@@ -30,3 +30,18 @@ License v3.0
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
+
+# %% Debug mode
+DEBUG_MODE = False
+# change this at runtime with 
+# >>> radis.DEBUG_MODE = True
+# Use the printdbg() function in radis.misc, typically with:
+# >>> if __debug__: printdbg(...)
+# so that printdbg are removed by the Python preprocessor when running in 
+# optimize mode:   
+# >>> python -O *.py
+
+from .lbl import *             # line-by-line module 
+from .los import *             # line-of-sight module
+from .spectrum import *        # Spectrum object
+from .tools import *           # slit, database, line survey, etc.
