@@ -22,7 +22,7 @@ long_description = 'A non-equilibrium Radiative Solver for HITRAN-like database 
 if os.path.exists('README.rst'):
     long_description = codecs.open('README.rst', encoding="utf-8").read()
 
-__version__ = '0.1'
+__version__ = '0.1.1'
     
 setup(name='radis',
       version=__version__,
