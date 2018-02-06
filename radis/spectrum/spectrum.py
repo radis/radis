@@ -292,7 +292,7 @@ class Spectrum(object):
     '''
 
     # hardcode attribute names, but can save a lot of memory if hundreds of spectra
-    __slots__ = ['q', 'q_conv', 'units', 'conditions', 'cond_units', 'populations',
+    __slots__ = ['_q', '_q_conv', 'units', 'conditions', 'cond_units', 'populations',
                   'lines', 'name']
 
     def __init__(self, quantities, units=None, conditions=None, cond_units=None,
