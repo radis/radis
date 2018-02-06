@@ -4,6 +4,10 @@ A code to simulate infrared spectra of molecules.
 
 ---
 
+- Docs: http://radis.readthedocs.io/
+
+---
+
 RADIS is nonequilibrium emission and absorption line-by-line code, for use by 
 infrared spectroscopic that want to compare line databases, or experimentalist 
 that want to fit their experimental line-of-sight spectra.
@@ -19,7 +23,7 @@ equilibrium calculations. To fit experimental spectra, RADIS includes a line
 survey tool, an interface with a look-up database to improve fitting convergence 
 times, and a multi-slab module with a radiative transfer equation solver to 
 reproduce line-of-sight experiments. Validation cases against existing spectral 
-codes and experimental results from various plasma sources are presented. 
+codes and experimental results from various plasma sources are included. 
 
 The code will soon be available on this repository under under GNU General Public 
 License v3.0
