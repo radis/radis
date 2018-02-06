@@ -1,2 +1,2 @@
-radis
+sphinx-autodoc-annotation
 sphinxcontrib-napoleon
