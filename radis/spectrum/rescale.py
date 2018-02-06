@@ -176,15 +176,23 @@ def get_reachable(spec): #, derivation_graph):
 
 
 
-def update(spec, optically_thin='default', greedy=True, verbose=True):
-    ''' Calculate missing quantities: ex: if path_length and emisscoeff
-    are given, recalculate radiance_noslit
+def update(spec, quantity='all', optically_thin='default', verbose=True):
+    ''' Calculate missing quantities that can be derived from the current quantities
+    and conditions 
+    
+    ex: if path_length and emisscoeff are given, recalculate radiance_noslit
+    if optically thin, or if abscoeff is also given 
     
     Input
     -------
     
     spec: Spectrum
     
+    quantity: str
+        name of the spectral quantity to recompute. If 'same', only the quantities
+        in the Spectrum are recomputed. If 'all', then all quantities that can
+        be derived are recomputed. Default 'all'. 
+
     optically_thin: True, False, or 'default'
         determines whether to calculate radiance with or without self absorption.
         If 'default', the value is determined from the self_absorption key
@@ -192,9 +200,6 @@ def update(spec, optically_thin='default', greedy=True, verbose=True):
         Also updates the self_absorption value in conditions (creates it if 
         doesnt exist)
         
-    greedy: boolean
-        whether to recompute all possible spectral quantities from existing ones 
-        (e.g: emisscoeff + path_length > radiance_noslit ). Default True
     '''
 
     # Get path length
@@ -221,21 +226,21 @@ def update(spec, optically_thin='default', greedy=True, verbose=True):
 
     initial = spec.get_vars()
 
-    _recalculate(spec, path_length, path_length, 1, 1,
-                 greedy=True, true_path_length=true_path_length,
+    _recalculate(spec, quantity, path_length, path_length, 1, 1,
+                 true_path_length=true_path_length,
                  verbose=verbose)
     
-    # Add units 
+    # Get list of new quantities 
     new_q = [k for k in spec.get_vars() if k not in initial]
     if verbose:
         print('New quantities added: {0}'.format(new_q))
         
-#    _add_units(spec, new_q)
-#def _add_units(spec, new_q):
-#    ''' Add units in Spectrum spec for new quantities new_q '''
-#    # TODO: test 
-    
-
+    # Final checks
+    for k in new_q:
+        # make sure units exist
+        if not k in spec.units:
+            raise ValueError('{0} added but unit is unknown'.format(k))
+        
 # Rescale functions
 
 # ... absorption coefficient
@@ -289,9 +294,15 @@ def _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
         abscoeff must be rescaled already 
     '''
     
-    def get_unit():
+    def get_unit_radiance():
         return spec.units.get('radiance_noslit', 'mW/cm2/sr/nm')
     
+    def get_unit_emisscoeff(unit_radiance):
+        if '/cm2' in unit_radiance:
+            return unit_radiance.replace('/cm2', '/cm3')
+        else:
+            return unit_radiance + '/cm'  # will be simplified by Pint afterwards
+
     assert true_path_length
     
     abscoeff = rescaled['abscoeff']
@@ -303,7 +314,7 @@ def _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
     transmittance_noslit = exp(-absorbance)
     emissivity_noslit = 1 - transmittance_noslit
     radiance_noslit = calc_radiance(wavenumber, emissivity_noslit, Tgas, 
-                                    unit=get_unit())
+                                    unit=get_unit_radiance())
     b = (abscoeff==0)  # optically thin mask
     emisscoeff = np.zeros_like(abscoeff)
     emisscoeff[b] = radiance_noslit[b]/path_length              # recalculate (opt thin)
@@ -322,7 +333,8 @@ def _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
     units['absorbance'] = '-ln(I/I0)'
     units['transmittance_noslit'] = 'I/I0'
     units['emissivity_noslit'] = 'eps'
-    units['radiance_noslit'] = get_unit()
+    units['radiance_noslit'] = get_unit_radiance()
+    units['emisscoeff'] = get_unit_emisscoeff(units['radiance_noslit'])
     
     return rescaled, units
 
@@ -342,7 +354,7 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
         if '/cm2' in unit_radiance:
             return unit_radiance.replace('/cm2', '/cm3')
         else:
-            return unit_radiance + '/cm2'
+            return unit_radiance + '/cm'  # will be simplified by Pint afterwards
 
     if 'emisscoeff' in initial:
         if __debug__: printdbg('... rescale: emisscoeff j1 = j1')
@@ -576,10 +588,9 @@ def rescale_emissivity_noslit(spec, rescaled, units, extra, true_path_length):
 
     return rescaled, units
 
-def _recalculate(spec, new_path_length, old_path_length,
+def _recalculate(spec, quantity, new_path_length, old_path_length,
                  new_mole_fraction, old_mole_fraction,
-                 greedy=False, true_path_length=True,
-                 verbose=True):
+                 true_path_length=True, verbose=True):
     ''' General function to recalculate missing quantities. Used in rescale
     and update
 
@@ -587,6 +598,11 @@ def _recalculate(spec, new_path_length, old_path_length,
     ------
 
     spec: Spectrum
+    
+    quantity: str
+        name of the spectral quantity to recompute. If 'same', only the quantities
+        in the Spectrum are recomputed. If 'all', then all quantities that can
+        be derived are recomputed. 
 
     true_path_length: boolean
         if False, only relative rescaling (new/old) is allowed. For instance,
@@ -598,10 +614,21 @@ def _recalculate(spec, new_path_length, old_path_length,
     optically_thin = spec.is_optically_thin()
     if __debug__: printdbg('... rescale: optically_thin: {0}'.format(optically_thin))
 
+    # Check inputs
+    assert quantity in CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES + ['all', 'same']
+
     # Choose which values to recompute
     # ----------
     initial = spec.get_vars()               # quantities initialy in spectrum
-    recompute = list(initial)               # quantities to recompute
+    if quantity == 'all':                   # quantities to recompute
+        recompute = list(initial)
+        greedy = True
+    elif quantity == 'same':
+        recompute = list(initial)
+        greedy = False
+    else:
+        recompute = [quantity]
+    recompute = list(initial)               
     rescaled = {}                           # quantities rescaled
 
     if ('radiance_noslit' in initial and not optically_thin):
@@ -769,7 +796,7 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
                            ' will be deleted')
 
     # Rescale
-    _recalculate(spec, new_path_length, old_path_length, 1, 1)
+    _recalculate(spec, 'same', new_path_length, old_path_length, 1, 1)
 
     # Update conditions
     spec.conditions['path_length'] = new_path_length
@@ -852,7 +879,7 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
         true_path_length = False
 
     # Rescale
-    _recalculate(spec, path_length, path_length, new_mole_fraction, old_mole_fraction,
+    _recalculate(spec, 'same', path_length, path_length, new_mole_fraction, old_mole_fraction,
                       true_path_length=true_path_length)
 
     # Update conditions

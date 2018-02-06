@@ -775,7 +775,7 @@ class Spectrum(object):
         np.savetxt(filename, np.vstack(self.get(var, wunit=wunit, Iunit=Iunit,
                                                 medium=medium)).T, header=header)
     
-    def update(self, optically_thin='default', greedy=True, verbose=True):
+    def update(self, quantity='all', optically_thin='default', verbose=True):
         ''' Calculate missing quantities: ex: if path_length and emisscoeff
         are given, recalculate radiance_noslit
         
@@ -783,7 +783,12 @@ class Spectrum(object):
         -------
         
         spec: Spectrum
-        
+            
+        quantity: str
+            name of the spectral quantity to recompute. If 'same', only the quantities
+            in the Spectrum are recomputed. If 'all', then all quantities that can
+            be derived are recomputed. Default 'all'. 
+
         optically_thin: True, False, or 'default'
             determines whether to calculate radiance with or without self absorption.
             If 'default', the value is determined from the self_absorption key
@@ -791,12 +796,9 @@ class Spectrum(object):
             Also updates the self_absorption value in conditions (creates it if 
             doesnt exist)
             
-        greedy: boolean
-            whether to recompute all possible spectral quantities from existing ones 
-            (e.g: emisscoeff + path_length > radiance_noslit ). Default True
         '''
 
-        return update(self, optically_thin=optically_thin, greedy=greedy,
+        return update(self, quantity=quantity, optically_thin=optically_thin,
                       verbose=verbose)
 
     # Rescale functions
