@@ -8,11 +8,11 @@ Created on Fri Apr 14 12:06:46 2017
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 import numpy as np
-from neq.io.hitran.hiparser import get_molecule
-from neq.io.hitran.hiparser import HITRAN_CLASS1
-from neq.io.hitran.hiparser import columns_2004 as hitrancolumns
-from neq.io.cdsd import columns_hitemp as cdsdcolumns
-from neq.io.cdsd import columns_4000 as cdsd4000columns
+from radis.tools.parser.hiparser import get_molecule
+from radis.tools.parser.hiparser import HITRAN_CLASS1
+from radis.tools.parser.hiparser import columns_2004 as hitrancolumns
+from radis.tools.parser.cdsd import columns_hitemp as cdsdcolumns
+from radis.tools.parser.cdsd import columns_4000 as cdsd4000columns
 from radis.phys.convert import cm2nm
 from radis.phys.air import vacuum2air
 from radis.phys.constants import k_b
