@@ -32,7 +32,7 @@ setup(name='radis',
       author='Erwan Pannier',
       author_email='erwan.pannier@gmail.com',
       license='GNU GENERAL PUBLIC LICENSE',
-      packages=['radis'],
+      packages=find_packages(),
       install_requires=[
 				 'mpldatacursor',
                         #'numpy'          # let the user install it 
