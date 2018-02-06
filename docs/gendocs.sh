@@ -1,3 +1,3 @@
-sphinx-apidoc.exe -f -o . ../radis
+sphinx-apidoc.exe -f -o source/ ../radis
 make clean
 make html
