@@ -1,0 +1,14 @@
+# NeQ extension of Pint units definition file
+# Based on the International System of Units
+# Language: english
+
+# E/N
+Td = 1e-17 * volt * centimeter**2 = townsend
+
+# Abbreviations 
+cm2 = cm ** 2
+cm3 = cm ** 3
+m2 = m ** 2
+m3 = m ** 3
+
+cm_1 = 1 / cm
