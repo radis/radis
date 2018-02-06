@@ -35,7 +35,7 @@ setup(name='radis',
       packages=find_packages(),
       install_requires=[
 				 'mpldatacursor',
-                        'numpy'          # let the user install it 
+                        'numpy',          # let the user install it 
                         'scipy',         # let the user install it  
                         'matplotlib',    # let the user install it 
                         'pandas',        # let the user install it 
