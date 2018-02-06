@@ -45,6 +45,7 @@ setup(name='radis',
                         'plotly>=2.0.6',
                         'termcolor',     # terminal colors
                         'six',  # python 2-3 compatibility
+                        'configparser', 
 				],
       classifiers=[
         'Development Status :: 4 - Beta',
