@@ -7,16 +7,16 @@ import os
 from os.path import dirname, join
 import sys
 
-# Check mandatory modules that we want users to install themselves
-try:
-    import numpy 
-    import scipy
-    import matplotlib
-    import pandas
-except ImportError:
-    raise ImportError('Please install these librairies first (with Anaconda is '+\
-                      'strongly recommended) \n >>> conda install numpy scipy '+\
-                      'matplotlib pandas')
+## Check mandatory modules that we want users to install themselves
+#try:
+#    import numpy 
+#    import scipy
+#    import matplotlib
+#    import pandas
+#except ImportError:
+#    raise ImportError('Please install these librairies first (with Anaconda is '+\
+#                      'strongly recommended) \n >>> conda install numpy scipy '+\
+#                      'matplotlib pandas')
 
 long_description = 'A non-equilibrium Radiative Solver for HITRAN-like database species '
 if os.path.exists('README.rst'):
@@ -32,14 +32,14 @@ setup(name='radis',
       author='Erwan Pannier',
       author_email='erwan.pannier@gmail.com',
       license='GNU GENERAL PUBLIC LICENSE',
-      packages=['radis'],
+      packages=find_packages(),
       install_requires=[
 				 'mpldatacursor',
-                        #'numpy'          # let the user install it 
-                        #'scipy',         # let the user install it  
-                        #'matplotlib',    # let the user install it 
-                        #'pandas',        # let the user install it 
-                        #'sympy',         # let the user install it 
+                        'numpy',          # let the user install it 
+                        'scipy',         # let the user install it  
+                        'matplotlib',    # let the user install it 
+                        'pandas',        # let the user install it 
+#                        'sympy',         # let the user install it 
                         'pint>=0.7.2',  # Unit aware calculations
                         'publib>=0.1.11', # Plotting styles for Matplotlib
                         'plotly>=2.0.6',
@@ -58,6 +58,7 @@ setup(name='radis',
         'Programming Language :: Python :: 3.6',
         "Operating System :: OS Independent"],
 	  include_package_data=True,
+      #data_files = [('radis/phys', ['units.txt'])],
       zip_safe=True,
       platforms='any',
       # Plugins for special features 
