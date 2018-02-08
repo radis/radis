@@ -303,7 +303,7 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
     return slabs
     
 def MergeSlabs(*slabs, **kwargs):
-    ''' Combines several slabs into one. Useful to calculate multi-gaz slabs. 
+    ''' Combines several slabs into one. Useful to calculate multi-gas slabs. 
     Linear absorption coefficient is calculated as the sum of all linear absorption
     coefficients, and the RTE is recalculated to get the total radiance
 
