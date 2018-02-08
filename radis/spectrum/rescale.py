@@ -628,6 +628,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         greedy = False
     else:
         recompute = [quantity]
+        greedy = False
     recompute = list(initial)               
     rescaled = {}                           # quantities rescaled
 
