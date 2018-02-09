@@ -8,7 +8,7 @@ Spectrum objects can be stored/loaded to/from .spec JSON files using the
 
 It is also possible to set up a :class:`~radis.tools.database.SpecDatabase` 
 which reads all .spec files in a folder. The :class:`~radis.tools.database.SpecDatabase`  
-can then be connected to a :class:`~radis.los.factory.SpectrumFactory` so that 
+can then be connected to a :class:`~radis.lbl.factory.SpectrumFactory` so that 
 spectra already in the database are not recomputed, and that new calculated spectra 
 are stored in the folder
 

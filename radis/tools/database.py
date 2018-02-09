@@ -877,7 +877,7 @@ class SpecDatabase():
             an unfolded dict of conditions
             >>> get(Tvib=3000, Trot=1500)
             
-        Extra Parameters
+        Other Parameters
         ----------------
         
         inplace: boolean
