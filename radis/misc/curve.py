@@ -24,8 +24,9 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
     
     Distances for out of bounds values is set to nan
     
-    Input
-    -----
+    
+    Parameters    
+    ----------
     
     w1, I1: array
         range and values for first curve
@@ -37,8 +38,9 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
         if True, distance for out of bound values is set to nan. Else, it 
         will be the distance from the last point.
     
-    Output
-    ------
+
+    Returns
+    -------
     
     w1, Idist: array
         minimal distance from I1 to I2, for each point in (w1, I1)
@@ -60,8 +62,9 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     
     Similar to Origin "Simple Curve Math Substract"
     
-    Input
-    -----
+    
+    Parameters    
+    ----------
     
     w1, I1: array
         range and values for first curve
@@ -75,8 +78,9 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
     
-    Output
-    ----
+
+    Returns
+    -------
     
     w1, Idiff: array
         difference interpolated on the second range
@@ -94,8 +98,9 @@ def curve_substract(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     
     Similar to Origin "Simple Curve Math Substract"
     
-    Input
-    -----
+    
+    Parameters    
+    ----------
     
     w1, I1: array
         range and values for first curve
@@ -109,8 +114,9 @@ def curve_substract(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
     
-    Output
-    ----
+
+    Returns
+    -------
     
     w1, Idiff: array
         difference interpolated on the second range
@@ -128,8 +134,9 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     
     Similar to Origin "Simple Curve Math Substract"
     
-    Input
-    -----
+    
+    Parameters    
+    ----------
     
     w1, I1: array
         range and values for first curve
@@ -143,8 +150,9 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
     
-    Output
-    ----
+
+    Returns
+    -------
     
     w1, Idiff: array
         difference interpolated on the second range
@@ -162,8 +170,9 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     
     Similar to Origin "Simple Curve Math Substract"
     
-    Input
-    -----
+    
+    Parameters    
+    ----------
     
     w1, I1: array
         range and values for first curve
@@ -177,8 +186,9 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
     
-    Output
-    ----
+
+    Returns
+    -------
     
     w1, Idiff: array
         difference interpolated on the second range

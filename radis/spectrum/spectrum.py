@@ -4,9 +4,6 @@ Created on Wed Feb 15 19:38:14 2017
 
 @author: erwan
 
-Description
-----------
-
 Spectrum class holder
 
 Keeps all output data from a SpectrumFactory calculation. Allows to reapply a
@@ -14,8 +11,8 @@ different slit function in post-processing, and plot all spectral quantities
 with any unit
 
 
-Use
-----------
+Examples
+--------
 
 Typical use
 
@@ -48,8 +45,6 @@ is_spectrum
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
-from matplotlib.widgets import MultiCursor
 import numpy as np
 from publib import set_style, fix_style
 from radis.phys.convert import conv2, cm2nm, nm2cm
@@ -61,8 +56,7 @@ from radis.spectrum.rescale import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTIT
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from neq.spec.base import print_conditions
 from radis.misc.basics import compare_lists
-from radis.misc.arrays import array_allclose, evenly_distributed
-from radis.misc.curve import curve_substract, curve_distance, curve_divide
+from radis.misc.arrays import evenly_distributed
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
 from pint import UndefinedUnitError
@@ -79,8 +73,9 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     ''' Convert (w, I) into a Spectrum object that has unit conversion, plotting
     and slit convolution capabilities
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     w, I: np.array
         wavelength and intensity
@@ -118,8 +113,9 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     ''' Convert (w, I) into a Spectrum object that has unit conversion, plotting
     and slit convolution capabilities
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     w, I: np.array
         wavelength and transmittance (no slit)
@@ -153,8 +149,9 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     be measured experimentally (hence deconvolution of the slit function would
     be required)
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     w, I: np.array
         wavelength and intensity
@@ -190,8 +187,8 @@ class Spectrum(object):
     (for instance convert a spectral radiance per wavelength units to a
     spectral radiance per wavenumber)
 
-    Input
-    -------
+    Parameters
+    ----------
 
     quantities: dict of tuples   {'quantity':(wavenum, quantity)}
         where quantities are spectral quantities (absorbance, radiance, etc.)
@@ -204,13 +201,13 @@ class Spectrum(object):
     units: dict
         units for quantities
 
-    conditions: (optional) dict
+    (optional) conditions: dict
         physical conditions and calculation parameters
 
     cond_units: dict
         units for conditions
 
-    populations: (optional) dict
+    (optional) populations: dict
         a dictionary of all species, and levels. Should be compatible with other
         radiative codes such as Specair output. Suggested format:
         {molecules: {isotopes: {elec state: rovib levels}}}
@@ -218,7 +215,7 @@ class Spectrum(object):
         {'CO2':{1: 'X': df}}   with df a Pandas Dataframe
         #TODO. Add pop_units? Can be a pandas dataframe too. 
 
-    lines: (optional) pandas Dataframe
+    (optional) lines: pandas Dataframe
         all lines in databank (necessary for LineSurvey). Warning if you want to
         play with the lins content: The signification of columns in `lines` may be
         specific to a database format. Plus, some additional columns may have been
@@ -234,9 +231,10 @@ class Spectrum(object):
         Defaults None (but raises an error if wavespace is not defined in
         conditions neither)
 
-    Optional Input
-    -----------
 
+    Other Parameters
+    ----------------
+    
     name: str, or None
         Give a name to this Spectrum object (helps debugging in multislab
         configurations). Default None
@@ -248,8 +246,9 @@ class Spectrum(object):
         ~ 1.8ms (makes it 3 times longer, and can be a problem if hundreds of 
         spectra are created in a row). Default True
 
+
     Example
-    -----------
+    -------
 
     >>> s = calc_spectrum(2125, 2300, Tgas=2000, databank='CDSD')
     >>> s.print_conditions()
@@ -274,21 +273,35 @@ class Spectrum(object):
     >>> s.resample(w_new)               # resample on new wavespace
     >>> s.store('co_calculation2.spec')
 
-    Implementation
-    ------
 
-    quantites are stored in self._q and self._q_conv dictionaries. They are better accessed
-    with the get() function that deals with units and wavespace
-    Note: we may move to a unique storage under self._q: in that case q['wavespace']
-    and q_conv['wavespace'] need different names: ex. 'wavespace' and 'wavespace_conv'
+    Notes
+    -----
+    
+    Implementation:
+    
+        quantites are stored in self._q and self._q_conv dictionaries. They are better accessed
+        with the get() function that deals with units and wavespace
+        Note: we may move to a unique storage under self._q: in that case q['wavespace']
+        and q_conv['wavespace'] need different names: ex. 'wavespace' and 'wavespace_conv'
 
-    Wavebase
-    --------
+    Wavebase:
+    
+        quantites are stored either in wavenum or wavelength base, but this doesnt
+        matter as they are retrieved / plotted with get() and plot() functions
+        which have units as input arguments
 
-    quantites are stored either in wavenum or wavelength base, but this doesnt
-    matter as they are retrieved / plotted with get() and plot() functions
-    which have units as input arguments
 
+    Attributes
+    ----------
+    
+    conditions : dict
+        Stores computation / measurement conditions
+        
+    populations: dict
+        Stores molecules, isotopes, electronic states and vibrational or 
+        rovibrational populations
+    
+    
     '''
 
     # hardcode attribute names, but can save a lot of memory if hundreds of spectra
@@ -448,9 +461,12 @@ class Spectrum(object):
     def get(self, var, wunit='nm', Iunit='default', medium='default',
             xunit=None, yunit=None  # deprecated for wunit, Iunit
             ):
-        '''
-        Input
-        -----
+        ''' Retrieve a spectral quantity from a Spectrum object. You can change 
+        wavespace unit, intensity unit, or propagation medium.
+        
+        
+        Parameters    
+        ----------
 
         var: variable ('absorbance', 'transmittance', etc.) For full list see
             get_vars()
@@ -468,13 +484,17 @@ class Spectrum(object):
             value set in conditions is used. If None you better be sure of
             what you're doing.
 
+        
+        Todo
+        ----
         TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
         by FWHM.
 
-        Output
-        ------
+    
+        Returns
+        -------
 
-        w, I: np.array
+        w, I: array-like
             wavespace, quantity (ex: wavelength, radiance_noslit). For numpy
             users, note that these are copies (values) of the Spectrum quantity
             and not a view (reference): if you modify them the Spectrum is not
@@ -540,15 +560,17 @@ class Spectrum(object):
     def _get_wavespace(self, which='any'):
         ''' Return wavespace (if the same for all quantities)
 
-        Input
-        -----
+        
+        Parameters    
+        ----------
 
         which: 'convoluted', 'non_convoluted', 'any'
             return wavelength for convoluted quantities, non convoluted quantities, 
             or any. If any and both are defined, they have to be the same else 
             an error is raised. Default any.
 
-        Output
+    
+        Returns
         -------
 
         w: array_like
@@ -588,8 +610,9 @@ class Spectrum(object):
     def get_wavelength(self, medium='default', which='any'):
         ''' Return wavelength in defined medium 
         
-        Input
-        -----
+    
+        Parameters    
+        ----------
 
         which: 'convoluted', 'non_convoluted', 'any'
             return wavelength for convoluted quantities, non convoluted quantities, 
@@ -601,7 +624,8 @@ class Spectrum(object):
             value set in conditions is used. If None you better be sure of
             what you're doing.
 
-        Output
+
+        Returns
         -------
 
         w: array_like
@@ -665,15 +689,17 @@ class Spectrum(object):
     def get_wavenumber(self, which='any'):
         ''' Return wavenumber (if the same for all quantities)
         
-        Input
-        -----
+    
+        Parameters    
+        ----------
 
         which: 'convoluted', 'non_convoluted', 'any'
             return wavenumber for convoluted quantities, non convoluted quantities, 
             or any. If any and both are defined, they have to be the same else 
             an error is raised. Default any.
 
-        Output
+
+        Returns
         -------
 
         w: array_like
@@ -745,8 +771,9 @@ class Spectrum(object):
     def savetxt(self, filename, var, wunit='nm', Iunit='default', medium='default'):
         ''' Export spectral quantity var to filename
         
-        Input
-        ----
+    
+        Parameters    
+        ----------
         
         filename: str
         
@@ -779,8 +806,9 @@ class Spectrum(object):
         ''' Calculate missing quantities: ex: if path_length and emisscoeff
         are given, recalculate radiance_noslit
         
-        Input
-        -------
+    
+        Parameters    
+        ----------
         
         spec: Spectrum
             
@@ -819,8 +847,9 @@ class Spectrum(object):
         and emission coefficient, and solves the RTE again for the new path length
         Convoluted values (with slit) are dropped in the process.
 
-        Input
-        ---------
+    
+        Parameters    
+        ----------
 
         new_path_length: float
             new path length
@@ -828,18 +857,22 @@ class Spectrum(object):
         old_path_length: float, or None
             if None, current path length (conditions['path_length']) is used
 
-        Optional Input
-        -------
+
+        Other Parameters
+        ----------------
 
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
             Default False
 
-        Implementation
-        --------
 
-        To deal with all the input cases, we first make a list of what has to
-        be recomputed, and what has to be recalculated
+        Notes
+        -----
+        
+        Implementation:
+
+            To deal with all the input cases, we first make a list of what has to
+            be recomputed, and what has to be recalculated
 
         '''
         
@@ -852,8 +885,9 @@ class Spectrum(object):
         ''' Update spectrum with new molar fraction
         Convoluted values (with slit) are dropped in the process.
 
-        Input
-        ---------
+    
+        Parameters    
+        ----------
 
         new_mole_fraction: float
             new mole fraction
@@ -861,23 +895,27 @@ class Spectrum(object):
         old_mole_fraction: float, or None
             if None, current mole fraction (conditions['mole_fraction']) is used
 
-        Optional Input
-        -------
+
+        Other Parameters
+        ----------------
 
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
             Default False
 
-        Implementation
+
+        Notes
         -----
 
-        similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
-        Note that this is valid only for small changes in mole fractions. Then,
-        the change in line broadening becomes significant
+        Implementation:
+    
+            similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
+            Note that this is valid only for small changes in mole fractions. Then,
+            the change in line broadening becomes significant
 
 
         Todo
-        -------
+        ----
 
         Add warning when too large rescaling
         '''
@@ -928,8 +966,9 @@ class Spectrum(object):
              normalize=False,
              **kwargs):
         '''
-        Input
-        -----
+    
+        Parameters    
+        ----------
 
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, etc.)
             For full list see get_vars(). If None, plot the first thing in
@@ -943,8 +982,11 @@ class Spectrum(object):
             for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
             per wavenumber (~ `W/m2/sr/cm_1`) units
 
-        Plot parameters inputs
-        -----
+
+        Other Paramaters
+        ----------------
+        
+        Plot parameters inputs:
 
         show_points: boolean
             show calculated points. Default True
@@ -1048,8 +1090,9 @@ class Spectrum(object):
         ''' Return populations that are featured in the spectrum, either as 
         upper or lower levels 
         
-        Input
-        -------
+    
+        Parameters    
+        ----------
         
         molecule: str, or None
             if None, only one molecule must be defined. Else, an error is raised
@@ -1062,20 +1105,23 @@ class Spectrum(object):
             if None, only one electronic state must be defined. Else, an error 
             is raised
             
-        Output
-        --------
+
+        Returns
+        -------
         
         pandas dataframe of levels, where levels are the index, 
         and 'Evib' and 'nvib' are featured 
         
-        Structure
-        ----------
+        Notes
+        -----
         
-        {molecule: {isotope: {electronic_state: {'vib': pandas Dataframe,    # (copy of) vib levels
-                                                 'rovib': pandas Dataframe,  # (copy of) rovib levels
-                                                 'Ia': float    # isotopic abundance
-                                                 }}}}
-        
+        Structure:
+            
+            {molecule: {isotope: {electronic_state: {'vib': pandas Dataframe,    # (copy of) vib levels
+                                                     'rovib': pandas Dataframe,  # (copy of) rovib levels
+                                                     'Ia': float    # isotopic abundance
+                                                     }}}}
+            
         (If Spectrum generated with RADIS, structure should match that of 
         SpectrumFactory.get_populations())
         
@@ -1114,8 +1160,9 @@ class Spectrum(object):
                        first=None):
         ''' Return vibrational levels in the spectrum (energies, populations)
         
-        Input
-        -------
+    
+        Parameters  
+        ----------  
         
         molecule: str, or None
             if None, only one molecule must be defined. Else, an error is raised
@@ -1131,8 +1178,9 @@ class Spectrum(object):
         first: int, or 'all' or None
             only show the first N levels. If None or 'all', all levels are shown
             
-        Output
-        --------
+
+        Returns
+        -------
         
         pandas dataframe of levels, where levels are the index, 
         and 'Evib' and 'nvib' are featured 
@@ -1168,8 +1216,9 @@ class Spectrum(object):
         ''' Return rovibrational levels calculated in the spectrum (energies, 
         populations)
         
-        Input
-        -------
+    
+        Parameters    
+        ----------
         
         molecule: str, or None
             if None, only one molecule must be defined. Else, an error is raised
@@ -1185,9 +1234,10 @@ class Spectrum(object):
         first: int, or 'all' or None
             only show the first N levels. If None or 'all', all levels are shown
 
-        Output
-        --------
-        
+
+        Returns
+        -------
+    
         pandas dataframe of levels, where levels are the index, 
         and 'Evib' and 'nvib' are featured 
             
@@ -1220,8 +1270,9 @@ class Spectrum(object):
     def plot_populations(self, what=None, nunit='', correct_for_abundance=False, **kwargs):
         ''' Plots vib populations if given and format is valid
         
-        Input
-        -------
+    
+        Parameters    
+        ----------
         
         what: 'vib', 'rovib', None
             if None plot everything
@@ -1340,8 +1391,9 @@ class Spectrum(object):
 
         Warning with units: read about unit and return_unit parameters.
 
-        Input
-        --------
+    
+        Parameters    
+        ----------
 
         slit_function: float (nm) / str (.txt file)
             If float:
@@ -1365,8 +1417,9 @@ class Spectrum(object):
             done in Specair and changes units. For 'max2' read about it in 
             get_slit_function() docstrings. Default 'area'
 
-        Optional input
-        ----------
+
+        Other Parameters
+        ----------------
 
         *args, **kwargs
             are forwarded to slit generation or import function
@@ -1376,8 +1429,11 @@ class Spectrum(object):
         energy_threshold: float
              tolerance fraction when resampling. Default 1e-3 (0.1%)
 
-        Implementation
-        --------
+
+        Notes
+        -----
+        
+        Implementation:
 
         Apply `convolve_slit` for all quantities in .vars that ends with
         _noslit. Generate a triangular instrumental slit function with base
@@ -1388,8 +1444,9 @@ class Spectrum(object):
         - when slit unit and spectrum unit arent the same
         - when spectrum is not evenly spaced
 
-        Note
-        ------
+
+        Example
+        -------
 
         To manually apply the slit to a particular quantity use:
 
@@ -1402,8 +1459,11 @@ class Spectrum(object):
         The slit is made considering the "center wavelength" which is
         the mean wavelength of the full spectrum you are applying it to.
 
+    
+        Todo
+        ----
 
-        # TODO: add warning if FWHM >= wstep(spectrum)/5    
+        add warning if FWHM >= wstep(spectrum)/5    
 
         '''
 
@@ -1661,8 +1721,9 @@ class Spectrum(object):
         ''' Plot Line Survey (all linestrengths used for calculation)
         Output in Plotly (html)
 
-        Input
-        -------
+    
+        Parameters    
+        ----------
 
         spec: Spectrum
             result from SpectrumFactory calculation (see spectrum.py)
@@ -1765,8 +1826,9 @@ class Spectrum(object):
         ''' Save a Spectrum object in JSON format. Object can be recovered with
         neq.spec.load_spec()
 
-        Input
-        ---------
+    
+        Parameters    
+        ----------
 
         path: path to folder (database) or file
             if a folder, file is saved to database and name is generated automatically.
@@ -1798,17 +1860,24 @@ class Spectrum(object):
             is added. If replace file is replaced (yeah). If error (or anything else)
             an error is raised. Default `increment`
 
-        Output
-        --------
+
+        Returns
+        -------
 
         Returns filename used
 
 
-        Note
-        --------
+        Notes
+        -----
 
-        Shouldnt rely on a Database. One may just want to store/load a Spectrum
-        once.
+        Implementation:
+            
+            Shouldnt rely on a Database. One may just want to store/load a Spectrum
+            once.
+            
+        Todo
+        ----
+        
         # Todo: maybe move most of the code here (filename writing) in database.py ?
 
         '''
@@ -1838,7 +1907,8 @@ class Spectrum(object):
         oversampling and spline interpolation. These parameters can be adjusted,
         and energy conservation ensured with the appropriate parameters.
 
-        Input
+    
+        Parameters    
         ----------
 
         w_new: array
@@ -1866,8 +1936,11 @@ class Spectrum(object):
             TODO (but dangerous): reapply_slit at the end of the process if slit
             is in conditions?
             
+            
+        Other Parameters
+        ----------------
+        
         Inputs transfered to resample:
-        -------
 
         energy_threshold: float
             if energy conservation (integrals) is above this threshold, raise an
@@ -2084,14 +2157,16 @@ class Spectrum(object):
         Note: using deepcopy would work but then the Spectrum object would be pickled
         and unpickled again. It's a little faster here
 
-        Performance
-        -------
 
-        deepcopy: 3.32 ms
-        initial : 10 ms
-        no check test, optimised: 1.8 ms
-        ... asymptote: without evenly spaced check, without copies: 1.84 ms
+        Notes
+        -----
+        
+        Performance:
 
+            deepcopy: 3.32 ms
+            initial : 10 ms
+            no check test, optimised: 1.8 ms
+            ... asymptote: without evenly spaced check, without copies: 1.84 ms
 
         '''
 
@@ -2142,8 +2217,9 @@ class Spectrum(object):
                      verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False):
         ''' Compare Spectrum with another spectrum
 
-        Input
-        ------
+    
+        Parameters    
+        ----------
         
         other: type Spectrum
             another Spectrum to compare with
@@ -2173,14 +2249,16 @@ class Spectrum(object):
             
             >>> out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
 
-        Output
+
+        Returns
         -------
         
         equals: boolean
             return True if spectra are equal (respective to tolerance defined by 
             rtol and other input conditions)
             
-        Use
+            
+        Example
         -------
         
         >>> s1.compare_with(s2)
@@ -2213,8 +2291,9 @@ class Spectrum(object):
 
         def _compare_dataframes(df1, df2, name):
             ''' 
-            Input
-            ----
+    
+            Parameters    
+            ----------
             
             df1, df2: pandas Dataframe
                 lines, or vib/rovib levels dataframes 
@@ -2488,401 +2567,6 @@ class Spectrum(object):
                    'values']
 
         return [k for k in attrs if not k in exclude]
-
-
-# %% ======================================================================
-# External functions
-# ----------------
-# XXX =====================================================================
-
-def make_up(label):
-    ''' Cosmetic changes on label, before plot 
-    
-    Input
-    ------
-    
-    label: str
-    '''
-    
-    # Improve units
-    label = label.replace('cm_1', 'cm-1')
-    label = label.replace('cm-1', 'cm$^{-1}$')
-    label = label.replace('m2', 'm$^2$')
-    label = label.replace('m3', 'm$^3$')
-    label = label.replace('I/I0', 'I/I$_\mathrm{0}$')    # transmittance unit
-    
-    # Improve text
-    label = label.replace('_noslit', ' (unconvolved)')
-    return label
-
-def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
-             resample=True):
-    ''' Get the difference between 2 spectra
-    Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
-    s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
-    
-    Input
-    -------
-    
-    s1, s2: Spectrum objects
-    
-    var: str
-        spectral quantity 
-    
-    wunit: 'nm', 'cm-1'
-        waveunit to compare in
-        
-    Iunit: str
-        If 'default' use s1 unit for variable var
-    
-    medium: 'air', 'vacuum', default'
-        propagating medium to compare in (if in wavelength)
-    
-    '''
-
-    w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
-                                   medium=medium, resample=resample)
-
-    return curve_substract(w1, I1, w2, I2)    # basically w1, I1 - I2 (on same range)
-
-def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
-             resample=True):
-    ''' Get the ratio between two spectra
-    Basically returns w1, I1 / I2 where (w1, I1) and (w2, I2) are the values of
-    s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
-    
-    Input
-    -------
-    
-    s1, s2: Spectrum objects
-    
-    var: str
-        spectral quantity 
-    
-    wunit: 'nm', 'cm-1'
-        waveunit to compare in
-        
-    Iunit: str
-        If 'default' use s1 unit for variable var
-    
-    medium: 'air', 'vacuum', default'
-        propagating medium to compare in (if in wavelength)
-    
-    '''
-
-    w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
-                                   medium=medium, resample=resample)
-
-    return curve_divide(w1, I1, w2, I2)    # basically w1, I1 - I2 (on same range)
-
-def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default',
-             resample=True):
-    ''' Get the Euclidian distance between 2 spectra
-    
-    Input
-    -------
-    
-    s1, s2: Spectrum objects
-    
-    var: str
-        spectral quantity 
-    
-    wunit: 'nm', 'cm-1'
-        waveunit to compare in
-        
-    Iunit: str
-        If 'default' use s1 unit for variable var
-    
-    medium: 'air', 'vacuum', default'
-        propagating medium to compare in (if in wavelength)
-    
-    '''
-
-    w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
-                                   medium=medium, resample=resample)
-
-    return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)    # euclidian distance from w1, I1
-
-def get_residual(s1, s2, var):
-    ''' Returns integral of the difference between two spectra s1 and s2, 
-    relatively to the integral of spectrum s1 
-    
-    Input
-    -----
-    
-    s1, s2: Spectrum objects
-    
-    var: str
-        spectral quantity
-        
-    Calculation
-    -------    
-    
-    For I1, I2, the values of 'var' in s1 and s2, respectively, residual
-    is calculated as:
-    
-    >>> res = trapz(I2-I1, w1) / trapz(I1, w1)
-
-    0 values for I1 yield nans except if I2 = I1 = 0
-    
-    Note
-    -----
-    
-    when s1 and s2 dont have the size wavespace range, they are automatically
-    resampled through get_diff on 's1' range 
-
-    '''
-
-    w, I = s1.get(var)
-    # mask for 0
-    wdiff, dI = get_diff(s1, s2, var, resample=True)
-    
-    return np.abs(np.trapz(dI, wdiff) / np.trapz(I, w))
-
-#    b1 = (I_avg == 0)
-#    b2 = (dI == 0)
-    
-#    with catch_warnings():
-#        filterwarnings('ignore', 'invalid value encountered in true_divide')
-#        res = dI/I_avg
-    
-#    res[b1*b2] = 0             # if both I_avg and dI = 0, solve nan as 0     
-    
-#    return np.sqrt((res**2).sum())/len(res)
-#    return res.mean()
-
-def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default',
-             resample=True):
-    ''' See get_distance, get_diff '''
-
-    # Check inputs, get defaults
-    # ----
-    if Iunit == 'default':
-        try:
-            Iunit = s1.units[var]
-        except KeyError:  # unit not defined in dictionary
-            raise KeyError('Iunit not defined in spectrum. Cant plot')        
-    # Format units    
-    if wunit == 'default':
-        wunit = s1.get_waveunit()
-    wunit = cast_waveunit(wunit)
-    if medium == 'default':
-        medium = s1.conditions.get('medium', None)
-
-    # Get data
-    # ----
-    w1,I1 = s1.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
-    w2,I2 = s2.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
-    
-    if not resample:
-        if not array_allclose(w1, w2):
-            raise AssertionError('Wavespace are not the same: use Spectrum.resample()')
-
-    return w1, I1, w2, I2
-
-def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='default',
-              resample=True, method='diff',  show_points=False,
-              label1 = None, label2 = None, figsize=None, title=None, nfig=None):
-    ''' Plot two spectra, and the difference between them
-    
-    Input
-    ------
-    
-    s1, s2: Spectrum objects
-    
-    var: str, or None
-        spectral quantity to plot (ex: 'abscoeff'). If None, plot the first one 
-        in the Spectrum from 'radiance', 'radiance_noslit', 'transmittance', etc.
-        
-    wunit: 'default', 'nm', 'cm-1'
-        if 'default', use first spectrum wunit
-    
-    Iunit: str
-        if 'default', use first spectrum unit
-        
-    medium: 'air', 'vacuum', 'default'
-        if 'default', use first spectrum propagating medium
-        
-    method: 'distance', 'diff', 'ratio'
-        If 'diff', plot difference at same wavespace position. 
-        If 'distance', plot Euclidian distance (note that units are meaningless then)
-        If 'ratio', plot ratio of two spectra
-        Default 'diff'.
-        
-        Warning: with 'distance', calculation scales as ~N^2 with N the number
-        of points in a spectrum (against ~N with 'diff'). This can quickly 
-        override all memory.
-        
-    Optional Input
-    ------
-    
-    show_points: boolean
-        if True, make all points appear with 'o'
-    
-    label1, label2: str
-        curve names
-        
-    figsize
-        figure size
-        
-    nfig: int, str
-        figure number of name
-        
-    title: str
-        title
-
-    Example
-    ----------
-
-    >>> Punit = 'mW/cm2/sr'
-    >>> fig, axes = plot_diff(s10, s50, figsize=(18,6),
-    >>>       label1='brd 10 cm-1, P={0:.2f} {1}'.format(s10.get_power(unit=Punit),Punit),
-    >>>       label2='brd 50 cm-1, P={0:.2f} {1}'.format(s50.get_power(unit=Punit),Punit)
-    >>>       )
-    '''
-    
-    # Get defaults
-    # ---
-    if var is None:    # if nothing is defined, try these first:
-        params = s1.get_vars()
-        if 'radiance' in params:
-            var = 'radiance'
-        elif 'radiance_noslit' in params:
-            var = 'radiance_noslit'
-        elif 'transmittance' in params:
-            var = 'transmittance'
-        elif 'transmittance_noslit' in params:
-            var = 'transmittance_noslit'
-        else:
-            # or plot the first variable we find
-            var = list(params)[0]
-            if var.replace('_noslit', '') in params:
-                var = var.replace('_noslit', '')
-    if Iunit == 'default':
-        try:
-            Iunit = s1.units[var]
-        except KeyError:  # unit not defined in dictionary
-            raise KeyError('Iunit not defined in spectrum. Cant plot')
-    if wunit == 'default':
-        wunit = s1.get_waveunit()
-    if medium == 'default':
-        medium = s1.conditions.get('medium', None)
-
-    # Get data
-    # ----
-    if method == 'distance':
-        wdiff, Idiff = get_distance(s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-    elif method == 'diff':
-        wdiff, Idiff = get_diff(s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-    elif method == 'ratio':
-        wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-    else:
-        raise ValueError('Unknown comparison method: {0}'.format(method))
-    
-    # Plot 
-    # ----
-    
-    # Format units
-    wunit = cast_waveunit(wunit)
-    if wunit == 'cm-1':
-        xlabel='Wavenumber (cm-1)'
-    elif wunit == 'nm':
-        xlabel='Wavelength (nm)'
-        
-    # Init figure
-    set_style('origin')
-    fig = plt.figure(num=nfig, figsize=figsize)
-    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
-    ax0 = plt.subplot(gs[0])
-    ax1 = plt.subplot(gs[1])
-    ax1.get_shared_x_axes().join(ax0, ax1)
-
-    # Plotting style
-    if show_points:
-        style = '-o'
-    else:        
-        style = '-'
-
-    # Get labels and names
-    if label1 is None:
-        label1 = s1.get_name()
-    if label2 is None:
-        label2 = s2.get_name()
-    Iunit = make_up(Iunit)  # cosmetic changes 
-    
-    # Plot compared spectra
-    ax0.plot(*s1.get(var, wunit, Iunit, medium), ls=style, color='k', lw=3, label=label1)
-    ax0.plot(*s2.get(var, wunit, Iunit, medium), ls=style, color='r', lw=1, label=label2)
-
-    ax0.tick_params(labelbottom='off')
-    if label1 is not None or label2 is not None:
-        ax0.legend(loc='best')
-    
-    # Start to 0
-    if var in ['radiance_noslit', 'radiance', 'abscoeff', 'absorbance']:
-        ax0.set_ylim(bottom=0)
-
-    # plot difference (sorted)
-    b = np.argsort(wdiff)
-    ax1.plot(wdiff[b], Idiff[b], style, color='k', lw=1)
-    
-    if method == 'diff':
-        fig.text(0.09,0.38,'diff')
-    elif method == 'distance':
-        fig.text(0.09,0.38,'distance')
-    elif method == 'ratio':
-        fig.text(0.09,0.38,'ratio')
-        
-    # Write labels
-    ax1.set_xlabel(make_up(xlabel))
-    fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),
-             va='center', rotation='vertical')
-    
-    # Set limits
-    if method == 'diff':
-        # symmetrize error scale:
-        ymin, ymax = ax1.get_ylim()
-        ymax = max(abs(ymin), abs(ymax))
-        ax1.set_ylim(-ymax, ymax)
-    elif method == 'distance':
-        ax1.set_ylim(bottom=0)
-    elif method == 'ratio':
-        # auto-zoom on min, max, but discard first decile (case of spikes / divergences)
-        Idiff_s = np.sort(Idiff)
-        ax1.set_ylim(bottom=0, top=Idiff_s[len(Idiff_s)//10]+Idiff_s[-len(Idiff_s)//10])
-    
-
-    if title:
-        fig.suptitle(title)
-
-    # Fix format
-    fix_style('origin', ax=ax0)
-    fix_style('origin', ax=ax1)
-    plt.tight_layout()
-    if title:
-        plt.subplots_adjust(left=0.15, top=0.92)
-    else:
-        plt.subplots_adjust(left=0.15)
-        
-    # Add cursors
-    fig.cursors = MultiCursor(fig.canvas, (ax0, ax1), 
-                         color='r', lw=1, alpha=0.2, horizOn=False, 
-                         vertOn=True)
-    
-    return fig, [ax0, ax1]
-
-
-# %% Extra
-
-# Test class
-
-def is_spectrum(a):
-    ''' sometimes the Spectrum class gets imported twice, and a purely isinstance()
-    comparison fails '''
-
-    return (isinstance(a, Spectrum) or
-             repr(a.__class__) == repr(Spectrum))
-
 
 # Test functions
 if __name__ == '__main__':

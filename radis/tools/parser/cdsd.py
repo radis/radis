@@ -97,7 +97,8 @@ columns_4000 = OrderedDict([ (
 def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     ''' Convert a CDSD-HITEMP file to a Pandas dataframe 
     
-    Input
+    
+    Parameters    
     ----------
     
     fname: str
@@ -116,14 +117,17 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         taken into account). If False, no database is used. If 'regen', temp
         file are reconstructed. Default True. 
     
-    Reference
-    -----------
+    
+    References
+    ----------
     
     CDSD-HITEMP / CDSD-4000 doc 
     
     
-    Performance
-    ----------
+    Notes
+    -----
+    
+    Performances:
     
     I had huge performance trouble with this function, because the files are 
     huge (500k lines) and the format is to special (no space between numbers...)
@@ -145,7 +149,6 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     - cache mode, then              2s
     
     Moving to HDF5:
-    --------
     
     On cdsd_02069_02070 (56 Mb)
     

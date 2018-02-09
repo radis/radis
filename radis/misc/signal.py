@@ -28,8 +28,9 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
     is the same as the initial xspace, times a resolution factor. Verifies energy 
     conservation on the intersecting range at the end.
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     xspace: array
         space on which vector was generated 
@@ -57,8 +58,9 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
     print_conservation: boolean
         if True, prints energy conservation
 
-    Output
-    ------
+
+    Returns
+    -------
     
     vector_new: array
         resampled vector on evenly spaced array. Number of element is conserved.
@@ -66,8 +68,9 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
     Note that depending upon the from_space > to_space operation, sorting may 
     be reversed. 
     
-    Example
-    -------
+    
+    Examples
+    --------
     
     >>> w_nm, I_nm = s.get('radiance')
     >>> w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
@@ -179,8 +182,9 @@ def resample_even(xspace, vector, resfactor=2, k=1, ext='error', energy_threshol
     is the same as the initial xspace, times a resolution factor. Verifies energy 
     conservation at the end.
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     xspace: array
         space on which vector was generated 
@@ -207,8 +211,9 @@ def resample_even(xspace, vector, resfactor=2, k=1, ext='error', energy_threshol
     print_conservation: boolean
         if True, prints energy conservation
 
-    Output
-    ------
+
+    Returns
+    -------
     
     xspace_new: array
         evenly spaced mapping of xspace (same min, same max)
@@ -219,8 +224,9 @@ def resample_even(xspace, vector, resfactor=2, k=1, ext='error', energy_threshol
     Note that depending upon the from_space > to_space operation, sorting may 
     be reversed. 
     
-    Example
-    -------
+    
+    Examples
+    --------
     
     >>> w_nm, I_nm = s.get('radiance')
     >>> w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
@@ -244,8 +250,9 @@ def resample_even(xspace, vector, resfactor=2, k=1, ext='error', energy_threshol
 def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
     ''' Test procedures
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     debug: boolean
         swamps the console namespace with local variables. Default False

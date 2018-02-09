@@ -125,11 +125,20 @@ columns_grp2 = OrderedDict([ (
 # %% Hitran global quanta classes
 
 def parse_HITRAN_class1(df):
-    ''' Diatomic molecules
-    CO, HF, HCl, HBr, HI, N2, NO+
+    ''' Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>      v1
     >>>  13x I2
@@ -146,11 +155,20 @@ def parse_HITRAN_class1(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 def parse_HITRAN_class2(df):
-    ''' Diatomic molecules with different electronic levels
-    O2
+    ''' Diatomic molecules with different electronic levels: O2
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>      X  v1
     >>>  12x A1 I2
@@ -159,11 +177,20 @@ def parse_HITRAN_class2(df):
     raise NotImplementedError
 
 def parse_HITRAN_class3(df):
-    ''' Diatomic molecules with doublet-Pi electronic state
-    NO, OH, ClO
+    ''' Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
     
-    HITRAN syntax
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
     -------
+    
+    HITRAN syntax:
     
     >>>      X i     v1
     >>>  7x A1 A3 2x I2
@@ -171,11 +198,20 @@ def parse_HITRAN_class3(df):
     raise NotImplementedError
 
 def parse_HITRAN_class4(df):
-    ''' Linear triatomic
-    N2O, OCS, HCN
+    ''' Linear triatomic: N2O, OCS, HCN
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>     v1 v2 l2 v3
     >>>  7x I2 I2 I2 I2
@@ -193,11 +229,20 @@ def parse_HITRAN_class4(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 def parse_HITRAN_class5(df):
-    ''' Linear triatomic with large Fermi resonance
-    CO2
+    ''' Linear triatomic with large Fermi resonance: CO2
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>     v1 v2 l2 v3 r
     >>>  6x I2 I2 I2 I2 I1
@@ -215,11 +260,20 @@ def parse_HITRAN_class5(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 def parse_HITRAN_class6(df):
-    ''' Non-linear triatomic
-    H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
+    ''' Non-linear triatomic: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>     v1 v2 v3
     >>>  9x I2 I2 I2
@@ -237,33 +291,60 @@ def parse_HITRAN_class6(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 def parse_HITRAN_class7(df):
-    ''' Linear tetratomic
-    C2H2
+    ''' Linear tetratomic: C2H2
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>
     '''
     raise NotImplementedError
 
 def parse_HITRAN_class8(df):
-    ''' Pyramidal tetratomic
-    NH3, PH3
+    ''' Pyramidal tetratomic: NH3, PH3
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>
     '''
     raise NotImplementedError
 
 def parse_HITRAN_class9(df):
-    ''' Non-linear tetratomic
-    H2CO, H2O2, COF2
+    ''' Non-linear tetratomic: H2CO, H2O2, COF2
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>
     '''
@@ -272,8 +353,18 @@ def parse_HITRAN_class9(df):
 def parse_HITRAN_class10(df):
     ''' Pentatomic or greater polyatomic
     
-    HITRAN syntax
-    -------
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
     
     >>>
     '''
@@ -302,8 +393,9 @@ def _cast_to_dtype(data, dtype):
     ''' Cast array to certain type, crash with hopefull helping error message.
     Return casted data
     
-    Input 
-    --------
+    
+    Parameters    
+    ----------
     
     data: array to cast
     
@@ -332,7 +424,8 @@ def _cast_to_dtype(data, dtype):
 def hit2df(fname, count=-1, cache=False, verbose=True):
     ''' Convert a HITRAN/HITEMP file to a Pandas dataframe 
     
-    Input
+    
+    Parameters    
     ----------
     
     fname: str
@@ -348,16 +441,17 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
         taken into account). If False, no database is used. If 'regen', temp
         file are reconstructed. Default False. 
     
-    Reference
-    -----------
+    
+    References
+    ----------
     
     HITRAN-HITEMP doc 
     
     
-    Performance
-    ----------
+    Notes
+    -----
     
-    see CDSD-HITEMP parser
+    Performances: see CDSD-HITEMP parser
     
     '''
     
@@ -484,17 +578,23 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
 def get_molecule_identifier(molecule_name):
     '''
     For a given input molecular formula, return the corresponding HITRAN molecule identifier number.
+    
+    
     Parameters
     ----------
     molecular_formula : str
         The string describing the molecule.
+        
+        
     Returns
     -------
     M : int
         The HITRAN molecular identified number.
         
-    Reference
-    -------
+        
+    References
+    ----------
+    
     Function from https://github.com/nzhagen/hitran/blob/master/hitran.py
     '''
 
@@ -520,7 +620,8 @@ def get_molecule(molecule_id):
     For a given input molecular identifier, return the corresponding HITRAN 
     molecule name.
     
-    Input
+    
+    Parameters    
     ----------
     
     molecular_id : str

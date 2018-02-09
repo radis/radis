@@ -20,8 +20,9 @@ from radis.phys.blackbody import planck
 def calc_radiance(wavenumber, emissivity, Tgas, unit='mW/sr/cm2/nm'):
     ''' Derive radiance (mW/cm2/sr/nm) from the emissivity
 
-    Output
-    --------
+
+    Returns
+    -------
 
     radiance: mW/sr/cm2/nm
     '''

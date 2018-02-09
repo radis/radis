@@ -183,8 +183,9 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
     ex: if path_length and emisscoeff are given, recalculate radiance_noslit
     if optically thin, or if abscoeff is also given 
     
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     spec: Spectrum
     
@@ -247,8 +248,9 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
 def rescale_abscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_fraction,
                       old_path_length, waveunit, units, extra, true_path_length):
     '''
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     spec: Spectrum
     '''
@@ -287,8 +289,9 @@ def _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
                                   new_path_length, true_path_length,
                                   units):
     ''' 
-    Input
-    -----
+    
+    Parameters    
+    ----------
     
     rescaled: dict
         abscoeff must be rescaled already 
@@ -343,8 +346,9 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
                         old_path_length, optically_thin, waveunit, units, 
                         extra, true_path_length):
     '''
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     spec: Spectrum
     '''
@@ -412,8 +416,9 @@ def rescale_absorbance(spec, rescaled, initial, old_mole_fraction, new_mole_frac
                         old_path_length, new_path_length, waveunit, units, 
                         extra, true_path_length):
     '''
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     spec: Spectrum
     '''
@@ -450,8 +455,9 @@ def rescale_absorbance(spec, rescaled, initial, old_mole_fraction, new_mole_frac
 def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole_fraction,
                                   old_path_length, new_path_length, waveunit, units, extra):
     '''
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     spec: Spectrum
     '''
@@ -496,8 +502,9 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
                              old_path_length, new_path_length, optically_thin, waveunit,
                              units, extra, true_path_length):
     '''
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     spec: Spectrum
     '''
@@ -563,8 +570,9 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
 # ... emissivity_noslit
 def rescale_emissivity_noslit(spec, rescaled, units, extra, true_path_length):
     '''
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     spec: Spectrum
     '''
@@ -594,8 +602,9 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     ''' General function to recalculate missing quantities. Used in rescale
     and update
 
-    Input
-    ------
+    
+    Parameters    
+    ----------
 
     spec: Spectrum
     
@@ -741,8 +750,9 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
     and emission coefficient, and solves the RTE again for the new path length
     Convoluted values (with slit) are dropped in the process.
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     spec: Spectrum
     
@@ -752,18 +762,22 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
     old_path_length: float, or None
         if None, current path length (conditions['path_length']) is used
 
-    Optional Input
-    -------
-
+        
+    Other Parameters
+    ----------------
+    
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
         Default False
 
-    Implementation
-    --------
 
-    To deal with all the input cases, we first make a list of what has to
-    be recomputed, and what has to be recalculated
+    Notes
+    -----
+    
+    Implementation:
+    
+        To deal with all the input cases, we first make a list of what has to
+        be recomputed, and what has to be recalculated
 
     '''
 
@@ -808,8 +822,9 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
     ''' Update spectrum with new molar fraction
     Convoluted values (with slit) are dropped in the process.
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     spec: Spectrum
     
@@ -819,19 +834,23 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
     old_mole_fraction: float, or None
         if None, current mole fraction (conditions['mole_fraction']) is used
 
-    Optional Input
-    -------
-
+        
+    Other Parameters
+    ----------------
+    
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
         Default False
 
-    Implementation
-    -----
 
-    similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
-    Note that this is valid only for small changes in mole fractions. Then,
-    the change in line broadening becomes significant
+    Notes
+    -----
+    
+    Implementation:
+    
+        similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
+        Note that this is valid only for small changes in mole fractions. Then,
+        the change in line broadening becomes significant
 
 
     Todo

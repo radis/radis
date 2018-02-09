@@ -84,40 +84,43 @@ def getConfig():
 def getDatabankEntries(dbname):
     ''' Read radis.rc config file and returns a dictionary of entries.
 
-    Databank format
-    ---------
 
-    [CDSD]                           # your databank name
-    info = CDSD-HITEMP databank      # whatever you want
-    path =                           # no "", multipath allowed
-           D:\Databases\CDSD-HITEMP\cdsd_hitemp_07
-           D:\Databases\CDSD-HITEMP\cdsd_hitemp_08
-           D:\Databases\CDSD-HITEMP\cdsd_hitemp_09
-    format = cdsd                    # 'hitran' or 'cdsd' (no ")
-                                     # Databank text file format. More info in
-                                     # SpectrumFactory.load_databank function.
-
-    # Optional:
-
-    parfunc                          # path or 'USE_HAPI'
-                                     # path to tabulated partition functions. If
-                                     # `USE_HAPI`, then HAPI (HITRAN Python
-                                     interface) is used to retrieve them (valid
-                                     if your databank is HITRAN data). HAPI
-                                     is embedded into NeQ. Check the version.
-
-    parfuncfmt:                      # 'cdsd'
-                                     # format to read tabulated partition function
-                                     # file. If `USE_HAPI` is given as `parfunc`
-                                     # parameter then this line should not be used.
-
-    levels_iso1                      # path to energy levels (needed for non-eq)
-                                     # calculations.
-    levels_iso2                      # etc
-    levels_iso4                      # etc
-
-    levelsfmt                        # 'cdsd'
-                                     # how to read the previous file.
+    Notes
+    -----
+    
+    Databank format:
+    
+        [CDSD]                           # your databank name
+        info = CDSD-HITEMP databank      # whatever you want
+        path =                           # no "", multipath allowed
+               D:\Databases\CDSD-HITEMP\cdsd_hitemp_07
+               D:\Databases\CDSD-HITEMP\cdsd_hitemp_08
+               D:\Databases\CDSD-HITEMP\cdsd_hitemp_09
+        format = cdsd                    # 'hitran' or 'cdsd' (no ")
+                                         # Databank text file format. More info in
+                                         # SpectrumFactory.load_databank function.
+    
+        # Optional:
+    
+        parfunc                          # path or 'USE_HAPI'
+                                         # path to tabulated partition functions. If
+                                         # `USE_HAPI`, then HAPI (HITRAN Python
+                                         interface) is used to retrieve them (valid
+                                         if your databank is HITRAN data). HAPI
+                                         is embedded into NeQ. Check the version.
+    
+        parfuncfmt:                      # 'cdsd'
+                                         # format to read tabulated partition function
+                                         # file. If `USE_HAPI` is given as `parfunc`
+                                         # parameter then this line should not be used.
+    
+        levels_iso1                      # path to energy levels (needed for non-eq)
+                                         # calculations.
+        levels_iso2                      # etc
+        levels_iso4                      # etc
+    
+        levelsfmt                        # 'cdsd'
+                                         # how to read the previous file.
 
     '''
 
@@ -263,16 +266,18 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
 def printDatabankEntries(dbname, crop=200):
     ''' Print databank info
     
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     dbname: str
         database name in radis.rc
         
     crop: int
         if > 0, cutoff entries larger than that
+        
     '''
-    entries =  getDatabankEntries(dbname)
+    entries = getDatabankEntries(dbname)
     print(dbname,'\n-------')
     for k, v in entries.items():
         # Add extra arguments

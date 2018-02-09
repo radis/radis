@@ -43,8 +43,9 @@ def intersect(a, b):
 def SerialSlabs(*slabs, **kwargs):
     ''' Compute the result of several slabs 
 
-    Input    
-    ------
+    
+    Parameters    
+    ----------
     
     slabs: list of Spectra, each representing a slab
         slabs       [0]     [1]  ............... [n]     
@@ -66,8 +67,9 @@ def SerialSlabs(*slabs, **kwargs):
         what to do if resampling is out of bounds. 'transparent': fills with 
         transparent medium. 'nan': fills with nan. 'error': raises an error. 
         Default 'nan'
-                                                                
-    Output
+                       
+
+    Returns
     -------
     
     Spectrum object representing total emission and total transmittance as 
@@ -211,8 +213,9 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
     depending on the mode we may fill with optically thin media, or raise an
     error 
     
-    Input
-    --------
+    
+    Parameters    
+    ----------
     
     waveunit: 'nm', 'cm-1'
         which wavespace we're working in 
@@ -234,8 +237,9 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
         
     *slabs: list of Spectrum objects
     
-    Output
-    --------
+
+    Returns
+    -------
     
     slabs: list of Spectrum objects
         resampled copies of inputs Spectra. All now have the same wavespace
@@ -307,8 +311,9 @@ def MergeSlabs(*slabs, **kwargs):
     Linear absorption coefficient is calculated as the sum of all linear absorption
     coefficients, and the RTE is recalculated to get the total radiance
 
-    Input    
-    ------
+    
+    Parameters    
+    ----------
     
     slabs: list of Spectra, each representing a slab
         If given in conditions, all path_length have to be same
@@ -337,7 +342,8 @@ def MergeSlabs(*slabs, **kwargs):
     verbose: boolean
         if True, print messages and warnings. Default True
         
-    Output
+
+    Returns
     -------
     
     Spectrum object representing total emission and total transmittance as 
@@ -345,7 +351,8 @@ def MergeSlabs(*slabs, **kwargs):
     unless there is a mismatch then conditions are dropped (and units mismatch
     raises an error because it doesnt make sense)
     
-    Examples of use
+    
+    Examples
     -------
     
     Merge two spectra calculated with different species (true only if broadening

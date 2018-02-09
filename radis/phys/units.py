@@ -9,7 +9,8 @@ Performance test with pint
 
 Import neq.phys.units to get access to:
 
-Use:
+Use
+---
 
 from radis.phys.units import Q_
 - a = Q_(np.array([5,4,2]),'cm')
@@ -33,10 +34,10 @@ Q_ = ureg.Quantity
 class uarray(np.ndarray):
     ''' Unit-aware array based on Pint
     
-    Use
-    ------
+    Example
+    -------
     
-    a = uarray(np.linspace(10, 100, 10), 'Td')
+    >>> a = uarray(np.linspace(10, 100, 10), 'Td')
     
     '''
 
@@ -62,29 +63,28 @@ class uarray(np.ndarray):
 def conv2(quantity, fromunit, tounit):
     ''' Converts `quantity` from unit `fromunit` to unit `tounit`
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     quantity: array
         quantity to convert
         
-    fromunit, tounit: str
-        input unit, output unit
+    fromunit: str
+        input unit
+    
+    tounit: str
+        output unit
+        
+        
+    Note
+    ----
     
     Note that the output is still non dimensional. We don't transform `quantity` 
     into a pint array (or neq.phys.uarray) because this may create a performance
     drop in computationaly-expensive task. Instead, we assume we know for 
     sure the units in which some of our quantities will be created, and just
     want to let the users choose another output unit 
-    
-    Input
-    ------
-    
-    quantity: array, float, etc.
-    
-    fromunit: str
-    
-    tounit: str
     
     '''
 
@@ -104,8 +104,9 @@ def conv2(quantity, fromunit, tounit):
 def is_homogeneous(unit1, unit2):
     ''' Tells if unit1 and unit2 are homogeneous, using the Pint library
     
-    Input
-    --------
+    
+    Parameters    
+    ----------
     
     unit1, unit2: str
         units 
@@ -125,8 +126,9 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     Convert spectral emission density in wavelength base (typically ~mW/cm3/sr/nm) 
     to spectral emission density in wavenumber base (~mW/cm3/sr/cm_1)
     
-    Input
-    ---------
+    
+    Parameters    
+    ----------
     
     j_nm: array
         spectral emission density in Iunit0 unit (~ per wavelength) )
@@ -140,23 +142,29 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     Iunit: str
         unit (~ per wavenumber) to convert to
 
-    Description
-    --------
 
-    We use a variable substitution:
+    Notes
+    -----
+    
+    Implementation:
+
+    We use the variable substitution:
             dλ/dν = - 1/ν**2        [in SI]
             dλ/dν = - 10^7 / ν**2   [nm -> cm-1]
 
     We want   Lν.dν = Lλ.dλ
     so        Lν = - Lλ * 1e7 / ν^2
 
-    Validation
-    --------
 
-    >>> w_nm, j_nm = s.get('emisscoeff', 'nm', 'mW/cm2/sr/nm')
-    >>> w_cm, j_cm = s.get('emisscoeff', 'cm', 'mW/cm2/sr/cm_1')
-    >>> print(trapz(y_nm, x_nm))
-    >>> print(trapz(y_cm, x_cm))
+    Example
+    -------
+
+    Validation:
+    
+        >>> w_nm, j_nm = s.get('emisscoeff', 'nm', 'mW/cm2/sr/nm')
+        >>> w_cm, j_cm = s.get('emisscoeff', 'cm', 'mW/cm2/sr/cm_1')
+        >>> print(trapz(y_nm, x_nm))
+        >>> print(trapz(y_cm, x_cm))
 
     Both integrals are to be the same
 
@@ -183,8 +191,9 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
     Convert spectral emission density in wavenumber base (typically ~mW/cm3/sr/cm_1) to 
     spectral radiance in wavelength base (~mW/cm3/sr/nm)
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
     
     j_cm: array
         spectral emission density in Iunit0 unit (~ per wavenumber)
@@ -198,10 +207,13 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
     Iunit: str
         unit (~ per wavelength) to convert to
         
-    Description
-    --------
+        
+    Notes
+    -----
+    
+    Implementation:
 
-    We use a variable substitution:
+    We use the variable substitution:
             dλ/dν = - 1/ν**2        [in SI]
             dλ/dν = - 10^7 / ν**2   [nm -> cm-1]
 
@@ -233,8 +245,9 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
     Convert spectral radiance in wavelength base (~1/nm) to spectral radiance in
     wavenumber base (~1/cm_1)
     
-    Input
-    ---------
+    
+    Parameters    
+    ----------
     
     l_nm: array
         spectral radiance in yunit0 unit (~ per wavelength)
@@ -248,23 +261,29 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
     Iunit: str
         unit (~ per wavenumber) to convert to
 
-    Description
-    --------
 
-    We use a variable substitution:
+    Notes
+    -----
+    
+    Implementation:
+
+    We use the variable substitution:
             dλ/dν = - 1/ν**2        [in SI]
             dλ/dν = - 10^7 / ν**2   [nm -> cm-1]
 
     We want   Lν.dν = Lλ.dλ
     so        Lν = - Lλ * 1e7 / ν^2
 
-    Validation
-    --------
 
-    >>> x_nm, y_nm = s.get('radiance_noslit', 'nm', 'mW/cm2/sr/nm')
-    >>> x_cm, y_cm = s.get('radiance_noslit', 'cm', 'mW/cm2/sr/cm_1')
-    >>> print(trapz(y_nm, x_nm))
-    >>> print(trapz(y_cm, x_cm))
+    Example
+    -------
+    
+    Validation:
+    
+        >>> x_nm, y_nm = s.get('radiance_noslit', 'nm', 'mW/cm2/sr/nm')
+        >>> x_cm, y_cm = s.get('radiance_noslit', 'cm', 'mW/cm2/sr/cm_1')
+        >>> print(trapz(y_nm, x_nm))
+        >>> print(trapz(y_cm, x_cm))
 
     Both integrals are to be the same
 
@@ -291,8 +310,9 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     Convert spectral radiance in wavenumber base (~1/cm_1) to spectral radiance in
     wavelength base (~1/nm)
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
     
     l_cm: array
         spectral radiance in yunit0 unit (~ per wavenumber)
@@ -306,8 +326,10 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     Iunit: str
         unit (~ per wavelength) to convert to
         
-    Description
-    --------
+    Notes
+    -----
+    
+    Implementation:
 
     We use a variable substitution:
             dλ/dν = - 1/ν**2        [in SI]
@@ -340,8 +362,9 @@ def convert_universal(I, from_unit, to_unit, w_cm,
     Also deal with cases where var is in ~1/nm (per_nm_is_like) or ~1/cm-1
     (per_cm_is_like)
 
-    Input
-    ------
+    
+    Parameters    
+    ----------
 
     var: str
         variable to get. Usually 'radiance' or 'radiance_noslit'

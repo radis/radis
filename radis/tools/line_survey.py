@@ -34,8 +34,9 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     ''' Plot Line Survey (all linestrengths above cutoff criteria)
     Output in Plotly (html)
 
-    Input
-    -------
+    
+    Parameters    
+    ----------
 
     spec: Spectrum 
         result from SpectrumFactory calculation (see spectrum.py)

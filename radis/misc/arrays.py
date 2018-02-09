@@ -24,8 +24,9 @@ def norm(a, normby=None, how='max'):
     ''' Normalize a numpy array with its maximum. Or normalize it with another
     vector. Works if array contains nans.
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     normby: array, or None
         if array, norm with this other array's maximum. If None, normalize with
@@ -63,8 +64,9 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
     returns False (instead of crashing like the numpy version). Cf numpy.allclose
     docs for more information. 
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     a, b: arrays
     
@@ -97,16 +99,36 @@ def shift_array(t0, y0, shift, nmax=10, tab=0):
     '''     
     shift the array and interpolate when the shift is smaller than the time step
 
-    Input:    
-    - t0: x
-    - y0: y
-    - shift: value to shift x and y    
-    - nmax : maximum interpolation step
-    - unless said otherwise (tab != 0), replace values with 0
+    
+    Parameters    
+    ----------
+    
+    t0: array-like
+        x
+    
+    y0: array-like
+        y
+    
+    shift: float
+        value to shift x and y    
+    
+    nmax : int
+        maximum interpolation step
+    
+    tab: int
+        unless said otherwise (tab != 0), replace values with 0. Default 0 
 
-    Output:
-    - returns t, y shifted
 
+    Returns
+    -------
+    
+    t, y: array-like
+        shifted arrays
+
+
+    Note
+    ----
+    
     Only tested with constant timesteps    
     '''
 
@@ -163,8 +185,9 @@ def calc_diff(t1, v1, t2, v2):
     ''' Substract two vectors that may have slightly offset abscisses 
     interpolating the correct values 
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     t1, v1: array_like
         first vector and its abscisses
@@ -172,8 +195,9 @@ def calc_diff(t1, v1, t2, v2):
     t2, v2: array_like
         second vector and its abscisses
         
-    Output
-    -----
+
+    Returns
+    -------
     
     tdiff, vdiff: array_like
         substracted vector and its abscisses
@@ -268,8 +292,9 @@ def centered_diff(w):
 def evenly_distributed(w, tolerance=1e-5):
     ''' Make sure array `w` is evenly distributed
     
-    Input
-    -------
+    
+    Parameters    
+    ----------
     
     w : numpy array
         array to test 
@@ -285,8 +310,9 @@ def bining(I, ymin=None, ymax=None, axis=1):
     bining(I) corresponds to I.mean(axis=1)
     Nan are not taken into account
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     I: numpy array
         intensity

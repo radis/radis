@@ -37,8 +37,9 @@ class ProgressBar():
         ''' 
         write to progress bar completion status i/N. 
         
-        Input
-        -------
+        
+        Parameters    
+        ----------
         
         N: int
             total number of iterations
@@ -60,8 +61,9 @@ class ProgressBar():
         write to progress bar completion status i/N. If t0 is not None, also 
         write the time spent
         
-        Input
-        -------
+        
+        Parameters    
+        ----------
         
         i: int
             current iteration

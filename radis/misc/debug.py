@@ -54,14 +54,18 @@ def export(var=locals()):
     Another option is to insert this export() call in the troubled function, 
     before the exception occurs.
 
-    Use:
-    ---------
+
+    Example
+    -------
+    
         debug_export(locals())
 
     Note: you can also use  'globals().update(locals())' directly in your 
     function to debug
 
-    Note: 
+    Note
+    ----
+    
     - seems not to work for functions nested in functions
     - 01/05 : doesn't seem to work at all.. @Erwan  
 

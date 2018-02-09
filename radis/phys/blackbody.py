@@ -18,8 +18,9 @@ from radis.phys.units import conv2, Q_
 def planck(lmbda, T, eps=1, unit='mW/sr/cm2/nm'):
     ''' Planck function for blackbody radiation
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     λ: np.array   (nm)
        wavelength
@@ -33,8 +34,9 @@ def planck(lmbda, T, eps=1, unit='mW/sr/cm2/nm'):
     unit: output unit
         default 'mW/sr/cm2/nm'
 
-    Output
-    ---------
+
+    Returns
+    -------
 
     planck: np.array   (mW.sr-1.cm-2/nm)
         equilibrium radiance
@@ -54,8 +56,9 @@ def planck(lmbda, T, eps=1, unit='mW/sr/cm2/nm'):
 def planck_wn(wavenum, T, eps=1, unit='mW/sr/cm2/cm_1'):
     ''' Planck function for blackbody radiation, wavenumber version
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     wavenum: np.array   (cm-1)
        wavenumber
@@ -69,8 +72,9 @@ def planck_wn(wavenum, T, eps=1, unit='mW/sr/cm2/cm_1'):
     unit: str
         output unit. Default 'mW/sr/cm2/cm_1'
 
-    Output
-    ---------
+
+    Returns
+    -------
 
     planck: np.array   default (mW/sr/cm2/cm_1)
         equilibrium radiance

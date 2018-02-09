@@ -118,8 +118,9 @@ def nm2hz(lbd_nm):
 def dcm2dnm(delta_nu, nu_0):
     ''' Converts (ex: FWHM) from Δcm to Δnm
     
-    Input
-    ---
+    
+    Parameters    
+    ----------
     
     delta_nu: cm-1
         wavenumber broadening
@@ -132,8 +133,9 @@ def dcm2dnm(delta_nu, nu_0):
 def dnm2dcm(delta_lbd, lbd_0):
     ''' Converts (ex: FWHM) from Δnm to Δcm
     
-    Input
-    ---
+    
+    Parameters    
+    ----------
     
     delta_lbd: nm
         wavelength broadening
@@ -146,8 +148,9 @@ def dnm2dcm(delta_lbd, lbd_0):
 def dhz2dnm(deltaf_hz, f_0):
     ''' Converts (ex: FWHM) from ΔHz to Δnm
     
-    Input
-    ---
+    
+    Parameters    
+    ----------
     
     deltaf_hz: Hz
         frequency broadening
@@ -160,8 +163,9 @@ def dhz2dnm(deltaf_hz, f_0):
 def dnm2dhz(delta_lbd, lbd_0):
     ''' Converts (ex: FWHM) from Δnm to Δhz
     
-    Input
-    ---
+    
+    Parameters    
+    ----------
     
     delta_lbd: nm
         wavelength broadening

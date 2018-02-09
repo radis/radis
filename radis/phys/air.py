@@ -11,12 +11,14 @@ Constants and correlations for air
 def air_index_dispersion(lbd):
     ''' Return air index dispersion as a function of wavelength 
     
-    Index
-    ---------
+    Parameters
+    ----------
     
-    lbd: µm
+    lbd: array-like (µm)
+        wavelength 
+        
     
-    Reference:
+    References
     ----------
     
     P. E. Ciddor. "Refractive index of air: new equations for the visible and 
@@ -37,10 +39,19 @@ def air_index_dispersion(lbd):
 def vacuum2air(wavelength):
     ''' Converts wavelength as seen in vacuum to wavelength as seen in air
     
-    Input
-    -----
     
-    wavelength: array (nm)
+    Parameters    
+    ----------
+    
+    wavelength: array-like (nm)
+        wavelength in vacuum
+        
+    
+    Returns
+    -------
+    
+    wavelength: array-like (nm)
+        wavelength in air
     
     '''
     
@@ -50,19 +61,29 @@ def vacuum2air(wavelength):
 def air2vacuum(wavelength):
     ''' Converts wavelength as seen in air to wavelength as seen in vacuum
     
-    Input
-    -----
     
-    wavelength: array (nm)
+    Parameters    
+    ----------
     
+    wavelength: array-like (nm)
+        wavelength in air
+    
+    
+    Returns
+    -------
+    
+    wavelength: array-like (nm)
+        wavelength in vacuum
+        
+        
     Note
-    ---------
+    ----
     
     Not exactly true, as air_index_dispersion is defined for vacuum wavelength
     However, air_index_dispersion doesnt vary much on 1-2 cm-1 (which is typical
     of air index dispersion effect on air/vacuum wavelength in the mid-IR)
     
-    Test with:
+    Estimate the error you make with:
         
     >>> vacuum2air(air2vacuum(w))-w
     

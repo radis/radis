@@ -58,13 +58,15 @@ def remove_duplicates(l):
 def partition(pred, iterable):
     ''' Use a predicate to partition entries into false entries and true entries
     
-    Output
+
+    Returns
     -------
     
     Returns two lists: positive, and negative
     
+    
     Example
-    --------
+    -------
     
      >>> partition(is_odd, range(10)) 
      --> [0 2 4 6 8], [1 3 5 7 9]
@@ -93,13 +95,15 @@ def compare_dict(d1, d2, verbose=True, compare_as_paths=[]):
     ''' Returns ratio of equal keys [0-1]
     If verbose, also print all keys and values on 2 columns
     
-    Input
-    -----
+    
+    Parameters    
+    ----------
     
     d1, d2: dict
     
-    Optional input
-    -------
+    
+    Other Parameters
+    ----------------
     
     compare_as_paths: list of keys
         compare the values corresponding to given keys as path (irrespective of
@@ -109,8 +113,9 @@ def compare_dict(d1, d2, verbose=True, compare_as_paths=[]):
         'if_different' means results will be shown only if there is a difference. 
         function is called twice
         
-    Output
-    -----
+
+    Returns
+    -------
     
     out: float [0-1]
         ratio of matching keys 
@@ -163,8 +168,9 @@ def compare_lists(l1, l2, verbose=True):
     of order. Returns the ratio of elements [0-1] present in both lists. If verbose, 
     prints the differences 
     
-    Input
-    -----
+    
+    Parameters    
+    ----------
     
     l1, l2: list-like 
     
@@ -172,8 +178,9 @@ def compare_lists(l1, l2, verbose=True):
         'if_different' means results will be shown only if there is a difference. 
         function is called twice
         
-    Output
-    -----
+
+    Returns
+    -------
     
     out: float [0-1]
         ratio of matching keys 
@@ -233,8 +240,9 @@ def merge_rename_columns(df, columns1, columns2, merged_names):
     ''' Merge all columns under easier names. Only keep the useful ones
     Returns a new dataframe
     
-    Input
-    ------
+    
+    Parameters    
+    ----------
     
     df: pandas Dataframe
     
@@ -248,8 +256,8 @@ def merge_rename_columns(df, columns1, columns2, merged_names):
         new names
         
        
-    Use
-    -----
+    Example
+    -------
     
     df = merge_rename_columns(df1, ['lvl_u', 'ju', 'Eu', 'nu', 'gu', 'grotu'],
                                    ['lvl_l', 'jl', 'El', 'nl', 'gl', 'grotl'],

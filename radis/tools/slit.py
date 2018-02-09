@@ -61,8 +61,9 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
 
     See apply_slit() and convolve_slit() for more info
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     slit_function: tuple, or str
         If float:
@@ -93,8 +94,9 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         which discretization step to use (in return_unit) when generating a slit
         function. Not used if importing
 
-    Optional input
-    ------
+
+    Other Parameters
+    ----------------
 
     resfactor: int
         resolution increase when resampling from nm to cm-1, or the other way
@@ -105,14 +107,16 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
          theoretical slit functions are directly generated in spectrum wavespace
          Default 1e-3 (0.1%)
          
-    Output
+
+    Returns
     -------
     
     wslit, Islit: array
         wslit is in `return_unit` . Islit is normalized according to  `norm_by`
          
-    Use
-    ---------
+        
+    Examples
+    --------
     
     >>> wslit, Islit = get_slit_function(1, 'nm', shape='triangular', 
     center_wavespace=600, wstep=0.01)     
@@ -128,8 +132,8 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
     a step of 0.01 cm-1 (!)   
     
 
-    Note on norm_by=max mode
-    -----------
+    Notes
+    -----
 
     In norm_by 'max' mode, slit is normalized by slit max. In NeQ, this is done
     in the spectrum wavespace (to avoid errors that would be caused by interpolating
@@ -348,8 +352,9 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area', slit_dispersion=N
     ''' Convolves spectrum (w,I) with instrumental slit function (w_slit, I_slit)
     Returns a convolved spectrum on a valid range.
 
-    Input
-    ---------
+    
+    Parameters    
+    ----------
 
     w, I: array
         theoretical spectrum (wavespace unit (nm / cm-1))
@@ -414,16 +419,17 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area', slit_dispersion=N
     verbose: boolean
         blabla
 
-    Output
-    ------
+
+    Returns
+    -------
 
     w_conv, I_conv: arrays
         convoluted quantity. w_conv is defined on a valid range (sides are cut)
 
-    Internals
-    ---------
-
-    7 steps:
+    Notes
+    -----
+    
+    Implementation is done in 7 steps:
     - Check input
     - Correct for Slit dispersion
     - Interpolate the slit function on the spectrum grid, resample it if not
@@ -564,23 +570,26 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area', slit_dispersion=N
 def get_FWHM(w, I, return_index=False):
     ''' Calculate full width half maximum by comparing amplitudes
 
-    Input
-    ------
+    
+    Parameters    
+    ----------
 
     w, I: arrays
 
     return_index: boolean
         if True, returns indexes for half width boundaries. Default False
 
-    Output
-    --------
+
+    Returns
+    -------
 
     FWHM: float
 
     [xmin, xmax]: int
 
+
     Todo
-    --------
+    ----
 
     Linearly interpolate at the boundary? insignificant for large number of points
 
@@ -599,8 +608,9 @@ def get_FWHM(w, I, return_index=False):
 def get_effective_FWHM(w, I):
     ''' Calculate FWHM of a triangular slit of same area and height 1
 
-    Input
-    ------
+    
+    Parameters    
+    ----------
 
     w, I: arrays
     '''
@@ -616,8 +626,9 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', warnings=True):
     FWHM is calculated from the limits of the range above the half width,
     while FWHM is the equivalent width of a triangular slit with the same area
 
-    Input
-    --------
+    
+    Parameters    
+    ----------
 
     w, I: arrays    or   (str, None)
         if str, open file directly
@@ -773,8 +784,9 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
                              center=None, scale=1, verbose=True):
     ''' Import instrumental slit function and normalize it
 
-    Input
-    -------
+    
+    Parameters    
+    ----------
 
     fname: str
         slit function spectrum
@@ -857,12 +869,9 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
                     waveunit='', scale=1, footerspacing=0):
     ''' Generate normalized slit function
 
-    Note: slit is generated with an odd number of elements and centered on its
-    maximum. This may result in sightly different FWHM if wstep is too large.
-    However, slit is corrected so that effective FWHM is preserved.
-
-    Input
-    -------
+    
+    Parameters    
+    ----------
 
     FWHM: (nm)
         full-width at half maximum
@@ -890,17 +899,27 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     footerspacing: int
         spacing (footer) on left and right. Default 10.
 
-    Output
+
+    Returns
     -------
 
     Slit function of shape
-           ^
-          / \
-     _ _ /   \ _ _
-    :   :  :  :   :
-   -a-f -a 0  a  a+f
+    
+               ^
+              / \
+         _ _ /   \ _ _
+        :   :  :  :   :
+       -a-f -a 0  a  a+f
 
-   with FWHM = (a+1/2)*wstep, `f` spacing on left & right
+    with FWHM = (a+1/2)*wstep, `f` spacing on left & right
+
+
+    Notes
+    -----
+    
+    slit is generated with an odd number of elements and centered on its
+    maximum. This may result in sightly different FWHM if wstep is too large.
+    However, slit is corrected so that effective FWHM is preserved.
 
     '''
 
@@ -943,12 +962,9 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
                     waveunit='', scale=1, footerspacing=0):
     """ Build a trapezoidal slit. Remember that FWHM = (top + base) / 2
 
-    Note: slit is generated with an odd number of elements and centered on its
-    maximum. This may result in sightly different FWHM if wstep is too large.
-    However, slit is corrected so that effective FWHM is preserved.
-
-    Input
-    -------
+    
+    Parameters    
+    ----------
 
     top: (nm)
         top of the trapeze
@@ -979,20 +995,29 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
     footerspacing: int
         spacing (footer) on left and right. Default 10.
 
-    Output
+
+    Returns
     -------
 
     Slit function of shape
-             _______
-            /       \
-           / :     : \
-     _ _ _/  :     :  \____
-     0    :  :     :  :   0
-     :   -b  :     :  b   :
-   -b-f     -t     t     b+f
+                 _______
+                /       \
+               / :     : \
+         _ _ _/  :     :  \____
+         0    :  :     :  :   0
+         :   -b  :     :  b   :
+       -b-f     -t     t     b+f
 
-   with `t`and `b` the half-top and half-base in number of elements, `f` spacing
-   on left & right. FWHM = (t+b+1)*wstep
+    with `t`and `b` the half-top and half-base in number of elements, `f` spacing
+    on left & right. FWHM = (t+b+1)*wstep
+
+
+    Notes
+    -----
+    
+    slit is generated with an odd number of elements and centered on its
+    maximum. This may result in sightly different FWHM if wstep is too large.
+    However, slit is corrected so that effective FWHM is preserved.
 
     """
 
@@ -1052,11 +1077,8 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
                   waveunit='', calc_range=4, scale=1, footerspacing=0):
     ''' Generate normalized slit function
 
-    Note: slit is generated with an odd number of elements and centered on its
-    maximum. This may result in sightly different FWHM if wstep is too large.
-
-    Input
-    -------
+    Parameters    
+    ----------
 
     FWHM: (nm)
         full-width at half maximum
@@ -1087,20 +1109,30 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     footerspacing: int
         spacing (footer) on left and right. Default 10
 
-    Output
+
+    Returns
     -------
 
     Slit function of shape
-             .-.
-            /   \
-           /     \
-     _ _.-'       `-._ _
-     0    [gaussian]   0
-     :  :     :     :  :
-   -c-f -c    0     c  c+f          (c : calc_range)
+    
+                 .-.
+                /   \
+               /     \
+         _ _.-'       `-._ _
+         0    [gaussian]   0
+         :  :     :     :  :
+       -c-f -c    0     c  c+f          (c : calc_range)
 
    with `c` cutoff in number of elements, `f` spacing on left & right
 
+
+    Notes
+    -----
+    
+    slit is generated with an odd number of elements and centered on its
+    maximum. This may result in sightly different FWHM if wstep is too large.
+
+    
     '''
 
     f = int(footerspacing)   # spacing (footer) on left and right
