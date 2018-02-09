@@ -1,13 +1,6 @@
 radis.tools package
 ===================
 
-Subpackages
------------
-
-.. toctree::
-
-    radis.tools.parser
-
 Submodules
 ----------
 

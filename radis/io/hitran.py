@@ -442,6 +442,14 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
         file are reconstructed. Default False. 
     
     
+    Returns
+    -------
+    
+    df: pandas Dataframe
+        dataframe containing all lines and parameters
+        
+    
+    
     References
     ----------
     

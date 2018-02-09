@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+    radis.io
     radis.lbl
     radis.los
     radis.misc

@@ -43,6 +43,17 @@ User documentation
 ==================
 
 
+Interfaces
+----------
+
+RADIS includes parsers and interfaces to read and return data in different formats: 
+
+.. toctree::
+   :maxdepth: 2
+   
+   io/parsers
+
+
 The line-by-line (LBL) module
 -----------------------------
 

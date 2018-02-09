@@ -15,7 +15,7 @@ import numpy as np
 from collections import OrderedDict
 import os
 from os.path import exists, splitext
-from radis.tools.parser.hiparser import _cast_to_dtype, _format_dtype
+from radis.io.hitran import _cast_to_dtype, _format_dtype
 import sys
 from six.moves import zip
 
@@ -117,6 +117,13 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         taken into account). If False, no database is used. If 'regen', temp
         file are reconstructed. Default True. 
     
+    
+    Returns
+    -------
+    
+    df: pandas Dataframe
+        dataframe containing all lines and parameters
+        
     
     References
     ----------
