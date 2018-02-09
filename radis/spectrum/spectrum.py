@@ -50,8 +50,6 @@ from publib import set_style, fix_style
 from radis.phys.convert import conv2, cm2nm, nm2cm
 from radis.phys.units import Q_, convert_universal
 from radis.phys.air import vacuum2air, air2vacuum
-from radis.tools.slit import convolve_with_slit, get_slit_function, cast_waveunit
-from radis.tools.line_survey import LineSurvey
 from radis.spectrum.rescale import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from neq.spec.base import print_conditions
@@ -64,6 +62,9 @@ from warnings import warn
 from numpy import allclose, abs, diff
 from copy import deepcopy
 from six import string_types
+
+WAVENUM_UNITS = ['cm', 'cm-1', 'cm_1', 'wavenumber']
+WAVELEN_UNITS = ['nm', 'wavelength']
 
 # %% Array-to-Spectrum functions
 
@@ -1466,6 +1467,8 @@ class Spectrum(object):
         add warning if FWHM >= wstep(spectrum)/5    
 
         '''
+        
+        from radis.tools.slit import convolve_with_slit, get_slit_function, cast_waveunit
 
         # Check inputs
         # ---------
@@ -1755,6 +1758,8 @@ class Spectrum(object):
             Default 0.07
 
         '''
+        
+        from radis.tools.line_survey import LineSurvey
 
         # Check inputs
         if xunit is not None:
@@ -1882,7 +1887,7 @@ class Spectrum(object):
 
         '''
 
-        from neq.spec.database import save
+        from radis.tools.database import save
 
         if type(discard) is str:
             discard = [discard]
@@ -2266,6 +2271,8 @@ class Spectrum(object):
 
         '''
         
+        from radis.spectrum.compare import plot_diff
+        
         # Check inputs
         if not 0<=ignore_outliers<1:
             raise ValueError('ignore_outliers should be < 1, or False')
@@ -2569,7 +2576,7 @@ class Spectrum(object):
         return [k for k in attrs if not k in exclude]
 
 # %% ======================================================================
-# External functions
+# Util functions
 # ----------------
 # XXX =====================================================================
 
@@ -2580,6 +2587,18 @@ def is_spectrum(a):
 
     return (isinstance(a, Spectrum) or
              repr(a.__class__) == repr(Spectrum))
+
+def cast_waveunit(unit, force_match=True):
+    ''' Standardize unit formats '''
+    if unit in WAVELEN_UNITS:
+        return 'nm'
+    elif unit in WAVENUM_UNITS:
+        return 'cm-1'
+    elif force_match:
+        raise ValueError('Unknown wavespace unit: {0}. Should be one of {1}'.format(unit,
+                         WAVELEN_UNITS+WAVENUM_UNITS))
+    else:
+        return unit  # dont convert
 
 def make_up(label):
     ''' Cosmetic changes on label, before plot 

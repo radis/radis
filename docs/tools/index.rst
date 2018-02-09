@@ -8,7 +8,7 @@ Different tools to work with Spectrum objects
 Line survey
 ===========
 
-Line survey is defined by the :class:`~.radis.tools.line_survey.LineSurvey` class. 
+Line survey is defined by the :class:`~radis.tools.line_survey.LineSurvey` class. 
 It can be accessed directly by the Spectrum :meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
 method::
 
@@ -24,3 +24,10 @@ method::
     s = pl.eq_spectrum(Tgas=1500)
     s.apply_slit(0.5)
     s.line_survey(overlay='transmittance', barwidth=0.01)
+
+Output:
+
+.. image:: line_survey.png
+
+    
+

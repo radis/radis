@@ -11,6 +11,14 @@ Subpackages
 Submodules
 ----------
 
+radis.tools.database module
+---------------------------
+
+.. automodule:: radis.tools.database
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 radis.tools.line_survey module
 ------------------------------
 

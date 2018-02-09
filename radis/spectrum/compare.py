@@ -7,8 +7,7 @@ Created on Fri Feb  9 13:03:04 2018
 
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
-from radis.tools.slit import cast_waveunit
-from radis.spectrum.spectrum import make_up
+from radis.spectrum.spectrum import make_up, cast_waveunit
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.widgets import MultiCursor

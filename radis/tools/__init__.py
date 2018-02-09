@@ -12,3 +12,4 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from .slit import (plot_slit, get_effective_FWHM, get_FWHM, convolve_with_slit,
                    recenter_slit, crop_slit)
+from .database import SpecDatabase, save, load_spec, plot_spec

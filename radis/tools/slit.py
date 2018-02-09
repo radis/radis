@@ -27,26 +27,10 @@ from radis.misc.basics import is_float
 from radis.misc.signal import resample_even
 from radis.misc.debug import printdbg
 from radis.phys.convert import cm2nm, nm2cm, dnm2dcm, dcm2dnm
+from radis.spectrum.spectrum import cast_waveunit
 from six import string_types
 
-WAVENUM_UNITS = ['cm', 'cm-1', 'cm_1', 'wavenumber']
-WAVELEN_UNITS = ['nm', 'wavelength']
-
 SLIT_SHAPES = ['triangular', 'trapezoidal', 'gaussian']
-
-# %% Util functions
-
-def cast_waveunit(unit, force_match=True):
-    ''' Standardize unit formats '''
-    if unit in WAVELEN_UNITS:
-        return 'nm'
-    elif unit in WAVENUM_UNITS:
-        return 'cm-1'
-    elif force_match:
-        raise ValueError('Unknown wavespace unit: {0}. Should be one of {1}'.format(unit,
-                         WAVELEN_UNITS+WAVENUM_UNITS))
-    else:
-        return unit  # dont convert
 
 # %% Get slit function
 

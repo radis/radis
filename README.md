@@ -5,6 +5,8 @@ A code to simulate infrared spectra of molecules.
 ---
 
 - Docs: http://radis.readthedocs.io/
+- source: https://github.com/radis
+- Pypi: https://pypi.python.org/pypi/radis
 
 ---
 

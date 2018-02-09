@@ -112,14 +112,28 @@ Use :meth:`~radis.spectrum.spectrum.Spectrum.plot`::
     s.plot('radiance_noslit')
     
     
+How to plot populations?
+------------------------
+
+Use :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`::
+
+    s.plot_populations('vib', nunit='cm-3')
+    
+    
 How to save and retrieve a Spectrum object?
 -------------------------------------------
 
-Use :meth:`~radis.spectrum.spectrum.Spectrum.store`::
-            
+To store use the :meth:`~radis.spectrum.spectrum.Spectrum.store` method. To retrieve 
+use the :func:`~radis.tools.database.load_spec` function
+    
+    # Store (s is a Spectrum object)
     s.store(temp_file_name, compress=True)
+    
+    # Retrieve
+    from radis.tools import load_spec 
     s2 = load_spec(temp_file_name)
-
+    s2.update()    # regenerate missing quantities 
+    
     
 How to compare Spectrum objects?
 --------------------------------

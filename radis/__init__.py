@@ -41,7 +41,7 @@ DEBUG_MODE = False
 # optimize mode:   
 # >>> python -O *.py
 
+from .spectrum import *        # Spectrum object
 from .lbl import *             # line-by-line module 
 from .los import *             # line-of-sight module
-from .spectrum import *        # Spectrum object
 from .tools import *           # slit, database, line survey, etc.
