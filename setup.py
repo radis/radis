@@ -50,7 +50,7 @@ setup(name='radis',
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU GENERAL PUBLIC LICENSE',
+        'License :: OSI Approved :: GNU General Public License (GPL)',
         'Topic :: Scientific/Engineering',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
