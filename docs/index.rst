@@ -47,7 +47,8 @@ The line-by-line (LBL) module
 -----------------------------
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
-slab of gas, and returns a Spectrum object. 
+slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
+are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class. 
 
 .. toctree::
    :maxdepth: 2
@@ -58,9 +59,10 @@ slab of gas, and returns a Spectrum object.
 The line-of-sight (LOS) module
 ------------------------------
 
-This module takes several Spectrum objects as an input and combines then along the 
-line-of-sight (SerialSlabs) or at the same spatial position (MergeSlabs), to 
-reproduce line-of-sight experiments 
+This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
+as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
+or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
+line-of-sight experiments 
 
 .. toctree::
    :maxdepth: 2

@@ -31,7 +31,7 @@ to work properly it is recommended to follow the naming conventions below:
 Variables convoluted with an instrumental slit function: 
 
 - **radiance**: spectral radiance after self-absorption (typically in mW/cm2/sr/nm)
-- **transmittance**`: spectral transmittance (0-1)
+- **transmittance**: spectral transmittance (0-1)
 - **emissivity**: spectral emissivity (0-1)
 
 Variables not convoluted: 
