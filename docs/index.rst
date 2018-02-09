@@ -78,7 +78,7 @@ store or retrieve from a Spectrum database.
 .. toctree::
    :maxdepth: 2
    
-   spectrum/index
+   spectrum/spectrum
 
    
 Tools
@@ -89,7 +89,8 @@ Different tools to work with Spectrum objects
 .. toctree::
    :maxdepth: 2
    
-   tools/index
+   tools/line_survey
+   tools/database
 
 
 

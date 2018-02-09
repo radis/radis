@@ -124,7 +124,7 @@ How to save and retrieve a Spectrum object?
 -------------------------------------------
 
 To store use the :meth:`~radis.spectrum.spectrum.Spectrum.store` method. To retrieve 
-use the :func:`~radis.tools.database.load_spec` function
+use the :func:`~radis.tools.database.load_spec` function::
     
     # Store (s is a Spectrum object)
     s.store(temp_file_name, compress=True)

@@ -6,16 +6,13 @@ Created on Mon May 29 21:50:56 2017
 
 A Spectrum Database class to manage them all
 
-Description
-------
-
 It basically manages a list of Spectrum JSON files, adding a Pandas
 dataframe structure on top to serve as an efficient index to visualize
 the spectra input conditions, and slice through the Dataframe with
 easy queries
 
-Use
-------
+Example
+-------
 
     >>> from neq.spec import SpecDatabase
     >>> db = SpecDatabase(r"path/to/database")     # create or loads database
@@ -29,9 +26,8 @@ Use
 Note that SpectrumFactory objects can be configured to automatically update
 a database
 
-Edit Database
------
-
+Edit database: 
+    
 An example of script to update all spectra conditions in a database (ex: when 
 a condition was added afterwards to the Spectrum class)
     
@@ -44,7 +40,7 @@ a condition was added afterwards to the Spectrum class)
     >>>    s.store(join(db,f), if_exists_then='replace')
 
 Todo
--------
+----
 
 Alert if case already in database when generating from a SpectrumFactory / ParallelFactory
 connected to a SpecDatabase
@@ -91,10 +87,10 @@ def is_jsonable(x):
 def save(s, path, discard=[], compress=False, add_info=None, add_date=None, 
          if_exists_then='increment', verbose=True, warnings=True):
     ''' Save a Spectrum object in JSON format. Object can be recovered with 
-    neq.spec.load_spec()
+    radis.tools.load_spec()
     
-    Input
-    ---------
+    Parameters
+    ----------
 
     s: Spectrum
         to save
@@ -129,8 +125,8 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
         is added. If replace file is replaced (yeah). If error (or anything else)
         an error is raised. Default `increment`
 
-    Output
-    --------
+    Returns
+    -------
 
     Returns filename used (may be different from given path as new info or
     incremental identifiers are added)
@@ -360,8 +356,8 @@ def _export_safe(sjson, f, warnings=True):
 
 def load(file):
     '''
-    Input
-    -----
+    Parameters
+    ----------
 
     file: str
         .spec file to load
@@ -376,8 +372,8 @@ def load(file):
 
 def load_spec(file):
     '''
-    Input
-    -----
+    Parameters
+    ----------
 
     file: str
         .spec file to load
@@ -547,8 +543,8 @@ def _fix_deprecated_format(file, sload):
 def plot_spec(file, what='radiance', title=True):
     ''' Plot a .spec file. *
 
-    Input
-    -----
+    Parameters
+    ----------
 
     file: str
         .spec file to load
@@ -585,16 +581,23 @@ class SpecDatabase():
                  verbose=True):
         ''' A Spectrum Database class to manage them all
 
-        Description
-        ------
-
         It basically manages a list of Spectrum JSON files, adding a Pandas
         dataframe structure on top to serve as an efficient index to visualize
         the spectra input conditions, and slice through the Dataframe with
         easy queries
+        
+        Parameters
+        ----------
+        
+        path: str
+            a folder to initialize the database
+            
+        filt: str
+            only consider files ending with filt
+        
 
-        Use
-        ------
+        Example
+        -------
 
             >>> db = SpecDatabase(r"path/to/database")     # create or loads database
 
@@ -610,8 +613,8 @@ class SpecDatabase():
         The function to auto retrieve a Spectrum from database on calculation
         time is a method of DatabankLoader class
         
-        Implementation
-        --------
+        Note
+        ----
         
         Database interaction is based on Pandas query functions. As such, it 
         requires all conditions to be either float, string, or boolean. List 
@@ -659,8 +662,8 @@ class SpecDatabase():
         ''' Shows Spectrum database will whole conditions (index=None) or
         specific conditions
 
-        Input
-        ------
+        Parameters
+        ----------
 
         columns: str, list of str, or None
             shows the conditions value for all cases in database. If None, all
@@ -669,7 +672,7 @@ class SpecDatabase():
             >>> db.see(['Tvib', 'Trot'])
 
         Notes
-        ------
+        -----
 
         Makes the 'file' column the index, and also discard the 'Spectrum' column
         (that holds all the data) for readibility
@@ -705,14 +708,15 @@ class SpecDatabase():
         ''' Reloads database, updates internal index structure and print it
         in <database>.csv
 
-        Input
-        ------
+        Parameters
+        ----------
 
         force_reload: boolean
             if True, reloads files already in database
 
         filt: str
             only consider files ending with `filt`
+            
         '''
 
         path = self.path
@@ -765,8 +769,8 @@ class SpecDatabase():
         ''' Add Spectrum to database, whether it's a Spectrum object or a file
         that stores one. Check it's not in database already.
 
-        Input
-        --------
+        Parameters
+        ----------
 
         spectrum: path to .spec file, or Spectrum object
             if Spectrum object: stores it in database first (using Spectrum.store()),
@@ -859,8 +863,8 @@ class SpecDatabase():
     def get(self, conditions='', **kwconditions):
         '''   Returns a list of spectra that match given conditions
 
-        Input
-        ------
+        Parameters
+        ----------
 
         database: list of Spectrum objects
             the database
@@ -873,18 +877,20 @@ class SpecDatabase():
             an unfolded dict of conditions
             >>> get(Tvib=3000, Trot=1500)
             
-        Optional inputs
-        ---------
+        Extra Parameters
+        ----------------
         
         inplace: boolean
             if True, return the actual object in the database. Else, return
             copies. Default False
 
-        Use
-        -------
+        Examples
+        --------
 
         >>> spec_list = db.get('Tvib==3000 & Trot==1300')
+        
         or
+        
         >>> spec_list = db.get(Tvib=3000, Trot=1300)
 
         '''
@@ -943,8 +949,8 @@ class SpecDatabase():
         ''' Returns a spectrum that match given conditions. Raises an error
         if the spectrum is not unique 
         
-        Input
-        ------
+        Parameters
+        ----------
         
         see .get() for more details '''
         
@@ -965,8 +971,8 @@ class SpecDatabase():
         To calculate the distance all numeric values are scaled by their
         mean value in the database
         
-        Input
-        ------
+        Parameters
+        ----------
         
         kwconditions: named arguments 
             i.e: Tgas=300, path_length=1.5
@@ -976,8 +982,8 @@ class SpecDatabase():
             directly from spectroscopic quantities (e.g: 'path_length', 'molar_fraction')
             Default True
             
-        Optional inputs
-        -----------
+        Extra Parameters
+        ----------------
         
         verbose: boolean
             print messages. Default True
@@ -1067,8 +1073,8 @@ class SpecDatabase():
     def plot(self, cond_x, cond_y, z_value=None, nfig=None):
         ''' Plot database points available:
 
-        Input
-        ----
+        Parameters
+        ----------
 
         cond_x, cond_y: str
             columns (conditions) of database.
@@ -1077,14 +1083,14 @@ class SpecDatabase():
             if not None, colors the 2D map with z_value. z_value is ordered
             so that z_value[i] corresponds to row[i] in database.
 
-        Example
-        ------
-
-        db.plot(Tvib, Trot)     # plot all points calculated
-
-
-        db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
-                                          # procedure...
+        Examples
+        --------
+    
+        >>> db.plot(Tvib, Trot)     # plot all points calculated
+    
+    
+        >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
+                                              # procedure...
 
         '''
         # %%
