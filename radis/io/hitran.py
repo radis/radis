@@ -420,7 +420,7 @@ def _cast_to_dtype(data, dtype):
             raise ValueError('Cant cast data to specific dtype. Tried column by column. See results above')
 
     return data
-        
+
 def hit2df(fname, count=-1, cache=False, verbose=True):
     ''' Convert a HITRAN/HITEMP file to a Pandas dataframe 
     
@@ -532,7 +532,9 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
         raise ValueError('Databank looks empty')        
     elif nmol!=1:
         raise ValueError('Multiple molecules in database ({0}). Current '.format(nmol)+\
-                         'spectral code only computes 1 species at the time. Use MergeSlabs')
+                         'spectral code only computes 1 species at the time. Use MergeSlabs. '+\
+                         'Verify the parsing was correct by looking at the first row below: '+\
+                         '\n{0}'.format(df.iloc[0]))
     
     for k, c in columns.items():
         if c[1] == str:

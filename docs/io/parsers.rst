@@ -10,6 +10,9 @@ HITRAN
 
 see :func:`~radis.io.hitran.hit2df`
 
+There are also functions to get HITRAN molecule ids, and vice-versa:
+:func:`~radis.io.hitran.get_molecule`, :func:`~radis.io.hitran.get_molecule_identifier`
+
 CDSD
 ----
 
