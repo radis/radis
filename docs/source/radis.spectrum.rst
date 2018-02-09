@@ -4,6 +4,14 @@ radis.spectrum package
 Submodules
 ----------
 
+radis.spectrum.compare module
+-----------------------------
+
+.. automodule:: radis.spectrum.compare
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 radis.spectrum.rescale module
 -----------------------------
 

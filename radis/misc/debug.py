@@ -18,8 +18,8 @@ def printdbg(*args, **kwargs):
     ''' Function that prints only in debug mode. change this at runtime with 
      >>> radis.debug = True
      
-     Good practice
-     -------
+     Use
+     ---
      
      Embed this print in a if __debug__ statement:
      >>> if __debug__: printdbg(...)
@@ -27,8 +27,8 @@ def printdbg(*args, **kwargs):
      optimize mode:   
      >>> python -O *.py
      
-     Implementation
-     -------------
+     Todo
+     ----
      
      no idea how this performs in multiprocessing mode
      '''

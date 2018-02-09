@@ -9,7 +9,7 @@ Conversion formulas between different units (works with numpy arrays)
 Checks the order of magnitudes to help detect conversion errors (comparing with
 standard order of magnitudes in plasma physics)
 
-Examples of use
+Examples
 --------
 
 Get equivalent width in nm of a 10cm-1 width at 380 nm

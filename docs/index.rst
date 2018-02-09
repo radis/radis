@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-=================
+=====
 RADIS
-=================
+=====
 
 .. |logo_png| image:: radis_ico.png
 
@@ -28,9 +28,9 @@ multi-slab module with a radiative transfer equation solver to reproduce line-of
 experiments. Validation cases against existing spectral codes and experimental 
 results from various plasma sources are included.
 
-=================
+===============
 Getting Started
-=================
+===============
 
 .. toctree::
    :maxdepth: 2
@@ -54,6 +54,7 @@ slab of gas, and returns a Spectrum object.
    
    lbl/index
 
+   
 The line-of-sight (LOS) module
 ------------------------------
 
@@ -66,6 +67,7 @@ reproduce line-of-sight experiments
    
    los/index
 
+   
 The Spectrum class
 ------------------
 
@@ -78,7 +80,20 @@ store or retrieve from a Spectrum database.
    
    spectrum/index
 
+   
+Tools
+------------------
 
+Different tools to work with Spectrum objects
+
+.. toctree::
+   :maxdepth: 2
+   
+   tools/index
+
+
+
+==================
 Indices and tables
 ==================
 

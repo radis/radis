@@ -124,5 +124,16 @@ Use :meth:`~radis.spectrum.spectrum.Spectrum.store`::
 How to compare Spectrum objects?
 --------------------------------
 
+Use one of the predefined functions :func:`~radis.spectrum.compare.get_diff`, 
+:func:`~radis.spectrum.compare.get_ratio`, :func:`~radis.spectrum.compare.get_distance`, 
+:func:`~radis.spectrum.compare.get_residual` or the plot function 
+:func:`~radis.spectrum.compare.plot_diff`::
+
+    from radis.spectrum import plot_diff
+    s1 = load_spec(temp_file_name)
+    s2 = load_spec(temp_file_name2)
+    plot_diff(s1, s2, 'radiance')
+
+
     
     

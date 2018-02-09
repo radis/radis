@@ -983,7 +983,7 @@ class Spectrum(object):
             per wavenumber (~ `W/m2/sr/cm_1`) units
 
 
-        Other Paramaters
+        Other Parameters
         ----------------
         
         Plot parameters inputs:
@@ -2567,6 +2567,42 @@ class Spectrum(object):
                    'values']
 
         return [k for k in attrs if not k in exclude]
+
+# %% ======================================================================
+# External functions
+# ----------------
+# XXX =====================================================================
+
+# Test class
+def is_spectrum(a):
+    ''' sometimes the Spectrum class gets imported twice, and a purely isinstance()
+    comparison fails '''
+
+    return (isinstance(a, Spectrum) or
+             repr(a.__class__) == repr(Spectrum))
+
+def make_up(label):
+    ''' Cosmetic changes on label, before plot 
+    
+    
+    Parameters    
+    ----------
+    
+    label: str
+    '''
+    
+    # Improve units
+    label = label.replace('cm_1', 'cm-1')
+    label = label.replace('cm-1', 'cm$^{-1}$')
+    label = label.replace('m2', 'm$^2$')
+    label = label.replace('m3', 'm$^3$')
+    label = label.replace('I/I0', 'I/I$_\mathrm{0}$')    # transmittance unit
+    
+    # Improve text
+    label = label.replace('_noslit', ' (unconvolved)')
+    return label
+
+
 
 # Test functions
 if __name__ == '__main__':

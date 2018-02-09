@@ -8,7 +8,7 @@ Created on Fri Feb  9 13:03:04 2018
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
 from radis.tools.slit import cast_waveunit
-from radis.spectrum.spectrum import Spectrum
+from radis.spectrum.spectrum import make_up
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.widgets import MultiCursor
@@ -380,37 +380,3 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
                          vertOn=True)
     
     return fig, [ax0, ax1]
-
-def make_up(label):
-    ''' Cosmetic changes on label, before plot 
-    
-    
-    Parameters    
-    ----------
-    
-    label: str
-    '''
-    
-    # Improve units
-    label = label.replace('cm_1', 'cm-1')
-    label = label.replace('cm-1', 'cm$^{-1}$')
-    label = label.replace('m2', 'm$^2$')
-    label = label.replace('m3', 'm$^3$')
-    label = label.replace('I/I0', 'I/I$_\mathrm{0}$')    # transmittance unit
-    
-    # Improve text
-    label = label.replace('_noslit', ' (unconvolved)')
-    return label
-
-
-# %% Extra
-
-# Test class
-
-def is_spectrum(a):
-    ''' sometimes the Spectrum class gets imported twice, and a purely isinstance()
-    comparison fails '''
-
-    return (isinstance(a, Spectrum) or
-             repr(a.__class__) == repr(Spectrum))
-

@@ -910,6 +910,7 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
          _ _ /   \ _ _
         :   :  :  :   :
        -a-f -a 0  a  a+f
+       
 
     with FWHM = (a+1/2)*wstep, `f` spacing on left & right
 
@@ -1007,6 +1008,7 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
          0    :  :     :  :   0
          :   -b  :     :  b   :
        -b-f     -t     t     b+f
+       
 
     with `t`and `b` the half-top and half-base in number of elements, `f` spacing
     on left & right. FWHM = (t+b+1)*wstep
@@ -1077,6 +1079,7 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
                   waveunit='', calc_range=4, scale=1, footerspacing=0):
     ''' Generate normalized slit function
 
+
     Parameters    
     ----------
 
@@ -1122,6 +1125,7 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
          0    [gaussian]   0
          :  :     :     :  :
        -c-f -c    0     c  c+f          (c : calc_range)
+       
 
    with `c` cutoff in number of elements, `f` spacing on left & right
 
