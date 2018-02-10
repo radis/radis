@@ -8,6 +8,14 @@ A code to simulate infrared spectra of molecules.
     :target: https://pypi.python.org/pypi/radis
     :alt: PyPI
 
+.. image:: https://img.shields.io/travis/radis/radis.svg
+    :target: https://travis-ci.org/radis/radis
+    :alt: Continuous Integration
+    
+.. image:: https://img.shields.io/codecov/c/github/radis/radis.svg
+    :target: https://travis-ci.org/radis/radis
+    :alt: Coverage
+
 .. image:: https://readthedocs.org/projects/climt/badge/
     :target: https://radis.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
