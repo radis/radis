@@ -19,21 +19,10 @@ import shutil
 
 package_name = 'radis'
 
-# All the rest below is standard:
-
-if os.path.exists('README.rst'):
-    os.remove('README.rst')
-
-os.system('pandoc -s README.md --from markdown --to rst -s -o README.rst')
-
-
-if os.path.exists('README.rst'):
-    print('Readme generated')
-    os.system('python setup.py sdist')
-    os.system('python setup.py bdist_wheel --universal')
-    os.system("twine upload dist/*")
-    # Clean
-    shutil.rmtree('dist')
-    os.remove('README.rst')
+os.system('python setup.py sdist')
+os.system('python setup.py bdist_wheel --universal')
+os.system("twine upload dist/*")
+# Clean
+shutil.rmtree('dist')
 
 print('All done')
