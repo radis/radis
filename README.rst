@@ -4,6 +4,14 @@ RADIS
 
 A code to simulate infrared spectra of molecules.
 
+RADIS is nonequilibrium emission and absorption line-by-line code, for use by 
+infrared spectroscopic that want to compare line databases, or experimentalist 
+that want to fit their experimental line-of-sight spectra.
+
+- Docs: http://radis.readthedocs.io/
+- Source: https://github.com/radis
+- Pypi: https://pypi.python.org/pypi/radis
+
 .. image:: https://img.shields.io/pypi/v/radis.svg
     :target: https://pypi.python.org/pypi/radis
     :alt: PyPI
@@ -20,14 +28,6 @@ A code to simulate infrared spectra of molecules.
     :target: https://radis.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
     
-RADIS is nonequilibrium emission and absorption line-by-line code, for use by 
-infrared spectroscopic that want to compare line databases, or experimentalist 
-that want to fit their experimental line-of-sight spectra.
-
-- Docs: http://radis.readthedocs.io/
-- source: https://github.com/radis
-- Pypi: https://pypi.python.org/pypi/radis
-
 Description
 -----------
 
