@@ -22,8 +22,8 @@ long_description = 'A non-equilibrium Radiative Solver for HITRAN-like database 
 if os.path.exists('README.rst'):
     long_description = codecs.open('README.rst', encoding="utf-8").read()
 
-__version__ = '0.1.1'
-    
+__version__ = '0.1.2'
+
 setup(name='radis',
       version=__version__,
       description='A non-equilibrium Radiative Solver for HITRAN-like database species ',
@@ -31,7 +31,7 @@ setup(name='radis',
       url='https://github.com/radis/radis',
       author='Erwan Pannier',
       author_email='erwan.pannier@gmail.com',
-      license='GNU GENERAL PUBLIC LICENSE',
+      license='GNU Lesser General Public License v3 (LGPLv3)',
       packages=find_packages(),
       install_requires=[
 				 'mpldatacursor',
@@ -50,7 +50,7 @@ setup(name='radis',
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License (GPL)',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Topic :: Scientific/Engineering',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',

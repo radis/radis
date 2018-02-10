@@ -44,5 +44,5 @@ times, and a multi-slab module with a radiative transfer equation solver to
 reproduce line-of-sight experiments. Validation cases against existing spectral 
 codes and experimental results from various plasma sources are included. 
 
-The code will soon be available on this repository under under GNU General Public 
-License v3.0
+The code will soon be fully available on this repository under under 
+GNU LESSER GENERAL PUBLIC LICENSE (v3)
