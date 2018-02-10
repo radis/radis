@@ -28,6 +28,12 @@ multi-slab module with a radiative transfer equation solver to reproduce line-of
 experiments. Validation cases against existing spectral codes and experimental 
 results from various plasma sources are included.
 
+*Example of input produced by the* :class:`~radis.tools.line_survey.LineSurvey` *tool.*
+
+.. raw:: html
+
+    <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="700" height="450" seamless="seamless" scrolling="no"></iframe>
+	
 ===============
 Getting Started
 ===============
