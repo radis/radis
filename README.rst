@@ -41,6 +41,6 @@ reproduce line-of-sight experiments. Validation cases against existing spectral
 codes and experimental results from various plasma sources are included. 
 
 The code will soon be fully available on this repository under 
-`GNU LESSER GENERAL PUBLIC LICENSE (v3) <LICENCE>`_
+`GNU LESSER GENERAL PUBLIC LICENSE (v3) <./LICENSE>`_
 
 .. |CO2| replace:: CO\ :sub:`2`\ 
