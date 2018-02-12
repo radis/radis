@@ -30,3 +30,9 @@ script:
   # Your test script goes here
   - echo ">>> Running tests"
   - python -m pytest
+  
+# safelist
+branches:
+  only:
+  - master
+  - develop
