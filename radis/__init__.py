@@ -31,6 +31,10 @@ License v3.0
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
+from .misc.utils import getProjectRoot, Chdir
+
+
 # %% Debug mode
 DEBUG_MODE = False
 # change this at runtime with 
@@ -45,3 +49,31 @@ from .spectrum import *        # Spectrum object
 from .lbl import *             # line-by-line module 
 from .los import *             # line-of-sight module
 from .tools import *           # slit, database, line survey, etc.
+
+
+def get_version(verbose=False):
+    ''' Reads version.txt and retrieve version 
+    Also adds Git number if we're on a gitted session '''
+    
+    # First get version
+    with open(os.path.join(getProjectRoot(),'__version__.txt')) as version_file:
+        version = version_file.read().strip()
+        
+    # Now get git info 
+    import subprocess
+    import sys
+    cd = Chdir(os.path.dirname(__file__))
+    try:
+        label = subprocess.check_output('git describe')
+        label = label.decode().strip()
+        label = '-' + label
+    except:
+        if verbose: print("couldnt get git version: {0}".format(sys.exc_info()[1]))
+        # probably not a git session. drop 
+        label = '' 
+    finally:
+        version = version+label
+        cd.__del__()
+    return version 
+
+__version__ = get_version()

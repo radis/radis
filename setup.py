@@ -22,7 +22,8 @@ long_description = 'A non-equilibrium Radiative Solver for HITRAN-like database 
 if os.path.exists('README.rst'):
     long_description = codecs.open('README.rst', encoding="utf-8").read()
 
-__version__ = '0.1.2'
+with open(join(dirname(__file__),'radis', '__version__.txt')) as version_file:
+    __version__ = version_file.read().strip()
 
 setup(name='radis',
       version=__version__,
@@ -58,7 +59,7 @@ setup(name='radis',
         'Programming Language :: Python :: 3.6',
         "Operating System :: OS Independent"],
 	  include_package_data=True,
-      data_files = [('radis/phys', ['units.txt'])],
+      #data_files = [('radis/phys', ['units.txt'])],
       zip_safe=True,
       platforms='any',
       # Plugins for special features 

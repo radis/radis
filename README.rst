@@ -36,7 +36,7 @@ HITEMP and CDSD databases for molecules in their electronic ground state. Energy
 levels are read from tabulated databases or calculated from Dunham developments. 
 Boltzmann, Treanor, and state specific vibrational distributions can be 
 generated. A modular architecture makes it possible to add new species without 
-modifications to the core code. Thus far, CO<sub>2</sub>, CO are featured for non-equilibrium 
+modifications to the core code. Thus far, |CO2|, CO are featured for non-equilibrium 
 calculations, and all species present in the HITRAN database are featured for 
 equilibrium calculations. To fit experimental spectra, RADIS includes a line 
 survey tool, an interface with a look-up database to improve fitting convergence 
@@ -46,3 +46,5 @@ codes and experimental results from various plasma sources are included.
 
 The code will soon be fully available on this repository under under 
 GNU LESSER GENERAL PUBLIC LICENSE (v3)
+
+.. |CO2| replace:: CO\ :sub:`2`\ 
