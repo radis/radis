@@ -22,7 +22,7 @@ install:
   - conda info -a
 
   # Create conda environment
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest numpy scipy matplotlib pandas configparser
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest numpy scipy matplotlib pandas
   - source activate test-environment
   - python setup.py install
 

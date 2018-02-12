@@ -14,7 +14,6 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 from radis.misc.utils import FileNotFoundError, DatabankNotFound, configparser
 from os.path import expanduser, join, exists, dirname
-from configparser import ConfigParser
 from six import string_types
 from radis.misc.basics import compare_lists, compare_dict, stdpath
 
@@ -194,7 +193,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
                          '. Cant add it')
         
     # Add entries to parser
-    config = ConfigParser()
+    config = configparser.ConfigParser()
     config[dbname] = {}
     
     if 'info' in dict_entries: # optional
