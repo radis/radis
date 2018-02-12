@@ -234,36 +234,6 @@ def _asserteV(E):
         print(('Warning. Input values may not be in eV', E, 'eV?'))
 
 # %% Test
-
-
-def _test(verbose=True, *args, **kwargs):
-    btest = True
-
-    E = np.linspace(1, 5, 5)  # eV
-    btest *= (J2eV(K2J(J2K(eV2J(E)))) == E).all()
-
-    E = 2150  # cm-1
-    btest *= J2cm(cm2J(E))
-
-    E = 1  # eV
-    btest *= (eV2cm(E) == J2cm(eV2J(1)))
-    btest *= (round(eV2K(E), 0) == 11605)
-    
-    E = 250 # nm
-    btest *= np.isclose(nm2eV(E),cm2eV(nm2cm(E)))
-    btest *= (eV2nm(nm2eV(E))==E)
-
-    fwhm = 1.5 # nm
-    lbd_0 = 632.8 # nm
-    btest *= (np.isclose(fwhm, dcm2dnm(dnm2dcm(fwhm, lbd_0), nm2cm(lbd_0))))
-
-    fwhm = 2e-3  # nm
-    lbd_0 = 632.8
-    fwhm_hz = dnm2dhz(fwhm, lbd_0)
-    print(('{0:.2g} nm broadening at {1} nm = {2:.2g} Ghz'.format(fwhm, lbd_0, fwhm_hz*1e-9)))
-    btest *= np.isclose(fwhm_hz*1e-9, 1.4973307983125002)
-
-    return bool(btest)
-
 if __name__ == '__main__':
-    print(('Test :', _test()))
+    from radis.test.test_phys import test_convert__fast
+    print(('Test :', test_convert__fast()))

@@ -395,33 +395,6 @@ def convert_universal(I, from_unit, to_unit, w_cm,
 
 
 # %% Test
-
-def _test(verbose=True, *args, **kwargs):
-
-    b = True
-
-    # Test unit-ware arrays
-    a = uarray(np.linspace(10, 100, 10), 'Td')          # NeQ pint-aware array
-    res = Q_(np.linspace(1e-16, 1e-15, 10), 'V * cm^2')  # pint definition
-
-    b *= (np.round(np.array(a.to('V * cm^2')) - np.array(res), 5)
-         == np.zeros_like(res)).all()
-#    b = (print(a.to('V * cm^2'))==print(res))
-
-
-    # Test conversion 
-    convtable = [
-            (500, 'nm', 0.5, 'µm'),
-            (1, 'erg/s', 1e-7, 'W'),
-            (1, 'm2',10000,'cm2')
-            ]
-    for a, f, r, t in convtable:
-        cr = conv2(a, f, t)
-        print(('{0} {1} = {2} {3}'.format(a, f, cr, t)))
-        b *= np.isclose(cr,r)
-
-    return bool(b)
-
 if __name__ == '__main__':
-
-    print((_test()))
+    from radis.test.test_phys import test_units__fast
+    print(('Test :', test_units__fast()))
