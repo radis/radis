@@ -22,7 +22,7 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 
 
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals, print_function
 
 import numpy as np
 from radis.phys.convert import (J2eV, J2cm, cm2J, eV2cm, eV2K, eV2nm, nm2eV,
@@ -76,7 +76,7 @@ def test_units__fast(verbose=True, *args, **kwargs):
     convtable = [
             (500, 'nm', 0.5, 'µm'),
             (1, 'erg/s', 1e-7, 'W'),
-            (1, 'm2',10000,'cm2')
+            (1, 'm2',10000, 'cm2')
             ]
     for a, f, r, t in convtable:
         cr = conv2(a, f, t)
