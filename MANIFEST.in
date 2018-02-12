@@ -1,3 +1,4 @@
 include README.rst
 include LICENSE
+include radis/__version__.txt
 include radis/phys/units.txt
