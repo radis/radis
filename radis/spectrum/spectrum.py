@@ -2281,11 +2281,11 @@ class Spectrum(object):
                     other.__class__))
         if isinstance(spectra_only, string_types):   # case where we compare all quantities
             if not spectra_only in self.get_vars():
-                raise ValueError('{0} is not a spectral quantity in Spectrum'.format(
-                        self.get_vars()))
+                raise ValueError('{0} is not a spectral quantity in our Spectrum ({1})'.format(
+                        spectra_only, self.get_vars()))
             if not spectra_only in other.get_vars():
-                raise ValueError('{0} is not a spectral quantity in other Spectrum'.format(
-                        other.get_vars()))
+                raise ValueError('{0} is not a spectral quantity in the other Spectrum ({1})'.format(
+                        spectra_only, other.get_vars()))
         if verbose:  # print conditions
             what = spectra_only if isinstance(spectra_only, string_types) else 'all quantities'
             msg = 'compare {0} with rtol={1}'.format(what, rtol)
@@ -2355,12 +2355,13 @@ class Spectrum(object):
                 
             return bool(out)
 
-        b = set(self.get_vars()) == set(other.get_vars())
-        if not b and verbose: print('... list of quantities dont match: {0} vs {1}'.format(
-                self.get_vars(), other.get_vars()))
+        b = True
         if isinstance(spectra_only, string_types): # compare this quantity
             vars = [spectra_only]
         else:                    # compare all quantities
+            b = set(self.get_vars()) == set(other.get_vars())
+            if not b and verbose: print('... list of quantities dont match: {0} vs {1}'.format(
+                    self.get_vars(), other.get_vars()))
             vars = [k for k in self.get_vars() if k in other.get_vars()]
 
         if spectra_only:
