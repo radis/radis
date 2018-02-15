@@ -50,7 +50,7 @@ from .lbl import *             # line-by-line module
 from .los import *             # line-of-sight module
 from .tools import *           # slit, database, line survey, etc.
 
-
+# %% Version
 def get_version(verbose=False):
     ''' Reads version.txt and retrieve version 
     Also adds Git number if we're on a gitted session '''
@@ -77,3 +77,4 @@ def get_version(verbose=False):
     return version 
 
 __version__ = get_version()
+
