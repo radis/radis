@@ -531,10 +531,16 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     if nmol == 0:
         raise ValueError('Databank looks empty')        
     elif nmol!=1:
+        # Crash, give explicity error messages
+        try:
+            secondline = df.iloc[1]
+        except IndexError:
+            secondline = ''
         raise ValueError('Multiple molecules in database ({0}). Current '.format(nmol)+\
                          'spectral code only computes 1 species at the time. Use MergeSlabs. '+\
                          'Verify the parsing was correct by looking at the first row below: '+\
-                         '\n{0}'.format(df.iloc[0]))
+                         '\n{0}'.format(df.iloc[0])+'\n----------------\nand the second row '+\
+                         'below: \n{0}'.format(secondline))
     
     for k, c in columns.items():
         if c[1] == str:
@@ -659,29 +665,7 @@ def get_molecule(molecule_id):
 ## ======================================================
 # %% Test
 
-def _test(verbose=True, warnings=True, **kwargs):
-    ''' Analyse some default files to make sure everything still works'''
-    from neq.test.utils import getTestFile
-    from time import time
-    
-    b = True
-    
-    t0 = time()
-    df = hit2df(getTestFile('hitran_CO_fragment.par'))
-    print('File loaded in {0:.0f}s'.format(time()-t0))
-    if verbose: print(df.head())
-    b *= (list(df.ix[0, ['v1u', 'v1l']]) == [4, 4])
-
-    t0 = time()
-    df = hit2df(getTestFile('hitran_CO2_fragment.par'))
-    print('File loaded in {0:.0f}s'.format(time()-t0))
-    if verbose: print(df.head())
-    b *= (list(df.ix[0, ['v1u', 'v2u', 'l2u', 'v3u', 'v1l', 'v2l', 'l2l', 'v3l']]) ==
-              [4, 0, 0, 0, 0, 0, 0, 1])
-    
-    return (bool(b))
-
-
 if __name__ == '__main__':
-    print('Testing HITRAN parsing: ', _test())
+    from radis.test.test_io import test_hitran_parser__fast
+    print('Testing HITRAN parsing: ', test_hitran_parser__fast())
         
