@@ -14,6 +14,7 @@ from os.path import exists, splitext
 from six.moves import range
 from six.moves import zip
 
+
 # %% Hitran groups and classes
 # As defined in Rothman et al, "The HITRAN 2004 molecular spectroscopic database"
 # Tables 3 and 4
