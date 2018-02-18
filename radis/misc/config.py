@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
+""" Functions to parse radis.rc file
+
+Notes
+-----
 
 @author: Erwan
 
@@ -104,7 +107,7 @@ def getDatabankEntries(dbname):
         parfunc                          # path or 'USE_HAPI'
                                          # path to tabulated partition functions. If
                                          # `USE_HAPI`, then HAPI (HITRAN Python
-                                         interface) is used to retrieve them (valid
+                                         interface) [1]_ is used to retrieve them (valid
                                          if your databank is HITRAN data). HAPI
                                          is embedded into NeQ. Check the version.
     
@@ -120,6 +123,12 @@ def getDatabankEntries(dbname):
     
         levelsfmt                        # 'cdsd'
                                          # how to read the previous file.
+
+    References
+    ----------
+
+    .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
+
 
     '''
 
