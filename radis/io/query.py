@@ -26,7 +26,7 @@ from radis.misc import is_float
 from astroquery.hitran import read_hitran_file, cache_location, download_hitran
 from os.path import join
 
-def fetch_databank(molecule, isotope, wmin, wmax):
+def fetch_astroquery(molecule, isotope, wmin, wmax):
     ''' Wrapper to Astroquery [1]_ fetch function to download a line database 
     
     Notes
