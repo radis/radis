@@ -590,10 +590,13 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
         
     # %% Start reading the full file
     
+    # To be faster, we read file totally in bytes mode with fromfiles. But that
+    # requires to properly decode the line return character:
+    
     # get format of line return
-    if sys.platform in ['linux', 'darwin']:
+    if sys.platform in ['linux', 'darwin', 'linux2']:
         linereturnformat = 'a1'
-    elif sys.platform in ['win32','linux2']:
+    elif sys.platform in ['win32']:
         linereturnformat = 'a2'
     else:
         raise ValueError('Line return format not defined for this OS: please update neq')
