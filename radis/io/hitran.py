@@ -778,7 +778,7 @@ def get_molecule_identifier(molecule_name):
     ## Invert the dictionary.
     trans = {v:k for k,v in trans.items()}
 
-    return(int(trans[molecule_name]))
+    return int(trans[molecule_name])
 
 def get_molecule(molecule_id):
     '''
@@ -809,7 +809,7 @@ def get_molecule(molecule_id):
              '41':'CH3CN', '42':'CF4',  '43':'C4H2',   '44':'HC3N', 
              '45':'H2',   '46':'CS',   '47':'SO3'}
 
-    return(trans[id])
+    return trans[id]
 
 ## ======================================================
 # %% Test
