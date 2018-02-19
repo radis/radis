@@ -25,6 +25,7 @@ from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.misc import is_float
 from astroquery.hitran import read_hitran_file, cache_location, download_hitran
 from os.path import join
+import numpy as np
 
 def fetch_astroquery(molecule, isotope, wmin, wmax):
     ''' Wrapper to Astroquery [1]_ fetch function to download a line database 
@@ -89,8 +90,20 @@ def fetch_astroquery(molecule, isotope, wmin, wmax):
                       'gp':'gp',
                       'gpp':'gpp',
                       }
-
     df = df.rename(columns=rename_columns)
     
+    # Cast type to float64
+    cast_type = {'wav':np.float64,
+                 'int':np.float64,
+                 'A':np.float64,
+                 'airbrd':np.float64,
+                 'selbrd':np.float64,
+                 'El':np.float64,
+                 'Tdpair':np.float64,
+                 'Pshft':np.float64,
+                 }
+    for c, typ in cast_type.items():
+        df[c] = df[c].astype(typ)
+
     return df
 

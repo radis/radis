@@ -377,14 +377,18 @@ def _parse_HITRAN_group2(df):
     '''
     
     dgu = df['locu'].str.extract(
-            '[ ]{10}(?P<Fu>[\s ]{5})',
+            '[ ]{10}(?P<Fu>.{5})',
             expand=True)
     dgl = df['locl'].str.extract(
-            '(?P<branch>[\s ]{3})(?P<jl>[\d ]{3})(?P<sym>[\s ]{1})(?P<Fl>[\s ]{2})',
+            '[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<sym>.)(?P<Fl>.{5})',
             expand=True)
 #    dgu = dgu.apply(pd.to_numeric)
     dgl['jl'] = dgl.jl.apply(pd.to_numeric)
 #    dgl = dgl.apply(pd.to_numeric)
+    
+    del df['locu']
+    del df['locl']
+    
     return pd.concat([df, dgu, dgl], axis=1)
 
     
@@ -669,6 +673,10 @@ def parse_local_quanta(df, mol):
         molecule name
     '''
     
+    # had some problems with bytes types
+    df['locu'] = df.locu.astype(str)
+    df['locl'] = df.locl.astype(str)
+    
     if mol in HITRAN_GROUP1:
         df = _parse_HITRAN_group1(df)
     elif mol in HITRAN_GROUP2:
@@ -697,6 +705,10 @@ def parse_global_quanta(df, mol):
     mol: str
         molecule name
     '''
+    
+    # had some problems with bytes types
+    df['globu'] = df.globu.astype(str)
+    df['globl'] = df.globl.astype(str)
     
     if mol in HITRAN_CLASS1:
         df = _parse_HITRAN_class1(df)
