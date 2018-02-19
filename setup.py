@@ -47,6 +47,7 @@ setup(name='radis',
                         'termcolor',     # terminal colors
                         'six',  # python 2-3 compatibility
                         'configparser', 
+                        'astroquery',   # to fetch HITRAN databases
 				],
       classifiers=[
         'Development Status :: 4 - Beta',

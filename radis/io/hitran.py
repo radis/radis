@@ -14,6 +14,7 @@ from os.path import exists, splitext
 from six.moves import range
 from six.moves import zip
 
+
 # %% Hitran groups and classes
 # As defined in Rothman et al, "The HITRAN 2004 molecular spectroscopic database"
 # Tables 3 and 4
@@ -84,47 +85,12 @@ columns_2004 = OrderedDict([ (
                ])
 
 
-# Particular cases for different groups of local quanta ('locu', 'locl' are split)
-# cf "The HITRAN 2004 molecular spectroscopic database", Rothman et al. 2004
-# -----------
-
-# Group 2: diatomic and linear molecules
-columns_grp2 = OrderedDict([ (
-               # name    # format # type  # description                                 # unit 
-               'id',     ('a2',   int,   'Molecular number'                               ,''                      )),(
-               'iso',    ('a1',   int,   'isotope number'                                 ,''                      )),(
-               'wav',    ('a12',  float, 'vacuum wavenumber'                              ,'cm-1'                  )),(
-               'int',    ('a10',  float, 'intensity at 296K'                              ,'cm-1/(molecule/cm-2)', )),(
-               'A',      ('a10',  float, 'Einstein A coefficient'                         ,'s-1'                   )),(
-               'airbrd', ('a5',   float, 'air-broadened half-width at 296K'               ,'cm-1.atm-1'            )),(
-               'selbrd', ('a5',   float, 'self-broadened half-width at 296K'              ,'cm-1.atm-1'            )),(
-               'El',     ('a10',  float, 'lower-state energy'                             ,'cm-1'                  )),(
-               'Tdpair', ('a4',   float, 'temperature-dependance exponent for Gamma air'  ,''                      )),(
-               'Pshft',  ('a8',   float, 'air pressure-induced line shift at 296K'        ,'cm-1.atm-1'            )),( 
-               'globu',  ('a15',  str,   'electronic and vibrational global upper quanta' ,''                      )),(
-               'globl',  ('a15',  str,   'electronic and vibrational global lower quanta' ,''                      )),(
-               #'locu',   ('a15',  str,   'electronic and vibrational local upper quanta'  ,''                      )),(
-                # 10X included in Fu
-               'Fu',     ('a15',  str,  'upper state total angular momentum including nuclear spin'  ,''         )),(
-               #'locl',   ('a15',  str,   'electronic and vibrational local lower quanta'  ,''                      )),(
-               'branch', ('a6',   str,     'O, P, Q, R, S branch symbol'                  ,''                      )),(
-               'jl',     ('a3',   int,    'lower state rotational quantum number'         ,''                      )),(
-               'sym',    ('a1',   str,     'symmetry'                                     ,''                      )),(
-               'Fl',     ('a5',   str,   'lower state total angular momentum including nuclear spin', ''         )),(
-               #
-               'ierr',   ('a6',   str,   'ordered list of indices corresponding to uncertainty estimates of transition parameters'   ,''    )),(
-               'iref',   ('a12',  str,   'ordered list of reference identifiers for transition parameters'                    ,''           )),(
-               'lmix',   ('a1',   str,   'flag indicating the presence of additional data and code relating to line-mixing'   ,''           )),(
-               'gp',     ('a7',   float, 'upper state degeneracy'                         ,''                      )),(
-               'gpp',    ('a7',   float, 'lower state degeneracy'                         ,''                      ))
-               ])
-
 # quick fix # TODO: proper implementation of HITRAN classes, and groups
 # Update: classes are now implemented properly, groups remain to be done 
 
 # %% Hitran global quanta classes
 
-def parse_HITRAN_class1(df):
+def _parse_HITRAN_class1(df):
     ''' Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
     
     
@@ -154,7 +120,7 @@ def parse_HITRAN_class1(df):
     dgl = dgl.apply(pd.to_numeric)
     return pd.concat([df, dgu, dgl], axis=1)
 
-def parse_HITRAN_class2(df):
+def _parse_HITRAN_class2(df):
     ''' Diatomic molecules with different electronic levels: O2
     
     
@@ -176,7 +142,7 @@ def parse_HITRAN_class2(df):
     '''
     raise NotImplementedError
 
-def parse_HITRAN_class3(df):
+def _parse_HITRAN_class3(df):
     ''' Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
     
     
@@ -197,7 +163,7 @@ def parse_HITRAN_class3(df):
     '''
     raise NotImplementedError
 
-def parse_HITRAN_class4(df):
+def _parse_HITRAN_class4(df):
     ''' Linear triatomic: N2O, OCS, HCN
     
     
@@ -228,7 +194,7 @@ def parse_HITRAN_class4(df):
     dgl = dgl.apply(pd.to_numeric)
     return pd.concat([df, dgu, dgl], axis=1)
 
-def parse_HITRAN_class5(df):
+def _parse_HITRAN_class5(df):
     ''' Linear triatomic with large Fermi resonance: CO2
     
     
@@ -259,7 +225,7 @@ def parse_HITRAN_class5(df):
     dgl = dgl.apply(pd.to_numeric)
     return pd.concat([df, dgu, dgl], axis=1)
 
-def parse_HITRAN_class6(df):
+def _parse_HITRAN_class6(df):
     ''' Non-linear triatomic: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
     
     
@@ -290,7 +256,7 @@ def parse_HITRAN_class6(df):
     dgl = dgl.apply(pd.to_numeric)
     return pd.concat([df, dgu, dgl], axis=1)
 
-def parse_HITRAN_class7(df):
+def _parse_HITRAN_class7(df):
     ''' Linear tetratomic: C2H2
     
     
@@ -310,7 +276,7 @@ def parse_HITRAN_class7(df):
     '''
     raise NotImplementedError
 
-def parse_HITRAN_class8(df):
+def _parse_HITRAN_class8(df):
     ''' Pyramidal tetratomic: NH3, PH3
     
     
@@ -330,7 +296,7 @@ def parse_HITRAN_class8(df):
     '''
     raise NotImplementedError
 
-def parse_HITRAN_class9(df):
+def _parse_HITRAN_class9(df):
     ''' Non-linear tetratomic: H2CO, H2O2, COF2
     
     
@@ -350,7 +316,7 @@ def parse_HITRAN_class9(df):
     '''
     raise NotImplementedError
 
-def parse_HITRAN_class10(df):
+def _parse_HITRAN_class10(df):
     ''' Pentatomic or greater polyatomic
     
     
@@ -369,6 +335,147 @@ def parse_HITRAN_class10(df):
     >>>
     '''
     raise NotImplementedError
+    
+# %% HITRAN Local quanta
+    
+    
+def _parse_HITRAN_group1(df):
+    ''' 
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
+    
+    '''
+    raise NotImplementedError
+
+    
+    
+def _parse_HITRAN_group2(df):
+    ''' 
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
+    
+    '''
+    
+    dgu = df['locu'].str.extract(
+            '[ ]{10}(?P<Fu>.{5})',
+            expand=True)
+    dgl = df['locl'].str.extract(
+            '[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<sym>.)(?P<Fl>.{5})',
+            expand=True)
+#    dgu = dgu.apply(pd.to_numeric)
+    dgl['jl'] = dgl.jl.apply(pd.to_numeric)
+#    dgl = dgl.apply(pd.to_numeric)
+    
+    del df['locu']
+    del df['locl']
+    
+    return pd.concat([df, dgu, dgl], axis=1)
+
+    
+#                # 10X included in Fu
+#               'Fu',     ('a15',  str,  'upper state total angular momentum including nuclear spin'  ,''         )),(
+#               #'locl',   ('a15',  str,   'electronic and vibrational local lower quanta'  ,''                      )),(
+#               'branch', ('a6',   str,     'O, P, Q, R, S branch symbol'                  ,''                      )),(
+#               'jl',     ('a3',   int,    'lower state rotational quantum number'         ,''                      )),(
+#               'sym',    ('a1',   str,     'symmetry'                                     ,''                      )),(
+#               'Fl',     ('a5',   str,   'lower state total angular momentum including nuclear spin', ''         )),(
+
+    
+def _parse_HITRAN_group3(df):
+    ''' 
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
+    
+    '''
+    raise NotImplementedError
+
+    
+def _parse_HITRAN_group4(df):
+    ''' 
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
+    
+    '''
+    raise NotImplementedError
+
+    
+def _parse_HITRAN_group5(df):
+    ''' 
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
+    
+    '''
+    raise NotImplementedError
+
+    
+def _parse_HITRAN_group6(df):
+    ''' 
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+        
+    
+    Notes
+    -----
+    
+    HITRAN syntax:
+    
+    '''
+    raise NotImplementedError
+
 
 # %% Reading function
 
@@ -481,23 +588,6 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     with open(fname) as f:
         mol = get_molecule(int(f.read(2)))
         
-    # parse group specific local quanta information
-    if mol in HITRAN_GROUP1:
-        if verbose: print('Local quanta specific format not implemented yet for group 1') #TODO someday
-    elif mol in HITRAN_GROUP2:
-        columns = columns_grp2  
-    elif mol in HITRAN_GROUP3:
-        if verbose: print('Local quanta specific format not implemented yet for group 3') #TODO someday
-    elif mol in HITRAN_GROUP4:
-        if verbose: print('Local quanta specific format not implemented yet for group 4') #TODO someday
-    elif mol in HITRAN_GROUP5:
-        if verbose: print('Local quanta specific format not implemented yet for group 5') #TODO someday
-    elif mol in HITRAN_GROUP6:
-        if verbose: print('Local quanta specific format not implemented yet for group 6') #TODO someday
-    else:
-        if verbose: print('Unknown molecule group for:', mol)
-
-
     # %% Start reading the full file
     
     # get format of line return
@@ -545,32 +635,13 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     for k, c in columns.items():
         if c[1] == str:
             df[k] = df[k].str.decode("utf-8")
-            
-    # Add global quanta attributes
-    if mol in HITRAN_CLASS1:
-        df = parse_HITRAN_class1(df)
-    elif mol in HITRAN_CLASS2:
-        df = parse_HITRAN_class2(df)
-    elif mol in HITRAN_CLASS3:
-        df = parse_HITRAN_class3(df)
-    elif mol in HITRAN_CLASS4:
-        df = parse_HITRAN_class4(df)
-    elif mol in HITRAN_CLASS5:
-        df = parse_HITRAN_class5(df)
-    elif mol in HITRAN_CLASS6:
-        df = parse_HITRAN_class6(df)
-    elif mol in HITRAN_CLASS7:
-        df = parse_HITRAN_class7(df)
-    elif mol in HITRAN_CLASS8:
-        df = parse_HITRAN_class8(df)
-    elif mol in HITRAN_CLASS9:
-        df = parse_HITRAN_class9(df)
-    elif mol in HITRAN_CLASS10:
-        df = parse_HITRAN_class10(df)
-    else:
-        raise ValueError('Unknown class for molecule {0}. Cant parse global quanta'.format(
-                mol))
-            
+    
+    # %% Add local quanta attributes, based on the HITRAN group
+    df = parse_local_quanta(df, mol)
+    
+    # %% Add global quanta attributes, based on the HITRAN class
+    df = parse_global_quanta(df, mol)
+
     # Strip whitespaces around PQR columns (due to 2 columns jumped)
     if 'branch' in df:
         df['branch'] = df.branch.str.strip()
@@ -590,6 +661,81 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
             pass
         
     return df 
+
+def parse_local_quanta(df, mol):
+    '''
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+    
+    mol: str
+        molecule name
+    '''
+    
+    # had some problems with bytes types
+    df['locu'] = df.locu.astype(str)
+    df['locl'] = df.locl.astype(str)
+    
+    if mol in HITRAN_GROUP1:
+        df = _parse_HITRAN_group1(df)
+    elif mol in HITRAN_GROUP2:
+        df = _parse_HITRAN_group2(df)
+    elif mol in HITRAN_GROUP3:
+        df = _parse_HITRAN_group3(df)
+    elif mol in HITRAN_GROUP4:
+        df = _parse_HITRAN_group4(df)
+    elif mol in HITRAN_GROUP5:
+        df = _parse_HITRAN_group5(df)
+    elif mol in HITRAN_GROUP6:
+        df = _parse_HITRAN_group6(df)
+    else:
+        raise ValueError('Unknown group for molecule {0}. Cant parse local quanta'.format(
+                mol))
+        
+    return df
+            
+def parse_global_quanta(df, mol):
+    '''
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+    
+    mol: str
+        molecule name
+    '''
+    
+    # had some problems with bytes types
+    df['globu'] = df.globu.astype(str)
+    df['globl'] = df.globl.astype(str)
+    
+    if mol in HITRAN_CLASS1:
+        df = _parse_HITRAN_class1(df)
+    elif mol in HITRAN_CLASS2:
+        df = _parse_HITRAN_class2(df)
+    elif mol in HITRAN_CLASS3:
+        df = _parse_HITRAN_class3(df)
+    elif mol in HITRAN_CLASS4:
+        df = _parse_HITRAN_class4(df)
+    elif mol in HITRAN_CLASS5:
+        df = _parse_HITRAN_class5(df)
+    elif mol in HITRAN_CLASS6:
+        df = _parse_HITRAN_class6(df)
+    elif mol in HITRAN_CLASS7:
+        df = _parse_HITRAN_class7(df)
+    elif mol in HITRAN_CLASS8:
+        df = _parse_HITRAN_class8(df)
+    elif mol in HITRAN_CLASS9:
+        df = _parse_HITRAN_class9(df)
+    elif mol in HITRAN_CLASS10:
+        df = _parse_HITRAN_class10(df)
+    else:
+        raise ValueError('Unknown class for molecule {0}. Cant parse global quanta'.format(
+                mol))
+        
+    return df
+            
 
 def get_molecule_identifier(molecule_name):
     '''

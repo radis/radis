@@ -25,6 +25,7 @@ time:
 - `termcolor <https://pypi.python.org/pypi/termcolor>`_: because it's prettier
 - `six <https://pypi.python.org/pypi/six>`_: for python 2-3 compatibility
 - `configparser <https://pypi.python.org/pypi/configparser>`_: to read user config files
+- `astroquery <https://astroquery.readthedocs.io/en/latest/>`_: to fetch HITRAN files
 
 
 Install
