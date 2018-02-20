@@ -32,7 +32,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     s1, s2: Spectrum objects
     
     var: str
-        spectral quantity 
+        spectral quantity (ex: 'radiance', 'transmittance'...)
     
     wunit: 'nm', 'cm-1'
         waveunit to compare in
