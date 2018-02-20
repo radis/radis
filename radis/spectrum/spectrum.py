@@ -2570,7 +2570,8 @@ class Spectrum(object):
         the use of this class (@minou).
         '''
 
-        attrs = super(Spectrum, self).__dir__()
+#        attrs = super(Spectrum, self).__dir__()
+        attrs = dir(type(self))     # Python 2 and 3 compatible
         exclude = ['clear', 'fromkeys', 'items', 'pop', 'popitem', 'setdefault',
                    'values']
 
