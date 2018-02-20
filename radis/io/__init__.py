@@ -26,8 +26,8 @@ def _get_supported_molecules_equilibrium():
                                  HITRAN_CLASS7, HITRAN_CLASS8, HITRAN_CLASS9,
                                  HITRAN_CLASS10)
     
-    return [HITRAN_CLASS1+HITRAN_CLASS2+HITRAN_CLASS3+HITRAN_CLASS4+HITRAN_CLASS5+
-            HITRAN_CLASS6+HITRAN_CLASS7+HITRAN_CLASS8+HITRAN_CLASS9+HITRAN_CLASS10]
+    return (HITRAN_CLASS1+HITRAN_CLASS2+HITRAN_CLASS3+HITRAN_CLASS4+HITRAN_CLASS5+
+            HITRAN_CLASS6+HITRAN_CLASS7+HITRAN_CLASS8+HITRAN_CLASS9+HITRAN_CLASS10)
     
 def _get_supported_molecules_nonequilibrium():
     ''' Molecules supported in RADIS non equilibrium calculations without need

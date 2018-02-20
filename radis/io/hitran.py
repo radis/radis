@@ -140,7 +140,8 @@ def _parse_HITRAN_class2(df):
     >>>  12x A1 I2
     
     '''
-    raise NotImplementedError
+    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    return df
 
 def _parse_HITRAN_class3(df):
     ''' Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
@@ -161,7 +162,8 @@ def _parse_HITRAN_class3(df):
     >>>      X i     v1
     >>>  7x A1 A3 2x I2
     '''
-    raise NotImplementedError
+    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    return df
 
 def _parse_HITRAN_class4(df):
     ''' Linear triatomic: N2O, OCS, HCN
@@ -274,7 +276,8 @@ def _parse_HITRAN_class7(df):
     
     >>>
     '''
-    raise NotImplementedError
+    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    return df
 
 def _parse_HITRAN_class8(df):
     ''' Pyramidal tetratomic: NH3, PH3
@@ -294,7 +297,8 @@ def _parse_HITRAN_class8(df):
     
     >>>
     '''
-    raise NotImplementedError
+    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    return df
 
 def _parse_HITRAN_class9(df):
     ''' Non-linear tetratomic: H2CO, H2O2, COF2
@@ -314,7 +318,8 @@ def _parse_HITRAN_class9(df):
     
     >>>
     '''
-    raise NotImplementedError
+    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    return df
 
 def _parse_HITRAN_class10(df):
     ''' Pentatomic or greater polyatomic
@@ -334,7 +339,8 @@ def _parse_HITRAN_class10(df):
     
     >>>
     '''
-    raise NotImplementedError
+    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    return df
     
 # %% HITRAN Local quanta
     
@@ -355,7 +361,8 @@ def _parse_HITRAN_group1(df):
     HITRAN syntax:
     
     '''
-    raise NotImplementedError
+    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    return df
 
     
     
@@ -417,7 +424,8 @@ def _parse_HITRAN_group3(df):
     HITRAN syntax:
     
     '''
-    raise NotImplementedError
+    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    return df
 
     
 def _parse_HITRAN_group4(df):
@@ -436,7 +444,8 @@ def _parse_HITRAN_group4(df):
     HITRAN syntax:
     
     '''
-    raise NotImplementedError
+    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    return df
 
     
 def _parse_HITRAN_group5(df):
@@ -455,7 +464,8 @@ def _parse_HITRAN_group5(df):
     HITRAN syntax:
     
     '''
-    raise NotImplementedError
+    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    return df
 
     
 def _parse_HITRAN_group6(df):
@@ -474,7 +484,8 @@ def _parse_HITRAN_group6(df):
     HITRAN syntax:
     
     '''
-    raise NotImplementedError
+    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    return df
 
 
 # %% Reading function
