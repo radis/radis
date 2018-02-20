@@ -11,7 +11,7 @@ RADIS has the following strict requirements:
 
 The above librairies require compiled components that usually fail to be 
 installed with `pip`. It is enforced that RADIS users install them manually 
-beforehand. We suggest using the `Anaconda <https://www.anaconda.com/download/>` 
+beforehand. We suggest using the `Anaconda <https://www.anaconda.com/download/>`_ 
 distribution that contains all the required scientific packages above, plus 
 many others. 
 
