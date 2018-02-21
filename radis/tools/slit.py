@@ -851,7 +851,7 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
 
 def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
                     waveunit='', scale=1, footerspacing=0):
-    ''' Generate normalized slit function
+    r''' Generate normalized slit function
 
     
     Parameters    
@@ -945,7 +945,7 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
 # trapezoidal instrumental broadening function of base base nm and top top nm
 def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
                     waveunit='', scale=1, footerspacing=0):
-    """ Build a trapezoidal slit. Remember that FWHM = (top + base) / 2
+    r""" Build a trapezoidal slit. Remember that FWHM = (top + base) / 2
 
     
     Parameters    
@@ -1061,7 +1061,7 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
 
 def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
                   waveunit='', calc_range=4, scale=1, footerspacing=0):
-    ''' Generate normalized slit function
+    r''' Generate normalized slit function
 
 
     Parameters    
