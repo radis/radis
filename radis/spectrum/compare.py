@@ -43,6 +43,12 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
     
+    Returns    
+    -------
+    
+    w1, Idiff: array
+        difference interpolated on the second range(order?)
+    
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
@@ -50,6 +56,8 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
 
     return curve_substract(w1, I1, w2, I2)    # basically w1, I1 - I2 (on same range)
 
+
+    
 def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
              resample=True):
     ''' Get the ratio between two spectra
@@ -379,3 +387,4 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
                          vertOn=True)
     
     return fig, [ax0, ax1]
+
