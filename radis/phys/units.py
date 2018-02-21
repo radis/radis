@@ -22,11 +22,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 import numpy as np
-from os.path import join, dirname, abspath
+from os.path import join, dirname, abspath, exists
 from pint import UnitRegistry, DimensionalityError
 
 ureg = UnitRegistry()
-ureg.load_definitions(abspath(join(dirname(__file__), 'units.txt')))
+_units_file = abspath(join(dirname(__file__), 'units.txt'))
+assert exists(_units_file)
+ureg.load_definitions(_units_file)
 Q_ = ureg.Quantity
 
 # %% Pint aware arrays
