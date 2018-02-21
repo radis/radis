@@ -43,7 +43,7 @@ from radis.misc.basics import compare_dict, compare_paths
 from os.path import join, dirname
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), 'test')
-IGNORE_MISSING_DATABASES = False        # TODO: move in radis.rc
+IGNORE_MISSING_DATABASES = False        # TODO: move in ~/.radis
 
 def getTestFile(file):
     ''' Return the full path of a test file. Used by test functions not to
@@ -76,7 +76,7 @@ TEST_DATABASES = {
         'HITRAN-CO2-TEST':{
             'info':'HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: '+\
                    '2380-2398 cm-1 (4165-4200 nm)',
-            'path':[getTestFile(r'hitran_CO2_626_bandhead_4165_4200nm.par')],
+            'path':[getTestFile(r'hitran_co2_626_bandhead_4165_4200nm.par')],
             'format':'hitran',
             'parfuncfmt':'hapi',
             'levelsfmt':'neq', # TODO: replace with 'radis'
@@ -84,7 +84,7 @@ TEST_DATABASES = {
         'HITRAN-CO-TEST':{
             'info':'HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), '+\
                    '2000-2300 cm-1',
-            'path':[getTestFile(r'hitran_CO_3iso_2000_2300cm.par')],
+            'path':[getTestFile(r'hitran_co_3iso_2000_2300cm.par')],
             'format':'hitran',
             'parfuncfmt':'hapi',
             'levelsfmt':'neq', # TODO: replace with 'radis'
@@ -94,7 +94,7 @@ TEST_DATABASES = {
 # %% Utils to test spec module
 
 def build_test_databases(verbose=True):
-    ''' Build test databases and add them in radis.rc. Generate the file if it 
+    ''' Build test databases and add them in ~/.radis. Generate the file if it 
     doesnt exist
     
     In particular:
@@ -104,7 +104,7 @@ def build_test_databases(verbose=True):
     
     These test databases are used to run the different test routines. They can
     obviously be used by Users to run simulations, but we suggest Users to download
-    their own line databases files and add them to radis.rc so they have more control
+    their own line databases files and add them to ~/.radis so they have more control
     on it
     
     '''
@@ -120,7 +120,7 @@ def build_test_databases(verbose=True):
     def add_to_parser(config, name, dic):
         for k, v in dic.items():
             config[name][k] = v
-        if verbose: print("Adding '{0}' database in radis.rc".format(name))
+        if verbose: print("Adding '{0}' database in ~/.radis".format(name))
         
     for dbname, dbentries in TEST_DATABASES.items():
         
@@ -130,12 +130,12 @@ def build_test_databases(verbose=True):
                                        verbose=False)
             if diff is not None:
                 raise ValueError('{0}'.format(diff)+\
-                                 '\nIn radis.rc\n----------\n{0}'.format(getDatabankEntries(dbname))+\
+                                 '\nIn ~/.radis\n----------\n{0}'.format(getDatabankEntries(dbname))+\
                                  '\n\nExpected\n---------\n{0}\n\n'.format(dbentries)+\
                                  'Test Database {0} doesnt match expected '.format(dbname)+\
                                  'entries for key `{0}`. See comparison above'.format(diff))
 
-        else:  #  add them (create radis.rc file if doesnt exist yet)
+        else:  #  add them (create ~/.radis file if doesnt exist yet)
             addDatabankEntries(dbname, dbentries)
     
     return
