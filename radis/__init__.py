@@ -32,6 +32,7 @@ License v3.0
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+import pkg_resources
 from .misc.utils import getProjectRoot, Chdir
 
 
@@ -56,17 +57,35 @@ from .test import *            # test
 # %% Version
 def get_version(verbose=False):
     ''' Reads version.txt and retrieve version 
-    Also adds Git number if we're on a gitted session '''
+    Also adds Git number if we're on a gitted session
     
-    # First get version
-    with open(os.path.join(getProjectRoot(),'__version__.txt')) as version_file:
-        version = version_file.read().strip()
+    Notes
+    -----
         
+    version is stored in a static __version__.txt file. This creates problems
+    when packaging eggs (zip files). See:
+    https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package
+        
+    '''
+    
+    # Get version (works even in egg)
+    resource_package = __name__  
+    resource_path = '__version__.txt'
+    version = pkg_resources.resource_string(resource_package, resource_path)
+    version = version.decode()
+
+#    version = _file_like.read().strip()
+    
+#
+#    # First get version
+#    with open(os.path.join(getProjectRoot(),'__version__.txt')) as version_file:
+#        version = version_file.read().strip()
+    
     # Now get git info 
     import subprocess
     import sys
-    cd = Chdir(os.path.dirname(__file__))
     try:
+        cd = Chdir(os.path.dirname(__file__))
         label = subprocess.check_output('git describe')
         label = label.decode().strip()
         label = '-' + label
