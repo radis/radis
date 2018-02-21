@@ -18,19 +18,24 @@ def printdbg(*args, **kwargs):
     ''' Function that prints only in debug mode. change this at runtime with 
      >>> radis.debug = True
      
-     Use
-     ---
+     Examples
+     --------
      
-     Embed this print in a if __debug__ statement:
-     >>> if __debug__: printdbg(...)
+     Embed this print in a if __debug__ statement::
+     
+         if __debug__: printdbg(...)
+         
      so that printdbg are removed by the Python preprocessor when running in 
-     optimize mode:   
-     >>> python -O *.py
+     optimize mode::
      
-     Todo
-     ----
+         python -O *.py
      
-     no idea how this performs in multiprocessing mode
+     Notes
+     -----
+     
+     Todo: 
+     
+     - no idea how this performs in multiprocessing mode
      '''
      
     from radis import DEBUG_MODE
@@ -42,11 +47,11 @@ def export(var=locals()):
     ''' Export local variables. Useful for debugging 
 
     Debugging inside a function may be tedious because you can't access the 
-    local variables. One of the option is to use the ipython magic:
+    local variables. One of the option is to use the ipython magic::
 
         %debug    
 
-    Or the pdb equivalent. 
+    Or the pdb equivalent::
 
         import pdb
         pdb.pm()
@@ -55,8 +60,8 @@ def export(var=locals()):
     before the exception occurs.
 
 
-    Example
-    -------
+    Examples
+    --------
     
         debug_export(locals())
 
