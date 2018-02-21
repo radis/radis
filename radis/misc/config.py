@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-"""
+""" Functions to parse ~/.radis file
+
+Notes
+-----
 
 @author: Erwan
 
-Functions to parse radis.rc file
+Functions to parse ~/.radis file
 
-Create a radis.rc file in your HOME that contains all machine-specific information
+Create a ~/.radis file in your HOME that contains all machine-specific information
 (e.g: path to databanks)
 
 """
@@ -17,7 +20,7 @@ from os.path import expanduser, join, exists, dirname
 from six import string_types
 from radis.misc.basics import compare_lists, compare_dict, stdpath
 
-# %% Functions to parse radis.rc file
+# %% Functions to parse ~/.radis file
 
 DBFORMAT = ("""
 --------------------------
@@ -55,22 +58,22 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
 
 --------------------------""")
 
-CONFIG_PATH = join(expanduser("~"),"radis.rc")
+CONFIG_PATH = join(expanduser("~"),".radis")
     
 
 def getConfig():
     ''' Read config file and returns it
 
-    Config file name is harcoded: `radis.rc`
+    Config file name is harcoded: `~/.radis`
     '''
 
     config = configparser.ConfigParser()
     configpath = CONFIG_PATH
 
-    # Test radis.rc exists
+    # Test ~/.radis exists
     if not exists(configpath):
 
-        raise FileNotFoundError("Create a `radis.rc` in {0} to store links to ".format(
+        raise FileNotFoundError("Create a `.radis` file in {0} to store links to ".format(
                                         dirname(configpath))+\
                                 "your local databanks. Format must be:\n {0}".format(
                                         DBFORMAT)+\
@@ -81,7 +84,7 @@ def getConfig():
 #
 
 def getDatabankEntries(dbname):
-    ''' Read radis.rc config file and returns a dictionary of entries.
+    ''' Read ~/.radis config file and returns a dictionary of entries.
 
 
     Notes
@@ -104,7 +107,7 @@ def getDatabankEntries(dbname):
         parfunc                          # path or 'USE_HAPI'
                                          # path to tabulated partition functions. If
                                          # `USE_HAPI`, then HAPI (HITRAN Python
-                                         interface) is used to retrieve them (valid
+                                         interface) [1]_ is used to retrieve them (valid
                                          if your databank is HITRAN data). HAPI
                                          is embedded into NeQ. Check the version.
     
@@ -121,6 +124,12 @@ def getDatabankEntries(dbname):
         levelsfmt                        # 'cdsd'
                                          # how to read the previous file.
 
+    References
+    ----------
+
+    .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
+
+
     '''
 
     config = getConfig()
@@ -131,7 +140,7 @@ def getDatabankEntries(dbname):
         config.get(dbname, 'format')
     except configparser.NoSectionError:
         msg = ("{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)+\
-               "No databank named {0} in `radis.rc`. ".format(dbname) +
+               "No databank named {0} in `~/.radis`. ".format(dbname) +
                "Available databanks: {0}. ".format(getDatabankList())+\
                "See databank format above")
         raise DatabankNotFound(msg)
@@ -153,7 +162,7 @@ def getDatabankEntries(dbname):
     return entries
 
 def getDatabankList():
-    ''' Get all databanks available in radis.rc'''
+    ''' Get all databanks available in ~/.radis'''
 
     config = getConfig()
 
@@ -175,17 +184,17 @@ def getDatabankList():
 
 def addDatabankEntries(dbname, dict_entries, verbose=True):
     ''' Add database dbname with entries from dict_entries. If database 
-    already exists in radis.rc, raises an error
+    already exists in ~/.radis, raises an error
     '''
         
-    # Get radis.rc if exists, else create it
+    # Get ~/.radis if exists, else create it
     try:
         dbnames = getDatabankList()
     except FileNotFoundError:
-        # generate radis.rc:
+        # generate ~/.radis:
         dbnames = []
         open(CONFIG_PATH, 'a').close()
-        if verbose: print('Created radis.rc in {0}'.format(dirname(CONFIG_PATH)))
+        if verbose: print('Created ~/.radis in {0}'.format(dirname(CONFIG_PATH)))
         
     # Check database doesnt exist
     if dbname in dbnames:
@@ -221,12 +230,12 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
     if dict_entries != {}:
         raise ValueError('Unexpected keys: {0}'.format(dict_entries.keys()))
         
-    # Write to radis.rc
+    # Write to ~/.radis
     # ... Note: what if there is a PermissionError here? Try/except pass? 
     with open(CONFIG_PATH, 'a') as configfile:
         configfile.write('\n')
         config.write(configfile)
-    if verbose: print("Added {0} database in radis.rc".format(dbname))
+    if verbose: print("Added {0} database in ~/.radis".format(dbname))
 
     return
 
@@ -236,6 +245,8 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
     
     Returns None if no differences are found, or the first different key 
     '''
+    
+    k = None
     
     try:
         assert len(dict_entries1) == len(dict_entries2)
@@ -270,7 +281,7 @@ def printDatabankEntries(dbname, crop=200):
     ----------
     
     dbname: str
-        database name in radis.rc
+        database name in ~/.radis
         
     crop: int
         if > 0, cutoff entries larger than that
@@ -290,14 +301,14 @@ def printDatabankEntries(dbname, crop=200):
         print(k,':',v, *args)
 
 def printDatabankList():
-    ''' Print all databanks available in radis.rc '''
+    ''' Print all databanks available in ~/.radis '''
     try:
-        print('Databanks in radis.rc: ', ','.join(getDatabankList()))
+        print('Databanks in ~/.radis: ', ','.join(getDatabankList()))
         for dbname in getDatabankList():
             print('\n')
             printDatabankEntries(dbname)
     except FileNotFoundError:
-        print('No config file `radis.rc`')
+        print('No config file `~/.radis`')
         # it's okay
 
 # %% Test

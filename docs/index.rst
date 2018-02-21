@@ -15,6 +15,10 @@ RADIS is nonequilibrium emission and absorption line-by-line code, for use
 by infrared spectroscopic that want to compare line databases, or experimentalist 
 that want to fit their experimental line-of-sight spectra.
 
+.. warning::
+    Deployment is still in progress, not all modules are available yet. The
+    documentation will be updated as more modules are included. 
+
 Written as a general purpose radiative solver, the code is built around the HITRAN, 
 HITEMP and CDSD databases for molecules in their electronic ground state. Energy 
 levels are read from tabulated databases or calculated from Dunham developments. 

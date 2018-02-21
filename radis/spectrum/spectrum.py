@@ -833,14 +833,14 @@ class Spectrum(object):
     # Rescale functions
 
     def rescale(self, new_path_length, old_path_length=None,
-                optically_thin=False):
+                force=False):
         ''' Deprecated. See rescale_path_length '''
 
         warn(DeprecationWarning("rescale have been replaced by more explicit "+\
                                 "rescale_path_length"))
 
         return self.rescale_path_length(new_path_length, old_path_length=old_path_length,
-                optically_thin=optically_thin)
+                force=force)
 
     def rescale_path_length(self, new_path_length, old_path_length=None,
                 force=False):
@@ -2144,8 +2144,9 @@ class Spectrum(object):
         try:
             return not self.conditions['self_absorption']
         except KeyError:
-            raise KeyError("self_absorption not defined in conditions. Please add the "+\
-                             "value manually, or use Spectrum.update(optically_thin=)")
+            raise KeyError("We need to know if Spectrum is optically thin, but "+\
+                           "self_absorption is not defined in conditions. Please add the "+\
+                             "value manually")
         
     def copy(self, copy_lines=True):
         ''' Returns a copy of this Spectrum object (performs a smart deepcopy) '''
@@ -2281,11 +2282,11 @@ class Spectrum(object):
                     other.__class__))
         if isinstance(spectra_only, string_types):   # case where we compare all quantities
             if not spectra_only in self.get_vars():
-                raise ValueError('{0} is not a spectral quantity in Spectrum'.format(
-                        self.get_vars()))
+                raise ValueError('{0} is not a spectral quantity in our Spectrum ({1})'.format(
+                        spectra_only, self.get_vars()))
             if not spectra_only in other.get_vars():
-                raise ValueError('{0} is not a spectral quantity in other Spectrum'.format(
-                        other.get_vars()))
+                raise ValueError('{0} is not a spectral quantity in the other Spectrum ({1})'.format(
+                        spectra_only, other.get_vars()))
         if verbose:  # print conditions
             what = spectra_only if isinstance(spectra_only, string_types) else 'all quantities'
             msg = 'compare {0} with rtol={1}'.format(what, rtol)
@@ -2355,12 +2356,13 @@ class Spectrum(object):
                 
             return bool(out)
 
-        b = set(self.get_vars()) == set(other.get_vars())
-        if not b and verbose: print('... list of quantities dont match: {0} vs {1}'.format(
-                self.get_vars(), other.get_vars()))
+        b = True
         if isinstance(spectra_only, string_types): # compare this quantity
             vars = [spectra_only]
         else:                    # compare all quantities
+            b = set(self.get_vars()) == set(other.get_vars())
+            if not b and verbose: print('... list of quantities dont match: {0} vs {1}'.format(
+                    self.get_vars(), other.get_vars()))
             vars = [k for k in self.get_vars() if k in other.get_vars()]
 
         if spectra_only:
@@ -2569,7 +2571,8 @@ class Spectrum(object):
         the use of this class (@minou).
         '''
 
-        attrs = super(Spectrum, self).__dir__()
+#        attrs = super(Spectrum, self).__dir__()
+        attrs = dir(type(self))     # Python 2 and 3 compatible
         exclude = ['clear', 'fromkeys', 'items', 'pop', 'popitem', 'setdefault',
                    'values']
 

@@ -11,7 +11,7 @@ RADIS has the following strict requirements:
 
 The above librairies require compiled components that usually fail to be 
 installed with `pip`. It is enforced that RADIS users install them manually 
-beforehand. We suggest using the `Anaconda <https://www.anaconda.com/download/>` 
+beforehand. We suggest using the `Anaconda <https://www.anaconda.com/download/>`_ 
 distribution that contains all the required scientific packages above, plus 
 many others. 
 
@@ -25,6 +25,7 @@ time:
 - `termcolor <https://pypi.python.org/pypi/termcolor>`_: because it's prettier
 - `six <https://pypi.python.org/pypi/six>`_: for python 2-3 compatibility
 - `configparser <https://pypi.python.org/pypi/configparser>`_: to read user config files
+- `astroquery <https://astroquery.readthedocs.io/en/latest/>`_: to fetch HITRAN files
 
 
 Install

@@ -19,7 +19,7 @@ from .convert import (J2eV, J2K, J2cm,
                   dnm2dcm, dcm2dnm,
                   )
                   
-from .blackbody import planck, planck_wn
+from .blackbody import planck, planck_wn, sPlanck
 
 from .units import (conv2, is_homogeneous, convert_rad2cm, convert_rad2nm,
                     convert_emi2cm, convert_emi2nm)

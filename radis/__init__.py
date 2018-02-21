@@ -46,9 +46,12 @@ DEBUG_MODE = False
 # >>> python -O *.py
 
 from .spectrum import *        # Spectrum object
+from .io import *              # input / output 
 from .lbl import *             # line-by-line module 
 from .los import *             # line-of-sight module
+from .phys import *            # conversion functions, blackbody objects
 from .tools import *           # slit, database, line survey, etc.
+from .test import *            # test
 
 # %% Version
 def get_version(verbose=False):

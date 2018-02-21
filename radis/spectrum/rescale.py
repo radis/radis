@@ -382,6 +382,21 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
         T_b = exp(-k[~b]*old_path_length)
         emisscoeff[~b] = I[~b]/(1-T_b)*k[~b]              # recalculate (non opt thin)
         unit = get_unit(units['radiance_noslit'])
+#    elif ('radiance_noslit' in initial and true_path_length and
+#          'transmittance_noslit' in initial):
+#        if __debug__: printdbg('... rescale: emisscoeff j1 = k1*I1/(1-T1)')
+#        _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
+##            _, T = spec.get('transmittance_noslit', wunit=waveunit)
+#        _, T = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
+##            assert np.allclose(wT, wE)    # now forced by construction
+##            assert np.allclose(wT, wk)    # now forced by construction
+#        b = (T==1)  # optically thin mask
+#        emisscoeff = np.zeros_like(T)
+#        emisscoeff[b] = I[b]/old_path_length              # recalculate (opt thin)
+#        T_b = T[~b]
+#        k_b = -ln(T_b)/old_path_length
+#        emisscoeff[~b] = I[~b]/(1-T_b)*k_b              # recalculate (non opt thin)
+        unit = get_unit(units['radiance_noslit'])
     else:
         if optically_thin:
             msg = "Cant calculate emisscoeff if true path_length "+\
@@ -392,9 +407,11 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
             else:
                 raise ValueError(msg)
         else:
-            msg = "Cant calculate emisscoeff if true path_length "+\
-                  "and radiance_noslit and abscoeff are not given. "+\
-                  "Try optically_thin?"
+            msg = "Trying to rescale emission coefficient in non optically "+\
+                  "thin case. True path_length, radiance_noslit "+\
+                  "and abscoeff are needed but not given. "+\
+                  "Try optically_thin? See known Spectrum conditions with "+\
+                  "Spectrum.print_conditions()"
             if 'emisscoeff' in extra: # cant calculate this one but let it go
                 emisscoeff = None
                 if __debug__: printdbg(msg)
@@ -474,7 +491,7 @@ def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new
     elif 'transmittance_noslit' in initial:
         if __debug__: printdbg('... rescale: transmittance_noslit T2 = '+\
                         'exp( ln(T1) * N2/N1 * L2/L1)')
-        _, T = spec.get('transmittance_noslit', wunit=waveunit, units=units['transmittance_noslit'])
+        _, T = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
         b = (T == 0)  # optically thick mask
         transmittance_noslit = np.empty_like(T)
         absorbance_b = -ln(transmittance_noslit[~b])
@@ -886,8 +903,9 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
         qns = q+'_noslit'
         qties = spec.get_vars()
         if q in qties and qns not in qties and not force:
-            raise KeyError('Cant rescale {0} if {1} not stored'.format(q, qns)+\
-                           ' Use force=True to rescale anyway. {0}'.format(q)+\
+            raise KeyError('Cant rescale {0} if {1} not stored.'.format(q, qns)+\
+                           '(you need to rescale before applying the slit again) '+\
+                           ' Use force=True to rescale anyway, but {0}'.format(q)+\
                            ' will be deleted')
 
     # Get path length
