@@ -43,7 +43,7 @@ from radis.misc.basics import compare_dict, compare_paths
 from os.path import join, dirname
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), 'test')
-IGNORE_MISSING_DATABASES = False        # TODO: move in ~/.radis
+IGNORE_MISSING_DATABASES = True        # TODO: move in ~/.radis
 
 def getTestFile(file):
     ''' Return the full path of a test file. Used by test functions not to
