@@ -833,14 +833,14 @@ class Spectrum(object):
     # Rescale functions
 
     def rescale(self, new_path_length, old_path_length=None,
-                optically_thin=False):
+                force=False):
         ''' Deprecated. See rescale_path_length '''
 
         warn(DeprecationWarning("rescale have been replaced by more explicit "+\
                                 "rescale_path_length"))
 
         return self.rescale_path_length(new_path_length, old_path_length=old_path_length,
-                optically_thin=optically_thin)
+                force=force)
 
     def rescale_path_length(self, new_path_length, old_path_length=None,
                 force=False):
@@ -2144,8 +2144,9 @@ class Spectrum(object):
         try:
             return not self.conditions['self_absorption']
         except KeyError:
-            raise KeyError("self_absorption not defined in conditions. Please add the "+\
-                             "value manually, or use Spectrum.update(optically_thin=)")
+            raise KeyError("We need to know if Spectrum is optically thin, but "+\
+                           "self_absorption is not defined in conditions. Please add the "+\
+                             "value manually")
         
     def copy(self, copy_lines=True):
         ''' Returns a copy of this Spectrum object (performs a smart deepcopy) '''
