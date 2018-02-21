@@ -5,7 +5,7 @@
 Notes
 -----
 
-Astroquery [1]_ is itself based on HAPI [2]_ 
+Astroquery [R1]_ is itself based on HAPI [R2]_ 
     
 Created on Sun Feb 18 18:29:58 2018
 
@@ -15,9 +15,9 @@ Created on Sun Feb 18 18:29:58 2018
 References
 ----------
 
-.. [1] `Astroquery <https://astroquery.readthedocs.io>`_ 
+.. [R1] `Astroquery <https://astroquery.readthedocs.io>`_ 
 
-.. [2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
+.. [R2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
 
 """
 

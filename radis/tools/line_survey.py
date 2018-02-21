@@ -31,8 +31,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
                yscale='log', 
                xunit=None, yunit=None # deprecated
                ):    
-    ''' Plot Line Survey (all linestrengths above cutoff criteria)
-    Output in Plotly (html)
+    ''' Plot Line Survey (all linestrengths above cutoff criteria) in Plotly (html)
 
     
     Parameters    
@@ -67,6 +66,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
         (s.lines). For instance: 'int', 'selbrd', etc... Default ['int']
 
     yscale: 'log', 'linear'
+        Default 'log'
 
     '''
     

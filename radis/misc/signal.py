@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun May 07 20:34:22 2017
 
-@author: p38
-
-Description
+Summary
 -------
 
 Signal processing functions 
@@ -72,8 +69,10 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
     Examples
     --------
     
-    >>> w_nm, I_nm = s.get('radiance')
-    >>> w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
+    Resample a Spectrum radiance on an evenvly spaced wavenumber space::
+    
+        w_nm, I_nm = s.get('radiance')
+        w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
     
     
     '''
@@ -228,8 +227,10 @@ def resample_even(xspace, vector, resfactor=2, k=1, ext='error', energy_threshol
     Examples
     --------
     
-    >>> w_nm, I_nm = s.get('radiance')
-    >>> w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
+    Resample a Spectrum radiance on an evenvly spaced wavenumber space::
+    
+        w_nm, I_nm = s.get('radiance')
+        w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
     
     
     '''

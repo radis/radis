@@ -59,9 +59,9 @@ setup(name='radis',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.6',
         "Operating System :: OS Independent"],
-	  include_package_data=True,
-      #data_files = [('radis/phys', ['units.txt'])],
-      zip_safe=True,
+	  include_package_data=True,  # add non .py data files in MANIFEST.in
+      package_data={'radis': ['radis/phys/units.txt']},
+      zip_safe=False,  # impossible as long as we have external files read from __file__
       platforms='any',
       # Plugins for special features 
       extras_require={

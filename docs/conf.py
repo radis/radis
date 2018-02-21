@@ -12,6 +12,11 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+# 
+# --------
+# For help on Sphinx and readthedocs see:
+# https://samnicholls.net/2016/06/15/how-to-sphinx-readthedocs/
+# --------
 
 import sys
 import os
@@ -20,7 +25,34 @@ import shlex
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('.'))
+#sys.path.insert(0, os.path.abspath('../'))
+
+
+# ------------------------------------
+# Added EP 2018:
+# Auto-generate files with sphinx.apidoc
+# (else it requires /docs/source files to be generated manually and commited
+# to the git directory)
+# 
+# Reference: 
+# https://github.com/rtfd/readthedocs.org/issues/1139
+
+def run_apidoc(_):
+    from sphinx.apidoc import main
+    from os.path import join, abspath, dirname
+#    import sys
+#    sys.path.append(join(dirname(__file__), '..'))
+    cur_dir = abspath(dirname(__file__))
+    source_dir = abspath(join(cur_dir, 'source'))
+    module = join(cur_dir,"..","radis")
+    main(['-e', '-o', source_dir, module, '--force'])
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
+
+# --------------------------------------
+
 
 # -- General configuration ------------------------------------------------
 
@@ -41,6 +73,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
 ]
+
+napoleon_google_docstring = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
