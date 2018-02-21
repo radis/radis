@@ -10,13 +10,11 @@ import os
 import sys
 from os.path import dirname
 import importlib
-import pkg_resources
 
 def getProjectRoot():
     ''' Return the full path of the project root'''
-    
-    return dirname(dirname(pkg_resources.resource_filename(__name__, '.')))
 
+    return dirname(dirname(__file__))
 
 def import_from_module(module, name):
     ''' Import object 'name' from module 'module' 

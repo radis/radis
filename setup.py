@@ -1,6 +1,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
-from setuptools import setup #, find_packages
+from setuptools import setup, find_packages
 import codecs
 import io
 import os
@@ -33,7 +33,7 @@ setup(name='radis',
       author='Erwan Pannier',
       author_email='erwan.pannier@gmail.com',
       license='GNU Lesser General Public License v3 (LGPLv3)',
-      packages=['radis'],
+      packages=find_packages(),
       install_requires=[
 				 'mpldatacursor',
 #                        'numpy',          # let the user install it 
@@ -48,7 +48,6 @@ setup(name='radis',
                         'six',  # python 2-3 compatibility
                         'configparser', 
                         'astroquery',   # to fetch HITRAN databases
-                        'setuptools-git'
 				],
       classifiers=[
         'Development Status :: 4 - Beta',
@@ -61,8 +60,7 @@ setup(name='radis',
         'Programming Language :: Python :: 3.6',
         "Operating System :: OS Independent"],
 	  include_package_data=True,  # add non .py data files in MANIFEST.in
-#      package_data={'radis': ['__version__.txt',
-#                              'phys/units.txt']},
+      package_data={'radis': ['radis/phys/units.txt']},
       zip_safe=True,
       platforms='any',
       # Plugins for special features 

@@ -9,20 +9,12 @@ Performance test with pint
 
 Import neq.phys.units to get access to:
 
-Examples
---------
+Use
+---
 
 from radis.phys.units import Q_
 - a = Q_(np.array([5,4,2]),'cm')
 - a.to_base_units()
-
-Notes
------
-
-units.py uses definitions stored in a static units.txt file. This creates problems
-when packaging eggs (zip files). See:
-https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package
-    
 
 """
 
@@ -32,44 +24,14 @@ from __future__ import unicode_literals
 import numpy as np
 from os.path import join, dirname, abspath, exists
 from pint import UnitRegistry, DimensionalityError
-import pkg_resources
-#from StringIo import 
-
-# Get units static data file (works even in egg)
-# ----------
-resource_package = __name__  # Could be any module/package name
-#resource_path = '/'.join(('phys', 'units.txt'))  # Do not use os.path.join()
-resource_path = 'units.txt'
-_units_file_str = pkg_resources.resource_string(resource_package, resource_path)
-
-# Read it with Pint
-# ----------
-
-def load_in_pint(ureg, file_string):
-    ''' My own Pint loader, that deals with FileIO objects (in case of 
-    reading units from a static file in a packaged egg object)
-    
-    Parameters
-    ----------
-    
-    file_string: str
-        file 
-    
-    '''
-    
-    from pint.definitions import Definition
-    for l in file_string.splitlines():
-        try:
-            ureg.define(Definition.from_string(l))
-        except:
-            pass
 
 ureg = UnitRegistry()
-ureg.load_definitions(pkg_resources.resource_filename(__name__, 'units.txt'))
-#load_in_pint(ureg, _units_file_str)
+_units_file = abspath(join(dirname(__file__), 'units.txt'))
+# make sure file exists
+if not exists(_units_file):
+    raise AssertionError("Couldn't find units file in : {0}".format(_units_file))
+ureg.load_definitions(_units_file)
 Q_ = ureg.Quantity
-
-
 
 # %% Pint aware arrays
 
