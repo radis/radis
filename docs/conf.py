@@ -32,6 +32,8 @@ sys.path.insert(0, os.path.abspath('.'))
 # ------------------------------------
 # Added EP 2018:
 # Auto-generate files with sphinx.apidoc
+# (else it requires /docs/source files to be generated manually and commited
+# to the git directory)
 # 
 # Reference: 
 # https://github.com/rtfd/readthedocs.org/issues/1139
