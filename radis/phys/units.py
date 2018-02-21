@@ -27,7 +27,9 @@ from pint import UnitRegistry, DimensionalityError
 
 ureg = UnitRegistry()
 _units_file = abspath(join(dirname(__file__), 'units.txt'))
-assert exists(_units_file)
+# make sure file exists
+if not exists(_units_file):
+    raise AssertionError("Couldn't find units file in : {0}".format(_units_file))
 ureg.load_definitions(_units_file)
 Q_ = ureg.Quantity
 
