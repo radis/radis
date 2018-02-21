@@ -14,14 +14,16 @@ from six.moves import range
 class ProgressBar():
     ''' A console progress-bar
     
-    Use
-    ---
+    Example
+    -------
     
-    >>> pb = ProgressBar(N)
-    >>> for i, ... in enumerate(...):
-    >>>     (...)
-    >>>     pb.update(i)
-    >>> pb.done()
+    add a progress bar in a loop::
+    
+        pb = ProgressBar(N)
+        for i, ... in enumerate(...):
+            (...)
+            pb.update(i)
+        pb.done()
     
     See test in progress_bar.py
     

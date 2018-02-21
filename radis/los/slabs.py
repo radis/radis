@@ -318,8 +318,10 @@ def MergeSlabs(*slabs, **kwargs):
     slabs: list of Spectra, each representing a slab
         If given in conditions, all path_length have to be same
 
-    kwargs input
-    --------
+    Other Parameters
+    ----------------
+    
+    kwargs input:
 
     resample_wavespace: 'never', 'intersect', 'full'
         what to do when spectra have different wavespaces. 
@@ -353,7 +355,7 @@ def MergeSlabs(*slabs, **kwargs):
     
     
     Examples
-    -------
+    --------
     
     Merge two spectra calculated with different species (true only if broadening
     coefficient dont change much):

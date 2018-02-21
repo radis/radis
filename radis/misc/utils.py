@@ -20,7 +20,11 @@ def import_from_module(module, name):
     ''' Import object 'name' from module 'module' 
     raises AttributeError if name doesnt exist
     
+    Parameters
+    ----------
+    
     module, name: str
+        module path, object name
     
     '''
     impmodule = importlib.import_module(module)
@@ -31,17 +35,19 @@ class Chdir:
     the Git files and version, when imported from another program. This class
     then ensures we get back in the correct directory 
     
-    Use
-    -----
+    Example
+    -------
     
-    > cd = Chdir(os.path.dirname(__file__))
-    > try:
-    >     (...)
-    > except:
-    >     (...)
-    > finally:
-    >     (...)
-    >     cd.__del__()
+    Do::
+    
+        cd = Chdir(os.path.dirname(__file__))
+        try:
+            (...)
+        except:
+            (...)
+        finally:
+            (...)
+            cd.__del__()
     
     '''
 
