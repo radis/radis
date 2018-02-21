@@ -182,5 +182,23 @@ Use one of the predefined functions :func:`~radis.spectrum.compare.get_diff`,
     plot_diff(s1, s2, 'radiance')
 
 
+Generate a Blackbody (Planck) function object?
+----------------------------------------------
+
+In RADIS you can either use the :func:`~radis.phys.blackbody.planck` and
+:func:`~radis.phys.blackbody.planck_wn` functions that generate Planck
+radiation arrays for wavelength and wavenumber, respectively. 
+
+Or, you can use the :func:`~radis.phys.blackbody.sPlanck` function that
+returns a :class:`~radis.spectrum.spectrum.Spectrum` object, with all 
+the associated methods (add in a line-of-sight, compare, etc.)
+
+Example::
+    
+    s = sPlanck(wavelength_min=3000, wavelength_max=50000,
+                T=288, eps=1)
+    s.plot()
+
+
     
     
