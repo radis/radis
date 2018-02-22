@@ -38,3 +38,4 @@ results from various plasma sources are included.
 
     <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="700" height="450" seamless="seamless" scrolling="no"></iframe>
 	
+.. |CO2| replace:: CO\ :sub:`2`
