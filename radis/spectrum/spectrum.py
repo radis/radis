@@ -14,7 +14,7 @@ with any unit
 Examples
 --------
 
-Typical use
+Typical use::
 
     >>> from radis calculated_spectrum
     >>> s = calculated_spectrum(w, I, conditions={'case':'previously calculated by ##'})
@@ -22,7 +22,7 @@ Typical use
     >>> s.apply_slit(0.5, shape='triangular')
     >>> s.plot('radiance')
 
-Spectrum objects can be stored, retrieved, rescaled, resamples
+Spectrum objects can be stored, retrieved, rescaled, resamples::
 
     >>> from radis import load_spec
     >>> s = load_spec('co_calculation.spec')
