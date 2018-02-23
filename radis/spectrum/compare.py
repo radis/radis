@@ -196,7 +196,8 @@ def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default
 
 def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='default',
               resample=True, method='diff',  show_points=False,
-              label1 = None, label2 = None, figsize=None, title=None, nfig=None):
+              label1 = None, label2 = None, figsize=None, title=None, nfig=None,
+              normalize=False):
     ''' Plot two spectra, and the difference between them
     
     
@@ -227,7 +228,8 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         Warning: with 'distance', calculation scales as ~N^2 with N the number
         of points in a spectrum (against ~N with 'diff'). This can quickly 
         override all memory.
-        
+    normalize: bool
+        Normalize the spectra to be ploted 
         
     Other Parameters
     ----------------
@@ -328,8 +330,14 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     Iunit = make_up(Iunit)  # cosmetic changes 
     
     # Plot compared spectra
-    ax0.plot(*s1.get(var, wunit, Iunit, medium), ls=style, color='k', lw=3, label=label1)
-    ax0.plot(*s2.get(var, wunit, Iunit, medium), ls=style, color='r', lw=1, label=label2)
+    if normalize:
+        w1, I1 = s1.get(var, wunit, Iunit, medium)
+        w2, I2 = s2.get(var, wunit, Iunit, medium)
+        ax0.plot(w1, I1/np.max(I1), ls=style, color='k', lw=3, label=label1)
+        ax0.plot(w2, I2/np.max(I2), ls=style, color='r', lw=1, label=label2)
+    else:
+        ax0.plot(*s1.get(var, wunit, Iunit, medium), ls=style, color='k', lw=3, label=label1)
+        ax0.plot(*s2.get(var, wunit, Iunit, medium), ls=style, color='r', lw=1, label=label2)
 
     ax0.tick_params(labelbottom='off')
     if label1 is not None or label2 is not None:
@@ -352,9 +360,13 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         
     # Write labels
     ax1.set_xlabel(make_up(xlabel))
-    fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),
-             va='center', rotation='vertical')
-    
+    if normalize:
+       fig.text(0.02, 0.5, 'Arb. Units',
+                 va='center', rotation='vertical')
+    else:
+        fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),
+                 va='center', rotation='vertical')
+        
     # Set limits
     if method == 'diff':
         # symmetrize error scale:

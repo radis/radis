@@ -2220,7 +2220,8 @@ class Spectrum(object):
                 )
 
     def compare_with(self, other, spectra_only=False, plot=True, wunit='default',
-                     verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False):
+                     verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
+                     normalize=False):
         ''' Compare Spectrum with another spectrum
 
     
@@ -2254,7 +2255,9 @@ class Spectrum(object):
             if not False, outliers are discarded. i.e, output is determined by:
             
             >>> out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
-
+        
+        normalize: bool
+            Normalize the spectra to be ploted 
 
         Returns
         -------
@@ -2384,7 +2387,7 @@ class Spectrum(object):
                 
                 if plot:
                     try:
-                        plot_diff(self, other, var=k, wunit=wunit)
+                        plot_diff(self, other, var=k, wunit=wunit, normalize=normalize)
                     except:
                         print('... couldnt plot {0}'.format(k))
 
@@ -2406,7 +2409,7 @@ class Spectrum(object):
 
                 if plot:
                     try:
-                        plot_diff(self, other, var=k, wunit=wunit)
+                        plot_diff(self, other, var=k, wunit=wunit, normalize=normalize)
                     except:
                         print('... couldnt plot {0}'.format(k))
 
