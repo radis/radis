@@ -333,6 +333,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     if normalize:
         w1, I1 = s1.get(var, wunit, Iunit, medium)
         w2, I2 = s2.get(var, wunit, Iunit, medium)
+        print('Rescale factor: '+str(np.max(I1)/np.max(I2)))
         ax0.plot(w1, I1/np.max(I1), ls=style, color='k', lw=3, label=label1)
         ax0.plot(w2, I2/np.max(I2), ls=style, color='r', lw=1, label=label2)
     else:
