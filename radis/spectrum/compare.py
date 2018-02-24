@@ -400,4 +400,42 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
                          vertOn=True)
     
     return fig, [ax0, ax1]
+''' Return the average distance between two spectra.
+    It's important to note that if averageDistance(s1, s2)==0 then s1 = s2
+    
 
+   .. math::
+
+      \\sqrt{\\sum {(u_i-v_i)^2 / V[x_i]}}.
+'''
+
+def averageDistance(s1, s2, var='radiance'):
+    ''' Return the average distance between two spectra.
+    It's important to note for fitting that if averageDistance(s1, s2)==0 
+    then s1 = s2
+    
+    Parameters    
+    ----------
+            
+    s1, s2: Spectrum objects
+        spectra to be compared
+    
+    var: str, optional
+        spectral quantity (ex: 'radiance', 'transmittance'...)
+    
+    Returns    
+    -------
+    
+    distance: float
+        Average distance as in the following equation:
+        
+        .. math::
+
+            dist = \\frac{\\sqrt{\\sum_i {(s1_i-s2_i)^2}}}{N}.
+    
+    '''
+    distArray = get_diff(s1, s2, var)
+    distArray_Y2 = distArray[1]*distArray[1]
+    N = np.size(distArray[1])
+    distance = np.sqrt(np.sum(distArray_Y2))/N
+    return distance
