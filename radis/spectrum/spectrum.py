@@ -2580,6 +2580,10 @@ class Spectrum(object):
                    'values']
 
         return [k for k in attrs if not k in exclude]
+    
+    def __repr__(self):
+        self.print_conditions()
+        return ""
 
 # %% ======================================================================
 # Util functions

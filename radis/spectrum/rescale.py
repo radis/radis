@@ -19,6 +19,7 @@ from radis.misc.debug import printdbg
 from radis.misc.utils import DatabankNotFound
 from radis.lbl.equations import calc_radiance
 from warnings import warn
+from six import string_types
 
 CONVOLUTED_QUANTITIES = ['radiance', 'transmittance', 'emissivity']
 NON_CONVOLUTED_QUANTITIES = ['radiance_noslit', 'transmittance_noslit',
@@ -253,6 +254,10 @@ def rescale_abscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_fracti
     ----------
     
     spec: Spectrum
+    
+    old_path_length: float
+        path length in cm
+        
     '''
     
     unit = None
@@ -269,6 +274,7 @@ def rescale_abscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_fracti
         abscoeff = np.zeros_like(T)
         abscoeff[~b] = -ln(T[~b]/old_path_length)         # recalculate
         abscoeff[b] = inf  # 0 transmittance = infinite abscoeff
+        unit = 'cm-1'
     elif 'abscoeff' in extra: # cant calculate this one but let it go
         abscoeff = None
     else:
@@ -643,47 +649,36 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     # Check inputs
     assert quantity in CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES + ['all', 'same']
 
-    # Choose which values to recompute
+    # Choose which values to recompute (and store them in the list wanted)
     # ----------
     initial = spec.get_vars()               # quantities initialy in spectrum
     if quantity == 'all':                   # quantities to recompute
-        recompute = list(initial)
+        wanted = list(initial)
         greedy = True
     elif quantity == 'same':
-        recompute = list(initial)
+        wanted = list(initial)
+        greedy = False
+    elif type(quantity) in string_types:
+        wanted = [quantity]
         greedy = False
     else:
-        recompute = [quantity]
-        greedy = False
-    recompute = list(initial)               
-    rescaled = {}                           # quantities rescaled
-
+        raise ValueError('unexpected type for quantity: expected str, got '+\
+                         '{0} ({1})'.format(quantity, type(quantity)))
+    rescaled = {}   # quantities rescaled
+    
+    recompute = wanted        # list of quantities that are needed to recomputed what we want
     if ('radiance_noslit' in initial and not optically_thin):
         recompute.append('emisscoeff') # needed
     if ('absorbance' in initial or 'transmittance_noslit' in initial
                          or 'radiance_noslit' in initial and not optically_thin):
         recompute.append('abscoeff')   # needed
 
-    extra = []
+    extra = []   # other parameters to calculate along the way because its easy
     if greedy:
         # ... let's be greedy: recompute all possible quantities
         reachable = get_reachable(spec)
         extra = [k for k, v in reachable.items() if v]
         
-#        if 'abscoeff' in recompute:
-#            extra.append('absorbance')
-#            extra.append('transmittance_noslit')
-#        if 'emisscoeff' in recompute:
-#            extra.append('radiance_noslit')
-#        if 'radiance_noslit' in initial and optically_thin:
-#            extra.append('emisscoeff')
-#        if 'radiance_noslit' in initial and 'abscoeff' in initial:
-#            extra.append('emisscoeff')
-#        if 'transmittance_noslit' in initial:
-#            extra.append('absorbance')
-#            extra.append('abscoeff')
-#        if spec.is_at_equilibrium() and 'transmittance_noslit' in recompute+extra:
-#            extra.append('emissivity_noslit')
     recompute = set(recompute+extra)  # remove duplicates
 
     # Get units 
@@ -733,13 +728,18 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
             rescaled, units = rescale_emissivity_noslit(spec, rescaled, units, extra, 
                                                   true_path_length)
 
+    # check we didnt miss anyone 
+    for q in wanted:
+        assert q in rescaled
+        
     # Save (only) the ones that were in the spectrum initially
     for q in rescaled:
-        if q in initial or greedy:
+        if q in wanted:
             if q in NON_CONVOLUTED_QUANTITIES:
                 spec._q[q] = rescaled[q]
             else:
                 spec._q_conv[q] = rescaled[q]
+        
     # Update units
     for k, u in units.items():
         spec.units[k] = u
