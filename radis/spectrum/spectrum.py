@@ -2592,8 +2592,27 @@ class Spectrum(object):
 
 # Test class
 def is_spectrum(a):
-    ''' sometimes the Spectrum class gets imported twice, and a purely isinstance()
-    comparison fails '''
+    ''' Returns whether a is a Spectrum object
+    
+    Parameters
+    ----------
+    
+    a: anything
+        a Python object
+        
+    Returns
+    -------
+    
+    True if a is a Spectrum object
+    
+    Notes
+    -----
+    
+    is_spectrum compares the object class name (str): in some cases the Spectrum 
+    class gets imported twice (when databases are involved, mostly), and a purely 
+    isinstance() comparison fails
+    
+    '''
 
     return (isinstance(a, Spectrum) or
              repr(a.__class__) == repr(Spectrum))

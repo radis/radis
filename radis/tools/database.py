@@ -63,7 +63,7 @@ from warnings import warn
 from os.path import (join, splitext, exists, basename, split, dirname, abspath, 
                      isdir, getsize)
 from six.moves import range
-from radis.spectrum.spectrum import Spectrum
+from radis.spectrum.spectrum import Spectrum, is_spectrum
 from shutil import copy2
 from time import strftime
 from radis.misc.basics import is_float, list_if_float
@@ -134,10 +134,10 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
     '''
 
     # 1) Format to JSON writable dictionary
-    sjson, conditions = _format_to_jsondict(s, discard, compress)
+    sjson = _format_to_jsondict(s, discard, compress)
 
     # 2) Get final output name (add info, extension, increment number if needed)
-    fout = _get_fout_name(path, if_exists_then, add_date, add_info, conditions, 
+    fout = _get_fout_name(path, if_exists_then, add_date, add_info, 
                           sjson, verbose)
     
     # 3) Now is time to save
@@ -152,7 +152,14 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
     return fout    # return final name
 
 def _format_to_jsondict(s, discard, compress):
-    ''' Format to JSON writable dictionary '''
+    ''' Format to JSON writable dictionary 
+    
+    Notes
+    -----
+    
+    path names create much troubles on reload if they are stored with '/' 
+    Make sure we use raw format 
+    '''
     
     # ... add main attributes from Spectrum class
     sjson = {}
@@ -176,8 +183,15 @@ def _format_to_jsondict(s, discard, compress):
     except KeyError:
         raise KeyError('Spectrum `conditions` dict should at least have a `waveunit` key')
     # Todo: what if conditions is an empty dictionary? do we allow that?
-    sjson['conditions'] = conditions
-
+    sjson['conditions'] = {}
+    for k, v in conditions.items():
+        # Store all conditions as raw text (that fixes most trouble with paths)
+        try:
+            sjson['conditions'][k] = r'{0}'.format(v)
+        except:
+            # Store the object directly
+            sjson['conditions'][k] = v
+            
     # ... Only `quantities` and `conditions` are required. The rest is just extra
     # details. Add them now if they exist (assuming a Spectrum class is being stored)
     for attr in ['units', 'cond_units', 'name']:
@@ -218,10 +232,12 @@ def _format_to_jsondict(s, discard, compress):
         except AttributeError:
             pass  # dont store populations if they dont exist
     
-    return sjson, conditions
+    return sjson
 
-def _get_fout_name(path, if_exists_then, add_date, add_info, conditions, sjson, verbose):
+def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
     ''' Get final output name   (add info, extension, increment number if needed) '''
+    
+    conditions = sjson['conditions']
     
     if isdir(path):
         fold, name = path, ''
@@ -477,15 +493,8 @@ def _fix_deprecated_format(file, sload):
             sload['conditions']['waveunit'] = sload['conditions']['wavespace']
             del sload['conditions']['wavespace']
         else:
-            # temporary fix: on early versions wavespace may be saved as an attribute
-            try:
-                warn("File {0}".format(basename(file))+" has a deprecrated structure "+\
-                      " (attribute 'wgridspace' replaced by 'wavespace' key in 'conditions')."+\
-                      "Fixed, but regenerate database ASAP.", DeprecationWarning)
-                # Fix it:
-                sload['conditions']['wavespace'] = sload['wgridspace']
-            except AttributeError:
-                raise KeyError("Spectrum 'conditions' dict should at least have a 'waveunit' key")
+            raise KeyError("Spectrum 'conditions' dict should at least have a "+\
+                           "'waveunit' key. Got: {0}".format(sload['conditions'].keys()))
                 
     if 'isotope_identifier' in sload['conditions']:
         warn("File {0}".format(basename(file))+" has a deprecrated structure (key "+\
@@ -519,6 +528,12 @@ def _fix_deprecated_format(file, sload):
             sload['conditions']['dbpath'] = ','.join([str(k).replace('\\','/') for k in 
                  list_if_float(dbpath)])  # list_if_float or just list??
     
+    if 'selfabsorption' in sload['conditions']:
+        self_absorption = sload['conditions']['selfabsorption']
+        sload['conditions']['self_absorption'] = self_absorption
+        del sload['conditions']['selfabsorption']
+        
+    # Fix all path names (if / are stored it screws up the JSON loading)
     def fix_path(key):
         if key in sload['conditions']:
             path = sload['conditions'][key]
@@ -528,15 +543,12 @@ def _fix_deprecated_format(file, sload):
                     "database ASAP.", DeprecationWarning)
                 # Fix it:
                 sload['conditions'][key] = path.replace('\\','/')
-    fix_path('database')
-    fix_path('levelspath')
-    fix_path('parfuncpath')
+                
+    for param in ['database', 'levelspath', 'parfuncpath', # RADIS quantities
+                  'results_directory', 'jobName', # other quantities
+                  ]:
+        fix_path(param)
     
-    if 'selfabsorption' in sload['conditions']:
-        self_absorption = sload['conditions']['selfabsorption']
-        sload['conditions']['self_absorption'] = self_absorption
-        del sload['conditions']['selfabsorption']
-        
     return sload
     
 
@@ -784,11 +796,53 @@ class SpecDatabase():
             are forwarded to Spectrum.store() class. See Spectrum.store() or
             database.save() for more information
 
-        '''
+        Other Parameters
+        ----------------
+        
+        Spectrum.store() parameters given as kwargs arguments. 
+            
+        file: str
+            explicitely give a filename to save
+    
+        compress: boolean
+            if True, removes all quantities that can be regenerated with s.update(),
+            e.g, transmittance if abscoeff and path length are given, radiance if
+            emisscoeff and abscoeff are given in non-optically thin case, etc.
+            Default False
 
-        # Get file in database
+        add_info: list
+            append these parameters and their values if they are in conditions
+            example::
+
+                nameafter = ['Tvib', 'Trot']
+
+        discard: list of str
+            parameters to exclude. To save some memory for instance
+            Default [`lines`, `populations`]: retrieved Spectrum will loose the 
+            line_survey ability, and plot_populations() (but it saves a ton of memory!)
+
+        if_exists_then: 'increment', 'replace', 'error'
+            what to do if file already exists. If increment an incremental digit
+            is added. If replace file is replaced (yeah). If error (or anything else)
+            an error is raised. Default `increment`
+
+        Examples
+        --------
+        
+        Simply write::
+            
+            db.add(s, discard=['populations'])
+
+        '''
+        
+        # Check inputs
+        if 'path' in kwargs:
+            raise ValueError('path is an invalid Parameter. The database path '+\
+                             'is used')
+
+        # First, store the spectrum on a file
         # ... input is a Spectrum. Store it in database and load it from there
-        if type(spectrum) is Spectrum:
+        if is_spectrum(spectrum):
             # add defaults
             if not 'add_info' in kwargs:
                 kwargs['add_info'] = self.add_info
@@ -799,7 +853,7 @@ class SpecDatabase():
             # (saves the load stage) but it also serves to
             # check the file we just stored is readable
 
-        # ... input is a file. Copy it in database and load it
+        # ... input is a file name. Copy it in database and load it
         elif type(spectrum) is str:
             if not exists(spectrum):
                 raise FileNotFoundError('File doesnt exist: {0}'.format(spectrum))
@@ -827,7 +881,8 @@ class SpecDatabase():
         else:
             raise ValueError('Unvalid Spectrum type: {0}'.format(type(spectrum)))
 
-        # Add file
+        # Then, load the Spectrum again (so we're sure it works!) and add the
+        # information to the database
         self.df = self.df.append(self._load_file(file), ignore_index=True)
 
         # Update index .csv
