@@ -92,7 +92,7 @@ columns_4000 = OrderedDict([ (
                 ])
 
 def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
-    ''' Convert a CDSD-HITEMP file to a Pandas dataframe
+    ''' Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
     
     Parameters
     ----------
@@ -119,13 +119,10 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     df: pandas Dataframe
         dataframe containing all lines and parameters
         
-    References
-    ----------
-    
-    CDSD-HITEMP / CDSD-4000 doc 
-    
     Notes
     -----
+    
+    CDSD-4000 Database can be downloaded from [3]_
     
     Performances: I had huge performance trouble with this function, because the files are 
     huge (500k lines) and the format is to special (no space between numbers...)
@@ -163,6 +160,17 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         %timeit df.to_hdf("cdsd_02069_02070.h5", "df", format="fixed")  337ms
         %timeit df.to_hdf("cdsd_02069_02070.h5", "df", format="table")  1.03s
 
+    References
+    ----------
+    
+    Note that CDSD-HITEMP is used as the line database for CO2 in HITEMP 2010
+    
+    .. [1] `HITEMP 2010, Rothman et al., 2010 <https://www.sciencedirect.com/science/article/pii/S002240731000169X>`_
+    
+    .. [2] `CDSD-4000 article, Tashkun et al., 2011 <https://www.sciencedirect.com/science/article/pii/S0022407311001154>`_
+    
+    .. [3] `CDSD-4000 database <ftp://ftp.iao.ru/pub/CDSD-4000/>`_
+    
     '''
     
     if version == 'hitemp':

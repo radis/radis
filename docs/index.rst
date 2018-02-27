@@ -97,6 +97,3 @@ Indices and tables
 
 
 
-
-.. |CO2| replace:: CO\ :sub:`2`
-.. |H2O| replace:: H\ :sub:`2`\ O

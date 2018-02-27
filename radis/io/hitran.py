@@ -166,8 +166,7 @@ def _parse_HITRAN_class3(df):
     return df
 
 def _parse_HITRAN_class4(df):
-    ''' Linear triatomic: N2O, OCS, HCN
-    
+    ''' Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
     
     Parameters
     ----------
@@ -175,7 +174,6 @@ def _parse_HITRAN_class4(df):
     df: pandas Dataframe
         lines read from a HITRAN-like database
         
-    
     Notes
     -----
     
@@ -185,6 +183,12 @@ def _parse_HITRAN_class4(df):
     >>>  7x I2 I2 I2 I2
     
     Note: I2 in regexp: [\d ]{2} 
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     '''
     dgu = df['globu'].str.extract(
             '[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})',
@@ -197,8 +201,7 @@ def _parse_HITRAN_class4(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 def _parse_HITRAN_class5(df):
-    ''' Linear triatomic with large Fermi resonance: CO2
-    
+    ''' Parse linear triatomic with large Fermi resonance in HITRAN [1]_: CO2
     
     Parameters
     ----------
@@ -206,7 +209,6 @@ def _parse_HITRAN_class5(df):
     df: pandas Dataframe
         lines read from a HITRAN-like database
         
-    
     Notes
     -----
     
@@ -216,6 +218,12 @@ def _parse_HITRAN_class5(df):
     >>>  6x I2 I2 I2 I2 I1
     
     Note: I2 in regexp: [\d ]{2} 
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     '''
     dgu = df['globu'].str.extract(
             '[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)',
@@ -228,8 +236,7 @@ def _parse_HITRAN_class5(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 def _parse_HITRAN_class6(df):
-    ''' Non-linear triatomic: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
-    
+    ''' Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
     
     Parameters
     ----------
@@ -237,7 +244,6 @@ def _parse_HITRAN_class6(df):
     df: pandas Dataframe
         lines read from a HITRAN-like database
         
-    
     Notes
     -----
     
@@ -247,6 +253,12 @@ def _parse_HITRAN_class6(df):
     >>>  9x I2 I2 I2
     
     Note: I2 in regexp: [\d ]{2} 
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     '''
     dgu = df['globu'].str.extract(
             '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
@@ -259,8 +271,7 @@ def _parse_HITRAN_class6(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 def _parse_HITRAN_class7(df):
-    ''' Linear tetratomic: C2H2
-    
+    ''' Parse linear tetratomic in HITRAN [1]_: C2H2
     
     Parameters
     ----------
@@ -268,19 +279,24 @@ def _parse_HITRAN_class7(df):
     df: pandas Dataframe
         lines read from a HITRAN-like database
         
-    
     Notes
     -----
     
     HITRAN syntax:
     
     >>>
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     '''
     print('parse_global_quanta not implemented for molecules of this HITRAN class')
     return df
 
 def _parse_HITRAN_class8(df):
-    ''' Pyramidal tetratomic: NH3, PH3
+    ''' Pyramidal tetratomic in HITRAN [1]_: NH3, PH3
     
     
     Parameters
@@ -296,12 +312,18 @@ def _parse_HITRAN_class8(df):
     HITRAN syntax:
     
     >>>
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     '''
     print('parse_global_quanta not implemented for molecules of this HITRAN class')
     return df
 
 def _parse_HITRAN_class9(df):
-    ''' Non-linear tetratomic: H2CO, H2O2, COF2
+    ''' Non-linear tetratomic in HITRAN [1]_: H2CO, H2O2, COF2
     
     
     Parameters
@@ -317,12 +339,18 @@ def _parse_HITRAN_class9(df):
     HITRAN syntax:
     
     >>>
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     '''
     print('parse_global_quanta not implemented for molecules of this HITRAN class')
     return df
 
 def _parse_HITRAN_class10(df):
-    ''' Pentatomic or greater polyatomic
+    ''' Pentatomic or greater polyatomic in HITRAN [1]_
     
     
     Parameters
@@ -338,6 +366,12 @@ def _parse_HITRAN_class10(df):
     HITRAN syntax:
     
     >>>
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     '''
     print('parse_global_quanta not implemented for molecules of this HITRAN class')
     return df
@@ -358,7 +392,14 @@ def _parse_HITRAN_group1(df):
     Notes
     -----
     
-    HITRAN syntax:
+    HITRAN syntax: [1]_
+    
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     
     '''
     print('parse_local_quanta not implemented for molecules of this HITRAN group')
@@ -379,7 +420,14 @@ def _parse_HITRAN_group2(df):
     Notes
     -----
     
-    HITRAN syntax:
+    HITRAN syntax: [1]
+    
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     
     '''
     
@@ -421,7 +469,14 @@ def _parse_HITRAN_group3(df):
     Notes
     -----
     
-    HITRAN syntax:
+    HITRAN syntax [1]_:
+        
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     
     '''
     print('parse_local_quanta not implemented for molecules of this HITRAN group')
@@ -441,7 +496,14 @@ def _parse_HITRAN_group4(df):
     Notes
     -----
     
-    HITRAN syntax:
+    HITRAN syntax [1]_:
+        
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     
     '''
     print('parse_local_quanta not implemented for molecules of this HITRAN group')
@@ -461,7 +523,14 @@ def _parse_HITRAN_group5(df):
     Notes
     -----
     
-    HITRAN syntax:
+    HITRAN syntax [1]_:
+        
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     
     '''
     print('parse_local_quanta not implemented for molecules of this HITRAN group')
@@ -481,7 +550,14 @@ def _parse_HITRAN_group6(df):
     Notes
     -----
     
-    HITRAN syntax:
+    HITRAN syntax [1]_:
+    
+        
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     
     '''
     print('parse_local_quanta not implemented for molecules of this HITRAN group')
@@ -540,7 +616,7 @@ def _cast_to_dtype(data, dtype):
     return data
 
 def hit2df(fname, count=-1, cache=False, verbose=True):
-    ''' Convert a HITRAN/HITEMP file to a Pandas dataframe 
+    ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
     
     
     Parameters    
@@ -570,8 +646,10 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     
     References
     ----------
+
     
-    HITRAN-HITEMP doc 
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     
     
     Notes
@@ -710,7 +788,8 @@ def parse_local_quanta(df, mol):
     return df
             
 def parse_global_quanta(df, mol):
-    '''
+    ''' 
+    
     Parameters
     ----------
     
@@ -753,7 +832,8 @@ def parse_global_quanta(df, mol):
 
 def get_molecule_identifier(molecule_name):
     '''
-    For a given input molecular formula, return the corresponding HITRAN molecule identifier number.
+    For a given input molecular formula, return the corresponding HITRAN molecule 
+    identifier number [1]_.
     
     
     Parameters
@@ -771,7 +851,10 @@ def get_molecule_identifier(molecule_name):
     References
     ----------
     
-    Function from https://github.com/nzhagen/hitran/blob/master/hitran.py
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
+    Function is from from https://github.com/nzhagen/hitran/blob/master/hitran.py
+    
     '''
 
     trans = { '1':'H2O',    '2':'CO2',   '3':'O3',      '4':'N2O',   
@@ -794,7 +877,7 @@ def get_molecule_identifier(molecule_name):
 def get_molecule(molecule_id):
     '''
     For a given input molecular identifier, return the corresponding HITRAN 
-    molecule name.
+    molecule name [1]_.
     
     
     Parameters    
@@ -802,6 +885,13 @@ def get_molecule(molecule_id):
     
     molecular_id : str
         Hitran identifier of the molecule.
+        
+    
+    References
+    ----------
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
     '''
     
     # assert str
