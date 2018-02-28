@@ -20,6 +20,9 @@ that want to fit their experimental line-of-sight spectra.
     :target: https://travis-ci.org/radis/radis
     :alt: Continuous Integration
     
+.. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/radis/radis
+  
 .. image:: https://readthedocs.org/projects/climt/badge/
     :target: https://radis.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
