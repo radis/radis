@@ -25,15 +25,20 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest numpy scipy matplotlib pandas
   - source activate test-environment
   - conda install -c astropy astroquery
+  - pip install codecov pytest-cov
   - python setup.py install
 
 script:
   # Your test script goes here
   - echo ">>> Running tests"
-  - python -m pytest
+  - pytest --cov=./
   
 # safelist
 branches:
   only:
   - master
   - develop
+  
+ 
+after_success:
+- codecov
