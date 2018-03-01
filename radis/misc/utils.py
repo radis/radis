@@ -35,8 +35,8 @@ class Chdir:
     the Git files and version, when imported from another program. This class
     then ensures we get back in the correct directory 
     
-    Example
-    -------
+    Examples
+    --------
     
     Do::
     

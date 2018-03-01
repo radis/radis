@@ -1,19 +1,3 @@
-
-.. image:: https://img.shields.io/pypi/v/radis.svg
-    :target: https://pypi.python.org/pypi/radis
-    :alt: PyPI
-
-.. image:: https://img.shields.io/travis/radis/radis.svg
-    :target: https://travis-ci.org/radis/radis
-    :alt: Continuous Integration
-    
-.. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/radis/radis
-  
-.. image:: https://readthedocs.org/projects/climt/badge/
-    :target: https://radis.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-    
 =====
 RADIS
 =====
@@ -25,7 +9,7 @@ by infrared spectroscopic that want to compare line databases, or experimentalis
 that want to fit their experimental line-of-sight spectra.
 
 - Docs: http://radis.readthedocs.io/
-- Source: https://github.com/radis
+- Source: https://github.com/radis/radis
 - PyPi: https://pypi.python.org/pypi/radis
 
 .. warning::
@@ -49,7 +33,13 @@ experiments. Validation cases against existing spectral codes and experimental
 results from various plasma sources are included.
 
 The code will soon be fully available on this repository under 
-`GNU LESSER GENERAL PUBLIC LICENSE (v3) <./LICENSE>`_
+`GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`_
 
+*Example of input produced by the* :class:`~radis.tools.line_survey.LineSurvey` *tool.*
 
+.. raw:: html
+
+    <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="700" height="450" seamless="seamless" scrolling="no"></iframe>
+	
 .. |CO2| replace:: CO\ :sub:`2`
+.. |H2O| replace:: H\ :sub:`2`\ O

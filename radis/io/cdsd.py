@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Feb 16 14:58:40 2017
-
-@author: erwan
+""" Parser for CDSD-HITEMP, CDSD-4000 format 
 
 """
 
@@ -95,15 +92,14 @@ columns_4000 = OrderedDict([ (
                 ])
 
 def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
-    ''' Convert a CDSD-HITEMP file to a Pandas dataframe 
+    ''' Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
     
-    
-    Parameters    
+    Parameters
     ----------
     
     fname: str
         CDSD file name 
-        
+    
     version: str ('4000', 'hitemp')
         CDSD version
         
@@ -117,60 +113,64 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         taken into account). If False, no database is used. If 'regen', temp
         file are reconstructed. Default True. 
     
-    
     Returns
     -------
     
     df: pandas Dataframe
         dataframe containing all lines and parameters
         
-    
-    References
-    ----------
-    
-    CDSD-HITEMP / CDSD-4000 doc 
-    
-    
     Notes
     -----
     
-    Performances:
+    CDSD-4000 Database can be downloaded from [3]_
     
-    I had huge performance trouble with this function, because the files are 
+    Performances: I had huge performance trouble with this function, because the files are 
     huge (500k lines) and the format is to special (no space between numbers...)
     to apply optimized methods such as pandas's. A line by line reading isn't
     so bad, using struct to parse each line. However, we waste typing determining
     what every line is. I ended up using the fromfiles functions from numpy,
-    not considering '\n' as a special character anymore, and a second call
+    not considering *\\n* (line return) as a special character anymore, and a second call
     to numpy to cast the correct format. That ended up being twice as fast. 
-    
-    - initial:                      20s / loop
-    - with mmap:                    worse 
-    - w/o readline().rstrip('\n'):  still 20s
-    - numpy fromfiles:              17s
-    - no more readline, 2x fromfile 9s
-    
+
+        - initial:                      20s / loop
+        - with mmap:                    worse 
+        - w/o readline().rstrip('\\n'):  still 20s
+        - numpy fromfiles:              17s
+        - no more readline, 2x fromfile 9s
+        
     Think about using cache mode too:
-    - no cache mode                 9s
-    - cache mode, first time        22s
-    - cache mode, then              2s
-    
+            
+        - no cache mode                 9s
+        - cache mode, first time        22s
+        - cache mode, then              2s
+        
     Moving to HDF5:
     
     On cdsd_02069_02070 (56 Mb)
     
-    Reading:
+    Reading::
         
-    >>> cdsd2df(): 9.29 s
-    >>> cdsd2df(cache=True [old .txt version]): 2.3s 
-    >>> cdsd2df(cache=True [new h5 version, table]): 910ms
-    >>> cdsd2df(cache=True [new h5 version, fixed]): 125ms
+        cdsd2df(): 9.29 s
+        cdsd2df(cache=True [old .txt version]): 2.3s 
+        cdsd2df(cache=True [new h5 version, table]): 910ms
+        cdsd2df(cache=True [new h5 version, fixed]): 125ms
     
-    Storage:
+    Storage::
         
-    >>> %timeit df.to_hdf("cdsd_02069_02070.h5", "df", format="fixed")  337ms
-    >>> %timeit df.to_hdf("cdsd_02069_02070.h5", "df", format="table")  1.03s
+        %timeit df.to_hdf("cdsd_02069_02070.h5", "df", format="fixed")  337ms
+        %timeit df.to_hdf("cdsd_02069_02070.h5", "df", format="table")  1.03s
 
+    References
+    ----------
+    
+    Note that CDSD-HITEMP is used as the line database for CO2 in HITEMP 2010
+    
+    .. [1] `HITEMP 2010, Rothman et al., 2010 <https://www.sciencedirect.com/science/article/pii/S002240731000169X>`_
+    
+    .. [2] `CDSD-4000 article, Tashkun et al., 2011 <https://www.sciencedirect.com/science/article/pii/S0022407311001154>`_
+    
+    .. [3] `CDSD-4000 database <ftp://ftp.iao.ru/pub/CDSD-4000/>`_
+    
     '''
     
     if version == 'hitemp':

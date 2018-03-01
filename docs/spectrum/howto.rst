@@ -137,6 +137,16 @@ Use :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`::
     s.apply_slit(1.5)    # nm 
     
 
+plot the slit function that was applied?
+----------------------------------------
+
+Use :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. You can also
+change the unit::
+    
+    s.apply_slit(0.5, 'cm-1')    # for instance
+    s.plot_slit('nm')
+
+
 plot spectral quantities?
 -------------------------
 
@@ -200,5 +210,4 @@ Example::
     s.plot()
 
 
-    
     

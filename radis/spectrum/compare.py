@@ -196,7 +196,8 @@ def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default
 
 def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='default',
               resample=True, method='diff',  show_points=False,
-              label1 = None, label2 = None, figsize=None, title=None, nfig=None):
+              label1 = None, label2 = None, figsize=None, title=None, nfig=None,
+              normalize=False, verbose=True):
     ''' Plot two spectra, and the difference between them
     
     
@@ -228,6 +229,8 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         of points in a spectrum (against ~N with 'diff'). This can quickly 
         override all memory.
         
+    normalize: bool
+        Normalize the spectra to be ploted 
         
     Other Parameters
     ----------------
@@ -247,9 +250,12 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     title: str
         title
 
+    verbose: boolean
+        if True, plot stuff such as rescale ratio in normalize mode. Default True
 
-    Example
-    -------
+
+    Examples
+    --------
 
     >>> Punit = 'mW/cm2/sr'
     >>> fig, axes = plot_diff(s10, s50, figsize=(18,6),
@@ -328,8 +334,15 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     Iunit = make_up(Iunit)  # cosmetic changes 
     
     # Plot compared spectra
-    ax0.plot(*s1.get(var, wunit, Iunit, medium), ls=style, color='k', lw=3, label=label1)
-    ax0.plot(*s2.get(var, wunit, Iunit, medium), ls=style, color='r', lw=1, label=label2)
+    if normalize:
+        w1, I1 = s1.get(var, wunit, Iunit, medium)
+        w2, I2 = s2.get(var, wunit, Iunit, medium)
+        if verbose: print('Rescale factor: '+str(np.max(I1)/np.max(I2)))
+        ax0.plot(w1, I1/np.max(I1), ls=style, color='k', lw=3, label=label1)
+        ax0.plot(w2, I2/np.max(I2), ls=style, color='r', lw=1, label=label2)
+    else:
+        ax0.plot(*s1.get(var, wunit, Iunit, medium), ls=style, color='k', lw=3, label=label1)
+        ax0.plot(*s2.get(var, wunit, Iunit, medium), ls=style, color='r', lw=1, label=label2)
 
     ax0.tick_params(labelbottom='off')
     if label1 is not None or label2 is not None:
@@ -352,9 +365,13 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         
     # Write labels
     ax1.set_xlabel(make_up(xlabel))
-    fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),
-             va='center', rotation='vertical')
-    
+    if normalize:
+       fig.text(0.02, 0.5, 'Arb. Units',
+                 va='center', rotation='vertical')
+    else:
+        fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),
+                 va='center', rotation='vertical')
+        
     # Set limits
     if method == 'diff':
         # symmetrize error scale:
@@ -387,4 +404,42 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
                          vertOn=True)
     
     return fig, [ax0, ax1]
+''' Return the average distance between two spectra.
+    It's important to note that if averageDistance(s1, s2)==0 then s1 = s2
+    
 
+   .. math::
+
+      \\sqrt{\\sum {(u_i-v_i)^2 / V[x_i]}}.
+'''
+
+def averageDistance(s1, s2, var='radiance'):
+    ''' Return the average distance between two spectra.
+    It's important to note for fitting that if averageDistance(s1, s2)==0 
+    then s1 = s2
+    
+    Parameters    
+    ----------
+            
+    s1, s2: Spectrum objects
+        spectra to be compared
+    
+    var: str, optional
+        spectral quantity (ex: 'radiance', 'transmittance'...)
+    
+    Returns    
+    -------
+    
+    distance: float
+        Average distance as in the following equation:
+        
+        .. math::
+
+            dist = \\frac{\\sqrt{\\sum_i {(s1_i-s2_i)^2}}}{N}.
+    
+    '''
+    distArray = get_diff(s1, s2, var)
+    distArray_Y2 = distArray[1]*distArray[1]
+    N = np.size(distArray[1])
+    distance = np.sqrt(np.sum(distArray_Y2))/N
+    return distance

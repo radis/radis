@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 21 19:10:01 2017
 
-@author: erwan
+Summary
+-------
 
 Classes to deal with multi-slabs configurations: 
 - MergeSlabs for several Spectrum
@@ -10,9 +10,11 @@ Classes to deal with multi-slabs configurations:
 
 One Slab is just a Spectrum object 
 
-Todo
-------
+Notes
+-----
 
+Todo:
+    
 - transport emisscoeff too 
 - emisscoeff default unit 
 
@@ -77,17 +79,21 @@ def SerialSlabs(*slabs, **kwargs):
     unless there is a mismatch then conditions are dropped (and units mismatch
     raises an error because it doesnt make sense)
     
-    Use
-    -------
+    Examples
+    --------
     
-        >>> s1 = calc_spectrum(...)
-        >>> s2 = calc_spectrum(...)
-        >>> s3 = SerialSlabs(s1, s2)
+    Add s1 and s2 along the line of sight: s1 --> s2 ::
+    
+        s1 = calc_spectrum(...)
+        s2 = calc_spectrum(...)
+        s3 = SerialSlabs(s1, s2)
         
-    Todo
-    -------
+    Notes
+    -----
     
-    rewrite with 'recompute' list like in MergeSlabs
+    Todo:
+    
+    - rewrite with 'recompute' list like in MergeSlabs
     
     '''
 
