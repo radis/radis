@@ -122,11 +122,18 @@ def dcm2dnm(delta_nu, nu_0):
     Parameters    
     ----------
     
-    delta_nu: cm-1
+    delta_nu: float (cm-1)
         wavenumber broadening
     
-    nu_0: cm-1
+    nu_0: float (cm-1)
         center wavenumber
+        
+    Returns
+    -------
+    
+    delta_nm: float (nm)
+        broadening in wavelength
+        
     '''
     return cm2nm(nu_0-delta_nu/2)-cm2nm(nu_0+delta_nu/2)
 
@@ -137,11 +144,18 @@ def dnm2dcm(delta_lbd, lbd_0):
     Parameters    
     ----------
     
-    delta_lbd: nm
+    delta_lbd: float (nm)
         wavelength broadening
     
-    lbd_0: nm
+    lbd_0: float (nm)
         center wavelength
+        
+    Returns
+    -------
+    
+    delta_cm: float (cm-1)
+        broadening in wavenumber
+        
     '''
     return nm2cm(lbd_0-delta_lbd/2)-nm2cm(lbd_0+delta_lbd/2)
 
