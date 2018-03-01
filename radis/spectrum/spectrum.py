@@ -1385,6 +1385,7 @@ class Spectrum(object):
 
     def apply_slit(self, slit_function, unit='nm', shape='triangular',
                    center_wavespace=None, plot_slit=False, norm_by='area',
+                   store=True,
                    *args, **kwargs):
         ''' Apply a slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see shape) or imported from an
@@ -1418,6 +1419,9 @@ class Spectrum(object):
             done in Specair and changes units. For 'max2' read about it in 
             get_slit_function() docstrings. Default 'area'
 
+        store: boolean
+            if True, store slit in Spectrum object conditions under 'slit_wavelength'
+            and 'slit_intensity' keys. Default True
 
         Other Parameters
         ----------------
@@ -1555,6 +1559,11 @@ class Spectrum(object):
                 self.units[q] = new_unit
             else:
                 raise ValueError('Unknown normalization type: {0}'.format(norm_by))
+                
+        # Store slit in Spectrum 
+        if store:
+            self.conditions['slit_wavelength'] = wslit
+            self.conditions['slit_intensity'] = Islit
 
         # Update conditions
         self.conditions['slit_function'] = slit_function
