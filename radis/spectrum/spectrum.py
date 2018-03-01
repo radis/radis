@@ -2590,9 +2590,31 @@ class Spectrum(object):
 
         return [k for k in attrs if not k in exclude]
     
-    def __repr__(self):
+    def __str__(self):
+        ''' Print all Spectrum attributes'''
+        
+        # Print name
+        print('Spectrum Name: ', self.get_name())
+        
+        # Print spectral quantities
+        print('Spectral Quantities')
+        print('-'*40)
+        for k, v in self._get_items().items():
+            print(' '*2, k, '\t({0} points)'.format(len(v[0])))
+            
+        # Print populations
+        print('Populations Stored')
+        print('-'*40)
+        try:
+            for k, v in self.populations.items():
+                print(' '*2, k, '\t\t', list(v.keys()))
+        except:
+            pass
+        
+        # Print conditions
         self.print_conditions()
-        return ""
+        
+        return '' #self.print_conditions()
 
 # %% ======================================================================
 # Util functions
