@@ -414,10 +414,12 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
                 raise ValueError(msg)
         else:
             msg = "Trying to rescale emission coefficient in non optically "+\
-                  "thin case. True path_length, radiance_noslit "+\
-                  "and abscoeff are needed but not given. "+\
+                  "thin case. True path_length ({0}), radiance_noslit ({1})".format(
+                          true_path_length, 'radiance_noslit' in initial)+\
+                  "and abscoeff ({0}) are needed but not given. ".format(
+                          'abscoeff' in initial)+\
                   "Try optically_thin? See known Spectrum conditions with "+\
-                  "Spectrum.print_conditions()"
+                  "print(Spectrum)"
             if 'emisscoeff' in extra: # cant calculate this one but let it go
                 emisscoeff = None
                 if __debug__: printdbg(msg)
@@ -566,8 +568,9 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
         if optically_thin:
             msg = 'Missing data to rescale radiance_noslit in '+\
                              'optically thin mode. You need at least initial '+\
-                             'radiance, or emission coefficient and true path '+\
-                             'length. '
+                             'radiance_noslit ({0}), or scaled emission coefficient ({1}) '.format(
+                                     'radiance_noslit' in initial, 'emisscoeff' in rescaled)+\
+                             'and true path length ({0}).'.format(true_path_length)
             if 'radiance_noslit' in extra: # cant calculate this one but let it go
                 radiance_noslit = None
                 if __debug__: printdbg(msg)
@@ -659,23 +662,32 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         wanted = list(initial)
         greedy = False
     elif type(quantity) in string_types:
-        wanted = [quantity]
+        wanted = list(initial)+[quantity]
         greedy = False
     else:
         raise ValueError('unexpected type for quantity: expected str, got '+\
                          '{0} ({1})'.format(quantity, type(quantity)))
     rescaled = {}   # quantities rescaled
     
-    recompute = wanted        # list of quantities that are needed to recomputed what we want
+    # list of quantities that are needed to recomputed what we want
+    recompute = wanted        
+    if 'radiance' in recompute:
+        recompute.append('radiance_noslit')   # technically it's possible without radiance_noslit if in optically_thin mode
+    if 'transmittance' in recompute:
+        recompute.append('transmittance_noslit')  # same comment
+    if 'emissivity' in recompute:
+        recompute.append('emissivity_noslit')    # same comment
     if ('radiance_noslit' in initial and not optically_thin):
         recompute.append('emisscoeff') # needed
     if ('absorbance' in initial or 'transmittance_noslit' in initial
                          or 'radiance_noslit' in initial and not optically_thin):
         recompute.append('abscoeff')   # needed
 
-    extra = []   # other parameters to calculate along the way because its easy
+    # choose other parameters to calculate along the way because its easy
+    extra = []  
     if greedy:
-        # ... let's be greedy: recompute all possible quantities
+        # ... let's be greedy: recompute all possible quantities. The list of 
+        # all spectral quantities is calculated by parsing a tree in get_reachable
         reachable = get_reachable(spec)
         extra = [k for k, v in reachable.items() if v]
         
@@ -728,13 +740,9 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
             rescaled, units = rescale_emissivity_noslit(spec, rescaled, units, extra, 
                                                   true_path_length)
 
-    # check we didnt miss anyone 
-    for q in wanted:
-        assert q in rescaled
-        
-    # Save (only) the ones that were in the spectrum initially
+    # Save (only) the ones that we want, unless we want everything ('greedy')
     for q in rescaled:
-        if q in wanted:
+        if q in wanted or greedy:
             if q in NON_CONVOLUTED_QUANTITIES:
                 spec._q[q] = rescaled[q]
             else:
@@ -745,7 +753,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         spec.units[k] = u
 
     # Drop convoluted values
-    for q in ['transmittance', 'radiance']:
+    for q in CONVOLUTED_QUANTITIES:
         if q in list(spec._q_conv.keys()):
             del spec._q_conv[q]
 
@@ -762,8 +770,18 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         except KeyError:
             shape = 'triangular'
         spec.apply_slit(slit_function=slit_function, unit=slit_unit, shape=shape,
-                        norm_by=norm_by, verbose=verbose)
+                        norm_by=norm_by, verbose=verbose)            
 
+    # check we didnt miss anyone 
+    rescaled_list = list(rescaled)
+    for q in spec._q_conv:  # see which one were added by apply_slit
+        if not q in rescaled_list:
+            rescaled_list.append(q)
+    for q in wanted:
+        if not q in rescaled_list:
+            raise AssertionError('{0} could not be rescaled as wanted. '.format(q)+\
+                                 'Could rescale: {0}'.format(rescaled_list))
+        
 def rescale_path_length(spec, new_path_length, old_path_length=None, force=False):
     ''' Rescale spectrum to new path length. Starts from absorption coefficient
     and emission coefficient, and solves the RTE again for the new path length
