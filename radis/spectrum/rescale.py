@@ -750,6 +750,8 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
             del spec._q_conv[q]
 
     # Reapply slit if possible
+    # TODO: replace with directly convolving with slit stored in conditions
+    # TODO: first, add an option to give arrays to apply_slit
     if ('slit_function' in spec.conditions and 'slit_unit' in spec.conditions
         and 'norm_by' in spec.conditions):
         slit_function = spec.conditions['slit_function']

@@ -1385,13 +1385,13 @@ class Spectrum(object):
 
     def apply_slit(self, slit_function, unit='nm', shape='triangular',
                    center_wavespace=None, plot_slit=False, norm_by='area',
-                   store=True,
+                   mode='valid', store=True,
                    *args, **kwargs):
         ''' Apply a slit function to all quantities in Spectrum. Slit function
-        can be generated with usual shapes (see shape) or imported from an
+        can be generated with usual shapes (see `shape=`) or imported from an
         experimental slit function.
 
-        Warning with units: read about unit and return_unit parameters.
+        Warning with units: read about `unit` and `return_unit` parameters.
 
     
         Parameters    
@@ -1409,18 +1409,43 @@ class Spectrum(object):
             unit of slit_function (FWHM, or imported file)
 
         shape: 'triangular', 'trapezoidal', 'gaussian'
-            which shape to use when generating a slit. Default 'triangular'
+            which shape to use when generating a slit. Will call,
+             respectively, :func:`~radis.tools.slit.triangular_slit`, 
+             :func:`~radis.tools.slit.trapezoidal_slit`, 
+             :func:`~radis.tools.slit.gaussian_slit`. Default 'triangular'
 
         center_wavespace: float, or None
             center of slit when generated (in unit). Not used if slit is imported.
 
         norm_by: 'area', 'max', 'max2'
-            normalisation type. 'area' conserves energy. 'max' is what is
-            done in Specair and changes units. For 'max2' read about it in 
-            get_slit_function() docstrings. Default 'area'
+            normalisation type:
+            
+            - 'area' normalizes the slit function to an area
+              of 1. It conserves energy, and keeps the same units. 
+            
+            - 'max' normalizes the slit function to a maximum of 1. 
+              The convoluted spectrum units change (they are 
+              multiplied by the spectrum waveunit, e.g: a radiance 
+              non convoluted in mW/cm2/sr/nm on a wavelength (nm).
+              range will yield a convoluted radiance in mW/cm2/sr. 
+              Note that the slit is set to 1 in the Spectrum wavespace
+              (i.e: a Spectrum calculated in cm-1 will have a slit
+              set to 1 in cm-1). 
+            
+            - 'max2': read about it in :func:`~radis.tools.slit.get_slit_function` 
+              docstrings. 
+            
+            Default 'area'
+    
+        mode: 'valid', 'same'
+            'same' returns output of same length as initial spectra, 
+            but boundary effects are still visible. 'valid' returns 
+            output of length len(spectra) - len(slit) + 1, for 
+            which lines outside of the calculated range have
+            no impact. Default 'valid'. 
 
         store: boolean
-            if True, store slit in Spectrum object conditions under 'slit_wavelength'
+            if True, store slit in Spectrum object conditions under 'slit_wavespace'
             and 'slit_intensity' keys. Default True
 
         Other Parameters
@@ -1433,6 +1458,8 @@ class Spectrum(object):
 
         energy_threshold: float
              tolerance fraction when resampling. Default 1e-3 (0.1%)
+             If areas before and after resampling differ by 
+             more than that an error is raised. 
 
 
         Notes
@@ -1440,23 +1467,27 @@ class Spectrum(object):
         
         Implementation:
 
-        Apply `convolve_slit` for all quantities in .vars that ends with
-        _noslit. Generate a triangular instrumental slit function with base
+        Apply :func:`~radis.tools.slit.convolve_with_slit` 
+        for all quantities in .vars that ends with
+        _noslit. Generate a triangular instrumental slit function 
+        (or any other shape depending of shape=) with base
         `slit_function_base` (Uses the central wavelength of the spectrum
         for the slit function generation)
 
-        We deal with several special cases (which makes the code a little heavy):
+        We deal with several special cases (which makes the code 
+        a little heavy, but the method very versatile):
+            
         - when slit unit and spectrum unit arent the same
         - when spectrum is not evenly spaced
 
 
-        Example
-        -------
+        Examples
+        --------
 
-        To manually apply the slit to a particular quantity use:
+        To manually apply the slit to a particular quantity use::
 
-        >>> wavenum, quantity = s['quantity']
-        >>> s['convolved_quantity'] = convolve_slit(wavenum, quantity,
+            wavenum, quantity = s['quantity']
+            s['convolved_quantity'] = convolve_slit(wavenum, quantity,
                 slit_function_base)
 
         See convolve_slit for more details on Units and Normalization
@@ -1464,13 +1495,15 @@ class Spectrum(object):
         The slit is made considering the "center wavelength" which is
         the mean wavelength of the full spectrum you are applying it to.
 
-    
-        Todo
-        ----
 
-        add warning if FWHM >= wstep(spectrum)/5    
+        See Also
+        --------
+        
+        :func:`~radis.tools.slit.get_slit_function`, 
+        :func:`~radis.tools.slit.convolve_with_slit`
 
         '''
+        # TODO: add warning if FWHM >= wstep(spectrum)/5    
         
         from radis.tools.slit import convolve_with_slit, get_slit_function, cast_waveunit
 
@@ -1512,7 +1545,8 @@ class Spectrum(object):
             elif waveunit == 'nm' and unit == 'cm-1':
                 center_wavespace = nm2cm(center_wavespace)     # wavelen > wavenum
 
-        # Get slit once and for all (and convert the slit unit if wavespaces are different)
+        # Get slit once and for all (and convert the slit unit 
+        # to the Spectrum `waveunit` if wavespaces are different)
         # -------
         wslit, Islit = get_slit_function(slit_function, unit=unit, norm_by = norm_by,
                                          shape=shape, center_wavespace = center_wavespace,
@@ -1528,7 +1562,7 @@ class Spectrum(object):
             # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
             # Create if requireds
             w_conv, I_conv =  convolve_with_slit(w, I, wslit, Islit, norm_by = None, # already norm.
-                                          **kwargsconvolve)
+                                          mode=mode, **kwargsconvolve)
             self._q_conv['wavespace'] = w_conv
             self._q_conv[q] = I_conv
 
@@ -1560,173 +1594,62 @@ class Spectrum(object):
             else:
                 raise ValueError('Unknown normalization type: {0}'.format(norm_by))
                 
-        # Store slit in Spectrum 
+        # Store slit in Spectrum, in the Spectrum unit
         if store:
-            self.conditions['slit_wavelength'] = wslit
+            self.conditions['slit_wavespace'] = wslit  # in 'waveunit'
             self.conditions['slit_intensity'] = Islit
 
         # Update conditions
         self.conditions['slit_function'] = slit_function
-        self.conditions['slit_unit'] = unit
+        self.conditions['slit_unit'] = unit  # input slit unit
         self.conditions['norm_by'] = norm_by
 
         return
+    
+    def plot_slit(self, wunit=None):
+        ''' Plot slit function that was applied to the Spectrum 
+        
+        Parameters
+        ----------
+        
+        wunit: 'nm', 'cm-1', or None
+            plot slit in wavelength or wavenumber. If None, use the unit
+            the slit in which the slit function was given. Default None
+        '''
+        
+        from radis.tools.slit import plot_slit
+        
+        # Check inputs
+        assert wunit in ['nm', 'cm-1', None]
+        if wunit is None:
+            wunit = self.conditions['slit_unit']
 
-    # Discarded in 0.9.16: just use apply_slit all the time. 
-#    def convolve_slit(self, quantity, slit_function, unit='nm', shape='triangular',
-#                      center_wavespace=None, norm_by='area',
-#                      plot_slit=False, *args, **kwargs):
-#        ''' Convolve `quantity` (typically: emissivity or transmittance)
-#        with instrumental slit function (in wavelength space)
-#
-#        Input
-#        ---------
-#
-#        quantity: str
-#            quantity to be convolved e.g: `transmittance_noslit`, etc...
-#
-#        slit_function: float (nm)   or   str (path to slit function)
-#            if float: FWHM of triangular slit function
-#
-#            if str: slit_function: str.txt file
-#            2-columns with wavelengths and intensity
-#            (doesn't have to be normalized)
-#
-#        unit: 'nm' or 'cm-1'
-#            if unit is in 'cm-1', then FWHM (slit_function) and center_wavelength
-#            are taken as 'cm-1' instead of 'nm'. Default 'nm'.
-#
-#        center_wavespace: float, or None
-#            center of slit when generated (in unit). Not used if slit is imported.
-#
-#        shape: 'triangular', 'trapezoidal', 'gaussian'
-#            which shape to use when generating a slit. Default 'triangular'
-#
-#        plot_slit: bool
-#            plot the slit function in a new window for debugging
-#
-#        norm_by: 'area', 'max', 'max2'
-#            normalisation type. 'area' conserves energy. 'max' is what is
-#            done in Specair and changes units. For 'max2' read about it in 
-#            get_slit_function() docstrings. Default 'area'
-#
-#        Optional input
-#        ----------
-#
-#        *args, **kwargs
-#            are forwarded to slit generation or import function
-#
-#        In particular:
-#
-#        energy_threshold: float
-#             tolerance fraction. Only used when importing experimental slit as the
-#             theoretical slit functions are directly generated in spectrum wavespace
-#             Default 1e-3 (0.1%)
-#
-#        Output
-#        ---------
-#
-#        wavenumber_conv: (cm^-1)
-#            x-axis for the cquantity
-#
-#        quantity_conv: (convolved quantity)
-#            same unit as quantity as slit_function is normalized with area=1
-#
-#        Does not change the spectrum object itself. Use apply_slit for that
-#
-#        Units detail
-#        ---------
-#
-#        [quantity_conv] = [quantity], input unit of `quantity`
-#
-#                 I x f = np.convolve(I,f)  has unit [I]*[f]
-#                 :    :
-#            quantity  slit
-#
-#            f   (normalized) [f] = 1/cm_1
-#
-#
-#            We multiply by dν  to have the proper convolution
-#                int_ν'{I(v')*f(ν-ν')dν'}
-#
-#        So eventually:
-#
-#            quantity_conv = np.convolve(I, f) * dν
-#                :               :              :
-#               [I]          [I] / cm_1        cm_1
-#
-#        Note: it would be different if slit function was not normalized to
-#        conserve energy.
-#
-#        Normalization
-#        ---------
-#
-#        Instrumental slit function should conserve the energy. As such, the
-#        area (in energy space = wavenumber space)
-#            int(I_ν * dν)
-#        is set to 1.
-#
-#        If it was normalized using
-#        trapz(I, x=w) then multiplying by wstep is required here.
-#
-#        Normalizing by `trapz(I)` and not multiplying by wstep here would yield
-#        the same results, only with a different slit function units.
-#
-#        Note that if we are not to use a constant wavenumber step, then the
-#        wstep multiplication should be replaced by np.diff(wstep)
-#
-#        Performance
-#        ---------
-#
-#        There are two ways to perform a convolution:
-#
-#        - convolve (direct)    ~  O(n^2)
-#
-#        - fftconvolve          ~  O(n ln(n))
-#
-#        fftconvolve is faster for large kernels, but for slit functions we usually
-#        have a small kernel so direct convolution is probably faster. That being
-#        said, I haven't tested fftconvolve and it could be a good idea.
-#
-#        '''
-#
-#        # Check inputs
-#        unit = cast_waveunit(unit)
-#
-#        # Forward relevant inputs to convolution instead of slit function generation
-#        kwargsconvolve = {}
-#        for kw in ['slit_dispersion']:
-#            if kw in kwargs:
-#                kwargsconvolve.update({kw:kwargs.pop(kw)})
-#
-#        # Get the slit function (and convert the slit unit if wavespaces are different)
-#        waverange, quantity_arr = self._q[quantity]
-#        wstep = abs(waverange[1]-waverange[0])
-#        waveunit = self.get_waveunit()
-#        if center_wavespace is None:
-#            # center_wavespace should be ~ unit
-#            center_wavespace = waverange[len(waverange)//2]  # waverange ~ waveunit
-#            if waveunit == 'cm-1' and unit == 'nm':
-#                center_wavespace = cm2nm(center_wavespace)     # wavenum > wavelen
-#            elif waveunit == 'nm' and unit == 'cm-1':
-#                center_wavespace = nm2cm(center_wavespace)     # wavelen > wavenum
-#
-#        wslit, Islit = get_slit_function(slit_function, unit=unit, norm_by = norm_by,
-#                                         shape=shape, center_wavespace = center_wavespace,
-#                                         return_unit = waveunit, wstep=wstep,
-#                                         plot=plot_slit,
-#                                         *args, **kwargs)
-#        # ... Now slit is generated / loaded, in slit_unit space
-#
-#        # Time to convolve!
-#        waverange_conv, quantity_conv = convolve_with_slit(
-#                                        waverange, quantity_arr,
-#                                        wslit, Islit,
-#                                        norm_by = None,    # already normalized
-#                                        **kwargsconvolve)
-#
-#        return waverange_conv, quantity_conv
-
+        # Make sure that slit is stored already
+        try:
+            wslit = self.conditions['slit_wavespace'] # stored in Spectrum waveunit
+            Islit = self.conditions['slit_intensity']
+        except KeyError:
+            raise ValueError('Slit function not found in Spectrum '+\
+                             'conditions. Have you used Spectrum.apply_slit '+\
+                             'with store=True?')
+            
+        # Get slit unit
+        norm_by = self.conditions['norm_by']
+        waveunit = self.get_waveunit()
+        if norm_by == 'area':
+            Iunit = '1/{0}'.format(waveunit)
+        elif norm_by == 'max': # set maximum to 1
+            Iunit = '1'
+        elif norm_by is None:
+            Iunit=None
+        else:
+            raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+        
+        # Plot in correct unit
+        return plot_slit(wslit, Islit, waveunit=waveunit, plot_unit=wunit, 
+                         Iunit=Iunit)
+        
+        
     def line_survey(self, overlay=None, wunit='cm-1', cutoff=None, medium = 'default', 
                     xunit=None,  # deprecated
                     *args, **kwargs):
@@ -2396,7 +2319,8 @@ class Spectrum(object):
                 
                 if plot:
                     try:
-                        plot_diff(self, other, var=k, wunit=wunit, normalize=normalize)
+                        plot_diff(self, other, var=k, wunit=wunit, 
+                                  normalize=normalize, verbose=verbose)
                     except:
                         print('... couldnt plot {0}'.format(k))
 
@@ -2418,7 +2342,8 @@ class Spectrum(object):
 
                 if plot:
                     try:
-                        plot_diff(self, other, var=k, wunit=wunit, normalize=normalize)
+                        plot_diff(self, other, var=k, wunit=wunit, 
+                                  normalize=normalize, verbose=verbose)
                     except:
                         print('... couldnt plot {0}'.format(k))
 
