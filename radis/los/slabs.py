@@ -441,8 +441,10 @@ def MergeSlabs(*slabs, **kwargs):
 #                    s['abscoeff'] = (w, A/s.conditions['path_length'])
                 except KeyError:
                     raise KeyError('If abscoeff is not a calculated spectrum quantity '+\
-                                   'then both `absorbance` and conditions[`path_length`] '+\
-                                   'should be given for MergeSlabs inputs')
+                                   'then both `absorbance` ({0}) '.format('absorbance' in s.get_vars())+\
+                                   'and conditions[`path_length`] ({0}) '.format('path_length' in s.conditions)+\
+                                   'should be given for MergeSlabs inputs. '+\
+                                   'Try Spectrum.update()')
         
         
         # Get conditions
