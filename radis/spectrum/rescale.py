@@ -179,10 +179,10 @@ def get_reachable(spec): #, derivation_graph):
 
 def update(spec, quantity='all', optically_thin='default', verbose=True):
     ''' Calculate missing quantities that can be derived from the current quantities
-    and conditions 
+    and conditions
     
-    ex: if path_length and emisscoeff are given, recalculate radiance_noslit
-    if optically thin, or if abscoeff is also given 
+    e.g: if path_length and emisscoeff are given, radiance_noslit can be recalculated
+    if in an optically thin configuration, else if abscoeff is also given 
     
     
     Parameters    
@@ -203,6 +203,9 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
         doesnt exist)
         
     '''
+
+    # Check inputs
+    # ------------
 
     # Get path length
     if 'path_length' in list(spec.conditions.keys()):
@@ -228,9 +231,14 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
 
     initial = spec.get_vars()
 
+    # This is where everything happens:
+    # ---------------------------------
     _recalculate(spec, quantity, path_length, path_length, 1, 1,
                  true_path_length=true_path_length,
                  verbose=verbose)
+    
+    # Output
+    # ------
     
     # Get list of new quantities 
     new_q = [k for k in spec.get_vars() if k not in initial]
@@ -369,54 +377,69 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
     if 'emisscoeff' in initial:
         if __debug__: printdbg('... rescale: emisscoeff j1 = j1')
         _, emisscoeff = spec.get('emisscoeff', wunit=waveunit, Iunit=units['emisscoeff'])
+        
     elif 'radiance_noslit' in initial and true_path_length and optically_thin:
         if __debug__: printdbg('... rescale: emisscoeff j2 = I1/L1')
         _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
         emisscoeff = I/old_path_length   # recalculate
         unit = get_unit(units['radiance_noslit'])
+        
     elif ('radiance_noslit' in initial and true_path_length and
           'abscoeff' in initial):
         if __debug__: printdbg('... rescale: emisscoeff j1 = k1*I1/(1-exp(-k1*L1))')
+        # get emisscoeff from (initial) abscoeff and (initial) radiance
         _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
-#            _, T = spec.get('transmittance_noslit', wunit=waveunit)
         _, k = spec.get('abscoeff', wunit=waveunit, Iunit=units['abscoeff'])
-#            assert np.allclose(wT, wE)    # now forced by construction
-#            assert np.allclose(wT, wk)    # now forced by construction
+        
+        # Recalculate in the optically thin range (T=1) and elsewhere
         b = (k==0)  # optically thin mask
         emisscoeff = np.zeros_like(k)
+        # ... optically thin case
         emisscoeff[b] = I[b]/old_path_length              # recalculate (opt thin)
-        T_b = exp(-k[~b]*old_path_length)
-        emisscoeff[~b] = I[~b]/(1-T_b)*k[~b]              # recalculate (non opt thin)
+        
+        # ... non optically thin case:
+        # ... recalculate transmittance from abscoeff
+        T_b = exp(-k[~b]*old_path_length) 
+        # ... and solve the RTE on an homogeneous slab
+        emisscoeff[~b] = k[~b]*I[~b]/(1-T_b)              # recalculate (non opt thin)
         unit = get_unit(units['radiance_noslit'])
-#    elif ('radiance_noslit' in initial and true_path_length and
-#          'transmittance_noslit' in initial):
-#        if __debug__: printdbg('... rescale: emisscoeff j1 = k1*I1/(1-T1)')
-#        _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
-##            _, T = spec.get('transmittance_noslit', wunit=waveunit)
-#        _, T = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
-##            assert np.allclose(wT, wE)    # now forced by construction
-##            assert np.allclose(wT, wk)    # now forced by construction
-#        b = (T==1)  # optically thin mask
-#        emisscoeff = np.zeros_like(T)
-#        emisscoeff[b] = I[b]/old_path_length              # recalculate (opt thin)
-#        T_b = T[~b]
-#        k_b = -ln(T_b)/old_path_length
-#        emisscoeff[~b] = I[~b]/(1-T_b)*k_b              # recalculate (non opt thin)
+        
+    elif ('radiance_noslit' in initial and true_path_length and
+          'transmittance_noslit' in initial):
+        if __debug__: printdbg('... rescale: emisscoeff j1 = k1*I1/(1-T1)')
+        # get emisscoeff from (initial) transmittance and (initial) radiance
+        _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
+        _, T = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
+        
+        # Recalculate in the optically thin range (T=1) and elsewhere
+        b = (T==1)  # optically thin mask
+        emisscoeff = np.zeros_like(T)
+        # ... optically thin case
+        emisscoeff[b] = I[b]/old_path_length              # recalculate (opt thin)
+        
+        # ... non optically thin case:
+        # ... recalculate abscoeff from transmittance
+        T_b = T[~b]
+        k_b = -ln(T_b)/old_path_length       
+        # ... and solve the RTE on an homogeneous slab
+        emisscoeff[~b] = k_b*I[~b]/(1-T_b)              # recalculate (non opt thin)
         unit = get_unit(units['radiance_noslit'])
+        
     else:
         if optically_thin:
-            msg = "Cant calculate emisscoeff if true path_length "+\
-                  "and radiance_noslit are not given"
+            msg = "Can't calculate emisscoeff if true path_length ({0})".format(true_path_length)+\
+                  "and initial radiance_noslit ({0}) are not all given".format(
+                          'radiance_noslit' in initial)
             if 'emisscoeff' in extra: # cant calculate this one but let it go
                 emisscoeff = None
                 if __debug__: printdbg(msg)
             else:
                 raise ValueError(msg)
         else:
-            msg = "Trying to rescale emission coefficient in non optically "+\
-                  "thin case. True path_length ({0}), radiance_noslit ({1})".format(
+            msg = "Trying to get the emission coefficient (emisscoeff) in non optically "+\
+                  "thin case. True path_length ({0}), radiance_noslit ({1}) ".format(
                           true_path_length, 'radiance_noslit' in initial)+\
-                  "and abscoeff ({0}) are needed but not given. ".format(
+                  "and abscoeff ({0}) are needed but not all given. ".format(
                           'abscoeff' in initial)+\
                   "Try optically_thin? See known Spectrum conditions with "+\
                   "print(Spectrum)"
@@ -429,6 +452,7 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
     # Export rescaled value
     if emisscoeff is not None:
         if __debug__: printdbg('... rescale: emisscoeff j2 = j2 * N2/N1')
+        # Now rescale for mole fractions
         emisscoeff *= new_mole_fraction / old_mole_fraction   # rescale
         rescaled['emisscoeff'] = emisscoeff
     if unit is not None:
@@ -691,6 +715,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         reachable = get_reachable(spec)
         extra = [k for k, v in reachable.items() if v]
         
+    wanted = set(wanted)
     recompute = set(recompute+extra)  # remove duplicates
 
     # Get units 

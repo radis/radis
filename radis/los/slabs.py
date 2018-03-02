@@ -433,19 +433,6 @@ def MergeSlabs(*slabs, **kwargs):
         w_noconv = slabs[0]._get_wavespace()
     
         # %%
-        for s in slabs:
-            if not 'abscoeff' in list(s._q.keys()):
-                try:
-                    s.get('absorbance', wunit=waveunit)
-                    s.conditions['path_length']
-#                    s['abscoeff'] = (w, A/s.conditions['path_length'])
-                except KeyError:
-                    raise KeyError('If abscoeff is not a calculated spectrum quantity '+\
-                                   'then both `absorbance` ({0}) '.format('absorbance' in s.get_vars())+\
-                                   'and conditions[`path_length`] ({0}) '.format('path_length' in s.conditions)+\
-                                   'should be given for MergeSlabs inputs. '+\
-                                   'Try Spectrum.update()')
-        
         
         # Get conditions
         conditions = slabs[0].conditions
@@ -467,10 +454,23 @@ def MergeSlabs(*slabs, **kwargs):
         if 'abscoeff' in recompute and 'path_length' in conditions:
             recompute.append('absorbance')
             recompute.append('transmittance_noslit')
-                    
+        
+        # To make it easier, we start from abscoeff and emisscoeff of all slabs
+        # Let's recompute them all 
+        # TODO: if that changes the initial Spectra, maybe we should just work on copies
+        for s in slabs:
+            if 'abscoeff' in recompute and not 'abscoeff' in list(s._q.keys()):
+                s.update('abscoeff')  
+                # that may crash if Spectrum doesnt have the correct inputs.
+                # let update() handle that
+            if 'emisscoeff' in recompute and not 'emisscoeff' in list(s._q.keys()):
+                s.update('emisscoeff')
+                # same
+                
         path_length = conditions['path_length']
 
-        # %% Calculate new quantites
+        # %% Calculate new quantites from emisscoeff and abscoeff
+        # TODO: rewrite all of the above with simple calls to .update() 
         added = {}        
         
         # ... absorption coefficient (cm-1)
