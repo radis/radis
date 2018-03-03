@@ -16,7 +16,6 @@ import numpy as np
 from numpy import log as ln
 from numpy import inf, exp
 from radis.misc.debug import printdbg
-from radis.misc.utils import DatabankNotFound
 from radis.lbl.equations import calc_radiance
 from warnings import warn
 from six import string_types
@@ -1007,42 +1006,7 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
 
 
 
-def _test_compression(verbose=True, warnings=True, *args, **kwargs):
-    
-    from neq.spec import SpectrumFactory
-    
-    Tgas = 1500
-    sf = SpectrumFactory(
-                         wavelength_min=4400,
-                         wavelength_max=4800,
-    #                     mole_fraction=1,
-                         path_length=0.1,
-                         mole_fraction=0.01,
-                         cutoff=1e-25,
-                         wstep = 0.005,
-                         isotope=[1],
-                         db_use_cached=True,
-                         self_absorption=True,
-                         verbose=False)
-    try:
-        sf.load_databank('HITRAN-CO')
-    except DatabankNotFound:
-        if warnings:
-            import sys
-            print(sys.exc_info())
-            print('Testing spectrum.py: Database not defined: HITRAN-CO \n'+\
-                           'Ignoring the test')
-        return True
-
-    s1 = sf.non_eq_spectrum(Tgas, Tgas, path_length=0.01)
-    redundant = get_redundant(s1)
-    if verbose: print(redundant)
-    
-    return redundant == {'emissivity_noslit': True, 'radiance_noslit': True, 
-                         'radiance': True, 'emisscoeff': True, 
-                         'transmittance_noslit': True, 'absorbance': True, 
-                         'transmittance': True, 'abscoeff': False}
-
 if __name__ == '__main__':
 
-    print('Test rescale.py: ', _test_compression())
+    from radis.test.spectrum.test_rescale import _run_all_tests
+    print('Test rescale.py: ', _run_all_tests(verbose=True))
