@@ -98,8 +98,8 @@ def SerialSlabs(*slabs, **kwargs):
     '''
 
     # Check inputs, get defaults
-    resample_wavespace = kwargs.get('resample_wavespace', 'never')   # default 'never'
-    out_of_bounds = kwargs.get('out_of_bounds', 'nan')               # default 'nan'
+    resample_wavespace = kwargs.pop('resample_wavespace', 'never')   # default 'never'
+    out_of_bounds = kwargs.pop('out_of_bounds', 'nan')               # default 'nan'
     if len(kwargs)>0:
         raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
     
@@ -374,8 +374,8 @@ def MergeSlabs(*slabs, **kwargs):
     '''
     
     # inputs (Python 2 compatible)
-    resample_wavespace = kwargs.get('resample_wavespace', 'never')   # default 'never'
-    out_of_bounds = kwargs.get('out_of_bounds', 'nan')               # default 'nan'
+    resample_wavespace = kwargs.pop('resample_wavespace', 'never')   # default 'never'
+    out_of_bounds = kwargs.pop('out_of_bounds', 'nan')               # default 'nan'
     optically_thin = kwargs.pop('optically_thin', False)             # default False
     verbose = kwargs.pop('verbose', True)             # type: bool
     debug = kwargs.pop('debug', False)                # type: bool
