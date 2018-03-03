@@ -307,7 +307,7 @@ class Spectrum(object):
 
     # hardcode attribute names, but can save a lot of memory if hundreds of spectra
     __slots__ = ['_q', '_q_conv', 'units', 'conditions', 'cond_units', 'populations',
-                  'lines', 'name']
+                  'lines', 'name', '_slit']
 
     def __init__(self, quantities, units=None, conditions=None, cond_units=None,
                  populations=None, lines=None, waveunit=None, wavespace=None, # deprecated
@@ -360,6 +360,8 @@ class Spectrum(object):
 
         self._q = {}                # non convoluted quantities
         self._q_conv = {}           # convoluted quantities
+        
+        self._slit = {}            # hold slit function
 
         for k, v in quantities.items():
             try:
@@ -1445,8 +1447,8 @@ class Spectrum(object):
             no impact. Default 'valid'. 
 
         store: boolean
-            if True, store slit in Spectrum object conditions under 'slit_wavespace'
-            and 'slit_intensity' keys. Default True
+            if True, store slit in Spectrum object under ._slit['wavespace']
+            and ._slit['intensity'] keys. Default True
 
         Other Parameters
         ----------------
@@ -1596,8 +1598,8 @@ class Spectrum(object):
                 
         # Store slit in Spectrum, in the Spectrum unit
         if store:
-            self.conditions['slit_wavespace'] = wslit  # in 'waveunit'
-            self.conditions['slit_intensity'] = Islit
+            self._slit['wavespace'] = wslit  # in 'waveunit'
+            self._slit['intensity'] = Islit
 
         # Update conditions
         self.conditions['slit_function'] = slit_function
@@ -1605,6 +1607,29 @@ class Spectrum(object):
         self.conditions['norm_by'] = norm_by
 
         return
+    
+    def get_slit(self):
+        ''' Get slit function that was applied to the Spectrum 
+        
+        Returns
+        -------
+        
+        wslit, Islit: array
+            slit function with wslit in waveunit. See 
+            :meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`
+            
+        '''
+    
+        # Make sure that slit is stored already
+        try:
+            wslit = self._slit['wavespace'] # stored in Spectrum waveunit
+            Islit = self._slit['intensity']
+        except KeyError:
+            raise KeyError('Slit function not found in Spectrum '+\
+                             'conditions. Have you used Spectrum.apply_slit '+\
+                             'with store=True?')
+            
+        return wslit, Islit
     
     def plot_slit(self, wunit=None):
         ''' Plot slit function that was applied to the Spectrum 
@@ -1624,15 +1649,9 @@ class Spectrum(object):
         if wunit is None:
             wunit = self.conditions['slit_unit']
 
-        # Make sure that slit is stored already
-        try:
-            wslit = self.conditions['slit_wavespace'] # stored in Spectrum waveunit
-            Islit = self.conditions['slit_intensity']
-        except KeyError:
-            raise ValueError('Slit function not found in Spectrum '+\
-                             'conditions. Have you used Spectrum.apply_slit '+\
-                             'with store=True?')
-            
+        # Get slit arrays (in Spectrum.waveunit)
+        wslit, Islit = self.get_slit()
+        
         # Get slit unit
         norm_by = self.conditions['norm_by']
         waveunit = self.get_waveunit()
@@ -1645,7 +1664,7 @@ class Spectrum(object):
         else:
             raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
         
-        # Plot in correct unit
+        # Plot in correct unit  (plot_slit deals with the conversion if needed)
         return plot_slit(wslit, Islit, waveunit=waveunit, plot_unit=wunit, 
                          Iunit=Iunit)
         
@@ -2199,8 +2218,8 @@ class Spectrum(object):
             rtol and other input conditions)
             
             
-        Example
-        -------
+        Examples
+        --------
         
         >>> s1.compare_with(s2)
         >>> s1.compare_with(s2, 'transmittance')
@@ -2301,6 +2320,8 @@ class Spectrum(object):
             vars = [k for k in self.get_vars() if k in other.get_vars()]
 
         if spectra_only:
+            # Compare spectral variables
+            # -----------
             for k in vars:
                 w, q = self.get(k, wunit=wunit)
                 w0, q0 = other.get(k, wunit=wunit)
@@ -2325,6 +2346,8 @@ class Spectrum(object):
                         print('... couldnt plot {0}'.format(k))
 
         else:
+            # Compare spectral variables
+            # -----------
             for k in vars:
                 w, q = self.get(k, wunit=wunit)
                 w0, q0 = other.get(k, wunit=wunit)
@@ -2333,7 +2356,7 @@ class Spectrum(object):
                     b1 = False
                 else:
                     b1 = allclose(w, w0, rtol=rtol, atol=0)
-                    b1 = _compare_variables(q, q0)
+                    b1 *= _compare_variables(q, q0)
                     if not b1 and verbose:
                         error = np.nanmax(abs(q/q0-1))
                         print('...', k, 'dont match (up to {0:.1f}% diff.)'.format(
@@ -2347,6 +2370,8 @@ class Spectrum(object):
                     except:
                         print('... couldnt plot {0}'.format(k))
 
+            # Compare conditions and units
+            # -----------
             b1 = self.conditions == other.conditions
             b2 = self.cond_units == other.cond_units
             b3 = self.units == other.units
@@ -2356,6 +2381,7 @@ class Spectrum(object):
             b *= b1 * b2 * b3
 
             # Compare lines
+            # -----------
             if self.lines is None and other.lines is None:
                 b4 = True
             elif self.lines is None:
@@ -2368,6 +2394,7 @@ class Spectrum(object):
             b *= b4
 
             # Compare populations
+            # -----------
             if self.populations is None and other.populations is None:
                 b5 = True
             elif self.populations is None:
@@ -2413,7 +2440,26 @@ class Spectrum(object):
                     if verbose: print('Molecules are different (see above)')
             if not b5 and verbose: print('... populations dont match (see detail above)')
             b *= b5
-                
+            
+            
+            # Compare slit
+            # -----------
+            
+            if len(self._slit) != len(other._slit):
+                b6 = False
+                if verbose: print('A spectrum has slit function array but the other doesnt')
+            else:
+                ws, Is = self.get_slit()
+                ws0, Is0 = other.get_slit()
+                if len(ws) != len(ws0):
+                    if verbose: print('Slits have different length')
+                    b6 = False
+                else:
+                    b6 = allclose(ws, ws0, rtol=rtol, atol=0)
+                    b6 *= _compare_variables(Is, Is0)
+                    if not b6 and verbose:
+                        print('Slit functions dont match')
+            b *= b6
 
         return bool(b)
 
