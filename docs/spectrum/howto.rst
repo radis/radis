@@ -90,7 +90,7 @@ update Spectrum conditions?
 
 Spectrum conditions are stored in a :attr:`~radis.spectrum.spectrum.Spectrum.conditions` dictionary 
 
-Conditions can be updated a posteriori by modifying the dictionary::
+Conditions can be updated *a posteriori* by modifying the dictionary::
 
     s.conditions['path_length'] = 10    # cm 
 

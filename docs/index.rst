@@ -65,7 +65,7 @@ The Spectrum class
 
 This module contains the :class:`~radis.spectrum.spectrum.Spectrum` object itself, with several methods that can be 
 applied after the Spectrum was calculated: rescale, apply instrumental slit function, 
-store or retrieve from a Spectrum database. 
+store or retrieve from a Spectrum database, plot or compare with another Spectrum object. 
 
 .. toctree::
    :maxdepth: 2
