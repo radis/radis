@@ -100,6 +100,8 @@ def SerialSlabs(*slabs, **kwargs):
     # Check inputs, get defaults
     resample_wavespace = kwargs.get('resample_wavespace', 'never')   # default 'never'
     out_of_bounds = kwargs.get('out_of_bounds', 'nan')               # default 'nan'
+    if len(kwargs)>0:
+        raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
     
     if resample_wavespace not in ['never', 'intersect', 'full']:
         raise ValueError("resample_wavespace should be one of: {0}".format
@@ -130,11 +132,13 @@ def SerialSlabs(*slabs, **kwargs):
                         out_of_bounds=out_of_bounds)
         
         quantities = {}
+        unitsn = sn.units
         
         # make sure we use the same wavespace type (even if sn is in 'nm' and s in 'cm-1')
+        # also make sure we use the same units
         waveunit = s.get_waveunit()  
-        w = s.get('radiance_noslit', wunit=waveunit)[0]
-        wn = sn.get('radiance_noslit', wunit=waveunit)[0]
+        w = s.get('radiance_noslit', wunit=waveunit, Iunit=unitsn['radiance_noslit'])[0]
+        wn = sn.get('radiance_noslit', wunit=waveunit, Iunit=unitsn['radiance_noslit'])[0]
         
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
@@ -142,33 +146,17 @@ def SerialSlabs(*slabs, **kwargs):
         s, sn = resample_slabs(waveunit, resample_wavespace, out_of_bounds, 
                                s, sn)
         
-        w, I = s.get('radiance_noslit', wunit=waveunit)  
-        wn, In = sn.get('radiance_noslit', wunit=waveunit)
-        _, Tn = sn.get('transmittance_noslit', wunit=waveunit)
-        
-        units = intersect(s.units, sn.units)
+        w, I = s.get('radiance_noslit', wunit=waveunit, Iunit=unitsn['radiance_noslit'])  
+        wn, In = sn.get('radiance_noslit', wunit=waveunit, Iunit=unitsn['radiance_noslit'])
+        _, Tn = sn.get('transmittance_noslit', wunit=waveunit, Iunit=unitsn['transmittance_noslit'])
         
         if 'radiance_noslit' in s._q and 'radiance_noslit' in sn._q:
             # case where we may use SerialSlabs just to compute the products of all transmittances
-            # Check units:
-            unit = s.units['radiance_noslit']
-            unitn = sn.units['radiance_noslit']
-            if (unit != unitn):
-                # convert unit of (w,I) into (wn, In)
-                I = s.get_radiance_noslit(unitn)  # will crash if not possible
-#                I = conv2(I, unit, unitn)  # will crash if not possible
-                units['radiance_noslit'] = unitn
             quantities['radiance_noslit']=(w, I * Tn + In)
             
         if 'transmittance_noslit' in s._q:  # note that we dont need the transmittance in the inner
                                          # slabs to calculate the total radiance
-            _, T = s.get('transmittance_noslit', wunit=waveunit)
-            # Check units:
-            if (s.units['transmittance_noslit'] != sn.units['transmittance_noslit']):
-                # actually transmittance should have no units always...
-                raise ValueError('Transmittance units arent the same in SerialSlabs '+\
-                                 'calculation: {0} & {1}'.format(
-                        s.units['radiance_noslit'], sn.units['radiance_noslit'])) 
+            _, T = s.get('transmittance_noslit', wunit=waveunit, Iunit=unitsn['transmittance_noslit'])
             quantities['transmittance_noslit']=(w, Tn * T)
         
         # Get conditions (if they're different, fill with 'N/A')
@@ -181,7 +169,7 @@ def SerialSlabs(*slabs, **kwargs):
         name = _serial_slab_names(s,sn)
         
         return Spectrum(quantities=quantities, conditions = conditions, 
-                        cond_units = cond_units, units = units,
+                        cond_units = cond_units, units = unitsn,
                         name=name)
 
 def _serial_slab_names(s, sn):
@@ -389,9 +377,10 @@ def MergeSlabs(*slabs, **kwargs):
     resample_wavespace = kwargs.get('resample_wavespace', 'never')   # default 'never'
     out_of_bounds = kwargs.get('out_of_bounds', 'nan')               # default 'nan'
     optically_thin = kwargs.pop('optically_thin', False)             # default False
-    
     verbose = kwargs.pop('verbose', True)             # type: bool
     debug = kwargs.pop('debug', False)                # type: bool
+    if len(kwargs)>0:
+        raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
     
     # Check inputs
     if resample_wavespace not in ['never', 'intersect', 'full']:
@@ -438,11 +427,11 @@ def MergeSlabs(*slabs, **kwargs):
         conditions = slabs[0].conditions
         conditions['waveunit'] = waveunit
         cond_units = slabs[0].cond_units
-        units = slabs[0].units
+        units0 = slabs[0].units
         for s in slabs[1:]:
             conditions = intersect(conditions, s.conditions)
             cond_units = intersect(cond_units, s.cond_units)
-            units = intersect(units, s.units)
+            #units = intersect(units0, s.units)  # we're actually using [slabs0].units insteads
         
         # %% Get quantities that should be calculated 
             
@@ -477,7 +466,7 @@ def MergeSlabs(*slabs, **kwargs):
         if 'abscoeff' in recompute:
             #TODO: deal with all cases
             if __debug__: printdbg('... merge: calculating abscoeff k=sum(k_i)')
-            abscoeff_eq = np.sum([s.get('abscoeff', wunit=waveunit)[1] for s in slabs], axis=0)
+            abscoeff_eq = np.sum([s.get('abscoeff', wunit=waveunit, Iunit=units0['abscoeff'])[1] for s in slabs], axis=0)
             assert len(w_noconv) == len(abscoeff_eq)
             added['abscoeff'] = (w_noconv, abscoeff_eq)
         
@@ -508,19 +497,21 @@ def MergeSlabs(*slabs, **kwargs):
                 # Could also do a slab.update() first then sum emisscoeff directly
                 if 'emisscoeff' in list(s._q.keys()):
                     if __debug__: printdbg('... merge: calculating emisscoeff: j+=j_i')
-                    _, emisscoeff = s.get('emisscoeff', wunit=waveunit)
+                    _, emisscoeff = s.get('emisscoeff', wunit=waveunit, Iunit=units0['emisscoeff'])
                 elif optically_thin and 'radiance_noslit' in list(s._q.keys()):
                     if __debug__: printdbg('... merge: calculating emisscoeff: j+=I_i/L '+\
                                     '(optically thin case)')
-                    _, I = s.get('radiance_noslit', wunit=waveunit)
+                    _, I = s.get('radiance_noslit', wunit=waveunit, Iunit=units0['radiance_noslit'])
                     emisscoeff = I/path_length
                     emisscoeff_eq += emisscoeff
                 else:
-                    wI, I = s.get('radiance_noslit', wunit=waveunit)
+                    wI, I = s.get('radiance_noslit', wunit=waveunit, Iunit=units0['radiance_noslit'])
                     if __debug__: printdbg('... merge: calculating emisscoeff j+=[k*I/(1-T)]_i)')
                     try:
-                        wT, T = s.get('transmittance_noslit', wunit=waveunit)
-                        wk, k = s.get('abscoeff', wunit=waveunit)
+                        wT, T = s.get('transmittance_noslit', wunit=waveunit, 
+                                      Iunit=units0['transmittance_noslit'])
+                        wk, k = s.get('abscoeff', wunit=waveunit,
+                                      Iunit=units0['abscoeff'])
                     except KeyError:
                         raise KeyError('Need transmittance_noslit and abscoeff to '+\
                                        'recompute emission coefficient')
@@ -553,7 +544,8 @@ def MergeSlabs(*slabs, **kwargs):
                 radiance_noslit_eq = np.zeros_like(w_noconv)
                 for s in slabs:
                     if 'radiance_noslit' in list(s._q.keys()):
-                        radiance_noslit_eq += s.get('radiance_noslit', wunit=waveunit)[1]
+                        radiance_noslit_eq += s.get('radiance_noslit', wunit=waveunit,
+                                                    Iunit=units0['radiance_noslit'])[1]
                     else:
                         raise KeyError('Need radiance_noslit for all slabs to '+\
                                        'recalculate for the MergeSlab (could also '+\
@@ -583,7 +575,7 @@ def MergeSlabs(*slabs, **kwargs):
         
         # TODO: check units are consistent in all slabs inputs
         return Spectrum(quantities=quantities, conditions = conditions, 
-                        cond_units = cond_units, units = units,
+                        cond_units = cond_units, units = units0,
                         name=name)
 
 # %% Tests
@@ -597,7 +589,7 @@ def _test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False,
     updated in MergeSlabs 
     '''
     
-    from neq.spec import load_spec
+    from radis.tools.database import load_spec
     import matplotlib.pyplot as plt
     from neq.test.utils import getTestFile
     
