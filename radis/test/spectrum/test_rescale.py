@@ -13,7 +13,9 @@ from radis.tools.database import load_spec
 from radis.test.utils import getTestFile
 import numpy as np
 
-def test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
+def _test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
+    # Deactivated from pytest with _ for the moment, because neq is not public
+    # TODO: convet _test_ to test_ once the SpectrumFactory is added in RADIS
     
     from neq.spec import SpectrumFactory
     
@@ -92,13 +94,13 @@ def test_update_transmittance__fast(verbose=True, warnings=True, *args, **kwargs
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     b1 = _test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
-    b2 = _test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
+    b2 = test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
     
     if verbose:
-        print('_test_compression: ', b1)
-        print('_test_update: ', b2)
+        print('test_compression: ', b1)
+        print('test_update: ', b2)
         
     return bool(b1*b2)
 
 if __name__ == '__main__':
-    _run_all_tests(verbose=True)
+    print('Testing test_rescale.py:', _run_all_tests(verbose=True)
