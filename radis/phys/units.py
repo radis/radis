@@ -98,8 +98,10 @@ def conv2(quantity, fromunit, tounit):
         a = a.to(tounit)
     except TypeError:
         if 'cm-1' in fromunit or 'cm-1' in tounit:
-            raise TypeError('Use cm_1 instead of cm-1 else it triggers errors in '+\
-                            'pint (symbolic unit converter)')
+#            raise TypeError('Use cm_1 instead of cm-1 else it triggers errors in '+\
+#                            'pint (symbolic unit converter)')
+            conv2(quantity, fromunit.replace('cm-1', 'cm_1'), tounit.replace('cm-1', 'cm_1'))
+            
         else:
             raise
             
