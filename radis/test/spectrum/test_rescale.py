@@ -93,8 +93,8 @@ def test_update_transmittance__fast(verbose=True, warnings=True, *args, **kwargs
 
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
-    b1 = _test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
-    b2 = test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
+    b1 = _test_compression__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
+    b2 = test_update_transmittance__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
     
     if verbose:
         print('test_compression: ', b1)
@@ -103,4 +103,4 @@ def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     return bool(b1*b2)
 
 if __name__ == '__main__':
-    print('Testing test_rescale.py:', _run_all_tests(verbose=True)
+    print('Testing test_rescale.py:', _run_all_tests(verbose=True))
