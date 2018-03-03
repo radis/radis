@@ -94,6 +94,25 @@ Conditions can be updated a posteriori by modifying the dictionary::
 
     s.conditions['path_length'] = 10    # cm 
 
+
+print Spectrum conditions?
+--------------------------
+
+Want to know under which calculation conditions was your Spectrum object 
+generated, or under which experimental conditions it was measure? 
+Just print it::
+
+    print(s)
+    
+(that shows all spectral quantities stored in the object, all keys and 
+values in the :attr:`~radis.spectrum.spectrum.Spectrum.conditions` dictionary, 
+and all atoms/molecules stored in the :attr:`~radis.spectrum.spectrum.Spectrum.populations` 
+dictionary)
+
+You can also show the conditions only with 
+:meth:`~radis.spectrum.spectrum.Spectrum.print_conditions`::
+
+	s.print_conditions()
     
 rescale Spectrum with new path length?
 --------------------------------------

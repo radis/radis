@@ -16,7 +16,6 @@ import numpy as np
 from numpy import log as ln
 from numpy import inf, exp
 from radis.misc.debug import printdbg
-from radis.misc.utils import DatabankNotFound
 from radis.lbl.equations import calc_radiance
 from warnings import warn
 from six import string_types
@@ -179,10 +178,10 @@ def get_reachable(spec): #, derivation_graph):
 
 def update(spec, quantity='all', optically_thin='default', verbose=True):
     ''' Calculate missing quantities that can be derived from the current quantities
-    and conditions 
+    and conditions
     
-    ex: if path_length and emisscoeff are given, recalculate radiance_noslit
-    if optically thin, or if abscoeff is also given 
+    e.g: if path_length and emisscoeff are given, radiance_noslit can be recalculated
+    if in an optically thin configuration, else if abscoeff is also given 
     
     
     Parameters    
@@ -204,12 +203,15 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
         
     '''
 
+    # Check inputs
+    # ------------
+
     # Get path length
     if 'path_length' in list(spec.conditions.keys()):
         path_length = spec.conditions['path_length']
         true_path_length = True
     else:
-        path_length = 1
+        path_length = 1        # some stuff can still be updated.
         true_path_length = False
         
     # Update optically thin
@@ -228,9 +230,14 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
 
     initial = spec.get_vars()
 
+    # This is where everything happens:
+    # ---------------------------------
     _recalculate(spec, quantity, path_length, path_length, 1, 1,
                  true_path_length=true_path_length,
                  verbose=verbose)
+    
+    # Output
+    # ------
     
     # Get list of new quantities 
     new_q = [k for k in spec.get_vars() if k not in initial]
@@ -262,27 +269,46 @@ def rescale_abscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_fracti
     
     unit = None
 
+    # First get initial abscoeff
+    # ---------------------
     if 'abscoeff' in initial:
         _, abscoeff = spec.get('abscoeff', wunit=waveunit)
     elif 'absorbance' in initial and true_path_length: # aka: true path_lengths given
+        if __debug__: printdbg('... rescale: abscoeff k1 = A/L1')
         _, A = spec.get('absorbance', wunit=waveunit)
         abscoeff = A/old_path_length                      # recalculate
         unit = 'cm-1'
     elif 'transmittance_noslit' in initial and true_path_length:
-        _, T = spec.get('transmittance_noslit', wunit=waveunit)
-        b = (T== 0)  # no transmittance
-        abscoeff = np.zeros_like(T)
-        abscoeff[~b] = -ln(T[~b]/old_path_length)         # recalculate
-        abscoeff[b] = inf  # 0 transmittance = infinite abscoeff
+        if __debug__: printdbg('... rescale: abscoeff k1 = -ln(T1)/L1')
+        # Get abscoeff from transmittance
+        _, T1 = spec.get('transmittance_noslit', wunit=waveunit)
+        
+        # We'll have a problem if the spectrum is optically thick
+        b = (T1== 0)  # no transmittance: optically thick mask
+        if b.sum()>0:
+            msg = "Transmittance is satured. Can't infer abscoeff. Please give absorbance"
+            if 'abscoeff' in extra: # cant calculate this one but let it go
+                abscoeff = None
+                if __debug__: printdbg(msg)
+            else:
+                raise ValueError(msg)
+            
+        # Else, let's calculate it
+        abscoeff = -ln(T1)/old_path_length         # recalculate
         unit = 'cm-1'
     elif 'abscoeff' in extra: # cant calculate this one but let it go
         abscoeff = None
     else:
-        raise ValueError('Cant rescale abscoeff if transmittance_noslit '+\
-                       'is not given. Use optically_thin?')
+        raise ValueError("Can't rescale abscoeff if transmittance_noslit ({0}) ".format(
+                            'transmittance_noslit' in initial)+\
+                         'or absorbance ({0}), '.format('absorbance' in initial)+\
+                         'and true_path_length ({0}) '.format(true_path_length)+\
+                         'are not given. Use optically_thin?')
         
-    # Export rescaled value
+    # Then export rescaled value
+    # --------------------
     if abscoeff is not None:
+        if __debug__: printdbg('... rescale: abscoeff k2 = k1 * N2/N1')
         abscoeff *= new_mole_fraction / old_mole_fraction     # rescale
         rescaled['abscoeff'] = abscoeff
     if unit is not None:
@@ -325,7 +351,7 @@ def _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
     radiance_noslit = calc_radiance(wavenumber, emissivity_noslit, Tgas, 
                                     unit=get_unit_radiance())
     b = (abscoeff==0)  # optically thin mask
-    emisscoeff = np.zeros_like(abscoeff)
+    emisscoeff = np.empty_like(abscoeff)
     emisscoeff[b] = radiance_noslit[b]/path_length              # recalculate (opt thin)
     emisscoeff[~b] = radiance_noslit[~b]/(1-transmittance_noslit[~b])*abscoeff[~b]    # recalculate (non opt thin)
     
@@ -366,57 +392,75 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
         else:
             return unit_radiance + '/cm'  # will be simplified by Pint afterwards
 
+    # Firt get initial emisscoeff j1
+    # -------------------
+
     if 'emisscoeff' in initial:
         if __debug__: printdbg('... rescale: emisscoeff j1 = j1')
         _, emisscoeff = spec.get('emisscoeff', wunit=waveunit, Iunit=units['emisscoeff'])
+        
     elif 'radiance_noslit' in initial and true_path_length and optically_thin:
-        if __debug__: printdbg('... rescale: emisscoeff j2 = I1/L1')
+        if __debug__: printdbg('... rescale: emisscoeff j1 = I1/L1')
         _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
         emisscoeff = I/old_path_length   # recalculate
         unit = get_unit(units['radiance_noslit'])
+        
     elif ('radiance_noslit' in initial and true_path_length and
           'abscoeff' in initial):
         if __debug__: printdbg('... rescale: emisscoeff j1 = k1*I1/(1-exp(-k1*L1))')
+        # get emisscoeff from (initial) abscoeff and (initial) radiance
         _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
-#            _, T = spec.get('transmittance_noslit', wunit=waveunit)
         _, k = spec.get('abscoeff', wunit=waveunit, Iunit=units['abscoeff'])
-#            assert np.allclose(wT, wE)    # now forced by construction
-#            assert np.allclose(wT, wk)    # now forced by construction
+        
+        # Recalculate in the optically thin range (T=1) and elsewhere
         b = (k==0)  # optically thin mask
-        emisscoeff = np.zeros_like(k)
+        emisscoeff = np.empty_like(k)
+        # ... optically thin case
         emisscoeff[b] = I[b]/old_path_length              # recalculate (opt thin)
-        T_b = exp(-k[~b]*old_path_length)
-        emisscoeff[~b] = I[~b]/(1-T_b)*k[~b]              # recalculate (non opt thin)
+        
+        # ... non optically thin case:
+        # ... recalculate transmittance from abscoeff
+        T_b = exp(-k[~b]*old_path_length) 
+        # ... and solve the RTE on an homogeneous slab
+        emisscoeff[~b] = k[~b]*I[~b]/(1-T_b)              # recalculate (non opt thin)
         unit = get_unit(units['radiance_noslit'])
-#    elif ('radiance_noslit' in initial and true_path_length and
-#          'transmittance_noslit' in initial):
-#        if __debug__: printdbg('... rescale: emisscoeff j1 = k1*I1/(1-T1)')
-#        _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
-##            _, T = spec.get('transmittance_noslit', wunit=waveunit)
-#        _, T = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
-##            assert np.allclose(wT, wE)    # now forced by construction
-##            assert np.allclose(wT, wk)    # now forced by construction
-#        b = (T==1)  # optically thin mask
-#        emisscoeff = np.zeros_like(T)
-#        emisscoeff[b] = I[b]/old_path_length              # recalculate (opt thin)
-#        T_b = T[~b]
-#        k_b = -ln(T_b)/old_path_length
-#        emisscoeff[~b] = I[~b]/(1-T_b)*k_b              # recalculate (non opt thin)
+        
+    elif ('radiance_noslit' in initial and true_path_length and
+          'transmittance_noslit' in initial):
+        if __debug__: printdbg('... rescale: emisscoeff j1 = k1*I1/(1-T1)')
+        # get emisscoeff from (initial) transmittance and (initial) radiance
+        _, I = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
+        _, T = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
+        
+        # Recalculate in the optically thin range (T=1) and elsewhere
+        b = (T==1)  # optically thin mask
+        emisscoeff = np.empty_like(T)
+        # ... optically thin case
+        emisscoeff[b] = I[b]/old_path_length              # recalculate (opt thin)
+        
+        # ... non optically thin case:
+        # ... recalculate abscoeff from transmittance
+        T_b = T[~b]
+        k_b = -ln(T_b)/old_path_length       
+        # ... and solve the RTE on an homogeneous slab
+        emisscoeff[~b] = k_b*I[~b]/(1-T_b)              # recalculate (non opt thin)
         unit = get_unit(units['radiance_noslit'])
+        
     else:
         if optically_thin:
-            msg = "Cant calculate emisscoeff if true path_length "+\
-                  "and radiance_noslit are not given"
+            msg = "Can't calculate emisscoeff if true path_length ({0})".format(true_path_length)+\
+                  "and initial radiance_noslit ({0}) are not all given".format(
+                          'radiance_noslit' in initial)
             if 'emisscoeff' in extra: # cant calculate this one but let it go
                 emisscoeff = None
                 if __debug__: printdbg(msg)
             else:
                 raise ValueError(msg)
         else:
-            msg = "Trying to rescale emission coefficient in non optically "+\
-                  "thin case. True path_length ({0}), radiance_noslit ({1})".format(
+            msg = "Trying to get the emission coefficient (emisscoeff) in non optically "+\
+                  "thin case. True path_length ({0}), radiance_noslit ({1}) ".format(
                           true_path_length, 'radiance_noslit' in initial)+\
-                  "and abscoeff ({0}) are needed but not given. ".format(
+                  "and abscoeff ({0}) are needed but not all given. ".format(
                           'abscoeff' in initial)+\
                   "Try optically_thin? See known Spectrum conditions with "+\
                   "print(Spectrum)"
@@ -426,9 +470,11 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
             else:
                 raise ValueError(msg)
             
-    # Export rescaled value
+    # Then rescale and export
+    # -----------
     if emisscoeff is not None:
-        if __debug__: printdbg('... rescale: emisscoeff j2 = j2 * N2/N1')
+        if __debug__: printdbg('... rescale: emisscoeff j2 = j1 * N2/N1')
+        # Now rescale for mole fractions
         emisscoeff *= new_mole_fraction / old_mole_fraction   # rescale
         rescaled['emisscoeff'] = emisscoeff
     if unit is not None:
@@ -499,13 +545,27 @@ def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new
     elif 'transmittance_noslit' in initial:
         if __debug__: printdbg('... rescale: transmittance_noslit T2 = '+\
                         'exp( ln(T1) * N2/N1 * L2/L1)')
-        _, T = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
-        b = (T == 0)  # optically thick mask
-        transmittance_noslit = np.empty_like(T)
-        absorbance_b = -ln(transmittance_noslit[~b])
-        absorbance_b *= new_mole_fraction / old_mole_fraction # rescale
-        absorbance_b *= new_path_length / old_path_length     # rescale
-        transmittance_noslit[~b] = exp(-absorbance_b)
+        # get transmittance from initial transmittance
+        _, T1 = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
+        
+        
+        # We'll have a problem if the spectrum is optically thick
+        b = (T1 == 0)  # optically thick mask
+        if b.sum()>0 and (new_mole_fraction < old_mole_fraction or 
+                new_path_length < old_path_length):
+            # decreasing mole fractions/ path length could increase the transmittance
+            # but this information was lost in the saturation
+            msg = 'Transmittance is satured. Cant rescale. Please give absorbance'
+            if 'transmittance_noslit' in extra: # cant calculate this one but let it go
+                transmittance_noslit = None
+                if __debug__: printdbg(msg)
+            else:
+                raise ValueError(msg)
+        # Else, just get absorbance
+        absorbance = -ln(T1)
+        absorbance *= new_mole_fraction / old_mole_fraction     # rescale
+        absorbance *= new_path_length / old_path_length         # rescale
+        transmittance_noslit = exp(-absorbance)
     else:
         msg = 'Missing data to rescale transmittance'
         if 'transmittance_noslit' in extra: # cant calculate this one but let it go
@@ -662,7 +722,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         wanted = list(initial)
         greedy = False
     elif type(quantity) in string_types:
-        wanted = list(initial)+[quantity]
+        wanted = [quantity]
         greedy = False
     else:
         raise ValueError('unexpected type for quantity: expected str, got '+\
@@ -691,6 +751,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         reachable = get_reachable(spec)
         extra = [k for k, v in reachable.items() if v]
         
+    wanted = set(wanted)
     recompute = set(recompute+extra)  # remove duplicates
 
     # Get units 
@@ -945,42 +1006,7 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
 
 
 
-def _test_compression(verbose=True, warnings=True, *args, **kwargs):
-    
-    from neq.spec import SpectrumFactory
-    
-    Tgas = 1500
-    sf = SpectrumFactory(
-                         wavelength_min=4400,
-                         wavelength_max=4800,
-    #                     mole_fraction=1,
-                         path_length=0.1,
-                         mole_fraction=0.01,
-                         cutoff=1e-25,
-                         wstep = 0.005,
-                         isotope=[1],
-                         db_use_cached=True,
-                         self_absorption=True,
-                         verbose=False)
-    try:
-        sf.load_databank('HITRAN-CO')
-    except DatabankNotFound:
-        if warnings:
-            import sys
-            print(sys.exc_info())
-            print('Testing spectrum.py: Database not defined: HITRAN-CO \n'+\
-                           'Ignoring the test')
-        return True
-
-    s1 = sf.non_eq_spectrum(Tgas, Tgas, path_length=0.01)
-    redundant = get_redundant(s1)
-    if verbose: print(redundant)
-    
-    return redundant == {'emissivity_noslit': True, 'radiance_noslit': True, 
-                         'radiance': True, 'emisscoeff': True, 
-                         'transmittance_noslit': True, 'absorbance': True, 
-                         'transmittance': True, 'abscoeff': False}
-
 if __name__ == '__main__':
 
-    print('Test rescale.py: ', _test_compression())
+    from radis.test.spectrum.test_rescale import _run_all_tests
+    print('Test rescale.py: ', _run_all_tests(verbose=True))

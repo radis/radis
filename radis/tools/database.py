@@ -134,7 +134,7 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
     '''
 
     # 1) Format to JSON writable dictionary
-    sjson = _format_to_jsondict(s, discard, compress)
+    sjson = _format_to_jsondict(s, discard, compress, verbose=verbose)
 
     # 2) Get final output name (add info, extension, increment number if needed)
     fout = _get_fout_name(path, if_exists_then, add_date, add_info, 
@@ -151,7 +151,7 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
 
     return fout    # return final name
 
-def _format_to_jsondict(s, discard, compress):
+def _format_to_jsondict(s, discard, compress, verbose=True):
     ''' Format to JSON writable dictionary 
     
     Notes
@@ -183,14 +183,20 @@ def _format_to_jsondict(s, discard, compress):
     except KeyError:
         raise KeyError('Spectrum `conditions` dict should at least have a `waveunit` key')
     # Todo: what if conditions is an empty dictionary? do we allow that?
+    # ... now let's store all conditions
     sjson['conditions'] = {}
     for k, v in conditions.items():
-        # Store all conditions as raw text (that fixes most trouble with paths)
-        try:
+        # If it looks like string, store as raw text (that fixes most trouble with paths)
+        if type(v) in string_types:
             sjson['conditions'][k] = r'{0}'.format(v)
-        except:
+        else:
             # Store the object directly
-            sjson['conditions'][k] = v
+            if is_jsonable(v):
+                sjson['conditions'][k] = v
+            else:
+                if verbose:
+                    print('condition {0}, type {1} not jsonable and discarded'.format(
+                            k, type(v)))
             
     # ... Only `quantities` and `conditions` are required. The rest is just extra
     # details. Add them now if they exist (assuming a Spectrum class is being stored)
@@ -200,6 +206,11 @@ def _format_to_jsondict(s, discard, compress):
                 sjson[attr] = s.__getattribute__(attr)
             except AttributeError:
                 pass
+    # ... special case of slit (a dictionary of arrays)
+    if '_slit' not in discard:
+        sjson['slit'] = {}
+        for k, v in s._slit.items():
+            sjson['slit'][k] = v.tolist()
     # ... special case of lines (a Pandas dataframe): 
     if 'lines' not in discard:
         try:
@@ -404,7 +415,7 @@ def load_spec(file):
             raise
 
     # Test format / correct deprecated format:
-    sload = _fix_deprecated_format(file, sload)
+    sload = _fix_format(file, sload)
 
     # ... Back to real stuff:
     conditions = sload['conditions']
@@ -431,6 +442,12 @@ def load_spec(file):
     # details
     kwargs = {}
     
+    # ... load slit if exists
+    if 'slit' in sload:
+        slit = {k:np.array(v) for k,v in sload['slit'].items()}
+    else:
+        slit = {}
+        
     # ... load lines if exist
     if 'lines' in sload:
         dtypes = sload.get('_dtypes_lines', True)   # default to True
@@ -475,16 +492,24 @@ def load_spec(file):
         except KeyError:
             kwargs[attr] = None
 
-    return Spectrum(quantities=quantities,
+    s = Spectrum(quantities=quantities,
                     conditions=conditions,
                     waveunit=waveunit,
                     **kwargs)
+    
+    # ... add slit 
+    s._slit = slit
+    
+    return s 
 
-def _fix_deprecated_format(file, sload):
+def _fix_format(file, sload):
     ''' Test format / correct deprecated format:
     The goal is to still be able to load old format precomputed spectra, and
     fix their attribute names. Save them again to fix the warnigns definitly.
     '''
+    
+    # Fix deprecration syntax
+    # ----------------
     try:
         sload['conditions']['waveunit']
     except KeyError as err:
@@ -534,6 +559,7 @@ def _fix_deprecated_format(file, sload):
         del sload['conditions']['selfabsorption']
         
     # Fix all path names (if / are stored it screws up the JSON loading)
+    # -----------------
     def fix_path(key):
         if key in sload['conditions']:
             path = sload['conditions'][key]
@@ -548,6 +574,7 @@ def _fix_deprecated_format(file, sload):
                   'results_directory', 'jobName', # other quantities
                   ]:
         fix_path(param)
+        
     
     return sload
     
