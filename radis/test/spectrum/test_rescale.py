@@ -13,7 +13,7 @@ from radis.tools.database import load_spec
 from radis.test.utils import getTestFile
 import numpy as np
 
-def _test_compression(verbose=True, warnings=True, *args, **kwargs):
+def test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
     
     from neq.spec import SpectrumFactory
     
@@ -50,7 +50,7 @@ def _test_compression(verbose=True, warnings=True, *args, **kwargs):
                          'transmittance': True, 'abscoeff': False}
 
 
-def _test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
+def test_update_transmittance__fast(verbose=True, warnings=True, *args, **kwargs):
     ''' Test that update can correctly recompute missing quantities '''
     # TODO: add one with radiance too
     
