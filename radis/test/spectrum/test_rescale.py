@@ -33,7 +33,7 @@ def _test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
                          self_absorption=True,
                          verbose=False)
     try:
-        sf.load_databank('HITRAN-CO')
+        sf.load_databank('HITRAN-CO-TEST')
     except DatabankNotFound:
         if warnings:
             import sys

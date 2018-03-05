@@ -688,7 +688,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     elif sys.platform in ['win32']:
         linereturnformat = 'a2'
     else:
-        raise ValueError('Line return format not defined for this OS: please update neq')
+        raise ValueError('Line return format not defined for this OS: please update RADIS')
 
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   

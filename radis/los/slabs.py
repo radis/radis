@@ -95,6 +95,12 @@ def SerialSlabs(*slabs, **kwargs):
     
     - rewrite with 'recompute' list like in MergeSlabs
     
+    
+    See Also
+    --------
+    
+    :func:`~radis.los.slabs.MergeSlabs`
+    
     '''
 
     # Check inputs, get defaults
@@ -119,9 +125,6 @@ def SerialSlabs(*slabs, **kwargs):
     else:  
         # recursively calculate serial slabs
         slabs = list(slabs)
-        
-        # TODO: correct class but it crashes anyway. 
-        #  "All inputs must be Spectrum objects (got: <class 'neq.spec.spectrum.Spectrum'>)"
         
 #        # Check all items are Spectrum
         for s in slabs:
@@ -371,6 +374,11 @@ def MergeSlabs(*slabs, **kwargs):
         >>> s.update()   # Generate missing spectral quantities
         >>> s.plot()
         
+        
+    See Also
+    --------
+    
+    :func:`~radis.los.slabs.SerialSlabs`
     '''
     
     # inputs (Python 2 compatible)

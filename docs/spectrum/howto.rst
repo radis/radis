@@ -99,7 +99,7 @@ print Spectrum conditions?
 --------------------------
 
 Want to know under which calculation conditions was your Spectrum object 
-generated, or under which experimental conditions it was measure? 
+generated, or under which experimental conditions it was measured? 
 Just print it::
 
     print(s)
@@ -200,16 +200,40 @@ use the :func:`~radis.tools.database.load_spec` function::
 compare two Spectrum objects?
 -----------------------------
 
-Use one of the predefined functions :func:`~radis.spectrum.compare.get_diff`, 
-:func:`~radis.spectrum.compare.get_ratio`, :func:`~radis.spectrum.compare.get_distance`, 
-:func:`~radis.spectrum.compare.get_residual` or the plot function 
-:func:`~radis.spectrum.compare.plot_diff`::
+You can compare two Spectrum objects using the :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` 
+method, or simply the ``==`` statement (which is essentially the same thing)::
+
+    s1 == s2 
+    >>> True/False 
+    s1.compare_with(s2)
+    >>> True/False 
+    
+However, :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` allows more freedom 
+regarding what quantities to compare. ``==`` will compare everything of two spectra, 
+including input conditions, units under which spectral quantities are stored, 
+populations of species if they were saved, etc. In many situations we may want 
+to simply compare the spectra themselves, or even a particular quantity like 
+*transmittance_noslit*. Use::
+
+    s1.compare_with(s2, spectra_only=True)                    # compares all spectral quantities 
+    s1.compare_with(s2, spectra_only='transmittance_noslit')  # compares transmittance only 
+    
+The aforementionned methods will return a boolean array (True/False). If you 
+need the difference, or ratio, or distance, between your two spectra, or simply 
+want to plot the difference, you can use one of the predefined functions 
+:func:`~radis.spectrum.compare.get_diff`, :func:`~radis.spectrum.compare.get_ratio`, 
+:func:`~radis.spectrum.compare.get_distance`, :func:`~radis.spectrum.compare.get_residual` 
+or the plot function :func:`~radis.spectrum.compare.plot_diff`::
 
     from radis.spectrum import plot_diff
     s1 = load_spec(temp_file_name)
     s2 = load_spec(temp_file_name2)
     plot_diff(s1, s2, 'radiance')
 
+These functions usually require that the spectra are calculated on the same spectral 
+range. When comparing, let's say, a calculated spectrum with experimental data, 
+you may want to interpolate: you can have a look at the :meth:`~radis.spectrum.spectrum.Spectrum.resample` 
+method. 
 
 Generate a Blackbody (Planck) function object?
 ----------------------------------------------

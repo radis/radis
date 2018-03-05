@@ -39,13 +39,13 @@ parfuncfmt:                      #  'cdsd', 'hapi', etc.
                                  # file. If `hapi`, then HAPI (HITRAN Python 
                                  # interface) is used to retrieve them (valid if
                                  # your databank is HITRAN data). HAPI is embedded 
-                                 # into NeQ. Check the version.            
+                                 # into RADIS. Check the version.            
 # Optional
 # ----------
 parfunc:                         #  path to tabulated partition function to use.
                                  # If `parfuncfmt` is `hapi` then `parfunc` 
                                  # should be the link to the hapi.py file. If 
-                                 # not given, then the hapi.py embedded in NeQ 
+                                 # not given, then the hapi.py embedded in RADIS 
                                  # is used (check version)
 levels_iso1                      #  path to energy levels (needed for non-eq 
                                  # calculations). Default None
@@ -109,7 +109,7 @@ def getDatabankEntries(dbname):
                                          # `USE_HAPI`, then HAPI (HITRAN Python
                                          interface) [1]_ is used to retrieve them (valid
                                          if your databank is HITRAN data). HAPI
-                                         is embedded into NeQ. Check the version.
+                                         is embedded into RADIS. Check the version.
     
         parfuncfmt:                      # 'cdsd'
                                          # format to read tabulated partition function

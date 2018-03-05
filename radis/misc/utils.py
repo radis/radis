@@ -31,7 +31,7 @@ def import_from_module(module, name):
     return getattr(impmodule , name)
 
 class Chdir:
-    ''' because we need to change directory to get into the NeQ folder to find
+    ''' because we need to change directory to get into the RADIS folder to find
     the Git files and version, when imported from another program. This class
     then ensures we get back in the correct directory 
     
@@ -75,7 +75,7 @@ else:
 # %% Other stuff
     
 class DatabankNotFound(FileNotFoundError):
-    ''' Used when a line database is not found in neq.rc ''' 
+    ''' Used when a line database is not found in radis.rc ''' 
     pass
 
 # %%

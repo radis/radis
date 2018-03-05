@@ -61,7 +61,7 @@ Test
 ====
 
 To make sure the install worked, run the following command from the console in
-the `radis\radis` directory::
+the ``radis\radis`` directory::
 
     pytest
 

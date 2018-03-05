@@ -1,4 +1,4 @@
-# NeQ extension of Pint units definition file
+# RADIS extension of Pint units definition file
 # Based on the International System of Units
 # Language: english
 

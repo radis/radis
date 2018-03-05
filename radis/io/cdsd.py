@@ -216,7 +216,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     elif sys.platform in ['win32']:
         linereturnformat = 'a2'
     else:
-        raise ValueError('Line return format not defined for this OS: please update neq')  
+        raise ValueError('Line return format not defined for this OS: please update RADIS')  
     
     newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]

@@ -49,6 +49,15 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     w1, Idiff: array
         difference interpolated on the second range(order?)
     
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_ratio`, 
+    :func:`~radis.spectrum.compare.get_distance`,  
+    :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.plot_diff` 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
@@ -82,6 +91,16 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
     
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_distance`,  
+    :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.plot_diff` 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
+    
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
@@ -110,6 +129,16 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
     
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
+    
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_ratio`,  
+    :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.plot_diff` 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
     
     '''
 
@@ -145,6 +174,15 @@ def get_residual(s1, s2, var):
     when s1 and s2 dont have the size wavespace range, they are automatically
     resampled through get_diff on 's1' range 
 
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_ratio`, 
+    :func:`~radis.spectrum.compare.get_distance`, 
+    :func:`~radis.spectrum.compare.plot_diff` 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
 
     w, I = s1.get(var)
@@ -262,6 +300,18 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     >>>       label1='brd 10 cm-1, P={0:.2f} {1}'.format(s10.get_power(unit=Punit),Punit),
     >>>       label2='brd 50 cm-1, P={0:.2f} {1}'.format(s50.get_power(unit=Punit),Punit)
     >>>       )
+    
+    
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_ratio`, 
+    :func:`~radis.spectrum.compare.get_distance`, 
+    :func:`~radis.spectrum.compare.get_residual`, 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
+    
     '''
     
     # Get defaults

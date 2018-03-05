@@ -87,7 +87,7 @@ def is_jsonable(x):
 def save(s, path, discard=[], compress=False, add_info=None, add_date=None, 
          if_exists_then='increment', verbose=True, warnings=True):
     ''' Save a Spectrum object in JSON format. Object can be recovered with 
-    radis.tools.load_spec()
+    :func:`radis.tools.database.load_spec`
     
     Parameters
     ----------
@@ -131,6 +131,21 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
     Returns filename used (may be different from given path as new info or
     incremental identifiers are added)
 
+
+    Examples
+    --------
+    
+    Test if an object hasnt changed during saving::
+        
+        from radis.tools.database import load_spec
+        s == load_spec(s.store('test'))
+
+
+    See Also
+    --------
+    
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+    :func:`~radis.tools.database.load_spec`
     '''
 
     # 1) Format to JSON writable dictionary
@@ -389,7 +404,7 @@ def load(file):
     file: str
         .spec file to load
 
-    (wrapper to neq.spec.load)
+    (wrapper to :func:`~radis.tools.database.load_spec`)
 
     '''
 
@@ -405,6 +420,12 @@ def load_spec(file):
     file: str
         .spec file to load
 
+    
+    See Also
+    --------
+    
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+    
     '''
 
     with open(file, 'r') as f:
