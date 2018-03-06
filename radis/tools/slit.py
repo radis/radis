@@ -945,14 +945,6 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     maximum. This may result in sightly different FWHM if wstep is too large.
     However, slit is corrected so that effective FWHM is preserved.
 
-
-    See Also
-    --------
-    
-    :func:`~radis.tools.slit.trapezoidal_slit`
-    :func:`~radis.tools.slit.gaussian_slit`
-    :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`
-    
     '''
 
     # Build first half
@@ -1057,14 +1049,6 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
     maximum. This may result in sightly different FWHM if wstep is too large.
     However, slit is corrected so that effective FWHM is preserved.
 
-
-    See Also
-    --------
-    
-    :func:`~radis.tools.slit.triangular_slit`
-    :func:`~radis.tools.slit.gaussian_slit`
-    :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`
-    
     """
 
 
@@ -1185,14 +1169,6 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     slit is generated with an odd number of elements and centered on its
     maximum. This may result in sightly different FWHM if wstep is too large.
 
-
-    See Also
-    --------
-    
-    :func:`~radis.tools.slit.triangular_slit`
-    :func:`~radis.tools.slit.trapezoidal_slit`
-    :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`
-    
     
     '''
 

@@ -49,7 +49,7 @@ Spectral quantities (see the list of quantities in :doc:`spectrum`) can be store
 different formats in a Spectrum object (with wavenumbers, or wavelengths
 in air, or wavelengths in vacuum, for a given unit, etc.) 
 
-It is recommended to use the .get() method to get exactly what you want::
+It is recommended to use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get exactly what you want::
     
     w, I = s.get('transmittance_noslit', wunit='cm-1')  
     _, T = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
@@ -63,7 +63,19 @@ The default quantities are::
     # Not convoluted: 
     'radiance_noslit', 'transmittance_noslit', 'emisscoeff', 'absorbance', 
     'abscoeff', 'abscoeff_continuum', 'emissivity_noslit'
+
+See the latest list in the CONVOLUTED_QUANTITIES and NON_CONVOLUTED_QUANTITIES defined 
+`here <https://github.com/radis/radis/blob/master/radis/spectrum/rescale.py>`__.
     
+get wavelength / wavenumber?
+------------------------
+
+Use the :meth:`~radis.spectrum.spectrum.Spectrum.get_wavelength` and
+:meth:`~radis.spectrum.spectrum.Spectrum.get_wavenumber` methods::
+    
+    w_nm = s.get_wavelength()
+    w_cm = s.get_wavenumber()
+        
     
 calculate missing quantities?
 -----------------------------

@@ -7,8 +7,8 @@ Created on Tue Aug 15 14:56:25 2017
 Runs tests for neq/phys so that they can be accessed by pytest (and hopefully 
 the CI test suite)
 
-Use
-------
+Examples
+--------
 
 Run all tests:
 
