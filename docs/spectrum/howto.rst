@@ -275,7 +275,7 @@ create a database of Spectrum objects?
 Use the :class:`~radis.tools.database.SpecDatabase` class. It takes a 
 folder as an argument, as can be used to see the properties and all 
 :class:`~radis.spectrum.spectrum.Spectrum` objects within this folder 
-with :meth:`~radis.tools.database.SpecDatabase.view`, and select 
+with :meth:`~radis.tools.database.SpecDatabase.see`, and select 
 the Spectrum that match a given set of conditions with 
 :meth:`~radis.tools.database.SpecDatabase.get`, 
 :meth:`~radis.tools.database.SpecDatabase.get_unique` and 

@@ -11,17 +11,19 @@ dataframe structure on top to serve as an efficient index to visualize
 the spectra input conditions, and slice through the Dataframe with
 easy queries
 
-Example
--------
+Examples
+--------
 
-    >>> from neq.spec import SpecDatabase
-    >>> db = SpecDatabase(r"path/to/database")     # create or loads database
+See and get objects from database::
 
-    >>> db.update()  # in case something changed (like a file was added manually)
-    >>> db.see(['Tvib', 'Trot'])   # nice print in console
+    from neq.spec import SpecDatabase
+    db = SpecDatabase(r"path/to/database")     # create or loads database
 
-    >>> s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
-    >>> db.add(s)  # update database (and raise error because duplicate!)
+    db.update()  # in case something changed (like a file was added manually)
+    db.see(['Tvib', 'Trot'])   # nice print in console
+
+    s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
+    db.add(s)  # update database (and raise error because duplicate!)
 
 Note that SpectrumFactory objects can be configured to automatically update
 a database
@@ -29,15 +31,15 @@ a database
 Edit database: 
     
 An example of script to update all spectra conditions in a database (ex: when 
-a condition was added afterwards to the Spectrum class)
+a condition was added afterwards to the Spectrum class)::
     
-    >>> # Example: add the 'medium' key in conditions 
-    >>> db = "database_CO"
-    >>> for f in os.listdir(db):
-    >>>    if not f.endswith('.spec'): continue
-    >>>    s = load_spec(join(db, f))
-    >>>    s.conditions['medium'] = 'vacuum'
-    >>>    s.store(join(db,f), if_exists_then='replace')
+    # Example: add the 'medium' key in conditions 
+    db = "database_CO"
+    for f in os.listdir(db):
+       if not f.endswith('.spec'): continue
+       s = load_spec(join(db, f))
+       s.conditions['medium'] = 'vacuum'
+       s.store(join(db,f), if_exists_then='replace')
 
 Todo
 ----
@@ -750,6 +752,7 @@ class SpecDatabase():
         Makes the 'file' column the index, and also discard the 'Spectrum' column
         (that holds all the data) for readibility
 
+        
         '''
 
         if len(self) == 0:
@@ -773,7 +776,8 @@ class SpecDatabase():
         return dg.reindex(columns=columns)
 
     def view(self, columns=None, *args):
-        ''' alias to df.see() '''
+        ''' alias to :meth:`~radis.tools.database.SpecDatabase.see`
+        '''
         
         return self.see(columns = columns, *args)
 
@@ -894,6 +898,14 @@ class SpecDatabase():
             
             db.add(s, discard=['populations'])
 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        
         '''
         
         # Check inputs
@@ -1009,6 +1021,13 @@ class SpecDatabase():
         
         >>> spec_list = db.get(Tvib=3000, Trot=1300)
 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        
         '''
                 
         # Test inputs
@@ -1068,7 +1087,16 @@ class SpecDatabase():
         Parameters
         ----------
         
-        see .get() for more details '''
+        see meth:`~radis.tools.database.SpecDatabase.get` for more details 
+        
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        
+        '''
         
         out = self.get(conditions, **kwconditions)
 
@@ -1108,6 +1136,13 @@ class SpecDatabase():
             if True, returns the actual object in database. Else, return a copy
             Default False
             
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+        
         '''
         
         scalable_inputs = ['mole_fraction', 'path_length']
