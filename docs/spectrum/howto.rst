@@ -208,7 +208,11 @@ use the :func:`~radis.tools.database.load_spec` function::
     s2 = load_spec(temp_file_name)
     s2.update()    # regenerate missing quantities 
     
-    
+If many spectra are stored in a folder, it may be time to set up a 
+:class:`~radis.tools.database.SpecDatabase` structure to easily see all 
+Spectrum conditions and get Spectrum that suits specific parameters 
+
+
 compare two Spectrum objects?
 -----------------------------
 
@@ -247,7 +251,7 @@ range. When comparing, let's say, a calculated spectrum with experimental data,
 you may want to interpolate: you can have a look at the :meth:`~radis.spectrum.spectrum.Spectrum.resample` 
 method. 
 
-Generate a Blackbody (Planck) function object?
+generate a Blackbody (Planck) function object?
 ----------------------------------------------
 
 In RADIS you can either use the :func:`~radis.phys.blackbody.planck` and
@@ -264,5 +268,17 @@ Example::
                 T=288, eps=1)
     s.plot()
 
+
+create a database of Spectrum objects?
+--------------------------------------
+
+Use the :class:`~radis.tools.database.SpecDatabase` class. It takes a 
+folder as an argument, as can be used to see the properties and all 
+:class:`~radis.spectrum.spectrum.Spectrum` objects within this folder 
+with :meth:`~radis.tools.database.SpecDatabase.view`, and select 
+the Spectrum that match a given set of conditions with 
+:meth:`~radis.tools.database.SpecDatabase.get`, 
+:meth:`~radis.tools.database.SpecDatabase.get_unique` and 
+:meth:`~radis.tools.database.SpecDatabase.get_closest`
 
     

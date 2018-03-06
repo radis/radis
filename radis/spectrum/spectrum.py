@@ -1781,8 +1781,9 @@ class Spectrum(object):
     def store(self, path, discard=['lines', 'populations'], compress=False, 
               add_info=None, add_date=None, if_exists_then='error', verbose=True):
         ''' Save a Spectrum object in JSON format. Object can be recovered with
-        :func:`radis.tools.database.load_spec`
-
+        :func:`radis.tools.database.load_spec`. If many Spectrum are saved in a 
+        same folder you can view their properties with the :class:`~radis.tools.database.SpecDatabase`
+        structure.
     
         Parameters    
         ----------
@@ -1809,9 +1810,11 @@ class Spectrum(object):
             >>> nameafter = ['Tvib', 'Trot']
 
         discard: list of str
-            parameters to exclude. To save some memory for instance
-            Default [`lines`, `populations`]: retrieved Spectrum will loose the 
-            line_survey ability, and plot_populations() (but it saves a ton of memory!)
+            parameters to exclude, for instance to save some memory for instance
+            Default [`lines`, `populations`]: retrieved Spectrum looses the 
+            :meth:`~radis.spectrum.spectrum.Spectrum.line_survey` ability, 
+            and :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`
+            (but it saves tons of memory!)
 
         if_exists_then: 'increment', 'replace', 'error'
             what to do if file already exists. If increment an incremental digit
@@ -1827,18 +1830,38 @@ class Spectrum(object):
 
         Notes
         -----
+        
+        If many spectra are stored in a folder, it may be time to set up a 
+        :class:`~radis.tools.database.SpecDatabase` structure to easily see all 
+        Spectrum conditions and get Spectrum that suits specific parameters. 
+        
 
         Implementation:
             
             Shouldnt rely on a Database. One may just want to store/load a Spectrum
             once.
             
-        Todo
-        ----
+            
+        Examples
+        --------
         
-        # Todo: maybe move most of the code here (filename writing) in database.py ?
-
+        Store a spectrum in compressed mode, regenerate quantities after loading::
+        
+            from radis import load_spec 
+            s.store('test.spec', compress=True)   # s is a Spectrum 
+            s2 = load_spec('test.spec')
+            s2.update()                           # regenerate missing quantities 
+            
+        
+        See Also
+        --------
+        
+        :class:`~radis.tools.database.SpecDatabase`, 
+        :func:`~radis.tools.database.load_spec`, 
+        :meth:`~radis.spectrum.spectrum.Spectrum.store`
+            
         '''
+        # Todo: maybe move most of the code here (filename writing) in database.py ?
 
         from radis.tools.database import save
 

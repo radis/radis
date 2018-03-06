@@ -86,8 +86,11 @@ def is_jsonable(x):
     
 def save(s, path, discard=[], compress=False, add_info=None, add_date=None, 
          if_exists_then='increment', verbose=True, warnings=True):
-    ''' Save a Spectrum object in JSON format. Object can be recovered with 
-    radis.tools.load_spec()
+    ''' Save a :class:`~radis.spectrum.spectrum.Spectrum` object in JSON format. 
+    Object can be recovered with :func:`~radis.tools.database.load_spec`. 
+    If many :class:`~radis.spectrum.spectrum.Spectrum` are saved in a 
+    same folder you can view their properties with the :class:`~radis.tools.database.SpecDatabase`
+    structure.
     
     Parameters
     ----------
@@ -130,6 +133,15 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
 
     Returns filename used (may be different from given path as new info or
     incremental identifiers are added)
+    
+    
+    See Also
+    --------
+    
+    :class:`~radis.tools.database.SpecDatabase`, 
+    :func:`~radis.tools.database.load_spec`, 
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+    
 
     '''
 
@@ -405,6 +417,21 @@ def load_spec(file):
     file: str
         .spec file to load
 
+        
+    Returns
+    -------
+    
+    s: Spectrum 
+        a :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+        
+    See Also
+    --------
+    
+    :class:`~radis.tools.database.SpecDatabase`, 
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+    
+        
     '''
 
     with open(file, 'r') as f:
@@ -659,6 +686,13 @@ class SpecDatabase():
         requires all conditions to be either float, string, or boolean. List 
         won't work!
 
+            
+        See Also
+        --------
+        
+        :func:`~radis.tools.database.load_spec`, 
+        :meth:`~radis.spectrum.spectrum.Spectrum.store`
+        
         '''
 
         # Assert name looks like a directory
