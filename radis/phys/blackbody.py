@@ -202,4 +202,5 @@ def sPlanck(wavenum_min=None, wavenum_max=None,
 
 
 if __name__ == '__main__':
-    pass
+    from radis.test.phys.test_blackbody import test_planck
+    test_planck()
