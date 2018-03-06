@@ -1779,7 +1779,7 @@ class Spectrum(object):
         return print_conditions(self.get_conditions(), self.cond_units)
 
     def store(self, path, discard=['lines', 'populations'], compress=False, 
-              add_info=None, add_date=None, if_exists_then='increment', verbose=True):
+              add_info=None, add_date=None, if_exists_then='error', verbose=True):
         ''' Save a Spectrum object in JSON format. Object can be recovered with
         :func:`radis.tools.database.load_spec`
 
@@ -1796,7 +1796,8 @@ class Spectrum(object):
             explicitely give a filename to save
     
         compress: boolean
-            if True, removes all quantities that can be regenerated with s.update(),
+            if True, removes all quantities that can be regenerated with the 
+            :meth:`~radis.spectrum.spectrum.Spectrum.update` method
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
             Default False
@@ -1815,7 +1816,7 @@ class Spectrum(object):
         if_exists_then: 'increment', 'replace', 'error'
             what to do if file already exists. If increment an incremental digit
             is added. If replace file is replaced (yeah). If error (or anything else)
-            an error is raised. Default `increment`
+            an error is raised. Default `error`
 
 
         Returns
