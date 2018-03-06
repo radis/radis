@@ -601,8 +601,6 @@ def _test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False,
     import matplotlib.pyplot as plt
     from neq.test.utils import getTestFile
     
-    b = True
-    
     for optically_thin in [True, False]:
     
         s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
@@ -620,12 +618,11 @@ def _test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False,
     #    print('Max error: {0:.2f}%'.format(np.abs(s2.get('radiance_noslit')[1]/
     #          s1N.get('radiance_noslit')[1]-1).max()*100))
         
-        b1 = np.isclose(s2.get_power(), s1N.get_power(), 1.5e-2)
         if verbose:
-            print('Compare 50x[CO=0.01] vs 1x[CON=0.5] (optically thin: {1}): {0}'.format(
-                    b1, optically_thin))
+            print('Compare 50x[CO=0.01] vs 1x[CON=0.5] (optically thin: {0})'.format(
+                    optically_thin))
             print('... Difference: {0:.2f}%'.format(abs(s1N.get_power()/s2.get_power()-1)*100))
-        b *= b1
+        assert np.isclose(s2.get_power(), s1N.get_power(), 1.5e-2)
     
         if plot:
             for k in ['radiance_noslit']: #, 'transmittance_noslit']:
@@ -635,19 +632,17 @@ def _test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False,
                 plt.title('Optically thin: {0}'.format(optically_thin))
                 plt.tight_layout()
             
-    return bool(b)
+    return True
 #        
         
 def _test(verbose=True, plot=True, debug=False, warnings=True, *args, **kwargs):
     
-    b = True
-    
-    b *= _test_merge_slabs(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
+    _test_merge_slabs(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
                            *args, **kwargs)
     
-    # Todo: add a test with _serial_slabs ... For instance the Sebastien Depraz reference case
+    # Todo: add a test with _serial_slabs ... 
         
-    return bool(b)
+    return True
 
 
 if __name__ == '__main__':

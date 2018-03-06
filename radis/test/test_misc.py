@@ -35,12 +35,10 @@ def test_utils__fast(*args, **kwargs):
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-    b = True
-
-    b *= test_config__fast(verbose=verbose,*args, **kwargs)
-    b *= test_utils__fast(verbose=verbose,*args, **kwargs)
+    test_config__fast(verbose=verbose,*args, **kwargs)
+    test_utils__fast(verbose=verbose,*args, **kwargs)
     
-    return b
+    return True
 
 if __name__ == '__main__':
     print('Testing misc.py: ', _run_testcases(verbose=True))

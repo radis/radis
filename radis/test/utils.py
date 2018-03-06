@@ -154,7 +154,7 @@ def _failsafe_if_no_db(testcase, *args, **kwargs):
                        'Ignoring the test'))
         return True
     
-def MissingDatabase(err, file='', warnings=True):
+def IgnoreMissingDatabase(err, file='', warnings=True):
     if IGNORE_MISSING_DATABASES:
         if warnings:
             import sys

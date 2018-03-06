@@ -46,10 +46,12 @@ def _test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
     redundant = get_redundant(s1)
     if verbose: print(redundant)
     
-    return redundant == {'emissivity_noslit': True, 'radiance_noslit': True, 
+    assert redundant == {'emissivity_noslit': True, 'radiance_noslit': True, 
                          'radiance': True, 'emisscoeff': True, 
                          'transmittance_noslit': True, 'absorbance': True, 
                          'transmittance': True, 'abscoeff': False}
+    
+    return True
 
 
 def test_update_transmittance__fast(verbose=True, warnings=True, *args, **kwargs):
@@ -93,14 +95,10 @@ def test_update_transmittance__fast(verbose=True, warnings=True, *args, **kwargs
 
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
-    b1 = _test_compression__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
-    b2 = test_update_transmittance__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
+    _test_compression__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_update_transmittance__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
     
-    if verbose:
-        print('test_compression: ', b1)
-        print('test_update: ', b2)
-        
-    return bool(b1*b2)
+    return True
 
 if __name__ == '__main__':
     print('Testing test_rescale.py:', _run_all_tests(verbose=True))
