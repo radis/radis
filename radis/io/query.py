@@ -21,6 +21,8 @@ References
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.misc import is_float
 from astroquery.hitran import read_hitran_file, cache_location, download_hitran
@@ -92,8 +94,8 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
             # Let's bet it's just that there are no lines in this range
             empty_range = True
             if verbose: 
-                print('Not lines for {0} (id={1}), iso={2} between {3:.2f}-{4:.2f}cm-1. '.format(
-                        molecule, mol_id, isotope, wmin, wmax))
+                print(('Not lines for {0} (id={1}), iso={2} between {3:.2f}-{4:.2f}cm-1. '.format(
+                        molecule, mol_id, isotope, wmin, wmax)))
         else:
             raise ValueError('An error occured during the download of HITRAN files '+\
                              'for {0} (id={1}), iso={2} between {3:.2f}-{4:.2f}cm-1. '.format(
@@ -125,7 +127,7 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)
     else:
-        df = pd.DataFrame(columns=rename_columns.values())
+        df = pd.DataFrame(columns=list(rename_columns.values()))
     
     # Cast type to float64
     cast_type = {'wav':np.float64,

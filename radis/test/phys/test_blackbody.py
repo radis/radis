@@ -3,6 +3,9 @@
 
 """
 
+from __future__ import division, unicode_literals, print_function
+
+from __future__ import absolute_import
 import numpy as np
 from radis.phys.blackbody import sPlanck, planck, planck_wn
 

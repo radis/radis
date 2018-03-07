@@ -90,8 +90,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     sp = spec.lines.copy()
     dbformat = spec.conditions['dbformat']
     
-    if not plot in sp.keys():
-        raise KeyError('Key {0} is not in line database: {1}'.format(plot, sp.keys()))
+    if not plot in list(sp.keys()):
+        raise KeyError('Key {0} is not in line database: {1}'.format(plot, list(sp.keys())))
 
     def hitran2splot(S):
         ''' convert Linestrength in HITRAN units (cm-1/(molecules.cm-2)) to

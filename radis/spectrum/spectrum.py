@@ -1138,17 +1138,17 @@ class Spectrum(object):
         if type(populations) != dict:
             raise TypeError('Method defined for populations as dictionary')
         if molecule is None:
-            if len(populations.keys())!=1:
+            if len(list(populations.keys()))!=1:
                 raise ValueError('Please choose which molecule among: {0}'.format(
                         list(populations.keys())))
             molecule = list(populations.keys())[0]
         if isotope is None:
-            if len(populations[molecule].keys())!=1:
+            if len(list(populations[molecule].keys()))!=1:
                 raise ValueError('Please choose which isotope among: {0}'.format(
                         list(populations[molecule].keys())))
             isotope = list(populations[molecule].keys())[0]
         if electronic_state is None:
-            if len(populations[molecule][isotope].keys())!=1:
+            if len(list(populations[molecule][isotope].keys()))!=1:
                 raise ValueError('Please choose which electronic state among: {0}'.format(
                         list(populations[molecule][isotope].keys())))
             electronic_state = list(populations[molecule][isotope].keys())[0]
@@ -1356,7 +1356,7 @@ class Spectrum(object):
 
                     Ia = None                    
                     if correct_for_abundance:
-                        if 'Ia' in content.keys():
+                        if 'Ia' in list(content.keys()):
                             Ia = content['Ia']
                         else:
                             raise KeyError('Ia: isotopic abundance not defined in '+\

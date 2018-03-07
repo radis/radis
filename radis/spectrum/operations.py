@@ -6,6 +6,7 @@ Handy functions for manipulation of spectra
 @author: minou
 """
 
+from __future__ import absolute_import
 from radis.misc.curve import curve_substract, curve_add
 from radis import get_diff, Spectrum
 

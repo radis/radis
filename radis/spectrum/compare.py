@@ -5,6 +5,8 @@ Created on Fri Feb  9 13:03:04 2018
 @author: erwan
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
 from radis.spectrum.spectrum import make_up, cast_waveunit
@@ -387,7 +389,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     if normalize:
         w1, I1 = s1.get(var, wunit, Iunit, medium)
         w2, I2 = s2.get(var, wunit, Iunit, medium)
-        if verbose: print('Rescale factor: '+str(np.max(I1)/np.max(I2)))
+        if verbose: print(('Rescale factor: '+str(np.max(I1)/np.max(I2))))
         ax0.plot(w1, I1/np.max(I1), ls=style, color='k', lw=3, label=label1)
         ax0.plot(w2, I2/np.max(I2), ls=style, color='r', lw=1, label=label2)
     else:

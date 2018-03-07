@@ -12,6 +12,8 @@ unload the spectrum.py file
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 from numpy import log as ln
 from numpy import inf, exp
@@ -226,7 +228,7 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
     if old_self_absorption != (not optically_thin):
         spec.conditions['self_absorption'] = not optically_thin
         if verbose:
-            print('self absorption set to:', spec.conditions['self_absorption'])
+            print(('self absorption set to:', spec.conditions['self_absorption']))
 
     initial = spec.get_vars()
 
@@ -242,7 +244,7 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
     # Get list of new quantities 
     new_q = [k for k in spec.get_vars() if k not in initial]
     if verbose:
-        print('New quantities added: {0}'.format(new_q))
+        print(('New quantities added: {0}'.format(new_q)))
         
     # Final checks
     for k in new_q:
@@ -1009,4 +1011,4 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
 if __name__ == '__main__':
 
     from radis.test.spectrum.test_rescale import _run_all_tests
-    print('Test rescale.py: ', _run_all_tests(verbose=True))
+    print(('Test rescale.py: ', _run_all_tests(verbose=True)))

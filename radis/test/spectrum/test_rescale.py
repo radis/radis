@@ -6,6 +6,8 @@ Created on Fri Mar  2 23:39:52 2018
 @author: erwan
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import radis
 from radis.misc.utils import DatabankNotFound
 from radis.spectrum.rescale import get_redundant
@@ -37,9 +39,9 @@ def _test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
     except DatabankNotFound:
         if warnings:
             import sys
-            print(sys.exc_info())
-            print('Testing spectrum.py: Database not defined: HITRAN-CO \n'+\
-                           'Ignoring the test')
+            print((sys.exc_info()))
+            print(('Testing spectrum.py: Database not defined: HITRAN-CO \n'+\
+                           'Ignoring the test'))
         return True
 
     s1 = sf.non_eq_spectrum(Tgas, Tgas, path_length=0.01)
@@ -101,4 +103,4 @@ def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     return True
 
 if __name__ == '__main__':
-    print('Testing test_rescale.py:', _run_all_tests(verbose=True))
+    print(('Testing test_rescale.py:', _run_all_tests(verbose=True)))

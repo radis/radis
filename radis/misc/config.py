@@ -228,7 +228,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
     
     # Check nothing is left
     if dict_entries != {}:
-        raise ValueError('Unexpected keys: {0}'.format(dict_entries.keys()))
+        raise ValueError('Unexpected keys: {0}'.format(list(dict_entries.keys())))
         
     # Write to ~/.radis
     # ... Note: what if there is a PermissionError here? Try/except pass? 
@@ -250,7 +250,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
     
     try:
         assert len(dict_entries1) == len(dict_entries2)
-        assert compare_lists(dict_entries1.keys(), dict_entries2.keys(),
+        assert compare_lists(list(dict_entries1.keys()), list(dict_entries2.keys()),
                              verbose=verbose) == 1
         for k in dict_entries1.keys():
             v1 = dict_entries1[k]
@@ -262,7 +262,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
                                      [stdpath(path2) for path2 in v2],
                                      verbose=verbose) == 1
             elif k in ['levels']:
-                assert compare_dict(v1, v2, compare_as_paths=v1.keys(),
+                assert compare_dict(v1, v2, compare_as_paths=list(v1.keys()),
                                     verbose=verbose) == 1
             else:
                 raise ValueError('Unexpected key:', k)

@@ -10,6 +10,7 @@ Similar to Origin Simple Curve Math operators
 
 """
 
+from __future__ import absolute_import
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.spatial.distance import cdist

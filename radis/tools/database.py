@@ -548,7 +548,7 @@ def _fix_format(file, sload):
             del sload['conditions']['wavespace']
         else:
             raise KeyError("Spectrum 'conditions' dict should at least have a "+\
-                           "'waveunit' key. Got: {0}".format(sload['conditions'].keys()))
+                           "'waveunit' key. Got: {0}".format(list(sload['conditions'].keys())))
                 
     if 'isotope_identifier' in sload['conditions']:
         warn("File {0}".format(basename(file))+" has a deprecrated structure (key "+\

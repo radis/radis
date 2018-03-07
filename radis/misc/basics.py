@@ -265,8 +265,8 @@ def merge_rename_columns(df, columns1, columns2, merged_names):
                                    )
     '''
     
-    assert all_in(columns1, df.keys())
-    assert all_in(columns2, df.keys())
+    assert all_in(columns1, list(df.keys()))
+    assert all_in(columns2, list(df.keys()))
  
     df1 = df.loc[:,columns1]
     df2 = df.loc[:,columns2]
