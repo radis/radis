@@ -85,7 +85,7 @@ def conv2(quantity, fromunit, tounit):
     Note
     ----
     
-    Note that the output is still non dimensional. We don't transform `quantity` 
+    The output is still non dimensional. We don't transform `quantity` 
     into a pint array (or neq.phys.uarray) because this may create a performance
     drop in computationaly-expensive task. Instead, we assume we know for 
     sure the units in which some of our quantities will be created, and just

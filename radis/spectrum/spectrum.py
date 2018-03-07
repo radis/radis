@@ -1683,20 +1683,22 @@ class Spectrum(object):
         spec: Spectrum
             result from SpectrumFactory calculation (see spectrum.py)
 
-        overlay: 'absorbance', 'transmittance', 'radiance', etc... or list
-                 of the above, or None,
+        overlay: 'absorbance', 'transmittance', 'radiance', etc... or list of the above, or None
             overlay Linestrength with specified variable calculated in `spec`.
-            Default None. Full list in spec.get_vars()
+            Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
+            method. Default None. 
 
         wunit: 'nm', 'cm-1'
             wavelength / wavenumber units
             
-        medium: 'air', 'vacuum', or 'default'
+        medium: {'air', 'vacuum', 'default'}
             Choose whether wavelength are shown in air or vacuum. If 'default'  
             lines are shown as stored in the spectrum. 
 
-        Other inputs are passed to LineSurvey
-        ------
+        Other inputs are passed to :func:`~radis.tools.line_survey.LineSurvey`
+
+        Other Parameters
+        ----------------
         
         ex:
 
@@ -1707,7 +1709,13 @@ class Spectrum(object):
             Note: if not None, cutoff criteria is applied in this unit.
 
         barwidth: float
-            Default 0.07
+            With of bars in LineSurvey. Default 0.07
+
+
+        See Also
+        --------
+
+        :func:`~radis.tools.line_survey.LineSurvey`
 
         '''
         
@@ -1805,9 +1813,9 @@ class Spectrum(object):
 
         add_info: list
             append these parameters and their values if they are in conditions
-            example:
+            example::
 
-            >>> nameafter = ['Tvib', 'Trot']
+                add_info = ['Tvib', 'Trot']
 
         discard: list of str
             parameters to exclude, for instance to save some memory for instance

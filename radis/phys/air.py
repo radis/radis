@@ -9,7 +9,8 @@ Constants and correlations for air
 
 
 def air_index_dispersion(lbd):
-    ''' Return air index dispersion as a function of wavelength 
+    ''' Return air index dispersion as a function of wavelength with the 
+    relation of Ciddor [1]_
     
     Parameters
     ----------
@@ -21,11 +22,9 @@ def air_index_dispersion(lbd):
     References
     ----------
     
-    P. E. Ciddor. "Refractive index of air: new equations for the visible and 
-    near infrared", Appl. Optics 35, 1566-1573 (1996)
+    .. [1] `P. E. Ciddor. "Refractive index of air: new equations for the visible and near infrared", Appl. Optics 35, 1566-1573 (1996) <https://refractiveindex.info/?shelf=other&book=air&page=Ciddor>`__
     
-    https://refractiveindex.info/?shelf=other&book=air&page=Ciddor
-    Standard air: dry air at 15 °C, 101.325 kPa and with 450 ppm CO2 content.
+    Standard air: dry air at 15 °C, 101.325 kPa and with 450 ppm CO2 content
     
     '''
     
@@ -52,6 +51,12 @@ def vacuum2air(wavelength):
     
     wavelength: array-like (nm)
         wavelength in air
+    
+    
+    See Also
+    --------
+    
+    :func:`~radis.phys.air.air2vacuum`
     
     '''
     
@@ -83,9 +88,15 @@ def air2vacuum(wavelength):
     However, air_index_dispersion doesnt vary much on 1-2 cm-1 (which is typical
     of air index dispersion effect on air/vacuum wavelength in the mid-IR)
     
-    Estimate the error you make with:
-        
-    >>> vacuum2air(air2vacuum(w))-w
+    Estimate the error you make with::
+    
+        vacuum2air(air2vacuum(w))-w
+    
+    
+    See Also
+    --------
+    
+    :func:`~radis.phys.air.vacuum2air`
     
     '''
     
