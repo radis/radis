@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb 15 19:38:14 2017
-
-@author: erwan
+Summary
+-------
 
 Spectrum class holder
 
@@ -10,35 +9,34 @@ Keeps all output data from a SpectrumFactory calculation. Allows to reapply a
 different slit function in post-processing, and plot all spectral quantities
 with any unit
 
+Routine Listings
+----------------
+
+:func:`~radis.spectrum.spectrum.calculated_spectrum`
+:func:`~radis.spectrum.spectrum.experimental_spectrum`
+:func:`~radis.spectrum.spectrum.transmittance_spectrum`
+:func:`~radis.spectrum.spectrum.is_spectrum`
+
 
 Examples
 --------
 
 Typical use::
 
-    >>> from radis calculated_spectrum
-    >>> s = calculated_spectrum(w, I, conditions={'case':'previously calculated by ##'})
-    >>> s.plot('radiance_noslit')
-    >>> s.apply_slit(0.5, shape='triangular')
-    >>> s.plot('radiance')
+    from radis calculated_spectrum
+    s = calculated_spectrum(w, I, conditions={'case':'previously calculated by ##'})
+    s.plot('radiance_noslit')
+    s.apply_slit(0.5, shape='triangular')
+    s.plot('radiance')
 
 Spectrum objects can be stored, retrieved, rescaled, resamples::
 
-    >>> from radis import load_spec
-    >>> s = load_spec('co_calculation.spec')
-    >>> s.rescale_path_length(0.5)                  # calculate for new path_length
-    >>> s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
-    >>> s.resample(w_new)               # resample on new wavespace
-    >>> s.store('co_calculation2.spec')
-
-Other functions in this module
------------
-
-calculated_spectrum
-experimental_spectrum
-transmittance_spectrum
-plot_diff
-is_spectrum
+    from radis import load_spec
+    s = load_spec('co_calculation.spec')
+    s.rescale_path_length(0.5)                  # calculate for new path_length
+    s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
+    s.resample(w_new)               # resample on new wavespace
+    s.store('co_calculation2.spec')
 
 """
 
@@ -88,6 +86,10 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
         intensity unit (can be 'counts', 'mW/cm2/sr/nm', etc...). Default
         'mW/cm2/sr/nm' (note that non-convoluted Specair spectra are in 'mW/cm2/sr/µm')
 
+
+    Other Parameters
+    ----------------
+
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum. Default None
 
@@ -100,6 +102,16 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     name: str
         (optional) give a name
 
+
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+    :func:`~radis.spectrum.spectrum.experimental_spectrum`
+    :meth:`~radis.spectrum.spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.from_txt`
+    :func:`~radis.tools.database.load_spec`
+    
     '''
 
     return Spectrum.from_array(w, I, 'radiance_noslit', 
@@ -127,6 +139,10 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     Iunit: str
         intensity unit. Default 'I/I0'
 
+
+    Other Parameters
+    ----------------
+
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum
 
@@ -136,6 +152,16 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     name: str
         (optional) give a name
 
+
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+    :func:`~radis.spectrum.spectrum.experimental_spectrum`
+    :meth:`~radis.spectrum.spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.from_txt`
+    :func:`~radis.tools.database.load_spec`
+        
     '''
 
     return Spectrum.from_array(w, T, 'transmittance_noslit', 
@@ -164,6 +190,9 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
         intensity unit (can be 'counts', 'mW/cm2/sr/nm', etc...). Default
         'counts' (default Winspec output)
 
+    Other Parameters
+    ----------------
+
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum
 
@@ -173,6 +202,16 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     name: str
         (optional) give a name
 
+
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+    :meth:`~radis.spectrum.spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.from_txt`
+    :func:`~radis.tools.database.load_spec`
+    
     '''
 
     return Spectrum.from_array(w, I, 'radiance', 
@@ -201,14 +240,19 @@ class Spectrum(object):
 
     units: dict
         units for quantities
+        
+    Other Parameters
+    ----------------
+    
+    Optional parameters:
 
-    (optional) conditions: dict
+    conditions: dict
         physical conditions and calculation parameters
 
-    (optional) cond_units: dict
+    cond_units: dict
         units for conditions
 
-    (optional) populations: dict
+    populations: dict
         a dictionary of all species, and levels. Should be compatible with other
         radiative codes such as Specair output. Suggested format:
         {molecules: {isotopes: {elec state: rovib levels}}}
@@ -217,7 +261,7 @@ class Spectrum(object):
             {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
         
 
-    (optional) lines: pandas Dataframe
+    lines: pandas Dataframe
         all lines in databank (necessary for LineSurvey). Warning if you want to
         play with the lins content: The signification of columns in `lines` may be
         specific to a database format. Plus, some additional columns may have been
@@ -249,31 +293,41 @@ class Spectrum(object):
         spectra are created in a row). Default True
 
 
-    Example
-    -------
+    Examples
+    --------
+    
+    Manipulate a Spectrum calculated by RADIS::
 
-    >>> s = calc_spectrum(2125, 2300, Tgas=2000, databank='CDSD')
-    >>> s.print_conditions()
-    >>> s.plot('absorbance')
-    >>> s.line_survey(overlay='absorbance')
-    >>> s.plot('radiance_noslit', wunits='cm-1', Iunits='W/m2/sr/cm_1')
-    >>> s.apply_slit(5)
-    >>> s.plot('radiance')
-    >>> w, t = s.get('transmittance_noslit')  # for use in multi-slabs configs
+        s = calc_spectrum(2125, 2300, Tgas=2000, databank='CDSD')
+        s.print_conditions()
+        s.plot('absorbance')
+        s.line_survey(overlay='absorbance')
+        s.plot('radiance_noslit', wunits='cm-1', Iunits='W/m2/sr/cm_1')
+        s.apply_slit(5)
+        s.plot('radiance')
+        w, t = s.get('transmittance_noslit')  # for use in multi-slabs configs
 
-    Any emission spectrum (w, I) can also be converted into a Spectrum object
-    with the function `emission_spectrum` :
+    Any tuple of numpy arrays (w, I) can also be converted into a Spectrum object
+    from the :class:`~radis.spectrum.spectrum.Spectrum` class directly, or using 
+    the :func:`~radis.spectrum.spectrum.Spectrum.calculated_spectrum` function. 
+    All the following methods are equivalent::
 
-    >>> s = emission_spectrum(w, I)
+        from radis import Spectrum, calculated_spectrum
+        s1 = calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm')
+        s2 = Spectrum.from_array(w, I, 'radiance_noslit', 
+                               waveunit='nm', unit='mW/cm2/sr/nm')
+        s3 = Spectrum({'radiance_noslit': (w, I)}, 
+                      units={'radiance_noslit':'mW/cm2/sr/nm'},
+                      waveunit='nm')
 
-    Spectrum objects can be stored, retrieved, rescaled, resamples
+    Spectrum objects can be stored, retrieved, rescaled, resampled::
 
-    >>> from radis import load_spec
-    >>> s = load_spec('co_calculation.spec')
-    >>> s.rescale_path_length(0.5)                  # calculate for new path_length
-    >>> s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
-    >>> s.resample(w_new)               # resample on new wavespace
-    >>> s.store('co_calculation2.spec')
+        from radis import load_spec
+        s = load_spec('co_calculation.spec')
+        s.rescale_path_length(0.5)                  # calculate for new path_length
+        s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
+        s.resample(w_new)               # resample on new wavespace
+        s.store('co_calculation2.spec')
 
 
     Notes
@@ -281,7 +335,7 @@ class Spectrum(object):
     
     Implementation:
     
-        quantites are stored in self._q and self._q_conv dictionaries. They are better accessed
+        quantities are stored in self._q and self._q_conv dictionaries. They are better accessed
         with the get() function that deals with units and wavespace
         Note: we may move to a unique storage under self._q: in that case q['wavespace']
         and q_conv['wavespace'] need different names: ex. 'wavespace' and 'wavespace_conv'
@@ -302,6 +356,17 @@ class Spectrum(object):
     populations: dict
         Stores molecules, isotopes, electronic states and vibrational or 
         rovibrational populations
+    
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+    :func:`~radis.spectrum.spectrum.experimental_spectrum`
+    :meth:`~radis.spectrum.spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.from_txt`
+    :func:`~radis.tools.database.load_spec`
     
     
     '''
@@ -410,14 +475,16 @@ class Spectrum(object):
         
         Other Parameters
         ----------------
-            
-        (optional) conditions: dict
+                
+        Optional parameters:
+    
+        conditions: dict
             physical conditions and calculation parameters
     
-        (optional) cond_units: dict
+        cond_units: dict
             units for conditions
     
-        (optional) populations: dict
+        populations: dict
             a dictionary of all species, and levels. Should be compatible with other
             radiative codes such as Specair output. Suggested format:
             {molecules: {isotopes: {elec state: rovib levels}}}
@@ -425,7 +492,8 @@ class Spectrum(object):
             
                 {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
             
-        (optional) lines: pandas Dataframe
+    
+        lines: pandas Dataframe
             all lines in databank (necessary for LineSurvey). Warning if you want to
             play with the lins content: The signification of columns in `lines` may be
             specific to a database format. Plus, some additional columns may have been
@@ -446,6 +514,16 @@ class Spectrum(object):
             from radis import Spectrum
             s = Spectrum.from_array(w, I, 'radiance_noslit', 
                                    waveunit='nm', unit='mW/cm2/sr/nm')
+        
+        
+        See Also
+        --------
+        
+        :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+        :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+        :func:`~radis.spectrum.spectrum.experimental_spectrum`
+        :meth:`~radis.spectrum.spectrum.from_txt`
+        :func:`~radis.tools.database.load_spec`
         """
         
         # TODO: if medium not defined and quantities are given in cm-1, use vacuum
@@ -458,9 +536,8 @@ class Spectrum(object):
     @classmethod
     def from_txt(cls, file, quantity, waveunit, unit, *args, **kwargs):
         """
-        Construct Spectrum from txt file with
+        Construct Spectrum from txt file
         
-        >>> w, I = np.loadtxt(file).T
 
         Parameters
         ----------
@@ -478,16 +555,19 @@ class Spectrum(object):
             The rest if forwarded to Spectrum. see :class:`~radis.spectrum.spectrum.Spectrum`
             doc
         
+        
         Other Parameters
         ----------------
-            
-        (optional) conditions: dict
+                
+        Optional parameters:
+    
+        conditions: dict
             physical conditions and calculation parameters
     
-        (optional) cond_units: dict
+        cond_units: dict
             units for conditions
     
-        (optional) populations: dict
+        populations: dict
             a dictionary of all species, and levels. Should be compatible with other
             radiative codes such as Specair output. Suggested format:
             {molecules: {isotopes: {elec state: rovib levels}}}
@@ -495,7 +575,8 @@ class Spectrum(object):
             
                 {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
             
-        (optional) lines: pandas Dataframe
+    
+        lines: pandas Dataframe
             all lines in databank (necessary for LineSurvey). Warning if you want to
             play with the lins content: The signification of columns in `lines` may be
             specific to a database format. Plus, some additional columns may have been
@@ -503,9 +584,39 @@ class Spectrum(object):
             linestrength in SpectrumFactory). Refer to the code to know what they mean
             (and their units)
 
+
         Returns
         -------
         :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+        
+        Examples
+        --------
+        
+        Generate an experimental spectrum from txt::
+        
+            from radis import Spectrum
+            s = Spectrum.from_txt('spectrum.csv', 'radiance', waveunit='nm',
+                                      unit='W/cm2/sr/nm')
+        
+        
+        Notes
+        -----
+        
+        Internally, the numpy ``loadtxt`` function is used and transposed::
+        
+            w, I = np.loadtxt(file).T
+
+        
+        See Also
+        --------
+        
+        :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+        :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+        :func:`~radis.spectrum.spectrum.experimental_spectrum`
+        :meth:`~radis.spectrum.spectrum.from_array`
+        :func:`~radis.tools.database.load_spec`
+        
         """
         
         # Get input for loadtxt
@@ -1855,7 +1966,7 @@ class Spectrum(object):
     def store(self, path, discard=['lines', 'populations'], compress=False, 
               add_info=None, add_date=None, if_exists_then='error', verbose=True):
         ''' Save a Spectrum object in JSON format. Object can be recovered with
-        :func:`radis.tools.database.load_spec`. If many Spectrum are saved in a 
+        :func:`~radis.tools.database.load_spec`. If many Spectrum are saved in a 
         same folder you can view their properties with the :class:`~radis.tools.database.SpecDatabase`
         structure.
     
@@ -2547,12 +2658,15 @@ class Spectrum(object):
                     if verbose: print('Molecules are different (see above)')
             if not b5 and verbose: print('... populations dont match (see detail above)')
             b *= b5
-            
-            
+
+
             # Compare slit
             # -----------
             
-            if len(self._slit) != len(other._slit):
+            if len(self._slit) == len(other._slit) == 0:
+                # no slit anywhere
+                b6 = True
+            elif len(self._slit) != len(other._slit):
                 b6 = False
                 if verbose: print('A spectrum has slit function array but the other doesnt')
             else:

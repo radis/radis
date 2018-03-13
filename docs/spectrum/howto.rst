@@ -23,7 +23,7 @@ From numpy arrays, use :meth:`~radis.spectrum.spectrum.Spectrum.from_array` ::
                                waveunit='nm', unit='I/I0')
                                
               
-From a file, use , use :meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
+From a file, use :meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
                  
     # 'exp_spectrum.txt' contains a spectrum
     from radis import Spectrum
