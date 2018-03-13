@@ -205,16 +205,17 @@ class Spectrum(object):
     (optional) conditions: dict
         physical conditions and calculation parameters
 
-    cond_units: dict
+    (optional) cond_units: dict
         units for conditions
 
     (optional) populations: dict
         a dictionary of all species, and levels. Should be compatible with other
         radiative codes such as Specair output. Suggested format:
         {molecules: {isotopes: {elec state: rovib levels}}}
-        e.g
-        {'CO2':{1: 'X': df}}   with df a Pandas Dataframe
-        #TODO. Add pop_units? Can be a pandas dataframe too. 
+        e.g::
+        
+            {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
+        
 
     (optional) lines: pandas Dataframe
         all lines in databank (necessary for LineSurvey). Warning if you want to
@@ -393,19 +394,58 @@ class Spectrum(object):
         ----------
         
         w, I: array
+            waverange and vector 
         
         quantity: str
             spectral quantity name
             
+        waveunit: 'nm', 'cm-1'
+            unit of waverange
+            
         unit: str
-            spectral quantity unit
+            spectral quantity unit (arbitrary). Ex: 'mW/cm2/sr/nm' for radiance_noslit
             
         *args, **kwargs
-            see Spectrum doc
+            see :class:`~radis.spectrum.spectrum.Spectrum` doc
         
+        Other Parameters
+        ----------------
+            
+        (optional) conditions: dict
+            physical conditions and calculation parameters
+    
+        (optional) cond_units: dict
+            units for conditions
+    
+        (optional) populations: dict
+            a dictionary of all species, and levels. Should be compatible with other
+            radiative codes such as Specair output. Suggested format:
+            {molecules: {isotopes: {elec state: rovib levels}}}
+            e.g::
+            
+                {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
+            
+        (optional) lines: pandas Dataframe
+            all lines in databank (necessary for LineSurvey). Warning if you want to
+            play with the lins content: The signification of columns in `lines` may be
+            specific to a database format. Plus, some additional columns may have been
+            added by the calculation (e.g: `Ei` and `S` for emission integral and
+            linestrength in SpectrumFactory). Refer to the code to know what they mean
+            (and their units)
+
         Returns
         -------
-        Spectrum object
+        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+        
+        Examples
+        --------
+        
+        Create a spectrum::
+        
+            from radis import Spectrum
+            s = Spectrum.from_array(w, I, 'radiance_noslit', 
+                                   waveunit='nm', unit='mW/cm2/sr/nm')
         """
         
         # TODO: if medium not defined and quantities are given in cm-1, use vacuum
@@ -435,11 +475,37 @@ class Spectrum(object):
             
         *args, **kwargs
             the following inputs are forwarded to loadtxt: 'delimiter', 'skiprows'
-            The rest if forwarded to Spectrum. see Spectrum doc
+            The rest if forwarded to Spectrum. see :class:`~radis.spectrum.spectrum.Spectrum`
+            doc
         
+        Other Parameters
+        ----------------
+            
+        (optional) conditions: dict
+            physical conditions and calculation parameters
+    
+        (optional) cond_units: dict
+            units for conditions
+    
+        (optional) populations: dict
+            a dictionary of all species, and levels. Should be compatible with other
+            radiative codes such as Specair output. Suggested format:
+            {molecules: {isotopes: {elec state: rovib levels}}}
+            e.g::
+            
+                {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
+            
+        (optional) lines: pandas Dataframe
+            all lines in databank (necessary for LineSurvey). Warning if you want to
+            play with the lins content: The signification of columns in `lines` may be
+            specific to a database format. Plus, some additional columns may have been
+            added by the calculation (e.g: `Ei` and `S` for emission integral and
+            linestrength in SpectrumFactory). Refer to the code to know what they mean
+            (and their units)
+
         Returns
         -------
-        Spectrum object
+        :class:`~radis.spectrum.spectrum.Spectrum` object
         """
         
         # Get input for loadtxt
