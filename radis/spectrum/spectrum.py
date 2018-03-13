@@ -1712,6 +1712,7 @@ class Spectrum(object):
         # Note: by construction all variables now have the same wavespace
         w = self._q['wavespace']  # non convoluted wavespace
         wstep = abs(diff(w)).min()
+        assert wstep>0
         waveunit = self.get_waveunit()
         
         if __debug__: printdbg('apply_slit: {0} in {1}, center `{2}`{1}, applied in waveunit {3}'.format(
@@ -2713,12 +2714,11 @@ class Spectrum(object):
         assert(len(w)==len(I))
 
         def check_wavespace(w):
-            ''' Note: this check takes a lot of time!'''
+            ''' Note: this check takes a lot of time! 
+            Is is not performed if warnings is False'''
             if warnings:
                 # Check Wavelength/wavenumber is evently spaced
-                try:
-                    evenly_distributed(w, tolerance=1e-5)
-                except AssertionError:
+                if not evenly_distributed(w, tolerance=1e-5):
                     warn('Wavespace is not evenly spaced ({0:.3f}%) for {1}.'.format(
                             np.abs(np.diff(w)).max()/w.mean()*100, name)\
                          + ' This may create problems when convolving with slit function')
