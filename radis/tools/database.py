@@ -664,8 +664,8 @@ class SpecDatabase():
             only consider files ending with filt
         
 
-        Example
-        -------
+        Examples
+        --------
 
             >>> db = SpecDatabase(r"path/to/database")     # create or loads database
 
@@ -776,7 +776,12 @@ class SpecDatabase():
         return dg.reindex(columns=columns)
 
     def view(self, columns=None, *args):
-        ''' alias to :meth:`~radis.tools.database.SpecDatabase.see`
+        ''' alias of :meth:`~radis.tools.database.SpecDatabase.see`
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.see`
         '''
         
         return self.see(columns = columns, *args)
@@ -1027,6 +1032,7 @@ class SpecDatabase():
         
         :meth:`~radis.tools.database.SpecDatabase.get_unique`
         :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        :meth:`~radis.tools.database.SpecDatabase.items`
         
         '''
                 
@@ -1221,6 +1227,122 @@ class SpecDatabase():
             print(('Got     \t'+'\t'.join(['{0:.3g}'.format(sout.conditions[k]) for k in kwconditions.keys()])))
 
         return sout
+    
+    def to_dict(self):
+        ''' Returns all Spectra in database under a dictionary. 
+        
+        Returns
+        -------
+        
+        out: dict
+            {path : Spectrum object} dictionary 
+        
+        Note
+        ----
+        
+        ``SpecDatabase.items().values()`` is equivalent to ``SpecDatabase.get()`` 
+        
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.keys`
+        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        
+        '''
+        
+        return dict(zip(self.df.file, self.df.Spectrum))
+
+
+    def __iter__(self):
+        ''' Iterate over all Spectra in database 
+        
+        Examples
+        --------
+        
+        Print name of all Spectra in dictionary::
+        
+            db = SpecDatabase('.')
+            for s in db:
+                print(s.name)
+                
+        Note that this is equivalent to::
+                
+            db = SpecDatabase('.')
+            for s in db.get():
+                print(s.name)
+                
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.keys`
+        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+                
+        '''
+        
+        return self.get().__iter__()
+    
+    def keys(self):
+        ''' Iterate over all {path} in database 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        
+        '''
+        
+        return self.to_dict().keys()
+
+    def values(self):
+        ''' Iterate over all {Spectrum} in database 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.keys`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        
+        '''
+        
+        return self.to_dict().values()
+
+    def items(self):
+        ''' Iterate over all {path:Spectrum} in database 
+        
+        Examples
+        --------
+        
+        Print name of all Spectra in dictionary::
+        
+            db = SpecDatabase('.')
+            for path, s in db.items():
+                print(path, s.name)
+                
+        Update all spectra in current folder with a new condition ('author')::
+                        
+            db = SpecDatabase('.')
+            for path, s in db.items():
+                s.conditions['author'] = 'me'
+                s.store(path, if_exists_then='replace')
+                
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.keys`
+        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        
+        '''
+        
+        return self.to_dict().items()
 
     def plot(self, cond_x, cond_y, z_value=None, nfig=None):
         ''' Plot database points available:
