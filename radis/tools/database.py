@@ -1048,9 +1048,10 @@ class SpecDatabase():
         if conditions == '' and kwconditions == {}:
             return list(self.df['Spectrum'])
 
-        if conditions != '':
+        # Find Spectrum that match conditions 
+        if conditions != '':   # ... with input conditions query directly
             dg = self.df.query(conditions)
-        else:
+        else:                  # ... first write input conditions query
             query = []
             for (k, v) in kwconditions.items():
                 if isinstance(v, string_types):
