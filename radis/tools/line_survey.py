@@ -47,10 +47,12 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     xunit: 'nm', 'cm-1'
         wavelength / wavenumber units
 
-    Iunit: `hitran`, `splot` (Spectraplot)
-        Linestrength output units.
-            `hitran`: (cm-1/(molecule/cm-2))
-            `splot`: (cm-1/atm)
+    Iunit: `hitran`, `splot` 
+        Linestrength output units:
+            
+        - `hitran`: (cm-1/(molecule/cm-2))
+        - `splot`: (cm-1/atm)   (Spectraplot units [2]_)
+        
         Note: if not None, cutoff criteria is applied in this unit.
         Not used if plot is not 'S'
 
@@ -67,6 +69,38 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
 
     yscale: 'log', 'linear'
         Default 'log'
+        
+    Returns
+    -------
+    
+    Plot in Plotly. See Output in [1]_
+    
+        
+    Examples
+    --------
+        
+    An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
+    
+        from radis import SpectrumFactory
+        sf = SpectrumFactory(
+                             wavenum_min=2380,
+                             wavenum_max=2400,
+                             mole_fraction=400e-6,
+                             path_length=100,  # cm
+                             isotope=[1],
+                             db_use_cached=True) 
+        sf.load_databank('HITRAN-CO2-TEST')
+        s = sf.eq_spectrum(Tgas=1500)
+        s.apply_slit(0.5)
+        s.line_survey(overlay='radiance_noslit', barwidth=0.01)
+
+    References
+    ----------
+    
+    .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
+
+    .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+
 
     '''
     
