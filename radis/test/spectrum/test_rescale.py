@@ -6,8 +6,7 @@ Created on Fri Mar  2 23:39:52 2018
 @author: erwan
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import print_function, absolute_import, division, unicode_literals
 import radis
 from radis.misc.utils import DatabankNotFound
 from radis.spectrum.rescale import get_redundant

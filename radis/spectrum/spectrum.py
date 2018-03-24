@@ -1749,7 +1749,7 @@ class Spectrum(object):
             if norm_by == 'area':
                 self.units[q] = self.units[qns]
             elif norm_by == 'max':
-                new_unit = self.units[qns] + '*' + unit.replace('cm-1', 'cm_1')
+                new_unit = '{0}*{1}'.format(self.units[qns], unit.replace('cm-1', 'cm_1'))
                                         # because it's like if we multiplied 
                                         # by slit FWHM in the wavespace it was
                                         # generated
@@ -1760,7 +1760,7 @@ class Spectrum(object):
                     pass
                 self.units[q] = new_unit
             elif norm_by == 'max2':   # difference with 'max': unit is multiplied by [unit] not [return_unit]
-                new_unit = self.units[qns] + '*' + waveunit.replace('cm-1', 'cm_1')
+                new_unit = '{0}*{1}'.format(self.units[qns], waveunit.replace('cm-1', 'cm_1'))
                                         # because it's like if we multiplied 
                                         # by slit FWHM in the wavespace it was
                                         # generated

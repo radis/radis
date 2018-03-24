@@ -14,8 +14,7 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.spectrum import Spectrum, calculated_spectrum
 from radis.phys.convert import nm2cm
 #from radis.misc.utils import DatabankNotFound
