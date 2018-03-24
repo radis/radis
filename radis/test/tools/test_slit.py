@@ -114,7 +114,7 @@ def test_against_specair_convolution__fast(plot=False, verbose=True, debug=False
     if plot:
         s.plot('radiance', Iunit='mW/cm2/sr', lw=3, nfig=fig.number, color='b',
                zorder=-3, label='Resampled')
-    plt.legend()
+        plt.legend()
 
     if verbose: print('\n>>>Testing spectrum slit matches Specair: OK')
     
