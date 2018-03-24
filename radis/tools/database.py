@@ -746,7 +746,7 @@ class SpecDatabase():
         if len(self) == 0:
             raise ValueError('Database is empty')
 
-        if type(columns)==str:
+        if isinstance(columns, string_types):
             columns = [columns]+[k for k in args]
             
         dg  = self.df.set_index('file')  # note that this is a copy already.
@@ -920,7 +920,7 @@ class SpecDatabase():
             # check the file we just stored is readable
 
         # ... input is a file name. Copy it in database and load it
-        elif type(spectrum) is str:
+        elif isinstance(spectrum, string_types):
             if not exists(spectrum):
                 raise FileNotFoundError('File doesnt exist: {0}'.format(spectrum))
 

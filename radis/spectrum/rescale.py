@@ -146,7 +146,7 @@ def _build_update_graph(spec):
         
         '''
         for k in from_keys:
-            if type(k) == str:
+            if isinstance(k, string_types):
                 k = [k]
             try:
                 derivation[what].append(k)
@@ -960,7 +960,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     elif quantity == 'same':
         wanted = list(initial)
         greedy = False
-    elif type(quantity) in string_types:
+    elif isinstance(quantity, string_types):
         wanted = [quantity]
         greedy = False
     else:

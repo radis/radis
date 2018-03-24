@@ -41,7 +41,6 @@ Spectrum objects can be stored, retrieved, rescaled, resamples::
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-
 import matplotlib.pyplot as plt
 import numpy as np
 from publib import set_style, fix_style
@@ -2110,7 +2109,7 @@ class Spectrum(object):
 
         from radis.tools.database import save
 
-        if type(discard) is str:
+        if isinstance(discard, string_types):
             discard = [discard]
 
         return save(self, path, discard=discard, compress=compress, add_info=add_info, 
