@@ -23,7 +23,8 @@ from radis.spectrum.spectrum import calculated_spectrum, transmittance_spectrum
 from radis.tools.database import load_spec
 from radis.los.slabs import SerialSlabs
 from radis.tools.slit import (gaussian_slit, triangular_slit, trapezoidal_slit,
-                           import_experimental_slit, convolve_with_slit, get_FWHM)
+                           import_experimental_slit, convolve_with_slit, 
+                           get_FWHM, get_effective_FWHM)
 from radis.phys.units import is_homogeneous
 #from radis.misc.utils import DatabankNotFound
 #from radis.test.utils import IgnoreMissingDatabase, build_test_databases
@@ -38,28 +39,45 @@ fig_prefix = basename(__file__)+': '
 #  Test cases
 # -----------------------------------------------------------------------------
 
-def test_all_slits__fast(FWHM=2, wstep=0.01, verbose=True, plot=False, *args, **kwargs):
+def test_all_slits__fast(FWHM=0.4, verbose=True, plot=False, *args, **kwargs):
     ''' Test all slit generation functions and make sure we get the expected FWHM'''
 
-    if plot:
-        plt.figure(fig_prefix+'all_slits')
-        
-    w, I = gaussian_slit(FWHM, wstep, calc_range=4)
-    if plot:
-        plt.plot(w, I, label='Gaussian slit (FWHM={0})'.format(get_FWHM(w, I)))
-    assert np.isclose(get_FWHM(w, I), FWHM, atol=1.1*wstep)
-
-    w, I = triangular_slit(FWHM, wstep)
-    if plot:
-        plt.plot(w, I, label='Triangular slit (FWHM={0})'.format(get_FWHM(w, I)))
-    assert np.isclose(get_FWHM(w, I), FWHM, atol=1.1*wstep)
-
-    w, I = trapezoidal_slit(FWHM*0.9, FWHM*1.1, wstep)
-    if plot:
-        plt.plot(w, I, label='Trapezoidal slit (FWHM={0})'.format(get_FWHM(w, I)))
-        plt.legend()
-    assert np.isclose(get_FWHM(w, I), FWHM, atol=1.1*wstep)
-
+    # get spectrum
+    from radis.test.utils import getTestFile
+    from radis.phys.convert import dnm2dcm
+    from radis.spectrum.spectrum import Spectrum
+    s = Spectrum.from_txt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt'),
+                          quantity='radiance_noslit', waveunit='nm', unit='mW/cm2/sr/µm',
+                          conditions={'medium':'air'})
+    wstep = np.diff(s.get_wavelength())[0]
+    
+    # Plot all slits
+    # ... gaussian
+    s.apply_slit(FWHM, unit='nm', shape='gaussian', plot_slit=plot)
+    assert np.isclose(get_FWHM(*s.get_slit()), FWHM, atol=2*wstep)
+    
+    # ... triangular
+    s.apply_slit(FWHM, unit='nm', shape='triangular', plot_slit=plot)
+    assert np.isclose(get_FWHM(*s.get_slit()), FWHM, atol=2*wstep)
+    
+    # ... trapezoidal
+    s.apply_slit((FWHM*0.9, FWHM*1.1), unit='nm', shape='trapezoidal', plot_slit=plot)
+    assert np.isclose(get_FWHM(*s.get_slit()), FWHM, atol=2*wstep)
+    
+#    # ... trapezoidal
+#    s.apply_slit(FWHM, unit='nm', shape='trapezoidal', plot_slit=plot, norm='max')
+#    assert np.isclose(get_FWHM(*s.get_slit()), FWHM, atol=1.1*wstep)
+    
+    # ... experimental
+    s.apply_slit(getTestFile('slitfunction.txt'), unit='nm', plot_slit=plot)
+    assert np.isclose(get_effective_FWHM(*s.get_slit()), FWHM, atol=0.01)
+    # note that we're applying a slit function measured at 632.5 nm to a Spectrum 
+    # at 4.7 µm. It's just good for testing the functions
+    
+#    # ... experimental, convolve with max
+#    s.apply_slit(getTestFile('slitfunction.txt'), unit='nm', norm_by='max', plot_slit=plot)
+#    assert np.isclose(get_FWHM(*s.get_slit()), FWHM, atol=1.1*wstep)
+    
     if verbose: print('\n>>> _test_all_slits yield correct FWHM (+- wstep) : OK\n')
     
     return True # nothing defined yet

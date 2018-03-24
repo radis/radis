@@ -278,8 +278,21 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         if __debug__: printdbg('get_slit_function: {0} in {1}, norm_by {2}, return in {3}'.format(
                 slit_function, unit, norm_by, return_unit))
         wslit, Islit = import_experimental_slit(slit_function,norm_by=norm_by, # norm is done later anyway
+                                                waveunit=unit,
                                                 bplot=False, # we will plot after resampling
                                                 *args, **kwargs)
+        # ... get unit 
+        # Normalize
+        if norm_by == 'area': # normalize by the area
+    #        I_slit /= np.trapz(I_slit, x=w_slit)
+            Iunit = '1/{0}'.format(unit)
+        elif norm_by == 'max': # set maximum to 1
+            Iunit = '1'
+        elif norm_by is None:
+            Iunit=None
+        else:
+            raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+
         # ... check it looks correct
         unq, counts = np.unique(wslit, return_counts=True)
         dup = counts > 1
