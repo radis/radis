@@ -294,7 +294,9 @@ def list_if_float(a):
         return [a]
 
 def is_list(a):
+    ''' Returns True if a has list-like type: list, np.array, tuple, set, etc.)'''
     return type(a) in [list, np.ndarray, tuple, set]
 
 def is_float(a):
+    ''' Returns True if a has float-like type: float, np.float64, np.int64, etc.)'''
     return type(a) in [float, np.float64, np.int32, np.float32, int, np.int64]

@@ -200,12 +200,21 @@ save and retrieve a Spectrum object?
 To store use the :meth:`~radis.spectrum.spectrum.Spectrum.store` method. To retrieve 
 use the :func:`~radis.tools.database.load_spec` function::
     
-    # Store (s is a Spectrum object)
-    s.store(temp_file_name, compress=True)
-    
-    # Retrieve
-    from radis.tools import load_spec 
-    s2 = load_spec(temp_file_name)
+    # s is a Spectrum object
+    s.store('temp_file.spec')
+    from radis import load_spec
+    s2 = load_spec('temp_file.spec')
+    assert s == s2  # compare both
+
+The generated ``.spec`` file can be read (and edited) with any text editor. However, 
+it may take a lot of space. If memory is important, you may use the ``compress=True`` 
+argument which will remove redundant spectral quantities (for instance, transmittance
+if you already know absorbance), and store the .spec file under binary format. Use
+the :meth:`~radis.spectrum.spectrum.Spectrum.update` method to regenerate missing 
+quantities::
+
+    s.store('temp_file.spec', compress=True, if_exists_then='replace')
+    s2 = load_spec('temp_file.spec')
     s2.update()    # regenerate missing quantities 
     
 If many spectra are stored in a folder, it may be time to set up a 

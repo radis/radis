@@ -54,6 +54,7 @@ Implement a h5py version of load / store
 from __future__ import absolute_import
 from __future__ import print_function
 import json
+import json_tricks
 import numpy as np
 from numpy import array
 import pandas as pd
@@ -74,17 +75,58 @@ from radis.misc.debug import printdbg
 from six import string_types
 
 
-# Serializing functions
-# ... functions to store / load a Spectrum to / from a JSON file
-
-# %% Save functions
+# %% Tools 
 
 def is_jsonable(x):
     try:
-        json.dumps(x)
+#        json.dumps(x)
+        json_tricks.dumps(x)
         return True
     except:
         return False
+    
+#def jsonize(x):
+#    ''' Converts x so it can be stored in JSON 
+#    Replaced by call to json-tricks '''
+#    typ = type(x)
+#    
+#    # Convert object based on type
+#    if typ == dict:
+#        # If dictionary, deal with all keys recursively
+#        out = {}
+#        for k, v in x.items():
+#            out[k] = jsonize(v)        
+#    elif typ in string_types:
+#        # If it looks like string, store as raw text (that fixes most trouble with paths)
+#        out = r'{0}'.format(x)
+#    elif typ == pd.DataFrame:
+#        out = x.to_json()
+#    elif typ == np.ndarray:
+#        # converts numpy array to list
+#        out = x.tolist()
+#    elif typ in [np.float64, np.float32]:
+#        # cast numpy floats to float 
+#        out = float(x)
+#    elif typ in [np.int32, np.int64]:
+#        # cast numpy int to int
+#        out = int(x)
+#    else:
+#        # Keep the object as it is 
+#        out = x
+#        
+#    # Check it's jsonable
+#    if is_jsonable(out):
+#        return out
+#    else:
+#        if out is x:
+#            raise TypeError('{0} (type {1}) is not jsonable'.format(out, type(out)))        
+#        else:
+#            raise TypeError('{0} (type {1}) converted from {2} (type {3}) is not jsonable'.format(
+#                    out, type(out), x, typ))
+        
+# %% Serializing functions
+# ... functions to store / load a Spectrum to / from a JSON file
+
     
 def save(s, path, discard=[], compress=False, add_info=None, add_date=None, 
          if_exists_then='increment', verbose=True, warnings=True):
@@ -155,11 +197,18 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
                           sjson, verbose)
     
     # 3) Now is time to save
-    with open(fout, 'w') as f:
-        try:
-            json.dump(sjson, f)
-        except TypeError:
-            _export_safe(sjson, f, warnings=warnings)
+    if compress:
+        with open(fout, 'wb') as f:
+            json_tricks.dump(sjson, f, 
+                             compression=True,  # calls gzip compression
+                             )
+    else:
+        with open(fout, 'w') as f:
+    #        json.dump(sjson, f)
+            json_tricks.dump(sjson, f, 
+                             indent=4,         # takes more space but more readable
+                             )
+            
     if verbose: print('Spectrum stored in {0} ({1:.1f}Mb)'.format(fout,
                        getsize(fout)/1024*1e-3))
 
@@ -172,90 +221,26 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     -----
     
     path names create much troubles on reload if they are stored with '/' 
-    Make sure we use raw format 
+    Make sure we use raw format. This is now dealt with by the json-tricks module
+    
+    We also store the initial type of all conditions so they are correctly 
+    reproduced on loading .
+    
     '''
     
-    # ... add main attributes from Spectrum class
+    # Add all in a dictionary using json-tricks (that deals with numpy and pandas
+    # array, as well as text: see 24/03/18 for former implementation that was 
+    # manually converted to jsonable)
     sjson = {}
-    sjson['q'] = {}
-    sjson['q_conv'] = {}
-    for k, v in s._q.items():
-        sjson['q'][k] = v.tolist()
-    for k, v in s._q_conv.items():
-        sjson['q_conv'][k] = v.tolist()
-        
-    if compress:
-        sjson = _compress(s, sjson) #, s.conditions, equilibrium=s.is_at_equilibrium())
+    for attr in s.__slots__:
+        sjson[attr] = s.__getattribute__(attr)
     
-    # ... Format conditions, check that minimum information is given
-    try:
-        conditions = s.conditions
-    except AttributeError:
-        raise ValueError('Spectrum needs a `conditions` attribute (dict) to be stored in database')
-    try:
-        conditions['waveunit']
-    except KeyError:
-        raise KeyError('Spectrum `conditions` dict should at least have a `waveunit` key')
-    # Todo: what if conditions is an empty dictionary? do we allow that?
-    # ... now let's store all conditions
-    sjson['conditions'] = {}
-    for k, v in conditions.items():
-        # If it looks like string, store as raw text (that fixes most trouble with paths)
-        if type(v) in string_types:
-            sjson['conditions'][k] = r'{0}'.format(v)
-        else:
-            # Store the object directly
-            if is_jsonable(v):
-                sjson['conditions'][k] = v
-            else:
-                if verbose:
-                    print('condition {0}, type {1} not jsonable and discarded'.format(
-                            k, type(v)))
-            
-    # ... Only `quantities` and `conditions` are required. The rest is just extra
-    # details. Add them now if they exist (assuming a Spectrum class is being stored)
-    for attr in ['units', 'cond_units', 'name']:
-        if attr not in discard:
-            try:
-                sjson[attr] = s.__getattribute__(attr)
-            except AttributeError:
-                pass
-    # ... special case of slit (a dictionary of arrays)
-    if '_slit' not in discard:
-        sjson['slit'] = {}
-        for k, v in s._slit.items():
-            sjson['slit'][k] = v.tolist()
-    # ... special case of lines (a Pandas dataframe): 
-    if 'lines' not in discard:
-        try:
-            if s.lines is not None:
-                sjson['lines'] = s.lines.to_json()   # Pandas > JSON conversion
-                sjson['_dtypes_lines'] = s.lines.dtypes.to_json()  # Keep dtype 
-        except AttributeError:
-            pass  # dont store lines if they dont exist
-    # ... special case of populations (a dict of dict of dict of Pandas dataframes)
-    if 'populations' not in discard:
-        try:
-            if s.populations is not None:
-                pops = s.populations
-                jsonpops = {}
-                for molecule, isotopes in pops.items():
-                    jsonpops[molecule] = {}
-                    for isotope, elec_states in isotopes.items():
-                        jsonpops[molecule][isotope] = {}
-                        for elec_state, content in elec_states.items():
-                            jsonpops[molecule][isotope][elec_state] = {}
-                            for k, v in content.items():
-                                if isinstance(v, pd.DataFrame): # rovib or vib levels
-                                    vjson = v.to_json()   # Pandas > JSON conversion
-                                    jsonpops[molecule][isotope][elec_state][k] = vjson
-                                    jsonpops[molecule][isotope][elec_state]['_dtypes_'+k] = v.dtypes.to_json()
-                                else:   # can be other data. Hopefully serializable. 
-                                    vjson = v
-                                    jsonpops[molecule][isotope][elec_state][k] = vjson
-            sjson['populations'] = jsonpops
-        except AttributeError:
-            pass  # dont store populations if they dont exist
+    # if compress, remove unecessary spectral quantities (that can be recomputed
+    # from the rest)
+    if compress:
+        sjson['_q'] = sjson['_q'].copy()
+        sjson['_q_conv'] = sjson['_q_conv'].copy()
+        sjson = _compress(s, sjson) 
     
     return sjson
 
@@ -347,15 +332,15 @@ def _compress(s, sjson):
     redundant = get_redundant(s)
     
     discarded = []
-    for key in list(sjson['q'].keys()):
+    for key in list(sjson['_q'].keys()):
         if key == 'wavespace': continue
         if redundant[key]:
-            del sjson['q'][key]
+            del sjson['_q'][key]
             discarded.append(key)
-    for key in list(sjson['q_conv'].keys()):
+    for key in list(sjson['_q_conv'].keys()):
         if key == 'wavespace': continue
         if redundant[key]:
-            del sjson['q_conv'][key]
+            del sjson['_q_conv'][key]
             discarded.append(key)
         
     if len(discarded)>0:
@@ -364,44 +349,19 @@ def _compress(s, sjson):
     
     return sjson
 
-def _export_safe(sjson, f, warnings=True):
-    ''' Export only jsonable attributes in 'conditions' '''
-    
-    # remove non jsonable objects
-    discard = []
-    for k,v in sjson['conditions'].items():
-        if not is_jsonable(v):
-            discard.append(k)
-            if warnings: print(("... discard conditions['{0}'] as non jsonable".format(k)))
-    new_conds = {k:v for k,v in sjson['conditions'].items() if not k in discard}
-    sjson['conditions'] = new_conds  # dont modify initial spectrum
-    
-    if 'populations' in list(sjson.keys()):
-        # remove non jsonable objects
-        # (note: Specair generated populations include numpy arrays tht could
-        # be jsonized eventually... just look at what's done with quantities... 
-        # but for the time being we just discard them)
-        discard = []
-        for k,v in sjson['populations'].items():
-            if not is_jsonable(v):
-                discard.append(k)
-                if warnings: print(("... discard populations['{0}'] as non jsonable".format(k)))
-        new_pops = {k:v for k,v in sjson['populations'].items() if not k in discard}
-        sjson['populations'] = new_pops
-    
-    # retry export
-    json.dump(sjson, f)
-    
     
 # %% Load functions
 
-def load(file):
+def load(file, binary=False):
     '''
     Parameters
     ----------
 
     file: str
         .spec file to load
+        
+    binary: boolean
+        set to True if the file is encoded as binary. Default False
 
     (wrapper to :func:`radis.tools.database.load_spec`)
 
@@ -411,14 +371,18 @@ def load(file):
 
     return load_spec(file)
 
-def load_spec(file):
-    '''
+def load_spec(file, binary=False):
+    ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object
+    
     Parameters
     ----------
 
     file: str
         .spec file to load
 
+    binary: boolean
+        set to True if the file is encoded as binary. Default False. Will autodetect
+        if it fails, but that may take longer.
         
     Returns
     -------
@@ -436,15 +400,30 @@ def load_spec(file):
         
     '''
 
-    with open(file, 'r') as f:
-        try:
-            sload = json.load(f)
-        except:
-            print(('Error opening file {0}'.format(f)))
-            raise
+    if not binary:
+        with open(file, 'r') as f:
+            try:
+                sload = json_tricks.load(f, preserve_order=False)
+            except:
+                # try as binary
+                print(('Error opening file {0}. Trying with binary=True'.format(f)))
+                binary = True 
+                
+    if binary:
+        with open(file, 'rb') as f:
+            try:
+                sload = json_tricks.load(f, preserve_order=False)
+            except:
+                print(('Error opening file {0}'.format(f)))
+                raise
+                
+    return _json_to_spec(sload, file)
+
+def _json_to_spec(jsondict, file=''):
+    ''' Builds a Spectrum object from a JSON dictionary. Called by load_spec'''
 
     # Test format / correct deprecated format:
-    sload = _fix_format(file, sload)
+    sload = _fix_format(file, jsondict)
 
     # ... Back to real stuff:
     conditions = sload['conditions']
@@ -459,9 +438,9 @@ def load_spec(file):
               "quantities are stored with shared wavespace: uses less space). "+\
             "Regenerate database ASAP.", DeprecationWarning)
     else:
-        quantities = {k:(sload['q']['wavespace'],v) for k,v in sload['q'].items() 
+        quantities = {k:(sload['_q']['wavespace'],v) for k,v in sload['_q'].items() 
                             if k != 'wavespace'}
-        quantities.update({k:(sload['q_conv']['wavespace'],v) for k,v in sload['q_conv'].items() 
+        quantities.update({k:(sload['_q_conv']['wavespace'],v) for k,v in sload['_q_conv'].items() 
                             if k != 'wavespace'})
 
     # Generate spectrum:    
@@ -479,38 +458,22 @@ def load_spec(file):
         
     # ... load lines if exist
     if 'lines' in sload:
-        dtypes = sload.get('_dtypes_lines', True)   # default to True
-        if dtypes != True:
-            dtypes = pd.read_json(dtypes)
-        df = pd.read_json(sload['lines'], dtype=dtypes)
-        df.sort_index(inplace=True)
+        df = sload['lines']
         kwargs['lines'] = df
     else:
         kwargs['lines'] = None
         
     # ... load populations if exist
     if 'populations' in sload:
-        pops = {}
+        
+        # Fix some problems in json-tricks
+        # ... cast isotopes to int  (getting sload['populations'] directly doesnt do that)
+        kwargs['populations'] = {} 
         for molecule, isotopes in sload['populations'].items():
-            pops[molecule] = {}
+            kwargs['populations'][molecule] = {}
             for isotope, states in isotopes.items():
-                isotope = int(isotope)    # cast to int
-                pops[molecule][isotope] = {}
-                for state, content in states.items():
-                    pops[molecule][isotope][state] = {}
-                    for k, v in content.items():
-                        if k in ['vib', 'rovib']:  # pandas dataframes
-                            dtypes = content.get('_dtypes_'+k, True)  # default True
-                            if dtypes != True:
-                                dtypes = pd.read_json(dtypes)
-                            df = pd.read_json(v, dtype=dtypes)
-                            df.sort_index(inplace=True)
-                            pops[molecule][isotope][state][k] = df
-                        elif k in ['_dtypes_vib', '_dtypes_rovib']:
-                            pass
-                        else:
-                            pops[molecule][isotope][state][k] = v                        
-        kwargs['populations'] = pops
+                kwargs['populations'][molecule][int(isotope)] = states
+
     else:
         kwargs['populations'] = None
         
@@ -539,6 +502,13 @@ def _fix_format(file, sload):
     
     # Fix deprecration syntax
     # ----------------
+    if 'q' in sload:
+        warn("File {0}".format(basename(file))+" has a deprecrated structure (key "+\
+              "q replaced with _q). Fixed, but regenerate "+\
+            "database ASAP.", DeprecationWarning)
+        sload['_q'] = sload.pop('q')
+        sload['_q_conv'] = sload.pop('q_conv')    
+    
     try:
         sload['conditions']['waveunit']
     except KeyError as err:
@@ -1429,3 +1399,4 @@ if __name__ == '__main__':
 
     from neq.test.spec.test_database import _run_testcases
     print(('Testing database.py: ', _run_testcases()))
+        

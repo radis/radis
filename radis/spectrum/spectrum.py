@@ -2844,6 +2844,22 @@ class Spectrum(object):
         self.print_conditions()
         
         return '' #self.print_conditions()
+    
+    # the following is so that json_tricks.dumps and .loads can be used directly,
+    # ie.:  
+    # >>> s == loads(s.dumps())
+    # Does not work yet.
+    # see https://github.com/mverleg/pyjson_tricks#class-instances
+#    def __json_encode__(self):
+#        ''' Called by json_tricks.dumps '''
+#        from radis.tools.database import _format_to_jsondict
+#        return _format_to_jsondict(self, discard=[], compress=[], verbose=True)
+#    
+#    def __json_decode__(self, **attrs):
+#        from radis.tools.database import _json_to_spec
+#        print(attrs)
+#        raise
+#        return _json_to_spec(attrs)
 
 # %% ======================================================================
 # Util functions

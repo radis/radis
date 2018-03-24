@@ -48,6 +48,7 @@ setup(name='radis',
                         'six',  # python 2-3 compatibility
                         'configparser', 
                         'astroquery',   # to fetch HITRAN databases
+                        'json-tricks',   # to deal with non jsonable formats
 				],
       classifiers=[
         'Development Status :: 4 - Beta',
