@@ -16,11 +16,10 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 
 from radis.spectrum import Spectrum, calculated_spectrum
 from radis.phys.convert import nm2cm
-from radis.misc.utils import DatabankNotFound
+#from radis.misc.utils import DatabankNotFound
+#from radis.test.utils import IgnoreMissingDatabase, build_test_databases
 import numpy as np
 from numpy import allclose, linspace
-import matplotlib.pyplot as plt
-from radis.test.utils import IgnoreMissingDatabase, build_test_databases
 from os.path import basename
 
 fig_prefix = basename(__file__)+': '

@@ -17,15 +17,15 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 
 """
 
-from neq.spec import SpectrumFactory
+#from neq.spec import SpectrumFactory
 from radis.spectrum.spectrum import calculated_spectrum, transmittance_spectrum
 from radis.tools.database import load_spec
 from radis.los.slabs import SerialSlabs
 from radis.tools.slit import (gaussian_slit, triangular_slit, trapezoidal_slit,
                            import_experimental_slit, convolve_with_slit, get_FWHM)
 from radis.phys.units import is_homogeneous
-from radis.misc.utils import DatabankNotFound
-from neq.test.utils import IgnoreMissingDatabase, build_test_databases
+#from radis.misc.utils import DatabankNotFound
+#from radis.test.utils import IgnoreMissingDatabase, build_test_databases
 import matplotlib.pyplot as plt 
 import numpy as np
 from numpy import sqrt, linspace, abs, trapz
