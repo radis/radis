@@ -122,7 +122,7 @@ def print_conditions(conditions, units,
         v_k_str = '{0}'.format(v_k)
         if len(v_k_str)>102:   # cut if too long
             v_k_str = v_k_str[:100] + '...'
-        print((' '*2, align(k), v_k_str, *args))
+        print(' '*2, align(k), v_k_str, *args)
 
     phys_param, non_phys_param = partition(lambda x: x in phys_param_list,
                                            conditions)
@@ -131,29 +131,29 @@ def print_conditions(conditions, units,
                                            non_phys_param)
     
     print('Physical Conditions')
-    print(('-'*40))
+    print('-'*40)
     for k in sorted(phys_param):
         print_param(k)
         
     print('Computation Parameters')
-    print(('-'*40))
+    print('-'*40)
     for k in sorted(non_phys_param):
         print_param(k)
     
     if len(info_param)>0:
         print('Information')
-        print(('-'*40))
+        print('-'*40)
         for k in sorted(info_param):
             print_param(k)
             
-    print(('-'*40))
+    print('-'*40)
     
     # print gas_inp (information on each gas slab) if exists (specifically
     # for Specair output)
     if 'gas_inp' in conditions:
         try:
             for slab in conditions['gas_inp']:
-                print(('Slab', slab))
+                print('Slab', slab)
                 slab.print_conditions()
         except:
             pass
