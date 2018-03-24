@@ -217,7 +217,7 @@ def test_slit_function_effect__fast(verbose=True, plot=False, *args, **kwargs):
     ''' A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function '''
 
-    from neq.test.utils import getTestFile
+    from radis.test.utils import getTestFile
     from publib import fix_style
     from numpy import pi, tan, cos
 

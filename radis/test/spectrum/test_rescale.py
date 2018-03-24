@@ -97,7 +97,7 @@ def test_update_transmittance__fast(verbose=True, warnings=True, *args, **kwargs
 
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
-    _test_compression__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
+    _test_compression__fast(verbose=verbose, warnings=warnings, *args, **kwargs)  # TODO: rename once SpectrumFactory is imported
     test_update_transmittance__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
     
     return True
