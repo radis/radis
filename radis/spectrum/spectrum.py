@@ -2414,7 +2414,8 @@ class Spectrum(object):
         waveunit = self.get_waveunit()    # 163 ns
         name = self.name
 
-        return Spectrum(      # 1.51 ms
+        # Generate copied Spectrum
+        s = Spectrum(      # 1.51 ms
                 quantities=quantities,
                 conditions=conditions,
                 cond_units=cond_units,
@@ -2425,6 +2426,17 @@ class Spectrum(object):
                 name=name,
                 warnings=False,   # saves about 3.5 ms on the Performance test object
                 )
+        
+        # Add slit information
+        try:
+            wslit, Islit = self.get_slit()
+            s._slit['wavespace'] = wslit  # in 'waveunit'
+            s._slit['intensity'] = Islit
+        except KeyError:
+            # no slit to apply
+            pass
+
+        return s
 
     def compare_with(self, other, spectra_only=False, plot=True, wunit='default',
                      verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
@@ -2459,9 +2471,9 @@ class Spectrum(object):
             if True, nans are ignored when comparing spectral quantities
             
         ignore_outliers: boolean, or float
-            if not False, outliers are discarded. i.e, output is determined by:
+            if not False, outliers are discarded. i.e, output is determined by::
             
-            >>> out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
+                out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
         
         normalize: bool
             Normalize the spectra to be ploted 
@@ -2477,8 +2489,10 @@ class Spectrum(object):
         Examples
         --------
         
-        >>> s1.compare_with(s2)
-        >>> s1.compare_with(s2, 'transmittance')
+        Compare two Spectrum objects, or specifically the transmittance::
+        
+            s1.compare_with(s2)
+            s1.compare_with(s2, 'transmittance')
 
         '''
         
@@ -2930,5 +2944,5 @@ def make_up(label):
 
 # Test functions
 if __name__ == '__main__':
-    from neq.test.spec.test_spectrum import _run_testcases
+    from radis.test.spectrum.test_spectrum import _run_testcases
     print('Test spectrum: ', _run_testcases(debug=False))

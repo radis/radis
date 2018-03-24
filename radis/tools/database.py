@@ -399,6 +399,8 @@ def load_spec(file, binary=False):
     
         
     '''
+    
+    retry_with_binary = False
 
     if not binary:
         with open(file, 'r') as f:
@@ -407,16 +409,18 @@ def load_spec(file, binary=False):
             except:
                 # try as binary
                 print(('Error opening file {0}. Trying with binary=True'.format(f)))
-                binary = True 
+                retry_with_binary = True 
                 
-    if binary:
+    if binary or retry_with_binary:
         with open(file, 'rb') as f:
             try:
                 sload = json_tricks.load(f, preserve_order=False)
+                if retry_with_binary:
+                    print('Worked! Use binary=True directly in load_spec for faster loading')
             except:
                 print(('Error opening file {0}'.format(f)))
                 raise
-                
+
     return _json_to_spec(sload, file)
 
 def _json_to_spec(jsondict, file=''):

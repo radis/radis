@@ -1212,5 +1212,5 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
 
 # %% Test
 if __name__ == '__main__':
-    from neq.test.spec.test_slit import _run_testcases
+    from radis.test.tools.test_slit import _run_testcases
     print('Testing slit.py: ', _run_testcases())
