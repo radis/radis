@@ -18,6 +18,8 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 """
 
 #from neq.spec import SpectrumFactory
+from __future__ import absolute_import
+from __future__ import print_function
 from radis.spectrum.spectrum import calculated_spectrum, transmittance_spectrum
 from radis.tools.database import load_spec
 from radis.los.slabs import SerialSlabs
@@ -102,8 +104,8 @@ def test_against_specair_convolution__fast(plot=False, verbose=True, debug=False
     As = np.trapz(Is, ws)  # Todo one day: replace with get_power() function
     Au = np.trapz(Iu, wu)
     if verbose:
-        print('Integrals should match: {0:.2f} vs {1:.2f} ({2:.2f}% error)'.format(
-                As, Au, 100*abs(As-Au)/As))
+        print(('Integrals should match: {0:.2f} vs {1:.2f} ({2:.2f}% error)'.format(
+                As, Au, 100*abs(As-Au)/As)))
     assert np.isclose(As, Au, rtol=1e-2)
 
     # Test resampling
@@ -176,7 +178,7 @@ def test_normalisation_mode__fast(plot=False, verbose=True, *args, **kwargs):
         print("equivalence of normalisation mode for spectrum in 'cm-1': {0}: OK")
     assert is_homogeneous(s.units['radiance'], 'mW/cm2/sr')
     if verbose: 
-        print("radiance unit ({0}) is homogeneous to 'mW/cm2/sr': OK".format(s.units['radiance']))
+        print(("radiance unit ({0}) is homogeneous to 'mW/cm2/sr': OK".format(s.units['radiance'])))
     
     return True
 
@@ -296,5 +298,5 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == '__main__':
-    print('Testing slit.py: ', _run_testcases(plot=True))
+    print(('Testing slit.py: ', _run_testcases(plot=True)))
     

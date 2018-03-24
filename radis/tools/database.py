@@ -73,6 +73,7 @@ from radis.misc.basics import is_float, list_if_float
 from radis.misc.utils import FileNotFoundError, PermissionError
 from radis.misc.debug import printdbg
 from six import string_types
+from six.moves import zip
 
 
 # %% Tools 
@@ -1227,7 +1228,7 @@ class SpecDatabase():
         
         '''
         
-        return dict(zip(self.df.file, self.df.Spectrum))
+        return dict(list(zip(self.df.file, self.df.Spectrum)))
 
 
     def __iter__(self):
@@ -1272,7 +1273,7 @@ class SpecDatabase():
         
         '''
         
-        return self.to_dict().keys()
+        return list(self.to_dict().keys())
 
     def values(self):
         ''' Iterate over all {Spectrum} in database 
@@ -1286,7 +1287,7 @@ class SpecDatabase():
         
         '''
         
-        return self.to_dict().values()
+        return list(self.to_dict().values())
 
     def items(self):
         ''' Iterate over all {path:Spectrum} in database 
@@ -1316,7 +1317,7 @@ class SpecDatabase():
         
         '''
         
-        return self.to_dict().items()
+        return list(self.to_dict().items())
 
     def plot(self, cond_x, cond_y, z_value=None, nfig=None):
         ''' Plot database points available:

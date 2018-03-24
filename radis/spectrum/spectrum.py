@@ -48,7 +48,8 @@ from publib import set_style, fix_style
 from radis.phys.convert import conv2, cm2nm, nm2cm
 from radis.phys.units import Q_, convert_universal
 from radis.phys.air import vacuum2air, air2vacuum
-from radis.spectrum.rescale import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
+from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES, 
+                                  make_up, cast_waveunit, print_conditions)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from neq.spec.base import print_conditions
 from radis.misc.basics import compare_lists
@@ -60,9 +61,6 @@ from warnings import warn
 from numpy import allclose, abs, diff
 from copy import deepcopy
 from six import string_types
-
-WAVENUM_UNITS = ['cm', 'cm-1', 'cm_1', 'wavenumber']
-WAVELEN_UNITS = ['nm', 'wavelength']
 
 # %% Array-to-Spectrum functions
 
@@ -1997,8 +1995,6 @@ class Spectrum(object):
         
         '''
         
-        from neq.spec.base import print_conditions
-        
         return print_conditions(self.get_conditions(), self.cond_units)
 
     def store(self, path, discard=['lines', 'populations'], compress=False, 
@@ -2876,8 +2872,8 @@ class Spectrum(object):
 #        return _json_to_spec(attrs)
 
 # %% ======================================================================
-# Util functions
-# ----------------
+# Test class function
+# -------------------
 # XXX =====================================================================
 
 # Test class
@@ -2906,40 +2902,6 @@ def is_spectrum(a):
 
     return (isinstance(a, Spectrum) or
              repr(a.__class__) == repr(Spectrum))
-
-def cast_waveunit(unit, force_match=True):
-    ''' Standardize unit formats '''
-    if unit in WAVELEN_UNITS:
-        return 'nm'
-    elif unit in WAVENUM_UNITS:
-        return 'cm-1'
-    elif force_match:
-        raise ValueError('Unknown wavespace unit: {0}. Should be one of {1}'.format(unit,
-                         WAVELEN_UNITS+WAVENUM_UNITS))
-    else:
-        return unit  # dont convert
-
-def make_up(label):
-    ''' Cosmetic changes on label, before plot 
-    
-    
-    Parameters    
-    ----------
-    
-    label: str
-    '''
-    
-    # Improve units
-    label = label.replace('cm_1', 'cm-1')
-    label = label.replace('cm-1', 'cm$^{-1}$')
-    label = label.replace('m2', 'm$^2$')
-    label = label.replace('m3', 'm$^3$')
-    label = label.replace('I/I0', 'I/I$_\mathrm{0}$')    # transmittance unit
-    
-    # Improve text
-    label = label.replace('_noslit', ' (unconvolved)')
-    return label
-
 
 
 # Test functions

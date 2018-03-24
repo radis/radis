@@ -14,6 +14,8 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from radis.spectrum import Spectrum, calculated_spectrum
 from radis.phys.convert import nm2cm
 #from radis.misc.utils import DatabankNotFound
@@ -177,4 +179,4 @@ def _run_testcases(plot=False, verbose=True, debug=False, warnings=True, *args, 
 
 
 if __name__ == '__main__':
-    print('Test spectrum: ', _run_testcases(debug=False))
+    print(('Test spectrum: ', _run_testcases(debug=False)))

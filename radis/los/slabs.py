@@ -22,7 +22,8 @@ Todo:
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
-from radis.spectrum.spectrum import Spectrum, is_spectrum, NON_CONVOLUTED_QUANTITIES
+from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.utils import NON_CONVOLUTED_QUANTITIES
 from radis.phys.convert import nm2cm
 from radis.misc.basics import merge_lists
 from radis.misc.utils import FileNotFoundError

@@ -18,20 +18,10 @@ import numpy as np
 from numpy import log as ln
 from numpy import inf, exp
 from radis.misc.debug import printdbg
+from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
 from radis.lbl.equations import calc_radiance
 from warnings import warn
 from six import string_types
-
-CONVOLUTED_QUANTITIES = ['radiance', 'transmittance', 'emissivity']
-NON_CONVOLUTED_QUANTITIES = ['radiance_noslit', 'transmittance_noslit',
-                              'emisscoeff', 'absorbance', 'abscoeff',
-                              'abscoeff_continuum', 'emissivity_noslit',]
-
-# note: it is hardcoded (and needed) that quantities that are convoluted are 
-# generated from a non convoluted quantity with the same name + _noslit
-for _q in CONVOLUTED_QUANTITIES:
-    assert _q+'_noslit' in NON_CONVOLUTED_QUANTITIES
-
 
 def _build_update_graph(spec):
     ''' Find dependencies and equivalences between different spectral parameters
