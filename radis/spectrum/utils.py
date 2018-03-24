@@ -3,8 +3,7 @@
 Functions and constants used in Spectrum object
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.basics import partition
 
 # %% Definitions

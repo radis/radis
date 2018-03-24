@@ -5,8 +5,7 @@ Created on Fri Feb  9 13:03:04 2018
 @author: erwan
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
 from radis.spectrum.spectrum import make_up, cast_waveunit
