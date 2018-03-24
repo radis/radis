@@ -383,8 +383,6 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         label1 = s1.get_name()
     if label2 is None:
         label2 = s2.get_name()
-    Iunit = make_up(Iunit)  # cosmetic changes 
-    
     # Plot compared spectra
     if normalize:
         w1, I1 = s1.get(var, wunit, Iunit, medium)
@@ -396,6 +394,8 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         ax0.plot(*s1.get(var, wunit, Iunit, medium), ls=style, color='k', lw=3, label=label1)
         ax0.plot(*s2.get(var, wunit, Iunit, medium), ls=style, color='r', lw=1, label=label2)
 
+    Iunit = make_up(Iunit)  # cosmetic changes 
+    
     ax0.tick_params(labelbottom='off')
     if label1 is not None or label2 is not None:
         ax0.legend(loc='best')

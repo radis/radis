@@ -9,41 +9,20 @@ Created on Fri Mar  2 23:39:52 2018
 from __future__ import print_function, absolute_import, division, unicode_literals
 import radis
 from radis.misc.utils import DatabankNotFound
-from radis.spectrum.rescale import get_redundant
+from radis.spectrum.rescale import get_redundant, get_recompute
 from radis.tools.database import load_spec
 from radis.test.utils import getTestFile
 import numpy as np
 
-def _test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
-    # Deactivated from pytest with _ for the moment, because neq is not public
-    # TODO: convet _test_ to test_ once the SpectrumFactory is added in RADIS
+def test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
+    ''' Test that redundant quantities are properly infered from already known 
+    spectral quantities '''
     
-    from neq.spec import SpectrumFactory
+    # Get spectrum
+    s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s1.update()
     
-    Tgas = 1500
-    sf = SpectrumFactory(
-                         wavelength_min=4400,
-                         wavelength_max=4800,
-    #                     mole_fraction=1,
-                         path_length=0.1,
-                         mole_fraction=0.01,
-                         cutoff=1e-25,
-                         wstep = 0.005,
-                         isotope=[1],
-                         db_use_cached=True,
-                         self_absorption=True,
-                         verbose=False)
-    try:
-        sf.load_databank('HITRAN-CO-TEST')
-    except DatabankNotFound:
-        if warnings:
-            import sys
-            print((sys.exc_info()))
-            print(('Testing spectrum.py: Database not defined: HITRAN-CO \n'+\
-                           'Ignoring the test'))
-        return True
-
-    s1 = sf.non_eq_spectrum(Tgas, Tgas, path_length=0.01)
+    # Analyse redundant spectral quantities
     redundant = get_redundant(s1)
     if verbose: print(redundant)
     
@@ -94,10 +73,63 @@ def test_update_transmittance__fast(verbose=True, warnings=True, *args, **kwargs
     
     return True
 
+def test_get_recompute(verbose=True, *args, **kwargs):
+    ''' Make sure get_recompute works as expected
+    
+    Here, we check which quantities are needed to recompute radiance_noslit'''
+
+    # Equilibrium
+    # -----------
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    assert s.get_vars() == ['abscoeff']
+    assert s.is_at_equilibrium()
+    # At equilibrium, everything should be deduced from abscoeff
+    assert set(get_recompute(s, ['radiance_noslit'])) == set(('radiance_noslit', 'abscoeff'))
+    
+    # Non Equilibrium
+    # ----------------
+    s.conditions['Tvib'] = 2000 # force non equilibrium
+    assert not s.is_at_equilibrium()
+    # Now more data is needed:
+    assert set(get_recompute(s, ['radiance_noslit'])) == set(('abscoeff', 'emisscoeff', 'radiance_noslit'))
+
+def test_recompute_equilibrium(verbose=True, warnings=True, plot=False, 
+                               *args, **kwargs):
+    ''' Test that spectral quantities recomputed under equilibrium assumption
+    yields the same output as with non equilibrium routines when Tvib = Trot '''
+    
+    # Get spectrum
+    s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s1.rescale_path_length(100)  # just for fun
+    
+    assert s1.is_at_equilibrium()
+    s1.update('emisscoeff')
+    
+    # force non equilibrium calculation by setting Tvib=2000 
+    s2 = s1.copy()
+    s2.conditions['Tvib'] = 2000 # force non equilibrium
+    assert not s2.is_at_equilibrium()
+    s2.update('radiance_noslit') 
+
+    # update s1 now (at equilibrium)
+    s1.update('radiance_noslit')
+    
+    s1.name = 'scaled with Kirchoff law'
+    s2.name = 'scaled from emisscoeff + abscoeff with RTE'
+    
+    if verbose: 
+        print('Checked that scaling at equilibrium with Kirchoff law yields the '+\
+              'same radiance as by solving the RTE from emisscoeff and abscoeff')
+    
+    # Compare
+    assert s1.compare_with(s2,spectra_only='radiance_noslit', plot=plot)
+    
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
-    _test_compression__fast(verbose=verbose, warnings=warnings, *args, **kwargs)  # TODO: rename once SpectrumFactory is imported
+    test_compression__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_update_transmittance__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
     
     return True
 

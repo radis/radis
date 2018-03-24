@@ -165,6 +165,8 @@ setup(name='radis',
                         'configparser', 
                         'astroquery',   # to fetch HITRAN databases
                         'json-tricks',   # to deal with non jsonable formats
+                        'numpydoc',     # for Jedi (autocompletion) to recognize
+                                        # numpy docstrings
 				],
       classifiers=[
         'Development Status :: 4 - Beta',

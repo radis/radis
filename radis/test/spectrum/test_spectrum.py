@@ -21,7 +21,8 @@ from radis.phys.convert import nm2cm
 #from radis.test.utils import IgnoreMissingDatabase, build_test_databases
 import numpy as np
 from numpy import allclose, linspace
-from os.path import basename
+import os
+from os.path import basename, exists
 
 fig_prefix = basename(__file__)+': '
 
@@ -88,7 +89,6 @@ def test_copy(verbose=True, *args, **kwargs):
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
     s.update()
     s.apply_slit(1.5)
-    
     s2 = s.copy()
     
     assert s == s2
@@ -96,8 +96,29 @@ def test_copy(verbose=True, *args, **kwargs):
     
     if verbose:
         print('Tested that s2 == s after Spectrum copy')
-        print('Warning: current test doesnt include populations nor lines')
     
+def test_store_functions(verbose=True, *args, **kwargs):
+    ''' Test some store / retrieve functions '''
+    
+    from radis.spectrum.spectrum import transmittance_spectrum
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+    
+    temp_file = 'test_radis_tempfile_transmittance.txt'
+    assert not exists(temp_file)
+         
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s.update()
+    try:
+        s.savetxt(temp_file, 'transmittance_noslit', wunit='nm', medium='vacuum')
+        w, T = np.loadtxt(temp_file).T
+    finally:
+        os.remove(temp_file)
+
+    s2 = transmittance_spectrum(w, T, wunit='nm', conditions={'medium':'vacuum'})       
+    assert s.compare_with(s2, spectra_only='transmittance_noslit', plot=False)
+    
+    return True
 
 def test_intensity_conversion__fast(verbose=True, *args, **kwargs):
     ''' Test conversion of intensity cm-1 works'''
@@ -149,9 +170,11 @@ def _run_testcases(plot=False, verbose=True, debug=False, warnings=True, *args, 
 
     '''
     
-    # Test all Spectrum get methods 
-    # -----------------------------
+    # Test all Spectrum methods 
+    # -------------------------
     test_spectrum_get_methods(debug=debug, verbose=verbose, *args, **kwargs)
+    test_copy(verbose=verbose, *args, **kwargs)
+    test_store_functions(verbose=verbose, *args, **kwargs)
     
     
     # Test populations

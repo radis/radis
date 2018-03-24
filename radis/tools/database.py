@@ -425,7 +425,20 @@ def load_spec(file, binary=False):
     return _json_to_spec(sload, file)
 
 def _json_to_spec(jsondict, file=''):
-    ''' Builds a Spectrum object from a JSON dictionary. Called by load_spec'''
+    ''' Builds a Spectrum object from a JSON dictionary. Called by load_spec
+    
+    Parameters
+    ----------
+    
+    jsondict: dict
+        Spectrum object content stored under a dictonary 
+    
+    Returns
+    -------    
+    
+    s: Spectrum
+        a :class:`~radis.spectrum.spectrum.Spectrum` object
+    '''
 
     # Test format / correct deprecated format:
     sload = _fix_format(file, jsondict)

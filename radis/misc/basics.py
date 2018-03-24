@@ -34,6 +34,10 @@ def all_in(keys, L):
     ''' Returns whether all items in keys are in list L '''
     return all([k in L for k in keys])
         
+def any_in(keys, L):
+    ''' Returns whether any of the items in keys are in list L '''
+    return any([k in L for k in keys])
+        
 def key_max_val(d):
     '''Return the dictionary key with max value'''
     v = list(d.values())

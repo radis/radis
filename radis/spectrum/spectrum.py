@@ -728,6 +728,12 @@ class Spectrum(object):
                 I = convert_universal(I, Iunit0, Iunit, w_cm,
                                           per_nm_is_like='mW/sr/cm3/nm',
                                           per_cm_is_like='mW/sr/cm3/cm_1')
+            elif var in ['absorbance']:  # no unit
+                assert Iunit in ['', '-ln(I/I0)']
+                # dont change the variable: I has no dimension
+            elif var in ['transmittance']:  # no unit
+                assert Iunit in ['', 'I/I0']
+                # dont change the variable: I has no dimension
             else:
                 I = conv2(I, Iunit0, Iunit)
         else:
@@ -949,13 +955,33 @@ class Spectrum(object):
     def savetxt(self, filename, var, wunit='nm', Iunit='default', medium='default'):
         ''' Export spectral quantity var to filename
         
-    
         Parameters    
         ----------
         
         filename: str
+            file name
         
-        var, wunit, Iunit, medium: cf Spectrum.get()
+        var: str
+            which spectral variable ot export 
+            
+        Other Parameters
+        ----------------
+        
+        wunit, Iunit, medium: str
+            see :meth:`~radis.spectrum.spectrum.Spectrum.get` for more information
+        
+        Notes
+        -----
+        
+        Export variable as::
+            
+            np.savetxt(filename, np.vstack(self.get(var, wunit=wunit, Iunit=Iunit,
+                                                medium=medium)).T, header=header)
+        
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.store`
         
         '''
         
