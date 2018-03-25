@@ -159,7 +159,7 @@ setup(name='radis',
 #                        'sympy',         # let the user install it 
                         'pint>=0.7.2',  # Unit aware calculations
                         'publib>=0.1.11', # Plotting styles for Matplotlib
-                        'plotly>=2.0.6',
+                        'plotly>=2.0.6',    # for line survey HTML output
                         'termcolor',     # terminal colors
                         'six',  # python 2-3 compatibility
                         'configparser', 

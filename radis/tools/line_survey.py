@@ -18,6 +18,7 @@ from radis.phys.constants import k_b
 from radis.misc.basics import is_float
 from radis.misc.utils import NotInstalled
 from warnings import warn
+import plotly.graph_objs as go
 try:
     import plotly.offline as py
     import plotly.graph_objs as go
