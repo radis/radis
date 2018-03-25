@@ -10,6 +10,7 @@ import os
 from os.path import exists
 
 def test_line_survey__fast(verbose=True, plot=False, warnings=True, *args, **kwargs):
+    ''' Test line survey '''
 
     _temp_file = 'radis_test_line_survey.html'
     if exists(_temp_file):
@@ -29,7 +30,7 @@ def test_line_survey__fast(verbose=True, plot=False, warnings=True, *args, **kwa
         
     return True
 
-def _run_testcases(plot=False, verbose=True, *args, **kwargs):
+def _run_testcases(plot=True, verbose=True, *args, **kwargs):
 
     # Show media line_shift
     test_line_survey__fast(plot=plot, verbose=verbose, *args, **kwargs)

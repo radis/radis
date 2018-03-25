@@ -1289,7 +1289,7 @@ class Spectrum(object):
 
         return line
     
-    def _get_populations(self, molecule=None, isotope=None, electronic_state=None):
+    def get_populations(self, molecule=None, isotope=None, electronic_state=None):
         ''' Return populations that are featured in the spectrum, either as 
         upper or lower levels 
         
@@ -1390,7 +1390,7 @@ class Spectrum(object):
             
         '''
         
-        pops = self._get_populations(molecule=molecule, isotope=isotope,
+        pops = self.get_populations(molecule=molecule, isotope=isotope,
                                      electronic_state=electronic_state)
         
         try:
@@ -1446,7 +1446,7 @@ class Spectrum(object):
             
         '''
         
-        pops = self._get_populations(molecule=molecule, isotope=isotope,
+        pops = self.get_populations(molecule=molecule, isotope=isotope,
                                      electronic_state=electronic_state)
         
         try:

@@ -10,7 +10,7 @@ import numpy as np
 from numpy import pi
 from radis.phys.blackbody import sPlanck, planck, planck_wn
 
-def test_exceptions(verbose=True, plot=False, *args, **kwargs):
+def test_exceptions(verbose=True, *args, **kwargs):
     ''' Here we test that the code actually crashes properly!'''
     
     import pytest
@@ -33,7 +33,21 @@ def test_exceptions(verbose=True, plot=False, *args, **kwargs):
         
         
 
-def test_planck_nm(verbose=True, plot=False, *args, **kwargs):
+def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
+    ''' Test blackbody with Wien's law, Stefan's law and tabulated data 
+    of maximum 
+    
+    Reference
+    ---------
+    
+    Tabulated intensity (75.987...) was checked to match SpectraPlot and 
+    manually calculated values
+    
+    '''
+    
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
     
     T = 2200
     eps = 0.36
@@ -82,7 +96,7 @@ def test_planck_nm(verbose=True, plot=False, *args, **kwargs):
     
     return True
 
-def test_planck_cm(verbose=True, plot=False, *args, **kwargs):
+def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     ''' Validate Planck calculation with wavenumber
     
     Notes
@@ -102,7 +116,9 @@ def test_planck_cm(verbose=True, plot=False, *args, **kwargs):
     
     '''
     
-    import matplotlib.pyplot as plt
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
     
     T = 287.2
     eps = 0.78
@@ -143,7 +159,7 @@ def test_planck_cm(verbose=True, plot=False, *args, **kwargs):
     
     return True
 
-def _run_testcases(plot=False, verbose=True, warnings=True, *args, **kwargs):
+def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     ''' Test procedures
 
     Input

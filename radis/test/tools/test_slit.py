@@ -40,9 +40,13 @@ fig_prefix = basename(__file__)+': '
 #  Test cases
 # -----------------------------------------------------------------------------
 
-def test_all_slit_shapes__fast(FWHM=0.4, verbose=True, plot=False, *args, **kwargs):
+def test_all_slit_shapes__fast(FWHM=0.4, verbose=True, plot=True, *args, **kwargs):
     ''' Test all slit generation functions and make sure we get the expected FWHM'''
 
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+    
     # get spectrum
     from radis.test.utils import getTestFile
     from radis.spectrum.spectrum import Spectrum
@@ -171,8 +175,12 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, *args, **
     
     # %% 
     
-def test_against_specair_convolution__fast(plot=False, verbose=True, debug=False, *args, **kwargs):
+def test_against_specair_convolution__fast(plot=True, verbose=True, debug=False, *args, **kwargs):
 
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+    
     # Test
     from radis.test.utils import getTestFile
     
@@ -226,10 +234,14 @@ def test_against_specair_convolution__fast(plot=False, verbose=True, debug=False
     
     return True
 
-def test_normalisation_mode__fast(plot=False, verbose=True, *args, **kwargs):
+def test_normalisation_mode__fast(plot=True, verbose=True, *args, **kwargs):
     ''' Test norm_by = 'area' vs norm_by = 'max' '''
 
     from radis.test.utils import getTestFile
+    
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
     
     # Test
     from publib import set_style
@@ -289,12 +301,16 @@ def test_normalisation_mode__fast(plot=False, verbose=True, *args, **kwargs):
     return True
 
 
-def test_slit_energy_conservation__fast(verbose=True, plot=False, *args, **kwargs):
+def test_slit_energy_conservation__fast(verbose=True, plot=True, *args, **kwargs):
     ''' Convoluted and non convoluted quantities should have the same area
     (difference arises from side effects if the initial spectrum is not 0 on 
     the sides '''
     
     from radis.test.utils import getTestFile
+    
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
     
     if verbose: print('\n>>> _test_slit_energy_conservation\n')
 
@@ -321,7 +337,7 @@ def test_slit_energy_conservation__fast(verbose=True, plot=False, *args, **kwarg
     return True
     
 
-def test_slit_function_effect__fast(verbose=True, plot=False, *args, **kwargs):
+def test_slit_function_effect__fast(verbose=True, plot=True, *args, **kwargs):
     ''' A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function '''
 
@@ -329,6 +345,10 @@ def test_slit_function_effect__fast(verbose=True, plot=False, *args, **kwargs):
     from publib import fix_style
     from numpy import pi, tan, cos
 
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+    
     # Effect of Slit dispersion
 
     def dirac(w0, width=20, wstep=0.009):
@@ -391,7 +411,7 @@ def test_slit_function_effect__fast(verbose=True, plot=False, *args, **kwargs):
 
     return True # nothing defined yet
 
-def _run_testcases(plot=False, verbose=True, *args, **kwargs):
+def _run_testcases(plot=True, verbose=True, *args, **kwargs):
 
     test_against_specair_convolution__fast(plot=plot, verbose=verbose,
                                            *args, **kwargs)

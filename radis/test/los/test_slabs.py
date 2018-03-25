@@ -18,7 +18,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 import numpy as np
 from radis.los.slabs import MergeSlabs, SerialSlabs
 
-def test_merge_slabs(verbose=True, plot=False, warnings=True, debug=False, 
+def test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False, 
                       *args, **kwargs):
     ''' Merge 10 slabs with 1/10 of concentration, and compare the results. 
     Ensure error is < 0.1%
@@ -30,6 +30,8 @@ def test_merge_slabs(verbose=True, plot=False, warnings=True, debug=False,
     from radis.tools.database import load_spec
     import matplotlib.pyplot as plt
     from radis.test.utils import getTestFile
+    if plot:
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
     
     for optically_thin in [True, False]:
     
@@ -40,7 +42,8 @@ def test_merge_slabs(verbose=True, plot=False, warnings=True, debug=False,
         s2.update('all')
         
         # Merge 50 times s1 in the same slab
-        s1N = MergeSlabs(*[s1]*50, optically_thin=optically_thin, debug=debug)
+        s50 = [s1]*50
+        s1N = MergeSlabs(*s50, optically_thin=optically_thin, debug=debug)
         
         if plot:
             for k in ['radiance_noslit']: #, 'transmittance_noslit']:

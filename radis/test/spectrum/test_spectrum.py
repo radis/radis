@@ -97,6 +97,39 @@ def test_copy(verbose=True, *args, **kwargs):
     if verbose:
         print('Tested that s2 == s after Spectrum copy')
     
+def test_populations(verbose=True, plot=True, *args, **kwargs):
+    ''' Test that populations in a Spectrum are correctly read 
+    '''
+    
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+    
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+    import pytest
+    
+    # get a spectrum
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    
+    # Get all populations
+    pops = s.get_populations(molecule='CO', isotope=1)
+    assert np.isclose(pops['Ia'], 0.986544)
+    
+    # Get vib levels
+    df_vib = s.get_vib_levels()
+    assert len(df_vib) == 49
+    
+    # Get rovib levels (dont exist: should fail!)
+    with pytest.raises(KeyError):  # expected behavior
+        s.get_rovib_levels()
+        
+    if plot:
+        s.plot_populations()
+    
+    if verbose:
+        print('test_populations: OK')
+    
 def test_store_functions(verbose=True, *args, **kwargs):
     ''' Test some store / retrieve functions '''
     
@@ -159,7 +192,7 @@ def test_rescaling_function__fast(verbose=True, *args, **kwargs):
     assert np.isclose(s.get_radiance_noslit(Iunit='mW/cm2/sr/nm')[0], 352.57305783248)
 
 
-def _run_testcases(plot=False, verbose=True, debug=False, warnings=True, *args, **kwargs):
+def _run_testcases(plot=True, verbose=True, debug=False, warnings=True, *args, **kwargs):
     ''' Test procedures
 
     Input
@@ -174,6 +207,7 @@ def _run_testcases(plot=False, verbose=True, debug=False, warnings=True, *args, 
     # -------------------------
     test_spectrum_get_methods(debug=debug, verbose=verbose, *args, **kwargs)
     test_copy(verbose=verbose, *args, **kwargs)
+    test_populations(verbose=verbose, plot=plot, *args, **kwargs)
     test_store_functions(verbose=verbose, *args, **kwargs)
     
     

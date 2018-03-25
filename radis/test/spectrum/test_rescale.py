@@ -93,10 +93,14 @@ def test_get_recompute(verbose=True, *args, **kwargs):
     # Now more data is needed:
     assert set(get_recompute(s, ['radiance_noslit'])) == set(('abscoeff', 'emisscoeff', 'radiance_noslit'))
 
-def test_recompute_equilibrium(verbose=True, warnings=True, plot=False, 
+def test_recompute_equilibrium(verbose=True, warnings=True, plot=True, 
                                *args, **kwargs):
     ''' Test that spectral quantities recomputed under equilibrium assumption
     yields the same output as with non equilibrium routines when Tvib = Trot '''
+    
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
     
     # Get spectrum
     s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
