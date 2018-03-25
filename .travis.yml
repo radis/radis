@@ -31,7 +31,8 @@ install:
 script:
   # Your test script goes here
   - echo ">>> Running tests"
-  - pytest --cov=./
+  # use XVFB to have headless display port, and still run the Matplotlib tests.
+  - xvfb-run pytest --cov=./            
   
 # safelist
 branches:

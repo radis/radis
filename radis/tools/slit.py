@@ -677,8 +677,8 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
 
     '''
 
-    from neq.plot.toolbar import add_tools     # TODO: move in publib
     try:
+        from neq.plot.toolbar import add_tools     # TODO: move in publib
         add_tools()       # includes a Ruler to measure slit
     except:
         pass

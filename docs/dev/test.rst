@@ -61,4 +61,6 @@ adding the following lines within your test function::
     if plot:
         import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+        
+See: https://github.com/statsmodels/statsmodels/issues/3697
     
