@@ -86,6 +86,17 @@ Different tools to work with Spectrum objects
    tools/database
 
 
+===============
+Developer Guide
+===============
+
+   
+.. toctree::
+   :maxdepth: 2
+   
+   dev/test
+   
+   
 
 ==================
 Indices and tables
