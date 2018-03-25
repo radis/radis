@@ -445,7 +445,7 @@ def MergeSlabs(*slabs, **kwargs):
         # %% Get quantities that should be calculated 
             
         requested = merge_lists([s.get_vars() for s in slabs])
-        recompute = requested.copy()
+        recompute = requested[:]  #  copy
         if ('radiance_noslit' in requested and not optically_thin):
             recompute.append('emisscoeff')
             recompute.append('abscoeff')
@@ -590,5 +590,5 @@ def MergeSlabs(*slabs, **kwargs):
 # %% Tests
         
 if __name__ == '__main__':
-    from radis.test.los.slabs import _run_testcases
+    from radis.test.los.test_slabs import _run_testcases
     print('Testing merge slabs: ', _run_testcases(verbose=True))
