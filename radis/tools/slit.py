@@ -580,6 +580,11 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
         b = int((la)/2)
         I_conv = I_conv[a:-b]
         w_conv = w[a:-b]
+    elif mode == 'same':
+        I_conv = I_conv
+        w_conv = w
+    else:
+        raise ValueError('Unexpected mode: {0}'.format(mode))
 
     # reverse back if needed
     # Todo: add test case for that

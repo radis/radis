@@ -46,7 +46,7 @@ non_rescalable_keys = ['abscoeff_continuum']
 assert compare_lists(ordered_keys+non_rescalable_keys, CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES,
                      verbose=False)
     
-def _build_update_graph(spec):
+def _build_update_graph(spec, optically_thin=None, equilibrium=None, path_length=None):
     ''' Find inheritances properties (dependencies and equivalences) between all spectral 
     variables based on the spectrum conditions (equilibrium, optically thin, 
     known path length?)
@@ -56,6 +56,23 @@ def _build_update_graph(spec):
     
     spec: Spectrum
         a :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    Other Parameters
+    ----------------
+    
+    optically_thin: boolean
+        know whether the Spectrum should be considered optically thin to build
+        the equivalence graph tree. If None, the value stored in the Spectrum is used. 
+        Default None
+        
+    equilibrium: boolean
+        know whether the Spectrum should be considered at equilibrium to build
+        the equivalence graph tree. If None, the value stored in the Spectrum is used. 
+        Default None
+        
+    path_length: boolean
+        know whether the path length is given to build the equivalence graph tree. 
+        If None, ``path_length`` is looked up in the Spectrum condition. Default None
         
     Returns
     -------
@@ -101,15 +118,18 @@ def _build_update_graph(spec):
                       ['transmittance'],
                       ['radiance'],
                       ['radiance_noslit'],
-                      ['transmittance_noslit']],  etc.
+                      ['transmittance_noslit']],
+         etc. }
+        
     
     '''
     
-    path_length = 'path_length' in spec.conditions
+    # Get defaults 
+    if path_length is None: path_length = 'path_length' in spec.conditions
+    if optically_thin is None: optically_thin = spec.is_optically_thin()
+    if equilibrium is None: equilibrium = spec.is_at_equilibrium()
     slit = ('slit_function' in spec.conditions and 'slit_unit' in spec.conditions
             and 'norm_by' in spec.conditions)
-    equilibrium = spec.is_at_equilibrium()
-    optically_thin = spec.is_optically_thin()
     
     all_keys = [
              'abscoeff',
@@ -279,7 +299,7 @@ def get_reachable(spec): #, derivation_graph):
         
     return reachable
 
-def get_recompute(spec, wanted): #, derivation_graph):
+def get_recompute(spec, wanted, true_path_length=None): #, derivation_graph):
     ''' Get the list of all quantities that need to be recomputed to get the 
     ``wanted`` quantities based on given spec conditions 
     
@@ -291,6 +311,13 @@ def get_recompute(spec, wanted): #, derivation_graph):
         
     wanted: list
         list of quantities to recompute
+        
+    Other Parameters
+    ----------------
+    
+    true_path_length: boolean
+        know whether the path length is given to build the equivalence graph tree. 
+        If None, ``path_length`` is looked up in the Spectrum condition. Default None
         
     Returns
     -------
@@ -311,7 +338,7 @@ def get_recompute(spec, wanted): #, derivation_graph):
     '''
     
     # Get inheritance links based on Spectrum conditions (equilibrium, optically thin, etc.)
-    derivation_graph = _build_update_graph(spec)
+    derivation_graph = _build_update_graph(spec, path_length=true_path_length)
     
 #    activated = dict().fromkeys(ordered_keys, False)
     # Store two dictionaries, that characterize, at a given instant, all quantities
@@ -970,7 +997,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     
     # list of quantities that are needed to recomputed what we want
     try:
-        recompute = get_recompute(spec, wanted)
+        recompute = get_recompute(spec, wanted, true_path_length=true_path_length)
     except KeyError as err:
         import sys
         print(sys.exc_info())

@@ -26,6 +26,7 @@ from radis.tools.slit import (gaussian_slit, triangular_slit, trapezoidal_slit,
                            import_experimental_slit, convolve_with_slit, 
                            get_FWHM, get_effective_FWHM)
 from radis.phys.units import is_homogeneous
+from radis.phys.convert import dcm2dnm, dnm2dcm
 #from radis.misc.utils import DatabankNotFound
 #from radis.test.utils import IgnoreMissingDatabase, build_test_databases
 import matplotlib.pyplot as plt 
@@ -39,12 +40,11 @@ fig_prefix = basename(__file__)+': '
 #  Test cases
 # -----------------------------------------------------------------------------
 
-def test_all_slits__fast(FWHM=0.4, verbose=True, plot=False, *args, **kwargs):
+def test_all_slit_shapes__fast(FWHM=0.4, verbose=True, plot=False, *args, **kwargs):
     ''' Test all slit generation functions and make sure we get the expected FWHM'''
 
     # get spectrum
     from radis.test.utils import getTestFile
-    from radis.phys.convert import dnm2dcm
     from radis.spectrum.spectrum import Spectrum
     s = Spectrum.from_txt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt'),
                           quantity='radiance_noslit', waveunit='nm', unit='mW/cm2/sr/µm',
@@ -82,6 +82,95 @@ def test_all_slits__fast(FWHM=0.4, verbose=True, plot=False, *args, **kwargs):
     
     return True # nothing defined yet
 
+def test_slit_unit_conversions_spectrum_in_cm(verbose=True, plot=True, *args, **kwargs):
+    ''' Test that slit is consistently applied for different units
+    
+    Assert that:
+    
+    - calculated FWHM is the one that was applied
+    
+    '''
+    
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+    
+    # %% Get a Spectrum (stored in cm-1)
+    s_cm = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s_cm.rescale_mole_fraction(1)   # just because it makes better units
+    s_cm.update()
+    wstep = s_cm.conditions['wstep']
+    
+    assert s_cm.get_waveunit() == 'cm-1'       # ensures it's stored in cm-1
+    
+    for shape in ['gaussian', 'triangular']:
+        
+        # Apply slit in cm-1 
+        slit_cm = 2    
+        s_cm.name = 'Spec in cm-1, slit {0:.2f} cm-1'.format(slit_cm)
+        s_cm.apply_slit(slit_cm, unit='cm-1', shape=shape, mode='same')  
+        # ... mode=same to keep same output length. It helps compare both Spectra afterwards
+        fwhm = get_FWHM(*s_cm.get_slit())   # in cm-1 as that's s.get_waveunit()
+        assert np.isclose(slit_cm, fwhm, atol=2*wstep)
+            
+        # Apply slit in nm this time
+        s_nm = s_cm.copy()
+        w_cm = s_nm.get_wavenumber(which='non_convoluted')
+        slit_nm = dcm2dnm(slit_cm, w_cm[len(w_cm)//2])
+        s_nm.name = 'Spec in cm-1, slit {0:.2f} nm'.format(slit_nm)
+        s_nm.apply_slit(slit_nm, unit='nm', shape=shape, mode='same')
+        
+        plotargs = {}
+        if plot: plotargs['title'] = 'test_slit_unit_conversions: {0} ({1} cm-1)'.format(shape, slit_cm)
+        s_cm.compare_with(s_nm, spectra_only='radiance', rtol=1e-3, 
+                          verbose=verbose, plot=plot, **plotargs)
+    
+def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, *args, **kwargs):
+    ''' Test that slit is consistently applied for different units
+    
+    Assert that:
+    
+    - calculated FWHM is the one that was applied
+    
+    '''
+    
+    from radis.test.utils import getTestFile
+    from radis.spectrum.spectrum import Spectrum
+    
+    # %% Get a Spectrum (stored in nm)
+    s_nm = Spectrum.from_txt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt'),
+                          quantity='radiance_noslit', waveunit='nm', unit='mW/cm2/sr/µm',
+                          conditions={'medium':'air',
+                                      'self_absorption':False})
+    s_nm.rescale_path_length(1, 0.001)   # just because it makes better units
+    wstep = np.diff(s_nm.get_wavelength())[0]
+    
+    assert s_nm.get_waveunit() == 'nm'       # ensures it's stored in cm-1
+    
+    for shape in ['gaussian', 'triangular']:
+        
+        # Apply slit in nm
+        slit_nm = 0.5    
+        s_nm.name = 'Spec in nm, slit {0:.2f} nm'.format(slit_nm)
+        s_nm.apply_slit(slit_nm, unit='nm', shape=shape, mode='same')  
+        # ... mode=same to keep same output length. It helps compare both Spectra afterwards
+        fwhm = get_FWHM(*s_nm.get_slit())   # in cm-1 as that's s.get_waveunit()
+        assert np.isclose(slit_nm, fwhm, atol=2*wstep)
+    
+        # Apply slit in nm this time
+        s_cm = s_nm.copy()
+        w_nm = s_nm.get_wavelength(which='non_convoluted')
+        slit_cm = dnm2dcm(slit_nm, w_nm[len(w_nm)//2])
+        s_cm.name = 'Spec in nm, slit {0:.2f} cm-1'.format(slit_cm)
+        s_cm.apply_slit(slit_cm, unit='cm-1', shape=shape, mode='same')
+        
+        plotargs = {}
+        if plot: plotargs['title'] = 'test_slit_unit_conversions: {0} ({1} nm)'.format(shape, slit_nm)
+        s_nm.compare_with(s_cm, spectra_only='radiance', rtol=1e-3, 
+                          verbose=verbose, plot=plot, **plotargs)
+    
+    
+    # %% 
+    
 def test_against_specair_convolution__fast(plot=False, verbose=True, debug=False, *args, **kwargs):
 
     # Test
@@ -251,12 +340,7 @@ def test_slit_function_effect__fast(verbose=True, plot=False, *args, **kwargs):
 
         return w, I
 
-    def FWHM(w, I):
-        ''' Returns effective FWHM, which is the area when peak is normalized
-        to 1 '''
-        return np.trapz(I/I.max(), x=w)
-
-    def linear_dispersion(w, f=750, phi=6, m=1, gr=300):
+    def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
         ''' dlambda / dx
         Default values correspond to Acton 750i
 
@@ -280,24 +364,31 @@ def test_slit_function_effect__fast(verbose=True, plot=False, *args, **kwargs):
         disp = w/(2*f)*(tan(phi)+sqrt((2*d/m/(w*1e-9)*cos(phi))**2-1))
         return disp  # to nm/mm
 
+    w_slit, I_slit = import_experimental_slit(getTestFile('slitfunction.txt'))
 
     if plot:
         plt.figure(fig_prefix+'Linear dispersion effect')
-
-        w_slit, I_slit = import_experimental_slit(getTestFile('slitfunction.txt'))
-
         plt.plot(w_slit, I_slit, '--k', label='Exp: FWHM @{0}nm: {1:.3f} nm'.format(632.8,
-                 FWHM(w_slit, I_slit)))
-        for w0 in [380, 1000, 4200, 5500]:
-            w, I = dirac(w0)
-            wc, Ic = convolve_with_slit(w, I, w_slit, I_slit, slit_dispersion=linear_dispersion)
-            plt.plot(wc, Ic, label='FWHM @{0:.2f} nm: {1:.3f} nm'.format(w0, FWHM(wc, Ic)))
+                 get_effective_FWHM(w_slit, I_slit)))
+        
+    # Test how slit function FWHM scales with linear_dispersion
+    for w0, FWHM in zip([380, 1000, 4200, 5500],
+                        [0.396, 0.388, 0.282, 0.188]):
+        w, I = dirac(w0)
+        wc, Ic = convolve_with_slit(w, I, w_slit, I_slit, norm_by='area', 
+                                    slit_dispersion=linear_dispersion)
+        assert np.isclose(FWHM, get_effective_FWHM(wc, Ic), atol=0.001)
+
+        if plot: 
+            plt.plot(wc, Ic, label='FWHM @{0:.2f} nm: {1:.3f} nm'.format(w0, 
+                     get_effective_FWHM(wc, Ic)))
+    
+    if plot:
         plt.xlabel('Wavelength (nm)')
         plt.ylabel('Dirac $x$ slit function')
         plt.legend(loc='best', prop={'size':15})
-        fix_style(str('article'))
+        fix_style('article')
 
-    if verbose: print('\n>>> _test_slit_function_effect : NOT DEFINED\n')
     return True # nothing defined yet
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
@@ -308,7 +399,9 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_slit_energy_conservation__fast(plot=plot, verbose=verbose, *args, **kwargs)
     test_slit_function_effect__fast(plot=plot, verbose=verbose, *args, **kwargs)
 #    test_constant_source(plot=plot, verbose=verbose, *args, **kwargs)
-    test_all_slits__fast(plot=plot, verbose=verbose, *args, **kwargs)
+    test_all_slit_shapes__fast(plot=plot, verbose=verbose, *args, **kwargs)
+    test_slit_unit_conversions_spectrum_in_cm(verbose=verbose, plot=plot, *args, **kwargs)
+    test_slit_unit_conversions_spectrum_in_nm(verbose=verbose, plot=plot, *args, **kwargs)
 #    test_resampling__fast(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True

@@ -2463,7 +2463,7 @@ class Spectrum(object):
 
     def compare_with(self, other, spectra_only=False, plot=True, wunit='default',
                      verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
-                     normalize=False):
+                     normalize=False, **kwargs):
         ''' Compare Spectrum with another spectrum
 
     
@@ -2500,6 +2500,12 @@ class Spectrum(object):
         
         normalize: bool
             Normalize the spectra to be ploted 
+
+        Other Parameters
+        ----------------
+        
+        kwargs: dict
+            arguments are forwarded to :func:`~radis.spectrum.compare.plot_diff`
 
         Returns
         -------
@@ -2540,6 +2546,8 @@ class Spectrum(object):
             if ignore_nan: msg += ', ignore_nan'
             if ignore_outliers: msg += ', ignore_outliers={0}'.format(ignore_outliers)
             print(msg)
+        if not plot and len(kwargs)>0:
+            raise ValueError('Unexpected argument: {0}'.format(kwargs))
 
         if wunit == 'default':
             wunit = self.get_waveunit()
@@ -2634,7 +2642,8 @@ class Spectrum(object):
                 if plot:
                     try:
                         plot_diff(self, other, var=k, wunit=wunit, 
-                                  normalize=normalize, verbose=verbose)
+                                  normalize=normalize, verbose=verbose,
+                                  **kwargs)
                     except:
                         print('... couldnt plot {0}'.format(k))
 
@@ -2659,7 +2668,8 @@ class Spectrum(object):
                 if plot:
                     try:
                         plot_diff(self, other, var=k, wunit=wunit, 
-                                  normalize=normalize, verbose=verbose)
+                                  normalize=normalize, verbose=verbose,
+                                  **kwargs)
                     except:
                         print('... couldnt plot {0}'.format(k))
 
