@@ -851,17 +851,14 @@ class SpecDatabase():
         **kwargs: **dict
             extra parameters used in the case where spectrum is a file and a .spec object
             has to be created (useless if `spectrum` is a file already). kwargs
-            are forwarded to Spectrum.store() class. See Spectrum.store() or
-            database.save() for more information
+            are forwarded to Spectrum.store() method. See :meth:`~radis.spectrum.spectrum.Spectrum.store` 
+            or database.:meth:`~radis.tools.database.SpecDatabase.save` for more information
 
         Other Parameters
         ----------------
         
-        Spectrum.store() parameters given as kwargs arguments. 
+        :meth:`~radis.spectrum.spectrum.Spectrum.store` parameters given as kwargs arguments. 
             
-        file: str
-            explicitely give a filename to save
-    
         compress: boolean
             if True, removes all quantities that can be regenerated with s.update(),
             e.g, transmittance if abscoeff and path length are given, radiance if
@@ -954,7 +951,7 @@ class SpecDatabase():
         # Update index .csv
         self.print_index()
 
-        return
+        return file
 
     def _load_files(self, files):
         ''' Parse files and generate a database
@@ -1415,6 +1412,6 @@ def in_database(smatch, db='.', filt='.spec'):
 # %% Test
 if __name__ == '__main__':
 
-    from neq.test.spec.test_database import _run_testcases
-    print(('Testing database.py: ', _run_testcases()))
+    from radis.test.tools.test_database import _run_testcases
+    print('Testing database.py: ', _run_testcases())
         
