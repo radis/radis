@@ -3,6 +3,7 @@
 Test that line survey works
 """
 
+from __future__ import print_function, absolute_import, division, unicode_literals
 #from radis.misc.utils import DatabankNotFound
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec, SpecDatabase
@@ -35,23 +36,31 @@ def test_database_functions__fast(verbose=True, plot=True, warnings=True, *args,
     # Database add method
     s2 = s.copy()
     s2.conditions['Tgas'] = 0  # make it unique (for testing)
-    l = db.add(s2, if_exists_then='increment')
+    l = db.add(s2, add_info=['Tvib', 'Trot'], compress=True, if_exists_then='increment')
     assert exists(l)
     try:
         assert s2 in db
         # .. ensures that you cant add it twice
         with pytest.raises(ValueError):
-            db.add(s2)
+            db.add(s2, add_info=['Tvib', 'Trot'])
     finally:
         os.remove(l)
     db.update(force_reload=True)            # update database 
     assert s2 not in db
+    
+def test_plot_spec(plot=True, verbose=True, *args, **kwargs):
+    
+    from radis.tools.database import plot_spec
+    from radis.test.utils import getTestFile
+    
+    if plot:
+        plot_spec(getTestFile('N2C_specair_380nm.spec'))
         
 
 def _run_testcases(plot=True, verbose=True, *args, **kwargs):
 
-    # Show media line_shift
     test_database_functions__fast(plot=plot, verbose=verbose, *args, **kwargs)
+    test_plot_spec(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 
