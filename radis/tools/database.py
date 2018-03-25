@@ -51,8 +51,7 @@ Implement a h5py version of load / store
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function, division, unicode_literals
 import json
 import json_tricks
 import numpy as np
@@ -1048,7 +1047,13 @@ class SpecDatabase():
                 if isinstance(v, string_types):
                     query.append("{0} == '{1}'".format(k, v))
                 else:
-                    query.append('{0} == {1}'.format(k,v))
+#                    query.append('{0} == {1}'.format(k,v))
+                    query.append('{0} == {1}'.format(k,v.__repr__()))
+                    # ... for som reason {1}.format() would remove some digit
+                    # ... to floats in Python2. Calling .__repr__() keeps
+                    # ... the correct format, and has no other consequences as far
+                    # ... as I can tell
+                    
             # There is a limitation in numpy: a max of 32 arguments is required. 
             # Below we write a workaround when the Spectrum has more than 32 conditions
             if len(query) < 32:
@@ -1169,32 +1174,36 @@ class SpecDatabase():
         
         mean = dict(dg.mean())
         std = dict(dg.std())
+        assert '_d' not in dg.columns
         dg['_d'] = 0  # distance (squared, actually)
-        for k, v in kwconditions.items():
-            if not k in dg.columns:
-                continue
-#            # add distance to all conditions planes. We regularize the different
-#            # dimensions by working on normalized quantities: 
-#            #     a  ->   (a-mean)/std  € [0-1]
-#            # Distance becomes:
-#            #     d^2 ->  sum((a-target)/std)^2
-#            # Problem when std == 0! That means this dimension is not discrimant
-#            # anyway
-#            if std[k] == 0:
-#                # for this conditions all parameters have the same value. 
-#                dg['_d'] += (dg[k]-v)**2
-#            else:
-#                dg['_d'] += (dg[k]-v)**2/(std[k])**2
-            # Eventually I chose to scale database with mean only (there was
-            # an obvious problem with standard deviation scaling in the case of 
-            # a non important feature containing very close datapoints that would
-            # result in inappropriately high weights)
-            dg['_d'] += (dg[k]-v)**2/mean[k]**2
-
-        # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
-        
-        # Get spectrum with minimum distance to target conditions
-        sout = self.df.ix[dg['_d'].idxmin(), 'Spectrum']     # type: Spectrum
+        try:
+            for k, v in kwconditions.items():
+                if not k in dg.columns:
+                    continue
+    #            # add distance to all conditions planes. We regularize the different
+    #            # dimensions by working on normalized quantities: 
+    #            #     a  ->   (a-mean)/std  € [0-1]
+    #            # Distance becomes:
+    #            #     d^2 ->  sum((a-target)/std)^2
+    #            # Problem when std == 0! That means this dimension is not discrimant
+    #            # anyway
+    #            if std[k] == 0:
+    #                # for this conditions all parameters have the same value. 
+    #                dg['_d'] += (dg[k]-v)**2
+    #            else:
+    #                dg['_d'] += (dg[k]-v)**2/(std[k])**2
+                # Eventually I chose to scale database with mean only (there was
+                # an obvious problem with standard deviation scaling in the case of 
+                # a non important feature containing very close datapoints that would
+                # result in inappropriately high weights)
+                dg['_d'] += (dg[k]-v)**2/mean[k]**2
+    
+            # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
+            
+            # Get spectrum with minimum distance to target conditions
+            sout = self.df.ix[dg['_d'].idxmin(), 'Spectrum']     # type: Spectrum
+        finally:
+            del dg['_d']
         
         if not inplace:
             sout = sout.copy()
