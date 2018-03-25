@@ -12,35 +12,124 @@ unload the spectrum.py file
 
 """
 
+from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
 from numpy import log as ln
 from numpy import inf, exp
 from radis.misc.debug import printdbg
+from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
 from radis.lbl.equations import calc_radiance
+from radis.misc.basics import all_in, any_in
+from radis.misc.basics import compare_lists
 from warnings import warn
 from six import string_types
 
-CONVOLUTED_QUANTITIES = ['radiance', 'transmittance', 'emissivity']
-NON_CONVOLUTED_QUANTITIES = ['radiance_noslit', 'transmittance_noslit',
-                              'emisscoeff', 'absorbance', 'abscoeff',
-                              'abscoeff_continuum', 'emissivity_noslit',]
-
-# note: it is hardcoded (and needed) that quantities that are convoluted are 
-# generated from a non convoluted quantity with the same name + _noslit
-for _q in CONVOLUTED_QUANTITIES:
-    assert _q+'_noslit' in NON_CONVOLUTED_QUANTITIES
-
-
-def _build_update_graph(spec):
-    ''' Find dependencies and equivalences between different spectral parameters
-    based on the spectrum conditions (equilibrium?, optically thin?, path length given?)
+# List of all spectral variables sorted by priority during recomputation 
+# (ex: first get abscoeff, then try to calculate emisscoeff, etc.)
+ordered_keys = [ 
+         'abscoeff',
+         'emisscoeff',
+         'absorbance',
+         'radiance_noslit',
+         'transmittance_noslit',
+         'emissivity',
+         'emissivity_noslit',
+         'radiance',
+         'transmittance',
+         ]
+# ... variables that cannot be rescaled (or not implemented):
+non_rescalable_keys = ['abscoeff_continuum']
+# ... Check we have everyone (safety check!):
+# ... if it fails here, then we may have added a new key without adding a scaling 
+# ... method. Explicitely add it in non_rescalableçkeys so an error is raised 
+# ... if trying to rescale a Spectrum that has such a quantity
+assert compare_lists(ordered_keys+non_rescalable_keys, CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES,
+                     verbose=False)
+    
+def _build_update_graph(spec, optically_thin=None, equilibrium=None, path_length=None):
+    ''' Find inheritances properties (dependencies and equivalences) between all spectral 
+    variables based on the spectrum conditions (equilibrium, optically thin, 
+    known path length?)
+    
+    Parameters
+    ----------
+    
+    spec: Spectrum
+        a :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    Other Parameters
+    ----------------
+    
+    optically_thin: boolean
+        know whether the Spectrum should be considered optically thin to build
+        the equivalence graph tree. If None, the value stored in the Spectrum is used. 
+        Default None
+        
+    equilibrium: boolean
+        know whether the Spectrum should be considered at equilibrium to build
+        the equivalence graph tree. If None, the value stored in the Spectrum is used. 
+        Default None
+        
+    path_length: boolean
+        know whether the path length is given to build the equivalence graph tree. 
+        If None, ``path_length`` is looked up in the Spectrum condition. Default None
+        
+    Returns
+    -------
+    
+    derivation: dict
+        {spectral_quantity: [list of combinations of spectral quantities needed to calculate it]}
+    
+    Examples
+    --------
+    
+    to recompute a Spectrum under nonequilibrium, non optically thin case
+    (note that all paths are not there yet)::
+        
+        {'abscoeff': [['absorbance']],
+         'absorbance': [['transmittance_noslit'], ['abscoeff']],
+         'emisscoeff': [['radiance_noslit', 'abscoeff']],
+         'radiance_noslit': [['emisscoeff', 'abscoeff']],
+         'transmittance_noslit': [['absorbance']]}
+    
+    a Spectrum under nonequilibrium, with optically thin case::
+        
+        {'abscoeff': [['absorbance']],
+         'absorbance': [['transmittance_noslit'], ['abscoeff']],
+         'emisscoeff': [['radiance_noslit']],
+         'radiance_noslit': [['emisscoeff']],
+         'transmittance_noslit': [['absorbance']]}
+        
+    a Spectrum under equilibrium (everything leads to everything)::
+        
+        {'abscoeff': [['absorbance'],
+                      ['absorbance'],
+                      ['emisscoeff'],
+                      ['emissivity_noslit'],
+                      ['transmittance'],
+                      ['radiance'],
+                      ['radiance_noslit'],
+                      ['transmittance_noslit']],
+         'absorbance': [['transmittance_noslit'],
+                      ['abscoeff'],
+                      ['abscoeff'],
+                      ['emisscoeff'],
+                      ['emissivity_noslit'],
+                      ['transmittance'],
+                      ['radiance'],
+                      ['radiance_noslit'],
+                      ['transmittance_noslit']],
+         etc. }
+        
+    
     '''
     
-    path_length = 'path_length' in spec.conditions
+    # Get defaults 
+    if path_length is None: path_length = 'path_length' in spec.conditions
+    if optically_thin is None: optically_thin = spec.is_optically_thin()
+    if equilibrium is None: equilibrium = spec.is_at_equilibrium()
     slit = ('slit_function' in spec.conditions and 'slit_unit' in spec.conditions
             and 'norm_by' in spec.conditions)
-    equilibrium = spec.is_at_equilibrium()
-    optically_thin = spec.is_optically_thin()
     
     all_keys = [
              'abscoeff',
@@ -52,6 +141,7 @@ def _build_update_graph(spec):
              'radiance_noslit',
              'transmittance_noslit',
              ]
+    assert all_in(all_keys, CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES)
     
     # Build edges of relationships
     derivation = {             # {keys, [list of keys]}
@@ -60,8 +150,23 @@ def _build_update_graph(spec):
         }
     
     def derives_from(what, *from_keys):
+        ''' Writes that quantity ``what`` can be infered by having all quantities
+        ``from_keys`` 
+        
+        Examples
+        --------
+        
+        Radiance can be infered from emisscoeff if optically thin::
+        
+            derives_from('radiance_noslit', 'emisscoeff')
+            
+        Else abscoeff would also be needed::
+            
+            derives_from('emisscoeff', ['radiance_noslit', 'abscoeff'])
+        
+        '''
         for k in from_keys:
-            if type(k) == str:
+            if isinstance(k, string_types):
                 k = [k]
             try:
                 derivation[what].append(k)
@@ -69,21 +174,32 @@ def _build_update_graph(spec):
                 derivation[what] = [k]
     
     # Build more equivalence relationships if path_length is given
+    # ------------------------------------------------------------
+    # TODO: complete that, list is not exhaustive yet. 
+    # Duplicates are removed afterwards anyway
+    # 
+    # Note for Developers: all derives_from relationship should correspond to a  
+    # rescale method that was implemented. Only the developer can know that!
+    # If a rescaled relationship is implemetend but not added here it wont be 
+    # used by the code when trying to add all quantities. If a relationship is 
+    # added here but not implemented it will crash during rescale (and explain why)
+    
+    # Deal with case where we know path_length:
     if path_length:
-        derives_from('abscoeff', 'absorbance')
-        derives_from('absorbance', 'abscoeff')
+        derives_from('abscoeff', ['absorbance'])
+        derives_from('absorbance', ['abscoeff'])
         if optically_thin:
-            derives_from('radiance_noslit', 'emisscoeff')
-            derives_from('emisscoeff', 'radiance_noslit')
+            derives_from('radiance_noslit', ['emisscoeff'])
+            derives_from('emisscoeff', ['radiance_noslit'])
         else:
             derives_from('radiance_noslit', ['emisscoeff', 'abscoeff'])
             derives_from('emisscoeff', ['radiance_noslit', 'abscoeff'])
 
     if slit:
         if __debug__: printdbg('... build_graph: slit given > convoluted keys can be recomputed')
-        derives_from('radiance', 'radiance_noslit')
-        derives_from('transmittance', 'transmittance_noslit')
-        derives_from('emissivity', 'emissivity_noslit')
+        derives_from('radiance', ['radiance_noslit'])
+        derives_from('transmittance', ['transmittance_noslit'])
+        derives_from('emissivity', ['emissivity_noslit'])
 
     if equilibrium:
         if __debug__: printdbg('... build_graph: equilibrium > all keys derive from one')
@@ -91,6 +207,8 @@ def _build_update_graph(spec):
         for key in all_keys:
             all_but_k = [[k] for k in all_keys if k != key]
             derives_from(key, *all_but_k)
+    
+    # ------------------------------------------------------------
     
     return derivation
 
@@ -107,18 +225,6 @@ def get_redundant(spec):
     
     derivation_graph = _build_update_graph(spec)
     
-    ordered_keys = [  # ranked by priority
-             'abscoeff',
-             'emisscoeff',
-             'absorbance',
-             'radiance_noslit',
-             'transmittance_noslit',
-             'emissivity',
-             'emissivity_noslit',
-             'radiance',
-             'transmittance',
-             ]
-    
     activated = dict().fromkeys(ordered_keys, False)
     for k in spec.get_vars():
         activated[k] = True
@@ -128,6 +234,9 @@ def get_redundant(spec):
     for key in ordered_keys[::-1]:    # roots
         if key in derivation_graph:
             for from_keys in derivation_graph[key]:
+#                if [key] == from_keys:
+#                    # that you can be recomputed from yourself doesnt make you redundant
+#                    continue
                 if all([activated[k] and not redundant[k] for k in from_keys]):
                     redundant[key] = True
                     continue
@@ -137,23 +246,39 @@ def get_redundant(spec):
             
     return redundant
 
+def _path_is_complete(list_of_keys, computed_keys):
+    return all([computed_keys[k] for k in list_of_keys])
+    
 def get_reachable(spec): #, derivation_graph):
     ''' Get the list of all quantities that can be derived from current available
-    quantities, based on given spec conditions '''
+    quantities, based on given spec conditions 
     
+    Parameters
+    ----------
+    
+    spec: Spectrum
+        a :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    Returns
+    -------
+    
+    reachable: list
+        list of quantities that can be calculated from available information
+        
+    Notes
+    -----
+    
+    Algorithm::
+        
+        for all quantities, starting from the last:
+            for all possible ways to compute them
+                if valid, add quantity to reachable list, and restart
+                else, continue
+            
+    '''
+    
+    # Get inheritance links based on Spectrum conditions (equilibrium, optically thin, etc.)
     derivation_graph = _build_update_graph(spec)
-    
-    ordered_keys = [  # ranked by priority
-             'abscoeff',
-             'emisscoeff',
-             'absorbance',
-             'radiance_noslit',
-             'transmittance_noslit',
-             'emissivity',
-             'emissivity_noslit',
-             'radiance',
-             'transmittance',
-             ]
     
 #    activated = dict().fromkeys(ordered_keys, False)
     reachable = dict().fromkeys(ordered_keys, False)
@@ -167,12 +292,124 @@ def get_reachable(spec): #, derivation_graph):
         for key in ordered_keys[::-1]:    # roots
             if key in derivation_graph:
                 for from_keys in derivation_graph[key]:  # all different ways to compute this value
-                    if all([reachable[k] for k in from_keys]):
+                    if _path_is_complete(from_keys, reachable):  # if all are reachable then we can reach this new value
                         if not reachable[key]:
                             reachable[key] = True
-                            restart = True   # status changed -> restart?
+                            restart = True   # status changed -> restart?                            
         
     return reachable
+
+def get_recompute(spec, wanted, true_path_length=None): #, derivation_graph):
+    ''' Get the list of all quantities that need to be recomputed to get the 
+    ``wanted`` quantities based on given spec conditions 
+    
+    Parameters
+    ----------
+    
+    spec: Spectrum
+        a :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    wanted: list
+        list of quantities to recompute
+        
+    Other Parameters
+    ----------------
+    
+    true_path_length: boolean
+        know whether the path length is given to build the equivalence graph tree. 
+        If None, ``path_length`` is looked up in the Spectrum condition. Default None
+        
+    Returns
+    -------
+    
+    recompute: list
+        list of quantities needed
+        
+    Notes
+    -----
+    
+    Algorithm::
+        
+        for all quantities:
+            for all possible ways to compute them
+                if valid, add quantity to reachable list, and restart
+                else, continue
+            
+    '''
+    
+    # Get inheritance links based on Spectrum conditions (equilibrium, optically thin, etc.)
+    derivation_graph = _build_update_graph(spec, path_length=true_path_length)
+    
+#    activated = dict().fromkeys(ordered_keys, False)
+    # Store two dictionaries, that characterize, at a given instant, all quantities
+    # that we had to recompute, and all quantities that can be recomputed from these 
+    recompute = dict().fromkeys(ordered_keys, False)
+    for k in spec.get_vars():     # start from all quantities we have
+        recompute[k] = True
+    for k in wanted:              # add all quantities we want
+        recompute[k] = True
+#    reachable = dict().fromkeys(ordered_keys, False)
+#    for k in spec.get_vars():   # start from all quantities we have
+#        reachable[k] = True
+        
+    def parse_tree(recompute):
+        for key in ordered_keys:
+            if key in wanted:       # find a way to recompute it:
+                can_recompute_key = False
+                for from_keys in derivation_graph[key]:   # all different ways to compute this value
+                    if _path_is_complete(from_keys, recompute):  # if all are recomputed already they we can recompute this new value
+                        # we can reach this quantity
+                        recompute[key] = True
+                        can_recompute_key = True
+                        break
+                if not can_recompute_key:
+                    if __debug__:
+                        printdbg("... get_recompute: Can't recompute {0} with current keys: {1}. Finding something else".format
+                          (key, [k for k in from_keys if recompute[k]]))
+#                    # cant recompute this quantity. Let's force recomputation 
+#                    def get_best_path():
+#                        new_recompute_set = recompute.copy()
+#                        for k in ordered_keys:
+#                            # let's add a new quantity to recompute
+#                            if new_recompute_set[k]:
+#                                # we already have this quantity
+#                                continue
+#                            elif not any([k in from_keys for from_keys in derivation_graph[key]]):
+#                                # this quantity (k) doesnt participate in calculating from_keys
+#                                continue
+#                            else:
+#                                # let's calculate it
+#                                
+                    # cant recompute this quantity. Let's force recomputation 
+                    # of a given path. We'll arbitrary use the one will the fewer
+                    # amount of not already recomputed quantities
+                    score_non_recomputed_per_path = {}
+                    for from_keys in derivation_graph[key]:
+                        score = sum([not recompute[k] for k in from_keys])
+                        # if several paths have same score the last will be chosen:
+                        score_non_recomputed_per_path[score] = from_keys   
+                    # get the path with the minimum of values to recompute:
+                    min_path = score_non_recomputed_per_path[min(score_non_recomputed_per_path)]
+                    # Add all these variables to the recompute list, and restart
+                    for k in min_path:
+                        recompute[k] = True
+                        if __debug__: 
+                            printdbg('... get_recompute: Added new quantity to recompute list:', k)
+                    return recompute, True
+         # reached the end with no change, no need to restart
+        return recompute, False
+                    
+    # Parse graph
+    restart = True
+    while restart:
+        recompute, restart = parse_tree(recompute)
+        
+    recompute = [k for k in recompute if recompute[k]]
+        
+    if __debug__:
+        printdbg('... get_recompute: List of quantities to recompute: ', recompute)
+        
+    return recompute
 
 
 
@@ -226,7 +463,7 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
     if old_self_absorption != (not optically_thin):
         spec.conditions['self_absorption'] = not optically_thin
         if verbose:
-            print('self absorption set to:', spec.conditions['self_absorption'])
+            print(('self absorption set to:', spec.conditions['self_absorption']))
 
     initial = spec.get_vars()
 
@@ -242,7 +479,7 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
     # Get list of new quantities 
     new_q = [k for k in spec.get_vars() if k not in initial]
     if verbose:
-        print('New quantities added: {0}'.format(new_q))
+        print(('New quantities added: {0}'.format(new_q)))
         
     # Final checks
     for k in new_q:
@@ -507,7 +744,9 @@ def rescale_absorbance(spec, rescaled, initial, old_mole_fraction, new_mole_frac
         absorbance = abscoeff*new_path_length               # calculate
         unit = '-ln(I/I0)'
     else:
-        msg = 'Cant recalculate absorbance if absoeff and true path_length are not given'
+        msg = 'Cant recalculate absorbance if scaled absoeff '+\
+              '({0}) and true path_length ({1}) are not given'.format(
+                    'abscoeff' in rescaled, true_path_length)
         if 'absorbance' in extra:  # cant calculate this one but let it go
             absorbance = None
             if __debug__: printdbg(msg)
@@ -567,7 +806,10 @@ def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new
         absorbance *= new_path_length / old_path_length         # rescale
         transmittance_noslit = exp(-absorbance)
     else:
-        msg = 'Missing data to rescale transmittance'
+        msg = 'Missing data to rescale transmittance. Expected scaled absorbance ({0})'.format(
+                'absorbance' in rescaled)
+#        +' or scaled abscoeff ({0}) and true_path_length ({1})'.format(
+#                'abscoeff' in rescaled, true_path_length)
         if 'transmittance_noslit' in extra: # cant calculate this one but let it go
             transmittance_noslit = None
             if __debug__: printdbg(msg)
@@ -607,6 +849,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
         emisscoeff = rescaled['emisscoeff']    # mole_fraction already scaled
         radiance_noslit = emisscoeff*new_path_length      # recalculate
         unit = get_unit(units['emisscoeff'])
+        
     elif ('emisscoeff' in rescaled and 'transmittance_noslit' in rescaled
           and 'abscoeff' in rescaled and true_path_length and not optically_thin): # not optically thin
         if __debug__: printdbg('... rescale: radiance_noslit I2 = j2*(1-T2)/k2')
@@ -614,16 +857,29 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
         abscoeff = rescaled['abscoeff']        # mole_fraction already scaled
         transmittance_noslit = rescaled['transmittance_noslit']  # mole_fraction, path_length already scaled
         b = (abscoeff == 0)  # optically thin mask
-        radiance_noslit = np.zeros_like(emisscoeff)         # calculate
+        radiance_noslit = np.empty_like(emisscoeff)         # calculate
         radiance_noslit[~b] = emisscoeff[~b]/abscoeff[~b]*(1-transmittance_noslit[~b])
         radiance_noslit[b] = emisscoeff[b]*new_path_length # optically thin limit
         unit = get_unit(units['emisscoeff'])
+        
+    elif ('emisscoeff' in rescaled and 'abscoeff' in rescaled and true_path_length 
+          and not optically_thin): # not optically thin
+        if __debug__: printdbg('... rescale: radiance_noslit I2 = j2*(1-exp(-k2*L2))/k2')
+        emisscoeff = rescaled['emisscoeff']    # mole_fraction already scaled
+        abscoeff = rescaled['abscoeff']        # mole_fraction already scaled
+        b = (abscoeff == 0)  # optically thin mask
+        radiance_noslit = np.empty_like(emisscoeff)         # calculate
+        radiance_noslit[~b] = emisscoeff[~b]/abscoeff[~b]*(1-exp(-abscoeff[~b]*new_path_length))
+        radiance_noslit[b] = emisscoeff[b]*new_path_length # optically thin limit
+        unit = get_unit(units['emisscoeff'])
+        
     elif 'radiance_noslit' in initial and optically_thin:
         if __debug__: printdbg('... rescale: radiance_noslit I2 = I1*N2/N1*L2/L1 '+\
                         '(optically thin)')
         _, radiance_noslit = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
         radiance_noslit *= new_mole_fraction / old_mole_fraction    # rescale
         radiance_noslit *= new_path_length / old_path_length        # rescale
+        
     else:
         if optically_thin:
             msg = 'Missing data to rescale radiance_noslit in '+\
@@ -637,7 +893,11 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
             else:
                 raise ValueError(msg)
         else:
-            msg = 'Missing data to recalculate radiance_noslit. '+\
+            msg = 'Missing data to recalculate radiance_noslit. You need at least '+\
+                  'scaled emisscoeff ({0}), scaled transmittance_noslit ({1}) '.format(
+                          'emisscoeff' in rescaled, 'transmittance_noslit' in rescaled)+\
+                  'scaled abscoeff ({0}) and true_path_length ({1}). '.format(
+                          'abscoeff' in rescaled, true_path_length)+\
                              'Try in optically thin mode'
             if 'radiance_noslit' in extra:
                 radiance_noslit = None
@@ -707,21 +967,27 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     '''
     
     optically_thin = spec.is_optically_thin()
+    initial = spec.get_vars()               # quantities initialy in spectrum
     if __debug__: printdbg('... rescale: optically_thin: {0}'.format(optically_thin))
 
     # Check inputs
     assert quantity in CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES + ['all', 'same']
+    # ... make sure we're not trying to rescale a Spectrum that has non scalable
+    # ... quantities
+    if any_in(initial, non_rescalable_keys):
+        raise NotImplementedError('Trying to rescale a Spectrum that has non scalable '+\
+                                  'quantities: '.format([k for k in initial if k in non_rescalable_keys])+\
+                                  'Remove them manually, or implement the scaling method.')
 
     # Choose which values to recompute (and store them in the list wanted)
     # ----------
-    initial = spec.get_vars()               # quantities initialy in spectrum
     if quantity == 'all':                   # quantities to recompute
         wanted = list(initial)
         greedy = True
     elif quantity == 'same':
         wanted = list(initial)
         greedy = False
-    elif type(quantity) in string_types:
+    elif isinstance(quantity, string_types):
         wanted = [quantity]
         greedy = False
     else:
@@ -730,18 +996,29 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     rescaled = {}   # quantities rescaled
     
     # list of quantities that are needed to recomputed what we want
-    recompute = wanted        
-    if 'radiance' in recompute:
-        recompute.append('radiance_noslit')   # technically it's possible without radiance_noslit if in optically_thin mode
-    if 'transmittance' in recompute:
-        recompute.append('transmittance_noslit')  # same comment
-    if 'emissivity' in recompute:
-        recompute.append('emissivity_noslit')    # same comment
-    if ('radiance_noslit' in initial and not optically_thin):
-        recompute.append('emisscoeff') # needed
-    if ('absorbance' in initial or 'transmittance_noslit' in initial
-                         or 'radiance_noslit' in initial and not optically_thin):
-        recompute.append('abscoeff')   # needed
+    try:
+        recompute = get_recompute(spec, wanted, true_path_length=true_path_length)
+    except KeyError as err:
+        import sys
+        print(sys.exc_info())
+        raise KeyError('Error in get_recompute (see above). Quantity `{0}` cannot be recomputed '.format(
+                err.args[0])+'from available quantities in Spectrum ({0}) with '.format(spec.get_vars())+\
+                ' conditions: optically thin ({0}), true_path_length ({1}), equilibrium ({2})'.format(
+                     optically_thin, true_path_length, spec.is_at_equilibrium())+\
+                     '. Check how your equivalence tree is built: see rescale._build_update_graph()')
+
+#    recompute = wanted        
+#    if 'radiance' in recompute:
+#        recompute.append('radiance_noslit')   # technically it's possible without radiance_noslit if in optically_thin mode
+#    if 'transmittance' in recompute:
+#        recompute.append('transmittance_noslit')  # same comment
+#    if 'emissivity' in recompute:
+#        recompute.append('emissivity_noslit')    # same comment
+#    if ('radiance_noslit' in recompute and not optically_thin):
+#        recompute.append('emisscoeff') # needed
+#    if ('absorbance' in initial or 'transmittance_noslit' in initial
+#                         or 'radiance_noslit' in initial and not optically_thin):
+#        recompute.append('abscoeff')   # needed
 
     # choose other parameters to calculate along the way because its easy
     extra = []  
@@ -766,8 +1043,8 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
                     old_mole_fraction, new_mole_fraction, old_path_length,
                     waveunit, units, extra, true_path_length)
         
-    if (spec.is_at_equilibrium() and 'abscoeff' in recompute and 'Tgas' in spec.conditions
-        and greedy):
+    if spec.is_at_equilibrium():
+        assert 'abscoeff' in rescaled
         wavenumber = spec.get_wavenumber('non_convoluted')
         Tgas = spec.conditions['Tgas']
         rescaled, units = _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas, 
@@ -1009,4 +1286,5 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
 if __name__ == '__main__':
 
     from radis.test.spectrum.test_rescale import _run_all_tests
-    print('Test rescale.py: ', _run_all_tests(verbose=True))
+    print(('Test rescale.py: ', _run_all_tests(verbose=True)))
+    

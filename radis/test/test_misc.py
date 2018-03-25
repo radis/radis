@@ -24,6 +24,7 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 
 from __future__ import absolute_import
 
+from __future__ import print_function
 def test_config__fast(*args, **kwargs):
     from radis.misc.config import _test
     return _test(*args, **kwargs)
@@ -35,13 +36,11 @@ def test_utils__fast(*args, **kwargs):
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-    b = True
-
-    b *= test_config__fast(verbose=verbose,*args, **kwargs)
-    b *= test_utils__fast(verbose=verbose,*args, **kwargs)
+    test_config__fast(verbose=verbose,*args, **kwargs)
+    test_utils__fast(verbose=verbose,*args, **kwargs)
     
-    return b
+    return True
 
 if __name__ == '__main__':
-    print('Testing misc.py: ', _run_testcases(verbose=True))
+    print(('Testing misc.py: ', _run_testcases(verbose=True)))
     

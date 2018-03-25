@@ -12,7 +12,7 @@ import numpy as np
 from collections import OrderedDict
 import os
 from os.path import exists, splitext
-from radis.io.hitran import _cast_to_dtype, _format_dtype
+from radis.io.hitran import _cast_to_dtype, _format_dtype, _generate_cache_file
 import sys
 from six.moves import zip
 
@@ -216,7 +216,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     elif sys.platform in ['win32']:
         linereturnformat = 'a2'
     else:
-        raise ValueError('Line return format not defined for this OS: please update neq')  
+        raise ValueError('Line return format not defined for this OS: please update RADIS')  
     
     newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
@@ -239,7 +239,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         if verbose: print('Generating cached file: {0}'.format(fcache))
         try:
 #            df.to_csv(fcache)
-            df.to_hdf(fcache, 'df', format='fixed')
+            _generate_cache_file(fcache, df)
         except:
             if verbose: print('An error occured in cache file generation. Lookup access rights')
             pass

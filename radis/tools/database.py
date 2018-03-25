@@ -11,17 +11,19 @@ dataframe structure on top to serve as an efficient index to visualize
 the spectra input conditions, and slice through the Dataframe with
 easy queries
 
-Example
--------
+Examples
+--------
 
-    >>> from neq.spec import SpecDatabase
-    >>> db = SpecDatabase(r"path/to/database")     # create or loads database
+See and get objects from database::
 
-    >>> db.update()  # in case something changed (like a file was added manually)
-    >>> db.see(['Tvib', 'Trot'])   # nice print in console
+    from neq.spec import SpecDatabase
+    db = SpecDatabase(r"path/to/database")     # create or loads database
 
-    >>> s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
-    >>> db.add(s)  # update database (and raise error because duplicate!)
+    db.update()  # in case something changed (like a file was added manually)
+    db.see(['Tvib', 'Trot'])   # nice print in console
+
+    s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
+    db.add(s)  # update database (and raise error because duplicate!)
 
 Note that SpectrumFactory objects can be configured to automatically update
 a database
@@ -29,15 +31,15 @@ a database
 Edit database: 
     
 An example of script to update all spectra conditions in a database (ex: when 
-a condition was added afterwards to the Spectrum class)
+a condition was added afterwards to the Spectrum class)::
     
-    >>> # Example: add the 'medium' key in conditions 
-    >>> db = "database_CO"
-    >>> for f in os.listdir(db):
-    >>>    if not f.endswith('.spec'): continue
-    >>>    s = load_spec(join(db, f))
-    >>>    s.conditions['medium'] = 'vacuum'
-    >>>    s.store(join(db,f), if_exists_then='replace')
+    # Example: add the 'medium' key in conditions 
+    db = "database_CO"
+    for f in os.listdir(db):
+       if not f.endswith('.spec'): continue
+       s = load_spec(join(db, f))
+       s.conditions['medium'] = 'vacuum'
+       s.store(join(db,f), if_exists_then='replace')
 
 Todo
 ----
@@ -49,9 +51,9 @@ Implement a h5py version of load / store
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function, division, unicode_literals
 import json
+import json_tricks
 import numpy as np
 from numpy import array
 import pandas as pd
@@ -70,24 +72,69 @@ from radis.misc.basics import is_float, list_if_float
 from radis.misc.utils import FileNotFoundError, PermissionError
 from radis.misc.debug import printdbg
 from six import string_types
+from six.moves import zip
 
 
-# Serializing functions
-# ... functions to store / load a Spectrum to / from a JSON file
-
-# %% Save functions
+# %% Tools 
 
 def is_jsonable(x):
     try:
-        json.dumps(x)
+#        json.dumps(x)
+        json_tricks.dumps(x)
         return True
     except:
         return False
     
+#def jsonize(x):
+#    ''' Converts x so it can be stored in JSON 
+#    Replaced by call to json-tricks '''
+#    typ = type(x)
+#    
+#    # Convert object based on type
+#    if typ == dict:
+#        # If dictionary, deal with all keys recursively
+#        out = {}
+#        for k, v in x.items():
+#            out[k] = jsonize(v)        
+#    elif typ in string_types:
+#        # If it looks like string, store as raw text (that fixes most trouble with paths)
+#        out = r'{0}'.format(x)
+#    elif typ == pd.DataFrame:
+#        out = x.to_json()
+#    elif typ == np.ndarray:
+#        # converts numpy array to list
+#        out = x.tolist()
+#    elif typ in [np.float64, np.float32]:
+#        # cast numpy floats to float 
+#        out = float(x)
+#    elif typ in [np.int32, np.int64]:
+#        # cast numpy int to int
+#        out = int(x)
+#    else:
+#        # Keep the object as it is 
+#        out = x
+#        
+#    # Check it's jsonable
+#    if is_jsonable(out):
+#        return out
+#    else:
+#        if out is x:
+#            raise TypeError('{0} (type {1}) is not jsonable'.format(out, type(out)))        
+#        else:
+#            raise TypeError('{0} (type {1}) converted from {2} (type {3}) is not jsonable'.format(
+#                    out, type(out), x, typ))
+        
+# %% Serializing functions
+# ... functions to store / load a Spectrum to / from a JSON file
+
+    
 def save(s, path, discard=[], compress=False, add_info=None, add_date=None, 
          if_exists_then='increment', verbose=True, warnings=True):
-    ''' Save a Spectrum object in JSON format. Object can be recovered with 
-    radis.tools.load_spec()
+    ''' Save a :class:`~radis.spectrum.spectrum.Spectrum` object in JSON format. 
+    Object can be recovered with :func:`~radis.tools.database.load_spec`. 
+    If many :class:`~radis.spectrum.spectrum.Spectrum` are saved in a 
+    same folder you can view their properties with the :class:`~radis.tools.database.SpecDatabase`
+    structure.
     
     Parameters
     ----------
@@ -130,6 +177,15 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
 
     Returns filename used (may be different from given path as new info or
     incremental identifiers are added)
+    
+    
+    See Also
+    --------
+    
+    :class:`~radis.tools.database.SpecDatabase`, 
+    :func:`~radis.tools.database.load_spec`, 
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+    
 
     '''
 
@@ -141,11 +197,18 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
                           sjson, verbose)
     
     # 3) Now is time to save
-    with open(fout, 'w') as f:
-        try:
-            json.dump(sjson, f)
-        except TypeError:
-            _export_safe(sjson, f, warnings=warnings)
+    if compress:
+        with open(fout, 'wb') as f:
+            json_tricks.dump(sjson, f, 
+                             compression=True,  # calls gzip compression
+                             )
+    else:
+        with open(fout, 'w') as f:
+    #        json.dump(sjson, f)
+            json_tricks.dump(sjson, f, 
+                             indent=4,         # takes more space but more readable
+                             )
+            
     if verbose: print('Spectrum stored in {0} ({1:.1f}Mb)'.format(fout,
                        getsize(fout)/1024*1e-3))
 
@@ -158,90 +221,26 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     -----
     
     path names create much troubles on reload if they are stored with '/' 
-    Make sure we use raw format 
+    Make sure we use raw format. This is now dealt with by the json-tricks module
+    
+    We also store the initial type of all conditions so they are correctly 
+    reproduced on loading .
+    
     '''
     
-    # ... add main attributes from Spectrum class
+    # Add all in a dictionary using json-tricks (that deals with numpy and pandas
+    # array, as well as text: see 24/03/18 for former implementation that was 
+    # manually converted to jsonable)
     sjson = {}
-    sjson['q'] = {}
-    sjson['q_conv'] = {}
-    for k, v in s._q.items():
-        sjson['q'][k] = v.tolist()
-    for k, v in s._q_conv.items():
-        sjson['q_conv'][k] = v.tolist()
-        
-    if compress:
-        sjson = _compress(s, sjson) #, s.conditions, equilibrium=s.is_at_equilibrium())
+    for attr in s.__slots__:
+        sjson[attr] = s.__getattribute__(attr)
     
-    # ... Format conditions, check that minimum information is given
-    try:
-        conditions = s.conditions
-    except AttributeError:
-        raise ValueError('Spectrum needs a `conditions` attribute (dict) to be stored in database')
-    try:
-        conditions['waveunit']
-    except KeyError:
-        raise KeyError('Spectrum `conditions` dict should at least have a `waveunit` key')
-    # Todo: what if conditions is an empty dictionary? do we allow that?
-    # ... now let's store all conditions
-    sjson['conditions'] = {}
-    for k, v in conditions.items():
-        # If it looks like string, store as raw text (that fixes most trouble with paths)
-        if type(v) in string_types:
-            sjson['conditions'][k] = r'{0}'.format(v)
-        else:
-            # Store the object directly
-            if is_jsonable(v):
-                sjson['conditions'][k] = v
-            else:
-                if verbose:
-                    print('condition {0}, type {1} not jsonable and discarded'.format(
-                            k, type(v)))
-            
-    # ... Only `quantities` and `conditions` are required. The rest is just extra
-    # details. Add them now if they exist (assuming a Spectrum class is being stored)
-    for attr in ['units', 'cond_units', 'name']:
-        if attr not in discard:
-            try:
-                sjson[attr] = s.__getattribute__(attr)
-            except AttributeError:
-                pass
-    # ... special case of slit (a dictionary of arrays)
-    if '_slit' not in discard:
-        sjson['slit'] = {}
-        for k, v in s._slit.items():
-            sjson['slit'][k] = v.tolist()
-    # ... special case of lines (a Pandas dataframe): 
-    if 'lines' not in discard:
-        try:
-            if s.lines is not None:
-                sjson['lines'] = s.lines.to_json()   # Pandas > JSON conversion
-                sjson['_dtypes_lines'] = s.lines.dtypes.to_json()  # Keep dtype 
-        except AttributeError:
-            pass  # dont store lines if they dont exist
-    # ... special case of populations (a dict of dict of dict of Pandas dataframes)
-    if 'populations' not in discard:
-        try:
-            if s.populations is not None:
-                pops = s.populations
-                jsonpops = {}
-                for molecule, isotopes in pops.items():
-                    jsonpops[molecule] = {}
-                    for isotope, elec_states in isotopes.items():
-                        jsonpops[molecule][isotope] = {}
-                        for elec_state, content in elec_states.items():
-                            jsonpops[molecule][isotope][elec_state] = {}
-                            for k, v in content.items():
-                                if isinstance(v, pd.DataFrame): # rovib or vib levels
-                                    vjson = v.to_json()   # Pandas > JSON conversion
-                                    jsonpops[molecule][isotope][elec_state][k] = vjson
-                                    jsonpops[molecule][isotope][elec_state]['_dtypes_'+k] = v.dtypes.to_json()
-                                else:   # can be other data. Hopefully serializable. 
-                                    vjson = v
-                                    jsonpops[molecule][isotope][elec_state][k] = vjson
-            sjson['populations'] = jsonpops
-        except AttributeError:
-            pass  # dont store populations if they dont exist
+    # if compress, remove unecessary spectral quantities (that can be recomputed
+    # from the rest)
+    if compress:
+        sjson['_q'] = sjson['_q'].copy()
+        sjson['_q_conv'] = sjson['_q_conv'].copy()
+        sjson = _compress(s, sjson) 
     
     return sjson
 
@@ -333,15 +332,15 @@ def _compress(s, sjson):
     redundant = get_redundant(s)
     
     discarded = []
-    for key in list(sjson['q'].keys()):
+    for key in list(sjson['_q'].keys()):
         if key == 'wavespace': continue
         if redundant[key]:
-            del sjson['q'][key]
+            del sjson['_q'][key]
             discarded.append(key)
-    for key in list(sjson['q_conv'].keys()):
+    for key in list(sjson['_q_conv'].keys()):
         if key == 'wavespace': continue
         if redundant[key]:
-            del sjson['q_conv'][key]
+            del sjson['_q_conv'][key]
             discarded.append(key)
         
     if len(discarded)>0:
@@ -350,46 +349,21 @@ def _compress(s, sjson):
     
     return sjson
 
-def _export_safe(sjson, f, warnings=True):
-    ''' Export only jsonable attributes in 'conditions' '''
-    
-    # remove non jsonable objects
-    discard = []
-    for k,v in sjson['conditions'].items():
-        if not is_jsonable(v):
-            discard.append(k)
-            if warnings: print(("... discard conditions['{0}'] as non jsonable".format(k)))
-    new_conds = {k:v for k,v in sjson['conditions'].items() if not k in discard}
-    sjson['conditions'] = new_conds  # dont modify initial spectrum
-    
-    if 'populations' in list(sjson.keys()):
-        # remove non jsonable objects
-        # (note: Specair generated populations include numpy arrays tht could
-        # be jsonized eventually... just look at what's done with quantities... 
-        # but for the time being we just discard them)
-        discard = []
-        for k,v in sjson['populations'].items():
-            if not is_jsonable(v):
-                discard.append(k)
-                if warnings: print(("... discard populations['{0}'] as non jsonable".format(k)))
-        new_pops = {k:v for k,v in sjson['populations'].items() if not k in discard}
-        sjson['populations'] = new_pops
-    
-    # retry export
-    json.dump(sjson, f)
-    
     
 # %% Load functions
 
-def load(file):
+def load(file, binary=False):
     '''
     Parameters
     ----------
 
     file: str
         .spec file to load
+        
+    binary: boolean
+        set to True if the file is encoded as binary. Default False
 
-    (wrapper to neq.spec.load)
+    (wrapper to :func:`radis.tools.database.load_spec`)
 
     '''
 
@@ -397,25 +371,76 @@ def load(file):
 
     return load_spec(file)
 
-def load_spec(file):
-    '''
+def load_spec(file, binary=False):
+    ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object
+    
     Parameters
     ----------
 
     file: str
         .spec file to load
 
+    binary: boolean
+        set to True if the file is encoded as binary. Default False. Will autodetect
+        if it fails, but that may take longer.
+        
+    Returns
+    -------
+    
+    s: Spectrum 
+        a :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+        
+    See Also
+    --------
+    
+    :class:`~radis.tools.database.SpecDatabase`, 
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+    
+        
+    '''
+    
+    retry_with_binary = False
+
+    if not binary:
+        with open(file, 'r') as f:
+            try:
+                sload = json_tricks.load(f, preserve_order=False)
+            except:
+                # try as binary
+                print(('Error opening file {0}. Trying with binary=True'.format(f)))
+                retry_with_binary = True 
+                
+    if binary or retry_with_binary:
+        with open(file, 'rb') as f:
+            try:
+                sload = json_tricks.load(f, preserve_order=False)
+                if retry_with_binary:
+                    print('Worked! Use binary=True directly in load_spec for faster loading')
+            except:
+                print(('Error opening file {0}'.format(f)))
+                raise
+
+    return _json_to_spec(sload, file)
+
+def _json_to_spec(jsondict, file=''):
+    ''' Builds a Spectrum object from a JSON dictionary. Called by load_spec
+    
+    Parameters
+    ----------
+    
+    jsondict: dict
+        Spectrum object content stored under a dictonary 
+    
+    Returns
+    -------    
+    
+    s: Spectrum
+        a :class:`~radis.spectrum.spectrum.Spectrum` object
     '''
 
-    with open(file, 'r') as f:
-        try:
-            sload = json.load(f)
-        except:
-            print(('Error opening file {0}'.format(f)))
-            raise
-
     # Test format / correct deprecated format:
-    sload = _fix_format(file, sload)
+    sload = _fix_format(file, jsondict)
 
     # ... Back to real stuff:
     conditions = sload['conditions']
@@ -430,9 +455,9 @@ def load_spec(file):
               "quantities are stored with shared wavespace: uses less space). "+\
             "Regenerate database ASAP.", DeprecationWarning)
     else:
-        quantities = {k:(sload['q']['wavespace'],v) for k,v in sload['q'].items() 
+        quantities = {k:(sload['_q']['wavespace'],v) for k,v in sload['_q'].items() 
                             if k != 'wavespace'}
-        quantities.update({k:(sload['q_conv']['wavespace'],v) for k,v in sload['q_conv'].items() 
+        quantities.update({k:(sload['_q_conv']['wavespace'],v) for k,v in sload['_q_conv'].items() 
                             if k != 'wavespace'})
 
     # Generate spectrum:    
@@ -450,38 +475,22 @@ def load_spec(file):
         
     # ... load lines if exist
     if 'lines' in sload:
-        dtypes = sload.get('_dtypes_lines', True)   # default to True
-        if dtypes != True:
-            dtypes = pd.read_json(dtypes)
-        df = pd.read_json(sload['lines'], dtype=dtypes)
-        df.sort_index(inplace=True)
+        df = sload['lines']
         kwargs['lines'] = df
     else:
         kwargs['lines'] = None
         
     # ... load populations if exist
     if 'populations' in sload:
-        pops = {}
+        
+        # Fix some problems in json-tricks
+        # ... cast isotopes to int  (getting sload['populations'] directly doesnt do that)
+        kwargs['populations'] = {} 
         for molecule, isotopes in sload['populations'].items():
-            pops[molecule] = {}
+            kwargs['populations'][molecule] = {}
             for isotope, states in isotopes.items():
-                isotope = int(isotope)    # cast to int
-                pops[molecule][isotope] = {}
-                for state, content in states.items():
-                    pops[molecule][isotope][state] = {}
-                    for k, v in content.items():
-                        if k in ['vib', 'rovib']:  # pandas dataframes
-                            dtypes = content.get('_dtypes_'+k, True)  # default True
-                            if dtypes != True:
-                                dtypes = pd.read_json(dtypes)
-                            df = pd.read_json(v, dtype=dtypes)
-                            df.sort_index(inplace=True)
-                            pops[molecule][isotope][state][k] = df
-                        elif k in ['_dtypes_vib', '_dtypes_rovib']:
-                            pass
-                        else:
-                            pops[molecule][isotope][state][k] = v                        
-        kwargs['populations'] = pops
+                kwargs['populations'][molecule][int(isotope)] = states
+
     else:
         kwargs['populations'] = None
         
@@ -510,6 +519,13 @@ def _fix_format(file, sload):
     
     # Fix deprecration syntax
     # ----------------
+    if 'q' in sload:
+        warn("File {0}".format(basename(file))+" has a deprecrated structure (key "+\
+              "q replaced with _q). Fixed, but regenerate "+\
+            "database ASAP.", DeprecationWarning)
+        sload['_q'] = sload.pop('q')
+        sload['_q_conv'] = sload.pop('q_conv')    
+    
     try:
         sload['conditions']['waveunit']
     except KeyError as err:
@@ -519,7 +535,7 @@ def _fix_format(file, sload):
             del sload['conditions']['wavespace']
         else:
             raise KeyError("Spectrum 'conditions' dict should at least have a "+\
-                           "'waveunit' key. Got: {0}".format(sload['conditions'].keys()))
+                           "'waveunit' key. Got: {0}".format(list(sload['conditions'].keys())))
                 
     if 'isotope_identifier' in sload['conditions']:
         warn("File {0}".format(basename(file))+" has a deprecrated structure (key "+\
@@ -635,8 +651,8 @@ class SpecDatabase():
             only consider files ending with filt
         
 
-        Example
-        -------
+        Examples
+        --------
 
             >>> db = SpecDatabase(r"path/to/database")     # create or loads database
 
@@ -659,6 +675,13 @@ class SpecDatabase():
         requires all conditions to be either float, string, or boolean. List 
         won't work!
 
+            
+        See Also
+        --------
+        
+        :func:`~radis.tools.database.load_spec`, 
+        :meth:`~radis.spectrum.spectrum.Spectrum.store`
+        
         '''
 
         # Assert name looks like a directory
@@ -716,12 +739,13 @@ class SpecDatabase():
         Makes the 'file' column the index, and also discard the 'Spectrum' column
         (that holds all the data) for readibility
 
+        
         '''
 
         if len(self) == 0:
             raise ValueError('Database is empty')
 
-        if type(columns)==str:
+        if isinstance(columns, string_types):
             columns = [columns]+[k for k in args]
             
         dg  = self.df.set_index('file')  # note that this is a copy already.
@@ -739,7 +763,13 @@ class SpecDatabase():
         return dg.reindex(columns=columns)
 
     def view(self, columns=None, *args):
-        ''' alias to df.see() '''
+        ''' alias of :meth:`~radis.tools.database.SpecDatabase.see`
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.see`
+        '''
         
         return self.see(columns = columns, *args)
 
@@ -820,17 +850,14 @@ class SpecDatabase():
         **kwargs: **dict
             extra parameters used in the case where spectrum is a file and a .spec object
             has to be created (useless if `spectrum` is a file already). kwargs
-            are forwarded to Spectrum.store() class. See Spectrum.store() or
-            database.save() for more information
+            are forwarded to Spectrum.store() method. See :meth:`~radis.spectrum.spectrum.Spectrum.store` 
+            or database.:meth:`~radis.tools.database.SpecDatabase.save` for more information
 
         Other Parameters
         ----------------
         
-        Spectrum.store() parameters given as kwargs arguments. 
+        :meth:`~radis.spectrum.spectrum.Spectrum.store` parameters given as kwargs arguments. 
             
-        file: str
-            explicitely give a filename to save
-    
         compress: boolean
             if True, removes all quantities that can be regenerated with s.update(),
             e.g, transmittance if abscoeff and path length are given, radiance if
@@ -860,6 +887,14 @@ class SpecDatabase():
             
             db.add(s, discard=['populations'])
 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        
         '''
         
         # Check inputs
@@ -881,7 +916,7 @@ class SpecDatabase():
             # check the file we just stored is readable
 
         # ... input is a file name. Copy it in database and load it
-        elif type(spectrum) is str:
+        elif isinstance(spectrum, string_types):
             if not exists(spectrum):
                 raise FileNotFoundError('File doesnt exist: {0}'.format(spectrum))
 
@@ -915,7 +950,7 @@ class SpecDatabase():
         # Update index .csv
         self.print_index()
 
-        return
+        return file
 
     def _load_files(self, files):
         ''' Parse files and generate a database
@@ -975,6 +1010,14 @@ class SpecDatabase():
         
         >>> spec_list = db.get(Tvib=3000, Trot=1300)
 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        
         '''
                 
         # Test inputs
@@ -995,15 +1038,22 @@ class SpecDatabase():
         if conditions == '' and kwconditions == {}:
             return list(self.df['Spectrum'])
 
-        if conditions != '':
+        # Find Spectrum that match conditions 
+        if conditions != '':   # ... with input conditions query directly
             dg = self.df.query(conditions)
-        else:
+        else:                  # ... first write input conditions query
             query = []
             for (k, v) in kwconditions.items():
                 if isinstance(v, string_types):
                     query.append("{0} == '{1}'".format(k, v))
                 else:
-                    query.append('{0} == {1}'.format(k,v))
+#                    query.append('{0} == {1}'.format(k,v))
+                    query.append('{0} == {1}'.format(k,v.__repr__()))
+                    # ... for som reason {1}.format() would remove some digit
+                    # ... to floats in Python2. Calling .__repr__() keeps
+                    # ... the correct format, and has no other consequences as far
+                    # ... as I can tell
+                    
             # There is a limitation in numpy: a max of 32 arguments is required. 
             # Below we write a workaround when the Spectrum has more than 32 conditions
             if len(query) < 32:
@@ -1034,7 +1084,16 @@ class SpecDatabase():
         Parameters
         ----------
         
-        see .get() for more details '''
+        see meth:`~radis.tools.database.SpecDatabase.get` for more details 
+        
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        
+        '''
         
         out = self.get(conditions, **kwconditions)
 
@@ -1074,6 +1133,13 @@ class SpecDatabase():
             if True, returns the actual object in database. Else, return a copy
             Default False
             
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+        
         '''
         
         scalable_inputs = ['mole_fraction', 'path_length']
@@ -1108,32 +1174,36 @@ class SpecDatabase():
         
         mean = dict(dg.mean())
         std = dict(dg.std())
+        assert '_d' not in dg.columns
         dg['_d'] = 0  # distance (squared, actually)
-        for k, v in kwconditions.items():
-            if not k in dg.columns:
-                continue
-#            # add distance to all conditions planes. We regularize the different
-#            # dimensions by working on normalized quantities: 
-#            #     a  ->   (a-mean)/std  € [0-1]
-#            # Distance becomes:
-#            #     d^2 ->  sum((a-target)/std)^2
-#            # Problem when std == 0! That means this dimension is not discrimant
-#            # anyway
-#            if std[k] == 0:
-#                # for this conditions all parameters have the same value. 
-#                dg['_d'] += (dg[k]-v)**2
-#            else:
-#                dg['_d'] += (dg[k]-v)**2/(std[k])**2
-            # Eventually I chose to scale database with mean only (there was
-            # an obvious problem with standard deviation scaling in the case of 
-            # a non important feature containing very close datapoints that would
-            # result in inappropriately high weights)
-            dg['_d'] += (dg[k]-v)**2/mean[k]**2
-
-        # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
-        
-        # Get spectrum with minimum distance to target conditions
-        sout = self.df.ix[dg['_d'].idxmin(), 'Spectrum']     # type: Spectrum
+        try:
+            for k, v in kwconditions.items():
+                if not k in dg.columns:
+                    continue
+    #            # add distance to all conditions planes. We regularize the different
+    #            # dimensions by working on normalized quantities: 
+    #            #     a  ->   (a-mean)/std  € [0-1]
+    #            # Distance becomes:
+    #            #     d^2 ->  sum((a-target)/std)^2
+    #            # Problem when std == 0! That means this dimension is not discrimant
+    #            # anyway
+    #            if std[k] == 0:
+    #                # for this conditions all parameters have the same value. 
+    #                dg['_d'] += (dg[k]-v)**2
+    #            else:
+    #                dg['_d'] += (dg[k]-v)**2/(std[k])**2
+                # Eventually I chose to scale database with mean only (there was
+                # an obvious problem with standard deviation scaling in the case of 
+                # a non important feature containing very close datapoints that would
+                # result in inappropriately high weights)
+                dg['_d'] += (dg[k]-v)**2/mean[k]**2
+    
+            # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
+            
+            # Get spectrum with minimum distance to target conditions
+            sout = self.df.ix[dg['_d'].idxmin(), 'Spectrum']     # type: Spectrum
+        finally:
+            del dg['_d']
         
         if not inplace:
             sout = sout.copy()
@@ -1151,6 +1221,122 @@ class SpecDatabase():
             print(('Got     \t'+'\t'.join(['{0:.3g}'.format(sout.conditions[k]) for k in kwconditions.keys()])))
 
         return sout
+    
+    def to_dict(self):
+        ''' Returns all Spectra in database under a dictionary. 
+        
+        Returns
+        -------
+        
+        out: dict
+            {path : Spectrum object} dictionary 
+        
+        Note
+        ----
+        
+        ``SpecDatabase.items().values()`` is equivalent to ``SpecDatabase.get()`` 
+        
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.keys`
+        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        
+        '''
+        
+        return dict(list(zip(self.df.file, self.df.Spectrum)))
+
+
+    def __iter__(self):
+        ''' Iterate over all Spectra in database 
+        
+        Examples
+        --------
+        
+        Print name of all Spectra in dictionary::
+        
+            db = SpecDatabase('.')
+            for s in db:
+                print(s.name)
+                
+        Note that this is equivalent to::
+                
+            db = SpecDatabase('.')
+            for s in db.get():
+                print(s.name)
+                
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.keys`
+        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+                
+        '''
+        
+        return self.get().__iter__()
+    
+    def keys(self):
+        ''' Iterate over all {path} in database 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        
+        '''
+        
+        return list(self.to_dict().keys())
+
+    def values(self):
+        ''' Iterate over all {Spectrum} in database 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.keys`
+        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        
+        '''
+        
+        return list(self.to_dict().values())
+
+    def items(self):
+        ''' Iterate over all {path:Spectrum} in database 
+        
+        Examples
+        --------
+        
+        Print name of all Spectra in dictionary::
+        
+            db = SpecDatabase('.')
+            for path, s in db.items():
+                print(path, s.name)
+                
+        Update all spectra in current folder with a new condition ('author')::
+                        
+            db = SpecDatabase('.')
+            for path, s in db.items():
+                s.conditions['author'] = 'me'
+                s.store(path, if_exists_then='replace')
+                
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.keys`
+        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        
+        '''
+        
+        return list(self.to_dict().items())
 
     def plot(self, cond_x, cond_y, z_value=None, nfig=None):
         ''' Plot database points available:
@@ -1235,5 +1421,6 @@ def in_database(smatch, db='.', filt='.spec'):
 # %% Test
 if __name__ == '__main__':
 
-    from neq.test.spec.test_database import _run_testcases
-    print(('Testing database.py: ', _run_testcases()))
+    from radis.test.tools.test_database import _run_testcases
+    print('Testing database.py: ', _run_testcases())
+        

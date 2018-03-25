@@ -12,6 +12,7 @@ in post processing)
 
 """
 
+from __future__ import absolute_import
 from radis.phys.convert import cm2nm
 from radis.phys.blackbody import planck
 

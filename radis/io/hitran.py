@@ -88,6 +88,48 @@ columns_2004 = OrderedDict([ (
 # quick fix # TODO: proper implementation of HITRAN classes, and groups
 # Update: classes are now implemented properly, groups remain to be done 
 
+
+def _generate_cache_file(fname, df):
+    ''' Generate cache file for pandas Dataframe df under name fname, which 
+    must be a HDF5 
+    
+    Parameters
+    ----------
+    
+    fname: str
+        HDF5 filename
+        
+    df: pandas Dataframe
+        line database to store
+        
+    Note
+    ----
+    
+    Performance of different compression librairies / methods:
+        
+    - storing as np.float32 can save up to 50% space, but we can loose some 
+    information such as low linestrength numbers (1e-80, 1e-100) that becomes 0
+    
+    - storing with compression (complevel=9, complib='blosc') saves up to 50%
+    space, but reading speed is doubled 
+    
+    - storing with low compression 'complevel=1', complib='blosc' can still
+    save up to 50%, but reading speed is only increased by about 20%
+    
+    - format='fixed' is always much faster than format='table' (about a factor 5!)
+    
+    Eventually we use ``format='fixed', mode='w', complevel=1, complib='blosc')`` 
+
+    
+    '''
+    
+    assert fname.endswith('h5')
+    
+    df.to_hdf(fname, 'df', format='fixed', mode='w', complevel=1, complib='blosc')
+#    df.to_hdf(fname, 'df', format='fixed', mode='w')  # would be 10-20% faster, but take 2x more space
+    
+
+
 # %% Hitran global quanta classes
 
 def _parse_HITRAN_class1(df):
@@ -688,7 +730,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     elif sys.platform in ['win32']:
         linereturnformat = 'a2'
     else:
-        raise ValueError('Line return format not defined for this OS: please update neq')
+        raise ValueError('Line return format not defined for this OS: please update RADIS')
 
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
@@ -745,7 +787,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
         if verbose: print('Generating cached file: {0}'.format(fcache))
         try:
 #            df.to_csv(fcache)
-            df.to_hdf(fcache, 'df', format='fixed')
+            _generate_cache_file(fcache, df)
         except:
             if verbose:
                 print(sys.exc_info())

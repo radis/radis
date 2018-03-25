@@ -9,7 +9,6 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 import numpy as np
 from radis.io.hitran import get_molecule
-from radis.io.hitran  import HITRAN_CLASS1
 from radis.io.hitran  import columns_2004 as hitrancolumns
 from radis.io.cdsd import columns_hitemp as cdsdcolumns
 from radis.io.cdsd import columns_4000 as cdsd4000columns
@@ -29,6 +28,7 @@ except ImportError:
 def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air', 
                cutoff=None, plot='S', lineinfo=['int', 'A'], barwidth=0.07, 
                yscale='log', 
+               display=True, filename='line-survey.html',
                xunit=None, yunit=None # deprecated
                ):    
     ''' Plot Line Survey (all linestrengths above cutoff criteria) in Plotly (html)
@@ -47,10 +47,12 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     xunit: 'nm', 'cm-1'
         wavelength / wavenumber units
 
-    Iunit: `hitran`, `splot` (Spectraplot)
-        Linestrength output units.
-            `hitran`: (cm-1/(molecule/cm-2))
-            `splot`: (cm-1/atm)
+    Iunit: `hitran`, `splot` 
+        Linestrength output units:
+            
+        - `hitran`: (cm-1/(molecule/cm-2))
+        - `splot`: (cm-1/atm)   (Spectraplot units [2]_)
+        
         Note: if not None, cutoff criteria is applied in this unit.
         Not used if plot is not 'S'
 
@@ -65,8 +67,49 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
         extra line information to plot. Should be a column name in the databank
         (s.lines). For instance: 'int', 'selbrd', etc... Default ['int']
 
+    Other Parameters
+    ----------------
+    
+    display: boolean
+        if True, open the image in a browser. Default True. 
+
+    filename: str
+        filename to save .html 
+
     yscale: 'log', 'linear'
         Default 'log'
+        
+    Returns
+    -------
+    
+    Plot in Plotly. See Output in [1]_
+    
+        
+    Examples
+    --------
+        
+    An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
+    
+        from radis import SpectrumFactory
+        sf = SpectrumFactory(
+                             wavenum_min=2380,
+                             wavenum_max=2400,
+                             mole_fraction=400e-6,
+                             path_length=100,  # cm
+                             isotope=[1],
+                             db_use_cached=True) 
+        sf.load_databank('HITRAN-CO2-TEST')
+        s = sf.eq_spectrum(Tgas=1500)
+        s.apply_slit(0.5)
+        s.line_survey(overlay='radiance_noslit', barwidth=0.01)
+
+    References
+    ----------
+    
+    .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
+
+    .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+
 
     '''
     
@@ -90,8 +133,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     sp = spec.lines.copy()
     dbformat = spec.conditions['dbformat']
     
-    if not plot in sp.keys():
-        raise KeyError('Key {0} is not in line database: {1}'.format(plot, sp.keys()))
+    if not plot in list(sp.keys()):
+        raise KeyError('Key {0} is not in line database: {1}'.format(plot, list(sp.keys())))
 
     def hitran2splot(S):
         ''' convert Linestrength in HITRAN units (cm-1/(molecules.cm-2)) to
@@ -363,7 +406,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     # %% Plot
 
     fig= go.Figure(data=l, layout=layout)
-    py.plot(fig, filename='line-survey.html')
+    py.plot(fig, filename=filename, auto_open=display)
 
 # %% Test 
 if __name__ == '__main__':

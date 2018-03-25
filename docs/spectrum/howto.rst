@@ -23,7 +23,7 @@ From numpy arrays, use :meth:`~radis.spectrum.spectrum.Spectrum.from_array` ::
                                waveunit='nm', unit='I/I0')
                                
               
-From a file, use , use :meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
+From a file, use :meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
                  
     # 'exp_spectrum.txt' contains a spectrum
     from radis import Spectrum
@@ -49,7 +49,7 @@ Spectral quantities (see the list of quantities in :doc:`spectrum`) can be store
 different formats in a Spectrum object (with wavenumbers, or wavelengths
 in air, or wavelengths in vacuum, for a given unit, etc.) 
 
-It is recommended to use the .get() method to get exactly what you want::
+It is recommended to use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get exactly what you want::
     
     w, I = s.get('transmittance_noslit', wunit='cm-1')  
     _, T = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
@@ -63,7 +63,19 @@ The default quantities are::
     # Not convoluted: 
     'radiance_noslit', 'transmittance_noslit', 'emisscoeff', 'absorbance', 
     'abscoeff', 'abscoeff_continuum', 'emissivity_noslit'
+
+See the latest list in the CONVOLUTED_QUANTITIES and NON_CONVOLUTED_QUANTITIES defined 
+`here <https://github.com/radis/radis/blob/master/radis/spectrum/rescale.py>`__.
     
+get wavelength / wavenumber?
+------------------------
+
+Use the :meth:`~radis.spectrum.spectrum.Spectrum.get_wavelength` and
+:meth:`~radis.spectrum.spectrum.Spectrum.get_wavenumber` methods::
+    
+    w_nm = s.get_wavelength()
+    w_cm = s.get_wavenumber()
+        
     
 calculate missing quantities?
 -----------------------------
@@ -99,7 +111,7 @@ print Spectrum conditions?
 --------------------------
 
 Want to know under which calculation conditions was your Spectrum object 
-generated, or under which experimental conditions it was measure? 
+generated, or under which experimental conditions it was measured? 
 Just print it::
 
     print(s)
@@ -188,30 +200,67 @@ save and retrieve a Spectrum object?
 To store use the :meth:`~radis.spectrum.spectrum.Spectrum.store` method. To retrieve 
 use the :func:`~radis.tools.database.load_spec` function::
     
-    # Store (s is a Spectrum object)
-    s.store(temp_file_name, compress=True)
-    
-    # Retrieve
-    from radis.tools import load_spec 
-    s2 = load_spec(temp_file_name)
+    # s is a Spectrum object
+    s.store('temp_file.spec')
+    from radis import load_spec
+    s2 = load_spec('temp_file.spec')
+    assert s == s2  # compare both
+
+The generated ``.spec`` file can be read (and edited) with any text editor. However, 
+it may take a lot of space. If memory is important, you may use the ``compress=True`` 
+argument which will remove redundant spectral quantities (for instance, transmittance
+if you already know absorbance), and store the .spec file under binary format. Use
+the :meth:`~radis.spectrum.spectrum.Spectrum.update` method to regenerate missing 
+quantities::
+
+    s.store('temp_file.spec', compress=True, if_exists_then='replace')
+    s2 = load_spec('temp_file.spec')
     s2.update()    # regenerate missing quantities 
     
-    
+If many spectra are stored in a folder, it may be time to set up a 
+:class:`~radis.tools.database.SpecDatabase` structure to easily see all 
+Spectrum conditions and get Spectrum that suits specific parameters 
+
+
 compare two Spectrum objects?
 -----------------------------
 
-Use one of the predefined functions :func:`~radis.spectrum.compare.get_diff`, 
-:func:`~radis.spectrum.compare.get_ratio`, :func:`~radis.spectrum.compare.get_distance`, 
-:func:`~radis.spectrum.compare.get_residual` or the plot function 
-:func:`~radis.spectrum.compare.plot_diff`::
+You can compare two Spectrum objects using the :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` 
+method, or simply the ``==`` statement (which is essentially the same thing)::
+
+    s1 == s2 
+    >>> True/False 
+    s1.compare_with(s2)
+    >>> True/False 
+    
+However, :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` allows more freedom 
+regarding what quantities to compare. ``==`` will compare everything of two spectra, 
+including input conditions, units under which spectral quantities are stored, 
+populations of species if they were saved, etc. In many situations we may want 
+to simply compare the spectra themselves, or even a particular quantity like 
+*transmittance_noslit*. Use::
+
+    s1.compare_with(s2, spectra_only=True)                    # compares all spectral quantities 
+    s1.compare_with(s2, spectra_only='transmittance_noslit')  # compares transmittance only 
+    
+The aforementionned methods will return a boolean array (True/False). If you 
+need the difference, or ratio, or distance, between your two spectra, or simply 
+want to plot the difference, you can use one of the predefined functions 
+:func:`~radis.spectrum.compare.get_diff`, :func:`~radis.spectrum.compare.get_ratio`, 
+:func:`~radis.spectrum.compare.get_distance`, :func:`~radis.spectrum.compare.get_residual` 
+or the plot function :func:`~radis.spectrum.compare.plot_diff`::
 
     from radis.spectrum import plot_diff
     s1 = load_spec(temp_file_name)
     s2 = load_spec(temp_file_name2)
     plot_diff(s1, s2, 'radiance')
 
+These functions usually require that the spectra are calculated on the same spectral 
+range. When comparing, let's say, a calculated spectrum with experimental data, 
+you may want to interpolate: you can have a look at the :meth:`~radis.spectrum.spectrum.Spectrum.resample` 
+method. 
 
-Generate a Blackbody (Planck) function object?
+generate a Blackbody (Planck) function object?
 ----------------------------------------------
 
 In RADIS you can either use the :func:`~radis.phys.blackbody.planck` and
@@ -228,5 +277,17 @@ Example::
                 T=288, eps=1)
     s.plot()
 
+
+create a database of Spectrum objects?
+--------------------------------------
+
+Use the :class:`~radis.tools.database.SpecDatabase` class. It takes a 
+folder as an argument, as can be used to see the properties and all 
+:class:`~radis.spectrum.spectrum.Spectrum` objects within this folder 
+with :meth:`~radis.tools.database.SpecDatabase.see`, and select 
+the Spectrum that match a given set of conditions with 
+:meth:`~radis.tools.database.SpecDatabase.get`, 
+:meth:`~radis.tools.database.SpecDatabase.get_unique` and 
+:meth:`~radis.tools.database.SpecDatabase.get_closest`
 
     

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb 15 19:38:14 2017
-
-@author: erwan
+Summary
+-------
 
 Spectrum class holder
 
@@ -10,47 +9,46 @@ Keeps all output data from a SpectrumFactory calculation. Allows to reapply a
 different slit function in post-processing, and plot all spectral quantities
 with any unit
 
+Routine Listings
+----------------
+
+:func:`~radis.spectrum.spectrum.calculated_spectrum`
+:func:`~radis.spectrum.spectrum.experimental_spectrum`
+:func:`~radis.spectrum.spectrum.transmittance_spectrum`
+:func:`~radis.spectrum.spectrum.is_spectrum`
+
 
 Examples
 --------
 
 Typical use::
 
-    >>> from radis calculated_spectrum
-    >>> s = calculated_spectrum(w, I, conditions={'case':'previously calculated by ##'})
-    >>> s.plot('radiance_noslit')
-    >>> s.apply_slit(0.5, shape='triangular')
-    >>> s.plot('radiance')
+    from radis calculated_spectrum
+    s = calculated_spectrum(w, I, conditions={'case':'previously calculated by ##'})
+    s.plot('radiance_noslit')
+    s.apply_slit(0.5, shape='triangular')
+    s.plot('radiance')
 
 Spectrum objects can be stored, retrieved, rescaled, resamples::
 
-    >>> from radis import load_spec
-    >>> s = load_spec('co_calculation.spec')
-    >>> s.rescale_path_length(0.5)                  # calculate for new path_length
-    >>> s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
-    >>> s.resample(w_new)               # resample on new wavespace
-    >>> s.store('co_calculation2.spec')
-
-Other functions in this module
------------
-
-calculated_spectrum
-experimental_spectrum
-transmittance_spectrum
-plot_diff
-is_spectrum
+    from radis import load_spec
+    s = load_spec('co_calculation.spec')
+    s.rescale_path_length(0.5)                  # calculate for new path_length
+    s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
+    s.resample(w_new)               # resample on new wavespace
+    s.store('co_calculation2.spec')
 
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-
 import matplotlib.pyplot as plt
 import numpy as np
 from publib import set_style, fix_style
 from radis.phys.convert import conv2, cm2nm, nm2cm
 from radis.phys.units import Q_, convert_universal
 from radis.phys.air import vacuum2air, air2vacuum
-from radis.spectrum.rescale import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
+from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES, 
+                                  make_up, cast_waveunit, print_conditions)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from neq.spec.base import print_conditions
 from radis.misc.basics import compare_lists
@@ -62,9 +60,6 @@ from warnings import warn
 from numpy import allclose, abs, diff
 from copy import deepcopy
 from six import string_types
-
-WAVENUM_UNITS = ['cm', 'cm-1', 'cm_1', 'wavenumber']
-WAVELEN_UNITS = ['nm', 'wavelength']
 
 # %% Array-to-Spectrum functions
 
@@ -88,6 +83,10 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
         intensity unit (can be 'counts', 'mW/cm2/sr/nm', etc...). Default
         'mW/cm2/sr/nm' (note that non-convoluted Specair spectra are in 'mW/cm2/sr/µm')
 
+
+    Other Parameters
+    ----------------
+
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum. Default None
 
@@ -100,6 +99,16 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     name: str
         (optional) give a name
 
+
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+    :func:`~radis.spectrum.spectrum.experimental_spectrum`
+    :meth:`~radis.spectrum.spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.from_txt`
+    :func:`~radis.tools.database.load_spec`
+    
     '''
 
     return Spectrum.from_array(w, I, 'radiance_noslit', 
@@ -127,6 +136,10 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     Iunit: str
         intensity unit. Default 'I/I0'
 
+
+    Other Parameters
+    ----------------
+
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum
 
@@ -136,6 +149,16 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     name: str
         (optional) give a name
 
+
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+    :func:`~radis.spectrum.spectrum.experimental_spectrum`
+    :meth:`~radis.spectrum.spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.from_txt`
+    :func:`~radis.tools.database.load_spec`
+        
     '''
 
     return Spectrum.from_array(w, T, 'transmittance_noslit', 
@@ -164,6 +187,9 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
         intensity unit (can be 'counts', 'mW/cm2/sr/nm', etc...). Default
         'counts' (default Winspec output)
 
+    Other Parameters
+    ----------------
+
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum
 
@@ -173,6 +199,16 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     name: str
         (optional) give a name
 
+
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+    :meth:`~radis.spectrum.spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.from_txt`
+    :func:`~radis.tools.database.load_spec`
+    
     '''
 
     return Spectrum.from_array(w, I, 'radiance', 
@@ -201,22 +237,28 @@ class Spectrum(object):
 
     units: dict
         units for quantities
+        
+    Other Parameters
+    ----------------
+    
+    Optional parameters:
 
-    (optional) conditions: dict
+    conditions: dict
         physical conditions and calculation parameters
 
     cond_units: dict
         units for conditions
 
-    (optional) populations: dict
+    populations: dict
         a dictionary of all species, and levels. Should be compatible with other
         radiative codes such as Specair output. Suggested format:
         {molecules: {isotopes: {elec state: rovib levels}}}
-        e.g
-        {'CO2':{1: 'X': df}}   with df a Pandas Dataframe
-        #TODO. Add pop_units? Can be a pandas dataframe too. 
+        e.g::
+        
+            {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
+        
 
-    (optional) lines: pandas Dataframe
+    lines: pandas Dataframe
         all lines in databank (necessary for LineSurvey). Warning if you want to
         play with the lins content: The signification of columns in `lines` may be
         specific to a database format. Plus, some additional columns may have been
@@ -248,31 +290,41 @@ class Spectrum(object):
         spectra are created in a row). Default True
 
 
-    Example
-    -------
+    Examples
+    --------
+    
+    Manipulate a Spectrum calculated by RADIS::
 
-    >>> s = calc_spectrum(2125, 2300, Tgas=2000, databank='CDSD')
-    >>> s.print_conditions()
-    >>> s.plot('absorbance')
-    >>> s.line_survey(overlay='absorbance')
-    >>> s.plot('radiance_noslit', wunits='cm-1', Iunits='W/m2/sr/cm_1')
-    >>> s.apply_slit(5)
-    >>> s.plot('radiance')
-    >>> w, t = s.get('transmittance_noslit')  # for use in multi-slabs configs
+        s = calc_spectrum(2125, 2300, Tgas=2000, databank='CDSD')
+        s.print_conditions()
+        s.plot('absorbance')
+        s.line_survey(overlay='absorbance')
+        s.plot('radiance_noslit', wunits='cm-1', Iunits='W/m2/sr/cm_1')
+        s.apply_slit(5)
+        s.plot('radiance')
+        w, t = s.get('transmittance_noslit')  # for use in multi-slabs configs
 
-    Any emission spectrum (w, I) can also be converted into a Spectrum object
-    with the function `emission_spectrum` :
+    Any tuple of numpy arrays (w, I) can also be converted into a Spectrum object
+    from the :class:`~radis.spectrum.spectrum.Spectrum` class directly, or using 
+    the :func:`~radis.spectrum.spectrum.Spectrum.calculated_spectrum` function. 
+    All the following methods are equivalent::
 
-    >>> s = emission_spectrum(w, I)
+        from radis import Spectrum, calculated_spectrum
+        s1 = calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm')
+        s2 = Spectrum.from_array(w, I, 'radiance_noslit', 
+                               waveunit='nm', unit='mW/cm2/sr/nm')
+        s3 = Spectrum({'radiance_noslit': (w, I)}, 
+                      units={'radiance_noslit':'mW/cm2/sr/nm'},
+                      waveunit='nm')
 
-    Spectrum objects can be stored, retrieved, rescaled, resamples
+    Spectrum objects can be stored, retrieved, rescaled, resampled::
 
-    >>> from radis import load_spec
-    >>> s = load_spec('co_calculation.spec')
-    >>> s.rescale_path_length(0.5)                  # calculate for new path_length
-    >>> s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
-    >>> s.resample(w_new)               # resample on new wavespace
-    >>> s.store('co_calculation2.spec')
+        from radis import load_spec
+        s = load_spec('co_calculation.spec')
+        s.rescale_path_length(0.5)                  # calculate for new path_length
+        s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
+        s.resample(w_new)               # resample on new wavespace
+        s.store('co_calculation2.spec')
 
 
     Notes
@@ -280,7 +332,7 @@ class Spectrum(object):
     
     Implementation:
     
-        quantites are stored in self._q and self._q_conv dictionaries. They are better accessed
+        quantities are stored in self._q and self._q_conv dictionaries. They are better accessed
         with the get() function that deals with units and wavespace
         Note: we may move to a unique storage under self._q: in that case q['wavespace']
         and q_conv['wavespace'] need different names: ex. 'wavespace' and 'wavespace_conv'
@@ -301,6 +353,17 @@ class Spectrum(object):
     populations: dict
         Stores molecules, isotopes, electronic states and vibrational or 
         rovibrational populations
+    
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+    :func:`~radis.spectrum.spectrum.experimental_spectrum`
+    :meth:`~radis.spectrum.spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.from_txt`
+    :func:`~radis.tools.database.load_spec`
     
     
     '''
@@ -393,19 +456,71 @@ class Spectrum(object):
         ----------
         
         w, I: array
+            waverange and vector 
         
         quantity: str
             spectral quantity name
             
+        waveunit: 'nm', 'cm-1'
+            unit of waverange
+            
         unit: str
-            spectral quantity unit
+            spectral quantity unit (arbitrary). Ex: 'mW/cm2/sr/nm' for radiance_noslit
             
         *args, **kwargs
-            see Spectrum doc
+            see :class:`~radis.spectrum.spectrum.Spectrum` doc
         
+        Other Parameters
+        ----------------
+                
+        Optional parameters:
+    
+        conditions: dict
+            physical conditions and calculation parameters
+    
+        cond_units: dict
+            units for conditions
+    
+        populations: dict
+            a dictionary of all species, and levels. Should be compatible with other
+            radiative codes such as Specair output. Suggested format:
+            {molecules: {isotopes: {elec state: rovib levels}}}
+            e.g::
+            
+                {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
+            
+    
+        lines: pandas Dataframe
+            all lines in databank (necessary for LineSurvey). Warning if you want to
+            play with the lins content: The signification of columns in `lines` may be
+            specific to a database format. Plus, some additional columns may have been
+            added by the calculation (e.g: `Ei` and `S` for emission integral and
+            linestrength in SpectrumFactory). Refer to the code to know what they mean
+            (and their units)
+
         Returns
         -------
-        Spectrum object
+        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+        
+        Examples
+        --------
+        
+        Create a spectrum::
+        
+            from radis import Spectrum
+            s = Spectrum.from_array(w, I, 'radiance_noslit', 
+                                   waveunit='nm', unit='mW/cm2/sr/nm')
+        
+        
+        See Also
+        --------
+        
+        :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+        :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+        :func:`~radis.spectrum.spectrum.experimental_spectrum`
+        :meth:`~radis.spectrum.spectrum.from_txt`
+        :func:`~radis.tools.database.load_spec`
         """
         
         # TODO: if medium not defined and quantities are given in cm-1, use vacuum
@@ -418,9 +533,8 @@ class Spectrum(object):
     @classmethod
     def from_txt(cls, file, quantity, waveunit, unit, *args, **kwargs):
         """
-        Construct Spectrum from txt file with
+        Construct Spectrum from txt file
         
-        >>> w, I = np.loadtxt(file).T
 
         Parameters
         ----------
@@ -435,11 +549,71 @@ class Spectrum(object):
             
         *args, **kwargs
             the following inputs are forwarded to loadtxt: 'delimiter', 'skiprows'
-            The rest if forwarded to Spectrum. see Spectrum doc
+            The rest if forwarded to Spectrum. see :class:`~radis.spectrum.spectrum.Spectrum`
+            doc
         
+        
+        Other Parameters
+        ----------------
+                
+        Optional parameters:
+    
+        conditions: dict
+            physical conditions and calculation parameters
+    
+        cond_units: dict
+            units for conditions
+    
+        populations: dict
+            a dictionary of all species, and levels. Should be compatible with other
+            radiative codes such as Specair output. Suggested format:
+            {molecules: {isotopes: {elec state: rovib levels}}}
+            e.g::
+            
+                {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
+            
+    
+        lines: pandas Dataframe
+            all lines in databank (necessary for LineSurvey). Warning if you want to
+            play with the lins content: The signification of columns in `lines` may be
+            specific to a database format. Plus, some additional columns may have been
+            added by the calculation (e.g: `Ei` and `S` for emission integral and
+            linestrength in SpectrumFactory). Refer to the code to know what they mean
+            (and their units)
+
+
         Returns
         -------
-        Spectrum object
+        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+        
+        Examples
+        --------
+        
+        Generate an experimental spectrum from txt::
+        
+            from radis import Spectrum
+            s = Spectrum.from_txt('spectrum.csv', 'radiance', waveunit='nm',
+                                      unit='W/cm2/sr/nm')
+        
+        
+        Notes
+        -----
+        
+        Internally, the numpy ``loadtxt`` function is used and transposed::
+        
+            w, I = np.loadtxt(file).T
+
+        
+        See Also
+        --------
+        
+        :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
+        :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+        :func:`~radis.spectrum.spectrum.experimental_spectrum`
+        :meth:`~radis.spectrum.spectrum.from_array`
+        :func:`~radis.tools.database.load_spec`
+        
         """
         
         # Get input for loadtxt
@@ -462,8 +636,8 @@ class Spectrum(object):
 
 
     def get(self, var, wunit='nm', Iunit='default', medium='default',
-            xunit=None, yunit=None  # deprecated for wunit, Iunit
-            ):
+            xunit=None, yunit=None,  # deprecated for wunit, Iunit
+            copy=True):
         ''' Retrieve a spectral quantity from a Spectrum object. You can change 
         wavespace unit, intensity unit, or propagation medium.
         
@@ -487,6 +661,12 @@ class Spectrum(object):
             value set in conditions is used. If None you better be sure of
             what you're doing.
 
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored quantity (modifying it wont
+            change the Spectrum object). Default True.
         
         Todo
         ----
@@ -524,17 +704,20 @@ class Spectrum(object):
         # Get quantity
         if var in CONVOLUTED_QUANTITIES:
             vartype = 'convoluted'
-            I = self._q_conv[var].copy()
+            I = self._q_conv[var]
         else:  # non convoluted
             vartype = 'non_convoluted'
-            I = self._q[var].copy()
+            I = self._q[var]
+            
+        # Copy
+        if copy: I = I.copy()
             
         # Get wavespace (in correct unit, and correct medium)
         wunit = cast_waveunit(wunit)
         if wunit == 'cm-1':
-            w = self.get_wavenumber(vartype)  # (is a copy)
+            w = self.get_wavenumber(vartype, copy=copy)
         else: # wunit == 'nm':
-            w = self.get_wavelength(medium, vartype)  # (is a copy)
+            w = self.get_wavelength(medium, vartype, copy=copy)
             
         # Convert y unit if necessary
         Iunit0 = self.units[var]
@@ -553,6 +736,12 @@ class Spectrum(object):
                 I = convert_universal(I, Iunit0, Iunit, w_cm,
                                           per_nm_is_like='mW/sr/cm3/nm',
                                           per_cm_is_like='mW/sr/cm3/cm_1')
+            elif var in ['absorbance']:  # no unit
+                assert Iunit in ['', '-ln(I/I0)']
+                # dont change the variable: I has no dimension
+            elif var in ['transmittance']:  # no unit
+                assert Iunit in ['', 'I/I0']
+                # dont change the variable: I has no dimension
             else:
                 I = conv2(I, Iunit0, Iunit)
         else:
@@ -560,7 +749,7 @@ class Spectrum(object):
 
         return w, I
 
-    def _get_wavespace(self, which='any'):
+    def _get_wavespace(self, which='any', copy=True):
         ''' Return wavespace (if the same for all quantities)
 
         
@@ -572,6 +761,13 @@ class Spectrum(object):
             or any. If any and both are defined, they have to be the same else 
             an error is raised. Default any.
 
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
     
         Returns
         -------
@@ -608,9 +804,11 @@ class Spectrum(object):
             raise ValueError("which has to be one of 'convoluted', 'non_convoluted', "+\
                              "'any'. Got {0}".format(which))
 
-        return w.copy()
+        if copy: w = w.copy()
+        
+        return w
 
-    def get_wavelength(self, medium='default', which='any'):
+    def get_wavelength(self, medium='default', which='any', copy=True):
         ''' Return wavelength in defined medium 
         
     
@@ -627,6 +825,14 @@ class Spectrum(object):
             value set in conditions is used. If None you better be sure of
             what you're doing.
 
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
+    
 
         Returns
         -------
@@ -644,7 +850,7 @@ class Spectrum(object):
             raise NotImplementedError('Unknown propagating medium: {0}'.format(stored_medium))
             
         # Now get wavespace
-        w = self._get_wavespace(which=which)
+        w = self._get_wavespace(which=which, copy=copy)
         if self.get_waveunit() == 'cm-1':
             w = cm2nm(w)       # we get vacuum wavelength
         
@@ -689,7 +895,7 @@ class Spectrum(object):
             
         return w
 
-    def get_wavenumber(self, which='any'):
+    def get_wavenumber(self, which='any', copy=True):
         ''' Return wavenumber (if the same for all quantities)
         
     
@@ -702,6 +908,14 @@ class Spectrum(object):
             an error is raised. Default any.
 
 
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
+    
         Returns
         -------
 
@@ -709,7 +923,7 @@ class Spectrum(object):
             (a copy of) spectrum wavenumber for convoluted or non convoluted
             quantities
         '''
-        w = self._get_wavespace(which=which)
+        w = self._get_wavespace(which=which, copy=copy)
         
         if self.get_waveunit() == 'nm':     # we want w in vacuum before converting
             # Correct for propagation medium (air, vacuum)
@@ -730,25 +944,45 @@ class Spectrum(object):
             w = nm2cm(w)
         return w
 
-    def get_radiance(self, Iunit='mW/cm2/sr/nm'):
+    def get_radiance(self, Iunit='mW/cm2/sr/nm', copy=True):
         ''' Return radiance in whatever unit, and can even convert from ~1/nm
         to ~1/cm-1 (and the other way round)
+        
+        
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
+    
         '''
 
         Iunit0 = self.units['radiance']
-        w_cm, I = self.get('radiance', wunit='cm-1', Iunit=Iunit0)
+        w_cm, I = self.get('radiance', wunit='cm-1', Iunit=Iunit0, copy=copy)
 
         return convert_universal(I, Iunit0, Iunit, w_cm,
                                      per_nm_is_like='mW/sr/cm2/nm',
                                      per_cm_is_like='mW/sr/cm2/cm_1')
 
-    def get_radiance_noslit(self, Iunit='mW/cm2/sr/nm'):
+    def get_radiance_noslit(self, Iunit='mW/cm2/sr/nm', copy=True):
         ''' Return radiance (non convoluted) in whatever unit, and can even
         convert from ~1/nm to ~1/cm-1 (and the other way round)
+        
+        
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
+    
         '''
 
         Iunit0 = self.units['radiance_noslit']
-        w_cm, I = self.get('radiance_noslit', wunit='cm-1', Iunit=Iunit0)
+        w_cm, I = self.get('radiance_noslit', wunit='cm-1', Iunit=Iunit0, copy=copy)
 
         return convert_universal(I, Iunit0, Iunit, w_cm,
                                      per_nm_is_like='mW/sr/cm2/nm',
@@ -774,13 +1008,33 @@ class Spectrum(object):
     def savetxt(self, filename, var, wunit='nm', Iunit='default', medium='default'):
         ''' Export spectral quantity var to filename
         
-    
         Parameters    
         ----------
         
         filename: str
+            file name
         
-        var, wunit, Iunit, medium: cf Spectrum.get()
+        var: str
+            which spectral variable ot export 
+            
+        Other Parameters
+        ----------------
+        
+        wunit, Iunit, medium: str
+            see :meth:`~radis.spectrum.spectrum.Spectrum.get` for more information
+        
+        Notes
+        -----
+        
+        Export variable as::
+            
+            np.savetxt(filename, np.vstack(self.get(var, wunit=wunit, Iunit=Iunit,
+                                                medium=medium)).T, header=header)
+        
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.store`
         
         '''
         
@@ -1089,7 +1343,7 @@ class Spectrum(object):
 
         return line
     
-    def _get_populations(self, molecule=None, isotope=None, electronic_state=None):
+    def get_populations(self, molecule=None, isotope=None, electronic_state=None):
         ''' Return populations that are featured in the spectrum, either as 
         upper or lower levels 
         
@@ -1138,17 +1392,17 @@ class Spectrum(object):
         if type(populations) != dict:
             raise TypeError('Method defined for populations as dictionary')
         if molecule is None:
-            if len(populations.keys())!=1:
+            if len(list(populations.keys()))!=1:
                 raise ValueError('Please choose which molecule among: {0}'.format(
                         list(populations.keys())))
             molecule = list(populations.keys())[0]
         if isotope is None:
-            if len(populations[molecule].keys())!=1:
+            if len(list(populations[molecule].keys()))!=1:
                 raise ValueError('Please choose which isotope among: {0}'.format(
                         list(populations[molecule].keys())))
             isotope = list(populations[molecule].keys())[0]
         if electronic_state is None:
-            if len(populations[molecule][isotope].keys())!=1:
+            if len(list(populations[molecule][isotope].keys()))!=1:
                 raise ValueError('Please choose which electronic state among: {0}'.format(
                         list(populations[molecule][isotope].keys())))
             electronic_state = list(populations[molecule][isotope].keys())[0]
@@ -1190,7 +1444,7 @@ class Spectrum(object):
             
         '''
         
-        pops = self._get_populations(molecule=molecule, isotope=isotope,
+        pops = self.get_populations(molecule=molecule, isotope=isotope,
                                      electronic_state=electronic_state)
         
         try:
@@ -1246,7 +1500,7 @@ class Spectrum(object):
             
         '''
         
-        pops = self._get_populations(molecule=molecule, isotope=isotope,
+        pops = self.get_populations(molecule=molecule, isotope=isotope,
                                      electronic_state=electronic_state)
         
         try:
@@ -1356,7 +1610,7 @@ class Spectrum(object):
 
                     Ia = None                    
                     if correct_for_abundance:
-                        if 'Ia' in content.keys():
+                        if 'Ia' in list(content.keys()):
                             Ia = content['Ia']
                         else:
                             raise KeyError('Ia: isotopic abundance not defined in '+\
@@ -1447,8 +1701,9 @@ class Spectrum(object):
             no impact. Default 'valid'. 
 
         store: boolean
-            if True, store slit in Spectrum object under ._slit['wavespace']
-            and ._slit['intensity'] keys. Default True
+            if True, store slit in the Spectrum object so it can be retrieved with 
+            :meth:`~radis.spectrum.spectrum.Spectrum.get_slit` and plot with 
+            :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default True
 
         Other Parameters
         ----------------
@@ -1534,6 +1789,7 @@ class Spectrum(object):
         # Note: by construction all variables now have the same wavespace
         w = self._q['wavespace']  # non convoluted wavespace
         wstep = abs(diff(w)).min()
+        assert wstep>0
         waveunit = self.get_waveunit()
         
         if __debug__: printdbg('apply_slit: {0} in {1}, center `{2}`{1}, applied in waveunit {3}'.format(
@@ -1572,7 +1828,7 @@ class Spectrum(object):
             if norm_by == 'area':
                 self.units[q] = self.units[qns]
             elif norm_by == 'max':
-                new_unit = self.units[qns] + '*' + unit.replace('cm-1', 'cm_1')
+                new_unit = '{0}*{1}'.format(self.units[qns], unit.replace('cm-1', 'cm_1'))
                                         # because it's like if we multiplied 
                                         # by slit FWHM in the wavespace it was
                                         # generated
@@ -1583,7 +1839,7 @@ class Spectrum(object):
                     pass
                 self.units[q] = new_unit
             elif norm_by == 'max2':   # difference with 'max': unit is multiplied by [unit] not [return_unit]
-                new_unit = self.units[qns] + '*' + waveunit.replace('cm-1', 'cm_1')
+                new_unit = '{0}*{1}'.format(self.units[qns], waveunit.replace('cm-1', 'cm_1'))
                                         # because it's like if we multiplied 
                                         # by slit FWHM in the wavespace it was
                                         # generated
@@ -1673,7 +1929,7 @@ class Spectrum(object):
                     xunit=None,  # deprecated
                     *args, **kwargs):
         ''' Plot Line Survey (all linestrengths used for calculation)
-        Output in Plotly (html)
+        Output in Plotly (html) 
 
     
         Parameters    
@@ -1682,32 +1938,79 @@ class Spectrum(object):
         spec: Spectrum
             result from SpectrumFactory calculation (see spectrum.py)
 
-        overlay: 'absorbance', 'transmittance', 'radiance', etc... or list
-                 of the above, or None,
+        overlay: 'absorbance', 'transmittance', 'radiance', etc... or list of the above, or None
             overlay Linestrength with specified variable calculated in `spec`.
-            Default None. Full list in spec.get_vars()
+            Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
+            method. Default None. 
 
         wunit: 'nm', 'cm-1'
             wavelength / wavenumber units
             
-        medium: 'air', 'vacuum', or 'default'
+        medium: {'air', 'vacuum', 'default'}
             Choose whether wavelength are shown in air or vacuum. If 'default'  
             lines are shown as stored in the spectrum. 
 
-        Other inputs are passed to LineSurvey
-        ------
+        Other inputs are passed to :func:`~radis.tools.line_survey.LineSurvey`
+
+        Other Parameters
+        ----------------
         
         ex:
 
-        Iunit: `hitran`, `splot` (Spectraplot)
-            Linestrength output units.
-                `hitran`: (cm-1/(molecule/cm-2))
-                `splot`: (cm-1/atm)
+        Iunit: `hitran`, `splot` 
+            Linestrength output units:
+                
+            - `hitran`: (cm-1/(molecule/cm-2))
+            - `splot`: (cm-1/atm)   (Spectraplot units [2]_)
+            
             Note: if not None, cutoff criteria is applied in this unit.
+            Not used if plot is not 'S'
 
         barwidth: float
-            Default 0.07
+            With of bars in LineSurvey. Default 0.07
 
+        See :func:`~radis.tools.line_survey.LineSurvey` documentation
+
+        
+        Returns
+        -------
+        
+        Plot in Plotly. See Output in [1]_
+        
+        
+        Examples
+        --------
+            
+        An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
+        
+            from radis import SpectrumFactory
+            sf = SpectrumFactory(
+                                 wavenum_min=2380,
+                                 wavenum_max=2400,
+                                 mole_fraction=400e-6,
+                                 path_length=100,  # cm
+                                 isotope=[1],
+                                 db_use_cached=True) 
+            sf.load_databank('HITRAN-CO2-TEST')
+            s = sf.eq_spectrum(Tgas=1500)
+            s.apply_slit(0.5)
+            s.line_survey(overlay='radiance_noslit', barwidth=0.01)
+    
+        
+        References
+        ----------
+        
+        .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
+
+        .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+
+
+        See Also
+        --------
+
+        :func:`~radis.tools.line_survey.LineSurvey`
+    
+    
         '''
         
         from radis.tools.line_survey import LineSurvey
@@ -1773,15 +2076,14 @@ class Spectrum(object):
         
         '''
         
-        from neq.spec.base import print_conditions
-        
         return print_conditions(self.get_conditions(), self.cond_units)
 
     def store(self, path, discard=['lines', 'populations'], compress=False, 
-              add_info=None, add_date=None, if_exists_then='increment', verbose=True):
+              add_info=None, add_date=None, if_exists_then='error', verbose=True):
         ''' Save a Spectrum object in JSON format. Object can be recovered with
-        neq.spec.load_spec()
-
+        :func:`~radis.tools.database.load_spec`. If many Spectrum are saved in a 
+        same folder you can view their properties with the :class:`~radis.tools.database.SpecDatabase`
+        structure.
     
         Parameters    
         ----------
@@ -1795,26 +2097,29 @@ class Spectrum(object):
             explicitely give a filename to save
     
         compress: boolean
-            if True, removes all quantities that can be regenerated with s.update(),
+            if True, removes all quantities that can be regenerated with the 
+            :meth:`~radis.spectrum.spectrum.Spectrum.update` method
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
             Default False
 
         add_info: list
             append these parameters and their values if they are in conditions
-            example:
+            example::
 
-            >>> nameafter = ['Tvib', 'Trot']
+                add_info = ['Tvib', 'Trot']
 
         discard: list of str
-            parameters to exclude. To save some memory for instance
-            Default [`lines`, `populations`]: retrieved Spectrum will loose the 
-            line_survey ability, and plot_populations() (but it saves a ton of memory!)
+            parameters to exclude, for instance to save some memory for instance
+            Default [`lines`, `populations`]: retrieved Spectrum looses the 
+            :meth:`~radis.spectrum.spectrum.Spectrum.line_survey` ability, 
+            and :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`
+            (but it saves tons of memory!)
 
         if_exists_then: 'increment', 'replace', 'error'
             what to do if file already exists. If increment an incremental digit
             is added. If replace file is replaced (yeah). If error (or anything else)
-            an error is raised. Default `increment`
+            an error is raised. Default `error`
 
 
         Returns
@@ -1825,22 +2130,42 @@ class Spectrum(object):
 
         Notes
         -----
+        
+        If many spectra are stored in a folder, it may be time to set up a 
+        :class:`~radis.tools.database.SpecDatabase` structure to easily see all 
+        Spectrum conditions and get Spectrum that suits specific parameters. 
+        
 
         Implementation:
             
             Shouldnt rely on a Database. One may just want to store/load a Spectrum
             once.
             
-        Todo
-        ----
+            
+        Examples
+        --------
         
-        # Todo: maybe move most of the code here (filename writing) in database.py ?
-
+        Store a spectrum in compressed mode, regenerate quantities after loading::
+        
+            from radis import load_spec 
+            s.store('test.spec', compress=True)   # s is a Spectrum 
+            s2 = load_spec('test.spec')
+            s2.update()                           # regenerate missing quantities 
+            
+        
+        See Also
+        --------
+        
+        :class:`~radis.tools.database.SpecDatabase`, 
+        :func:`~radis.tools.database.load_spec`, 
+        :meth:`~radis.spectrum.spectrum.Spectrum.store`
+            
         '''
+        # Todo: maybe move most of the code here (filename writing) in database.py ?
 
         from radis.tools.database import save
 
-        if type(discard) is str:
+        if isinstance(discard, string_types):
             discard = [discard]
 
         return save(self, path, discard=discard, compress=compress, add_info=add_info, 
@@ -1852,9 +2177,8 @@ class Spectrum(object):
         return self.store(*args, **kwargs)
 
     def resample(self, w_new, unit='same', out_of_bounds='nan', 
-                 if_conflict_drop='error',
-                 energy_threshold=1e-3, print_conservation=False,
-                 if_conflict_drop_convoluted_spectra=None):
+                 if_conflict_drop='error', medium='default', 
+                 energy_threshold=1e-3, print_conservation=False):
         ''' Resample spectrum over a new wavelength
         Fills with transparent medium when out of bound (transmittance 1,
         radiance 0)
@@ -1862,6 +2186,8 @@ class Spectrum(object):
         Warning. This may result in information loss. Resampling is done with
         oversampling and spline interpolation. These parameters can be adjusted,
         and energy conservation ensured with the appropriate parameters.
+        
+        Uses the :func:`~radis.misc.signal.resample` function. 
 
     
         Parameters    
@@ -1875,7 +2201,8 @@ class Spectrum(object):
             unit of new wavespace. It 'same' it is assumed to be the current
             waveunit. Default 'same'. The spectrum waveunit is changed to this
             unit after resampling (i.e: a spectrum calculated and stored in `cm-1`
-            but resampled in `nm` will be stored in `nm` from now on)
+            but resampled in `nm` will be stored in `nm` from now on). 
+            If 'nm', see also argument ``medium``
             
         out_of_bounds: 'transparent', 'nan', 'error'
             what to do if resampling is out of bounds. 'transparent': fills with
@@ -1892,6 +2219,10 @@ class Spectrum(object):
             TODO (but dangerous): reapply_slit at the end of the process if slit
             is in conditions?
             
+        medium: 'air', 'vacuum', or 'default'
+            in which medium is the new waverange is calculated if it is given 
+            in 'nm'. Ignored if unit='cm-1'
+            
             
         Other Parameters
         ----------------
@@ -1905,16 +2236,16 @@ class Spectrum(object):
         print_conservation: boolean
             if True, prints energy conservation. Default False.
 
+            
+        See Also
+        --------
+        
+        :func:`~radis.misc.signal.resample`
+            
         '''
 
         # Check inputs (check for deprecated)
-        if if_conflict_drop_convoluted_spectra is not None:
-            warn(DeprecationWarning('if_conflict_drop_convoluted_spectra replaced with if_conflict_drop'))
-            if if_conflict_drop_convoluted_spectra: # True
-                if_conflict_drop = 'convoluted'
-            else:
-                if_conflict_drop = 'error'
-            
+
         # ... see if convoluted / non convoluted values co-exist
         if 'wavespace' in self._q and 'wavespace' in self._q_conv:
             try:
@@ -1943,19 +2274,42 @@ class Spectrum(object):
 #            if not allclose(q[0], quantities[0][0]):
 #                raise ValueError('Not all wavespaces are the same. Cant resample')
 
-        # Get wavespace
-        update_q = 'wavespace' in self._q
-        update_q_conv = 'wavespace' in self._q_conv
-        try:
-            w = self._q['wavespace']
-        except KeyError:
-            w = self._q_conv['wavespace']
         # Get wavespace units
         waveunit = self.get_waveunit()   # spectrum unit
         if unit == 'same':               # resampled unit
             unit = waveunit
         else:
             unit = cast_waveunit(unit)
+        
+        # Get current waverange in output unit, output medium   -> w 
+        if unit == 'nm':         # if asking for wavelength, check in which medium (air or vacuum?)
+            # get defaults
+            current_medium = self.get_medium()
+            if medium == 'default':
+                medium = current_medium 
+            # convert if needed
+            if medium == current_medium:
+                pass # correct medium already, do nothing
+            else:
+                # update medium
+                self.conditions['medium'] = medium
+                
+            w = self.get_wavelength(medium=medium)   # in correct medium
+        elif unit == 'cm-1':
+            if medium != 'default':
+                raise ValueError('resampling to cm-1 but `medium` is given. It '+\
+                                 'wont change wavenumbers, so just dont use it')
+            w = self.get_wavenumber()              
+        else:
+            raise ValueError('Unknown unit: {0}'.format(unit))
+            
+        # Update waveunit to new unit 
+        if unit != waveunit:
+            self.conditions['waveunit'] = unit
+
+        # Get wavespace
+        update_q = 'wavespace' in self._q
+        update_q_conv = 'wavespace' in self._q_conv
 
         # Now let's resample
         def get_filling(variable):
@@ -1977,68 +2331,33 @@ class Spectrum(object):
         
         
         # There are different cases depending on the unit of w_new
-        if unit == waveunit: # same units
+        # ... Note for devs: we're looping over dictionaries directly rather than
+        # ... using the (safter) .get() function because it's much faster (the 
+        # ... air2vacuum conversion in particular is quite slow, but has been 
+        # ... done once for all with get_wavelength() above )
+        if update_q:
             for (k, I) in self._q.items():
+                if k == 'wavespace':
+                    continue
                 fill_with = get_filling(k)
                 Inew = resample(w, I, w_new, ext=fill_with,
                                 energy_threshold=energy_threshold,
                                 print_conservation=False)
                 self._q[k] = Inew
+            # update wavespace
+            self._q['wavespace'] = w_new
 
+        if update_q_conv:
             for (k, I) in self._q_conv.items():
+                if k == 'wavespace':
+                    continue
                 fill_with = get_filling(k)
                 Inew = resample(w, I, w_new, ext=fill_with,
                                 energy_threshold=energy_threshold,
                                 print_conservation=False)
                 self._q_conv[k] = Inew
             # update wavespace
-            if update_q: self._q['wavespace'] = w_new
-            if update_q_conv: self._q_conv['wavespace'] = w_new
-
-        elif unit == 'nm' and waveunit == 'cm-1': # convert to nm
-            for (k, I) in self._q.items():
-                fill_with = get_filling(k)
-                # convert to nm before resampling
-                Inew = resample(cm2nm(w), I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=print_conservation)
-                self._q[k] = Inew
-
-            for (k, I) in self._q_conv.items():
-                fill_with = get_filling(k)
-                # convert to nm before resampling
-                Inew = resample(cm2nm(w), I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=print_conservation)
-                self._q_conv[k] = Inew
-            # update wavespace
-            self.conditions['waveunit'] = 'nm'
-            if update_q: self._q['wavespace'] = w_new
-            if update_q_conv: self._q_conv['wavespace'] = w_new
-
-        elif unit == 'cm-1' and waveunit == 'nm': # convert to cm-1
-            for (k, I) in self._q.items():
-                fill_with = get_filling(k)
-                # convert to cm-1 before resampling
-                Inew = resample(nm2cm(w), I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=print_conservation)
-                self._q[k] = Inew
-
-            for (k, I) in self._q_conv.items():
-                fill_with = get_filling(k)
-                # convert to cm-1 before resampling
-                Inew = resample(nm2cm(w), I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=print_conservation)
-                self._q_conv[k] = Inew
-            # update wavespace
-            self.conditions['waveunit'] = 'cm-1'
-            if update_q: self._q['wavespace'] = w_new
-            if update_q_conv: self._q_conv['wavespace'] = w_new
-
-        else:
-            raise ValueError('Unknown unit: {0}'.format(unit))
+            self._q_conv['wavespace'] = w_new
 
 
     # %% ======================================================================
@@ -2088,6 +2407,17 @@ class Spectrum(object):
                  '. Assumed False')
             return False  
         
+    def get_medium(self):
+        ''' Returns in which medium the spectrum is calculated (air or vacuum), 
+        based on the value on the self_absorption key in conditions. If not given, raises an error'''
+        
+        try:
+            return self.conditions['medium']
+        except KeyError:
+            raise KeyError("We need to know if Spectrum is calculated in air or vacuum, but "+\
+                           "`medium` is not defined in conditions. Please add the "+\
+                             "value manually")
+        
     def is_optically_thin(self):
         ''' Returns whether the spectrum is optically thin, based on the value
         on the self_absorption key in conditions. If not given, raises an error'''
@@ -2096,7 +2426,7 @@ class Spectrum(object):
             return not self.conditions['self_absorption']
         except KeyError:
             raise KeyError("We need to know if Spectrum is optically thin, but "+\
-                           "self_absorption is not defined in conditions. Please add the "+\
+                           "`self_absorption` is not defined in conditions. Please add the "+\
                              "value manually")
         
     def copy(self, copy_lines=True):
@@ -2158,7 +2488,8 @@ class Spectrum(object):
         waveunit = self.get_waveunit()    # 163 ns
         name = self.name
 
-        return Spectrum(      # 1.51 ms
+        # Generate copied Spectrum
+        s = Spectrum(      # 1.51 ms
                 quantities=quantities,
                 conditions=conditions,
                 cond_units=cond_units,
@@ -2169,10 +2500,21 @@ class Spectrum(object):
                 name=name,
                 warnings=False,   # saves about 3.5 ms on the Performance test object
                 )
+        
+        # Add slit information
+        try:
+            wslit, Islit = self.get_slit()
+            s._slit['wavespace'] = wslit  # in 'waveunit'
+            s._slit['intensity'] = Islit
+        except KeyError:
+            # no slit to apply
+            pass
+
+        return s
 
     def compare_with(self, other, spectra_only=False, plot=True, wunit='default',
                      verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
-                     normalize=False):
+                     normalize=False, **kwargs):
         ''' Compare Spectrum with another spectrum
 
     
@@ -2203,12 +2545,18 @@ class Spectrum(object):
             if True, nans are ignored when comparing spectral quantities
             
         ignore_outliers: boolean, or float
-            if not False, outliers are discarded. i.e, output is determined by:
+            if not False, outliers are discarded. i.e, output is determined by::
             
-            >>> out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
+                out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
         
         normalize: bool
             Normalize the spectra to be ploted 
+
+        Other Parameters
+        ----------------
+        
+        kwargs: dict
+            arguments are forwarded to :func:`~radis.spectrum.compare.plot_diff`
 
         Returns
         -------
@@ -2221,8 +2569,10 @@ class Spectrum(object):
         Examples
         --------
         
-        >>> s1.compare_with(s2)
-        >>> s1.compare_with(s2, 'transmittance')
+        Compare two Spectrum objects, or specifically the transmittance::
+        
+            s1.compare_with(s2)
+            s1.compare_with(s2, 'transmittance')
 
         '''
         
@@ -2247,6 +2597,8 @@ class Spectrum(object):
             if ignore_nan: msg += ', ignore_nan'
             if ignore_outliers: msg += ', ignore_outliers={0}'.format(ignore_outliers)
             print(msg)
+        if not plot and len(kwargs)>0:
+            raise ValueError('Unexpected argument: {0}'.format(kwargs))
 
         if wunit == 'default':
             wunit = self.get_waveunit()
@@ -2341,7 +2693,8 @@ class Spectrum(object):
                 if plot:
                     try:
                         plot_diff(self, other, var=k, wunit=wunit, 
-                                  normalize=normalize, verbose=verbose)
+                                  normalize=normalize, verbose=verbose,
+                                  **kwargs)
                     except:
                         print('... couldnt plot {0}'.format(k))
 
@@ -2366,7 +2719,8 @@ class Spectrum(object):
                 if plot:
                     try:
                         plot_diff(self, other, var=k, wunit=wunit, 
-                                  normalize=normalize, verbose=verbose)
+                                  normalize=normalize, verbose=verbose,
+                                  **kwargs)
                     except:
                         print('... couldnt plot {0}'.format(k))
 
@@ -2440,12 +2794,15 @@ class Spectrum(object):
                     if verbose: print('Molecules are different (see above)')
             if not b5 and verbose: print('... populations dont match (see detail above)')
             b *= b5
-            
-            
+
+
             # Compare slit
             # -----------
             
-            if len(self._slit) != len(other._slit):
+            if len(self._slit) == len(other._slit) == 0:
+                # no slit anywhere
+                b6 = True
+            elif len(self._slit) != len(other._slit):
                 b6 = False
                 if verbose: print('A spectrum has slit function array but the other doesnt')
             else:
@@ -2492,12 +2849,11 @@ class Spectrum(object):
         assert(len(w)==len(I))
 
         def check_wavespace(w):
-            ''' Note: this check takes a lot of time!'''
+            ''' Note: this check takes a lot of time! 
+            Is is not performed if warnings is False'''
             if warnings:
                 # Check Wavelength/wavenumber is evently spaced
-                try:
-                    evenly_distributed(w, tolerance=1e-5)
-                except AssertionError:
+                if not evenly_distributed(w, tolerance=1e-5):
                     warn('Wavespace is not evenly spaced ({0:.3f}%) for {1}.'.format(
                             np.abs(np.diff(w)).max()/w.mean()*100, name)\
                          + ' This may create problems when convolving with slit function')
@@ -2586,10 +2942,26 @@ class Spectrum(object):
         self.print_conditions()
         
         return '' #self.print_conditions()
+    
+    # the following is so that json_tricks.dumps and .loads can be used directly,
+    # ie.:  
+    # >>> s == loads(s.dumps())
+    # Does not work yet.
+    # see https://github.com/mverleg/pyjson_tricks#class-instances
+#    def __json_encode__(self):
+#        ''' Called by json_tricks.dumps '''
+#        from radis.tools.database import _format_to_jsondict
+#        return _format_to_jsondict(self, discard=[], compress=[], verbose=True)
+#    
+#    def __json_decode__(self, **attrs):
+#        from radis.tools.database import _json_to_spec
+#        print(attrs)
+#        raise
+#        return _json_to_spec(attrs)
 
 # %% ======================================================================
-# Util functions
-# ----------------
+# Test class function
+# -------------------
 # XXX =====================================================================
 
 # Test class
@@ -2619,42 +2991,8 @@ def is_spectrum(a):
     return (isinstance(a, Spectrum) or
              repr(a.__class__) == repr(Spectrum))
 
-def cast_waveunit(unit, force_match=True):
-    ''' Standardize unit formats '''
-    if unit in WAVELEN_UNITS:
-        return 'nm'
-    elif unit in WAVENUM_UNITS:
-        return 'cm-1'
-    elif force_match:
-        raise ValueError('Unknown wavespace unit: {0}. Should be one of {1}'.format(unit,
-                         WAVELEN_UNITS+WAVENUM_UNITS))
-    else:
-        return unit  # dont convert
-
-def make_up(label):
-    ''' Cosmetic changes on label, before plot 
-    
-    
-    Parameters    
-    ----------
-    
-    label: str
-    '''
-    
-    # Improve units
-    label = label.replace('cm_1', 'cm-1')
-    label = label.replace('cm-1', 'cm$^{-1}$')
-    label = label.replace('m2', 'm$^2$')
-    label = label.replace('m3', 'm$^3$')
-    label = label.replace('I/I0', 'I/I$_\mathrm{0}$')    # transmittance unit
-    
-    # Improve text
-    label = label.replace('_noslit', ' (unconvolved)')
-    return label
-
-
 
 # Test functions
 if __name__ == '__main__':
-    from neq.test.spec.test_spectrum import _run_testcases
+    from radis.test.spectrum.test_spectrum import _run_testcases
     print('Test spectrum: ', _run_testcases(debug=False))

@@ -6,6 +6,9 @@ Line survey is defined by the :class:`~radis.tools.line_survey.LineSurvey` class
 It can be accessed directly by the Spectrum :meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
 method.
 
+Example
+-------
+
 An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
 
     from radis import SpectrumFactory

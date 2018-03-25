@@ -34,33 +34,26 @@ from time import time
 def test_hitran_parser__fast(verbose=True, warnings=True, **kwargs):
     ''' Analyse some default files to make sure everything still works'''
     
-    b = True
-    
     t0 = time()
     df = hit2df(getTestFile('hitran_CO_fragment.par'))
-    print('File loaded in {0:.0f}s'.format(time()-t0))
+    if verbose: print('File loaded in {0:.0f}s'.format(time()-t0))
     if verbose: print(df.head())
-    b *= (list(df.ix[0, ['v1u', 'v1l']]) == [4, 4])
+    assert (list(df.ix[0, ['v1u', 'v1l']]) == [4, 4])
 
     t0 = time()
     df = hit2df(getTestFile('hitran_CO2_fragment.par'))
-    print('File loaded in {0:.0f}s'.format(time()-t0))
+    if verbose: print('File loaded in {0:.0f}s'.format(time()-t0))
     if verbose: print(df.head())
-    b *= (list(df.ix[0, ['v1u', 'v2u', 'l2u', 'v3u', 'v1l', 'v2l', 'l2l', 'v3l']]) ==
+    assert (list(df.ix[0, ['v1u', 'v2u', 'l2u', 'v3u', 'v1l', 'v2l', 'l2l', 'v3l']]) ==
               [4, 0, 0, 0, 0, 0, 0, 1])
     
-    return (bool(b))
+    return True
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-    b1 = test_hitran_parser__fast(verbose=verbose,*args, **kwargs)
+    test_hitran_parser__fast(verbose=verbose,*args, **kwargs)
     
-    if verbose:
-        print('>>> test_hitran_parser__fast:', b1)
-        
-    b = bool(b1)
-    
-    return bool(b)
+    return True
 
 if __name__ == '__main__':
     print('Testing io.py: ', _run_testcases(verbose=True))

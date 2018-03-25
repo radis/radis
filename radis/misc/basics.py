@@ -34,6 +34,10 @@ def all_in(keys, L):
     ''' Returns whether all items in keys are in list L '''
     return all([k in L for k in keys])
         
+def any_in(keys, L):
+    ''' Returns whether any of the items in keys are in list L '''
+    return any([k in L for k in keys])
+        
 def key_max_val(d):
     '''Return the dictionary key with max value'''
     v = list(d.values())
@@ -265,8 +269,8 @@ def merge_rename_columns(df, columns1, columns2, merged_names):
                                    )
     '''
     
-    assert all_in(columns1, df.keys())
-    assert all_in(columns2, df.keys())
+    assert all_in(columns1, list(df.keys()))
+    assert all_in(columns2, list(df.keys()))
  
     df1 = df.loc[:,columns1]
     df2 = df.loc[:,columns2]
@@ -294,7 +298,9 @@ def list_if_float(a):
         return [a]
 
 def is_list(a):
+    ''' Returns True if a has list-like type: list, np.array, tuple, set, etc.)'''
     return type(a) in [list, np.ndarray, tuple, set]
 
 def is_float(a):
+    ''' Returns True if a has float-like type: float, np.float64, np.int64, etc.)'''
     return type(a) in [float, np.float64, np.int32, np.float32, int, np.int64]

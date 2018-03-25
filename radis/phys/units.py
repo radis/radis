@@ -7,10 +7,10 @@ Created on Sat Nov 14 19:40:53 2015
 Performance test with pint
 - 2 times slower than numpy on np.std(np.exp())
 
-Import neq.phys.units to get access to:
+Import radis.phys.units to get access to:
 
-Use
----
+Examples
+--------
 
 from radis.phys.units import Q_
 - a = Q_(np.array([5,4,2]),'cm')
@@ -85,7 +85,7 @@ def conv2(quantity, fromunit, tounit):
     Note
     ----
     
-    Note that the output is still non dimensional. We don't transform `quantity` 
+    The output is still non dimensional. We don't transform `quantity` 
     into a pint array (or neq.phys.uarray) because this may create a performance
     drop in computationaly-expensive task. Instead, we assume we know for 
     sure the units in which some of our quantities will be created, and just

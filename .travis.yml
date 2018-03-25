@@ -6,6 +6,7 @@ python:
   - "3.6"
 install:
   - sudo apt-get update
+  # Install Anaconda 
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -22,7 +23,7 @@ install:
   - conda info -a
 
   # Create conda environment
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest numpy scipy matplotlib pandas
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest numpy scipy matplotlib pandas plotly
   - source activate test-environment
   - conda install -c astropy astroquery
   - pip install codecov pytest-cov
@@ -31,7 +32,8 @@ install:
 script:
   # Your test script goes here
   - echo ">>> Running tests"
-  - pytest --cov=./
+  # use XVFB to have headless display port, and still run the Matplotlib tests.
+  - xvfb-run pytest --cov=./            
   
 # safelist
 branches:

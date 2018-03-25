@@ -1,11 +1,42 @@
 # -*- coding: utf-8 -*-
 """
 
+Summary
+-------
+
 RADIS 
 
-A code to simulate infrared spectra of molecules.
+A code to simulate infrared spectra of molecules::
 
----
+                *(((((((                                       
+                 ((((((((((((              ,(((((              
+                 ((((((((((((((((/   *((((((((((*              
+                  ((((((((((((((((( ((((((((((((               
+                      (((((((( (((((((((((((                   
+                         *                                      
+                       @@  *@@       ..  /@@                   
+                  @@&  @@  *@@       @@  /@@  @@%              
+              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@          
+              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@          
+              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@  (@      
+         ,@   @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@          
+         @@   @@  @@&  @@  ,.                                  
+                                    ,%&&&&&&&&&&&&&&&&&&&
+          &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&      
+           &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&       
+             &&&&&&&&&&&&&&&&@@@@@@&@@@&&&@@@&&&&&&&&          
+               &&&&&&&&&&&&&&&@@@@@@&&&&&&&&&&&&&&&            
+                 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&              
+                   &&&&&&&&&&&&&&&&&&&&&&&&&&&.                
+                       &&&&&&&&&&&&&&&&&&&                     
+                               .**.                            
+                                &&&,                         
+                                 &&         
+
+See Source code [1]_, Documentation [2]_, Package [3]_
+
+Notes
+-----
 
 RADIS is nonequilibrium emission and absorption line-by-line code, for use by 
 infrared spectroscopic that want to compare line databases, or experimentalist 
@@ -24,8 +55,17 @@ times, and a multi-slab module with a radiative transfer equation solver to
 reproduce line-of-sight experiments. Validation cases against existing spectral 
 codes and experimental results from various plasma sources are presented. 
 
-The code will soon be available on this repository under under GNU General Public 
-License v3.0
+The code will soon be available under under GNU General Public 
+License v3.0 
+
+References
+----------
+
+.. [1] Source code: `GitHub repository <https://github.com/radis/radis>`__
+
+.. [2] Online Documentation: `Readthedocs.io <https://radis.readthedocs.io/en/latest/?badge=latest>`__
+
+.. [3] Install as a package: `PyPi project <https://pypi.python.org/pypi/radis>`__
 
 """
 

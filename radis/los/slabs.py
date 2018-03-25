@@ -22,7 +22,8 @@ Todo:
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
-from radis.spectrum.spectrum import Spectrum, is_spectrum, NON_CONVOLUTED_QUANTITIES
+from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.utils import NON_CONVOLUTED_QUANTITIES
 from radis.phys.convert import nm2cm
 from radis.misc.basics import merge_lists
 from radis.misc.utils import FileNotFoundError
@@ -95,6 +96,12 @@ def SerialSlabs(*slabs, **kwargs):
     
     - rewrite with 'recompute' list like in MergeSlabs
     
+    
+    See Also
+    --------
+    
+    :func:`~radis.los.slabs.MergeSlabs`
+    
     '''
 
     # Check inputs, get defaults
@@ -119,9 +126,6 @@ def SerialSlabs(*slabs, **kwargs):
     else:  
         # recursively calculate serial slabs
         slabs = list(slabs)
-        
-        # TODO: correct class but it crashes anyway. 
-        #  "All inputs must be Spectrum objects (got: <class 'neq.spec.spectrum.Spectrum'>)"
         
 #        # Check all items are Spectrum
         for s in slabs:
@@ -371,6 +375,11 @@ def MergeSlabs(*slabs, **kwargs):
         >>> s.update()   # Generate missing spectral quantities
         >>> s.plot()
         
+        
+    See Also
+    --------
+    
+    :func:`~radis.los.slabs.SerialSlabs`
     '''
     
     # inputs (Python 2 compatible)
@@ -436,7 +445,7 @@ def MergeSlabs(*slabs, **kwargs):
         # %% Get quantities that should be calculated 
             
         requested = merge_lists([s.get_vars() for s in slabs])
-        recompute = requested.copy()
+        recompute = requested[:]  #  copy
         if ('radiance_noslit' in requested and not optically_thin):
             recompute.append('emisscoeff')
             recompute.append('abscoeff')
@@ -580,67 +589,6 @@ def MergeSlabs(*slabs, **kwargs):
 
 # %% Tests
         
-def _test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False, 
-                      *args, **kwargs):
-    ''' Merge 10 slabs with 1/10 of concentration, and compare the results. 
-    Ensure error is < 0.1%
-    
-    Note that we won't have exactly the same results as the broadening is not
-    updated in MergeSlabs 
-    '''
-    
-    from radis.tools.database import load_spec
-    import matplotlib.pyplot as plt
-    from neq.test.utils import getTestFile
-    
-    b = True
-    
-    for optically_thin in [True, False]:
-    
-        s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
-        s2 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'))
-        s1.update(optically_thin=optically_thin)
-        s2.update(optically_thin=optically_thin)
-    #    s1 = sf.non_eq_spectrum(Tgas, Tgas, mole_fraction=0.01)
-    #    s2 = sf.eq_spectrum(Tgas, mole_fraction=N*0.01)
-    #    slist = [s1.copy()]*N
-        slist = [s1]*50
-        s1N = MergeSlabs(*slist, optically_thin=optically_thin, debug=debug)
-        
-    #    print(s2.compare_with(s1N, only_spectra=True))
-    #    print(np.allclose(s2.get('radiance_noslit'), s1N.get('radiance_noslit')))
-    #    print('Max error: {0:.2f}%'.format(np.abs(s2.get('radiance_noslit')[1]/
-    #          s1N.get('radiance_noslit')[1]-1).max()*100))
-        
-        b1 = np.isclose(s2.get_power(), s1N.get_power(), 1.5e-2)
-        if verbose:
-            print('Compare 50x[CO=0.01] vs 1x[CON=0.5] (optically thin: {1}): {0}'.format(
-                    b1, optically_thin))
-            print('... Difference: {0:.2f}%'.format(abs(s1N.get_power()/s2.get_power()-1)*100))
-        b *= b1
-    
-        if plot:
-            for k in ['radiance_noslit']: #, 'transmittance_noslit']:
-                s2.plot(k, lw=3,label='1x[CO=0.5]')
-                s1N.plot(k, nfig='same', label='50x[CO=0.01]')
-                plt.legend()
-                plt.title('Optically thin: {0}'.format(optically_thin))
-                plt.tight_layout()
-            
-    return bool(b)
-#        
-        
-def _test(verbose=True, plot=True, debug=False, warnings=True, *args, **kwargs):
-    
-    b = True
-    
-    b *= _test_merge_slabs(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
-                           *args, **kwargs)
-    
-    # Todo: add a test with _serial_slabs ... For instance the Sebastien Depraz reference case
-        
-    return bool(b)
-
-
 if __name__ == '__main__':
-    print('Testing merge slabs: ', _test(verbose=True))
+    from radis.test.los.test_slabs import _run_testcases
+    print('Testing merge slabs: ', _run_testcases(verbose=True))

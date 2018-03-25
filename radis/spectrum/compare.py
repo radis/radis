@@ -5,6 +5,7 @@ Created on Fri Feb  9 13:03:04 2018
 @author: erwan
 """
 
+from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
 from radis.spectrum.spectrum import make_up, cast_waveunit
@@ -49,6 +50,15 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     w1, Idiff: array
         difference interpolated on the second range(order?)
     
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_ratio`, 
+    :func:`~radis.spectrum.compare.get_distance`,  
+    :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.plot_diff` 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
@@ -82,6 +92,16 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
     
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_distance`,  
+    :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.plot_diff` 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
+    
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
@@ -111,6 +131,16 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
     
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_ratio`,  
+    :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.plot_diff` 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
+    
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
@@ -118,7 +148,7 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
 
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)    # euclidian distance from w1, I1
 
-def get_residual(s1, s2, var):
+def get_residual(s1, s2, var, ignore_nan=False):
     ''' Returns integral of the difference between two spectra s1 and s2, 
     relatively to the integral of spectrum s1 
     
@@ -130,7 +160,14 @@ def get_residual(s1, s2, var):
     
     var: str
         spectral quantity
-        
+    
+    Other Parameters
+    ----------------
+    
+    ignore_nan: boolean
+        if True, ignore nan in the difference between s1 and s2 (ex: out of bound)
+        when calculating residual. Default False. Note: get_residual will still 
+        fail if there are nan in initial Spectrum. 
         
     Notes
     -----
@@ -145,11 +182,24 @@ def get_residual(s1, s2, var):
     when s1 and s2 dont have the size wavespace range, they are automatically
     resampled through get_diff on 's1' range 
 
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_ratio`, 
+    :func:`~radis.spectrum.compare.get_distance`, 
+    :func:`~radis.spectrum.compare.plot_diff` 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
 
     w, I = s1.get(var)
     # mask for 0
     wdiff, dI = get_diff(s1, s2, var, resample=True)
+    
+    if ignore_nan:
+        b = np.isnan(dI)
+        wdiff, dI = wdiff[~b], dI[~b]
     
     return np.abs(np.trapz(dI, wdiff) / np.trapz(I, w))
 
@@ -262,6 +312,18 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     >>>       label1='brd 10 cm-1, P={0:.2f} {1}'.format(s10.get_power(unit=Punit),Punit),
     >>>       label2='brd 50 cm-1, P={0:.2f} {1}'.format(s50.get_power(unit=Punit),Punit)
     >>>       )
+    
+    
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_ratio`, 
+    :func:`~radis.spectrum.compare.get_distance`, 
+    :func:`~radis.spectrum.compare.get_residual`, 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
+    
     '''
     
     # Get defaults
@@ -331,19 +393,19 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         label1 = s1.get_name()
     if label2 is None:
         label2 = s2.get_name()
-    Iunit = make_up(Iunit)  # cosmetic changes 
-    
     # Plot compared spectra
     if normalize:
         w1, I1 = s1.get(var, wunit, Iunit, medium)
         w2, I2 = s2.get(var, wunit, Iunit, medium)
-        if verbose: print('Rescale factor: '+str(np.max(I1)/np.max(I2)))
+        if verbose: print(('Rescale factor: '+str(np.max(I1)/np.max(I2))))
         ax0.plot(w1, I1/np.max(I1), ls=style, color='k', lw=3, label=label1)
         ax0.plot(w2, I2/np.max(I2), ls=style, color='r', lw=1, label=label2)
     else:
         ax0.plot(*s1.get(var, wunit, Iunit, medium), ls=style, color='k', lw=3, label=label1)
         ax0.plot(*s2.get(var, wunit, Iunit, medium), ls=style, color='r', lw=1, label=label2)
 
+    Iunit = make_up(Iunit)  # cosmetic changes 
+    
     ax0.tick_params(labelbottom='off')
     if label1 is not None or label2 is not None:
         ax0.legend(loc='best')
@@ -443,3 +505,10 @@ def averageDistance(s1, s2, var='radiance'):
     N = np.size(distArray[1])
     distance = np.sqrt(np.sum(distArray_Y2))/N
     return distance
+
+
+if __name__ == '__main__':
+    
+    from radis.test.spectrum.test_compare import _run_testcases
+    print(('Test compare.py: ', _run_testcases(verbose=True)))
+    

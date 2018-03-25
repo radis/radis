@@ -39,13 +39,13 @@ parfuncfmt:                      #  'cdsd', 'hapi', etc.
                                  # file. If `hapi`, then HAPI (HITRAN Python 
                                  # interface) is used to retrieve them (valid if
                                  # your databank is HITRAN data). HAPI is embedded 
-                                 # into NeQ. Check the version.            
+                                 # into RADIS. Check the version.            
 # Optional
 # ----------
 parfunc:                         #  path to tabulated partition function to use.
                                  # If `parfuncfmt` is `hapi` then `parfunc` 
                                  # should be the link to the hapi.py file. If 
-                                 # not given, then the hapi.py embedded in NeQ 
+                                 # not given, then the hapi.py embedded in RADIS 
                                  # is used (check version)
 levels_iso1                      #  path to energy levels (needed for non-eq 
                                  # calculations). Default None
@@ -109,7 +109,7 @@ def getDatabankEntries(dbname):
                                          # `USE_HAPI`, then HAPI (HITRAN Python
                                          interface) [1]_ is used to retrieve them (valid
                                          if your databank is HITRAN data). HAPI
-                                         is embedded into NeQ. Check the version.
+                                         is embedded into RADIS. Check the version.
     
         parfuncfmt:                      # 'cdsd'
                                          # format to read tabulated partition function
@@ -228,7 +228,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
     
     # Check nothing is left
     if dict_entries != {}:
-        raise ValueError('Unexpected keys: {0}'.format(dict_entries.keys()))
+        raise ValueError('Unexpected keys: {0}'.format(list(dict_entries.keys())))
         
     # Write to ~/.radis
     # ... Note: what if there is a PermissionError here? Try/except pass? 
@@ -250,7 +250,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
     
     try:
         assert len(dict_entries1) == len(dict_entries2)
-        assert compare_lists(dict_entries1.keys(), dict_entries2.keys(),
+        assert compare_lists(list(dict_entries1.keys()), list(dict_entries2.keys()),
                              verbose=verbose) == 1
         for k in dict_entries1.keys():
             v1 = dict_entries1[k]
@@ -262,7 +262,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
                                      [stdpath(path2) for path2 in v2],
                                      verbose=verbose) == 1
             elif k in ['levels']:
-                assert compare_dict(v1, v2, compare_as_paths=v1.keys(),
+                assert compare_dict(v1, v2, compare_as_paths=list(v1.keys()),
                                     verbose=verbose) == 1
             else:
                 raise ValueError('Unexpected key:', k)

@@ -120,7 +120,7 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
     Notes
     -----
 
-    In norm_by 'max' mode, slit is normalized by slit max. In NeQ, this is done
+    In norm_by 'max' mode, slit is normalized by slit max. In RADIS, this is done
     in the spectrum wavespace (to avoid errors that would be caused by interpolating
     the spectrum). 
     
@@ -278,8 +278,21 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         if __debug__: printdbg('get_slit_function: {0} in {1}, norm_by {2}, return in {3}'.format(
                 slit_function, unit, norm_by, return_unit))
         wslit, Islit = import_experimental_slit(slit_function,norm_by=norm_by, # norm is done later anyway
+                                                waveunit=unit,
                                                 bplot=False, # we will plot after resampling
                                                 *args, **kwargs)
+        # ... get unit 
+        # Normalize
+        if norm_by == 'area': # normalize by the area
+    #        I_slit /= np.trapz(I_slit, x=w_slit)
+            Iunit = '1/{0}'.format(unit)
+        elif norm_by == 'max': # set maximum to 1
+            Iunit = '1'
+        elif norm_by is None:
+            Iunit=None
+        else:
+            raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+
         # ... check it looks correct
         unq, counts = np.unique(wslit, return_counts=True)
         dup = counts > 1
@@ -567,6 +580,11 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
         b = int((la)/2)
         I_conv = I_conv[a:-b]
         w_conv = w[a:-b]
+    elif mode == 'same':
+        I_conv = I_conv
+        w_conv = w
+    else:
+        raise ValueError('Unexpected mode: {0}'.format(mode))
 
     # reverse back if needed
     # Todo: add test case for that
@@ -659,8 +677,8 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
 
     '''
 
-    from neq.plot.toolbar import add_tools     # TODO: move in publib
     try:
+        from neq.plot.toolbar import add_tools     # TODO: move in publib
         add_tools()       # includes a Ruler to measure slit
     except:
         pass
@@ -1212,5 +1230,5 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
 
 # %% Test
 if __name__ == '__main__':
-    from neq.test.spec.test_slit import _run_testcases
+    from radis.test.tools.test_slit import _run_testcases
     print('Testing slit.py: ', _run_testcases())
