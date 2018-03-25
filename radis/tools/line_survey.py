@@ -9,7 +9,6 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 import numpy as np
 from radis.io.hitran import get_molecule
-from radis.io.hitran  import HITRAN_CLASS1
 from radis.io.hitran  import columns_2004 as hitrancolumns
 from radis.io.cdsd import columns_hitemp as cdsdcolumns
 from radis.io.cdsd import columns_4000 as cdsd4000columns
@@ -29,6 +28,7 @@ except ImportError:
 def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air', 
                cutoff=None, plot='S', lineinfo=['int', 'A'], barwidth=0.07, 
                yscale='log', 
+               display=True, filename='line-survey.html',
                xunit=None, yunit=None # deprecated
                ):    
     ''' Plot Line Survey (all linestrengths above cutoff criteria) in Plotly (html)
@@ -66,6 +66,15 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     lineinfo: list, or 'all'
         extra line information to plot. Should be a column name in the databank
         (s.lines). For instance: 'int', 'selbrd', etc... Default ['int']
+
+    Other Parameters
+    ----------------
+    
+    display: boolean
+        if True, open the image in a browser. Default True. 
+
+    filename: str
+        filename to save .html 
 
     yscale: 'log', 'linear'
         Default 'log'
@@ -397,7 +406,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     # %% Plot
 
     fig= go.Figure(data=l, layout=layout)
-    py.plot(fig, filename='line-survey.html')
+    py.plot(fig, filename=filename, auto_open=display)
 
 # %% Test 
 if __name__ == '__main__':

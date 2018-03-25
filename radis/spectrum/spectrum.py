@@ -1915,6 +1915,8 @@ class Spectrum(object):
         barwidth: float
             With of bars in LineSurvey. Default 0.07
 
+        See :func:`~radis.tools.line_survey.LineSurvey` documentation
+
         
         Returns
         -------
