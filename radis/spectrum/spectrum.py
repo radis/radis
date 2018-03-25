@@ -636,8 +636,8 @@ class Spectrum(object):
 
 
     def get(self, var, wunit='nm', Iunit='default', medium='default',
-            xunit=None, yunit=None  # deprecated for wunit, Iunit
-            ):
+            xunit=None, yunit=None,  # deprecated for wunit, Iunit
+            copy=True):
         ''' Retrieve a spectral quantity from a Spectrum object. You can change 
         wavespace unit, intensity unit, or propagation medium.
         
@@ -661,6 +661,12 @@ class Spectrum(object):
             value set in conditions is used. If None you better be sure of
             what you're doing.
 
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored quantity (modifying it wont
+            change the Spectrum object). Default True.
         
         Todo
         ----
@@ -698,17 +704,20 @@ class Spectrum(object):
         # Get quantity
         if var in CONVOLUTED_QUANTITIES:
             vartype = 'convoluted'
-            I = self._q_conv[var].copy()
+            I = self._q_conv[var]
         else:  # non convoluted
             vartype = 'non_convoluted'
-            I = self._q[var].copy()
+            I = self._q[var]
+            
+        # Copy
+        if copy: I = I.copy()
             
         # Get wavespace (in correct unit, and correct medium)
         wunit = cast_waveunit(wunit)
         if wunit == 'cm-1':
-            w = self.get_wavenumber(vartype)  # (is a copy)
+            w = self.get_wavenumber(vartype, copy=copy)
         else: # wunit == 'nm':
-            w = self.get_wavelength(medium, vartype)  # (is a copy)
+            w = self.get_wavelength(medium, vartype, copy=copy)
             
         # Convert y unit if necessary
         Iunit0 = self.units[var]
@@ -740,7 +749,7 @@ class Spectrum(object):
 
         return w, I
 
-    def _get_wavespace(self, which='any'):
+    def _get_wavespace(self, which='any', copy=True):
         ''' Return wavespace (if the same for all quantities)
 
         
@@ -752,6 +761,13 @@ class Spectrum(object):
             or any. If any and both are defined, they have to be the same else 
             an error is raised. Default any.
 
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
     
         Returns
         -------
@@ -788,9 +804,11 @@ class Spectrum(object):
             raise ValueError("which has to be one of 'convoluted', 'non_convoluted', "+\
                              "'any'. Got {0}".format(which))
 
-        return w.copy()
+        if copy: w = w.copy()
+        
+        return w
 
-    def get_wavelength(self, medium='default', which='any'):
+    def get_wavelength(self, medium='default', which='any', copy=True):
         ''' Return wavelength in defined medium 
         
     
@@ -807,6 +825,14 @@ class Spectrum(object):
             value set in conditions is used. If None you better be sure of
             what you're doing.
 
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
+    
 
         Returns
         -------
@@ -824,7 +850,7 @@ class Spectrum(object):
             raise NotImplementedError('Unknown propagating medium: {0}'.format(stored_medium))
             
         # Now get wavespace
-        w = self._get_wavespace(which=which)
+        w = self._get_wavespace(which=which, copy=copy)
         if self.get_waveunit() == 'cm-1':
             w = cm2nm(w)       # we get vacuum wavelength
         
@@ -869,7 +895,7 @@ class Spectrum(object):
             
         return w
 
-    def get_wavenumber(self, which='any'):
+    def get_wavenumber(self, which='any', copy=True):
         ''' Return wavenumber (if the same for all quantities)
         
     
@@ -882,6 +908,14 @@ class Spectrum(object):
             an error is raised. Default any.
 
 
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
+    
         Returns
         -------
 
@@ -889,7 +923,7 @@ class Spectrum(object):
             (a copy of) spectrum wavenumber for convoluted or non convoluted
             quantities
         '''
-        w = self._get_wavespace(which=which)
+        w = self._get_wavespace(which=which, copy=copy)
         
         if self.get_waveunit() == 'nm':     # we want w in vacuum before converting
             # Correct for propagation medium (air, vacuum)
@@ -910,25 +944,45 @@ class Spectrum(object):
             w = nm2cm(w)
         return w
 
-    def get_radiance(self, Iunit='mW/cm2/sr/nm'):
+    def get_radiance(self, Iunit='mW/cm2/sr/nm', copy=True):
         ''' Return radiance in whatever unit, and can even convert from ~1/nm
         to ~1/cm-1 (and the other way round)
+        
+        
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
+    
         '''
 
         Iunit0 = self.units['radiance']
-        w_cm, I = self.get('radiance', wunit='cm-1', Iunit=Iunit0)
+        w_cm, I = self.get('radiance', wunit='cm-1', Iunit=Iunit0, copy=copy)
 
         return convert_universal(I, Iunit0, Iunit, w_cm,
                                      per_nm_is_like='mW/sr/cm2/nm',
                                      per_cm_is_like='mW/sr/cm2/cm_1')
 
-    def get_radiance_noslit(self, Iunit='mW/cm2/sr/nm'):
+    def get_radiance_noslit(self, Iunit='mW/cm2/sr/nm', copy=True):
         ''' Return radiance (non convoluted) in whatever unit, and can even
         convert from ~1/nm to ~1/cm-1 (and the other way round)
+        
+        
+        Other Parameters
+        ----------------
+        
+        copy: boolean
+            if True, returns a copy of the stored waverange (modifying it wont
+            change the Spectrum object). Default True.
+        
+    
         '''
 
         Iunit0 = self.units['radiance_noslit']
-        w_cm, I = self.get('radiance_noslit', wunit='cm-1', Iunit=Iunit0)
+        w_cm, I = self.get('radiance_noslit', wunit='cm-1', Iunit=Iunit0, copy=copy)
 
         return convert_universal(I, Iunit0, Iunit, w_cm,
                                      per_nm_is_like='mW/sr/cm2/nm',
@@ -2123,9 +2177,8 @@ class Spectrum(object):
         return self.store(*args, **kwargs)
 
     def resample(self, w_new, unit='same', out_of_bounds='nan', 
-                 if_conflict_drop='error',
-                 energy_threshold=1e-3, print_conservation=False,
-                 if_conflict_drop_convoluted_spectra=None):
+                 if_conflict_drop='error', medium='default', 
+                 energy_threshold=1e-3, print_conservation=False):
         ''' Resample spectrum over a new wavelength
         Fills with transparent medium when out of bound (transmittance 1,
         radiance 0)
@@ -2148,7 +2201,8 @@ class Spectrum(object):
             unit of new wavespace. It 'same' it is assumed to be the current
             waveunit. Default 'same'. The spectrum waveunit is changed to this
             unit after resampling (i.e: a spectrum calculated and stored in `cm-1`
-            but resampled in `nm` will be stored in `nm` from now on)
+            but resampled in `nm` will be stored in `nm` from now on). 
+            If 'nm', see also argument ``medium``
             
         out_of_bounds: 'transparent', 'nan', 'error'
             what to do if resampling is out of bounds. 'transparent': fills with
@@ -2164,6 +2218,10 @@ class Spectrum(object):
 
             TODO (but dangerous): reapply_slit at the end of the process if slit
             is in conditions?
+            
+        medium: 'air', 'vacuum', or 'default'
+            in which medium is the new waverange is calculated if it is given 
+            in 'nm'. Ignored if unit='cm-1'
             
             
         Other Parameters
@@ -2187,13 +2245,7 @@ class Spectrum(object):
         '''
 
         # Check inputs (check for deprecated)
-        if if_conflict_drop_convoluted_spectra is not None:
-            warn(DeprecationWarning('if_conflict_drop_convoluted_spectra replaced with if_conflict_drop'))
-            if if_conflict_drop_convoluted_spectra: # True
-                if_conflict_drop = 'convoluted'
-            else:
-                if_conflict_drop = 'error'
-            
+
         # ... see if convoluted / non convoluted values co-exist
         if 'wavespace' in self._q and 'wavespace' in self._q_conv:
             try:
@@ -2222,19 +2274,42 @@ class Spectrum(object):
 #            if not allclose(q[0], quantities[0][0]):
 #                raise ValueError('Not all wavespaces are the same. Cant resample')
 
-        # Get wavespace
-        update_q = 'wavespace' in self._q
-        update_q_conv = 'wavespace' in self._q_conv
-        try:
-            w = self._q['wavespace']
-        except KeyError:
-            w = self._q_conv['wavespace']
         # Get wavespace units
         waveunit = self.get_waveunit()   # spectrum unit
         if unit == 'same':               # resampled unit
             unit = waveunit
         else:
             unit = cast_waveunit(unit)
+        
+        # Get current waverange in output unit, output medium   -> w 
+        if unit == 'nm':         # if asking for wavelength, check in which medium (air or vacuum?)
+            # get defaults
+            current_medium = self.get_medium()
+            if medium == 'default':
+                medium = current_medium 
+            # convert if needed
+            if medium == current_medium:
+                pass # correct medium already, do nothing
+            else:
+                # update medium
+                self.conditions['medium'] = medium
+                
+            w = self.get_wavelength(medium=medium)   # in correct medium
+        elif unit == 'cm-1':
+            if medium != 'default':
+                raise ValueError('resampling to cm-1 but `medium` is given. It '+\
+                                 'wont change wavenumbers, so just dont use it')
+            w = self.get_wavenumber()              
+        else:
+            raise ValueError('Unknown unit: {0}'.format(unit))
+            
+        # Update waveunit to new unit 
+        if unit != waveunit:
+            self.conditions['waveunit'] = unit
+
+        # Get wavespace
+        update_q = 'wavespace' in self._q
+        update_q_conv = 'wavespace' in self._q_conv
 
         # Now let's resample
         def get_filling(variable):
@@ -2256,68 +2331,33 @@ class Spectrum(object):
         
         
         # There are different cases depending on the unit of w_new
-        if unit == waveunit: # same units
+        # ... Note for devs: we're looping over dictionaries directly rather than
+        # ... using the (safter) .get() function because it's much faster (the 
+        # ... air2vacuum conversion in particular is quite slow, but has been 
+        # ... done once for all with get_wavelength() above )
+        if update_q:
             for (k, I) in self._q.items():
+                if k == 'wavespace':
+                    continue
                 fill_with = get_filling(k)
                 Inew = resample(w, I, w_new, ext=fill_with,
                                 energy_threshold=energy_threshold,
                                 print_conservation=False)
                 self._q[k] = Inew
+            # update wavespace
+            self._q['wavespace'] = w_new
 
+        if update_q_conv:
             for (k, I) in self._q_conv.items():
+                if k == 'wavespace':
+                    continue
                 fill_with = get_filling(k)
                 Inew = resample(w, I, w_new, ext=fill_with,
                                 energy_threshold=energy_threshold,
                                 print_conservation=False)
                 self._q_conv[k] = Inew
             # update wavespace
-            if update_q: self._q['wavespace'] = w_new
-            if update_q_conv: self._q_conv['wavespace'] = w_new
-
-        elif unit == 'nm' and waveunit == 'cm-1': # convert to nm
-            for (k, I) in self._q.items():
-                fill_with = get_filling(k)
-                # convert to nm before resampling
-                Inew = resample(cm2nm(w), I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=print_conservation)
-                self._q[k] = Inew
-
-            for (k, I) in self._q_conv.items():
-                fill_with = get_filling(k)
-                # convert to nm before resampling
-                Inew = resample(cm2nm(w), I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=print_conservation)
-                self._q_conv[k] = Inew
-            # update wavespace
-            self.conditions['waveunit'] = 'nm'
-            if update_q: self._q['wavespace'] = w_new
-            if update_q_conv: self._q_conv['wavespace'] = w_new
-
-        elif unit == 'cm-1' and waveunit == 'nm': # convert to cm-1
-            for (k, I) in self._q.items():
-                fill_with = get_filling(k)
-                # convert to cm-1 before resampling
-                Inew = resample(nm2cm(w), I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=print_conservation)
-                self._q[k] = Inew
-
-            for (k, I) in self._q_conv.items():
-                fill_with = get_filling(k)
-                # convert to cm-1 before resampling
-                Inew = resample(nm2cm(w), I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=print_conservation)
-                self._q_conv[k] = Inew
-            # update wavespace
-            self.conditions['waveunit'] = 'cm-1'
-            if update_q: self._q['wavespace'] = w_new
-            if update_q_conv: self._q_conv['wavespace'] = w_new
-
-        else:
-            raise ValueError('Unknown unit: {0}'.format(unit))
+            self._q_conv['wavespace'] = w_new
 
 
     # %% ======================================================================
@@ -2367,6 +2407,17 @@ class Spectrum(object):
                  '. Assumed False')
             return False  
         
+    def get_medium(self):
+        ''' Returns in which medium the spectrum is calculated (air or vacuum), 
+        based on the value on the self_absorption key in conditions. If not given, raises an error'''
+        
+        try:
+            return self.conditions['medium']
+        except KeyError:
+            raise KeyError("We need to know if Spectrum is calculated in air or vacuum, but "+\
+                           "`medium` is not defined in conditions. Please add the "+\
+                             "value manually")
+        
     def is_optically_thin(self):
         ''' Returns whether the spectrum is optically thin, based on the value
         on the self_absorption key in conditions. If not given, raises an error'''
@@ -2375,7 +2426,7 @@ class Spectrum(object):
             return not self.conditions['self_absorption']
         except KeyError:
             raise KeyError("We need to know if Spectrum is optically thin, but "+\
-                           "self_absorption is not defined in conditions. Please add the "+\
+                           "`self_absorption` is not defined in conditions. Please add the "+\
                              "value manually")
         
     def copy(self, copy_lines=True):

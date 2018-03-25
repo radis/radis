@@ -148,7 +148,7 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
 
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)    # euclidian distance from w1, I1
 
-def get_residual(s1, s2, var):
+def get_residual(s1, s2, var, ignore_nan=False):
     ''' Returns integral of the difference between two spectra s1 and s2, 
     relatively to the integral of spectrum s1 
     
@@ -160,7 +160,14 @@ def get_residual(s1, s2, var):
     
     var: str
         spectral quantity
-        
+    
+    Other Parameters
+    ----------------
+    
+    ignore_nan: boolean
+        if True, ignore nan in the difference between s1 and s2 (ex: out of bound)
+        when calculating residual. Default False. Note: get_residual will still 
+        fail if there are nan in initial Spectrum. 
         
     Notes
     -----
@@ -189,6 +196,10 @@ def get_residual(s1, s2, var):
     w, I = s1.get(var)
     # mask for 0
     wdiff, dI = get_diff(s1, s2, var, resample=True)
+    
+    if ignore_nan:
+        b = np.isnan(dI)
+        wdiff, dI = wdiff[~b], dI[~b]
     
     return np.abs(np.trapz(dI, wdiff) / np.trapz(I, w))
 

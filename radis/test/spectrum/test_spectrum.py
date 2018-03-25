@@ -28,7 +28,7 @@ fig_prefix = basename(__file__)+': '
 
 # %% Test routines
 
-def test_spectrum_get_methods(verbose=True, *args, **kwargs):
+def test_spectrum_get_methods(verbose=True, plot=True, *args, **kwargs):
     ''' Test all spectrum methods on a Spectrum generated in Specair '''
     
     from radis.test.utils import getTestFile
@@ -37,7 +37,11 @@ def test_spectrum_get_methods(verbose=True, *args, **kwargs):
 
     s = load_spec(getTestFile('N2C_specair_380nm.spec'))
     
+    # general methods
     if verbose: print(s)
+    dir(s)
+    
+    # access properties
     assert s.get_name() == 'N2C_specair_380nm'
     assert all(s.get_radiance_noslit(Iunit='W/m2/sr/nm') == 
                s.get('radiance_noslit', Iunit='W/m2/sr/nm')[1])
@@ -47,6 +51,7 @@ def test_spectrum_get_methods(verbose=True, *args, **kwargs):
     assert s.get_waveunit() == 'nm'
     assert s.get_power(unit='W/cm2/sr') == s.get_integral('radiance_noslit', Iunit='W/cm2/sr/nm')
     assert s.get_conditions()['Tgas'] == 1500
+    assert s.get_medium() == 'air'
     assert len(s.get_vars()) == 2
     assert s.is_at_equilibrium() == False
     assert s.is_optically_thin() == False
@@ -56,6 +61,9 @@ def test_spectrum_get_methods(verbose=True, *args, **kwargs):
     wslit, Islit = s.get_slit()
     wstep = np.diff(wslit)[0]
     assert np.isclose(get_FWHM(*s.get_slit()), 0.5, atol=1.1*wstep)
+    
+    if plot:
+        s.plot_slit()
     
     if verbose:
         print('Tested Spectrum methods:')
@@ -191,6 +199,41 @@ def test_rescaling_function__fast(verbose=True, *args, **kwargs):
 
     assert np.isclose(s.get_radiance_noslit(Iunit='mW/cm2/sr/nm')[0], 352.57305783248)
 
+def test_resampling_function__fast(verbose=True, plot=True, *args, **kwargs):
+    ''' Test resampling functions 
+    
+    Get a Spectrum calculated in cm-1, then resample on a smaller range in cm-1, 
+    and in approximately the same range (but in nm). Check that all 3 overlap 
+    '''
+# %%
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+    from radis.spectrum import get_residual
+
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s.name = 'original'
+    s2 = s.copy()
+    s2b = s.copy()
+    s3 = s.copy()
+    s2.resample(np.linspace(4500, 4700, 10000), unit='nm', medium='vacuum')
+    s2b.resample(np.linspace(4500, 4700, 10000), unit='nm', medium='air')
+    s3.resample(np.linspace(2127.2, 2227.7, 10000), unit='cm-1')
+    s2.name = 'resampled in nm (vacuum)'
+    s2b.name = 'resampled in nm (air)'
+    s3.name = 'resampled in cm-1'
+    
+    s.compare_with(s2, plot=plot, title='Residual: {0:.2g}'.format(
+            get_residual(s, s2, 'abscoeff', ignore_nan=True)))
+    s.compare_with(s2b, plot=plot, title='Residual: {0:.2g}'.format(
+            get_residual(s, s2b, 'abscoeff', ignore_nan=True)))
+    s.compare_with(s3, plot=plot, title='Residual: {0:.2g}'.format(
+            get_residual(s, s3, 'abscoeff', ignore_nan=True)))
+    
+    assert get_residual(s, s2, 'abscoeff', ignore_nan=True) < 1e-4
+    assert get_residual(s, s2b, 'abscoeff', ignore_nan=True) < 1e-3
+    assert get_residual(s, s3, 'abscoeff', ignore_nan=True) < 1e-5
+    
+# %%
 
 def _run_testcases(plot=True, verbose=True, debug=False, warnings=True, *args, **kwargs):
     ''' Test procedures
@@ -205,7 +248,7 @@ def _run_testcases(plot=True, verbose=True, debug=False, warnings=True, *args, *
     
     # Test all Spectrum methods 
     # -------------------------
-    test_spectrum_get_methods(debug=debug, verbose=verbose, *args, **kwargs)
+    test_spectrum_get_methods(debug=debug, verbose=verbose, plot=plot, *args, **kwargs)
     test_copy(verbose=verbose, *args, **kwargs)
     test_populations(verbose=verbose, plot=plot, *args, **kwargs)
     test_store_functions(verbose=verbose, *args, **kwargs)
@@ -222,6 +265,7 @@ def _run_testcases(plot=True, verbose=True, debug=False, warnings=True, *args, *
     # Test updating / rescaling functions (no self absorption)
     # ---------
     test_rescaling_function__fast(debug=debug, *args, **kwargs)
+    test_resampling_function__fast(debug=debug, *args, **kwargs)
 #    test_rescaling_path_length__fast(plot=plot, verbose=verbose, debug=debug,
 #                                     warnings=warnings, *args, **kwargs)
 #    test_rescaling_mole_fraction__fast(plot=plot, verbose=verbose, debug=debug,
