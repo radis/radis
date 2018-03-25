@@ -505,3 +505,10 @@ def averageDistance(s1, s2, var='radiance'):
     N = np.size(distArray[1])
     distance = np.sqrt(np.sum(distArray_Y2))/N
     return distance
+
+
+if __name__ == '__main__':
+    
+    from radis.test.spectrum.test_compare import _run_testcases
+    print(('Test compare.py: ', _run_testcases(verbose=True)))
+    

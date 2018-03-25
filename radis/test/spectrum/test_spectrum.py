@@ -162,21 +162,48 @@ def test_store_functions(verbose=True, *args, **kwargs):
     return True
 
 def test_intensity_conversion__fast(verbose=True, *args, **kwargs):
-    ''' Test conversion of intensity cm-1 works'''
+    ''' Test conversion of intensity cm-1 works:
+        
+    - conversion of mW/sr/cm2/nm -> mW/sr/cm2/cm-1
+    
+    '''
 
     from radis import planck, planck_wn
 
     w_nm = linspace(300, 3000)
+    w_cm = nm2cm(w_nm)
     I_nm = planck(w_nm, T=6000, unit='mW/sr/cm2/nm')
 
     s = calculated_spectrum(w_nm, I_nm, wunit='nm', Iunit='mW/sr/cm2/nm', 
                             conditions={'medium':'vacuum'})
+    
+    # mW/sr/cm2/nm -> mW/sr/cm2/cm-1
     w, I = s.get('radiance_noslit', Iunit='mW/sr/cm2/cm_1')
-
-    w_cm = nm2cm(w_nm)
     I_cm = planck_wn(w_cm, T=6000, unit='mW/sr/cm2/cm_1')
-
     assert allclose(I_cm, I, rtol=1e-3)
+    
+#def test_emissivity_conversion__fast(verbose=True, *args, **kwargs):
+#    ''' Test conversion of intensity cm-1 works:
+#        
+#    - conversion of mW/sr/cm2/nm -> mW/sr/cm2/cm-1
+#    
+#    '''
+#    
+#    from radis.phys.units import convert_emi2nm
+#    from radis.test.utils import getTestFile
+#    from radis.tools.database import load_spec
+#    
+#    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+#    s.update()
+#
+#    # mW/sr/cm3/nm -> mW/sr/cm3/cm-1
+#    
+#    w, I = s.get('emissivity_noslit', Iunit='mW/sr/cm3/cm_1')
+#    I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm_1', 'mW/sr/m3/µm')
+#    
+    
+# TODO: finish implementing emissivity_conversino above
+
 
 def test_rescaling_function__fast(verbose=True, *args, **kwargs):
     ''' Test rescaling functions '''

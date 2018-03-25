@@ -195,7 +195,7 @@ def dnm2dhz(delta_lbd, lbd_0):
 
 def torr2bar(p_torr):
     ' Torr to bar'
-    return p_torr / 1.01325 / 760
+    return p_torr * 1.01325 / 760
 
 
 def torr2atm(p_atm):
@@ -203,7 +203,7 @@ def torr2atm(p_atm):
 
 
 def bar2torr(p_bar):
-    return p_bar * 1.01325 * 760
+    return p_bar / 1.01325 * 760
 
 
 def bar2atm(p_bar):

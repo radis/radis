@@ -1288,5 +1288,3 @@ if __name__ == '__main__':
     from radis.test.spectrum.test_rescale import _run_all_tests
     print(('Test rescale.py: ', _run_all_tests(verbose=True)))
     
-    s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
-    s1.conditions['Tvib'] = 2000 # non eq

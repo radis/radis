@@ -25,13 +25,17 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 from __future__ import absolute_import, unicode_literals, print_function
 
 import numpy as np
+from numpy import isclose
 from radis.phys.convert import (J2eV, J2cm, cm2J, eV2cm, eV2K, eV2nm, nm2eV,
-                                dnm2dcm, nm2cm, dnm2dhz, cm2eV, eV2J, K2J,
-                                J2K, dcm2dnm)
+                                dnm2dcm, nm2cm, dnm2dhz, dhz2dnm, cm2eV, eV2J, K2J,
+                                J2K, dcm2dnm, K2eV, hz2nm, nm2hz,
+                                torr2bar, torr2atm, bar2torr, bar2atm, atm2torr,
+                                atm2bar)
 from radis.phys.units import uarray, Q_, conv2
 
 def test_convert__fast(verbose=True, *args, **kwargs):
-
+    ''' Test conversions  '''
+    
     E = np.linspace(1, 5, 5)  # eV
     assert (J2eV(K2J(J2K(eV2J(E)))) == E).all()
 
@@ -41,20 +45,28 @@ def test_convert__fast(verbose=True, *args, **kwargs):
     E = 1  # eV
     assert (eV2cm(E) == J2cm(eV2J(1)))
     assert (round(eV2K(E), 0) == 11605)
+    assert K2eV(eV2K(E)) == E
     
     E = 250 # nm
-    assert np.isclose(nm2eV(E),cm2eV(nm2cm(E)))
+    assert isclose(nm2eV(E),cm2eV(nm2cm(E)))
     assert (eV2nm(nm2eV(E))==E)
+    assert hz2nm(nm2hz(E)) == E
 
     fwhm = 1.5 # nm
     lbd_0 = 632.8 # nm
-    assert (np.isclose(fwhm, dcm2dnm(dnm2dcm(fwhm, lbd_0), nm2cm(lbd_0))))
+    assert (isclose(fwhm, dcm2dnm(dnm2dcm(fwhm, lbd_0), nm2cm(lbd_0))))
 
-    fwhm = 2e-3  # nm
+    fwhm = 2e-3  # 0.002 nm
     lbd_0 = 632.8
-    fwhm_hz = dnm2dhz(fwhm, lbd_0)
+    fwhm_hz = dnm2dhz(fwhm, lbd_0)         #  ~ 1.5 GHz
     if verbose: print(('{0:.2g} nm broadening at {1} nm = {2:.2g} Ghz'.format(fwhm, lbd_0, fwhm_hz*1e-9)))
-    assert np.isclose(fwhm_hz*1e-9, 1.4973307983125002)
+    assert isclose(fwhm_hz*1e-9, 1.4973307983125002)
+    assert isclose(dhz2dnm(fwhm_hz, nm2hz(lbd_0)), fwhm)
+    
+    assert atm2bar(1) == 1.01325
+    assert isclose(torr2bar(atm2torr(bar2atm(1))), 1)
+    assert isclose(torr2atm(bar2torr(atm2bar(1))), 1)
+
 
     return True
 
@@ -78,7 +90,7 @@ def test_units__fast(verbose=True, *args, **kwargs):
     for a, f, r, t in convtable:
         cr = conv2(a, f, t)
         if verbose: print(('{0} {1} = {2} {3}'.format(a, f, cr, t)))
-        assert np.isclose(cr,r)
+        assert isclose(cr,r)
 
     return True
 
