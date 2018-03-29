@@ -363,7 +363,7 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     return l_nm
 
 
-def convert_universal(I, from_unit, to_unit, w_cm,
+def convert_universal(I, from_unit, to_unit, spec=None,
                      per_nm_is_like='mW/sr/cm2/nm', per_cm_is_like='mW/sr/cm2/cm_1'):
     ''' Return variable var in whatever unit, and converts to to_unit
     Also deal with cases where var is in ~1/nm (per_nm_is_like) or ~1/cm-1
@@ -378,6 +378,19 @@ def convert_universal(I, from_unit, to_unit, w_cm,
 
     to_unit: str
         unit to convert variable to
+        
+    Other Parameters
+    ----------------
+        
+    spec: Spectrum object
+        needed to get wavenumber in case we need to do a change of variable 
+        within the integral
+        
+    Notes
+    -----
+    
+    wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires 
+    a change of variable in the integral)
 
     '''
     Iunit0 = from_unit
@@ -385,11 +398,13 @@ def convert_universal(I, from_unit, to_unit, w_cm,
     try:
         if is_homogeneous(Iunit0, per_nm_is_like) and is_homogeneous(
                 Iunit, per_cm_is_like):
+            w_cm = spec.get_wavenumber()
             I = convert_rad2cm(I, w_cm, Iunit0, Iunit)
             # note that there may still be a new DimensionalityError
             # raise here if the input was non-sense.
         elif is_homogeneous(Iunit0, per_cm_is_like) and is_homogeneous(
                 Iunit, per_nm_is_like):
+            w_cm = spec.get_wavenumber()
             I = convert_rad2nm(I, w_cm, Iunit0, Iunit)
             # note that there may still be a new DimensionalityError
             # raise here if the input was non-sense.

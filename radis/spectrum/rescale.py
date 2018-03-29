@@ -1292,6 +1292,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         rescaled, units = _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas, 
                                                  new_path_length, true_path_length,
                                                  units)
+        apply_slit = 'radiance' in recompute or 'transmittance' in recompute 
         
     else:
     
@@ -1358,7 +1359,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     # Reapply slit if needed
     # TODO: replace with directly convolving with slit stored in conditions
     # TODO: first, add an option to give arrays to apply_slit
-    if slit_needed:
+    if apply_slit:
         if not ('slit_function' in spec.conditions and 'slit_unit' in spec.conditions
                 and 'norm_by' in spec.conditions):
             raise KeyError('Slit is needed to recompute some quantities ({0}) '.format(wanted)+\
@@ -1375,12 +1376,14 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         except KeyError:
             shape = 'triangular'
         spec.apply_slit(slit_function=slit_function, unit=slit_unit, shape=shape,
-                        norm_by=norm_by, verbose=verbose)            
+                        norm_by=norm_by, verbose=verbose)
 
     # Final checks
 
     # ... "everyone is here": check we didnt miss anyone 
     rescaled_list = list(rescaled)
+    # add the ones added by apply_slit
+    rescaled_list = rescaled_list + spec.get_vars('convoluted')
     for q in wanted:
         if not q in rescaled_list:
             raise AssertionError('{0} could not be rescaled as wanted. '.format(q)+\
