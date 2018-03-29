@@ -2849,14 +2849,19 @@ class Spectrum(object):
         assert(len(w)==len(I))
 
         def check_wavespace(w):
-            ''' Note: this check takes a lot of time! 
+            ''' If warnings, check that array is evenly spaced. Returns a copy
+            of input array.
+            
+            Note: this check takes a lot of time! 
             Is is not performed if warnings is False'''
+            w = np.array(w)              # copy 
             if warnings:
                 # Check Wavelength/wavenumber is evently spaced
                 if not evenly_distributed(w, tolerance=1e-5):
                     warn('Wavespace is not evenly spaced ({0:.3f}%) for {1}.'.format(
                             np.abs(np.diff(w)).max()/w.mean()*100, name)\
                          + ' This may create problems when convolving with slit function')
+            return w
 
         if name in CONVOLUTED_QUANTITIES:
             # Add wavespace
@@ -2865,8 +2870,7 @@ class Spectrum(object):
                     raise ValueError('wavespace for {0} doesnt correspond to existing wavespace'.format
                                      (name)+' for convoluted quantities')
             else:
-                check_wavespace(w)
-                self._q_conv['wavespace'] = np.array(w)   # copy
+                self._q_conv['wavespace'] = check_wavespace(w)   # copy
 
             # Add quantity itself
             self._q_conv[name] = np.array(I)              # copy
@@ -2878,8 +2882,7 @@ class Spectrum(object):
                     raise ValueError('wavespace for {0} doesnt correspond to existing wavespace'.format
                                      (name)+' for non convoluted quantities')
             else:
-                check_wavespace(w)
-                self._q['wavespace'] = np.array(w)   # copy
+                self._q['wavespace'] = check_wavespace(w)   # copy
 
             # Add quantity itself
             self._q[name] = np.array(I)              # copy
