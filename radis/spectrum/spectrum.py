@@ -982,7 +982,7 @@ class Spectrum(object):
     
         '''
         
-        return self.get('radiance_noslit', Iunit=Iunit, copy=copy)
+        return self.get('radiance_noslit', Iunit=Iunit, copy=copy)[1]
 
 #        Iunit0 = self.units['radiance_noslit']
 #        w_cm, I = self.get('radiance_noslit', wunit='cm-1', Iunit=Iunit0, copy=copy)

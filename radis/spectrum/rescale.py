@@ -216,8 +216,9 @@ def _build_update_graph(spec, optically_thin=None, equilibrium=None, path_length
         if __debug__: printdbg('... build_graph: equilibrium > all keys derive from one')
         # Anything can be recomputed from anything
         for key in all_keys:
-            all_but_k = [[k] for k in all_keys if k != key]
-            derives_from(key, *all_but_k)
+            if key in NON_CONVOLUTED_QUANTITIES:
+                all_but_k = [[k] for k in all_keys if k != key]
+                derives_from(key, *all_but_k)
     
     # ------------------------------------------------------------
     
@@ -662,7 +663,7 @@ def rescale_emisscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_frac
     # case where we recomputed it already (somehow... ex: no_change signaled)
     if 'emisscoeff' in rescaled:
         if __debug__: printdbg('... rescale: emisscoeff was scaled already')
-        assert 'emiscoeff' in units
+        assert 'emisscoeff' in units
         return rescaled, units
 
     # Firt get initial emisscoeff j1
@@ -1327,22 +1328,19 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
                         new_path_length, optically_thin, waveunit, units, 
                         extra, true_path_length)
             apply_slit = apply_slit or slit_needed
-            # delete former convoluted value if apply_slit will be used (just to be sure
-            # we arent keeping a non rescaled value if something goes wrong)
-            if slit_needed and 'radiance' in spec._q_conv.keys():
-                del spec._q_conv['radiance']
-                del spec.units['radiance']
 
         if 'transmittance' in recompute:
             rescaled, units, slit_needed = rescale_transmittance(spec, rescaled, initial,
                         old_mole_fraction, new_mole_fraction, old_path_length,
                         new_path_length, waveunit, units, extra)
             apply_slit = apply_slit or slit_needed
-            # delete former convoluted value if apply_slit will be used (just to be sure
-            # we arent keeping a non rescaled value if something goes wrong)
-            if slit_needed and 'transmittance' in spec._q_conv.keys():
-                del spec._q_conv['transmittance']
-                del spec.units['transmittance']
+            
+    # delete former convoluted value if apply_slit will be used (just to be sure
+    # we arent keeping a non rescaled value if something goes wrong)
+    if apply_slit:
+        for k in spec._q_conv.keys():
+            del spec._q_conv[k]
+            del spec.units[k]
 
     # Save (only) the ones that we want, unless we want everything ('greedy')
     for q in rescaled:
@@ -1362,27 +1360,31 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     if apply_slit:
         if not ('slit_function' in spec.conditions and 'slit_unit' in spec.conditions
                 and 'norm_by' in spec.conditions):
+#            if 'transmittance' in extra and 'radiance' in extra:
+#                pass  
+#            else:
             raise KeyError('Slit is needed to recompute some quantities ({0}) '.format(wanted)+\
                             'but not all conditions are given among slit_function '+\
                             '({0}), slit_unit ({1}) and norm_by ({2})'.format(
                                     'slit_function' in spec.conditions,
                                     'slit_unit' in spec.conditions,
                                     'norm_by' in spec.conditions))
-        slit_function = spec.conditions['slit_function']
-        slit_unit = spec.conditions['slit_unit']
-        norm_by = spec.conditions['norm_by']
-        try:
-            shape = spec.conditions['shape']
-        except KeyError:
-            shape = 'triangular'
-        spec.apply_slit(slit_function=slit_function, unit=slit_unit, shape=shape,
-                        norm_by=norm_by, verbose=verbose)
+        else:
+            slit_function = spec.conditions['slit_function']
+            slit_unit = spec.conditions['slit_unit']
+            norm_by = spec.conditions['norm_by']
+            try:
+                shape = spec.conditions['shape']
+            except KeyError:
+                shape = 'triangular'
+            spec.apply_slit(slit_function=slit_function, unit=slit_unit, shape=shape,
+                            norm_by=norm_by, verbose=verbose)
 
     # Final checks
 
     # ... "everyone is here": check we didnt miss anyone 
     rescaled_list = list(rescaled)
-    # add the ones added by apply_slit
+    # add the new quantities added by apply_slit
     rescaled_list = rescaled_list + spec.get_vars('convoluted')
     for q in wanted:
         if not q in rescaled_list:
@@ -1390,7 +1392,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
                                  'The following properties were rescaled: {0}'.format(rescaled_list))
     # ... everyone was added in the Spectrum properly
     final_list = spec.get_vars()
-    for q in rescaled_list:
+    for q in wanted:
         if not q in final_list:
             raise AssertionError('{0} is not in the final Spectrum. '.format(q)+\
                                  'Rescaled spectrum contains: {0}'.format(final_list))
