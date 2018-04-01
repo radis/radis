@@ -235,7 +235,7 @@ def _assertK(E):
 def _assertcm(E):
     try:
         m = _magn(E)
-        assert(((2 <= m) & (m <= 5)).all())
+        assert(((1 <= m) & (m <= 5)).all())
     except AssertionError:
         print(('Warning. Input values may not be in cm-1', E, 'cm-1?'))
 
