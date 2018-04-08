@@ -32,6 +32,7 @@ Documentation
 User guide, install procedure and examples are available on the RADIS Website:
 
     http://radis.readthedocs.io/
+    ============================
 
 
 Description
