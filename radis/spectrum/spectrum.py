@@ -726,14 +726,12 @@ class Spectrum(object):
                 # deal with the case where we want to get a radiance in per
                 # wavelength unit (~ W/sr/cm2/nm) in wavenumber units (~ W/sr/cm2/cm_1),
                 # or the other way round
-                w_cm = w if wunit == 'cm-1' else self.get_wavenumber(vartype)
-                I = convert_universal(I, Iunit0, Iunit, w_cm,
-                                          per_nm_is_like='mW/sr/cm2/nm',
-                                          per_cm_is_like='mW/sr/cm2/cm_1')
+                I = convert_universal(I, Iunit0, Iunit, self,
+                                              per_nm_is_like='mW/sr/cm2/nm',
+                                              per_cm_is_like='mW/sr/cm2/cm_1')
             elif var in ['emisscoeff']:
                 # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ /sr/cm3/cm_1)
-                w_cm = w if wunit == 'cm-1' else self.get_wavenumber(vartype)
-                I = convert_universal(I, Iunit0, Iunit, w_cm,
+                I = convert_universal(I, Iunit0, Iunit, self,
                                           per_nm_is_like='mW/sr/cm3/nm',
                                           per_cm_is_like='mW/sr/cm3/cm_1')
             elif var in ['absorbance']:  # no unit
@@ -929,7 +927,7 @@ class Spectrum(object):
             # Correct for propagation medium (air, vacuum)
             stored_medium = self.conditions.get('medium', None)
             if stored_medium is None:
-                raise ValueError('Medium not defined in Spectrum conditions. We cant '+\
+                raise KeyError('Medium not defined in Spectrum conditions. We cant '+\
                                  'derive wavenumber if we dont know whether '+\
                                  'wavelengths are in vacuum or air. '+\
                                  "Update conditions")
@@ -958,13 +956,16 @@ class Spectrum(object):
         
     
         '''
+        
+        return self.get('radiance', Iunit=Iunit, copy=copy)[1]
 
-        Iunit0 = self.units['radiance']
-        w_cm, I = self.get('radiance', wunit='cm-1', Iunit=Iunit0, copy=copy)
-
-        return convert_universal(I, Iunit0, Iunit, w_cm,
-                                     per_nm_is_like='mW/sr/cm2/nm',
-                                     per_cm_is_like='mW/sr/cm2/cm_1')
+#        Iunit0 = self.units['radiance']
+#        
+#        w_cm, I = self.get('radiance', wunit='cm-1', Iunit=Iunit0, copy=copy)
+#
+#        return convert_universal(I, Iunit0, Iunit, w_cm,
+#                                     per_nm_is_like='mW/sr/cm2/nm',
+#                                     per_cm_is_like='mW/sr/cm2/cm_1')
 
     def get_radiance_noslit(self, Iunit='mW/cm2/sr/nm', copy=True):
         ''' Return radiance (non convoluted) in whatever unit, and can even
@@ -980,13 +981,15 @@ class Spectrum(object):
         
     
         '''
+        
+        return self.get('radiance_noslit', Iunit=Iunit, copy=copy)[1]
 
-        Iunit0 = self.units['radiance_noslit']
-        w_cm, I = self.get('radiance_noslit', wunit='cm-1', Iunit=Iunit0, copy=copy)
-
-        return convert_universal(I, Iunit0, Iunit, w_cm,
-                                     per_nm_is_like='mW/sr/cm2/nm',
-                                     per_cm_is_like='mW/sr/cm2/cm_1')
+#        Iunit0 = self.units['radiance_noslit']
+#        w_cm, I = self.get('radiance_noslit', wunit='cm-1', Iunit=Iunit0, copy=copy)
+#
+#        return convert_universal(I, Iunit0, Iunit, w_cm,
+#                                     per_nm_is_like='mW/sr/cm2/nm',
+#                                     per_cm_is_like='mW/sr/cm2/cm_1')
 
     def get_name(self):
         ''' Return Spectrum name. If not defined, returns 'spectrum{id}' with
@@ -1202,9 +1205,26 @@ class Spectrum(object):
 
     # %% Plotting routines
 
-    def get_vars(self):
-        ''' Returns all spectral quantities stored in this object (convoluted or non convoluted)'''
-        varlist = list(self._q.keys())+list(self._q_conv.keys())
+    def get_vars(self, which='any'):
+        ''' Returns all spectral quantities stored in this object (convoluted or 
+        non convoluted)
+        
+        Parameters
+        ----------
+        
+        which: 'any', 'convoluted', 'non convoluted' 
+        
+        '''
+        if which == 'any':
+            varlist = list(self._q.keys())+list(self._q_conv.keys())
+        elif which == 'convoluted':
+            varlist = list(self._q_conv.keys())
+        elif which == 'non convoluted':
+            varlist = list(self._q.keys())
+        else:
+            raise ValueError('Unexpected value: {0}'.format(which))
+            
+        # remove wavespace
         varlist = [k for k in varlist if k != 'wavespace']
         return varlist
 
@@ -2849,14 +2869,19 @@ class Spectrum(object):
         assert(len(w)==len(I))
 
         def check_wavespace(w):
-            ''' Note: this check takes a lot of time! 
+            ''' If warnings, check that array is evenly spaced. Returns a copy
+            of input array.
+            
+            Note: this check takes a lot of time! 
             Is is not performed if warnings is False'''
+            w = np.array(w)              # copy 
             if warnings:
                 # Check Wavelength/wavenumber is evently spaced
                 if not evenly_distributed(w, tolerance=1e-5):
                     warn('Wavespace is not evenly spaced ({0:.3f}%) for {1}.'.format(
                             np.abs(np.diff(w)).max()/w.mean()*100, name)\
                          + ' This may create problems when convolving with slit function')
+            return w
 
         if name in CONVOLUTED_QUANTITIES:
             # Add wavespace
@@ -2865,8 +2890,7 @@ class Spectrum(object):
                     raise ValueError('wavespace for {0} doesnt correspond to existing wavespace'.format
                                      (name)+' for convoluted quantities')
             else:
-                check_wavespace(w)
-                self._q_conv['wavespace'] = np.array(w)   # copy
+                self._q_conv['wavespace'] = check_wavespace(w)   # copy
 
             # Add quantity itself
             self._q_conv[name] = np.array(I)              # copy
@@ -2878,8 +2902,7 @@ class Spectrum(object):
                     raise ValueError('wavespace for {0} doesnt correspond to existing wavespace'.format
                                      (name)+' for non convoluted quantities')
             else:
-                check_wavespace(w)
-                self._q['wavespace'] = np.array(w)   # copy
+                self._q['wavespace'] = check_wavespace(w)   # copy
 
             # Add quantity itself
             self._q[name] = np.array(I)              # copy

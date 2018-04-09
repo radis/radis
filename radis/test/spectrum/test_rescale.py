@@ -27,9 +27,8 @@ def test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
     if verbose: print(redundant)
     
     assert redundant == {'emissivity_noslit': True, 'radiance_noslit': True, 
-                         'radiance': True, 'emisscoeff': True, 
-                         'transmittance_noslit': True, 'absorbance': True, 
-                         'transmittance': True, 'abscoeff': False}
+                         'emisscoeff': True, 'transmittance_noslit': True, 
+                         'absorbance': True, 'abscoeff': False}
     
     return True
 
