@@ -1,8 +1,3 @@
-=====
-RADIS
-=====
-
-A code to simulate infrared spectra of molecules.
 
 .. image:: https://img.shields.io/pypi/v/radis.svg
     :target: https://pypi.python.org/pypi/radis
@@ -20,6 +15,13 @@ A code to simulate infrared spectra of molecules.
     :target: https://radis.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
   
+
+=====
+RADIS
+=====
+
+A code to simulate infrared spectra of molecules.
+
 .. warning::
     Deployment is still in progress, not all modules are available yet. The
     documentation will be updated as more modules are included. 
@@ -27,7 +29,7 @@ A code to simulate infrared spectra of molecules.
 Documentation
 -------------
 
-User guide, install procedure and examples are available here:
+User guide, install procedure and examples are available on the RADIS Website:
 
     http://radis.readthedocs.io/
 
