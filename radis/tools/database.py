@@ -234,6 +234,11 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     sjson = {}
     for attr in s.__slots__:
         sjson[attr] = s.__getattribute__(attr)
+        
+    # Discard some entries
+    for k in discard:
+        if k in sjson:
+            del sjson[k]
     
     # if compress, remove unecessary spectral quantities (that can be recomputed
     # from the rest)
