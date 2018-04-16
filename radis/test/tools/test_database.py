@@ -10,12 +10,13 @@ from radis.tools.database import load_spec, SpecDatabase
 import os
 from os.path import exists, dirname, basename
 
-def test_database_functions__fast(verbose=True, plot=True, warnings=True, *args, **kwargs):
+def test_database_functions__fast(verbose=True, plot=True, close_plots=True, warnings=True, *args, **kwargs):
     ''' Test SpecDatabase functions '''
     
     if plot:
         import matplotlib.pyplot as plt
         plt.ion()
+    if close_plots: plt.close('all')
     
     import pytest
     
@@ -53,7 +54,7 @@ def test_database_functions__fast(verbose=True, plot=True, warnings=True, *args,
     db.update(force_reload=True)            # update database 
     assert s2 not in db
     
-def test_plot_spec(plot=True, verbose=True, *args, **kwargs):
+def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
     
     from radis.tools.database import plot_spec
     from radis.test.utils import getTestFile
@@ -61,15 +62,16 @@ def test_plot_spec(plot=True, verbose=True, *args, **kwargs):
     if plot:
         import matplotlib.pyplot as plt
         plt.ion()
+    if close_plots: plt.close('all')
     
     if plot:
         plot_spec(getTestFile('N2C_specair_380nm.spec'))
         
 
-def _run_testcases(plot=True, verbose=True, *args, **kwargs):
+def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
-    test_database_functions__fast(plot=plot, verbose=verbose, *args, **kwargs)
-    test_plot_spec(plot=plot, verbose=verbose, *args, **kwargs)
+    test_database_functions__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_plot_spec(plot=plot, close_plots=close_plots, ssverbose=verbose, *args, **kwargs)
 
     return True
 
