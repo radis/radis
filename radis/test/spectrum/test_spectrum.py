@@ -28,12 +28,17 @@ fig_prefix = basename(__file__)+': '
 
 # %% Test routines
 
-def test_spectrum_get_methods(verbose=True, plot=True, *args, **kwargs):
+def test_spectrum_get_methods(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test all spectrum methods on a Spectrum generated in Specair '''
     
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
     from radis.tools.slit import get_FWHM
+
+
+    if plot and close_plots:
+        import matplotlib.pyplot as plt
+        plt.close('all')
 
     s = load_spec(getTestFile('N2C_specair_380nm.spec'))
     
@@ -105,7 +110,7 @@ def test_copy(verbose=True, *args, **kwargs):
     if verbose:
         print('Tested that s2 == s after Spectrum copy')
     
-def test_populations(verbose=True, plot=True, *args, **kwargs):
+def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test that populations in a Spectrum are correctly read 
     '''
     
@@ -113,6 +118,11 @@ def test_populations(verbose=True, plot=True, *args, **kwargs):
         import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
     
+
+    if plot and close_plots:
+        import matplotlib.pyplot as plt
+        plt.close('all')
+
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
     import pytest
@@ -226,7 +236,7 @@ def test_rescaling_function__fast(verbose=True, *args, **kwargs):
 
     assert np.isclose(s.get_radiance_noslit(Iunit='mW/cm2/sr/nm')[0], 352.57305783248)
 
-def test_resampling_function__fast(verbose=True, plot=True, *args, **kwargs):
+def test_resampling_function__fast(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test resampling functions 
     
     Get a Spectrum calculated in cm-1, then resample on a smaller range in cm-1, 
@@ -236,6 +246,10 @@ def test_resampling_function__fast(verbose=True, plot=True, *args, **kwargs):
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
     from radis.spectrum import get_residual
+
+    if plot and close_plots:
+        import matplotlib.pyplot as plt
+        plt.close('all')
 
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     s.name = 'original'
@@ -262,7 +276,7 @@ def test_resampling_function__fast(verbose=True, plot=True, *args, **kwargs):
     
 # %%
 
-def _run_testcases(plot=True, verbose=True, debug=False, warnings=True, *args, **kwargs):
+def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warnings=True, *args, **kwargs):
     ''' Test procedures
 
     Input
@@ -275,9 +289,9 @@ def _run_testcases(plot=True, verbose=True, debug=False, warnings=True, *args, *
     
     # Test all Spectrum methods 
     # -------------------------
-    test_spectrum_get_methods(debug=debug, verbose=verbose, plot=plot, *args, **kwargs)
+    test_spectrum_get_methods(debug=debug, verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
     test_copy(verbose=verbose, *args, **kwargs)
-    test_populations(verbose=verbose, plot=plot, *args, **kwargs)
+    test_populations(verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
     test_store_functions(verbose=verbose, *args, **kwargs)
     
     
@@ -292,7 +306,7 @@ def _run_testcases(plot=True, verbose=True, debug=False, warnings=True, *args, *
     # Test updating / rescaling functions (no self absorption)
     # ---------
     test_rescaling_function__fast(debug=debug, *args, **kwargs)
-    test_resampling_function__fast(debug=debug, *args, **kwargs)
+    test_resampling_function__fast(debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs)
 #    test_rescaling_path_length__fast(plot=plot, verbose=verbose, debug=debug,
 #                                     warnings=warnings, *args, **kwargs)
 #    test_rescaling_mole_fraction__fast(plot=plot, verbose=verbose, debug=debug,
@@ -306,4 +320,4 @@ def _run_testcases(plot=True, verbose=True, debug=False, warnings=True, *args, *
 
 
 if __name__ == '__main__':
-    print(('Test spectrum: ', _run_testcases(debug=False)))
+    print(('Test spectrum: ', _run_testcases(debug=False, close_plots=False)))

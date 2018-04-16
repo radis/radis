@@ -234,6 +234,11 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     sjson = {}
     for attr in s.__slots__:
         sjson[attr] = s.__getattribute__(attr)
+        
+    # Discard some entries
+    for k in discard:
+        if k in sjson:
+            del sjson[k]
     
     # if compress, remove unecessary spectral quantities (that can be recomputed
     # from the rest)
@@ -901,6 +906,7 @@ class SpecDatabase():
         if 'path' in kwargs:
             raise ValueError('path is an invalid Parameter. The database path '+\
                              'is used')
+        compress = kwargs.pop('compress', False)
 
         # First, store the spectrum on a file
         # ... input is a Spectrum. Store it in database and load it from there
@@ -910,7 +916,7 @@ class SpecDatabase():
                 kwargs['add_info'] = self.add_info
             if not 'add_date' in kwargs:
                 kwargs['add_date'] = self.add_date
-            file = spectrum.store(self.path, **kwargs)
+            file = spectrum.store(self.path, compress=compress, **kwargs)
             # Note we could have added the Spectrum directly
             # (saves the load stage) but it also serves to
             # check the file we just stored is readable
@@ -945,7 +951,7 @@ class SpecDatabase():
 
         # Then, load the Spectrum again (so we're sure it works!) and add the
         # information to the database
-        self.df = self.df.append(self._load_file(file), ignore_index=True)
+        self.df = self.df.append(self._load_file(file, binary=compress), ignore_index=True)
 
         # Update index .csv
         self.print_index()
@@ -961,11 +967,11 @@ class SpecDatabase():
 
         return pd.DataFrame(db)
 
-    def _load_file(self, file):
+    def _load_file(self, file, binary=False):
         ''' return Spectrum attributes for insertion in database.
         '''
 
-        s = load_spec(file)
+        s = load_spec(file, binary=binary)
 
         if self.verbose: print(('loaded {0}'.format(basename(file))))
 

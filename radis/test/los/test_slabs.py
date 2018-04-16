@@ -18,7 +18,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 import numpy as np
 from radis.los.slabs import MergeSlabs, SerialSlabs
 
-def test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False, 
+def test_merge_slabs(verbose=True, plot=True, close_plots=True, warnings=True, debug=False, 
                       *args, **kwargs):
     ''' Merge 10 slabs with 1/10 of concentration, and compare the results. 
     Ensure error is < 0.1%
@@ -32,7 +32,8 @@ def test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False,
     from radis.test.utils import getTestFile
     if plot:
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
-    
+        if close_plots: plt.close('all')
+
     for optically_thin in [True, False]:
     
         # Get Some spectra
@@ -63,9 +64,9 @@ def test_merge_slabs(verbose=True, plot=True, warnings=True, debug=False,
     return True
 #        
         
-def _run_testcases(verbose=True, plot=True, debug=False, warnings=True, *args, **kwargs):
+def _run_testcases(verbose=True, plot=True, close_plots=True, debug=False, warnings=True, *args, **kwargs):
     
-    test_merge_slabs(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
+    test_merge_slabs(verbose=verbose, plot=plot, close_plots=close_plots, debug=debug, warnings=warnings,
                            *args, **kwargs)
 
     # Todo: add a test with _serial_slabs ... 

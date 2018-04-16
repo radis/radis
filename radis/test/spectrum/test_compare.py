@@ -22,8 +22,12 @@ from radis.spectrum.compare import get_distance, plot_diff
 
 # Test routines
 
-def test_compare_methods(verbose=True, plot=True, *args, **kwargs):
+def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Just run all Spectrum compare methods to check they work'''
+
+    if plot and close_plots:
+        import matplotlib.pyplot as plt
+        plt.close('all')
     
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
     s.resample(np.linspace(2193, 2193.8, 100))   # limits to a single line, because get_distance() 
@@ -45,8 +49,9 @@ def test_compare_methods(verbose=True, plot=True, *args, **kwargs):
     # Compare 
     get_distance(s, s_noabsorption, 'radiance_noslit')  # should be added in an example with experimental fit of bandhead
     title = 'CO x={0:.2f}, L={1:.2f}cm'.format(s.conditions['mole_fraction'], s.conditions['path_length'])
-    plot_diff(s, s_noabsorption, method='diff', title=title)
-    plot_diff(s, s_noabsorption, method='ratio', normalize=True, title=title)
+    if plot:
+        plot_diff(s, s_noabsorption, method='diff', title=title)
+        plot_diff(s, s_noabsorption, method='ratio', normalize=True, title=title)
     
     
     
