@@ -42,7 +42,7 @@ def test_database_functions__fast(verbose=True, plot=True, close_plots=True, war
     # Database add method
     s2 = s.copy()
     s2.conditions['Tgas'] = 0  # make it unique (for testing)
-    l = db.add(s2, add_info=['Tvib', 'Trot'], compress=True, if_exists_then='increment')
+    l = db.add(s2, add_info=['Tvib', 'Trot'], discard=[], compress=True, if_exists_then='increment')
     assert exists(l)
     try:
         assert s2 in db

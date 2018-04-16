@@ -44,9 +44,8 @@ def test_all_slit_shapes__fast(FWHM=0.4, verbose=True, plot=True, close_plots=Tr
     ''' Test all slit generation functions and make sure we get the expected FWHM'''
 
     if plot:
-        import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
-    if close_plots: plt.close('all')
+        if close_plots: plt.close('all')
     
     # get spectrum
     from radis.test.utils import getTestFile
@@ -97,12 +96,11 @@ def test_slit_unit_conversions_spectrum_in_cm(verbose=True, plot=True, close_plo
     '''
     
     from radis.test.utils import getTestFile
-    from radis.tools.database import load_spe
+    from radis.tools.database import load_spec
     
     if plot: 
-        import matplotlib.pyplot as plt
-    plt.ion()
-    if close_plots: plt.close('all')
+        plt.ion()
+        if close_plots: plt.close('all')
     
     # %% Get a Spectrum (stored in cm-1)
     s_cm = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
@@ -148,9 +146,8 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
  
     
     if plot: 
-        import matplotlib.pyplot as plt
-    plt.ion()
-    if close_plots: plt.close('all')
+        plt.ion()
+        if close_plots: plt.close('all')
    
     # %% Get a Spectrum (stored in nm)
     s_nm = Spectrum.from_txt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt'),
@@ -190,9 +187,8 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
 def test_against_specair_convolution__fast(plot=True, close_plots=True, verbose=True, debug=False, *args, **kwargs):
 
     if plot:
-        import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
-    if close_plots: plt.close('all')
+        if close_plots: plt.close('all')
     
     # Test
     from radis.test.utils import getTestFile
@@ -253,7 +249,6 @@ def test_normalisation_mode__fast(plot=True, close_plots=True, verbose=True, *ar
     from radis.test.utils import getTestFile
     
     if plot:
-        import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
         if close_plots: plt.close('all')
     
@@ -359,9 +354,8 @@ def test_slit_function_effect__fast(verbose=True, plot=True, close_plots=True, *
     from numpy import pi, tan, cos
 
     if plot:
-        import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
-    if close_plots: plt.close('all')
+        if close_plots: plt.close('all')
     
     # Effect of Slit dispersion
 
