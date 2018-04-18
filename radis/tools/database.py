@@ -494,7 +494,11 @@ def _json_to_spec(jsondict, file=''):
         for molecule, isotopes in sload['populations'].items():
             kwargs['populations'][molecule] = {}
             for isotope, states in isotopes.items():
-                kwargs['populations'][molecule][int(isotope)] = states
+                try:
+                    isotope = int(isotope)
+                except ValueError:
+                    pass  # keep isotope as it was
+                kwargs['populations'][molecule][isotope] = states
 
     else:
         kwargs['populations'] = None
