@@ -14,7 +14,6 @@ from .hitran import hit2df, get_molecule, get_molecule_identifier
 from .cdsd import cdsd2df
 
 
-
 # %% Get list of supported molecules
 def _get_supported_molecules_equilibrium():
     ''' Molecules supported in RADIS equilibrium calculations
@@ -44,5 +43,3 @@ def _get_supported_molecules_nonequilibrium():
     
 __supported_molecules_equilibrium__ = _get_supported_molecules_equilibrium()
 __supported_molecules_nonequilibrium__ = _get_supported_molecules_nonequilibrium()
-
-    
