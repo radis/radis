@@ -19,7 +19,7 @@ def test_fetch_astroquery(verbose=True, *args, **kwargs):
 @pytest.mark.needs_connection   # ignored by pytest with argument -m "not needs_connection" 
 def test_fetch_astroquery_empty(verbose=True, *args, **kwargs):
     ''' Test astroquery: get a spectral range where there are no lines'''
-    df = fetch_astroquery(2, 1, 200, 400, verbose=verbose)
+    df = fetch_astroquery(2, 1, 25000, 50000, verbose=verbose)  # 200-400 nm
     
     assert len(df) == 0
     
