@@ -1338,9 +1338,10 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     # delete former convoluted value if apply_slit will be used (just to be sure
     # we arent keeping a non rescaled value if something goes wrong)
     if apply_slit:
-        for k in spec._q_conv.keys():
-            del spec._q_conv[k]
-            del spec.units[k]
+        for k in list(spec._q_conv.keys()):
+            if k != 'wavespace':
+                del spec._q_conv[k]
+                del spec.units[k]
 
     # Save (only) the ones that we want, unless we want everything ('greedy')
     for q in rescaled:
