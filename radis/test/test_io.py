@@ -29,9 +29,10 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.io.hitran import hit2df
 from radis.test.utils import getTestFile
 from time import time
+import pytest
 
-
-def test_hitran_parser__fast(verbose=True, warnings=True, **kwargs):
+@pytest.mark.fast
+def test_hitran_parser(verbose=True, warnings=True, **kwargs):
     ''' Analyse some default files to make sure everything still works'''
     
     t0 = time()
@@ -51,7 +52,7 @@ def test_hitran_parser__fast(verbose=True, warnings=True, **kwargs):
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-    test_hitran_parser__fast(verbose=verbose,*args, **kwargs)
+    test_hitran_parser(verbose=verbose,*args, **kwargs)
     
     return True
 

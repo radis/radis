@@ -958,6 +958,6 @@ def get_molecule(molecule_id):
 # %% Test
 
 if __name__ == '__main__':
-    from radis.test.test_io import test_hitran_parser__fast
-    print('Testing HITRAN parsing: ', test_hitran_parser__fast())
+    from radis.test.test_io import test_hitran_parser
+    print('Testing HITRAN parsing: ', test_hitran_parser())
         

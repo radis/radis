@@ -13,8 +13,10 @@ from radis.spectrum.rescale import get_redundant, get_recompute
 from radis.tools.database import load_spec
 from radis.test.utils import getTestFile
 import numpy as np
+import pytest
 
-def test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
+@pytest.mark.fast
+def test_compression(verbose=True, warnings=True, *args, **kwargs):
     ''' Test that redundant quantities are properly infered from already known 
     spectral quantities '''
     
@@ -33,7 +35,8 @@ def test_compression__fast(verbose=True, warnings=True, *args, **kwargs):
     return True
 
 
-def test_update_transmittance__fast(verbose=True, warnings=True, *args, **kwargs):
+@pytest.mark.fast
+def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
     ''' Test that update can correctly recompute missing quantities '''
     # TODO: add one with radiance too
     
@@ -129,8 +132,8 @@ def test_recompute_equilibrium(verbose=True, warnings=True, plot=True,
     
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
-    test_compression__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
-    test_update_transmittance__fast(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
     

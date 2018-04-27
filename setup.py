@@ -167,6 +167,8 @@ setup(name='radis',
                         'json-tricks',   # to deal with non jsonable formats
                         'numpydoc',     # for Jedi (autocompletion) to recognize
                                         # numpy docstrings
+                        'tables',       # for pandas to HDF5 export
+                        'pytest',       # to run test suite
 				],
       classifiers=[
         'Development Status :: 4 - Beta',
@@ -181,9 +183,4 @@ setup(name='radis',
 	  include_package_data=True,  # add non .py data files in MANIFEST.in
       package_data={'radis': ['radis/phys/units.txt']},
       zip_safe=False,  # impossible as long as we have external files read with __file__ syntax
-      platforms='any',
-      # Plugins for special features 
-      extras_require={
-          'test': ['pytest']
-          
-      })
+      platforms='any')
