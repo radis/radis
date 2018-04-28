@@ -39,13 +39,13 @@ def test_hitran_parser(verbose=True, warnings=True, **kwargs):
     df = hit2df(getTestFile('hitran_CO_fragment.par'))
     if verbose: print('File loaded in {0:.0f}s'.format(time()-t0))
     if verbose: print(df.head())
-    assert (list(df.ix[0, ['v1u', 'v1l']]) == [4, 4])
+    assert (list(df.loc[0, ['v1u', 'v1l']]) == [4, 4])
 
     t0 = time()
     df = hit2df(getTestFile('hitran_CO2_fragment.par'))
     if verbose: print('File loaded in {0:.0f}s'.format(time()-t0))
     if verbose: print(df.head())
-    assert (list(df.ix[0, ['v1u', 'v2u', 'l2u', 'v3u', 'v1l', 'v2l', 'l2l', 'v3l']]) ==
+    assert (list(df.loc[0, ['v1u', 'v2u', 'l2u', 'v3u', 'v1l', 'v2l', 'l2l', 'v3l']]) ==
               [4, 0, 0, 0, 0, 0, 0, 1])
     
     return True

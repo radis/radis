@@ -211,13 +211,13 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     # %% Cast to new type
     
     # get format of line return
-    if sys.platform in ['linux', 'darwin']:
+    if os.linesep == '\n': # sys.platform in ['linux', 'darwin', 'linux2']:
         linereturnformat = 'a1'
-    elif sys.platform in ['win32']:
+    elif os.linesep == '\r\n':
         linereturnformat = 'a2'
     else:
-        raise ValueError('Line return format not defined for this OS: please update RADIS')  
-    
+        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(os.linesep))
+
     newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
     data2 = _cast_to_dtype(data, dtype)

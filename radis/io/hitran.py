@@ -725,12 +725,12 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     # requires to properly decode the line return character:
     
     # get format of line return
-    if sys.platform in ['linux', 'darwin', 'linux2']:
+    if os.linesep == '\n': # sys.platform in ['linux', 'darwin', 'linux2']:
         linereturnformat = 'a1'
-    elif sys.platform in ['win32']:
+    elif os.linesep == '\r\n':
         linereturnformat = 'a2'
     else:
-        raise ValueError('Line return format not defined for this OS: please update RADIS')
+        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(os.linesep))
 
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
