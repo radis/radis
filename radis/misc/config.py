@@ -140,7 +140,7 @@ def getDatabankEntries(dbname):
         config.get(dbname, 'format')
     except configparser.NoSectionError:
         msg = ("{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)+\
-               "No databank named {0} in `~/.radis`. ".format(dbname) +
+               "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH) +
                "Available databanks: {0}. ".format(getDatabankList())+\
                "See databank format above")
         raise DatabankNotFound(msg)
@@ -158,6 +158,10 @@ def getDatabankEntries(dbname):
             iso = float(k[10:])
             levels[iso] = entries.pop(k)
         entries['levels'] = levels
+    else:
+        if 'levels' in entries:
+            raise SyntaxError('in {0}: `levels` replaced with '.format(CONFIG_PATH)+\
+                              '`levels_iso#` where # is the isotope number')
 
     return entries
 
@@ -235,7 +239,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
     with open(CONFIG_PATH, 'a') as configfile:
         configfile.write('\n')
         config.write(configfile)
-    if verbose: print("Added {0} database in ~/.radis".format(dbname))
+    if verbose: print("Added {0} database in {1}".format(dbname, CONFIG_PATH))
 
     return
 
@@ -303,12 +307,12 @@ def printDatabankEntries(dbname, crop=200):
 def printDatabankList():
     ''' Print all databanks available in ~/.radis '''
     try:
-        print('Databanks in ~/.radis: ', ','.join(getDatabankList()))
+        print('Databanks in {0}: '.format(CONFIG_PATH), ','.join(getDatabankList()))
         for dbname in getDatabankList():
             print('\n')
             printDatabankEntries(dbname)
     except FileNotFoundError:
-        print('No config file `~/.radis`')
+        print('No config file {0}'.format(CONFIG_PATH))
         # it's okay
 
 # %% Test

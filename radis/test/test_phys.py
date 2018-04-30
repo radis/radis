@@ -32,8 +32,10 @@ from radis.phys.convert import (J2eV, J2cm, cm2J, eV2cm, eV2K, eV2nm, nm2eV,
                                 torr2bar, torr2atm, bar2torr, bar2atm, atm2torr,
                                 atm2bar)
 from radis.phys.units import uarray, Q_, conv2
+import pytest
 
-def test_convert__fast(verbose=True, *args, **kwargs):
+@pytest.mark.fast
+def test_convert(verbose=True, *args, **kwargs):
     ''' Test conversions  '''
     
     E = np.linspace(1, 5, 5)  # eV
@@ -70,7 +72,7 @@ def test_convert__fast(verbose=True, *args, **kwargs):
 
     return True
 
-def test_units__fast(verbose=True, *args, **kwargs):
+def test_units(verbose=True, *args, **kwargs):
 
     # Test unit-ware arrays
     a = uarray(np.linspace(10, 100, 10), 'Td')          # RADIS pint-aware array
@@ -96,8 +98,8 @@ def test_units__fast(verbose=True, *args, **kwargs):
 
 def _run_testcases(*args, **kwargs):
     
-    assert test_convert__fast(*args, **kwargs)
-    assert test_units__fast(*args, **kwargs)
+    assert test_convert(*args, **kwargs)
+    assert test_units(*args, **kwargs)
     
     return True
 

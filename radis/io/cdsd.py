@@ -192,32 +192,46 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     #            return pd.read_csv(fcache)
                 return pd.read_hdf(fcache, 'df')
 
-    # Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]
-    try:
-        dt = np.dtype([(str(k), c) for k, c in dtype])
-        # Note: dtype names cannot be `unicode` in Python2. Hence the str()
-    except TypeError:
-        # Cant read database. Try to be more explicit for user
-        print('Data type')
-        print('-'*30)
-        for (k, c) in dtype:
-            print(str(k), '\t', c)
-        print('-'*30)
-        raise
-        
+    # %% Start reading the full file
+    
+    # To be faster, we read file totally in bytes mode with fromfiles. But that
+    # requires to properly decode the line return character:
+    
+    # problem arise when file was written in an OS and read in another OS (for instance,
+    # line return characters are not converted when read from .egg files). Here
+    # we read the first line and infer the line return character for it 
+    
+    # ... Create a dtype with the binary data format and the desired column names
+    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
+    # ... _linereturn is to capture the line return symbol. We delete it afterwards
+    dt = _format_dtype(dtype)
+    data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
+    
+    # get format of line return
+    from radis.misc.basics import to_str
+    linereturn = to_str(data[0][-1])
+    if to_str('\n\r') in linereturn:
+        linereturnformat = 'a2'
+    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
+        linereturnformat = 'a1'
+    else:
+        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
+
+    # Now re-read with correct line return character
+
+    # ... Create a dtype with the binary data format and the desired column names
+    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
+    # ... _linereturn is to capture the line return symbol. We delete it afterwards
+    dt = _format_dtype(dtype)
     data = np.fromfile(fname, dtype=dt, count=count)
     
     # %% Cast to new type
-    
-    # get format of line return
-    if sys.platform in ['linux', 'darwin']:
-        linereturnformat = 'a1'
-    elif sys.platform in ['win32']:
-        linereturnformat = 'a2'
-    else:
-        raise ValueError('Line return format not defined for this OS: please update RADIS')  
-    
+
+    # ... Cast to new type
+    # This requires to recast all the data already read, but is still the fastest
+    # method I found to read a file directly (for performance benchmark see 
+    # CDSD-HITEMP parser)
+
     newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
     data2 = _cast_to_dtype(data, dtype)

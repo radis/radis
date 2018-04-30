@@ -2,3 +2,6 @@ include README.rst
 include LICENSE
 include radis/__version__.txt
 include radis/phys/units.txt
+include radis/test/files/*.txt
+include radis/test/files/*.spec
+include radis/test/files/*.par

@@ -144,3 +144,6 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
 
     return df
 
+if __name__ == '__main__':
+    from radis.test.io.test_query import _run_testcases
+    _run_testcases(verbose=True)

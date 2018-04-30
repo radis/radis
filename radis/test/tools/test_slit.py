@@ -98,7 +98,7 @@ def test_slit_unit_conversions_spectrum_in_cm(verbose=True, plot=True, close_plo
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
     
-    if plot: 
+    if plot:    # dont get stuck with Matplotlib if executing through pytest
         plt.ion()
         if close_plots: plt.close('all')
     
@@ -145,7 +145,7 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
     from radis.spectrum.spectrum import Spectrum
  
     
-    if plot: 
+    if plot:    # dont get stuck with Matplotlib if executing through pytest
         plt.ion()
         if close_plots: plt.close('all')
    

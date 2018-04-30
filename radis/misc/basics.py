@@ -16,6 +16,7 @@ import sys
 import fileinput
 from six.moves import filter
 from six.moves import range
+from six import binary_type
 if sys.version_info[0] == 2:
     from itertools import ifilterfalse as filterfalse
 else:
@@ -304,3 +305,11 @@ def is_list(a):
 def is_float(a):
     ''' Returns True if a has float-like type: float, np.float64, np.int64, etc.)'''
     return type(a) in [float, np.float64, np.int32, np.float32, int, np.int64]
+
+def to_str(a):
+    if isinstance(a, binary_type):
+        return a.decode('utf-8')
+    else:
+        return a
+    
+    

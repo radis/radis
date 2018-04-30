@@ -479,9 +479,9 @@ def _parse_HITRAN_group2(df):
     dgl = df['locl'].str.extract(
             '[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<sym>.)(?P<Fl>.{5})',
             expand=True)
-#    dgu = dgu.apply(pd.to_numeric)
-    dgl['jl'] = dgl.jl.apply(pd.to_numeric)
-#    dgl = dgl.apply(pd.to_numeric)
+    
+    #dgl['jl'] = dgl.jl.apply(pd.to_numeric)
+    dgl['jl'] = pd.to_numeric(dgl.jl)
     
     del df['locu']
     del df['locl']
@@ -724,13 +724,27 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     # To be faster, we read file totally in bytes mode with fromfiles. But that
     # requires to properly decode the line return character:
     
+    # problem arise when file was written in an OS and read in another OS (for instance,
+    # line return characters are not converted when read from .egg files). Here
+    # we read the first line and infer the line return character for it 
+    
+    # ... Create a dtype with the binary data format and the desired column names
+    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
+    # ... _linereturn is to capture the line return symbol. We delete it afterwards
+    dt = _format_dtype(dtype)
+    data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
+    
     # get format of line return
-    if sys.platform in ['linux', 'darwin', 'linux2']:
-        linereturnformat = 'a1'
-    elif sys.platform in ['win32']:
+    from radis.misc.basics import to_str
+    linereturn = to_str(data[0][-1])
+    if to_str('\n\r') in linereturn:
         linereturnformat = 'a2'
+    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
+        linereturnformat = 'a1'
     else:
-        raise ValueError('Line return format not defined for this OS: please update RADIS')
+        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
+        
+    # Now re-read with correct line return character
 
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
@@ -745,7 +759,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
     data = _cast_to_dtype(data, dtype)
-
+    
     # %% Create dataframe    
     df = pd.DataFrame(data.tolist(), columns=list(columns.keys())+['_linereturn'])
 
@@ -958,6 +972,6 @@ def get_molecule(molecule_id):
 # %% Test
 
 if __name__ == '__main__':
-    from radis.test.test_io import test_hitran_parser__fast
-    print('Testing HITRAN parsing: ', test_hitran_parser__fast())
+    from radis.test.test_io import test_hitran_parser
+    print('Testing HITRAN parsing: ', test_hitran_parser())
         

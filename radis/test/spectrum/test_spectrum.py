@@ -23,6 +23,7 @@ import numpy as np
 from numpy import allclose, linspace
 import os
 from os.path import basename, exists
+import pytest
 
 fig_prefix = basename(__file__)+': '
 
@@ -171,7 +172,9 @@ def test_store_functions(verbose=True, *args, **kwargs):
     
     return True
 
-def test_intensity_conversion__fast(verbose=True, *args, **kwargs):
+
+@pytest.mark.fast
+def test_intensity_conversion(verbose=True, *args, **kwargs):
     ''' Test conversion of intensity cm-1 works:
         
     - conversion of mW/sr/cm2/nm -> mW/sr/cm2/cm-1
@@ -215,7 +218,7 @@ def test_intensity_conversion__fast(verbose=True, *args, **kwargs):
 # TODO: finish implementing emissivity_conversino above
 
 
-def test_rescaling_function__fast(verbose=True, *args, **kwargs):
+def test_rescaling_function(verbose=True, *args, **kwargs):
     ''' Test rescaling functions '''
 
     from radis.test.utils import getTestFile
@@ -236,7 +239,7 @@ def test_rescaling_function__fast(verbose=True, *args, **kwargs):
 
     assert np.isclose(s.get_radiance_noslit(Iunit='mW/cm2/sr/nm')[0], 352.57305783248)
 
-def test_resampling_function__fast(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test resampling functions 
     
     Get a Spectrum calculated in cm-1, then resample on a smaller range in cm-1, 
@@ -301,12 +304,12 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warn
 
     # Test conversion of intensity cm-1 works
     # -------------
-    test_intensity_conversion__fast(debug=debug, verbose=verbose, *args, **kwargs)
+    test_intensity_conversion(debug=debug, verbose=verbose, *args, **kwargs)
 
     # Test updating / rescaling functions (no self absorption)
     # ---------
-    test_rescaling_function__fast(debug=debug, *args, **kwargs)
-    test_resampling_function__fast(debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs)
+    test_rescaling_function(debug=debug, *args, **kwargs)
+    test_resampling_function(debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs)
 #    test_rescaling_path_length__fast(plot=plot, verbose=verbose, debug=debug,
 #                                     warnings=warnings, *args, **kwargs)
 #    test_rescaling_mole_fraction__fast(plot=plot, verbose=verbose, debug=debug,
