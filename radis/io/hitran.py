@@ -479,9 +479,9 @@ def _parse_HITRAN_group2(df):
     dgl = df['locl'].str.extract(
             '[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<sym>.)(?P<Fl>.{5})',
             expand=True)
-#    dgu = dgu.apply(pd.to_numeric)
-    dgl['jl'] = dgl.jl.apply(pd.to_numeric)
-#    dgl = dgl.apply(pd.to_numeric)
+    
+    #dgl['jl'] = dgl.jl.apply(pd.to_numeric)
+    dgl['jl'] = pd.to_numeric(dgl.jl)
     
     del df['locu']
     del df['locl']
@@ -735,14 +735,15 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
     
     # get format of line return
-    linereturn = str(data[0][-1])
-    if linereturn == r'\r\n':
+    from radis.misc.basics import to_str
+    linereturn = to_str(data[0][-1])
+    if to_str('\n\r') in linereturn:
         linereturnformat = 'a2'
-    elif r'\n' in linereturn or r'\r' in linereturn:   
+    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
         linereturnformat = 'a1'
     else:
-        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(os.linesep))
-
+        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
+        
     # Now re-read with correct line return character
 
     # ... Create a dtype with the binary data format and the desired column names
@@ -758,7 +759,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
     data = _cast_to_dtype(data, dtype)
-
+    
     # %% Create dataframe    
     df = pd.DataFrame(data.tolist(), columns=list(columns.keys())+['_linereturn'])
 

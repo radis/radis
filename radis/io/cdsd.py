@@ -208,13 +208,14 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
     
     # get format of line return
-    linereturn = str(data[0][-1])
-    if linereturn == r'\r\n':
+    from radis.misc.basics import to_str
+    linereturn = to_str(data[0][-1])
+    if to_str('\n\r') in linereturn:
         linereturnformat = 'a2'
-    elif r'\n' in linereturn or r'\r' in linereturn:   
+    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
         linereturnformat = 'a1'
     else:
-        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(os.linesep))
+        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
 
     # Now re-read with correct line return character
 
