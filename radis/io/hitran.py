@@ -724,13 +724,26 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     # To be faster, we read file totally in bytes mode with fromfiles. But that
     # requires to properly decode the line return character:
     
+    # problem arise when file was written in an OS and read in another OS (for instance,
+    # line return characters are not converted when read from .egg files). Here
+    # we read the first line and infer the line return character for it 
+    
+    # ... Create a dtype with the binary data format and the desired column names
+    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
+    # ... _linereturn is to capture the line return symbol. We delete it afterwards
+    dt = _format_dtype(dtype)
+    data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
+    
     # get format of line return
-    if os.linesep == '\n': # sys.platform in ['linux', 'darwin', 'linux2']:
-        linereturnformat = 'a1'
-    elif os.linesep == '\r\n':
+    linereturn = str(data[0][-1])
+    if linereturn == r'\r\n':
         linereturnformat = 'a2'
+    elif r'\n' in linereturn or r'\r' in linereturn:   
+        linereturnformat = 'a1'
     else:
         raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(os.linesep))
+
+    # Now re-read with correct line return character
 
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
