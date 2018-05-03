@@ -222,6 +222,22 @@ If many spectra are stored in a folder, it may be time to set up a
 Spectrum conditions and get Spectrum that suits specific parameters 
 
 
+export to txt?
+--------------
+
+Saving to .txt in general isn't recommended as you will loose some information (for instance,
+the conditions). You better use :meth:`~radis.spectrum.spectrum.Spectrum.store` and export 
+to .spec [hidden .json] format. 
+
+If you really need to export a given spectral quantity to txt file (for use in another software, 
+for instance), you can use the :meth:`~radis.spectrum.spectrum.Spectrum.savetxt` method that 
+will export a given spectral quantity.
+
+Example::
+
+    s.savetxt('radiance_W_cm2_sr_um.csv', 'radiance_noslit', wunit='nm', Iunit='W/cm2/sr/µm')
+
+
 compare two Spectrum objects?
 -----------------------------
 

@@ -1011,6 +1011,9 @@ class Spectrum(object):
     def savetxt(self, filename, var, wunit='nm', Iunit='default', medium='default'):
         ''' Export spectral quantity var to filename
         
+        (note that this will loose some information. You better save a Spectrum
+        object under .spec file with :meth:`~radis.spectrum.spectrum.Spectrum.store` )
+        
         Parameters    
         ----------
         
@@ -1037,8 +1040,8 @@ class Spectrum(object):
         See Also
         --------
         
-        :meth:`~radis.spectrum.spectrum.Spectrum.store`
-        
+        :meth:`~radis.spectrum.spectrum.Spectrum.store`, 
+        :meth:`~radis.spectrum.spectrum.Spectrum.save`
         '''
         
         # Get units to export 
@@ -2178,7 +2181,8 @@ class Spectrum(object):
         
         :class:`~radis.tools.database.SpecDatabase`, 
         :func:`~radis.tools.database.load_spec`, 
-        :meth:`~radis.spectrum.spectrum.Spectrum.store`
+        :meth:`~radis.spectrum.spectrum.Spectrum.save`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.savetxt`
             
         '''
         # Todo: maybe move most of the code here (filename writing) in database.py ?
