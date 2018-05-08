@@ -248,7 +248,7 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
 # %%
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
-    from radis.spectrum import get_residual
+    from radis.spectrum import get_residual_integral
 
     if plot and close_plots:
         import matplotlib.pyplot as plt
@@ -267,15 +267,15 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
     s3.name = 'resampled in cm-1'
     
     s.compare_with(s2, plot=plot, title='Residual: {0:.2g}'.format(
-            get_residual(s, s2, 'abscoeff', ignore_nan=True)))
+            get_residual_integral(s, s2, 'abscoeff', ignore_nan=True)))
     s.compare_with(s2b, plot=plot, title='Residual: {0:.2g}'.format(
-            get_residual(s, s2b, 'abscoeff', ignore_nan=True)))
+            get_residual_integral(s, s2b, 'abscoeff', ignore_nan=True)))
     s.compare_with(s3, plot=plot, title='Residual: {0:.2g}'.format(
-            get_residual(s, s3, 'abscoeff', ignore_nan=True)))
+            get_residual_integral(s, s3, 'abscoeff', ignore_nan=True)))
     
-    assert get_residual(s, s2, 'abscoeff', ignore_nan=True) < 1e-4
-    assert get_residual(s, s2b, 'abscoeff', ignore_nan=True) < 1e-3
-    assert get_residual(s, s3, 'abscoeff', ignore_nan=True) < 1e-5
+    assert get_residual_integral(s, s2, 'abscoeff', ignore_nan=True) < 1e-4
+    assert get_residual_integral(s, s2b, 'abscoeff', ignore_nan=True) < 1e-3
+    assert get_residual_integral(s, s3, 'abscoeff', ignore_nan=True) < 1e-5
     
 # %%
 

@@ -414,10 +414,7 @@ def MergeSlabs(*slabs, **kwargs):
             _check_valid(s)
         
         # Just check all path_lengths are the same if they exist
-        try:
-            path_lengths = [s.conditions['path_length'] for s in slabs]
-        except KeyError:
-            raise KeyError('path_length must be defined for all MergeSlabs inputs')
+        path_lengths = [s.conditions['path_length'] for s in slabs if 'path_length' in s.conditions]
         if not all([L == path_lengths[0] for L in path_lengths[1:]]):
             raise ValueError('path_length must be equal for all MergeSlabs inputs'+\
                              '  (got {0})'.format(path_lengths))

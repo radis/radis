@@ -133,7 +133,9 @@ def build_test_databases(verbose=True):
                                  '\nIn ~/.radis\n----------\n{0}'.format(getDatabankEntries(dbname))+\
                                  '\n\nExpected\n---------\n{0}\n\n'.format(dbentries)+\
                                  'Test Database {0} doesnt match expected '.format(dbname)+\
-                                 'entries for key `{0}`. See comparison above'.format(diff))
+                                 'entries for key `{0}`. See comparison above. '.format(diff)+\
+                                 'To regenerate test databases just delete the {0} '.format(dbname)+\
+                                 'entry in your ~/.radis')
 
         else:  #  add them (create ~/.radis file if doesnt exist yet)
             addDatabankEntries(dbname, dbentries)

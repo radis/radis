@@ -51,11 +51,10 @@ In a terminal, run::
 
     git clone https://github.com/radis/radis
     cd radis
-    python setup.py develop --user
+    pip install -e .
 
-The `develop` command creates a link from your /radis folder into Python 
+The `-e` (editable) command creates a link from your /radis folder into Python 
 site-packages.
-
 
 Test 
 ====
@@ -74,7 +73,7 @@ With Pip you can keep the package up-to-date with::
     pip install radis --upgrade
 
 
-In the developer version, use git to `pull` the latest changes from Github. 
+In the developer version (installed with `pip -e`), use git to `pull` the latest changes from Github. 
 
 
 

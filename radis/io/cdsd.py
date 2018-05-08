@@ -210,13 +210,13 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     # get format of line return
     from radis.misc.basics import to_str
     linereturn = to_str(data[0][-1])
-    if to_str('\n\r') in linereturn:
+    if to_str('\r\n') in linereturn:
         linereturnformat = 'a2'
     elif to_str('\n') in linereturn or to_str('\r') in linereturn:
         linereturnformat = 'a1'
     else:
         raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
-
+        
     # Now re-read with correct line return character
 
     # ... Create a dtype with the binary data format and the desired column names
