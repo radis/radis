@@ -37,8 +37,8 @@ def test_merge_slabs(verbose=True, plot=True, close_plots=True, warnings=True, d
     for optically_thin in [True, False]:
     
         # Get Some spectra
-        s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
-        s2 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'))
+        s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+        s2 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
         s1.update('all')
         s2.update('all')
         

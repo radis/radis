@@ -448,7 +448,7 @@ class Spectrum(object):
     # %% Constructors
     
     @classmethod
-    def from_array(cls, w, I, quantity, waveunit, unit, *args, **kwargs):
+    def from_array(self, w, I, quantity, waveunit, unit, *args, **kwargs):
         """
         Construct Spectrum from 2 arrays
 
@@ -528,10 +528,10 @@ class Spectrum(object):
         quantities = {quantity:(w,I)}
         units = {quantity:unit}
         
-        return cls(quantities, units, waveunit=waveunit, *args, **kwargs)
+        return self(quantities, units, waveunit=waveunit, *args, **kwargs)
 
     @classmethod
-    def from_txt(cls, file, quantity, waveunit, unit, *args, **kwargs):
+    def from_txt(self, file, quantity, waveunit, unit, *args, **kwargs):
         """
         Construct Spectrum from txt file
         
@@ -626,7 +626,7 @@ class Spectrum(object):
         quantities = {quantity:(w,I)}
         units = {quantity:unit}
         
-        return cls(quantities, units, waveunit=waveunit, *args, **kwargs)
+        return self(quantities, units, waveunit=waveunit, *args, **kwargs)
 
 
     # Public functions

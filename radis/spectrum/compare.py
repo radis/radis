@@ -57,6 +57,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     :func:`~radis.spectrum.compare.get_ratio`, 
     :func:`~radis.spectrum.compare.get_distance`,  
     :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.get_residual_integral`, 
     :func:`~radis.spectrum.compare.plot_diff` 
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
@@ -99,6 +100,7 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     :func:`~radis.spectrum.compare.get_diff`, 
     :func:`~radis.spectrum.compare.get_distance`,  
     :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.get_residual_integral`, 
     :func:`~radis.spectrum.compare.plot_diff` 
     :meth:`~radis.spectrum.spectrum.compare_with` 
     
@@ -112,6 +114,8 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
 def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default',
              resample=True):
     ''' Get the Euclidian distance between 2 spectra
+    
+    If waveranges dont match, `s2` is interpolated over `s1`. 
     
     
     Parameters    
@@ -138,6 +142,7 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
     :func:`~radis.spectrum.compare.get_diff`, 
     :func:`~radis.spectrum.compare.get_ratio`,  
     :func:`~radis.spectrum.compare.get_residual`,
+    :func:`~radis.spectrum.compare.get_residual_integral`, 
     :func:`~radis.spectrum.compare.plot_diff` 
     :meth:`~radis.spectrum.spectrum.compare_with` 
     
@@ -148,7 +153,70 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
 
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)    # euclidian distance from w1, I1
 
-def get_residual(s1, s2, var, ignore_nan=False):
+def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
+    ''' Returns L2 norm of s1 and s2
+    
+    
+    Parameters    
+    ----------
+    
+    s1, s2: Spectrum objects
+    
+    var: str
+        spectral quantity
+        
+    norm: 'L2', 'L1'
+        which norm to use 
+    
+    Other Parameters
+    ----------------
+    
+    ignore_nan: boolean
+        if True, ignore nan in the difference between s1 and s2 (ex: out of bound)
+        when calculating residual. Default False. Note: get_residual will still 
+        fail if there are nan in initial Spectrum. 
+        
+    Notes
+    -----
+    
+    For I1, I2, the values of 'var' in s1 and s2, respectively, residual
+    is calculated as:
+    
+    >>> res = trapz(I2-I1, w1) / trapz(I1, w1)
+
+    0 values for I1 yield nans except if I2 = I1 = 0
+    
+    when s1 and s2 dont have the size wavespace range, they are automatically
+    resampled through get_diff on 's1' range 
+
+    
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_ratio`, 
+    :func:`~radis.spectrum.compare.get_distance`, 
+    :func:`~radis.spectrum.compare.plot_diff`, 
+    :func:`~radis.spectrum.compare.get_residual_integral`, 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
+    '''
+
+    w, I = s1.get(var)
+    # mask for 0
+    wdiff, dI = get_diff(s1, s2, var, resample=True)
+    
+    if ignore_nan:
+        b = np.isnan(dI)
+        wdiff, dI = wdiff[~b], dI[~b]
+    
+    if norm == 'L2':
+        return np.sqrt((dI**2).sum())
+    elif norm == 'L1':
+        return (np.abs(dI)).sum()
+    else:
+        raise ValueError('unexpected value for norm')
+
+def get_residual_integral(s1, s2, var, ignore_nan=False):
     ''' Returns integral of the difference between two spectra s1 and s2, 
     relatively to the integral of spectrum s1 
     
@@ -189,6 +257,7 @@ def get_residual(s1, s2, var, ignore_nan=False):
     :func:`~radis.spectrum.compare.get_diff`, 
     :func:`~radis.spectrum.compare.get_ratio`, 
     :func:`~radis.spectrum.compare.get_distance`, 
+    :func:`~radis.spectrum.compare.get_residual`, 
     :func:`~radis.spectrum.compare.plot_diff` 
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
@@ -249,6 +318,8 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
               label1 = None, label2 = None, figsize=None, title=None, nfig=None,
               normalize=False, verbose=True):
     ''' Plot two spectra, and the difference between them
+    
+    If waveranges dont match, `s2` is interpolated over `s1`. 
     
     
     Parameters    
