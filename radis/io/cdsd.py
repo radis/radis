@@ -111,7 +111,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not 
         taken into account). If False, no database is used. If 'regen', temp
-        file are reconstructed. Default True. 
+        file are reconstructed. Default ``True``. 
     
     Returns
     -------

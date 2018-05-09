@@ -64,16 +64,16 @@ def _build_update_graph(spec, optically_thin=None, equilibrium=None, path_length
     optically_thin: boolean
         know whether the Spectrum should be considered optically thin to build
         the equivalence graph tree. If None, the value stored in the Spectrum is used. 
-        Default None
+        Default ``None``
         
     equilibrium: boolean
         know whether the Spectrum should be considered at equilibrium to build
         the equivalence graph tree. If None, the value stored in the Spectrum is used. 
-        Default None
+        Default ``None``
         
     path_length: boolean
         know whether the path length is given to build the equivalence graph tree. 
-        If None, ``path_length`` is looked up in the Spectrum condition. Default None
+        If None, ``path_length`` is looked up in the Spectrum condition. Default ``None``
         
     no_change: boolean
         if True, signals that we are somehow rescaling without changing path length
@@ -339,7 +339,7 @@ def get_recompute(spec, wanted, no_change=False, true_path_length=None): #, deri
     
     true_path_length: boolean
         know whether the path length is given to build the equivalence graph tree. 
-        If None, ``path_length`` is looked up in the Spectrum condition. Default None
+        If None, ``path_length`` is looked up in the Spectrum condition. Default ``None``
         
     Returns
     -------
@@ -1204,7 +1204,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         if False, only relative rescaling (new/old) is allowed. For instance,
         when you dont know the true path_lenth, rescaling absorbance
         with *= new_length/old_length is fine, but abscoeff*new_length is not
-        Default True
+        Default ``True``
     '''
     
     optically_thin = spec.is_optically_thin()
@@ -1427,7 +1427,7 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
     
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
-        Default False
+        Default ``False``
 
 
     Notes
@@ -1499,7 +1499,7 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
     
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
-        Default False
+        Default ``False``
 
 
     Notes

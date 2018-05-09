@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
+Summary
+-------
+
 HITRAN database parser 
 '''
 
@@ -22,41 +25,57 @@ from six.moves import zip
 # Groups (define local quanta)
 
 HITRAN_GROUP1 = ['H2O', 'O3', 'SO2', 'NO2', 'HNO3', 'H2CO', 'HOCl', 'H2O2', 'COF2',
-               'H2S', 'HO2', 'HCOOH', 'ClONO2', 'HOBr', 'C2H4'] # asymmetric rotors
+               'H2S', 'HO2', 'HCOOH', 'ClONO2', 'HOBr', 'C2H4']
+'''str: asymmetric rotors'''
 
 HITRAN_GROUP2 = ['CO2', 'N2O', 'CO', 'HF', 'HCl', 'HBr', 'HI', 'OCS', 'N2', 'HCN',
-                 'C2H2', 'NO+']   # diatomic and linear molecules
+                 'C2H2', 'NO+']
+'''str: diatomic and linear molecules'''
 
-HITRAN_GROUP3 = ['SF6', 'CH4']   # Spherical rotors
+HITRAN_GROUP3 = ['SF6', 'CH4']  
+'''str: Spherical rotors'''
 
-HITRAN_GROUP4 = ['CH3D', 'CH3Cl', 'C2H6', 'NH3', 'PH3', 'CH3OH']  # symmetric rotors
+HITRAN_GROUP4 = ['CH3D', 'CH3Cl', 'C2H6', 'NH3', 'PH3', 'CH3OH']
+'''str: symmetric rotors'''
 
-HITRAN_GROUP5 = ['O2']  # Triplet-Sigma ground electronic states
+HITRAN_GROUP5 = ['O2']
+'''str: Triplet-Sigma ground electronic states'''
 
-HITRAN_GROUP6 = ['NO', 'OH', 'ClO']  # Doublet-Pi ground electronic states 
+HITRAN_GROUP6 = ['NO', 'OH', 'ClO']
+'''str: Doublet-Pi ground electronic states'''
 
 # Classes (define global quanta)
 
 HITRAN_CLASS1 = ['CO', 'HF', 'HCl', 'HBr', 'HI', 'N2', 'NO+']
+'''str: Diatomic molecules with ? '''
 
-HITRAN_CLASS2 = ['O2']  # Diatomic molecules with different electronic levels
+HITRAN_CLASS2 = ['O2']
+'''str: Diatomic molecules with different electronic levels'''
 
-HITRAN_CLASS3 = ['NO', 'OH', 'ClO']  # Diatomic molecules with doublet-Pi electronic state
+HITRAN_CLASS3 = ['NO', 'OH', 'ClO']  
+'''str: Diatomic molecules with doublet-Pi electronic state'''
     
-HITRAN_CLASS4 = ['N2O', 'OCS', 'HCN']  # Linear triatomic
+HITRAN_CLASS4 = ['N2O', 'OCS', 'HCN']  
+'''str: Linear triatomic'''
 
-HITRAN_CLASS5 = ['CO2']  # Linear triatomic with large Fermi resonance
+HITRAN_CLASS5 = ['CO2']  
+'''str: Linear triatomic with large Fermi resonance'''
 
-HITRAN_CLASS6 = ['H2O', 'O3', 'SO2', 'NO2', 'HOCl', 'H2S', 'HO2', 'HOBr'] # Non-linear triatomic
+HITRAN_CLASS6 = ['H2O', 'O3', 'SO2', 'NO2', 'HOCl', 'H2S', 'HO2', 'HOBr'] 
+'''str: Non-linear triatomic'''
 
-HITRAN_CLASS7 = ['C2H2']  # Linear tetratomic
+HITRAN_CLASS7 = ['C2H2']  
+'''str: Linear tetratomic'''
 
-HITRAN_CLASS8 = ['NH3', 'PH3']  # Pyramidal tetratomic
+HITRAN_CLASS8 = ['NH3', 'PH3']  
+'''str: Pyramidal tetratomic'''
 
-HITRAN_CLASS9 = ['H2CO', 'H2O2', 'COF2']  # Non-linear tetratomic
+HITRAN_CLASS9 = ['H2CO', 'H2O2', 'COF2']  
+'''str: Non-linear tetratomic'''
 
 HITRAN_CLASS10 = ['CH4', 'CH3D', 'CH3Cl', 'C2H6', 'HNO3', 'SF6', 'HCOOH', 
-                  'ClONO2', 'C2H4', 'CH3OH']  # Pentatomic or greater polyatomic
+                  'ClONO2', 'C2H4', 'CH3OH']  
+'''str: Pentatomic or greater polyatomic'''
 
 # %% Parsing functions
 
@@ -675,7 +694,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not 
         taken into account). If False, no database is used. If 'regen', temp
-        file are reconstructed. Default False. 
+        file are reconstructed. Default ``False``. 
     
     
     Returns

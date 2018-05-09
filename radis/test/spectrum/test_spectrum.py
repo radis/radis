@@ -282,11 +282,11 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
 def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warnings=True, *args, **kwargs):
     ''' Test procedures
 
-    Input
-    ------
+    Parameters
+    ----------
 
     debug: boolean
-        swamps the console namespace with local variables. Default False
+        swamps the console namespace with local variables. Default ``False``
 
     '''
     

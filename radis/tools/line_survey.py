@@ -71,7 +71,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     ----------------
     
     display: boolean
-        if True, open the image in a browser. Default True. 
+        if True, open the image in a browser. Default ``True``. 
 
     filename: str
         filename to save .html 

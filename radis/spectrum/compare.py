@@ -186,8 +186,8 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
     ----------------
     
     ignore_nan: boolean
-        if True, ignore nan in the difference between s1 and s2 (ex: out of bound)
-        when calculating residual. Default False. Note: get_residual will still 
+        if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
+        when calculating residual. Default ``False``. Note: ``get_residual`` will still 
         fail if there are nan in initial Spectrum. 
         
     Notes
@@ -247,9 +247,9 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
     ----------------
     
     ignore_nan: boolean
-        if True, ignore nan in the difference between s1 and s2 (ex: out of bound)
-        when calculating residual. Default False. Note: get_residual will still 
-        fail if there are nan in initial Spectrum. 
+        if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
+        when calculating residual. Default ``False``. Note: ``get_residual_integral``
+        will still fail if there are nan in initial Spectrum. 
         
     Notes
     -----
@@ -386,7 +386,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         title
 
     verbose: boolean
-        if True, plot stuff such as rescale ratio in normalize mode. Default True
+        if True, plot stuff such as rescale ratio in normalize mode. Default ``True``
 
 
     Examples

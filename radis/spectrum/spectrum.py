@@ -88,13 +88,13 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     ----------------
 
     conditions: dict
-        (optional) calculation conditions to be stored with Spectrum. Default None
+        (optional) calculation conditions to be stored with Spectrum. Default ``None``
 
     cond_units: dict
-        (optional) calculation conditions units. Default None
+        (optional) calculation conditions units. Default ``None``
 
     populations: dict
-        populations to be stored in Spectrum. Default None
+        populations to be stored in Spectrum. Default ``None``
 
     name: str
         (optional) give a name
@@ -280,14 +280,14 @@ class Spectrum(object):
     
     name: str, or None
         Give a name to this Spectrum object (helps debugging in multislab
-        configurations). Default None
+        configurations). Default ``None``
 
     warnings: boolean
         If True, test if inputs are valid, e.g, spectra are evenly distributed in
         wavelength, and raise a warning if not. Note that this take ~ 3.5 ms for
         a 20k points spectrum, when the rest of the creation process is only 
         ~ 1.8ms (makes it 3 times longer, and can be a problem if hundreds of 
-        spectra are created in a row). Default True
+        spectra are created in a row). Default ``True``
 
 
     Examples
@@ -461,7 +461,7 @@ class Spectrum(object):
         quantity: str
             spectral quantity name
             
-        waveunit: 'nm', 'cm-1'
+        waveunit: ``'nm'``, ``'cm-1'``
             unit of waverange
             
         unit: str
@@ -648,30 +648,30 @@ class Spectrum(object):
         ----------
 
         var: variable ('absorbance', 'transmittance', etc.) 
-            Should be a defined quantity among :data:`CONVOLUTED_QUANTITIES <CONVOLUTED_QUANTITIES>`
-            or :data:`NON_CONVOLUTED_QUANTITIES <NON_CONVOLUTED_QUANTITIES>`. 
+            Should be a defined quantity among :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
+            or :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`. 
             To get the full list of quantities defined in this Spectrum object use
             the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars` method.
 
-        wunit: 'cm', 'nm'
-            wavelength / wavenumber unit. Default 'nm'
+        wunit: ``'cm'``, ``'nm'``
+            wavelength / wavenumber unit. Default ``nm``
 
-        Iunit: unit for variable `var`
+        Iunit: unit for variable ``var``
             if 'default', default unit for quantity `var` is used. See Spectrum.units
             to get the units. for radiance, one can use per wavelength (~ 'W/m2/sr/nm')
             or per wavenumber (~ 'W/m2/sr/cm_1') units
 
-        medium: 'air', 'vacuum', 'default'
+        medium: ``'air'``, ``'vacuum'``, ``'default'``
             returns wavelength as seen in air, or vacuum. If 'default' the
             value set in conditions is used. If None you better be sure of
-            what you're doing.
+            what you're doing. Default ``'default'``
 
         Other Parameters
         ----------------
         
         copy: boolean
             if True, returns a copy of the stored quantity (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
         Returns
         -------
@@ -781,7 +781,7 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
     
         Returns
@@ -845,7 +845,7 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
     
 
@@ -928,7 +928,7 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
     
         Returns
@@ -969,7 +969,7 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
     
         See Also
@@ -1000,7 +1000,7 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
         
         See Also
@@ -1156,7 +1156,7 @@ class Spectrum(object):
 
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
-            Default False
+            Default ``False``
 
 
         Notes
@@ -1194,7 +1194,7 @@ class Spectrum(object):
 
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
-            Default False
+            Default ``False``
 
 
         Notes
@@ -1299,7 +1299,7 @@ class Spectrum(object):
         Plot parameters inputs:
 
         show_points: boolean
-            show calculated points. Default True
+            show calculated points. Default ``True``
 
         nfig: int, None, or 'same'
             plot on a particular figure. 'same' plots on current figure.
@@ -1308,7 +1308,7 @@ class Spectrum(object):
             plot yscale
 
         normalize: boolean
-            option to normalize quantity to 1 (ex: for radiance). Default False
+            option to normalize quantity to 1 (ex: for radiance). Default ``False``
 
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
@@ -1756,7 +1756,7 @@ class Spectrum(object):
         store: boolean
             if True, store slit in the Spectrum object so it can be retrieved with 
             :meth:`~radis.spectrum.spectrum.Spectrum.get_slit` and plot with 
-            :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default True
+            :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default ``True``
 
         Other Parameters
         ----------------
@@ -1948,7 +1948,7 @@ class Spectrum(object):
         
         wunit: 'nm', 'cm-1', or None
             plot slit in wavelength or wavenumber. If None, use the unit
-            the slit in which the slit function was given. Default None
+            the slit in which the slit function was given. Default ``None``
         '''
         
         from radis.tools.slit import plot_slit
@@ -1994,7 +1994,7 @@ class Spectrum(object):
         overlay: 'absorbance', 'transmittance', 'radiance', etc... or list of the above, or None
             overlay Linestrength with specified variable calculated in `spec`.
             Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
-            method. Default None. 
+            method. Default ``None``. 
 
         wunit: 'nm', 'cm-1'
             wavelength / wavenumber units
@@ -2154,7 +2154,7 @@ class Spectrum(object):
             :meth:`~radis.spectrum.spectrum.Spectrum.update` method
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
-            Default False
+            Default ``False``
 
         add_info: list
             append these parameters and their values if they are in conditions
@@ -2288,7 +2288,7 @@ class Spectrum(object):
             error.
 
         print_conservation: boolean
-            if True, prints energy conservation. Default False.
+            if True, prints energy conservation. Default ``False``.
 
             
         See Also
@@ -2581,11 +2581,11 @@ class Spectrum(object):
             if True, only compares spectral quantities (in the same waveunit)
             and not lines or conditions. If str, compare a particular quantity
             name. If False, compare everything (including lines and conditions
-            and populations). Default False
+            and populations). Default ``False``
 
         plot: boolean
             if True, use plot_diff to plot all quantities for the 2 spectra
-            and the difference between them. Default False.
+            and the difference between them. Default ``False``.
             
         wunit: 'nm', 'cm-1', 'default'
             in which wavespace to compare (and plot). If default, natural wavespace

@@ -154,7 +154,7 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
         if True, removes all quantities that can be regenerated with s.update(),
         e.g, transmittance if abscoeff and path length are given, radiance if
         emisscoeff and abscoeff are given in non-optically thin case, etc.
-        Default False
+        Default ``False``
 
     add_info: list, or None/False
         append these parameters and their values if they are in conditions.
@@ -330,7 +330,7 @@ def _compress(s, sjson):
     ''' if True, removes all quantities that can be regenerated with s.update(),
     e.g, transmittance if abscoeff and path length are given, radiance if
     emisscoeff and abscoeff are given in non-optically thin case, etc.
-    Default False '''
+    Default ``False`` '''
     
     
     from radis.spectrum.rescale import get_redundant
@@ -366,7 +366,7 @@ def load(file, binary=False):
         .spec file to load
         
     binary: boolean
-        set to True if the file is encoded as binary. Default False
+        set to True if the file is encoded as binary. Default ``False``
 
     (wrapper to :func:`radis.tools.database.load_spec`)
 
@@ -386,7 +386,7 @@ def load_spec(file, binary=False):
         .spec file to load
 
     binary: boolean
-        set to True if the file is encoded as binary. Default False. Will autodetect
+        set to True if the file is encoded as binary. Default ``False``. Will autodetect
         if it fails, but that may take longer.
         
     Returns
@@ -738,7 +738,7 @@ class SpecDatabase():
 
         columns: str, list of str, or None
             shows the conditions value for all cases in database. If None, all
-            conditions are shown. Default None
+            conditions are shown. Default ``None``
             e.g.
             >>> db.see(['Tvib', 'Trot'])
 
@@ -871,7 +871,7 @@ class SpecDatabase():
             if True, removes all quantities that can be regenerated with s.update(),
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
-            Default False
+            Default ``False``
 
         add_info: list
             append these parameters and their values if they are in conditions
@@ -1009,7 +1009,7 @@ class SpecDatabase():
         
         inplace: boolean
             if True, return the actual object in the database. Else, return
-            copies. Default False
+            copies. Default ``False``
 
         Examples
         --------
@@ -1131,17 +1131,17 @@ class SpecDatabase():
         scale_if_possible: boolean
             if True, spectrum is scaled for parameters that can be computed 
             directly from spectroscopic quantities (e.g: 'path_length', 'molar_fraction')
-            Default True
+            Default ``True``
             
         Extra Parameters
         ----------------
         
         verbose: boolean
-            print messages. Default True
+            print messages. Default ``True``
             
         inplace: boolean
             if True, returns the actual object in database. Else, return a copy
-            Default False
+            Default ``False``
             
         
         See Also

@@ -256,7 +256,7 @@ def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
     ----------
     
     debug: boolean
-        swamps the console namespace with local variables. Default False
+        swamps the console namespace with local variables. Default ``False``
         
     '''
 

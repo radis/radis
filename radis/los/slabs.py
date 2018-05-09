@@ -215,7 +215,7 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
     Parameters    
     ----------
     
-    waveunit: 'nm', 'cm-1'
+    waveunit: ``'nm'``, ``'cm-1'``
         which wavespace we're working in 
     
     resample_wavespace: 'never', 'intersect', 'full'
@@ -337,10 +337,10 @@ def MergeSlabs(*slabs, **kwargs):
         Default 'nan'
 
     optically_thin: boolean
-        if True, merge slabs in optically thin mode. Default False 
+        if True, merge slabs in optically thin mode. Default ``False`` 
                             
     verbose: boolean
-        if True, print messages and warnings. Default True
+        if True, print messages and warnings. Default ``True``
         
 
     Returns

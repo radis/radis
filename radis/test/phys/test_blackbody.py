@@ -162,11 +162,11 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     ''' Test procedures
 
-    Input
-    ------
+    Parameters
+    ----------
 
     debug: boolean
-        swamps the console namespace with local variables. Default False
+        swamps the console namespace with local variables. Default ``False``
 
     '''
     
