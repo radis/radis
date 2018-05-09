@@ -53,7 +53,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
         waveunit to compare in
         
     Iunit: str
-        If 'default' use s1 unit for variable var
+        if ``'default'`` use s1 unit for variable var
     
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
@@ -102,7 +102,7 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
         waveunit to compare in
         
     Iunit: str
-        If 'default' use s1 unit for variable var
+        if ``'default'`` use s1 unit for variable var
     
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
@@ -144,7 +144,7 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
         waveunit to compare in
         
     Iunit: str
-        If 'default' use s1 unit for variable var
+        if ``'default'`` use s1 unit for variable var
     
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
@@ -255,9 +255,9 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
     -----
     
     For I1, I2, the values of 'var' in s1 and s2, respectively, residual
-    is calculated as:
+    is calculated as::
     
-    >>> res = trapz(I2-I1, w1) / trapz(I1, w1)
+        res = trapz(I2-I1, w1) / trapz(I1, w1)
 
     0 values for I1 yield nans except if I2 = I1 = 0
     
@@ -342,27 +342,29 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     s1, s2: Spectrum objects
     
     var: str, or None
-        spectral quantity to plot (ex: 'abscoeff'). If None, plot the first one 
-        in the Spectrum from 'radiance', 'radiance_noslit', 'transmittance', etc.
+        spectral quantity to plot (ex: ``'abscoeff'``). If None, 
+        plot the first one in the Spectrum from ``'radiance'``, 
+        ``'radiance_noslit'``, ``'transmittance'``, etc.
         
-    wunit: 'default', 'nm', 'cm-1'
-        if 'default', use first spectrum wunit
+    wunit: ``'default'``, ``'nm'``, ``'cm-1'``
+        if ``'default'``, use first spectrum wunit
     
     Iunit: str
-        if 'default', use first spectrum unit
+        if ``'default'``, use first spectrum unit
         
-    medium: 'air', 'vacuum', 'default'
-        if 'default', use first spectrum propagating medium
+    medium: ``'air'``, ``'vacuum'``, ``'default'``
+        if ``'default'``, use first spectrum propagating medium
         
-    method: 'distance', 'diff', 'ratio'
-        If 'diff', plot difference at same wavespace position. 
-        If 'distance', plot Euclidian distance (note that units are meaningless then)
-        If 'ratio', plot ratio of two spectra
-        Default 'diff'.
+    method: ``'distance'``, ``'diff'``, ``'ratio'``
+        If ``'diff'``, plot difference at same wavespace position. 
+        If ``'distance'``, plot Euclidian distance (note that units are meaningless then)
+        If ``'ratio'``, plot ratio of two spectra
+        Default ``'diff'``.
         
-        Warning: with 'distance', calculation scales as ~N^2 with N the number
-        of points in a spectrum (against ~N with 'diff'). This can quickly 
-        override all memory.
+        .. warning::
+            with ``'distance'``, calculation scales as ~N^2 with N the number
+            of points in a spectrum (against ~N with ``'diff'``). This can quickly 
+            override all memory.
         
     normalize: bool
         Normalize the spectra to be ploted 

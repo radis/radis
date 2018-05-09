@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Nov 11 13:30:16 2017
 
-@author: erwan
-
-Functions to update Spectrum with new spectral quantities that can be derived
+Functions to update :class:`~radis.spectrum.spectrum.Spectrum` 
+objects with new spectral quantities that can be derived
 from existing ones, or rescale path_length or mole_fraction, or add overpopulations
 
 Most of these are binded as methods to the Spectrum class, but stored here to
@@ -1194,10 +1192,11 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     ----------
 
     spec: Spectrum
+        the Spectrum object to recompute
     
     quantity: str
-        name of the spectral quantity to recompute. If 'same', only the quantities
-        in the Spectrum are recomputed. If 'all', then all quantities that can
+        name of the spectral quantity to recompute. If ``'same'``, only the quantities
+        in the Spectrum are recomputed. If ``'all'``, then all quantities that can
         be derived are recomputed. 
 
     true_path_length: boolean

@@ -7,7 +7,7 @@ Notes
 Planck functions:
 - planck: planck radiation with wavelength input
 - planck_wn: planck radiation with wavenumber input
-- sPlanck: a RADIS Spectrum blackbody object
+- sPlanck: a RADIS :class:`~radis.spectrum.spectrum.Spectrum` blackbody object
 
 Example
 -------

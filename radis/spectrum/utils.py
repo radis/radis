@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Functions and constants used in Spectrum object
+Functions and constants used in :class:`~radis.spectrum.spectrum.Spectrum` 
+object
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

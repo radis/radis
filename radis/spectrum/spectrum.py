@@ -3,7 +3,7 @@
 Summary
 -------
 
-Spectrum class holder
+:class:`~radis.spectrum.spectrum.Spectrum` class holder
 
 Keeps all output data from a SpectrumFactory calculation. Allows to reapply a
 different slit function in post-processing, and plot all spectral quantities
@@ -835,7 +835,7 @@ class Spectrum(object):
             or any. If any and both are defined, they have to be the same else 
             an error is raised. Default any.
 
-        medium: 'air', 'vacuum', 'default'
+        medium: ``'air'``, ``'vacuum'``, ``'default'``
             returns wavelength as seen in air, or vacuum. If 'default' the
             value set in conditions is used. If None you better be sure of
             what you're doing.

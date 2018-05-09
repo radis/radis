@@ -5,10 +5,10 @@ Summary
 -------
 
 Classes to deal with multi-slabs configurations: 
-- MergeSlabs for several Spectrum
+- MergeSlabs for several spectra
 - SerialSlabs to add several spectra along the line-of-path
 
-One Slab is just a Spectrum object 
+One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object 
 
 Notes
 -----
