@@ -12,9 +12,9 @@ with any unit
 Routine Listings
 ----------------
 
-:func:`~radis.spectrum.spectrum.calculated_spectrum`
-:func:`~radis.spectrum.spectrum.experimental_spectrum`
-:func:`~radis.spectrum.spectrum.transmittance_spectrum`
+:func:`~radis.spectrum.spectrum.calculated_spectrum`,
+:func:`~radis.spectrum.spectrum.experimental_spectrum`,
+:func:`~radis.spectrum.spectrum.transmittance_spectrum`,
 :func:`~radis.spectrum.spectrum.is_spectrum`
 
 
@@ -636,20 +636,22 @@ class Spectrum(object):
 
 
     def get(self, var, wunit='nm', Iunit='default', medium='default',
-            xunit=None, yunit=None,  # deprecated for wunit, Iunit
             copy=True):
-        ''' Retrieve a spectral quantity from a Spectrum object. You can change 
+        ''' Retrieve a spectral quantity from a Spectrum object. You can select 
         wavespace unit, intensity unit, or propagation medium.
         
         
         Parameters    
         ----------
 
-        var: variable ('absorbance', 'transmittance', etc.) For full list see
-            get_vars()
+        var: variable ('absorbance', 'transmittance', etc.) 
+            Should be a defined quantity among :data:`CONVOLUTED_QUANTITIES <CONVOLUTED_QUANTITIES>`
+            or :data:`NON_CONVOLUTED_QUANTITIES <NON_CONVOLUTED_QUANTITIES>`. 
+            To get the full list of quantities defined in this Spectrum object use
+            the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars` method.
 
         wunit: 'cm', 'nm'
-            wavelength / wavenumber unit. Default nm
+            wavelength / wavenumber unit. Default 'nm'
 
         Iunit: unit for variable `var`
             if 'default', default unit for quantity `var` is used. See Spectrum.units
@@ -668,12 +670,6 @@ class Spectrum(object):
             if True, returns a copy of the stored quantity (modifying it wont
             change the Spectrum object). Default True.
         
-        Todo
-        ----
-        TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
-        by FWHM.
-
-    
         Returns
         -------
 
@@ -683,15 +679,31 @@ class Spectrum(object):
             and not a view (reference): if you modify them the Spectrum is not
             changed
 
-        '''
+        Examples
+        --------
 
-        # deprecation
-        if xunit is not None:
-            warn(DeprecationWarning('xunit replaced by wunit in Spectrum class'))
-            wunit = xunit
-        if yunit is not None:
-            warn(DeprecationWarning('yunit replaced by Iunit in Spectrum class'))
-            Iunit = yunit
+        Get transmittance in cm-1::
+
+            w, I = s.get('transmittance_noslit', wunit='cm-1')  
+            
+        Get radiance::
+            
+            _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
+                         medium='air')  
+        
+        Notes
+        -----
+        
+        TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
+        by FWHM.
+
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`
+        
+        '''
 
         # check input
         if not var in self.get_vars():
@@ -705,9 +717,11 @@ class Spectrum(object):
         if var in CONVOLUTED_QUANTITIES:
             vartype = 'convoluted'
             I = self._q_conv[var]
-        else:  # non convoluted
+        elif var in NON_CONVOLUTED_QUANTITIES:  # non convoluted
             vartype = 'non_convoluted'
             I = self._q[var]
+        else:
+            raise ValueError('Unexpected quantity: {0}'.format(var))
             
         # Copy
         if copy: I = I.copy()
@@ -955,6 +969,12 @@ class Spectrum(object):
             change the Spectrum object). Default True.
         
     
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.get`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`
+        
         '''
         
         return self.get('radiance', Iunit=Iunit, copy=copy)[1]
@@ -978,6 +998,13 @@ class Spectrum(object):
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
             change the Spectrum object). Default True.
+        
+        
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.get`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance`
         
     
         '''
@@ -2539,9 +2566,8 @@ class Spectrum(object):
     def compare_with(self, other, spectra_only=False, plot=True, wunit='default',
                      verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
                      normalize=False, **kwargs):
-        ''' Compare Spectrum with another spectrum
+        ''' Compare Spectrum with another Spectrum object
 
-    
         Parameters    
         ----------
         
@@ -2598,6 +2624,12 @@ class Spectrum(object):
             s1.compare_with(s2)
             s1.compare_with(s2, 'transmittance')
 
+
+        Note that you can also simply use `s1 == s2`, that uses 
+        :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` internally::
+            
+            s1 == s2       # will return True or False
+    
         '''
         
         from radis.spectrum.compare import plot_diff

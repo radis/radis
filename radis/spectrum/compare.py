@@ -1,8 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Feb  9 13:03:04 2018
+Summary
+-------
 
-@author: erwan
+Functions to compare and plot comparison of Spectrum objects
+
+
+Routine Listings
+----------------
+
+:func:`~radis.spectrum.compare.get_diff`,
+:func:`~radis.spectrum.compare.get_distance`,
+:func:`~radis.spectrum.compare.get_ratio`,
+:func:`~radis.spectrum.compare.get_residual`,
+:func:`~radis.spectrum.compare.get_residual_integral`,
+:func:`~radis.spectrum.compare.plot_diff`
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

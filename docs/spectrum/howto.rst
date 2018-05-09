@@ -52,7 +52,7 @@ in air, or wavelengths in vacuum, for a given unit, etc.)
 It is recommended to use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get exactly what you want::
     
     w, I = s.get('transmittance_noslit', wunit='cm-1')  
-    _, T = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
+    _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
                  medium='air')  
         
 The default quantities are::
