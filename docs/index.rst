@@ -98,9 +98,9 @@ Developer Guide
    
    
 
-==================
-Indices and tables
-==================
+=====================
+Access Module Methods
+=====================
 
 * :ref:`genindex`
 * :ref:`modindex`

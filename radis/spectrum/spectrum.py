@@ -105,8 +105,8 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     
     :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
     :func:`~radis.spectrum.spectrum.experimental_spectrum`
-    :meth:`~radis.spectrum.spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
     
     '''
@@ -155,8 +155,8 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     
     :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
     :func:`~radis.spectrum.spectrum.experimental_spectrum`
-    :meth:`~radis.spectrum.spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
         
     '''
@@ -205,8 +205,8 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     
     :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
     :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-    :meth:`~radis.spectrum.spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
     
     '''
@@ -332,16 +332,16 @@ class Spectrum(object):
     
     Implementation:
     
-        quantities are stored in self._q and self._q_conv dictionaries. They are better accessed
-        with the get() function that deals with units and wavespace
-        Note: we may move to a unique storage under self._q: in that case q['wavespace']
-        and q_conv['wavespace'] need different names: ex. 'wavespace' and 'wavespace_conv'
-
+        quantities are stored in ``self._q`` and ``self._q_conv`` dictionaries. 
+        They are better accessed with the :meth:`~radis.spectrum.spectrum.Spectrum.get` 
+        method that deals with units and wavespace
+        
     Wavebase:
     
         quantites are stored either in wavenum or wavelength base, but this doesnt
-        matter as they are retrieved / plotted with get() and plot() functions
-        which have units as input arguments
+        matter as they are retrieved / plotted with the 
+        :meth:`~radis.spectrum.spectrum.Spectrum.get` and :meth:`~radis.spectrum.spectrum.Spectrum.plot` 
+        methods which have units as input arguments
 
 
     Attributes
@@ -361,8 +361,8 @@ class Spectrum(object):
     :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
     :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
     :func:`~radis.spectrum.spectrum.experimental_spectrum`
-    :meth:`~radis.spectrum.spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
     
     
@@ -500,8 +500,9 @@ class Spectrum(object):
 
         Returns
         -------
-        :class:`~radis.spectrum.spectrum.Spectrum` object
         
+        s: Spectrum
+            creates a :class:`~radis.spectrum.spectrum.Spectrum` object
         
         Examples
         --------
@@ -519,7 +520,7 @@ class Spectrum(object):
         :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
         :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
         :func:`~radis.spectrum.spectrum.experimental_spectrum`
-        :meth:`~radis.spectrum.spectrum.from_txt`
+        :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
         :func:`~radis.tools.database.load_spec`
         """
         
@@ -584,7 +585,9 @@ class Spectrum(object):
 
         Returns
         -------
-        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+        s: Spectrum
+            creates a :class:`~radis.spectrum.spectrum.Spectrum` object
         
         
         Examples
@@ -610,8 +613,8 @@ class Spectrum(object):
         
         :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
         :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-        :func:`~radis.spectrum.spectrum.experimental_spectrum`
-        :meth:`~radis.spectrum.spectrum.from_array`
+        :func:`~radis.spectrum.spectrum.experimental_spectrum`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
         :func:`~radis.tools.database.load_spec`
         
         """
