@@ -2464,9 +2464,9 @@ class Spectrum(object):
             if 'overpopulation' in cond:
                 assert cond['overpopulation'] is None
             assert cond['self_absorption']  # is True
-            
+
             return True
-            
+
         except AssertionError:
             return False 
         except KeyError as err:

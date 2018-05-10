@@ -34,6 +34,7 @@ import numpy as np
 from numpy import sqrt, linspace, abs, trapz
 from os.path import basename
 import pytest
+from warnings import catch_warnings, filterwarnings
 
 fig_prefix = basename(__file__)+': '
 
@@ -152,13 +153,18 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
         if close_plots: plt.close('all')
    
     # %% Get a Spectrum (stored in nm)
+    
     s_nm = Spectrum.from_txt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt'),
                           quantity='radiance_noslit', waveunit='nm', unit='mW/cm2/sr/µm',
                           conditions={'medium':'air',
-                                      'self_absorption':False})
-    s_nm.rescale_path_length(1, 0.001)   # just because it makes better units
-    wstep = np.diff(s_nm.get_wavelength())[0]
+                                     'self_absorption':False})
     
+    with catch_warnings(): 
+        filterwarnings('ignore','Condition missing to know if spectrum is at equilibrium:')
+        s_nm.rescale_path_length(1, 0.001)   # just because it makes better units
+        
+    wstep = np.diff(s_nm.get_wavelength())[0]
+        
     assert s_nm.get_waveunit() == 'nm'       # ensures it's stored in cm-1
     
     for shape in ['gaussian', 'triangular']:
@@ -182,7 +188,7 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
         if plot: plotargs['title'] = 'test_slit_unit_conversions: {0} ({1} nm)'.format(shape, slit_nm)
         s_nm.compare_with(s_cm, spectra_only='radiance', rtol=1e-3, 
                           verbose=verbose, plot=plot, **plotargs)
-    
+        
     
     # %% 
 
@@ -409,8 +415,10 @@ def test_slit_function_effect(verbose=True, plot=True, close_plots=True, *args, 
     for w0, FWHM in zip([380, 1000, 4200, 5500],
                         [0.396, 0.388, 0.282, 0.188]):
         w, I = dirac(w0)
+        
         wc, Ic = convolve_with_slit(w, I, w_slit, I_slit, norm_by='area', 
-                                    slit_dispersion=linear_dispersion)
+                                    slit_dispersion=linear_dispersion,
+                                    verbose=False)
         assert np.isclose(FWHM, get_effective_FWHM(wc, Ic), atol=0.001)
 
         if plot: 
