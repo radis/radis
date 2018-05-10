@@ -8,8 +8,9 @@ import radis
 from warnings import warn
 from os.path import exists
 from radis.misc.basics import compare_dict
+DeprecatedFileError = DeprecationWarning
 
-LAST_COMPATIBLE_VERSION = '0.1.18'
+LAST_COMPATIBLE_VERSION = '0.1.17'
 '''str: forces to regenerate cache files that were created in a previous version'''
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
@@ -50,7 +51,7 @@ def check_not_deprecated(file, metadata, current_version=None, last_compatible_v
     try:
         file_version = attrs.pop('version')
     except KeyError:
-        raise KeyError('File {0} has been generated in a deprecated '.format(file)+\
+        raise DeprecatedFileError('File {0} has been generated in a deprecated '.format(file)+\
                        'version. Delete it to regenerate it on next run')
         
     # Get current version
@@ -60,7 +61,7 @@ def check_not_deprecated(file, metadata, current_version=None, last_compatible_v
     # ... Update here versions afterwhich Deprecated cache file is not safe 
     # ... (example: a key name was changed)
     if file_version < last_compatible_version:
-        raise KeyError('File {0} has been generated in a deprecated '.format(file)+\
+        raise DeprecatedFileError('File {0} has been generated in a deprecated '.format(file)+\
                        'version ({0}). Last compatible version is {1}.'.format(
                                file_version, last_compatible_version)+\
                         'Delete the file to regenerate it on next run')
@@ -80,7 +81,7 @@ def check_not_deprecated(file, metadata, current_version=None, last_compatible_v
     # Compare metadata
     out, compare_string = compare_dict(metadata, attrs, verbose=False, return_string=True)
     if out != 1:
-        raise ValueError('Metadata in file {0} dont match '.format(file)+\
+        raise DeprecatedFileError('Metadata in file {0} dont match '.format(file)+\
                          'expected values. See comparison below:'+\
                          '\nExpected\tFile\n{0}'.format(compare_string))
 

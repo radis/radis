@@ -638,9 +638,8 @@ def cast_to_dtype(data, dtype):
 
     return data
 
-def hit2df(fname, count=-1, cache=False, verbose=True):
+def hit2df(fname, count=-1, cache=True, verbose=True):
     ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
-    
     
     Parameters    
     ----------
@@ -651,12 +650,12 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     count: int
         number of items to read (-1 means all file)
         
-    cache: boolean
-        if True, a pandas-readable HDF5 file is generated on first access, 
+    cache: boolean, or ``'regen'`` or ``'force'``
+        if ``True``, a pandas-readable HDF5 file is generated on first access, 
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not 
-        taken into account). If False, no database is used. If 'regen', temp
-        file are reconstructed. Default ``False``. 
+        taken into account). If False, no database is used. If ``'regen'``, temp
+        file are reconstructed. Default ``True``. 
     
     
     Returns
@@ -695,6 +694,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
                 check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
                                      last_compatible_version=LAST_COMPATIBLE_VERSION)
                 return pd.read_hdf(fcache, 'df')
+                # >>> Function ends here if cache file was found
         
     # Detect the molecule by reading the start of the file
     with open(fname) as f:
