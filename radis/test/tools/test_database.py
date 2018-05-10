@@ -9,8 +9,10 @@ from radis.test.utils import getTestFile
 from radis.tools.database import load_spec, SpecDatabase
 import os
 from os.path import exists, dirname, basename
+import pytest
 
-def test_database_functions__fast(verbose=True, plot=True, close_plots=True, warnings=True, *args, **kwargs):
+@pytest.mark.fast
+def test_database_functions(verbose=True, plot=True, close_plots=True, warnings=True, *args, **kwargs):
     ''' Test SpecDatabase functions '''
     
     if plot:
@@ -70,7 +72,7 @@ def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
 
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
-    test_database_functions__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_database_functions(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
     test_plot_spec(plot=plot, close_plots=close_plots, ssverbose=verbose, *args, **kwargs)
 
     return True

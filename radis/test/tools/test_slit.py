@@ -33,6 +33,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import sqrt, linspace, abs, trapz
 from os.path import basename
+import pytest
 
 fig_prefix = basename(__file__)+': '
 
@@ -40,7 +41,8 @@ fig_prefix = basename(__file__)+': '
 #  Test cases
 # -----------------------------------------------------------------------------
 
-def test_all_slit_shapes__fast(FWHM=0.4, verbose=True, plot=True, close_plots=True, *args, **kwargs):
+@pytest.mark.fast
+def test_all_slit_shapes(FWHM=0.4, verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test all slit generation functions and make sure we get the expected FWHM'''
 
     if plot:
@@ -183,8 +185,9 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
     
     
     # %% 
-    
-def test_against_specair_convolution__fast(plot=True, close_plots=True, verbose=True, debug=False, *args, **kwargs):
+
+@pytest.mark.fast
+def test_against_specair_convolution(plot=True, close_plots=True, verbose=True, debug=False, *args, **kwargs):
 
     if plot:
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
@@ -243,7 +246,8 @@ def test_against_specair_convolution__fast(plot=True, close_plots=True, verbose=
     
     return True
 
-def test_normalisation_mode__fast(plot=True, close_plots=True, verbose=True, *args, **kwargs):
+@pytest.mark.fast
+def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **kwargs):
     ''' Test norm_by = 'area' vs norm_by = 'max' '''
 
     from radis.test.utils import getTestFile
@@ -308,7 +312,8 @@ def test_normalisation_mode__fast(plot=True, close_plots=True, verbose=True, *ar
     return True
 
 
-def test_slit_energy_conservation__fast(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+@pytest.mark.fast
+def test_slit_energy_conservation(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Convoluted and non convoluted quantities should have the same area
     (difference arises from side effects if the initial spectrum is not 0 on 
     the sides '''
@@ -345,7 +350,8 @@ def test_slit_energy_conservation__fast(verbose=True, plot=True, close_plots=Tru
     return True
     
 
-def test_slit_function_effect__fast(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+@pytest.mark.fast
+def test_slit_function_effect(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function '''
 
@@ -421,16 +427,16 @@ def test_slit_function_effect__fast(verbose=True, plot=True, close_plots=True, *
 
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
-    test_against_specair_convolution__fast(plot=plot, close_plots=close_plots, verbose=verbose,
+    test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
                                            *args, **kwargs)
-    test_normalisation_mode__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
-    test_slit_energy_conservation__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
-    test_slit_function_effect__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_slit_function_effect(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
 #    test_constant_source(plot=plot, verbose=verbose, *args, **kwargs)
-    test_all_slit_shapes__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_all_slit_shapes(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
     test_slit_unit_conversions_spectrum_in_cm(verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
     test_slit_unit_conversions_spectrum_in_nm(verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
-#    test_resampling__fast(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 

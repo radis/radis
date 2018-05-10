@@ -8,8 +8,10 @@ from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
 import os
 from os.path import exists
+import pytest
 
-def test_line_survey__fast(verbose=True, plot=False, warnings=True, *args, **kwargs):
+@pytest.mark.fast
+def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
     ''' Test line survey '''
 
     _temp_file = 'radis_test_line_survey.html'
@@ -33,7 +35,7 @@ def test_line_survey__fast(verbose=True, plot=False, warnings=True, *args, **kwa
 def _run_testcases(plot=True, verbose=True, *args, **kwargs):
 
     # Show media line_shift
-    test_line_survey__fast(plot=plot, verbose=verbose, *args, **kwargs)
+    test_line_survey(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 

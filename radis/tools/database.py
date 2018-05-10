@@ -413,7 +413,8 @@ def load_spec(file, binary=False):
                 sload = json_tricks.load(f, preserve_order=False)
             except:
                 # try as binary
-                print(('Error opening file {0}. Trying with binary=True'.format(f)))
+                print(('Could not open file {0} with binary=False. '.format(basename(file))+
+                       'Trying with binary=True'))
                 retry_with_binary = True 
                 
     if binary or retry_with_binary:
@@ -423,7 +424,7 @@ def load_spec(file, binary=False):
                 if retry_with_binary:
                     print('Worked! Use binary=True directly in load_spec for faster loading')
             except:
-                print(('Error opening file {0}'.format(f)))
+                print(('Error opening file {0}'.format(file)))
                 raise
 
     return _json_to_spec(sload, file)
@@ -642,7 +643,7 @@ def plot_spec(file, what='radiance', title=True):
 class SpecDatabase():
     
     def __init__(self, path='.', filt='.spec', add_info=None, add_date='%Y%m%d',
-                 verbose=True):
+                 verbose=True, binary=False):
         ''' A Spectrum Database class to manage them all
 
         It basically manages a list of Spectrum JSON files, adding a Pandas
@@ -659,6 +660,9 @@ class SpecDatabase():
         filt: str
             only consider files ending with filt
         
+        binary: boolean
+            if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
+            try as binary file anyway. Default ``False``
 
         Examples
         --------
@@ -711,6 +715,7 @@ class SpecDatabase():
         self.path = path
         self.df = None
         self.verbose = verbose
+        self.binary = binary
 
         # default
         self.add_info = add_info
@@ -783,8 +788,8 @@ class SpecDatabase():
         return self.see(columns = columns, *args)
 
     def update(self, force_reload=False, filt='.spec'):
-        ''' Reloads database, updates internal index structure and print it
-        in <database>.csv
+        ''' Reloads database, updates internal index structure and export it
+        in ``<database>.csv``
 
         Parameters
         ----------
@@ -793,7 +798,7 @@ class SpecDatabase():
             if True, reloads files already in database
 
         filt: str
-            only consider files ending with `filt`
+            only consider files ending with ``filt``. Default ``.spec``
             
         '''
 
@@ -967,7 +972,7 @@ class SpecDatabase():
         '''
         db = []
         for f in files:
-            db.append(self._load_file(f))
+            db.append(self._load_file(f, binary=self.binary))
 
         return pd.DataFrame(db)
 
