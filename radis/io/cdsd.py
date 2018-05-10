@@ -11,9 +11,10 @@ import pandas as pd
 import numpy as np
 from collections import OrderedDict
 import os
+import radis
 from os.path import exists, splitext
-from radis.io.hitran import (check_deprecated, _cast_to_dtype, 
-                             _format_dtype, _generate_cache_file)
+from radis.io.hitran import cast_to_dtype, format_dtype
+from radis.misc.cache_files import check_not_deprecated, save_to_hdf, LAST_COMPATIBLE_VERSION
 import sys
 from six.moves import zip
 
@@ -189,7 +190,8 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
                 if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
             else:
                 if verbose: print('Using h5 file: {0}'.format(fcache))
-                check_deprecated(fcache)
+                check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
+                                     last_compatible_version=LAST_COMPATIBLE_VERSION)
                 return pd.read_hdf(fcache, 'df')
 
     # %% Start reading the full file
@@ -204,7 +206,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
     # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
+    dt = format_dtype(dtype)
     data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
     
     # get format of line return
@@ -222,7 +224,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
     # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
+    dt = format_dtype(dtype)
     data = np.fromfile(fname, dtype=dt, count=count)
     
     # %% Cast to new type
@@ -234,7 +236,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
 
     newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
-    data2 = _cast_to_dtype(data, dtype)
+    data2 = cast_to_dtype(data, dtype)
 
     # %% Create dataframe    
     df = pd.DataFrame(data2.tolist(), columns=list(columns.keys())+['_linereturn'])
@@ -252,8 +254,8 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
         if verbose: print('Generating cached file: {0}'.format(fcache))
         try:
-#            df.to_csv(fcache)
-            _generate_cache_file(fcache, df)
+            save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
+                        key='df', overwrite=True)
         except:
             if verbose: print('An error occured in cache file generation. Lookup access rights')
             pass

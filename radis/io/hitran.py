@@ -17,7 +17,8 @@ from os.path import exists, splitext
 from six.moves import range
 from six.moves import zip
 from warnings import warn
-import h5py
+import radis
+from radis.misc.cache_files import check_not_deprecated, save_to_hdf, LAST_COMPATIBLE_VERSION
 
 
 # %% Hitran groups and classes
@@ -108,54 +109,6 @@ columns_2004 = OrderedDict([ (
 
 # quick fix # TODO: proper implementation of HITRAN classes, and groups
 # Update: classes are now implemented properly, groups remain to be done 
-
-
-def _generate_cache_file(fname, df):
-    ''' Generate cache file for pandas Dataframe df under name fname, which 
-    must be a HDF5 
-    
-    Parameters
-    ----------
-    
-    fname: str
-        HDF5 filename
-        
-    df: pandas Dataframe
-        line database to store
-        
-    Note
-    ----
-    
-    Performance of different compression librairies / methods:
-        
-    - storing as np.float32 can save up to 50% space, but we can loose some 
-    information such as low linestrength numbers (1e-80, 1e-100) that becomes 0
-    
-    - storing with compression (complevel=9, complib='blosc') saves up to 50%
-    space, but reading speed is doubled 
-    
-    - storing with low compression 'complevel=1', complib='blosc' can still
-    save up to 50%, but reading speed is only increased by about 20%
-    
-    - format='fixed' is always much faster than format='table' (about a factor 5!)
-    
-    Eventually we use ``format='fixed', mode='w', complevel=1, complib='blosc')`` 
-
-    
-    '''
-    
-    assert fname.endswith('h5')
-    
-    # Start by adding version
-    from radis import get_version
-    hf = h5py.File(fname, 'w')
-    hf.attrs['version'] = get_version(add_git_number=False)
-    hf.close()
-    
-    # now export dataframe
-    df.to_hdf(fname, 'df', format='fixed', mode='a', complevel=1, complib='blosc')
-#    df.to_hdf(fname, 'df', format='fixed', mode='a')  # would be 10-20% faster, but take 2x more space
-    
 
 
 # %% Hitran global quanta classes
@@ -637,7 +590,7 @@ def _parse_HITRAN_group6(df):
 # %% Reading function
 
 
-def _format_dtype(dtype):
+def format_dtype(dtype):
     ''' Format dtype from specific columns. Crash with hopefully helping error message '''
     
     try:
@@ -653,7 +606,7 @@ def _format_dtype(dtype):
         raise
     return dt
 
-def _cast_to_dtype(data, dtype):
+def cast_to_dtype(data, dtype):
     ''' Cast array to certain type, crash with hopefull helping error message.
     Return casted data
     
@@ -667,7 +620,7 @@ def _cast_to_dtype(data, dtype):
     
     '''
     
-    dt = _format_dtype(dtype)
+    dt = format_dtype(dtype)
     
     try:
         data = np.array(data, dtype=dt)
@@ -684,39 +637,6 @@ def _cast_to_dtype(data, dtype):
             raise ValueError('Cant cast data to specific dtype. Tried column by column. See results above')
 
     return data
-
-def check_deprecated(file):
-    ''' Check if h5 file ``file`` has been generated in a former version
-    
-    If so, trigger a warning'''
-    
-    hf = h5py.File(file, 'r')
-    
-    # Raise an error if version is not found
-    try:
-        file_version = hf.attrs['version']
-    except KeyError:
-        raise KeyError('File {0} has been generated in a deprecated '.format(file)+\
-                       'version. Delete it to regenerate it on next run')
-    finally:
-        hf.close()
-        
-    from radis import get_version
-    version = get_version(add_git_number=False)
-    
-    # If file version is anterior to a major change
-    # ... Update here versions afterwhich Deprecated cache file is not safe 
-    # ... (example: a key name was changed)
-    if file_version < '0.1.18':
-        raise KeyError('File {0} has been generated in a deprecated '.format(file)+\
-                       'version ({0}). Delete it to regenerate it on next run'.format(file_version))
-    
-    # If file version is outdated: Warning, but no error
-    if version > file_version:
-        warn(DeprecationWarning('File {0} has been generated in '.format(file)+\
-                'a deprecated version ({0}) compared to current ({1})'.format(file_version, version)+\
-                '. Delete it to regenerate it on next run'))   
-        
 
 def hit2df(fname, count=-1, cache=False, verbose=True):
     ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
@@ -772,7 +692,8 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
                 if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
             else:
                 if verbose: print('Using h5 file: {0}'.format(fcache))
-                check_deprecated(fcache)
+                check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
+                                     last_compatible_version=LAST_COMPATIBLE_VERSION)
                 return pd.read_hdf(fcache, 'df')
         
     # Detect the molecule by reading the start of the file
@@ -791,7 +712,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
     # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
+    dt = format_dtype(dtype)
     data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
     
     # get format of line return
@@ -809,7 +730,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
     # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
+    dt = format_dtype(dtype)
     data = np.fromfile(fname, dtype=dt, count=count)
     
     # ... Cast to new type
@@ -818,7 +739,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     # CDSD-HITEMP parser)
     newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
-    data = _cast_to_dtype(data, dtype)
+    data = cast_to_dtype(data, dtype)
     
     # %% Create dataframe    
     df = pd.DataFrame(data.tolist(), columns=list(columns.keys())+['_linereturn'])
@@ -860,8 +781,8 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
         if verbose: print('Generating cached file: {0}'.format(fcache))
         try:
-#            df.to_csv(fcache)
-            _generate_cache_file(fcache, df)
+            save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
+                        key='df', overwrite=True)
         except:
             if verbose:
                 print(sys.exc_info())

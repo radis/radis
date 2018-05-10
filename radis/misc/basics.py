@@ -23,6 +23,7 @@ else:
     from itertools import filterfalse
 from itertools import tee
 import pandas as pd
+from six import StringIO
 
 verbose = True
 
@@ -96,7 +97,7 @@ def partition(pred, iterable):
     
 # %% Compare / merge tools
 
-def compare_dict(d1, d2, verbose=True, compare_as_paths=[]):
+def compare_dict(d1, d2, verbose=True, compare_as_paths=[], return_string=False):
     ''' Returns ratio of equal keys [0-1]
     If verbose, also print all keys and values on 2 columns
     
@@ -105,6 +106,7 @@ def compare_dict(d1, d2, verbose=True, compare_as_paths=[]):
     ----------
     
     d1, d2: dict
+        two dictionaries to compare
     
     
     Other Parameters
@@ -114,59 +116,75 @@ def compare_dict(d1, d2, verbose=True, compare_as_paths=[]):
         compare the values corresponding to given keys as path (irrespective of
         forward / backward slashes, or case )
     
-    verbose: boolean, or 'if_different'
-        'if_different' means results will be shown only if there is a difference. 
-        function is called twice
+    verbose: boolean, or ``'if_different'``
+        ``'if_different'`` means results will be shown only if there is a difference. 
         
-
+    return_string: boolean
+        if ``True``, returns message
+        
     Returns
     -------
     
     out: float [0-1]
-        ratio of matching keys 
+        ratio of matching keys
+        
+    if ``return_string``:
+        
+    out, string: float [0-1], str
+        ratio of matching keys and comparison message
         
     '''
+        
+    old_stdout = sys.stdout
+    sys.stdout = newstdout = StringIO()     # capture all print
     
-    if verbose == 'if_different':
-        restart = True
-        verbose = False
-    else:
-        restart = False
-    
-    if verbose: print('{0:15}{1}\t{2}'.format('Key', 'Left', 'Right'))
-    if verbose: print('-'*40)
-    all_keys = set(list(d1.keys())+list(d2.keys()))
-    s = 0       # counter of all matching keys
-    for k in all_keys:
-        if k in d1 and k in d2:   # key in both dicts. Let's compare values
-            # Deal with path case
-            if k in compare_as_paths:
-                if not compare_paths(d1[k], d2[k]):
-                    print('{0:15}{1}\t{2}'.format(k, d1[k], d2[k]))
-                else:
-                    s += 1 
-            # Other cases
-            else:
-                if d1[k] != d2[k]:
-                    if verbose: print('{0:15}{1}\t{2}'.format(k, d1[k], d2[k]))
-                else:
-                    s += 1 
-        elif k in d1: 
-            if verbose: print('{0:15}{1}\tN/A'.format(k, d1[k]))
-        else:
-            if verbose: print('{0:15}N/A\t{1}'.format(k, d2[k]))
-    if verbose: print('-'*40)
-    
-    if len(all_keys) == 0:
-        out = 1 
-    else:
-        out = s/len(all_keys)
+    try:
 
-    # Exit
-    if restart and out != 1: 
-        return compare_dict(d1, d2, verbose=True, compare_as_paths=compare_as_paths)
-    else:
+        print('{0:15}{1}\t{2}'.format('Key', 'Left', 'Right'))
+        print('-'*40)
+        all_keys = set(list(d1.keys())+list(d2.keys()))
+        s = 0       # counter of all matching keys
+        for k in all_keys:
+            if k in d1 and k in d2:   # key in both dicts. Let's compare values
+                # Deal with path case
+                if k in compare_as_paths:
+                    if not compare_paths(d1[k], d2[k]):
+                        print('{0:15}{1}\t{2}'.format(k, d1[k], d2[k]))
+                    else:
+                        s += 1 
+                # Other cases
+                else:
+                    if d1[k] != d2[k]:
+                        print('{0:15}{1}\t{2}'.format(k, d1[k], d2[k]))
+                    else:
+                        s += 1 
+            elif k in d1: 
+                print('{0:15}{1}\tN/A'.format(k, d1[k]))
+            else:
+                print('{0:15}N/A\t{1}'.format(k, d2[k]))
+        print('-'*40)
+        
+        if len(all_keys) == 0:
+            out = 1 
+        else:
+            out = s/len(all_keys)
+            
+        # Get string output
+        string = newstdout.getvalue()
+        sys.stdout = old_stdout    # reset normal print
+        
+        # Output
+        if verbose == True or (verbose == 'if_different' and out !=1):
+            print(string)
+            
+        if return_string:
+            out = out, string
+        
         return out
+    except:
+        raise
+    finally:        
+        sys.stdout = old_stdout
 
 def compare_lists(l1, l2, verbose=True):
     ''' Compare 2 lists of elements that may not be of the same length, irrespective
