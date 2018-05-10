@@ -590,7 +590,7 @@ def _parse_HITRAN_group6(df):
 # %% Reading function
 
 
-def format_dtype(dtype):
+def _format_dtype(dtype):
     ''' Format dtype from specific columns. Crash with hopefully helping error message '''
     
     try:
@@ -606,7 +606,7 @@ def format_dtype(dtype):
         raise
     return dt
 
-def cast_to_dtype(data, dtype):
+def _cast_to_dtype(data, dtype):
     ''' Cast array to certain type, crash with hopefull helping error message.
     Return casted data
     
@@ -620,7 +620,7 @@ def cast_to_dtype(data, dtype):
     
     '''
     
-    dt = format_dtype(dtype)
+    dt = _format_dtype(dtype)
     
     try:
         data = np.array(data, dtype=dt)
@@ -702,48 +702,10 @@ def hit2df(fname, count=-1, cache=True, verbose=True):
         
     # %% Start reading the full file
     
-    # To be faster, we read file totally in bytes mode with fromfiles. But that
-    # requires to properly decode the line return character:
+    df = parse_binary_file(fname, columns, count)
     
-    # problem arise when file was written in an OS and read in another OS (for instance,
-    # line return characters are not converted when read from .egg files). Here
-    # we read the first line and infer the line return character for it 
+    # %% Post processing
     
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
-    
-    # get format of line return
-    from radis.misc.basics import to_str
-    linereturn = to_str(data[0][-1])
-    if to_str('\r\n') in linereturn:
-        linereturnformat = 'a2'
-    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
-        linereturnformat = 'a1'
-    else:
-        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
-        
-    # Now re-read with correct line return character
-
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=count)
-    
-    # ... Cast to new type
-    # This requires to recast all the data already read, but is still the fastest
-    # method I found to read a file directly (for performance benchmark see 
-    # CDSD-HITEMP parser)
-    newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
-    dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
-    data = cast_to_dtype(data, dtype)
-    
-    # %% Create dataframe    
-    df = pd.DataFrame(data.tolist(), columns=list(columns.keys())+['_linereturn'])
-
     # assert one molecule per database only. Else the groupbase data reading 
     # above doesnt make sense
     nmol = len(set(df['id']))
@@ -761,23 +723,12 @@ def hit2df(fname, count=-1, cache=True, verbose=True):
                          '\n{0}'.format(df.iloc[0])+'\n----------------\nand the second row '+\
                          'below: \n{0}'.format(secondline))
     
-    for k, c in columns.items():
-        if c[1] == str:
-            df[k] = df[k].str.decode("utf-8")
-    
-    # %% Add local quanta attributes, based on the HITRAN group
+    # dd local quanta attributes, based on the HITRAN group
     df = parse_local_quanta(df, mol)
     
-    # %% Add global quanta attributes, based on the HITRAN class
+    # Add global quanta attributes, based on the HITRAN class
     df = parse_global_quanta(df, mol)
 
-    # Strip whitespaces around PQR columns (due to 2 columns jumped)
-    if 'branch' in df:
-        df['branch'] = df.branch.str.strip()
-    
-    # Delete dummy column than handled the line return character
-    del df['_linereturn']
-    
     if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
         if verbose: print('Generating cached file: {0}'.format(fcache))
         try:
@@ -790,6 +741,92 @@ def hit2df(fname, count=-1, cache=True, verbose=True):
             pass
         
     return df 
+
+
+def parse_binary_file(fname, columns, count):
+    ''' Parse a file under HITRAN ``par`` format. Parsing is done in binary 
+    format so it's as fast as possible.
+    
+    Parameters
+    ----------
+    
+    fname: str
+        filename
+        
+    columns: dict
+        list of columns and their format
+       
+    count: int
+        number of lines to read
+        
+    Returns
+    -------
+    
+    df: pandas DataFrame
+        dataframe with lines
+        
+    Notes
+    -----
+    
+    Part common to hit2df and cdsd2df
+    
+    '''
+    
+    # To be faster, we read file totally in bytes mode with fromfiles. But that
+    # requires to properly decode the line return character:
+    
+    # problem arise when file was written in an OS and read in another OS (for instance,
+    # line return characters are not converted when read from .egg files). Here
+    # we read the first line and infer the line return character for it 
+    
+    # ... Create a dtype with the binary data format and the desired column names
+    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
+    # ... _linereturn is to capture the line return symbol. We delete it afterwards
+    dt = _format_dtype(dtype)
+    data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
+    
+    # get format of line return
+    from radis.misc.basics import to_str
+    linereturn = to_str(data[0][-1])
+    if to_str('\r\n') in linereturn:
+        linereturnformat = 'a2'
+    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
+        linereturnformat = 'a1'
+    else:
+        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
+        
+    # Now re-read with correct line return character
+
+    # ... Create a dtype with the binary data format and the desired column names
+    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
+    # ... _linereturn is to capture the line return symbol. We delete it afterwards
+    dt = _format_dtype(dtype)
+    data = np.fromfile(fname, dtype=dt, count=count)
+    
+    # ... Cast to new type
+    # This requires to recast all the data already read, but is still the fastest
+    # method I found to read a file directly (for performance benchmark see 
+    # CDSD-HITEMP parser)
+    newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
+    dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
+    data = _cast_to_dtype(data, dtype)
+    
+    # %% Create dataframe    
+    df = pd.DataFrame(data.tolist(), columns=list(columns.keys())+['_linereturn'])
+
+    # Delete dummy column than handled the line return character
+    del df['_linereturn']
+    
+    # Update format
+    for k, c in columns.items():
+        if c[1] == str:
+            df[k] = df[k].str.decode("utf-8")
+    
+    # Strip whitespaces around PQR columns (due to 2 columns jumped)
+    if 'branch' in df:
+        df['branch'] = df.branch.str.strip()
+    
+    return df
 
 def parse_local_quanta(df, mol):
     '''

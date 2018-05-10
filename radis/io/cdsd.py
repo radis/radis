@@ -13,7 +13,7 @@ from collections import OrderedDict
 import os
 import radis
 from os.path import exists, splitext
-from radis.io.hitran import cast_to_dtype, format_dtype
+from radis.io.hitran import parse_binary_file
 from radis.misc.cache_files import check_not_deprecated, save_to_hdf, LAST_COMPATIBLE_VERSION
 import sys
 from six.moves import zip
@@ -196,60 +196,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
 
     # %% Start reading the full file
     
-    # To be faster, we read file totally in bytes mode with fromfiles. But that
-    # requires to properly decode the line return character:
-    
-    # problem arise when file was written in an OS and read in another OS (for instance,
-    # line return characters are not converted when read from .egg files). Here
-    # we read the first line and infer the line return character for it 
-    
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
-    
-    # get format of line return
-    from radis.misc.basics import to_str
-    linereturn = to_str(data[0][-1])
-    if to_str('\r\n') in linereturn:
-        linereturnformat = 'a2'
-    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
-        linereturnformat = 'a1'
-    else:
-        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
-        
-    # Now re-read with correct line return character
-
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=count)
-    
-    # %% Cast to new type
-
-    # ... Cast to new type
-    # This requires to recast all the data already read, but is still the fastest
-    # method I found to read a file directly (for performance benchmark see 
-    # CDSD-HITEMP parser)
-
-    newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
-    dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
-    data2 = cast_to_dtype(data, dtype)
-
-    # %% Create dataframe    
-    df = pd.DataFrame(data2.tolist(), columns=list(columns.keys())+['_linereturn'])
-    
-    for k, c in columns.items():
-        if c[1] == str:
-            df[k] = df[k].str.decode("utf-8")
-    
-    # Strip whitespaces around PQR columns (due to 2 columns jumped)
-    df.branch = df.branch.str.strip()
-    
-    # Delete dummy column than handled the line return character
-    del df['_linereturn']
+    df = parse_binary_file(fname, columns, count)
     
     if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
         if verbose: print('Generating cached file: {0}'.format(fcache))
