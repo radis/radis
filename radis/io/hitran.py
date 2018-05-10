@@ -4,6 +4,18 @@ Summary
 -------
 
 HITRAN database parser 
+
+
+Routine Listing
+---------------
+
+hit2df,
+get_molecule,
+get_molecule_identifier,
+parse_local_quanta,
+parse_global_quanta
+
+
 '''
 
 from __future__ import print_function, absolute_import, division, unicode_literals
@@ -16,9 +28,9 @@ import os
 from os.path import exists, splitext
 from six.moves import range
 from six.moves import zip
-from warnings import warn
 import radis
-from radis.misc.cache_files import check_not_deprecated, save_to_hdf, LAST_COMPATIBLE_VERSION
+from radis.misc.cache_files import (check_not_deprecated, save_to_hdf, 
+                                    DeprecatedFileError, LAST_COMPATIBLE_VERSION)
 
 
 # %% Hitran groups and classes
@@ -106,9 +118,146 @@ columns_2004 = OrderedDict([ (
                'gpp',    ('a7',   float, 'lower state degeneracy'                         ,''                      ))
                ])
 
+def check_cache_file(use_cached, fcache, verbose):
+    ''' Check cache file:
+        
+    First test its existence: function of the value of ``use_cached``:
+    
+    - if True, ok
+    - if 'regen', delete cache file to regenerate it later. 
+    - if 'force', raise an error if file doesnt exist. 
+    
+    Then look if it is deprecated:
+        
+    - if deprecated, delete it to regenerate later unless 'force' was used
+    '''
+    
+    # Test existence of file:
+    if not use_cached:
+        return                   # we dont want a cache file, no need to test it
+    elif use_cached == 'regen':
+        if exists(fcache):
+            os.remove(fcache)
+            if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
+    elif use_cached == 'force':
+        if not exists(fcache):
+            raise ValueError('Cache file {0} doesnt exist'.format(fcache))
+    else: #  use_cached == True
+        pass    # just use the file as is
+            
+    # If file is still here, test if it is deprecated:
+    if exists(fcache):
+        if verbose: print('Using cache file: {0}'.format(fcache))
+        try:
+            check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
+                                 last_compatible_version=LAST_COMPATIBLE_VERSION)
+        except DeprecatedFileError as err:
+            if use_cached == 'force':         
+                raise
+            else:   # delete file to regenerate it in the end of the script
+                if verbose: print('File {0} deprecated:\n{1}\nDeleting it!'.format(
+                            fcache, str(err)))
+                os.remove(fcache)      
 
-# quick fix # TODO: proper implementation of HITRAN classes, and groups
-# Update: classes are now implemented properly, groups remain to be done 
+    return 
+
+def hit2df(fname, count=-1, cache=True, verbose=True):
+    ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
+    
+    Parameters    
+    ----------
+    
+    fname: str
+        HITRAN-HITEMP file name 
+        
+    count: int
+        number of items to read (-1 means all file)
+        
+    cache: boolean, or ``'regen'`` or ``'force'``
+        if ``True``, a pandas-readable HDF5 file is generated on first access, 
+        and later used. This saves on the datatype cast and conversion and
+        improves performances a lot (but changes in the database are not 
+        taken into account). If False, no database is used. If ``'regen'``, temp
+        file are reconstructed. Default ``True``. 
+    
+    
+    Returns
+    -------
+    
+    df: pandas Dataframe
+        dataframe containing all lines and parameters
+        
+    
+    
+    References
+    ----------
+
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
+    
+    
+    Notes
+    -----
+    
+    Performances: see CDSD-HITEMP parser
+    
+    '''
+    
+    columns = columns_2004
+
+    # Use cache file if possible
+    fcache = splitext(fname)[0]+'.h5'
+    check_cache_file(cache, fcache=fcache, verbose=verbose)
+    if cache and exists(fcache):
+        return pd.read_hdf(fcache, 'df')
+        
+    # Detect the molecule by reading the start of the file
+    with open(fname) as f:
+        mol = get_molecule(int(f.read(2)))
+        
+    # %% Start reading the full file
+    
+    df = parse_binary_file(fname, columns, count)
+    
+    # %% Post processing
+    
+    # assert one molecule per database only. Else the groupbase data reading 
+    # above doesnt make sense
+    nmol = len(set(df['id']))
+    if nmol == 0:
+        raise ValueError('Databank looks empty')        
+    elif nmol!=1:
+        # Crash, give explicity error messages
+        try:
+            secondline = df.iloc[1]
+        except IndexError:
+            secondline = ''
+        raise ValueError('Multiple molecules in database ({0}). Current '.format(nmol)+\
+                         'spectral code only computes 1 species at the time. Use MergeSlabs. '+\
+                         'Verify the parsing was correct by looking at the first row below: '+\
+                         '\n{0}'.format(df.iloc[0])+'\n----------------\nand the second row '+\
+                         'below: \n{0}'.format(secondline))
+    
+    # dd local quanta attributes, based on the HITRAN group
+    df = parse_local_quanta(df, mol)
+    
+    # Add global quanta attributes, based on the HITRAN class
+    df = parse_global_quanta(df, mol)
+
+    if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
+        if verbose: print('Generating cached file: {0}'.format(fcache))
+        try:
+            save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
+                        key='df', overwrite=True)
+        except:
+            if verbose:
+                print(sys.exc_info())
+                print('An error occured in cache file generation. Lookup access rights')
+            pass
+        
+    return df 
+
 
 
 # %% Hitran global quanta classes
@@ -637,111 +786,6 @@ def _cast_to_dtype(data, dtype):
             raise ValueError('Cant cast data to specific dtype. Tried column by column. See results above')
 
     return data
-
-def hit2df(fname, count=-1, cache=True, verbose=True):
-    ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
-    
-    Parameters    
-    ----------
-    
-    fname: str
-        HITRAN-HITEMP file name 
-        
-    count: int
-        number of items to read (-1 means all file)
-        
-    cache: boolean, or ``'regen'`` or ``'force'``
-        if ``True``, a pandas-readable HDF5 file is generated on first access, 
-        and later used. This saves on the datatype cast and conversion and
-        improves performances a lot (but changes in the database are not 
-        taken into account). If False, no database is used. If ``'regen'``, temp
-        file are reconstructed. Default ``True``. 
-    
-    
-    Returns
-    -------
-    
-    df: pandas Dataframe
-        dataframe containing all lines and parameters
-        
-    
-    
-    References
-    ----------
-
-    
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
-    
-    
-    
-    Notes
-    -----
-    
-    Performances: see CDSD-HITEMP parser
-    
-    '''
-    
-    columns = columns_2004
-
-    if cache: # lookup if cached file exist. 
-        fcache = splitext(fname)[0]+'.h5'
-        if exists(fcache):
-            if cache == 'regen':
-                os.remove(fcache)
-                if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
-            else:
-                if verbose: print('Using h5 file: {0}'.format(fcache))
-                check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
-                                     last_compatible_version=LAST_COMPATIBLE_VERSION)
-                return pd.read_hdf(fcache, 'df')
-                # >>> Function ends here if cache file was found
-        
-    # Detect the molecule by reading the start of the file
-    with open(fname) as f:
-        mol = get_molecule(int(f.read(2)))
-        
-    # %% Start reading the full file
-    
-    df = parse_binary_file(fname, columns, count)
-    
-    # %% Post processing
-    
-    # assert one molecule per database only. Else the groupbase data reading 
-    # above doesnt make sense
-    nmol = len(set(df['id']))
-    if nmol == 0:
-        raise ValueError('Databank looks empty')        
-    elif nmol!=1:
-        # Crash, give explicity error messages
-        try:
-            secondline = df.iloc[1]
-        except IndexError:
-            secondline = ''
-        raise ValueError('Multiple molecules in database ({0}). Current '.format(nmol)+\
-                         'spectral code only computes 1 species at the time. Use MergeSlabs. '+\
-                         'Verify the parsing was correct by looking at the first row below: '+\
-                         '\n{0}'.format(df.iloc[0])+'\n----------------\nand the second row '+\
-                         'below: \n{0}'.format(secondline))
-    
-    # dd local quanta attributes, based on the HITRAN group
-    df = parse_local_quanta(df, mol)
-    
-    # Add global quanta attributes, based on the HITRAN class
-    df = parse_global_quanta(df, mol)
-
-    if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
-        if verbose: print('Generating cached file: {0}'.format(fcache))
-        try:
-            save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
-                        key='df', overwrite=True)
-        except:
-            if verbose:
-                print(sys.exc_info())
-                print('An error occured in cache file generation. Lookup access rights')
-            pass
-        
-    return df 
-
 
 def parse_binary_file(fname, columns, count):
     ''' Parse a file under HITRAN ``par`` format. Parsing is done in binary 

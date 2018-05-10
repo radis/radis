@@ -8,13 +8,14 @@ import radis
 from warnings import warn
 from os.path import exists
 from radis.misc.basics import compare_dict
-DeprecatedFileError = DeprecationWarning
+class DeprecatedFileError(DeprecationWarning):
+    pass
 
-LAST_COMPATIBLE_VERSION = '0.1.17'
+LAST_COMPATIBLE_VERSION = '0.1.19'
 '''str: forces to regenerate cache files that were created in a previous version'''
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
-assert radis.__version__>=LAST_COMPATIBLE_VERSION
+#assert radis.__version__>=LAST_COMPATIBLE_VERSION
 
 # Utils
 
@@ -62,7 +63,7 @@ def check_not_deprecated(file, metadata, current_version=None, last_compatible_v
     # ... (example: a key name was changed)
     if file_version < last_compatible_version:
         raise DeprecatedFileError('File {0} has been generated in a deprecated '.format(file)+\
-                       'version ({0}). Last compatible version is {1}.'.format(
+                       'version ({0}). Last compatible version is {1}. '.format(
                                file_version, last_compatible_version)+\
                         'Delete the file to regenerate it on next run')
     

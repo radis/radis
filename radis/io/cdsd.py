@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """ Parser for CDSD-HITEMP, CDSD-4000 format 
 
+Routine Listing
+---------------
+
+cdsd2df
+
+
 """
 
 # TODO: remove wangl2  after loading database (wangl is enough, with 1=e and 2=f)
@@ -13,7 +19,7 @@ from collections import OrderedDict
 import os
 import radis
 from os.path import exists, splitext
-from radis.io.hitran import parse_binary_file
+from radis.io.hitran import parse_binary_file, check_cache_file
 from radis.misc.cache_files import check_not_deprecated, save_to_hdf, LAST_COMPATIBLE_VERSION
 import sys
 from six.moves import zip
@@ -182,18 +188,12 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     else:
         raise ValueError('Unknown CDSD version: {0}'.format(version))
     
-    if cache: # lookup if cached file exist. 
-        fcache = splitext(fname)[0]+'.h5'
-        if exists(fcache):
-            if cache == 'regen':
-                os.remove(fcache)
-                if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
-            else:
-                if verbose: print('Using h5 file: {0}'.format(fcache))
-                check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
-                                     last_compatible_version=LAST_COMPATIBLE_VERSION)
-                return pd.read_hdf(fcache, 'df')
-
+    # Use cache file if possible
+    fcache = splitext(fname)[0]+'.h5'
+    check_cache_file(cache, fcache=fcache, verbose=verbose)
+    if cache and exists(fcache):
+        return pd.read_hdf(fcache, 'df')
+        
     # %% Start reading the full file
     
     df = parse_binary_file(fname, columns, count)
