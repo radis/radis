@@ -27,6 +27,7 @@ Run only fast tests (i.e: tests that have 'fast' in their name)::
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 from radis.io.hitran import hit2df
+from neq.io.hitran.hiparser import hit2dfTAB
 from radis.test.utils import getTestFile
 from time import time
 import pytest
@@ -53,6 +54,17 @@ def test_hitran_parser(verbose=True, warnings=True, **kwargs):
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_hitran_parser(verbose=verbose,*args, **kwargs)
+    
+    return True
+
+def test_hitran_tab_parser(verbose=True):
+    '''Opens a test file and tries to read some key parameters in it'''
+    
+    t0 = time()
+    df = hit2dfTAB(getTestFile('CO_in_air_tabtest.out'))
+    if verbose: print('File loaded in {0:.0f}s'.format(time()-t0))
+    assert (df.statep[0] == 'ElecStateLabel=X;v=2;J=26')
+    #TODO: change it when you wrote the extraction of J and v
     
     return True
 
