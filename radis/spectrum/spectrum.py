@@ -529,7 +529,14 @@ class Spectrum(object):
         quantities = {quantity:(w,I)}
         units = {quantity:unit}
         
-        return self(quantities, units, waveunit=waveunit, *args, **kwargs)
+        # Update Spectrum conditions
+        conditions = kwargs.pop('conditions', {})
+        for k in ['path_length', 'medium']:   # usual conditions 
+            if k in kwargs:
+                conditions[k] = kwargs.pop(k)
+        
+        return self(quantities, units, waveunit=waveunit, conditions=conditions,
+                    *args, **kwargs)
 
     @classmethod
     def from_txt(self, file, quantity, waveunit, unit, *args, **kwargs):
@@ -573,7 +580,6 @@ class Spectrum(object):
             
                 {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
             
-    
         lines: pandas Dataframe
             all lines in databank (necessary for LineSurvey). Warning if you want to
             play with the lins content: The signification of columns in `lines` may be
@@ -629,7 +635,14 @@ class Spectrum(object):
         quantities = {quantity:(w,I)}
         units = {quantity:unit}
         
-        return self(quantities, units, waveunit=waveunit, *args, **kwargs)
+        # Update Spectrum conditions
+        conditions = kwargs.pop('conditions', {})
+        for k in ['path_length', 'medium']:   # usual conditions 
+            if k in kwargs:
+                conditions[k] = kwargs.pop(k)
+        
+        return self(quantities, units, waveunit=waveunit, conditions=conditions,
+                    *args, **kwargs)
 
 
     # Public functions
