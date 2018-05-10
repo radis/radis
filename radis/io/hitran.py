@@ -16,6 +16,8 @@ import os
 from os.path import exists, splitext
 from six.moves import range
 from six.moves import zip
+from warnings import warn
+import h5py
 
 
 # %% Hitran groups and classes
@@ -144,8 +146,15 @@ def _generate_cache_file(fname, df):
     
     assert fname.endswith('h5')
     
-    df.to_hdf(fname, 'df', format='fixed', mode='w', complevel=1, complib='blosc')
-#    df.to_hdf(fname, 'df', format='fixed', mode='w')  # would be 10-20% faster, but take 2x more space
+    # Start by adding version
+    from radis import get_version
+    hf = h5py.File(fname, 'w')
+    hf.attrs['version'] = get_version(add_git_number=False)
+    hf.close()
+    
+    # now export dataframe
+    df.to_hdf(fname, 'df', format='fixed', mode='a', complevel=1, complib='blosc')
+#    df.to_hdf(fname, 'df', format='fixed', mode='a')  # would be 10-20% faster, but take 2x more space
     
 
 
@@ -167,15 +176,15 @@ def _parse_HITRAN_class1(df):
     
     HITRAN syntax:
     
-    >>>      v1
+    >>>       v
     >>>  13x I2
     
     '''
     dgu = df['globu'].str.extract(
-            '[ ]{13}(?P<v1u>[\d ]{2})',
+            '[ ]{13}(?P<vu>[\d ]{2})',
             expand=True)
     dgl = df['globl'].str.extract(
-            '[ ]{13}(?P<v1l>[\d ]{2})',
+            '[ ]{13}(?P<vl>[\d ]{2})',
             expand=True)
     dgu = dgu.apply(pd.to_numeric)
     dgl = dgl.apply(pd.to_numeric)
@@ -197,7 +206,7 @@ def _parse_HITRAN_class2(df):
     
     HITRAN syntax:
     
-    >>>      X  v1
+    >>>      X   v
     >>>  12x A1 I2
     
     '''
@@ -676,6 +685,39 @@ def _cast_to_dtype(data, dtype):
 
     return data
 
+def check_deprecated(file):
+    ''' Check if h5 file ``file`` has been generated in a former version
+    
+    If so, trigger a warning'''
+    
+    hf = h5py.File(file, 'r')
+    
+    # Raise an error if version is not found
+    try:
+        file_version = hf.attrs['version']
+    except KeyError:
+        raise KeyError('File {0} has been generated in a deprecated '.format(file)+\
+                       'version. Delete it to regenerate it on next run')
+    finally:
+        hf.close()
+        
+    from radis import get_version
+    version = get_version(add_git_number=False)
+    
+    # If file version is anterior to a major change
+    # ... Update here versions afterwhich Deprecated cache file is not safe 
+    # ... (example: a key name was changed)
+    if file_version < '0.1.18':
+        raise KeyError('File {0} has been generated in a deprecated '.format(file)+\
+                       'version ({0}). Delete it to regenerate it on next run'.format(file_version))
+    
+    # If file version is outdated: Warning, but no error
+    if version > file_version:
+        warn(DeprecationWarning('File {0} has been generated in '.format(file)+\
+                'a deprecated version ({0}) compared to current ({1})'.format(file_version, version)+\
+                '. Delete it to regenerate it on next run'))   
+        
+
 def hit2df(fname, count=-1, cache=False, verbose=True):
     ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
     
@@ -723,7 +765,6 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     columns = columns_2004
 
     if cache: # lookup if cached file exist. 
-#        fcache = fname+'.cached'
         fcache = splitext(fname)[0]+'.h5'
         if exists(fcache):
             if cache == 'regen':
@@ -731,7 +772,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
                 if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
             else:
                 if verbose: print('Using h5 file: {0}'.format(fcache))
-    #            return pd.read_csv(fcache)
+                check_deprecated(fcache)
                 return pd.read_hdf(fcache, 'df')
         
     # Detect the molecule by reading the start of the file

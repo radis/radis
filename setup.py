@@ -94,6 +94,7 @@ setup(name='radis',
                                         # numpy docstrings
                         'tables',       # for pandas to HDF5 export
                         'pytest',       # to run test suite
+                        'h5py',         # to write HDF5 files
 				],
       classifiers=[
         'Development Status :: 4 - Beta',

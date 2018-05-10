@@ -12,7 +12,8 @@ import numpy as np
 from collections import OrderedDict
 import os
 from os.path import exists, splitext
-from radis.io.hitran import _cast_to_dtype, _format_dtype, _generate_cache_file
+from radis.io.hitran import (check_deprecated, _cast_to_dtype, 
+                             _format_dtype, _generate_cache_file)
 import sys
 from six.moves import zip
 
@@ -181,7 +182,6 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         raise ValueError('Unknown CDSD version: {0}'.format(version))
     
     if cache: # lookup if cached file exist. 
-#        fcache = fname+'.cached'
         fcache = splitext(fname)[0]+'.h5'
         if exists(fcache):
             if cache == 'regen':
@@ -189,7 +189,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
                 if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
             else:
                 if verbose: print('Using h5 file: {0}'.format(fcache))
-    #            return pd.read_csv(fcache)
+                check_deprecated(fcache)
                 return pd.read_hdf(fcache, 'df')
 
     # %% Start reading the full file
