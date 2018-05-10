@@ -28,7 +28,7 @@ from radis.tools.slit import (gaussian_slit, triangular_slit, trapezoidal_slit,
 from radis.phys.units import is_homogeneous
 from radis.phys.convert import dcm2dnm, dnm2dcm
 #from radis.misc.utils import DatabankNotFound
-#from radis.test.utils import IgnoreMissingDatabase, build_test_databases
+#from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 import matplotlib.pyplot as plt 
 import numpy as np
 from numpy import sqrt, linspace, abs, trapz
