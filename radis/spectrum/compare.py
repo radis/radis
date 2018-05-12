@@ -552,6 +552,8 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
                          color='r', lw=1, alpha=0.2, horizOn=False, 
                          vertOn=True)
     
+    plt.show()
+    
     return fig, [ax0, ax1]
 ''' Return the average distance between two spectra.
     It's important to note that if averageDistance(s1, s2)==0 then s1 = s2

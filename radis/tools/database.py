@@ -377,7 +377,9 @@ def load(file, binary=False):
     return load_spec(file)
 
 def load_spec(file, binary=False):
-    ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object
+    ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object. 
+    Adds ``file`` in the Spectrum :attr:`~radis.spectrum.spectrum.Spectrum.file` 
+    attribute.
     
     Parameters
     ----------
@@ -430,7 +432,8 @@ def load_spec(file, binary=False):
     return _json_to_spec(sload, file)
 
 def _json_to_spec(jsondict, file=''):
-    ''' Builds a Spectrum object from a JSON dictionary. Called by load_spec
+    ''' Builds a Spectrum object from a JSON dictionary. Called by 
+    :func:`~radis.tools.database.load_spec`. 
     
     Parameters
     ----------
@@ -515,6 +518,9 @@ def _json_to_spec(jsondict, file=''):
                     conditions=conditions,
                     waveunit=waveunit,
                     **kwargs)
+    
+    # ... add file
+    s.file = basename(file)
     
     # ... add slit 
     s._slit = slit

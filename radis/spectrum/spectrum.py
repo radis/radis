@@ -60,6 +60,7 @@ from warnings import warn
 from numpy import allclose, abs, diff
 from copy import deepcopy
 from six import string_types
+from os.path import basename
 
 # %% Array-to-Spectrum functions
 
@@ -370,7 +371,7 @@ class Spectrum(object):
 
     # hardcode attribute names, but can save a lot of memory if hundreds of spectra
     __slots__ = ['_q', '_q_conv', 'units', 'conditions', 'cond_units', 'populations',
-                  'lines', 'name', '_slit']
+                  'lines', 'name', '_slit', 'file']
 
     def __init__(self, quantities, units=None, conditions=None, cond_units=None,
                  populations=None, lines=None, waveunit=None, wavespace=None, # deprecated
@@ -444,6 +445,7 @@ class Spectrum(object):
         self.units = units
         self.cond_units = cond_units
         self.name = name
+        self.file = None        # used to store filename when loaded from a file
 
     # %% Constructors
     
@@ -641,9 +643,12 @@ class Spectrum(object):
             if k in kwargs:
                 conditions[k] = kwargs.pop(k)
         
-        return self(quantities, units, waveunit=waveunit, conditions=conditions,
+        s = self(quantities, units, waveunit=waveunit, conditions=conditions,
                     *args, **kwargs)
-
+        
+        # Store filename
+        s.file = file
+        return s
 
     # Public functions
     # %% ======================================================================
@@ -1035,17 +1040,21 @@ class Spectrum(object):
 #                                     per_cm_is_like='mW/sr/cm2/cm_1')
 
     def get_name(self):
-        ''' Return Spectrum name. If not defined, returns 'spectrum{id}' with
-        the Python id object
+        ''' Return Spectrum name. If not defined, returns either the 
+        :attr:`~radis.spectrum.spectrum.Spectrum.file` name if Spectrum was 
+        loaded from a file, or the ``'spectrum{id}'`` with
+        the Python ``id`` object
         '''
         try:
             self.name
         except AttributeError:
-            warn('Spectrum has no .name attribute and is probably outdated. Update!')
+            warn(DeprecationWarning('Spectrum has no .name attribute and is probably outdated. Update!'))
             self.name = None
 
         if self.name is not None:
             name = self.name
+        elif self.file is not None:
+            name = '{0}'.format(basename(self.file))
         else:
             name = 'spectrum{0}'.format(id(self))
 
@@ -2568,7 +2577,12 @@ class Spectrum(object):
                 warnings=False,   # saves about 3.5 ms on the Performance test object
                 )
         
-        # Add slit information
+        # Add extra information
+        
+        # ... file name (if exists)
+        s.file = self.file
+        
+        # ... slit information
         try:
             wslit, Islit = self.get_slit()
             s._slit['wavespace'] = wslit  # in 'waveunit'
