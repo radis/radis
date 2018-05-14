@@ -163,15 +163,15 @@ html_theme = 'alabaster' #'bizstyle' #'nature'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
+    'description': "Radiative Solver",
     'logo': 'radis_ico.png',
     'logo_name': True, 
     'github_user': 'radis',
     'github_repo': 'radis',
     'github_button': True, 
     'github_banner': False,
-    'badge_branch': 'master',
     'travis_button': True,
-    'codecov_button': True,
+    'codecov_button': True
     }
 
 # Add any paths that contain custom themes here, relative to this directory.
