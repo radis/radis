@@ -164,14 +164,14 @@ html_theme = 'alabaster' #'bizstyle' #'nature'
 # documentation.
 html_theme_options = {
     'logo': 'radis_ico.png',
-    'logo_name': 'true', 
+    'logo_name': True, 
     'github_user': 'radis',
     'github_repo': 'radis',
-    'github_button': 'true', 
-    'github_banner': 'true',
+    'github_button': True, 
+    'github_banner': False,
     'badge_branch': 'master',
-    'travis_button': 'true',
-    'codecov_button': 'true',
+    'travis_button': True,
+    'codecov_button': True,
     }
 
 # Add any paths that contain custom themes here, relative to this directory.
