@@ -8,7 +8,8 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.misc.curve import curve_substract, curve_add
 from radis import get_diff, Spectrum
 
-def substract(s1, s2, var='radiance', wunit='nm', Iunit='default', 
+
+def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
               resample=True, name='default'):
     '''Substract s2 to s1
 
@@ -27,7 +28,7 @@ def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
     Returns    
     ----------
     sub : Spectrum object where intensities of s1 and s2 are substracted
-    
+
     Note    
     ----------
     Wavelength of s1 is taken as reference.
@@ -40,15 +41,16 @@ def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
         try:
             Iunit = s1.units[var]
         except KeyError:  # unit not defined in dictionary
-            raise KeyError('Iunit not defined in spectrum. Cant plot') 
-            
-    w1, I3 = get_diff(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
-                                  resample=resample)
+            raise KeyError('Iunit not defined in spectrum. Cant plot')
+
+    w1, I3 = get_diff(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
+                      resample=resample)
     if name != 'default':
         name = s1.get_name()+'+'+s2.get_name()
-    sub = Spectrum.from_array(w1, I3, var, 
-                               waveunit=wunit, 
-                               unit=Iunit,
-                               conditions={'medium' : s1.conditions['medium'], 'waveunit':wunit}, 
-                               name=name)
+    sub = Spectrum.from_array(w1, I3, var,
+                              waveunit=wunit,
+                              unit=Iunit,
+                              conditions={
+                                  'medium': s1.conditions['medium'], 'waveunit': wunit},
+                              name=name)
     return sub

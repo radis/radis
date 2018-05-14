@@ -42,16 +42,16 @@ Na = Av = 6.02214129e23  # mol-1
 eps_0 = 8.854187817e-12  # Farads / m
 
 # cm to K conversion (used in Boltman factors)
-hc_k = h*c/k_b*100          #   ~ 1.44 cm.K
+hc_k = h*c/k_b*100  # ~ 1.44 cm.K
 
 
 # %% HITRAN (CGS) units
 
 # Boltzman constant
-k_b_CGS = 1.380648813E-16 # erg/K, CGS
+k_b_CGS = 1.380648813E-16  # erg/K, CGS
 
 # Light velocity
-c_CGS = 2.99792458e10 # cm/s, CGS
+c_CGS = 2.99792458e10  # cm/s, CGS
 
 # Planck constant
-h_CGS = 6.626196e-27 # erg*s, CGS
+h_CGS = 6.626196e-27  # erg*s, CGS

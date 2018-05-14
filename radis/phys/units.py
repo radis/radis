@@ -29,7 +29,8 @@ ureg = UnitRegistry()
 _units_file = abspath(join(dirname(__file__), 'units.txt'))
 # make sure file exists
 if not exists(_units_file):
-    raise AssertionError("Couldn't find units file in : {0}".format(_units_file))
+    raise AssertionError(
+        "Couldn't find units file in : {0}".format(_units_file))
 ureg.load_definitions(_units_file)
 Q_ = ureg.Quantity
 
@@ -38,12 +39,12 @@ Q_ = ureg.Quantity
 
 class uarray(np.ndarray):
     ''' Unit-aware array based on Pint
-    
+
     Example
     -------
-    
+
     >>> a = uarray(np.linspace(10, 100, 10), 'Td')
-    
+
     '''
 
     def __new__(cls, input_array, unit=None):
@@ -65,94 +66,97 @@ class uarray(np.ndarray):
             return
 #        self.info = getattr(obj, 'info', None)
 
+
 def conv2(quantity, fromunit, tounit):
     ''' Converts `quantity` from unit `fromunit` to unit `tounit`
-    
-    
+
+
     Parameters    
     ----------
-    
+
     quantity: array
         quantity to convert
-        
+
     fromunit: str
         input unit
-    
+
     tounit: str
         output unit
-        
-        
+
+
     Note
     ----
-    
+
     The output is still non dimensional. We don't transform `quantity` 
     into a pint array (or neq.phys.uarray) because this may create a performance
     drop in computationaly-expensive task. Instead, we assume we know for 
     sure the units in which some of our quantities will be created, and just
     want to let the users choose another output unit 
-    
+
     '''
 
     try:
-        a = Q_(quantity,fromunit)
+        a = Q_(quantity, fromunit)
         a = a.to(tounit)
     except TypeError:
         if 'cm-1' in fromunit or 'cm-1' in tounit:
-#            raise TypeError('Use cm_1 instead of cm-1 else it triggers errors in '+\
-#                            'pint (symbolic unit converter)')
-            conv2(quantity, fromunit.replace('cm-1', 'cm_1'), tounit.replace('cm-1', 'cm_1'))
-            
+            #            raise TypeError('Use cm_1 instead of cm-1 else it triggers errors in '+\
+            #                            'pint (symbolic unit converter)')
+            conv2(quantity, fromunit.replace('cm-1', 'cm_1'),
+                  tounit.replace('cm-1', 'cm_1'))
+
         else:
             raise
-            
+
     return a.magnitude
 
 
 def is_homogeneous(unit1, unit2):
     ''' Tells if unit1 and unit2 are homogeneous, using the Pint library
-    
-    
+
+
     Parameters    
     ----------
-    
+
     unit1, unit2: str
         units 
 
     '''
-    
+
     try:
         Q_(unit1) + Q_(unit2)
         return True
     except DimensionalityError:
         return False
-    
+
 # %% Emission density conversion functions (with changes from ~1/nm in ~1/cm-1)
+
 
 def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     '''
     Convert spectral emission density in wavelength base (typically ~mW/cm3/sr/nm) 
     to spectral emission density in wavenumber base (~mW/cm3/sr/cm_1)
-    
-    
+
+
     Parameters    
     ----------
-    
+
     j_nm: array
         spectral emission density in Iunit0 unit (~ per wavelength) )
-        
+
     wavenum: array (cm-1)
         wavenumber
-        
+
     Iunit0: str
         unit (~ per wavelength) to convert from 
-        
+
     Iunit: str
         unit (~ per wavenumber) to convert to
 
 
     Notes
     -----
-    
+
     Implementation:
 
     We use the variable substitution:
@@ -167,7 +171,7 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     -------
 
     Validation:
-    
+
         >>> w_nm, j_nm = s.get('emisscoeff', 'nm', 'mW/cm2/sr/nm')
         >>> w_cm, j_cm = s.get('emisscoeff', 'cm', 'mW/cm2/sr/cm_1')
         >>> print(trapz(y_nm, x_nm))
@@ -198,26 +202,26 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
     Convert spectral emission density in wavenumber base (typically ~mW/cm3/sr/cm_1) to 
     spectral radiance in wavelength base (~mW/cm3/sr/nm)
 
-    
+
     Parameters    
     ----------
-    
+
     j_cm: array
         spectral emission density in Iunit0 unit (~ per wavenumber)
-        
+
     wavenum: array (cm-1)
         wavenumber
-        
+
     Iunit0: str
         unit (~ per wavenumber) to convert from 
-        
+
     Iunit: str
         unit (~ per wavelength) to convert to
-        
-        
+
+
     Notes
     -----
-    
+
     Implementation:
 
     We use the variable substitution:
@@ -229,7 +233,7 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
 
     '''
 
-    if Q_(Iunit0) != Q_('mW/cm3/sr/cm_1'):  
+    if Q_(Iunit0) != Q_('mW/cm3/sr/cm_1'):
         j_cm = conv2(j_cm, Iunit0, 'mW/cm3/sr/cm_1')
 
     # Convert 'mW/cm3/sr/cm_1' to 'mW/cm3/sr/nm'
@@ -246,32 +250,32 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
 
 
 # %% Radiance conversion functions (with changes from ~1/nm in ~1/cm-1)
-    
+
 def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
     '''
     Convert spectral radiance in wavelength base (~1/nm) to spectral radiance in
     wavenumber base (~1/cm_1)
-    
-    
+
+
     Parameters    
     ----------
-    
+
     l_nm: array
         spectral radiance in yunit0 unit (~ per wavelength)
-        
+
     wavenum: array (cm-1)
         wavenumber
-        
+
     Iunit0: str
         unit (~ per wavelength) to convert from 
-        
+
     Iunit: str
         unit (~ per wavenumber) to convert to
 
 
     Notes
     -----
-    
+
     Implementation:
 
     We use the variable substitution:
@@ -284,9 +288,9 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
 
     Example
     -------
-    
+
     Validation:
-    
+
         >>> x_nm, y_nm = s.get('radiance_noslit', 'nm', 'mW/cm2/sr/nm')
         >>> x_cm, y_cm = s.get('radiance_noslit', 'cm', 'mW/cm2/sr/cm_1')
         >>> print(trapz(y_nm, x_nm))
@@ -317,25 +321,25 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     Convert spectral radiance in wavenumber base (~1/cm_1) to spectral radiance in
     wavelength base (~1/nm)
 
-    
+
     Parameters    
     ----------
-    
+
     l_cm: array
         spectral radiance in yunit0 unit (~ per wavenumber)
-        
+
     wavenum: array (cm-1)
         wavenumber
-        
+
     Iunit0: str
         unit (~ per wavenumber) to convert from 
-        
+
     Iunit: str
         unit (~ per wavelength) to convert to
-        
+
     Notes
     -----
-    
+
     Implementation:
 
     We use a variable substitution:
@@ -364,12 +368,12 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
 
 
 def convert_universal(I, from_unit, to_unit, spec=None,
-                     per_nm_is_like='mW/sr/cm2/nm', per_cm_is_like='mW/sr/cm2/cm_1'):
+                      per_nm_is_like='mW/sr/cm2/nm', per_cm_is_like='mW/sr/cm2/cm_1'):
     ''' Return variable var in whatever unit, and converts to to_unit
     Also deal with cases where var is in ~1/nm (per_nm_is_like) or ~1/cm-1
     (per_cm_is_like)
 
-    
+
     Parameters    
     ----------
 
@@ -378,17 +382,17 @@ def convert_universal(I, from_unit, to_unit, spec=None,
 
     to_unit: str
         unit to convert variable to
-        
+
     Other Parameters
     ----------------
-        
+
     spec: :class:`~radis.spectrum.spectrum.Spectrum` object
         needed to get wavenumber in case we need to do a change of variable 
         within the integral
-        
+
     Notes
     -----
-    
+
     wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires 
     a change of variable in the integral)
 

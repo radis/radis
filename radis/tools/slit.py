@@ -34,10 +34,11 @@ SLIT_SHAPES = ['triangular', 'trapezoidal', 'gaussian']
 
 # %% Get slit function
 
+
 def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangular',
                       center_wavespace=None, return_unit='same', wstep=None,
-                       plot=False, resfactor=2,
-                       *args, **kwargs):
+                      plot=False, resfactor=2,
+                      *args, **kwargs):
     ''' Import or generate slit function in correct wavespace
     Give a file path to import, or a float / tuple to generate arbitrary shapes
 
@@ -46,7 +47,7 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
     See :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` and 
     :func:`~radis.tools.slit.convolve_with_slit` for more info
 
-    
+
     Parameters    
     ----------
 
@@ -91,31 +92,31 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
          tolerance fraction. Only used when importing experimental slit as the
          theoretical slit functions are directly generated in spectrum wavespace
          Default 1e-3 (0.1%)
-         
+
 
     Returns
     -------
-    
+
     wslit, Islit: array
         wslit is in `return_unit` . Islit is normalized according to  `norm_by`
-         
-        
+
+
     Examples
     --------
-    
+
     >>> wslit, Islit = get_slit_function(1, 'nm', shape='triangular', 
     center_wavespace=600, wstep=0.01)     
-    
+
     Returns a triangular slit function of FWHM = 1 nm, centered on 600 nm, with
     a step of 0.01 nm
-    
+
     >>> wslit, Islit = get_slit_function(1, 'nm', shape='triangular', 
     center_wavespace=600, return_unit='cm-1', wstep=0.01)   
-    
+
     Returns a triangular slit function expressed in cm-1, with a FWHM = 1 nm 
     (converted in equivalent width in cm-1 at 600 nm), centered on 600 nm, with 
     a step of 0.01 cm-1 (!)   
-    
+
 
     Notes
     -----
@@ -123,28 +124,28 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
     In norm_by 'max' mode, slit is normalized by slit max. In RADIS, this is done
     in the spectrum wavespace (to avoid errors that would be caused by interpolating
     the spectrum). 
-    
+
     A problem arise if the spectrum wavespace is different from the slit wavespace:
     typically, slit is in 'nm' but a spectrum calculated by RADIS is stored in 
     'cm-1': in that case, the convoluted spectrum is multiplied by /int(Islit*dν)
     instead of /int(Islit*dλ). The output unit is then [radiance]*[spec_unit]
     instead of [radiance]*[slit_unit], i.e, typically, [mW/cm2/sr/nm]*[cm-1]
     instead of [mW/cm2/sr/nm]*[nm]=[mW/cm2/sr]
-    
+
     While this remains true if the units are taken into account, this is not the
     expected behaviour. For instance, Specair users are used to having a FWHM(nm) 
     factor between spectra convolved with slit normalized by max and slit normalized
     by area.
-    
+
     The norm_by='max' behaviour adds a correction factor
     `/int(Islit*dλ)/int(Islit*dν)` to maintain an output spectrum in [radiance]*[slit_unit]
-    
+
     See Also
     --------
-    
+
     :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, 
     :func:`~radis.tools.slit.convolve_with_slit`
-    
+
     '''
 
     if 'waveunit' in kwargs:
@@ -152,22 +153,22 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         return_unit = kwargs.pop('waveunit')
         warn(DeprecationWarning('waveunit renamed return_unit'))
     if 'slit_unit' in kwargs:
-        assert unit == 'nm' # default
+        assert unit == 'nm'  # default
         unit = kwargs.pop('slit_unit')
         warn(DeprecationWarning('slit_unit renamed unit'))
 
     energy_threshold = kwargs.pop('energy_threshold', 1e-3)   # type: float
-                    # tolerance fraction
-                    # when resampling (only used in experimental slit as the)
-                    # theoretical slit functions are directly generated in
-                    # spectrum wavespace
+    # tolerance fraction
+    # when resampling (only used in experimental slit as the)
+    # theoretical slit functions are directly generated in
+    # spectrum wavespace
 
     def check_input_gen():
         if center_wavespace is None:
-            raise ValueError('center_wavespace has to be given when generating '+\
+            raise ValueError('center_wavespace has to be given when generating ' +
                              'slit function')
         if wstep is None:
-            raise ValueError('wstep has to be given when generating '+\
+            raise ValueError('wstep has to be given when generating ' +
                              'slit function')
 
     # Cast units
@@ -175,8 +176,9 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         return_unit = unit
     unit = cast_waveunit(unit)
     return_unit = cast_waveunit(return_unit)
-    scale_slit = 1   # in norm_by=max mode, used to keep units in [Iunit]*return_unit in [Iunit]*unit
-                     # not used in norm_by=area mode
+    # in norm_by=max mode, used to keep units in [Iunit]*return_unit in [Iunit]*unit
+    scale_slit = 1
+    # not used in norm_by=area mode
 
     # First get the slit in return_unit space
     if is_float(slit_function):  # Generate slit function (directly in return_unit space)
@@ -189,24 +191,27 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
             # center_wavespace ~ nm, FWHM ~ nm
             FWHM = dnm2dcm(FWHM, center_wavespace)   # wavelength > wavenumber
             center_wavespace = nm2cm(center_wavespace)
-            if norm_by=='max': scale_slit = slit_function/FWHM         # [unit/return_unit]
+            if norm_by == 'max':
+                scale_slit = slit_function/FWHM         # [unit/return_unit]
         elif return_unit == 'nm' and unit == 'cm-1':
             # center_wavespace ~ cm-1, FWHM ~ cm-1
             FWHM = dcm2dnm(FWHM, center_wavespace)  # wavenumber > wavelength
             center_wavespace = cm2nm(center_wavespace)
-            if norm_by=='max': scale_slit = slit_function/FWHM         # [unit/return_unit]
+            if norm_by == 'max':
+                scale_slit = slit_function/FWHM         # [unit/return_unit]
         else:
-            pass # correct unit already
+            pass  # correct unit already
         # Now FWHM is in 'return_unit'
 
         # ... now, build it (in our wavespace)
-        if __debug__: printdbg('get_slit_function: {0} FWHM {1:.2f}{2}, center {3:.2f}{2}, norm_by {4}'.format(
+        if __debug__:
+            printdbg('get_slit_function: {0} FWHM {1:.2f}{2}, center {3:.2f}{2}, norm_by {4}'.format(
                 shape, FWHM, return_unit, center_wavespace, norm_by))
 
         if shape == 'triangular':
             wslit, Islit = triangular_slit(FWHM, wstep,
                                            center=center_wavespace, bplot=plot,
-                                           norm_by = norm_by,
+                                           norm_by=norm_by,
                                            waveunit=return_unit,
                                            scale=scale_slit,
                                            *args, **kwargs)
@@ -217,17 +222,18 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         elif shape == 'gaussian':
             wslit, Islit = gaussian_slit(FWHM, wstep,
                                          center=center_wavespace, bplot=plot,
-                                         norm_by = norm_by,
+                                         norm_by=norm_by,
                                          waveunit=return_unit,
                                          scale=scale_slit,
                                          *args, **kwargs)
 
         elif shape == 'trapezoidal':
-            raise TypeError('A (top, base) tuple must be given with a trapezoidal slit')
+            raise TypeError(
+                'A (top, base) tuple must be given with a trapezoidal slit')
 
         else:
             raise TypeError('Slit function ({0}) not in known slit shapes: {1}'.format(
-                    shape, SLIT_SHAPES))
+                shape, SLIT_SHAPES))
 
     elif isinstance(slit_function, tuple):
 
@@ -236,14 +242,16 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         try:
             top, base = slit_function
         except:
-            raise TypeError('Wrong format for slit function: {0}'.format(slit_function))
+            raise TypeError(
+                'Wrong format for slit function: {0}'.format(slit_function))
         if shape == 'trapezoidal':
             pass
-        elif shape == 'triangular': # it's the default
+        elif shape == 'triangular':  # it's the default
             warn('Triangular slit given with a tuple: we used trapezoidal slit instead')
             shape = 'trapezoidal'
         else:
-            raise TypeError('A (top, base) tuple must be used with a trapezoidal slit')
+            raise TypeError(
+                'A (top, base) tuple must be used with a trapezoidal slit')
 
         # ... first get FWHM in our wavespace unit
         if return_unit == 'cm-1' and unit == 'nm':
@@ -251,69 +259,78 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
             top = dnm2dcm(top, center_wavespace)   # wavelength > wavenumber
             base = dnm2dcm(base, center_wavespace)   # wavelength > wavenumber
             center_wavespace = nm2cm(center_wavespace)
-            if norm_by=='max': scale_slit = sum(slit_function)/(top+base)  # [unit/return_unit]
+            if norm_by == 'max':
+                scale_slit = sum(slit_function) / \
+                    (top+base)  # [unit/return_unit]
         elif return_unit == 'nm' and unit == 'cm-1':
             # center_wavespace ~ cm-1, FWHM ~ cm-1
             top = dcm2dnm(top, center_wavespace)  # wavenumber > wavelength
             base = dcm2dnm(base, center_wavespace)  # wavenumber > wavelength
             center_wavespace = cm2nm(center_wavespace)
-            if norm_by=='max': scale_slit = sum(slit_function)/(top+base)  # [unit/return_unit]
+            if norm_by == 'max':
+                scale_slit = sum(slit_function) / \
+                    (top+base)  # [unit/return_unit]
         else:
-            pass # correct unit already
-            
+            pass  # correct unit already
+
         FWHM = (top+base)/2
 
         # ... now, build it (in our wavespace)
-        if __debug__: printdbg('get_slit_function: {0}, FWHM {1:.2f}{2}, center {3:.2f}{2}, norm_by {4}'.format(
+        if __debug__:
+            printdbg('get_slit_function: {0}, FWHM {1:.2f}{2}, center {3:.2f}{2}, norm_by {4}'.format(
                 shape, FWHM, return_unit, center_wavespace, norm_by))
 
         wslit, Islit = trapezoidal_slit(top, base, wstep,
-                                     center=center_wavespace, bplot=plot,
-                                     norm_by = norm_by,
-                                     waveunit=return_unit,
-                                     scale=scale_slit,
-                                     *args, **kwargs)
+                                        center=center_wavespace, bplot=plot,
+                                        norm_by=norm_by,
+                                        waveunit=return_unit,
+                                        scale=scale_slit,
+                                        *args, **kwargs)
 
-    elif isinstance(slit_function, string_types): # import it
-        if __debug__: printdbg('get_slit_function: {0} in {1}, norm_by {2}, return in {3}'.format(
+    elif isinstance(slit_function, string_types):  # import it
+        if __debug__:
+            printdbg('get_slit_function: {0} in {1}, norm_by {2}, return in {3}'.format(
                 slit_function, unit, norm_by, return_unit))
-        wslit, Islit = import_experimental_slit(slit_function,norm_by=norm_by, # norm is done later anyway
+        wslit, Islit = import_experimental_slit(slit_function, norm_by=norm_by,  # norm is done later anyway
                                                 waveunit=unit,
-                                                bplot=False, # we will plot after resampling
+                                                bplot=False,  # we will plot after resampling
                                                 *args, **kwargs)
-        # ... get unit 
+        # ... get unit
         # Normalize
-        if norm_by == 'area': # normalize by the area
-    #        I_slit /= np.trapz(I_slit, x=w_slit)
+        if norm_by == 'area':  # normalize by the area
+            #        I_slit /= np.trapz(I_slit, x=w_slit)
             Iunit = '1/{0}'.format(unit)
-        elif norm_by == 'max': # set maximum to 1
+        elif norm_by == 'max':  # set maximum to 1
             Iunit = '1'
         elif norm_by is None:
-            Iunit=None
+            Iunit = None
         else:
-            raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+            raise ValueError(
+                'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
 
         # ... check it looks correct
         unq, counts = np.unique(wslit, return_counts=True)
         dup = counts > 1
         if dup.sum() > 0:
-            raise ValueError('Not all wavespace points are unique: slit function '+
-                 'format may be wrong. Duplicates for w={0}'.format(unq[dup]))
+            raise ValueError('Not all wavespace points are unique: slit function ' +
+                             'format may be wrong. Duplicates for w={0}'.format(unq[dup]))
 
         # ... resample if needed
-        if return_unit == 'cm-1' and unit == 'nm': # wavelength > wavenumber
+        if return_unit == 'cm-1' and unit == 'nm':  # wavelength > wavenumber
             wold, Iold = wslit, Islit
             wslit, Islit = resample_even(nm2cm(wslit), Islit, resfactor=resfactor,
-                                    energy_threshold=energy_threshold,
-                                    print_conservation=True)
-            scale_slit=trapz(Iold, wold)/trapz(Islit, wslit)    # [unit/return_unit]
+                                         energy_threshold=energy_threshold,
+                                         print_conservation=True)
+            scale_slit = trapz(Iold, wold)/trapz(Islit,
+                                                 wslit)    # [unit/return_unit]
             renormalize = True
-        elif return_unit == 'nm' and unit == 'cm-1': # wavenumber > wavelength
+        elif return_unit == 'nm' and unit == 'cm-1':  # wavenumber > wavelength
             wold, Iold = wslit, Islit
             wslit, Islit = resample_even(cm2nm(wslit), Islit, resfactor=resfactor,
-                                    energy_threshold=energy_threshold,
-                                    print_conservation=True)
-            scale_slit=trapz(Iold, wold)/trapz(Islit, wslit)    # [unit/return_unit]
+                                         energy_threshold=energy_threshold,
+                                         print_conservation=True)
+            scale_slit = trapz(Iold, wold)/trapz(Islit,
+                                                 wslit)    # [unit/return_unit]
             renormalize = True
         else:  # return_unit == unit
             renormalize = False
@@ -322,11 +339,12 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
 
         # re-Normalize if needed (after changing units)
         if renormalize:
-            if __debug__: printdbg('get_slit_function: renormalize')
-            if norm_by == 'area': # normalize by the area
+            if __debug__:
+                printdbg('get_slit_function: renormalize')
+            if norm_by == 'area':  # normalize by the area
                 Islit /= abs(np.trapz(Islit, x=wslit))
                 Iunit = '1/{0}'.format(return_unit)
-            elif norm_by == 'max': # set maximum to 1
+            elif norm_by == 'max':  # set maximum to 1
                 Islit /= abs(np.max(Islit))
                 Islit *= scale_slit
                 Iunit = '1'
@@ -335,18 +353,21 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
 #            elif norm_by == 'max2': # set maximum to 1    # removed this mode for simplification
 #                Islit /= abs(np.max(Islit))
             elif norm_by is None:
-                Iunit=None
+                Iunit = None
             else:
-                raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+                raise ValueError(
+                    'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
 
-        if plot: # (plot after resampling / renormalizing)
+        if plot:  # (plot after resampling / renormalizing)
             # Plot slit
             plot_slit(wslit, Islit, waveunit=return_unit, Iunit=Iunit)
 
     else:
-        raise TypeError('Unexpected type for slit function: {0}'.format(type(slit_function)))
+        raise TypeError(
+            'Unexpected type for slit function: {0}'.format(type(slit_function)))
 
     return wslit, Islit
+
 
 try:  # Python >3.6 only
     get_slit_function.__annotations__['shape'] = SLIT_SHAPES
@@ -355,13 +376,14 @@ except AttributeError:
 
 # %% Convolve with slit function
 
-def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area', 
+
+def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
                        mode='valid', slit_dispersion=None,
                        k=1, bplot=False, conv_type=None, verbose=True):
     ''' Convolves spectrum (w,I) with instrumental slit function (w_slit, I_slit)
     Returns a convolved spectrum on a valid range.
 
-    
+
     Parameters    
     ----------
 
@@ -446,7 +468,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
 
     Notes
     -----
-    
+
     Implementation is done in 7 steps:
     - Check input
     - Correct for Slit dispersion
@@ -459,7 +481,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
 
     See Also
     --------
-    
+
     :func:`~radis.tools.slit.get_slit_function`, 
     :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`
 
@@ -473,12 +495,11 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
 
     # Assert slit function is thin enough
     try:
-        assert(abs(w[-1]-w[0])>abs(w_slit[-1]-w_slit[0]))
+        assert(abs(w[-1]-w[0]) > abs(w_slit[-1]-w_slit[0]))
     except AssertionError:
         raise AssertionError('Slit function is broader ({0:.1f}nm) than spectrum'.format(
-                            abs(w_slit[-1]-w_slit[0])) + \
-                            ' ({0:.1f}nm). No valid range.'.format(abs(w[-1]-w[0])))
-
+            abs(w_slit[-1]-w_slit[0])) +
+            ' ({0:.1f}nm). No valid range.'.format(abs(w[-1]-w[0])))
 
     # 2. Correct for Slit dispersion
     # --------------
@@ -491,12 +512,12 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
         threshold = 0.01
         if not 1-threshold < slit_dispersion(w.max())/slit_dispersion(w.min()) < 1+threshold:
             warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}nm'.format(
-                    w.min(), w.max(), abs(slit_dispersion(w.max())/slit_dispersion(w.min())-1
-                          )*100)+'. Consider splitting your spectrum')
+                w.min(), w.max(), abs(slit_dispersion(w.max())/slit_dispersion(w.min())-1
+                                      )*100)+'. Consider splitting your spectrum')
 
         # Offset slit and correct for dispersion
-        w_slit = w0 + slit_dispersion(w0)/slit_dispersion(wslit0)*(w_slit-wslit0)
-
+        w_slit = w0 + slit_dispersion(w0) / \
+            slit_dispersion(wslit0)*(w_slit-wslit0)
 
     # 3. Interpolate the slit function on the spectrum grid, resample it if not
     #    evenly spaced
@@ -517,8 +538,10 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
         w_slit = w_slit[::-1]
         I_slit = I_slit[::-1]
 
-    if not np.allclose(np.diff(w_slit),wstep):
-        if verbose: print('interpolating slit function over spectrum grid') # numerical errors can be produced
+    if not np.allclose(np.diff(w_slit), wstep):
+        if verbose:
+            # numerical errors can be produced
+            print('interpolating slit function over spectrum grid')
         try:
             tck = splrep(w_slit, I_slit, k=k)
         except ValueError:
@@ -531,8 +554,9 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
             plot_slit(w_slit, I_slit, waveunit='')
             raise
 
-        w_slit_int = np.arange(w_slit[0],w_slit[-1]+wstep,wstep)  # can be a bug here if wstep has the wrong sign.
-                                                              # more test needed.
+        # can be a bug here if wstep has the wrong sign.
+        w_slit_int = np.arange(w_slit[0], w_slit[-1]+wstep, wstep)
+        # more test needed.
         I_slit_int = splev(w_slit_int, tck)
     else:
         w_slit_int = w_slit
@@ -541,14 +565,15 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
     # 4. Normalize
     # --------------
 
-    if norm_by == 'area': # normalize by the area
+    if norm_by == 'area':  # normalize by the area
         I_slit_int /= abs(np.trapz(I_slit_int, x=w_slit_int))
-    elif norm_by == 'max': # set maximum to 1
+    elif norm_by == 'max':  # set maximum to 1
         I_slit_int /= abs(np.max(I_slit_int))
     elif norm_by is None:
         pass
     else:
-        raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+        raise ValueError(
+            'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
 
     # 5. Check aspect
     # -------------
@@ -558,7 +583,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
         raise ValueError('Slit has nan value')
 
     # check slit is positive
-    if not (I_slit>=0).all():
+    if not (I_slit >= 0).all():
         plot_slit(w_slit, I_slit, waveunit='')
         raise ValueError('Slit is partially negative. Check Figure')
 
@@ -595,12 +620,13 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
 
     return w_conv, I_conv
 
-#%% Slit function methods
+# %% Slit function methods
+
 
 def get_FWHM(w, I, return_index=False):
     ''' Calculate full width half maximum by comparing amplitudes
 
-    
+
     Parameters    
     ----------
 
@@ -625,7 +651,7 @@ def get_FWHM(w, I, return_index=False):
 
     '''
 
-    upper = np.argwhere(I>=I.max()/2)
+    upper = np.argwhere(I >= I.max()/2)
 
     xmin = upper.min()
     xmax = upper.max()
@@ -635,10 +661,11 @@ def get_FWHM(w, I, return_index=False):
     else:
         return abs(w[xmax] - w[xmin])
 
+
 def get_effective_FWHM(w, I):
     ''' Calculate FWHM of a triangular slit of same area and height 1
 
-    
+
     Parameters    
     ----------
 
@@ -651,12 +678,13 @@ def get_effective_FWHM(w, I):
 
     return area/Imax
 
+
 def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=True):
     ''' Plot slit, calculate and display FWHM, and calculate effective FWHM.
     FWHM is calculated from the limits of the range above the half width,
     while FWHM is the equivalent width of a triangular slit with the same area
 
-    
+
     Parameters    
     ----------
 
@@ -668,7 +696,7 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
 
     plot_unit: ``'nm'``, ``'cm-1'`` or ``'same'``
         change plot unit (and FWHM units)
-        
+
     Iunit: str, or None
         give Iunit
 
@@ -687,12 +715,12 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
     # Check input
     if isinstance(w, string_types) and I is None:
         w, I = np.loadtxt(w).T
-    assert len(w)==len(I)
-    if np.isnan(I).sum()>0:
+    assert len(w) == len(I)
+    if np.isnan(I).sum() > 0:
         warn('Slit function has nans')
         w = w[~np.isnan(I)]
         I = I[~np.isnan(I)]
-    assert len(I)>0
+    assert len(I) > 0
 
     # cast units
     waveunit = cast_waveunit(waveunit, force_match=False)
@@ -701,13 +729,13 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
         plot_unit = waveunit
 
     # Convert wavespace unit if needed
-    elif waveunit == 'cm-1' and plot_unit == 'nm': # wavelength > wavenumber
+    elif waveunit == 'cm-1' and plot_unit == 'nm':  # wavelength > wavenumber
         w = cm2nm(w)
         waveunit = 'nm'
-    elif waveunit == 'nm' and plot_unit == 'cm-1': # wavenumber > wavelength
+    elif waveunit == 'nm' and plot_unit == 'cm-1':  # wavenumber > wavelength
         w = nm2cm(w)
         waveunit = 'cm-1'
-    else: # same units
+    else:  # same units
         pass
 #        raise ValueError('Unknown plot unit: {0}'.format(plot_unit))
 
@@ -730,36 +758,38 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
 
     fig, ax = plt.subplots()
     ax.plot(w, I, 'o', color='lightgrey')
-    ax.plot(w, I, '-k', label='FWHM: {0:.3f} {1}'.format(FWHM, plot_unit)+\
-                             '\nEff. FWHM: {0:.3f} {1}'.format(FWHM_eff, plot_unit)+\
-                             '\nArea: {0:.3f}'.format(abs(np.trapz(I, x=w))),
-                             )
+    ax.plot(w, I, '-k', label='FWHM: {0:.3f} {1}'.format(FWHM, plot_unit) +
+            '\nEff. FWHM: {0:.3f} {1}'.format(FWHM_eff, plot_unit) +
+            '\nArea: {0:.3f}'.format(abs(np.trapz(I, x=w))),
+            )
 
     # Vertical lines on center, and FWHM
     plt.axvline(w[len(w)//2], ls='-', lw=2, color='lightgrey')  # center
-    plt.axvline(w[(xmin+xmax)//2], ls='--', color='k', lw=0.5)   # maximum (should be center)
+    plt.axvline(w[(xmin+xmax)//2], ls='--', color='k',
+                lw=0.5)   # maximum (should be center)
     plt.axvline(w[xmin], ls='--', color='k', lw=0.5)      # FWHM min
     plt.axvline(w[xmax], ls='--', color='k', lw=0.5)      # FWHM max
     plt.axhline(I.max()/2, ls='--', color='k', lw=0.5)      # half maximum
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    plt.legend(loc='best', prop={'size':16})
+    plt.legend(loc='best', prop={'size': 16})
 
     # extend axis:
     fig.tight_layout()
-    xlmin, xlmax= ax.get_xlim()
+    xlmin, xlmax = ax.get_xlim()
     ax.set_xlim((xlmin-0.5, xlmax+0.5))
 
     if warnings:
         if w[(xmin+xmax)//2] != w[len(w)//2]:
-            warn('Slit function doesnt seem centered (center measured with FWHM)'+\
-                  ' is not the array center. This can induce offsets!')
+            warn('Slit function doesnt seem centered (center measured with FWHM)' +
+                 ' is not the array center. This can induce offsets!')
 
         if I[0] != 0 or I[-1] != 0:
             warn('Slit function should have zeros on both sides')
 
     return fig, ax
+
 
 def recenter_slit(w_slit, I_slit, verbose=True):
     ''' Recenters the slit on the maximum calculated from the two
@@ -777,7 +807,8 @@ def recenter_slit(w_slit, I_slit, verbose=True):
                              add_zeros)
         w_slit = np.hstack((w_left, w_slit))
         I_slit = np.hstack((np.zeros(add_zeros), I_slit))
-        if verbose: print('... added zeros to the slit to center it')
+        if verbose:
+            print('... added zeros to the slit to center it')
     elif add_zeros < 0:
         add_zeros = -add_zeros
         # add zeros on the right (assume regular step)
@@ -786,18 +817,20 @@ def recenter_slit(w_slit, I_slit, verbose=True):
                               add_zeros)
         w_slit = np.hstack((w_slit, w_right))
         I_slit = np.hstack((I_slit, np.zeros(add_zeros)))
-        if verbose: print('... added zeros to the slit to center it')
+        if verbose:
+            print('... added zeros to the slit to center it')
     else:
         pass
 
     return w_slit, I_slit
+
 
 def crop_slit(w_slit, I_slit, verbose=True):
     ''' Removes unnecessary zeros on the side for a faster convolution.
     (remove as many zeros on the left as on the right).
     '''
 
-    nzeros_index = np.argwhere(I_slit!=0)
+    nzeros_index = np.argwhere(I_slit != 0)
     zeros_left = nzeros_index.min()
     zeros_right = len(I_slit) - nzeros_index.max() - 1
     remove = 0
@@ -808,12 +841,14 @@ def crop_slit(w_slit, I_slit, verbose=True):
     if remove > 0:
         w_slit = w_slit[remove:-remove]
         I_slit = I_slit[remove:-remove]
-        if verbose: print('... removed {0} zeros to the slit on each side'.format(remove))
+        if verbose:
+            print(
+                '... removed {0} zeros to the slit on each side'.format(remove))
 
     return w_slit, I_slit
 
 
-#%% Slit function models
+# %% Slit function models
 
 
 def import_experimental_slit(fname, norm_by='area', bplot=False,
@@ -821,7 +856,7 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
                              center=None, scale=1, verbose=True):
     ''' Import instrumental slit function and normalize it
 
-    
+
     Parameters    
     ----------
 
@@ -871,8 +906,8 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
     # recenter if asked for
     if auto_recenter:
         w_slit, I_slit = recenter_slit(w_slit, I_slit, verbose=verbose)
-         # note: if auto_crop is true we may be adding zeros just to remove them
-         # right way. Fix that. Someday.
+        # note: if auto_crop is true we may be adding zeros just to remove them
+        # right way. Fix that. Someday.
 
     # remove unecessary zeros
     if auto_crop:   # (note that we know I_slit has zeros on each side already)
@@ -883,17 +918,18 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
         w_slit += center - w_slit[len(w_slit)//2]
 
     # Normalize
-    if norm_by == 'area': # normalize by the area
-#        I_slit /= np.trapz(I_slit, x=w_slit)
+    if norm_by == 'area':  # normalize by the area
+        #        I_slit /= np.trapz(I_slit, x=w_slit)
         I_slit /= abs(np.trapz(I_slit, x=w_slit))
         Iunit = '1/{0}'.format(waveunit)
-    elif norm_by == 'max': # set maximum to 1
+    elif norm_by == 'max':  # set maximum to 1
         I_slit /= abs(np.max(I_slit))
         Iunit = '1'
     elif norm_by is None:
-        Iunit=None
+        Iunit = None
     else:
-        raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+        raise ValueError(
+            'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
 
     # scale
     I_slit *= scale
@@ -911,7 +947,7 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
                     waveunit='', scale=1, footerspacing=0):
     r''' Generate normalized slit function
 
-    
+
     Parameters    
     ----------
 
@@ -946,20 +982,20 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     -------
 
     Slit function of shape
-    
+
                ^
               / \
          _ _ /   \ _ _
         :   :  :  :   :
        -a-f -a 0  a  a+f
-       
+
 
     with FWHM = (a+1/2)*wstep, `f` spacing on left & right
 
 
     Notes
     -----
-    
+
     slit is generated with an odd number of elements and centered on its
     maximum. This may result in sightly different FWHM if wstep is too large.
     However, slit is corrected so that effective FWHM is preserved.
@@ -983,16 +1019,17 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     w = np.hstack((-w[1:][::-1], w)) + center
 
     # Normalize
-    if norm_by == 'area': # normalize by the area
+    if norm_by == 'area':  # normalize by the area
         I /= np.trapz(I, x=w)
         Iunit = '1/{0}'.format(waveunit)
-    elif norm_by == 'max': # set maximum to 1
+    elif norm_by == 'max':  # set maximum to 1
         I /= np.max(I)
         Iunit = '1'
     elif norm_by is None:
-        Iunit=None
+        Iunit = None
     else:
-        raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+        raise ValueError(
+            'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
 
     # Scale
     I *= scale
@@ -1006,11 +1043,13 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     return w, I
 
 # trapezoidal instrumental broadening function of base base nm and top top nm
+
+
 def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
-                    waveunit='', scale=1, footerspacing=0):
+                     waveunit='', scale=1, footerspacing=0):
     r""" Build a trapezoidal slit. Remember that FWHM = (top + base) / 2
 
-    
+
     Parameters    
     ----------
 
@@ -1055,7 +1094,7 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
          0    :  :     :  :   0
          :   -b  :     :  b   :
        -b-f     -t     t     b+f
-       
+
 
     with `t`and `b` the half-top and half-base in number of elements, `f` spacing
     on left & right. FWHM = (t+b+1)*wstep
@@ -1063,13 +1102,12 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
 
     Notes
     -----
-    
+
     slit is generated with an odd number of elements and centered on its
     maximum. This may result in sightly different FWHM if wstep is too large.
     However, slit is corrected so that effective FWHM is preserved.
 
     """
-
 
     if top > base:
         top, base = base, top
@@ -1104,16 +1142,17 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
     w = wstep*np.linspace(-len(I)/2, len(I)/2, len(I)) + center
 
     # Normalize
-    if norm_by == 'area': # normalize by the area
+    if norm_by == 'area':  # normalize by the area
         I /= np.trapz(I, x=w)
         Iunit = '1/{0}'.format(waveunit)
-    elif norm_by == 'max': # set maximum to 1
+    elif norm_by == 'max':  # set maximum to 1
         I /= np.max(I)
         Iunit = '1'
     elif norm_by is None:
         Iunit = None
     else:
-        raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+        raise ValueError(
+            'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
 
     # scale
     I *= scale
@@ -1169,7 +1208,7 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     -------
 
     Slit function of shape
-    
+
                  .-.
                 /   \
                /     \
@@ -1177,45 +1216,47 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
          0    [gaussian]   0
          :  :     :     :  :
        -c-f -c    0     c  c+f          (c : calc_range)
-       
+
 
    with `c` cutoff in number of elements, `f` spacing on left & right
 
 
     Notes
     -----
-    
+
     slit is generated with an odd number of elements and centered on its
     maximum. This may result in sightly different FWHM if wstep is too large.
 
-    
+
     '''
 
     f = int(footerspacing)   # spacing (footer) on left and right
     sigma = FWHM / 2 / sqrt(2 * ln(2))
 
-    a = 2*int(calc_range*sigma//wstep/2)    # half-base in number of elements (even number)
+    # half-base in number of elements (even number)
+    a = 2*int(calc_range*sigma//wstep/2)
 
     # 2 sigma: gaussian non calculated residual: 5%
     # 3 sigma: gaussian non calculated residual: 1%
 
-    w0 = wstep*np.linspace(-a, a, 2*a+1) # centered
+    w0 = wstep*np.linspace(-a, a, 2*a+1)  # centered
     Igauss = exp(-w0**2 / (2 * sigma**2))
 
     I = np.hstack((np.zeros(f), Igauss, np.zeros(f)))
     w = wstep*np.linspace(-(a+f), (a+f), 2*a+2*f+1) + center
 
     # Normalize
-    if norm_by == 'area': # normalize by the area
+    if norm_by == 'area':  # normalize by the area
         I /= np.trapz(I, x=w)
         Iunit = '1/{0}'.format(waveunit)
-    elif norm_by == 'max': # set maximum to 1
+    elif norm_by == 'max':  # set maximum to 1
         I /= np.max(I)
         Iunit = '1'
     elif norm_by is None:
-        Iunit=None
+        Iunit = None
     else:
-        raise ValueError('Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+        raise ValueError(
+            'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
 
     # scale
     I *= scale
