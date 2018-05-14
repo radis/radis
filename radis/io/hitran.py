@@ -207,6 +207,12 @@ def hit2df(fname, count=-1, cache=True, verbose=True):
 
     Performances: see CDSD-HITEMP parser
 
+
+    See Also
+    --------
+    
+    :func:`~radis.io.cdsd.cdsd2df`
+
     '''
 
     columns = columns_2004

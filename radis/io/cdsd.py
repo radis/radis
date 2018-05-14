@@ -180,6 +180,11 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
 
     .. [3] `CDSD-4000 database <ftp://ftp.iao.ru/pub/CDSD-4000/>`_
 
+    See Also
+    --------
+    
+    :func:`~radis.io.hitran.hit2df`
+
     '''
 
     if version == 'hitemp':
