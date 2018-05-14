@@ -93,7 +93,7 @@ TEST_DATABASES = {
 
 # %% Utils to test spec module
 
-def build_test_databases(verbose=True):
+def setup_test_line_databases(verbose=True):
     ''' Build test databases and add them in ~/.radis. Generate the file if it 
     doesnt exist
     
@@ -169,4 +169,4 @@ def IgnoreMissingDatabase(err, file='', warnings=True):
 
 if __name__ == '__main__':
 #    run_tests()
-    build_test_databases()
+    setup_test_line_databases()

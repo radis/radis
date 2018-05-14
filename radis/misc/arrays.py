@@ -318,10 +318,10 @@ def bining(I, ymin=None, ymax=None, axis=1):
         intensity
     
     ymin: int [0-I.shape[1]]
-        If None, 0 is used. Default None.
+        If None, 0 is used. Default ``None``.
     
     ymax: int [0-I.shape[1]]
-        If None, I.shape[1] is used. Default None.
+        If None, I.shape[1] is used. Default ``None``.
     
     axis: int
         Default 1

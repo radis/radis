@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """ Parser for CDSD-HITEMP, CDSD-4000 format 
 
+Routine Listing
+---------------
+
+cdsd2df
+
+
 """
 
 # TODO: remove wangl2  after loading database (wangl is enough, with 1=e and 2=f)
@@ -11,8 +17,10 @@ import pandas as pd
 import numpy as np
 from collections import OrderedDict
 import os
+import radis
 from os.path import exists, splitext
-from radis.io.hitran import _cast_to_dtype, _format_dtype, _generate_cache_file
+from radis.io.hitran import parse_binary_file, check_cache_file
+from radis.misc.cache_files import check_not_deprecated, save_to_hdf, LAST_COMPATIBLE_VERSION
 import sys
 from six.moves import zip
 
@@ -111,7 +119,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not 
         taken into account). If False, no database is used. If 'regen', temp
-        file are reconstructed. Default True. 
+        file are reconstructed. Default ``True``. 
     
     Returns
     -------
@@ -180,80 +188,21 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     else:
         raise ValueError('Unknown CDSD version: {0}'.format(version))
     
-    if cache: # lookup if cached file exist. 
-#        fcache = fname+'.cached'
-        fcache = splitext(fname)[0]+'.h5'
-        if exists(fcache):
-            if cache == 'regen':
-                os.remove(fcache)
-                if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
-            else:
-                if verbose: print('Using h5 file: {0}'.format(fcache))
-    #            return pd.read_csv(fcache)
-                return pd.read_hdf(fcache, 'df')
-
+    # Use cache file if possible
+    fcache = splitext(fname)[0]+'.h5'
+    check_cache_file(cache, fcache=fcache, verbose=verbose)
+    if cache and exists(fcache):
+        return pd.read_hdf(fcache, 'df')
+        
     # %% Start reading the full file
     
-    # To be faster, we read file totally in bytes mode with fromfiles. But that
-    # requires to properly decode the line return character:
-    
-    # problem arise when file was written in an OS and read in another OS (for instance,
-    # line return characters are not converted when read from .egg files). Here
-    # we read the first line and infer the line return character for it 
-    
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn','a2')]   
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line 
-    
-    # get format of line return
-    from radis.misc.basics import to_str
-    linereturn = to_str(data[0][-1])
-    if to_str('\r\n') in linereturn:
-        linereturnformat = 'a2'
-    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
-        linereturnformat = 'a1'
-    else:
-        raise ValueError('Line return format unknown: {0}. Please update RADIS'.format(linereturn))
-        
-    # Now re-read with correct line return character
-
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn',linereturnformat)]   
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=count)
-    
-    # %% Cast to new type
-
-    # ... Cast to new type
-    # This requires to recast all the data already read, but is still the fastest
-    # method I found to read a file directly (for performance benchmark see 
-    # CDSD-HITEMP parser)
-
-    newtype = [c[0] if (c[1]==str) else c[1] for c in columns.values()]
-    dtype = list(zip(list(columns.keys()), newtype))+[('_linereturn',linereturnformat)]
-    data2 = _cast_to_dtype(data, dtype)
-
-    # %% Create dataframe    
-    df = pd.DataFrame(data2.tolist(), columns=list(columns.keys())+['_linereturn'])
-    
-    for k, c in columns.items():
-        if c[1] == str:
-            df[k] = df[k].str.decode("utf-8")
-    
-    # Strip whitespaces around PQR columns (due to 2 columns jumped)
-    df.branch = df.branch.str.strip()
-    
-    # Delete dummy column than handled the line return character
-    del df['_linereturn']
+    df = parse_binary_file(fname, columns, count)
     
     if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
         if verbose: print('Generating cached file: {0}'.format(fcache))
         try:
-#            df.to_csv(fcache)
-            _generate_cache_file(fcache, df)
+            save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
+                        key='df', overwrite=True)
         except:
             if verbose: print('An error occured in cache file generation. Lookup access rights')
             pass

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Feb 20 23:44:47 2018
-Handy functions for manipulation of spectra
-@author: minou
+Handy functions for manipulation of :class:`~radis.spectrum.spectrum.Spectrum` objects
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

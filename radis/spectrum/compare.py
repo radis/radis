@@ -1,8 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Feb  9 13:03:04 2018
+Summary
+-------
 
-@author: erwan
+Functions to compare and plot comparison of Spectrum objects
+
+
+Routine Listings
+----------------
+
+:func:`~radis.spectrum.compare.get_diff`,
+:func:`~radis.spectrum.compare.get_distance`,
+:func:`~radis.spectrum.compare.get_ratio`,
+:func:`~radis.spectrum.compare.get_residual`,
+:func:`~radis.spectrum.compare.get_residual_integral`,
+:func:`~radis.spectrum.compare.plot_diff`
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
@@ -39,7 +53,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
         waveunit to compare in
         
     Iunit: str
-        If 'default' use s1 unit for variable var
+        if ``'default'`` use s1 unit for variable var
     
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
@@ -88,7 +102,7 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
         waveunit to compare in
         
     Iunit: str
-        If 'default' use s1 unit for variable var
+        if ``'default'`` use s1 unit for variable var
     
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
@@ -130,7 +144,7 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
         waveunit to compare in
         
     Iunit: str
-        If 'default' use s1 unit for variable var
+        if ``'default'`` use s1 unit for variable var
     
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
@@ -172,8 +186,8 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
     ----------------
     
     ignore_nan: boolean
-        if True, ignore nan in the difference between s1 and s2 (ex: out of bound)
-        when calculating residual. Default False. Note: get_residual will still 
+        if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
+        when calculating residual. Default ``False``. Note: ``get_residual`` will still 
         fail if there are nan in initial Spectrum. 
         
     Notes
@@ -233,17 +247,17 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
     ----------------
     
     ignore_nan: boolean
-        if True, ignore nan in the difference between s1 and s2 (ex: out of bound)
-        when calculating residual. Default False. Note: get_residual will still 
-        fail if there are nan in initial Spectrum. 
+        if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
+        when calculating residual. Default ``False``. Note: ``get_residual_integral``
+        will still fail if there are nan in initial Spectrum. 
         
     Notes
     -----
     
     For I1, I2, the values of 'var' in s1 and s2, respectively, residual
-    is calculated as:
+    is calculated as::
     
-    >>> res = trapz(I2-I1, w1) / trapz(I1, w1)
+        res = trapz(I2-I1, w1) / trapz(I1, w1)
 
     0 values for I1 yield nans except if I2 = I1 = 0
     
@@ -328,27 +342,29 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     s1, s2: Spectrum objects
     
     var: str, or None
-        spectral quantity to plot (ex: 'abscoeff'). If None, plot the first one 
-        in the Spectrum from 'radiance', 'radiance_noslit', 'transmittance', etc.
+        spectral quantity to plot (ex: ``'abscoeff'``). If None, 
+        plot the first one in the Spectrum from ``'radiance'``, 
+        ``'radiance_noslit'``, ``'transmittance'``, etc.
         
-    wunit: 'default', 'nm', 'cm-1'
-        if 'default', use first spectrum wunit
+    wunit: ``'default'``, ``'nm'``, ``'cm-1'``
+        if ``'default'``, use first spectrum wunit
     
     Iunit: str
-        if 'default', use first spectrum unit
+        if ``'default'``, use first spectrum unit
         
-    medium: 'air', 'vacuum', 'default'
-        if 'default', use first spectrum propagating medium
+    medium: ``'air'``, ``'vacuum'``, ``'default'``
+        if ``'default'``, use first spectrum propagating medium
         
-    method: 'distance', 'diff', 'ratio'
-        If 'diff', plot difference at same wavespace position. 
-        If 'distance', plot Euclidian distance (note that units are meaningless then)
-        If 'ratio', plot ratio of two spectra
-        Default 'diff'.
+    method: ``'distance'``, ``'diff'``, ``'ratio'``
+        If ``'diff'``, plot difference at same wavespace position. 
+        If ``'distance'``, plot Euclidian distance (note that units are meaningless then)
+        If ``'ratio'``, plot ratio of two spectra
+        Default ``'diff'``.
         
-        Warning: with 'distance', calculation scales as ~N^2 with N the number
-        of points in a spectrum (against ~N with 'diff'). This can quickly 
-        override all memory.
+        .. warning::
+            with ``'distance'``, calculation scales as ~N^2 with N the number
+            of points in a spectrum (against ~N with ``'diff'``). This can quickly 
+            override all memory.
         
     normalize: bool
         Normalize the spectra to be ploted 
@@ -372,7 +388,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         title
 
     verbose: boolean
-        if True, plot stuff such as rescale ratio in normalize mode. Default True
+        if True, plot stuff such as rescale ratio in normalize mode. Default ``True``
 
 
     Examples
@@ -535,6 +551,8 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     fig.cursors = MultiCursor(fig.canvas, (ax0, ax1), 
                          color='r', lw=1, alpha=0.2, horizOn=False, 
                          vertOn=True)
+    
+    plt.show()
     
     return fig, [ax0, ax1]
 ''' Return the average distance between two spectra.

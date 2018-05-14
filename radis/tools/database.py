@@ -154,7 +154,7 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
         if True, removes all quantities that can be regenerated with s.update(),
         e.g, transmittance if abscoeff and path length are given, radiance if
         emisscoeff and abscoeff are given in non-optically thin case, etc.
-        Default False
+        Default ``False``
 
     add_info: list, or None/False
         append these parameters and their values if they are in conditions.
@@ -330,7 +330,7 @@ def _compress(s, sjson):
     ''' if True, removes all quantities that can be regenerated with s.update(),
     e.g, transmittance if abscoeff and path length are given, radiance if
     emisscoeff and abscoeff are given in non-optically thin case, etc.
-    Default False '''
+    Default ``False`` '''
     
     
     from radis.spectrum.rescale import get_redundant
@@ -366,7 +366,7 @@ def load(file, binary=False):
         .spec file to load
         
     binary: boolean
-        set to True if the file is encoded as binary. Default False
+        set to True if the file is encoded as binary. Default ``False``
 
     (wrapper to :func:`radis.tools.database.load_spec`)
 
@@ -377,7 +377,9 @@ def load(file, binary=False):
     return load_spec(file)
 
 def load_spec(file, binary=False):
-    ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object
+    ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object. 
+    Adds ``file`` in the Spectrum :attr:`~radis.spectrum.spectrum.Spectrum.file` 
+    attribute.
     
     Parameters
     ----------
@@ -386,7 +388,7 @@ def load_spec(file, binary=False):
         .spec file to load
 
     binary: boolean
-        set to True if the file is encoded as binary. Default False. Will autodetect
+        set to True if the file is encoded as binary. Default ``False``. Will autodetect
         if it fails, but that may take longer.
         
     Returns
@@ -413,7 +415,8 @@ def load_spec(file, binary=False):
                 sload = json_tricks.load(f, preserve_order=False)
             except:
                 # try as binary
-                print(('Error opening file {0}. Trying with binary=True'.format(f)))
+                print(('Could not open file {0} with binary=False. '.format(basename(file))+
+                       'Trying with binary=True'))
                 retry_with_binary = True 
                 
     if binary or retry_with_binary:
@@ -423,13 +426,14 @@ def load_spec(file, binary=False):
                 if retry_with_binary:
                     print('Worked! Use binary=True directly in load_spec for faster loading')
             except:
-                print(('Error opening file {0}'.format(f)))
+                print(('Error opening file {0}'.format(file)))
                 raise
 
     return _json_to_spec(sload, file)
 
 def _json_to_spec(jsondict, file=''):
-    ''' Builds a Spectrum object from a JSON dictionary. Called by load_spec
+    ''' Builds a Spectrum object from a JSON dictionary. Called by 
+    :func:`~radis.tools.database.load_spec`. 
     
     Parameters
     ----------
@@ -514,6 +518,9 @@ def _json_to_spec(jsondict, file=''):
                     conditions=conditions,
                     waveunit=waveunit,
                     **kwargs)
+    
+    # ... add file
+    s.file = basename(file)
     
     # ... add slit 
     s._slit = slit
@@ -642,7 +649,7 @@ def plot_spec(file, what='radiance', title=True):
 class SpecDatabase():
     
     def __init__(self, path='.', filt='.spec', add_info=None, add_date='%Y%m%d',
-                 verbose=True):
+                 verbose=True, binary=False):
         ''' A Spectrum Database class to manage them all
 
         It basically manages a list of Spectrum JSON files, adding a Pandas
@@ -659,6 +666,9 @@ class SpecDatabase():
         filt: str
             only consider files ending with filt
         
+        binary: boolean
+            if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
+            try as binary file anyway. Default ``False``
 
         Examples
         --------
@@ -711,6 +721,7 @@ class SpecDatabase():
         self.path = path
         self.df = None
         self.verbose = verbose
+        self.binary = binary
 
         # default
         self.add_info = add_info
@@ -738,7 +749,7 @@ class SpecDatabase():
 
         columns: str, list of str, or None
             shows the conditions value for all cases in database. If None, all
-            conditions are shown. Default None
+            conditions are shown. Default ``None``
             e.g.
             >>> db.see(['Tvib', 'Trot'])
 
@@ -783,8 +794,8 @@ class SpecDatabase():
         return self.see(columns = columns, *args)
 
     def update(self, force_reload=False, filt='.spec'):
-        ''' Reloads database, updates internal index structure and print it
-        in <database>.csv
+        ''' Reloads database, updates internal index structure and export it
+        in ``<database>.csv``
 
         Parameters
         ----------
@@ -793,7 +804,7 @@ class SpecDatabase():
             if True, reloads files already in database
 
         filt: str
-            only consider files ending with `filt`
+            only consider files ending with ``filt``. Default ``.spec``
             
         '''
 
@@ -871,7 +882,7 @@ class SpecDatabase():
             if True, removes all quantities that can be regenerated with s.update(),
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
-            Default False
+            Default ``False``
 
         add_info: list
             append these parameters and their values if they are in conditions
@@ -967,7 +978,7 @@ class SpecDatabase():
         '''
         db = []
         for f in files:
-            db.append(self._load_file(f))
+            db.append(self._load_file(f, binary=self.binary))
 
         return pd.DataFrame(db)
 
@@ -1009,7 +1020,7 @@ class SpecDatabase():
         
         inplace: boolean
             if True, return the actual object in the database. Else, return
-            copies. Default False
+            copies. Default ``False``
 
         Examples
         --------
@@ -1131,17 +1142,17 @@ class SpecDatabase():
         scale_if_possible: boolean
             if True, spectrum is scaled for parameters that can be computed 
             directly from spectroscopic quantities (e.g: 'path_length', 'molar_fraction')
-            Default True
+            Default ``True``
             
         Extra Parameters
         ----------------
         
         verbose: boolean
-            print messages. Default True
+            print messages. Default ``True``
             
         inplace: boolean
             if True, returns the actual object in database. Else, return a copy
-            Default False
+            Default ``False``
             
         
         See Also

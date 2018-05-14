@@ -54,7 +54,7 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
     ----------------
     
     verbose: boolean
-        Default True
+        Default ``True``
         
     References
     ----------

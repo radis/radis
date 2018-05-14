@@ -22,8 +22,8 @@ try:
     import plotly.offline as py
     import plotly.graph_objs as go
 except ImportError:
-    py = NotInstalled(name='plotly',info='LineSurvey requires Plotly. Please install it manually')
-    go = NotInstalled(name='plotly',info='LineSurvey requires Plotly. Please install it manually')
+    py = NotInstalled(name='plotly.offline',info='LineSurvey requires Plotly. Please install it manually')
+    go = NotInstalled(name='plotly.graph_objs',info='LineSurvey requires Plotly. Please install it manually')
 
 def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air', 
                cutoff=None, plot='S', lineinfo=['int', 'A'], barwidth=0.07, 
@@ -71,7 +71,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1',Iunit='hitran', medium='air',
     ----------------
     
     display: boolean
-        if True, open the image in a browser. Default True. 
+        if True, open the image in a browser. Default ``True``. 
 
     filename: str
         filename to save .html 

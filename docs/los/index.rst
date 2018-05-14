@@ -3,9 +3,10 @@
 Line-of-sight (LOS) module
 **************************
 
-This module takes several Spectrum objects as an input and combines then along the 
-line-of-sight (SerialSlabs) or at the same spatial position (MergeSlabs), to 
-reproduce line-of-sight experiments 
+This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects as an input 
+and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
+or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
+line-of-sight experiments 
 
 
 How to combine slabs?

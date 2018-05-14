@@ -3,7 +3,7 @@
 Summary
 -------
 
-Spectrum class holder
+:class:`~radis.spectrum.spectrum.Spectrum` class holder
 
 Keeps all output data from a SpectrumFactory calculation. Allows to reapply a
 different slit function in post-processing, and plot all spectral quantities
@@ -12,9 +12,9 @@ with any unit
 Routine Listings
 ----------------
 
-:func:`~radis.spectrum.spectrum.calculated_spectrum`
-:func:`~radis.spectrum.spectrum.experimental_spectrum`
-:func:`~radis.spectrum.spectrum.transmittance_spectrum`
+:func:`~radis.spectrum.spectrum.calculated_spectrum`,
+:func:`~radis.spectrum.spectrum.experimental_spectrum`,
+:func:`~radis.spectrum.spectrum.transmittance_spectrum`,
 :func:`~radis.spectrum.spectrum.is_spectrum`
 
 
@@ -60,6 +60,7 @@ from warnings import warn
 from numpy import allclose, abs, diff
 from copy import deepcopy
 from six import string_types
+from os.path import basename
 
 # %% Array-to-Spectrum functions
 
@@ -88,13 +89,13 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     ----------------
 
     conditions: dict
-        (optional) calculation conditions to be stored with Spectrum. Default None
+        (optional) calculation conditions to be stored with Spectrum. Default ``None``
 
     cond_units: dict
-        (optional) calculation conditions units. Default None
+        (optional) calculation conditions units. Default ``None``
 
     populations: dict
-        populations to be stored in Spectrum. Default None
+        populations to be stored in Spectrum. Default ``None``
 
     name: str
         (optional) give a name
@@ -105,8 +106,8 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     
     :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
     :func:`~radis.spectrum.spectrum.experimental_spectrum`
-    :meth:`~radis.spectrum.spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
     
     '''
@@ -155,8 +156,8 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     
     :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
     :func:`~radis.spectrum.spectrum.experimental_spectrum`
-    :meth:`~radis.spectrum.spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
         
     '''
@@ -205,8 +206,8 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     
     :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
     :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-    :meth:`~radis.spectrum.spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
     
     '''
@@ -280,14 +281,14 @@ class Spectrum(object):
     
     name: str, or None
         Give a name to this Spectrum object (helps debugging in multislab
-        configurations). Default None
+        configurations). Default ``None``
 
     warnings: boolean
         If True, test if inputs are valid, e.g, spectra are evenly distributed in
         wavelength, and raise a warning if not. Note that this take ~ 3.5 ms for
         a 20k points spectrum, when the rest of the creation process is only 
         ~ 1.8ms (makes it 3 times longer, and can be a problem if hundreds of 
-        spectra are created in a row). Default True
+        spectra are created in a row). Default ``True``
 
 
     Examples
@@ -332,16 +333,16 @@ class Spectrum(object):
     
     Implementation:
     
-        quantities are stored in self._q and self._q_conv dictionaries. They are better accessed
-        with the get() function that deals with units and wavespace
-        Note: we may move to a unique storage under self._q: in that case q['wavespace']
-        and q_conv['wavespace'] need different names: ex. 'wavespace' and 'wavespace_conv'
-
+        quantities are stored in ``self._q`` and ``self._q_conv`` dictionaries. 
+        They are better accessed with the :meth:`~radis.spectrum.spectrum.Spectrum.get` 
+        method that deals with units and wavespace
+        
     Wavebase:
     
         quantites are stored either in wavenum or wavelength base, but this doesnt
-        matter as they are retrieved / plotted with get() and plot() functions
-        which have units as input arguments
+        matter as they are retrieved / plotted with the 
+        :meth:`~radis.spectrum.spectrum.Spectrum.get` and :meth:`~radis.spectrum.spectrum.Spectrum.plot` 
+        methods which have units as input arguments
 
 
     Attributes
@@ -361,8 +362,8 @@ class Spectrum(object):
     :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
     :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
     :func:`~radis.spectrum.spectrum.experimental_spectrum`
-    :meth:`~radis.spectrum.spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
     
     
@@ -370,7 +371,7 @@ class Spectrum(object):
 
     # hardcode attribute names, but can save a lot of memory if hundreds of spectra
     __slots__ = ['_q', '_q_conv', 'units', 'conditions', 'cond_units', 'populations',
-                  'lines', 'name', '_slit']
+                  'lines', 'name', '_slit', 'file']
 
     def __init__(self, quantities, units=None, conditions=None, cond_units=None,
                  populations=None, lines=None, waveunit=None, wavespace=None, # deprecated
@@ -444,6 +445,7 @@ class Spectrum(object):
         self.units = units
         self.cond_units = cond_units
         self.name = name
+        self.file = None        # used to store filename when loaded from a file
 
     # %% Constructors
     
@@ -461,7 +463,7 @@ class Spectrum(object):
         quantity: str
             spectral quantity name
             
-        waveunit: 'nm', 'cm-1'
+        waveunit: ``'nm'``, ``'cm-1'``
             unit of waverange
             
         unit: str
@@ -500,8 +502,9 @@ class Spectrum(object):
 
         Returns
         -------
-        :class:`~radis.spectrum.spectrum.Spectrum` object
         
+        s: Spectrum
+            creates a :class:`~radis.spectrum.spectrum.Spectrum` object
         
         Examples
         --------
@@ -519,7 +522,7 @@ class Spectrum(object):
         :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
         :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
         :func:`~radis.spectrum.spectrum.experimental_spectrum`
-        :meth:`~radis.spectrum.spectrum.from_txt`
+        :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
         :func:`~radis.tools.database.load_spec`
         """
         
@@ -528,7 +531,14 @@ class Spectrum(object):
         quantities = {quantity:(w,I)}
         units = {quantity:unit}
         
-        return self(quantities, units, waveunit=waveunit, *args, **kwargs)
+        # Update Spectrum conditions
+        conditions = kwargs.pop('conditions', {})
+        for k in ['path_length', 'medium']:   # usual conditions 
+            if k in kwargs:
+                conditions[k] = kwargs.pop(k)
+        
+        return self(quantities, units, waveunit=waveunit, conditions=conditions,
+                    *args, **kwargs)
 
     @classmethod
     def from_txt(self, file, quantity, waveunit, unit, *args, **kwargs):
@@ -572,7 +582,6 @@ class Spectrum(object):
             
                 {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
             
-    
         lines: pandas Dataframe
             all lines in databank (necessary for LineSurvey). Warning if you want to
             play with the lins content: The signification of columns in `lines` may be
@@ -584,7 +593,9 @@ class Spectrum(object):
 
         Returns
         -------
-        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+        s: Spectrum
+            creates a :class:`~radis.spectrum.spectrum.Spectrum` object
         
         
         Examples
@@ -610,8 +621,8 @@ class Spectrum(object):
         
         :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
         :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-        :func:`~radis.spectrum.spectrum.experimental_spectrum`
-        :meth:`~radis.spectrum.spectrum.from_array`
+        :func:`~radis.spectrum.spectrum.experimental_spectrum`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
         :func:`~radis.tools.database.load_spec`
         
         """
@@ -626,8 +637,18 @@ class Spectrum(object):
         quantities = {quantity:(w,I)}
         units = {quantity:unit}
         
-        return self(quantities, units, waveunit=waveunit, *args, **kwargs)
-
+        # Update Spectrum conditions
+        conditions = kwargs.pop('conditions', {})
+        for k in ['path_length', 'medium']:   # usual conditions 
+            if k in kwargs:
+                conditions[k] = kwargs.pop(k)
+        
+        s = self(quantities, units, waveunit=waveunit, conditions=conditions,
+                    *args, **kwargs)
+        
+        # Store filename
+        s.file = file
+        return s
 
     # Public functions
     # %% ======================================================================
@@ -636,44 +657,40 @@ class Spectrum(object):
 
 
     def get(self, var, wunit='nm', Iunit='default', medium='default',
-            xunit=None, yunit=None,  # deprecated for wunit, Iunit
             copy=True):
-        ''' Retrieve a spectral quantity from a Spectrum object. You can change 
+        ''' Retrieve a spectral quantity from a Spectrum object. You can select 
         wavespace unit, intensity unit, or propagation medium.
         
         
         Parameters    
         ----------
 
-        var: variable ('absorbance', 'transmittance', etc.) For full list see
-            get_vars()
+        var: variable ('absorbance', 'transmittance', etc.) 
+            Should be a defined quantity among :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
+            or :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`. 
+            To get the full list of quantities defined in this Spectrum object use
+            the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars` method.
 
-        wunit: 'cm', 'nm'
-            wavelength / wavenumber unit. Default nm
+        wunit: ``'cm'``, ``'nm'``
+            wavelength / wavenumber unit. Default ``nm``
 
-        Iunit: unit for variable `var`
+        Iunit: unit for variable ``var``
             if 'default', default unit for quantity `var` is used. See Spectrum.units
             to get the units. for radiance, one can use per wavelength (~ 'W/m2/sr/nm')
             or per wavenumber (~ 'W/m2/sr/cm_1') units
 
-        medium: 'air', 'vacuum', 'default'
+        medium: ``'air'``, ``'vacuum'``, ``'default'``
             returns wavelength as seen in air, or vacuum. If 'default' the
             value set in conditions is used. If None you better be sure of
-            what you're doing.
+            what you're doing. Default ``'default'``
 
         Other Parameters
         ----------------
         
         copy: boolean
             if True, returns a copy of the stored quantity (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
-        Todo
-        ----
-        TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
-        by FWHM.
-
-    
         Returns
         -------
 
@@ -683,15 +700,31 @@ class Spectrum(object):
             and not a view (reference): if you modify them the Spectrum is not
             changed
 
-        '''
+        Examples
+        --------
 
-        # deprecation
-        if xunit is not None:
-            warn(DeprecationWarning('xunit replaced by wunit in Spectrum class'))
-            wunit = xunit
-        if yunit is not None:
-            warn(DeprecationWarning('yunit replaced by Iunit in Spectrum class'))
-            Iunit = yunit
+        Get transmittance in cm-1::
+
+            w, I = s.get('transmittance_noslit', wunit='cm-1')  
+            
+        Get radiance::
+            
+            _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
+                         medium='air')  
+        
+        Notes
+        -----
+        
+        TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
+        by FWHM.
+
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`
+        
+        '''
 
         # check input
         if not var in self.get_vars():
@@ -705,9 +738,11 @@ class Spectrum(object):
         if var in CONVOLUTED_QUANTITIES:
             vartype = 'convoluted'
             I = self._q_conv[var]
-        else:  # non convoluted
+        elif var in NON_CONVOLUTED_QUANTITIES:  # non convoluted
             vartype = 'non_convoluted'
             I = self._q[var]
+        else:
+            raise ValueError('Unexpected quantity: {0}'.format(var))
             
         # Copy
         if copy: I = I.copy()
@@ -764,7 +799,7 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
     
         Returns
@@ -818,7 +853,7 @@ class Spectrum(object):
             or any. If any and both are defined, they have to be the same else 
             an error is raised. Default any.
 
-        medium: 'air', 'vacuum', 'default'
+        medium: ``'air'``, ``'vacuum'``, ``'default'``
             returns wavelength as seen in air, or vacuum. If 'default' the
             value set in conditions is used. If None you better be sure of
             what you're doing.
@@ -828,7 +863,7 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
     
 
@@ -911,7 +946,7 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
     
         Returns
@@ -952,9 +987,15 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
         
     
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.get`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`
+        
         '''
         
         return self.get('radiance', Iunit=Iunit, copy=copy)[1]
@@ -977,7 +1018,14 @@ class Spectrum(object):
         
         copy: boolean
             if True, returns a copy of the stored waverange (modifying it wont
-            change the Spectrum object). Default True.
+            change the Spectrum object). Default ``True``.
+        
+        
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.get`,
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance`
         
     
         '''
@@ -992,17 +1040,21 @@ class Spectrum(object):
 #                                     per_cm_is_like='mW/sr/cm2/cm_1')
 
     def get_name(self):
-        ''' Return Spectrum name. If not defined, returns 'spectrum{id}' with
-        the Python id object
+        ''' Return Spectrum name. If not defined, returns either the 
+        :attr:`~radis.spectrum.spectrum.Spectrum.file` name if Spectrum was 
+        loaded from a file, or the ``'spectrum{id}'`` with
+        the Python ``id`` object
         '''
         try:
             self.name
         except AttributeError:
-            warn('Spectrum has no .name attribute and is probably outdated. Update!')
+            warn(DeprecationWarning('Spectrum has no .name attribute and is probably outdated. Update!'))
             self.name = None
 
         if self.name is not None:
             name = self.name
+        elif self.file is not None:
+            name = '{0}'.format(basename(self.file))
         else:
             name = 'spectrum{0}'.format(id(self))
 
@@ -1126,7 +1178,7 @@ class Spectrum(object):
 
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
-            Default False
+            Default ``False``
 
 
         Notes
@@ -1164,7 +1216,7 @@ class Spectrum(object):
 
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
-            Default False
+            Default ``False``
 
 
         Notes
@@ -1269,7 +1321,7 @@ class Spectrum(object):
         Plot parameters inputs:
 
         show_points: boolean
-            show calculated points. Default True
+            show calculated points. Default ``True``
 
         nfig: int, None, or 'same'
             plot on a particular figure. 'same' plots on current figure.
@@ -1278,7 +1330,7 @@ class Spectrum(object):
             plot yscale
 
         normalize: boolean
-            option to normalize quantity to 1 (ex: for radiance). Default False
+            option to normalize quantity to 1 (ex: for radiance). Default ``False``
 
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
@@ -1726,7 +1778,7 @@ class Spectrum(object):
         store: boolean
             if True, store slit in the Spectrum object so it can be retrieved with 
             :meth:`~radis.spectrum.spectrum.Spectrum.get_slit` and plot with 
-            :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default True
+            :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default ``True``
 
         Other Parameters
         ----------------
@@ -1918,7 +1970,7 @@ class Spectrum(object):
         
         wunit: 'nm', 'cm-1', or None
             plot slit in wavelength or wavenumber. If None, use the unit
-            the slit in which the slit function was given. Default None
+            the slit in which the slit function was given. Default ``None``
         '''
         
         from radis.tools.slit import plot_slit
@@ -1964,7 +2016,7 @@ class Spectrum(object):
         overlay: 'absorbance', 'transmittance', 'radiance', etc... or list of the above, or None
             overlay Linestrength with specified variable calculated in `spec`.
             Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
-            method. Default None. 
+            method. Default ``None``. 
 
         wunit: 'nm', 'cm-1'
             wavelength / wavenumber units
@@ -2124,7 +2176,7 @@ class Spectrum(object):
             :meth:`~radis.spectrum.spectrum.Spectrum.update` method
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
-            Default False
+            Default ``False``
 
         add_info: list
             append these parameters and their values if they are in conditions
@@ -2258,7 +2310,7 @@ class Spectrum(object):
             error.
 
         print_conservation: boolean
-            if True, prints energy conservation. Default False.
+            if True, prints energy conservation. Default ``False``.
 
             
         See Also
@@ -2421,9 +2473,9 @@ class Spectrum(object):
             if 'overpopulation' in cond:
                 assert cond['overpopulation'] is None
             assert cond['self_absorption']  # is True
-            
+
             return True
-            
+
         except AssertionError:
             return False 
         except KeyError as err:
@@ -2525,7 +2577,12 @@ class Spectrum(object):
                 warnings=False,   # saves about 3.5 ms on the Performance test object
                 )
         
-        # Add slit information
+        # Add extra information
+        
+        # ... file name (if exists)
+        s.file = self.file
+        
+        # ... slit information
         try:
             wslit, Islit = self.get_slit()
             s._slit['wavespace'] = wslit  # in 'waveunit'
@@ -2539,9 +2596,8 @@ class Spectrum(object):
     def compare_with(self, other, spectra_only=False, plot=True, wunit='default',
                      verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
                      normalize=False, **kwargs):
-        ''' Compare Spectrum with another spectrum
+        ''' Compare Spectrum with another Spectrum object
 
-    
         Parameters    
         ----------
         
@@ -2552,11 +2608,11 @@ class Spectrum(object):
             if True, only compares spectral quantities (in the same waveunit)
             and not lines or conditions. If str, compare a particular quantity
             name. If False, compare everything (including lines and conditions
-            and populations). Default False
+            and populations). Default ``False``
 
         plot: boolean
             if True, use plot_diff to plot all quantities for the 2 spectra
-            and the difference between them. Default False.
+            and the difference between them. Default ``False``.
             
         wunit: 'nm', 'cm-1', 'default'
             in which wavespace to compare (and plot). If default, natural wavespace
@@ -2598,6 +2654,12 @@ class Spectrum(object):
             s1.compare_with(s2)
             s1.compare_with(s2, 'transmittance')
 
+
+        Note that you can also simply use `s1 == s2`, that uses 
+        :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` internally::
+            
+            s1 == s2       # will return True or False
+    
         '''
         
         from radis.spectrum.compare import plot_diff

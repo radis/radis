@@ -28,11 +28,13 @@ from radis.tools.slit import (gaussian_slit, triangular_slit, trapezoidal_slit,
 from radis.phys.units import is_homogeneous
 from radis.phys.convert import dcm2dnm, dnm2dcm
 #from radis.misc.utils import DatabankNotFound
-#from radis.test.utils import IgnoreMissingDatabase, build_test_databases
+#from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 import matplotlib.pyplot as plt 
 import numpy as np
 from numpy import sqrt, linspace, abs, trapz
 from os.path import basename
+import pytest
+from warnings import catch_warnings, filterwarnings
 
 fig_prefix = basename(__file__)+': '
 
@@ -40,7 +42,8 @@ fig_prefix = basename(__file__)+': '
 #  Test cases
 # -----------------------------------------------------------------------------
 
-def test_all_slit_shapes__fast(FWHM=0.4, verbose=True, plot=True, close_plots=True, *args, **kwargs):
+@pytest.mark.fast
+def test_all_slit_shapes(FWHM=0.4, verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test all slit generation functions and make sure we get the expected FWHM'''
 
     if plot:
@@ -150,13 +153,18 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
         if close_plots: plt.close('all')
    
     # %% Get a Spectrum (stored in nm)
+    
     s_nm = Spectrum.from_txt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt'),
                           quantity='radiance_noslit', waveunit='nm', unit='mW/cm2/sr/µm',
                           conditions={'medium':'air',
-                                      'self_absorption':False})
-    s_nm.rescale_path_length(1, 0.001)   # just because it makes better units
-    wstep = np.diff(s_nm.get_wavelength())[0]
+                                     'self_absorption':False})
     
+    with catch_warnings(): 
+        filterwarnings('ignore','Condition missing to know if spectrum is at equilibrium:')
+        s_nm.rescale_path_length(1, 0.001)   # just because it makes better units
+        
+    wstep = np.diff(s_nm.get_wavelength())[0]
+        
     assert s_nm.get_waveunit() == 'nm'       # ensures it's stored in cm-1
     
     for shape in ['gaussian', 'triangular']:
@@ -180,11 +188,12 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
         if plot: plotargs['title'] = 'test_slit_unit_conversions: {0} ({1} nm)'.format(shape, slit_nm)
         s_nm.compare_with(s_cm, spectra_only='radiance', rtol=1e-3, 
                           verbose=verbose, plot=plot, **plotargs)
-    
+        
     
     # %% 
-    
-def test_against_specair_convolution__fast(plot=True, close_plots=True, verbose=True, debug=False, *args, **kwargs):
+
+@pytest.mark.fast
+def test_against_specair_convolution(plot=True, close_plots=True, verbose=True, debug=False, *args, **kwargs):
 
     if plot:
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
@@ -243,7 +252,8 @@ def test_against_specair_convolution__fast(plot=True, close_plots=True, verbose=
     
     return True
 
-def test_normalisation_mode__fast(plot=True, close_plots=True, verbose=True, *args, **kwargs):
+@pytest.mark.fast
+def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **kwargs):
     ''' Test norm_by = 'area' vs norm_by = 'max' '''
 
     from radis.test.utils import getTestFile
@@ -308,7 +318,8 @@ def test_normalisation_mode__fast(plot=True, close_plots=True, verbose=True, *ar
     return True
 
 
-def test_slit_energy_conservation__fast(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+@pytest.mark.fast
+def test_slit_energy_conservation(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Convoluted and non convoluted quantities should have the same area
     (difference arises from side effects if the initial spectrum is not 0 on 
     the sides '''
@@ -345,7 +356,8 @@ def test_slit_energy_conservation__fast(verbose=True, plot=True, close_plots=Tru
     return True
     
 
-def test_slit_function_effect__fast(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+@pytest.mark.fast
+def test_slit_function_effect(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function '''
 
@@ -403,8 +415,10 @@ def test_slit_function_effect__fast(verbose=True, plot=True, close_plots=True, *
     for w0, FWHM in zip([380, 1000, 4200, 5500],
                         [0.396, 0.388, 0.282, 0.188]):
         w, I = dirac(w0)
+        
         wc, Ic = convolve_with_slit(w, I, w_slit, I_slit, norm_by='area', 
-                                    slit_dispersion=linear_dispersion)
+                                    slit_dispersion=linear_dispersion,
+                                    verbose=False)
         assert np.isclose(FWHM, get_effective_FWHM(wc, Ic), atol=0.001)
 
         if plot: 
@@ -421,16 +435,16 @@ def test_slit_function_effect__fast(verbose=True, plot=True, close_plots=True, *
 
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
-    test_against_specair_convolution__fast(plot=plot, close_plots=close_plots, verbose=verbose,
+    test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
                                            *args, **kwargs)
-    test_normalisation_mode__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
-    test_slit_energy_conservation__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
-    test_slit_function_effect__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_slit_function_effect(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
 #    test_constant_source(plot=plot, verbose=verbose, *args, **kwargs)
-    test_all_slit_shapes__fast(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    test_all_slit_shapes(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
     test_slit_unit_conversions_spectrum_in_cm(verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
     test_slit_unit_conversions_spectrum_in_nm(verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
-#    test_resampling__fast(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 

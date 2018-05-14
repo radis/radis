@@ -60,11 +60,11 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
     unit: 'nm' or 'cm-1'
         unit of slit_function FWHM, or unit of imported file
 
-    norm_by: 'area', 'max', or None
+    norm_by: ``'area'``, ``'max'``, or None
         how to normalize. `area` conserves energy. With `max` the slit is normalized
         so that its maximum is one (that is what is done in Specair: it changes
         the outptut spectrum unit, e.g. from 'mW/cm2/sr/µm' to 'mW/cm2/sr')
-        None doesnt normalize. Default 'area'
+        None doesnt normalize. Default ``'area'``
 
     shape: 'triangular', 'trapezoidal', 'gaussian'
         which shape to use when generating a slit. Default 'triangular'
@@ -372,10 +372,10 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
         instrumental slit function  (wavespace unit (nm / cm-1))
         Both wavespaces have to be the same!
 
-    norm_by: 'area', 'max', or None
+    norm_by: ``'area'``, ``'max'``, or None
         how to normalize. `area` conserves energy. `max` is what is done in
         Specair and changes spectrum units, e.g. from 'mW/cm2/sr/µm' to 'mW/cm2/sr'
-        None doesnt normalize. Default 'area'
+        None doesnt normalize. Default ``'area'``
 
     mode: 'valid', 'same'
         'same' returns output of same length as initial spectra, 
@@ -384,20 +384,21 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
         which lines outside of the calculated range have
         no impact. Default 'valid'. 
 
-    slit_dispersion: func of (lambda), or None
+    slit_dispersion: func of (lambda), or ``None``
         spectrometer reciprocal function : dλ/dx(λ)
         If not None, then the slit_dispersion function is used to correct the
         slit function for the whole range. Can be important if slit function
         was measured far from the measured spectrum  (e.g: a slit function
         measured at 632.8 nm will look broader at 350 nm because the spectrometer
         dispersion is higher at 350 nm. Therefore it should be corrected)
-        Default None
+        Default ``None``
 
-        Warning: slit dispersion is not unit aware: if your spectrum is stored
-        in cm-1 the slit function is converted in cm-1 but the slit dispersion
-        is not changed, so that may result in errors
-        # TODO. If slit dispersion first force slit function to be given in nm ?
-        # Else it's not relevant
+        .. warning::
+            slit dispersion is not unit aware: if your spectrum is stored
+            in cm-1 the slit function is converted in cm-1 but the slit dispersion
+            is not changed, so that may result in errors
+            # TODO. If slit dispersion first force slit function to be given in nm ?
+            # Else it's not relevant
 
         a Python implementation:
 
@@ -433,7 +434,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by = 'area',
         former norm_by name
 
     verbose: boolean
-        blabla
+        more blabla
 
 
     Returns
@@ -606,7 +607,7 @@ def get_FWHM(w, I, return_index=False):
     w, I: arrays
 
     return_index: boolean
-        if True, returns indexes for half width boundaries. Default False
+        if True, returns indexes for half width boundaries. Default ``False``
 
 
     Returns
@@ -662,10 +663,10 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
     w, I: arrays    or   (str, None)
         if str, open file directly
 
-    waveunit: 'nm', 'cm-1' or ''
+    waveunit: ``'nm'``, ``'cm-1'`` or ``''``
         unit of input w
 
-    plot_unit: 'nm, 'cm-1' or 'same'
+    plot_unit: ``'nm'``, ``'cm-1'`` or ``'same'``
         change plot unit (and FWHM units)
         
     Iunit: str, or None
@@ -673,7 +674,7 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
 
     warnings: boolean
         if True, test if slit is correctly centered and output a warning if it
-        is not. Default True
+        is not. Default ``True``
 
     '''
 
@@ -828,30 +829,30 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
         slit function spectrum
 
     norm_by: None, 'area', 'max'
-        normalisation type. 'area' conserves energy. 'max' is what is
+        normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
         done in Specair and changes units. None doesnt normalize
-        experimental slit. Default 'area'
+        experimental slit. Default ``'area'``
 
     bplot: boolean
-        plot normalized slit function (for debugging). Default False
+        plot normalized slit function (for debugging). Default ``False``
 
-    waveunit: 'nm', 'cm-1'
+    waveunit: ``'nm'``, ``'cm-1'``
         used for plot only. Slit function is generated assuming you use the
-        correct wavespace. No conversions are made here. Default 'nm'
+        correct wavespace. No conversions are made here. Default ``'nm'``
 
     auto_recenter: boolean
         if True, recenters the slit on the maximum calculated from the two
         FWHM limits. To recenter, zeros are added on the shorter side (zero padding)
-        Default True
+        Default ``True``
 
     auto_crop: boolean
         If True, remove unnecessary zeros on the side for a faster convolution.
-        (remove as many zeros on the left as on the right). Default True
+        (remove as many zeros on the left as on the right). Default ``True``
 
     center: float, None
         normally the slit instrumental slit function is centered on where it
         was measured. If not None, center overwrites the center and
-        offsets the slit to the given value. Default None
+        offsets the slit to the given value. Default ``None``
 
     scale: float
         multiply slit by an arbitrary factor. Default 1.
@@ -923,12 +924,12 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     center: (nm)
         center wavelength for the wavelength axs of the slit function
 
-    norm_by: 'area', 'max'
-        normalisation type. 'area' conserves energy. 'max' is what is
-        done in Specair and changes units. Default 'area'
+    norm_by: ``'area'``, ``'max'``
+        normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
+        done in Specair and changes units. Default ``'area'``
 
     bplot: boolean
-        plot normalized slit function (for debugging). Default False
+        plot normalized slit function (for debugging). Default ``False``
 
     wavespace: '', 'nm', 'cm-1'
         used for plot only. Slit function is generated assuming you use the
@@ -1025,12 +1026,12 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
     center: (nm)
         center wavelength for the wavelength axs of the slit function
 
-    norm_by: 'area', 'max'
-        normalisation type. 'area' conserves energy. 'max' is what is
-        done in Specair and changes units. Default 'area'
+    norm_by: ``'area'``, ``'max'``
+        normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
+        done in Specair and changes units. Default ``'area'``
 
     bplot: boolean
-        plot normalized slit function (for debugging). Default False
+        plot normalized slit function (for debugging). Default ``False``
 
     wavespace: '', 'nm', 'cm-1'
         used for plot only. Slit function is generated assuming you use the
@@ -1143,12 +1144,12 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     center: (nm)
         center wavelength for the wavelength axs of the slit function
 
-    norm_by: 'area', 'max'
-        normalisation type. 'area' conserves energy. 'max' is what is
-        done in Specair and changes units. Default 'area'
+    norm_by: ``'area'``, ``'max'``
+        normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
+        done in Specair and changes units. Default ``'area'``
 
     bplot: boolean
-        plot normalized slit function (for debugging). Default False
+        plot normalized slit function (for debugging). Default ``False``
 
     wavespace: '', 'nm', 'cm-1'
         used for plot only. Slit function is generated assuming you use the

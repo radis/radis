@@ -1,6 +1,21 @@
 # -*- coding: utf-8 -*-
 '''
+Summary
+-------
+
 HITRAN database parser 
+
+
+Routine Listing
+---------------
+
+hit2df,
+get_molecule,
+get_molecule_identifier,
+parse_local_quanta,
+parse_global_quanta
+
+
 '''
 
 from __future__ import print_function, absolute_import, division, unicode_literals
@@ -13,6 +28,9 @@ import os
 from os.path import exists, splitext
 from six.moves import range
 from six.moves import zip
+import radis
+from radis.misc.cache_files import (check_not_deprecated, save_to_hdf, 
+                                    DeprecatedFileError, LAST_COMPATIBLE_VERSION)
 
 
 # %% Hitran groups and classes
@@ -22,41 +40,57 @@ from six.moves import zip
 # Groups (define local quanta)
 
 HITRAN_GROUP1 = ['H2O', 'O3', 'SO2', 'NO2', 'HNO3', 'H2CO', 'HOCl', 'H2O2', 'COF2',
-               'H2S', 'HO2', 'HCOOH', 'ClONO2', 'HOBr', 'C2H4'] # asymmetric rotors
+               'H2S', 'HO2', 'HCOOH', 'ClONO2', 'HOBr', 'C2H4']
+'''str: asymmetric rotors'''
 
 HITRAN_GROUP2 = ['CO2', 'N2O', 'CO', 'HF', 'HCl', 'HBr', 'HI', 'OCS', 'N2', 'HCN',
-                 'C2H2', 'NO+']   # diatomic and linear molecules
+                 'C2H2', 'NO+']
+'''str: diatomic and linear molecules'''
 
-HITRAN_GROUP3 = ['SF6', 'CH4']   # Spherical rotors
+HITRAN_GROUP3 = ['SF6', 'CH4']  
+'''str: Spherical rotors'''
 
-HITRAN_GROUP4 = ['CH3D', 'CH3Cl', 'C2H6', 'NH3', 'PH3', 'CH3OH']  # symmetric rotors
+HITRAN_GROUP4 = ['CH3D', 'CH3Cl', 'C2H6', 'NH3', 'PH3', 'CH3OH']
+'''str: symmetric rotors'''
 
-HITRAN_GROUP5 = ['O2']  # Triplet-Sigma ground electronic states
+HITRAN_GROUP5 = ['O2']
+'''str: Triplet-Sigma ground electronic states'''
 
-HITRAN_GROUP6 = ['NO', 'OH', 'ClO']  # Doublet-Pi ground electronic states 
+HITRAN_GROUP6 = ['NO', 'OH', 'ClO']
+'''str: Doublet-Pi ground electronic states'''
 
 # Classes (define global quanta)
 
 HITRAN_CLASS1 = ['CO', 'HF', 'HCl', 'HBr', 'HI', 'N2', 'NO+']
+'''str: Diatomic molecules with ? '''
 
-HITRAN_CLASS2 = ['O2']  # Diatomic molecules with different electronic levels
+HITRAN_CLASS2 = ['O2']
+'''str: Diatomic molecules with different electronic levels'''
 
-HITRAN_CLASS3 = ['NO', 'OH', 'ClO']  # Diatomic molecules with doublet-Pi electronic state
+HITRAN_CLASS3 = ['NO', 'OH', 'ClO']  
+'''str: Diatomic molecules with doublet-Pi electronic state'''
     
-HITRAN_CLASS4 = ['N2O', 'OCS', 'HCN']  # Linear triatomic
+HITRAN_CLASS4 = ['N2O', 'OCS', 'HCN']  
+'''str: Linear triatomic'''
 
-HITRAN_CLASS5 = ['CO2']  # Linear triatomic with large Fermi resonance
+HITRAN_CLASS5 = ['CO2']  
+'''str: Linear triatomic with large Fermi resonance'''
 
-HITRAN_CLASS6 = ['H2O', 'O3', 'SO2', 'NO2', 'HOCl', 'H2S', 'HO2', 'HOBr'] # Non-linear triatomic
+HITRAN_CLASS6 = ['H2O', 'O3', 'SO2', 'NO2', 'HOCl', 'H2S', 'HO2', 'HOBr'] 
+'''str: Non-linear triatomic'''
 
-HITRAN_CLASS7 = ['C2H2']  # Linear tetratomic
+HITRAN_CLASS7 = ['C2H2']  
+'''str: Linear tetratomic'''
 
-HITRAN_CLASS8 = ['NH3', 'PH3']  # Pyramidal tetratomic
+HITRAN_CLASS8 = ['NH3', 'PH3']  
+'''str: Pyramidal tetratomic'''
 
-HITRAN_CLASS9 = ['H2CO', 'H2O2', 'COF2']  # Non-linear tetratomic
+HITRAN_CLASS9 = ['H2CO', 'H2O2', 'COF2']  
+'''str: Non-linear tetratomic'''
 
 HITRAN_CLASS10 = ['CH4', 'CH3D', 'CH3Cl', 'C2H6', 'HNO3', 'SF6', 'HCOOH', 
-                  'ClONO2', 'C2H4', 'CH3OH']  # Pentatomic or greater polyatomic
+                  'ClONO2', 'C2H4', 'CH3OH']  
+'''str: Pentatomic or greater polyatomic'''
 
 # %% Parsing functions
 
@@ -84,50 +118,146 @@ columns_2004 = OrderedDict([ (
                'gpp',    ('a7',   float, 'lower state degeneracy'                         ,''                      ))
                ])
 
-
-# quick fix # TODO: proper implementation of HITRAN classes, and groups
-# Update: classes are now implemented properly, groups remain to be done 
-
-
-def _generate_cache_file(fname, df):
-    ''' Generate cache file for pandas Dataframe df under name fname, which 
-    must be a HDF5 
+def check_cache_file(use_cached, fcache, verbose):
+    ''' Check cache file:
+        
+    First test its existence: function of the value of ``use_cached``:
     
-    Parameters
+    - if True, ok
+    - if 'regen', delete cache file to regenerate it later. 
+    - if 'force', raise an error if file doesnt exist. 
+    
+    Then look if it is deprecated:
+        
+    - if deprecated, delete it to regenerate later unless 'force' was used
+    '''
+    
+    # Test existence of file:
+    if not use_cached:
+        return                   # we dont want a cache file, no need to test it
+    elif use_cached == 'regen':
+        if exists(fcache):
+            os.remove(fcache)
+            if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
+    elif use_cached == 'force':
+        if not exists(fcache):
+            raise ValueError('Cache file {0} doesnt exist'.format(fcache))
+    else: #  use_cached == True
+        pass    # just use the file as is
+            
+    # If file is still here, test if it is deprecated:
+    if exists(fcache):
+        if verbose: print('Using cache file: {0}'.format(fcache))
+        try:
+            check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
+                                 last_compatible_version=LAST_COMPATIBLE_VERSION)
+        except DeprecatedFileError as err:
+            if use_cached == 'force':         
+                raise
+            else:   # delete file to regenerate it in the end of the script
+                if verbose: print('File {0} deprecated:\n{1}\nDeleting it!'.format(
+                            fcache, str(err)))
+                os.remove(fcache)      
+
+    return 
+
+def hit2df(fname, count=-1, cache=True, verbose=True):
+    ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
+    
+    Parameters    
     ----------
     
     fname: str
-        HDF5 filename
+        HITRAN-HITEMP file name 
         
+    count: int
+        number of items to read (-1 means all file)
+        
+    cache: boolean, or ``'regen'`` or ``'force'``
+        if ``True``, a pandas-readable HDF5 file is generated on first access, 
+        and later used. This saves on the datatype cast and conversion and
+        improves performances a lot (but changes in the database are not 
+        taken into account). If False, no database is used. If ``'regen'``, temp
+        file are reconstructed. Default ``True``. 
+    
+    
+    Returns
+    -------
+    
     df: pandas Dataframe
-        line database to store
+        dataframe containing all lines and parameters
         
-    Note
-    ----
     
-    Performance of different compression librairies / methods:
-        
-    - storing as np.float32 can save up to 50% space, but we can loose some 
-    information such as low linestrength numbers (1e-80, 1e-100) that becomes 0
     
-    - storing with compression (complevel=9, complib='blosc') saves up to 50%
-    space, but reading speed is doubled 
-    
-    - storing with low compression 'complevel=1', complib='blosc' can still
-    save up to 50%, but reading speed is only increased by about 20%
-    
-    - format='fixed' is always much faster than format='table' (about a factor 5!)
-    
-    Eventually we use ``format='fixed', mode='w', complevel=1, complib='blosc')`` 
+    References
+    ----------
 
+    
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    
+    
+    
+    Notes
+    -----
+    
+    Performances: see CDSD-HITEMP parser
     
     '''
     
-    assert fname.endswith('h5')
+    columns = columns_2004
+
+    # Use cache file if possible
+    fcache = splitext(fname)[0]+'.h5'
+    check_cache_file(cache, fcache=fcache, verbose=verbose)
+    if cache and exists(fcache):
+        return pd.read_hdf(fcache, 'df')
+        
+    # Detect the molecule by reading the start of the file
+    with open(fname) as f:
+        mol = get_molecule(int(f.read(2)))
+        
+    # %% Start reading the full file
     
-    df.to_hdf(fname, 'df', format='fixed', mode='w', complevel=1, complib='blosc')
-#    df.to_hdf(fname, 'df', format='fixed', mode='w')  # would be 10-20% faster, but take 2x more space
+    df = parse_binary_file(fname, columns, count)
     
+    # %% Post processing
+    
+    # assert one molecule per database only. Else the groupbase data reading 
+    # above doesnt make sense
+    nmol = len(set(df['id']))
+    if nmol == 0:
+        raise ValueError('Databank looks empty')        
+    elif nmol!=1:
+        # Crash, give explicity error messages
+        try:
+            secondline = df.iloc[1]
+        except IndexError:
+            secondline = ''
+        raise ValueError('Multiple molecules in database ({0}). Current '.format(nmol)+\
+                         'spectral code only computes 1 species at the time. Use MergeSlabs. '+\
+                         'Verify the parsing was correct by looking at the first row below: '+\
+                         '\n{0}'.format(df.iloc[0])+'\n----------------\nand the second row '+\
+                         'below: \n{0}'.format(secondline))
+    
+    # dd local quanta attributes, based on the HITRAN group
+    df = parse_local_quanta(df, mol)
+    
+    # Add global quanta attributes, based on the HITRAN class
+    df = parse_global_quanta(df, mol)
+
+    if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
+        if verbose: print('Generating cached file: {0}'.format(fcache))
+        try:
+            save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
+                        key='df', overwrite=True)
+        except:
+            if verbose:
+                print(sys.exc_info())
+                print('An error occured in cache file generation. Lookup access rights')
+            pass
+        
+    return df 
+
 
 
 # %% Hitran global quanta classes
@@ -148,15 +278,15 @@ def _parse_HITRAN_class1(df):
     
     HITRAN syntax:
     
-    >>>      v1
+    >>>       v
     >>>  13x I2
     
     '''
     dgu = df['globu'].str.extract(
-            '[ ]{13}(?P<v1u>[\d ]{2})',
+            '[ ]{13}(?P<vu>[\d ]{2})',
             expand=True)
     dgl = df['globl'].str.extract(
-            '[ ]{13}(?P<v1l>[\d ]{2})',
+            '[ ]{13}(?P<vl>[\d ]{2})',
             expand=True)
     dgu = dgu.apply(pd.to_numeric)
     dgl = dgl.apply(pd.to_numeric)
@@ -178,7 +308,7 @@ def _parse_HITRAN_class2(df):
     
     HITRAN syntax:
     
-    >>>      X  v1
+    >>>      X   v
     >>>  12x A1 I2
     
     '''
@@ -657,69 +787,34 @@ def _cast_to_dtype(data, dtype):
 
     return data
 
-def hit2df(fname, count=-1, cache=False, verbose=True):
-    ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
+def parse_binary_file(fname, columns, count):
+    ''' Parse a file under HITRAN ``par`` format. Parsing is done in binary 
+    format so it's as fast as possible.
     
-    
-    Parameters    
+    Parameters
     ----------
     
     fname: str
-        HITRAN-HITEMP file name 
+        filename
         
+    columns: dict
+        list of columns and their format
+       
     count: int
-        number of items to read (-1 means all file)
+        number of lines to read
         
-    cache: boolean
-        if True, a pandas-readable HDF5 file is generated on first access, 
-        and later used. This saves on the datatype cast and conversion and
-        improves performances a lot (but changes in the database are not 
-        taken into account). If False, no database is used. If 'regen', temp
-        file are reconstructed. Default False. 
-    
-    
     Returns
     -------
     
-    df: pandas Dataframe
-        dataframe containing all lines and parameters
+    df: pandas DataFrame
+        dataframe with lines
         
-    
-    
-    References
-    ----------
-
-    
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
-    
-    
-    
     Notes
     -----
     
-    Performances: see CDSD-HITEMP parser
+    Part common to hit2df and cdsd2df
     
     '''
-    
-    columns = columns_2004
-
-    if cache: # lookup if cached file exist. 
-#        fcache = fname+'.cached'
-        fcache = splitext(fname)[0]+'.h5'
-        if exists(fcache):
-            if cache == 'regen':
-                os.remove(fcache)
-                if verbose: print('Deleted h5 cache file : {0}'.format(fcache))
-            else:
-                if verbose: print('Using h5 file: {0}'.format(fcache))
-    #            return pd.read_csv(fcache)
-                return pd.read_hdf(fcache, 'df')
-        
-    # Detect the molecule by reading the start of the file
-    with open(fname) as f:
-        mol = get_molecule(int(f.read(2)))
-        
-    # %% Start reading the full file
     
     # To be faster, we read file totally in bytes mode with fromfiles. But that
     # requires to properly decode the line return character:
@@ -763,52 +858,19 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     # %% Create dataframe    
     df = pd.DataFrame(data.tolist(), columns=list(columns.keys())+['_linereturn'])
 
-    # assert one molecule per database only. Else the groupbase data reading 
-    # above doesnt make sense
-    nmol = len(set(df['id']))
-    if nmol == 0:
-        raise ValueError('Databank looks empty')        
-    elif nmol!=1:
-        # Crash, give explicity error messages
-        try:
-            secondline = df.iloc[1]
-        except IndexError:
-            secondline = ''
-        raise ValueError('Multiple molecules in database ({0}). Current '.format(nmol)+\
-                         'spectral code only computes 1 species at the time. Use MergeSlabs. '+\
-                         'Verify the parsing was correct by looking at the first row below: '+\
-                         '\n{0}'.format(df.iloc[0])+'\n----------------\nand the second row '+\
-                         'below: \n{0}'.format(secondline))
+    # Delete dummy column than handled the line return character
+    del df['_linereturn']
     
+    # Update format
     for k, c in columns.items():
         if c[1] == str:
             df[k] = df[k].str.decode("utf-8")
     
-    # %% Add local quanta attributes, based on the HITRAN group
-    df = parse_local_quanta(df, mol)
-    
-    # %% Add global quanta attributes, based on the HITRAN class
-    df = parse_global_quanta(df, mol)
-
     # Strip whitespaces around PQR columns (due to 2 columns jumped)
     if 'branch' in df:
         df['branch'] = df.branch.str.strip()
     
-    # Delete dummy column than handled the line return character
-    del df['_linereturn']
-    
-    if cache: # cached file mode but cached file doesn't exist yet (else we had returned)
-        if verbose: print('Generating cached file: {0}'.format(fcache))
-        try:
-#            df.to_csv(fcache)
-            _generate_cache_file(fcache, df)
-        except:
-            if verbose:
-                print(sys.exc_info())
-                print('An error occured in cache file generation. Lookup access rights')
-            pass
-        
-    return df 
+    return df
 
 def parse_local_quanta(df, mol):
     '''

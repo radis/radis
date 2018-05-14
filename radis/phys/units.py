@@ -382,7 +382,7 @@ def convert_universal(I, from_unit, to_unit, spec=None,
     Other Parameters
     ----------------
         
-    spec: Spectrum object
+    spec: :class:`~radis.spectrum.spectrum.Spectrum` object
         needed to get wavenumber in case we need to do a change of variable 
         within the integral
         

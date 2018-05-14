@@ -18,7 +18,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.spectrum import Spectrum, calculated_spectrum
 from radis.phys.convert import nm2cm
 #from radis.misc.utils import DatabankNotFound
-#from radis.test.utils import IgnoreMissingDatabase, build_test_databases
+#from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 import numpy as np
 from numpy import allclose, linspace
 import os
@@ -195,7 +195,7 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
     I_cm = planck_wn(w_cm, T=6000, unit='mW/sr/cm2/cm_1')
     assert allclose(I_cm, I, rtol=1e-3)
     
-#def test_emissivity_conversion__fast(verbose=True, *args, **kwargs):
+#def test_emissivity_conversion(verbose=True, *args, **kwargs):
 #    ''' Test conversion of intensity cm-1 works:
 #        
 #    - conversion of mW/sr/cm2/nm -> mW/sr/cm2/cm-1
@@ -282,11 +282,11 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
 def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warnings=True, *args, **kwargs):
     ''' Test procedures
 
-    Input
-    ------
+    Parameters
+    ----------
 
     debug: boolean
-        swamps the console namespace with local variables. Default False
+        swamps the console namespace with local variables. Default ``False``
 
     '''
     
@@ -300,7 +300,7 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warn
     
     # Test populations
     # ----------
-#    test_populations__fast(verbose=verbose, *args, **kwargs)
+#    test_populations(verbose=verbose, *args, **kwargs)
 
     # Test conversion of intensity cm-1 works
     # -------------
@@ -310,13 +310,13 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warn
     # ---------
     test_rescaling_function(debug=debug, *args, **kwargs)
     test_resampling_function(debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs)
-#    test_rescaling_path_length__fast(plot=plot, verbose=verbose, debug=debug,
+#    test_rescaling_path_length(plot=plot, verbose=verbose, debug=debug,
 #                                     warnings=warnings, *args, **kwargs)
-#    test_rescaling_mole_fraction__fast(plot=plot, verbose=verbose, debug=debug,
+#    test_rescaling_mole_fraction(plot=plot, verbose=verbose, debug=debug,
 #                                     warnings=warnings, *args, **kwargs)
     
     # Test propagating medium
-#    test_medium__fast(plot=plot, verbose=verbose, debug=debug,
+#    test_medium(plot=plot, verbose=verbose, debug=debug,
 #                           warnings=warnings, *args, **kwargs)
 
     return True

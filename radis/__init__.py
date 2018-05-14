@@ -72,7 +72,8 @@ References
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-from .misc.utils import getProjectRoot, Chdir
+from .misc.utils import getProjectRoot
+from .misc.utils import Chdir as _chdir
 
 
 # %% Debug mode
@@ -85,6 +86,37 @@ DEBUG_MODE = False
 # optimize mode:   
 # >>> python -O *.py
 
+# %% Version
+def get_version(verbose=False, add_git_number=True):
+    ''' Reads __version.txt__ and retrieve version number
+    If ``add_git``, also appends Git commit number if we're on a gitted session '''
+    
+    # First get version
+    with open(os.path.join(getProjectRoot(),'__version__.txt')) as version_file:
+        version = version_file.read().strip()
+        
+    # Now get git info 
+    if add_git_number:
+        import subprocess
+        import sys
+        cd = _chdir(os.path.dirname(__file__))
+        try:
+            label = subprocess.check_output('git describe')
+            label = label.decode().strip()
+            label = '-' + label
+        except:
+            if verbose: print("couldnt get git version: {0}".format(sys.exc_info()[1]))
+            # probably not a git session. drop 
+            label = '' 
+        finally:
+            version = version+label
+            cd.__del__()
+    
+    return version 
+
+__version__ = get_version(add_git_number=False)
+
+
 from .spectrum import *        # Spectrum object
 from .io import *              # input / output 
 from .lbl import *             # line-by-line module 
@@ -92,32 +124,3 @@ from .los import *             # line-of-sight module
 from .phys import *            # conversion functions, blackbody objects
 from .tools import *           # slit, database, line survey, etc.
 from .test import *            # test
-
-# %% Version
-def get_version(verbose=False):
-    ''' Reads version.txt and retrieve version 
-    Also adds Git number if we're on a gitted session '''
-    
-    # First get version
-    with open(os.path.join(getProjectRoot(),'__version__.txt')) as version_file:
-        version = version_file.read().strip()
-        
-    # Now get git info 
-    import subprocess
-    import sys
-    cd = Chdir(os.path.dirname(__file__))
-    try:
-        label = subprocess.check_output('git describe')
-        label = label.decode().strip()
-        label = '-' + label
-    except:
-        if verbose: print("couldnt get git version: {0}".format(sys.exc_info()[1]))
-        # probably not a git session. drop 
-        label = '' 
-    finally:
-        version = version+label
-        cd.__del__()
-    return version 
-
-__version__ = get_version()
-

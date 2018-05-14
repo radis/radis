@@ -69,7 +69,8 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
     Examples
     --------
     
-    Resample a Spectrum radiance on an evenvly spaced wavenumber space::
+    Resample a :class:`~radis.spectrum.spectrum.Spectrum` radiance 
+    on an evenly spaced wavenumber space::
     
         w_nm, I_nm = s.get('radiance')
         w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
@@ -227,7 +228,8 @@ def resample_even(xspace, vector, resfactor=2, k=1, ext='error', energy_threshol
     Examples
     --------
     
-    Resample a Spectrum radiance on an evenvly spaced wavenumber space::
+    Resample a :class:`~radis.spectrum.spectrum.Spectrum` radiance 
+    on an evenly spaced wavenumber space::
     
         w_nm, I_nm = s.get('radiance')
         w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
@@ -256,7 +258,7 @@ def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
     ----------
     
     debug: boolean
-        swamps the console namespace with local variables. Default False
+        swamps the console namespace with local variables. Default ``False``
         
     '''
 
