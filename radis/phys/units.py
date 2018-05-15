@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 
-Performance test with pint
-- 2 times slower than numpy on np.std(np.exp())
+Notes
+-----
 
-Import radis.phys.units to get access to:
+Dimensioned calculation is slower:
+
+Performance test with pint:
+
+- 2 times slower than numpy on np.std(np.exp())
 
 Examples
 --------
 
-from radis.phys.units import Q_
-- a = Q_(np.array([5,4,2]),'cm')
-- a.to_base_units()
+Import neq.phys.units to get access to::
 
+    from neq.phys.units import Q_
+    a = Q_(np.array([5,4,2]),'cm')
+    a.to_base_units()
 
 -------------------------------------------------------------------------------
 

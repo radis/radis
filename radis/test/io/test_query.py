@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 Test query functions
+
+-------------------------------------------------------------------------------
+
 """
 
+from __future__ import print_function, absolute_import, division, unicode_literals
 import pytest
 from radis.io.query import fetch_astroquery
 

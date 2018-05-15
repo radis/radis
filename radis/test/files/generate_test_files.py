@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Scripts used to generate some test files for RADIS
+
+
+-------------------------------------------------------------------------------
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

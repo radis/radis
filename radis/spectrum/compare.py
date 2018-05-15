@@ -69,7 +69,11 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
 
     w1, Idiff: array
         difference interpolated on the second range(order?)
-
+    
+    Notes
+    -----
+    
+    Uses :func:`~radis.misc.curve.curve_substract` internally
 
     See Also
     --------
@@ -83,7 +87,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
-                                   medium=medium, resample=resample)
+                                   medium=medium, assert_same_wavelength=not resample)
 
     # basically w1, I1 - I2 (on same range)
     return curve_substract(w1, I1, w2, I2)
@@ -113,6 +117,10 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
 
+    Notes
+    -----
+    
+    Uses :func:`~radis.misc.curve.curve_divide` internally
 
     See Also
     --------
@@ -123,11 +131,12 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     :func:`~radis.spectrum.compare.get_residual_integral`, 
     :func:`~radis.spectrum.compare.plot_diff` 
     :meth:`~radis.spectrum.spectrum.compare_with` 
+    
 
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
-                                   medium=medium, resample=resample)
+                                   medium=medium, assert_same_wavelength=not resample)
 
     # basically w1, I1 - I2 (on same range)
     return curve_divide(w1, I1, w2, I2)
@@ -156,7 +165,11 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
 
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
-
+    
+    Notes
+    -----
+    
+    Uses :func:`~radis.misc.curve.curve_distance` internally
 
     See Also
     --------
@@ -171,7 +184,7 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
     '''
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
-                                   medium=medium, resample=resample)
+                                   medium=medium, assert_same_wavelength=not resample)
 
     # euclidian distance from w1, I1
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)
@@ -205,9 +218,9 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
     -----
 
     For I1, I2, the values of 'var' in s1 and s2, respectively, residual
-    is calculated as:
+    is calculated as::
 
-    >>> res = trapz(I2-I1, w1) / trapz(I1, w1)
+        res = trapz(I2-I1, w1) / trapz(I1, w1)
 
     0 values for I1 yield nans except if I2 = I1 = 0
 
@@ -312,7 +325,7 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
 
 
 def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default',
-                  resample=True):
+                  assert_same_wavelength=False):
     ''' See get_distance, get_diff '''
 
     # Check inputs, get defaults
@@ -334,7 +347,7 @@ def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default
     w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
     w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
 
-    if not resample:
+    if assert_same_wavelength:
         if not array_allclose(w1, w2):
             raise AssertionError(
                 'Wavespace are not the same: use Spectrum.resample()')

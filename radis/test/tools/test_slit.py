@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 20 10:18:48 2017
-
-@author: erwan
+Test slit methods
 
 Examples
 --------
 
-Run all tests:
+Run all tests::
 
->>> pytest       (in command line, in project folder)
+    pytest       (in command line, in project folder)
 
-Run only fast tests (i.e: tests that have 'fast' in their name)
+Run only fast tests (i.e: tests that have a 'fast' label)::
 
->>> pytest -k fast
+    pytest -m fast
+
+
+-------------------------------------------------------------------------------
 
 """
 

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Aug 15 14:56:25 2017
-
-@author: erwan
+Summary
+-------
 
 Runs tests for neq/phys so that they can be accessed by pytest (and hopefully 
 the CI test suite)
@@ -10,19 +9,20 @@ the CI test suite)
 Examples
 --------
 
-Run all tests:
+Run all tests::
 
->>> pytest       (in command line, in project folder)
+    pytest       (in command line, in project folder)
 
-Run only fast tests (i.e: tests that have 'fast' in their name)
+Run only fast tests (i.e: tests that have a 'fast' label)::
 
->>> pytest -k fast
+    pytest -m fast
+
+-------------------------------------------------------------------------------
 
 """
 
 
 from __future__ import absolute_import, unicode_literals, print_function
-
 import numpy as np
 from numpy import isclose
 from radis.phys.convert import (J2eV, J2cm, cm2J, eV2cm, eV2K, eV2nm, nm2eV,

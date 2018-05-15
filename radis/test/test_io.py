@@ -4,10 +4,6 @@
 Notes
 -----
 
-Created on Tue Aug 15 14:56:25 2017
-
-@author: erwan
-
 Runs tests for radis/io so that they can be accessed by pytest (and hopefully 
 the CI test suite)
 
@@ -18,14 +14,15 @@ Run all tests::
 
 	pytest       (in command line, in project folder)
 
-Run only fast tests (i.e: tests that have 'fast' in their name)::
+Run only fast tests (i.e: tests that have a 'fast' label)::
 
-	pytest -k fast
+	pytest -m fast
+
+-------------------------------------------------------------------------------
 
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-
 from radis.io.hitran import hit2df
 from radis.test.utils import getTestFile
 from time import time

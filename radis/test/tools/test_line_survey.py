@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 Test that line survey works
+
+-------------------------------------------------------------------------------
+
 """
 
+from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec

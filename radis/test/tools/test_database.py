@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Test that line survey works
+Test that :class:`~radis.tools.database.SpecDatabase` works
+
+-------------------------------------------------------------------------------
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

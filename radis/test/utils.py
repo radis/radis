@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 """ Tools to test RADIS library
 
-Notes
------
-
-Created on Thu May 28 14:47:36 2015
-
-@author: Erwan
+Summary
+-------
 
 Tools to test RADIS library
 
@@ -19,17 +15,19 @@ the file exist else suggest to download the folder
 Examples
 --------
 
-Run all tests:
+Run all tests::
     
     cd radis/test
     pytest
     
-Run only "fast" tests (tests that have "fast" in their name, and should be 
-a few seconds only):
+Run only "fast" tests (tests that have a "fast" label, and should be 
+a few seconds only)::
     
     cd radis/test
-    pytest -k fast
-    
+    pytest -m fast
+
+-------------------------------------------------------------------------------
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

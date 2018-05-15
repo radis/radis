@@ -4,13 +4,15 @@
 Examples
 --------
 
-Run all tests:
+Run all tests::
 
->>> pytest       (in command line, in project folder)
+    pytest      # (in command line, in project folder)
 
-Run only fast tests (i.e: tests that have 'fast' in their name)
+Run only fast tests (i.e: tests that a  'fast' label)::
 
->>> pytest -k fast
+    pytest -m fast
+
+-------------------------------------------------------------------------------
 
 """
 
