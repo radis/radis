@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr 14 12:06:46 2017
+Functions to plot line surveys 
 
-@author: erwan
+
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

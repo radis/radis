@@ -5,6 +5,10 @@ Created on Sun Jan  3 17:52:04 2016
 @author: Erwan
 
 Debug functions
+
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

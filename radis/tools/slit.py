@@ -1,15 +1,38 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr 25 15:59:06 2017
 
-This module contains:
-- a function to convolve with a slit function, that can resample and correct
-for slit dilation
-- predefined slit functions generators (triangular, gaussian, etc... see SLIT_SHAPES)
-and experimental slit function importer
-- functions to manipulate slit functions (plot, get_FWHM, get_effective_FWHM,
-recenter_slit, crop_slit)
+Routine Listing
+---------------
+
+This module contains...
+
+a function to convolve with a slit function, that can resample and correct
+for slit dilation:
+
+- :func:`~radis.tools.slit.convolve_with_slit`
+
+predefined slit functions generators (triangular, gaussian, etc... see :data:`~radis.tools.slit.SLIT_SHAPES`)
+and experimental slit function importer:
+
+- :func:`~radis.tools.slit.get_slit_function`
+- :func:`~radis.tools.slit.import_experimental_slit`
+- :func:`~radis.tools.slit.triangular_slit`
+- :func:`~radis.tools.slit.trapezoidal_slit`
+- :func:`~radis.tools.slit.gaussian_slit`
+
+functions to manipulate slit functions (plot, get_FWHM, get_effective_FWHM,
+recenter_slit, crop_slit):
+
+:func:`~radis.tools.slit.get_FWHM`
+:func:`~radis.tools.slit.get_effective_FWHM`
+:func:`~radis.tools.slit.plot_slit`
+:func:`~radis.tools.slit.recenter_slit`
+:func:`~radis.tools.slit.crop_slit`
+
+
+-------------------------------------------------------------------------------
+
 
 
 """
@@ -644,11 +667,17 @@ def get_FWHM(w, I, return_index=False):
     [xmin, xmax]: int
 
 
-    Todo
-    ----
+    Notes
+    -----
 
-    Linearly interpolate at the boundary? insignificant for large number of points
+    # TODO: Linearly interpolate at the boundary? insignificant for large number of points
 
+    
+    See Also
+    --------
+    
+    :func:`~radis.tools.slit.get_effective_FWHM`
+    
     '''
 
     upper = np.argwhere(I >= I.max()/2)
@@ -670,6 +699,13 @@ def get_effective_FWHM(w, I):
     ----------
 
     w, I: arrays
+    
+    
+    See Also
+    --------
+    
+    :func:`~radis.tools.slit.get_FWHM`
+    
     '''
 
     Imax = I.max()

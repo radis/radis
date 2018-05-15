@@ -8,6 +8,21 @@ Operations on Curves, where a curve is a (w, I) array tuple
 
 Similar to Origin Simple Curve Math operators
 
+
+Routine Listing
+---------------
+
+- :func:`~radis.misc.curve.curve_distance`
+- :func:`~radis.misc.curve.curve_add`
+- :func:`~radis.misc.curve.curve_substract`
+- :func:`~radis.misc.curve.curve_multiply`
+- :func:`~radis.misc.curve.curve_divide`
+
+
+-------------------------------------------------------------------------------
+
+
+
 """
 
 from __future__ import absolute_import

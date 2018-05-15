@@ -1,15 +1,31 @@
 # -*- coding: utf-8 -*-
-""" Functions to parse ~/.radis file
+""" 
+Summary
+-------
+
+Functions to parse ~/.radis file
 
 Notes
 -----
 
-@author: Erwan
-
-Functions to parse ~/.radis file
-
 Create a ~/.radis file in your HOME that contains all machine-specific information
-(e.g: path to databanks)
+(e.g: path to databanks). See :data:`~radis.misc.config.DBFORMAT` for expected 
+format
+
+Routine Listing
+---------------
+
+- :func:`~radis.misc.config.getConfig`
+- :func:`~radis.misc.config.getDatabankEntries`
+- :func:`~radis.misc.config.getDatabankList`
+- :func:`~radis.misc.config.addDatabankEntries`
+- :func:`~radis.misc.config.diffDatabankEntries`
+- :func:`~radis.misc.config.printDatabankEntries`
+- :func:`~radis.misc.config.printDatabankList`
+
+
+-------------------------------------------------------------------------------
+
 
 """
 
@@ -57,6 +73,7 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
                                  # energies. Default 0 (if not given)
 
 --------------------------""")
+'''str: Typical expected format of a ~/.radis entry'''
 
 CONFIG_PATH = join(expanduser("~"), ".radis")
 

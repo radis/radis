@@ -2,6 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Handy functions for manipulation of :class:`~radis.spectrum.spectrum.Spectrum` objects
+
+Routine Listing
+---------------
+
+- :func:`~radis.spectrum.operations.substract`
+
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

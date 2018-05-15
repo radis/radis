@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon May 29 21:50:56 2017
-
-@author: erwan
-
-A Spectrum Database class to manage them all
+Implements a spectrum database :class:`~radis.tools.database.SpecDatabase` 
+class to manage them all
 
 It basically manages a list of Spectrum JSON files, adding a Pandas
 dataframe structure on top to serve as an efficient index to visualize
@@ -24,7 +21,7 @@ See and get objects from database::
 
     s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
     db.add(s)  # update database (and raise error because duplicate!)
-
+    
 Note that SpectrumFactory objects can be configured to automatically update
 a database
 
@@ -41,13 +38,19 @@ a condition was added afterwards to the Spectrum class)::
        s.conditions['medium'] = 'vacuum'
        s.store(join(db,f), if_exists_then='replace')
 
-Todo
-----
+Notes
+-----
+       
+# TODO: 
 
-Alert if case already in database when generating from a SpectrumFactory / ParallelFactory
+- Alert if case already in database when generating from a SpectrumFactory / ParallelFactory
 connected to a SpecDatabase
 
-Implement a h5py version of load / store 
+- Implement a h5py version of load / store 
+
+
+-------------------------------------------------------------------------------
+
 
 """
 

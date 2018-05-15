@@ -12,6 +12,10 @@ Run only fast tests (i.e: tests that have 'fast' in their name)
 
 >>> pytest -k fast
 
+
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

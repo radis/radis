@@ -38,6 +38,10 @@ Spectrum objects can be stored, retrieved, rescaled, resamples::
     s.resample(w_new)               # resample on new wavespace
     s.store('co_calculation2.spec')
 
+
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
@@ -311,7 +315,7 @@ class Spectrum(object):
 
     Any tuple of numpy arrays (w, I) can also be converted into a Spectrum object
     from the :class:`~radis.spectrum.spectrum.Spectrum` class directly, or using 
-    the :func:`~radis.spectrum.spectrum.Spectrum.calculated_spectrum` function. 
+    the :func:`~radis.spectrum.spectrum.calculated_spectrum` function. 
     All the following methods are equivalent::
 
         from radis import Spectrum, calculated_spectrum
@@ -1741,7 +1745,7 @@ class Spectrum(object):
                    mode='valid', store=True,
                    *args, **kwargs):
         ''' Apply a slit function to all quantities in Spectrum. Slit function
-        can be generated with usual shapes (see `shape=`) or imported from an
+        can be generated with usual shapes (see ``shape=``) or imported from an
         experimental slit function.
 
         Warning with units: read about `unit` and `return_unit` parameters.
@@ -1750,18 +1754,18 @@ class Spectrum(object):
         Parameters    
         ----------
 
-        slit_function: float (nm) / str (.txt file)
+        slit_function: float or str
             If float:
                 generate slit function with FWHM of slit function (in nm or
-                cm-1 depending on slit_unit)
-            If .txt file:
-                import experimental slit function: format must be 2-columns with
+                cm-1 depending on ``unit=``)
+            If .txt:
+                import experimental slit function from .txt file: format must be 2-columns with
                 wavelengths and intensity (doesn't have to be normalized)
 
         unit: 'nm' or 'cm-1'
             unit of slit_function (FWHM, or imported file)
 
-        shape: 'triangular', 'trapezoidal', 'gaussian'
+        shape: 'triangular', 'trapezoidal', 'gaussian', or any of :data:`~radis.tools.slit.SLIT_SHAPES`
             which shape to use when generating a slit. Will call,
              respectively, :func:`~radis.tools.slit.triangular_slit`, 
              :func:`~radis.tools.slit.trapezoidal_slit`, 
@@ -1770,13 +1774,13 @@ class Spectrum(object):
         center_wavespace: float, or None
             center of slit when generated (in unit). Not used if slit is imported.
 
-        norm_by: 'area', 'max', 'max2'
+        norm_by: ``'area'``, ``'max'``, ``'max2'``
             normalisation type:
 
-            - 'area' normalizes the slit function to an area
+            - ``'area'`` normalizes the slit function to an area
               of 1. It conserves energy, and keeps the same units. 
 
-            - 'max' normalizes the slit function to a maximum of 1. 
+            - ``'max'`` normalizes the slit function to a maximum of 1. 
               The convoluted spectrum units change (they are 
               multiplied by the spectrum waveunit, e.g: a radiance 
               non convoluted in mW/cm2/sr/nm on a wavelength (nm).
@@ -1785,17 +1789,17 @@ class Spectrum(object):
               (i.e: a Spectrum calculated in cm-1 will have a slit
               set to 1 in cm-1). 
 
-            - 'max2': read about it in :func:`~radis.tools.slit.get_slit_function` 
+            - ``'max2'``: read about it in :func:`~radis.tools.slit.get_slit_function` 
               docstrings. 
 
-            Default 'area'
+            Default ``'area'``
 
-        mode: 'valid', 'same'
-            'same' returns output of same length as initial spectra, 
-            but boundary effects are still visible. 'valid' returns 
+        mode: ``'valid'``, ``'same'``
+           ``'same'`` returns output of same length as initial spectra, 
+            but boundary effects are still visible. ``'valid'`` returns 
             output of length len(spectra) - len(slit) + 1, for 
             which lines outside of the calculated range have
-            no impact. Default 'valid'. 
+            no impact. Default ``'valid'``. 
 
         store: boolean
             if True, store slit in the Spectrum object so it can be retrieved with 
@@ -1811,7 +1815,7 @@ class Spectrum(object):
         In particular:
 
         energy_threshold: float
-             tolerance fraction when resampling. Default 1e-3 (0.1%)
+             tolerance fraction when resampling. Default ``1e-3`` (0.1%)
              If areas before and after resampling differ by 
              more than that an error is raised. 
 

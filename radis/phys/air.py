@@ -1,10 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug 10 15:44:48 2017
 
-@author: erwan
+Constants and correlations for air. 
+Wavelength correction due to medium dispersion. 
 
-Constants and correlations for air 
+Routine Listing 
+---------------
+
+- :func:`~radis.phys.air.air_index_dispersion`
+- :func:`~radis.phys.air.vacuum2air`
+- :func:`~radis.phys.air.air2vacuum`
+
+-------------------------------------------------------------------------------
+
+
 """
 
 

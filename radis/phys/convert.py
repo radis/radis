@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun  8 15:49:43 2015
-
-@author: Erwan
 
 Conversion formulas between different units (works with numpy arrays)
 
@@ -16,6 +13,10 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
     
     >>> from radis import * 
     >>> dcm2dnm(10, nm2cm(380))
+
+
+-------------------------------------------------------------------------------
+
 
 """
 

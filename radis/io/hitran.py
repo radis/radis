@@ -9,11 +9,14 @@ HITRAN database parser
 Routine Listing
 ---------------
 
-hit2df,
-get_molecule,
-get_molecule_identifier,
-parse_local_quanta,
-parse_global_quanta
+- :func:`~radis.io.hitran.hit2df`
+- :func:`~radis.io.hitran.get_molecule`
+- :func:`~radis.io.hitran.get_molecule_identifier`
+- :func:`~radis.io.hitran.parse_local_quanta`
+- :func:`~radis.io.hitran.parse_global_quanta`
+
+
+-------------------------------------------------------------------------------
 
 
 '''

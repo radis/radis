@@ -18,6 +18,9 @@ Generate Earth blackbody::
                 T=288, eps=1)
     s.plot()
 
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import absolute_import

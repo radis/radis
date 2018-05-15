@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Nov 14 19:40:53 2015
-
-@author: Erwan
 
 Performance test with pint
 - 2 times slower than numpy on np.std(np.exp())
@@ -15,6 +12,10 @@ Examples
 from radis.phys.units import Q_
 - a = Q_(np.array([5,4,2]),'cm')
 - a.to_base_units()
+
+
+-------------------------------------------------------------------------------
+
 
 """
 

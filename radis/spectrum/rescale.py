@@ -8,6 +8,10 @@ from existing ones, or rescale path_length or mole_fraction, or add overpopulati
 Most of these are binded as methods to the Spectrum class, but stored here to
 unload the spectrum.py file 
 
+
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals

@@ -3,18 +3,23 @@
 Summary
 -------
 
-Functions to compare and plot comparison of Spectrum objects
+Functions to compare and plot comparison of :class:`~radis.spectrum.spectrum.Spectrum` 
+objects
 
 
 Routine Listings
 ----------------
 
-:func:`~radis.spectrum.compare.get_diff`,
-:func:`~radis.spectrum.compare.get_distance`,
-:func:`~radis.spectrum.compare.get_ratio`,
-:func:`~radis.spectrum.compare.get_residual`,
-:func:`~radis.spectrum.compare.get_residual_integral`,
-:func:`~radis.spectrum.compare.plot_diff`
+- :func:`~radis.spectrum.compare.get_diff`
+- :func:`~radis.spectrum.compare.get_distance`
+- :func:`~radis.spectrum.compare.get_ratio`
+- :func:`~radis.spectrum.compare.get_residual`
+- :func:`~radis.spectrum.compare.get_residual_integral`
+- :func:`~radis.spectrum.compare.plot_diff`
+
+
+-------------------------------------------------------------------------------
+
 
 
 """
@@ -173,13 +178,14 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
 
 
 def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
-    ''' Returns L2 norm of s1 and s2
+    ''' Returns L2 norm of ``s1`` and ``s2``
 
 
     Parameters    
     ----------
 
     s1, s2: Spectrum objects
+        if not on the same range, ``s2`` is resampled on ``s1``.
 
     var: str
         spectral quantity

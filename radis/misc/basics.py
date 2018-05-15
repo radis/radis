@@ -5,6 +5,9 @@ Created on Wed Nov  5 12:59:37 2014
 @author: Erwan
 
 Small functions used in other procedures
+
+-------------------------------------------------------------------------------
+
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
