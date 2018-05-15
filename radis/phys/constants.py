@@ -56,4 +56,4 @@ c_CGS = 2.99792458e10
 '''float: Light velocity (cm / s)'''
 
 h_CGS = 6.626196e-27
-'''float: Planck constant (erg * s)
+'''float: Planck constant (erg * s)'''
