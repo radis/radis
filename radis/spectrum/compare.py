@@ -129,7 +129,7 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     :func:`~radis.spectrum.compare.get_distance`,  
     :func:`~radis.spectrum.compare.get_residual`,
     :func:`~radis.spectrum.compare.get_residual_integral`, 
-    :func:`~radis.spectrum.compare.plot_diff` 
+    :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with` 
     
 
@@ -178,7 +178,7 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
     :func:`~radis.spectrum.compare.get_ratio`,  
     :func:`~radis.spectrum.compare.get_residual`,
     :func:`~radis.spectrum.compare.get_residual_integral`, 
-    :func:`~radis.spectrum.compare.plot_diff` 
+    :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with` 
 
     '''
@@ -193,11 +193,22 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
 def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
     ''' Returns L2 norm of ``s1`` and ``s2``
 
+    For ``I1``, ``I2``, the values of variable ``var`` in ``s1`` and ``s2``, 
+    respectively, residual is calculated as:
+        
+    For ``L2`` norm::
+
+        np.sqrt((dI**2).sum())/len(dI)
+        
+    For ``L1`` norm::
+        
+        (np.abs(dI)).sum()/len(dI)
+
 
     Parameters    
     ----------
 
-    s1, s2: Spectrum objects
+    s1, s2: :class:`~radis.spectrum.spectrum.Spectrum` objects
         if not on the same range, ``s2`` is resampled on ``s1``.
 
     var: str
@@ -216,11 +227,6 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
 
     Notes
     -----
-
-    For I1, I2, the values of 'var' in s1 and s2, respectively, residual
-    is calculated as::
-
-        res = trapz(I2-I1, w1) / trapz(I1, w1)
 
     0 values for I1 yield nans except if I2 = I1 = 0
 
@@ -248,9 +254,9 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
         wdiff, dI = wdiff[~b], dI[~b]
 
     if norm == 'L2':
-        return np.sqrt((dI**2).sum())
+        return np.sqrt((dI**2).sum())/len(dI)
     elif norm == 'L1':
-        return (np.abs(dI)).sum()
+        return (np.abs(dI)).sum()/len(dI)
     else:
         raise ValueError('unexpected value for norm')
 
@@ -258,9 +264,22 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
 def get_residual_integral(s1, s2, var, ignore_nan=False):
     ''' Returns integral of the difference between two spectra s1 and s2, 
     relatively to the integral of spectrum s1 
+    
+    Compared to :func:`~radis.spectrum.compare.get_residual`, this tends to 
+    cancel the effect of the gaussian noise of an experimental spectrum. 
+    
+    ::
+    
+        res = trapz(I2-I1, w1) / trapz(I1, w1)
 
+    Note: when the considered variable is ``transmittance`` or ``transmittance_noslit``, 
+    the *upper* integral is used (up to 1) to normalize the integral difference
+    
+    ::
+    
+        res = trapz(I2-I1, w1) / trapz(1-I1, w1)
 
-    Parameters    
+    Parameters
     ----------
 
     s1, s2: Spectrum objects
@@ -297,7 +316,7 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
     :func:`~radis.spectrum.compare.get_ratio`, 
     :func:`~radis.spectrum.compare.get_distance`, 
     :func:`~radis.spectrum.compare.get_residual`, 
-    :func:`~radis.spectrum.compare.plot_diff` 
+    :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
 
@@ -308,8 +327,15 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
     if ignore_nan:
         b = np.isnan(dI)
         wdiff, dI = wdiff[~b], dI[~b]
+        b = np.isnan(I)
+        w, I = w[~b], I[~b]
+        
+    if var in ['transmittance', 'transmittance_noslit']:
+        norm = 1 - np.trapz(I, w)
+    else:
+        norm = np.trapz(I, w)
 
-    return np.abs(np.trapz(dI, wdiff) / np.trapz(I, w))
+    return np.abs(np.trapz(dI, wdiff)) / norm
 
 #    b1 = (I_avg == 0)
 #    b2 = (dI == 0)
@@ -361,7 +387,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
               normalize=False, verbose=True):
     ''' Plot two spectra, and the difference between them
 
-    If waveranges dont match, `s2` is interpolated over `s1`. 
+    If waveranges dont match, ``s2`` is interpolated over ``s1``. 
 
 
     Parameters    
@@ -422,11 +448,13 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     Examples
     --------
 
-    >>> Punit = 'mW/cm2/sr'
-    >>> fig, axes = plot_diff(s10, s50, figsize=(18,6),
-    >>>       label1='brd 10 cm-1, P={0:.2f} {1}'.format(s10.get_power(unit=Punit),Punit),
-    >>>       label2='brd 50 cm-1, P={0:.2f} {1}'.format(s50.get_power(unit=Punit),Punit)
-    >>>       )
+    ::
+
+        Punit = 'mW/cm2/sr'
+        fig, axes = plot_diff(s10, s50, figsize=(18,6),
+              label1='brd 10 cm-1, P={0:.2f} {1}'.format(s10.get_power(unit=Punit),Punit),
+              label2='brd 50 cm-1, P={0:.2f} {1}'.format(s50.get_power(unit=Punit),Punit)
+              )
 
 
 

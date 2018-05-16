@@ -1422,8 +1422,11 @@ class Spectrum(object):
         # Add extra plotting parameters
         if 'lw' not in kwargs and 'linewidth' not in kwargs:
             kwargs['lw'] = 0.5
+        # Add a label. Not shown by default but User can set it if using plt.legend()
+        # (useful when plotting multiple plots on same figure)
+        label = kwargs.pop('label', self.get_name())
         # note: '-k' by default with style origin for first plot
-        line, = plt.plot(x, y, **kwargs)
+        line, = plt.plot(x, y, label=label, **kwargs)
         if show_points:
             plt.plot(x, y, 'o', color='lightgrey', **kwargs)
         plt.ticklabel_format(useOffset=False, axis='x')
