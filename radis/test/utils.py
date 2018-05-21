@@ -33,15 +33,17 @@ a few seconds only)::
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 import os
-from warnings import warn
 from radis.misc.config import (getDatabankList, getDatabankEntries, addDatabankEntries,
                                diffDatabankEntries)
 from radis.misc.utils import FileNotFoundError
-from radis.misc.basics import compare_dict, compare_paths
+from radis.misc.print import printr
 from os.path import join, dirname
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), 'test')
-IGNORE_MISSING_DATABASES = True        # TODO: move in ~/.radis
+IGNORE_MISSING_DATABASES = False        # TODO: move in ~/.radis
+'''bool: how to deal with missing Line databases during tests. If ``True``, 
+print a warning. Else, raise an error. See :func:`~radis.test.utils.IgnoreMissingDatabase`
+'''
 
 
 def getTestFile(file):
@@ -165,11 +167,23 @@ def _failsafe_if_no_db(testcase, *args, **kwargs):
 
 
 def IgnoreMissingDatabase(err, file='', warnings=True):
+    ''' A function to deal with MissingDatabases errors. If :data:`~radis.test.utils.IGNORE_MISSING_DATABASES`
+    is ``True``, just print a warning. Else, raise the error
+    
+    Parameters
+    ----------
+    
+    err: an Error
+    
+    file: str
+        where the error occured. Use ``file=__file__`` on function call
+    '''
+    # TODO: make IGNORE_MISSING_DATABASES a ~/.radis parameter
     if IGNORE_MISSING_DATABASES:
         if warnings:
             import sys
             print(sys.exc_info())
-            print('In {0}: Database not defined: {1}'.format(file, err.filename) +
+            printr('In {0}: Database not defined: {1}'.format(file, err.filename) +
                   '\n Ignoring the test')
         return True
     else:
