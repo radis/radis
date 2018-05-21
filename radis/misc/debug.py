@@ -5,43 +5,49 @@ Created on Sun Jan  3 17:52:04 2016
 @author: Erwan
 
 Debug functions
+
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 # %%
-#==============================================================================
+# ==============================================================================
 # Debug functions
-#==============================================================================
+# ==============================================================================
+
 
 def printdbg(*args, **kwargs):
     ''' Function that prints only in debug mode. change this at runtime with 
      >>> radis.debug = True
-     
+
      Examples
      --------
-     
+
      Embed this print in a if __debug__ statement::
-     
+
          if __debug__: printdbg(...)
-         
+
      so that printdbg are removed by the Python preprocessor when running in 
      optimize mode::
-     
+
          python -O *.py
-     
+
      Notes
      -----
-     
+
      Todo: 
-     
+
      - no idea how this performs in multiprocessing mode
      '''
-     
+
     from radis import DEBUG_MODE
-    
+
     if DEBUG_MODE:
-        print('DEBUG:',*args, **kwargs)
+        print('DEBUG:', *args, **kwargs)
+
 
 def export(var=locals()):
     ''' Export local variables. Useful for debugging 
@@ -62,7 +68,7 @@ def export(var=locals()):
 
     Examples
     --------
-    
+
         debug_export(locals())
 
     Note: you can also use  'globals().update(locals())' directly in your 
@@ -70,7 +76,7 @@ def export(var=locals()):
 
     Note
     ----
-    
+
     - seems not to work for functions nested in functions
     - 01/05 : doesn't seem to work at all.. @Erwan  
 
@@ -102,4 +108,3 @@ def export(var=locals()):
 #        return tracefunc
 #
 #    return wrap
-

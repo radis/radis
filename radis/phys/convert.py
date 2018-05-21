@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun  8 15:49:43 2015
-
-@author: Erwan
 
 Conversion formulas between different units (works with numpy arrays)
 
@@ -17,13 +14,18 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
     >>> from radis import * 
     >>> dcm2dnm(10, nm2cm(380))
 
+
+-------------------------------------------------------------------------------
+
+
 """
 
 from __future__ import absolute_import, division, unicode_literals
 from __future__ import print_function
 import numpy as np
 from radis.phys.constants import eV, h, c, k_b
-from radis.phys.units import conv2       # to import it from .conv if it feels more natural
+# Make conv2 accessible from .convert:
+from radis.phys.units import conv2
 
 # %% Energy units
 
@@ -47,11 +49,13 @@ def eV2J(E):
     'eV to J'
     _asserteV(E)
     return E * eV
-    
+
+
 def eV2nm(E):
     'nm to eV'
     _asserteV(E)
     return 1/E * 1e9 * (h * c) / eV
+
 
 def eV2K(E):
     'eV to K'
@@ -95,18 +99,22 @@ def cm2nm(wl_cm1):
     'cm-1 to (vacuum) nm'
     return 1 / wl_cm1 * 1e9 / 100
 
+
 def nm2cm(wl_nm):
     '(vacuum) nm to cm-1'
     return 1 / wl_nm * 1e9 / 100
-    
+
+
 def nm2eV(wl_nm):
     'nm to eV'
     return 1 / wl_nm * 1e9 * (h * c) / eV
+
 
 def hz2nm(f_Hz):
     ''' frequency to wavelength
     f in Hz, output in nm '''
     return c*1e9/f_Hz
+
 
 def nm2hz(lbd_nm):
     ''' wavelength to frequency 
@@ -115,75 +123,79 @@ def nm2hz(lbd_nm):
 
 # Convert Broadenings
 
+
 def dcm2dnm(delta_nu, nu_0):
     ''' Converts (ex: FWHM) from Δcm to Δnm
-    
-    
+
+
     Parameters    
     ----------
-    
+
     delta_nu: float (cm-1)
         wavenumber broadening
-    
+
     nu_0: float (cm-1)
         center wavenumber
-        
+
     Returns
     -------
-    
+
     delta_nm: float (nm)
         broadening in wavelength
-        
+
     '''
     return cm2nm(nu_0-delta_nu/2)-cm2nm(nu_0+delta_nu/2)
 
+
 def dnm2dcm(delta_lbd, lbd_0):
     ''' Converts (ex: FWHM) from Δnm to Δcm
-    
-    
+
+
     Parameters    
     ----------
-    
+
     delta_lbd: float (nm)
         wavelength broadening
-    
+
     lbd_0: float (nm)
         center wavelength
-        
+
     Returns
     -------
-    
+
     delta_cm: float (cm-1)
         broadening in wavenumber
-        
+
     '''
     return nm2cm(lbd_0-delta_lbd/2)-nm2cm(lbd_0+delta_lbd/2)
 
+
 def dhz2dnm(deltaf_hz, f_0):
     ''' Converts (ex: FWHM) from ΔHz to Δnm
-    
-    
+
+
     Parameters    
     ----------
-    
+
     deltaf_hz: Hz
         frequency broadening
-    
+
     nu_0: Hz
         center frequency
     '''
     return hz2nm(f_0-deltaf_hz/2)-hz2nm(f_0+deltaf_hz/2)
 
+
 def dnm2dhz(delta_lbd, lbd_0):
     ''' Converts (ex: FWHM) from Δnm to Δhz
-    
-    
+
+
     Parameters    
     ----------
-    
+
     delta_lbd: nm
         wavelength broadening
-    
+
     lbd_0: nm
         center wavelength
     '''
@@ -246,6 +258,7 @@ def _asserteV(E):
         assert(((0 <= m) & (m <= 2)).all())
     except AssertionError:
         print(('Warning. Input values may not be in eV', E, 'eV?'))
+
 
 # %% Test
 if __name__ == '__main__':

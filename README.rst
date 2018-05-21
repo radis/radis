@@ -11,7 +11,7 @@
     :target: https://codecov.io/gh/radis/radis
     :alt: Coverage
   
-.. image:: https://readthedocs.org/projects/climt/badge/
+.. image:: https://readthedocs.org/projects/radis/badge/
     :target: https://radis.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
   

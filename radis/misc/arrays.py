@@ -5,6 +5,9 @@ Description
 
 Functions to deal with numpy arrays 
 
+
+-------------------------------------------------------------------------------
+
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -17,17 +20,16 @@ from scipy.interpolate import interp1d
 from six.moves import map
 
 
-
 # Normalize
 
 def norm(a, normby=None, how='max'):
     ''' Normalize a numpy array with its maximum. Or normalize it with another
     vector. Works if array contains nans.
-    
-    
+
+
     Parameters    
     ----------
-    
+
     normby: array, or None
         if array, norm with this other array's maximum. If None, normalize with
         its maximum.
@@ -36,13 +38,14 @@ def norm(a, normby=None, how='max'):
         normby = np.abs(normby)
     else:
         normby = np.abs(a)
-    
-    if how=='max':
+
+    if how == 'max':
         return a / np.nanmax(normby)
-    elif how=='mean':
+    elif how == 'mean':
         return a / np.nanmean(normby)
     else:
         raise ValueError('Unknown normalisation method')
+
 
 def norm_on(a, w, wmin=None, wmax=None, how='max'):
     ''' Normalize `a` on a specific range of `w` '''
@@ -55,80 +58,84 @@ def norm_on(a, w, wmin=None, wmax=None, how='max'):
             imax += 1
     return norm(a, a[imin:imax], how=how)
 
+
 def scale_to(a, b, k=1):
     ''' Scale function a to k*b '''
     return a * k * max(np.abs(b)) / max(np.abs(a))
+
 
 def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
     ''' Returns wheter a and b are all close (element wise). If not the same size,
     returns False (instead of crashing like the numpy version). Cf numpy.allclose
     docs for more information. 
-    
-    
+
+
     Parameters    
     ----------
-    
+
     a, b: arrays
-    
+
     rtol: float
-    
+
     atol: float
-    
+
     equal_nan: bool
         whether to consider Nan's as equal. Contrary to the numpy version this
         one is set to True by default 
-    
+
     '''
-    
+
     if len(a) != len(b):
         return False
-    
+
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
-    
+
+
 def nantrapz(I, w, dx=1.0, axis=-1):
     ''' Returns np.nan(I, w) discarding nan '''
     b = ~np.isnan(I)
     return np.trapz(I[b], w[b], dx=dx, axis=axis)
-    
+
 # %%
-#==============================================================================
+# ==============================================================================
 # Numpy Function
-#==============================================================================
+# ==============================================================================
+
 
 def shift_array(t0, y0, shift, nmax=10, tab=0):
     '''     
     shift the array and interpolate when the shift is smaller than the time step
 
-    
+
     Parameters    
     ----------
-    
+
     t0: array-like
         x
-    
+
     y0: array-like
         y
-    
+
     shift: float
         value to shift x and y    
-    
+
     nmax : int
         maximum interpolation step
-    
+
     tab: int
         unless said otherwise (tab != 0), replace values with 0. Default 0 
 
 
     Returns
     -------
-    
+
     t, y: array-like
         shifted arrays
 
 
     Note
     ----
-    
+
     Only tested with constant timesteps    
     '''
 
@@ -184,28 +191,28 @@ def shift_array(t0, y0, shift, nmax=10, tab=0):
 def calc_diff(t1, v1, t2, v2):
     ''' Substract two vectors that may have slightly offset abscisses 
     interpolating the correct values 
-    
-    
+
+
     Parameters    
     ----------
-    
+
     t1, v1: array_like
         first vector and its abscisses
-        
+
     t2, v2: array_like
         second vector and its abscisses
-        
+
 
     Returns
     -------
-    
+
     tdiff, vdiff: array_like
         substracted vector and its abscisses
-        
+
     '''
-    
+
     t1, v1, t2, v2 = list(map(np.array, (t1, v1, t2, v2)))
-    
+
     # Deal with inversely sorted case
     if t1[-1] < t1[0]:
         t1, v1 = t1[::-1], v1[::-1]
@@ -284,49 +291,53 @@ def autoturn(data, key=-1):
         else:
             return data
 
+
 def centered_diff(w):
     ''' Return w[i+1]-w[i-1]/2, same size as w'''
     dw = np.diff(w)
     return (hstack((dw, dw[-1])) + hstack((dw[0], dw)))/2
-           
+
+
 def evenly_distributed(w, tolerance=1e-5):
     ''' Make sure array `w` is evenly distributed
-    
-    
+
+
     Parameters    
     ----------
-    
+
     w : numpy array
         array to test 
-    
+
     tolerance: float
         absolute tolerance
     '''
     mean_step = np.diff(w).mean()
     return (np.abs((np.diff(w)-mean_step)) > tolerance).sum() == 0
 
+
 def bining(I, ymin=None, ymax=None, axis=1):
     ''' Averages a I multi-dimensional array (typically an image) along the y axis
     bining(I) corresponds to I.mean(axis=1)
     Nan are not taken into account
-    
-    
+
+
     Parameters    
     ----------
-    
+
     I: numpy array
         intensity
-    
+
     ymin: int [0-I.shape[1]]
         If None, 0 is used. Default ``None``.
-    
+
     ymax: int [0-I.shape[1]]
         If None, I.shape[1] is used. Default ``None``.
-    
+
     axis: int
         Default 1
     '''
-    I = np.array(I)   # convert to array in case it's a Pandas dataframe for instance
+    I = np.array(
+        I)   # convert to array in case it's a Pandas dataframe for instance
     if ymin is None:
         ymin = 0
     if ymax is None:
@@ -334,14 +345,14 @@ def bining(I, ymin=None, ymax=None, axis=1):
     if ymin < 0:
         print('Warning in bining. ymin ({0}) < 0'.format(ymin))
     if ymax > I.shape[axis]:
-        print('Warning in bining. ymax ({0}) > yaxis length ({1})'.format(ymax, 
-              I.shape[axis]))
+        print('Warning in bining. ymax ({0}) > yaxis length ({1})'.format(ymax,
+                                                                          I.shape[axis]))
     return np.nanmean(I[:, ymin:ymax], axis=axis)
 
 
 def count_nans(a):
     ''' Nan are good but only in India '''
-    
+
     return np.isnan(a).sum()
 
 
@@ -350,5 +361,5 @@ def logspace(xmin, xmax, npoints):
     space. 
     Numpy's logspace does the same from 10**xmin to 10**xmax
     '''
-    
+
     return np.logspace(np.log10(xmin), np.log10(xmax), npoints)

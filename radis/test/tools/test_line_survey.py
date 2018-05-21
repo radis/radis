@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 """
 Test that line survey works
+
+-------------------------------------------------------------------------------
+
 """
 
+from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
 import os
 from os.path import exists
 import pytest
+
 
 @pytest.mark.fast
 def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
@@ -17,20 +22,22 @@ def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
     _temp_file = 'radis_test_line_survey.html'
     if exists(_temp_file):
         os.remove(_temp_file)
-    
-    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+
+    s = load_spec(getTestFile(
+        'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     s.line_survey(overlay='abscoeff', display=plot, filename=_temp_file)
-    
+
     assert exists(_temp_file)
-    
+
     if verbose:
         print('test_line_survey: html file was correctly generated')
-    
+
     if not plot:
         # clean after use
         os.remove(_temp_file)
-        
+
     return True
+
 
 def _run_testcases(plot=True, verbose=True, *args, **kwargs):
 
@@ -38,6 +45,7 @@ def _run_testcases(plot=True, verbose=True, *args, **kwargs):
     test_line_survey(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
+
 
 if __name__ == '__main__':
 
