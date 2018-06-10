@@ -61,9 +61,6 @@ class and the associated compare and load functions
 
    .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
 
-      3 temperature fit in RADIS
-
-
 More examples can be found in the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
 
 
@@ -75,7 +72,7 @@ Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` to
 
 .. raw:: html
 
-    <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="700" height="450" seamless="seamless" scrolling="no"></iframe>
+    <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
 	
 .. |CO2| replace:: CO\ :sub:`2`
 .. |H2O| replace:: H\ :sub:`2`\ O
