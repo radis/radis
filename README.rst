@@ -58,9 +58,9 @@ results from various plasma sources are included.
 Examples
 --------
 
-.. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
+A `3-temperature fit <http://radis.readthedocs.io/en/latest/#multi-temperature-fit>`_ built on top of RADIS. 
 
-   A 3-temperature fit calculated with RADIS. 
+.. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
 
 More examples can be found in the `documentation <http://radis.readthedocs.io/>`_ or in the 
 `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
