@@ -57,7 +57,12 @@ The example is based on one of `RADIS validation cases <https://github.com/radis
 It makes use of the RADIS `Spectrum <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`_
 class and the associated compare and load functions
 
-.. image: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
+.. only:: html
+
+   .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
+
+      3 temperature fit in RADIS
+
 
 More examples can be found in the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
 
