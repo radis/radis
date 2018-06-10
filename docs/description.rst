@@ -44,23 +44,20 @@ Multi Temperature Fit
 
 A 3 temperature fitting example reproducing the validation case of Klarenaar 2017 [1]_, who calculated a transmittance
 spectrum from the initial data of Dang 1973 [2]_, with a 1 rotational temperature + 
-3 vibrational temperature (Treanor distributions) model 
-
-CO2 Energies are calculated from Dunham developments in an uncoupled harmonic 
-oscillator - rigid rotor model
-
-The example is based on one of `RADIS validation cases <https://github.com/radis/radis/tree/master/radis/test/validation>`_.
-
-It makes use of the RADIS `Spectrum <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`_
-class and the associated compare and load functions
-
-.. image: https://github.com/radis/radis-examples/blob/master/docs/multi-temperature-fit.gif
+3 vibrational temperature (Treanor distributions) model. 
 
 .. [1] Klarenaar et al 2017, "Time evolution of vibrational temperatures in a CO2 glow 
        discharge measured with infrared absorption spectroscopy" doi/10.1088/1361-6595/aa902e
 
 .. [2] Dang et al 1982, "Detailed vibrational population distributions in a CO2 laser 
         discharge as measured with a tunable diode laser" doi/10.1007/BF00694640
+
+|CO2| Energies are calculated from Dunham developments in an uncoupled harmonic oscillator - rigid rotor model. 
+The example is based on one of `RADIS validation cases <https://github.com/radis/radis/tree/master/radis/test/validation>`_.
+It makes use of the RADIS `Spectrum <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`_
+class and the associated compare and load functions
+
+.. image: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
 
 More examples can be found in the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
 
