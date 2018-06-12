@@ -1318,7 +1318,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     # ... quantities
     if any_in(initial, non_rescalable_keys):
         raise NotImplementedError('Trying to rescale a Spectrum that has non scalable ' +
-                                  'quantities: '.format([k for k in initial if k in non_rescalable_keys]) +
+                                  'quantities: {0}'.format([k for k in initial if k in non_rescalable_keys]) +
                                   'Remove them manually, or implement the scaling method.')
 
     # Choose which values to recompute (and store them in the list `wanted`)

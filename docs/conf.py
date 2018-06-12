@@ -18,6 +18,7 @@
 # https://samnicholls.net/2016/06/15/how-to-sphinx-readthedocs/
 # --------
 
+from __future__ import absolute_import
 import sys
 import os
 import shlex
@@ -29,7 +30,7 @@ sys.path.insert(0, os.path.abspath('.'))
 #sys.path.insert(0, os.path.abspath('../'))
 
 
-# ------------------------------------
+# %% ------------------------------------
 # Added EP 2018:
 # Auto-generate files with sphinx.apidoc
 # (else it requires /docs/source files to be generated manually and commited
@@ -37,6 +38,9 @@ sys.path.insert(0, os.path.abspath('.'))
 # 
 # Reference: 
 # https://github.com/rtfd/readthedocs.org/issues/1139
+#
+# Note:
+# comment this section if running locally from gendocs.sh
 
 def run_apidoc(_):
     from sphinx.apidoc import main
@@ -46,12 +50,14 @@ def run_apidoc(_):
     cur_dir = abspath(dirname(__file__))
     source_dir = abspath(join(cur_dir, 'source'))
     module = join(cur_dir,"..","radis")
+    print(cur_dir)
+    print(source_dir)
     main(['-e', '-o', source_dir, module, '--force'])
 
 def setup(app):
     app.connect('builder-inited', run_apidoc)
 
-# --------------------------------------
+# %% --------------------------------------
 
 
 # -- General configuration ------------------------------------------------
