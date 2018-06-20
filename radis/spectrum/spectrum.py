@@ -1749,7 +1749,9 @@ class Spectrum(object):
                    *args, **kwargs):
         ''' Apply a slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see ``shape=``) or imported from an
-        experimental slit function.
+        experimental slit function. Convoluted spectra are thinner than non 
+        convoluted spectra, to remove side effects. See ``mode=`` to change
+        this behaviour. 
 
         Warning with units: read about `unit` and `return_unit` parameters.
 

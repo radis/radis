@@ -404,7 +404,9 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
                        mode='valid', slit_dispersion=None,
                        k=1, bplot=False, conv_type=None, verbose=True):
     ''' Convolves spectrum (w,I) with instrumental slit function (w_slit, I_slit)
-    Returns a convolved spectrum on a valid range.
+    Returns a convolved spectrum on a valid range. Convoluted spectra are thinner 
+    than non convoluted spectra, to remove side effects. See ``mode=`` to change
+    this behaviour. 
 
 
     Parameters    
