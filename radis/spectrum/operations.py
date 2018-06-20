@@ -15,7 +15,8 @@ Routine Listing
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.curve import curve_substract, curve_add
-from radis import get_diff, Spectrum
+from radis.spectrum.compare import get_diff
+from radis.spectrum import Spectrum
 
 
 def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
@@ -63,3 +64,31 @@ def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
                                   'medium': s1.conditions['medium'], 'waveunit': wunit},
                               name=name)
     return sub
+
+
+
+def multiply(s, coef, var='radiance', wunit='nm', name='None'):
+    '''Multiply the spectrum by the float 'coef'
+
+    Parameters    
+    ----------
+    s: Spectrum objects
+        The spectra to multiply.
+    coef: Float
+        Coefficient of the multiplication.
+    Returns    
+    ----------
+    sub : Spectrum object where intensity of s is multiplied by coef
+
+    Note    
+    ----------
+    Godd for fittings without absolute calibration. No unit in output !
+    '''
+    w, I = s.get_wavelength(), s.get(var, wunit=wunit)
+    mult = Spectrum.from_array(w, coef*I, var,
+                              waveunit=wunit,
+                              unit='None',
+                              conditions={
+                                  'medium': s.conditions['medium'], 'waveunit': wunit},
+                              name=name)
+    return mult
