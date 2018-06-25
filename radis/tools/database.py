@@ -665,7 +665,7 @@ def plot_spec(file, what='radiance', title=True):
 class SpecDatabase():
 
     def __init__(self, path='.', filt='.spec', add_info=None, add_date='%Y%m%d',
-                 verbose=True, binary=False):
+                 verbose=True, binary=True):
         ''' A Spectrum Database class to manage them all
 
         It basically manages a list of Spectrum JSON files, adding a Pandas
