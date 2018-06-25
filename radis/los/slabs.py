@@ -138,12 +138,23 @@ def SerialSlabs(*slabs, **kwargs):
         for s in slabs:
             _check_valid(s)
 
+        # Recursively deal with the rest of Spectra --> call it s 
         sn = slabs.pop(-1)            # type: Spectrum
         s = SerialSlabs(*slabs, resample_wavespace=resample_wavespace,
                         out_of_bounds=out_of_bounds)
 
+        # Now calculate sn and s in Serial
         quantities = {}
         unitsn = sn.units
+        
+        # To make it easier, we require all slabs to have 'radiance_noslit' and 'transmittance_noslit'
+        # TODO: if that changes the initial Spectra, maybe we should just work on copies
+        s.update('transmittance_noslit')
+        s.update('radiance_noslit')
+        sn.update('transmittance_noslit')
+        sn.update('radiance_noslit')
+        # TODO: maybe we just want to multiply transmittances. In that case no need 
+        # to enforce radiance_noslit is here. Issue neq/#45
 
         # make sure we use the same wavespace type (even if sn is in 'nm' and s in 'cm-1')
         # also make sure we use the same units
