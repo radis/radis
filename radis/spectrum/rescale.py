@@ -870,7 +870,8 @@ def rescale_absorbance(spec, rescaled, initial, old_mole_fraction, new_mole_frac
 
 
 def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole_fraction,
-                                 old_path_length, new_path_length, waveunit, units, extra):
+                                 old_path_length, new_path_length, waveunit, units, extra,
+                                 true_path_length):
     '''
 
     Parameters    
@@ -896,6 +897,13 @@ def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new
         if __debug__:
             printdbg('... rescale: transmittance_noslit T2 = exp(-A2)')
         absorbance = rescaled['absorbance']  # N and L already scaled
+        transmittance_noslit = exp(-absorbance)           # recalculate
+        unit = get_unit()
+    elif 'abscoeff' in rescaled and true_path_length:
+        if __debug__:
+            printdbg('... rescale: transmittance_noslit T2 = exp(-j2*L2)')
+        abscoeff = rescaled['abscoeff']        # mole_fraction already scaled
+        absorbance = abscoeff*new_path_length               # calculate
         transmittance_noslit = exp(-absorbance)           # recalculate
         unit = get_unit()
     elif 'transmittance_noslit' in initial:
@@ -1412,7 +1420,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         if 'transmittance_noslit' in recompute:
             rescaled, units = rescale_transmittance_noslit(spec, rescaled, initial,
                                                            old_mole_fraction, new_mole_fraction, old_path_length,
-                                                           new_path_length, waveunit, units, extra)
+                                                           new_path_length, waveunit, units, extra, true_path_length)
 
         if 'radiance_noslit' in recompute:
             rescaled, units = rescale_radiance_noslit(spec, rescaled, initial,

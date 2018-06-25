@@ -2503,6 +2503,7 @@ class Spectrum(object):
         cond = self.conditions
 
         try:
+            assert cond['Tgas'] != r'N/A'
             assert cond['Tvib'] == cond['Tgas']
             assert cond['Trot'] == cond['Tgas']
             if 'overpopulation' in cond:
