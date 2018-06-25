@@ -420,28 +420,26 @@ def load_spec(file, binary=False):
 
     '''
 
-    retry_with_binary = False
-
-    if not binary:
-        with open(file, 'r') as f:
-            try:
+    def _load(binary):
+        if not binary:
+            with open(file, 'r') as f:
                 sload = json_tricks.load(f, preserve_order=False)
-            except:
-                # try as binary
-                print(('Could not open file {0} with binary=False. '.format(basename(file)) +
-                       'Trying with binary=True'))
-                retry_with_binary = True
-
-    if binary or retry_with_binary:
-        with open(file, 'rb') as f:
-            try:
+        else: 
+            with open(file, 'rb') as f:
                 sload = json_tricks.load(f, preserve_order=False)
-                if retry_with_binary:
-                    print(
-                        'Worked! Use binary=True directly in load_spec for faster loading')
-            except:
-                print(('Error opening file {0}'.format(file)))
-                raise
+        return sload
+                
+    # first try to open with given binary info
+    try:
+        sload = _load(binary)
+    # if it fails, retry with different format 
+    except (TypeError, Exception):
+        print(('Could not open file {0} with binary={1}. '.format(basename(file), binary) +
+               'Trying with binary={0}'.format(not binary)))
+        sload = _load(not binary)
+        # if it works:
+        print('Worked! Use binary={0} directly in load_spec for faster loading'.format(
+                not binary))
 
     return _json_to_spec(sload, file)
 
@@ -718,6 +716,20 @@ class SpecDatabase():
 
         :func:`~radis.tools.database.load_spec`, 
         :meth:`~radis.spectrum.spectrum.Spectrum.store`
+        
+        Methods to retrieve objects:
+            
+        :meth:`~radis.tools.database.SpecDatabase.get`, 
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`,
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`,  
+        
+        Methods to manipulate the SpecDatabase:
+            
+        :meth:`~radis.tools.database.SpecDatabase.see`, 
+        :meth:`~radis.tools.database.SpecDatabase.update`, 
+        :meth:`~radis.tools.database.SpecDatabase.add`, 
+        :meth:`~radis.tools.database.SpecDatabase.compress_to`, 
+        :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
 
         '''
 
@@ -819,7 +831,7 @@ class SpecDatabase():
         in ``<database>.csv``
 
         Parameters
-        ----------
+        ----------l
 
         force_reload: boolean
             if True, reloads files already in database
@@ -845,6 +857,39 @@ class SpecDatabase():
 
         # Print index
         self.print_index()
+
+    def compress_to(self, new_folder):
+        ''' Saves the Database in a new folder with all Spectrum objects under
+        compressed (binary) format. Read/write is much faster. 
+        After the operation, a new database should be initialized in the new_folder
+        to access the new Spectrum.
+
+        Parameters
+        ----------
+
+        new_folder: str
+            folder where to store the compressed SpecDatabase. If doesn't exist,
+            it is created.
+
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
+
+        '''
+        
+        # dont allow to compress to the same folder (doesnt make sense, and will 
+        # create conflicts with same name files)
+        assert abspath(self.path) != abspath(new_folder)
+
+        if not exists(new_folder):
+            os.makedirs(new_folder)
+            
+        for file, s in self.items():  # loop over all spectra
+            s.store(join(new_folder, file), compress=True)
+        
+        if self.verbose:
+            print('Database compressed to {0}'.format(new_folder))
 
     def print_index(self, file=None):
         if file is None:
@@ -903,10 +948,10 @@ class SpecDatabase():
         :meth:`~radis.spectrum.spectrum.Spectrum.store` parameters given as kwargs arguments. 
 
         compress: boolean
-            if True, removes all quantities that can be regenerated with s.update(),
+            if ``True``, removes all quantities that can be regenerated with s.update(),
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
-            Default ``False``
+            If not given, use the value of ``SpecDatabase.binary``
 
         add_info: list
             append these parameters and their values if they are in conditions
@@ -916,13 +961,15 @@ class SpecDatabase():
 
         discard: list of str
             parameters to exclude. To save some memory for instance
-            Default [`lines`, `populations`]: retrieved Spectrum will loose the 
-            line_survey ability, and plot_populations() (but it saves a ton of memory!)
+            Default ``['lines', 'populations']``: retrieved Spectrum will loose the 
+            :meth:`~radis.spectrum.spectrum.Spectrum.line_survey` and 
+            :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` methods 
+            (but it saves a ton of memory!)
 
-        if_exists_then: 'increment', 'replace', 'error'
+        if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
             what to do if file already exists. If increment an incremental digit
             is added. If replace file is replaced (yeah). If error (or anything else)
-            an error is raised. Default `increment`
+            an error is raised. Default ``'increment'``
 
         Examples
         --------
@@ -935,8 +982,8 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+        :meth:`~radis.tools.database.SpecDatabase.get`,
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`,
         :meth:`~radis.tools.database.SpecDatabase.get_closest`
 
         '''
@@ -945,7 +992,7 @@ class SpecDatabase():
         if 'path' in kwargs:
             raise ValueError('path is an invalid Parameter. The database path ' +
                              'is used')
-        compress = kwargs.pop('compress', False)
+        compress = kwargs.pop('compress', self.binary)
 
         # First, store the spectrum on a file
         # ... input is a Spectrum. Store it in database and load it from there
