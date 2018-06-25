@@ -527,7 +527,7 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
     # Get list of new quantities
     new_q = [k for k in spec.get_vars() if k not in initial]
     if verbose:
-        print(('New quantities added: {0}'.format(new_q)))
+        print(('{0} new quantities added: {1}'.format(spec.name, new_q)))
 
     # Final checks
     for k in new_q:
@@ -1389,8 +1389,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
                                            old_mole_fraction, new_mole_fraction, old_path_length,
                                            waveunit, units, extra, true_path_length)
 
-    if spec.is_at_equilibrium():
-        assert 'abscoeff' in rescaled
+    if spec.is_at_equilibrium() and 'abscoeff' in rescaled:
         wavenumber = spec.get_wavenumber('non_convoluted')
         Tgas = spec.conditions['Tgas']
         rescaled, units = _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
