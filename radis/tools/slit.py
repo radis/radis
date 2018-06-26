@@ -544,30 +544,10 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     # --------------
 
     if slit_dispersion is not None:
-        w0 = w[len(w)//2]
-        wslit0 = w_slit[len(w_slit)//2]
-        w_slit_init = w_slit
-    
-        plt.figure()
-        plt.plot(w_slit-wslit0, I_slit, 'k')
+        w_slit = offset_dilate_slit_function(w_slit, I_slit, w, slit_dispersion,
+                                             threshold=0.01, verbose=verbose,
+                                             waveunit=waveunit)
         
-        # Check that slit dispersion is about constant (<1% change) on the calculated range
-        threshold = 0.01
-        if not 1-threshold < slit_dispersion(w.max())/slit_dispersion(w.min()) < 1+threshold:
-            warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}{3}'.format(
-                w.min(), w.max(), abs(slit_dispersion(w.max())/slit_dispersion(w.min())-1
-                                      )*100, waveunit)+'. Consider splitting your spectrum')
-
-        # Offset slit and correct for dispersion
-        w_slit = w0 + slit_dispersion(w0) / slit_dispersion(wslit0)*(w_slit-wslit0)
-        
-        if verbose:
-            print('{0:.2f} to {1:.2f}{2}: slit function FWHM changed from {3:.2f} to {4:.2f}{2}'.format(
-                    wslit0, w0, waveunit, get_effective_FWHM(w_slit_init, I_slit), 
-                    get_effective_FWHM(w_slit, I_slit)))
-        
-        plt.plot(w_slit - w0, I_slit, 'r')
-
     # 3. Interpolate the slit function on the spectrum grid, resample it if not
     #    evenly spaced
     # --------------
@@ -670,6 +650,8 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
 
     return w_conv, I_conv
 
+
+
 # %% Slit function methods
 
 
@@ -684,7 +666,6 @@ def get_FWHM(w, I, return_index=False):
 
     return_index: boolean
         if True, returns indexes for half width boundaries. Default ``False``
-
 
     Returns
     -------
@@ -741,7 +722,69 @@ def get_effective_FWHM(w, I):
 
     return area/Imax
 
+def offset_dilate_slit_function(w_slit, I_slit, w, slit_dispersion, threshold=0.01, verbose=True,
+                                waveunit=''):
+    '''  Offset the slit wavelengths ``w_slit`` to the center of range ``w``, and 
+    dilate them with ``slit_dispersion(w0)``
+    
+    Parameters
+    ----------
+    
+    w_slit: np.array
+        wavelength (or wavenumber).
+        
+        :: warning:
+            slit_dispersion must have the same unit
+    
+    I_slit: np.array
+        slit intensity (just used to check FWHM)
+    
+    w: np.array
+        wavelength (or wavenumber) whose center is used to center the slit function
+    
+    slit_dispersion: func of (lambda), or ``None``
+        spectrometer reciprocal function : dλ/dx(λ)
+        If not None, then the slit_dispersion function is used to correct the
+        slit function for the whole range. Can be important if slit function
+        was measured far from the measured spectrum  (e.g: a slit function
+        measured at 632.8 nm will look broader at 350 nm because the spectrometer
+        dispersion is higher at 350 nm. Therefore it should be corrected)
+        Default ``None``. For more details see :func:`~radis.tools.slit.convolve_with_slit`    
+    
+    Other Parameters
+    ----------------
+    
+    threshold: float
+        if not None, that slit dispersion is about constant (< ``threshold`` change) 
+        on the calculated range. Default 0.01 (1%)
+        
+    Returns
+    -------
+    
+    w_slit: np.array
+        dilated wavelength (or wavenumber).
+        
+    '''
+    w0 = w[len(w)//2]
+    wslit0 = w_slit[len(w_slit)//2]
+    w_slit_init = w_slit
 
+    # Check that slit dispersion is about constant (<1% change) on the calculated range
+    if threshold:
+        if not 1-threshold < slit_dispersion(w.max())/slit_dispersion(w.min()) < 1+threshold:
+            warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}{3}'.format(
+                w.min(), w.max(), abs(slit_dispersion(w.max())/slit_dispersion(w.min())-1
+                                      )*100, waveunit)+'. Consider splitting your spectrum')
+
+    # Offset slit and correct for dispersion
+    w_slit = w0 + slit_dispersion(w0) / slit_dispersion(wslit0)*(w_slit-wslit0)
+    
+    if verbose:
+        print('{0:.2f} to {1:.2f}{2}: slit function FWHM changed from {3:.2f} to {4:.2f}{2}'.format(
+                wslit0, w0, waveunit, get_effective_FWHM(w_slit_init, I_slit), 
+                get_effective_FWHM(w_slit, I_slit)))
+    return w_slit
+    
 def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=True):
     ''' Plot slit, calculate and display FWHM, and calculate effective FWHM.
     FWHM is calculated from the limits of the range above the half width,

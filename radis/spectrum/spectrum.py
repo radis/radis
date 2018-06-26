@@ -1748,6 +1748,7 @@ class Spectrum(object):
     def apply_slit(self, slit_function, unit='nm', shape='triangular',
                    center_wavespace=None, norm_by='area', mode='valid', 
                    plot_slit=False, store=True, slit_dispersion=None,
+                   verbose=True,
                    *args, **kwargs):
         ''' Apply a slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see ``shape=``) or imported from an
@@ -1862,6 +1863,9 @@ class Spectrum(object):
         *args, **kwargs
             are forwarded to slit generation or import function
 
+        verbose: boolean
+            print stuff
+
         In particular:
 
         energy_threshold: float
@@ -1923,7 +1927,8 @@ class Spectrum(object):
         '''
         # TODO: add warning if FWHM >= wstep(spectrum)/5
 
-        from radis.tools.slit import convolve_with_slit, get_slit_function, cast_waveunit
+        from radis.tools.slit import (convolve_with_slit, get_slit_function, cast_waveunit,
+                                      offset_dilate_slit_function)
 
         # Check inputs
         # ---------
@@ -1974,7 +1979,14 @@ class Spectrum(object):
                                          shape=shape, center_wavespace=center_wavespace,
                                          return_unit=waveunit, wstep=wstep,
                                          plot=plot_slit, *args, **kwargs)
-
+        
+        # Check if dispersion is too large
+        # ----
+        if slit_dispersion is not None:
+            slice_windows = _cut_slices(w, slit_dispersion)
+        else:
+            slice_windows = [np.ones_like(w, dtype=np.int64)]
+        
         # Apply to all variables
         # ---------
         for qns in varlist:
@@ -1983,12 +1995,34 @@ class Spectrum(object):
 
             # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
             # Create if requireds
-            w_conv, I_conv = convolve_with_slit(w, I, wslit, Islit, norm_by=None,  # already norm.
-                                                mode=mode, slit_dispersion=slit_dispersion,
-                                                waveunit=waveunit,
-                                                **kwargsconvolve)
-            self._q_conv['wavespace'] = w_conv
-            self._q_conv[q] = I_conv
+            
+            # Loop over all waverange slices (needed if slit changed)
+            w_conv_slices = []
+            I_conv_slices = []
+            for slice_window in slice_windows:
+                # Scale slit
+                if slit_dispersion is not None:
+                    wslit_dilated = offset_dilate_slit_function(wslit, Islit, w[slice_window], slit_dispersion,
+                                                                threshold=0.01, verbose=verbose,
+                                                                waveunit=waveunit)
+                    TODO: renormalize Islit... Move that before get_slit_function ???
+                else:
+                    wslit_dilated = wslit
+                    # TODO: moved that up
+
+                # Apply convolution
+                w_conv, I_conv = convolve_with_slit(w, I, wslit_dilated, Islit, norm_by=None,  # already norm.
+                                                    mode=mode, waveunit=waveunit,
+                                                    verbose=verbose,
+                                                    assert_evenly_spaced=False,   
+                                                    # assumes Spectrum is correct by construction
+                                                    **kwargsconvolve)
+                
+                w_conv_slices.append(w_conv)
+                I_conv_slices.append(I_conv)
+                
+            self._q_conv['wavespace'] = np.hstack(w_conv_slices)
+            self._q_conv[q] = np.hstack(I_conv_slices)
 
             # Get units
             if norm_by == 'area':
@@ -3158,6 +3192,47 @@ class Spectrum(object):
 #        print(attrs)
 #        raise
 #        return _json_to_spec(attrs)
+
+# %% Private functions
+    
+# to cut 
+    
+
+def _cut_slices(w_nm, dispersion):
+    ''' used to cut a waverange when dispersion varies too much '''
+    
+    # TODO: just test every 10 or 100
+    
+    blocs = dispersion(w_nm)
+    diff = np.round(blocs[0]/blocs - 1, 2)  # difference in slit dispersion, +- 1%
+    _, index_blocs = np.unique(diff, return_index=True)
+    # check direction, add last element
+    
+    if index_blocs[0] < index_blocs[-1]:
+        increment = 1
+        index_blocs = np.hstack((index_blocs, len(w_nm)))
+    else:
+        increment = -1 
+        index_blocs = np.hstack((len(w_nm), index_blocs))
+#        index_blocs[-1] = None
+    
+    imins, imaxs = index_blocs[:-1], index_blocs[1:]
+    
+    # add last if needed
+    
+    slices = []
+    for imin, imax in zip(imins, imaxs):
+        if imax == 0: imax = None
+        slice_w = np.zeros_like(w_nm, dtype=np.int64)
+        slice_w[imin:imax:increment] = 1
+        slices.append(slice_w)
+    
+#    # make sure we didnt miss anyone
+    assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
+    
+    return slices
+
+
 
 # %% ======================================================================
 # Test class function
