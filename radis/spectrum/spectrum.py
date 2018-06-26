@@ -1928,7 +1928,7 @@ class Spectrum(object):
         # TODO: add warning if FWHM >= wstep(spectrum)/5
 
         from radis.tools.slit import (convolve_with_slit, get_slit_function, cast_waveunit,
-                                      offset_dilate_slit_function)
+                                      offset_dilate_slit_function, remove_boundary)
 
         # Check inputs
         # ---------
@@ -1972,6 +1972,13 @@ class Spectrum(object):
                 center_wavespace = nm2cm(
                     center_wavespace)     # wavelen > wavenum
 
+        # Check if dispersion is too large
+        # ----
+        if slit_dispersion is not None:
+            slice_windows = _cut_slices(w, slit_dispersion)
+        else:
+            slice_windows = [np.ones_like(w, dtype=np.bool)]
+        
         # Get slit once and for all (and convert the slit unit
         # to the Spectrum `waveunit` if wavespaces are different)
         # -------
@@ -1979,50 +1986,69 @@ class Spectrum(object):
                                          shape=shape, center_wavespace=center_wavespace,
                                          return_unit=waveunit, wstep=wstep,
                                          plot=plot_slit, *args, **kwargs)
-        
-        # Check if dispersion is too large
-        # ----
-        if slit_dispersion is not None:
-            slice_windows = _cut_slices(w, slit_dispersion)
-        else:
-            slice_windows = [np.ones_like(w, dtype=np.int64)]
-        
-        # Apply to all variables
-        # ---------
-        for qns in varlist:
-            q = qns[:-7]   # new name  (minus '_noslit')
-            I = self._q[qns]
 
+        # Create dictionary to store convolved
+        I_conv_slices = {}
+        for qns in varlist:
             # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
             # Create if requireds
             
-            # Loop over all waverange slices (needed if slit changed)
+            q = qns[:-7]   # new name  (minus '_noslit')
             w_conv_slices = []
-            I_conv_slices = []
-            for slice_window in slice_windows:
-                # Scale slit
-                if slit_dispersion is not None:
-                    wslit_dilated = offset_dilate_slit_function(wslit, Islit, w[slice_window], slit_dispersion,
-                                                                threshold=0.01, verbose=verbose,
-                                                                waveunit=waveunit)
-                    TODO: renormalize Islit... Move that before get_slit_function ???
-                else:
-                    wslit_dilated = wslit
-                    # TODO: moved that up
-
+            I_conv_slices[q] = []
+                
+        # Loop over all waverange slices (needed if slit changes over the spectral range)
+        for slice_window in slice_windows:
+                    
+            # Scale slit
+            if slit_dispersion is not None:
+                wslit_dilated, Islit_dilated = offset_dilate_slit_function(wslit, Islit, w[slice_window], slit_dispersion,
+                                                            threshold=0.01, norm_by=norm_by, verbose=verbose,
+                                                            waveunit=waveunit)
+            else:
+                wslit_dilated = wslit
+                Islit_dilated = Islit
+                # TODO: moved that up
+    
+            # Apply to all variables
+            # ---------
+            for i, q in enumerate(I_conv_slices.keys()):
+                # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
+                # Create if requireds
+                
+                w_window = w[slice_window]
+                I_window = self._q[qns][slice_window]
+    
                 # Apply convolution
-                w_conv, I_conv = convolve_with_slit(w, I, wslit_dilated, Islit, norm_by=None,  # already norm.
-                                                    mode=mode, waveunit=waveunit,
+                w_conv_window, I_conv_window = convolve_with_slit(w_window, I_window, 
+                                                    wslit_dilated, Islit_dilated, 
+                                                    norm_by=None,  # already norm.
+                                                    mode='same',    # dont loose information yet
+                                                    waveunit=waveunit,
                                                     verbose=verbose,
                                                     assert_evenly_spaced=False,   
                                                     # assumes Spectrum is correct by construction
                                                     **kwargsconvolve)
                 
-                w_conv_slices.append(w_conv)
-                I_conv_slices.append(I_conv)
-                
-            self._q_conv['wavespace'] = np.hstack(w_conv_slices)
-            self._q_conv[q] = np.hstack(I_conv_slices)
+                if i == 0: w_conv_slices.append(w_conv_window)
+                I_conv_slices[q].append(I_conv_window)
+           
+        # Merge and store all variables
+        # ---------
+        for q in I_conv_slices.keys():
+            I_not_conv = self._q[q+'_noslit']
+            
+            # Merge all slices
+            w_conv = np.hstack(w_conv_slices)
+            I_conv = np.hstack(I_conv_slices[q])
+            
+            # Crop to remove boundary effects        
+            w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, I=I_not_conv, 
+                                             I_slit_interp=Islit)
+    
+            # Store 
+            self._q_conv['wavespace'] = w_conv
+            self._q_conv[q] = I_conv
 
             # Get units
             if norm_by == 'area':
@@ -3204,7 +3230,7 @@ def _cut_slices(w_nm, dispersion):
     # TODO: just test every 10 or 100
     
     blocs = dispersion(w_nm)
-    diff = np.round(blocs[0]/blocs - 1, 2)  # difference in slit dispersion, +- 1%
+    diff = np.round(blocs[0]/blocs - 1, 1)  # difference in slit dispersion, +- 10%
     _, index_blocs = np.unique(diff, return_index=True)
     # check direction, add last element
     
@@ -3223,14 +3249,14 @@ def _cut_slices(w_nm, dispersion):
     slices = []
     for imin, imax in zip(imins, imaxs):
         if imax == 0: imax = None
-        slice_w = np.zeros_like(w_nm, dtype=np.int64)
+        slice_w = np.zeros_like(w_nm, dtype=np.bool)
         slice_w[imin:imax:increment] = 1
         slices.append(slice_w)
     
 #    # make sure we didnt miss anyone
     assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
     
-    return slices
+    return slices[::increment]
 
 
 
