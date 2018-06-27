@@ -1750,13 +1750,13 @@ class Spectrum(object):
                    plot_slit=False, store=True, slit_dispersion=None,
                    verbose=True,
                    *args, **kwargs):
-        ''' Apply a slit function to all quantities in Spectrum. Slit function
+        ''' Apply an instrumental slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see ``shape=``) or imported from an
         experimental slit function. Convoluted spectra are thinner than non 
         convoluted spectra, to remove side effects. See ``mode=`` to change
         this behaviour. 
 
-        Warning with units: read about `unit` and `return_unit` parameters.
+        Warning with units: read about ``'unit'`` and ``'return_unit'`` parameters.
 
 
         Parameters    
@@ -1821,7 +1821,7 @@ class Spectrum(object):
             :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default ``True``
     
         slit_dispersion: func of (lambda), or ``None``
-            spectrometer reciprocal function : dλ/dx(λ)
+            spectrometer reciprocal function : dλ/dx(λ)   (in ``nm``)
             If not None, then the slit_dispersion function is used to correct the
             slit function for the whole range. Can be important if slit function
             was measured far from the measured spectrum  (e.g: a slit function
@@ -1830,11 +1830,10 @@ class Spectrum(object):
             Default ``None``
     
             .. warning::
-                slit dispersion is not unit aware: if your spectrum is stored
-                in cm-1 the slit function is converted in cm-1 but the slit dispersion
-                is not changed, so that may result in errors
-                # TODO. If slit dispersion first force slit function to be given in nm ?
-                # Else it's not relevant
+                slit dispersion function is assumed to be given in ``nm``
+                if your spectrum is stored in ``cm-1`` the wavenumbers are 
+                converted to wavelengths before being forwarded to the dispersion 
+                function
     
             a Python implementation:
     
@@ -1912,7 +1911,7 @@ class Spectrum(object):
             s['convolved_quantity'] = convolve_slit(wavenum, quantity,
                 slit_function_base)
 
-        See convolve_slit for more details on Units and Normalization
+        See :func:`~radis.tools.slit.convolve_with_slit` for more details on Units and Normalization
 
         The slit is made considering the "center wavelength" which is
         the mean wavelength of the full spectrum you are applying it to.
@@ -1928,7 +1927,8 @@ class Spectrum(object):
         # TODO: add warning if FWHM >= wstep(spectrum)/5
 
         from radis.tools.slit import (convolve_with_slit, get_slit_function, cast_waveunit,
-                                      offset_dilate_slit_function, remove_boundary)
+                                      offset_dilate_slit_function, remove_boundary,
+                                      normalize_slit)
 
         # Check inputs
         # ---------
@@ -1975,7 +1975,7 @@ class Spectrum(object):
         # Get slit once and for all (and convert the slit unit
         # to the Spectrum `waveunit` if wavespaces are different)
         # -------
-        wslit, Islit = get_slit_function(slit_function, unit=unit, norm_by=norm_by,
+        wslit0, Islit0 = get_slit_function(slit_function, unit=unit, norm_by=norm_by,
                                          shape=shape, center_wavespace=center_wavespace,
                                          return_unit=waveunit, wstep=wstep,
                                          plot=plot_slit, *args, **kwargs)
@@ -1983,8 +1983,14 @@ class Spectrum(object):
         # Check if dispersion is too large
         # ----
         if slit_dispersion is not None:
-            wings = len(wslit)    # add space on the side of the slices 
-            slice_windows, wings_min, wings_max = _cut_slices(w, slit_dispersion, wings=wings)
+            wings = len(wslit0)    # add space on the side of the slices 
+            if waveunit == 'nm':
+                w_nm = w
+                wslit0_nm = wslit0
+            else:
+                w_nm = cm2nm(w)
+                wslit0_nm = cm2nm(wslit0)
+            slice_windows, wings_min, wings_max = _cut_slices(w_nm, slit_dispersion, wings=wings)
         else:
             slice_windows = [np.ones_like(w, dtype=np.bool)]
         
@@ -2003,14 +2009,22 @@ class Spectrum(object):
                     
             # Scale slit
             if slit_dispersion is not None:
-                wslit_dilated, Islit_dilated = offset_dilate_slit_function(wslit, Islit, w[slice_window], slit_dispersion,
-                                                            threshold=0.01, norm_by=norm_by, verbose=verbose,
-                                                            waveunit=waveunit)
+                # apply spectrometer linear dispersion function. 
+                # dont forget it has to be added in nm and not cm-1
+                wslit, Islit = offset_dilate_slit_function(wslit0_nm, Islit0, 
+                                                           w_nm[slice_window], 
+                                                           slit_dispersion,
+                                                           threshold=0.01,
+                                                           verbose=verbose)
+                # Convert it back if needed
+                if waveunit == 'cm-1':
+                    wslit = nm2cm(wslit)
+                # We need to renormalize now that Islit has changed
+                wslit, Islit = normalize_slit(wslit, Islit, norm_by=norm_by)
             else:
-                wslit_dilated = wslit
-                Islit_dilated = Islit
-                # TODO: moved that up
-    
+                wslit = wslit0
+                Islit = Islit0  # no need to renormalize it
+
             # Apply to all variables
             # ---------
             for i, q in enumerate(I_conv_slices.keys()):
@@ -2023,7 +2037,7 @@ class Spectrum(object):
     
                 # Apply convolution
                 w_conv_window, I_conv_window = convolve_with_slit(w_window, I_window, 
-                                                    wslit_dilated, Islit_dilated, 
+                                                    wslit, Islit, 
                                                     norm_by=None,  # already norm.
                                                     mode='same',    # dont loose information yet
                                                     waveunit=waveunit,
@@ -2053,7 +2067,7 @@ class Spectrum(object):
             
             # Crop to remove boundary effects (after merging)
             w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, I=I_not_conv, 
-                                             I_slit_interp=Islit)
+                                             I_slit_interp=Islit0)
     
             # Store 
             self._q_conv['wavespace'] = w_conv
@@ -2093,12 +2107,14 @@ class Spectrum(object):
 
         # Store slit in Spectrum, in the Spectrum unit
         if store:
-            self._slit['wavespace'] = wslit  # in 'waveunit'
-            self._slit['intensity'] = Islit
+            self._slit['wavespace'] = wslit0  # in 'waveunit'
+            self._slit['intensity'] = Islit0
 
         # Update conditions
         self.conditions['slit_function'] = slit_function
         self.conditions['slit_unit'] = unit  # input slit unit
+        self.conditions['slit_dispersion'] = slit_dispersion
+        # TODO: probably removed after Spectrum is stored. 
         self.conditions['norm_by'] = norm_by
 
         return
@@ -2375,6 +2391,12 @@ class Spectrum(object):
 
             Shouldnt rely on a Database. One may just want to store/load a Spectrum
             once.
+            
+        # TODO
+        
+        - in case a spectrometer linear dispersion function is used in 
+        :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, it probably isn't 
+        stored with the current code. Find a workaround?
 
 
         Examples
@@ -3238,6 +3260,9 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
     
     Parameters
     ----------
+    
+    w_nm: numpy arrays
+        wavelengths. If wavenumbers 
     
     threshold: float
         must be a negative power of 10 

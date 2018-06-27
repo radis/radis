@@ -595,16 +595,9 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     # 4. Normalize
     # --------------
 
-    if norm_by == 'area':  # normalize by the area
-        I_slit_interp /= abs(np.trapz(I_slit_interp, x=w_slit_interp))
-    elif norm_by == 'max':  # set maximum to 1
-        I_slit_interp /= abs(np.max(I_slit_interp))
-    elif norm_by is None:
-        pass
-    else:
-        raise ValueError(
-            'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
-
+    w_slit_interp, I_slit_interp = normalize_slit(w_slit_interp, I_slit_interp,
+                                                  norm_by=norm_by)
+    
     # 5. Check aspect
     # -------------
 
@@ -711,25 +704,27 @@ def get_effective_FWHM(w, I):
 
     return area/Imax
 
-def offset_dilate_slit_function(w_slit, I_slit, w, slit_dispersion, norm_by='area', 
-                                threshold=0.01, verbose=True, waveunit=''):
+def offset_dilate_slit_function(w_slit_nm, I_slit, w_nm, slit_dispersion,  
+                                threshold=0.01, verbose=True):
     '''  Offset the slit wavelengths ``w_slit`` to the center of range ``w``, and 
     dilate them with ``slit_dispersion(w0)``
     
     Parameters
     ----------
     
-    w_slit: np.array
-        wavelength (or wavenumber).
+    w_slit_nm: np.array
+        wavelength
         
-        :: warning:
-            slit_dispersion must have the same unit
+        .. warning::
+            slit_dispersion is assumed to be in wavelength. Warning if you're 
+            applying this to an array stored in wavenumbers: don't forget to
+            convert.
     
     I_slit: np.array
         slit intensity
     
-    w: np.array
-        wavelength (or wavenumber) whose center is used to center the slit function
+    w_nm: np.array
+        wavelength whose center is used to center the slit function
     
     slit_dispersion: func of (lambda), or ``None``
         spectrometer reciprocal function : dλ/dx(λ)
@@ -740,11 +735,6 @@ def offset_dilate_slit_function(w_slit, I_slit, w, slit_dispersion, norm_by='are
         dispersion is higher at 350 nm. Therefore it should be corrected)
         Default ``None``. For more details see :func:`~radis.tools.slit.convolve_with_slit`    
     
-    norm_by: ``'area'``, ``'max'``, or ``None``
-        renormalize after slit dilatation. ``'area'`` conserves energy. ``'max'`` is what is done in
-        Specair and changes spectrum units, e.g. from ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr'``
-        ``None`` doesnt normalize. Default ``'area'``
-
     Other Parameters
     ----------------
     
@@ -759,25 +749,50 @@ def offset_dilate_slit_function(w_slit, I_slit, w, slit_dispersion, norm_by='are
         dilated wavelength (or wavenumber), slit intensity (renormalized)
         
     '''
-    w0 = w[len(w)//2]
-    wslit0 = w_slit[len(w_slit)//2]
-    w_slit_init = w_slit
+    w0 = w_nm[len(w_nm)//2]
+    wslit0 = w_slit_nm[len(w_slit_nm)//2]
+    w_slit_init = w_slit_nm
 
     # Check that slit dispersion is about constant (<1% change) on the calculated range
     if threshold:
-        if not 1-threshold < slit_dispersion(w.max())/slit_dispersion(w.min()) < 1+threshold:
-            warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}{3}'.format(
-                w.min(), w.max(), abs(slit_dispersion(w.max())/slit_dispersion(w.min())-1
-                                      )*100, waveunit)+'. Consider splitting your spectrum')
+        if not 1-threshold < slit_dispersion(w_nm.max())/slit_dispersion(w_nm.min()) < 1+threshold:
+            warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}nm'.format(
+                w_nm.min(), w_nm.max(), abs(slit_dispersion(w_nm.max())/slit_dispersion(w_nm.min())-1
+                                      )*100)+'. Consider splitting your spectrum')
 
     # Offset slit and correct for dispersion
-    w_slit = w0 + slit_dispersion(w0) / slit_dispersion(wslit0)*(w_slit-wslit0)
+    w_slit_nm = w0 + slit_dispersion(w0) / slit_dispersion(wslit0)*(w_slit_nm-wslit0)
     
     if verbose:
-        print('{0:.2f} to {1:.2f}{2}: slit function FWHM changed from {3:.2f} to {4:.2f}{2}'.format(
-                wslit0, w0, waveunit, get_effective_FWHM(w_slit_init, I_slit), 
-                get_effective_FWHM(w_slit, I_slit)))
+        print('{0:.2f} to {1:.2f}nm: slit function FWHM changed from {2:.2f} to {3:.2f}'.format(
+                wslit0, w0, get_effective_FWHM(w_slit_init, I_slit), 
+                get_effective_FWHM(w_slit_nm, I_slit)))
         
+    return w_slit_nm, I_slit
+
+def normalize_slit(w_slit, I_slit, norm_by='area'):
+    ''' Normalize slit function with different normalization modes. Warning, 
+    some change units after convolution!
+    
+    Parameters
+    ----------
+    
+    w_slit, I_slit: np.array
+        wavelength and slit intensity
+        
+    norm_by: ``'area'``, ``'max'``, or ``None``
+        renormalize after slit dilatation. ``'area'`` conserves energy. ``'max'`` is what is done in
+        Specair and changes spectrum units, e.g. from ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr'``
+        ``None`` doesnt normalize. Default ``'area'``
+
+    Returns
+    -------
+    
+    w_slit, I_slit: np.array
+        wavelength, and normalized slit intensity
+
+    '''
+    
     # Renormalize
     # ---------
     

@@ -527,7 +527,8 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
     # Get list of new quantities
     new_q = [k for k in spec.get_vars() if k not in initial]
     if verbose:
-        print(('{0} new quantities added: {1}'.format(spec.name, new_q)))
+        if len(new_q)>0:
+            print(('{0} new quantities added: {1}'.format(spec.name, new_q)))
 
     # Final checks
     for k in new_q:
