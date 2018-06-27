@@ -292,7 +292,7 @@ class Spectrum(object):
         configurations). Default ``None``
 
     warnings: boolean
-        If True, test if inputs are valid, e.g, spectra are evenly distributed in
+        if ``True``, test if inputs are valid, e.g, spectra are evenly distributed in
         wavelength, and raise a warning if not. Note that this take ~ 3.5 ms for
         a 20k points spectrum, when the rest of the creation process is only 
         ~ 1.8ms (makes it 3 times longer, and can be a problem if hundreds of 
@@ -697,7 +697,7 @@ class Spectrum(object):
         ----------------
 
         copy: boolean
-            if True, returns a copy of the stored quantity (modifying it wont
+            if ``True``, returns a copy of the stored quantity (modifying it wont
             change the Spectrum object). Default ``True``.
 
         Returns
@@ -809,7 +809,7 @@ class Spectrum(object):
         ----------------
 
         copy: boolean
-            if True, returns a copy of the stored waverange (modifying it wont
+            if ``True``, returns a copy of the stored waverange (modifying it wont
             change the Spectrum object). Default ``True``.
 
 
@@ -828,10 +828,12 @@ class Spectrum(object):
             if q_defined and q_conv_defined:
                 if not len(self._q['wavespace']) == len(self._q_conv['wavespace']):
                     raise ValueError('All wavespace not equal for calculated ' +
-                                     "quantities. Can't use get_wavespace()")
+                                     "quantities. Can't use get_wavespace(). " +
+                                     'Specify which=`convoluted` or `non_convoluted`')
                 if not np.allclose(self._q['wavespace'], self._q_conv['wavespace']):
                     raise ValueError('All wavespace not equal for calculated ' +
-                                     "quantities. Can't use get_wavespace()")
+                                     "quantities. Can't use get_wavespace(). " +
+                                     'Specify which=`convoluted` or `non_convoluted`')
                 w = self._q['wavespace']
             elif q_defined:
                 w = self._q['wavespace']
@@ -874,7 +876,7 @@ class Spectrum(object):
         ----------------
 
         copy: boolean
-            if True, returns a copy of the stored waverange (modifying it wont
+            if ``True``, returns a copy of the stored waverange (modifying it wont
             change the Spectrum object). Default ``True``.
 
 
@@ -960,7 +962,7 @@ class Spectrum(object):
         ----------------
 
         copy: boolean
-            if True, returns a copy of the stored waverange (modifying it wont
+            if ``True``, returns a copy of the stored waverange (modifying it wont
             change the Spectrum object). Default ``True``.
 
 
@@ -1002,7 +1004,7 @@ class Spectrum(object):
         ----------------
 
         copy: boolean
-            if True, returns a copy of the stored waverange (modifying it wont
+            if ``True``, returns a copy of the stored waverange (modifying it wont
             change the Spectrum object). Default ``True``.
 
 
@@ -1033,7 +1035,7 @@ class Spectrum(object):
         ----------------
 
         copy: boolean
-            if True, returns a copy of the stored waverange (modifying it wont
+            if ``True``, returns a copy of the stored waverange (modifying it wont
             change the Spectrum object). Default ``True``.
 
 
@@ -1643,7 +1645,7 @@ class Spectrum(object):
             number in in cm-3
 
         correct_for_abundance: boolean
-            if True, multiplies each population by the isotopic abundance 
+            if ``True``, multiplies each population by the isotopic abundance 
             (as it is done during the calculation of emission integral)
 
         kwargs: **dict
@@ -1744,8 +1746,9 @@ class Spectrum(object):
     # %% ------------------ Instrumental Slit Function ---------------------
 
     def apply_slit(self, slit_function, unit='nm', shape='triangular',
-                   center_wavespace=None, plot_slit=False, norm_by='area',
-                   mode='valid', store=True,
+                   center_wavespace=None, norm_by='area', mode='valid', 
+                   plot_slit=False, store=True, slit_dispersion=None,
+                   verbose=True,
                    *args, **kwargs):
         ''' Apply a slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see ``shape=``) or imported from an
@@ -1760,23 +1763,23 @@ class Spectrum(object):
         ----------
 
         slit_function: float or str
-            If float:
+            If ``float``:
                 generate slit function with FWHM of slit function (in nm or
                 cm-1 depending on ``unit=``)
-            If .txt:
+            If ``.txt``:
                 import experimental slit function from .txt file: format must be 2-columns with
                 wavelengths and intensity (doesn't have to be normalized)
 
-        unit: 'nm' or 'cm-1'
+        unit: ``'nm'`` or ``'cm-1'``
             unit of slit_function (FWHM, or imported file)
 
-        shape: 'triangular', 'trapezoidal', 'gaussian', or any of :data:`~radis.tools.slit.SLIT_SHAPES`
+        shape: ``'triangular'``, ``'trapezoidal'``, ``'gaussian'``, or any of :data:`~radis.tools.slit.SLIT_SHAPES`
             which shape to use when generating a slit. Will call,
              respectively, :func:`~radis.tools.slit.triangular_slit`, 
              :func:`~radis.tools.slit.trapezoidal_slit`, 
              :func:`~radis.tools.slit.gaussian_slit`. Default 'triangular'
 
-        center_wavespace: float, or None
+        center_wavespace: float, or ``None``
             center of slit when generated (in unit). Not used if slit is imported.
 
         norm_by: ``'area'``, ``'max'``, ``'max2'``
@@ -1806,16 +1809,62 @@ class Spectrum(object):
             which lines outside of the calculated range have
             no impact. Default ``'valid'``. 
 
-        store: boolean
-            if True, store slit in the Spectrum object so it can be retrieved with 
-            :meth:`~radis.spectrum.spectrum.Spectrum.get_slit` and plot with 
-            :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default ``True``
-
         Other Parameters
         ----------------
 
+        plot_slit: boolean
+            if ``True``, plot slit
+
+        store: boolean
+            if ``True``, store slit in the Spectrum object so it can be retrieved with 
+            :meth:`~radis.spectrum.spectrum.Spectrum.get_slit` and plot with 
+            :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default ``True``
+    
+        slit_dispersion: func of (lambda), or ``None``
+            spectrometer reciprocal function : dλ/dx(λ)
+            If not None, then the slit_dispersion function is used to correct the
+            slit function for the whole range. Can be important if slit function
+            was measured far from the measured spectrum  (e.g: a slit function
+            measured at 632.8 nm will look broader at 350 nm because the spectrometer
+            dispersion is higher at 350 nm. Therefore it should be corrected)
+            Default ``None``
+    
+            .. warning::
+                slit dispersion is not unit aware: if your spectrum is stored
+                in cm-1 the slit function is converted in cm-1 but the slit dispersion
+                is not changed, so that may result in errors
+                # TODO. If slit dispersion first force slit function to be given in nm ?
+                # Else it's not relevant
+    
+            a Python implementation:
+    
+            >>> def f(lbd):
+            >>>    return  w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w*1e-9)*cos(Φ))^2-1))
+    
+            Theoretical / References:
+    
+            >>> dλ/dx ~ d/mf    # at first order
+            >>> dλ/dx = w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w)*cos(Φ))^2-1))  # cf
+    
+            with:
+    
+            - Φ: spectrometer angle (°)
+            - f: focal length (mm)
+            - m: order of dispersion
+            - d: grooves spacing (mm)   = 1/gr  with gr in (gr/mm)
+    
+            See Laux 1999 "Experimental study and modeling of infrared air plasma
+            radiation" for more information
+    
+            slit_dispersion is assumed to be constant on the whole measured range,
+            and corrected for the center wavelength. If there is an error >1% on
+            the whole range a warning is raised.
+
         *args, **kwargs
             are forwarded to slit generation or import function
+
+        verbose: boolean
+            print stuff
 
         In particular:
 
@@ -1827,14 +1876,20 @@ class Spectrum(object):
 
         Notes
         -----
+        
+        Units:
+            
+        the slit function is first converted to the wavespace (wavelength/wavenumber)
+        that the Spectrum is stored in, and applied to the spectral quantities
+        in their native wavespace.
 
         Implementation:
 
-        Apply :func:`~radis.tools.slit.convolve_with_slit` 
-        for all quantities in .vars that ends with
-        _noslit. Generate a triangular instrumental slit function 
+        :func:`~radis.tools.slit.convolve_with_slit` is applied to
+        all quantities in :meth:`~radis.spectrum.spectrum.Spectrum.get_vars` 
+        that ends with _noslit. Generate a triangular instrumental slit function 
         (or any other shape depending of shape=) with base
-        `slit_function_base` (Uses the central wavelength of the spectrum
+        ``slit_function_base`` (Uses the central wavelength of the spectrum
         for the slit function generation)
 
         We deal with several special cases (which makes the code 
@@ -1846,6 +1901,10 @@ class Spectrum(object):
 
         Examples
         --------
+        
+        ::
+            
+            s.apply_slit(1.2, 'nm')
 
         To manually apply the slit to a particular quantity use::
 
@@ -1868,7 +1927,8 @@ class Spectrum(object):
         '''
         # TODO: add warning if FWHM >= wstep(spectrum)/5
 
-        from radis.tools.slit import convolve_with_slit, get_slit_function, cast_waveunit
+        from radis.tools.slit import (convolve_with_slit, get_slit_function, cast_waveunit,
+                                      offset_dilate_slit_function, remove_boundary)
 
         # Check inputs
         # ---------
@@ -1920,16 +1980,82 @@ class Spectrum(object):
                                          return_unit=waveunit, wstep=wstep,
                                          plot=plot_slit, *args, **kwargs)
 
-        # Apply to all variables
-        # ---------
+        # Check if dispersion is too large
+        # ----
+        if slit_dispersion is not None:
+            wings = len(wslit)    # add space on the side of the slices 
+            slice_windows, wings_min, wings_max = _cut_slices(w, slit_dispersion, wings=wings)
+        else:
+            slice_windows = [np.ones_like(w, dtype=np.bool)]
+        
+        # Create dictionary to store convolved
+        I_conv_slices = {}
         for qns in varlist:
-            q = qns[:-7]   # new name  (minus '_noslit')
-            I = self._q[qns]
-
             # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
             # Create if requireds
-            w_conv, I_conv = convolve_with_slit(w, I, wslit, Islit, norm_by=None,  # already norm.
-                                                mode=mode, **kwargsconvolve)
+            
+            q = qns[:-7]   # new name  (minus '_noslit')
+            w_conv_slices = []
+            I_conv_slices[q] = []
+                
+        # Loop over all waverange slices (needed if slit changes over the spectral range)
+        for islice, slice_window in enumerate(slice_windows):
+                    
+            # Scale slit
+            if slit_dispersion is not None:
+                wslit_dilated, Islit_dilated = offset_dilate_slit_function(wslit, Islit, w[slice_window], slit_dispersion,
+                                                            threshold=0.01, norm_by=norm_by, verbose=verbose,
+                                                            waveunit=waveunit)
+            else:
+                wslit_dilated = wslit
+                Islit_dilated = Islit
+                # TODO: moved that up
+    
+            # Apply to all variables
+            # ---------
+            for i, q in enumerate(I_conv_slices.keys()):
+                # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
+                # Create if requireds
+                
+                qns = q+'_noslit'
+                w_window = w[slice_window]
+                I_window = self._q[qns][slice_window]
+    
+                # Apply convolution
+                w_conv_window, I_conv_window = convolve_with_slit(w_window, I_window, 
+                                                    wslit_dilated, Islit_dilated, 
+                                                    norm_by=None,  # already norm.
+                                                    mode='same',    # dont loose information yet
+                                                    waveunit=waveunit,
+                                                    verbose=verbose,
+                                                    assert_evenly_spaced=False,   
+                                                    # assumes Spectrum is correct by construction
+                                                    **kwargsconvolve)
+                
+                # Crop wings to remove overlaps (before merging)
+                if slit_dispersion is not None:
+                    w_conv_window, I_conv_window = remove_boundary(w_conv_window, I_conv_window, 
+                                                                   'crop', crop_left=wings_min[islice],
+                                                                   crop_right=wings_max[islice]) 
+                
+                if i == 0: w_conv_slices.append(w_conv_window)
+                I_conv_slices[q].append(I_conv_window)
+
+        # Merge and store all variables
+        # ---------
+        for q in I_conv_slices.keys():
+            qns = q+'_noslit'
+            I_not_conv = self._q[qns]
+            
+            # Merge all slices
+            w_conv = np.hstack(w_conv_slices)
+            I_conv = np.hstack(I_conv_slices[q])
+            
+            # Crop to remove boundary effects (after merging)
+            w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, I=I_not_conv, 
+                                             I_slit_interp=Islit)
+    
+            # Store 
             self._q_conv['wavespace'] = w_conv
             self._q_conv[q] = I_conv
 
@@ -2206,7 +2332,7 @@ class Spectrum(object):
             explicitely give a filename to save
 
         compress: boolean
-            if True, removes all quantities that can be regenerated with the 
+            if ``True``, removes all quantities that can be regenerated with the 
             :meth:`~radis.spectrum.spectrum.Spectrum.update` method
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
@@ -2344,7 +2470,7 @@ class Spectrum(object):
             error.
 
         print_conservation: boolean
-            if True, prints energy conservation. Default ``False``.
+            if ``True``, prints energy conservation. Default ``False``.
 
 
         See Also
@@ -2642,13 +2768,13 @@ class Spectrum(object):
             another Spectrum to compare with
 
         spectra_only: boolean, or str
-            if True, only compares spectral quantities (in the same waveunit)
+            if ``True``, only compares spectral quantities (in the same waveunit)
             and not lines or conditions. If str, compare a particular quantity
             name. If False, compare everything (including lines and conditions
             and populations). Default ``False``
 
         plot: boolean
-            if True, use plot_diff to plot all quantities for the 2 spectra
+            if ``True``, use plot_diff to plot all quantities for the 2 spectra
             and the difference between them. Default ``False``.
 
         wunit: 'nm', 'cm-1', 'default'
@@ -2659,7 +2785,7 @@ class Spectrum(object):
             relative difference to use for spectral quantities comparison
 
         ignore_nan: boolean
-            if True, nans are ignored when comparing spectral quantities
+            if ``True``, nans are ignored when comparing spectral quantities
 
         ignore_outliers: boolean, or float
             if not False, outliers are discarded. i.e, output is determined by::
@@ -3101,6 +3227,84 @@ class Spectrum(object):
 #        print(attrs)
 #        raise
 #        return _json_to_spec(attrs)
+
+# %% Private functions
+    
+# to cut 
+    
+
+def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
+    ''' used to cut a waverange into slices where dispersion does not very too much
+    
+    Parameters
+    ----------
+    
+    threshold: float
+        must be a negative power of 10 
+        
+    wings: int
+        extend with that many points on each side of the slice 
+        
+    '''
+    
+    # TODO: just test every 10 or 100
+    
+    blocs = dispersion(w_nm)
+    diff = np.round(blocs[0]/blocs - 1, int(-np.log10(threshold)))  # difference in slit dispersion, +- 10%
+    _, index_blocs = np.unique(diff, return_index=True)
+    # check direction, add last element
+    
+    if index_blocs[0] < index_blocs[-1]:
+        increment = 1
+        index_blocs = np.hstack((index_blocs, len(w_nm)))
+    else:
+        increment = -1 
+        index_blocs = np.hstack((len(w_nm), index_blocs))
+#        index_blocs[-1] = None
+    
+    imins, imaxs = index_blocs[:-1].copy(), index_blocs[1:].copy()
+    
+    # Add wings
+    if increment == 1:
+        imins -= wings
+        imaxs += wings
+    else:
+        imins += wings
+        imaxs -= wings
+        
+    # add last if needed
+    
+    slices = []
+    wings_min = []
+    wings_max = []
+    for imin, imax in zip(imins, imaxs):
+        # Keep track of what was added on each side
+#        if imin <= - wings:
+#            wings_min.append(None)
+#            imin = None
+        if imin <= 0:
+            wings_min.append(wings + imin)
+            imin = None
+        else:
+            wings_min.append(wings)
+#        if imax <= - wings:
+#            wings_max.append(None)
+#            imax = None
+        if imax <= 0:
+            wings_max.append(wings + imax)
+            imax = None
+        else:
+            wings_max.append(wings)
+        slice_w = np.zeros_like(w_nm, dtype=np.bool)
+        slice_w[imin:imax:increment] = 1
+        slices.append(slice_w)
+      
+##    # make sure we didnt miss anyone
+#    assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
+    
+    return slices[::increment], wings_min[::increment], wings_max[::increment]
+
+
 
 # %% ======================================================================
 # Test class function

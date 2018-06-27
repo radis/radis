@@ -1044,7 +1044,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
 
     unit = None
 
-    def get_unit(unit_emisscoeff):
+    def get_radiance_unit(unit_emisscoeff):
         ''' get radiance_noslit unit from emisscoeff unit'''
         if '/cm3' in unit_emisscoeff:
             return unit_emisscoeff.replace('/cm3', '/cm2')
@@ -1065,7 +1065,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
                      '(optically thin)')
         emisscoeff = rescaled['emisscoeff']    # mole_fraction already scaled
         radiance_noslit = emisscoeff*new_path_length      # recalculate
-        unit = get_unit(units['emisscoeff'])
+        unit = get_radiance_unit(units['emisscoeff'])
 
     elif ('emisscoeff' in rescaled and 'transmittance_noslit' in rescaled
           and 'abscoeff' in rescaled and true_path_length and not optically_thin):  # not optically thin
@@ -1081,7 +1081,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
             abscoeff[~b]*(1-transmittance_noslit[~b])
         radiance_noslit[b] = emisscoeff[b] * \
             new_path_length  # optically thin limit
-        unit = get_unit(units['emisscoeff'])
+        unit = get_radiance_unit(units['emisscoeff'])
 
     elif ('emisscoeff' in rescaled and 'abscoeff' in rescaled and true_path_length
           and not optically_thin):  # not optically thin
@@ -1095,7 +1095,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
             (1-exp(-abscoeff[~b]*new_path_length))
         radiance_noslit[b] = emisscoeff[b] * \
             new_path_length  # optically thin limit
-        unit = get_unit(units['emisscoeff'])
+        unit = get_radiance_unit(units['emisscoeff'])
 
     elif 'radiance_noslit' in initial and optically_thin:
         if __debug__:
