@@ -1972,13 +1972,6 @@ class Spectrum(object):
                 center_wavespace = nm2cm(
                     center_wavespace)     # wavelen > wavenum
 
-        # Check if dispersion is too large
-        # ----
-        if slit_dispersion is not None:
-            slice_windows = _cut_slices(w, slit_dispersion)
-        else:
-            slice_windows = [np.ones_like(w, dtype=np.bool)]
-        
         # Get slit once and for all (and convert the slit unit
         # to the Spectrum `waveunit` if wavespaces are different)
         # -------
@@ -1987,6 +1980,14 @@ class Spectrum(object):
                                          return_unit=waveunit, wstep=wstep,
                                          plot=plot_slit, *args, **kwargs)
 
+        # Check if dispersion is too large
+        # ----
+        if slit_dispersion is not None:
+            wings = len(wslit)    # add space on the side of the slices 
+            slice_windows, wings_min, wings_max = _cut_slices(w, slit_dispersion, wings=wings)
+        else:
+            slice_windows = [np.ones_like(w, dtype=np.bool)]
+        
         # Create dictionary to store convolved
         I_conv_slices = {}
         for qns in varlist:
@@ -1998,7 +1999,7 @@ class Spectrum(object):
             I_conv_slices[q] = []
                 
         # Loop over all waverange slices (needed if slit changes over the spectral range)
-        for slice_window in slice_windows:
+        for islice, slice_window in enumerate(slice_windows):
                     
             # Scale slit
             if slit_dispersion is not None:
@@ -2030,9 +2031,15 @@ class Spectrum(object):
                                                     # assumes Spectrum is correct by construction
                                                     **kwargsconvolve)
                 
+                # Crop wings to remove overlaps (before merging)
+                if slit_dispersion is not None:
+                    w_conv_window, I_conv_window = remove_boundary(w_conv_window, I_conv_window, 
+                                                                   'crop', crop_left=wings_min[islice],
+                                                                   crop_right=wings_max[islice]) 
+                
                 if i == 0: w_conv_slices.append(w_conv_window)
                 I_conv_slices[q].append(I_conv_window)
-           
+
         # Merge and store all variables
         # ---------
         for q in I_conv_slices.keys():
@@ -2042,7 +2049,7 @@ class Spectrum(object):
             w_conv = np.hstack(w_conv_slices)
             I_conv = np.hstack(I_conv_slices[q])
             
-            # Crop to remove boundary effects        
+            # Crop to remove boundary effects (after merging)
             w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, I=I_not_conv, 
                                              I_slit_interp=Islit)
     
@@ -3224,13 +3231,24 @@ class Spectrum(object):
 # to cut 
     
 
-def _cut_slices(w_nm, dispersion):
-    ''' used to cut a waverange when dispersion varies too much '''
+def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
+    ''' used to cut a waverange into slices where dispersion does not very too much
+    
+    Parameters
+    ----------
+    
+    threshold: float
+        must be a negative power of 10 
+        
+    wings: int
+        extend with that many points on each side of the slice 
+        
+    '''
     
     # TODO: just test every 10 or 100
     
     blocs = dispersion(w_nm)
-    diff = np.round(blocs[0]/blocs - 1, 1)  # difference in slit dispersion, +- 10%
+    diff = np.round(blocs[0]/blocs - 1, int(-np.log10(threshold)))  # difference in slit dispersion, +- 10%
     _, index_blocs = np.unique(diff, return_index=True)
     # check direction, add last element
     
@@ -3242,21 +3260,47 @@ def _cut_slices(w_nm, dispersion):
         index_blocs = np.hstack((len(w_nm), index_blocs))
 #        index_blocs[-1] = None
     
-    imins, imaxs = index_blocs[:-1], index_blocs[1:]
+    imins, imaxs = index_blocs[:-1].copy(), index_blocs[1:].copy()
     
+    # Add wings
+    if increment == 1:
+        imins -= wings
+        imaxs += wings
+    else:
+        imins += wings
+        imaxs -= wings
+        
     # add last if needed
     
     slices = []
+    wings_min = []
+    wings_max = []
     for imin, imax in zip(imins, imaxs):
-        if imax == 0: imax = None
+        # Keep track of what was added on each side
+#        if imin <= - wings:
+#            wings_min.append(None)
+#            imin = None
+        if imin <= 0:
+            wings_min.append(wings + imin)
+            imin = None
+        else:
+            wings_min.append(wings)
+#        if imax <= - wings:
+#            wings_max.append(None)
+#            imax = None
+        if imax <= 0:
+            wings_max.append(wings + imax)
+            imax = None
+        else:
+            wings_max.append(wings)
         slice_w = np.zeros_like(w_nm, dtype=np.bool)
         slice_w[imin:imax:increment] = 1
         slices.append(slice_w)
+      
+##    # make sure we didnt miss anyone
+#    assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
     
-#    # make sure we didnt miss anyone
-    assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
-    
-    return slices[::increment]
+    return slices[::increment], wings_min[::increment], wings_max[::increment]
 
 
 

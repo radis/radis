@@ -793,7 +793,8 @@ def offset_dilate_slit_function(w_slit, I_slit, w, slit_dispersion, norm_by='are
 
     return w_slit, I_slit
    
-def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None):
+def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None, crop_left=None,
+                    crop_right=None):
     ''' Crop convoluted array to remove boundary effects 
     
     Parameters
@@ -802,12 +803,13 @@ def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None):
     w, I_conv: numpy array
         wavelength and already convoluted quantity
     
-    mode: ``'valid'``, ``'same'``
+    mode: ``'valid'``, ``'same'``, ``''crop'`` 
         ``'same'`` returns output of same length as initial spectra, 
         but boundary effects are still visible. ``'valid'`` returns 
         output of length len(spectra) - len(slit) + 1, for 
         which lines outside of the calculated range have
-        no impact. 
+        no impact. ``'crop'`` just removes ``crop_wings`` points on 
+        the side.
 
     Other Parameters
     ----------------
@@ -815,6 +817,9 @@ def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None):
     I, I_slit_interp: numpy arrays
         initial quantity and slit function intensity, before convolution. Needed
         to determine the valid range if ``mode='valid'``
+        
+    crop_left, crop_right: int
+        number of points to discard on each side in ``''crop'`` mode
     
     Returns
     -------
@@ -834,6 +839,15 @@ def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None):
     elif mode == 'same':
         I_conv = I_conv
         w_conv = w
+    elif mode == 'crop':
+        l = len(I_conv)
+        if crop_right == 0:
+            _crop_right = None
+        else:
+            _crop_right = -crop_right
+        I_conv = I_conv[crop_left:_crop_right]
+        w_conv = w[crop_left:_crop_right]
+        assert len(I_conv) == l - crop_left - crop_right
     else:
         raise ValueError('Unexpected mode: {0}'.format(mode))
 
