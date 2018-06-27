@@ -629,7 +629,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     # 6. Remove boundary effects
     # --------------
     
-    w_conv, I_conv = remove_boundary(w, I_conv, mode, I_slit_interp)
+    w_conv, I_conv = remove_boundary(w, I_conv, mode, I=I, I_slit_interp=I_slit_interp)
     
     # reverse back if needed
     # Todo: add test case for that

@@ -209,6 +209,30 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
     # %%
 
 
+def test_convoluted_quantities_units(*args, **kwargs):
+    ''' Test that units are correctly convoluted after convolution '''
+    
+    from radis.test.utils import getTestFile
+    
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
+    s.update(verbose=False)
+    
+    assert s.units['radiance_noslit'] == 'mW/cm2/sr/nm'
+    assert s.units['transmittance_noslit'] == 'I/I0'
+    
+    s.apply_slit(0.5, norm_by='area', verbose=False)
+    
+    assert s.units['radiance'] == 'mW/cm2/sr/nm'
+    assert s.units['transmittance'] == 'I/I0'
+    
+    s.apply_slit(0.5, norm_by='max', verbose=False)
+    
+    assert s.units['radiance'] == 'mW/cm2/sr'
+    assert s.units['transmittance'] == 'I/I0*nm'  # whatever that means  
+    
+
+
+
 @pytest.mark.fast
 def test_against_specair_convolution(plot=True, close_plots=True, verbose=True, debug=False, *args, **kwargs):
 
@@ -320,7 +344,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     # Slit in nm
     # Spectrum in cm-1
 
-    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     s.update()
     # spectrum convolved with area=1
     s.apply_slit(FWHM, norm_by='area', plot_slit=plot)
@@ -481,10 +505,14 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 #    test_constant_source(plot=plot, verbose=verbose, *args, **kwargs)
     test_all_slit_shapes(plot=plot, close_plots=close_plots,
                          verbose=verbose, *args, **kwargs)
+    
     test_slit_unit_conversions_spectrum_in_cm(
         verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
     test_slit_unit_conversions_spectrum_in_nm(
         verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
+    test_convoluted_quantities_units(*args, **kwargs)
+    
+    
 #    test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True

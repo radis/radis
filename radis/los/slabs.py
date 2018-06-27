@@ -632,7 +632,7 @@ def MergeSlabs(*slabs, **kwargs):
 
         # name
         name = '//'.join([s.get_name() for s in slabs])
-
+        
         # TODO: check units are consistent in all slabs inputs
         return Spectrum(quantities=quantities, conditions=conditions,
                         cond_units=cond_units, units=units0,

@@ -2017,6 +2017,7 @@ class Spectrum(object):
                 # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
                 # Create if requireds
                 
+                qns = q+'_noslit'
                 w_window = w[slice_window]
                 I_window = self._q[qns][slice_window]
     
@@ -2043,7 +2044,8 @@ class Spectrum(object):
         # Merge and store all variables
         # ---------
         for q in I_conv_slices.keys():
-            I_not_conv = self._q[q+'_noslit']
+            qns = q+'_noslit'
+            I_not_conv = self._q[qns]
             
             # Merge all slices
             w_conv = np.hstack(w_conv_slices)
