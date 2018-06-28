@@ -545,8 +545,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
 
     if slit_dispersion is not None:
         w_slit, I_slit = offset_dilate_slit_function(w_slit, I_slit, w, slit_dispersion,
-                                             threshold=0.01, verbose=verbose,
-                                             waveunit=waveunit)
+                                             threshold=0.01, verbose=verbose)
         
     # 3. Interpolate the slit function on the spectrum grid, resample it if not
     #    evenly spaced
