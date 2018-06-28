@@ -95,6 +95,7 @@ def test_all_slit_shapes(FWHM=0.4, verbose=True, plot=True, close_plots=True, *a
     return True  # nothing defined yet
 
 
+@pytest.mark.fast
 def test_slit_unit_conversions_spectrum_in_cm(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test that slit is consistently applied for different units
 
@@ -147,6 +148,7 @@ def test_slit_unit_conversions_spectrum_in_cm(verbose=True, plot=True, close_plo
                           verbose=verbose, plot=plot, **plotargs)
 
 
+@pytest.mark.fast
 def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test that slit is consistently applied for different units
 
