@@ -402,10 +402,17 @@ except AttributeError:
 
 def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
                        mode='valid', slit_dispersion=None,
-                       k=1, bplot=False, conv_type=None, verbose=True):
+                       k=1, bplot=False, verbose=True,
+                       assert_evenly_spaced=True,
+                       waveunit=''):
     ''' Convolves spectrum (w,I) with instrumental slit function (w_slit, I_slit)
-    Returns a convolved spectrum on a valid range.
-
+    Returns a convolved spectrum on a valid range. 
+    
+    .. warning::
+        
+        By default, convoluted spectra are thinner than non convoluted spectra, 
+        as spectra are cropped to remove boundary effects. See ``mode=`` to change
+        this behaviour. 
 
     Parameters    
     ----------
@@ -415,19 +422,25 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
 
     w_slit, I_slit: array
         instrumental slit function  (wavespace unit (nm / cm-1))
-        Both wavespaces have to be the same!
+        
+        .. warning::
+            
+            Both wavespaces have to be the same!
 
-    norm_by: ``'area'``, ``'max'``, or None
-        how to normalize. `area` conserves energy. `max` is what is done in
-        Specair and changes spectrum units, e.g. from 'mW/cm2/sr/µm' to 'mW/cm2/sr'
-        None doesnt normalize. Default ``'area'``
+    norm_by: ``'area'``, ``'max'``, or ``None``
+        how to normalize. ``'area'`` conserves energy. ``'max'`` is what is done in
+        Specair and changes spectrum units, e.g. from ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr'``
+        ``None`` doesnt normalize. Default ``'area'``
 
-    mode: 'valid', 'same'
-        'same' returns output of same length as initial spectra, 
-        but boundary effects are still visible. 'valid' returns 
+    mode: ``'valid'``, ``'same'``
+        ``'same'`` returns output of same length as initial spectra, 
+        but boundary effects are still visible. ``'valid'`` returns 
         output of length len(spectra) - len(slit) + 1, for 
         which lines outside of the calculated range have
-        no impact. Default 'valid'. 
+        no impact. Default ``'valid'``. 
+
+    Other Parameters
+    ----------------
 
     slit_dispersion: func of (lambda), or ``None``
         spectrometer reciprocal function : dλ/dx(λ)
@@ -475,12 +488,17 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     bplot: boolean
         if True, plots the convolve slit function (for debugging)
 
-    conv_type: (deprecated)
-        former norm_by name
-
     verbose: boolean
         more blabla
+        
+    assert_evenly_spaced: boolean
+        for the convolution to be accurate, ``w`` should be evenly spaced. If 
+        ``assert_evenly_spaced=True``, then we check this is the case, and resample
+        ``w`` and ``I`` if needed. Recommended, but it takes some time. 
 
+    waveunit: 'nm', 'cm-1'
+        just for printing messages. However, ``w`` and ``w_slit`` should be in the
+        same wavespace.
 
     Returns
     -------
@@ -493,6 +511,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     -----
 
     Implementation is done in 7 steps:
+        
     - Check input
     - Correct for Slit dispersion
     - Interpolate the slit function on the spectrum grid, resample it if not
@@ -513,9 +532,6 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     # 1. Check input
     # --------------
 
-    if conv_type is not None:
-        raise ValueError('`conv_type` deprecated. Use `norm_by`')
-
     # Assert slit function is thin enough
     try:
         assert(abs(w[-1]-w[0]) > abs(w_slit[-1]-w_slit[0]))
@@ -528,20 +544,9 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     # --------------
 
     if slit_dispersion is not None:
-        w0 = w[len(w)//2]
-        wslit0 = w_slit[len(w_slit)//2]
-
-        # Check that slit dispersion is about constant (<1% change) on the calculated range
-        threshold = 0.01
-        if not 1-threshold < slit_dispersion(w.max())/slit_dispersion(w.min()) < 1+threshold:
-            warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}nm'.format(
-                w.min(), w.max(), abs(slit_dispersion(w.max())/slit_dispersion(w.min())-1
-                                      )*100)+'. Consider splitting your spectrum')
-
-        # Offset slit and correct for dispersion
-        w_slit = w0 + slit_dispersion(w0) / \
-            slit_dispersion(wslit0)*(w_slit-wslit0)
-
+        w_slit, I_slit = offset_dilate_slit_function(w_slit, I_slit, w, slit_dispersion,
+                                             threshold=0.01, verbose=verbose)
+        
     # 3. Interpolate the slit function on the spectrum grid, resample it if not
     #    evenly spaced
     # --------------
@@ -549,13 +554,14 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     # ... Resample if not evenly spaced
     # TODO: add a criteria based based on FWHM rather than absolute?
     wstep = abs(np.diff(w)).min()   # spectrum wavelength spacing
-    if not evenly_distributed(w, tolerance=wstep*1e-3):
-        # TODO: automatically find a resampling factor?
-        warn('Spectrum not evenly spaced. Resampling')
-        w, I = resample_even(w, I, resfactor=2, print_conservation=True)
-        wstep = abs(np.diff(w)).min()   # new spectrum wavelength spacing
+    if assert_evenly_spaced:
+        if not evenly_distributed(w, tolerance=wstep*1e-3):
+            # TODO: automatically find a resampling factor?
+            warn('Spectrum not evenly spaced. Resampling')
+            w, I = resample_even(w, I, resfactor=2, print_conservation=True)
+            wstep = abs(np.diff(w)).min()   # new spectrum wavelength spacing
 
-    # ... Check reversed (interpolation requires objects are sorted)
+    # ... Check that the slit is not reversed (interpolation requires objects are sorted)
     reverse = (w_slit[-1] < w_slit[0])
     if reverse:
         w_slit = w_slit[::-1]
@@ -574,30 +580,23 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
             print(w_slit)
             print(I_slit)
             print('Check figure')
-            plot_slit(w_slit, I_slit, waveunit='')
+            plot_slit(w_slit, I_slit, waveunit=waveunit)
             raise
 
         # can be a bug here if wstep has the wrong sign.
-        w_slit_int = np.arange(w_slit[0], w_slit[-1]+wstep, wstep)
+        w_slit_interp = np.arange(w_slit[0], w_slit[-1]+wstep, wstep)
         # more test needed.
-        I_slit_int = splev(w_slit_int, tck)
+        I_slit_interp = splev(w_slit_interp, tck)
     else:
-        w_slit_int = w_slit
-        I_slit_int = I_slit
+        w_slit_interp = w_slit
+        I_slit_interp = I_slit
 
     # 4. Normalize
     # --------------
 
-    if norm_by == 'area':  # normalize by the area
-        I_slit_int /= abs(np.trapz(I_slit_int, x=w_slit_int))
-    elif norm_by == 'max':  # set maximum to 1
-        I_slit_int /= abs(np.max(I_slit_int))
-    elif norm_by is None:
-        pass
-    else:
-        raise ValueError(
-            'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
-
+    w_slit_interp, I_slit_interp = normalize_slit(w_slit_interp, I_slit_interp,
+                                                  norm_by=norm_by)
+    
     # 5. Check aspect
     # -------------
 
@@ -617,24 +616,13 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
     # 7. Convolve!
     # --------------
 
-    I_conv = np.convolve(I, I_slit_int, mode='same')*wstep
+    I_conv = np.convolve(I, I_slit_interp, mode='same')*wstep
 
     # 6. Remove boundary effects
     # --------------
-
-    # Remove boundary effects with the x-axis changed accordingly
-    if mode == 'valid':
-        la = min(len(I), len(I_slit_int))
-        a = int((la-1)/2)
-        b = int((la)/2)
-        I_conv = I_conv[a:-b]
-        w_conv = w[a:-b]
-    elif mode == 'same':
-        I_conv = I_conv
-        w_conv = w
-    else:
-        raise ValueError('Unexpected mode: {0}'.format(mode))
-
+    
+    w_conv, I_conv = remove_boundary(w, I_conv, mode, I=I, I_slit_interp=I_slit_interp)
+    
     # reverse back if needed
     # Todo: add test case for that
     if reverse:
@@ -642,6 +630,8 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
         I_slit = I_slit[::-1]
 
     return w_conv, I_conv
+
+
 
 # %% Slit function methods
 
@@ -657,7 +647,6 @@ def get_FWHM(w, I, return_index=False):
 
     return_index: boolean
         if True, returns indexes for half width boundaries. Default ``False``
-
 
     Returns
     -------
@@ -714,7 +703,170 @@ def get_effective_FWHM(w, I):
 
     return area/Imax
 
+def offset_dilate_slit_function(w_slit_nm, I_slit, w_nm, slit_dispersion,  
+                                threshold=0.01, verbose=True):
+    '''  Offset the slit wavelengths ``w_slit`` to the center of range ``w``, and 
+    dilate them with ``slit_dispersion(w0)``
+    
+    Parameters
+    ----------
+    
+    w_slit_nm: np.array
+        wavelength
+        
+        .. warning::
+            slit_dispersion is assumed to be in wavelength. Warning if you're 
+            applying this to an array stored in wavenumbers: don't forget to
+            convert.
+    
+    I_slit: np.array
+        slit intensity
+    
+    w_nm: np.array
+        wavelength whose center is used to center the slit function
+    
+    slit_dispersion: func of (lambda), or ``None``
+        spectrometer reciprocal function : dλ/dx(λ)
+        If not None, then the slit_dispersion function is used to correct the
+        slit function for the whole range. Can be important if slit function
+        was measured far from the measured spectrum  (e.g: a slit function
+        measured at 632.8 nm will look broader at 350 nm because the spectrometer
+        dispersion is higher at 350 nm. Therefore it should be corrected)
+        Default ``None``. For more details see :func:`~radis.tools.slit.convolve_with_slit`    
+    
+    Other Parameters
+    ----------------
+    
+    threshold: float
+        if not None, that slit dispersion is about constant (< ``threshold`` change) 
+        on the calculated range. Default 0.01 (1%)
+        
+    Returns
+    -------
+    
+    w_slit, I_slit: np.array
+        dilated wavelength (or wavenumber), slit intensity (renormalized)
+        
+    '''
+    w0 = w_nm[len(w_nm)//2]
+    wslit0 = w_slit_nm[len(w_slit_nm)//2]
+    w_slit_init = w_slit_nm
 
+    # Check that slit dispersion is about constant (<1% change) on the calculated range
+    if threshold:
+        if not 1-threshold < slit_dispersion(w_nm.max())/slit_dispersion(w_nm.min()) < 1+threshold:
+            warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}nm'.format(
+                w_nm.min(), w_nm.max(), abs(slit_dispersion(w_nm.max())/slit_dispersion(w_nm.min())-1
+                                      )*100)+'. Consider splitting your spectrum')
+
+    # Offset slit and correct for dispersion
+    w_slit_nm = w0 + slit_dispersion(w0) / slit_dispersion(wslit0)*(w_slit_nm-wslit0)
+    
+    if verbose:
+        print('{0:.2f} to {1:.2f}nm: slit function FWHM changed from {2:.2f} to {3:.2f}'.format(
+                wslit0, w0, get_effective_FWHM(w_slit_init, I_slit), 
+                get_effective_FWHM(w_slit_nm, I_slit)))
+        
+    return w_slit_nm, I_slit
+
+def normalize_slit(w_slit, I_slit, norm_by='area'):
+    ''' Normalize slit function with different normalization modes. Warning, 
+    some change units after convolution!
+    
+    Parameters
+    ----------
+    
+    w_slit, I_slit: np.array
+        wavelength and slit intensity
+        
+    norm_by: ``'area'``, ``'max'``, or ``None``
+        renormalize after slit dilatation. ``'area'`` conserves energy. ``'max'`` is what is done in
+        Specair and changes spectrum units, e.g. from ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr'``
+        ``None`` doesnt normalize. Default ``'area'``
+
+    Returns
+    -------
+    
+    w_slit, I_slit: np.array
+        wavelength, and normalized slit intensity
+
+    '''
+    
+    # Renormalize
+    # ---------
+    
+    if norm_by == 'area':  # normalize by the area
+        I_slit = I_slit/abs(np.trapz(I_slit, x=w_slit))
+    elif norm_by == 'max':  # set maximum to 1
+        I_slit = I_slit/abs(np.max(I_slit))
+    elif norm_by is None:
+        pass
+    else:
+        raise ValueError(
+            'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
+
+    return w_slit, I_slit
+   
+def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None, crop_left=None,
+                    crop_right=None):
+    ''' Crop convoluted array to remove boundary effects 
+    
+    Parameters
+    ----------
+    
+    w, I_conv: numpy array
+        wavelength and already convoluted quantity
+    
+    mode: ``'valid'``, ``'same'``, ``''crop'`` 
+        ``'same'`` returns output of same length as initial spectra, 
+        but boundary effects are still visible. ``'valid'`` returns 
+        output of length len(spectra) - len(slit) + 1, for 
+        which lines outside of the calculated range have
+        no impact. ``'crop'`` just removes ``crop_wings`` points on 
+        the side.
+
+    Other Parameters
+    ----------------
+    
+    I, I_slit_interp: numpy arrays
+        initial quantity and slit function intensity, before convolution. Needed
+        to determine the valid range if ``mode='valid'``
+        
+    crop_left, crop_right: int
+        number of points to discard on each side in ``''crop'`` mode
+    
+    Returns
+    -------
+    
+    w_conv, I_conv: numpy arrays
+        cropped waverange and quantity
+        
+    '''
+
+    # Remove boundary effects with the x-axis changed accordingly
+    if mode == 'valid':
+        la = min(len(I), len(I_slit_interp))
+        a = int((la-1)/2)
+        b = int((la)/2)
+        I_conv = I_conv[a:-b]
+        w_conv = w[a:-b]
+    elif mode == 'same':
+        I_conv = I_conv
+        w_conv = w
+    elif mode == 'crop':
+        l = len(I_conv)
+        if crop_right == 0:
+            _crop_right = None
+        else:
+            _crop_right = -crop_right
+        I_conv = I_conv[crop_left:_crop_right]
+        w_conv = w[crop_left:_crop_right]
+        assert len(I_conv) == l - crop_left - crop_right
+    else:
+        raise ValueError('Unexpected mode: {0}'.format(mode))
+
+    return w_conv, I_conv
+ 
 def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=True):
     ''' Plot slit, calculate and display FWHM, and calculate effective FWHM.
     FWHM is calculated from the limits of the range above the half width,
@@ -818,8 +970,9 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
 
     if warnings:
         if w[(xmin+xmax)//2] != w[len(w)//2]:
-            warn('Slit function doesnt seem centered (center measured with FWHM)' +
-                 ' is not the array center. This can induce offsets!')
+            warn('Slit function doesnt seem centered: center measured with FWHM' +
+                 ' is not the array center (shift: {0:.3f}{1}): This can induce offsets!'.format(
+                         abs(w[(xmin+xmax)//2] - w[len(w)//2]), waveunit))
 
         if I[0] != 0 or I[-1] != 0:
             warn('Slit function should have zeros on both sides')

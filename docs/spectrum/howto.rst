@@ -167,6 +167,9 @@ Use :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`::
 
     s.apply_slit(1.5)    # nm 
     
+By default, convoluted spectra are thinner than non convoluted spectra, to remove 
+side effects. Use the ``mode=`` argument to change this behaviour. 
+
 
 plot the slit function that was applied?
 ----------------------------------------

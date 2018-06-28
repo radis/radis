@@ -7,3 +7,4 @@ from .spectrum import (Spectrum, calculated_spectrum, experimental_spectrum,
                        transmittance_spectrum, is_spectrum)
 from .compare import (plot_diff, get_diff, get_distance, get_ratio, get_residual,
                       get_residual_integral)
+from .operations import (substract, multiply)

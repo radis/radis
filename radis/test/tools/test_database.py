@@ -51,6 +51,9 @@ def test_database_functions(verbose=True, plot=True, close_plots=True, warnings=
     # Database add method
     s2 = s.copy()
     s2.conditions['Tgas'] = 0  # make it unique (for testing)
+    
+    matching_spectrum_in_db = (s2 in db)
+    
     l = db.add(s2, add_info=['Tvib', 'Trot'], discard=[],
                compress=True, if_exists_then='increment')
     assert exists(l)
@@ -59,10 +62,16 @@ def test_database_functions(verbose=True, plot=True, close_plots=True, warnings=
         # .. ensures that you cant add it twice
         with pytest.raises(ValueError):
             db.add(s2, add_info=['Tvib', 'Trot'])
+            
+    # Now remove the Spectrum, update the database and ensures it's not there anymore
     finally:
         os.remove(l)
     db.update(force_reload=True)            # update database
-    assert s2 not in db
+    assert not exists(l)
+    
+    # make sure we deleted it properly
+    if not matching_spectrum_in_db:
+        assert s2 not in db
 
 
 def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):

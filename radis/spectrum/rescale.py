@@ -527,7 +527,8 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
     # Get list of new quantities
     new_q = [k for k in spec.get_vars() if k not in initial]
     if verbose:
-        print(('New quantities added: {0}'.format(new_q)))
+        if len(new_q)>0:
+            print(('{0} new quantities added: {1}'.format(spec.get_name(), new_q)))
 
     # Final checks
     for k in new_q:
@@ -870,7 +871,8 @@ def rescale_absorbance(spec, rescaled, initial, old_mole_fraction, new_mole_frac
 
 
 def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole_fraction,
-                                 old_path_length, new_path_length, waveunit, units, extra):
+                                 old_path_length, new_path_length, waveunit, units, extra,
+                                 true_path_length):
     '''
 
     Parameters    
@@ -896,6 +898,13 @@ def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new
         if __debug__:
             printdbg('... rescale: transmittance_noslit T2 = exp(-A2)')
         absorbance = rescaled['absorbance']  # N and L already scaled
+        transmittance_noslit = exp(-absorbance)           # recalculate
+        unit = get_unit()
+    elif 'abscoeff' in rescaled and true_path_length:
+        if __debug__:
+            printdbg('... rescale: transmittance_noslit T2 = exp(-j2*L2)')
+        abscoeff = rescaled['abscoeff']        # mole_fraction already scaled
+        absorbance = abscoeff*new_path_length               # calculate
         transmittance_noslit = exp(-absorbance)           # recalculate
         unit = get_unit()
     elif 'transmittance_noslit' in initial:
@@ -1036,7 +1045,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
 
     unit = None
 
-    def get_unit(unit_emisscoeff):
+    def get_radiance_unit(unit_emisscoeff):
         ''' get radiance_noslit unit from emisscoeff unit'''
         if '/cm3' in unit_emisscoeff:
             return unit_emisscoeff.replace('/cm3', '/cm2')
@@ -1057,7 +1066,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
                      '(optically thin)')
         emisscoeff = rescaled['emisscoeff']    # mole_fraction already scaled
         radiance_noslit = emisscoeff*new_path_length      # recalculate
-        unit = get_unit(units['emisscoeff'])
+        unit = get_radiance_unit(units['emisscoeff'])
 
     elif ('emisscoeff' in rescaled and 'transmittance_noslit' in rescaled
           and 'abscoeff' in rescaled and true_path_length and not optically_thin):  # not optically thin
@@ -1073,7 +1082,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
             abscoeff[~b]*(1-transmittance_noslit[~b])
         radiance_noslit[b] = emisscoeff[b] * \
             new_path_length  # optically thin limit
-        unit = get_unit(units['emisscoeff'])
+        unit = get_radiance_unit(units['emisscoeff'])
 
     elif ('emisscoeff' in rescaled and 'abscoeff' in rescaled and true_path_length
           and not optically_thin):  # not optically thin
@@ -1087,7 +1096,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
             (1-exp(-abscoeff[~b]*new_path_length))
         radiance_noslit[b] = emisscoeff[b] * \
             new_path_length  # optically thin limit
-        unit = get_unit(units['emisscoeff'])
+        unit = get_radiance_unit(units['emisscoeff'])
 
     elif 'radiance_noslit' in initial and optically_thin:
         if __debug__:
@@ -1389,8 +1398,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
                                            old_mole_fraction, new_mole_fraction, old_path_length,
                                            waveunit, units, extra, true_path_length)
 
-    if spec.is_at_equilibrium():
-        assert 'abscoeff' in rescaled
+    if spec.is_at_equilibrium() and 'abscoeff' in rescaled:
         wavenumber = spec.get_wavenumber('non_convoluted')
         Tgas = spec.conditions['Tgas']
         rescaled, units = _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
@@ -1413,7 +1421,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         if 'transmittance_noslit' in recompute:
             rescaled, units = rescale_transmittance_noslit(spec, rescaled, initial,
                                                            old_mole_fraction, new_mole_fraction, old_path_length,
-                                                           new_path_length, waveunit, units, extra)
+                                                           new_path_length, waveunit, units, extra, true_path_length)
 
         if 'radiance_noslit' in recompute:
             rescaled, units = rescale_radiance_noslit(spec, rescaled, initial,

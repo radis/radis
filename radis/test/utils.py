@@ -36,7 +36,7 @@ import os
 from radis.misc.config import (getDatabankList, getDatabankEntries, addDatabankEntries,
                                diffDatabankEntries)
 from radis.misc.utils import FileNotFoundError
-from radis.misc.print import printr
+from radis.misc.printer import printr
 from os.path import join, dirname
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), 'test')
