@@ -19,8 +19,9 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
 from radis.los.slabs import MergeSlabs, SerialSlabs
+import pytest
 
-
+@pytest.mark.fast
 def test_merge_slabs(verbose=True, plot=True, close_plots=True, warnings=True, debug=False,
                      *args, **kwargs):
     ''' Merge 10 slabs with 1/10 of concentration, and compare the results. 
@@ -72,14 +73,57 @@ def test_merge_slabs(verbose=True, plot=True, close_plots=True, warnings=True, d
 #
 
 
+@pytest.mark.fast
+def test_serial_slabs(verbose=True, plot=True, warnings=True, debug=False,
+                     *args, **kwargs):
+    ''' Add some slabs in serie, ensure that overall transmittance decreases 
+    Also check that some quantities are propagated (like path length?)
+
+    '''
+
+    from radis.tools.database import load_spec
+    import matplotlib.pyplot as plt
+    from radis.test.utils import getTestFile
+    if plot:
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+
+    # Get Some spectra
+    s = load_spec(getTestFile(
+        'CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
+#    s.update('all')
+    assert 'transmittance_noslit' not in s.get_vars()
+    
+    s_los = SerialSlabs(s, s, s)
+    
+    w, T = s_los.get('transmittance_noslit')  
+    # note that it was calculated despite transmittance not in the initial
+    # spectrum
+    
+    s.update('transmittance_noslit')   # get from abscoeff
+    w1, T1 = s.get('transmittance_noslit')
+    
+    # Check it looks alright
+    assert (T <= T1).all()
+    assert (T != T1).any()
+    assert (w == w1).all()
+    
+    # because they were the same slabs, intensive conditions should have been propagated
+    assert(s.conditions['Tgas'] == s_los.conditions['Tgas'])
+    # but extensive shouldnt:
+    assert(s.conditions['path_length']*3 == s_los.conditions['path_length'])
+    
+    return True
+#
+
+
+
 def _run_testcases(verbose=True, plot=True, close_plots=True, debug=False, warnings=True, *args, **kwargs):
 
     test_merge_slabs(verbose=verbose, plot=plot, close_plots=close_plots, debug=debug, warnings=warnings,
                      *args, **kwargs)
 
-    # Todo: add a test with _serial_slabs ...
-    if verbose:
-        print('WARNING: no test for SerialSlabs defined yet')
+    test_serial_slabs(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
+                     *args, **kwargs)
 
     return True
 

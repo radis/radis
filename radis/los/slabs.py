@@ -147,49 +147,74 @@ def SerialSlabs(*slabs, **kwargs):
         quantities = {}
         unitsn = sn.units
         
-        # To make it easier, we require all slabs to have 'radiance_noslit' and 'transmittance_noslit'
-        # TODO: if that changes the initial Spectra, maybe we should just work on copies
-        s.update('transmittance_noslit')
-        s.update('radiance_noslit')
-        sn.update('transmittance_noslit')
-        sn.update('radiance_noslit')
-        # TODO: maybe we just want to multiply transmittances. In that case no need 
-        # to enforce radiance_noslit is here. Issue neq/#45
-
         # make sure we use the same wavespace type (even if sn is in 'nm' and s in 'cm-1')
         # also make sure we use the same units
         waveunit = s.get_waveunit()
-        w = s.get('radiance_noslit', wunit=waveunit,
-                  Iunit=unitsn['radiance_noslit'])[0]
-        wn = sn.get('radiance_noslit', wunit=waveunit,
-                    Iunit=unitsn['radiance_noslit'])[0]
-
+        w = s._q['wavespace']
+        
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
         s, sn = resample_slabs(waveunit, resample_wavespace, out_of_bounds,
                                s, sn)
+        
 
-        w, I = s.get('radiance_noslit', wunit=waveunit,
-                     Iunit=unitsn['radiance_noslit'])
-        wn, In = sn.get('radiance_noslit', wunit=waveunit,
-                        Iunit=unitsn['radiance_noslit'])
-        _, Tn = sn.get('transmittance_noslit', wunit=waveunit,
-                       Iunit=unitsn['transmittance_noslit'])
+        # Get all data
+        # -------------
+        
+        I, In, T, Tn = None, None, None, None
 
-        if 'radiance_noslit' in s._q and 'radiance_noslit' in sn._q:
+        # To make it easier, the radiative transfer equation is solved with 'radiance_noslit' and 
+        # 'transmittance_noslit' only. Here we first try to get these quantities: 
+
+        # ... get sn quantities
+        try:
+            sn.update('transmittance_noslit', verbose=False)
+        except ValueError:
+            pass
+        else:
+            Tn = sn.get('transmittance_noslit', wunit=waveunit,
+                           Iunit=unitsn['transmittance_noslit'])[1]
+        try:
+            sn.update('radiance_noslit', verbose=False)
+        except ValueError:
+            pass
+        else:
+            In = sn.get('radiance_noslit', wunit=waveunit,
+                            Iunit=unitsn['radiance_noslit'])[1]
+        # ... get s quantities
+        try:
+            s.update('transmittance_noslit', verbose=False)
+        except ValueError:
+            pass
+        else:
+            T = s.get('transmittance_noslit', wunit=waveunit,
+                         Iunit=unitsn['transmittance_noslit'])[1]
+        try:
+            s.update('radiance_noslit', verbose=False)
+        except ValueError:
+            pass
+        else:
+            I = s.get('radiance_noslit', wunit=waveunit,
+                         Iunit=unitsn['radiance_noslit'])[1]
+
+        # Solve radiative transfer equation
+        # ---------------------------------
+
+        if I is not None and In is not None:
             # case where we may use SerialSlabs just to compute the products of all transmittances
             quantities['radiance_noslit'] = (w, I * Tn + In)
 
-        if 'transmittance_noslit' in s._q:  # note that we dont need the transmittance in the inner
+        if T is not None:  # note that we dont need the transmittance in the inner
                                          # slabs to calculate the total radiance
-            _, T = s.get('transmittance_noslit', wunit=waveunit,
-                         Iunit=unitsn['transmittance_noslit'])
             quantities['transmittance_noslit'] = (w, Tn * T)
 
         # Get conditions (if they're different, fill with 'N/A')
         conditions = intersect(s.conditions, sn.conditions)
         conditions['waveunit'] = waveunit
+        # sum path lengths
+        if 'path_length' in s.conditions and 'path_length' in sn.conditions:
+            conditions['path_length'] = s.conditions['path_length'] + sn.conditions['path_length']
 
         cond_units = intersect(s.cond_units, sn.cond_units)
 
@@ -489,11 +514,11 @@ def MergeSlabs(*slabs, **kwargs):
         # TODO: if that changes the initial Spectra, maybe we should just work on copies
         for s in slabs:
             if 'abscoeff' in recompute and not 'abscoeff' in list(s._q.keys()):
-                s.update('abscoeff')
+                s.update('abscoeff', verbose=False)
                 # that may crash if Spectrum doesnt have the correct inputs.
                 # let update() handle that
             if 'emisscoeff' in recompute and not 'emisscoeff' in list(s._q.keys()):
-                s.update('emisscoeff')
+                s.update('emisscoeff', verbose=False)
                 # same
 
         path_length = conditions['path_length']
