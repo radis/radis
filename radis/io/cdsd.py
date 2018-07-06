@@ -27,8 +27,9 @@ from collections import OrderedDict
 import os
 import radis
 from os.path import exists, splitext
-from radis.io.hitran import parse_binary_file, check_cache_file
-from radis.misc.cache_files import check_not_deprecated, save_to_hdf, LAST_COMPATIBLE_VERSION
+from radis.io.tools import parse_binary_file
+from radis.misc.cache_files import (check_not_deprecated, check_cache_file, 
+                                    save_to_hdf, LAST_COMPATIBLE_VERSION)
 import sys
 from six.moves import zip
 

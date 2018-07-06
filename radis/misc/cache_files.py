@@ -3,11 +3,20 @@
 Tools to deal with cache files
 
 
+Routine Listing
+---------------
+
+
+- :func:`~radis.misc.cache_file.check_cache_file`
+- :func:`~radis.misc.cache_file.check_not_deprecated`
+- :func:`~radis.misc.cache_file.save_to_hdf`
+
 -------------------------------------------------------------------------------
 
 
 """
 
+import os
 import h5py
 import radis
 from warnings import warn
@@ -28,7 +37,56 @@ assert radis.__version__ >= LAST_COMPATIBLE_VERSION
 # Utils
 
 
-def check_not_deprecated(file, metadata, current_version=None, last_compatible_version=LAST_COMPATIBLE_VERSION):
+
+def check_cache_file(use_cached, fcache, verbose):
+    ''' Check cache file:
+
+    First test its existence: function of the value of ``use_cached``:
+
+    - if True, ok
+    - if 'regen', delete cache file to regenerate it later. 
+    - if 'force', raise an error if file doesnt exist. 
+
+    Then look if it is deprecated:
+
+    - if deprecated, delete it to regenerate later unless 'force' was used
+    '''
+
+    # Test existence of file:
+    if not use_cached:
+        return                   # we dont want a cache file, no need to test it
+    elif use_cached == 'regen':
+        if exists(fcache):
+            os.remove(fcache)
+            if verbose:
+                print('Deleted h5 cache file : {0}'.format(fcache))
+    elif use_cached == 'force':
+        if not exists(fcache):
+            raise ValueError('Cache file {0} doesnt exist'.format(fcache))
+    else:  # use_cached == True
+        pass    # just use the file as is
+
+    # If file is still here, test if it is deprecated:
+    if exists(fcache):
+        if verbose:
+            print('Using cache file: {0}'.format(fcache))
+        try:
+            check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
+                                 last_compatible_version=LAST_COMPATIBLE_VERSION)
+        except DeprecatedFileError as err:
+            if use_cached == 'force':
+                raise
+            else:   # delete file to regenerate it in the end of the script
+                if verbose:
+                    print('File {0} deprecated:\n{1}\nDeleting it!'.format(
+                        fcache, str(err)))
+                os.remove(fcache)
+
+    return
+
+
+def check_not_deprecated(file, metadata, current_version=None, 
+                         last_compatible_version=LAST_COMPATIBLE_VERSION):
     ''' Make sure cache file is not deprecated: checks that ``metadata`` is the same,
     and that the version under which the file was generated is valid.
 

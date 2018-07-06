@@ -25,15 +25,11 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 import sys
 import pandas as pd
-import numpy as np
 from collections import OrderedDict
-import os
 from os.path import exists, splitext
-from six.moves import range
-from six.moves import zip
 import radis
-from radis.misc.cache_files import (check_not_deprecated, save_to_hdf,
-                                    DeprecatedFileError, LAST_COMPATIBLE_VERSION)
+from radis.io.tools import parse_binary_file
+from radis.misc.cache_files import save_to_hdf, check_cache_file
 
 
 # %% Hitran groups and classes
@@ -120,53 +116,6 @@ columns_2004 = OrderedDict([(
     'gp',     ('a7',   float, 'upper state degeneracy', '')), (
     'gpp',    ('a7',   float, 'lower state degeneracy', ''))
 ])
-
-
-def check_cache_file(use_cached, fcache, verbose):
-    ''' Check cache file:
-
-    First test its existence: function of the value of ``use_cached``:
-
-    - if True, ok
-    - if 'regen', delete cache file to regenerate it later. 
-    - if 'force', raise an error if file doesnt exist. 
-
-    Then look if it is deprecated:
-
-    - if deprecated, delete it to regenerate later unless 'force' was used
-    '''
-
-    # Test existence of file:
-    if not use_cached:
-        return                   # we dont want a cache file, no need to test it
-    elif use_cached == 'regen':
-        if exists(fcache):
-            os.remove(fcache)
-            if verbose:
-                print('Deleted h5 cache file : {0}'.format(fcache))
-    elif use_cached == 'force':
-        if not exists(fcache):
-            raise ValueError('Cache file {0} doesnt exist'.format(fcache))
-    else:  # use_cached == True
-        pass    # just use the file as is
-
-    # If file is still here, test if it is deprecated:
-    if exists(fcache):
-        if verbose:
-            print('Using cache file: {0}'.format(fcache))
-        try:
-            check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
-                                 last_compatible_version=LAST_COMPATIBLE_VERSION)
-        except DeprecatedFileError as err:
-            if use_cached == 'force':
-                raise
-            else:   # delete file to regenerate it in the end of the script
-                if verbose:
-                    print('File {0} deprecated:\n{1}\nDeleting it!'.format(
-                        fcache, str(err)))
-                os.remove(fcache)
-
-    return
 
 
 def hit2df(fname, count=-1, cache=False, verbose=True):
@@ -760,147 +709,6 @@ def _parse_HITRAN_group6(df):
 
 
 # %% Reading function
-
-
-def _format_dtype(dtype):
-    ''' Format dtype from specific columns. Crash with hopefully helping error message '''
-
-    try:
-        dt = np.dtype([(str(k), c) for k, c in dtype])
-        # Note: dtype names cannot be `unicode` in Python2. Hence the str()
-    except TypeError:
-        # Cant read database. Try to be more explicit for user
-        print('Data type')
-        print('-'*30)
-        for (k, c) in dtype:
-            print(str(k), '\t', c)
-        print('-'*30)
-        raise
-    return dt
-
-
-def _cast_to_dtype(data, dtype):
-    ''' Cast array to certain type, crash with hopefull helping error message.
-    Return casted data
-
-
-    Parameters    
-    ----------
-
-    data: array to cast
-
-    dtype: (ordered) list of (param, type)
-
-    '''
-
-    dt = _format_dtype(dtype)
-
-    try:
-        data = np.array(data, dtype=dt)
-    except ValueError:
-        try:
-            # Cant read database. Try to be more explicit for user
-            print('Cant cast data to specific dtype. Trying column by column:')
-            print('-'*30)
-            for i in range(len(data[0])):
-                print(dtype[i], '\t', np.array(data[0][i], dtype=dt[i]))
-            print('-'*30)
-        except ValueError:
-            print('>>> Next param:', dtype[i], '. Value:', data[0][i], '\n')
-            raise ValueError(
-                'Cant cast data to specific dtype. Tried column by column. See results above')
-
-    return data
-
-
-def parse_binary_file(fname, columns, count):
-    ''' Parse a file under HITRAN ``par`` format. Parsing is done in binary 
-    format so it's as fast as possible.
-
-    Parameters
-    ----------
-
-    fname: str
-        filename
-
-    columns: dict
-        list of columns and their format
-
-    count: int
-        number of lines to read
-
-    Returns
-    -------
-
-    df: pandas DataFrame
-        dataframe with lines
-
-    Notes
-    -----
-
-    Part common to hit2df and cdsd2df
-
-    '''
-
-    # To be faster, we read file totally in bytes mode with fromfiles. But that
-    # requires to properly decode the line return character:
-
-    # problem arise when file was written in an OS and read in another OS (for instance,
-    # line return characters are not converted when read from .egg files). Here
-    # we read the first line and infer the line return character for it
-
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()]+[('_linereturn', 'a2')]
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=1)   # just read the first line
-
-    # get format of line return
-    from radis.misc.basics import to_str
-    linereturn = to_str(data[0][-1])
-    if to_str('\r\n') in linereturn:
-        linereturnformat = 'a2'
-    elif to_str('\n') in linereturn or to_str('\r') in linereturn:
-        linereturnformat = 'a1'
-    else:
-        raise ValueError(
-            'Line return format unknown: {0}. Check your file format.'.format(linereturn))
-
-    # Now re-read with correct line return character
-
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()] + \
-        [('_linereturn', linereturnformat)]
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=count)
-
-    # ... Cast to new type
-    # This requires to recast all the data already read, but is still the fastest
-    # method I found to read a file directly (for performance benchmark see
-    # CDSD-HITEMP parser)
-    newtype = [c[0] if (c[1] == str) else c[1] for c in columns.values()]
-    dtype = list(zip(list(columns.keys()), newtype)) + \
-        [('_linereturn', linereturnformat)]
-    data = _cast_to_dtype(data, dtype)
-
-    # %% Create dataframe
-    df = pd.DataFrame(data.tolist(), columns=list(
-        columns.keys())+['_linereturn'])
-
-    # Delete dummy column than handled the line return character
-    del df['_linereturn']
-
-    # Update format
-    for k, c in columns.items():
-        if c[1] == str:
-            df[k] = df[k].str.decode("utf-8")
-
-    # Strip whitespaces around PQR columns (due to 2 columns jumped)
-    if 'branch' in df:
-        df['branch'] = df.branch.str.strip()
-
-    return df
 
 
 def parse_local_quanta(df, mol):
