@@ -463,14 +463,14 @@ def _parse_HITRAN_class6(df):
     # 1. Parse
     dgu = df['globu'].str.extract(
 #        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
-        '[ ]{9}(?P<v1u>[-\d ]{2})(?P<v2u>[-\d ]{2})(?P<v3u>[-\d ]{2})',
+        '[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
 #        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
-        '[ ]{9}(?P<v1l>[-\d ]{2})(?P<v2l>[-\d ]{2})(?P<v3l>[-\d ]{2})',
+        '[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})',
         expand=True)
     # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are 
-    # ... somehow negative. The regex above is adapted to catch negation signs
+    # ... somehow negative. The regex above is adapted to catch negation signs with \-
     
     # 2. Convert to numeric
     dgu = dgu.apply(pd.to_numeric)
@@ -626,15 +626,17 @@ def _parse_HITRAN_group1(df):
     # J'  | Ka' | Kc' | F'  | Sym'
     # I3  | I3  | I3  | A5  | A1
     dgu = df['locu'].str.extract(
-        '(?P<ju>[\d ]{3})(?P<Kau>[\d ]{3})(?P<Kcu>[\d ]{3})(?P<Fu>.{5})(?P<symu>.)',
+        '(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)',
         expand=True)
     # Ref [1] : locl
     # --------------
     # J'' | Ka''| Kc''| F'' | Sym''
     # I3  | I3  | I3  | A5  | A1
     dgl = df['locl'].str.extract(
-        '(?P<jl>[\d ]{3})(?P<Kal>[\d ]{3})(?P<Kcl>[\d ]{3})(?P<Fl>.{5})(?P<syml>.)',
+        '(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)',
         expand=True)
+    # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
+    # ... be negative. The regex above is adapted to catch negation signs with \-
 
     # 2. Convert to numeric
     for k in ['ju', 'Kau', 'Kcu']:

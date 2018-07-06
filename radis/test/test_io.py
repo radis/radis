@@ -77,8 +77,20 @@ def test_hitran_h2o(verbose=True, warnings=True, **kwargs):
     # 2. Test
     assert (list(df.loc[0, ['v1u', 'v2u', 'v3u', 'v1l', 'v2l', 'v3l']]) ==
             [0, 2, 0, 0, 1, 0])
+    
+    assert df.loc[26, 'ju'] == 5    # in .par : line 27, column 99-100
+    assert df.loc[27, 'ju'] == 18   # in .par : line 28, column 99-100
+    
+    
     assert df.dtypes['v1l'] == np.int64
     assert df.dtypes['v3u'] == np.int64
+    
+    assert df.dtypes['ju'] == np.int64
+    assert df.dtypes['Kau'] == np.int64
+    assert df.dtypes['Kcu'] == np.int64
+    assert df.dtypes['jl'] == np.int64
+    assert df.dtypes['Kal'] == np.int64
+    assert df.dtypes['Kcl'] == np.int64
     
     return True
 
@@ -96,17 +108,17 @@ def test_hitemp(verbose=True, warnings=True, **kwargs):
     assert df.wav[3] == 2250.00096
     # make sure P Q R is correctly replaced by drop_non_numeric: 
     assert 'branch' in df    
-    assert df['branch'].iloc[0] in ['Q', 0]
-    assert df['branch'].iloc[1] in ['R', 1]
+    assert df['branch'].iloc[0] == 0 # Q
+    assert df['branch'].iloc[1] == 1 # R
     
     return True
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-    test_hitran_co(verbose=verbose, *args, **kwargs)
-    test_hitran_co2(verbose=verbose, *args, **kwargs)
+#    test_hitran_co(verbose=verbose, *args, **kwargs)
+#    test_hitran_co2(verbose=verbose, *args, **kwargs)
     test_hitran_h2o(verbose=verbose, *args, **kwargs)
-    test_hitemp(verbose=verbose, *args, **kwargs)
+#    test_hitemp(verbose=verbose, *args, **kwargs)
 
     return True
 

@@ -110,9 +110,9 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     --------
 
     :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-    :func:`~radis.spectrum.spectrum.experimental_spectrum`
-    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
+    :func:`~radis.spectrum.spectrum.experimental_spectrum`,
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
     '''
@@ -161,9 +161,9 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     --------
 
     :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-    :func:`~radis.spectrum.spectrum.experimental_spectrum`
-    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
+    :func:`~radis.spectrum.spectrum.experimental_spectrum`,
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
     '''
@@ -213,8 +213,8 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
 
     :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
     :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
-    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
+    :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
     '''
