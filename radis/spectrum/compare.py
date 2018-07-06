@@ -182,6 +182,7 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
     :meth:`~radis.spectrum.spectrum.compare_with` 
 
     '''
+    # TODO: normalize with Imax, wmax 
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
                                    medium=medium, assert_same_wavelength=not resample)
