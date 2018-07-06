@@ -163,7 +163,7 @@ def drop_object_format_columns(df, verbose=True):
     for k in objects:
         del df[k]
     if verbose and len(objects)>0:
-        print('The following columns had the `object` format are were removed: {0}'.format(
+        print('The following columns had the `object` format and were removed: {0}'.format(
                 objects))
     return df
     
@@ -187,9 +187,14 @@ def replace_PQR_with_m101(df):
     None:
         ``df`` is is modified in place 
     '''
+        
+    # Note: somehow pandas updates dtype automatically. We have to check
     
-    df.loc[df.branch=='P', 'branch'] = -1
-    df.loc[df.branch=='Q', 'branch'] = 0
-    df.loc[df.branch=='R', 'branch'] = 1
-    assert df.dtypes['branch'] == np.int64
-
+    if df.dtypes['branch'] != np.int64:
+        df.loc[df.branch=='P', 'branch'] = -1
+    if df.dtypes['branch'] != np.int64:
+        df.loc[df.branch=='Q', 'branch'] = 0
+    if df.dtypes['branch'] != np.int64:
+        df.loc[df.branch=='R', 'branch'] = 1
+    
+    assert df.dtypes['branch'] == np.int64  

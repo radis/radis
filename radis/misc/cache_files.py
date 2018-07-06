@@ -40,7 +40,7 @@ class DeprecatedFileError(DeprecationWarning):
     pass
 
 
-LAST_COMPATIBLE_VERSION = '0.1.18'
+LAST_COMPATIBLE_VERSION = '0.1.22'
 '''str: forces to regenerate cache files that were created in a previous version'''
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
