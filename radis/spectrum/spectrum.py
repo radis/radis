@@ -1165,16 +1165,6 @@ class Spectrum(object):
 
     # Rescale functions
 
-    def rescale(self, new_path_length, old_path_length=None,
-                force=False):
-        ''' Deprecated. See rescale_path_length '''
-
-        warn(DeprecationWarning("rescale have been replaced by more explicit " +
-                                "rescale_path_length"))
-
-        return self.rescale_path_length(new_path_length, old_path_length=old_path_length,
-                                        force=force)
-
     def rescale_path_length(self, new_path_length, old_path_length=None,
                             force=False):
         ''' Rescale spectrum to new path length. Starts from absorption coefficient
@@ -1265,12 +1255,6 @@ class Spectrum(object):
         w, I = self.get(var, wunit=wunit, Iunit=Iunit, **kwargs)
         return abs(np.trapz(I, x=w))
 
-    def power(self, unit='mW/cm2/sr'):
-        ''' Returns integrated radiance power density'''
-
-        raise DeprecationWarning(
-            'Spectrum.power() deprecated. Use get_power() instead')
-
     def get_power(self, unit='mW/cm2/sr'):
         ''' Returns integrated radiance (no slit) power density'''
 
@@ -1317,7 +1301,6 @@ class Spectrum(object):
 
     def plot(self, var=None, wunit='default', Iunit='default', show_points=False,
              nfig=None, yscale='linear', medium='default',
-             xunit=None, yunit=None,  # deprecated
              normalize=False,
              **kwargs):
         '''
@@ -1363,12 +1346,7 @@ class Spectrum(object):
 
         # Check inputs, get defaults
         # ------
-        if xunit is not None:
-            warn(DeprecationWarning('xunit replaced with wunit'))
-            wunit = xunit
-        if yunit is not None:
-            warn(DeprecationWarning('yunit replaced with Iunit'))
-            Iunit = yunit
+
         if var in ['intensity', 'intensity_noslit']:
             raise ValueError('`intensity` not defined. Use `radiance` instead')
 
@@ -1782,7 +1760,7 @@ class Spectrum(object):
         center_wavespace: float, or ``None``
             center of slit when generated (in unit). Not used if slit is imported.
 
-        norm_by: ``'area'``, ``'max'``, ``'max2'``
+        norm_by: ``'area'``, ``'max'``
             normalisation type:
 
             - ``'area'`` normalizes the slit function to an area
@@ -1796,9 +1774,6 @@ class Spectrum(object):
               Note that the slit is set to 1 in the Spectrum wavespace
               (i.e: a Spectrum calculated in cm-1 will have a slit
               set to 1 in cm-1). 
-
-            - ``'max2'``: read about it in :func:`~radis.tools.slit.get_slit_function` 
-              docstrings. 
 
             Default ``'area'``
 
@@ -1820,9 +1795,9 @@ class Spectrum(object):
             :meth:`~radis.spectrum.spectrum.Spectrum.get_slit` and plot with 
             :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default ``True``
     
-        slit_dispersion: func of (lambda), or ``None``
+        slit_dispersion: func of (lambda, in ``'nm'``), or ``None``
             spectrometer reciprocal function : dλ/dx(λ)   (in ``nm``)
-            If not None, then the slit_dispersion function is used to correct the
+            If not ``None``, then the slit_dispersion function is used to correct the
             slit function for the whole range. Can be important if slit function
             was measured far from the measured spectrum  (e.g: a slit function
             measured at 632.8 nm will look broader at 350 nm because the spectrometer
@@ -1834,8 +1809,11 @@ class Spectrum(object):
                 if your spectrum is stored in ``cm-1`` the wavenumbers are 
                 converted to wavelengths before being forwarded to the dispersion 
                 function
+                
+            See :func:`~radis.test.tools.test_slit.test_auto_correct_dispersion` 
+            for an example of the slit dispersion effect. 
     
-            a Python implementation:
+            A Python implementation of the slit dispersion:
     
             >>> def f(lbd):
             >>>    return  w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w*1e-9)*cos(Φ))^2-1))
@@ -1855,9 +1833,6 @@ class Spectrum(object):
             See Laux 1999 "Experimental study and modeling of infrared air plasma
             radiation" for more information
     
-            slit_dispersion is assumed to be constant on the whole measured range,
-            and corrected for the center wavelength. If there is an error >1% on
-            the whole range a warning is raised.
 
         *args, **kwargs
             are forwarded to slit generation or import function
@@ -1923,6 +1898,7 @@ class Spectrum(object):
         :func:`~radis.tools.slit.get_slit_function`, 
         :func:`~radis.tools.slit.convolve_with_slit`
 
+
         '''
         # TODO: add warning if FWHM >= wstep(spectrum)/5
 
@@ -1983,13 +1959,19 @@ class Spectrum(object):
         # Check if dispersion is too large
         # ----
         if slit_dispersion is not None:
-            wings = len(wslit0)    # add space on the side of the slices 
             if waveunit == 'nm':
                 w_nm = w
                 wslit0_nm = wslit0
             else:
                 w_nm = cm2nm(w)
                 wslit0_nm = cm2nm(wslit0)
+            # add space (wings) on the side of each slice. This space is cut
+            # after convolution, removing side effects. Too much space and we'll 
+            # overlap too much and loose performance. Not enough and we'll have
+            # artifacts on the jonction. We use the slit width to be conservative.
+            wings = len(wslit0)
+            # correct if the slit is to be interpolated (because wstep is different):
+            wings *= max(1, abs(int(np.diff(wslit0).mean() / wstep)))
             slice_windows, wings_min, wings_max = _cut_slices(w_nm, slit_dispersion, wings=wings)
         else:
             slice_windows = [np.ones_like(w, dtype=np.bool)]
@@ -2088,19 +2070,9 @@ class Spectrum(object):
                 except UndefinedUnitError:
                     pass
                 self.units[q] = new_unit
-            # difference with 'max': unit is multiplied by [unit] not [return_unit]
-            elif norm_by == 'max2':
-                new_unit = '{0}*{1}'.format(self.units[qns],
-                                            waveunit.replace('cm-1', 'cm_1'))
-                # because it's like if we multiplied
-                # by slit FWHM in the wavespace it was
-                # generated
-                # simplify unit:
-                try:
-                    new_unit = '{:~P}'.format(Q_(new_unit).units)
-                except UndefinedUnitError:
-                    pass
-                self.units[q] = new_unit
+            # Note: there was another mode called 'max2' where, unlike 'max',
+            # unit was multiplied by [unit] not [return_unit]
+            # Removed for simplification. You should stay with norm_by='area' anyway
             else:
                 raise ValueError(
                     'Unknown normalization type: {0}'.format(norm_by))
@@ -2143,7 +2115,10 @@ class Spectrum(object):
         return wslit, Islit
 
     def plot_slit(self, wunit=None):
-        ''' Plot slit function that was applied to the Spectrum 
+        ''' Plot slit function that was applied to the Spectrum
+        
+        If dispersion was used (see :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`)
+        the different slits are built again and plotted too (dotted).
 
         Parameters
         ----------
@@ -2151,9 +2126,17 @@ class Spectrum(object):
         wunit: 'nm', 'cm-1', or None
             plot slit in wavelength or wavenumber. If None, use the unit
             the slit in which the slit function was given. Default ``None``
+                
+        Returns
+        -------
+        
+        fix, ax: matplotlib objects
+            figure and ax
+
         '''
 
-        from radis.tools.slit import plot_slit
+        from radis.tools.slit import (plot_slit, offset_dilate_slit_function, 
+                                      normalize_slit)
 
         # Check inputs
         assert wunit in ['nm', 'cm-1', None]
@@ -2161,7 +2144,7 @@ class Spectrum(object):
             wunit = self.conditions['slit_unit']
 
         # Get slit arrays (in Spectrum.waveunit)
-        wslit, Islit = self.get_slit()
+        wslit0, Islit0 = self.get_slit()    # as imported
 
         # Get slit unit
         norm_by = self.conditions['norm_by']
@@ -2175,10 +2158,54 @@ class Spectrum(object):
         else:
             raise ValueError(
                 'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
-
+            
         # Plot in correct unit  (plot_slit deals with the conversion if needed)
-        return plot_slit(wslit, Islit, waveunit=waveunit, plot_unit=wunit,
+        fig, ax = plot_slit(wslit0, Islit0, waveunit=waveunit, plot_unit=wunit,
                          Iunit=Iunit)
+        
+        
+        # Plot other slit functions if dispersion was applied:
+        if 'slit_dispersion' in self.conditions:
+            slit_dispersion = self.conditions['slit_dispersion']
+            if slit_dispersion is not None:
+                waveunit = self.get_waveunit()
+                if waveunit == 'nm':
+                    wslit0_nm = wslit0
+                else:
+                    wslit0_nm = cm2nm(wslit0)
+                w_nm = self.get_wavelength(medium='default', which='non_convoluted')
+                wings = len(wslit0)    # note: hardcoded. Make sure it's the same as in apply_slit
+                wings *= max(1, abs(int(np.diff(wslit0_nm).mean() / np.diff(w_nm).mean())))
+                slice_windows, wings_min, wings_max = _cut_slices(w_nm, slit_dispersion, wings=wings)
+    
+                # Loop over all waverange slices (needed if slit changes over the spectral range)
+                for islice, slice_window in enumerate(slice_windows):
+                    
+                    w_nm_sliced = w_nm[slice_window]
+                    w_min = w_nm_sliced.min()
+                    w_max = w_nm_sliced.max()
+                           
+                    # apply spectrometer linear dispersion function. 
+                    # dont forget it has to be added in nm and not cm-1
+                    wslit, Islit = offset_dilate_slit_function(wslit0_nm, Islit0, 
+                                                               w_nm[slice_window], 
+                                                               slit_dispersion,
+                                                               threshold=0.01,
+                                                               # TODO: make sure threshold
+                                                               # is the same as the one 
+                                                               # applied (hardcoded for
+                                                               # the moment)
+                                                               verbose=False)
+                    # Convert it back if needed
+                    if waveunit == 'cm-1':
+                        wslit = nm2cm(wslit)
+                    # We need to renormalize now that Islit has changed
+                    wslit, Islit = normalize_slit(wslit, Islit, norm_by=norm_by)
+                    plot_slit(wslit, Islit, waveunit=waveunit, plot_unit=wunit,
+                              Iunit=Iunit, ls='--', title='Slit used on range {0:.2f}-{1:.2f} nm'.format(
+                                      w_min, w_max))
+                    
+        return fig, ax
 
     def line_survey(self, overlay=None, wunit='cm-1', cutoff=None, medium='default',
                     xunit=None,  # deprecated
@@ -3268,12 +3295,15 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
         must be a negative power of 10 
         
     wings: int
-        extend with that many points on each side of the slice 
+        extend with that many points on each side of the slice. This space is cut
+        after convolution (in apply_slit), removing side effects. Too much space and we'll 
+        overlap too much and loose performance. Not enough and we'll have
+        artifacts on the jonction. A good number is to use the slit width, to be 
+        conservative.
         
     '''
     
     # TODO: just test every 10 or 100
-    
     blocs = dispersion(w_nm)
     diff = np.round(blocs[0]/blocs - 1, int(-np.log10(threshold)))  # difference in slit dispersion, +- 10%
     _, index_blocs = np.unique(diff, return_index=True)
