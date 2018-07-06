@@ -31,6 +31,16 @@ except ImportError:
                       info='LineSurvey requires Plotly. Please install it manually')
 
 
+# dictionary to convert branch in numeric (-1, 0, 1) or (P, Q, R) format to (P, Q, R) format
+_fix_branch_format = {
+        -1: 'P',
+        'P': 'P',
+        0: 'Q',
+        'Q': 'Q',
+        1: 'R',
+        'R': 'R',
+        }
+
 def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
                cutoff=None, plot='S', lineinfo=['int', 'A'], barwidth=0.07,
                yscale='log',
@@ -249,7 +259,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
 
         label = ('{0}[iso{1}] '.format(molecule, row['iso']) +
                  '[{branch}{jl}]({globl})->({globu})'.format(
-            **dict([(k, row[k]) for k in ['branch', 'jl', 'globl', 'globu']])))
+            **dict([(k, row[k]) for k in ['jl', 'globl', 'globu']]+
+                    [('branch',_fix_branch_format[row['branch']])])))
 
         for k in details:
             name, _, unit = details[k]
@@ -265,7 +276,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
 
         label = ('{0}[iso{1}]'.format(molecule, row['iso']) +
                  '[{branch}{jl}]({v1l})->({v1u})'.format(
-            **dict([(k, row[k]) for k in ['branch', 'jl', 'v1l', 'v1u']])))
+            **dict([(k, row[k]) for k in ['jl', 'v1l', 'v1u']]+
+                    [('branch',_fix_branch_format[row['branch']])])))
 
         for k in details:
             name, _, unit = details[k]
@@ -280,7 +292,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
         label = ('CO2[iso{iso}] [{branch}{jl}]({v1l}{v2l}`{l2l}`{v3l})->({v1u}{v2u}`{l2u}`{v3u})'.format(
             **dict([(k, row[k]) for k in ['v1u', 'v2u', 'l2u', 'v3u',
                                           'v1l', 'v2l', 'l2l', 'v3l',
-                                          'branch', 'jl', 'iso']])))
+                                          'jl', 'iso']]+
+                    [('branch',_fix_branch_format[row['branch']])])))
 
         for k in details:
             name, _, unit = details[k]

@@ -27,7 +27,7 @@ from collections import OrderedDict
 import os
 import radis
 from os.path import exists, splitext
-from radis.io.tools import parse_binary_file, drop_object_format_columns
+from radis.io.tools import parse_binary_file, drop_object_format_columns, replace_PQR_with_m101
 from radis.misc.cache_files import (check_not_deprecated, check_cache_file, 
                                     save_to_hdf, get_cache_file, LAST_COMPATIBLE_VERSION)
 import sys
@@ -225,6 +225,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
 
     # Remove non numerical attributes
     if drop_non_numeric:
+        replace_PQR_with_m101(df)
         df = drop_object_format_columns(df, verbose=verbose)
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
@@ -241,19 +242,6 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
 
     return df
 
-
-def _test(verbose=True, warnings=True, **kwargs):
-    ''' Analyse some default files to make sure everything still works'''
-    from neq.test.utils import getTestFile
-    from time import time
-
-    t0 = time()
-    df = cdsd2df(getTestFile('cdsd_hitemp_09.txt'))
-    print('File loaded in {0:.1f}s'.format(time()-t0))
-    if verbose:
-        print(df.head())
-    return df.wav[3] == 2250.00096
-
-
 if __name__ == '__main__':
-    print('Testing cdsd: ', _test())
+    from radis.test.test_io import test_hitemp
+    print('Testing cdsd: ', test_hitemp())

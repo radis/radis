@@ -24,6 +24,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.io.hitran import hit2df
+from radis.io.cdsd import cdsd2df
 from radis.test.utils import getTestFile
 import pytest
 import numpy as np
@@ -82,11 +83,30 @@ def test_hitran_h2o(verbose=True, warnings=True, **kwargs):
     return True
 
 
+def test_hitemp(verbose=True, warnings=True, **kwargs):
+    ''' Analyse some default files to make sure everything still works'''
+
+    # 1. Load
+    df = cdsd2df(getTestFile('cdsd_hitemp_09.txt'), cache='regen',
+                 drop_non_numeric=True)
+    if verbose:
+        print(df.head())
+    
+    # 2. Tests
+    assert df.wav[3] == 2250.00096
+    # make sure P Q R is correctly replaced by drop_non_numeric: 
+    assert 'branch' in df    
+    assert df['branch'].iloc[0] in ['Q', 0]
+    assert df['branch'].iloc[1] in ['R', 1]
+    
+    return True
+
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_hitran_co(verbose=verbose, *args, **kwargs)
     test_hitran_co2(verbose=verbose, *args, **kwargs)
     test_hitran_h2o(verbose=verbose, *args, **kwargs)
+    test_hitemp(verbose=verbose, *args, **kwargs)
 
     return True
 

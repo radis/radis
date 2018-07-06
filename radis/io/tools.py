@@ -95,7 +95,7 @@ def parse_binary_file(fname, columns, count):
             df[k] = df[k].str.decode("utf-8")
 
     # Strip whitespaces around PQR columns (due to 2 columns jumped)
-    if 'branch' in df:
+    if 'branch' in df:  # (only in CDSD)
         df['branch'] = df.branch.str.strip()
 
     return df
@@ -167,4 +167,29 @@ def drop_object_format_columns(df, verbose=True):
                 objects))
     return df
     
+
+
+
+def replace_PQR_with_m101(df):
+    ''' Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric 
+    database. This improves performances quite a lot, as Pandas doesnt have a 
+    fixed-string dtype hence would use the slow ``object`` dtype. 
+    
+    Parameters
+    ----------
+    
+    df: pandas Dataframe
+        ``branch`` must be a column name
+    
+    Returns
+    -------
+    
+    None:
+        ``df`` is is modified in place 
+    '''
+    
+    df.loc[df.branch=='P', 'branch'] = -1
+    df.loc[df.branch=='Q', 'branch'] = 0
+    df.loc[df.branch=='R', 'branch'] = 1
+    assert df.dtypes['branch'] == np.int64
 
