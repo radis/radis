@@ -28,8 +28,8 @@ import pandas as pd
 from collections import OrderedDict
 from os.path import exists, splitext
 import radis
-from radis.io.tools import parse_binary_file
-from radis.misc.cache_files import save_to_hdf, check_cache_file
+from radis.io.tools import parse_binary_file, drop_object_format_columns
+from radis.misc.cache_files import save_to_hdf, check_cache_file, get_cache_file
 
 
 # %% Hitran groups and classes
@@ -118,7 +118,7 @@ columns_2004 = OrderedDict([(
 ])
 
 
-def hit2df(fname, count=-1, cache=False, verbose=True):
+def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
 
     Parameters    
@@ -137,6 +137,14 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
         taken into account). If False, no database is used. If ``'regen'``, temp
         file are reconstructed. Default ``False``. 
 
+    Other Parameters
+    ----------------
+    
+    drop_non_numeric: boolean
+        if ``True``, non numeric columns are dropped. This improves performances, 
+        but make sure all the columns you need are converted to numeric formats 
+        before hand. Default ``True``. Note that if a cache file is loaded it 
+        will be left untouched.
 
     Returns
     -------
@@ -173,7 +181,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
     fcache = splitext(fname)[0]+'.h5'
     check_cache_file(cache, fcache=fcache, verbose=verbose)
     if cache and exists(fcache):
-        return pd.read_hdf(fcache, 'df')
+        return get_cache_file(fcache)
 
     # Detect the molecule by reading the start of the file
     with open(fname) as f:
@@ -207,6 +215,10 @@ def hit2df(fname, count=-1, cache=False, verbose=True):
 
     # Add global quanta attributes, based on the HITRAN class
     df = parse_global_quanta(df, mol)
+    
+    # Remove non numerical attributes
+    if drop_non_numeric:
+        df = drop_object_format_columns(df, verbose=verbose)
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
@@ -240,20 +252,35 @@ def _parse_HITRAN_class1(df):
     Notes
     -----
 
-    HITRAN syntax:
+    HITRAN syntax [1]_ :
 
     >>>       v
     >>>  13x I2
+    
+    References
+    ----------
+    
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
 
     '''
+    
+    # 1. Parse
     dgu = df['globu'].str.extract(
         '[ ]{13}(?P<vu>[\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
         '[ ]{13}(?P<vl>[\d ]{2})',
         expand=True)
+    
+    # 2. Convert to numeric
     dgu = dgu.apply(pd.to_numeric)
     dgl = dgl.apply(pd.to_numeric)
+    
+    # 3. Clean
+    del df['globu']
+    del df['globl']
+    
     return pd.concat([df, dgu, dgl], axis=1)
 
 
@@ -271,13 +298,18 @@ def _parse_HITRAN_class2(df):
     Notes
     -----
 
-    HITRAN syntax:
+    HITRAN syntax [1]_ :
 
     >>>      X   v
     >>>  12x A1 I2
 
+    References
+    ----------
+    
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
     '''
-    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    print('parse_global_quanta not implemented for molecules of HITRAN class 2')
     return df
 
 
@@ -295,12 +327,18 @@ def _parse_HITRAN_class3(df):
     Notes
     -------
 
-    HITRAN syntax:
+    HITRAN syntax [1]_:
 
     >>>      X i     v1
     >>>  7x A1 A3 2x I2
+    
+    References
+    ----------
+    
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
     '''
-    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    print('parse_global_quanta not implemented for molecules of HITRAN class 3')
     return df
 
 
@@ -326,17 +364,26 @@ def _parse_HITRAN_class4(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     '''
+    
+    # 1. Parse
     dgu = df['globu'].str.extract(
         '[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
         '[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})',
         expand=True)
+    
+    # 2. Convert to numeric
     dgu = dgu.apply(pd.to_numeric)
     dgl = dgl.apply(pd.to_numeric)
+    
+    # 3. Clean
+    del df['globu']
+    del df['globl']
+    
     return pd.concat([df, dgu, dgl], axis=1)
 
 
@@ -362,17 +409,26 @@ def _parse_HITRAN_class5(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     '''
+    
+    # 1. Parse
     dgu = df['globu'].str.extract(
         '[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)',
         expand=True)
     dgl = df['globl'].str.extract(
         '[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)',
         expand=True)
+    
+    # 2. Convert to numeric
     dgu = dgu.apply(pd.to_numeric)
     dgl = dgl.apply(pd.to_numeric)
+    
+    # 3. Clean
+    del df['globu']
+    del df['globl']
+    
     return pd.concat([df, dgu, dgl], axis=1)
 
 
@@ -398,17 +454,30 @@ def _parse_HITRAN_class6(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     '''
+    
+    # 1. Parse
     dgu = df['globu'].str.extract(
-        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
+#        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
+        '[ ]{9}(?P<v1u>[-\d ]{2})(?P<v2u>[-\d ]{2})(?P<v3u>[-\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
-        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
+#        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
+        '[ ]{9}(?P<v1l>[-\d ]{2})(?P<v2l>[-\d ]{2})(?P<v3l>[-\d ]{2})',
         expand=True)
+    # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are 
+    # ... somehow negative. The regex above is adapted to catch negation signs
+    
+    # 2. Convert to numeric
     dgu = dgu.apply(pd.to_numeric)
     dgl = dgl.apply(pd.to_numeric)
+    
+    # 3. Clean
+    del df['globu']
+    del df['globl']
+    
     return pd.concat([df, dgu, dgl], axis=1)
 
 
@@ -431,10 +500,10 @@ def _parse_HITRAN_class7(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     '''
-    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    print('parse_global_quanta not implemented for molecules of HITRAN class 7')
     return df
 
 
@@ -459,10 +528,10 @@ def _parse_HITRAN_class8(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     '''
-    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    print('parse_global_quanta not implemented for molecules of HITRAN class 8')
     return df
 
 
@@ -487,10 +556,10 @@ def _parse_HITRAN_class9(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     '''
-    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    print('parse_global_quanta not implemented for molecules of HITRAN class 9')
     return df
 
 
@@ -515,10 +584,10 @@ def _parse_HITRAN_class10(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     '''
-    print('parse_global_quanta not implemented for molecules of this HITRAN class')
+    print('parse_global_quanta not implemented for molecules of HITRAN class 10')
     return df
 
 # %% HITRAN Local quanta
@@ -543,12 +612,39 @@ def _parse_HITRAN_group1(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
 
     '''
-    print('parse_local_quanta not implemented for molecules of this HITRAN group')
-    return df
+    
+    # 1. Parse
+    
+    # Ref [1] : locu
+    # --------------
+    # J'  | Ka' | Kc' | F'  | Sym'
+    # I3  | I3  | I3  | A5  | A1
+    dgu = df['locu'].str.extract(
+        '(?P<ju>[\d ]{3})(?P<Kau>[\d ]{3})(?P<Kcu>[\d ]{3})(?P<Fu>.{5})(?P<symu>.)',
+        expand=True)
+    # Ref [1] : locl
+    # --------------
+    # J'' | Ka''| Kc''| F'' | Sym''
+    # I3  | I3  | I3  | A5  | A1
+    dgl = df['locl'].str.extract(
+        '(?P<jl>[\d ]{3})(?P<Kal>[\d ]{3})(?P<Kcl>[\d ]{3})(?P<Fl>.{5})(?P<syml>.)',
+        expand=True)
+
+    # 2. Convert to numeric
+    for k in ['ju', 'Kau', 'Kcu']:
+        dgu[k] = pd.to_numeric(dgu[k])
+    for k in ['jl', 'Kal', 'Kcl']:
+        dgl[k] = pd.to_numeric(dgl[k])
+    
+    # 3. Clean
+    del df['locu']
+    del df['locl']
+    
+    return pd.concat([df, dgu, dgl], axis=1)
 
 
 def _parse_HITRAN_group2(df):
@@ -570,21 +666,34 @@ def _parse_HITRAN_group2(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
 
     '''
 
+    # 1. Parse
+    
+    # Ref [1] : locu
+    # --------------
+    #     | F'  |
+    # 10X | A5  |
     dgu = df['locu'].str.extract(
         '[ ]{10}(?P<Fu>.{5})',
         expand=True)
+    # Ref [1] : locl
+    # --------------
+    #     | Br  | J'' | Sym''| F'' |
+    # 5X  | A1  | I3  | A1   | A5  |
     dgl = df['locl'].str.extract(
-        '[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<sym>.)(?P<Fl>.{5})',
+        '[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})',
         expand=True)
 
+    # 2. Convert to numeric
+    
     #dgl['jl'] = dgl.jl.apply(pd.to_numeric)
     dgl['jl'] = pd.to_numeric(dgl.jl)
 
+    # 3. Clean
     del df['locu']
     del df['locl']
 
@@ -619,11 +728,11 @@ def _parse_HITRAN_group3(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
 
     '''
-    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    print('parse_local_quanta not implemented for molecules of HITRAN group 3')
     return df
 
 
@@ -646,11 +755,11 @@ def _parse_HITRAN_group4(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
 
     '''
-    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    print('parse_local_quanta not implemented for molecules of HITRAN group 4')
     return df
 
 
@@ -673,11 +782,11 @@ def _parse_HITRAN_group5(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
 
     '''
-    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    print('parse_local_quanta not implemented for molecules of HITRAN group 5')
     return df
 
 
@@ -700,11 +809,11 @@ def _parse_HITRAN_group6(df):
     References
     ----------
 
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
 
     '''
-    print('parse_local_quanta not implemented for molecules of this HITRAN group')
+    print('parse_local_quanta not implemented for molecules of HITRAN group 6')
     return df
 
 
@@ -786,7 +895,6 @@ def parse_global_quanta(df, mol):
             mol))
 
     return df
-
 
 def get_molecule_identifier(molecule_name):
     '''
@@ -876,5 +984,5 @@ def get_molecule(molecule_id):
 
 
 if __name__ == '__main__':
-    from radis.test.test_io import test_hitran_parser
-    print('Testing HITRAN parsing: ', test_hitran_parser())
+    from radis.test.test_io import _run_testcases
+    print('Testing HITRAN parsing: ', _run_testcases())

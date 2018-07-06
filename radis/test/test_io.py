@@ -25,37 +25,68 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.io.hitran import hit2df
 from radis.test.utils import getTestFile
-from time import time
 import pytest
+import numpy as np
 
 
 @pytest.mark.fast
-def test_hitran_parser(verbose=True, warnings=True, **kwargs):
+def test_hitran_co(verbose=True, warnings=True, **kwargs):
     ''' Analyse some default files to make sure everything still works'''
 
-    t0 = time()
-    df = hit2df(getTestFile('hitran_CO_fragment.par'))
+    # 1. Load
+    df = hit2df(getTestFile('hitran_CO_fragment.par'), cache='regen')
     if verbose:
-        print('File loaded in {0:.0f}s'.format(time()-t0))
-    if verbose:
+        print('Read hitran_CO_fragment.par')
+        print('---------------------------')
         print(df.head())
+        
+    # 2. Test
     assert (list(df.loc[0, ['vu', 'vl']]) == [4, 4])
+    assert df.dtypes['vu'] == np.int64
+    assert df.dtypes['vl'] == np.int64
+    
+    return True
 
-    t0 = time()
-    df = hit2df(getTestFile('hitran_CO2_fragment.par'))
+def test_hitran_co2(verbose=True, warnings=True, **kwargs):
+    
+    # 1. Load
+    df = hit2df(getTestFile('hitran_CO2_fragment.par'), cache='regen')
     if verbose:
-        print('File loaded in {0:.0f}s'.format(time()-t0))
-    if verbose:
+        print('Read hitran_CO2_fragment.par')
+        print('----------------------------')
         print(df.head())
+        
+    # 2. Test
     assert (list(df.loc[0, ['v1u', 'v2u', 'l2u', 'v3u', 'v1l', 'v2l', 'l2l', 'v3l']]) ==
             [4, 0, 0, 0, 0, 0, 0, 1])
+    assert df.dtypes['v1l'] == np.int64
+    assert df.dtypes['v3u'] == np.int64
 
+    return True
+
+def test_hitran_h2o(verbose=True, warnings=True, **kwargs):
+    
+    # 1. Load
+    df = hit2df(getTestFile('hitran_2016_H2O_2iso_2000_2100cm.par'), cache='regen')
+    if verbose:
+        print('Read hitran_2016_H2O_2iso_2000_2100cm.par')
+        print('-----------------------------------------')
+        print(df.head())
+        
+    # 2. Test
+    assert (list(df.loc[0, ['v1u', 'v2u', 'v3u', 'v1l', 'v2l', 'v3l']]) ==
+            [0, 2, 0, 0, 1, 0])
+    assert df.dtypes['v1l'] == np.int64
+    assert df.dtypes['v3u'] == np.int64
+    
     return True
 
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-    test_hitran_parser(verbose=verbose, *args, **kwargs)
+    test_hitran_co(verbose=verbose, *args, **kwargs)
+    test_hitran_co2(verbose=verbose, *args, **kwargs)
+    test_hitran_h2o(verbose=verbose, *args, **kwargs)
 
     return True
 

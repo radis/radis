@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Tools to deal with cache files
-
+Tools to deal with HDF5 cache files
+HDF5 cache files are used to cache Energy Database files, and Line Database
+files, and yield a much faster access time. 
 
 Routine Listing
 ---------------
@@ -11,10 +12,20 @@ Routine Listing
 - :func:`~radis.misc.cache_file.check_not_deprecated`
 - :func:`~radis.misc.cache_file.save_to_hdf`
 
+See Also
+--------
+
+:func:`~radis.io.hitran.hit2df`, :func:`~radis.io.cdsd.cdsd2df`
+
 -------------------------------------------------------------------------------
 
 
 """
+# TODO: start using .feather format. Faster than HDF5 for pandas Dataframe, 
+# and can be multithreaded.
+# see:
+# https://gist.github.com/gansanay/4514ec731da1a40d8811a2b3c313f836
+# and pd.read_feather(file, nthreads=3)
 
 import os
 import h5py
@@ -22,6 +33,7 @@ import radis
 from warnings import warn
 from os.path import exists
 from radis.misc.basics import compare_dict, is_float
+import pandas as pd
 
 
 class DeprecatedFileError(DeprecationWarning):
@@ -36,7 +48,25 @@ assert radis.__version__ >= LAST_COMPATIBLE_VERSION
 
 # Utils
 
-
+def get_cache_file(fcache):
+    ''' Load HDF5 cache file 
+    
+    Notes
+    -----
+    
+    we could start using FEATHER format instead. See notes in cache_files.py 
+    '''
+    
+    # Load file
+    
+    df = pd.read_hdf(fcache, 'df')
+    
+    # Check file
+    
+    # ... 'object' columns slow everything down (not fixed format strings!)
+    _warn_if_object_columns(df, fcache)
+    
+    return df
 
 def check_cache_file(use_cached, fcache, verbose):
     ''' Check cache file:
@@ -47,7 +77,8 @@ def check_cache_file(use_cached, fcache, verbose):
     - if 'regen', delete cache file to regenerate it later. 
     - if 'force', raise an error if file doesnt exist. 
 
-    Then look if it is deprecated:
+    Then look if it is deprecated (we just look at the attributes, the file 
+    is never fully read)
 
     - if deprecated, delete it to regenerate later unless 'force' was used
     '''
@@ -67,6 +98,7 @@ def check_cache_file(use_cached, fcache, verbose):
         pass    # just use the file as is
 
     # If file is still here, test if it is deprecated:
+    # (we just read the attributes, the file is never fully read)
     if exists(fcache):
         if verbose:
             print('Using cache file: {0}'.format(fcache))
@@ -176,6 +208,13 @@ def _h5_compatible(a_dict):
             out[k] = str(v)   # convert to str
     return out
 
+def _warn_if_object_columns(df, fname):
+    '''  'object' columns slow everything down (not fixed format strings!) '''
+    objects = [k for k,v in df.dtypes.items() if v == object]
+    if len(objects) > 0:
+        warn('Dataframe in {0} contains `object` format columns: {1}. '.format(
+                fname, objects)+'Operations will be slower. Try to convert them to numeric.')
+        
 
 def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
     ''' Save energy levels to HDF5 file. Add metadata and version 
@@ -213,8 +252,11 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
 
     '''
 
+    # Check file
     assert fname.endswith('.h5')
     assert 'version' not in metadata
+    # ... 'object' columns slow everything down (not fixed format strings!)
+    _warn_if_object_columns(df, fname)
 
     # Update metadata format
     metadata = _h5_compatible(metadata)

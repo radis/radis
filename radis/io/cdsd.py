@@ -27,9 +27,9 @@ from collections import OrderedDict
 import os
 import radis
 from os.path import exists, splitext
-from radis.io.tools import parse_binary_file
+from radis.io.tools import parse_binary_file, drop_object_format_columns
 from radis.misc.cache_files import (check_not_deprecated, check_cache_file, 
-                                    save_to_hdf, LAST_COMPATIBLE_VERSION)
+                                    save_to_hdf, get_cache_file, LAST_COMPATIBLE_VERSION)
 import sys
 from six.moves import zip
 
@@ -109,7 +109,8 @@ columns_4000 = OrderedDict([(
 ])
 
 
-def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
+def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
+            drop_non_numeric=True):
     ''' Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
 
     Parameters
@@ -131,6 +132,15 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         taken into account). If ``False``, no database is used. If 'regen', temp
         file are reconstructed. Default ``False``. 
 
+    Other Parameters
+    ----------------
+    
+    drop_non_numeric: boolean
+        if ``True``, non numeric columns are dropped. This improves performances, 
+        but make sure all the columns you need are converted to numeric formats 
+        before hand. Default ``True``. Note that if a cache file is loaded it 
+        will be left untouched.
+        
     Returns
     -------
 
@@ -207,11 +217,15 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     fcache = splitext(fname)[0]+'.h5'
     check_cache_file(cache, fcache=fcache, verbose=verbose)
     if cache and exists(fcache):
-        return pd.read_hdf(fcache, 'df')
+        return get_cache_file(fcache)
 
     # %% Start reading the full file
 
     df = parse_binary_file(fname, columns, count)
+
+    # Remove non numerical attributes
+    if drop_non_numeric:
+        df = drop_object_format_columns(df, verbose=verbose)
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:

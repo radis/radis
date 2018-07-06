@@ -151,3 +151,20 @@ def _cast_to_dtype(data, dtype):
 
     return data
 
+
+def drop_object_format_columns(df, verbose=True):
+    ''' Remove 'object' columns in a pandas DataFrame. They are not useful to us at this 
+    time, and they slow down all operations (as they are converted to 'object'
+    in pandas DataFrame). If you want to keep them, better convert them to 
+    some numeric values
+    '''
+    
+    objects = [k for k,v in df.dtypes.items() if v == object]
+    for k in objects:
+        del df[k]
+    if verbose and len(objects)>0:
+        print('The following columns had the `object` format are were removed: {0}'.format(
+                objects))
+    return df
+    
+
