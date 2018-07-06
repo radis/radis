@@ -28,7 +28,7 @@ import pandas as pd
 from collections import OrderedDict
 from os.path import exists, splitext
 import radis
-from radis.io.tools import parse_binary_file, drop_object_format_columns
+from radis.io.tools import parse_binary_file, drop_object_format_columns, replace_PQR_with_m101
 from radis.misc.cache_files import save_to_hdf, check_cache_file, get_cache_file
 
 
@@ -218,6 +218,8 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     
     # Remove non numerical attributes
     if drop_non_numeric:
+        if 'branch' in df:
+            replace_PQR_with_m101(df)
         df = drop_object_format_columns(df, verbose=verbose)
 
     # cached file mode but cached file doesn't exist yet (else we had returned)

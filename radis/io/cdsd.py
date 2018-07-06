@@ -29,7 +29,7 @@ import radis
 from os.path import exists, splitext
 from radis.io.tools import parse_binary_file, drop_object_format_columns, replace_PQR_with_m101
 from radis.misc.cache_files import (check_not_deprecated, check_cache_file, 
-                                    save_to_hdf, get_cache_file, LAST_COMPATIBLE_VERSION)
+                                    save_to_hdf, get_cache_file, OLDEST_COMPATIBLE_VERSION)
 import sys
 from six.moves import zip
 

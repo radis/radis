@@ -40,11 +40,11 @@ class DeprecatedFileError(DeprecationWarning):
     pass
 
 
-LAST_COMPATIBLE_VERSION = '0.1.22'
+OLDEST_COMPATIBLE_VERSION = '0.1.22'
 '''str: forces to regenerate cache files that were created in a previous version'''
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
-assert radis.__version__ >= LAST_COMPATIBLE_VERSION
+assert radis.__version__ >= OLDEST_COMPATIBLE_VERSION
 
 # Utils
 
@@ -104,7 +104,7 @@ def check_cache_file(use_cached, fcache, verbose):
             print('Using cache file: {0}'.format(fcache))
         try:
             check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
-                                 last_compatible_version=LAST_COMPATIBLE_VERSION)
+                                 last_compatible_version=OLDEST_COMPATIBLE_VERSION)
         except DeprecatedFileError as err:
             if use_cached == 'force':
                 raise
@@ -118,7 +118,7 @@ def check_cache_file(use_cached, fcache, verbose):
 
 
 def check_not_deprecated(file, metadata, current_version=None, 
-                         last_compatible_version=LAST_COMPATIBLE_VERSION):
+                         last_compatible_version=OLDEST_COMPATIBLE_VERSION):
     ''' Make sure cache file is not deprecated: checks that ``metadata`` is the same,
     and that the version under which the file was generated is valid.
 
@@ -139,7 +139,7 @@ def check_not_deprecated(file, metadata, current_version=None,
 
     last_backward_compatible_version: str
         If the file was generated in a non-compatible version, an error is raised.
-        Default :data:`~radis.misc.cache_files.LAST_COMPATIBLE_VERSION`
+        Default :data:`~radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION`
 
     '''
 
@@ -168,7 +168,7 @@ def check_not_deprecated(file, metadata, current_version=None,
     # ... (example: a key name was changed)
     if file_version < last_compatible_version:
         raise DeprecatedFileError('File {0} has been generated in a deprecated '.format(file) +
-                                  'version ({0}). Last compatible version is {1}. '.format(
+                                  'version ({0}). Oldest compatible version is {1}. '.format(
             file_version, last_compatible_version) +
             'Delete the file to regenerate it on next run')
 
@@ -237,7 +237,7 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
         file version. If ``None``, the current :data:`radis.__version__` is used. 
         On file loading, a warning will be raised if the current version is 
         posterior, or an error if the file version is set to be uncompatible.
-        See :data:`~radis.misc.cache_files.LAST_COMPATIBLE_VERSION`
+        See :data:`~radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION`
 
     key: str
         dataset name. Default ``'df'`` 
