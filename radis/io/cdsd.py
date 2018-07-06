@@ -82,14 +82,14 @@ columns_4000 = OrderedDict([(
     'El',     ('a10',  float, 'lower-state energy', 'cm-1')), (
     'Tdpair', ('a4',   float, 'temperature-dependance exponent for Gamma air', '')), (
     'Pshft',  ('a8',   float,  'air pressure-induced line shift at 296K', 'cm-1.atm-1')), (
-    # skip 1 columns   . WARNING. They didn't say that in the doc. But it doesn't make sense if i don't
+    # skip 1 columns  (Tdpsel becomes 4+1 = 5)
     'Tdpsel', ('a5',   float, 'temperature dependance exponent for gamma self', '')), (
     'v1u',    ('a3',   int,   'upper state vibrational number v1', '')), (
     'v2u',    ('a2',   int,   'upper state vibrational number v2', '')), (
     'l2u',    ('a2',   int,   'upper state vibrational number l2', '')), (
     'v3u',    ('a2',   int,   'upper state vibrational number v3', '')), (
     'ru',     ('a2',   int,   'upper state vibrational number r', '')), (
-    # skip 5 columns (v1l format becomes 3+5)
+    # skip 5 columns (v1l format becomes 3+3=6)
     'v1l',    ('a6',   int, 'lower state vibrational number v1', '')), (
     'v2l',    ('a2',   int,   'lower state vibrational number v2', '')), (
     'l2l',    ('a2',   int,   'lower state vibrational number l2', '')), (
@@ -124,11 +124,11 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         number of items to read (-1 means all file)
 
     cache: boolean, or 'regen'
-        if True, a pandas-readable HDF5 file is generated on first access, 
+        if ``True``, a pandas-readable HDF5 file is generated on first access, 
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not 
-        taken into account). If False, no database is used. If 'regen', temp
-        file are reconstructed. Default ``True``. 
+        taken into account). If ``False``, no database is used. If 'regen', temp
+        file are reconstructed. Default ``False``. 
 
     Returns
     -------

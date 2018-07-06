@@ -169,7 +169,7 @@ def check_cache_file(use_cached, fcache, verbose):
     return
 
 
-def hit2df(fname, count=-1, cache=True, verbose=True):
+def hit2df(fname, count=-1, cache=False, verbose=True):
     ''' Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
 
     Parameters    
@@ -186,7 +186,7 @@ def hit2df(fname, count=-1, cache=True, verbose=True):
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not 
         taken into account). If False, no database is used. If ``'regen'``, temp
-        file are reconstructed. Default ``True``. 
+        file are reconstructed. Default ``False``. 
 
 
     Returns
@@ -864,7 +864,7 @@ def parse_binary_file(fname, columns, count):
         linereturnformat = 'a1'
     else:
         raise ValueError(
-            'Line return format unknown: {0}. Please update RADIS'.format(linereturn))
+            'Line return format unknown: {0}. Check your file format.'.format(linereturn))
 
     # Now re-read with correct line return character
 
