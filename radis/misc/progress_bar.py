@@ -11,6 +11,7 @@ Created on Wed Oct 18 15:38:14 2017
 
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 import sys
 from time import time
 from six.moves import range
@@ -65,7 +66,7 @@ class ProgressBar():
 
         self.active = active
 
-    def update(self, i):
+    def update(self, i, modulo = 1):
         ''' 
         write to progress bar completion status i/N. If t0 is not None, also 
         write the time spent
@@ -83,15 +84,15 @@ class ProgressBar():
 
         N = self.N
         t0 = self.t0
+        if i % modulo == 0:
+            if t0 is None:
+                msg = '{0:.1f}%'.format(i/N*100)
+            else:
+                msg = '({0:.0f}s)\t{1:.1f}%'.format(time()-t0, i/N*100)
 
-        if t0 is None:
-            msg = '{0:.1f}%'.format(i/N*100)
-        else:
-            msg = '({0:.0f}s)\t{1:.1f}%'.format(time()-t0, i/N*100)
-
-        if sys.stdout is not None:
-            sys.stdout.write('\r'+msg)
-            sys.stdout.flush()
+            if sys.stdout is not None:
+                sys.stdout.write('\r'+msg)
+                sys.stdout.flush()
 
     def done(self):
 
@@ -103,7 +104,6 @@ class ProgressBar():
         if sys.stdout is not None:
             sys.stdout.write('\n')
             sys.stdout.flush()
-
 
 # %% Test
 def test_progress_bar(*args, **kwargs):
@@ -118,10 +118,9 @@ def test_progress_bar(*args, **kwargs):
     a = 0
     r = list(range(1000))
     N = len(r)
-    pb = ProgressBar(N, t0=time())
+    pb = ProgressBar(N)
     for i in r:
-        if i % 10:
-            pb.update(i)
+        pb.update(i,modulo=10)
         a += i
         sleep(rand()*3e-3)
     pb.done()
