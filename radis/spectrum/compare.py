@@ -33,6 +33,7 @@ from matplotlib import gridspec
 from matplotlib.widgets import MultiCursor
 import numpy as np
 from publib import set_style, fix_style
+from warnings import warn
 
 # %% ======================================================================
 # External functions
@@ -45,6 +46,10 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     ''' Get the difference between 2 spectra
     Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
+
+        .. math::
+
+            dI = I_1 - I_2
 
 
     Parameters    
@@ -99,6 +104,10 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     Basically returns w1, I1 / I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
 
+        .. math::
+
+            R = I_1 / I_2
+
 
     Parameters    
     ----------
@@ -144,9 +153,30 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
 
 def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default',
                  resample=True):
-    ''' Get the Euclidian distance between 2 spectra
+    ''' Get a regularized Euclidian distance between two spectra ``s1`` and ``s2`` 
 
-    If waveranges dont match, `s2` is interpolated over `s1`. 
+    This regularized Euclidian distance minimizes the effect of a small shift in 
+    wavelength between the two spectra
+
+    .. math::
+
+        D(w_1)[i] = \sqrt{ \sum_j (\hat{I_1}[i]  - \hat{I_2}[j] )^2 + (\hat{w_1}[i] - \hat{w_2}[j])^2}
+        
+    Where values are normalized as:
+        
+    .. math::
+
+        \hat{A} = \\frac{A}{max(A) - min(A)}
+
+    If waveranges dont match, ``s2`` is interpolated over ``s1``.
+
+    .. warning :: 
+        
+        This is a distance on both the waverange and the intensity axis. 
+        It may be used to compensate for a small offset in your experimental 
+        spectrum (due to wavelength calibration, for instance) but can lead
+        to wrong fits easily. Plus, it is very cost-intensive! Better use 
+        :func:`~radis.spectrum.compare.get_residual` for an automatized procedure. 
 
 
     Parameters    
@@ -197,13 +227,17 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
     For ``I1``, ``I2``, the values of variable ``var`` in ``s1`` and ``s2``, 
     respectively, residual is calculated as:
         
-    For ``L2`` norm::
+    For ``L2`` norm:
 
-        np.sqrt((dI**2).sum())/len(dI)
-        
-    For ``L1`` norm::
-        
-        (np.abs(dI)).sum()/len(dI)
+        .. math::
+    
+            res = \\frac{\\sqrt{\\sum_i {(s_1[i]-s_2[i])^2}}}{N}.
+
+    For ``L1`` norm:
+            
+        .. math::
+    
+            res = \\frac{\\sqrt{\\sum_i {|s_1[i]-s_2[i]|}}}{N}.
 
 
     Parameters    
@@ -233,6 +267,14 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
 
     when s1 and s2 dont have the size wavespace range, they are automatically
     resampled through get_diff on 's1' range 
+
+    Implementation of ``L2`` norm::
+
+        np.sqrt((dI**2).sum())/len(dI)
+    
+    Implementation of ``L1`` norm::
+        
+        np.abs(dI).sum()/len(dI)
 
 
     See Also
@@ -667,6 +709,9 @@ def averageDistance(s1, s2, var='radiance'):
             dist = \\frac{\\sqrt{\\sum_i {(s1_i-s2_i)^2}}}{N}.
 
     '''
+    
+    warn(FutureWarning('will be deprecated in future versions. Use get_residual(s1, s2, norm=L2) instead'))
+    
     distArray = get_diff(s1, s2, var)
     distArray_Y2 = distArray[1]*distArray[1]
     N = np.size(distArray[1])

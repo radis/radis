@@ -32,14 +32,31 @@ from scipy.spatial.distance import cdist
 
 
 def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
-    ''' Get euclidian distance from curve (w1, I1) to curve (w2, I2)
+    ''' Get a regularized euclidian distance from curve (w1, I1) to curve (w2, I2)
 
-    Euclidian distance minimizes the effect of a small shift in between the two
+    .. math::
+
+        D(w_1)[i] = \sqrt{ \sum_j (\hat{I_1}[i]  - \hat{I_2}[j] )^2 + (\hat{w_1}[i] - \hat{w_2}[j])^2}
+        
+    Where values are normalized as:
+        
+    .. math::
+
+        \hat{A} = \\frac{A}{max(A) - min(A)}
+
+    This regularized Euclidian distance minimizes the effect of a small shift in between the two
     curves in case of stiff curves (like a spectrum bandhead can be)
 
     No interpolation needed neither. 
 
     Distances for out of bounds values is set to nan
+
+    .. warning :: 
+        
+        This is a distance on both the waverange and the intensity axis. 
+        It may be used to compensate for a small offset in your experimental 
+        spectrum (due to wavelength calibration, for instance) but can lead
+        to wrong fits easily. Plus, it is very cost-intensive! 
 
 
     Parameters    
@@ -63,7 +80,13 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
         minimal distance from I1 to I2, for each point in (w1, I1)
     '''
 
-    dist = cdist(np.array((w1, I1)).T, np.array((w2, I2)).T).min(axis=1)
+    norm_w1 = np.max(w1) - np.min(w1)
+    norm_w2 = np.max(w2) - np.min(w2)
+    norm_I1 = np.max(I1) - np.min(I1)
+    norm_I2 = np.max(I2) - np.min(I2)
+    
+    dist = cdist(np.array((w1/norm_w1, I1/norm_I1)).T, 
+                 np.array((w2/norm_w2, I2/norm_I2)).T).min(axis=1)
 
     # discard out of bound values
     if discard_out_of_bounds:
