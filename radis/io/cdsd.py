@@ -27,8 +27,9 @@ from collections import OrderedDict
 import os
 import radis
 from os.path import exists, splitext
-from radis.io.hitran import parse_binary_file, check_cache_file
-from radis.misc.cache_files import check_not_deprecated, save_to_hdf, LAST_COMPATIBLE_VERSION
+from radis.io.tools import parse_binary_file, drop_object_format_columns, replace_PQR_with_m101
+from radis.misc.cache_files import (check_not_deprecated, check_cache_file, 
+                                    save_to_hdf, get_cache_file, OLDEST_COMPATIBLE_VERSION)
 import sys
 from six.moves import zip
 
@@ -82,14 +83,14 @@ columns_4000 = OrderedDict([(
     'El',     ('a10',  float, 'lower-state energy', 'cm-1')), (
     'Tdpair', ('a4',   float, 'temperature-dependance exponent for Gamma air', '')), (
     'Pshft',  ('a8',   float,  'air pressure-induced line shift at 296K', 'cm-1.atm-1')), (
-    # skip 1 columns   . WARNING. They didn't say that in the doc. But it doesn't make sense if i don't
+    # skip 1 columns  (Tdpsel becomes 4+1 = 5)
     'Tdpsel', ('a5',   float, 'temperature dependance exponent for gamma self', '')), (
     'v1u',    ('a3',   int,   'upper state vibrational number v1', '')), (
     'v2u',    ('a2',   int,   'upper state vibrational number v2', '')), (
     'l2u',    ('a2',   int,   'upper state vibrational number l2', '')), (
     'v3u',    ('a2',   int,   'upper state vibrational number v3', '')), (
     'ru',     ('a2',   int,   'upper state vibrational number r', '')), (
-    # skip 5 columns (v1l format becomes 3+5)
+    # skip 5 columns (v1l format becomes 3+3=6)
     'v1l',    ('a6',   int, 'lower state vibrational number v1', '')), (
     'v2l',    ('a2',   int,   'lower state vibrational number v2', '')), (
     'l2l',    ('a2',   int,   'lower state vibrational number l2', '')), (
@@ -108,7 +109,8 @@ columns_4000 = OrderedDict([(
 ])
 
 
-def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
+def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
+            drop_non_numeric=True):
     ''' Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
 
     Parameters
@@ -124,12 +126,21 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
         number of items to read (-1 means all file)
 
     cache: boolean, or 'regen'
-        if True, a pandas-readable HDF5 file is generated on first access, 
+        if ``True``, a pandas-readable HDF5 file is generated on first access, 
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not 
-        taken into account). If False, no database is used. If 'regen', temp
-        file are reconstructed. Default ``True``. 
+        taken into account). If ``False``, no database is used. If 'regen', temp
+        file are reconstructed. Default ``False``. 
 
+    Other Parameters
+    ----------------
+    
+    drop_non_numeric: boolean
+        if ``True``, non numeric columns are dropped. This improves performances, 
+        but make sure all the columns you need are converted to numeric formats 
+        before hand. Default ``True``. Note that if a cache file is loaded it 
+        will be left untouched.
+        
     Returns
     -------
 
@@ -206,11 +217,16 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
     fcache = splitext(fname)[0]+'.h5'
     check_cache_file(cache, fcache=fcache, verbose=verbose)
     if cache and exists(fcache):
-        return pd.read_hdf(fcache, 'df')
+        return get_cache_file(fcache)
 
     # %% Start reading the full file
 
     df = parse_binary_file(fname, columns, count)
+
+    # Remove non numerical attributes
+    if drop_non_numeric:
+        replace_PQR_with_m101(df)
+        df = drop_object_format_columns(df, verbose=verbose)
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
@@ -226,19 +242,6 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True):
 
     return df
 
-
-def _test(verbose=True, warnings=True, **kwargs):
-    ''' Analyse some default files to make sure everything still works'''
-    from neq.test.utils import getTestFile
-    from time import time
-
-    t0 = time()
-    df = cdsd2df(getTestFile('cdsd_hitemp_09.txt'))
-    print('File loaded in {0:.1f}s'.format(time()-t0))
-    if verbose:
-        print(df.head())
-    return df.wav[3] == 2250.00096
-
-
 if __name__ == '__main__':
-    print('Testing cdsd: ', _test())
+    from radis.test.test_io import test_hitemp
+    print('Testing cdsd: ', test_hitemp())

@@ -969,7 +969,7 @@ class SpecDatabase():
         if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
             what to do if file already exists. If increment an incremental digit
             is added. If replace file is replaced (yeah). If error (or anything else)
-            an error is raised. Default ``'increment'``
+            an error is raised. Default ``'error'``
 
         Examples
         --------

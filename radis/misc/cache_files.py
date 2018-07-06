@@ -1,34 +1,124 @@
 # -*- coding: utf-8 -*-
 """
-Tools to deal with cache files
+Tools to deal with HDF5 cache files
+HDF5 cache files are used to cache Energy Database files, and Line Database
+files, and yield a much faster access time. 
 
+Routine Listing
+---------------
+
+
+- :func:`~radis.misc.cache_file.check_cache_file`
+- :func:`~radis.misc.cache_file.check_not_deprecated`
+- :func:`~radis.misc.cache_file.save_to_hdf`
+
+See Also
+--------
+
+:func:`~radis.io.hitran.hit2df`, :func:`~radis.io.cdsd.cdsd2df`
 
 -------------------------------------------------------------------------------
 
 
 """
+# TODO: start using .feather format. Faster than HDF5 for pandas Dataframe, 
+# and can be multithreaded.
+# see:
+# https://gist.github.com/gansanay/4514ec731da1a40d8811a2b3c313f836
+# and pd.read_feather(file, nthreads=3)
 
+import os
 import h5py
 import radis
 from warnings import warn
 from os.path import exists
 from radis.misc.basics import compare_dict, is_float
+import pandas as pd
 
 
 class DeprecatedFileError(DeprecationWarning):
     pass
 
 
-LAST_COMPATIBLE_VERSION = '0.1.18'
+OLDEST_COMPATIBLE_VERSION = '0.1.22'
 '''str: forces to regenerate cache files that were created in a previous version'''
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
-assert radis.__version__ >= LAST_COMPATIBLE_VERSION
+assert radis.__version__ >= OLDEST_COMPATIBLE_VERSION
 
 # Utils
 
+def get_cache_file(fcache):
+    ''' Load HDF5 cache file 
+    
+    Notes
+    -----
+    
+    we could start using FEATHER format instead. See notes in cache_files.py 
+    '''
+    
+    # Load file
+    
+    df = pd.read_hdf(fcache, 'df')
+    
+    # Check file
+    
+    # ... 'object' columns slow everything down (not fixed format strings!)
+    _warn_if_object_columns(df, fcache)
+    
+    return df
 
-def check_not_deprecated(file, metadata, current_version=None, last_compatible_version=LAST_COMPATIBLE_VERSION):
+def check_cache_file(use_cached, fcache, verbose):
+    ''' Check cache file:
+
+    First test its existence: function of the value of ``use_cached``:
+
+    - if True, ok
+    - if 'regen', delete cache file to regenerate it later. 
+    - if 'force', raise an error if file doesnt exist. 
+
+    Then look if it is deprecated (we just look at the attributes, the file 
+    is never fully read)
+
+    - if deprecated, delete it to regenerate later unless 'force' was used
+    '''
+
+    # Test existence of file:
+    if not use_cached:
+        return                   # we dont want a cache file, no need to test it
+    elif use_cached == 'regen':
+        if exists(fcache):
+            os.remove(fcache)
+            if verbose:
+                print('Deleted h5 cache file : {0}'.format(fcache))
+    elif use_cached == 'force':
+        if not exists(fcache):
+            raise ValueError('Cache file {0} doesnt exist'.format(fcache))
+    else:  # use_cached == True
+        pass    # just use the file as is
+
+    # If file is still here, test if it is deprecated:
+    # (we just read the attributes, the file is never fully read)
+    if exists(fcache):
+        if verbose:
+            print('Using cache file: {0}'.format(fcache))
+        try:
+            check_not_deprecated(fcache, metadata={}, current_version=radis.__version__,
+                                 last_compatible_version=OLDEST_COMPATIBLE_VERSION)
+        except DeprecatedFileError as err:
+            if use_cached == 'force':
+                raise
+            else:   # delete file to regenerate it in the end of the script
+                if verbose:
+                    print('File {0} deprecated:\n{1}\nDeleting it!'.format(
+                        fcache, str(err)))
+                os.remove(fcache)
+
+    return
+
+
+def check_not_deprecated(file, metadata, current_version=None, 
+                         last_compatible_version=OLDEST_COMPATIBLE_VERSION):
     ''' Make sure cache file is not deprecated: checks that ``metadata`` is the same,
     and that the version under which the file was generated is valid.
 
@@ -49,7 +139,7 @@ def check_not_deprecated(file, metadata, current_version=None, last_compatible_v
 
     last_backward_compatible_version: str
         If the file was generated in a non-compatible version, an error is raised.
-        Default :data:`~radis.misc.cache_files.LAST_COMPATIBLE_VERSION`
+        Default :data:`~radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION`
 
     '''
 
@@ -78,7 +168,7 @@ def check_not_deprecated(file, metadata, current_version=None, last_compatible_v
     # ... (example: a key name was changed)
     if file_version < last_compatible_version:
         raise DeprecatedFileError('File {0} has been generated in a deprecated '.format(file) +
-                                  'version ({0}). Last compatible version is {1}. '.format(
+                                  'version ({0}). Oldest compatible version is {1}. '.format(
             file_version, last_compatible_version) +
             'Delete the file to regenerate it on next run')
 
@@ -118,6 +208,13 @@ def _h5_compatible(a_dict):
             out[k] = str(v)   # convert to str
     return out
 
+def _warn_if_object_columns(df, fname):
+    '''  'object' columns slow everything down (not fixed format strings!) '''
+    objects = [k for k,v in df.dtypes.items() if v == object]
+    if len(objects) > 0:
+        warn('Dataframe in {0} contains `object` format columns: {1}. '.format(
+                fname, objects)+'Operations will be slower. Try to convert them to numeric.')
+        
 
 def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
     ''' Save energy levels to HDF5 file. Add metadata and version 
@@ -140,7 +237,7 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
         file version. If ``None``, the current :data:`radis.__version__` is used. 
         On file loading, a warning will be raised if the current version is 
         posterior, or an error if the file version is set to be uncompatible.
-        See :data:`~radis.misc.cache_files.LAST_COMPATIBLE_VERSION`
+        See :data:`~radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION`
 
     key: str
         dataset name. Default ``'df'`` 
@@ -155,8 +252,11 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
 
     '''
 
+    # Check file
     assert fname.endswith('.h5')
     assert 'version' not in metadata
+    # ... 'object' columns slow everything down (not fixed format strings!)
+    _warn_if_object_columns(df, fname)
 
     # Update metadata format
     metadata = _h5_compatible(metadata)
