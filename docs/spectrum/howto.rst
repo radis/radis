@@ -10,7 +10,7 @@ and the different methods that are associated:
 :meth:`~radis.spectrum.spectrum.Spectrum.store`, etc. 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    
    howto
 
