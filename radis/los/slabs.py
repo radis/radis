@@ -237,14 +237,25 @@ def _serial_slab_names(s, sn):
 
 
 def _check_valid(s):
-    ''' Check s is a valid Spectrum object. Raises an error if not '''
+    ''' Check s is a valid Spectrum object. Raises an error if not 
+    
+    Valid if:
+        
+    - is a Spectrum
+    
+    Also print a warning if:
+        
+    - quantities used for solving the LOS have nan
+    
+    '''
 
     if not is_spectrum(s):
         raise TypeError('All inputs must be Spectrum objects (got: {0})'.format(
             type(s)))
     sdict = s._get_items()
     for k in sdict.keys():
-        if count_nans(sdict.get(k)) > 0:
+        if (k in ['transmittance_noslit', 'radiance_noslit', 'abscoeff', 'emisscoeff'] 
+                and count_nans(sdict.get(k)) > 0):
             warn('Nans detected in Spectrum object for multi-slab operation. ' +
                  'Results may be wrong!')
 
