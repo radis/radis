@@ -44,8 +44,9 @@ def test_spectrum_get_methods(verbose=True, plot=True, close_plots=True, *args, 
         import matplotlib.pyplot as plt
         plt.close('all')
 
-    s = load_spec(getTestFile('N2C_specair_380nm.spec'))
-
+    s = load_spec(getTestFile('N2C_specair_380nm.spec'), binary=False)
+    s.conditions['thermal_equilibrium'] = False  # placeholder as not defined before radis==0.2.2
+    
     # general methods
     if verbose:
         print(s)
@@ -107,6 +108,8 @@ def test_copy(verbose=True, *args, **kwargs):
     from radis.tools.database import load_spec
 
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s.conditions['thermal_equilibrium'] = True  # placeholder as not defined before radis==0.2.2
+    
     s.update()
     s.apply_slit(1.5)
     s2 = s.copy()
@@ -136,6 +139,7 @@ def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs)
 
     # get a spectrum
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s.conditions['thermal_equilibrium'] = True  # placeholder as not defined before radis==0.2.2
 
     # Get all populations
     pops = s.get_populations(molecule='CO', isotope=1)

@@ -2665,33 +2665,69 @@ class Spectrum(object):
 
         return self.conditions['waveunit']
 
-    def is_at_equilibrium(self):
-        ''' Returns whether this spectrum is at equilibrium. The following properties
-        are checked:
+    def is_at_equilibrium(self, check='warn'):
+        ''' Returns whether this spectrum is at (thermal) equilibrium. Reads the 
+        ``thermal_equilibrium`` key in Spectrum conditions. 
+        It does not imply chemical equilibrium (mole fractions are still arbitrary)
+        
+        If they are defined, also check that the following assertions are True:
 
             Tvib = Trot = Tgas
             self_absorption = True
+            overpopulation = None
+            
+        If they are not, still trust the value in Spectrum conditions, but raise
+        a warning. 
+        
+        Other Parameters
+        ----------------
+        
+        check: ``'warn'``, ``'error'``, ``'ignore'``
+            what to do if Spectrum conditions dont match the given equilibrium state:
+            raise a warning, raise an error, or just ignore and dont even check. 
+            Default ``'warn'``.
 
         '''
 
-        cond = self.conditions
+        conditions = self.conditions
 
+        # Get value
         try:
-            assert cond['Tgas'] != r'N/A'
-            assert cond['Tvib'] == cond['Tgas']
-            assert cond['Trot'] == cond['Tgas']
-            if 'overpopulation' in cond:
-                assert cond['overpopulation'] is None
-            assert cond['self_absorption']  # is True
+            equilibrium = conditions['thermal_equilibrium']
+        except KeyError:
+            raise KeyError("We need to know if Spectrum is at equilibrium, but " +
+                           "`thermal_equilibrium` is not defined in conditions. Please add the " +
+                           "value manually with s.conditions['thermal_equilibrium']=...")
 
-            return True
+        if check == 'ignore':
+            return equilibrium
+
+        # Check output match the rest of the spectrum conditions
+        try:
+            assert conditions['Tgas'] != r'N/A'
+            assert conditions['Tvib'] == conditions['Tgas']
+            assert conditions['Trot'] == conditions['Tgas']
+            if 'overpopulation' in conditions:
+                assert conditions['overpopulation'] is None
+            assert conditions['self_absorption']  # is True
+
+            guess = True
 
         except AssertionError:
-            return False
+            guess = False
         except KeyError as err:
-            warn('Condition missing to know if spectrum is at equilibrium: {0}'.format(err) +
-                 '. Assumed False')
-            return False
+            warn('Condition missing to know if spectrum is at equilibrium: {0}'.format(err))
+            guess = not equilibrium
+        
+        if equilibrium != guess:
+            msg = ('Declared value of equilibrium ({0}) does not match the infered one ({1})'.format(
+                    equilibrium, guess)+'. Update your Spectrum conditions')
+            if check == 'warn':
+                warn(msg)
+            elif check == 'error':
+                raise AssertionError(msg)
+
+        return equilibrium
 
     def get_medium(self):
         ''' Returns in which medium the spectrum is calculated (air or vacuum), 
@@ -2713,7 +2749,7 @@ class Spectrum(object):
         except KeyError:
             raise KeyError("We need to know if Spectrum is optically thin, but " +
                            "`self_absorption` is not defined in conditions. Please add the " +
-                           "value manually")
+                           "value manually with s.conditions['self_absorption']=...")
 
     def copy(self, copy_lines=True):
         ''' Returns a copy of this Spectrum object (performs a smart deepcopy) '''

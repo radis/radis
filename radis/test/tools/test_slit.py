@@ -116,6 +116,8 @@ def test_slit_unit_conversions_spectrum_in_cm(verbose=True, plot=True, close_plo
     # %% Get a Spectrum (stored in cm-1)
     s_cm = load_spec(getTestFile(
         'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s_cm.conditions['thermal_equilibrium'] = True  # placeholder as not defined before radis==0.2.2
+    
     s_cm.rescale_mole_fraction(1)   # just because it makes better units
     s_cm.update()
     wstep = s_cm.conditions['wstep']
@@ -217,6 +219,8 @@ def test_convoluted_quantities_units(*args, **kwargs):
     from radis.test.utils import getTestFile
     
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
+    s.conditions['thermal_equilibrium'] = True  # placeholder as not defined before radis==0.2.2
+    
     s.update(verbose=False)
     
     assert s.units['radiance_noslit'] == 'mW/cm2/sr/nm'
@@ -347,6 +351,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     # Spectrum in cm-1
 
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s.conditions['thermal_equilibrium'] = True   # fix: condition not given in radis < 0.2.2
     s.update()
     # spectrum convolved with area=1
     s.apply_slit(FWHM, norm_by='area', plot_slit=plot)
