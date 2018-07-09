@@ -28,7 +28,7 @@ def test_compression(verbose=True, warnings=True, *args, **kwargs):
     spectral quantities '''
 
     # Get spectrum
-    s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     s1.update()
 
     # Analyse redundant spectral quantities
@@ -125,9 +125,10 @@ def test_recompute_equilibrium(verbose=True, warnings=True, plot=True,
 
     # force non equilibrium calculation by setting Tvib=2000
     s2 = s1.copy()
-    s2.conditions['Tvib'] = 2000  # force non equilibrium
+    s2.conditions['Tvib'] = 2000  # hack: force non equilibrium
     assert not s2.is_at_equilibrium()
     s2.update('radiance_noslit')
+    s2.conditions['Tvib'] = 1500  # hack: switch back
 
     # update s1 now (at equilibrium)
     s1.update('radiance_noslit')

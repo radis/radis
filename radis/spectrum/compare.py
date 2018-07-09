@@ -27,13 +27,17 @@ Routine Listings
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
-from radis.spectrum.spectrum import make_up, cast_waveunit
+from radis.spectrum.spectrum import make_up, cast_waveunit, is_spectrum
+from radis.misc.basics import compare_lists, compare_dict
+from six import string_types
+
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.widgets import MultiCursor
 import numpy as np
 from publib import set_style, fix_style
 from warnings import warn
+
 
 # %% ======================================================================
 # External functions
@@ -722,6 +726,351 @@ def averageDistance(s1, s2, var='radiance'):
     N = np.size(distArray[1])
     distance = np.sqrt(np.sum(distArray_Y2))/N
     return distance
+
+
+
+# %% Function to compare Spectra including conditions and lines
+
+
+def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default',
+                 verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
+                 normalize=False, **kwargs):
+    ''' Compare Spectrum with another Spectrum object
+
+    Parameters    
+    ----------
+
+    first: type Spectrum
+        a Spectrum to be compared
+
+    other: type Spectrum
+        another Spectrum to compare with
+
+    spectra_only: boolean, or str
+        if ``True``, only compares spectral quantities (in the same waveunit)
+        and not lines or conditions. If str, compare a particular quantity
+        name. If False, compare everything (including lines and conditions
+        and populations). Default ``False``
+
+    plot: boolean
+        if ``True``, use plot_diff to plot all quantities for the 2 spectra
+        and the difference between them. Default ``False``.
+
+    wunit: 'nm', 'cm-1', 'default'
+        in which wavespace to compare (and plot). If default, natural wavespace
+        of first Spectrum is taken
+
+    rtol: float
+        relative difference to use for spectral quantities comparison
+
+    ignore_nan: boolean
+        if ``True``, nans are ignored when comparing spectral quantities
+
+    ignore_outliers: boolean, or float
+        if not False, outliers are discarded. i.e, output is determined by::
+
+            out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
+
+    normalize: bool
+        Normalize the spectra to be ploted 
+
+    Other Parameters
+    ----------------
+
+    kwargs: dict
+        arguments are forwarded to :func:`~radis.spectrum.compare.plot_diff`
+
+    Returns
+    -------
+
+    equals: boolean
+        return True if spectra are equal (respective to tolerance defined by 
+        rtol and other input conditions)
+
+
+    Examples
+    --------
+
+    Compare two Spectrum objects, or specifically the transmittance::
+
+        s1.compare_with(s2)
+        s1.compare_with(s2, 'transmittance')
+
+
+    Note that you can also simply use `s1 == s2`, that uses 
+    :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` internally::
+
+        s1 == s2       # will return True or False
+
+    '''
+
+    from radis.spectrum.compare import plot_diff
+
+    # Check inputs
+    if not 0 <= ignore_outliers < 1:
+        raise ValueError('ignore_outliers should be < 1, or False')
+    if not is_spectrum(other):
+        raise TypeError('2nd object is not a Spectrum: got class {0}'.format(
+            other.__class__))
+    if isinstance(spectra_only, string_types):   # case where we compare all quantities
+        if not spectra_only in first.get_vars():
+            raise ValueError('{0} is not a spectral quantity in our Spectrum ({1})'.format(
+                spectra_only, first.get_vars()))
+        if not spectra_only in other.get_vars():
+            raise ValueError('{0} is not a spectral quantity in the other Spectrum ({1})'.format(
+                spectra_only, other.get_vars()))
+    if verbose:  # print conditions
+        what = spectra_only if isinstance(
+            spectra_only, string_types) else 'all quantities'
+        msg = 'compare {0} with rtol={1}'.format(what, rtol)
+        if ignore_nan:
+            msg += ', ignore_nan'
+        if ignore_outliers:
+            msg += ', ignore_outliers={0}'.format(ignore_outliers)
+        print(msg)
+    if not plot and len(kwargs) > 0:
+        raise ValueError('Unexpected argument: {0}'.format(kwargs))
+
+    if wunit == 'default':
+        wunit = first.get_waveunit()
+
+    def _compare_dataframes(df1, df2, name):
+        ''' 
+
+        Parameters    
+        ----------
+
+        df1, df2: pandas Dataframe
+            lines, or vib/rovib levels dataframes 
+
+        name: str
+            for error message
+        '''
+
+#            if compare_lists(df1.keys(), df2.keys(), verbose=False) != 1:
+#                if verbose: print('... keys in {0} dont match:'.format(name))
+#                compare_lists(list(df1.keys()), list(df2.keys()),
+#                              verbose=True)
+#                out = False
+#            elif compare_lists(df1.index, df2.index, verbose=False) != 1:
+#                if verbose: print('... index in {0} dont match:'.format(name))
+#                compare_lists(list(df1.index), list(df2.index),
+#                              verbose=True)
+#                out = False
+#            else:
+#                out = (df1 == df2).all().all()
+#
+#            return out
+
+        from pandas.util.testing import assert_frame_equal
+
+        try:
+            assert_frame_equal(df1.sort_index(axis=0).sort_index(axis=1),
+                               df2.sort_index(axis=0).sort_index(axis=1),
+                               check_names=True)
+            out = True
+
+        except AssertionError as err:
+            if verbose:
+                print('Comparing ', name)
+                print(err.args[0])
+            out = False
+
+        return out
+
+    def _compare_variables(I, Ie):
+        ''' Compare spectral quantities I and Ie '''
+
+        if ignore_nan:
+            b = ~(np.isnan(I) + np.isnan(Ie))
+            I = I[b]
+            Ie = Ie[b]
+
+        if ignore_outliers:
+            out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum() / \
+                len(I) < ignore_outliers
+        else:
+            out = np.allclose(I, Ie, rtol=rtol, atol=0)
+
+        return bool(out)
+
+    b = True
+    if isinstance(spectra_only, string_types):  # compare this quantity
+        vars = [spectra_only]
+    else:                    # compare all quantities
+        b = set(first.get_vars()) == set(other.get_vars())
+        if not b and verbose:
+            print('... list of quantities dont match: {0} vs {1}'.format(
+                first.get_vars(), other.get_vars()))
+        vars = [k for k in first.get_vars() if k in other.get_vars()]
+
+    if spectra_only:
+        # Compare spectral variables
+        # -----------
+        for k in vars:
+            w, q = first.get(k, wunit=wunit)
+            w0, q0 = other.get(k, wunit=wunit)
+            if len(w) != len(w0):
+                print(
+                    'Wavespaces have different length (in {0})'.format(k))
+                b1 = False
+            else:
+                b1 = np.allclose(w, w0, rtol=rtol, atol=0)
+                b1 *= _compare_variables(q, q0)
+                if not b1 and verbose:
+                    error = np.nanmax(abs(q/q0-1))
+                    avgerr = np.nanmean(abs(q/q0-1))
+                    print('...', k, 'dont match (up to {0:.1f}% diff.,'.format(
+                        error*100)+' average {0:.1f}%)'.format(avgerr*100))
+            b *= b1
+
+            if plot:
+                try:
+                    plot_diff(first, other, var=k, wunit=wunit,
+                              normalize=normalize, verbose=verbose,
+                              **kwargs)
+                except:
+                    print('... couldnt plot {0}'.format(k))
+
+    else:
+        # Compare spectral variables
+        # -----------
+        for k in vars:
+            w, q = first.get(k, wunit=wunit)
+            w0, q0 = other.get(k, wunit=wunit)
+            if len(w) != len(w0):
+                print(
+                    'Wavespaces have different length (in {0})'.format(k))
+                b1 = False
+            else:
+                b1 = np.allclose(w, w0, rtol=rtol, atol=0)
+                b1 *= _compare_variables(q, q0)
+                if not b1 and verbose:
+                    error = np.nanmax(abs(q/q0-1))
+                    print('...', k, 'dont match (up to {0:.1f}% diff.)'.format(
+                        error*100))
+            b *= b1
+
+            if plot:
+                try:
+                    plot_diff(first, other, var=k, wunit=wunit,
+                              normalize=normalize, verbose=verbose,
+                              **kwargs)
+                except:
+                    print('... couldnt plot {0}'.format(k))
+
+        # Compare conditions and units
+        # -----------
+        verbose_dict = 'if_different' if verbose else False
+        b1 = (compare_dict(first.conditions, other.conditions, verbose=verbose_dict) == 1)
+        b2 = (compare_dict(first.cond_units, other.cond_units, verbose=verbose_dict) == 1)
+        b3 = (compare_dict(first.units, other.units, verbose=verbose_dict) == 1)
+        if not b1 and verbose:
+            print('... conditions dont match')
+        if not b2 and verbose:
+            print('... conditions units dont match')
+        if not b3 and verbose:
+            print('... units dont match')
+        b *= b1 * b2 * b3
+
+        # Compare lines
+        # -----------
+        if first.lines is None and other.lines is None:
+            b4 = True
+        elif first.lines is None:
+            b4 = False
+        elif other.lines is None:
+            b4 = False
+        else:
+            b4 = _compare_dataframes(first.lines, other.lines, 'lines')
+        if not b4 and verbose:
+            print('... lines dont match')
+        b *= b4
+
+        # Compare populations
+        # -----------
+        if first.populations is None and other.populations is None:
+            b5 = True
+        elif first.populations is None:
+            b5 = False
+        elif other.populations is None:
+            b5 = False
+        else:
+            # Compare keys in populations
+            b5 = True
+            if compare_lists(first.populations,
+                             other.populations,
+                             verbose='if_different') == 1:
+                # same molecules, compare isotopes
+                for molecule, isotopes in first.populations.items():
+                    if compare_lists(isotopes,
+                                     other.populations[molecule],
+                                     verbose='if_different') == 1:
+                        # same isotopes, compare electronic states
+                        for isotope, states in isotopes.items():
+                            if compare_lists(states,
+                                             other.populations[molecule][isotope],
+                                             verbose='if_different') == 1:
+                                # same electronic states, compare levels + other information
+                                for state, content in states.items():
+                                    for k, v in content.items():
+                                        if k in ['vib', 'rovib']:
+                                            b5 *= _compare_dataframes(
+                                                v,
+                                                other.populations[molecule][isotope][state][k],
+                                                'populations of {0}({1})(iso{2})'.format(
+                                                    molecule, state, isotope))
+                                        else:
+                                            b5 *= (
+                                                v == other.populations[molecule][isotope][state][k])
+                            else:
+                                b5 = False
+                                if verbose:
+                                    print('{0}(iso{1}) states are different (see above)'.format(
+                                        molecule, isotope))
+                    else:
+                        b5 = False
+                        if verbose:
+                            print(
+                                '{0} isotopes are different (see above)'.format(molecule))
+            else:
+                b5 = False
+                if verbose:
+                    print('Molecules are different (see above)')
+        if not b5 and verbose:
+            print('... populations dont match (see detail above)')
+        b *= b5
+
+        # Compare slit
+        # -----------
+
+        if len(first._slit) == len(other._slit) == 0:
+            # no slit anywhere
+            b6 = True
+        elif len(first._slit) != len(other._slit):
+            b6 = False
+            if verbose:
+                print('A spectrum has slit function array but the other doesnt')
+        else:
+            ws, Is = first.get_slit()
+            ws0, Is0 = other.get_slit()
+            if len(ws) != len(ws0):
+                if verbose:
+                    print('Slits have different length')
+                b6 = False
+            else:
+                b6 = np.allclose(ws, ws0, rtol=rtol, atol=0)
+                b6 *= _compare_variables(Is, Is0)
+                if not b6 and verbose:
+                    print('Slit functions dont match')
+        b *= b6
+
+    return bool(b)
+
+
+
+
+
 
 
 if __name__ == '__main__':
