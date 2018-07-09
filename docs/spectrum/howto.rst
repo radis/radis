@@ -9,6 +9,15 @@ and the different methods that are associated:
 :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, 
 :meth:`~radis.spectrum.spectrum.Spectrum.store`, etc. 
 
+.. toctree::
+   :maxdepth: 2
+   
+   howto
+
+   
+---------------------------------------------------------------------
+
+   
 initialize a Spectrum object?
 -----------------------------
 

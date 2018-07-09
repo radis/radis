@@ -373,8 +373,6 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
                 Iunit = '1'
                 if scale_slit != 1:
                     Iunit += 'x{0}'.format(scale_slit)
-#            elif norm_by == 'max2': # set maximum to 1    # removed this mode for simplification
-#                Islit /= abs(np.max(Islit))
             elif norm_by is None:
                 Iunit = None
             else:
@@ -867,7 +865,8 @@ def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None, crop_left=None,
 
     return w_conv, I_conv
  
-def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=True):
+def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=True,
+              ls='-', title=None):
     ''' Plot slit, calculate and display FWHM, and calculate effective FWHM.
     FWHM is calculated from the limits of the range above the half width,
     while FWHM is the equivalent width of a triangular slit with the same area
@@ -891,6 +890,12 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
     warnings: boolean
         if True, test if slit is correctly centered and output a warning if it
         is not. Default ``True``
+
+    Returns
+    -------
+    
+    fix, ax: matplotlib objects
+        figure and ax
 
     '''
 
@@ -946,7 +951,7 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
 
     fig, ax = plt.subplots()
     ax.plot(w, I, 'o', color='lightgrey')
-    ax.plot(w, I, '-k', label='FWHM: {0:.3f} {1}'.format(FWHM, plot_unit) +
+    ax.plot(w, I, 'k', ls=ls, label='FWHM: {0:.3f} {1}'.format(FWHM, plot_unit) +
             '\nEff. FWHM: {0:.3f} {1}'.format(FWHM_eff, plot_unit) +
             '\nArea: {0:.3f}'.format(abs(np.trapz(I, x=w))),
             )
@@ -962,6 +967,9 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     plt.legend(loc='best', prop={'size': 16})
+    
+    if title:
+        plt.title(title)
 
     # extend axis:
     fig.tight_layout()
