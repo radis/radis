@@ -55,7 +55,7 @@ from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITI
                                   make_up, cast_waveunit, print_conditions)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from neq.spec.base import print_conditions
-from radis.misc.basics import compare_lists
+from radis.misc.basics import compare_lists, compare_dict
 from radis.misc.arrays import evenly_distributed
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
@@ -3031,9 +3031,10 @@ class Spectrum(object):
 
             # Compare conditions and units
             # -----------
-            b1 = self.conditions == other.conditions
-            b2 = self.cond_units == other.cond_units
-            b3 = self.units == other.units
+            verbose_dict = 'if_different' if verbose else False
+            b1 = (compare_dict(self.conditions, other.conditions, verbose=verbose_dict) == 1)
+            b2 = (compare_dict(self.cond_units, other.cond_units, verbose=verbose_dict) == 1)
+            b3 = (compare_dict(self.units, other.units, verbose=verbose_dict) == 1)
             if not b1 and verbose:
                 print('... conditions dont match')
             if not b2 and verbose:
