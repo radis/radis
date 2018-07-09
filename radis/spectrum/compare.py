@@ -427,7 +427,7 @@ def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default
 def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='default',
               resample=True, method='diff',  show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
-              normalize=False, verbose=True, save=''):
+              normalize=False, verbose=True, save=False, show=True):
     ''' Plot two spectra, and the difference between them
 
     If waveranges dont match, ``s2`` is interpolated over ``s1``. 
@@ -487,7 +487,12 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     verbose: boolean
         if True, plot stuff such as rescale ratio in normalize mode. Default ``True``
 
-
+    save: str
+        Default is False. By default won't save anything, type the path of the 
+        destination if you want to save it (format in the name).
+        
+    show: Bool
+        Default is True. Will show the plots : bad if there are more than 20.
     Examples
     --------
 
@@ -668,13 +673,12 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     fig.cursors = MultiCursor(fig.canvas, (ax0, ax1),
                               color='r', lw=1, alpha=0.2, horizOn=False,
                               vertOn=True)
-    if save == '':
+    if show:
         plt.show()
-        return fig, [ax0, ax1]
-    else:
-        fig.savefig(save, format='png')
+    if save:
+        fig.savefig(save)
 
-
+    return fig, [ax0, ax1]
 ''' Return the average distance between two spectra.
     It's important to note that if averageDistance(s1, s2)==0 then s1 = s2
     
