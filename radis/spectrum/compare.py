@@ -427,7 +427,7 @@ def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default
 def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='default',
               resample=True, method='diff',  show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
-              normalize=False, verbose=True):
+              normalize=False, verbose=True, save=''):
     ''' Plot two spectra, and the difference between them
 
     If waveranges dont match, ``s2`` is interpolated over ``s1``. 
@@ -668,10 +668,11 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     fig.cursors = MultiCursor(fig.canvas, (ax0, ax1),
                               color='r', lw=1, alpha=0.2, horizOn=False,
                               vertOn=True)
-
-    plt.show()
-
-    return fig, [ax0, ax1]
+    if save == '':
+        plt.show()
+        return fig, [ax0, ax1]
+    else:
+        fig.savefig(save, format='png')
 
 
 ''' Return the average distance between two spectra.
