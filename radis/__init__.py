@@ -94,7 +94,7 @@ optimize mode::
     python -O *.py
 '''
 
-AUTO_UPDATE_SPEC = True
+AUTO_UPDATE_SPEC = False
 '''bool: experimental feature
 used to autoupdate .spec files to the latest format, by simply saving
 them again once they're loaded and fixed. 
