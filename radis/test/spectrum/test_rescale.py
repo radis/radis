@@ -21,7 +21,6 @@ from radis.test.utils import getTestFile
 import numpy as np
 import pytest
 
-
 @pytest.mark.fast
 def test_compression(verbose=True, warnings=True, *args, **kwargs):
     ''' Test that redundant quantities are properly infered from already known 
@@ -29,7 +28,6 @@ def test_compression(verbose=True, warnings=True, *args, **kwargs):
 
     # Get spectrum
     s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
-    s1.conditions['thermal_equilibrium'] = True   # fix: condition not given in radis < 0.2.2
     
     s1.conditions['thermal_equilibrium'] = True
     s1.update()
@@ -95,7 +93,6 @@ def test_get_recompute(verbose=True, *args, **kwargs):
     # Equilibrium
     # -----------
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
-    s.conditions['thermal_equilibrium'] = True  # placeholder as not defined before 0.2.2s
     
     assert s.get_vars() == ['abscoeff']
     assert s.conditions['thermal_equilibrium']
@@ -128,7 +125,6 @@ def test_recompute_equilibrium(verbose=True, warnings=True, plot=True,
 
     # Get spectrum
     s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
-    s1.conditions['thermal_equilibrium'] = True  # placeholder as not defined before radis==0.2.2
     s1.rescale_path_length(100)  # just for fun
 
     assert s1.is_at_equilibrium()

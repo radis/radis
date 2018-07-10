@@ -71,9 +71,10 @@ from six.moves import range
 from radis.spectrum.spectrum import Spectrum, is_spectrum
 from shutil import copy2
 from time import strftime
-from radis.misc.basics import is_float, list_if_float
+from radis.misc.basics import is_float, list_if_float, all_in
 from radis.misc.utils import FileNotFoundError, PermissionError
 from radis.misc.debug import printdbg
+from radis.misc.printer import printr
 from six import string_types
 from six.moves import zip
 
@@ -436,22 +437,35 @@ def load_spec(file, binary=False):
     except (TypeError, Exception):
         print(('Could not open file {0} with binary={1}. '.format(basename(file), binary) +
                'Trying with binary={0}'.format(not binary)))
-        sload = _load(not binary)
+        binary = not binary
+        sload = _load(binary)
         # if it works:
         print('Worked! Use binary={0} directly in load_spec for faster loading'.format(
-                not binary))
+                binary))
 
-    return _json_to_spec(sload, file)
+    # Test format / correct deprecated format:
+    sload, fixed = _fix_format(file, sload)
+
+    # Generate Spectrum
+    s = _json_to_spec(sload, file)
+    
+    # Auto-update RADIS .spec format
+    # ... experimental feature... 
+    if fixed:
+        _update_to_latest_format(s, file, binary)
+    
+    return s
 
 
-def _json_to_spec(jsondict, file=''):
+
+def _json_to_spec(sload, file=''):
     ''' Builds a Spectrum object from a JSON dictionary. Called by 
     :func:`~radis.tools.database.load_spec`. 
 
     Parameters
     ----------
 
-    jsondict: dict
+    sload: dict
         Spectrum object content stored under a dictonary 
 
     Returns
@@ -461,10 +475,6 @@ def _json_to_spec(jsondict, file=''):
         a :class:`~radis.spectrum.spectrum.Spectrum` object
     '''
 
-    # Test format / correct deprecated format:
-    sload = _fix_format(file, jsondict)
-
-    # ... Back to real stuff:
     conditions = sload['conditions']
 
     # Get quantities
@@ -546,15 +556,21 @@ def _fix_format(file, sload):
     The goal is to still be able to load old format precomputed spectra, and
     fix their attribute names. Save them again to fix the warnigns definitly.
     '''
+    
+    fixed = False
 
-    # Fix deprecration syntax
-    # ----------------
-    if 'q' in sload:
-        warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-             "q replaced with _q). Fixed, but regenerate " +
-             "database ASAP.", DeprecationWarning)
+    # Fix syntax of radis <= 0.1 
+    # --------------------------
+    
+    # ... note: at some points all these tests should simply be removed
+    
+    if 'q' in sload: 
+        printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+             "q replaced with _q). Fixed this time, but regenerate " +
+             "database ASAP.") #, DeprecationWarning)
         sload['_q'] = sload.pop('q')
         sload['_q_conv'] = sload.pop('q_conv')
+        fixed = True
 
     try:
         sload['conditions']['waveunit']
@@ -563,68 +579,161 @@ def _fix_format(file, sload):
         if 'wavespace' in sload['conditions']:
             sload['conditions']['waveunit'] = sload['conditions']['wavespace']
             del sload['conditions']['wavespace']
+            fixed = True
+
         else:
             raise KeyError("Spectrum 'conditions' dict should at least have a " +
                            "'waveunit' key. Got: {0}".format(list(sload['conditions'].keys())))
 
     if 'isotope_identifier' in sload['conditions']:
-        warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-             "isotope_identifier replaced with isotope). Fixed, but regenerate " +
-             "database ASAP.", DeprecationWarning)
+        printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+             "isotope_identifier replaced with isotope). Fixed this time, but regenerate " +
+             "database ASAP.") #, DeprecationWarning)
         sload['conditions']['isotope'] = sload['conditions'].pop(
             'isotope_identifier')
+        fixed = True
 
     if 'air_pressure_mbar' in sload['conditions']:
-        warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-             "air_pressure_mbar replaced with pressure_mbar). Fixed, but regenerate " +
-             "database ASAP.", DeprecationWarning)
+        printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+             "air_pressure_mbar replaced with pressure_mbar). Fixed this time, but regenerate " +
+             "database ASAP.") #, DeprecationWarning)
         sload['conditions']['pressure_mbar'] = sload['conditions'].pop(
             'air_pressure_mbar')
-
+        fixed = True
+        
     if 'isotope' in sload['conditions']:
         isotope = sload['conditions']['isotope']
         if not isinstance(isotope, string_types):
-            warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-                 "isotope is now a string). Fixed, but regenerate " +
-                 "database ASAP.", DeprecationWarning)
+            printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+                 "isotope is now a string). Fixed this time, but regenerate " +
+                 "database ASAP.") #, DeprecationWarning)
             # Fix it:
             sload['conditions']['isotope'] = ','.join([str(k) for k in
                                                        list_if_float(isotope)])
+            fixed = True
 
     if 'dbpath' in sload['conditions']:
         dbpath = sload['conditions']['dbpath']
         if not isinstance(dbpath, string_types):
-            warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-                 "dbpath is now a string). Fixed, but regenerate " +
-                 "database ASAP.", DeprecationWarning)
+            printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+                 "dbpath is now a string). Fixed this time, but regenerate " +
+                 "database ASAP.") #, DeprecationWarning)
             # Fix it:
             sload['conditions']['dbpath'] = ','.join([str(k).replace('\\', '/') for k in
                                                       list_if_float(dbpath)])  # list_if_float or just list??
+            fixed = True
 
     if 'selfabsorption' in sload['conditions']:
         self_absorption = sload['conditions']['selfabsorption']
         sload['conditions']['self_absorption'] = self_absorption
         del sload['conditions']['selfabsorption']
+        fixed = True
 
     # Fix all path names (if / are stored it screws up the JSON loading)
     # -----------------
     def fix_path(key):
+        fixed = False
         if key in sload['conditions']:
             path = sload['conditions'][key]
             if not isinstance(path, string_types):
-                warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-                     "{0} is now a string). Fixed, but regenerate ".format(key) +
-                     "database ASAP.", DeprecationWarning)
+                printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+                     "{0} is now a string). Fixed this time, but regenerate ".format(key) +
+                     "database ASAP.") #, DeprecationWarning)
                 # Fix it:
                 sload['conditions'][key] = path.replace('\\', '/')
+                fixed = True
+        return fixed
 
     for param in ['database', 'levelspath', 'parfuncpath',  # RADIS quantities
                   'results_directory', 'jobName',  # other quantities
                   ]:
-        fix_path(param)
+        fixed += fix_path(param)
+        
+    # Fix syntax of radis <= 0.2 
+    # --------------------------
+    
+    # Add 'thermal_equilibrium' in conditions
+    if 'thermal_equilibrium' not in sload['conditions']:
+        # Hints that the Spectrum has been calculated by a Spectral code:
+        if (all_in(['Tgas', 'Trot', 'Tvib', 'wstep'], sload['conditions'])  # NEQ / RADIS
+            or all_in(['Tgas', 'Trot', 'Tvib', 'narray', 'jobName'], sload['conditions'])):  # SPECAIR
+            
+            def _is_at_equilibrium(conditions):
+                # Guess if we're at equilibrium:
+                # ... if at Equilibrium, more quantities can be calculated with Kirchoff's law
+                # ... using Spectrum.update(). Also, the Spectrum can be stored by deleting 
+                # ... more redundant parts. 
+                # ... if not possible to guess, assume False
+                try:
+                    assert conditions['Tvib'] == conditions['Tgas']
+                    assert conditions['Trot'] == conditions['Tgas']
+                    if 'overpopulation' in conditions:
+                        assert conditions['overpopulation'] is None
+                    assert conditions['self_absorption']  # is True
+            
+                    return True
+                except AssertionError:
+                     return False
+                except KeyError as err:
+                    # Not all keys necessary to decide. Assume False
+                    warn('Missing keys to tell if Spectrum {0} is at equilibrium'.format(file)+\
+                         '. Update spectrum manually')
+                    return None
+            
+            equilibrium = _is_at_equilibrium(sload['conditions'])
+            
+            if equilibrium is not None:
+                sload['conditions']['thermal_equilibrium'] = equilibrium
+                fixed = True
+                printr("File {0}".format(basename(file))+" has a deprecrated structure (" +
+                     "thermal_equilibrium not defined). Fixed it this time (guessed {0})".format(
+                             equilibrium)+", but regenerate file ASAP.") #, DeprecationWarning)
 
-    return sload
+    return sload, fixed
 
+
+def _update_to_latest_format(s, file, binary):
+    ''' experimental feature
+    Used to autoupdate .spec files to the latest format, by simply saving
+    them again once they're loaded and fixed. 
+    Warning! Better have a copy of your files before that, or a way to regenerate 
+    them.
+    
+    Parameters
+    ----------
+    
+    s: a Spectrum object
+        already loaded, already updated. See fixes in :func:`~radis.tools.database._fix_format`
+    
+    file: str
+        current storage file of the object
+    
+    binary: boolean
+        the binary format that was used to open the object. Keep the same.
+        
+        
+    Examples
+    --------
+    
+    add to the start of your script::
+        
+        import radis
+        radis.AUTO_UPDATE_SPEC = True
+    '''
+    
+    import radis
+    if radis.AUTO_UPDATE_SPEC:
+        
+        assert exists(file)
+        
+        
+        s.store(file, compress=binary, if_exists_then='replace', discard=[])
+        
+        printr('File {0} auto-updated to latest RADIS format'.format(file))
+        
+        return
+        
+    
 
 def plot_spec(file, what='radiance', title=True):
     ''' Plot a .spec file. *

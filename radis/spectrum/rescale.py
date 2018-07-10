@@ -39,8 +39,13 @@ ordered_keys = [
     'radiance',
     'transmittance',
 ]
+'''list: List of all spectral variables sorted by priority during recomputation
+(ex: first get abscoeff, then try to calculate emisscoeff, etc.)
+'''
+
 # ... variables that cannot be rescaled (or not implemented):
 non_rescalable_keys = ['abscoeff_continuum']
+'''str:  variables that cannot be rescaled (or not implemented): '''
 # ... Check we have everyone (safety check!):
 # ... if it fails here, then we may have added a new key without adding a scaling
 # ... method. Explicitely add it in non_rescalableçkeys so an error is raised
@@ -243,13 +248,19 @@ def get_redundant(spec):
     ''' Returns a dictionary of all spectral quantities in spectrum and whether
     they are redundant
 
-    Use
-    -------
+    Examples
+    --------
 
-    redundant = get_redundant(spec)
+    ::
+    
+        redundant = get_redundant(spec)
 
+    >>> {'abscoeff': False, 'emisscoeff': True, 'absorbance': True, 'radiance_noslit': False, 
+         'transmittance_noslit': True}
+    
     '''
 
+    # Get all spectral quantities that derive from existing ones
     derivation_graph = _build_update_graph(spec)
 
     activated = dict().fromkeys(ordered_keys, False)
@@ -268,8 +279,8 @@ def get_redundant(spec):
                     redundant[key] = True
                     continue
         else:
-            del redundant[key]
-            # Should look at dependencies again ??
+            if key not in spec.get_vars():
+                del redundant[key]
 
     return redundant
 
@@ -1430,7 +1441,8 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
                                            old_mole_fraction, new_mole_fraction, old_path_length,
                                            waveunit, units, extra, true_path_length)
 
-    if assume_equilibrium:
+    if assume_equilibrium and 'Tgas' in spec.conditions and spec.conditions['Tgas'] != 'N/A':
+        # ... (dont forget Python will stop at evaluating the 2nd expression if False)
         assert 'abscoeff' in rescaled
         if not spec.is_at_equilibrium():
             warn('Rescaling with equilibrium assumption but Spectrum {0} does '.format(

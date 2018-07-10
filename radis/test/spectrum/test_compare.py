@@ -34,7 +34,6 @@ def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwa
         plt.close('all')
 
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
-    s.conditions['thermal_equilibrium'] = True   # fix: condition not given in radis < 0.2.2
     
     # limits to a single line, because get_distance()
     s.resample(np.linspace(2193, 2193.8, 100))

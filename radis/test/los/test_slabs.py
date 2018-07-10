@@ -46,8 +46,6 @@ def test_merge_slabs(verbose=True, plot=True, close_plots=True, warnings=True, d
             'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
         s2 = load_spec(getTestFile(
             'CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
-        s1.conditions['thermal_equilibrium'] = True   # fix: condition not given in radis < 0.2.2
-        s2.conditions['thermal_equilibrium'] = True   # fix: condition not given in radis < 0.2.2
         s1.update('all')
         s2.update('all')
 
@@ -129,7 +127,6 @@ def test_serial_slabs_updates(verbose=True, warnings=True, *args, **kwargs):
 
     # Get Some spectra
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
-    s.conditions['thermal_equilibrium'] = True   # fix: condition not given in radis < 0.2.2
     
     # Ensure Update works
     assert s.get_vars() == ['abscoeff']
