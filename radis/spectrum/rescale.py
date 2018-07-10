@@ -266,7 +266,7 @@ def get_redundant(spec):
     activated = dict().fromkeys(ordered_keys, False)
     for k in spec.get_vars():
         activated[k] = True
-    redundant = dict().fromkeys(ordered_keys, False)
+    redundant = dict().fromkeys(ordered_keys, False)  # nothing redundant by default
 
     # Parse graph
     for key in ordered_keys[::-1]:    # roots
@@ -276,7 +276,7 @@ def get_redundant(spec):
                 #                    # that you can be recomputed from yourself doesnt make you redundant
                 #                    continue
                 if all([activated[k] and not redundant[k] for k in from_keys]):
-                    redundant[key] = True
+                    redundant[key] = True   # declare redundant
                     continue
         else:
             if key not in spec.get_vars():
@@ -613,7 +613,7 @@ def rescale_abscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_fracti
         # We'll have a problem if the spectrum is optically thick
         b = (T1 == 0)  # no transmittance: optically thick mask
         if b.sum() > 0:
-            msg = "Transmittance is satured. Can't infer abscoeff. Please give absorbance"
+            msg = "Transmittance is saturated. Can't infer abscoeff. Please give absorbance"
             if 'abscoeff' in extra:  # cant calculate this one but let it go
                 abscoeff = None
                 if __debug__:
@@ -951,7 +951,7 @@ def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new
                             new_path_length < old_path_length):
             # decreasing mole fractions/ path length could increase the transmittance
             # but this information was lost in the saturation
-            msg = 'Transmittance is satured. Cant rescale. Please give absorbance'
+            msg = 'Transmittance is saturated. Cant rescale. Please give absorbance'
             if 'transmittance_noslit' in extra:  # cant calculate this one but let it go
                 transmittance_noslit = None
                 if __debug__:
@@ -1029,7 +1029,7 @@ def rescale_transmittance(spec, rescaled, initial, old_mole_fraction, new_mole_f
 #                new_path_length < old_path_length):
 #            # decreasing mole fractions/ path length could increase the transmittance
 #            # but this information was lost in the saturation
-#            msg = 'Transmittance is satured. Cant rescale. Please give absorbance'
+#            msg = 'Transmittance is saturated. Cant rescale. Please give absorbance'
 #            if 'transmittance_noslit' in extra: # cant calculate this one but let it go
 #                transmittance_noslit = None
 #                if __debug__: printdbg(msg)
@@ -1402,6 +1402,13 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     # mole fraction, or we are just updating() without changing length / mole fraction
     no_change = (new_mole_fraction ==
                  old_mole_fraction and new_path_length == old_path_length)
+
+    # Quickly stop if no change
+    if no_change and all_in(wanted,initial):
+        if __debug__:
+            printdbg('... rescale: no change')
+        # Stop here
+        return
 
     # list of quantities that are needed to recompute what we want
     # ... (we're just analysing how to compute them here, the actual calculation

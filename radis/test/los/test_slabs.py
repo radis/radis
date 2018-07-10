@@ -117,32 +117,6 @@ def test_serial_slabs(verbose=True, plot=True, warnings=True, debug=False,
 
 from radis.misc.basics import all_in
 
-def test_serial_slabs_updates(verbose=True, warnings=True, *args, **kwargs):
-    ''' Test how quantities are updated in a SerialSlab operation
-
-    '''
-
-    from radis.tools.database import load_spec
-    from radis.test.utils import getTestFile
-
-    # Get Some spectra
-    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
-    
-    # Ensure Update works
-    assert s.get_vars() == ['abscoeff']
-    s.update()
-    assert all_in(['radiance_noslit', 'transmittance_noslit', 'emisscoeff', 'absorbance'],
-                  s.get_vars())
-    
-    # Ensure Update() doesnt modify existing quantities
-    # ... Hack: kill radiance (see how it's used to generate a Pure Transmittance
-    # ... spectrum in validation/compare_torch
-    s.conditions['thermal_equilibrium'] = False  # ensure radiance not recomputed from abscoeff + Kirchoff
-    s._q['radiance_noslit'] *= 0
-    s.update('radiance_noslit')
-    assert (s._q['radiance_noslit'] == 0).all()
-    
-
 
 def _run_testcases(verbose=True, plot=True, close_plots=True, debug=False, warnings=True, *args, **kwargs):
 
@@ -152,9 +126,6 @@ def _run_testcases(verbose=True, plot=True, close_plots=True, debug=False, warni
     test_serial_slabs(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
                      *args, **kwargs)
 
-    test_serial_slabs_updates(verbose=verbose, warnings=warnings,
-                     *args, **kwargs)
-    
     return True
 
 
