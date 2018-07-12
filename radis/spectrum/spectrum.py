@@ -1249,13 +1249,66 @@ class Spectrum(object):
                                      force=force)
 
     def get_integral(self, var, wunit='nm', Iunit='default', **kwargs):
-        ''' Returns integral of variable 'var' '''
+        ''' Returns integral of variable 'var' over waverange
+        
+        Parameters
+        ----------
+        
+        var: str
+            spectral quantity to integate
+            
+        wunit: str
+            over which waverange to integrated. Default ``'nm'``
+            
+        Iunit: str
+            default ``'default'``
+            
+            .. warning::
+                this is the unit of the quantity, not the unit of the integral.
+                Don't forget to multiply by ``wunit`` 
+            
+        Other Parameters
+        ----------------
+        
+        kwargs: **dict
+            forwarded to :meth:`~radis.spectrum.spectrum.Spectrum.get`
+            
+        Returns
+        -------
+        
+        integral: float
+            integral in [Iunit]*[wunit]
+            
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_power`
+        '''
 
         w, I = self.get(var, wunit=wunit, Iunit=Iunit, **kwargs)
         return abs(np.trapz(I, x=w))
 
     def get_power(self, unit='mW/cm2/sr'):
-        ''' Returns integrated radiance (no slit) power density'''
+        ''' Returns integrated radiance (no slit) power density
+        
+        Parameters
+        ----------
+        
+        Iunit: str
+            power unit. 
+            
+        Returns
+        -------
+        
+        P: float
+            radiated power in ``unit`` 
+        
+        See Also
+        --------
+        
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_integral`
+        
+        '''
 
         P = self.get_integral(
             'radiance_noslit', wunit='nm', Iunit='mW/cm2/sr/nm')
