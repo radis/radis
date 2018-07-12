@@ -889,7 +889,7 @@ class SpecDatabase():
         return cond
 
     def see(self, columns=None, *args):
-        ''' Shows Spectrum database will whole conditions (index=None) or
+        ''' Shows Spectrum database with all conditions (``columns=None``) or
         specific conditions
 
         Parameters
@@ -898,8 +898,9 @@ class SpecDatabase():
         columns: str, list of str, or None
             shows the conditions value for all cases in database. If None, all
             conditions are shown. Default ``None``
-            e.g.
-            >>> db.see(['Tvib', 'Trot'])
+            e.g.::
+                
+                db.see(['Tvib', 'Trot'])
 
         Notes
         -----
@@ -941,6 +942,34 @@ class SpecDatabase():
 
         return self.see(columns=columns, *args)
 
+    def map(self, function):
+        ''' Apply ``function`` to all Spectra in database. 
+        
+        Examples
+        --------
+        
+        Add a missing parameter::
+            
+            db = SpecDatabase('...')
+            
+            def add_condition(s):
+                s.conditions['exp_run'] = 1
+                return s
+            
+            db.map(add_condition)
+            
+
+        '''
+        
+        # TODO: If ``function`` 
+        #returns a :class:`~radis.spectrum.spectrum.Spectrum` object then the 
+        # database is updated. 
+
+        
+        for s in self:
+            function(s)
+        
+        
     def update(self, force_reload=False, filt='.spec', nJobs=1):
         ''' Reloads database, updates internal index structure and export it
         in ``<database>.csv``
@@ -1183,7 +1212,7 @@ class SpecDatabase():
         
 #        for f in files:
 #                db.append(self._load_file(f, binary=self.binary))
-        print('*** Loading the database with '+ str(nJobs) + ' processor(s) ***')
+        if self.verbose: print('*** Loading the database with '+ str(nJobs) + ' processor(s) ***')
         if nJobs==1:
             for f in files:
                 db.append(self._load_file(f, binary=self.binary))
@@ -1507,6 +1536,11 @@ class SpecDatabase():
             db = SpecDatabase('.')
             for s in db.get():
                 print(s.name)
+                
+        or::
+            
+            db = SpecDatabase('.')
+            db.map(lambda s: print(s.name))
 
         See Also
         --------
