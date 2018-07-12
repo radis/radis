@@ -775,7 +775,7 @@ def plot_spec(file, what='radiance', title=True):
 class SpecDatabase():
 
     def __init__(self, path='.', filt='.spec', add_info=None, add_date='%Y%m%d',
-                 verbose=True, binary=True, nJobs=1):
+                 verbose=True, binary=True, nJobs=-4):
         ''' A Spectrum Database class to manage them all
 
         It basically manages a list of Spectrum JSON files, adding a Pandas
@@ -799,7 +799,7 @@ class SpecDatabase():
         nJobs: int
             Number of processors to use to load a database (usefull for big 
             databases). BE CAREFULL, no check is done on processor use prior
-            to the execution !
+            to the execution ! Default ``-4``: use all but 3 processors
 
         Examples
         --------
@@ -1219,7 +1219,7 @@ class SpecDatabase():
         else:
             def funLoad(f):
                 return self._load_file(f, binary=self.binary)
-            db = Parallel(n_jobs=nJobs, verbose = 5)(delayed(funLoad)(f) for f in files)
+            db = Parallel(n_jobs=nJobs, verbose = 5*self.verbose, batch_size=4)(delayed(funLoad)(f) for f in files)
         return pd.DataFrame(db)
 
     def _load_file(self, file, binary=False):
