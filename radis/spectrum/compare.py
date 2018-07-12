@@ -677,6 +677,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         plt.show()
     if save:
         fig.savefig(save)
+        plt.close(fig) #to avoid memory load if 
 
     return fig, [ax0, ax1]
 ''' Return the average distance between two spectra.

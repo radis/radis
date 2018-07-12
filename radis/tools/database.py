@@ -76,6 +76,7 @@ from radis.misc.utils import FileNotFoundError, PermissionError
 from radis.misc.debug import printdbg
 from six import string_types
 from six.moves import zip
+from joblib import Parallel, delayed
 
 
 # %% Tools
@@ -665,7 +666,7 @@ def plot_spec(file, what='radiance', title=True):
 class SpecDatabase():
 
     def __init__(self, path='.', filt='.spec', add_info=None, add_date='%Y%m%d',
-                 verbose=True, binary=True):
+                 verbose=True, binary=True, nJobs=1):
         ''' A Spectrum Database class to manage them all
 
         It basically manages a list of Spectrum JSON files, adding a Pandas
@@ -685,6 +686,11 @@ class SpecDatabase():
         binary: boolean
             if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
             try as binary file anyway. Default ``False``
+            
+        nJobs: int
+            Number of processors to use to load a database (usefull for big 
+            databases). BE CAREFULL, no check is done on processor use prior
+            to the execution !
 
         Examples
         --------
@@ -760,7 +766,7 @@ class SpecDatabase():
         self.add_info = add_info
         self.add_date = add_date
 
-        self.update(force_reload=True, filt=filt)
+        self.update(force_reload=True, filt=filt, nJobs=nJobs)
 
     def conditions(self):
         ''' Show conditions in database '''
@@ -826,7 +832,7 @@ class SpecDatabase():
 
         return self.see(columns=columns, *args)
 
-    def update(self, force_reload=False, filt='.spec'):
+    def update(self, force_reload=False, filt='.spec', nJobs=1):
         ''' Reloads database, updates internal index structure and export it
         in ``<database>.csv``
 
@@ -847,11 +853,12 @@ class SpecDatabase():
             # Reloads whole database  (necessary on database init to create self.df
             files = [join(path, f)
                      for f in os.listdir(path) if f.endswith(filt)]
-            self.df = self._load_files(files=files)
+            self.df = self._load_files(files=files, nJobs=nJobs)
         else:
             dbfiles = list(self.df['file'])
             files = [join(path, f) for f in os.listdir(path) if f not in dbfiles
                      and f.endswith(filt)]
+            #no parallelization here because the number of files is supposed to be small
             for f in files:
                 self.df = self.df.append(self._load_file(f), ignore_index=True)
 
@@ -911,17 +918,29 @@ class SpecDatabase():
                 pass
 
     def find_duplicates(self, columns=None):
-        ''' Find spectra with same conditions '''
-
-        dg = self.see(columns=columns).duplicated()
-
+        ''' Find spectra with same conditions. The first duplicated spectrum 
+        will be 'False', the following will be 'True' (see .duplicated()).
+        
+        Examples
+        --------
+        >>> db.find_duplicates(columns={'x_e', 'x_N_II'})
+        Out[34]: 
+        file
+        20180710_101.spec    True
+        20180710_103.spec    True
+        dtype: bool
+        '''
+        dg = self.see(columns=columns).astype(str).duplicated()
+        #need to convert eveything as a str to avoid comparaison problems (Minou)
         if columns is None:
             columns = 'all'
 
         if self.verbose:
             print(('{0} duplicate(s) found'.format(dg.sum()) +
                    ' based on columns: {0}'.format(columns)))
-        return dg
+        
+        onlyDuplicatedFiles = dg[dg == True]
+        return onlyDuplicatedFiles
 
     def add(self, spectrum, **kwargs):
         ''' Add Spectrum to database, whether it's a Spectrum object or a file
@@ -1048,13 +1067,21 @@ class SpecDatabase():
 
         return file
 
-    def _load_files(self, files):
+    def _load_files(self, files, nJobs=1):
         ''' Parse files and generate a database
         '''
         db = []
-        for f in files:
-            db.append(self._load_file(f, binary=self.binary))
-
+        
+#        for f in files:
+#                db.append(self._load_file(f, binary=self.binary))
+        print('*** Loading the database with '+ str(nJobs) + ' processor(s) ***')
+        if nJobs==1:
+            for f in files:
+                db.append(self._load_file(f, binary=self.binary))
+        else:
+            def funLoad(f):
+                return self._load_file(f, binary=self.binary)
+            db = Parallel(n_jobs=nJobs, verbose = 5)(delayed(funLoad)(f) for f in files)
         return pd.DataFrame(db)
 
     def _load_file(self, file, binary=False):
@@ -1201,7 +1228,7 @@ class SpecDatabase():
             raise ValueError('Spectrum not found')
         elif len(out) > 1:
             raise ValueError('Spectrum is not unique ({0} match found)'.format(
-                len(out)))
+                len(out))+' Think about using "db.find_duplicates()"')
         else:
             return out[0]
 
