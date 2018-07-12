@@ -33,7 +33,8 @@ def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwa
         import matplotlib.pyplot as plt
         plt.close('all')
 
-    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    
     # limits to a single line, because get_distance()
     s.resample(np.linspace(2193, 2193.8, 100))
     # is very computationaly heavy

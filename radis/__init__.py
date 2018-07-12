@@ -76,15 +76,43 @@ from .misc.utils import getProjectRoot
 from .misc.utils import Chdir as _chdir
 
 
-# %% Debug mode
+# %% Global constants
+
 DEBUG_MODE = False
-# change this at runtime with
-# >>> radis.DEBUG_MODE = True
-# Use the printdbg() function in radis.misc, typically with:
-# >>> if __debug__: printdbg(...)
-# so that printdbg are removed by the Python preprocessor when running in
-# optimize mode:
-# >>> python -O *.py
+'''bool: change this at runtime with::
+    
+    import radis
+    radis.DEBUG_MODE = True
+
+Use the printdbg() function in radis.misc, typically with::
+    
+    if __debug__: printdbg(...)
+
+so that printdbg are removed by the Python preprocessor when running in
+optimize mode::
+
+    python -O *.py
+'''
+
+AUTO_UPDATE_SPEC = False
+'''bool: experimental feature
+used to autoupdate .spec files to the latest format, by simply saving
+them again once they're loaded and fixed. 
+Warning! Better have a copy of your files before that, or a way to regenerate 
+them. 
+
+Examples
+--------
+
+Add to the top of your script (once is enough!):: 
+    
+    import radis
+    radis.AUTO_UPDATE_SPEC = True
+
+See Also
+--------
+:func:`~radis.tools.database._update_to_latest_format`
+'''
 
 # %% Version
 

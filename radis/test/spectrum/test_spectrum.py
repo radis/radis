@@ -44,8 +44,8 @@ def test_spectrum_get_methods(verbose=True, plot=True, close_plots=True, *args, 
         import matplotlib.pyplot as plt
         plt.close('all')
 
-    s = load_spec(getTestFile('N2C_specair_380nm.spec'))
-
+    s = load_spec(getTestFile('N2C_specair_380nm.spec'), binary=False)
+    
     # general methods
     if verbose:
         print(s)
@@ -107,6 +107,7 @@ def test_copy(verbose=True, *args, **kwargs):
     from radis.tools.database import load_spec
 
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    
     s.update()
     s.apply_slit(1.5)
     s2 = s.copy()
@@ -166,6 +167,7 @@ def test_store_functions(verbose=True, *args, **kwargs):
     temp_file = 'test_radis_tempfile_transmittance.txt'
     assert not exists(temp_file)
 
+    # Test that the transmittance stored on .txt and loaded again match
     s = load_spec(getTestFile(
         'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     s.update()
@@ -179,6 +181,9 @@ def test_store_functions(verbose=True, *args, **kwargs):
     s2 = transmittance_spectrum(
         w, T, wunit='nm', conditions={'medium': 'vacuum'})
     assert s.compare_with(s2, spectra_only='transmittance_noslit', plot=False)
+
+    # TODO: add test that ensures we can load a binary file without binary=True
+    # (and the warning should be captured)
 
     return True
 

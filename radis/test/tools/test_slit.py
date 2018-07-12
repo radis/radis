@@ -116,6 +116,7 @@ def test_slit_unit_conversions_spectrum_in_cm(verbose=True, plot=True, close_plo
     # %% Get a Spectrum (stored in cm-1)
     s_cm = load_spec(getTestFile(
         'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    
     s_cm.rescale_mole_fraction(1)   # just because it makes better units
     s_cm.update()
     wstep = s_cm.conditions['wstep']
@@ -217,6 +218,7 @@ def test_convoluted_quantities_units(*args, **kwargs):
     from radis.test.utils import getTestFile
     
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
+    
     s.update(verbose=False)
     
     assert s.units['radiance_noslit'] == 'mW/cm2/sr/nm'

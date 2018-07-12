@@ -101,7 +101,7 @@ Example::
     s = Spectrum.from_array(w, A, 'abscoeff', wunit='cm-1')
     s.update('transmittance_noslit')
     
-Or, all derivable quantities can be computed using .update('all') or simply .update()::
+Or, all derivable quantities can be computed using ``.update('all')`` or simply ``.update()``::
 
     s.update() 
     
@@ -304,7 +304,26 @@ Example::
     s = sPlanck(wavelength_min=3000, wavelength_max=50000,
                 T=288, eps=1)
     s.plot()
+    
+    
+calculate transmittance from radiance with Kirchoff's law
+---------------------------------------------------------
 
+RADIS can be used to infer spectral quantities from others if they can 
+be derived. If on top that, equilibrium is assumed, then Kirchoff's law 
+is used. See ``How to ... calculate missing quantities?`` and the 
+:meth:`~radis.spectrum.rescale.update` method with argument ``assume_equilibrium=True``.
+Example::
+
+    s = calculated_spectrum(...)     # defines 'radiance_noslit')
+    s.update('transmittance_noslit')
+    s.plot('transmittance_noslit')
+    
+You can infer if a Spectrum is at (thermal) equilibrium with the 
+:meth:`~radis.spectrum.spectrum.Spectrum.is_at_equilibrium` method, that 
+looks up the declared spectrum conditions and ensures ``Tgas==Tvib==Trot``. 
+It does not imply chemical equilibrium (mole fractions are still arbitrary)
+    
 
 create a database of Spectrum objects?
 --------------------------------------
