@@ -84,7 +84,7 @@ def multiply(s, coef, var='radiance', wunit='nm', name='None'):
     ----------
     Godd for fittings without absolute calibration. No unit in output !
     '''
-    w, I = s.get_wavelength(), s.get(var, wunit=wunit)
+    w, I = s.get(var, wunit=wunit)
     mult = Spectrum.from_array(w, coef*I, var,
                               waveunit=wunit,
                               unit='None',
