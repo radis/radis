@@ -1219,7 +1219,7 @@ class SpecDatabase():
         else:
             def funLoad(f):
                 return self._load_file(f, binary=self.binary)
-            db = Parallel(n_jobs=nJobs, verbose = 5*self.verbose, batch_size=4)(delayed(funLoad)(f) for f in files)
+            db = Parallel(n_jobs=nJobs, verbose = 5*self.verbose)(delayed(funLoad)(f) for f in files)
         return pd.DataFrame(db)
 
     def _load_file(self, file, binary=False):
