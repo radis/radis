@@ -1710,6 +1710,8 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
     if new_mole_fraction == 0 and not force:
         raise ValueError('Rescaling to 0 will loose information. Choose force '
                          '= True')
+    if new_mole_fraction > 1 and not force:
+        warn('rescaling to mole fraction > 1: {0}'.format(new_mole_fraction))
 
     for q in ['transmittance', 'radiance']:
         qns = q+'_noslit'
