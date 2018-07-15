@@ -775,7 +775,7 @@ def plot_spec(file, what='radiance', title=True):
 class SpecDatabase():
 
     def __init__(self, path='.', filt='.spec', add_info=None, add_date='%Y%m%d',
-                 verbose=True, binary=True, nJobs=-4):
+                 verbose=True, binary=True, nJobs=-2, batch_size='auto'):
         ''' A Spectrum Database class to manage them all
 
         It basically manages a list of Spectrum JSON files, adding a Pandas
@@ -796,10 +796,24 @@ class SpecDatabase():
             if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
             try as binary file anyway. Default ``False``
             
+        Other Parameters
+        ----------------
+        
+        input for :class:`~joblib.parallel.Parallel` loading of database:
+            
         nJobs: int
             Number of processors to use to load a database (usefull for big 
             databases). BE CAREFULL, no check is done on processor use prior
-            to the execution ! Default ``-4``: use all but 3 processors
+            to the execution ! Default ``-2``: use all but 1 processors
+
+        batch_size: int or ``'auto'``
+            The number of atomic tasks to dispatch at once to each
+            worker. When individual evaluations are very fast, dispatching
+            calls to workers can be slower than sequential computation because
+            of the overhead. Batching fast computations together can mitigate
+            this. Default: ``'auto'``
+            
+        More information in :class:`joblib.parallel.Parallel`
 
         Examples
         --------
@@ -874,8 +888,12 @@ class SpecDatabase():
         # default
         self.add_info = add_info
         self.add_date = add_date
+        
+        # loading parameters
+        self.nJobs = nJobs
+        self.batch_size = batch_size
 
-        self.update(force_reload=True, filt=filt, nJobs=nJobs)
+        self.update(force_reload=True, filt=filt)
 
     def conditions(self):
         ''' Show conditions in database '''
@@ -970,12 +988,12 @@ class SpecDatabase():
             function(s)
         
         
-    def update(self, force_reload=False, filt='.spec', nJobs=1):
+    def update(self, force_reload=False, filt='.spec'):
         ''' Reloads database, updates internal index structure and export it
-        in ``<database>.csv``
-
+        in ``<database>.csv``. 
+        
         Parameters
-        ----------l
+        ----------
 
         force_reload: boolean
             if True, reloads files already in database
@@ -983,15 +1001,22 @@ class SpecDatabase():
         filt: str
             only consider files ending with ``filt``. Default ``.spec``
 
+        Notes
+        -----
+        
+        Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
+        attributes of :class:`~radis.tools.database.SpecDatabase`. See :class:`joblib.parallel.Parallel`
+        for information on the arguments    
+
         '''
 
         path = self.path
-
+        
         if force_reload:
             # Reloads whole database  (necessary on database init to create self.df
             files = [join(path, f)
                      for f in os.listdir(path) if f.endswith(filt)]
-            self.df = self._load_files(files=files, nJobs=nJobs)
+            self.df = self._load_files(files=files)
         else:
             dbfiles = list(self.df['file'])
             files = [join(path, f) for f in os.listdir(path) if f not in dbfiles
@@ -1205,10 +1230,22 @@ class SpecDatabase():
 
         return file
 
-    def _load_files(self, files, nJobs=1):
+    def _load_files(self, files):
         ''' Parse files and generate a database
+        
+        Notes
+        -----
+        
+        Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
+        attributes of :class:`~radis.tools.database.SpecDatabase`. See :class:`joblib.parallel.Parallel`
+        for information on the arguments    
+
         '''
         db = []
+    
+        # get joblib parallel parameters        
+        nJobs = self.nJobs
+        batch_size = self.batch_size
         
 #        for f in files:
 #                db.append(self._load_file(f, binary=self.binary))
@@ -1219,7 +1256,8 @@ class SpecDatabase():
         else:
             def funLoad(f):
                 return self._load_file(f, binary=self.binary)
-            db = Parallel(n_jobs=nJobs, verbose = 5*self.verbose)(delayed(funLoad)(f) for f in files)
+            db = Parallel(n_jobs=nJobs, batch_size = batch_size, 
+                          verbose = 5*self.verbose)(delayed(funLoad)(f) for f in files)
         return pd.DataFrame(db)
 
     def _load_file(self, file, binary=False):

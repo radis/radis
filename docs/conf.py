@@ -80,6 +80,11 @@ extensions = [
     'sphinx.ext.intersphinx',
 ]
 
+# Reference other packages
+intersphinx_mapping = {'joblib': ('https://joblib.readthedocs.io/en/latest/', None),
+                       'astroquery': ('http://astroquery.readthedocs.io/en/latest/', None),
+                       }
+
 napoleon_google_docstring = False
 
 # Add any paths that contain templates here, relative to this directory.
