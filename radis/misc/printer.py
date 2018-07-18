@@ -19,6 +19,14 @@ def printm(*args, **kwargs):
     return print(colored(string, color='magenta'))
 
 
+def printg(*args, **kwargs):
+    ''' Print in green'''
+
+    string = _capture_print(*args, **kwargs)
+
+    return print(colored(string, color='green'))
+
+
 def printr(*args, **kwargs):
     ''' Print in red'''
 
