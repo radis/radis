@@ -21,14 +21,15 @@ from radis.test.utils import getTestFile
 import numpy as np
 import pytest
 
-
 @pytest.mark.fast
 def test_compression(verbose=True, warnings=True, *args, **kwargs):
     ''' Test that redundant quantities are properly infered from already known 
     spectral quantities '''
 
     # Get spectrum
-    s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s1 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    
+    s1.conditions['thermal_equilibrium'] = True
     s1.update()
 
     # Analyse redundant spectral quantities
@@ -91,17 +92,23 @@ def test_get_recompute(verbose=True, *args, **kwargs):
 
     # Equilibrium
     # -----------
-    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    
     assert s.get_vars() == ['abscoeff']
-    assert s.is_at_equilibrium()
+    assert s.conditions['thermal_equilibrium']
     # At equilibrium, everything should be deduced from abscoeff
     assert set(get_recompute(s, ['radiance_noslit'])) == set(
         ('radiance_noslit', 'abscoeff'))
 
     # Non Equilibrium
     # ----------------
-    s.conditions['Tvib'] = 2000  # force non equilibrium
-    assert not s.is_at_equilibrium()
+    s.conditions['Tvib'] = 2000  
+    # a problem should be detected by is_at_equilibrium()
+    with pytest.raises(AssertionError):
+        assert not s.is_at_equilibrium(check='error')
+    # force non equilibrium
+    s.conditions['thermal_equilibrium'] = False
+    
     # Now more data is needed:
     assert set(get_recompute(s, ['radiance_noslit'])) == set(
         ('abscoeff', 'emisscoeff', 'radiance_noslit'))
@@ -123,14 +130,15 @@ def test_recompute_equilibrium(verbose=True, warnings=True, plot=True,
     assert s1.is_at_equilibrium()
     s1.update('emisscoeff')
 
-    # force non equilibrium calculation by setting Tvib=2000
+    # force non equilibrium calculation
     s2 = s1.copy()
-    s2.conditions['Tvib'] = 2000  # force non equilibrium
-    assert not s2.is_at_equilibrium()
-    s2.update('radiance_noslit')
+    s2.conditions['thermal_equilibrium'] = False
+    s2.update()
+    assert 'emissivity_noslit' not in s2.get_vars()  # just a check update() was done at nonequilibrium
 
     # update s1 now (at equilibrium)
-    s1.update('radiance_noslit')
+    s1.update()
+    assert 'emissivity_noslit' in s1.get_vars()   # just a check update() was done at equilibrium
 
     s1.name = 'scaled with Kirchoff law'
     s2.name = 'scaled from emisscoeff + abscoeff with RTE'
@@ -139,7 +147,7 @@ def test_recompute_equilibrium(verbose=True, warnings=True, plot=True,
         print('Checked that scaling at equilibrium with Kirchoff law yields the ' +
               'same radiance as by solving the RTE from emisscoeff and abscoeff')
 
-    # Compare
+    # Now Compare both update processes
     assert s1.compare_with(s2, spectra_only='radiance_noslit', plot=plot)
 
 

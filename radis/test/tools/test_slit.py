@@ -116,6 +116,7 @@ def test_slit_unit_conversions_spectrum_in_cm(verbose=True, plot=True, close_plo
     # %% Get a Spectrum (stored in cm-1)
     s_cm = load_spec(getTestFile(
         'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    
     s_cm.rescale_mole_fraction(1)   # just because it makes better units
     s_cm.update()
     wstep = s_cm.conditions['wstep']
@@ -217,6 +218,7 @@ def test_convoluted_quantities_units(*args, **kwargs):
     from radis.test.utils import getTestFile
     
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.5.spec'), binary=True)
+    
     s.update(verbose=False)
     
     assert s.units['radiance_noslit'] == 'mW/cm2/sr/nm'
@@ -415,54 +417,56 @@ def test_slit_energy_conservation(verbose=True, plot=True, close_plots=True, *ar
     return True
 
 
+
+# Function used to test Slit dispersion
+from numpy import pi, tan, cos
+
+def dirac(w0, width=20, wstep=0.009):
+    ''' Return a Dirac in w0. Plus some space on the side '''
+
+    w = np.arange(w0-width, w0+width+wstep, wstep)
+    I = np.zeros_like(w)
+    I[len(I)//2] = 1/wstep
+
+    return w, I
+
+def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
+    ''' dlambda / dx
+    Default values correspond to Acton 750i
+
+    Input
+    -------
+    f: focal length (mm)
+         default 750 (SpectraPro 2750i)
+
+    phi: angle in degrees (°)
+        default 9
+
+    m: order of dispersion
+        default 1
+
+    gr: grooves spacing (gr/mm)
+        default 300
+    '''
+    # correct units:
+    phi *= 2*pi/360
+    d = 1e-3/gr
+    disp = w/(2*f)*(tan(phi)+sqrt((2*d/m/(w*1e-9)*cos(phi))**2-1))
+    return disp  # to nm/mm
+
+
 @pytest.mark.fast
-def test_slit_function_effect(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+def test_linear_dispersion_effect(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function '''
 
     from radis.test.utils import getTestFile
     from publib import fix_style
-    from numpy import pi, tan, cos
-
+    
     if plot:
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
         if close_plots:
             plt.close('all')
-
-    # Effect of Slit dispersion
-
-    def dirac(w0, width=20, wstep=0.009):
-        ''' Return a Dirac in w0. Plus some space on the side '''
-
-        w = np.arange(w0-width, w0+width+wstep, wstep)
-        I = np.zeros_like(w)
-        I[len(I)//2] = 1/wstep
-
-        return w, I
-
-    def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
-        ''' dlambda / dx
-        Default values correspond to Acton 750i
-
-        Input
-        -------
-        f: focal length (mm)
-             default 750 (SpectraPro 2750i)
-
-        phi: angle in degrees (°)
-            default 9
-
-        m: order of dispersion
-            default 1
-
-        gr: grooves spacing (gr/mm)
-            default 300
-        '''
-        # correct units:
-        phi *= 2*pi/360
-        d = 1e-3/gr
-        disp = w/(2*f)*(tan(phi)+sqrt((2*d/m/(w*1e-9)*cos(phi))**2-1))
-        return disp  # to nm/mm
 
     w_slit, I_slit = import_experimental_slit(getTestFile('slitfunction.txt'))
 
@@ -494,20 +498,95 @@ def test_slit_function_effect(verbose=True, plot=True, close_plots=True, *args, 
     return True  # nothing defined yet
 
 
+@pytest.mark.fast
+def test_auto_correct_dispersion(f=750, phi=-6, gr=2400, 
+                                 verbose=True, plot=True, close_plots=True, *args, **kwargs):
+    ''' A test case to show the effect of wavelength dispersion (cf spectrometer
+    reciprocal function) on the slit function 
+    
+    Parameters
+    ----------
+    
+    f: focal length (mm)
+         default 750 (SpectraPro 2750i)
+
+    phi: angle in degrees (°)
+        default -6
+
+    gr: grooves spacing (gr/mm)
+        default 2400
+    
+    '''
+
+    from radis.test.utils import getTestFile
+    from publib import set_style, fix_style
+    
+    if plot:
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+        if close_plots:
+            plt.close('all')
+
+    w_slit_632, I_slit_632 = import_experimental_slit(getTestFile('slitfunction.txt'))
+    slit_measured_632nm = getTestFile('slitfunction.txt')
+
+    w, I = np.loadtxt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt')).T
+    s = calculated_spectrum(w, I, conditions={'Tvib': 3000, 'Trot': 1200},
+                            Iunit='mW/cm2/sr/µm')
+
+    slit_dispersion = lambda w: linear_dispersion(w, f=f, phi=phi, m=1, gr=gr)
+
+    s.apply_slit(slit_measured_632nm)
+    if plot:
+        w_full_range = np.linspace(w.min(), w_slit_632.max())
+        set_style('origin')
+        plt.figure('Spectrometer Dispersion (f={0}mm, phi={1}°, gr={2}'.format(
+                            f, phi, gr))
+        plt.plot(w_full_range, slit_dispersion(w_full_range))
+        plt.xlabel('Wavelength (nm)')
+        plt.ylabel('Reciprocal Linear Dispersion')
+    
+    # Compare 2 spectra
+        s.plot(nfig='Linear dispersion effect', color='r', label='not corrected')
+    s.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
+    if plot:
+        s.plot(nfig='same', color='k', label='corrected')
+        plt.legend()
+        # Plot different slits:
+        s.plot_slit()
+#    plt.plot(w_slit_632, I_slit_632, color='r', label='Not corrected')
+#    plt.legend()
+
+    return True  # nothing defined yet
+
+
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
+    # Validation
     test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
                                      *args, **kwargs)
-    test_normalisation_mode(
-        plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
-    test_slit_energy_conservation(
-        plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
-    test_slit_function_effect(
-        plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    
+    # Different modes
+    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, 
+                            *args, **kwargs)
+    
+    # Resampling
+    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, 
+                                  *args, **kwargs)
+    
+    # Linear dispersion
+    test_linear_dispersion_effect(plot=plot, close_plots=close_plots, verbose=verbose, 
+                                  *args, **kwargs)
+    test_auto_correct_dispersion(plot=plot, close_plots=close_plots, verbose=verbose, 
+                                 *args, **kwargs)
+    
+    
 #    test_constant_source(plot=plot, verbose=verbose, *args, **kwargs)
+    
+    # Different shapes
     test_all_slit_shapes(plot=plot, close_plots=close_plots,
                          verbose=verbose, *args, **kwargs)
     
+    # Units
     test_slit_unit_conversions_spectrum_in_cm(
         verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
     test_slit_unit_conversions_spectrum_in_nm(

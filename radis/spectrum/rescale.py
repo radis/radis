@@ -39,8 +39,13 @@ ordered_keys = [
     'radiance',
     'transmittance',
 ]
+'''list: List of all spectral variables sorted by priority during recomputation
+(ex: first get abscoeff, then try to calculate emisscoeff, etc.)
+'''
+
 # ... variables that cannot be rescaled (or not implemented):
 non_rescalable_keys = ['abscoeff_continuum']
+'''str:  variables that cannot be rescaled (or not implemented): '''
 # ... Check we have everyone (safety check!):
 # ... if it fails here, then we may have added a new key without adding a scaling
 # ... method. Explicitely add it in non_rescalableçkeys so an error is raised
@@ -138,7 +143,8 @@ def _build_update_graph(spec, optically_thin=None, equilibrium=None, path_length
     if optically_thin is None:
         optically_thin = spec.is_optically_thin()
     if equilibrium is None:
-        equilibrium = spec.is_at_equilibrium()
+        # Read the Spectrum conditions. By default, use False.
+        equilibrium = spec.conditions.get('thermal_equilibrium', False) #is_at_equilibrium()
     slit = ('slit_function' in spec.conditions and 'slit_unit' in spec.conditions
             and 'norm_by' in spec.conditions)
 
@@ -242,19 +248,25 @@ def get_redundant(spec):
     ''' Returns a dictionary of all spectral quantities in spectrum and whether
     they are redundant
 
-    Use
-    -------
+    Examples
+    --------
 
-    redundant = get_redundant(spec)
+    ::
+    
+        redundant = get_redundant(spec)
 
+    >>> {'abscoeff': False, 'emisscoeff': True, 'absorbance': True, 'radiance_noslit': False, 
+         'transmittance_noslit': True}
+    
     '''
 
+    # Get all spectral quantities that derive from existing ones
     derivation_graph = _build_update_graph(spec)
 
     activated = dict().fromkeys(ordered_keys, False)
     for k in spec.get_vars():
         activated[k] = True
-    redundant = dict().fromkeys(ordered_keys, False)
+    redundant = dict().fromkeys(ordered_keys, False)  # nothing redundant by default
 
     # Parse graph
     for key in ordered_keys[::-1]:    # roots
@@ -264,11 +276,11 @@ def get_redundant(spec):
                 #                    # that you can be recomputed from yourself doesnt make you redundant
                 #                    continue
                 if all([activated[k] and not redundant[k] for k in from_keys]):
-                    redundant[key] = True
+                    redundant[key] = True   # declare redundant
                     continue
         else:
-            del redundant[key]
-            # Should look at dependencies again ??
+            if key not in spec.get_vars():
+                del redundant[key]
 
     return redundant
 
@@ -455,7 +467,8 @@ def get_recompute(spec, wanted, no_change=False, true_path_length=None):
     return recompute
 
 
-def update(spec, quantity='all', optically_thin='default', verbose=True):
+def update(spec, quantity='all', optically_thin='default', assume_equilibrium='default',
+           verbose=True):
     ''' Calculate missing quantities that can be derived from the current quantities
     and conditions
 
@@ -480,6 +493,15 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
         Also updates the self_absorption value in conditions (creates it if 
         doesnt exist)
 
+    Other Parameters
+    ----------------
+    
+    assume_equilibrium: boolean
+        if ``True``, only absorption coefficient ``abscoeff`` is recomputed
+        and all values are derived from a calculation under equilibrium, 
+        using Kirchoff's Law. If ``default``, use the value stored in
+        Spectrum conditions[``thermal_equilibrium``], else use ``False``. 
+        
     '''
 
     # Check inputs
@@ -493,6 +515,13 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
         path_length = 1        # some stuff can still be updated.
         true_path_length = False
 
+    # Update thermal equilibrium
+    if assume_equilibrium not in [True, False, 'default']:
+        raise ValueError(
+            "assume_equilibrium must be one of True, False, 'default'")
+    if assume_equilibrium == 'default':
+        assume_equilibrium = spec.conditions.get('thermal_equilibrium', False)
+        
     # Update optically thin
     if optically_thin not in [True, False, 'default']:
         raise ValueError(
@@ -519,6 +548,7 @@ def update(spec, quantity='all', optically_thin='default', verbose=True):
                  # same mole fractions (only the ratio matters)
                  1, 1,
                  true_path_length=true_path_length,
+                 assume_equilibrium=assume_equilibrium,
                  verbose=verbose)
 
     # Output
@@ -583,7 +613,7 @@ def rescale_abscoeff(spec, rescaled, initial, old_mole_fraction, new_mole_fracti
         # We'll have a problem if the spectrum is optically thick
         b = (T1 == 0)  # no transmittance: optically thick mask
         if b.sum() > 0:
-            msg = "Transmittance is satured. Can't infer abscoeff. Please give absorbance"
+            msg = "Transmittance is saturated. Can't infer abscoeff. Please give absorbance"
             if 'abscoeff' in extra:  # cant calculate this one but let it go
                 abscoeff = None
                 if __debug__:
@@ -921,7 +951,7 @@ def rescale_transmittance_noslit(spec, rescaled, initial, old_mole_fraction, new
                             new_path_length < old_path_length):
             # decreasing mole fractions/ path length could increase the transmittance
             # but this information was lost in the saturation
-            msg = 'Transmittance is satured. Cant rescale. Please give absorbance'
+            msg = 'Transmittance is saturated. Cant rescale. Please give absorbance'
             if 'transmittance_noslit' in extra:  # cant calculate this one but let it go
                 transmittance_noslit = None
                 if __debug__:
@@ -999,7 +1029,7 @@ def rescale_transmittance(spec, rescaled, initial, old_mole_fraction, new_mole_f
 #                new_path_length < old_path_length):
 #            # decreasing mole fractions/ path length could increase the transmittance
 #            # but this information was lost in the saturation
-#            msg = 'Transmittance is satured. Cant rescale. Please give absorbance'
+#            msg = 'Transmittance is saturated. Cant rescale. Please give absorbance'
 #            if 'transmittance_noslit' in extra: # cant calculate this one but let it go
 #                transmittance_noslit = None
 #                if __debug__: printdbg(msg)
@@ -1292,7 +1322,8 @@ def rescale_emissivity_noslit(spec, rescaled, units, extra, true_path_length):
 
 def _recalculate(spec, quantity, new_path_length, old_path_length,
                  new_mole_fraction, old_mole_fraction,
-                 true_path_length=True, verbose=True):
+                 true_path_length=True, verbose=True,
+                 assume_equilibrium=False):
     ''' General function to recalculate missing quantities. Used in rescale
     and update
 
@@ -1309,16 +1340,26 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         be derived are recomputed. 
 
     true_path_length: boolean
-        if False, only relative rescaling (new/old) is allowed. For instance,
+        if ``False``, only relative rescaling (new/old) is allowed. For instance,
         when you dont know the true path_lenth, rescaling absorbance
         with *= new_length/old_length is fine, but abscoeff*new_length is not
         Default ``True``
+        
+    Other Parameters
+    ----------------
+    
+    assume_equilibrium: boolean
+        if ``True``, only absorption coefficient ``abscoeff`` is recomputed
+        and all values are derived from a calculation under equilibrium, 
+        using Kirchoff's Law. Default ``False``
+        
     '''
 
     optically_thin = spec.is_optically_thin()
     initial = spec.get_vars()               # quantities initially in spectrum
     if __debug__:
         printdbg('... rescale: optically_thin: {0}'.format(optically_thin))
+        printdbg('... rescale: initial quantities: {0}'.format(initial))
 
     # Check inputs
     assert quantity in CONVOLUTED_QUANTITIES + \
@@ -1362,6 +1403,13 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     no_change = (new_mole_fraction ==
                  old_mole_fraction and new_path_length == old_path_length)
 
+    # Quickly stop if no change
+    if no_change and all_in(wanted,initial):
+        if __debug__:
+            printdbg('... rescale: no change')
+        # Stop here
+        return
+
     # list of quantities that are needed to recompute what we want
     # ... (we're just analysing how to compute them here, the actual calculation
     # ... will be done laters)
@@ -1373,9 +1421,11 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         print(sys.exc_info())
         raise KeyError('Error in get_recompute (see above). Quantity `{0}` cannot be recomputed '.format(
             err.args[0])+'from available quantities in Spectrum ({0}) with '.format(spec.get_vars()) +
-            ' conditions: optically thin ({0}), true_path_length ({1}), equilibrium ({2})'.format(
-            optically_thin, true_path_length, spec.is_at_equilibrium()) +
+            ' conditions: optically thin ({0}), true_path_length ({1}), thermal equilibrium ({2})'.format(
+            optically_thin, true_path_length, assume_equilibrium) +
             '. Check how your equivalence tree is built: see rescale._build_update_graph()')
+    if assume_equilibrium:
+        recompute.append('abscoeff')
     recompute = set(recompute)  # remove duplicates
 
     # Get units
@@ -1392,13 +1442,18 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
             rescaled[k] = spec.get(k)[1]   # note: creates a copy
 
     # Start with abscoeff
-
+    
     if 'abscoeff' in recompute:
         rescaled, units = rescale_abscoeff(spec, rescaled, initial,     # Todo: remove rescaled = ... Dict is mutable no?
                                            old_mole_fraction, new_mole_fraction, old_path_length,
                                            waveunit, units, extra, true_path_length)
 
-    if spec.is_at_equilibrium() and 'abscoeff' in rescaled:
+    if assume_equilibrium and 'Tgas' in spec.conditions and spec.conditions['Tgas'] != 'N/A':
+        # ... (dont forget Python will stop at evaluating the 2nd expression if False)
+        assert 'abscoeff' in rescaled
+        if not spec.is_at_equilibrium():
+            warn('Rescaling with equilibrium assumption but Spectrum {0} does '.format(
+                    spec.get_name()+'not look at equilibrium. Check spectrum conditions'))
         wavenumber = spec.get_wavenumber('non_convoluted')
         Tgas = spec.conditions['Tgas']
         rescaled, units = _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
@@ -1580,9 +1635,12 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
             raise KeyError('Cant rescale {0} if {1} not stored'.format(q, qns) +
                            ' Use force=True to rescale anyway. {0}'.format(q) +
                            ' will be deleted')
+            
 
     # Rescale
-    _recalculate(spec, 'same', new_path_length, old_path_length, 1, 1)
+    assume_equilibrium = spec.conditions.get('thermal_equilibrium', False)
+    _recalculate(spec, 'same', new_path_length, old_path_length, 1, 1, 
+                 assume_equilibrium=assume_equilibrium)
 
     # Update conditions
     spec.conditions['path_length'] = new_path_length
@@ -1652,6 +1710,8 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
     if new_mole_fraction == 0 and not force:
         raise ValueError('Rescaling to 0 will loose information. Choose force '
                          '= True')
+    if new_mole_fraction > 1 and not force:
+        warn('rescaling to mole fraction > 1: {0}'.format(new_mole_fraction))
 
     for q in ['transmittance', 'radiance']:
         qns = q+'_noslit'
@@ -1671,8 +1731,9 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
         true_path_length = False
 
     # Rescale
+    assume_equilibrium = spec.conditions.get('thermal_equilibrium', False)
     _recalculate(spec, 'same', path_length, path_length, new_mole_fraction, old_mole_fraction,
-                 true_path_length=true_path_length)
+                 true_path_length=true_path_length, assume_equilibrium=assume_equilibrium)
 
     # Update conditions
     spec.conditions['mole_fraction'] = new_mole_fraction

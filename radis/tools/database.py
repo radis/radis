@@ -71,11 +71,13 @@ from six.moves import range
 from radis.spectrum.spectrum import Spectrum, is_spectrum
 from shutil import copy2
 from time import strftime
-from radis.misc.basics import is_float, list_if_float
+from radis.misc.basics import is_float, list_if_float, all_in
 from radis.misc.utils import FileNotFoundError, PermissionError
 from radis.misc.debug import printdbg
+from radis.misc.printer import printr
 from six import string_types
 from six.moves import zip
+from joblib import Parallel, delayed
 
 
 # %% Tools
@@ -436,22 +438,35 @@ def load_spec(file, binary=False):
     except (TypeError, Exception):
         print(('Could not open file {0} with binary={1}. '.format(basename(file), binary) +
                'Trying with binary={0}'.format(not binary)))
-        sload = _load(not binary)
+        binary = not binary
+        sload = _load(binary)
         # if it works:
         print('Worked! Use binary={0} directly in load_spec for faster loading'.format(
-                not binary))
+                binary))
 
-    return _json_to_spec(sload, file)
+    # Test format / correct deprecated format:
+    sload, fixed = _fix_format(file, sload)
+
+    # Generate Spectrum
+    s = _json_to_spec(sload, file)
+    
+    # Auto-update RADIS .spec format
+    # ... experimental feature... 
+    if fixed:
+        _update_to_latest_format(s, file, binary)
+    
+    return s
 
 
-def _json_to_spec(jsondict, file=''):
+
+def _json_to_spec(sload, file=''):
     ''' Builds a Spectrum object from a JSON dictionary. Called by 
     :func:`~radis.tools.database.load_spec`. 
 
     Parameters
     ----------
 
-    jsondict: dict
+    sload: dict
         Spectrum object content stored under a dictonary 
 
     Returns
@@ -461,10 +476,6 @@ def _json_to_spec(jsondict, file=''):
         a :class:`~radis.spectrum.spectrum.Spectrum` object
     '''
 
-    # Test format / correct deprecated format:
-    sload = _fix_format(file, jsondict)
-
-    # ... Back to real stuff:
     conditions = sload['conditions']
 
     # Get quantities
@@ -546,15 +557,21 @@ def _fix_format(file, sload):
     The goal is to still be able to load old format precomputed spectra, and
     fix their attribute names. Save them again to fix the warnigns definitly.
     '''
+    
+    fixed = False
 
-    # Fix deprecration syntax
-    # ----------------
-    if 'q' in sload:
-        warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-             "q replaced with _q). Fixed, but regenerate " +
-             "database ASAP.", DeprecationWarning)
+    # Fix syntax of radis <= 0.1 
+    # --------------------------
+    
+    # ... note: at some points all these tests should simply be removed
+    
+    if 'q' in sload: 
+        printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+             "q replaced with _q). Fixed this time, but regenerate " +
+             "database ASAP.") #, DeprecationWarning)
         sload['_q'] = sload.pop('q')
         sload['_q_conv'] = sload.pop('q_conv')
+        fixed = True
 
     try:
         sload['conditions']['waveunit']
@@ -563,68 +580,161 @@ def _fix_format(file, sload):
         if 'wavespace' in sload['conditions']:
             sload['conditions']['waveunit'] = sload['conditions']['wavespace']
             del sload['conditions']['wavespace']
+            fixed = True
+
         else:
             raise KeyError("Spectrum 'conditions' dict should at least have a " +
                            "'waveunit' key. Got: {0}".format(list(sload['conditions'].keys())))
 
     if 'isotope_identifier' in sload['conditions']:
-        warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-             "isotope_identifier replaced with isotope). Fixed, but regenerate " +
-             "database ASAP.", DeprecationWarning)
+        printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+             "isotope_identifier replaced with isotope). Fixed this time, but regenerate " +
+             "database ASAP.") #, DeprecationWarning)
         sload['conditions']['isotope'] = sload['conditions'].pop(
             'isotope_identifier')
+        fixed = True
 
     if 'air_pressure_mbar' in sload['conditions']:
-        warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-             "air_pressure_mbar replaced with pressure_mbar). Fixed, but regenerate " +
-             "database ASAP.", DeprecationWarning)
+        printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+             "air_pressure_mbar replaced with pressure_mbar). Fixed this time, but regenerate " +
+             "database ASAP.") #, DeprecationWarning)
         sload['conditions']['pressure_mbar'] = sload['conditions'].pop(
             'air_pressure_mbar')
-
+        fixed = True
+        
     if 'isotope' in sload['conditions']:
         isotope = sload['conditions']['isotope']
         if not isinstance(isotope, string_types):
-            warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-                 "isotope is now a string). Fixed, but regenerate " +
-                 "database ASAP.", DeprecationWarning)
+            printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+                 "isotope is now a string). Fixed this time, but regenerate " +
+                 "database ASAP.") #, DeprecationWarning)
             # Fix it:
             sload['conditions']['isotope'] = ','.join([str(k) for k in
                                                        list_if_float(isotope)])
+            fixed = True
 
     if 'dbpath' in sload['conditions']:
         dbpath = sload['conditions']['dbpath']
         if not isinstance(dbpath, string_types):
-            warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-                 "dbpath is now a string). Fixed, but regenerate " +
-                 "database ASAP.", DeprecationWarning)
+            printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+                 "dbpath is now a string). Fixed this time, but regenerate " +
+                 "database ASAP.") #, DeprecationWarning)
             # Fix it:
             sload['conditions']['dbpath'] = ','.join([str(k).replace('\\', '/') for k in
                                                       list_if_float(dbpath)])  # list_if_float or just list??
+            fixed = True
 
     if 'selfabsorption' in sload['conditions']:
         self_absorption = sload['conditions']['selfabsorption']
         sload['conditions']['self_absorption'] = self_absorption
         del sload['conditions']['selfabsorption']
+        fixed = True
 
     # Fix all path names (if / are stored it screws up the JSON loading)
     # -----------------
     def fix_path(key):
+        fixed = False
         if key in sload['conditions']:
             path = sload['conditions'][key]
             if not isinstance(path, string_types):
-                warn("File {0}".format(basename(file))+" has a deprecrated structure (key " +
-                     "{0} is now a string). Fixed, but regenerate ".format(key) +
-                     "database ASAP.", DeprecationWarning)
+                printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+                     "{0} is now a string). Fixed this time, but regenerate ".format(key) +
+                     "database ASAP.") #, DeprecationWarning)
                 # Fix it:
                 sload['conditions'][key] = path.replace('\\', '/')
+                fixed = True
+        return fixed
 
     for param in ['database', 'levelspath', 'parfuncpath',  # RADIS quantities
                   'results_directory', 'jobName',  # other quantities
                   ]:
-        fix_path(param)
+        fixed += fix_path(param)
+        
+    # Fix syntax of radis <= 0.2 
+    # --------------------------
+    
+    # Add 'thermal_equilibrium' in conditions
+    if 'thermal_equilibrium' not in sload['conditions']:
+        # Hints that the Spectrum has been calculated by a Spectral code:
+        if (all_in(['Tgas', 'Trot', 'Tvib', 'wstep'], sload['conditions'])  # NEQ / RADIS
+            or all_in(['Tgas', 'Trot', 'Tvib', 'narray', 'jobName'], sload['conditions'])):  # SPECAIR
+            
+            def _is_at_equilibrium(conditions):
+                # Guess if we're at equilibrium:
+                # ... if at Equilibrium, more quantities can be calculated with Kirchoff's law
+                # ... using Spectrum.update(). Also, the Spectrum can be stored by deleting 
+                # ... more redundant parts. 
+                # ... if not possible to guess, assume False
+                try:
+                    assert conditions['Tvib'] == conditions['Tgas']
+                    assert conditions['Trot'] == conditions['Tgas']
+                    if 'overpopulation' in conditions:
+                        assert conditions['overpopulation'] is None
+                    assert conditions['self_absorption']  # is True
+            
+                    return True
+                except AssertionError:
+                     return False
+                except KeyError as err:
+                    # Not all keys necessary to decide. Assume False
+                    warn('Missing keys to tell if Spectrum {0} is at equilibrium'.format(file)+\
+                         '. Update spectrum manually')
+                    return None
+            
+            equilibrium = _is_at_equilibrium(sload['conditions'])
+            
+            if equilibrium is not None:
+                sload['conditions']['thermal_equilibrium'] = equilibrium
+                fixed = True
+                printr("File {0}".format(basename(file))+" has a deprecrated structure (" +
+                     "thermal_equilibrium not defined). Fixed it this time (guessed {0})".format(
+                             equilibrium)+", but regenerate file ASAP.") #, DeprecationWarning)
 
-    return sload
+    return sload, fixed
 
+
+def _update_to_latest_format(s, file, binary):
+    ''' experimental feature
+    Used to autoupdate .spec files to the latest format, by simply saving
+    them again once they're loaded and fixed. 
+    Warning! Better have a copy of your files before that, or a way to regenerate 
+    them.
+    
+    Parameters
+    ----------
+    
+    s: a Spectrum object
+        already loaded, already updated. See fixes in :func:`~radis.tools.database._fix_format`
+    
+    file: str
+        current storage file of the object
+    
+    binary: boolean
+        the binary format that was used to open the object. Keep the same.
+        
+        
+    Examples
+    --------
+    
+    add to the start of your script::
+        
+        import radis
+        radis.AUTO_UPDATE_SPEC = True
+    '''
+    
+    import radis
+    if radis.AUTO_UPDATE_SPEC:
+        
+        assert exists(file)
+        
+        
+        s.store(file, compress=binary, if_exists_then='replace', discard=[])
+        
+        printr('File {0} auto-updated to latest RADIS format'.format(file))
+        
+        return
+        
+    
 
 def plot_spec(file, what='radiance', title=True):
     ''' Plot a .spec file. *
@@ -665,7 +775,7 @@ def plot_spec(file, what='radiance', title=True):
 class SpecDatabase():
 
     def __init__(self, path='.', filt='.spec', add_info=None, add_date='%Y%m%d',
-                 verbose=True, binary=True):
+                 verbose=True, binary=True, nJobs=-2, batch_size='auto'):
         ''' A Spectrum Database class to manage them all
 
         It basically manages a list of Spectrum JSON files, adding a Pandas
@@ -685,6 +795,25 @@ class SpecDatabase():
         binary: boolean
             if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
             try as binary file anyway. Default ``False``
+            
+        Other Parameters
+        ----------------
+        
+        input for :class:`~joblib.parallel.Parallel` loading of database:
+            
+        nJobs: int
+            Number of processors to use to load a database (usefull for big 
+            databases). BE CAREFULL, no check is done on processor use prior
+            to the execution ! Default ``-2``: use all but 1 processors
+
+        batch_size: int or ``'auto'``
+            The number of atomic tasks to dispatch at once to each
+            worker. When individual evaluations are very fast, dispatching
+            calls to workers can be slower than sequential computation because
+            of the overhead. Batching fast computations together can mitigate
+            this. Default: ``'auto'``
+            
+        More information in :class:`joblib.parallel.Parallel`
 
         Examples
         --------
@@ -759,6 +888,10 @@ class SpecDatabase():
         # default
         self.add_info = add_info
         self.add_date = add_date
+        
+        # loading parameters
+        self.nJobs = nJobs
+        self.batch_size = batch_size
 
         self.update(force_reload=True, filt=filt)
 
@@ -774,7 +907,7 @@ class SpecDatabase():
         return cond
 
     def see(self, columns=None, *args):
-        ''' Shows Spectrum database will whole conditions (index=None) or
+        ''' Shows Spectrum database with all conditions (``columns=None``) or
         specific conditions
 
         Parameters
@@ -783,8 +916,9 @@ class SpecDatabase():
         columns: str, list of str, or None
             shows the conditions value for all cases in database. If None, all
             conditions are shown. Default ``None``
-            e.g.
-            >>> db.see(['Tvib', 'Trot'])
+            e.g.::
+                
+                db.see(['Tvib', 'Trot'])
 
         Notes
         -----
@@ -826,12 +960,40 @@ class SpecDatabase():
 
         return self.see(columns=columns, *args)
 
+    def map(self, function):
+        ''' Apply ``function`` to all Spectra in database. 
+        
+        Examples
+        --------
+        
+        Add a missing parameter::
+            
+            db = SpecDatabase('...')
+            
+            def add_condition(s):
+                s.conditions['exp_run'] = 1
+                return s
+            
+            db.map(add_condition)
+            
+
+        '''
+        
+        # TODO: If ``function`` 
+        #returns a :class:`~radis.spectrum.spectrum.Spectrum` object then the 
+        # database is updated. 
+
+        
+        for s in self:
+            function(s)
+        
+        
     def update(self, force_reload=False, filt='.spec'):
         ''' Reloads database, updates internal index structure and export it
-        in ``<database>.csv``
-
+        in ``<database>.csv``. 
+        
         Parameters
-        ----------l
+        ----------
 
         force_reload: boolean
             if True, reloads files already in database
@@ -839,10 +1001,17 @@ class SpecDatabase():
         filt: str
             only consider files ending with ``filt``. Default ``.spec``
 
+        Notes
+        -----
+        
+        Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
+        attributes of :class:`~radis.tools.database.SpecDatabase`. See :class:`joblib.parallel.Parallel`
+        for information on the arguments    
+
         '''
 
         path = self.path
-
+        
         if force_reload:
             # Reloads whole database  (necessary on database init to create self.df
             files = [join(path, f)
@@ -852,6 +1021,7 @@ class SpecDatabase():
             dbfiles = list(self.df['file'])
             files = [join(path, f) for f in os.listdir(path) if f not in dbfiles
                      and f.endswith(filt)]
+            #no parallelization here because the number of files is supposed to be small
             for f in files:
                 self.df = self.df.append(self._load_file(f), ignore_index=True)
 
@@ -911,17 +1081,29 @@ class SpecDatabase():
                 pass
 
     def find_duplicates(self, columns=None):
-        ''' Find spectra with same conditions '''
-
-        dg = self.see(columns=columns).duplicated()
-
+        ''' Find spectra with same conditions. The first duplicated spectrum 
+        will be 'False', the following will be 'True' (see .duplicated()).
+        
+        Examples
+        --------
+        >>> db.find_duplicates(columns={'x_e', 'x_N_II'})
+        Out[34]: 
+        file
+        20180710_101.spec    True
+        20180710_103.spec    True
+        dtype: bool
+        '''
+        dg = self.see(columns=columns).astype(str).duplicated()
+        #need to convert eveything as a str to avoid comparaison problems (Minou)
         if columns is None:
             columns = 'all'
 
         if self.verbose:
             print(('{0} duplicate(s) found'.format(dg.sum()) +
                    ' based on columns: {0}'.format(columns)))
-        return dg
+        
+        onlyDuplicatedFiles = dg[dg == True]
+        return onlyDuplicatedFiles
 
     def add(self, spectrum, **kwargs):
         ''' Add Spectrum to database, whether it's a Spectrum object or a file
@@ -1050,11 +1232,32 @@ class SpecDatabase():
 
     def _load_files(self, files):
         ''' Parse files and generate a database
+        
+        Notes
+        -----
+        
+        Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
+        attributes of :class:`~radis.tools.database.SpecDatabase`. See :class:`joblib.parallel.Parallel`
+        for information on the arguments    
+
         '''
         db = []
-        for f in files:
-            db.append(self._load_file(f, binary=self.binary))
-
+    
+        # get joblib parallel parameters        
+        nJobs = self.nJobs
+        batch_size = self.batch_size
+        
+#        for f in files:
+#                db.append(self._load_file(f, binary=self.binary))
+        if self.verbose: print('*** Loading the database with '+ str(nJobs) + ' processor(s) ***')
+        if nJobs==1:
+            for f in files:
+                db.append(self._load_file(f, binary=self.binary))
+        else:
+            def funLoad(f):
+                return self._load_file(f, binary=self.binary)
+            db = Parallel(n_jobs=nJobs, batch_size = batch_size, 
+                          verbose = 5*self.verbose)(delayed(funLoad)(f) for f in files)
         return pd.DataFrame(db)
 
     def _load_file(self, file, binary=False):
@@ -1201,7 +1404,7 @@ class SpecDatabase():
             raise ValueError('Spectrum not found')
         elif len(out) > 1:
             raise ValueError('Spectrum is not unique ({0} match found)'.format(
-                len(out)))
+                len(out))+' Think about using "db.find_duplicates()"')
         else:
             return out[0]
 
@@ -1371,6 +1574,11 @@ class SpecDatabase():
             db = SpecDatabase('.')
             for s in db.get():
                 print(s.name)
+                
+        or::
+            
+            db = SpecDatabase('.')
+            db.map(lambda s: print(s.name))
 
         See Also
         --------

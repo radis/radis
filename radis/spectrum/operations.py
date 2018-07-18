@@ -18,6 +18,54 @@ from radis.misc.curve import curve_substract, curve_add
 from radis.spectrum.compare import get_diff
 from radis.spectrum import Spectrum
 
+# %% Filter Spectra
+
+
+def Transmittance(s):
+    ''' Makes a new Spectrum with only the transmittance part of Spectrum ``s``
+    
+    Parameters
+    ----------
+    
+    s: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    Returns
+    -------
+    
+    s_tr: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object, with only the ``transmittance``,
+        ``absorbance`` and/or ``abscoeff`` part of ``s``, where ``radiance_noslit`` ,
+        ``emisscoeff`` and ``emissivity_noslit`` (if they exist) have been set to 0
+        
+    Examples
+    --------
+    
+    
+        
+    '''
+    
+    s_tr = s.copy()
+    for k in ['radiance_noslit', 'emisscoeff', 'emissivity_noslit']:
+        if k in s_tr._q:
+            s_tr._q[k] *= 0
+            
+    for k in ['radiance', 'emissivity']:
+        if k in s_tr._q_conv:
+            s_tr._q_conv[k] *= 0
+
+    # Deactivate equilibrium conditions (so Kirchoff's law cannot be used anymore)
+    s_tr.conditions['thermal_equilibrium'] = False
+    
+    s_tr.name = 'Transmittance({0})'.format(s.get_name())
+    
+    return s_tr
+    
+    
+
+
+
+# %% Algebric operations on Spectra
 
 def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
               resample=True, name='default'):
@@ -84,7 +132,7 @@ def multiply(s, coef, var='radiance', wunit='nm', name='None'):
     ----------
     Godd for fittings without absolute calibration. No unit in output !
     '''
-    w, I = s.get_wavelength(), s.get(var, wunit=wunit)
+    w, I = s.get(var, wunit=wunit)
     mult = Spectrum.from_array(w, coef*I, var,
                               waveunit=wunit,
                               unit='None',

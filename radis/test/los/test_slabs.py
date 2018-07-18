@@ -115,6 +115,7 @@ def test_serial_slabs(verbose=True, plot=True, warnings=True, debug=False,
     return True
 #
 
+from radis.misc.basics import all_in
 
 
 def _run_testcases(verbose=True, plot=True, close_plots=True, debug=False, warnings=True, *args, **kwargs):

@@ -83,7 +83,7 @@ setup(name='radis',
 #                        'pandas',        # let the user install it 
 #                        'sympy',         # let the user install it 
                         'pint>=0.7.2',  # Unit aware calculations
-                        'publib>=0.2.1', # Plotting styles for Matplotlib
+                        'publib>=0.3.1', # Plotting styles for Matplotlib
                         'plotly>=2.5.1',    # for line survey HTML output  
                         # TODO: update to >=2.5.1 as soon as https://github.com/plotly/plotly.py/issues/963 is fixed
                         'termcolor',     # terminal colors
@@ -96,6 +96,7 @@ setup(name='radis',
                         'tables',       # for pandas to HDF5 export
                         'pytest',       # to run test suite
                         'h5py',         # to write HDF5 files
+                        'joblib',       # for parallel loading of SpecDatabase
 				],
       classifiers=[
         'Development Status :: 4 - Beta',

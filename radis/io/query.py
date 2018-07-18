@@ -64,6 +64,11 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
     .. [2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
 
 
+    See Also
+    --------
+    
+    :func:`astroquery.hitran.reader.download_hitran`, :func:`astroquery.hitran.reader.read_hitran_file`
+
     '''
 
     # Check input
