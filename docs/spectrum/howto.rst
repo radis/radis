@@ -70,8 +70,8 @@ The default quantities are::
     'radiance', 'transmittance', 'emissivity'
     
     # Not convoluted: 
-    'radiance_noslit', 'transmittance_noslit', 'emisscoeff', 'absorbance', 
-    'abscoeff', 'abscoeff_continuum', 'emissivity_noslit'
+    'radiance_noslit', 'transmittance_noslit', 'emisscoeff', 'emisscoeff_continuum',
+    'absorbance', 'abscoeff', 'abscoeff_continuum', 'emissivity_noslit'
 
 See the latest list in the CONVOLUTED_QUANTITIES and NON_CONVOLUTED_QUANTITIES defined 
 `here <https://github.com/radis/radis/blob/master/radis/spectrum/rescale.py>`__.

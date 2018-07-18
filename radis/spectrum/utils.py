@@ -21,8 +21,9 @@ WAVELEN_UNITS = ['nm', 'wavelength']
 CONVOLUTED_QUANTITIES = ['radiance', 'transmittance', 'emissivity']
 '''list: name of spectral quantities after convolution with slit function'''
 NON_CONVOLUTED_QUANTITIES = ['radiance_noslit', 'transmittance_noslit',
-                             'emisscoeff', 'absorbance', 'abscoeff',
-                             'abscoeff_continuum', 'emissivity_noslit', ]
+                             'emisscoeff', 'emisscoeff_continuum', 
+                             'absorbance', 'abscoeff',
+                             'abscoeff_continuum', 'emissivity_noslit']
 '''list: name of spectral quantities not convolved with slit function'''
 
 # note: it is hardcoded (and needed) that quantities that are convoluted are
