@@ -520,7 +520,12 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     :meth:`~radis.spectrum.spectrum.compare_with` 
 
     '''
-
+    
+    if (not show) and (not save): #I added this line to avoid calculus in the case there is nothing to do (Minou) 
+        if verbose: print('plot_diff : Nothing to do')
+        return None, None
+    
+    #Normal behaviour (Minou)
     # Get defaults
     # ---
     if var is None:    # if nothing is defined, try these first:
@@ -630,6 +635,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     # plot difference (sorted)
     b = np.argsort(wdiff)
     ax1.plot(wdiff[b], Idiff[b], style, color='k', lw=1)
+    ax1.plot(wdiff[b], np.zeros(np.size(wdiff[b])), style, color='r', lw=1)
 
     if method == 'diff':
         fig.text(0.09, 0.38, 'diff')
