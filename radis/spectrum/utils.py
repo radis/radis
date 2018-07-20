@@ -60,6 +60,7 @@ INFORMATIVE_PARAMS = [
     'chunksize',
     'calculation_time',
     'lines_calculated',
+    'lines_cutoff',
     'lines_in_continuum',
     'parallel',
     'Nprocs',
