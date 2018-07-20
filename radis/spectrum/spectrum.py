@@ -2927,7 +2927,8 @@ class Spectrum(object):
         print('Spectral Quantities')
         print('-'*40)
         for k, v in self._get_items().items():
-            print(' '*2, k, '\t({0} points)'.format(len(v[0])))
+            # print number of points with a comma separator
+            print(' '*2, k, '\t({0:,d} points)'.format(len(v[0])))
 
         # Print populations
         print('Populations Stored')

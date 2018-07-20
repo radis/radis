@@ -40,7 +40,14 @@ PHYSICAL_PARAMS = ['molecule', 'wavenum_max', 'wavenum_min', 'mole_fraction',
                    'slit_function_base', 'pressure_mbar',
                    'wavelength_min', 'wavelength_max',
                    'Telec', 'Tvib', 'Trot', 'Tgas', 'vib_distribution', 'rot_distribution',
-                   'overpopulation']
+                   'overpopulation', 'thermal_equilibrium']
+'''list: physical conditions under which the Spectrum was calculated/measured. 
+When printing an object, these parameters are shown below "Physical Conditions" 
+If a parameter is not in this list, it is either in "Computation Parameters" 
+(non-physical parameters that can have an influence on the Spectrum, e.g, cutoffs
+and thresholds) or in "Informative Params" (descriptive parameters that have absolutely no
+impact on the spectrum, e.g, number of lines calculated or calculation time)
+'''
 
 # Informative parameters
 # ... Parameters that should be saved in the Spectrum objects, but ignored when
@@ -58,6 +65,10 @@ INFORMATIVE_PARAMS = [
     'Nprocs',
     'Ngroups',
 ]
+''' list: Informative parameters. Parameters that should be saved in the Spectrum 
+objects, but ignored when comparing two spectra. Should be written here only 
+these parameters that cannot affect the physical result. In particular, all 
+parameters relative to performance should be added here.'''
 
 # %% Util functions
 
@@ -107,11 +118,18 @@ def print_conditions(conditions, units,
 
     phys_param_list: list
         These parameters are shown below "Physical Conditions" rather than "Computation
-        Parameters
+        Parameters. See :data:`~radis.spectrum.utils.PHYSICAL_PARAMS` for more 
+        information. 
 
     info_param_list: list
         These parameters are shown below "Information" rather than "Computation 
-        Parameters
+        Parameters. See :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS` for more 
+        information.
+        
+    See Also
+    --------
+    
+    :data:`~radis.spectrum.utils.PHYSICAL_PARAMS`, :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS`
 
     '''
 
@@ -120,6 +138,7 @@ def print_conditions(conditions, units,
         return a + ' ' * max(1, (space - len(str(a))))
 
     def print_param(k):
+        ''' Special formatting for nicely printing conditions '''
         v_k = conditions[k]
         # Add extra arguments based on arbitrary conditions
         args = []
@@ -127,8 +146,18 @@ def print_conditions(conditions, units,
             args.append(units[k])
         # ... fill here for other args
 
-        # Print
-        v_k_str = '{0}'.format(v_k)
+        # Special formatting
+        if k in ['wavenum_max_calc', 'wavenum_min_calc', 'wavelength_max', 'wavelength_min',
+                 'wavenum_max', 'wavenum_min']:
+            v_k_str = '{0:.4f}'.format(v_k)
+        elif k in ['lines_calculated', 'lines_in_continuum']:
+            # Add comma separator for thousands
+            v_k_str = '{0:,d}'.format(v_k)
+        else:
+            # Default
+            v_k_str = '{0}'.format(v_k)
+    
+        # Crop
         if len(v_k_str) > 102:   # cut if too long
             v_k_str = v_k_str[:100] + '...'
         print(' '*2, align(k), v_k_str, *args)
