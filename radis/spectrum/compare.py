@@ -624,7 +624,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
 
     Iunit = make_up(Iunit)  # cosmetic changes
 
-    ax0.tick_params(labelbottom='off')
+    ax0.tick_params(labelbottom=False)
     if label1 is not None or label2 is not None:
         ax0.legend(loc='best')
 
