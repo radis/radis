@@ -653,7 +653,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),
                  va='center', rotation='vertical')
 
-    # Set limits
+    # Set limits of 'diff' window
     if method == 'diff':
         # symmetrize error scale:
         ymin, ymax = ax1.get_ylim()
@@ -663,9 +663,9 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         ax1.set_ylim(bottom=0)
     elif method == 'ratio':
         # auto-zoom on min, max, but discard first decile (case of spikes / divergences)
-        Idiff_s = np.sort(Idiff)
-        ax1.set_ylim(bottom=0, top=Idiff_s[len(
-            Idiff_s)//10]+Idiff_s[-len(Idiff_s)//10])
+        Idiff_sorted = np.sort(Idiff)
+        ax1.set_ylim(bottom=Idiff_sorted[len(Idiff_sorted)//10] - 0.001, 
+                        top=Idiff_sorted[-len(Idiff_sorted)//10] + 0.001)
 
     if title:
         fig.suptitle(title)
@@ -811,8 +811,6 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
         s1 == s2       # will return True or False
 
     '''
-
-    from radis.spectrum.compare import plot_diff
 
     # Check inputs
     if not 0 <= ignore_outliers < 1:
