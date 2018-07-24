@@ -582,7 +582,8 @@ class Spectrum(object):
         if not var in self.get_vars():
             if var+'_noslit' in self.get_vars():
                 raise KeyError(('`{0}` doesnt exist but `{1}` does'.format(var,
-                                                                           var+'_noslit')) + '. Have you used .apply_slit()?')
+                                                                           var+'_noslit')) +\
+                                '. Have you used .apply_slit()?')
             else:
                 raise KeyError('{0} not in quantity list: {1}'.format(
                     var, self.get_vars()))

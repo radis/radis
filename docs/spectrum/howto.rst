@@ -73,8 +73,8 @@ The default quantities are::
     'radiance_noslit', 'transmittance_noslit', 'emisscoeff', 'emisscoeff_continuum',
     'absorbance', 'abscoeff', 'abscoeff_continuum', 'emissivity_noslit'
 
-See the latest list in the CONVOLUTED_QUANTITIES and NON_CONVOLUTED_QUANTITIES defined 
-`here <https://github.com/radis/radis/blob/master/radis/spectrum/rescale.py>`__.
+See the latest list in the :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES` 
+and :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`.
     
 get wavelength / wavenumber?
 ------------------------

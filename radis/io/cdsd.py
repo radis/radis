@@ -21,17 +21,11 @@ CDSD-4000 manual
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
-import pandas as pd
-import numpy as np
 from collections import OrderedDict
-import os
 import radis
 from os.path import exists, splitext
 from radis.io.tools import parse_binary_file, drop_object_format_columns, replace_PQR_with_m101
-from radis.misc.cache_files import (check_not_deprecated, check_cache_file, 
-                                    save_to_hdf, get_cache_file, OLDEST_COMPATIBLE_VERSION)
-import sys
-from six.moves import zip
+from radis.misc.cache_files import check_cache_file, save_to_hdf, get_cache_file
 
 columns_hitemp = OrderedDict([(
     # name    # format # type  # description                                 # unit
