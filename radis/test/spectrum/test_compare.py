@@ -58,7 +58,7 @@ def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwa
     title = 'CO x={0:.2f}, L={1:.2f}cm'.format(
         s.conditions['mole_fraction'], s.conditions['path_length'])
     if plot:
-        plot_diff(s, s_noabsorption, method='diff', title=title)
+        plot_diff(s, s_noabsorption, method='diff', diff_window=1, title=title)
         plot_diff(s, s_noabsorption, method='ratio',
                   normalize=True, title=title)
 
