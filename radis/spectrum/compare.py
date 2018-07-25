@@ -60,6 +60,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     ----------
 
     s1, s2: Spectrum objects
+        2 spectra to compare.
 
     var: str
         spectral quantity (ex: 'radiance', 'transmittance'...)
@@ -482,7 +483,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         if ``'default'``, use first spectrum propagating medium
 
     method: ``'distance'``, ``'diff'``, ``'ratio'``
-        If ``'diff'``, plot difference at same wavespace position. 
+        If ``'diff'``, plot difference of the two spectra.
         If ``'distance'``, plot Euclidian distance (note that units are meaningless then)
         If ``'ratio'``, plot ratio of two spectra
         Default ``'diff'``.
