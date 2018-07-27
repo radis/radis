@@ -595,31 +595,26 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     # Get data
     # ----
     if normalize:
-        w1, I1 = s1.get(var, wunit, Iunit, medium)
-        w2, I2 = s2.get(var, wunit, Iunit, medium)
-        if method == 'distance':
-            wdiff, Idiff = curve_distance(w1, I1/np.max(I1), w2, I2/np.max(I2), 
-                                          discard_out_of_bounds=True)
-        elif method == 'diff':
-            wdiff, Idiff = curve_substract(w1, I1/np.max(I1), w2, I2/np.max(I2), 
-                                           diff_window=diff_window)
-        elif method == 'ratio':
-            wdiff, Idiff = curve_divide(w1, I1/np.max(I1), w2, I2/np.max(I2))
-        else:
-            raise ValueError('Unknown comparison method: {0}'.format(method))
+        # copy before modifying directly in spectrum
+        s1 = s1.copy()
+        s2 = s2.copy()
+        w1, I1 = s1.get(var, copy=False)
+        w2, I2 = s2.get(var, copy=False)
+        I1 /= np.max(I1)
+        I2 /= np.max(I2)
+        
+    if method == 'distance':
+        wdiff, Idiff = get_distance(
+            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+    elif method == 'diff':
+        wdiff, Idiff = get_diff(
+            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium, 
+            diff_window=diff_window)
+    elif method == 'ratio':
+        wdiff, Idiff = get_ratio(
+            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
     else:
-        if method == 'distance':
-            wdiff, Idiff = get_distance(
-                s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-        elif method == 'diff':
-            wdiff, Idiff = get_diff(
-                s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium, 
-                diff_window=diff_window)
-        elif method == 'ratio':
-            wdiff, Idiff = get_ratio(
-                s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-        else:
-            raise ValueError('Unknown comparison method: {0}'.format(method))
+        raise ValueError('Unknown comparison method: {0}'.format(method))
 
     # Plot
     # ----
