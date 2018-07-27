@@ -105,28 +105,29 @@ class ProgressBar():
             sys.stdout.write('\n')
             sys.stdout.flush()
 
-# %% Test
-def test_progress_bar(*args, **kwargs):
-    ''' Minimal example of a progress bar '''
 
-    from radis.misc.progress_bar import ProgressBar
-    from time import sleep
-    from numpy.random import rand
-
-    print('Testing progress bar')
-
-    a = 0
-    r = list(range(1000))
-    N = len(r)
-    pb = ProgressBar(N)
-    for i in r:
-        pb.update(i,modulo=10)
-        a += i
-        sleep(rand()*3e-3)
-    pb.done()
-
-    return True  # nothing implemented
-
-
-if __name__ == '__main__':
-    test_progress_bar()
+# %% Now tested in radis/radis/test/test_misc.py
+#def test_progress_bar(*args, **kwargs):
+#    ''' Minimal example of a progress bar '''
+#
+#    from radis.misc.progress_bar import ProgressBar
+#    from time import sleep
+#    from numpy.random import rand
+#
+#    print('Testing progress bar')
+#
+#    a = 0
+#    r = list(range(1000))
+#    N = len(r)
+#    pb = ProgressBar(N)
+#    for i in r:
+#        pb.update(i,modulo=10)
+#        a += i
+#        sleep(rand()*3e-3)
+#    pb.done()
+#
+#    return True  # nothing implemented
+#
+#
+#if __name__ == '__main__':
+#    test_progress_bar()
