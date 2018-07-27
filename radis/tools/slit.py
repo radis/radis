@@ -60,7 +60,7 @@ SLIT_SHAPES = ['triangular', 'trapezoidal', 'gaussian']
 
 def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangular',
                       center_wavespace=None, return_unit='same', wstep=None,
-                      plot=False, resfactor=2,
+                      plot=False, resfactor=2, verbose=True,
                       *args, **kwargs):
     ''' Import or generate slit function in correct wavespace
     Give a file path to import, or a float / tuple to generate arbitrary shapes
@@ -315,7 +315,7 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
             printdbg('get_slit_function: {0} in {1}, norm_by {2}, return in {3}'.format(
                 slit_function, unit, norm_by, return_unit))
         wslit, Islit = import_experimental_slit(slit_function, norm_by=norm_by,  # norm is done later anyway
-                                                waveunit=unit,
+                                                waveunit=unit, verbose=verbose,
                                                 bplot=False,  # we will plot after resampling
                                                 *args, **kwargs)
         # ... get unit

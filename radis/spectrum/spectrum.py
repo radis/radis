@@ -1049,7 +1049,7 @@ class Spectrum(object):
                                    force=force)
 
     def rescale_mole_fraction(self, new_mole_fraction, old_mole_fraction=None,
-                              ignore_warnings=False, force=False):
+                              ignore_warnings=False, force=False, verbose=True):
         ''' Update spectrum with new molar fraction
         Convoluted values (with slit) are dropped in the process.
 
@@ -1087,11 +1087,10 @@ class Spectrum(object):
 
         Add warning when too large rescaling
         '''
-
         return rescale_mole_fraction(self, new_mole_fraction=new_mole_fraction,
                                      old_mole_fraction=old_mole_fraction,
                                      ignore_warnings=ignore_warnings,
-                                     force=force)
+                                     force=force, verbose=verbose)
 
     def get_integral(self, var, wunit='nm', Iunit='default', **kwargs):
         ''' Returns integral of variable 'var' over waverange
@@ -1850,7 +1849,7 @@ class Spectrum(object):
         # -------
         wslit0, Islit0 = get_slit_function(slit_function, unit=unit, norm_by=norm_by,
                                          shape=shape, center_wavespace=center_wavespace,
-                                         return_unit=waveunit, wstep=wstep,
+                                         return_unit=waveunit, wstep=wstep, verbose=verbose,
                                          plot=plot_slit, *args, **kwargs)
 
         # Check if dispersion is too large

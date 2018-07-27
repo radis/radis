@@ -1676,7 +1676,7 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
 
 
 def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
-                          ignore_warnings=False, force=False):
+                          ignore_warnings=False, force=False, verbose=True):
     ''' Update spectrum with new molar fraction
     Convoluted values (with slit) are dropped in the process.
 
@@ -1769,7 +1769,8 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
     # Rescale
     assume_equilibrium = spec.conditions.get('thermal_equilibrium', False)
     _recalculate(spec, 'same', path_length, path_length, new_mole_fraction, old_mole_fraction,
-                 true_path_length=true_path_length, assume_equilibrium=assume_equilibrium)
+                 true_path_length=true_path_length, assume_equilibrium=assume_equilibrium,
+                 verbose=verbose)
 
     # Update conditions
     spec.conditions['mole_fraction'] = new_mole_fraction
