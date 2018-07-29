@@ -292,7 +292,7 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
     s.compare_with(s3, plot=plot, title='Residual: {0:.2g}'.format(
         get_residual_integral(s, s3, 'abscoeff', ignore_nan=True)))
 
-    assert get_residual_integral(s, s2, 'abscoeff', ignore_nan=True) < 1e-4
+    assert get_residual_integral(s, s2, 'abscoeff', ignore_nan=True) < 1e-3
     assert get_residual_integral(s, s2b, 'abscoeff', ignore_nan=True) < 1e-3
     assert get_residual_integral(s, s3, 'abscoeff', ignore_nan=True) < 1e-5
 
