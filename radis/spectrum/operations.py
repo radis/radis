@@ -60,8 +60,8 @@ def Transmittance(s):
     
 
 # %% Algebric operations on Spectra
-def multiply(s, coef, var='radiance', wunit='nm', name='None'):
-    '''Multiply the spectrum by the float 'coef'
+def _multiply(s, coef, var='radiance', wunit='nm', name='None'):
+    '''Multiply s[var] by the float 'coef'
 
     Parameters    
     ----------
@@ -69,28 +69,81 @@ def multiply(s, coef, var='radiance', wunit='nm', name='None'):
         The spectra to multiply.
     coef: Float
         Coefficient of the multiplication.
+    var: str
+        'radiance', 'transmittance', ...
+    wunit: str
+        'nm'or 'cm-1'
+    name: str
+        name of output spectrum
     Returns    
     ----------
-    sub : Spectrum object where intensity of s is multiplied by coef
+    mult : Spectrum object where intensity of s['var'] is multiplied by coef
 
-    Note    
-    ----------
-    Good for fittings without absolute calibration. No unit in output !
+
     '''
     w, I = s.get(var, wunit=wunit)
     mult = Spectrum.from_array(w, coef*I, var,
                               waveunit=wunit,
-                              unit='None',
+                              unit=s.units[var],
                               conditions={
                                   'medium': s.conditions['medium'], 'waveunit': wunit},
                               name=name)
     return mult
 
+def _add_constant(s, cst, var='radiance', wunit='nm', name='None'):
+    '''Add a constant to s[var] 
 
-if __name__ == '__main__':
-    from radis import plot_diff, get_residual_integral, load_spec
-    from radis.test.utils import getTestFile
-    s_5 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.5.spec"))
-    s_01 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
+    Parameters    
+    ----------
+    s: Spectrum objects
+        Spectrum you want to modify
+    cst: Float
+        Constant to add.
+    var: str
+        'radiance', 'transmittance', ...
+    wunit: str
+        'nm'or 'cm-1'
+    name: str
+        name of output spectrum
+    Returns    
+    ----------
+    add : Spectrum object where cst is added to intensity of s['var']
+
+    Note    
+    ----------
+    Use only for rough work. If you want to work properly with spectrum 
+    objects, see MergeSlabs.
+    '''
+    w, I = s.get(var, wunit=wunit)
+    add = Spectrum.from_array(w, cst+I, var,
+                              waveunit=wunit,
+                              unit=s.units[var],
+                              conditions={
+                                  'medium': s.conditions['medium'], 'waveunit': wunit},
+                              name=name)
+    return add
+
+def _test_multiplyAndAddition(s):
+    s_bis = _add_constant(s, 1)
+    diff = get_diff(s_bis, s, 'radiance') 
+    test = diff[1]-1
+    assert np.all(test<1e-10)
     
+    s_ter = _multiply(_multiply(s, 50), 1/50)
+#    plot_diff(s_ter, s_5)
+    diff = get_diff(s_ter, s, 'radiance') 
+    ratio = abs(np.trapz(diff[1], x=diff[0])/s.get_integral('radiance'))
+    assert ratio<1e-10
+    
+    
+if __name__ == '__main__':
+    from radis import load_spec, get_diff
+    from radis.test.utils import getTestFile
+    import numpy as np
+#    s_5 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.5.spec"))
+    s_01 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
+    s_01.conditions['self_absorption']=False
+    s_01.update()
+    s_01.apply_slit(0.1)
+    _test_multiplyAndAddition(s_01)
     
