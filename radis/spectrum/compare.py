@@ -37,6 +37,7 @@ from matplotlib.widgets import MultiCursor
 import numpy as np
 from publib import set_style, fix_style
 from warnings import warn
+from six.moves import range
 
 
 # %% ======================================================================

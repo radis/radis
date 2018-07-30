@@ -27,6 +27,8 @@ See Also
 # https://gist.github.com/gansanay/4514ec731da1a40d8811a2b3c313f836
 # and pd.read_feather(file, nthreads=3)
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import h5py
 import radis
@@ -108,7 +110,7 @@ def check_cache_file(use_cached, fcache, metadata={}, verbose=True):
         if exists(fcache):
             os.remove(fcache)
             if verbose:
-                print('Deleted h5 cache file : {0}'.format(fcache))
+                print(('Deleted h5 cache file : {0}'.format(fcache)))
     elif use_cached == 'force':
         if not exists(fcache):
             raise ValueError('Cache file {0} doesnt exist'.format(fcache))
@@ -119,7 +121,7 @@ def check_cache_file(use_cached, fcache, metadata={}, verbose=True):
     # (we just read the attributes, the file is never fully read)
     if exists(fcache):
         if verbose:
-            print('Using cache file: {0}'.format(fcache))
+            print(('Using cache file: {0}'.format(fcache)))
         try:
             check_not_deprecated(fcache, metadata=metadata, current_version=radis.__version__,
                                  last_compatible_version=OLDEST_COMPATIBLE_VERSION)

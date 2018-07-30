@@ -64,6 +64,7 @@ from numpy import abs, diff
 from copy import deepcopy
 from six import string_types
 from os.path import basename
+from six.moves import zip
 
 
 

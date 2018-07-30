@@ -3,6 +3,8 @@
 Utils for setup.py
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import re
 
 # Utils to format RST
@@ -74,7 +76,7 @@ def yield_sphinx_only_markup(lines):
             for (regex, sub) in regex_subs:
                 line = regex.sub(sub, line)
         except Exception as ex:
-            print("ERROR: %s, (line(%s)"%(regex, sub))
+            print(("ERROR: %s, (line(%s)"%(regex, sub)))
             raise ex
 
         return line

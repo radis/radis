@@ -36,6 +36,7 @@ from numpy import sqrt, linspace, abs, trapz
 from os.path import basename
 import pytest
 from warnings import catch_warnings, filterwarnings
+from six.moves import zip
 
 fig_prefix = basename(__file__)+': '
 

@@ -20,8 +20,9 @@ import fileinput
 from six.moves import filter
 from six.moves import range
 from six import binary_type
+from six.moves import filterfalse
 if sys.version_info[0] == 2:
-    from itertools import ifilterfalse as filterfalse
+    
 else:
     from itertools import filterfalse
 from itertools import tee
