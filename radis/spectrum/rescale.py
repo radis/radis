@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 
 Functions to update :class:`~radis.spectrum.spectrum.Spectrum` 

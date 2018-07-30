@@ -21,10 +21,6 @@ from six.moves import filter
 from six.moves import range
 from six import binary_type
 from six.moves import filterfalse
-if sys.version_info[0] == 2:
-    
-else:
-    from itertools import filterfalse
 from itertools import tee
 import pandas as pd
 from six import StringIO
