@@ -457,7 +457,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
             #                        y=spec.out[overlay],
             y=over_I,
             yaxis='y2',
-            name=overlay,
+            name=over_name,
         ))
 
         layout['yaxis2'] = dict(
