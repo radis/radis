@@ -48,7 +48,10 @@ def intersect(a, b):
     return c
 
 
-def SerialSlabs(*slabs, **kwargs):
+def SerialSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','full'),
+                                   'out_of_bounds':('transparent','nan','error'),
+                                   'optically_thin':bool,
+                                   'verbose':bool}):
     ''' Compute the result of several slabs 
 
 
@@ -110,10 +113,8 @@ def SerialSlabs(*slabs, **kwargs):
     '''
 
     # Check inputs, get defaults
-    resample_wavespace = kwargs.pop(
-        'resample_wavespace', 'never')   # default 'never'
-    out_of_bounds = kwargs.pop(
-        'out_of_bounds', 'nan')               # default 'nan'
+    resample_wavespace = kwargs.pop('resample_wavespace', 'never')   # default 'never'
+    out_of_bounds = kwargs.pop('out_of_bounds', 'nan')               # default 'nan'
     if len(kwargs) > 0:
         raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
 
@@ -225,7 +226,6 @@ def SerialSlabs(*slabs, **kwargs):
                         cond_units=cond_units, units=unitsn,
                         name=name)
 
-
 def _serial_slab_names(s, sn):
     name_s = s.get_name()
     name_sn = sn.get_name()
@@ -336,8 +336,9 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
             # resample slabs if allowed
             if resample_wavespace == 'never':
                 raise ValueError('All wavelengths/wavenumbers must be the same for ' +
-                                 'multi slabs configurations. Consider using `resample_wavespace` ' +
-                                 '= `intersect` or `full`')
+                                 'multi slabs configurations. Consider using '+\
+                                 "`resample_wavespace='intersect'` or " +\
+                                 "`resample_wavespace='full'")
             elif resample_wavespace == 'full':
                 # ... get bounds
                 wmin = min([w.min() for w in wl])   # minimum of all
@@ -369,7 +370,10 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
     return slabs
 
 
-def MergeSlabs(*slabs, **kwargs):
+def MergeSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','full'),
+                                   'out_of_bounds':('transparent','nan','error'),
+                                   'optically_thin':bool,
+                                   'verbose':bool}):
     ''' Combines several slabs into one. Useful to calculate multi-gas slabs. 
     Linear absorption coefficient is calculated as the sum of all linear absorption
     coefficients, and the RTE is recalculated to get the total radiance
@@ -446,14 +450,11 @@ def MergeSlabs(*slabs, **kwargs):
 
     :func:`~radis.los.slabs.SerialSlabs`
     '''
-
+    
     # inputs (Python 2 compatible)
-    resample_wavespace = kwargs.pop(
-        'resample_wavespace', 'never')   # default 'never'
-    out_of_bounds = kwargs.pop(
-        'out_of_bounds', 'nan')               # default 'nan'
-    optically_thin = kwargs.pop(
-        'optically_thin', False)             # default False
+    resample_wavespace = kwargs.pop('resample_wavespace', 'never')   # default 'never'
+    out_of_bounds = kwargs.pop('out_of_bounds', 'nan')               # default 'nan'
+    optically_thin = kwargs.pop('optically_thin', False)             # default False
     verbose = kwargs.pop('verbose', True)             # type: bool
     debug = kwargs.pop('debug', False)                # type: bool
     if len(kwargs) > 0:
@@ -504,6 +505,7 @@ def MergeSlabs(*slabs, **kwargs):
         conditions['waveunit'] = waveunit
         cond_units = slabs[0].cond_units
         units0 = slabs[0].units
+        # Define conditions as intersection of everything (N/A if unknown)
         for s in slabs[1:]:
             conditions = intersect(conditions, s.conditions)
             cond_units = intersect(cond_units, s.cond_units)
@@ -673,6 +675,7 @@ def MergeSlabs(*slabs, **kwargs):
         return Spectrum(quantities=quantities, conditions=conditions,
                         cond_units=cond_units, units=units0,
                         name=name)
+
 
 # %% Tests
 

@@ -116,6 +116,7 @@ columns_2004 = OrderedDict([(
     'gp',     ('a7',   float, 'upper state degeneracy', '')), (
     'gpp',    ('a7',   float, 'lower state degeneracy', ''))
 ])
+''' OrderedDict: parsing order of HITRAN '''
 
 
 def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
