@@ -91,7 +91,7 @@ def _multiply(s, coef, var='radiance', wunit='nm', name='None'):
     return mult
 
 def _add_constant(s, cst, var='radiance', wunit='nm', name='None'):
-    '''Add a constant to s[var] 
+    '''Return a new spectrum with a constant added to s[var] 
 
     Parameters    
     ----------
@@ -123,6 +123,44 @@ def _add_constant(s, cst, var='radiance', wunit='nm', name='None'):
                               name=name)
     return add
 
+def _sub_baseline(s, left, right, var='radiance', wunit='nm', name='None'):
+    '''Return a new spectrum with a baseline substracted to s[var] 
+    
+     Parameters    
+    ----------
+    s: Spectrum objects
+        Spectrum you want to modify
+    left: Float
+        Constant to substract on the left of the spectrum.
+    right: Float
+        Constant to substract on the right of the spectrum.
+    var: str
+        'radiance', 'transmittance', ...
+    wunit: str
+        'nm'or 'cm-1'
+    name: str
+        name of output spectrum
+    Returns    
+    ----------
+    add : Spectrum object where cst is added to intensity of s['var']
+
+    Note    
+    ----------
+    Use only for rough work. If you want to work properly with spectrum 
+    objects, see MergeSlabs.
+    '''
+    
+    w, I = s.get(var, wunit=wunit)
+    I_final = I - np.linspace(left, right, num=np.size(I))
+    output = Spectrum.from_array(w, I_final, var,
+                              waveunit=wunit,
+                              unit=s.units[var],
+                              conditions={
+                                  'medium': s.conditions['medium'], 'waveunit': wunit},
+                              name=name)
+    return output
+    
+    
 def _test_multiplyAndAddition(s):
     s_bis = _add_constant(s, 1)
     diff = get_diff(s_bis, s, 'radiance') 
@@ -135,6 +173,10 @@ def _test_multiplyAndAddition(s):
     ratio = abs(np.trapz(diff[1], x=diff[0])/s.get_integral('radiance'))
     assert ratio<1e-10
     
+def _test_visualTestBaseline(s):
+    from radis import plot_diff
+    s2 = _sub_baseline(s, 2e-4, -2e-4, name = 'sub_arb_baseline')
+    plot_diff(s, s2)
     
 if __name__ == '__main__':
     from radis import load_spec, get_diff
@@ -146,4 +188,4 @@ if __name__ == '__main__':
     s_01.update()
     s_01.apply_slit(0.1)
     _test_multiplyAndAddition(s_01)
-    
+    _test_visualTestBaseline(s_01)
