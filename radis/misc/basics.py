@@ -103,7 +103,7 @@ def partition(pred, iterable):
 # %% Compare / merge tools
 
 
-def compare_dict(d1, d2, verbose=True, compare_as_paths=[], return_string=False):
+def compare_dict(d1, d2, verbose='if_different', compare_as_paths=[], return_string=False):
     ''' Returns ratio of equal keys [0-1]
     If verbose, also print all keys and values on 2 columns
 
@@ -193,7 +193,7 @@ def compare_dict(d1, d2, verbose=True, compare_as_paths=[], return_string=False)
         sys.stdout = old_stdout
 
 
-def compare_lists(l1, l2, verbose=True):
+def compare_lists(l1, l2, verbose='if_different'):
     ''' Compare 2 lists of elements that may not be of the same length, irrespective
     of order. Returns the ratio of elements [0-1] present in both lists. If verbose, 
     prints the differences 
@@ -209,6 +209,13 @@ def compare_lists(l1, l2, verbose=True):
         function is called twice
 
 
+    Other Parameters
+    ----------------
+
+    verbose: boolean, or ``'if_different'``
+        ``'if_different'`` means results will be shown only if there is a difference. 
+
+
     Returns
     -------
 
@@ -217,41 +224,43 @@ def compare_lists(l1, l2, verbose=True):
 
     '''
 
-    if verbose == 'if_different':
-        restart = True
-        verbose = False
-    else:
-        restart = False
+    old_stdout = sys.stdout
+    sys.stdout = newstdout = StringIO()     # capture all print
 
-    if verbose:
+    try:
+
         print('{0:20}\t{1}'.format('Left', 'Right'))
-    if verbose:
         print('-'*40)
-    all_keys = set(list(l1)+list(l2))
-    s = 0       # counter of all matching keys
-    for k in all_keys:
-        if k in l1 and k in l2:   # key in both lists
-            s += 1
-        elif k in l1:
-            if verbose:
+        all_keys = set(list(l1)+list(l2))
+        s = 0       # counter of all matching keys
+        for k in all_keys:
+            if k in l1 and k in l2:   # key in both lists
+                s += 1
+            elif k in l1:
                 print('{0:20}\tN/A'.format('{0} ({1})'.format(k, type(k))))
-        else:
-            if verbose:
+            else:
                 print('{0:20}\t{1} ({2})'.format('N/A', k, type(k)))
-    if verbose:
         print('-'*40)
+    
+        if len(all_keys) == 0:
+            out = 1
+        else:
+            out = s/len(all_keys)
+    
+        # Get string output
+        string = newstdout.getvalue()
+        sys.stdout = old_stdout    # reset normal print
 
-    if len(all_keys) == 0:
-        out = 1
-    else:
-        out = s/len(all_keys)
+        # Output
+        if verbose == True or (verbose == 'if_different' and out != 1):
+            print(string)
 
-    # Exit
-    if restart and out != 1:
-        return compare_lists(l1, l2, verbose=True)
-    else:
         return out
-
+    except:
+        raise
+    finally:
+        sys.stdout = old_stdout
+        
 
 def stdpath(p):
     ''' Convert path p in standard path (irrespective of slash / backslash,
