@@ -142,12 +142,11 @@ def _sub_baseline(s, left, right, var='radiance', wunit='nm', name='None'):
         name of output spectrum
     Returns    
     ----------
-    add : Spectrum object where cst is added to intensity of s['var']
+    output : Spectrum object where the baseline was substracted to intensity of s['var']
 
     Note    
     ----------
-    Use only for rough work. If you want to work properly with spectrum 
-    objects, see MergeSlabs.
+    Use only for rough work. 
     '''
     
     w, I = s.get(var, wunit=wunit)
@@ -160,7 +159,54 @@ def _sub_baseline(s, left, right, var='radiance', wunit='nm', name='None'):
                               name=name)
     return output
     
-    
+def _offset(s, offset, var='radiance', wunit='nm', name='None'):
+    w, I = s.get(var, wunit=wunit)
+    w_final = w + offset
+    output = Spectrum.from_array(w_final, I, var,
+                              waveunit=wunit,
+                              unit=s.units[var],
+                              conditions={
+                                  'medium': s.conditions['medium'], 'waveunit': wunit},
+                              name=name)
+    return output
+
+#def _offset(s, offset, var='radiance', wunit='nm', name='None'):
+#     '''Return a new spectrum with a baseline substracted to s[var] 
+#    
+#     Parameters    
+#    ----------
+#    s: Spectrum objects
+#        Spectrum you want to modify
+#    offset: Float
+#        Constant to add to the wavelength.
+#    right: Float
+#        Constant to substract on the right of the spectrum.
+#    var: str
+#        'radiance', 'transmittance', ...
+#    wunit: str
+#        'nm'or 'cm-1'
+#    name: str
+#        name of output spectrum
+#    Returns    
+#    ----------
+#    output : Spectrum object shifted in wavelength
+#
+#    Note    
+#    ----------
+#    Use only for rough work. 
+#    '''
+#    
+#    w, I = s.get(var, wunit=wunit)
+#    w_final = w + offset
+#    output = Spectrum.from_array(w_final, I, var,
+#                              waveunit=wunit,
+#                              unit=s.units[var],
+#                              conditions={
+#                                  'medium': s.conditions['medium'], 'waveunit': wunit},
+#                              name=name)
+#    return output
+
+
 def _test_multiplyAndAddition(s):
     s_bis = _add_constant(s, 1)
     diff = get_diff(s_bis, s, 'radiance') 
@@ -177,6 +223,12 @@ def _test_visualTestBaseline(s):
     from radis import plot_diff
     s2 = _sub_baseline(s, 2e-4, -2e-4, name = 'sub_arb_baseline')
     plot_diff(s, s2)
+
+def _test_visualTestOffset(s):
+    from radis import plot_diff
+    s2 = _offset(s, 10, wunit='nm', name = 'sub_arb_baseline')
+    plot_diff(s, s2)
+    
     
 if __name__ == '__main__':
     from radis import load_spec, get_diff
@@ -188,4 +240,5 @@ if __name__ == '__main__':
     s_01.update()
     s_01.apply_slit(0.1)
     _test_multiplyAndAddition(s_01)
-    _test_visualTestBaseline(s_01)
+#    _test_visualTestBaseline(s_01)
+    _test_visualTestOffset(s_01)
