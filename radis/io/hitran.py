@@ -174,6 +174,9 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     :func:`~radis.io.cdsd.cdsd2df`
 
     '''
+    
+    if verbose>=2:
+        print('Opening file {0} (cache={1})'.format(fname, cache))
 
     columns = columns_2004
 

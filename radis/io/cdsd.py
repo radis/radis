@@ -200,6 +200,9 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
 
     '''
 
+    if verbose>=2:
+        print('Opening file {0} (format=CDSD {1}, cache={2})'.format(fname, version, cache))
+
     if version == 'hitemp':
         columns = columns_hitemp
     elif version == '4000':
