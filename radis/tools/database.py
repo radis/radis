@@ -282,7 +282,11 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
                 v = conditions[k]
                 # Format info
                 # ... special cases
-                if k in ['Tvib', 'Tgas', 'Trot']:
+                if k in ['Tvib'] and is_float(v):  
+                    # (dev): it can happen in multi-Tvib mode that Tvib is 
+                    # a str ('Tvib1,Tvib2,Tvib3') and not a float 
+                    vs = "{0:.0f}".format(v)
+                elif k in ['Telec', 'Tgas', 'Trot']:
                     vs = "{0:.0f}".format(v)
                 # ... general case
                 elif is_float(v):

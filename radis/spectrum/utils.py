@@ -148,14 +148,18 @@ def print_conditions(conditions, units,
         # ... fill here for other args
 
         # Special formatting
-        if k in ['wavenum_max_calc', 'wavenum_min_calc', 'wavelength_max', 'wavelength_min',
-                 'wavenum_max', 'wavenum_min']:
-            v_k_str = '{0:.4f}'.format(v_k)
-        elif k in ['lines_calculated', 'lines_in_continuum']:
-            # Add comma separator for thousands
-            v_k_str = '{0:,d}'.format(v_k)
-        else:
-            # Default
+        try:
+            if k in ['wavenum_max_calc', 'wavenum_min_calc', 'wavelength_max', 'wavelength_min',
+                     'wavenum_max', 'wavenum_min']:
+                v_k_str = '{0:.4f}'.format(v_k)
+            elif k in ['lines_calculated', 'lines_in_continuum']:
+                # Add comma separator for thousands
+                v_k_str = '{0:,d}'.format(v_k)
+            else:
+                # Default to printing str
+                v_k_str = '{0}'.format(v_k)
+        except ValueError:
+            # Default to printing str
             v_k_str = '{0}'.format(v_k)
     
         # Crop
