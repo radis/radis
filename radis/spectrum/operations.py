@@ -229,6 +229,21 @@ def _test_visualTestOffset(s):
     s2 = _offset(s, 10, wunit='nm', name = 'sub_arb_baseline')
     plot_diff(s, s2)
     
+def test_invariants():
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
+    s.update()
+    s.apply_slit(0.1, 'nm')
+    
+    
+    # Note @EP: this test doesnt work for the moment as constant & multiply
+    # seem to return a Spectrum in a difference medium (vacuum vs air) -> 
+    # creates a ~1 nm offset for CO IR 
+    
+    assert s == _add_constant(s, 0)
+    assert s == _multiply(s, 1)
+    
     
 if __name__ == '__main__':
     from radis import load_spec, get_diff, get_residual
@@ -243,7 +258,8 @@ if __name__ == '__main__':
 #    _test_visualTestBaseline(s_01)
     _test_visualTestOffset(s_01)
     
-    
+    test_invariants()
+
     
     # Added by @erwan
     
@@ -271,3 +287,4 @@ if __name__ == '__main__':
     s.plot(lw=2, nfig='Multiplication (Serial): s*s', wunit='nm')
 #    (s*s).plot(nfig='same')
     (2*s).plot(nfig='same', wunit='nm')
+
