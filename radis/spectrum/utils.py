@@ -57,6 +57,7 @@ impact on the spectrum, e.g, number of lines calculated or calculation time)
 # ... should be added here.
 INFORMATIVE_PARAMS = [
     'db_use_cached',
+    'lvl_use_cached',
     'chunksize',
     'calculation_time',
     'lines_calculated',
@@ -65,6 +66,11 @@ INFORMATIVE_PARAMS = [
     'parallel',
     'Nprocs',
     'Ngroups',
+    'warning_broadening_threshold',
+    'warning_linestrength_cutoff',
+    'load_energies',
+    'export_lines',
+    'export_populations',
 ]
 ''' list: Informative parameters. Parameters that should be saved in the Spectrum 
 objects, but ignored when comparing two spectra. Should be written here only 
