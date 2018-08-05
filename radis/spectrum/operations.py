@@ -231,7 +231,7 @@ def _test_visualTestOffset(s):
     
     
 if __name__ == '__main__':
-    from radis import load_spec, get_diff
+    from radis import load_spec, get_diff, get_residual
     from radis.test.utils import getTestFile
     import numpy as np
 #    s_5 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.5.spec"))
@@ -242,3 +242,32 @@ if __name__ == '__main__':
     _test_multiplyAndAddition(s_01)
 #    _test_visualTestBaseline(s_01)
     _test_visualTestOffset(s_01)
+    
+    
+    
+    # Added by @erwan
+    
+    # An implement of Spectrum Algebra
+    # Reload:
+    s=load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s.update()
+    
+    # Test addition
+    s.plot(lw=2, nfig='Addition (Merge): s+s')
+    (s+s).plot(nfig='same')
+    
+    # TODO: add test
+    # @EP: the test fails at the moment because multiply only works with radiance,
+    # and MergeSlabs only works with non convoluted quantities
+    # Do we want that? Up for discussion...
+    
+#    # This should be very small if the spectrum is optically thin (which it is)
+#    assert get_residual(2*s, s+s, 'radiance_noslit') < 1e-3
+
+    s.apply_slit(0.1, 'nm')
+    # TODO: make 2*s  (multiply)    crash if there are more than 1 spectral quantity?
+    
+    # Test multiplication with float
+    s.plot(lw=2, nfig='Multiplication (Serial): s*s', wunit='nm')
+#    (s*s).plot(nfig='same')
+    (2*s).plot(nfig='same', wunit='nm')

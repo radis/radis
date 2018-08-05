@@ -1197,7 +1197,7 @@ class Spectrum(object):
 
     def plot(self, var=None, wunit='default', Iunit='default', show_points=False,
              nfig=None, yscale='linear', medium='default',
-             normalize=False,
+             normalize=False, force=False,
              **kwargs):
         '''
 
@@ -1234,6 +1234,10 @@ class Spectrum(object):
         normalize: boolean
             option to normalize quantity to 1 (ex: for radiance). Default ``False``
 
+        force: bool
+            plotting on an existing figure is forbidden if labels are not the 
+            same. Use ``force=True`` to ignore that.
+
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
@@ -1269,6 +1273,7 @@ class Spectrum(object):
         # Get variable
         x, y = self.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
 
+        # Get labels
         wmedium = ' [{0}]'.format(medium) if medium != 'default' else ''
         if wunit == 'cm-1':
             xlabel = 'Wavenumber (cm-1)'
@@ -1281,6 +1286,8 @@ class Spectrum(object):
             except KeyError:  # unit not defined in dictionary
                 Iunit0 = 'a.u'
             Iunit = Iunit0
+            
+        ylabel = make_up('{0} ({1})'.format(var, Iunit))
 
         # cosmetic changes
         Iunit = make_up(Iunit)
@@ -1294,7 +1301,25 @@ class Spectrum(object):
         set_style('origin')
         if nfig == 'same':
             nfig = plt.gcf().number
-        plt.figure(nfig)
+        fig = plt.figure(nfig)
+        
+        # If figure exist, ensures xlabel and ylabel are the same (prevents some
+        # users errors if plotting difference units!)... Note that since 
+        # 'radiance' and 'radiance_noslit' are now plotted under the same name,
+        # they cannot be differenced. But at least this allows user to plot 
+        # both on the same figure if they want to compare
+        
+        if not force and (fig.gca().get_xlabel() not in ['', xlabel]):
+            raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
+                             'on a same figure with different xlabel: {0}, {1}'.format(
+                            fig.gca().get_xlabel(), xlabel)+\
+                            'Use force=True if you really want to plot')
+        if not force and (fig.gca().get_ylabel() not in ['', ylabel]):
+            raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
+                             'on a same figure with different ylabel: {0}, {1}'.format(
+                            fig.gca().get_ylabel(), ylabel)+\
+                            'Use force=True if you really want to plot')
+        
         # Add extra plotting parameters
         if 'lw' not in kwargs and 'linewidth' not in kwargs:
             kwargs['lw'] = 0.5
@@ -1307,7 +1332,7 @@ class Spectrum(object):
             plt.plot(x, y, 'o', color='lightgrey', **kwargs)
         plt.ticklabel_format(useOffset=False, axis='x')
         plt.xlabel(xlabel)
-        plt.ylabel(make_up('{0} ({1})'.format(var, Iunit)))
+        plt.ylabel(ylabel)
 
         plt.yscale(yscale)
 
@@ -2944,6 +2969,113 @@ class Spectrum(object):
 
         return ''  # self.print_conditions()
 
+
+    # %% Define Spectrum Algebra
+    # +, -, *, ^  operators
+    
+    # Notes:
+    # s + s = 2*s    # valid only if optically thin
+    
+    # Other possibility:
+    # use   s1>s2    for SerialSlabs
+    # and   s1//s2   for MergeSlabs
+    
+    # Or:
+    # use   s1*s2   for Serial Slabs
+    # and   s1+s2   for MergeSlabs
+    
+    # For the moment the first version is implemented
+    
+    # Plus
+    
+    def __add__(self, other):
+        ''' Override '+' behavior
+        Add is defined as :
+            
+        - for numeric values: add a baseline
+        - for 2 Spectra: Merge them (i.e: solve the RTE again). Won't work
+          if they are not defined on the same waverange, but it's okay: let 
+          the user use MergeSlabs manually with the appropriate options 
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _add_constant
+            # TODO: define _add_constant to loop over all quantities. @minou? 
+            # TODO: make sure units are okay
+            return _add_constant(self, other)
+        elif isinstance(other, Spectrum):
+            from radis.los.slabs import MergeSlabs
+            return MergeSlabs(self, other)
+        else:
+            raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __radd__(self, other):
+        ''' Right side addition '''
+        return self.__add__(other)
+    
+    # Minus
+
+    def __sub__(self, other):
+        ''' Override '-' behavior
+        Add is defined as :
+            
+        - for numeric values: substract a baseline
+        - for 2 Spectra: not defined
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _add_constant
+            # TODO: define _add_constant to loop over all quantities. @minou? 
+            # TODO: make sure units are okay
+            return _add_constant(self, -other)
+        else:
+            raise NotImplementedError('- not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __rsub__(self, other):
+        ''' Right side substraction '''
+        raise NotImplementedError('right substraction (-) not implemented for Spectrum objects')
+
+    # Times
+    
+    def __mul__(self, other):
+        ''' Override '*' behavior
+        Add is defined as :
+            
+        - for numeric values: multiply (equivalent to optically thin scaling)
+          (only if in front, i.e:  2*s   works but s*2 is not implemented)
+        - for 2 Spectra: add them along the line of sight, with SerialSlabs
+          
+        '''
+#        if isinstance(other, float) or isinstance(other, int):
+#            from radis.spectrum.operations import _multiply
+#            # TODO: define _add_constant to loop over all quantities. @minou? 
+#            # TODO: make sure units are okay
+#            return _multiply(self, other)
+        if isinstance(other, Spectrum):
+            from radis.los.slabs import SerialSlabs
+            return SerialSlabs(self, other)
+        else:
+            raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __rmul__(self, other):
+        ''' Right side multiplication '''
+
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _multiply
+            # TODO: define _add_constant to loop over all quantities. @minou? 
+            # TODO: make sure units are okay
+            return _multiply(self, other)
+        if isinstance(other, Spectrum):
+            from radis.los.slabs import SerialSlabs
+            return SerialSlabs(other, self)
+        else:
+            raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+    
+
     # the following is so that json_tricks.dumps and .loads can be used directly,
     # ie.:
     # >>> s == loads(s.dumps())
@@ -3043,7 +3175,6 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
     return slices[::increment], wings_min[::increment], wings_max[::increment]
 
 
-
 # %% ======================================================================
 # Test class function
 # -------------------
@@ -3105,3 +3236,5 @@ def experimental_spectrum(*args, **kwargs):
 if __name__ == '__main__':
     from radis.test.spectrum.test_spectrum import _run_testcases
     print('Test spectrum: ', _run_testcases(debug=False))
+
+    
