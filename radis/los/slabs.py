@@ -151,14 +151,13 @@ def SerialSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','f
         # make sure we use the same wavespace type (even if sn is in 'nm' and s in 'cm-1')
         # also make sure we use the same units
         waveunit = s.get_waveunit()
-        w = s._q['wavespace']
-        
+
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
         s, sn = resample_slabs(waveunit, resample_wavespace, out_of_bounds,
                                s, sn)
-        
+        w = s._q['wavespace']
 
         # Get all data
         # -------------
@@ -226,7 +225,7 @@ def SerialSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','f
                         cond_units=cond_units, units=unitsn,
                         name=name)
 
-def _serial_slab_names(s, sn):
+def _serial_slab_names(s : Spectrum, sn : Spectrum):
     name_s = s.get_name()
     name_sn = sn.get_name()
     if '//' in name_s and not '>>' in name_s:
@@ -268,7 +267,6 @@ def _has_quantity(quantity, *slabs):
     for s in slabs:
         b *= quantity in slabs
     return b
-
 
 def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
     ''' Resample slabs on the same wavespace: if the range are differents, 
@@ -345,6 +343,8 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
                 wmax = max([w.max() for w in wl])   # maximum of all
                 dw = min([abs(diff(w)).min() for w in wl])  # highest density
                 wnew = arange(wmin, wmax+dw, dw)
+                if wnew[-1] > wmax:  # sometimes arange doesnt work as expected
+                    wnew = wnew[:-1]
                 # ... copy the array of slabs not to modify the input
                 # ... slabs themselves
                 for s in slabsk:
@@ -357,6 +357,8 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
                 wmax = min([w.max() for w in wl])   # minimum of all
                 dw = min([abs(diff(w)).min() for w in wl])  # highest density
                 wnew = arange(wmin, wmax+dw, dw)
+                if wnew[-1] > wmax:  # sometimes arange doesnt work as expected
+                    wnew = wnew[:-1]
                 if len(wnew) == 0:
                     raise ValueError('Intersect range is empty')
                 # ... copy the array of slabs not to modify the input
@@ -383,7 +385,7 @@ def MergeSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','fu
     ----------
 
     slabs: list of Spectra, each representing a slab
-        If given in conditions, all path_length have to be same
+        If given in conditions, all ``path_length`` have to be same
 
     Other Parameters
     ----------------
@@ -391,18 +393,24 @@ def MergeSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','fu
     kwargs input:
 
     resample_wavespace: 'never', 'intersect', 'full'
-        what to do when spectra have different wavespaces. 
+        what to do when spectra have different wavespaces:
+            
         - If 'never', raises an error
         - If 'intersect', uses the intersection of all ranges, and resample
         spectra on the most resolved wavespace. 
         - If 'full', uses the overlap of all ranges, resample spectra on the 
         most resolved wavespace, and fill missing data with 0 emission and 0
         absorption
+        
         Default 'never'
 
     out_of_bounds: 'transparent', 'nan', 'error'
-        what to do if resampling is out of bounds. 'transparent': fills with 
-        transparent medium. 'nan': fills with nan. 'error': raises an error. 
+        what to do if resampling is out of bounds:
+            
+        - 'transparent': fills with transparent medium. 
+        - 'nan': fills with nan. 
+        - 'error': raises an error. 
+        
         Default 'nan'
 
     optically_thin: boolean
@@ -424,25 +432,25 @@ def MergeSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','fu
     Examples
     --------
 
-    Merge two spectra calculated with different species (true only if broadening
-    coefficient dont change much):
+    Merge two spectra calculated with different species (physically correct 
+    only if broadening coefficients dont change much)::
 
-        >>> from radis import calc_spectrum, MergeSlabs
-        >>> s1 = calc_spectrum(...)
-        >>> s2 = calc_spectrum(...)
-        >>> s3 = MergeSlabs(s1, s2)
+        from radis import calc_spectrum, MergeSlabs
+        s1 = calc_spectrum(...)
+        s2 = calc_spectrum(...)
+        s3 = MergeSlabs(s1, s2)
 
     Load a spectrum precalculated on several partial spectral ranges, for a same 
     molecule (i.e, partial spectra are optically thin on the rest of the spectral 
-    range)
+    range)::
 
-        >>> from radis import load_spec, MergeSlabs
-        >>> spectra = []
-        >>> for f in ['spec1.spec', 'spec2.spec', ...]:
-        >>>     spectra.append(load_spec(f))
-        >>> s = MergeSlabs(*spectra, resample_wavespace='full', out_of_bounds='transparent')
-        >>> s.update()   # Generate missing spectral quantities
-        >>> s.plot()
+        from radis import load_spec, MergeSlabs
+        spectra = []
+        for f in ['spec1.spec', 'spec2.spec', ...]:
+            spectra.append(load_spec(f))
+        s = MergeSlabs(*spectra, resample_wavespace='full', out_of_bounds='transparent')
+        s.update()   # Generate missing spectral quantities
+        s.plot()
 
 
     See Also

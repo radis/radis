@@ -55,7 +55,7 @@ from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITI
                                   make_up, cast_waveunit, print_conditions)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from neq.spec.base import print_conditions
-from radis.misc.arrays import evenly_distributed
+from radis.misc.arrays import evenly_distributed, count_nans
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
 from pint import UndefinedUnitError
@@ -1092,6 +1092,59 @@ class Spectrum(object):
                                      old_mole_fraction=old_mole_fraction,
                                      ignore_warnings=ignore_warnings,
                                      force=force, verbose=verbose)
+        
+        
+    def crop(self, wmin, wmax, wunit, medium='default'):
+        ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``
+        
+        Parameters
+        ----------
+        
+        wmin, wmax: float
+            boundaries of waverange
+            
+        wunit: 'nm', 'cm-1'
+            which wavespace to use for ``wmin, wmax``
+            
+        medium: 'air', vacuum'
+            necessary if cropping in 'nm'
+            
+        Returns
+        -------
+        
+        None: 
+            spectrum is modified in place
+        
+        Examples
+        --------
+        
+        Crop to experimental Spectrum, and compare::
+            
+            from radis import calc_spectrum, load_spec, plot_diff
+            s = calc_spectrum(...)
+            s_exp = load_spec('typical_result.spec')
+            s.crop(s_exp.get_wavelength.min(), s_exp.get_wavelength.max(), 'nm')
+            plot_diff(s_exp, s)
+        
+        See Also
+        --------
+        
+        :func:`~radis.los.slabs.MergeSlabs`: if used with ``resample='full', 
+        out='transparent'``, this becomes the opposite of cropping: can be used
+        to combine 2 adjacent spectra in one.
+        
+        
+        '''
+    
+        from radis.spectrum.operations import crop
+        
+        if medium == 'default':
+            medium = self.get_medium()
+        
+        crop(self, wmin=wmin, wmax=wmax, wunit=wunit, medium=medium, inplace=True)
+        
+        return 
+        
 
     def get_integral(self, var, wunit='nm', Iunit='default', **kwargs):
         ''' Returns integral of variable 'var' over waverange
@@ -2516,7 +2569,7 @@ class Spectrum(object):
 
         # There are different cases depending on the unit of w_new
         # ... Note for devs: we're looping over dictionaries directly rather than
-        # ... using the (safter) .get() function because it's much faster (the
+        # ... using the (safer) .get() function because it's much faster (the
         # ... air2vacuum conversion in particular is quite slow, but has been
         # ... done once for all with get_wavelength() above )
         if update_q:
@@ -2920,7 +2973,7 @@ class Spectrum(object):
 
     def __str__(self):
         ''' Print all Spectrum attributes'''
-
+        
         # Print name
         print('Spectrum Name: ', self.get_name())
 
@@ -2929,7 +2982,9 @@ class Spectrum(object):
         print('-'*40)
         for k, v in self._get_items().items():
             # print number of points with a comma separator
-            print(' '*2, k, '\t({0:,d} points)'.format(len(v[0])))
+            print(' '*2, k, '\t({0:,d} points{1})'.format(len(v[0]),
+                                ', {0} nans'.format(count_nans(v[1])) if count_nans(v[1])>0 
+                                else ''))
 
         # Print populations
         print('Populations Stored')

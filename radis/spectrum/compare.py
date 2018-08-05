@@ -27,7 +27,7 @@ Routine Listings
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
-from radis.spectrum.spectrum import make_up, cast_waveunit, is_spectrum
+from radis.spectrum.spectrum import Spectrum, make_up, cast_waveunit, is_spectrum
 from radis.misc.basics import compare_lists, compare_dict
 from six import string_types
 
@@ -46,7 +46,7 @@ from six.moves import range
 # XXX =====================================================================
 
 
-def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
+def get_diff(s1:Spectrum, s2:Spectrum, var, wunit='default', Iunit='default', medium='default',
              resample=True, diff_window=0):
     ''' Get the difference between 2 spectra
     Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
@@ -129,8 +129,8 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
         
 
 
-def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
-              resample=True):
+def get_ratio(s1:Spectrum, s2:Spectrum, var:str, 
+              wunit='default', Iunit='default', medium='default', resample=True):
     ''' Get the ratio between two spectra
     Basically returns w1, I1 / I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
@@ -182,8 +182,8 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     return curve_divide(w1, I1, w2, I2)
 
 
-def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default',
-                 resample=True):
+def get_distance(s1:Spectrum, s2:Spectrum, var:str, 
+                 wunit='default', Iunit='default', medium='default', resample=True):
     ''' Get a regularized Euclidian distance between two spectra ``s1`` and ``s2`` 
 
     This regularized Euclidian distance minimizes the effect of a small shift in 
@@ -252,7 +252,8 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)
 
 
-def get_residual(s1, s2, var, norm='L2', ignore_nan=False, diff_window=0):
+def get_residual(s1:Spectrum, s2:Spectrum, var:str, 
+                 norm='L2', ignore_nan=False, diff_window=0):
     ''' Returns L2 norm of ``s1`` and ``s2``
 
     For ``I1``, ``I2``, the values of variable ``var`` in ``s1`` and ``s2``, 
@@ -334,7 +335,8 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False, diff_window=0):
         raise ValueError('unexpected value for norm')
 
 
-def get_residual_integral(s1, s2, var, ignore_nan=False):
+def get_residual_integral(s1:Spectrum, s2:Spectrum, var:str, 
+                          ignore_nan=False):
     ''' Returns integral of the difference between two spectra s1 and s2, 
     relatively to the integral of spectrum s1 
     
@@ -423,7 +425,8 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
 #    return res.mean()
 
 
-def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default',
+def _get_defaults(s1:Spectrum, s2:Spectrum, var:str, 
+                  wunit='default', Iunit='default', medium='default',
                   assert_same_wavelength=False):
     ''' See get_distance, get_diff '''
 
@@ -454,7 +457,8 @@ def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default
     return w1, I1, w2, I2
 
 
-def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='default',
+def plot_diff(s1:Spectrum, s2:Spectrum, var:str=None, 
+              wunit='default', Iunit='default', medium='default',
               resample=True, method='diff', diff_window=0, show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
               normalize=False, verbose=True, save=False, show=True,
@@ -779,7 +783,7 @@ def averageDistance(s1, s2, var='radiance'):
 # %% Function to compare Spectra including conditions and lines
 
 
-def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default',
+def compare_spectra(first:Spectrum, other:Spectrum, spectra_only=False, plot=True, wunit='default',
                  verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
                  normalize=False, **kwargs):
     ''' Compare Spectrum with another Spectrum object

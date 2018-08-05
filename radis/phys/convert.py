@@ -26,6 +26,7 @@ import numpy as np
 from radis.phys.constants import eV, h, c, k_b
 # Make conv2 accessible from .convert:
 from radis.phys.units import conv2
+from radis.phys.air import air2vacuum, vacuum2air
 
 # %% Energy units
 
@@ -99,10 +100,29 @@ def cm2nm(wl_cm1):
     'cm-1 to (vacuum) nm'
     return 1 / wl_cm1 * 1e9 / 100
 
-
 def nm2cm(wl_nm):
     '(vacuum) nm to cm-1'
     return 1 / wl_nm * 1e9 / 100
+
+def cm2nm_air(wl_cm1):
+    '''cm-1 to (air) nm
+    
+    References
+    ----------
+    
+    :func:`~radis.phys.air.vacuum2air'
+    '''
+    return vacuum2air(cm2nm(wl_cm1))
+
+def nm_air2cm(wl_nm_air):
+    '''(air) nm to cm-1
+    
+    References
+    ----------
+    
+    :func:`~radis.phys.air.air2vacuum'
+    '''
+    return nm2cm(air2vacuum(wl_nm_air))
 
 
 def nm2eV(wl_nm):
