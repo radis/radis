@@ -46,7 +46,7 @@ from six.moves import range
 # XXX =====================================================================
 
 
-def get_diff(s1:Spectrum, s2:Spectrum, var, wunit='default', Iunit='default', medium='default',
+def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
              resample=True, diff_window=0):
     ''' Get the difference between 2 spectra
     Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
@@ -104,7 +104,7 @@ def get_diff(s1:Spectrum, s2:Spectrum, var, wunit='default', Iunit='default', me
     :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
-
+    
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
                                    medium=medium, assert_same_wavelength=not resample)
 
@@ -129,7 +129,7 @@ def get_diff(s1:Spectrum, s2:Spectrum, var, wunit='default', Iunit='default', me
         
 
 
-def get_ratio(s1:Spectrum, s2:Spectrum, var:str, 
+def get_ratio(s1, s2, var, 
               wunit='default', Iunit='default', medium='default', resample=True):
     ''' Get the ratio between two spectra
     Basically returns w1, I1 / I2 where (w1, I1) and (w2, I2) are the values of
@@ -174,7 +174,7 @@ def get_ratio(s1:Spectrum, s2:Spectrum, var:str,
     
 
     '''
-
+    
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
                                    medium=medium, assert_same_wavelength=not resample)
 
@@ -182,7 +182,7 @@ def get_ratio(s1:Spectrum, s2:Spectrum, var:str,
     return curve_divide(w1, I1, w2, I2)
 
 
-def get_distance(s1:Spectrum, s2:Spectrum, var:str, 
+def get_distance(s1, s2, var, 
                  wunit='default', Iunit='default', medium='default', resample=True):
     ''' Get a regularized Euclidian distance between two spectra ``s1`` and ``s2`` 
 
@@ -252,7 +252,7 @@ def get_distance(s1:Spectrum, s2:Spectrum, var:str,
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)
 
 
-def get_residual(s1:Spectrum, s2:Spectrum, var:str, 
+def get_residual(s1, s2, var, 
                  norm='L2', ignore_nan=False, diff_window=0):
     ''' Returns L2 norm of ``s1`` and ``s2``
 
@@ -335,7 +335,7 @@ def get_residual(s1:Spectrum, s2:Spectrum, var:str,
         raise ValueError('unexpected value for norm')
 
 
-def get_residual_integral(s1:Spectrum, s2:Spectrum, var:str, 
+def get_residual_integral(s1, s2, var, 
                           ignore_nan=False):
     ''' Returns integral of the difference between two spectra s1 and s2, 
     relatively to the integral of spectrum s1 
@@ -425,7 +425,7 @@ def get_residual_integral(s1:Spectrum, s2:Spectrum, var:str,
 #    return res.mean()
 
 
-def _get_defaults(s1:Spectrum, s2:Spectrum, var:str, 
+def _get_defaults(s1, s2, var, 
                   wunit='default', Iunit='default', medium='default',
                   assert_same_wavelength=False):
     ''' See get_distance, get_diff '''
@@ -457,7 +457,7 @@ def _get_defaults(s1:Spectrum, s2:Spectrum, var:str,
     return w1, I1, w2, I2
 
 
-def plot_diff(s1:Spectrum, s2:Spectrum, var:str=None, 
+def plot_diff(s1, s2, var=None, 
               wunit='default', Iunit='default', medium='default',
               resample=True, method='diff', diff_window=0, show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
@@ -783,7 +783,7 @@ def averageDistance(s1, s2, var='radiance'):
 # %% Function to compare Spectra including conditions and lines
 
 
-def compare_spectra(first:Spectrum, other:Spectrum, spectra_only=False, plot=True, wunit='default',
+def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default',
                  verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
                  normalize=False, **kwargs):
     ''' Compare Spectrum with another Spectrum object
@@ -854,6 +854,7 @@ def compare_spectra(first:Spectrum, other:Spectrum, spectra_only=False, plot=Tru
         s1 == s2       # will return True or False
 
     '''
+    
 
     # Check inputs
     if not 0 <= ignore_outliers < 1:

@@ -22,7 +22,7 @@ from radis.phys.convert import cm2nm, nm2cm, cm2nm_air, nm_air2cm, air2vacuum, v
 # %% Filter Spectra
 
 
-def Transmittance(s:Spectrum): # -> Spectrum:
+def Transmittance(s): # -> Spectrum:
     ''' Makes a new Spectrum with only the transmittance part of Spectrum ``s``
     
     Parameters
@@ -71,7 +71,7 @@ def Transmittance(s:Spectrum): # -> Spectrum:
 # %% Change wavelength
     
 
-def crop(s:Spectrum, wmin:float, wmax:float, wunit:str, medium=None,
+def crop(s, wmin, wmax, wunit, medium=None,
          inplace=False): # -> Spectrum:
     ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``
     
@@ -178,7 +178,7 @@ def crop(s:Spectrum, wmin:float, wmax:float, wunit:str, medium=None,
 
 # %% Algebric operations on Spectra
 
-def substract(s1:Spectrum, s2:Spectrum, var='radiance', wunit='nm', Iunit='default',
+def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
               resample=True, name='default'):
     '''Substract s2 to s1
 
@@ -228,7 +228,7 @@ def substract(s1:Spectrum, s2:Spectrum, var='radiance', wunit='nm', Iunit='defau
 
 
 
-def multiply(s:Spectrum, coef:float, var='radiance', wunit='nm', name='None'):
+def multiply(s, coef, var='radiance', wunit='nm', name='None'):
     '''Multiply the spectrum by the float 'coef'
 
     Parameters    

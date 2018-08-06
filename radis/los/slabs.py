@@ -48,10 +48,7 @@ def intersect(a, b):
     return c
 
 
-def SerialSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','full'),
-                                   'out_of_bounds':('transparent','nan','error'),
-                                   'optically_thin':bool,
-                                   'verbose':bool}):
+def SerialSlabs(*slabs, **kwargs):
     ''' Compute the result of several slabs 
 
 
@@ -372,10 +369,7 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
     return slabs
 
 
-def MergeSlabs(*slabs, **kwargs : {'resample_wavespace':('never','intersect','full'),
-                                   'out_of_bounds':('transparent','nan','error'),
-                                   'optically_thin':bool,
-                                   'verbose':bool}):
+def MergeSlabs(*slabs, **kwargs):
     ''' Combines several slabs into one. Useful to calculate multi-gas slabs. 
     Linear absorption coefficient is calculated as the sum of all linear absorption
     coefficients, and the RTE is recalculated to get the total radiance
