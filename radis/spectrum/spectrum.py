@@ -1251,7 +1251,7 @@ class Spectrum(object):
 
     def plot(self, var=None, wunit='default', Iunit='default', show_points=False,
              nfig=None, yscale='linear', medium='default',
-             normalize=False,
+             normalize=False, force=False,
              **kwargs):
         '''
 
@@ -1288,6 +1288,10 @@ class Spectrum(object):
         normalize: boolean
             option to normalize quantity to 1 (ex: for radiance). Default ``False``
 
+        force: bool
+            plotting on an existing figure is forbidden if labels are not the 
+            same. Use ``force=True`` to ignore that.
+
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
@@ -1323,6 +1327,7 @@ class Spectrum(object):
         # Get variable
         x, y = self.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
 
+        # Get labels
         wmedium = ' [{0}]'.format(medium) if medium != 'default' else ''
         if wunit == 'cm-1':
             xlabel = 'Wavenumber (cm-1)'
@@ -1335,9 +1340,10 @@ class Spectrum(object):
             except KeyError:  # unit not defined in dictionary
                 Iunit0 = 'a.u'
             Iunit = Iunit0
-
+            
         # cosmetic changes
         Iunit = make_up(Iunit)
+        ylabel = make_up('{0} ({1})'.format(var.capitalize(), Iunit))
 
         # Plot
         # -------
@@ -1348,7 +1354,25 @@ class Spectrum(object):
         set_style('origin')
         if nfig == 'same':
             nfig = plt.gcf().number
-        plt.figure(nfig)
+        fig = plt.figure(nfig)
+        
+        # If figure exist, ensures xlabel and ylabel are the same (prevents some
+        # users errors if plotting difference units!)... Note that since 
+        # 'radiance' and 'radiance_noslit' are now plotted under the same name,
+        # they cannot be differenced. But at least this allows user to plot 
+        # both on the same figure if they want to compare
+        
+        if not force and (fig.gca().get_xlabel() not in ['', xlabel]):
+            raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
+                             'on a same figure with different xlabel: {0}, {1}'.format(
+                            fig.gca().get_xlabel(), xlabel)+\
+                            'Use force=True if you really want to plot')
+        if not force and (fig.gca().get_ylabel() not in ['', ylabel]):
+            raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
+                             'on a same figure with different ylabel: {0}, {1}'.format(
+                            fig.gca().get_ylabel(), ylabel)+\
+                            'Use force=True if you really want to plot')
+        
         # Add extra plotting parameters
         if 'lw' not in kwargs and 'linewidth' not in kwargs:
             kwargs['lw'] = 0.5
@@ -1361,7 +1385,7 @@ class Spectrum(object):
             plt.plot(x, y, 'o', color='lightgrey', **kwargs)
         plt.ticklabel_format(useOffset=False, axis='x')
         plt.xlabel(xlabel)
-        plt.ylabel(make_up('{0} ({1})'.format(var, Iunit)))
+        plt.ylabel(ylabel)
 
         plt.yscale(yscale)
 
@@ -2921,7 +2945,10 @@ class Spectrum(object):
                     raise ValueError('wavespace for {0} doesnt correspond to existing wavespace'.format
                                      (name)+' for convoluted quantities')
             else:
-                self._q_conv['wavespace'] = check_wavespace(w)   # copy
+#                self._q_conv['wavespace'] = check_wavespace(w)   # copy
+                self._q_conv['wavespace'] = w   
+                # no need to check if wavespace is evenly spaced: we won't 
+                # apply the slit function again
 
             # Add quantity itself
             self._q_conv[name] = np.array(I)              # copy
