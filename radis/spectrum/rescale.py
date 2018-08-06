@@ -290,6 +290,7 @@ def _path_is_complete(list_of_keys, computed_keys):
 
 
 def get_reachable(spec):  # , derivation_graph):
+    # type: (Spectrum) -> dict
     ''' Get the list of all quantities that can be derived from current available
     quantities, based on given spec conditions 
 

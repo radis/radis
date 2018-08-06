@@ -22,7 +22,8 @@ from radis.phys.convert import cm2nm, nm2cm, cm2nm_air, nm_air2cm, air2vacuum, v
 # %% Filter Spectra
 
 
-def Transmittance(s): # -> Spectrum:
+def Transmittance(s):
+    # type: (Spectrum) -> Spectrum
     ''' Makes a new Spectrum with only the transmittance part of Spectrum ``s``
     
     Parameters
@@ -72,7 +73,8 @@ def Transmittance(s): # -> Spectrum:
     
 
 def crop(s, wmin, wmax, wunit, medium=None,
-         inplace=False): # -> Spectrum:
+         inplace=False):
+    # type: (Spectrum, float, float, str, str, bool) -> Spectrum
     ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``
     
     Parameters
@@ -180,6 +182,7 @@ def crop(s, wmin, wmax, wunit, medium=None,
 
 def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
               resample=True, name='default'):
+    # type: (Spectrum, Spectrum, str, str, str, bool, str) -> Spectrum
     '''Substract s2 to s1
 
     Parameters    

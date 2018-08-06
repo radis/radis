@@ -133,7 +133,7 @@ def is_jsonable(x):
 # ... functions to store / load a Spectrum to / from a JSON file
 
 
-def save(s : Spectrum, path, discard=[], compress=False, add_info=None, add_date=None,
+def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
          if_exists_then='increment', verbose=True, warnings=True):
     ''' Save a :class:`~radis.spectrum.spectrum.Spectrum` object in JSON format. 
     Object can be recovered with :func:`~radis.tools.database.load_spec`. 
