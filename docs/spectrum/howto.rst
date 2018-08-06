@@ -286,7 +286,26 @@ or the plot function :func:`~radis.spectrum.compare.plot_diff`::
 These functions usually require that the spectra are calculated on the same spectral 
 range. When comparing, let's say, a calculated spectrum with experimental data, 
 you may want to interpolate: you can have a look at the :meth:`~radis.spectrum.spectrum.Spectrum.resample` 
-method. 
+method. See below for details
+
+
+interpolate a Spectrum on another?
+----------------------------------
+
+Let's interpolate a calculated spectrum on an experimental spectrum, 
+using the :meth:`~radis.spectrum.spectrum.Spectrum.resample` and, for instance,
+the :meth:`~radis.spectrum.spectrum.Spectrum.get_wavelength` method::
+
+    # let's say we have two objects:
+    s_exp = load_spec('...')
+    s_calc = calc_spectrum(...)
+    # resample:
+    s_calc.resample(s_exp.get_wavelength(), 'nm')
+    
+Energy conservation is ensured and an error is raised if your interpolation 
+is too bad. If you need to adjust the error threshold, see the parameters
+in :meth:`~radis.spectrum.spectrum.Spectrum.resample`.
+
 
 generate a Blackbody (Planck) function object?
 ----------------------------------------------
