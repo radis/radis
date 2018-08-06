@@ -48,6 +48,7 @@ from six.moves import range
 
 def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
              resample=True, diff_window=0):
+    # type: (Spectrum, Spectrum, str, str, str, str, bool, int) -> np.array, np.array
     ''' Get the difference between 2 spectra
     Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
@@ -131,6 +132,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
 
 def get_ratio(s1, s2, var, 
               wunit='default', Iunit='default', medium='default', resample=True):
+    # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
     ''' Get the ratio between two spectra
     Basically returns w1, I1 / I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
@@ -184,6 +186,7 @@ def get_ratio(s1, s2, var,
 
 def get_distance(s1, s2, var, 
                  wunit='default', Iunit='default', medium='default', resample=True):
+    # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
     ''' Get a regularized Euclidian distance between two spectra ``s1`` and ``s2`` 
 
     This regularized Euclidian distance minimizes the effect of a small shift in 
@@ -254,6 +257,7 @@ def get_distance(s1, s2, var,
 
 def get_residual(s1, s2, var, 
                  norm='L2', ignore_nan=False, diff_window=0):
+    # type: (Spectrum, Spectrum, str, bool, int) -> np.array, np.array
     ''' Returns L2 norm of ``s1`` and ``s2``
 
     For ``I1``, ``I2``, the values of variable ``var`` in ``s1`` and ``s2``, 
@@ -337,6 +341,7 @@ def get_residual(s1, s2, var,
 
 def get_residual_integral(s1, s2, var, 
                           ignore_nan=False):
+    # type: (Spectrum, Spectrum, str, bool) -> float
     ''' Returns integral of the difference between two spectra s1 and s2, 
     relatively to the integral of spectrum s1 
     
@@ -428,6 +433,7 @@ def get_residual_integral(s1, s2, var,
 def _get_defaults(s1, s2, var, 
                   wunit='default', Iunit='default', medium='default',
                   assert_same_wavelength=False):
+    # type: (Spectrum, Spectrum, str, str, str, bool) -> (np.array, np.array, np.array, np.array)
     ''' See get_distance, get_diff '''
 
     # Check inputs, get defaults

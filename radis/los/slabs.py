@@ -222,7 +222,8 @@ def SerialSlabs(*slabs, **kwargs):
                         cond_units=cond_units, units=unitsn,
                         name=name)
 
-def _serial_slab_names(s : Spectrum, sn : Spectrum):
+def _serial_slab_names(s, sn):
+    # type: (Spectrum, Spectrum) -> Spectrum
     name_s = s.get_name()
     name_sn = sn.get_name()
     if '//' in name_s and not '>>' in name_s:
@@ -233,6 +234,7 @@ def _serial_slab_names(s : Spectrum, sn : Spectrum):
 
 
 def _check_valid(s):
+    # type: (Spectrum) -> bool
     ''' Check s is a valid Spectrum object. Raises an error if not 
     
     Valid if:
@@ -259,6 +261,7 @@ def _check_valid(s):
 
 
 def _has_quantity(quantity, *slabs):
+    # type: (str, *Spectrum) -> bool
     slabs = list(slabs)
     b = True
     for s in slabs:
@@ -266,6 +269,7 @@ def _has_quantity(quantity, *slabs):
     return b
 
 def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
+    # type: (str, str, str, *Spectrum) -> *Spectrum
     ''' Resample slabs on the same wavespace: if the range are differents, 
     depending on the mode we may fill with optically thin media, or raise an
     error 
