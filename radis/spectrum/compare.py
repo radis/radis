@@ -111,19 +111,17 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
 
     # basically w1, I1 - I2 (on same range)
     w1, Idiff = curve_substract(w1, I1, w2, I2)
-    
     if diff_window:
         # allow fluctuation from diff_window units. Kinda compensates 
         # for experimental errors on x-axis
         diff_list = []
         I2_interp = I1 + Idiff
         for i in range(-diff_window, diff_window+1):
-            diff_list.append(np.roll(I1, i)-I2_interp)
+            diff_list.append(I2_interp-np.roll(I1, i))
         # get minimum in abs value
         diff_list = np.array(diff_list)
         b = np.abs(diff_list).argmin(axis=0)
         Idiff = np.choose(b, diff_list)   # keeps sign
-
     return w1, Idiff
         
         
