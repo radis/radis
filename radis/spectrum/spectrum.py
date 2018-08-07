@@ -110,16 +110,16 @@ class Spectrum(object):
 
             {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
 
-
     lines: pandas Dataframe
-        all lines in databank (necessary for LineSurvey). Warning if you want to
-        play with the lins content: The signification of columns in `lines` may be
+        all lines in databank (necessary for using 
+        :meth:`~radis.spectrum.spectrum.Spectrum.line_survey`). Warning if you want to
+        play with the lines content: The signification of columns in `lines` may be
         specific to a database format. Plus, some additional columns may have been
         added by the calculation (e.g: `Ei` and `S` for emission integral and
         linestrength in SpectrumFactory). Refer to the code to know what they mean
         (and their units)
 
-    wavespace: 'nm' or 'cm-1', or None
+    wavespace: ``'nm'`` or ``'cm-1'``, or ``None``
         define whether wavenumber or wavelength are used in 'quantities' tuples.
         Quantities should be evenly distributed along this space for fast
         convolution with the slit function
@@ -345,10 +345,10 @@ class Spectrum(object):
 
                 {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
 
-
         lines: pandas Dataframe
-            all lines in databank (necessary for LineSurvey). Warning if you want to
-            play with the lins content: The signification of columns in `lines` may be
+            all lines in databank (necessary for using 
+            :meth:`~radis.spectrum.spectrum.Spectrum.line_survey`). Warning if you want to
+            play with the lines content: The signification of columns in `lines` may be
             specific to a database format. Plus, some additional columns may have been
             added by the calculation (e.g: `Ei` and `S` for emission integral and
             linestrength in SpectrumFactory). Refer to the code to know what they mean
@@ -437,13 +437,13 @@ class Spectrum(object):
                 {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
 
         lines: pandas Dataframe
-            all lines in databank (necessary for LineSurvey). Warning if you want to
-            play with the lins content: The signification of columns in `lines` may be
+            all lines in databank (necessary for using 
+            :meth:`~radis.spectrum.spectrum.Spectrum.line_survey`). Warning if you want to
+            play with the lines content: The signification of columns in `lines` may be
             specific to a database format. Plus, some additional columns may have been
             added by the calculation (e.g: `Ei` and `S` for emission integral and
             linestrength in SpectrumFactory). Refer to the code to know what they mean
             (and their units)
-
 
         Returns
         -------

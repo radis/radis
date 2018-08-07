@@ -1352,7 +1352,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
                  true_path_length=True, verbose=True,
                  assume_equilibrium=False):
     ''' General function to recalculate missing quantities. Used in
-    :func:`~radis.spectrum.rescale.rescale_path_length`, :func:`~radis.spectrum.rescale.rescale_mole_fractions`
+    :func:`~radis.spectrum.rescale.rescale_path_length`, :func:`~radis.spectrum.rescale.rescale_mole_fraction`
     and :func:`~radis.spectrum.rescale.update`. 
     
     Determines with spectral quantities should be recomputed, then scales
