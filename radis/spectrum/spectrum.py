@@ -1369,9 +1369,9 @@ class Spectrum(object):
                             'Use force=True if you really want to plot')
         if not force and (fig.gca().get_ylabel() not in ['', ylabel]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
-                             'on a same figure with different ylabel: {0}, {1}'.format(
+                             'on a same figure with different ylabel: \n{0}\n{1}'.format(
                             fig.gca().get_ylabel(), ylabel)+\
-                            'Use force=True if you really want to plot')
+                            '\nUse force=True if you really want to plot')
         
         # Add extra plotting parameters
         if 'lw' not in kwargs and 'linewidth' not in kwargs:

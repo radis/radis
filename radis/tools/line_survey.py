@@ -142,9 +142,11 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
 
     try:
         spec.lines
-    except AttributeError:
+        assert spec.lines is not None
+    except (AttributeError, AssertionError):
         raise AttributeError(
-            'Spectrum has no `lines` property. Cant run line survey')
+            'Spectrum has no `lines`. Cant run line survey. If your code allows '+\
+            "it, recompute the spectrum with 'export_lines=True'")
 
     T = spec.conditions['Tgas']
     P = spec.conditions['pressure_mbar']/1000  # bar1013.25 # atm
