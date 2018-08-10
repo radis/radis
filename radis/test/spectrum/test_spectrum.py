@@ -292,9 +292,28 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
     s.compare_with(s3, plot=plot, title='Residual: {0:.2g}'.format(
         get_residual_integral(s, s3, 'abscoeff', ignore_nan=True)))
 
-    assert get_residual_integral(s, s2, 'abscoeff', ignore_nan=True) < 1e-4
+    assert get_residual_integral(s, s2, 'abscoeff', ignore_nan=True) < 1e-3
     assert get_residual_integral(s, s2b, 'abscoeff', ignore_nan=True) < 1e-3
     assert get_residual_integral(s, s3, 'abscoeff', ignore_nan=True) < 1e-5
+
+
+@pytest.mark.fast
+def test_noplot_different_quantities(*args, **kwargs):
+    ''' Prevents User Errors: Ensures an error is raised if plotting different
+    quantities on the same graph'''
+    
+    import matplotlib.pyplot as plt
+    plt.ion()
+
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+    s=load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s.update()
+    s.plot('abscoeff', nfig='test_noplot_different_quantities')
+    with pytest.raises(ValueError):   # expect an error
+        s.plot('emisscoeff', nfig='same')
+    
+    plt.close('test_noplot_different_quantities')
 
 # %%
 
@@ -340,6 +359,9 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warn
     # Test propagating medium
 #    test_medium(plot=plot, verbose=verbose, debug=debug,
 #                           warnings=warnings, *args, **kwargs)
+
+    # Test plot firewalls:
+    test_noplot_different_quantities(*args, **kwargs)
 
     return True
 

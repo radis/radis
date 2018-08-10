@@ -277,9 +277,10 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
     k = None
 
     try:
+        verbose_compare = 'if_different' if verbose else False
         assert len(dict_entries1) == len(dict_entries2)
         assert compare_lists(list(dict_entries1.keys()), list(dict_entries2.keys()),
-                             verbose=verbose) == 1
+                             verbose=verbose_compare) == 1
         for k in dict_entries1.keys():
             v1 = dict_entries1[k]
             v2 = dict_entries2[k]
@@ -288,10 +289,10 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
             elif k in ['path']:
                 assert compare_lists([stdpath(path1) for path1 in v1],
                                      [stdpath(path2) for path2 in v2],
-                                     verbose=verbose) == 1
+                                     verbose=verbose_compare) == 1
             elif k in ['levels']:
                 assert compare_dict(v1, v2, compare_as_paths=list(v1.keys()),
-                                    verbose=verbose) == 1
+                                    verbose=verbose_compare) == 1
             else:
                 raise ValueError('Unexpected key:', k)
 

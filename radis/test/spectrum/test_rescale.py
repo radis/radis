@@ -14,10 +14,10 @@ Test Spectrum rescaling methods
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 import radis
-from radis.misc.utils import DatabankNotFound
 from radis.spectrum.rescale import get_redundant, get_recompute
 from radis.tools.database import load_spec
 from radis.test.utils import getTestFile
+from radis.misc.printer import printm
 import numpy as np
 import pytest
 
@@ -86,7 +86,7 @@ def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
 
 
 def test_get_recompute(verbose=True, *args, **kwargs):
-    ''' Make sure get_recompute works as expected
+    ''' Make sure :func:`~radis.spectrum.rescale.get_recompute` works as expected
 
     Here, we check which quantities are needed to recompute radiance_noslit'''
 
@@ -151,13 +151,72 @@ def test_recompute_equilibrium(verbose=True, warnings=True, plot=True,
     assert s1.compare_with(s2, spectra_only='radiance_noslit', plot=plot)
 
 
+
+def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
+
+    new_mole_fraction = 0.5
+    new_path_length = 0.1
+    
+    # Get spectrum
+    s0 = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s0.update('all')     # start with all possible quantities in s0
+    sscaled = s0.copy()
+    sscaled.rescale_mole_fraction(new_mole_fraction)
+    sscaled.rescale_path_length(new_path_length)
+    s0.conditions['thermal_equilibrium'] = False   # to prevent rescaling with Kirchoff
+    # remove emissivity_no_slit (speciifc to equilibrium)
+    del s0._q['emissivity_noslit']
+     
+    
+    # Determine all quantities that can be recomputed
+    if verbose >= 2:
+        import radis
+        DEBUG_MODE = radis.DEBUG_MODE
+        radis.DEBUG_MODE = True
+    from radis.spectrum.rescale import get_reachable, ordered_keys, _build_update_graph
+    # ordered_keys: all spectral quantities that can be rescaled
+    can_be_recomputed = get_reachable(s0)
+    # can_be_recomputed: all spectra quantities that can be rescaled for this 
+    # particular spectrum
+    update_paths = _build_update_graph(s0)
+    # update_paths: which quantities are needed to recompute the others
+    
+    rescale_list = [k for k in ordered_keys if can_be_recomputed[k]]
+    
+    for quantity in rescale_list:
+        all_paths = update_paths[quantity]
+        if verbose:
+            printm('{0} can be recomputed from {1}'.format(quantity, ' or '.join(
+                    ['&'.join(combinations) for combinations in all_paths])))
+        
+        # Now let's test all paths
+        for combinations in all_paths:
+            if verbose:
+                printm('> computing {0} from {1}'.format(quantity, '&'.join(combinations)))
+            s = s0.copy()
+            # Delete all other quantities
+            for k in s.get_vars():
+                if k not in combinations:
+                    del s._q[k]
+            
+            s.update(quantity, verbose=verbose)
+            
+            # Now rescale
+            s.rescale_mole_fraction(new_mole_fraction)
+            s.rescale_path_length(new_path_length)
+            
+            # Compare
+            assert s.compare_with(sscaled, spectra_only=quantity, plot=False)
+            
+    if verbose >= 2:
+        radis.DEBUG_MODE = DEBUG_MODE
+    
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
-    test_update_transmittance(
-        verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
-    test_recompute_equilibrium(
-        verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
 
     return True
 

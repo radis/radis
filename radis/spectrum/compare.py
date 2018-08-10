@@ -27,7 +27,7 @@ Routine Listings
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
-from radis.spectrum.spectrum import make_up, cast_waveunit, is_spectrum
+from radis.spectrum.spectrum import Spectrum, make_up, cast_waveunit, is_spectrum
 from radis.misc.basics import compare_lists, compare_dict
 from six import string_types
 
@@ -37,6 +37,7 @@ from matplotlib.widgets import MultiCursor
 import numpy as np
 from publib import set_style, fix_style
 from warnings import warn
+from six.moves import range
 
 
 # %% ======================================================================
@@ -46,7 +47,8 @@ from warnings import warn
 
 
 def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
-             resample=True):
+             resample=True, diff_window=0):
+    # type: (Spectrum, Spectrum, str, str, str, str, bool, int) -> np.array, np.array
     ''' Get the difference between 2 spectra
     Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
@@ -60,6 +62,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     ----------
 
     s1, s2: Spectrum objects
+        2 spectra to compare.
 
     var: str
         spectral quantity (ex: 'radiance', 'transmittance'...)
@@ -72,6 +75,14 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
 
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
+
+    Other Parameters
+    ----------------
+    
+    diff_window: int
+        If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
+        units on either side, and returns the minimum. Kinda compensates for experimental
+        errors on the w axis. Default 0. (look up code to understand...)
 
     Returns    
     -------
@@ -91,19 +102,35 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     :func:`~radis.spectrum.compare.get_distance`,  
     :func:`~radis.spectrum.compare.get_residual`,
     :func:`~radis.spectrum.compare.get_residual_integral`, 
-    :func:`~radis.spectrum.compare.plot_diff` 
+    :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
-
+    
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
                                    medium=medium, assert_same_wavelength=not resample)
 
     # basically w1, I1 - I2 (on same range)
-    return curve_substract(w1, I1, w2, I2)
+    w1, Idiff = curve_substract(w1, I1, w2, I2)
+    if diff_window:
+        # allow fluctuation from diff_window units. Kinda compensates 
+        # for experimental errors on x-axis
+        diff_list = []
+        I2_interp = I1 + Idiff
+        for i in range(-diff_window, diff_window+1):
+            diff_list.append(I2_interp-np.roll(I1, i))
+        # get minimum in abs value
+        diff_list = np.array(diff_list)
+        b = np.abs(diff_list).argmin(axis=0)
+        Idiff = np.choose(b, diff_list)   # keeps sign
+    return w1, Idiff
+        
+        
+        
 
 
-def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
-              resample=True):
+def get_ratio(s1, s2, var, 
+              wunit='default', Iunit='default', medium='default', resample=True):
+    # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
     ''' Get the ratio between two spectra
     Basically returns w1, I1 / I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
@@ -147,7 +174,7 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     
 
     '''
-
+    
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
                                    medium=medium, assert_same_wavelength=not resample)
 
@@ -155,8 +182,9 @@ def get_ratio(s1, s2, var, wunit='default', Iunit='default', medium='default',
     return curve_divide(w1, I1, w2, I2)
 
 
-def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default',
-                 resample=True):
+def get_distance(s1, s2, var, 
+                 wunit='default', Iunit='default', medium='default', resample=True):
+    # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
     ''' Get a regularized Euclidian distance between two spectra ``s1`` and ``s2`` 
 
     This regularized Euclidian distance minimizes the effect of a small shift in 
@@ -225,7 +253,9 @@ def get_distance(s1, s2, var, wunit='default', Iunit='default', medium='default'
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)
 
 
-def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
+def get_residual(s1, s2, var, 
+                 norm='L2', ignore_nan=False, diff_window=0):
+    # type: (Spectrum, Spectrum, str, bool, int) -> np.array, np.array
     ''' Returns L2 norm of ``s1`` and ``s2``
 
     For ``I1``, ``I2``, the values of variable ``var`` in ``s1`` and ``s2``, 
@@ -292,9 +322,8 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
 
-    w, I = s1.get(var)
     # mask for 0
-    wdiff, dI = get_diff(s1, s2, var, resample=True)
+    wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)
 
     if ignore_nan:
         b = np.isnan(dI)
@@ -308,7 +337,9 @@ def get_residual(s1, s2, var, norm='L2', ignore_nan=False):
         raise ValueError('unexpected value for norm')
 
 
-def get_residual_integral(s1, s2, var, ignore_nan=False):
+def get_residual_integral(s1, s2, var, 
+                          ignore_nan=False):
+    # type: (Spectrum, Spectrum, str, bool) -> float
     ''' Returns integral of the difference between two spectra s1 and s2, 
     relatively to the integral of spectrum s1 
     
@@ -367,20 +398,20 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
 
-    w, I = s1.get(var)
+    w1, I1, _, _ = _get_defaults(s1, s2, var)
     # mask for 0
     wdiff, dI = get_diff(s1, s2, var, resample=True)
 
     if ignore_nan:
         b = np.isnan(dI)
         wdiff, dI = wdiff[~b], dI[~b]
-        b = np.isnan(I)
-        w, I = w[~b], I[~b]
+        b = np.isnan(I1)
+        w1, I1 = w1[~b], I1[~b]
         
     if var in ['transmittance', 'transmittance_noslit']:
-        norm = 1 - np.trapz(I, w)
+        norm = 1 - np.trapz(I1, w1)
     else:
-        norm = np.trapz(I, w)
+        norm = np.trapz(I1, w1)
 
     return np.abs(np.trapz(dI, wdiff)) / norm
 
@@ -397,8 +428,10 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
 #    return res.mean()
 
 
-def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default',
+def _get_defaults(s1, s2, var, 
+                  wunit='default', Iunit='default', medium='default',
                   assert_same_wavelength=False):
+    # type: (Spectrum, Spectrum, str, str, str, bool) -> (np.array, np.array, np.array, np.array)
     ''' See get_distance, get_diff '''
 
     # Check inputs, get defaults
@@ -428,10 +461,12 @@ def _get_defaults(s1, s2, var, wunit='default', Iunit='default', medium='default
     return w1, I1, w2, I2
 
 
-def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='default',
-              resample=True, method='diff',  show_points=False,
+def plot_diff(s1, s2, var=None, 
+              wunit='default', Iunit='default', medium='default',
+              resample=True, method='diff', diff_window=0, show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
-              normalize=False, verbose=True, save=False, show=True):
+              normalize=False, verbose=True, save=False, show=True,
+              show_residual=False):
     ''' Plot two spectra, and the difference between them
 
     If waveranges dont match, ``s2`` is interpolated over ``s1``. 
@@ -457,7 +492,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         if ``'default'``, use first spectrum propagating medium
 
     method: ``'distance'``, ``'diff'``, ``'ratio'``
-        If ``'diff'``, plot difference at same wavespace position. 
+        If ``'diff'``, plot difference of the two spectra.
         If ``'distance'``, plot Euclidian distance (note that units are meaningless then)
         If ``'ratio'``, plot ratio of two spectra
         Default ``'diff'``.
@@ -473,8 +508,13 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     Other Parameters
     ----------------
 
+    diff_window: int
+        If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
+        units on either side, and returns the minimum. Kinda compensates for experimental
+        errors on the w axis. Default 0. (look up code to understand...)
+
     show_points: boolean
-        if True, make all points appear with 'o'
+        if ``True``, make all points appear with 'o'
 
     label1, label2: str
         curve names
@@ -489,14 +529,20 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         title
 
     verbose: boolean
-        if True, plot stuff such as rescale ratio in normalize mode. Default ``True``
+        if ``True``, plot stuff such as rescale ratio in normalize mode. Default ``True``
 
     save: str
-        Default is False. By default won't save anything, type the path of the 
+        Default is ``False``. By default won't save anything, type the path of the 
         destination if you want to save it (format in the name).
         
     show: Bool
-        Default is True. Will show the plots : bad if there are more than 20.
+        Default is ``True``. Will show the plots : bad if there are more than 20.
+    
+    show_residual: bool
+        if ``True``, calculates and shows on the graph the residual in L2 norm. 
+        See :func:`~radis.spectrum.compare.get_residual`. ``diff_window`` is 
+        used in the residual calculation too. ``normalize`` has no effect. 
+        
     Examples
     --------
 
@@ -509,7 +555,6 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
               )
 
 
-
     See Also
     --------
 
@@ -520,7 +565,12 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     :meth:`~radis.spectrum.spectrum.compare_with` 
 
     '''
-
+    
+    if (not show) and (not save): #I added this line to avoid calculus in the case there is nothing to do (Minou) 
+        if verbose: print('plot_diff : Nothing to do')
+        return None, None
+    
+    #Normal behaviour (Minou)
     # Get defaults
     # ---
     if var is None:    # if nothing is defined, try these first:
@@ -548,31 +598,32 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     if medium == 'default':
         medium = s1.conditions.get('medium', None)
 
+    if diff_window != 0 and method != 'diff':
+        raise NotImplementedError('diff_window with method {0}'.format(method))
+        
     # Get data
     # ----
     if normalize:
-        w1, I1 = s1.get(var, wunit, Iunit, medium)
-        w2, I2 = s2.get(var, wunit, Iunit, medium)
-        if method == 'distance':
-            wdiff, Idiff = curve_distance(w1, I1/np.max(I1), w2, I2/np.max(I2), discard_out_of_bounds=True)
-        elif method == 'diff':
-            wdiff, Idiff = curve_substract(w1, I1/np.max(I1), w2, I2/np.max(I2))
-        elif method == 'ratio':
-            wdiff, Idiff = curve_divide(w1, I1/np.max(I1), w2, I2/np.max(I2))
-        else:
-            raise ValueError('Unknown comparison method: {0}'.format(method))
+        # copy before modifying directly in spectrum
+        s1 = s1.copy()
+        s2 = s2.copy()
+        w1, I1 = s1.get(var, copy=False)
+        w2, I2 = s2.get(var, copy=False)
+        I1 /= np.max(I1)
+        I2 /= np.max(I2)
+        
+    if method == 'distance':
+        wdiff, Idiff = get_distance(
+            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+    elif method == 'diff':
+        wdiff, Idiff = get_diff(
+            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium, 
+            diff_window=diff_window)
+    elif method == 'ratio':
+        wdiff, Idiff = get_ratio(
+            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
     else:
-        if method == 'distance':
-            wdiff, Idiff = get_distance(
-                s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-        elif method == 'diff':
-            wdiff, Idiff = get_diff(
-                s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-        elif method == 'ratio':
-            wdiff, Idiff = get_ratio(
-                s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-        else:
-            raise ValueError('Unknown comparison method: {0}'.format(method))
+        raise ValueError('Unknown comparison method: {0}'.format(method))
 
     # Plot
     # ----
@@ -591,6 +642,8 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     ax0 = plt.subplot(gs[0])
     ax1 = plt.subplot(gs[1])
     ax1.get_shared_x_axes().join(ax0, ax1)
+    ax0.ticklabel_format(useOffset=False)
+    ax1.ticklabel_format(useOffset=False)
 
     # Plotting style
     if show_points:
@@ -619,7 +672,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
 
     Iunit = make_up(Iunit)  # cosmetic changes
 
-    ax0.tick_params(labelbottom='off')
+    ax0.tick_params(labelbottom=False)
     if label1 is not None or label2 is not None:
         ax0.legend(loc='best')
 
@@ -630,13 +683,21 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     # plot difference (sorted)
     b = np.argsort(wdiff)
     ax1.plot(wdiff[b], Idiff[b], style, color='k', lw=1)
+#    ax1.plot(wdiff[b], np.zeros(np.size(wdiff[b])), style, color='r', lw=1)
+    ax1.axhline(y=0, color='r', zorder=-1)
 
     if method == 'diff':
-        fig.text(0.09, 0.38, 'diff')
+        difftext = 'diff'
     elif method == 'distance':
-        fig.text(0.09, 0.38, 'distance')
+        difftext = 'distance'
     elif method == 'ratio':
-        fig.text(0.09, 0.38, 'ratio')
+        difftext = 'ratio'
+    
+    # Show residualget_residual
+    if show_residual:
+        difftext += ' (residual={0:.2g})'.format(get_residual(s1, s2, var=var, norm='L2',
+                      ignore_nan=True, diff_window=diff_window))
+    fig.text(0.09, 0.38, difftext)
 
     # Write labels
     ax1.set_xlabel(make_up(xlabel))
@@ -647,7 +708,7 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
         fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),
                  va='center', rotation='vertical')
 
-    # Set limits
+    # Set limits of 'diff' window
     if method == 'diff':
         # symmetrize error scale:
         ymin, ymax = ax1.get_ylim()
@@ -656,10 +717,10 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
     elif method == 'distance':
         ax1.set_ylim(bottom=0)
     elif method == 'ratio':
-        # auto-zoom on min, max, but discard first decile (case of spikes / divergences)
-        Idiff_s = np.sort(Idiff)
-        ax1.set_ylim(bottom=0, top=Idiff_s[len(
-            Idiff_s)//10]+Idiff_s[-len(Idiff_s)//10])
+        # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
+        Idiff_sorted = np.sort(Idiff)
+        ax1.set_ylim(bottom=Idiff_sorted[len(Idiff_sorted)//100] - 0.001, 
+                        top=Idiff_sorted[-len(Idiff_sorted)//100] + 0.001)
 
     if title:
         fig.suptitle(title)
@@ -685,14 +746,6 @@ def plot_diff(s1, s2, var=None, wunit='default', Iunit='default', medium='defaul
             plt.close(fig) #to avoid memory load if 
 
     return fig, [ax0, ax1]
-''' Return the average distance between two spectra.
-    It's important to note that if averageDistance(s1, s2)==0 then s1 = s2
-    
-
-   .. math::
-
-      \\sqrt{\\sum {(u_i-v_i)^2 / V[x_i]}}.
-'''
 
 
 def averageDistance(s1, s2, var='radiance'):
@@ -805,8 +858,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
         s1 == s2       # will return True or False
 
     '''
-
-    from radis.spectrum.compare import plot_diff
+    
 
     # Check inputs
     if not 0 <= ignore_outliers < 1:

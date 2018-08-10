@@ -55,7 +55,7 @@ from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITI
                                   make_up, cast_waveunit, print_conditions)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from neq.spec.base import print_conditions
-from radis.misc.arrays import evenly_distributed
+from radis.misc.arrays import evenly_distributed, count_nans
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
 from pint import UndefinedUnitError
@@ -64,6 +64,7 @@ from numpy import abs, diff
 from copy import deepcopy
 from six import string_types
 from os.path import basename
+from six.moves import zip
 
 
 
@@ -109,16 +110,16 @@ class Spectrum(object):
 
             {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
 
-
     lines: pandas Dataframe
-        all lines in databank (necessary for LineSurvey). Warning if you want to
-        play with the lins content: The signification of columns in `lines` may be
+        all lines in databank (necessary for using 
+        :meth:`~radis.spectrum.spectrum.Spectrum.line_survey`). Warning if you want to
+        play with the lines content: The signification of columns in `lines` may be
         specific to a database format. Plus, some additional columns may have been
         added by the calculation (e.g: `Ei` and `S` for emission integral and
         linestrength in SpectrumFactory). Refer to the code to know what they mean
         (and their units)
 
-    wavespace: 'nm' or 'cm-1', or None
+    wavespace: ``'nm'`` or ``'cm-1'``, or ``None``
         define whether wavenumber or wavelength are used in 'quantities' tuples.
         Quantities should be evenly distributed along this space for fast
         convolution with the slit function
@@ -344,10 +345,10 @@ class Spectrum(object):
 
                 {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
 
-
         lines: pandas Dataframe
-            all lines in databank (necessary for LineSurvey). Warning if you want to
-            play with the lins content: The signification of columns in `lines` may be
+            all lines in databank (necessary for using 
+            :meth:`~radis.spectrum.spectrum.Spectrum.line_survey`). Warning if you want to
+            play with the lines content: The signification of columns in `lines` may be
             specific to a database format. Plus, some additional columns may have been
             added by the calculation (e.g: `Ei` and `S` for emission integral and
             linestrength in SpectrumFactory). Refer to the code to know what they mean
@@ -436,13 +437,13 @@ class Spectrum(object):
                 {'CO2':{1: 'X': df}}   # with df a Pandas Dataframe
 
         lines: pandas Dataframe
-            all lines in databank (necessary for LineSurvey). Warning if you want to
-            play with the lins content: The signification of columns in `lines` may be
+            all lines in databank (necessary for using 
+            :meth:`~radis.spectrum.spectrum.Spectrum.line_survey`). Warning if you want to
+            play with the lines content: The signification of columns in `lines` may be
             specific to a database format. Plus, some additional columns may have been
             added by the calculation (e.g: `Ei` and `S` for emission integral and
             linestrength in SpectrumFactory). Refer to the code to know what they mean
             (and their units)
-
 
         Returns
         -------
@@ -582,7 +583,8 @@ class Spectrum(object):
         if not var in self.get_vars():
             if var+'_noslit' in self.get_vars():
                 raise KeyError(('`{0}` doesnt exist but `{1}` does'.format(var,
-                                                                           var+'_noslit')) + '. Have you used .apply_slit()?')
+                                                                           var+'_noslit')) +\
+                                '. Have you used .apply_slit()?')
             else:
                 raise KeyError('{0} not in quantity list: {1}'.format(
                     var, self.get_vars()))
@@ -1048,7 +1050,7 @@ class Spectrum(object):
                                    force=force)
 
     def rescale_mole_fraction(self, new_mole_fraction, old_mole_fraction=None,
-                              ignore_warnings=False, force=False):
+                              ignore_warnings=False, force=False, verbose=True):
         ''' Update spectrum with new molar fraction
         Convoluted values (with slit) are dropped in the process.
 
@@ -1086,11 +1088,63 @@ class Spectrum(object):
 
         Add warning when too large rescaling
         '''
-
         return rescale_mole_fraction(self, new_mole_fraction=new_mole_fraction,
                                      old_mole_fraction=old_mole_fraction,
                                      ignore_warnings=ignore_warnings,
-                                     force=force)
+                                     force=force, verbose=verbose)
+        
+        
+    def crop(self, wmin, wmax, wunit, medium='default'):
+        ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``
+        
+        Parameters
+        ----------
+        
+        wmin, wmax: float
+            boundaries of waverange
+            
+        wunit: 'nm', 'cm-1'
+            which wavespace to use for ``wmin, wmax``
+            
+        medium: 'air', vacuum'
+            necessary if cropping in 'nm'
+            
+        Returns
+        -------
+        
+        None: 
+            spectrum is modified in place
+        
+        Examples
+        --------
+        
+        Crop to experimental Spectrum, and compare::
+            
+            from radis import calc_spectrum, load_spec, plot_diff
+            s = calc_spectrum(...)
+            s_exp = load_spec('typical_result.spec')
+            s.crop(s_exp.get_wavelength.min(), s_exp.get_wavelength.max(), 'nm')
+            plot_diff(s_exp, s)
+        
+        See Also
+        --------
+        
+        :func:`~radis.los.slabs.MergeSlabs`: if used with ``resample='full', 
+        out='transparent'``, this becomes the opposite of cropping: can be used
+        to combine 2 adjacent spectra in one.
+        
+        
+        '''
+    
+        from radis.spectrum.operations import crop
+        
+        if medium == 'default':
+            medium = self.get_medium()
+        
+        crop(self, wmin=wmin, wmax=wmax, wunit=wunit, medium=medium, inplace=True)
+        
+        return 
+        
 
     def get_integral(self, var, wunit='nm', Iunit='default', **kwargs):
         ''' Returns integral of variable 'var' over waverange
@@ -1197,7 +1251,7 @@ class Spectrum(object):
 
     def plot(self, var=None, wunit='default', Iunit='default', show_points=False,
              nfig=None, yscale='linear', medium='default',
-             normalize=False,
+             normalize=False, force=False,
              **kwargs):
         '''
 
@@ -1234,6 +1288,10 @@ class Spectrum(object):
         normalize: boolean
             option to normalize quantity to 1 (ex: for radiance). Default ``False``
 
+        force: bool
+            plotting on an existing figure is forbidden if labels are not the 
+            same. Use ``force=True`` to ignore that.
+
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
@@ -1269,6 +1327,7 @@ class Spectrum(object):
         # Get variable
         x, y = self.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
 
+        # Get labels
         wmedium = ' [{0}]'.format(medium) if medium != 'default' else ''
         if wunit == 'cm-1':
             xlabel = 'Wavenumber (cm-1)'
@@ -1281,9 +1340,10 @@ class Spectrum(object):
             except KeyError:  # unit not defined in dictionary
                 Iunit0 = 'a.u'
             Iunit = Iunit0
-
+            
         # cosmetic changes
         Iunit = make_up(Iunit)
+        ylabel = make_up('{0} ({1})'.format(var.capitalize(), Iunit))
 
         # Plot
         # -------
@@ -1294,7 +1354,25 @@ class Spectrum(object):
         set_style('origin')
         if nfig == 'same':
             nfig = plt.gcf().number
-        plt.figure(nfig)
+        fig = plt.figure(nfig)
+        
+        # If figure exist, ensures xlabel and ylabel are the same (prevents some
+        # users errors if plotting difference units!)... Note that since 
+        # 'radiance' and 'radiance_noslit' are now plotted under the same name,
+        # they cannot be differenced. But at least this allows user to plot 
+        # both on the same figure if they want to compare
+        
+        if not force and (fig.gca().get_xlabel() not in ['', xlabel]):
+            raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
+                             'on a same figure with different xlabel: {0}, {1}'.format(
+                            fig.gca().get_xlabel(), xlabel)+\
+                            'Use force=True if you really want to plot')
+        if not force and (fig.gca().get_ylabel() not in ['', ylabel]):
+            raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
+                             'on a same figure with different ylabel: \n{0}\n{1}'.format(
+                            fig.gca().get_ylabel(), ylabel)+\
+                            '\nUse force=True if you really want to plot')
+        
         # Add extra plotting parameters
         if 'lw' not in kwargs and 'linewidth' not in kwargs:
             kwargs['lw'] = 0.5
@@ -1307,7 +1385,7 @@ class Spectrum(object):
             plt.plot(x, y, 'o', color='lightgrey', **kwargs)
         plt.ticklabel_format(useOffset=False, axis='x')
         plt.xlabel(xlabel)
-        plt.ylabel(make_up('{0} ({1})'.format(var, Iunit)))
+        plt.ylabel(ylabel)
 
         plt.yscale(yscale)
 
@@ -1849,7 +1927,7 @@ class Spectrum(object):
         # -------
         wslit0, Islit0 = get_slit_function(slit_function, unit=unit, norm_by=norm_by,
                                          shape=shape, center_wavespace=center_wavespace,
-                                         return_unit=waveunit, wstep=wstep,
+                                         return_unit=waveunit, wstep=wstep, verbose=verbose,
                                          plot=plot_slit, *args, **kwargs)
 
         # Check if dispersion is too large
@@ -2515,7 +2593,7 @@ class Spectrum(object):
 
         # There are different cases depending on the unit of w_new
         # ... Note for devs: we're looping over dictionaries directly rather than
-        # ... using the (safter) .get() function because it's much faster (the
+        # ... using the (safer) .get() function because it's much faster (the
         # ... air2vacuum conversion in particular is quite slow, but has been
         # ... done once for all with get_wavelength() above )
         if update_q:
@@ -2867,7 +2945,10 @@ class Spectrum(object):
                     raise ValueError('wavespace for {0} doesnt correspond to existing wavespace'.format
                                      (name)+' for convoluted quantities')
             else:
-                self._q_conv['wavespace'] = check_wavespace(w)   # copy
+#                self._q_conv['wavespace'] = check_wavespace(w)   # copy
+                self._q_conv['wavespace'] = w   
+                # no need to check if wavespace is evenly spaced: we won't 
+                # apply the slit function again
 
             # Add quantity itself
             self._q_conv[name] = np.array(I)              # copy
@@ -2919,7 +3000,7 @@ class Spectrum(object):
 
     def __str__(self):
         ''' Print all Spectrum attributes'''
-
+        
         # Print name
         print('Spectrum Name: ', self.get_name())
 
@@ -2927,7 +3008,10 @@ class Spectrum(object):
         print('Spectral Quantities')
         print('-'*40)
         for k, v in self._get_items().items():
-            print(' '*2, k, '\t({0} points)'.format(len(v[0])))
+            # print number of points with a comma separator
+            print(' '*2, k, '\t({0:,d} points{1})'.format(len(v[0]),
+                                ', {0} nans'.format(count_nans(v[1])) if count_nans(v[1])>0 
+                                else ''))
 
         # Print populations
         print('Populations Stored')

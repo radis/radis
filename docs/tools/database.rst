@@ -22,6 +22,17 @@ Example::
     s = db.get('Tvib==3000')[0]  # get a Spectrum back
     db.add(s)  # update database (and raise error because duplicate!)
 
+A :class:`~radis.tools.database.SpecDatabase` can also be used to simply
+compare the physical and computation parameters of all spectra in folder. 
+Indeed, whenever the database is generated, a summary ``.csv`` file 
+is generated that contains all conditions and can be read, for instance, 
+with Excel. 
+
+Example::
+
+    from radis import SpecDatabase
+    SpecDatabase(r".")     # this generates a .csv file in the current folder
+
 
 The examples below show some actions that can be performed on a database: 
     
@@ -69,6 +80,9 @@ use of the :meth:`~radis.tools.database.SpecDatabase.items` method::
         s.conditions['author'] = 'me'
         s.store(path, if_exists_then='replace')
                 
+You may also be interested in the :meth:`~radis.tools.database.SpecDatabase.map` 
+method. 
+
 
 When not to use a Database 
 --------------------------

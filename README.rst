@@ -1,4 +1,9 @@
 
+***************************************************
+`RADIS User Guide <https://radis.readthedocs.io/>`_
+***************************************************
+
+
 .. image:: https://img.shields.io/pypi/v/radis.svg
     :target: https://pypi.python.org/pypi/radis
     :alt: PyPI

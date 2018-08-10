@@ -208,7 +208,8 @@ def sPlanck(wavenum_min=None, wavenum_max=None,
                            'transmittance_noslit': 'I/I0',
                            'absorbance': '-ln(I/I0)'},
                     cond_units={'wstep': waveunit},
-                    waveunit=waveunit)
+                    waveunit=waveunit,
+                    name='Planck {0}K, eps={1:.2g}'.format(T, eps))
 
 
 if __name__ == '__main__':

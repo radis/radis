@@ -5,6 +5,8 @@ Created on Fri Jul  6 13:52:04 2018
 @author: erwan
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import pandas as pd
 from six.moves import range
@@ -110,10 +112,10 @@ def _format_dtype(dtype):
     except TypeError:
         # Cant read database. Try to be more explicit for user
         print('Data type')
-        print('-'*30)
+        print(('-'*30))
         for (k, c) in dtype:
-            print(str(k), '\t', c)
-        print('-'*30)
+            print((str(k), '\t', c))
+        print(('-'*30))
         raise
     return dt
 
@@ -140,12 +142,12 @@ def _cast_to_dtype(data, dtype):
         try:
             # Cant read database. Try to be more explicit for user
             print('Cant cast data to specific dtype. Trying column by column:')
-            print('-'*30)
+            print(('-'*30))
             for i in range(len(data[0])):
-                print(dtype[i], '\t', np.array(data[0][i], dtype=dt[i]))
-            print('-'*30)
+                print((dtype[i], '\t', np.array(data[0][i], dtype=dt[i])))
+            print(('-'*30))
         except ValueError:
-            print('>>> Next param:', dtype[i], '. Value:', data[0][i], '\n')
+            print(('>>> Next param:', dtype[i], '. Value:', data[0][i], '\n'))
             raise ValueError(
                 'Cant cast data to specific dtype. Tried column by column. See results above')
 
@@ -163,8 +165,8 @@ def drop_object_format_columns(df, verbose=True):
     for k in objects:
         del df[k]
     if verbose and len(objects)>0:
-        print('The following columns had the `object` format and were removed: {0}'.format(
-                objects))
+        print(('The following columns had the `object` format and were removed: {0}'.format(
+                objects)))
     return df
     
 

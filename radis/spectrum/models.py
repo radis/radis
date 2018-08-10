@@ -20,6 +20,7 @@ Routine Listing
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.spectrum.spectrum import Spectrum
+import numpy as np
 
 
 # %% Array-to-Spectrum functions
@@ -27,7 +28,7 @@ from radis.spectrum.spectrum import Spectrum
 
 def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
                         conditions=None, cond_units=None, populations=None,
-                        name=None):
+                        name=None): # -> Spectrum:
     ''' Convert (w, I) into a Spectrum object that has unit conversion, plotting
     and slit convolution capabilities
 
@@ -73,7 +74,7 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
 
     '''
 
-    return Spectrum.from_array(w, I, 'radiance_noslit',
+    return Spectrum.from_array(np.array(w), np.array(I), 'radiance_noslit',
                                waveunit=wunit, unit=Iunit,
                                conditions=conditions, cond_units=cond_units,
                                populations=populations,
@@ -82,7 +83,7 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
 
 def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
                            conditions=None, cond_units=None,
-                           name=None):
+                           name=None): # -> Spectrum:
     ''' Convert (w, I) into a Spectrum object that has unit conversion, plotting
     and slit convolution capabilities
 
@@ -124,14 +125,14 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
 
     '''
 
-    return Spectrum.from_array(w, T, 'transmittance_noslit',
+    return Spectrum.from_array(np.array(w), np.array(T), 'transmittance_noslit',
                                waveunit=wunit, unit=Tunit,
                                conditions=conditions, cond_units=cond_units,
                                name=name)
 
 
 def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
-                          conditions=None, cond_units=None, name=None):
+                          conditions=None, cond_units=None, name=None): # -> Spectrum:
     ''' Convert (w, I) into a Spectrum object that has unit conversion and plotting
     capabilities. Convolution is not available as the spectrum is assumed to
     be measured experimentally (hence deconvolution of the slit function would
@@ -175,7 +176,7 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
 
     '''
 
-    return Spectrum.from_array(w, I, 'radiance',
+    return Spectrum.from_array(np.array(w), np.array(I), 'radiance',
                                waveunit=wunit, unit=Iunit,
                                conditions=conditions, cond_units=cond_units,
                                name=name)

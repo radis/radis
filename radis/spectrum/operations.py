@@ -17,11 +17,13 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.misc.curve import curve_substract, curve_add
 from radis.spectrum.compare import get_diff
 from radis.spectrum import Spectrum
+from radis.phys.convert import cm2nm, nm2cm, cm2nm_air, nm_air2cm, air2vacuum, vacuum2air
 
 # %% Filter Spectra
 
 
 def Transmittance(s):
+    # type: (Spectrum) -> Spectrum
     ''' Makes a new Spectrum with only the transmittance part of Spectrum ``s``
     
     Parameters
@@ -41,7 +43,11 @@ def Transmittance(s):
     Examples
     --------
     
-    
+    ::
+        
+        from radis import load_spec, Transmittance
+        s = load_spec('file.spec')
+        s_tr = Transmittance(s)
         
     '''
     
@@ -63,12 +69,120 @@ def Transmittance(s):
     
     
 
+# %% Change wavelength
+    
+
+def crop(s, wmin, wmax, wunit, medium=None,
+         inplace=False):
+    # type: (Spectrum, float, float, str, str, bool) -> Spectrum
+    ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``
+    
+    Parameters
+    ----------
+    
+    s: Spectrum object
+        object to crop
+        
+    wmin, wmax: float
+        boundaries of waverange
+        
+    wunit: 'nm', 'cm-1'
+        which wavespace to use for ``wmin, wmax``
+    
+    medium: 'air', vacuum'
+        necessary if cropping in 'nm'
+        
+    Other Parameters
+    ----------------
+    
+    inplace: bool
+        if ``True``, modifiy ``s`` directly. Else, returns a copy.
+    
+    Returns
+    -------
+    
+    s_crop: Spectrum
+        a cropped Spectrum.
+        if using ``inplace``, then ``s_crop`` and ``s`` are still the same object
+    
+    Examples
+    --------
+    
+    ::
+        
+        crop(s, 420, 480, 'nm', 'air')
+        
+    Or in ``cm-1``::
+        
+        crop(s, 2000, 2300, 'cm-1')
+    
+    '''
+    
+    # Check inputs
+    assert wunit in ['nm', 'cm-1']
+    if wunit == 'nm' and medium is None:
+        raise ValueError("Precise give wavelength medium with medium='air' or "+\
+                         "medium='vacuum'")
+    if wmin >= wmax:
+        raise ValueError('wmin should be > wmax')
+    
+    if len(s._q)>0 and len(s._q_conv)>0:
+        raise NotImplementedError('Cant crop this Spectrum as there are both convoluted '+\
+                                  'and not convoluted quantities stored')
+        # Could bring unexpected errors... For instance, if cropping both 
+        # with slit and without slit  quantities to the same waverange, 
+        # reapplying the slit in 'valid' mode would reduce the wavelength range 
+        # of the convoluted quantities 
+        # Implementation: better ask User to drop some of the quantities themselves
+    
+    if not inplace:
+        s = s.copy()
+    
+    # Convert wmin, wmax to Spectrum wavespace    
+    # (deal with cases where wavelength are given in 'air' or 'vacuum')
+    waveunit = s.wavespace()
+    if wunit == 'nm' and waveunit == 'cm-1':
+        if medium == 'air':
+            wmin, wmax = nm_air2cm(wmax), nm_air2cm(wmin)   # reverted
+        else:
+            wmin, wmax = nm2cm(wmax), nm2cm(wmin)   # reverted
+    elif wunit == 'cm-1' and waveunit == 'nm':
+        if s.get_medium() == 'air':
+            wmin, wmax = cm2nm_air(wmax), cm2nm_air(wmin)   # nm in air
+        else:
+            wmin, wmax = cm2nm(wmax), cm2nm(wmin)   # get nm in vacuum
+    elif wunit == 'nm' and waveunit == 'nm':
+        if s.get_medium() == 'air' and medium == 'vacuum':
+            # convert from given medium ('vacuum') to spectrum medium ('air')
+            wmin, wmax = vacuum2air(wmin), vacuum2air(wmax)
+        elif s.get_medium() == 'vacuum' and medium == 'air':
+            # the other way around
+            wmin, wmax = air2vacuum(wmin), air2vacuum(wmax)
+    else:
+        assert wunit == waveunit           # correct wmin, wmax
+    
+    # Crop non convoluted
+    if len(s._q)>0:
+        b = (wmin <= s._q['wavespace']) & (s._q['wavespace'] <= wmax)
+        for k, v in s._q.items():
+            s._q[k] = v[b]
+  
+    # Crop convoluted
+    if len(s._q_conv)>0:
+        b = (wmin <= s._q_conv['wavespace']) & (s._q_conv['wavespace'] <= wmax)
+        for k, v in s._q_conv.items():
+            s._q_conv[k] = v[b]
+
+    return s
+    
+
 
 
 # %% Algebric operations on Spectra
 
 def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
               resample=True, name='default'):
+    # type: (Spectrum, Spectrum, str, str, str, bool, str) -> Spectrum
     '''Substract s2 to s1
 
     Parameters    
@@ -83,12 +197,14 @@ def substract(s1, s2, var='radiance', wunit='nm', Iunit='default',
         If 'default' s1 unit is used for variable var.
     name: str, optional
         If not given will be s1 and s2 names separated by '+'.
+    
     Returns    
-    ----------
-    sub : Spectrum object where intensities of s1 and s2 are substracted
+    -------
+    sub : Spectrum 
+        Spectrum object where intensities of s1 and s2 are substracted
 
-    Note    
-    ----------
+    Notes
+    -----
     Wavelength of s1 is taken as reference.
     '''
     if s1.get_conditions()['medium'] != s2.get_conditions()['medium']:
@@ -120,16 +236,21 @@ def multiply(s, coef, var='radiance', wunit='nm', name='None'):
 
     Parameters    
     ----------
+    
     s: Spectrum objects
         The spectra to multiply.
+        
     coef: Float
         Coefficient of the multiplication.
+        
     Returns    
-    ----------
+    -------
+    
     sub : Spectrum object where intensity of s is multiplied by coef
 
-    Note    
-    ----------
+    Notes
+    -----
+    
     Godd for fittings without absolute calibration. No unit in output !
     '''
     w, I = s.get(var, wunit=wunit)
