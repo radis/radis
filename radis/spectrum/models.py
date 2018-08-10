@@ -20,6 +20,7 @@ Routine Listing
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.spectrum.spectrum import Spectrum
+import numpy as np
 
 
 # %% Array-to-Spectrum functions
@@ -73,7 +74,7 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
 
     '''
 
-    return Spectrum.from_array(w, I, 'radiance_noslit',
+    return Spectrum.from_array(np.array(w), np.array(I), 'radiance_noslit',
                                waveunit=wunit, unit=Iunit,
                                conditions=conditions, cond_units=cond_units,
                                populations=populations,
@@ -124,7 +125,7 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
 
     '''
 
-    return Spectrum.from_array(w, T, 'transmittance_noslit',
+    return Spectrum.from_array(np.array(w), np.array(T), 'transmittance_noslit',
                                waveunit=wunit, unit=Tunit,
                                conditions=conditions, cond_units=cond_units,
                                name=name)
@@ -175,7 +176,7 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
 
     '''
 
-    return Spectrum.from_array(w, I, 'radiance',
+    return Spectrum.from_array(np.array(w), np.array(I), 'radiance',
                                waveunit=wunit, unit=Iunit,
                                conditions=conditions, cond_units=cond_units,
                                name=name)
