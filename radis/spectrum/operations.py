@@ -268,9 +268,9 @@ if __name__ == '__main__':
     s=load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
     s.update()
     
-    # Test addition
+    # Test addition of Spectra
     s.plot(lw=2, nfig='Addition (Merge): s+s')
-    (s+s).plot(nfig='same')
+    (s//s).plot(nfig='same')
     
     # TODO: add test
     # @EP: the test fails at the moment because multiply only works with radiance,
@@ -284,7 +284,13 @@ if __name__ == '__main__':
     # TODO: make 2*s  (multiply)    crash if there are more than 1 spectral quantity?
     
     # Test multiplication with float
-    s.plot(lw=2, nfig='Multiplication (Serial): s*s', wunit='nm')
+    s.plot(lw=2, nfig='Multiplication (by scalar): 2*s', wunit='nm')
 #    (s*s).plot(nfig='same')
     (2*s).plot(nfig='same', wunit='nm')
+    
+    
+    # Test Serial:
+    s.rescale_path_length(20)
+    s.plot('radiance_noslit', lw=2, nfig='Line of sight (SerialSlabs): s > s > s')
+    (s>s>s).plot('radiance_noslit', nfig='same')
 

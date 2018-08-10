@@ -2993,19 +2993,12 @@ class Spectrum(object):
         Add is defined as :
             
         - for numeric values: add a baseline
-        - for 2 Spectra: Merge them (i.e: solve the RTE again). Won't work
-          if they are not defined on the same waverange, but it's okay: let 
-          the user use MergeSlabs manually with the appropriate options 
-          
         '''
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import _add_constant
             # TODO: define _add_constant to loop over all quantities. @minou? 
             # TODO: make sure units are okay
             return _add_constant(self, other)
-        elif isinstance(other, Spectrum):
-            from radis.los.slabs import MergeSlabs
-            return MergeSlabs(self, other)
         else:
             raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
@@ -3041,11 +3034,49 @@ class Spectrum(object):
     
     def __mul__(self, other):
         ''' Override '*' behavior
-        Add is defined as :
+        Multiply is defined as :
             
         - for numeric values: multiply (equivalent to optically thin scaling)
           (only if in front, i.e:  2*s   works but s*2 is not implemented)
-        - for 2 Spectra: add them along the line of sight, with SerialSlabs
+        - for 2 Spectra: not defined
+          
+        '''
+#        if isinstance(other, float) or isinstance(other, int):
+#            from radis.spectrum.operations import _multiply
+#            # TODO: define _add_constant to loop over all quantities. @minou? 
+#            # TODO: make sure units are okay
+#            return _multiply(self, other)
+        raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __rmul__(self, other):
+        ''' Right side multiplication '''
+
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _multiply
+            # TODO: define _add_constant to loop over all quantities. @minou? 
+            # TODO: make sure units are okay
+            return _multiply(self, other)
+        else:
+            raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    # Line of sight operations
+    
+    def __gt__(self, other):
+        ''' Overloads '>' behavior
+        no comparison: here we use > to define a ``Line of sight``.
+        
+        Examples
+        --------
+        
+        s_plasma is seen through s_room::
+            
+            s = s_plasma > s_room 
+            
+        Equivalent to::
+            
+            s = SerialSlabs(s_plasma, s_room)
           
         '''
 #        if isinstance(other, float) or isinstance(other, int):
@@ -3057,24 +3088,47 @@ class Spectrum(object):
             from radis.los.slabs import SerialSlabs
             return SerialSlabs(self, other)
         else:
-            raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
+            raise NotImplementedError('> not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
             
-    def __rmul__(self, other):
-        ''' Right side multiplication '''
-
-        if isinstance(other, float) or isinstance(other, int):
-            from radis.spectrum.operations import _multiply
-            # TODO: define _add_constant to loop over all quantities. @minou? 
-            # TODO: make sure units are okay
-            return _multiply(self, other)
+#    def __rgt__(self, other):
+#        ''' Right side > '''
+#
+#        if isinstance(other, Spectrum):
+#            from radis.los.slabs import SerialSlabs
+#            return SerialSlabs(other, self)
+#        else:
+#            raise NotImplementedError('right side > not implemented for a Spectrum and a {0} object'.format(
+#                    type(other)))
+            
+    def __floordiv__(self, other):
+        ''' Overloads '//' behavior
+        not a divison here: we use it to say that Slabs are ``in parallel``, i.e.,
+        as if their respesctive mole fractions were added in the same physical space 
+        
+        Won't work if they are not defined on the same waverange, but it's okay: let 
+        the user use MergeSlabs manually with the appropriate options 
+          
+        Examples
+        --------
+        
+        s_co2 added with s_co:
+            
+            s = s_co2 // s_co 
+            
+        Equivalent to::
+            
+            s = MergeSlabs(s_co2, s_co)
+            
+        '''
+        
         if isinstance(other, Spectrum):
-            from radis.los.slabs import SerialSlabs
-            return SerialSlabs(other, self)
+            from radis.los.slabs import MergeSlabs
+            return MergeSlabs(self, other)
         else:
-            raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
+            raise NotImplementedError('// not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
-    
+
 
     # the following is so that json_tricks.dumps and .loads can be used directly,
     # ie.:
