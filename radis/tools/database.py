@@ -896,6 +896,7 @@ class SpecDatabase():
         # loading parameters
         self.nJobs = nJobs
         self.batch_size = batch_size
+        self.minimum_nfiles = 6    #: type: int. If there are less files, don't use parallel mode.
 
         self.update(force_reload=True, filt=filt)
 
@@ -1091,11 +1092,12 @@ class SpecDatabase():
         Examples
         --------
         >>> db.find_duplicates(columns={'x_e', 'x_N_II'})
-        Out[34]: 
-        file
-        20180710_101.spec    True
-        20180710_103.spec    True
-        dtype: bool
+            
+            Out[34]: 
+            file
+            20180710_101.spec    True
+            20180710_103.spec    True
+            dtype: bool
         '''
         dg = self.see(columns=columns).astype(str).duplicated()
         #need to convert eveything as a str to avoid comparaison problems (Minou)
@@ -1241,8 +1243,8 @@ class SpecDatabase():
         -----
         
         Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
-        attributes of :class:`~radis.tools.database.SpecDatabase`. See :class:`joblib.parallel.Parallel`
-        for information on the arguments    
+        attributes of :class:`~radis.tools.database.SpecDatabase`. 
+        See :class:`joblib.parallel.Parallel` for information on the arguments    
 
         '''
         db = []
@@ -1250,14 +1252,18 @@ class SpecDatabase():
         # get joblib parallel parameters        
         nJobs = self.nJobs
         batch_size = self.batch_size
+        minimum_nfiles = self.minimum_nfiles
         
-#        for f in files:
-#                db.append(self._load_file(f, binary=self.binary))
-        if self.verbose: print('*** Loading the database with '+ str(nJobs) + ' processor(s) ***')
-        if nJobs==1:
+        # Sequential loading
+        if nJobs==1 or len(files) < minimum_nfiles:
+            if self.verbose: print('*** Loading the database with 1 processor '+\
+                                   '({0} files)***'.format(len(files)))
             for f in files:
                 db.append(self._load_file(f, binary=self.binary))
+        # Parallel loading
         else:
+            if self.verbose: print('*** Loading the database with {0} '.format(nJobs)+\
+                                   'processor(s) ({0} files)***'.format(len(files)))
             def funLoad(f):
                 return self._load_file(f, binary=self.binary)
             db = Parallel(n_jobs=nJobs, batch_size = batch_size, 
@@ -1275,10 +1281,26 @@ class SpecDatabase():
 
         out = s.get_conditions().copy()
 
-        # Add filename, and a link Spectrum itself
+        # Add filename, and a link to the Spectrum object itself
         out.update({'file': basename(file), 'Spectrum': s})
 
         return out
+    
+    def update_conditions(self):
+        ''' Reloads conditions of all Spectrum in database '''
+        
+        # Fetch new conditions, including file and Spectrum object itself
+        new_conditions_list = []
+        for _,r in self.df.iterrows():
+            s = r.Spectrum
+            new_conditions = s.get_conditions()
+            new_conditions['file'] = r.file
+            new_conditions['Spectrum'] = r.Spectrum
+            new_conditions_list.append(new_conditions)
+        
+        # update DataFrame
+        self.df = pd.DataFrame(new_conditions_list)
+        
 
     def get(self, conditions='', **kwconditions):
         '''   Returns a list of spectra that match given conditions
@@ -1430,15 +1452,24 @@ class SpecDatabase():
             directly from spectroscopic quantities (e.g: 'path_length', 'molar_fraction')
             Default ``True``
 
-        Extra Parameters
+        Other Parameters
         ----------------
 
         verbose: boolean
             print messages. Default ``True``
 
         inplace: boolean
-            if True, returns the actual object in database. Else, return a copy
+            if ``True``, returns the actual object in database. Else, return a copy
             Default ``False``
+            
+#        split_columns: list of str. 
+#            slits a comma separated column in multiple columns, and number them. 
+#            Typically::
+#                
+#                db.get_closest(..., split_columns=['Tvib'])    # in multi temperature modes
+#                
+#            splits ``Tvib:'1200,1300,1000'``, in ``Tvib1:1200, Tvib2:1300, Tvib3:1000``
+#            Default ``[]``
 
 
         See Also
@@ -1457,15 +1488,17 @@ class SpecDatabase():
                 'Please specify filtering conditions. e.g: Tgas=300')
 
         # Inputs:
-        verbose = kwconditions.pop('verbose', True)         # type: bool
-        inplace = kwconditions.pop('inplace', False)        # type: bool
+        verbose = kwconditions.pop('verbose', True)         #: type: bool
+        inplace = kwconditions.pop('inplace', False)        #: type: bool
+#        split_columns = kwconditions.pop('split_columns', [])     #: type: bool
 
+        # Check all conditions exist
         for (k, _) in kwconditions.items():
             if not k in self.df.columns:
                 raise ValueError('{0} not a correct condition name. Use one of: {1}'.format(k,
                                                                                             self.df.columns))
 
-        dg = self.df.reindex(columns=list(kwconditions))
+        dg = self.df.reindex(columns=list(self.df.columns))
 
         if scale_if_possible:
             # Remove scalable inputs from distance calculation variables (unless
@@ -1477,7 +1510,7 @@ class SpecDatabase():
                     del dg[k]
                 except KeyError:
                     pass
-
+                
 #        raise
 
         mean = dict(dg.mean())
@@ -1504,7 +1537,22 @@ class SpecDatabase():
                 # an obvious problem with standard deviation scaling in the case of
                 # a non important feature containing very close datapoints that would
                 # result in inappropriately high weights)
-                dg['_d'] += (dg[k]-v)**2/mean[k]**2
+                
+                try:
+                    dg['_d'] += (dg[k]-v)**2/mean[k]**2
+                except TypeError as err:
+                    # Deal with case where formats dont match:
+                    try:
+                        dg[k]-v
+                    except TypeError:
+                        print(sys.exc_info())
+                        raise TypeError('An error occured (see above) when calculating '+\
+                                        '(dg[{0}]-{1}). Example: '.format(k, v)+\
+                                        '({0} - {1}). '.format(dg[k].iloc[0], v)+\
+                                         'Check that your requested conditions match '+\
+                                         'the database format')
+                    else:
+                        raise(err)
 
             # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
 
