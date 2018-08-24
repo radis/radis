@@ -25,7 +25,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest numpy scipy matplotlib pandas plotly h5py
   - source activate test-environment
   - conda install -c astropy astroquery
-  - pip install codecov pytest-cov
+  - pip install pytest-cov
   - python setup.py install
 
 script:
@@ -42,4 +42,8 @@ branches:
   
  
 after_success:
-- codecov
+  # codecoverage for Python 3 only
+  - if [[ "$TRAVIS_PYTHON_VERSION" != "2.7" ]]; then
+      pip install codecov;
+      codecov;
+    fi
