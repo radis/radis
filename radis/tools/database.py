@@ -1028,7 +1028,8 @@ class SpecDatabase():
                      and f.endswith(filt)]
             #no parallelization here because the number of files is supposed to be small
             for f in files:
-                self.df = self.df.append(self._load_file(f), ignore_index=True)
+                self.df = self.df.append(self._load_file(f, binary=self.binary), 
+                                         ignore_index=True)
 
         # Print index
         self.print_index()
