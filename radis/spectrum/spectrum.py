@@ -3000,6 +3000,7 @@ class Spectrum(object):
             # TODO: make sure units are okay
             return _add_constant(self, other)
         else:
+            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
             
@@ -3023,9 +3024,23 @@ class Spectrum(object):
             # TODO: make sure units are okay
             return _add_constant(self, -other)
         else:
-            raise NotImplementedError('- not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
+            from radis import get_diff
             
+            warn("Conditions of the left spectrum were copied in the substraction.", Warning)
+            
+            var = self.get_vars()[0] #on prend le premier et voilà
+            Iunit = self.units[var]            
+            wunit = self.get_waveunit()
+            w1, I3 = get_diff(self, other, var=var, wunit=wunit, Iunit=Iunit, 
+                                          resample=resample)
+            
+            name = self.get_name()+'- baseline'
+            sub = Spectrum.from_array(w1, I3, var, 
+                                       waveunit=wunit, 
+                                       unit=Iunit,
+                                       conditions={'medium' : self.conditions['medium']}, 
+                                       name=name)
+            return sub
     def __rsub__(self, other):
         ''' Right side substraction '''
         raise NotImplementedError('right substraction (-) not implemented for Spectrum objects')

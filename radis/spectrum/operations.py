@@ -258,7 +258,7 @@ if __name__ == '__main__':
 #    _test_visualTestBaseline(s_01)
     _test_visualTestOffset(s_01)
     
-    test_invariants()
+    test_invariants()   #not working
 
     
     # Added by @erwan
@@ -272,6 +272,9 @@ if __name__ == '__main__':
     s.plot(lw=2, nfig='Addition (Merge): s+s')
     (s//s).plot(nfig='same')
     
+    # Test substraction of Spectra
+    s_test = s-s
+    assert s_test.get_integral('abscoeff') == 0
     # TODO: add test
     # @EP: the test fails at the moment because multiply only works with radiance,
     # and MergeSlabs only works with non convoluted quantities
@@ -281,7 +284,7 @@ if __name__ == '__main__':
 #    assert get_residual(2*s, s+s, 'radiance_noslit') < 1e-3
 
     s.apply_slit(0.1, 'nm')
-    # TODO: make 2*s  (multiply)    crash if there are more than 1 spectral quantity?
+    # TODO: make 2*s  (multiply)    crash if there is more than 1 spectral quantity?
     
     # Test multiplication with float
     s.plot(lw=2, nfig='Multiplication (by scalar): 2*s', wunit='nm')
