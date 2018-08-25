@@ -2993,12 +2993,17 @@ class Spectrum(object):
         Add is defined as :
             
         - for numeric values: add a baseline
+        - for 2 Spectra: not defined (not physical)
         '''
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import _add_constant
-            # TODO: define _add_constant to loop over all quantities. @minou? 
             # TODO: make sure units are okay
-            return _add_constant(self, other)
+            if len(self.get_vars())>1:
+                raise Exception('There is an ambiguity on the substraction. '+
+                                'There should be only one var in s.\n'+
+                                "Think about using 'Transmittance(s)' or 'Radiance(s)'")
+            else:
+                return _add_constant(self, other)
         else:
             warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
@@ -3015,7 +3020,7 @@ class Spectrum(object):
         Add is defined as :
             
         - for numeric values: substract a baseline
-        - for 2 Spectra: not defined
+        - for 2 Spectra: defined only for baseline substraction
           
         '''
         if isinstance(other, float) or isinstance(other, int):
@@ -3026,21 +3031,25 @@ class Spectrum(object):
         else:
             from radis import get_diff
             
-            warn("Conditions of the left spectrum were copied in the substraction.", Warning)
-            
-            var = self.get_vars()[0] #on prend le premier et voilà
-            Iunit = self.units[var]            
-            wunit = self.get_waveunit()
-            w1, I3 = get_diff(self, other, var=var, wunit=wunit, Iunit=Iunit, 
-                                          resample=resample)
-            
-            name = self.get_name()+'- baseline'
-            sub = Spectrum.from_array(w1, I3, var, 
-                                       waveunit=wunit, 
-                                       unit=Iunit,
-                                       conditions={'medium' : self.conditions['medium']}, 
-                                       name=name)
-            return sub
+            if len(self.get_vars())>1:
+                raise Exception('There is an ambiguity on the substraction. '+
+                                'There should be only one var in s.\n'+
+                                "Think about using 'Transmittance(s)' or 'Radiance(s)'")
+            else:
+                var = self.get_vars()[0] #on prend le premier et voilà
+                Iunit = self.units[var]            
+                wunit = self.get_waveunit()
+                w1, I3 = get_diff(self, other, var=var, wunit=wunit, Iunit=Iunit, 
+                                              resample=resample)
+                
+                name = self.get_name()+'- baseline'
+                sub = Spectrum.from_array(w1, I3, var, 
+                                           waveunit=wunit, 
+                                           unit=Iunit,
+                                           conditions={'medium' : self.conditions['medium']}, 
+                                           name=name)
+                warn("Conditions of the left spectrum were copied in the substraction.", Warning)
+                return sub
     def __rsub__(self, other):
         ''' Right side substraction '''
         raise NotImplementedError('right substraction (-) not implemented for Spectrum objects')
@@ -3069,9 +3078,13 @@ class Spectrum(object):
 
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import _multiply
-            # TODO: define _add_constant to loop over all quantities. @minou? 
             # TODO: make sure units are okay
-            return _multiply(self, other)
+            if len(self.get_vars())>1:
+                raise Exception('There is an ambiguity on the multiplication. '+
+                                'There should be only one var in s.\n'+
+                                "Think about using 'Transmittance(s)' or 'Radiance(s)'")
+            else:
+                return _multiply(self, other)
         else:
             raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
                     type(other)))

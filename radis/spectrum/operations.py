@@ -273,8 +273,12 @@ if __name__ == '__main__':
     (s//s).plot(nfig='same')
     
     # Test substraction of Spectra
-    s_test = s-s
+    # TODO : Does not work because of Transmittance @Erwan
+    s2 = Transmittance(s)
+    s_test = s2-s2
     assert s_test.get_integral('abscoeff') == 0
+    
+    
     # TODO: add test
     # @EP: the test fails at the moment because multiply only works with radiance,
     # and MergeSlabs only works with non convoluted quantities
