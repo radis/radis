@@ -19,9 +19,99 @@ from radis.spectrum import Spectrum
 
 # %% Filter Spectra
 
-
 def Transmittance(s):
-    ''' Makes a new Spectrum with only the transmittance part of Spectrum ``s``
+    ''' Returns a new Spectrum with only the ``transmittance`` component of ``s`` 
+    
+    Parameters
+    ----------
+    
+    s: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    Returns
+    -------
+    
+    s_tr: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object, with only the ``transmittance``,
+        ``absorbance`` and/or ``abscoeff`` part of ``s``, where ``radiance_noslit`` ,
+        ``emisscoeff`` and ``emissivity_noslit`` (if they exist) have been set to 0
+ 
+    '''
+
+    return s.copy(copy_lines=True, quantity='transmittance')
+
+def Transmittance_noslit(s):
+    ''' Returns a new Spectrum with only the ``transmittance_noslit`` component of ``s`` 
+    
+    Parameters
+    ----------
+    
+    s: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    Returns
+    -------
+    
+    s_tr: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object, with only 
+        ``transmittance_noslit`` defined
+ 
+    '''
+
+    return s.copy(copy_lines=True, quantity='transmittance_noslit')
+
+def Radiance(s):
+    ''' Returns a new Spectrum with only the ``radiance`` component of ``s`` 
+    
+    Parameters
+    ----------
+    
+    s: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    Returns
+    -------
+    
+    s_tr: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object, with only ``radiance``
+        defined
+ 
+    '''
+
+    return s.copy(copy_lines=True, quantity='radiance')
+
+def Radiance_noslit(s):
+    ''' Returns a new Spectrum with only the ``radiance_noslit`` component of ``s`` 
+    
+    Parameters
+    ----------
+    
+    s: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object
+        
+    Returns
+    -------
+    
+    s_tr: Spectrum
+        :class:`~radis.spectrum.spectrum.Spectrum` object, with only ``radiance_noslit``
+        defined
+ 
+    '''
+
+    return s.copy(copy_lines=True, quantity='radiance_noslit')
+
+# Useful for determining line-of-sight contributions:
+
+def PerfectAbsorber(s):
+    ''' Makes a new Spectrum with the same transmittance/absorbance as Spectrum
+    ``s``, but with radiance set to 0. 
+    Useful to get contribution of different slabs in line-of-sight 
+    calculations)
+    
+    .. note:
+        
+        formerly named "Transmittance", but "Transmittance(s)" wouldnt 
+        return the Transmittance exactly
     
     Parameters
     ----------
@@ -54,7 +144,7 @@ def Transmittance(s):
     # Deactivate equilibrium conditions (so Kirchoff's law cannot be used anymore)
     s_tr.conditions['thermal_equilibrium'] = False
     
-    s_tr.name = 'Transmittance({0})'.format(s.get_name())
+    s_tr.name = 'PureAbsorber({0})'.format(s.get_name())
     
     return s_tr
     

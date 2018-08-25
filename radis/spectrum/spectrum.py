@@ -2673,21 +2673,40 @@ class Spectrum(object):
                            "`self_absorption` is not defined in conditions. Please add the " +
                            "value manually with s.conditions['self_absorption']=...")
 
-    def copy(self, copy_lines=True):
-        ''' Returns a copy of this Spectrum object (performs a smart deepcopy) '''
+    def copy(self, copy_lines=True, quantity='all'):
+        ''' Returns a copy of this Spectrum object (performs a smart deepcopy) 
+        
+        Parameters
+        ----------
+        
+        copy_lines: bool
+            default ``True``
+        
+        quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
+            if not 'all', copy only one quantity. Default ``'all'``
+            
+        '''
         try:
-            return self.__copy__(copy_lines=copy_lines)
+            return self.__copy__(copy_lines=copy_lines, quantity=quantity)
         except MemoryError:
             raise MemoryError("during copy of Spectrum. If you don't need them, " +
                               "droping lines before copying may save a lot of space: " +
                               "del s.lines ; or, use copy_lines=False")
 
-    def __copy__(self, copy_lines=True):
+    def __copy__(self, copy_lines=True, quantity='all'):
         ''' Generate a new spectrum object
 
         Note: using deepcopy would work but then the Spectrum object would be pickled
         and unpickled again. It's a little faster here
 
+        Parameters
+        ----------
+        
+        copy_lines: bool
+            default ``True``
+            
+        quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
+            if not 'all', copy only one quantity. Default ``'all'``
 
         Notes
         -----
@@ -2704,7 +2723,14 @@ class Spectrum(object):
         # quantities = {s:(v[0].copy(), v[1].copy()) for (s,v) in self.items()}  #╪ 1.8 ms
 #        quantities = dict(self.items())   # 912 ns, not a copy but no need as
 #                                        # Spectrum() recreates a copy anyway
-        quantities = dict(self._get_items())
+        if quantity == 'all':
+            quantities = dict(self._get_items())
+        else:
+#            assert quantity in CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES
+#            if not quantity in self.get_vars():
+#                raise ValueError("Spectrum {0} has no quantity '{1}'. Got: {2}".format(
+#                        self.get_name(), quantity, self.get_vars()))
+            quantities = {quantity:self.get(quantity)} # dict(self._get_items())
 
         try:
             units = deepcopy(self.units)
@@ -3033,8 +3059,9 @@ class Spectrum(object):
             
             if len(self.get_vars())>1:
                 raise Exception('There is an ambiguity on the substraction. '+
-                                'There should be only one var in s.\n'+
-                                "Think about using 'Transmittance(s)' or 'Radiance(s)'")
+                                'There should be only one var in Spectrum. Got {0}'.format(
+                                        self.get_vars())+
+                                "\nThink about using 'Transmittance(s)' or 'Radiance(s)'")
             else:
                 var = self.get_vars()[0] #on prend le premier et voilà
                 Iunit = self.units[var]            
