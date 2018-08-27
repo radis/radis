@@ -466,7 +466,7 @@ def plot_diff(s1, s2, var=None,
               resample=True, method='diff', diff_window=0, show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
               normalize=False, verbose=True, save=False, show=True,
-              show_residual=False):
+              show_residual=False, lw_multiplier=1):
     ''' Plot two spectra, and the difference between them
 
     If waveranges dont match, ``s2`` is interpolated over ``s1``. 
@@ -542,6 +542,16 @@ def plot_diff(s1, s2, var=None,
         if ``True``, calculates and shows on the graph the residual in L2 norm. 
         See :func:`~radis.spectrum.compare.get_residual`. ``diff_window`` is 
         used in the residual calculation too. ``normalize`` has no effect. 
+        
+    Returns
+    -------
+    
+    fig: figure
+        fig
+    
+    [ax0, ax1]: axes
+        spectra and difference axis
+    
         
     Examples
     --------
@@ -662,13 +672,13 @@ def plot_diff(s1, s2, var=None,
         w2, I2 = s2.get(var, wunit, Iunit, medium)
         if verbose:
             print(('Rescale factor: '+str(np.max(I1)/np.max(I2))))
-        ax0.plot(w1, I1/np.max(I1), ls=style, color='k', lw=3, label=label1)
-        ax0.plot(w2, I2/np.max(I2), ls=style, color='r', lw=1, label=label2)
+        ax0.plot(w1, I1/np.max(I1), ls=style, color='k', lw=3*lw_multiplier, label=label1)
+        ax0.plot(w2, I2/np.max(I2), ls=style, color='r', lw=1*lw_multiplier, label=label2)
     else:
         ax0.plot(*s1.get(var, wunit, Iunit, medium),
-                 ls=style, color='k', lw=3, label=label1)
+                 ls=style, color='k', lw=3*lw_multiplier, label=label1)
         ax0.plot(*s2.get(var, wunit, Iunit, medium),
-                 ls=style, color='r', lw=1, label=label2)
+                 ls=style, color='r', lw=1*lw_multiplier, label=label2)
 
     Iunit = make_up(Iunit)  # cosmetic changes
 
@@ -682,9 +692,9 @@ def plot_diff(s1, s2, var=None,
 
     # plot difference (sorted)
     b = np.argsort(wdiff)
-    ax1.plot(wdiff[b], Idiff[b], style, color='k', lw=1)
+    ax1.plot(wdiff[b], Idiff[b], style, color='k', lw=1*lw_multiplier)
 #    ax1.plot(wdiff[b], np.zeros(np.size(wdiff[b])), style, color='r', lw=1)
-    ax1.axhline(y=0, color='r', zorder=-1)
+    ax1.axhline(y=0, color='grey', zorder=-1)
 
     if method == 'diff':
         difftext = 'diff'
@@ -718,7 +728,7 @@ def plot_diff(s1, s2, var=None,
         ax1.set_ylim(bottom=0)
     elif method == 'ratio':
         # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
-        Idiff_sorted = np.sort(Idiff)
+        Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
         ax1.set_ylim(bottom=Idiff_sorted[len(Idiff_sorted)//100] - 0.001, 
                         top=Idiff_sorted[-len(Idiff_sorted)//100] + 0.001)
 
@@ -736,7 +746,7 @@ def plot_diff(s1, s2, var=None,
 
     # Add cursors
     fig.cursors = MultiCursor(fig.canvas, (ax0, ax1),
-                              color='r', lw=1, alpha=0.2, horizOn=False,
+                              color='r', lw=1*lw_multiplier, alpha=0.2, horizOn=False,
                               vertOn=True)
     if show:
         plt.show()
@@ -966,7 +976,8 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
             w0, q0 = other.get(k, wunit=wunit)
             if len(w) != len(w0):
                 print(
-                    'Wavespaces have different length (in {0})'.format(k))
+                    'Wavespaces have different length (for {0}: {1} vs {2})'.format(
+                            k, len(w), len(w0)))
                 b1 = False
             else:
                 b1 = np.allclose(w, w0, rtol=rtol, atol=0)
@@ -994,7 +1005,8 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
             w0, q0 = other.get(k, wunit=wunit)
             if len(w) != len(w0):
                 print(
-                    'Wavespaces have different length (in {0})'.format(k))
+                    'Wavespaces have different length (for {0}: {1} vs {2})'.format(
+                            k, len(w), len(w0)))
                 b1 = False
             else:
                 b1 = np.allclose(w, w0, rtol=rtol, atol=0)

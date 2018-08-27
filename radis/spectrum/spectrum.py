@@ -1319,6 +1319,8 @@ class Spectrum(object):
                 var = list(params)[0]
                 if var.replace('_noslit', '') in params:
                     var = var.replace('_noslit', '')
+                    # small hack: capitalize, to make a difference with non slit value
+                    var = var.capitalize()
 
         if wunit == 'default':
             wunit = self.get_waveunit()
@@ -1333,6 +1335,7 @@ class Spectrum(object):
             xlabel = 'Wavenumber (cm-1)'
         else:  # wunit == 'nm'
             xlabel = 'Wavelength (nm){0}'.format(wmedium)
+        xlabel = make_up(xlabel)
 
         if Iunit == 'default':
             try:
@@ -1362,12 +1365,12 @@ class Spectrum(object):
         # they cannot be differenced. But at least this allows user to plot 
         # both on the same figure if they want to compare
         
-        if not force and (fig.gca().get_xlabel() not in ['', xlabel]):
+        if not force and (fig.gca().get_xlabel().lower() not in ['', xlabel.lower()]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
                              'on a same figure with different xlabel: {0}, {1}'.format(
                             fig.gca().get_xlabel(), xlabel)+\
                             'Use force=True if you really want to plot')
-        if not force and (fig.gca().get_ylabel() not in ['', ylabel]):
+        if not force and (fig.gca().get_ylabel().lower() not in ['', ylabel.lower()]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
                              'on a same figure with different ylabel: \n{0}\n{1}'.format(
                             fig.gca().get_ylabel(), ylabel)+\
@@ -1700,7 +1703,7 @@ class Spectrum(object):
     def apply_slit(self, slit_function, unit='nm', shape='triangular',
                    center_wavespace=None, norm_by='area', mode='valid', 
                    plot_slit=False, store=True, slit_dispersion=None,
-                   verbose=True,
+                   auto_recenter_crop=True, verbose=True,
                    *args, **kwargs):
         ''' Apply an instrumental slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see ``shape=``) or imported from an
@@ -1806,7 +1809,11 @@ class Spectrum(object):
     
             See Laux 1999 "Experimental study and modeling of infrared air plasma
             radiation" for more information
-    
+        
+        auto_recenter_crop: bool
+            if ``True``, recenter slit and crop zeros on the side when importing
+            an experimental slit. Default ``True``. 
+            See :func:`~radis.tools.slit.recenter_slit`, :func:`~radis.tools.slit.crop_slit`
 
         *args, **kwargs
             are forwarded to slit generation or import function
@@ -1927,18 +1934,20 @@ class Spectrum(object):
         # -------
         wslit0, Islit0 = get_slit_function(slit_function, unit=unit, norm_by=norm_by,
                                          shape=shape, center_wavespace=center_wavespace,
-                                         return_unit=waveunit, wstep=wstep, verbose=verbose,
+                                         return_unit=waveunit, wstep=wstep, 
+                                         auto_recenter_crop=auto_recenter_crop,
+                                         verbose=verbose,
                                          plot=plot_slit, *args, **kwargs)
 
         # Check if dispersion is too large
         # ----
+        if waveunit == 'nm':
+            w_nm = w
+            wslit0_nm = wslit0
+        else:
+            w_nm = cm2nm(w)
+            wslit0_nm = cm2nm(wslit0)
         if slit_dispersion is not None:
-            if waveunit == 'nm':
-                w_nm = w
-                wslit0_nm = wslit0
-            else:
-                w_nm = cm2nm(w)
-                wslit0_nm = cm2nm(wslit0)
             # add space (wings) on the side of each slice. This space is cut
             # after convolution, removing side effects. Too much space and we'll 
             # overlap too much and loose performance. Not enough and we'll have
@@ -2001,7 +2010,7 @@ class Spectrum(object):
                                                     assert_evenly_spaced=False,   
                                                     # assumes Spectrum is correct by construction
                                                     **kwargsconvolve)
-                
+
                 # Crop wings to remove overlaps (before merging)
                 if slit_dispersion is not None:
                     w_conv_window, I_conv_window = remove_boundary(w_conv_window, I_conv_window, 
@@ -2022,9 +2031,16 @@ class Spectrum(object):
             I_conv = np.hstack(I_conv_slices[q])
             
             # Crop to remove boundary effects (after merging)
-            w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, I=I_not_conv, 
-                                             I_slit_interp=Islit0)
-    
+            # this uses the mode='valid', 'same' attribute
+            # ... if slit was imported, it has been interpolated on the Spectrum 
+            # ... grid and its initial length has changed: get the scaling factor
+            # ... to remove the correct number of non valid points on the side
+            scale_factor = int(abs((wslit0_nm[1]-wslit0_nm[0])/(w_nm[1]-w_nm[0])))
+            if not isinstance(slit_function, string_types):
+                assert scale_factor == 1
+            w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, 
+                                             len_I=len(I_not_conv), 
+                                             len_I_slit_interp=len(Islit0)*scale_factor)
             # Store 
             self._q_conv['wavespace'] = w_conv
             self._q_conv[q] = I_conv
@@ -2065,17 +2081,21 @@ class Spectrum(object):
 
         return
 
-    def get_slit(self):
+    def get_slit(self, unit='same'):
         ''' Get slit function that was applied to the Spectrum 
 
         Returns
         -------
 
         wslit, Islit: array
-            slit function with wslit in waveunit. See 
+            slit function with wslit in Spectrum ``waveunit``. See 
             :meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`
 
         '''
+        
+        if not unit in ['same', self.get_waveunit()]:
+            raise NotImplementedError('Unit must be Spectrum waveunit: {0}'.format(
+                    self.get_waveunit()))
 
         # Make sure that slit is stored already
         try:
