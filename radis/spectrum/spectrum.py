@@ -2035,9 +2035,7 @@ class Spectrum(object):
             # ... if slit was imported, it has been interpolated on the Spectrum 
             # ... grid and its initial length has changed: get the scaling factor
             # ... to remove the correct number of non valid points on the side
-            scale_factor = int(abs((wslit0_nm[1]-wslit0_nm[0])/(w_nm[1]-w_nm[0])))
-            if not isinstance(slit_function, string_types):
-                assert scale_factor == 1
+            scale_factor = int(round((wslit0_nm[1]-wslit0_nm[0])/(w_nm[1]-w_nm[0])))
             w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, 
                                              len_I=len(I_not_conv), 
                                              len_I_slit_interp=len(Islit0)*scale_factor)
