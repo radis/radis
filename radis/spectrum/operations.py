@@ -432,27 +432,23 @@ def _test_visualTestOffset(s):
     plot_diff(s, s2)
     
 def test_invariants():
+    ''' Ensures adding 0 or multiplying by 1 does not change the spectra '''
     from radis import load_spec
     from radis.test.utils import getTestFile
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
     s.update()
-    s.apply_slit(0.1, 'nm')
-    
-    
-    # Note @EP: this test doesnt work for the moment as constant & multiply
-    # seem to return a Spectrum in a difference medium (vacuum vs air) -> 
-    # creates a ~1 nm offset for CO IR 
-    
-    assert s == _add_constant(s, 0)
-    assert s == _multiply(s, 1)
+
+    assert s.compare_with(_add_constant(s, 0, 'radiance_noslit'), spectra_only='radiance_noslit')
+    assert s.compare_with(_multiply(s, 1, 'radiance_noslit'), spectra_only='radiance_noslit')
     
     
 if __name__ == '__main__':
-    from radis import load_spec, get_diff, get_residual
+    from radis import load_spec, get_diff, get_residual, plot_diff
     from radis.test.utils import getTestFile
     import numpy as np
+    
 #    s_5 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.5.spec"))
-    s_01 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
+    s_01 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
     s_01.conditions['self_absorption']=False
     s_01.update()
     s_01.apply_slit(0.1)
@@ -471,14 +467,14 @@ if __name__ == '__main__':
     s.update()
     
     # Test addition of Spectra
-    s.plot(lw=2, nfig='Addition (Merge): s+s')
+    s.plot(lw=2, nfig='Merge: s//s')
     (s//s).plot(nfig='same')
     
     # Test substraction of Spectra
     # TODO : Does not work because of Transmittance @Erwan
-    s2 = Transmittance(s)
+    s2 = Transmittance_noslit(s)
     s_test = s2-s2
-    assert s_test.get_integral('abscoeff') == 0
+    assert s_test.get_integral('transmittance_noslit') == 0
     
     
     # TODO: add test

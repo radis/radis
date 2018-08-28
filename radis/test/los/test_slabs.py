@@ -143,6 +143,7 @@ def test_serial_slabs_radiance(verbose=True, plot=False, warnings=True, debug=Fa
     
     if plot:
         s.plot(nfig='test_serial_slabs_radiance', lw=2)
+        plt.title('s>s for almost optically thin conditions')
         s_los.plot(nfig='same')
     
     # Check it looks alright
@@ -152,8 +153,8 @@ def test_serial_slabs_radiance(verbose=True, plot=False, warnings=True, debug=Fa
         print('Tested Serialslabs radiance is added when approximately optically thin: OK')
     
     # Test operators
-    s_times = s*s
-    assert s_times == s_los
+    s_serial = s>s
+    assert s_serial == s_los
     
     return True
 
