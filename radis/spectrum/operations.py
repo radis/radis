@@ -489,7 +489,7 @@ def _substract_spectra(s1, s2, var=None, wunit='nm', name=None):
     warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
-def _offset(s, offset, unit, name=None, inplace=False):
+def offset(s, offset, unit, name=None, inplace=False):
     # type: (Spectrum, float, str, str, bool) -> Spectrum
     '''Offset the spectrum by a wavelength or wavenumber 
 
@@ -585,13 +585,18 @@ def test_offset(plot=True):
     s.update('radiance_noslit', verbose=False)
     s.apply_slit(0.1)
     
-    s2 = _offset(s, 10, 'nm', name = 'offset_10nm')
+    s2 = offset(s, 10, 'nm', name = 'offset_10nm')
     if plot:
         plot_diff(s, s2)
     assert np.allclose(s2.get_wavelength(which='convoluted'), 
                        s.get_wavelength(which='convoluted')+10)
     assert np.allclose(s2.get_wavelength(which='non_convoluted'), 
                        s.get_wavelength(which='non_convoluted')+10)
+    
+    # Test inplace version
+    s.offset(10, 'nm')
+    assert np.allclose(s2.get_wavelength(which='convoluted'), 
+                       s.get_wavelength(which='convoluted'))
     
 def test_invariants():
     ''' Ensures adding 0 or multiplying by 1 does not change the spectra '''

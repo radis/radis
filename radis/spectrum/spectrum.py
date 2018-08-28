@@ -1097,7 +1097,7 @@ class Spectrum(object):
         
         
     def crop(self, wmin, wmax, wunit, medium='default'):
-        ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``
+        ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
         
         Parameters
         ----------
@@ -1115,7 +1115,8 @@ class Spectrum(object):
         -------
         
         None: 
-            spectrum is modified in place
+            spectrum is modified in place. Use :func:`radis.spectrum.operations.crop`
+            if you want a new object.
         
         Examples
         --------
@@ -1131,6 +1132,7 @@ class Spectrum(object):
         See Also
         --------
         
+        :func:`~radis.spectrum.operations.crop`,
         :func:`~radis.los.slabs.MergeSlabs`: if used with ``resample='full', 
         out='transparent'``, this becomes the opposite of cropping: can be used
         to combine 2 adjacent spectra in one.
@@ -1146,7 +1148,37 @@ class Spectrum(object):
         crop(self, wmin=wmin, wmax=wmax, wunit=wunit, medium=medium, inplace=True)
         
         return 
+    
+    def offset(self, offset, unit):
+        # type: (Spectrum, float, str) -> Spectrum
+        '''Offset the spectrum by a wavelength or wavenumber  (inplace)
+    
+        Parameters    
+        ----------
         
+        offset: float
+            Constant to add to all quantities in the Spectrum.
+        unit: 'nm' or 'cm-1'
+            unit for ``offset``
+    
+        Returns    
+        -------
+        None:
+            spectrum is modified in place. Use :func:`radis.spectrum.operations.offset`
+            if you want a new object.
+            
+        See Also
+        --------
+        
+        :func:`radis.spectrum.operations.offset`
+        
+        '''
+        
+        from radis.spectrum.operations import offset as offset_func
+        
+        offset_func(self, offset, unit, inplace=True)
+        
+        return
 
     def get_integral(self, var, wunit='nm', Iunit='default', **kwargs):
         ''' Returns integral of variable 'var' over waverange
