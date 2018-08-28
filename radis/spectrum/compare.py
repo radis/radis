@@ -254,7 +254,8 @@ def get_distance(s1, s2, var,
 
 
 def get_residual(s1, s2, var, 
-                 norm='L2', ignore_nan=False, diff_window=0):
+                 norm='L2', ignore_nan=False, diff_window=0,
+                 normalize=False):
     # type: (Spectrum, Spectrum, str, bool, int) -> np.array, np.array
     ''' Returns L2 norm of ``s1`` and ``s2``
 
@@ -294,6 +295,10 @@ def get_residual(s1, s2, var,
         when calculating residual. Default ``False``. Note: ``get_residual`` will still 
         fail if there are nan in initial Spectrum. 
 
+    normalize: bool, or tuple
+        if ``True``, normalize the two spectra before calculating the residual. 
+        If a tuple (ex: ``(4168, 4180)``), normalize on this range only 
+
     Notes
     -----
 
@@ -321,6 +326,9 @@ def get_residual(s1, s2, var,
     :func:`~radis.spectrum.compare.get_residual_integral`, 
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
+    
+    if normalize:
+        raise NotImplementedError('normalize not implemented')
 
     # mask for 0
     wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)
