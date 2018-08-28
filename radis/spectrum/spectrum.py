@@ -2744,21 +2744,40 @@ class Spectrum(object):
                            "`self_absorption` is not defined in conditions. Please add the " +
                            "value manually with s.conditions['self_absorption']=...")
 
-    def copy(self, copy_lines=True):
-        ''' Returns a copy of this Spectrum object (performs a smart deepcopy) '''
+    def copy(self, copy_lines=True, quantity='all'):
+        ''' Returns a copy of this Spectrum object (performs a smart deepcopy) 
+        
+        Parameters
+        ----------
+        
+        copy_lines: bool
+            default ``True``
+        
+        quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
+            if not 'all', copy only one quantity. Default ``'all'``
+            
+        '''
         try:
-            return self.__copy__(copy_lines=copy_lines)
+            return self.__copy__(copy_lines=copy_lines, quantity=quantity)
         except MemoryError:
             raise MemoryError("during copy of Spectrum. If you don't need them, " +
                               "droping lines before copying may save a lot of space: " +
                               "del s.lines ; or, use copy_lines=False")
 
-    def __copy__(self, copy_lines=True):
+    def __copy__(self, copy_lines=True, quantity='all'):
         ''' Generate a new spectrum object
 
         Note: using deepcopy would work but then the Spectrum object would be pickled
         and unpickled again. It's a little faster here
 
+        Parameters
+        ----------
+        
+        copy_lines: bool
+            default ``True``
+            
+        quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
+            if not 'all', copy only one quantity. Default ``'all'``
 
         Notes
         -----
@@ -2775,7 +2794,14 @@ class Spectrum(object):
         # quantities = {s:(v[0].copy(), v[1].copy()) for (s,v) in self.items()}  #╪ 1.8 ms
 #        quantities = dict(self.items())   # 912 ns, not a copy but no need as
 #                                        # Spectrum() recreates a copy anyway
-        quantities = dict(self._get_items())
+        if quantity == 'all':
+            quantities = dict(self._get_items())
+        else:
+#            assert quantity in CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES
+#            if not quantity in self.get_vars():
+#                raise ValueError("Spectrum {0} has no quantity '{1}'. Got: {2}".format(
+#                        self.get_name(), quantity, self.get_vars()))
+            quantities = {quantity:self.get(quantity)} # dict(self._get_items())
 
         try:
             units = deepcopy(self.units)
@@ -3045,6 +3071,196 @@ class Spectrum(object):
 
         return ''  # self.print_conditions()
 
+
+    # %% Define Spectrum Algebra
+    # +, -, *, ^  operators
+    
+    # Notes:
+    # s + s = 2*s    # valid only if optically thin
+    
+    # Other possibility:
+    # use   s1>s2    for SerialSlabs
+    # and   s1//s2   for MergeSlabs
+    
+    # Or:
+    # use   s1*s2   for Serial Slabs
+    # and   s1+s2   for MergeSlabs
+    
+    # For the moment the first version is implemented
+    
+    # Plus
+    
+    def __add__(self, other):
+        ''' Override '+' behavior
+        Add is defined as :
+            
+        - for numeric values: add a baseline
+        - for 2 Spectra: not defined (not physical)
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _add_constant
+            # TODO: make sure units are okay
+            if len(self.get_vars())>1:
+                raise Exception('There is an ambiguity on the substraction. '+
+                                'There should be only one var in s.\n'+
+                                "Think about using 'Transmittance(s)' or 'Radiance(s)'")
+            else:
+                return _add_constant(self, other)
+        else:
+            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __radd__(self, other):
+        ''' Right side addition '''
+        return self.__add__(other)
+    
+    # Minus
+
+    def __sub__(self, other):
+        ''' Override '-' behavior
+        Add is defined as :
+            
+        - for numeric values: substract a baseline
+        - for 2 Spectra: defined only for baseline substraction
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _add_constant
+            # TODO: define _add_constant to loop over all quantities. @minou? 
+            # TODO: make sure units are okay
+            return _add_constant(self, -other)
+        else:
+            from radis import get_diff
+            
+            if len(self.get_vars())>1:
+                raise Exception('There is an ambiguity on the substraction. '+
+                                'There should be only one var in Spectrum. Got {0}'.format(
+                                        self.get_vars())+
+                                "\nThink about using 'Transmittance(s)' or 'Radiance(s)'")
+            else:
+                var = self.get_vars()[0] #on prend le premier et voilà
+                Iunit = self.units[var]            
+                wunit = self.get_waveunit()
+                w1, I3 = get_diff(self, other, var=var, wunit=wunit, Iunit=Iunit, 
+                                              resample=resample)
+                
+                name = self.get_name()+'- baseline'
+                sub = Spectrum.from_array(w1, I3, var, 
+                                           waveunit=wunit, 
+                                           unit=Iunit,
+                                           conditions={'medium' : self.conditions['medium']}, 
+                                           name=name)
+                warn("Conditions of the left spectrum were copied in the substraction.", Warning)
+                return sub
+    def __rsub__(self, other):
+        ''' Right side substraction '''
+        raise NotImplementedError('right substraction (-) not implemented for Spectrum objects')
+
+    # Times
+    
+    def __mul__(self, other):
+        ''' Override '*' behavior
+        Multiply is defined as :
+            
+        - for numeric values: multiply (equivalent to optically thin scaling)
+          (only if in front, i.e:  2*s   works but s*2 is not implemented)
+        - for 2 Spectra: not defined
+          
+        '''
+#        if isinstance(other, float) or isinstance(other, int):
+#            from radis.spectrum.operations import _multiply
+#            # TODO: define _add_constant to loop over all quantities. @minou? 
+#            # TODO: make sure units are okay
+#            return _multiply(self, other)
+        raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __rmul__(self, other):
+        ''' Right side multiplication '''
+
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _multiply
+            # TODO: make sure units are okay
+            if len(self.get_vars())>1:
+                raise Exception('There is an ambiguity on the multiplication. '+
+                                'There should be only one var in s.\n'+
+                                "Think about using 'Transmittance(s)' or 'Radiance(s)'")
+            else:
+                return _multiply(self, other)
+        else:
+            raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    # Line of sight operations
+    
+    def __gt__(self, other):
+        ''' Overloads '>' behavior
+        no comparison: here we use > to define a ``Line of sight``.
+        
+        Examples
+        --------
+        
+        s_plasma is seen through s_room::
+            
+            s = s_plasma > s_room 
+            
+        Equivalent to::
+            
+            s = SerialSlabs(s_plasma, s_room)
+          
+        '''
+#        if isinstance(other, float) or isinstance(other, int):
+#            from radis.spectrum.operations import _multiply
+#            # TODO: define _add_constant to loop over all quantities. @minou? 
+#            # TODO: make sure units are okay
+#            return _multiply(self, other)
+        if isinstance(other, Spectrum):
+            from radis.los.slabs import SerialSlabs
+            return SerialSlabs(self, other)
+        else:
+            raise NotImplementedError('> not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+#    def __rgt__(self, other):
+#        ''' Right side > '''
+#
+#        if isinstance(other, Spectrum):
+#            from radis.los.slabs import SerialSlabs
+#            return SerialSlabs(other, self)
+#        else:
+#            raise NotImplementedError('right side > not implemented for a Spectrum and a {0} object'.format(
+#                    type(other)))
+            
+    def __floordiv__(self, other):
+        ''' Overloads '//' behavior
+        not a divison here: we use it to say that Slabs are ``in parallel``, i.e.,
+        as if their respesctive mole fractions were added in the same physical space 
+        
+        Won't work if they are not defined on the same waverange, but it's okay: let 
+        the user use MergeSlabs manually with the appropriate options 
+          
+        Examples
+        --------
+        
+        s_co2 added with s_co:
+            
+            s = s_co2 // s_co 
+            
+        Equivalent to::
+            
+            s = MergeSlabs(s_co2, s_co)
+            
+        '''
+        
+        if isinstance(other, Spectrum):
+            from radis.los.slabs import MergeSlabs
+            return MergeSlabs(self, other)
+        else:
+            raise NotImplementedError('// not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+
+
     # the following is so that json_tricks.dumps and .loads can be used directly,
     # ie.:
     # >>> s == loads(s.dumps())
@@ -3144,7 +3360,6 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
     return slices[::increment], wings_min[::increment], wings_max[::increment]
 
 
-
 # %% ======================================================================
 # Test class function
 # -------------------
@@ -3206,3 +3421,5 @@ def experimental_spectrum(*args, **kwargs):
 if __name__ == '__main__':
     from radis.test.spectrum.test_spectrum import _run_testcases
     print('Test spectrum: ', _run_testcases(debug=False))
+
+    
