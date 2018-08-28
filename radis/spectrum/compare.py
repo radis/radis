@@ -79,6 +79,10 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     Other Parameters
     ----------------
     
+    resample: bool
+        if not ``True``, wavelength must be equals. Else, resample ``s2`` on
+        ``s1`` if needed.
+    
     diff_window: int
         If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
         units on either side, and returns the minimum. Kinda compensates for experimental

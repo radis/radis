@@ -228,6 +228,8 @@ class Spectrum(object):
     def __init__(self, quantities, units=None, conditions=None, cond_units=None,
                  populations=None, lines=None, waveunit=None, wavespace=None,  # deprecated
                  name=None, warnings=True):
+        # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I, 
+        # 'transmittance':T, etc.} directly too (instead of {'radiance':(w,I), etc.})
 
         # Check inputs
         if wavespace is not None:
@@ -1239,9 +1241,16 @@ class Spectrum(object):
         return varlist
 
     def _get_items(self):
-        ''' Return a dictionary of tuples, e.g, {'radiance':(w,I), 'transmittance_noslit':(w_ns,T)}
+        ''' Return a dictionary of tuples, e.g::
+            
+            {'radiance':(w,I), 'transmittance_noslit':(w_ns,T)}
 
-        In the general case, users should use s.get()
+        In the general case, users should use the 
+        :meth:`~radis.spectrum.spectrum.Spectrum.get` method
+        
+        .. warning::
+            real quantities are returned, not copies. 
+        
         '''
         items = {k: (self._q['wavespace'], v)
                  for k, v in self._q.items() if k != 'wavespace'}
@@ -1295,6 +1304,12 @@ class Spectrum(object):
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
+            
+        Returns
+        -------
+        
+        line: 
+            line plot
 
         '''
 
@@ -1304,6 +1319,7 @@ class Spectrum(object):
         if var in ['intensity', 'intensity_noslit']:
             raise ValueError('`intensity` not defined. Use `radiance` instead')
 
+        plot_convolved_instead = False
         if var is None:    # if nothing is defined, try these first:
             params = self.get_vars()
             if 'radiance' in params:
@@ -1319,8 +1335,7 @@ class Spectrum(object):
                 var = list(params)[0]
                 if var.replace('_noslit', '') in params:
                     var = var.replace('_noslit', '')
-                    # small hack: capitalize, to make a difference with non slit value
-                    var = var.capitalize()
+                    plot_convolved_instead = True  # remember we're plotting the convolved value
 
         if wunit == 'default':
             wunit = self.get_waveunit()
@@ -1346,7 +1361,10 @@ class Spectrum(object):
             
         # cosmetic changes
         Iunit = make_up(Iunit)
-        ylabel = make_up('{0} ({1})'.format(var.capitalize(), Iunit))
+        if plot_convolved_instead:
+            ylabel = make_up('{0} ({1})'.format(var.capitalize(), Iunit))
+        else:  # small hack: capitalize, to make a difference with non slit value
+            ylabel = make_up('{0} ({1})'.format(var, Iunit))
 
         # Plot
         # -------
@@ -2801,7 +2819,7 @@ class Spectrum(object):
 #            if not quantity in self.get_vars():
 #                raise ValueError("Spectrum {0} has no quantity '{1}'. Got: {2}".format(
 #                        self.get_name(), quantity, self.get_vars()))
-            quantities = {quantity:self.get(quantity)} # dict(self._get_items())
+            quantities = {quantity:self.get(quantity, wunit=self.get_waveunit())} # dict(self._get_items())
 
         try:
             units = deepcopy(self.units)
@@ -2971,16 +2989,15 @@ class Spectrum(object):
             ''' If warnings, check that array is evenly spaced. Returns a copy
             of input array.
 
-            Note: this check takes a lot of time! 
+            Note: this check takes a lot of time!  (few ms)
             Is is not performed if warnings is False'''
-            w = np.array(w)              # copy
             if warnings:
                 # Check Wavelength/wavenumber is evently spaced
                 if not evenly_distributed(w, tolerance=1e-5):
                     warn('Wavespace is not evenly spaced ({0:.3f}%) for {1}.'.format(
                         np.abs(np.diff(w)).max()/w.mean()*100, name)
                         + ' This may create problems when convolving with slit function')
-            return w
+            return np.array(w)             # copy
 
         if name in CONVOLUTED_QUANTITIES:
             # Add wavespace
@@ -2990,7 +3007,7 @@ class Spectrum(object):
                                      (name)+' for convoluted quantities')
             else:
 #                self._q_conv['wavespace'] = check_wavespace(w)   # copy
-                self._q_conv['wavespace'] = w   
+                self._q_conv['wavespace'] = np.array(w)          # copy
                 # no need to check if wavespace is evenly spaced: we won't 
                 # apply the slit function again
 
@@ -3094,18 +3111,16 @@ class Spectrum(object):
         ''' Override '+' behavior
         Add is defined as :
             
-        - for numeric values: add a baseline
+        - for numeric values: add a baseline (returns a copy)
         - for 2 Spectra: not defined (not physical)
         '''
+        
+        # TODO: Implement unit addition (with Pint) one days
+        # Example:   s += s*_u('mW/cm2/sr/nm')
+    
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import _add_constant
-            # TODO: make sure units are okay
-            if len(self.get_vars())>1:
-                raise Exception('There is an ambiguity on the substraction. '+
-                                'There should be only one var in s.\n'+
-                                "Think about using 'Transmittance(s)' or 'Radiance(s)'")
-            else:
-                return _add_constant(self, other)
+            return _add_constant(self, other, inplace=False)
         else:
             warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
@@ -3115,48 +3130,57 @@ class Spectrum(object):
         ''' Right side addition '''
         return self.__add__(other)
     
+    def __iadd__(self, other):
+        ''' Override '+=' behavior
+        Add is defined as :
+            
+        - for numeric values: add a baseline (inplace)
+        - for 2 Spectra: not defined (not physical)
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _add_constant
+            return _add_constant(self, other, inplace=True)
+        else:
+            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
     # Minus
 
     def __sub__(self, other):
         ''' Override '-' behavior
         Add is defined as :
             
-        - for numeric values: substract a baseline
+        - for numeric values: substract a baseline (returns a copy)
         - for 2 Spectra: defined only for baseline substraction
           
         '''
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import _add_constant
-            # TODO: define _add_constant to loop over all quantities. @minou? 
-            # TODO: make sure units are okay
-            return _add_constant(self, -other)
+            return _add_constant(self, -other, inplace=False)
         else:
-            from radis import get_diff
+            from radis.spectrum.operations import _substract_spectra
+            return _substract_spectra(self, other)
             
-            if len(self.get_vars())>1:
-                raise Exception('There is an ambiguity on the substraction. '+
-                                'There should be only one var in Spectrum. Got {0}'.format(
-                                        self.get_vars())+
-                                "\nThink about using 'Transmittance(s)' or 'Radiance(s)'")
-            else:
-                var = self.get_vars()[0] #on prend le premier et voilà
-                Iunit = self.units[var]            
-                wunit = self.get_waveunit()
-                w1, I3 = get_diff(self, other, var=var, wunit=wunit, Iunit=Iunit, 
-                                              resample=resample)
-                
-                name = self.get_name()+'- baseline'
-                sub = Spectrum.from_array(w1, I3, var, 
-                                           waveunit=wunit, 
-                                           unit=Iunit,
-                                           conditions={'medium' : self.conditions['medium']}, 
-                                           name=name)
-                warn("Conditions of the left spectrum were copied in the substraction.", Warning)
-                return sub
     def __rsub__(self, other):
         ''' Right side substraction '''
         raise NotImplementedError('right substraction (-) not implemented for Spectrum objects')
 
+    def __isub__(self, other):
+        ''' Override '-=' behavior
+        Add is defined as :
+            
+        - for numeric values: substract a baseline (inplace)
+        - for 2 Spectra: defined only for baseline substraction
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _add_constant
+            return _add_constant(self, -other, inplace=True)
+        else:
+            from radis.spectrum.operations import _substract_spectra
+            return _substract_spectra(self, other)
+            
     # Times
     
     def __mul__(self, other):
@@ -3165,6 +3189,7 @@ class Spectrum(object):
             
         - for numeric values: multiply (equivalent to optically thin scaling)
           (only if in front, i.e:  2*s   works but s*2 is not implemented)
+          (returns a copy)
         - for 2 Spectra: not defined
           
         '''
@@ -3181,15 +3206,25 @@ class Spectrum(object):
 
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import _multiply
-            # TODO: make sure units are okay
-            if len(self.get_vars())>1:
-                raise Exception('There is an ambiguity on the multiplication. '+
-                                'There should be only one var in s.\n'+
-                                "Think about using 'Transmittance(s)' or 'Radiance(s)'")
-            else:
-                return _multiply(self, other)
+            return _multiply(self, other, inplace=False)
         else:
             raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __imul__(self, other):
+        ''' Override '*=' behavior
+        Multiply is defined as :
+            
+        - for numeric values: multiply (equivalent to optically thin scaling)
+          (only if in front, i.e:  s *= 2)  (modifies inplace)
+        - for 2 Spectra: not defined
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import _multiply
+            return _multiply(self, other, inplace=True)
+        else:
+            raise NotImplementedError('*= not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
             
     # Line of sight operations

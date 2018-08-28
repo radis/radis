@@ -40,6 +40,7 @@ def test_crop(verbose=True, *args, **kwargs):
     return True
 
 
+@pytest.mark.fast
 def test_cut_recombine(verbose=True, *args, **kwargs):
     ''' 
     Use :func:`~radis.spectrum.operations.crop` and :func:`~radis.los.slabs.MergeSlabs`
@@ -62,12 +63,38 @@ def test_cut_recombine(verbose=True, *args, **kwargs):
     assert s.compare_with(s_new, spectra_only=True, plot=False, verbose=verbose)
     
 
+@pytest.mark.fast
+def test_operations_inplace(verbose=True, *args, **kwargs):
+    
+    from radis.spectrum.operations import Radiance_noslit
+
+    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s.update('radiance_noslit', verbose=False)
+    s = Radiance_noslit(s)
+    
+    # Add 1, make sure it worked
+    I_max = s.get('radiance_noslit')[1].max()    
+    s += 1
+    assert s.get('radiance_noslit')[1].max() == I_max + 1
+    if verbose:
+        print('test_operations: s += 1: OK')
+    
+    # Multiply, make sure it worked
+    I_max = s.get('radiance_noslit')[1].max()    
+    s *= 10
+    assert s.get('radiance_noslit')[1].max() == 10*I_max
+    if verbose:
+        print('test_operations: s *= 10: OK')
+    
+
 def _run_testcases(verbose=True, *args, **kwargs):
     ''' Test procedures
     '''
 
     test_crop(verbose=verbose, *args, **kwargs)
     test_cut_recombine(verbose=verbose, *args, **kwargs)
+    test_operations_inplace(verbose=verbose, *args, **kwargs)
+    
     return True
 
 if __name__ == '__main__':
