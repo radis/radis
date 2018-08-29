@@ -301,7 +301,12 @@ def get_residual(s1, s2, var,
 
     normalize: bool, or tuple
         if ``True``, normalize the two spectra before calculating the residual. 
-        If a tuple (ex: ``(4168, 4180)``), normalize on this range only 
+        If a tuple (ex: ``(4168, 4180)``), normalize on this range only. The unit
+        is that of the first Spectrum. Ex::
+            
+            s_exp   # in 'nm'
+            s_calc  # in 'cm-1'
+            get_residual(s_exp, s_calc, normalize=(4178, 4180))  # interpreted as 'nm'
 
     Notes
     -----
@@ -319,7 +324,6 @@ def get_residual(s1, s2, var,
         
         np.abs(dI).sum()/len(dI)
 
-
     See Also
     --------
 
@@ -330,9 +334,20 @@ def get_residual(s1, s2, var,
     :func:`~radis.spectrum.compare.get_residual_integral`, 
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
-    
+
     if normalize:
-        raise NotImplementedError('normalize not implemented')
+        from radis.spectrum.operations import multiply
+        if isinstance(normalize, tuple):
+            wmin, wmax = normalize
+            w1, I1 = s1.get(var)
+            b = (w1 > wmin) & (w1 < wmax)
+            s1 = multiply(s1, 1/(I1[b].max()), var=var)
+            w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
+            b = (w2 > wmin) & (w2 < wmax)
+            s2 = multiply(s2, 1/(I2[b].max()), var=var)
+        else:
+            s1 = multiply(s1, 1/s1.get(var)[1].max(), var=var)
+            s2 = multiply(s2, 1/s2.get(var, Iunit=s1.units[var])[1].max(), var=var)
 
     # mask for 0
     wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)

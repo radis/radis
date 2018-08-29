@@ -204,7 +204,7 @@ def crop(s, wmin, wmax, wunit, medium=None,
     # Check inputs
     assert wunit in ['nm', 'cm-1']
     if wunit == 'nm' and medium is None:
-        raise ValueError("Precise give wavelength medium with medium='air' or "+\
+        raise ValueError("Precise wavelength medium with medium='air' or "+\
                          "medium='vacuum'")
     if wmin >= wmax:
         raise ValueError('wmin should be > wmax')
@@ -223,7 +223,7 @@ def crop(s, wmin, wmax, wunit, medium=None,
     
     # Convert wmin, wmax to Spectrum wavespace    
     # (deal with cases where wavelength are given in 'air' or 'vacuum')
-    waveunit = s.wavespace()
+    waveunit = s.get_waveunit()
     if wunit == 'nm' and waveunit == 'cm-1':
         if medium == 'air':
             wmin, wmax = nm_air2cm(wmax), nm_air2cm(wmin)   # reverted
@@ -263,31 +263,37 @@ def crop(s, wmin, wmax, wunit, medium=None,
 
 # %% Algebric operations on Spectra
     
-def _get_unique_var(s):
+def _get_unique_var(s, var, inplace):
     ''' Returns the unique spectral quantity in the Spectrum ``s``. If there are more, 
     raises an error.
     '''
-    # TODO: make sure units are okay
-    quantities = s.get_vars()
-    if len(quantities)>1:
-        raise KeyError('There is an ambiguity with the Spectrum algebraic operation. '+\
-                        'There should be only one var in Spectrum {0}. Got {1}\n'.format(
-                                s.get_name(), s.get_vars())+\
-                        "Think about using 'Transmittance(s)', 'Radiance(s)', etc.")
-    elif len(quantities)==0:
-        raise KeyError('No spectral quantity defined in Spectrum {0}'.format(s.get_name()))
-    else:
-        return quantities[0]
+    # If var is undefined, get it if there is no ambiguity
+    if var is None:
+        quantities = s.get_vars()
+        if len(quantities)>1:
+            raise KeyError('There is an ambiguity with the Spectrum algebraic operation. '+\
+                            'There should be only one var in Spectrum {0}. Got {1}\n'.format(
+                                    s.get_name(), s.get_vars())+\
+                            "Think about using 'Transmittance(s)', 'Radiance(s)', etc.")
+        elif len(quantities)==0:
+            raise KeyError('No spectral quantity defined in Spectrum {0}'.format(s.get_name()))
+        else:
+            var = quantities[0]
+    # If inplace, assert there is only one var
+    if inplace and len(s.get_vars())>1:
+        raise ValueError('Cant modify inplace one spectral quantity of a Spectrum '+\
+                         "that contains several ({0}). Use 'inplace=False'".format(
+                                 s.get_vars()))
+    return var
 
-
-def _multiply(s, coef, var=None, name='None', inplace=False):
+def multiply(s, coef, var=None, name=None, inplace=False):
     '''Multiply s[var] by the float 'coef'
 
-    Parameters    
+    Parameters
     ----------
     s: Spectrum objects
         The spectra to multiply.
-    coef: Float
+    coef: float
         Coefficient of the multiplication.
     var: str, or ``None``
         'radiance', 'transmittance', ... If ``None``, get the unique spectral
@@ -295,21 +301,23 @@ def _multiply(s, coef, var=None, name='None', inplace=False):
     name: str
         name of output spectrum
     inplace: bool
-        if ``True``, modifies ``s`` directly. Else, returns a copy. 
+        if ``True``, modifies ``s`` directly. Else, returns a copy.
         Default ``False``
-        
-    Returns    
+
+    Returns
     -------
     s : Spectrum
         Spectrum object where intensity of s['var'] is multiplied by coef
         If ``inplace=True``, ``s`` has been modified directly.
-        
+
     '''
-    if var is None:
-        var = _get_unique_var(s)
+    # Check input
+    var = _get_unique_var(s, var, inplace)
         
     if not inplace:
         s = s.copy(quantity=var)
+        if name is not None:
+            s.name = name
     
     # Multiply inplace       ( @dev: we have copied already if needed )
     w, I = s.get(var, wunit=s.get_waveunit(), copy=False)  
@@ -317,7 +325,7 @@ def _multiply(s, coef, var=None, name='None', inplace=False):
 
     return s
 
-def _add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=False):
+def add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=False):
     '''Return a new spectrum with a constant added to s[var] 
 
     Parameters    
@@ -351,17 +359,16 @@ def _add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=
     Use only for rough work. If you want to work properly with spectrum 
     objects, see MergeSlabs.
     '''
-    
-    if var is None:
-        var = _get_unique_var(s)
-        
+    # Check input
+    var = _get_unique_var(s, var, inplace)
+
     # Convert to Spectrum unit
     if unit is not None:
         Iunit = s.units[var]
         if unit != Iunit:
             from radis.phys.convert import conv2
             cst = conv2(cst, unit, Iunit)
-        
+
     if not inplace:
         s = s.copy(quantity=var)
     
@@ -372,7 +379,71 @@ def _add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=
 
     return s
 
-def _sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None', 
+def add_array(s, a, unit=None, var=None, wunit='nm', name='None', inplace=False):
+    '''Return a new spectrum with a constant added to s[var] 
+
+    Parameters    
+    ----------
+    s: Spectrum objects
+        Spectrum you want to modify
+    a: numpy array
+        array to add. Must have the same length as variable ``var`` in Spectrum 
+        ``s``
+    unit: str
+        unit for ``a``. If ``None``, uses the default unit in ``s`` for 
+        variable ``var``.
+    var: str, or ``None``
+        'radiance', 'transmittance', ... If ``None``, get the unique spectral
+        quantity of ``s`` or raises an error if there is any ambiguity
+    wunit: str
+        'nm'or 'cm-1'
+    name: str
+        name of output spectrum
+    inplace: bool
+        if ``True``, modifies ``s`` directly. Else, returns a copy. 
+        Default ``False``
+
+    Returns    
+    -------
+    s : Spectrum
+        Spectrum object where array ``a`` is added to intensity of s['var']
+        If ``inplace=True``, ``s`` has been modified directly.
+
+    Notes   
+    -----
+    Use only for rough work. If you want to work properly with spectrum 
+    objects, see MergeSlabs.
+    
+    Examples
+    --------
+    
+    Add Gaussian noise to your Spectrum (assuming there is only one spectral
+    quantity defined)::
+        
+        s += np.random.normal(0,1,len(s.get_wavelength()))
+
+    '''
+    # Check input
+    var = _get_unique_var(s, var, inplace)
+
+    # Convert to Spectrum unit
+    if unit is not None:
+        Iunit = s.units[var]
+        if unit != Iunit:
+            from radis.phys.convert import conv2
+            a = conv2(a, unit, Iunit)
+
+    if not inplace:
+        s = s.copy(quantity=var)
+    
+    # Add inplace       ( @dev: we have copied already if needed )
+    w, I = s.get(var, wunit=s.get_waveunit(), copy=False)  
+    I += a
+    # @dev: updates the Spectrum directly because of copy=False
+
+    return s
+
+def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None', 
                   inplace=False):
     '''Return a new spectrum with a baseline substracted to s[var] 
     
@@ -410,9 +481,8 @@ def _sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
     -----
     Use only for rough work. 
     '''
-    
-    if var is None:
-        var = _get_unique_var(s)
+    # Check input
+    var = _get_unique_var(s, var, inplace)
         
     # Convert to Spectrum unit
     if unit is not None:
@@ -436,7 +506,7 @@ def _sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
     
 from warnings import warn
 
-def _substract_spectra(s1, s2, var=None, wunit='nm', name=None):
+def substract_spectra(s1, s2, var=None, wunit='nm', name=None):
     '''Return a new spectrum with s2 substracted from s1
     
     Parameters    
@@ -555,12 +625,12 @@ def test_multiplyAndAddition(*args, **kwargs):
     s = Radiance(s)
     assert s.units['radiance'] == 'mW/cm2/sr/nm'
 
-    s_bis = _add_constant(s, 1, 'mW/cm2/sr/nm')
+    s_bis = add_constant(s, 1, 'mW/cm2/sr/nm')
     w, Idiff = get_diff(s_bis, s, 'radiance') 
     test = Idiff[1]-1
     assert np.all(test<1e-10)
 
-    s_ter = _multiply(_multiply(s, 50), 1/50)
+    s_ter = multiply(multiply(s, 50), 1/50)
 #    plot_diff(s_ter, s_5)
     diff = get_diff(s_ter, s, 'radiance') 
     ratio = abs(np.trapz(diff[1], x=diff[0])/s.get_integral('radiance'))
@@ -574,7 +644,7 @@ def test_visualTestBaseline(plot=True, *args, **kwargs):
     s = Radiance_noslit(s)
     assert s.units['radiance'] == 'mW/cm2/sr/nm'
     
-    s2 = _sub_baseline(s, 2e-4, -2e-4, name = 'sub_arb_baseline')
+    s2 = sub_baseline(s, 2e-4, -2e-4, name = 'sub_arb_baseline')
     if plot:
         plot_diff(s, s2)
     # TODO: add Test on intensity on both sides?
@@ -606,8 +676,8 @@ def test_invariants():
     s.update()
     s = Radiance_noslit(s)
 
-    assert s.compare_with(_add_constant(s, 0, 'W/cm2/sr/nm'), spectra_only='radiance_noslit')
-    assert s.compare_with(_multiply(s, 1), spectra_only='radiance_noslit')
+    assert s.compare_with(add_constant(s, 0, 'W/cm2/sr/nm'), spectra_only='radiance_noslit')
+    assert s.compare_with(multiply(s, 1), spectra_only='radiance_noslit')
     
 
 if __name__ == '__main__':

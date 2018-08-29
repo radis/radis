@@ -865,6 +865,11 @@ class SpecDatabase():
         :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
 
         '''
+        # TODO @devs: add a method that allow to get the closest Spectrum to a SpecDatabase
+        # | Handy for fitting experimental spectra against a precomputed database
+        # | Maybe, use:
+        # | get_residual
+        # | SpecDatabase.map? 
 
         # Assert name looks like a directory
         name, ext = splitext(path)
@@ -1582,9 +1587,40 @@ class SpecDatabase():
                 ('Got     \t'+'\t'.join(['{0:.3g}'.format(sout.conditions[k]) for k in kwconditions.keys()])))
 
         return sout
+    
+    def get_items(self, condition):
+        ''' Returns all Spectra in database under a dictionary; indexed by ``condition``
+        
+        Requires that ``condition`` is unique
+        
+        Parameters
+        ----------
+        
+        condition: str
+            condition. Ex: ``Trot``
+            
+        Returns
+        -------
+        
+        out: dict
+            {condition:Spectrum}
+            
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`,
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        
+        '''
+        
+        if not self.df[condition].is_unique:
+            raise ValueError('Values in {0} must be unique to use get_items(). Got {1}'.format(
+                             condition, self.see(condition)[self.see(condition).duplicated()]))
+            
+        return dict(zip(self.df[condition], self.df.Spectrum))
 
     def to_dict(self):
-        ''' Returns all Spectra in database under a dictionary. 
+        ''' Returns all Spectra in database under a dictionary, indexed by file. 
 
         Returns
         -------
@@ -1601,9 +1637,9 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`
-        :meth:`~radis.tools.database.SpecDatabase.keys`
-        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.get`,
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.values`,
         :meth:`~radis.tools.database.SpecDatabase.items`
 
         '''

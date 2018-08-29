@@ -18,6 +18,7 @@ from numpy import trapz, abs, linspace, isnan, nan
 from scipy.interpolate import splev, splrep
 from warnings import warn
 from radis.misc.debug import printdbg
+from radis.misc.arrays import is_sorted, is_sorted_backward
 
 
 def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3,
@@ -87,7 +88,12 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
                          'Got {0}, {1}'.format(len(vector), len(xspace)))
 
     # Check reversed (interpolation requires objects are sorted)
-    reverse = (xspace[-1] < xspace[0])
+    if is_sorted(xspace):
+        reverse = False
+    elif is_sorted_backward(xspace):
+        reverse = True
+    else:
+        raise ValueError('Resampling requires wavespace to be sorted. It is not!')
 
     if reverse:
         xspace = xspace[::-1]
