@@ -506,6 +506,87 @@ def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
     
 from warnings import warn
 
+def add_spectra(s1, s2, var=None, wunit='nm', name=None):
+    '''Return a new spectrum with s2 added to s1
+    
+    .. warning::
+        we are just algebrically added the quantities. If you want to merge
+        spectra while preserving the radiative transfer equation, see 
+        :func:`~radis.los.slabs.MergeSlabs`
+    
+    Parameters    
+    ----------
+    
+    s1, s2: Spectrum objects
+        Spectrum you want to substract
+    var: str
+        quantity to manipulate: 'radiance', 'transmittance', ... If ``None``, 
+        get the unique spectral quantity of ``s1``, or the unique spectral
+        quantity of ``s2``, or raises an error if there is any ambiguity
+    wunit: str
+        'nm'or 'cm-1'
+    name: str
+        name of output spectrum
+        
+    Returns    
+    -------
+    
+    s: Spectrum
+        Spectrum object with the same units and waveunits as ``s1``
+        
+    See Also
+    --------
+    
+    :func:`~radis.los.slabs.MergeSlabs`,
+    :func:`~radis.spectrum.operations.substract_spectra`
+    
+    '''
+    
+    # Get variable
+    if var is None:
+        try:
+            var = _get_unique_var(s2, var, inplace=False)    # unique variable of 2nd spectrum  
+        except KeyError:
+            var = _get_unique_var(s1, var, inplace=False)    # if doesnt exist, unique variable of 1st spectrum
+            # if it fails, let it fail
+    # Make sure it is in both Spectra
+    if var not in s1.get_vars():
+        raise KeyError('Variable {0} not in Spectrum {1}'.format(var, s1.get_name()))
+    if var not in s2.get_vars():
+        raise KeyError('Variable {0} not in Spectrum {1}'.format(var, s1.get_name()))
+        
+    if var in ['transmittance_noslit', 'transmittance']:
+        warn('It does not make much physical sense to sum transmittances. Are '+\
+             'you sure of what you are doing? See also // (MergeSlabs) and > '+\
+             '(SerialSlabs)')
+    
+    # Use same units 
+    Iunit = s1.units[var]            
+    wunit = s1.get_waveunit()
+    medium = s1.get_medium()
+
+    # Resample
+    if wunit == 'nm':
+        s2 = s2.resample(s1.get_wavelength(), 'nm', inplace=False)
+    elif wunit == 'cm-1':
+        s2 = s2.resample(s1.get_wavenumber(), 'cm-1', inplace=False)
+    else:
+        raise ValueError('Unexpected wunit: {0}'.format(wunit))
+    
+    # Add
+    w1, I1 = s1.get(var=var, Iunit=Iunit, wunit=wunit, medium=medium)
+    w2, I2 = s2.get(var=var, Iunit=Iunit, wunit=wunit, medium=medium)
+
+    name = s1.get_name()+'+'+s2.get_name()
+    
+    sub = Spectrum.from_array(w1, I1 + I2, var, 
+                               waveunit=wunit, 
+                               unit=Iunit,
+                               conditions={'medium' : medium}, 
+                               name=name)
+#    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
+    return sub
+
 def substract_spectra(s1, s2, var=None, wunit='nm', name=None):
     '''Return a new spectrum with s2 substracted from s1
     
@@ -530,14 +611,14 @@ def substract_spectra(s1, s2, var=None, wunit='nm', name=None):
         Spectrum object with the same units and waveunits as ``s1``
     '''
 
-    from radis import get_diff
+    from radis.spectrum.compare import get_diff
     
     # Get variable
     if var is None:
         try:
-            var = _get_unique_var(s2)    # unique variable of 2nd spectrum  
+            var = _get_unique_var(s2, var, inplace=False)    # unique variable of 2nd spectrum  
         except KeyError:
-            var = _get_unique_var(s1)    # if doesnt exist, unique variable of 1st spectrum
+            var = _get_unique_var(s1, var, inplace=False)    # if doesnt exist, unique variable of 1st spectrum
             # if it fails, let it fail
     # Make sure it is in both Spectra
     if var not in s1.get_vars():
@@ -548,15 +629,28 @@ def substract_spectra(s1, s2, var=None, wunit='nm', name=None):
     # Use same units 
     Iunit = s1.units[var]            
     wunit = s1.get_waveunit()
-    w1, Idiff = get_diff(s1, s2, var=var, wunit=wunit, Iunit=Iunit, resample=True)
+    medium = s1.get_medium()
+
+    # Resample
+    if wunit == 'nm':
+        s2 = s2.resample(s1.get_wavelength(), 'nm', inplace=False)
+    elif wunit == 'cm-1':
+        s2 = s2.resample(s1.get_wavenumber(), 'cm-1', inplace=False)
+    else:
+        raise ValueError('Unexpected wunit: {0}'.format(wunit))
     
+    # Substract
+    w1, I1 = s1.get(var=var, Iunit=Iunit, wunit=wunit, medium=medium)
+    w2, I2 = s2.get(var=var, Iunit=Iunit, wunit=wunit, medium=medium)
+
     name = s1.get_name()+'-'+s2.get_name()
-    sub = Spectrum.from_array(w1, Idiff, var, 
+    
+    sub = Spectrum.from_array(w1, I1 - I2, var, 
                                waveunit=wunit, 
                                unit=Iunit,
-                               conditions={'medium' : s1.conditions['medium']}, 
+                               conditions={'medium' : medium}, 
                                name=name)
-    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
+#    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
 def offset(s, offset, unit, name=None, inplace=False):
@@ -692,15 +786,11 @@ if __name__ == '__main__':
     test_multiplyAndAddition()
     test_offset()
     
-    
-    
-    # Added by @erwan
-    
     # An implement of Spectrum Algebra
     # Reload:
     s=load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
     s.update()
-        
+
     # Test addition of Spectra
     s.plot(lw=2, nfig='Merge: s//s')
     (s//s).plot(nfig='same')
@@ -732,3 +822,12 @@ if __name__ == '__main__':
     s.plot('radiance_noslit', lw=2, nfig='Line of sight (SerialSlabs): s > s > s')
     (s>s>s).plot('radiance_noslit', nfig='same')
 
+    # Test algebraic addition (vs multiplication)
+    assert (s_rad+s_rad).compare_with(2*s_rad, spectra_only='radiance', plot=False)
+
+    # Test algebraic addition with different waveunits
+    s_rad_nm = s_rad.resample(s_rad.get_wavelength(), 'nm', inplace=False)
+    s_sum = (2*s_rad_nm-s_rad_nm)
+    s_sum.compare_with(s_rad, spectra_only='radiance', plot=True)
+    assert (s_rad_nm+s_rad_nm).compare_with(2*s_rad, spectra_only='radiance', plot=True,rtol=1e-3)
+    

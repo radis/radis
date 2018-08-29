@@ -459,7 +459,9 @@ def _get_defaults(s1, s2, var,
                   wunit='default', Iunit='default', medium='default',
                   assert_same_wavelength=False):
     # type: (Spectrum, Spectrum, str, str, str, bool) -> (np.array, np.array, np.array, np.array)
-    ''' See get_distance, get_diff '''
+    ''' Returns w1, I1, w2, I2  in the same waveunit, unit and medium.
+    
+    See get_distance, get_diff for more information '''
 
     # Check inputs, get defaults
     # ----
@@ -467,7 +469,7 @@ def _get_defaults(s1, s2, var,
         try:
             Iunit = s1.units[var]
         except KeyError:  # unit not defined in dictionary
-            raise KeyError('Iunit not defined in spectrum. Cant plot')
+            raise KeyError('Iunit not defined in spectrum for variable {0}'.format(var))
     # Format units
     if wunit == 'default':
         wunit = s1.get_waveunit()
@@ -479,7 +481,7 @@ def _get_defaults(s1, s2, var,
     # ----
     w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
     w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
-
+    
     if assert_same_wavelength:
         if not array_allclose(w1, w2):
             raise AssertionError(
@@ -1012,8 +1014,8 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 if not b1 and verbose:
                     error = np.nanmax(abs(q/q0-1))
                     avgerr = np.nanmean(abs(q/q0-1))
-                    print('...', k, 'dont match (up to {0:.1f}% diff.,'.format(
-                        error*100)+' average {0:.1f}%)'.format(avgerr*100))
+                    print('...', k, 'dont match (up to {0:.3}% diff.,'.format(
+                        error*100)+' average {0:.3f}%)'.format(avgerr*100))
             b *= b1
 
             if plot:
@@ -1040,7 +1042,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 b1 *= _compare_variables(q, q0)
                 if not b1 and verbose:
                     error = np.nanmax(abs(q/q0-1))
-                    print('...', k, 'dont match (up to {0:.1f}% diff.)'.format(
+                    print('...', k, 'dont match (up to {0:.3f}% diff.)'.format(
                         error*100))
             b *= b1
 
@@ -1050,7 +1052,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                               normalize=normalize, verbose=verbose,
                               **kwargs)
                 except:
-                    print('... couldnt plot {0}'.format(k))
+                    print('... there was an error while plotting {0}'.format(k))
 
         # Compare conditions and units
         # -----------

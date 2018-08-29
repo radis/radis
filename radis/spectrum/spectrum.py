@@ -227,15 +227,12 @@ class Spectrum(object):
                  'lines', 'name', '_slit', 'file']
 
     def __init__(self, quantities, units=None, conditions=None, cond_units=None,
-                 populations=None, lines=None, waveunit=None, wavespace=None,  # deprecated
+                 populations=None, lines=None, waveunit=None, 
                  name=None, warnings=True):
         # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I, 
         # 'transmittance':T, etc.} directly too (instead of {'radiance':(w,I), etc.})
 
         # Check inputs
-        if wavespace is not None:
-            warn(DeprecationWarning('wavespace replaced with waveunit'))
-            waveunit = wavespace
         # ... Replace None attributes with dictionaries
         if conditions is None:
             conditions = {}
@@ -278,10 +275,10 @@ class Spectrum(object):
                                  '`radiance`, `transmittance` etc... with dict ' +
                                  'format. e.g: {`radiance`: (w,I)}')
 
-        self._q = {}                # non convoluted quantities
-        self._q_conv = {}           # convoluted quantities
+        self._q = {}                #: dict: stores non convoluted quantities
+        self._q_conv = {}           #: dict: stores convoluted (slit) quantities
 
-        self._slit = {}            # hold slit function
+        self._slit = {}            #: dict: hold slit function
 
         for k, v in quantities.items():
             try:
@@ -2550,16 +2547,19 @@ class Spectrum(object):
         Parameters    
         ----------
 
-        w_new: array
+        w_new: array,  or Spectrum
             new wavespace to resample the spectrum on. Must be inclosed in the
             current wavespace (we won't extrapolate)
+            One can also give a Spectrum directly.
 
-        unit: 'same', 'nm', 'cm-1'
-            unit of new wavespace. It 'same' it is assumed to be the current
-            waveunit. Default 'same'. The spectrum waveunit is changed to this
+        unit: ``'same'``, ``'nm'``, ``'cm-1'``
+            unit of new wavespace. It ``'same'`` it is assumed to be the current
+            waveunit. Default ``'same'``. The spectrum waveunit is changed to this
             unit after resampling (i.e: a spectrum calculated and stored in `cm-1`
             but resampled in `nm` will be stored in `nm` from now on). 
             If 'nm', see also argument ``medium``
+            If a Spectrum has been given instead of ``w_new``, use that Spectrum
+            waveunit if using ``'same'``. 
 
         out_of_bounds: 'transparent', 'nan', 'error'
             what to do if resampling is out of bounds. 'transparent': fills with
@@ -2649,6 +2649,27 @@ class Spectrum(object):
 #        for q in quantities[1:]:
 #            if not allclose(q[0], quantities[0][0]):
 #                raise ValueError('Not all wavespaces are the same. Cant resample')
+        
+        # Get wavelength
+        if isinstance(w_new, Spectrum):
+            raise NotImplementedError('cant use a Spectrum yet. Stick to arrays')
+#            assert medium == 'default'
+#            medium = w_new.get_medium()       # @EP: Error raised later if medium != default and get_wavenumber() is used
+#                                              # we could suppress it but better rewrite all medium mess with nm_air, nm_vac
+#            # ... in which unit?
+#            if unit == 'same':
+#                unit = w_new.get_waveunit() 
+#            else:
+#                unit = cast_waveunit(unit)
+#            # ... Get waverange
+#            if unit == 'nm':
+#                w_new = w_new.get_wavelength(medium=medium)
+#            elif unit == 'cm-1':
+#                w_new = w_new.get_wavenumber()
+#            else:
+#                raise ValueError('unexpected unit: {0}'.format(unit))
+            # TODO: @dev Rewrite this part after switching to medium=['cm-1', 'nm_air', 'nm_vac']
+            # and forgetting about this medium thing. 
 
         # Get wavespace units
         waveunit = s.get_waveunit()   # spectrum unit
@@ -3196,8 +3217,11 @@ class Spectrum(object):
         elif isinstance(other, np.ndarray):
             from radis.spectrum.operations import add_array
             return add_array(self, other, inplace=True)
+        elif isinstance(other, Spectrum):
+            from radis.spectrum.operations import add_spectra
+            return add_spectra(self, other)
         else:
-            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+#            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
             
@@ -3239,9 +3263,12 @@ class Spectrum(object):
         elif isinstance(other, np.ndarray):
             from radis.spectrum.operations import add_array
             return add_array(self, -other, inplace=False)
-        else:
+        elif isinstance(other, Spectrum):
             from radis.spectrum.operations import substract_spectra
             return substract_spectra(self, other)
+        else:
+            raise NotImplementedError('- not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
             
     def __rsub__(self, other):
         ''' Right side substraction '''
@@ -3261,9 +3288,12 @@ class Spectrum(object):
         elif isinstance(other, np.ndarray):
             from radis.spectrum.operations import add_array
             return add_array(self, -other, inplace=True)
-        else:
+        elif isinstance(other, Spectrum):
             from radis.spectrum.operations import substract_spectra
             return substract_spectra(self, other)
+        else:
+            raise NotImplementedError('-= not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
             
     # Times
     

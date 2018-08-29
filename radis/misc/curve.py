@@ -224,8 +224,12 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     w2, I2: array
         range and values for 2nd curve
 
+    Other Parameters
+    ----------------
+
     is_sorted: boolean
-        (optional) if True, doesnt sort input arrays
+        (optional) if ``True``, assumes that both input arrays are sorted already.
+        Default ``False``.
 
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
