@@ -92,6 +92,7 @@ def test_spectrum_get_methods(verbose=True, plot=True, close_plots=True, *args, 
         print('.. get_slit()')
 
 
+@pytest.mark.fast
 def test_copy(verbose=True, *args, **kwargs):
     ''' Test that a Spectrum is correctly copied 
 
@@ -112,12 +113,20 @@ def test_copy(verbose=True, *args, **kwargs):
     s.apply_slit(1.5)
     s2 = s.copy()
 
+    # Test spectrum in general
     assert s == s2
     assert s is not s2
 
-    if verbose:
-        print('Tested that s2 == s after Spectrum copy')
+    # Test all quantities in detail
+    for var in s._q.keys():
+        assert np.allclose(s._q[var], s2._q[var])
+        assert not (s._q[var] is s2._q[var])
+    for var in s._q_conv.keys():
+        assert np.allclose(s._q_conv[var], s2._q_conv[var])
+        assert not (s._q_conv[var] is s2._q_conv[var])
 
+    if verbose:
+        print('Tested that s2 == s (but s2 is not s) after Spectrum copy')
 
 def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test that populations in a Spectrum are correctly read 
