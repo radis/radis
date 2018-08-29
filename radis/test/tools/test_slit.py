@@ -398,7 +398,7 @@ def test_slit_energy_conservation(verbose=True, plot=True, close_plots=True, *ar
                             wunit='nm', Iunit='mW/cm2/sr/nm')   # arbitrary)
 
     P = s.get_power(unit='mW/cm2/sr')
-    s.apply_slit(1.5, norm_by='area')
+    s.apply_slit(0.5, norm_by='area')
     w, I = s.get('radiance', wunit='nm', Iunit='mW/cm2/sr/nm')
     Pc = abs(np.trapz(I, x=w))  # mW/cm2/sr
 
