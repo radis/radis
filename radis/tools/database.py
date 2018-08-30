@@ -348,6 +348,10 @@ def _compress(s, sjson):
     e.g, transmittance if abscoeff and path length are given, radiance if
     emisscoeff and abscoeff are given in non-optically thin case, etc.
     Default ``False`` '''
+    
+    # TODO: at the moment, a Spectrum with 'radiance_noslit' and 'transmittance_noslit'
+    # is saved with 'radiance_noslit' only, if stored with compress, but it is then impossible
+    # to reconstruct 'radiance_noslit'. 
 
     from radis.spectrum.rescale import get_redundant
     redundant = get_redundant(s)
