@@ -698,6 +698,17 @@ def _fix_format(file, sload):
                      "thermal_equilibrium not defined). Fixed it this time (guessed {0})".format(
                              equilibrium)+", but regenerate file ASAP.") #, DeprecationWarning)
 
+    # Fix lines format HITRAN_CLASS_1 molecules
+    if 'lines' in sload and sload['lines'] is not None:
+        lines = sload['lines']
+        from radis.io.hitran import get_molecule, HITRAN_CLASS1
+        if 'v1u' in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
+            printr("File {0}".format(basename(file))+" has a deprecrated structure " +\
+                 "(v1u in lines is now called vu). Fixed this time, but regenerate " +\
+                 "database ASAP.")
+            # Fix it:
+            lines.rename(columns={'v1u':'vu', 'v1l':'vl'}, inplace=True)
+        
     return sload, fixed
 
 

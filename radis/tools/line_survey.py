@@ -148,6 +148,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
             'Spectrum has no `lines`. Cant run line survey. If your code allows '+\
             "it, recompute the spectrum with 'export_lines=True'")
 
+    # Get input
     T = spec.conditions['Tgas']
     P = spec.conditions['pressure_mbar']/1000  # bar1013.25 # atm
     Xi = spec.conditions['mole_fraction']
@@ -247,8 +248,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
 
         # Get global labels        
         if molecule in HITRAN_CLASS1:
-            label = ('{molec}[iso{iso}] [{branch}{jl}]({v1l})->({v1u})'.format(
-                **dict([(k, row[k]) for k in ['v1u', 'v1l',
+            label = ('{molec}[iso{iso}] [{branch}{jl}]({vl})->({vu})'.format(
+                **dict([(k, row[k]) for k in ['vu', 'vl',
                                               'jl', 'iso']]+
                         [('molec',molecule),
                          ('branch',_fix_branch_format[row['branch']])])))
