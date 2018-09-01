@@ -18,6 +18,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.spectrum import Spectrum
 from radis.phys.convert import (cm2nm, nm2cm, cm2nm_air, nm_air2cm, air2vacuum, vacuum2air,
                                 dcm2dnm, dnm2dcm)
+from numpy import ones_like
 
 # %% Filter Spectra
 
@@ -155,7 +156,7 @@ def PerfectAbsorber(s):
 # %% Change wavelength
     
 
-def crop(s, wmin, wmax, wunit, medium=None,
+def crop(s, wmin=None, wmax=None, wunit=None, medium=None,
          inplace=False):
     # type: (Spectrum, float, float, str, str, bool) -> Spectrum
     ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``
@@ -165,13 +166,14 @@ def crop(s, wmin, wmax, wunit, medium=None,
     
     s: Spectrum object
         object to crop
-        
-    wmin, wmax: float
-        boundaries of waverange
-        
-    wunit: 'nm', 'cm-1'
-        which wavespace to use for ``wmin, wmax``
     
+    wmin, wmax: float, or None
+        boundaries of spectral range (in ``wunit``)
+        
+    wunit: ``'nm'``, ``'cm-1'``
+        which waveunit to use for ``wmin, wmax``. Default ``default``: 
+        just use the Spectrum wavespace. 
+
     medium: 'air', vacuum'
         necessary if cropping in 'nm'
         
@@ -202,12 +204,17 @@ def crop(s, wmin, wmax, wunit, medium=None,
     '''
     
     # Check inputs
+    if wmin is None and wmax is None:
+        raise ValueError('Choose at least `wmin=` or `wmax=`')
+    if wunit is None:
+        raise ValueError('Please precise unit for wmin and wmax with `unit=`')
     assert wunit in ['nm', 'cm-1']
     if wunit == 'nm' and medium is None:
         raise ValueError("Precise wavelength medium with medium='air' or "+\
                          "medium='vacuum'")
-    if wmin >= wmax:
-        raise ValueError('wmin should be > wmax')
+    if (wmin is not None and wmax is not None) and wmin >= wmax:
+        raise ValueError('wmin should be < wmax (Got: {0:.2f}, {1:.2f})'.format(
+                wmin, wmax))
     
     if len(s._q)>0 and len(s._q_conv)>0:
         raise NotImplementedError('Cant crop this Spectrum as there are both convoluted '+\
@@ -223,39 +230,51 @@ def crop(s, wmin, wmax, wunit, medium=None,
     
     # Convert wmin, wmax to Spectrum wavespace    
     # (deal with cases where wavelength are given in 'air' or 'vacuum')
+    # TODO @dev: rewrite with wunit='cm-1', 'nm_air', 'nm_vac'
     waveunit = s.get_waveunit()
+    wmin0, wmax0 = wmin, wmax
     if wunit == 'nm' and waveunit == 'cm-1':
         if medium == 'air':
-            wmin, wmax = nm_air2cm(wmax), nm_air2cm(wmin)   # reverted
+            if wmin: wmin = nm_air2cm(wmax0)   # reverted
+            if wmax: wmax = nm_air2cm(wmin0)   # reverted
         else:
-            wmin, wmax = nm2cm(wmax), nm2cm(wmin)   # reverted
+            if wmin: wmin = nm2cm(wmax0)   # reverted
+            if wmax: wmax = nm2cm(wmin0)   # reverted
     elif wunit == 'cm-1' and waveunit == 'nm':
         if s.get_medium() == 'air':
-            wmin, wmax = cm2nm_air(wmax), cm2nm_air(wmin)   # nm in air
+            if wmin: wmin = cm2nm_air(wmax0)   # nm in air
+            if wmax: wmax = cm2nm_air(wmin0)   # nm in air
         else:
-            wmin, wmax = cm2nm(wmax), cm2nm(wmin)   # get nm in vacuum
+            if wmin: wmin = cm2nm(wmax0)   # get nm in vacuum
+            if wmax: wmax = cm2nm(wmin0)   # get nm in vacuum
     elif wunit == 'nm' and waveunit == 'nm':
         if s.get_medium() == 'air' and medium == 'vacuum':
             # convert from given medium ('vacuum') to spectrum medium ('air')
-            wmin, wmax = vacuum2air(wmin), vacuum2air(wmax)
+            if wmin: wmin = vacuum2air(wmin0)
+            if wmax: wmax = vacuum2air(wmax0)
         elif s.get_medium() == 'vacuum' and medium == 'air':
             # the other way around
-            wmin, wmax = air2vacuum(wmin), air2vacuum(wmax)
+            if wmin: wmin = air2vacuum(wmin0)
+            if wmax: wmax = air2vacuum(wmax0)
     else:
         assert wunit == waveunit           # correct wmin, wmax
     
     # Crop non convoluted
     if len(s._q)>0:
-        b = (wmin <= s._q['wavespace']) & (s._q['wavespace'] <= wmax)
+        b = ones_like(s._q['wavespace'], dtype=bool)
+        if wmin: b *= (wmin <= s._q['wavespace'])
+        if wmax: b *= (s._q['wavespace'] <= wmax)
         for k, v in s._q.items():
             s._q[k] = v[b]
   
     # Crop convoluted
     if len(s._q_conv)>0:
-        b = (wmin <= s._q_conv['wavespace']) & (s._q_conv['wavespace'] <= wmax)
+        b = ones_like(s._q_conv['wavespace'], dtype=bool)
+        if wmin: b *= (wmin <= s._q_conv['wavespace'])
+        if wmax: b *= (s._q_conv['wavespace'] <= wmax)
         for k, v in s._q_conv.items():
             s._q_conv[k] = v[b]
-
+            
     return s
     
 
@@ -762,17 +781,6 @@ def test_offset(plot=True):
     assert np.allclose(s2.get_wavelength(which='convoluted'), 
                        s.get_wavelength(which='convoluted'))
     
-def test_invariants():
-    ''' Ensures adding 0 or multiplying by 1 does not change the spectra '''
-    from radis import load_spec
-    from radis.test.utils import getTestFile
-    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
-    s.update()
-    s = Radiance_noslit(s)
-
-    assert s.compare_with(add_constant(s, 0, 'W/cm2/sr/nm'), spectra_only='radiance_noslit')
-    assert s.compare_with(multiply(s, 1), spectra_only='radiance_noslit')
-    
 
 if __name__ == '__main__':
     
@@ -782,7 +790,6 @@ if __name__ == '__main__':
     import pytest
    
     
-    test_invariants()
     test_multiplyAndAddition()
     test_offset()
     

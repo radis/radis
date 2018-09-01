@@ -398,6 +398,11 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         raise TypeError(
             'Unexpected type for slit function: {0}'.format(type(slit_function)))
 
+    # Final shape
+    if len(wslit) < 5:
+        raise ValueError('Slit should have at least 5 points. Got {0} only. '.format(len(wslit))+\
+                         'Reduce `wstep=`?')
+
     return wslit, Islit
 
 

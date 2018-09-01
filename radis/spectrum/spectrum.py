@@ -1094,17 +1094,18 @@ class Spectrum(object):
                                      force=force, verbose=verbose)
         
         
-    def crop(self, wmin, wmax, wunit, medium='default', inplace=True):
+    def crop(self, wmin=None, wmax=None, wunit='default', medium='default', inplace=True):
         ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
         
         Parameters
         ----------
         
-        wmin, wmax: float
-            boundaries of waverange
+        wmin, wmax: float, or None
+            boundaries of spectral range (in ``wunit``)
             
-        wunit: 'nm', 'cm-1'
-            which wavespace to use for ``wmin, wmax``
+        wunit: ``'nm'``, ``'cm-1'``
+            which waveunit to use for ``wmin, wmax``. Default ``default``: 
+            just use the Spectrum wavespace. 
             
         medium: 'air', vacuum'
             necessary if cropping in 'nm'
@@ -1144,9 +1145,11 @@ class Spectrum(object):
         
         
         '''
-    
+        
         from radis.spectrum.operations import crop
         
+        if wunit == 'default':
+            wunit = self.get_waveunit()
         if medium == 'default':
             medium = self.get_medium()
         
@@ -3307,8 +3310,12 @@ class Spectrum(object):
         - for 2 Spectra: not defined
           
         '''
-        raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, other, inplace=False)
+        else:
+            raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
+                        type(other)))
             
     def __rmul__(self, other):
         ''' Right side multiplication '''
@@ -3335,6 +3342,48 @@ class Spectrum(object):
         else:
             raise NotImplementedError('*= not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
+            
+    # Divide
+    
+    def __truediv__(self, other):
+        ''' Override '/' behavior
+        Divide is defined as :
+            
+        - for numeric values: divide algebrically (equivalent to optically thin scaling)
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, 1/other, inplace=False)
+        else:
+            raise NotImplementedError('/ not implemented for a Spectrum and a {0} object'.format(
+                        type(other)))
+            
+    def __rtruediv__(self, other):
+        ''' Right side division '''
+
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, 1/other, inplace=False)
+        else:
+            raise NotImplementedError('right side / not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __itruediv__(self, other):
+        ''' Override '/=' behavior
+        Divide is defined as :
+            
+        - for numeric values: divide quantities algebrically 
+        (equivalent to optically thin scaling)
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, 1/other, inplace=True)
+        else:
+            raise NotImplementedError('/= not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
             
     # Line of sight operations
     
