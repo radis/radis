@@ -29,7 +29,7 @@ from __future__ import absolute_import
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.spatial.distance import cdist
-
+import warnings
 
 def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
     ''' Get a regularized euclidian distance from curve (w1, I1) to curve (w2, I2)
@@ -207,7 +207,7 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     return w1, I1 * I2
 
 
-def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear'):
+def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear', interpolation=1):
     ''' Divides curve (w1, I1) by (w2, I2)
     Linearly interpolates if the two ranges dont match. Fills out of bound 
     parameters with nan.
@@ -234,18 +234,27 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
 
-
+    interpolation: int, optional
+        If 1, interpolate on w1, I1. Else, on w2, I2.
+        Default 1
+        
     Returns
     -------
 
-    w1, Idiff: array
-        difference interpolated on the second range
+    w1, Idiv: array
+        Division interpolated on the first or second range according to reverseInterpolation
 
     '''
+    if interpolation==1:
+        I1, I2 = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
+    else:
+        I2, I1 = _curve_interpolate(w2, I2, w1, I1, is_sorted=is_sorted, kind=kind)
+    
+    output = I1 / I2
+    if np.isnan(output).any():
+        warnings.warn('Presence of NaN in curve_divide!\nThink about interpolation=2', UserWarning)
 
-    I1, I2 = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
-
-    return w1, I1 / I2
+    return w1, output
 
 
 def _curve_interpolate(w1, I1, w2, I2, is_sorted=False, kind='linear'):
