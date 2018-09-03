@@ -355,11 +355,17 @@ def get_residual(s1, s2, var,
     if ignore_nan:
         b = np.isnan(dI)
         wdiff, dI = wdiff[~b], dI[~b]
-
+    warningText = 'NaN output in residual. You should use "ignore_nan=True". Read the help.'
     if norm == 'L2':
-        return np.sqrt((dI**2).sum())/len(dI)
+        output = np.sqrt((dI**2).sum())/len(dI)
+        if np.isnan(output):
+            warn(warningText, UserWarning)
+        return output
     elif norm == 'L1':
-        return (np.abs(dI)).sum()/len(dI)
+        output = (np.abs(dI)).sum()/len(dI)
+        if np.isnan(output):
+            warn.warning(warningText, UserWarning)
+        return output
     else:
         raise ValueError('unexpected value for norm')
 
