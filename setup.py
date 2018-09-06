@@ -97,6 +97,7 @@ setup(name='radis',
                         'pytest',       # to run test suite
                         'h5py',         # to write HDF5 files
                         'joblib',       # for parallel loading of SpecDatabase
+                        'numba',        # just-in-time compiler
 				],
       classifiers=[
         'Development Status :: 4 - Beta',

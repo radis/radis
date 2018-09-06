@@ -60,7 +60,7 @@ SLIT_SHAPES = ['triangular', 'trapezoidal', 'gaussian']
 
 def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangular',
                       center_wavespace=None, return_unit='same', wstep=None,
-                      plot=False, resfactor=2, verbose=True,
+                      plot=False, resfactor=2, verbose=True, auto_recenter_crop=True,
                       *args, **kwargs):
     ''' Import or generate slit function in correct wavespace
     Give a file path to import, or a float / tuple to generate arbitrary shapes
@@ -115,6 +115,11 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
          tolerance fraction. Only used when importing experimental slit as the
          theoretical slit functions are directly generated in spectrum wavespace
          Default 1e-3 (0.1%)
+         
+    auto_recenter_crop: bool
+        if ``True``, recenter slit and crop zeros on the side when importing
+        an experimental slit. Default ``True``. 
+        See :func:`~radis.tools.slit.recenter_slit`, :func:`~radis.tools.slit.crop_slit`
 
 
     Returns
@@ -203,6 +208,8 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
     scale_slit = 1
     # not used in norm_by=area mode
 
+    # Generate Slit 
+    # -------------
     # First get the slit in return_unit space
     if is_float(slit_function):  # Generate slit function (directly in return_unit space)
 
@@ -310,12 +317,16 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
                                         scale=scale_slit,
                                         *args, **kwargs)
 
+    # Or import it
+    # ------------
     elif isinstance(slit_function, string_types):  # import it
         if __debug__:
             printdbg('get_slit_function: {0} in {1}, norm_by {2}, return in {3}'.format(
                 slit_function, unit, norm_by, return_unit))
         wslit, Islit = import_experimental_slit(slit_function, norm_by=norm_by,  # norm is done later anyway
                                                 waveunit=unit, verbose=verbose,
+                                                auto_crop=auto_recenter_crop,
+                                                auto_recenter=auto_recenter_crop,
                                                 bplot=False,  # we will plot after resampling
                                                 *args, **kwargs)
         # ... get unit
@@ -386,6 +397,11 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
     else:
         raise TypeError(
             'Unexpected type for slit function: {0}'.format(type(slit_function)))
+
+    # Final shape
+    if len(wslit) < 5:
+        raise ValueError('Slit should have at least 5 points. Got {0} only. '.format(len(wslit))+\
+                         'Reduce `wstep=`?')
 
     return wslit, Islit
 
@@ -566,7 +582,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
         I_slit = I_slit[::-1]
 
     if not np.allclose(np.diff(w_slit), wstep):
-        if verbose:
+        if verbose>=2:
             # numerical errors can be produced
             print('interpolating slit function over spectrum grid')
         try:
@@ -613,14 +629,15 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
 
     # 7. Convolve!
     # --------------
-
+      
     I_conv = np.convolve(I, I_slit_interp, mode='same')*wstep
 
     # 6. Remove boundary effects
     # --------------
     
-    w_conv, I_conv = remove_boundary(w, I_conv, mode, I=I, I_slit_interp=I_slit_interp)
-    
+    w_conv, I_conv = remove_boundary(w, I_conv, mode, 
+                                     len_I=len(I), len_I_slit_interp=len(I_slit_interp))
+
     # reverse back if needed
     # Todo: add test case for that
     if reverse:
@@ -805,15 +822,16 @@ def normalize_slit(w_slit, I_slit, norm_by='area'):
 
     return w_slit, I_slit
    
-def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None, crop_left=None,
-                    crop_right=None):
+def remove_boundary(w, I_conv, mode, len_I=None, len_I_slit_interp=None, 
+                    crop_left=None, crop_right=None):
     ''' Crop convoluted array to remove boundary effects 
     
     Parameters
     ----------
     
     w, I_conv: numpy array
-        wavelength and already convoluted quantity
+        wavelength and intensity of already convoluted quantity 
+        (ex: ``radiance``)
     
     mode: ``'valid'``, ``'same'``, ``''crop'`` 
         ``'same'`` returns output of same length as initial spectra, 
@@ -826,12 +844,13 @@ def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None, crop_left=None,
     Other Parameters
     ----------------
     
-    I, I_slit_interp: numpy arrays
-        initial quantity and slit function intensity, before convolution. Needed
-        to determine the valid range if ``mode='valid'``
+    len_I, len_I_slit_interp: int
+        length of initial quantity (ex: ``radiance_noslit``) and length 
+        of slit function intensity, before convolution. 
+        Needed to determine the valid range if ``mode='valid'``
         
     crop_left, crop_right: int
-        number of points to discard on each side in ``''crop'`` mode
+        number of points to discard on each side if ``mode='crop'``
     
     Returns
     -------
@@ -843,7 +862,7 @@ def remove_boundary(w, I_conv, mode, I=None, I_slit_interp=None, crop_left=None,
 
     # Remove boundary effects with the x-axis changed accordingly
     if mode == 'valid':
-        la = min(len(I), len(I_slit_interp))
+        la = min(len_I, len_I_slit_interp)
         a = int((la-1)/2)
         b = int((la)/2)
         I_conv = I_conv[a:-b]
@@ -898,6 +917,9 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
         figure and ax
 
     '''
+    
+    from publib import set_style
+    set_style('origin')
 
     try:
         from neq.plot.toolbar import add_tools     # TODO: move in publib
@@ -1072,12 +1094,15 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
         used for plot only. Slit function is generated assuming you use the
         correct wavespace. No conversions are made here. Default ``'nm'``
 
-    auto_recenter: boolean
+    Other Parameters
+    ----------------
+    
+    auto_recenter: bool
         if True, recenters the slit on the maximum calculated from the two
         FWHM limits. To recenter, zeros are added on the shorter side (zero padding)
         Default ``True``
 
-    auto_crop: boolean
+    auto_crop: bool
         If True, remove unnecessary zeros on the side for a faster convolution.
         (remove as many zeros on the left as on the right). Default ``True``
 

@@ -55,7 +55,8 @@ from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITI
                                   make_up, cast_waveunit, print_conditions)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from neq.spec.base import print_conditions
-from radis.misc.arrays import evenly_distributed, count_nans
+from radis.misc.arrays import (evenly_distributed, count_nans, 
+                               is_sorted, is_sorted_backward)
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
 from pint import UndefinedUnitError
@@ -226,13 +227,12 @@ class Spectrum(object):
                  'lines', 'name', '_slit', 'file']
 
     def __init__(self, quantities, units=None, conditions=None, cond_units=None,
-                 populations=None, lines=None, waveunit=None, wavespace=None,  # deprecated
+                 populations=None, lines=None, waveunit=None, 
                  name=None, warnings=True):
+        # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I, 
+        # 'transmittance':T, etc.} directly too (instead of {'radiance':(w,I), etc.})
 
         # Check inputs
-        if wavespace is not None:
-            warn(DeprecationWarning('wavespace replaced with waveunit'))
-            waveunit = wavespace
         # ... Replace None attributes with dictionaries
         if conditions is None:
             conditions = {}
@@ -275,10 +275,10 @@ class Spectrum(object):
                                  '`radiance`, `transmittance` etc... with dict ' +
                                  'format. e.g: {`radiance`: (w,I)}')
 
-        self._q = {}                # non convoluted quantities
-        self._q_conv = {}           # convoluted quantities
+        self._q = {}                #: dict: stores non convoluted quantities
+        self._q_conv = {}           #: dict: stores convoluted (slit) quantities
 
-        self._slit = {}            # hold slit function
+        self._slit = {}            #: dict: hold slit function
 
         for k, v in quantities.items():
             try:
@@ -1094,26 +1094,35 @@ class Spectrum(object):
                                      force=force, verbose=verbose)
         
         
-    def crop(self, wmin, wmax, wunit, medium='default'):
-        ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``
+    def crop(self, wmin=None, wmax=None, wunit='default', medium='default', inplace=True):
+        ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
         
         Parameters
         ----------
         
-        wmin, wmax: float
-            boundaries of waverange
+        wmin, wmax: float, or None
+            boundaries of spectral range (in ``wunit``)
             
-        wunit: 'nm', 'cm-1'
-            which wavespace to use for ``wmin, wmax``
+        wunit: ``'nm'``, ``'cm-1'``
+            which waveunit to use for ``wmin, wmax``. Default ``default``: 
+            just use the Spectrum wavespace. 
             
         medium: 'air', vacuum'
             necessary if cropping in 'nm'
-            
+        
+        Other Parameters
+        ----------------
+        
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+        
         Returns
         -------
         
-        None: 
-            spectrum is modified in place
+        s: Spectrum 
+            Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
+            directly anyway.
         
         Examples
         --------
@@ -1129,22 +1138,59 @@ class Spectrum(object):
         See Also
         --------
         
+        :func:`radis.spectrum.operations.crop`,
         :func:`~radis.los.slabs.MergeSlabs`: if used with ``resample='full', 
         out='transparent'``, this becomes the opposite of cropping: can be used
         to combine 2 adjacent spectra in one.
         
         
         '''
-    
+        
         from radis.spectrum.operations import crop
         
+        if wunit == 'default':
+            wunit = self.get_waveunit()
         if medium == 'default':
             medium = self.get_medium()
         
-        crop(self, wmin=wmin, wmax=wmax, wunit=wunit, medium=medium, inplace=True)
+        return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, medium=medium, 
+                    inplace=inplace)
+    
+    def offset(self, offset, unit, inplace=True):
+        # type: (Spectrum, float, str) -> Spectrum
+        '''Offset the spectrum by a wavelength or wavenumber  (inplace)
+    
+        Parameters    
+        ----------
         
-        return 
+        offset: float
+            Constant to add to all quantities in the Spectrum.
+        unit: 'nm' or 'cm-1'
+            unit for ``offset``
+    
+        Other Parameters
+        ----------------
         
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+
+        Returns    
+        -------
+        
+        s: Spectrum
+            Offset Spectrum. If ``inplace=True``, Spectrum has been updated
+            directly anyway.
+            
+        See Also
+        --------
+        
+        :func:`radis.spectrum.operations.offset`
+        
+        '''
+        
+        from radis.spectrum.operations import offset as offset_func
+        return offset_func(self, offset, unit, inplace=inplace)
 
     def get_integral(self, var, wunit='nm', Iunit='default', **kwargs):
         ''' Returns integral of variable 'var' over waverange
@@ -1239,9 +1285,16 @@ class Spectrum(object):
         return varlist
 
     def _get_items(self):
-        ''' Return a dictionary of tuples, e.g, {'radiance':(w,I), 'transmittance_noslit':(w_ns,T)}
+        ''' Return a dictionary of tuples, e.g::
+            
+            {'radiance':(w,I), 'transmittance_noslit':(w_ns,T)}
 
-        In the general case, users should use s.get()
+        In the general case, users should use the 
+        :meth:`~radis.spectrum.spectrum.Spectrum.get` method
+        
+        .. warning::
+            real quantities are returned, not copies. 
+        
         '''
         items = {k: (self._q['wavespace'], v)
                  for k, v in self._q.items() if k != 'wavespace'}
@@ -1285,9 +1338,9 @@ class Spectrum(object):
         yscale: 'linear', 'log'
             plot yscale
 
-        normalize: boolean
+        normalize: boolean,  or tuple.
             option to normalize quantity to 1 (ex: for radiance). Default ``False``
-
+            
         force: bool
             plotting on an existing figure is forbidden if labels are not the 
             same. Use ``force=True`` to ignore that.
@@ -1295,6 +1348,12 @@ class Spectrum(object):
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
+            
+        Returns
+        -------
+        
+        line: 
+            line plot
 
         '''
 
@@ -1333,6 +1392,7 @@ class Spectrum(object):
             xlabel = 'Wavenumber (cm-1)'
         else:  # wunit == 'nm'
             xlabel = 'Wavelength (nm){0}'.format(wmedium)
+        xlabel = make_up(xlabel)
 
         if Iunit == 'default':
             try:
@@ -1343,12 +1403,18 @@ class Spectrum(object):
             
         # cosmetic changes
         Iunit = make_up(Iunit)
-        ylabel = make_up('{0} ({1})'.format(var.capitalize(), Iunit))
+        ylabel = make_up('{0} ({1})'.format(var, Iunit))
+    
 
         # Plot
         # -------
         if normalize:
-            y /= y.max()
+            if isinstance(normalize, tuple):
+                from radis.misc.arrays import norm_on
+                wmin, wmax = normalize
+                y = norm_on(y, x, wmin=wmin, wmax=wmax)
+            else:
+                y /= y.max()
             Iunit = 'norm'
 
         set_style('origin')
@@ -1362,12 +1428,12 @@ class Spectrum(object):
         # they cannot be differenced. But at least this allows user to plot 
         # both on the same figure if they want to compare
         
-        if not force and (fig.gca().get_xlabel() not in ['', xlabel]):
+        if not force and (fig.gca().get_xlabel().lower() not in ['', xlabel.lower()]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
                              'on a same figure with different xlabel: {0}, {1}'.format(
                             fig.gca().get_xlabel(), xlabel)+\
                             'Use force=True if you really want to plot')
-        if not force and (fig.gca().get_ylabel() not in ['', ylabel]):
+        if not force and (fig.gca().get_ylabel().lower() not in ['', ylabel.lower()]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
                              'on a same figure with different ylabel: \n{0}\n{1}'.format(
                             fig.gca().get_ylabel(), ylabel)+\
@@ -1700,7 +1766,7 @@ class Spectrum(object):
     def apply_slit(self, slit_function, unit='nm', shape='triangular',
                    center_wavespace=None, norm_by='area', mode='valid', 
                    plot_slit=False, store=True, slit_dispersion=None,
-                   verbose=True,
+                   auto_recenter_crop=True, verbose=True,
                    *args, **kwargs):
         ''' Apply an instrumental slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see ``shape=``) or imported from an
@@ -1806,7 +1872,11 @@ class Spectrum(object):
     
             See Laux 1999 "Experimental study and modeling of infrared air plasma
             radiation" for more information
-    
+        
+        auto_recenter_crop: bool
+            if ``True``, recenter slit and crop zeros on the side when importing
+            an experimental slit. Default ``True``. 
+            See :func:`~radis.tools.slit.recenter_slit`, :func:`~radis.tools.slit.crop_slit`
 
         *args, **kwargs
             are forwarded to slit generation or import function
@@ -1927,18 +1997,20 @@ class Spectrum(object):
         # -------
         wslit0, Islit0 = get_slit_function(slit_function, unit=unit, norm_by=norm_by,
                                          shape=shape, center_wavespace=center_wavespace,
-                                         return_unit=waveunit, wstep=wstep, verbose=verbose,
+                                         return_unit=waveunit, wstep=wstep, 
+                                         auto_recenter_crop=auto_recenter_crop,
+                                         verbose=verbose,
                                          plot=plot_slit, *args, **kwargs)
 
         # Check if dispersion is too large
         # ----
+        if waveunit == 'nm':
+            w_nm = w
+            wslit0_nm = wslit0
+        else:
+            w_nm = cm2nm(w)
+            wslit0_nm = cm2nm(wslit0)
         if slit_dispersion is not None:
-            if waveunit == 'nm':
-                w_nm = w
-                wslit0_nm = wslit0
-            else:
-                w_nm = cm2nm(w)
-                wslit0_nm = cm2nm(wslit0)
             # add space (wings) on the side of each slice. This space is cut
             # after convolution, removing side effects. Too much space and we'll 
             # overlap too much and loose performance. Not enough and we'll have
@@ -2001,7 +2073,7 @@ class Spectrum(object):
                                                     assert_evenly_spaced=False,   
                                                     # assumes Spectrum is correct by construction
                                                     **kwargsconvolve)
-                
+
                 # Crop wings to remove overlaps (before merging)
                 if slit_dispersion is not None:
                     w_conv_window, I_conv_window = remove_boundary(w_conv_window, I_conv_window, 
@@ -2021,10 +2093,17 @@ class Spectrum(object):
             w_conv = np.hstack(w_conv_slices)
             I_conv = np.hstack(I_conv_slices[q])
             
+#            assert all(sorted(w_conv) == w_conv)
+            
             # Crop to remove boundary effects (after merging)
-            w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, I=I_not_conv, 
-                                             I_slit_interp=Islit0)
-    
+            # this uses the mode='valid', 'same' attribute
+            # ... if slit was imported, it has been interpolated on the Spectrum 
+            # ... grid and its initial length has changed: get the scaling factor
+            # ... to remove the correct number of non valid points on the side
+            scale_factor = abs((wslit0_nm[1]-wslit0_nm[0])/(w_nm[1]-w_nm[0]))
+            w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, 
+                                             len_I=len(I_not_conv), 
+                                             len_I_slit_interp=int(len(Islit0)*scale_factor)+1)
             # Store 
             self._q_conv['wavespace'] = w_conv
             self._q_conv[q] = I_conv
@@ -2050,7 +2129,16 @@ class Spectrum(object):
             else:
                 raise ValueError(
                     'Unknown normalization type: {0}'.format(norm_by))
-
+                
+        # Sort if needed (sorting can be broken after applying corrected slits 
+        # on different slices)
+        # | @EP: deactivated for the moment. It's dangerous to reorder because 
+        # | it creates features that could be confused with spectral features. 
+#        if not is_sorted(w_conv) or not is_sorted_backward(w_conv):
+#            b = np.argsort(w_conv)
+#            for q in list(self._q_conv.keys()):
+#                self._q_conv[q] = self._q_conv[q][b]
+            
         # Store slit in Spectrum, in the Spectrum unit
         if store:
             self._slit['wavespace'] = wslit0  # in 'waveunit'
@@ -2065,17 +2153,21 @@ class Spectrum(object):
 
         return
 
-    def get_slit(self):
+    def get_slit(self, unit='same'):
         ''' Get slit function that was applied to the Spectrum 
 
         Returns
         -------
 
         wslit, Islit: array
-            slit function with wslit in waveunit. See 
+            slit function with wslit in Spectrum ``waveunit``. See 
             :meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`
 
         '''
+        
+        if not unit in ['same', self.get_waveunit()]:
+            raise NotImplementedError('Unit must be Spectrum waveunit: {0}'.format(
+                    self.get_waveunit()))
 
         # Make sure that slit is stored already
         try:
@@ -2437,31 +2529,36 @@ class Spectrum(object):
 
     def resample(self, w_new, unit='same', out_of_bounds='nan',
                  if_conflict_drop='error', medium='default',
-                 energy_threshold=1e-3, print_conservation=False):
-        ''' Resample spectrum over a new wavelength
+                 energy_threshold=1e-3, print_conservation=False,
+                 inplace=True, **kwargs):
+        ''' Resample spectrum over a new wavelength. 
         Fills with transparent medium when out of bound (transmittance 1,
         radiance 0)
 
-        Warning. This may result in information loss. Resampling is done with
-        oversampling and spline interpolation. These parameters can be adjusted,
-        and energy conservation ensured with the appropriate parameters.
+        .. warning::
+            This may result in information loss. Resampling is done with
+            oversampling and spline interpolation. These parameters can be adjusted,
+            and energy conservation ensured with the appropriate parameters.
 
-        Uses the :func:`~radis.misc.signal.resample` function. 
+        Uses the :func:`radis.misc.signal.resample` function. 
 
 
         Parameters    
         ----------
 
-        w_new: array
+        w_new: array,  or Spectrum
             new wavespace to resample the spectrum on. Must be inclosed in the
             current wavespace (we won't extrapolate)
+            One can also give a Spectrum directly.
 
-        unit: 'same', 'nm', 'cm-1'
-            unit of new wavespace. It 'same' it is assumed to be the current
-            waveunit. Default 'same'. The spectrum waveunit is changed to this
+        unit: ``'same'``, ``'nm'``, ``'cm-1'``
+            unit of new wavespace. It ``'same'`` it is assumed to be the current
+            waveunit. Default ``'same'``. The spectrum waveunit is changed to this
             unit after resampling (i.e: a spectrum calculated and stored in `cm-1`
             but resampled in `nm` will be stored in `nm` from now on). 
             If 'nm', see also argument ``medium``
+            If a Spectrum has been given instead of ``w_new``, use that Spectrum
+            waveunit if using ``'same'``. 
 
         out_of_bounds: 'transparent', 'nan', 'error'
             what to do if resampling is out of bounds. 'transparent': fills with
@@ -2475,9 +2572,6 @@ class Spectrum(object):
             quantities will be dropped. If 'non_convoluted' non convoluted quantities 
             are dropped. Default 'error'
 
-            TODO (but dangerous): reapply_slit at the end of the process if slit
-            is in conditions?
-
         medium: 'air', 'vacuum', or 'default'
             in which medium is the new waverange is calculated if it is given 
             in 'nm'. Ignored if unit='cm-1'
@@ -2486,7 +2580,7 @@ class Spectrum(object):
         Other Parameters
         ----------------
 
-        Inputs transfered to resample:
+        Inputs transfered to :func:`radis.misc.signal.resample`:
 
         energy_threshold: float
             if energy conservation (integrals) is above this threshold, raise an
@@ -2495,6 +2589,19 @@ class Spectrum(object):
         print_conservation: boolean
             if ``True``, prints energy conservation. Default ``False``.
 
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+        
+        **kwargs: **dict
+            all other arguments are sent to :func:`~radis.misc.signal.resample`
+            
+        Returns
+        -------
+        
+        s: Spectrum
+            resampled Spectrum object. If using ``inplace=True``, the Spectrum
+            object has been modified anyway.
 
         See Also
         --------
@@ -2502,23 +2609,30 @@ class Spectrum(object):
         :func:`~radis.misc.signal.resample`
 
         '''
-
+        # TODO (but dangerous): reapply_slit at the end of the process if slit
+        # is in conditions?
+        
+        if inplace:
+            s = self
+        else:
+            s = self.copy()
+            
         # Check inputs (check for deprecated)
 
         # ... see if convoluted / non convoluted values co-exist
-        if 'wavespace' in self._q and 'wavespace' in self._q_conv:
+        if 'wavespace' in s._q and 'wavespace' in s._q_conv:
             try:
-                assert len(self._q['wavespace']) == len(
-                    self._q_conv['wavespace'])
+                assert len(s._q['wavespace']) == len(
+                    s._q_conv['wavespace'])
                 assert np.allclose(
-                    self._q['wavespace'], self._q_conv['wavespace'])
+                    s._q['wavespace'], s._q_conv['wavespace'])
             except AssertionError:  # wavespaces are not the same.
                 if if_conflict_drop == 'convoluted':
-                    for q in list(self._q_conv.keys()):
-                        del self._q_conv[q]
+                    for q in list(s._q_conv.keys()):
+                        del s._q_conv[q]
                 elif if_conflict_drop == 'non_convoluted':
-                    for q in list(self._q.keys()):
-                        del self._q[q]
+                    for q in list(s._q.keys()):
+                        del s._q[q]
                 elif if_conflict_drop == 'error':
                     raise ValueError('Cant resample as there are convoluted and non ' +
                                      'convoluted quantities in the Spectrum object (and ' +
@@ -2530,13 +2644,34 @@ class Spectrum(object):
 
         # ... assert all values have the same wavespace
         # Now true by construction
-#        quantities = list(self.values())
+#        quantities = list(s.values())
 #        for q in quantities[1:]:
 #            if not allclose(q[0], quantities[0][0]):
 #                raise ValueError('Not all wavespaces are the same. Cant resample')
+        
+        # Get wavelength
+        if isinstance(w_new, Spectrum):
+            raise NotImplementedError('cant use a Spectrum yet. Stick to arrays')
+#            assert medium == 'default'
+#            medium = w_new.get_medium()       # @EP: Error raised later if medium != default and get_wavenumber() is used
+#                                              # we could suppress it but better rewrite all medium mess with nm_air, nm_vac
+#            # ... in which unit?
+#            if unit == 'same':
+#                unit = w_new.get_waveunit() 
+#            else:
+#                unit = cast_waveunit(unit)
+#            # ... Get waverange
+#            if unit == 'nm':
+#                w_new = w_new.get_wavelength(medium=medium)
+#            elif unit == 'cm-1':
+#                w_new = w_new.get_wavenumber()
+#            else:
+#                raise ValueError('unexpected unit: {0}'.format(unit))
+            # TODO: @dev Rewrite this part after switching to medium=['cm-1', 'nm_air', 'nm_vac']
+            # and forgetting about this medium thing. 
 
         # Get wavespace units
-        waveunit = self.get_waveunit()   # spectrum unit
+        waveunit = s.get_waveunit()   # spectrum unit
         if unit == 'same':               # resampled unit
             unit = waveunit
         else:
@@ -2546,7 +2681,7 @@ class Spectrum(object):
         # if asking for wavelength, check in which medium (air or vacuum?)
         if unit == 'nm':
             # get defaults
-            current_medium = self.get_medium()
+            current_medium = s.get_medium()
             if medium == 'default':
                 medium = current_medium
             # convert if needed
@@ -2554,24 +2689,23 @@ class Spectrum(object):
                 pass  # correct medium already, do nothing
             else:
                 # update medium
-                self.conditions['medium'] = medium
-
-            w = self.get_wavelength(medium=medium)   # in correct medium
+                s.conditions['medium'] = medium
+            w = s.get_wavelength(medium=medium)   # in correct medium
         elif unit == 'cm-1':
             if medium != 'default':
                 raise ValueError('resampling to cm-1 but `medium` is given. It ' +
                                  'wont change wavenumbers, so just dont use it')
-            w = self.get_wavenumber()
+            w = s.get_wavenumber()
         else:
             raise ValueError('Unknown unit: {0}'.format(unit))
 
         # Update waveunit to new unit
         if unit != waveunit:
-            self.conditions['waveunit'] = unit
+            s.conditions['waveunit'] = unit
 
         # Get wavespace
-        update_q = 'wavespace' in self._q
-        update_q_conv = 'wavespace' in self._q_conv
+        update_q = 'wavespace' in s._q
+        update_q_conv = 'wavespace' in s._q_conv
 
         # Now let's resample
         def get_filling(variable):
@@ -2592,47 +2726,41 @@ class Spectrum(object):
             return fill_with
 
         # There are different cases depending on the unit of w_new
-        # ... Note for devs: we're looping over dictionaries directly rather than
+        # ... Note @devs: we're looping over dictionaries directly rather than
         # ... using the (safer) .get() function because it's much faster (the
         # ... air2vacuum conversion in particular is quite slow, but has been
         # ... done once for all with get_wavelength() above )
         if update_q:
-            for (k, I) in self._q.items():
+            for (k, I) in s._q.items():
                 if k == 'wavespace':
                     continue
                 fill_with = get_filling(k)
                 Inew = resample(w, I, w_new, ext=fill_with,
                                 energy_threshold=energy_threshold,
-                                print_conservation=False)
-                self._q[k] = Inew
+                                print_conservation=False, **kwargs)
+                s._q[k] = Inew
             # update wavespace
-            self._q['wavespace'] = w_new
+            s._q['wavespace'] = w_new
 
         if update_q_conv:
-            for (k, I) in self._q_conv.items():
+            for (k, I) in s._q_conv.items():
                 if k == 'wavespace':
                     continue
                 fill_with = get_filling(k)
                 Inew = resample(w, I, w_new, ext=fill_with,
                                 energy_threshold=energy_threshold,
-                                print_conservation=False)
-                self._q_conv[k] = Inew
+                                print_conservation=False, **kwargs)
+                s._q_conv[k] = Inew
             # update wavespace
-            self._q_conv['wavespace'] = w_new
+            s._q_conv['wavespace'] = w_new
+            
+        return s
 
     # %% ======================================================================
     # Semi public functions
     # ----------------
     # Access object properties (but don't manipulate the spectrum itself)
     # XXX =====================================================================
-
-    def wavespace(self):
-        ''' Returns whether this spectrum is defined in wavelength (nm) or
-        wavenumber (cm-1) '''
-
-        warn(DeprecationWarning('wavespace replaced with get_waveunit'))
-
-        return self.get_waveunit()
 
     def get_waveunit(self):
         ''' Returns whether this spectrum is defined in wavelength (nm) or
@@ -2726,21 +2854,40 @@ class Spectrum(object):
                            "`self_absorption` is not defined in conditions. Please add the " +
                            "value manually with s.conditions['self_absorption']=...")
 
-    def copy(self, copy_lines=True):
-        ''' Returns a copy of this Spectrum object (performs a smart deepcopy) '''
+    def copy(self, copy_lines=True, quantity='all'):
+        ''' Returns a copy of this Spectrum object (performs a smart deepcopy) 
+        
+        Parameters
+        ----------
+        
+        copy_lines: bool
+            default ``True``
+        
+        quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
+            if not 'all', copy only one quantity. Default ``'all'``
+            
+        '''
         try:
-            return self.__copy__(copy_lines=copy_lines)
+            return self.__copy__(copy_lines=copy_lines, quantity=quantity)
         except MemoryError:
             raise MemoryError("during copy of Spectrum. If you don't need them, " +
                               "droping lines before copying may save a lot of space: " +
                               "del s.lines ; or, use copy_lines=False")
 
-    def __copy__(self, copy_lines=True):
+    def __copy__(self, copy_lines=True, quantity='all'):
         ''' Generate a new spectrum object
 
         Note: using deepcopy would work but then the Spectrum object would be pickled
         and unpickled again. It's a little faster here
 
+        Parameters
+        ----------
+        
+        copy_lines: bool
+            default ``True``
+            
+        quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
+            if not 'all', copy only one quantity. Default ``'all'``
 
         Notes
         -----
@@ -2757,7 +2904,14 @@ class Spectrum(object):
         # quantities = {s:(v[0].copy(), v[1].copy()) for (s,v) in self.items()}  #╪ 1.8 ms
 #        quantities = dict(self.items())   # 912 ns, not a copy but no need as
 #                                        # Spectrum() recreates a copy anyway
-        quantities = dict(self._get_items())
+        if quantity == 'all':
+            quantities = dict(self._get_items())
+        else:
+#            assert quantity in CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES
+#            if not quantity in self.get_vars():
+#                raise ValueError("Spectrum {0} has no quantity '{1}'. Got: {2}".format(
+#                        self.get_name(), quantity, self.get_vars()))
+            quantities = {quantity:self.get(quantity, wunit=self.get_waveunit())} # dict(self._get_items())
 
         try:
             units = deepcopy(self.units)
@@ -2927,16 +3081,15 @@ class Spectrum(object):
             ''' If warnings, check that array is evenly spaced. Returns a copy
             of input array.
 
-            Note: this check takes a lot of time! 
+            Note: this check takes a lot of time!  (few ms)
             Is is not performed if warnings is False'''
-            w = np.array(w)              # copy
             if warnings:
                 # Check Wavelength/wavenumber is evently spaced
                 if not evenly_distributed(w, tolerance=1e-5):
                     warn('Wavespace is not evenly spaced ({0:.3f}%) for {1}.'.format(
                         np.abs(np.diff(w)).max()/w.mean()*100, name)
                         + ' This may create problems when convolving with slit function')
-            return w
+            return np.array(w)             # copy
 
         if name in CONVOLUTED_QUANTITIES:
             # Add wavespace
@@ -2946,7 +3099,7 @@ class Spectrum(object):
                                      (name)+' for convoluted quantities')
             else:
 #                self._q_conv['wavespace'] = check_wavespace(w)   # copy
-                self._q_conv['wavespace'] = w   
+                self._q_conv['wavespace'] = np.array(w)          # copy
                 # no need to check if wavespace is evenly spaced: we won't 
                 # apply the slit function again
 
@@ -3026,6 +3179,271 @@ class Spectrum(object):
         self.print_conditions()
 
         return ''  # self.print_conditions()
+
+
+    # %% Define Spectrum Algebra
+    # +, -, *, ^  operators
+    
+    # Notes:
+    # s + s = 2*s    # valid only if optically thin
+    
+    # Other possibility:
+    # use   s1>s2    for SerialSlabs
+    # and   s1//s2   for MergeSlabs
+    
+    # Or:
+    # use   s1*s2   for Serial Slabs
+    # and   s1+s2   for MergeSlabs
+    
+    # For the moment the first version is implemented
+    
+    # Plus
+    
+    def __add__(self, other):
+        ''' Override '+' behavior
+        Add is defined as :
+            
+        - for numeric values: add a baseline (returns a copy)
+        - for 2 Spectra: not defined (not physical)
+        '''
+        
+        # TODO: Implement unit addition (with Pint) one days
+        # Example:   s += s*_u('mW/cm2/sr/nm')
+    
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import add_constant
+            return add_constant(self, other, inplace=False)
+        elif isinstance(other, np.ndarray):
+            from radis.spectrum.operations import add_array
+            return add_array(self, other, inplace=True)
+        elif isinstance(other, Spectrum):
+            from radis.spectrum.operations import add_spectra
+            return add_spectra(self, other)
+        else:
+#            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __radd__(self, other):
+        ''' Right side addition '''
+        return self.__add__(other)
+    
+    def __iadd__(self, other):
+        ''' Override '+=' behavior
+        Add is defined as :
+            
+        - for numeric values: add a baseline (inplace)
+        - for 2 Spectra: not defined (not physical)
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import add_constant
+            return add_constant(self, other, inplace=True)
+        elif isinstance(other, np.ndarray):
+            from radis.spectrum.operations import add_array
+            return add_array(self, other, inplace=True)
+        else:
+            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    # Minus
+
+    def __sub__(self, other):
+        ''' Override '-' behavior
+        Add is defined as :
+            
+        - for numeric values: substract a baseline (returns a copy)
+        - for 2 Spectra: defined only for baseline substraction
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import add_constant
+            return add_constant(self, -other, inplace=False)
+        elif isinstance(other, np.ndarray):
+            from radis.spectrum.operations import add_array
+            return add_array(self, -other, inplace=False)
+        elif isinstance(other, Spectrum):
+            from radis.spectrum.operations import substract_spectra
+            return substract_spectra(self, other)
+        else:
+            raise NotImplementedError('- not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __rsub__(self, other):
+        ''' Right side substraction '''
+        raise NotImplementedError('right substraction (-) not implemented for Spectrum objects')
+
+    def __isub__(self, other):
+        ''' Override '-=' behavior
+        Add is defined as :
+            
+        - for numeric values: substract a baseline (inplace)
+        - for 2 Spectra: defined only for baseline substraction
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import add_constant
+            return add_constant(self, -other, inplace=True)
+        elif isinstance(other, np.ndarray):
+            from radis.spectrum.operations import add_array
+            return add_array(self, -other, inplace=True)
+        elif isinstance(other, Spectrum):
+            from radis.spectrum.operations import substract_spectra
+            return substract_spectra(self, other)
+        else:
+            raise NotImplementedError('-= not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    # Times
+    
+    def __mul__(self, other):
+        ''' Override '*' behavior
+        Multiply is defined as :
+            
+        - for numeric values: multiply (equivalent to optically thin scaling)
+          (only if in front, i.e:  2*s   works but s*2 is not implemented)
+          (returns a copy)
+        - for 2 Spectra: not defined
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, other, inplace=False)
+        else:
+            raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
+                        type(other)))
+            
+    def __rmul__(self, other):
+        ''' Right side multiplication '''
+
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, other, inplace=False)
+        else:
+            raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __imul__(self, other):
+        ''' Override '*=' behavior
+        Multiply is defined as :
+            
+        - for numeric values: multiply (equivalent to optically thin scaling)
+          (only if in front, i.e:  s *= 2)  (modifies inplace)
+        - for 2 Spectra: not defined
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, other, inplace=True)
+        else:
+            raise NotImplementedError('*= not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    # Divide
+    
+    def __truediv__(self, other):
+        ''' Override '/' behavior
+        Divide is defined as :
+            
+        - for numeric values: divide algebrically (equivalent to optically thin scaling)
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, 1/other, inplace=False)
+        else:
+            raise NotImplementedError('/ not implemented for a Spectrum and a {0} object'.format(
+                        type(other)))
+            
+    def __rtruediv__(self, other):
+        ''' Right side division '''
+
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, 1/other, inplace=False)
+        else:
+            raise NotImplementedError('right side / not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+    def __itruediv__(self, other):
+        ''' Override '/=' behavior
+        Divide is defined as :
+            
+        - for numeric values: divide quantities algebrically 
+        (equivalent to optically thin scaling)
+          
+        '''
+        if isinstance(other, float) or isinstance(other, int):
+            from radis.spectrum.operations import multiply
+            return multiply(self, 1/other, inplace=True)
+        else:
+            raise NotImplementedError('/= not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+            
+    # Line of sight operations
+    
+    def __gt__(self, other):
+        ''' Overloads '>' behavior
+        no comparison: here we use > to define a ``Line of sight``.
+        
+        Examples
+        --------
+        
+        s_plasma is seen through s_room::
+            
+            s = s_plasma > s_room 
+            
+        Equivalent to::
+            
+            s = SerialSlabs(s_plasma, s_room)
+          
+        '''
+        if isinstance(other, Spectrum):
+            from radis.los.slabs import SerialSlabs
+            return SerialSlabs(self, other)
+        else:
+            raise NotImplementedError('> not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+            
+#    def __rgt__(self, other):
+#        ''' Right side > '''
+#
+#        if isinstance(other, Spectrum):
+#            from radis.los.slabs import SerialSlabs
+#            return SerialSlabs(other, self)
+#        else:
+#            raise NotImplementedError('right side > not implemented for a Spectrum and a {0} object'.format(
+#                    type(other)))
+            
+    def __floordiv__(self, other):
+        ''' Overloads '//' behavior
+        not a divison here: we use it to say that Slabs are ``in parallel``, i.e.,
+        as if their respesctive mole fractions were added in the same physical space 
+        
+        Won't work if they are not defined on the same waverange, but it's okay: let 
+        the user use MergeSlabs manually with the appropriate options 
+          
+        Examples
+        --------
+        
+        s_co2 added with s_co:
+            
+            s = s_co2 // s_co 
+            
+        Equivalent to::
+            
+            s = MergeSlabs(s_co2, s_co)
+            
+        '''
+        
+        if isinstance(other, Spectrum):
+            from radis.los.slabs import MergeSlabs
+            return MergeSlabs(self, other)
+        else:
+            raise NotImplementedError('// not implemented for a Spectrum and a {0} object'.format(
+                    type(other)))
+
 
     # the following is so that json_tricks.dumps and .loads can be used directly,
     # ie.:
@@ -3126,7 +3544,6 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
     return slices[::increment], wings_min[::increment], wings_max[::increment]
 
 
-
 # %% ======================================================================
 # Test class function
 # -------------------
@@ -3188,3 +3605,5 @@ def experimental_spectrum(*args, **kwargs):
 if __name__ == '__main__':
     from radis.test.spectrum.test_spectrum import _run_testcases
     print('Test spectrum: ', _run_testcases(debug=False))
+
+    

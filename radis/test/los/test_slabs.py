@@ -22,7 +22,7 @@ from radis.los.slabs import MergeSlabs, SerialSlabs
 import pytest
 
 @pytest.mark.fast
-def test_merge_slabs(verbose=True, plot=True, close_plots=True, warnings=True, debug=False,
+def test_merge_slabs(verbose=True, plot=False, close_plots=True, warnings=True, debug=False,
                      *args, **kwargs):
     ''' Merge 10 slabs with 1/10 of concentration, and compare the results. 
     Ensure error is < 0.1%
@@ -74,7 +74,7 @@ def test_merge_slabs(verbose=True, plot=True, close_plots=True, warnings=True, d
 
 
 @pytest.mark.fast
-def test_serial_slabs(verbose=True, plot=True, warnings=True, debug=False,
+def test_serial_slabs_transmittance(verbose=True, plot=False, warnings=True, debug=False,
                      *args, **kwargs):
     ''' Add some slabs in serie, ensure that overall transmittance decreases 
     Also check that some quantities are propagated (like path length?)
@@ -112,10 +112,51 @@ def test_serial_slabs(verbose=True, plot=True, warnings=True, debug=False,
     # but extensive shouldnt:
     assert(s.conditions['path_length']*3 == s_los.conditions['path_length'])
     
+    if verbose:
+        print('Tested Serialslabs transmittance decreases s1>s2: OK')
+    
     return True
-#
 
-from radis.misc.basics import all_in
+
+@pytest.mark.fast
+def test_serial_slabs_radiance(verbose=True, plot=False, warnings=True, debug=False,
+                     *args, **kwargs):
+    ''' Add some slabs in serie under optically thin conditions, ensures 
+    that radiance is about the sum of all. 
+    '''
+
+    from radis.tools.database import load_spec
+    import matplotlib.pyplot as plt
+    from radis.test.utils import getTestFile
+    if plot:
+        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+
+    # Get Some spectra
+    s = load_spec(getTestFile(
+        'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
+    s.update('radiance_noslit')
+    
+    s_los = SerialSlabs(s, s)
+    
+    w, I = s_los.get('radiance_noslit')      
+    w1, I1 = s.get('radiance_noslit')
+    
+    if plot:
+        s.plot(nfig='test_serial_slabs_radiance', lw=2)
+        plt.title('s>s for almost optically thin conditions')
+        s_los.plot(nfig='same')
+    
+    # Check it looks alright
+    assert np.allclose(I, 2*I1, rtol=1e-3)
+    
+    if verbose:
+        print('Tested Serialslabs radiance is added when approximately optically thin: OK')
+    
+    # Test operators
+    s_serial = s>s
+    assert s_serial == s_los
+    
+    return True
 
 
 def _run_testcases(verbose=True, plot=True, close_plots=True, debug=False, warnings=True, *args, **kwargs):
@@ -123,7 +164,10 @@ def _run_testcases(verbose=True, plot=True, close_plots=True, debug=False, warni
     test_merge_slabs(verbose=verbose, plot=plot, close_plots=close_plots, debug=debug, warnings=warnings,
                      *args, **kwargs)
 
-    test_serial_slabs(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
+    test_serial_slabs_transmittance(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
+                     *args, **kwargs)
+
+    test_serial_slabs_radiance(verbose=verbose, plot=plot, debug=debug, warnings=warnings,
                      *args, **kwargs)
 
     return True

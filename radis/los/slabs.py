@@ -57,25 +57,33 @@ def SerialSlabs(*slabs, **kwargs):
     ----------
 
     slabs: list of Spectra, each representing a slab
-        slabs       [0]     [1]  ............... [n]     
-                     :       :                    :         \====
-        light        *   ->  *        ->          *    ->    )===  observer
-                                                            /====
+        line-of-sight::
+                
+            slabs       [0]     [1]  ............... [n]     
+                         :       :                    :         \====
+            light        *   ->  *        ->          *    ->    )===  observer
+                                                                /====
 
-    resample_wavespace: 'never', 'intersect', 'full'
-        what to do when spectra have different wavespaces. 
-        - If 'never', raises an error
-        - If 'intersect', uses the intersection of all ranges, and resample
-        spectra on the most resolved wavespace. 
-        - If 'full', uses the overlap of all ranges, resample spectra on the 
-        most resolved wavespace, and fill missing data with 0 emission and 0
-        absorption
-        Default 'never'
+    resample_wavespace: ``'never'``, ``'intersect'``, ``'full'``
+        what to do when spectra have different wavespaces:
+            
+        - If ``'never'``, raises an error
+        - If ``'intersect'``, uses the intersection of all ranges, and resample
+          spectra on the most resolved wavespace. 
+        - If ``'full``', uses the overlap of all ranges, resample spectra on the 
+          most resolved wavespace, and fill missing data with 0 emission and 0
+          absorption
+        
+        Default ``'never'``
 
-    out_of_bounds: 'transparent', 'nan', 'error'
-        what to do if resampling is out of bounds. 'transparent': fills with 
-        transparent medium. 'nan': fills with nan. 'error': raises an error. 
-        Default 'nan'
+    out_of_bounds: ``'transparent'``, ``'nan'``, ``'error'``
+        what to do if resampling is out of bounds:
+            
+        - ``'transparent'``: fills with transparent medium. 
+        - ``'nan'``: fills with nan. 
+        - ``'error'``: raises an error. 
+        
+        Default ``'nan'``
 
 
     Returns
@@ -283,19 +291,25 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
         which wavespace we're working in 
 
     resample_wavespace: 'never', 'intersect', 'full'
-        what to do when spectra have different wavespaces. 
+        what to do when spectra have different wavespaces:
+            
         - If 'never', raises an error
         - If 'intersect', uses the intersection of all ranges, and resample
-        spectra on the most resolved wavespace. 
+          spectra on the most resolved wavespace. 
         - If 'full', uses the overlap of all ranges, resample spectra on the 
-        most resolved wavespace, and fill missing data with 0 emission and 0
-        absorption
+          most resolved wavespace, and fill missing data with 0 emission and 0
+          absorption
+        
         Default 'never'
 
     out_of_bounds: 'transparent', 'nan', 'error'
-        what to do if resampling is out of bounds. 'transparent': fills with 
-        transparent medium. 'nan': fills with nan. 'error': raises an error. 
-        Default 'nan'
+        what to do if resampling is out of bounds:
+            
+        - 'transparent': fills with transparent medium. 
+        - 'nan': fills with nan. 
+        - 'error': raises an error. 
+        
+        Default ``'nan'``
 
     *slabs: list of Spectrum objects
 
@@ -386,38 +400,44 @@ def MergeSlabs(*slabs, **kwargs):
 
     slabs: list of Spectra, each representing a slab
         If given in conditions, all ``path_length`` have to be same
+        line-of-sight::
+                
+            slabs       
+                        [0]        \====
+            light       [1]  ->     )===  observer
+                        [n]        /====
 
     Other Parameters
     ----------------
 
     kwargs input:
 
-    resample_wavespace: 'never', 'intersect', 'full'
+    resample_wavespace: ``'never'``, ``'intersect'``, ``'full'``
         what to do when spectra have different wavespaces:
             
-        - If 'never', raises an error
-        - If 'intersect', uses the intersection of all ranges, and resample
-        spectra on the most resolved wavespace. 
-        - If 'full', uses the overlap of all ranges, resample spectra on the 
-        most resolved wavespace, and fill missing data with 0 emission and 0
-        absorption
+        - If ``'never'``, raises an error
+        - If ``'intersect'``, uses the intersection of all ranges, and resample
+          spectra on the most resolved wavespace. 
+        - If ``'full'``, uses the overlap of all ranges, resample spectra on the 
+          most resolved wavespace, and fill missing data with 0 emission and 0
+          absorption
         
-        Default 'never'
+        Default ``'never'``
 
-    out_of_bounds: 'transparent', 'nan', 'error'
+    out_of_bounds: ``'transparent'``, ``'nan'``, ``'error'``
         what to do if resampling is out of bounds:
             
-        - 'transparent': fills with transparent medium. 
-        - 'nan': fills with nan. 
-        - 'error': raises an error. 
+        - ``'transparent'``: fills with transparent medium. 
+        - ``'nan'``: fills with nan. 
+        - ``'error'``: raises an error. 
         
-        Default 'nan'
+        Default ``'nan'``
 
     optically_thin: boolean
-        if True, merge slabs in optically thin mode. Default ``False`` 
+        if ``True``, merge slabs in optically thin mode. Default ``False`` 
 
     verbose: boolean
-        if True, print messages and warnings. Default ``True``
+        if ``True``, print messages and warnings. Default ``True``
 
 
     Returns
@@ -461,7 +481,9 @@ def MergeSlabs(*slabs, **kwargs):
     
     # inputs (Python 2 compatible)
     resample_wavespace = kwargs.pop('resample_wavespace', 'never')   # default 'never'
+    # TODO: rename in 'resample'
     out_of_bounds = kwargs.pop('out_of_bounds', 'nan')               # default 'nan'
+    # TODO: rename in 'out'
     optically_thin = kwargs.pop('optically_thin', False)             # default False
     verbose = kwargs.pop('verbose', True)             # type: bool
     debug = kwargs.pop('debug', False)                # type: bool
@@ -502,8 +524,7 @@ def MergeSlabs(*slabs, **kwargs):
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
-        slabs = resample_slabs(
-            waveunit, resample_wavespace, out_of_bounds, *slabs)
+        slabs = resample_slabs(waveunit, resample_wavespace, out_of_bounds, *slabs)
         w_noconv = slabs[0]._get_wavespace()
 
         # %%

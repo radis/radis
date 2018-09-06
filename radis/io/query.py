@@ -99,7 +99,7 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
             # Let's bet it's just that there are no lines in this range
             empty_range = True
             if verbose:
-                print(('Not lines for {0} (id={1}), iso={2} between {3:.2f}-{4:.2f}cm-1. '.format(
+                print(('No lines for {0} (id={1}), iso={2} in range {3:.2f}-{4:.2f}cm-1. '.format(
                     molecule, mol_id, isotope, wmin, wmax)))
         else:
             raise ValueError('An error occured during the download of HITRAN files ' +

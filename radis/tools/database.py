@@ -348,6 +348,10 @@ def _compress(s, sjson):
     e.g, transmittance if abscoeff and path length are given, radiance if
     emisscoeff and abscoeff are given in non-optically thin case, etc.
     Default ``False`` '''
+    
+    # TODO: at the moment, a Spectrum with 'radiance_noslit' and 'transmittance_noslit'
+    # is saved with 'radiance_noslit' only, if stored with compress, but it is then impossible
+    # to reconstruct 'radiance_noslit'. 
 
     from radis.spectrum.rescale import get_redundant
     redundant = get_redundant(s)
@@ -694,6 +698,17 @@ def _fix_format(file, sload):
                      "thermal_equilibrium not defined). Fixed it this time (guessed {0})".format(
                              equilibrium)+", but regenerate file ASAP.") #, DeprecationWarning)
 
+    # Fix lines format HITRAN_CLASS_1 molecules
+    if 'lines' in sload and sload['lines'] is not None:
+        lines = sload['lines']
+        from radis.io.hitran import get_molecule, HITRAN_CLASS1
+        if 'v1u' in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
+            printr("File {0}".format(basename(file))+" has a deprecrated structure " +\
+                 "(v1u in lines is now called vu). Fixed this time, but regenerate " +\
+                 "database ASAP.")
+            # Fix it:
+            lines.rename(columns={'v1u':'vu', 'v1l':'vl'}, inplace=True)
+        
     return sload, fixed
 
 
@@ -865,6 +880,11 @@ class SpecDatabase():
         :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
 
         '''
+        # TODO @devs: add a method that allow to get the closest Spectrum to a SpecDatabase
+        # | Handy for fitting experimental spectra against a precomputed database
+        # | Maybe, use:
+        # | get_residual
+        # | SpecDatabase.map? 
 
         # Assert name looks like a directory
         name, ext = splitext(path)
@@ -896,6 +916,7 @@ class SpecDatabase():
         # loading parameters
         self.nJobs = nJobs
         self.batch_size = batch_size
+        self.minimum_nfiles = 6    #: type: int. If there are less files, don't use parallel mode.
 
         self.update(force_reload=True, filt=filt)
 
@@ -1027,7 +1048,8 @@ class SpecDatabase():
                      and f.endswith(filt)]
             #no parallelization here because the number of files is supposed to be small
             for f in files:
-                self.df = self.df.append(self._load_file(f), ignore_index=True)
+                self.df = self.df.append(self._load_file(f, binary=self.binary), 
+                                         ignore_index=True)
 
         # Print index
         self.print_index()
@@ -1091,11 +1113,12 @@ class SpecDatabase():
         Examples
         --------
         >>> db.find_duplicates(columns={'x_e', 'x_N_II'})
-        Out[34]: 
-        file
-        20180710_101.spec    True
-        20180710_103.spec    True
-        dtype: bool
+            
+            Out[34]: 
+            file
+            20180710_101.spec    True
+            20180710_103.spec    True
+            dtype: bool
         '''
         dg = self.see(columns=columns).astype(str).duplicated()
         #need to convert eveything as a str to avoid comparaison problems (Minou)
@@ -1241,8 +1264,8 @@ class SpecDatabase():
         -----
         
         Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
-        attributes of :class:`~radis.tools.database.SpecDatabase`. See :class:`joblib.parallel.Parallel`
-        for information on the arguments    
+        attributes of :class:`~radis.tools.database.SpecDatabase`. 
+        See :class:`joblib.parallel.Parallel` for information on the arguments    
 
         '''
         db = []
@@ -1250,14 +1273,18 @@ class SpecDatabase():
         # get joblib parallel parameters        
         nJobs = self.nJobs
         batch_size = self.batch_size
+        minimum_nfiles = self.minimum_nfiles
         
-#        for f in files:
-#                db.append(self._load_file(f, binary=self.binary))
-        if self.verbose: print('*** Loading the database with '+ str(nJobs) + ' processor(s) ***')
-        if nJobs==1:
+        # Sequential loading
+        if nJobs==1 or len(files) < minimum_nfiles:
+            if self.verbose: print('*** Loading the database with 1 processor '+\
+                                   '({0} files)***'.format(len(files)))
             for f in files:
                 db.append(self._load_file(f, binary=self.binary))
+        # Parallel loading
         else:
+            if self.verbose: print('*** Loading the database with {0} '.format(nJobs)+\
+                                   'processor(s) ({0} files)***'.format(len(files)))
             def funLoad(f):
                 return self._load_file(f, binary=self.binary)
             db = Parallel(n_jobs=nJobs, batch_size = batch_size, 
@@ -1275,10 +1302,26 @@ class SpecDatabase():
 
         out = s.get_conditions().copy()
 
-        # Add filename, and a link Spectrum itself
+        # Add filename, and a link to the Spectrum object itself
         out.update({'file': basename(file), 'Spectrum': s})
 
         return out
+    
+    def update_conditions(self):
+        ''' Reloads conditions of all Spectrum in database '''
+        
+        # Fetch new conditions, including file and Spectrum object itself
+        new_conditions_list = []
+        for _,r in self.df.iterrows():
+            s = r.Spectrum
+            new_conditions = dict(s.get_conditions()) # copy
+            new_conditions['file'] = r.file
+            new_conditions['Spectrum'] = r.Spectrum
+            new_conditions_list.append(new_conditions)
+        
+        # update DataFrame
+        self.df = pd.DataFrame(new_conditions_list)
+        
 
     def get(self, conditions='', **kwconditions):
         '''   Returns a list of spectra that match given conditions
@@ -1430,15 +1473,24 @@ class SpecDatabase():
             directly from spectroscopic quantities (e.g: 'path_length', 'molar_fraction')
             Default ``True``
 
-        Extra Parameters
+        Other Parameters
         ----------------
 
         verbose: boolean
             print messages. Default ``True``
 
         inplace: boolean
-            if True, returns the actual object in database. Else, return a copy
+            if ``True``, returns the actual object in database. Else, return a copy
             Default ``False``
+            
+#        split_columns: list of str. 
+#            slits a comma separated column in multiple columns, and number them. 
+#            Typically::
+#                
+#                db.get_closest(..., split_columns=['Tvib'])    # in multi temperature modes
+#                
+#            splits ``Tvib:'1200,1300,1000'``, in ``Tvib1:1200, Tvib2:1300, Tvib3:1000``
+#            Default ``[]``
 
 
         See Also
@@ -1457,15 +1509,17 @@ class SpecDatabase():
                 'Please specify filtering conditions. e.g: Tgas=300')
 
         # Inputs:
-        verbose = kwconditions.pop('verbose', True)         # type: bool
-        inplace = kwconditions.pop('inplace', False)        # type: bool
+        verbose = kwconditions.pop('verbose', True)         #: type: bool
+        inplace = kwconditions.pop('inplace', False)        #: type: bool
+#        split_columns = kwconditions.pop('split_columns', [])     #: type: bool
 
+        # Check all conditions exist
         for (k, _) in kwconditions.items():
             if not k in self.df.columns:
                 raise ValueError('{0} not a correct condition name. Use one of: {1}'.format(k,
                                                                                             self.df.columns))
 
-        dg = self.df.reindex(columns=list(kwconditions))
+        dg = self.df.reindex(columns=list(self.df.columns))
 
         if scale_if_possible:
             # Remove scalable inputs from distance calculation variables (unless
@@ -1477,7 +1531,7 @@ class SpecDatabase():
                     del dg[k]
                 except KeyError:
                     pass
-
+                
 #        raise
 
         mean = dict(dg.mean())
@@ -1504,7 +1558,22 @@ class SpecDatabase():
                 # an obvious problem with standard deviation scaling in the case of
                 # a non important feature containing very close datapoints that would
                 # result in inappropriately high weights)
-                dg['_d'] += (dg[k]-v)**2/mean[k]**2
+                
+                try:
+                    dg['_d'] += (dg[k]-v)**2/mean[k]**2
+                except TypeError as err:
+                    # Deal with case where formats dont match:
+                    try:
+                        dg[k]-v
+                    except TypeError:
+                        print(sys.exc_info())
+                        raise TypeError('An error occured (see above) when calculating '+\
+                                        '(dg[{0}]-{1}). Example: '.format(k, v)+\
+                                        '({0} - {1}). '.format(dg[k].iloc[0], v)+\
+                                         'Check that your requested conditions match '+\
+                                         'the database format')
+                    else:
+                        raise(err)
 
             # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
 
@@ -1533,9 +1602,40 @@ class SpecDatabase():
                 ('Got     \t'+'\t'.join(['{0:.3g}'.format(sout.conditions[k]) for k in kwconditions.keys()])))
 
         return sout
+    
+    def get_items(self, condition):
+        ''' Returns all Spectra in database under a dictionary; indexed by ``condition``
+        
+        Requires that ``condition`` is unique
+        
+        Parameters
+        ----------
+        
+        condition: str
+            condition. Ex: ``Trot``
+            
+        Returns
+        -------
+        
+        out: dict
+            {condition:Spectrum}
+            
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`,
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        
+        '''
+        
+        if not self.df[condition].is_unique:
+            raise ValueError('Values in {0} must be unique to use get_items(). Got {1}'.format(
+                             condition, self.see(condition)[self.see(condition).duplicated()]))
+            
+        return dict(zip(self.df[condition], self.df.Spectrum))
 
     def to_dict(self):
-        ''' Returns all Spectra in database under a dictionary. 
+        ''' Returns all Spectra in database under a dictionary, indexed by file. 
 
         Returns
         -------
@@ -1552,9 +1652,9 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`
-        :meth:`~radis.tools.database.SpecDatabase.keys`
-        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.get`,
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.values`,
         :meth:`~radis.tools.database.SpecDatabase.items`
 
         '''

@@ -112,7 +112,10 @@ def make_up(label):
 
     # Improve text
 #    label = label.replace('_noslit', ' (unconvolved)')
-    label = label.replace('_noslit', '')     # make no difference between no_slit and slit while plotting
+    label = label.replace('radiance_noslit', 'Radiance')     # make no difference between no_slit and slit while plotting
+    label = label.replace('transmittance_noslit', 'Transmittance')     # make no difference between no_slit and slit while plotting
+    # small hack: capitalize, to make a difference with non slit value
+    
     return label
 
 
@@ -158,7 +161,7 @@ def print_conditions(conditions, units,
             if k in ['wavenum_max_calc', 'wavenum_min_calc', 'wavelength_max', 'wavelength_min',
                      'wavenum_max', 'wavenum_min']:
                 v_k_str = '{0:.4f}'.format(v_k)
-            elif k in ['lines_calculated', 'lines_in_continuum']:
+            elif k in ['lines_calculated', 'lines_in_continuum', 'lines_cutoff']:
                 # Add comma separator for thousands
                 v_k_str = '{0:,d}'.format(v_k)
             else:

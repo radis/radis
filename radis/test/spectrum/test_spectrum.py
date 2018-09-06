@@ -92,6 +92,7 @@ def test_spectrum_get_methods(verbose=True, plot=True, close_plots=True, *args, 
         print('.. get_slit()')
 
 
+@pytest.mark.fast
 def test_copy(verbose=True, *args, **kwargs):
     ''' Test that a Spectrum is correctly copied 
 
@@ -112,12 +113,20 @@ def test_copy(verbose=True, *args, **kwargs):
     s.apply_slit(1.5)
     s2 = s.copy()
 
+    # Test spectrum in general
     assert s == s2
     assert s is not s2
 
-    if verbose:
-        print('Tested that s2 == s after Spectrum copy')
+    # Test all quantities in detail
+    for var in s._q.keys():
+        assert np.allclose(s._q[var], s2._q[var])
+        assert not (s._q[var] is s2._q[var])
+    for var in s._q_conv.keys():
+        assert np.allclose(s._q_conv[var], s2._q_conv[var])
+        assert not (s._q_conv[var] is s2._q_conv[var])
 
+    if verbose:
+        print('Tested that s2 == s (but s2 is not s) after Spectrum copy')
 
 def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' Test that populations in a Spectrum are correctly read 
@@ -275,6 +284,14 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
     s = load_spec(getTestFile(
         'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     s.name = 'original'
+    
+    # Test resampling without changing anything
+    s_cm = s.resample(s.get_wavenumber(), 'cm-1', inplace=False)
+    s_nm = s.resample(s.get_wavelength(), 'nm', inplace=False)
+    assert s == s_cm
+    assert np.allclose(s.get('abscoeff', wunit='nm'), s_nm.get('abscoeff', wunit='nm'))
+    
+    # Test resampling on new ranges
     s2 = s.copy()
     s2b = s.copy()
     s3 = s.copy()
@@ -329,26 +346,26 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warn
 
     '''
 
-    # Test all Spectrum methods
-    # -------------------------
-    test_spectrum_get_methods(debug=debug, verbose=verbose,
-                              plot=plot, close_plots=close_plots, *args, **kwargs)
-    test_copy(verbose=verbose, *args, **kwargs)
-    test_populations(verbose=verbose, plot=plot,
-                     close_plots=close_plots, *args, **kwargs)
-    test_store_functions(verbose=verbose, *args, **kwargs)
-
-    # Test populations
-    # ----------
-#    test_populations(verbose=verbose, *args, **kwargs)
-
-    # Test conversion of intensity cm-1 works
-    # -------------
-    test_intensity_conversion(debug=debug, verbose=verbose, *args, **kwargs)
-
-    # Test updating / rescaling functions (no self absorption)
-    # ---------
-    test_rescaling_function(debug=debug, *args, **kwargs)
+#    # Test all Spectrum methods
+#    # -------------------------
+#    test_spectrum_get_methods(debug=debug, verbose=verbose,
+#                              plot=plot, close_plots=close_plots, *args, **kwargs)
+#    test_copy(verbose=verbose, *args, **kwargs)
+#    test_populations(verbose=verbose, plot=plot,
+#                     close_plots=close_plots, *args, **kwargs)
+#    test_store_functions(verbose=verbose, *args, **kwargs)
+#
+#    # Test populations
+#    # ----------
+##    test_populations(verbose=verbose, *args, **kwargs)
+#
+#    # Test conversion of intensity cm-1 works
+#    # -------------
+#    test_intensity_conversion(debug=debug, verbose=verbose, *args, **kwargs)
+#
+#    # Test updating / rescaling functions (no self absorption)
+#    # ---------
+#    test_rescaling_function(debug=debug, *args, **kwargs)
     test_resampling_function(debug=debug, plot=plot,
                              close_plots=close_plots, *args, **kwargs)
 #    test_rescaling_path_length(plot=plot, verbose=verbose, debug=debug,
