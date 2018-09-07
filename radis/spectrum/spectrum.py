@@ -1363,7 +1363,6 @@ class Spectrum(object):
         if var in ['intensity', 'intensity_noslit']:
             raise ValueError('`intensity` not defined. Use `radiance` instead')
 
-        plot_convolved_instead = False
         if var is None:    # if nothing is defined, try these first:
             params = self.get_vars()
             if 'radiance' in params:
@@ -1379,7 +1378,6 @@ class Spectrum(object):
                 var = list(params)[0]
                 if var.replace('_noslit', '') in params:
                     var = var.replace('_noslit', '')
-                    plot_convolved_instead = True  # remember we're plotting the convolved value
 
         if wunit == 'default':
             wunit = self.get_waveunit()
@@ -1405,10 +1403,8 @@ class Spectrum(object):
             
         # cosmetic changes
         Iunit = make_up(Iunit)
-        if plot_convolved_instead:
-            ylabel = make_up('{0} ({1})'.format(var.capitalize(), Iunit))
-        else:  # small hack: capitalize, to make a difference with non slit value
-            ylabel = make_up('{0} ({1})'.format(var, Iunit))
+        ylabel = make_up('{0} ({1})'.format(var, Iunit))
+    
 
         # Plot
         # -------

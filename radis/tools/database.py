@@ -1314,7 +1314,7 @@ class SpecDatabase():
         new_conditions_list = []
         for _,r in self.df.iterrows():
             s = r.Spectrum
-            new_conditions = s.get_conditions()
+            new_conditions = dict(s.get_conditions()) # copy
             new_conditions['file'] = r.file
             new_conditions['Spectrum'] = r.Spectrum
             new_conditions_list.append(new_conditions)
