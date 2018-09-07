@@ -500,6 +500,7 @@ def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
     -----
     Use only for rough work. 
     '''
+    import numpy as np
     # Check input
     var = _get_unique_var(s, var, inplace)
         
@@ -727,7 +728,28 @@ def offset(s, offset, unit, name=None, inplace=False):
         
     return s
 
+def get_baseline(s, var='radiance', wunit='nm', medium='air', Iunit=None):
+    '''Offset the spectrum by a wavelength or wavenumber 
 
+    Parameters    
+    ----------
+    s: Spectrum
+        Spectrum which needs a baseline
+
+    Returns    
+    -------
+    baseline: Spectrum
+        Spectrum object where intenisity is the baseline of s is computed by peakutils
+    '''
+    import peakutils 
+    w1, I1 = s.get(var=var, Iunit=Iunit, wunit=wunit, medium=medium)
+    baseline = peakutils.baseline(I1, deg=1, max_it = 500)
+    baselineSpectrum = Spectrum.from_array(w1, baseline, var, 
+                               waveunit=wunit, 
+                               unit=Iunit,
+                               conditions={'medium' : medium}, 
+                               name=s.get_name()+'_baseline')
+    return baselineSpectrum
 # %% Tests
 
 def test_multiplyAndAddition(*args, **kwargs):
