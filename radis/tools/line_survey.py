@@ -369,8 +369,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
     if columndescriptor:
         for k in lineinfo:
             if not k in sp.columns:
-                raise KeyError('{0} not a {1} databank entry: {2}'.format(k,
-                                                                          columndescriptor, dbformat.upper()))
+                raise KeyError('{0} not a {1} databank entry ({2} format)'.format(k,
+                                                    columndescriptor, dbformat.upper()))
             try:  # to find units and real name (if exists in initial databank)
                 _, ktype, name, unit = columndescriptor[k]
                 details[k] = (name, ktype, ' [{0}]'.format(unit))
