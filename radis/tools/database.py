@@ -156,7 +156,8 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
         parameters to discard. To save some memory.
 
     compress: boolean
-        if True, removes all quantities that can be regenerated with s.update(),
+        if ``True``, saves under binary format. Faster and takes less space.
+        If ``2``, removes all quantities that can be regenerated with s.update(),
         e.g, transmittance if abscoeff and path length are given, radiance if
         emisscoeff and abscoeff are given in non-optically thin case, etc.
         Default ``False``
@@ -234,6 +235,8 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     reproduced on loading .
 
     '''
+    # TODO: convert functions to text with marshal: 
+    # see: https://stackoverflow.com/a/51938459/5622825
 
     # Add all in a dictionary using json-tricks (that deals with numpy and pandas
     # array, as well as text: see 24/03/18 for former implementation that was
@@ -247,9 +250,9 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
         if k in sjson:
             del sjson[k]
 
-    # if compress, remove unecessary spectral quantities (that can be recomputed
+    # if compress>=2, remove unecessary spectral quantities (that can be recomputed
     # from the rest)
-    if compress:
+    if compress>=2:
         sjson['_q'] = sjson['_q'].copy()
         sjson['_q_conv'] = sjson['_q_conv'].copy()
         sjson = _compress(s, sjson)
@@ -274,6 +277,8 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
         date = ''
 
     # ... add conditions info
+    if isinstance(add_info, string_types):
+        add_info = [add_info]
     if add_info not in [[], {}, None, False]:
         # complete name with info about calculation conditions
         info = []
@@ -344,7 +349,7 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
 
 
 def _compress(s, sjson):
-    ''' if True, removes all quantities that can be regenerated with s.update(),
+    ''' removes all quantities that can be regenerated with s.update(),
     e.g, transmittance if abscoeff and path length are given, radiance if
     emisscoeff and abscoeff are given in non-optically thin case, etc.
     Default ``False`` '''
@@ -730,7 +735,8 @@ def _update_to_latest_format(s, file, binary):
     
     binary: boolean
         the binary format that was used to open the object. Keep the same.
-        
+        if ``True``, saves under binary format. Faster and takes less space.
+        If ``2``.
         
     Examples
     --------
@@ -878,7 +884,11 @@ class SpecDatabase():
         :meth:`~radis.tools.database.SpecDatabase.add`, 
         :meth:`~radis.tools.database.SpecDatabase.compress_to`, 
         :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
-
+        
+        Compare another Spectrum to all spectra in the database:
+            
+        :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`, 
+            
         '''
         # TODO @devs: add a method that allow to get the closest Spectrum to a SpecDatabase
         # | Handy for fitting experimental spectra against a precomputed database
@@ -1054,7 +1064,7 @@ class SpecDatabase():
         # Print index
         self.print_index()
 
-    def compress_to(self, new_folder):
+    def compress_to(self, new_folder, compress=True):
         ''' Saves the Database in a new folder with all Spectrum objects under
         compressed (binary) format. Read/write is much faster. 
         After the operation, a new database should be initialized in the new_folder
@@ -1066,6 +1076,10 @@ class SpecDatabase():
         new_folder: str
             folder where to store the compressed SpecDatabase. If doesn't exist,
             it is created.
+            
+        compress: boolean, or 2
+            if ``True``, saves under binary format. Faster and takes less space.
+            If ``2``, additionaly remove all redundant quantities. 
 
         See Also
         --------
@@ -1082,7 +1096,7 @@ class SpecDatabase():
             os.makedirs(new_folder)
             
         for file, s in self.items():  # loop over all spectra
-            s.store(join(new_folder, file), compress=True)
+            s.store(join(new_folder, file), compress=compress)
         
         if self.verbose:
             print('Database compressed to {0}'.format(new_folder))
@@ -1256,7 +1270,72 @@ class SpecDatabase():
         self.print_index()
 
         return file
+    
+    def fit_spectrum(self, s_exp, residual=None, normalize=False,
+                     conditions='', **kwconditions):
+        ''' Returns the Spectrum in the database that has the lowest residual
+        with s_exp
+        
+        Parameters
+        ----------
+        
+        s_exp: Spectrum
+            Spectrum to fit (typically: experimental spectrum)
+            
+        Other Parameters
+        ----------------
+        
+        residual: func, or ``None``
+            which residual function to use. If ``None``, use 
+            :func:`~radis.spectrum.compare.get_residual`
+            ``get_residual`` should have the form::
+                    
+                lambda s_exp, s, normalize: func(s_exp, s, normalize=normalize)
+                
+            where the output is a float. 
+            Default ``None``
+            
+        conditions, **kwconditions: str, **dict
+            restrain fitting to only Spectrum that match the given conditions
+            in the database. See :meth:`~radis.tools.database.SpecDatabase.get`
+            for more information.
 
+            
+        Returns 
+        -------
+        
+        s_best: Spectrum
+            closest Spectrum to s_exp
+            
+        Examples
+        --------
+        
+        ::
+            
+            from radis import get_residual
+            db = SpecDatabase('...')
+            db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
+        
+        '''
+        
+        if residual is None:
+            from radis.spectrum.compare import get_residual
+            if len(s_exp.get_vars()) != 1:
+                raise ValueError('Multiple variables in fitted Spectrum. Please '+\
+                                 'define which residual to use with, for instance: '+\
+                                 '`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)')
+            residual = lambda s_exp, s, normalize: get_residual(s_exp, s, 
+                                                                var=s_exp.get_vars()[0],
+                                                                normalize=normalize)
+            
+        kwconditions.update({'inplace':True})  # dont copy Spectrum to be faster
+        spectra = self.get(conditions=conditions, **kwconditions)
+        res = [residual(s_exp, s, normalize=normalize) for s in spectra]
+        
+        i = np.argmin(np.array(res))
+
+        return spectra[i].copy()       # dont forget to copy the Spectrum we return
+        
     def _load_files(self, files):
         ''' Parse files and generate a database
         
@@ -1366,6 +1445,9 @@ class SpecDatabase():
 
         '''
 
+        # type: bool, default False
+        inplace = kwconditions.pop('inplace', False)
+
         # Test inputs
         for (k, _) in kwconditions.items():
             if not k in self.df.columns:
@@ -1375,52 +1457,51 @@ class SpecDatabase():
             warn('Empty database')
             return []
 
-        # type: bool, default False
-        inplace = kwconditions.pop('inplace', False)
-
         # Unique condition method
         if conditions != '' and kwconditions != {}:
             raise ValueError(
                 "Please choose one of the two input format (str or dict) exclusively")
 
         if conditions == '' and kwconditions == {}:
-            return list(self.df['Spectrum'])
-
-        # Find Spectrum that match conditions
-        if conditions != '':   # ... with input conditions query directly
-            dg = self.df.query(conditions)
-        else:                  # ... first write input conditions query
-            query = []
-            for (k, v) in kwconditions.items():
-                if isinstance(v, string_types):
-                    query.append("{0} == '{1}'".format(k, v))
-                else:
-                    #                    query.append('{0} == {1}'.format(k,v))
-                    query.append('{0} == {1}'.format(k, v.__repr__()))
-                    # ... for som reason {1}.format() would remove some digit
-                    # ... to floats in Python2. Calling .__repr__() keeps
-                    # ... the correct format, and has no other consequences as far
-                    # ... as I can tell
-
-            # There is a limitation in numpy: a max of 32 arguments is required.
-            # Below we write a workaround when the Spectrum has more than 32 conditions
-            if len(query) < 32:
-                query = ' & '.join(query)
-                if __debug__:
-                    printdbg('Database query: {0}'.format(query))
-                dg = self.df.query(query)
-            else:
-                # cut in <32-long parts
-                N = len(query)//32+1
-                querypart = ' & '.join(query[::N])
-                dg = self.df.query(querypart)
-                for i in range(1, N+1):
-                    querypart = ' & '.join(query[i::N])
+            # Get all Spectrum objects
+            out = list(self.df['Spectrum'])
+            
+        else:
+            # Find Spectrum that match conditions
+            if conditions != '':   # ... with input conditions query directly
+                dg = self.df.query(conditions)
+            else:                  # ... first write input conditions query
+                query = []
+                for (k, v) in kwconditions.items():
+                    if isinstance(v, string_types):
+                        query.append("{0} == '{1}'".format(k, v))
+                    else:
+                        #                    query.append('{0} == {1}'.format(k,v))
+                        query.append('{0} == {1}'.format(k, v.__repr__()))
+                        # ... for som reason {1}.format() would remove some digit
+                        # ... to floats in Python2. Calling .__repr__() keeps
+                        # ... the correct format, and has no other consequences as far
+                        # ... as I can tell
+    
+                # There is a limitation in numpy: a max of 32 arguments is required.
+                # Below we write a workaround when the Spectrum has more than 32 conditions
+                if len(query) < 32:
+                    query = ' & '.join(query)
                     if __debug__:
-                        printdbg('Database query: {0}'.format(querypart))
-                    dg = dg.query(querypart)
-
-        out = list(dg['Spectrum'])
+                        printdbg('Database query: {0}'.format(query))
+                    dg = self.df.query(query)
+                else:
+                    # cut in <32-long parts
+                    N = len(query)//32+1
+                    querypart = ' & '.join(query[::N])
+                    dg = self.df.query(querypart)
+                    for i in range(1, N+1):
+                        querypart = ' & '.join(query[i::N])
+                        if __debug__:
+                            printdbg('Database query: {0}'.format(querypart))
+                        dg = dg.query(querypart)
+    
+            out = list(dg['Spectrum'])
 
         if not inplace:
             out = [s.copy() for s in out]
