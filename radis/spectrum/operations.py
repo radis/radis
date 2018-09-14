@@ -698,29 +698,32 @@ def offset(s, offset, unit, name=None, inplace=False):
         If ``inplace=True``, ``s`` has been modified directly.
     '''
     
+    has_var = len(s._q)>0
+    has_conv_var = len(s._q_conv)>0
+    
     # Convert to correct unit:
     if unit == 'nm' and s.get_waveunit() == 'cm-1':
         # Note @EP: technically we should check the medium is air or vacuum...  TODO
         # Note @EP: here we're offsetting by a constant value in 'cm-1', which is
         # not a constant value in 'nm'. We end of with offset as an array 
-        offset_q = - dnm2dcm(offset, s.get_wavelength(which='non_convoluted'))  # this is an array
-        offset_qconv = - dnm2dcm(offset, s.get_wavelength(which='convoluted'))  # this is an array
+        if has_var: offset_q = - dnm2dcm(offset, s.get_wavelength(which='non_convoluted'))  # this is an array
+        if has_conv_var: offset_qconv = - dnm2dcm(offset, s.get_wavelength(which='convoluted'))  # this is an array
     elif unit == 'cm-1' and s.get_waveunit() == 'nm':
-        offset_q = - dcm2dnm(offset, s.get_wavenumber(which='non_convoluted'))  # this is an array
-        offset_qconv = - dcm2dnm(offset, s.get_wavenumber(which='convoluted'))  # this is an array
+        if has_var: offset_q = - dcm2dnm(offset, s.get_wavenumber(which='non_convoluted'))  # this is an array
+        if has_conv_var: offset_qconv = - dcm2dnm(offset, s.get_wavenumber(which='convoluted'))  # this is an array
     else:
         assert unit == s.get_waveunit()
-        offset_q = offset
-        offset_qconv = offset
+        if has_var: offset_q = offset
+        if has_conv_var: offset_qconv = offset
         
     if not inplace:
         s = s.copy()
         
     # Update all variables
-    if 'wavespace' in s._q:
+    if has_var:
         s._q['wavespace'] += offset_q
         # @dev: updates the Spectrum directly because of copy=False
-    if 'wavespace' in s._q_conv:
+    if has_conv_var:
         s._q_conv['wavespace'] += offset_qconv
         
     if name:

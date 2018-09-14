@@ -5,8 +5,9 @@ Summary
 -------
 
 Classes to deal with multi-slabs configurations: 
-- MergeSlabs for several spectra
-- SerialSlabs to add several spectra along the line-of-path
+    
+- :func:`~radis.los.slabs.MergeSlabs` for several species at the same spatial position
+- :func:`~radis.los.slabs.SerialSlabs` to add several spectra along the line-of-path
 
 One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object 
 
@@ -50,7 +51,10 @@ def intersect(a, b):
 
 def SerialSlabs(*slabs, **kwargs):
     # type: (*Spectrum, **dict) -> Spectrum
-    ''' Compute the result of several slabs 
+    ''' Adds several slabs along the line-of-sight. 
+    You can also use::
+        
+        s1>s2>s3 
 
 
     Parameters    
@@ -76,7 +80,7 @@ def SerialSlabs(*slabs, **kwargs):
         
         Default ``'never'``
 
-    out_of_bounds: ``'transparent'``, ``'nan'``, ``'error'``
+    out: ``'transparent'``, ``'nan'``, ``'error'``
         what to do if resampling is out of bounds:
             
         - ``'transparent'``: fills with transparent medium. 
@@ -102,6 +106,10 @@ def SerialSlabs(*slabs, **kwargs):
         s1 = calc_spectrum(...)
         s2 = calc_spectrum(...)
         s3 = SerialSlabs(s1, s2)
+        
+    The last line is equivalent to::
+        
+        s3 = s1>s2
 
     Notes
     -----
@@ -117,15 +125,22 @@ def SerialSlabs(*slabs, **kwargs):
     :func:`~radis.los.slabs.MergeSlabs`
 
     '''
+    
+    if 'resample_wavespace' in kwargs:
+        warn(DeprecationWarning("'resample_wavespace' replaced with 'resample'"))
+        kwargs['resample'] = kwargs.pop('resample_wavespace')
+    if 'out_of_bounds' in kwargs:
+        warn(DeprecationWarning("'out_of_bounds' replaced with 'out'"))
+        kwargs['out'] = kwargs.pop('out_of_bounds')
 
     # Check inputs, get defaults
-    resample_wavespace = kwargs.pop('resample_wavespace', 'never')   # default 'never'
-    out_of_bounds = kwargs.pop('out_of_bounds', 'nan')               # default 'nan'
+    resample_wavespace = kwargs.pop('resample', 'never')   # default 'never'
+    out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'
     if len(kwargs) > 0:
         raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
 
     if resample_wavespace not in ['never', 'intersect', 'full']:
-        raise ValueError("resample_wavespace should be one of: {0}".format
+        raise ValueError("resample should be one of: {0}".format
                          (', '.join(['never', 'intersect', 'full'])))
 
     if len(slabs) == 0:
@@ -147,8 +162,7 @@ def SerialSlabs(*slabs, **kwargs):
 
         # Recursively deal with the rest of Spectra --> call it s 
         sn = slabs.pop(-1)            # type: Spectrum
-        s = SerialSlabs(*slabs, resample_wavespace=resample_wavespace,
-                        out_of_bounds=out_of_bounds)
+        s = SerialSlabs(*slabs, resample=resample_wavespace, out=out_of_bounds)
 
         # Now calculate sn and s in Serial
         quantities = {}
@@ -163,7 +177,11 @@ def SerialSlabs(*slabs, **kwargs):
         # equal for all slabs)
         s, sn = resample_slabs(waveunit, resample_wavespace, out_of_bounds,
                                s, sn)
-        w = s._q['wavespace']
+        try:
+            w = s._q['wavespace']
+        except KeyError:
+            raise KeyError('Cannot calculate the RTE if non convoluted quantities '+\
+                           'are not defined. Got: {0}'.format(s.get_vars()))
 
         # Get all data
         # -------------
@@ -351,8 +369,8 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
             if resample_wavespace == 'never':
                 raise ValueError('All wavelengths/wavenumbers must be the same for ' +
                                  'multi slabs configurations. Consider using '+\
-                                 "`resample_wavespace='intersect'` or " +\
-                                 "`resample_wavespace='full'")
+                                 "`resample='intersect'` or " +\
+                                 "`resample='full'`")
             elif resample_wavespace == 'full':
                 # ... get bounds
                 wmin = min([w.min() for w in wl])   # minimum of all
@@ -392,14 +410,17 @@ def MergeSlabs(*slabs, **kwargs):
     # type: (*Spectrum, **dict) -> Spectrum
     ''' Combines several slabs into one. Useful to calculate multi-gas slabs. 
     Linear absorption coefficient is calculated as the sum of all linear absorption
-    coefficients, and the RTE is recalculated to get the total radiance
-
+    coefficients, and the RTE is recalculated to get the total radiance.
+    You can also simply use::
+        
+        s1//s2 
 
     Parameters    
     ----------
 
     slabs: list of Spectra, each representing a slab
-        If given in conditions, all ``path_length`` have to be same
+        If given in conditions, all ``path_length`` have to be the same.
+        
         line-of-sight::
                 
             slabs       
@@ -412,7 +433,7 @@ def MergeSlabs(*slabs, **kwargs):
 
     kwargs input:
 
-    resample_wavespace: ``'never'``, ``'intersect'``, ``'full'``
+    resample: ``'never'``, ``'intersect'``, ``'full'``
         what to do when spectra have different wavespaces:
             
         - If ``'never'``, raises an error
@@ -424,7 +445,7 @@ def MergeSlabs(*slabs, **kwargs):
         
         Default ``'never'``
 
-    out_of_bounds: ``'transparent'``, ``'nan'``, ``'error'``
+    out: ``'transparent'``, ``'nan'``, ``'error'``
         what to do if resampling is out of bounds:
             
         - ``'transparent'``: fills with transparent medium. 
@@ -460,6 +481,10 @@ def MergeSlabs(*slabs, **kwargs):
         s2 = calc_spectrum(...)
         s3 = MergeSlabs(s1, s2)
 
+    The last line is equivalent to::
+        
+        s3 = s1//s2
+
     Load a spectrum precalculated on several partial spectral ranges, for a same 
     molecule (i.e, partial spectra are optically thin on the rest of the spectral 
     range)::
@@ -468,7 +493,7 @@ def MergeSlabs(*slabs, **kwargs):
         spectra = []
         for f in ['spec1.spec', 'spec2.spec', ...]:
             spectra.append(load_spec(f))
-        s = MergeSlabs(*spectra, resample_wavespace='full', out_of_bounds='transparent')
+        s = MergeSlabs(*spectra, resample='full', out='transparent')
         s.update()   # Generate missing spectral quantities
         s.plot()
 
@@ -479,11 +504,18 @@ def MergeSlabs(*slabs, **kwargs):
     :func:`~radis.los.slabs.SerialSlabs`
     '''
     
+    # Deprecation warnings
+    if 'resample_wavespace' in kwargs:
+        warn(DeprecationWarning("'resample_wavespace' replaced with 'resample'"))
+        kwargs['resample'] = kwargs.pop('resample_wavespace')
+    if 'out_of_bounds' in kwargs:
+        warn(DeprecationWarning("'out_of_bounds' replaced with 'out'"))
+        kwargs['out'] = kwargs.pop('out_of_bounds')
+
+    # Check inputs, get defaults
     # inputs (Python 2 compatible)
-    resample_wavespace = kwargs.pop('resample_wavespace', 'never')   # default 'never'
-    # TODO: rename in 'resample'
-    out_of_bounds = kwargs.pop('out_of_bounds', 'nan')               # default 'nan'
-    # TODO: rename in 'out'
+    resample_wavespace = kwargs.pop('resample', 'never')   # default 'never'
+    out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'
     optically_thin = kwargs.pop('optically_thin', False)             # default False
     verbose = kwargs.pop('verbose', True)             # type: bool
     debug = kwargs.pop('debug', False)                # type: bool
@@ -492,7 +524,7 @@ def MergeSlabs(*slabs, **kwargs):
 
     # Check inputs
     if resample_wavespace not in ['never', 'intersect', 'full']:
-        raise ValueError("resample_wavespace should be one of: {0}".format
+        raise ValueError("'resample' should be one of: {0}".format
                          (', '.join(['never', 'intersect', 'full'])))
 
     if len(slabs) == 0:

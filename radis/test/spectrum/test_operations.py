@@ -57,7 +57,7 @@ def test_cut_recombine(verbose=True, *args, **kwargs):
     s2 = crop(s, cut, 2300, 'cm-1', inplace=False)
 
     # Recombine
-    s_new = MergeSlabs(s1, s2, resample_wavespace='full', out_of_bounds='transparent')
+    s_new = MergeSlabs(s1, s2, resample='full', out='transparent')
     
     # Compare
     assert s.compare_with(s_new, spectra_only=True, plot=False, verbose=verbose)

@@ -3574,9 +3574,13 @@ def is_spectrum(a):
     isinstance() comparison fails
 
     '''
-
-    return (isinstance(a, Spectrum) or
-            repr(a.__class__) == repr(Spectrum))
+    
+    return isinstance(a, Spectrum)
+    
+    # removed: was used initially in the early RADIS development phase. Spectrum 
+    # object would not be recognized if the library was modified
+#    return (isinstance(a, Spectrum) or     
+#            repr(a.__class__) == repr(Spectrum))
 
 
 #%% Deprecated

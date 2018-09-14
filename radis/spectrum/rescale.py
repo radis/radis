@@ -1659,7 +1659,7 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
         qns = q+'_noslit'
         qties = spec.get_vars()
         if q in qties and qns not in qties and not force:
-            raise KeyError('Cant rescale {0} if {1} not stored'.format(q, qns) +
+            raise KeyError('Cant rescale {0} if {1} not stored. '.format(q, qns) +
                            ' Use force=True to rescale anyway. {0}'.format(q) +
                            ' will be deleted')
             
