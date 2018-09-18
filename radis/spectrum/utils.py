@@ -115,6 +115,8 @@ def make_up(label):
     label = label.replace('radiance', 'Radiance')     # make a small difference between no_slit and slit while plotting
     label = label.replace('transmittance', 'Transmittance')     # make a small difference between no_slit and slit while plotting
     # small hack: capitalize, to make a difference with non slit value
+    # Remove _noslit
+    label = label.replace('_noslit', '')
     
     return label
 

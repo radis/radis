@@ -384,26 +384,6 @@ def _compress(s, sjson):
 
 # %% Load functions
 
-def load(file, binary=False):
-    '''
-    Parameters
-    ----------
-
-    file: str
-        .spec file to load
-
-    binary: boolean
-        set to True if the file is encoded as binary. Default ``False``
-
-    (wrapper to :func:`radis.tools.database.load_spec`)
-
-    '''
-
-    warn(DeprecationWarning("load replaced with more explicit load_spec"))
-
-    return load_spec(file)
-
-
 def load_spec(file, binary=False):
     ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object. 
     Adds ``file`` in the Spectrum :attr:`~radis.spectrum.spectrum.Spectrum.file` 
@@ -1412,12 +1392,14 @@ class SpecDatabase():
             the database
 
         conditions: str
-            a list of conditions
-            >>> get('Tvib==3000 & Trot==1500')
+            a list of conditions. Example::
+            
+                db.get('Tvib==3000 & Trot==1500')
 
         kwconditions: dict
-            an unfolded dict of conditions
-            >>> get(Tvib=3000, Trot=1500)
+            an unfolded dict of conditions. Example::
+            
+                db.get(Tvib=3000, Trot=1500)
 
         Other Parameters
         ----------------
@@ -1429,18 +1411,20 @@ class SpecDatabase():
         Examples
         --------
 
-        >>> spec_list = db.get('Tvib==3000 & Trot==1300')
+        ::
+        
+            spec_list = db.get('Tvib==3000 & Trot==1300')
 
-        or
+        or::
 
-        >>> spec_list = db.get(Tvib=3000, Trot=1300)
+            spec_list = db.get(Tvib=3000, Trot=1300)
 
 
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`
-        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`,
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`,
         :meth:`~radis.tools.database.SpecDatabase.items`
 
         '''
@@ -1521,7 +1505,7 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get`,
         :meth:`~radis.tools.database.SpecDatabase.get_closest`
 
         '''
@@ -1577,7 +1561,7 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get`,
         :meth:`~radis.tools.database.SpecDatabase.get_unique`
 
         '''
@@ -1768,9 +1752,9 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`
-        :meth:`~radis.tools.database.SpecDatabase.values`
-        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.values`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
         :meth:`~radis.tools.database.SpecDatabase.to_dict`
 
         '''
@@ -1783,8 +1767,8 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.values`
-        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.values`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
         :meth:`~radis.tools.database.SpecDatabase.to_dict`
 
         '''
@@ -1797,8 +1781,8 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`
-        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
         :meth:`~radis.tools.database.SpecDatabase.to_dict`
 
         '''
@@ -1827,8 +1811,8 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`
-        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.values`,
         :meth:`~radis.tools.database.SpecDatabase.to_dict`
 
         '''

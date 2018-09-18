@@ -72,8 +72,10 @@ def test_invariants(*args, **kwargs):
     s.update()
     s = Radiance_noslit(s)
 
-    assert s.compare_with(add_constant(s, 0, 'W/cm2/sr/nm'), spectra_only='radiance_noslit')
-    assert s.compare_with(multiply(s, 1), spectra_only='radiance_noslit')
+    assert s.compare_with(add_constant(s, 0, 'W/cm2/sr/nm'), 
+                          plot=False, spectra_only='radiance_noslit')
+    assert s.compare_with(multiply(s, 1), 
+                          plot=False, spectra_only='radiance_noslit')
     
     assert 3*s/3 == s
     assert (1+s)-1 == s
