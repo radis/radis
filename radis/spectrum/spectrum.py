@@ -1376,7 +1376,7 @@ class Spectrum(object):
             else:
                 # or plot the first variable we find
                 var = list(params)[0]
-                if var.replace('_noslit', '') in params:
+                if var.replace('_noslit', '') in params:  # favour convolved quantities
                     var = var.replace('_noslit', '')
 
         if wunit == 'default':
@@ -3309,6 +3309,8 @@ class Spectrum(object):
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
             return multiply(self, other, inplace=False)
+        elif isinstance(other, Spectrum):
+            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
         else:
             raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
                         type(other)))
@@ -3319,6 +3321,8 @@ class Spectrum(object):
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
             return multiply(self, other, inplace=False)
+        elif isinstance(other, Spectrum):
+            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
         else:
             raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
@@ -3335,6 +3339,8 @@ class Spectrum(object):
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
             return multiply(self, other, inplace=True)
+        elif isinstance(other, Spectrum):
+            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
         else:
             raise NotImplementedError('*= not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
@@ -3575,12 +3581,11 @@ def is_spectrum(a):
 
     '''
     
-    return isinstance(a, Spectrum)
-    
+#    return isinstance(a, Spectrum)
     # removed: was used initially in the early RADIS development phase. Spectrum 
     # object would not be recognized if the library was modified
-#    return (isinstance(a, Spectrum) or     
-#            repr(a.__class__) == repr(Spectrum))
+    return (isinstance(a, Spectrum) or     
+            repr(a.__class__) == repr(Spectrum))
 
 
 #%% Deprecated

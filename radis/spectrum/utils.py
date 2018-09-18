@@ -112,8 +112,8 @@ def make_up(label):
 
     # Improve text
 #    label = label.replace('_noslit', ' (unconvolved)')
-    label = label.replace('radiance_noslit', 'Radiance')     # make no difference between no_slit and slit while plotting
-    label = label.replace('transmittance_noslit', 'Transmittance')     # make no difference between no_slit and slit while plotting
+    label = label.replace('radiance', 'Radiance')     # make a small difference between no_slit and slit while plotting
+    label = label.replace('transmittance', 'Transmittance')     # make a small difference between no_slit and slit while plotting
     # small hack: capitalize, to make a difference with non slit value
     
     return label
