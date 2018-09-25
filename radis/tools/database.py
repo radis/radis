@@ -384,7 +384,7 @@ def _compress(s, sjson):
 
 # %% Load functions
 
-def load_spec(file, binary=False):
+def load_spec(file, binary=False): #, return_binary_status=False):
     ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object. 
     Adds ``file`` in the Spectrum :attr:`~radis.spectrum.spectrum.Spectrum.file` 
     attribute.
@@ -448,6 +448,12 @@ def load_spec(file, binary=False):
     if fixed:
         _update_to_latest_format(s, file, binary)
     
+#    if return_binary_status:   # feature discarded. Could be used to accelerate database reading, 
+                               # but we better raise a warning and catch it.
+#        out = s, binary
+#    else:
+#        out = s
+        
     return s
 
 
@@ -741,37 +747,61 @@ def _update_to_latest_format(s, file, binary):
         
     
 
-def plot_spec(file, what='radiance', title=True):
+def plot_spec(file, what='radiance', title=True, **kwargs):
     ''' Plot a .spec file. *
 
     Parameters
     ----------
 
-    file: str
-        .spec file to load
+    file: str,  or Spectrum object
+        .spec file to load, or Spectrum object directly 
 
+    Other Parameters
+    ----------------
+
+    kwargs: dict
+    	arguments forwarded to :meth:`~radis.spectrum.spectrum.Spectrum.plot`
+
+        
+    Returns
+    -------
+    
+    fig: matplotlib figure 
+        where the Spectrum has been plotted
+        
+    See Also
+    --------
+    
+    Uses the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method internally
+    
     '''
 
-    s = load_spec(file)
+    if isinstance(file, string_types):
+        s = load_spec(file)
+    elif isinstance(file, Spectrum):
+        s = file
+    else:
+        raise ValueError('file should be a string, or a Spectrum object directly. '+\
+                         'Got {0}'.format(type(file)))
 
     try:
-        s.plot(what)
+        s.plot(what, **kwargs)
     except KeyError:
         try:
             print((sys.exc_info()[0], sys.exc_info()[1]))
-            s.plot(what + '_noslit')  # who knows maybe it will work :)
+            s.plot(what + '_noslit', **kwargs)  # who knows maybe it will work :)
             print(('Printing {0} instead'.format(what + '_noslit')))
         except:
             print((sys.exc_info()[0], sys.exc_info()[1]))
             # Plot something
-            s.plot(s.get_vars()[0])
+            s.plot(s.get_vars()[0], **kwargs)
             print(('Printing {0} instead'.format(s.get_vars()[0])))
 
-    if title:
-        plt.title(basename(file))
+    if title and s.file:
+        plt.title(basename(s.file))
         plt.tight_layout()
 
-    return
+    return plt.gcf()
 
 # %% Database class
 # ... loads database and manipulate it
