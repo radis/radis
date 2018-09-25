@@ -75,7 +75,13 @@ INFORMATIVE_PARAMS = [
 ''' list: Informative parameters. Parameters that should be saved in the Spectrum 
 objects, but ignored when comparing two spectra. Should be written here only 
 these parameters that cannot affect the physical result. In particular, all 
-parameters relative to performance should be added here.'''
+parameters relative to performance should be added here.
+
+Notes
+-----
+
+units for these parameters are stored in Spectrum.cond_units and are defined
+by the generating class (ex: SpectrumFactory)'''
 
 # %% Util functions
 
