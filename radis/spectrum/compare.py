@@ -119,7 +119,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
         # allow fluctuation from diff_window units. Kinda compensates 
         # for experimental errors on x-axis
         diff_list = []
-        I2_interp = I1 + Idiff
+        I2_interp = I1 - Idiff
         for i in range(-diff_window, diff_window+1):
             diff_list.append(I2_interp-np.roll(I1, i))
         # get minimum in abs value
