@@ -494,8 +494,8 @@ def _json_to_spec(sload, file=''):
     kwargs = {}
 
     # ... load slit if exists
-    if 'slit' in sload:
-        slit = {k: np.array(v) for k, v in sload['slit'].items()}
+    if '_slit' in sload:
+        slit = {k: np.array(v) for k, v in sload['_slit'].items()}
     else:
         slit = {}
 
