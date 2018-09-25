@@ -633,11 +633,19 @@ def plot_diff(s1, s2, var=None,
             var = list(params)[0]
             if var.replace('_noslit', '') in params:
                 var = var.replace('_noslit', '')
+    # ... check variable exist
+    if var not in s1.get_vars():
+        raise ValueError('{0} not defined in Spectrum {1}. Use one of : {2}'.format(
+                var, s1.get_name(), s1.get_vars()))
+    if var not in s2.get_vars():
+        raise ValueError('{0} not defined in Spectrum {1}. Use one of : {2}'.format(
+                var, s2.get_name(), s2.get_vars()))
     if Iunit == 'default':
         try:
             Iunit = s1.units[var]
         except KeyError:  # unit not defined in dictionary
-            raise KeyError('Iunit not defined in spectrum. Cant plot')
+            raise KeyError('Iunit not defined in spectrum for variable {0}. '.format(var)+\
+                           "Cant use default unit. Specify unit in s.units['{0}'].".format(var))
     if wunit == 'default':
         wunit = s1.get_waveunit()
     if medium == 'default':
