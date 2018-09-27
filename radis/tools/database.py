@@ -1164,7 +1164,7 @@ class SpecDatabase():
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
 
-    def add(self, spectrum, **kwargs):
+    def add(self, spectrum, store_name = None, **kwargs):
         ''' Add Spectrum to database, whether it's a Spectrum object or a file
         that stores one. Check it's not in database already.
 
@@ -1176,6 +1176,11 @@ class SpecDatabase():
             then adds the file
             if path to file: will first copy the file in database folder, then
             adds the file
+            
+        [Optionnal] 
+        
+        store_name: string
+            name of the file where the spectrum will be stored
 
         **kwargs: **dict
             extra parameters used in the case where spectrum is a file and a .spec object
@@ -1239,11 +1244,14 @@ class SpecDatabase():
         # ... input is a Spectrum. Store it in database and load it from there
         if is_spectrum(spectrum):
             # add defaults
-            if not 'add_info' in kwargs:
-                kwargs['add_info'] = self.add_info
-            if not 'add_date' in kwargs:
-                kwargs['add_date'] = self.add_date
-            file = spectrum.store(self.path, compress=compress, **kwargs)
+            if store_name == None:
+                if not 'add_info' in kwargs:
+                    kwargs['add_info'] = self.add_info
+                if not 'add_date' in kwargs:
+                    kwargs['add_date'] = self.add_date
+                file = spectrum.store(self.path, compress=compress, **kwargs)
+            else:
+                file = spectrum.store(self.path + '/' + str(store_name), compress=compress, **kwargs)
             # Note we could have added the Spectrum directly
             # (saves the load stage) but it also serves to
             # check the file we just stored is readable
