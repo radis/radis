@@ -249,6 +249,14 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     for k in discard:
         if k in sjson:
             del sjson[k]
+            
+    # Check that all conditions are jsonable, discard if not
+    for k,v in sjson['conditions'].items():
+        if not is_jsonable(v):
+            if verbose:
+                printr('Discarded {0} from conditions as not jsonable ({1})'.format(
+                        k, type(v)))
+            del sjson['conditions'][k]
 
     # if compress>=2, remove unecessary spectral quantities (that can be recomputed
     # from the rest)
