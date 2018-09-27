@@ -682,13 +682,10 @@ def _recompute_all_at_equilibrium(spec, rescaled, wavenumber, Tgas,
     emissivity_noslit = 1 - transmittance_noslit
     radiance_noslit = calc_radiance(wavenumber, emissivity_noslit, Tgas,
                                     unit=get_unit_radiance())
-    b = (abscoeff == 0)  # optically thin mask
+    b = (transmittance_noslit == 1)  # optically thin mask
     emisscoeff = np.empty_like(abscoeff)
-    emisscoeff[b] = radiance_noslit[b] / \
-        path_length              # recalculate (opt thin)
-    # recalculate (non opt thin)
-    emisscoeff[~b] = radiance_noslit[~b] / \
-        (1-transmittance_noslit[~b])*abscoeff[~b]
+    emisscoeff[b] = radiance_noslit[b] / path_length              # recalculate (opt thin)
+    emisscoeff[~b] = radiance_noslit[~b] / (1-transmittance_noslit[~b])*abscoeff[~b] # recalculate (non opt thin)
 
     # ----------------------------------------------------------------------
 
@@ -1136,7 +1133,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
         abscoeff = rescaled['abscoeff']                         # x already scaled
         # mole_fraction, path_length already scaled
         transmittance_noslit = rescaled['transmittance_noslit']
-        b = (abscoeff == 0)  # optically thin mask
+        b = (transmittance_noslit == 1)  # optically thin mask
         radiance_noslit = np.empty_like(emisscoeff)             # calculate L
         radiance_noslit[~b] = emisscoeff[~b] / abscoeff[~b]*(1-transmittance_noslit[~b])
         radiance_noslit[b] = emisscoeff[b] * new_path_length   # optically thin limit
@@ -1150,8 +1147,7 @@ def rescale_radiance_noslit(spec, rescaled, initial, old_mole_fraction, new_mole
         abscoeff = rescaled['abscoeff']                       # x already scaled
         b = (abscoeff == 0)  # optically thin mask
         radiance_noslit = np.empty_like(emisscoeff)         # calculate
-        radiance_noslit[~b] = emisscoeff[~b]/abscoeff[~b] * \
-            (1-exp(-abscoeff[~b]*new_path_length))
+        radiance_noslit[~b] = emisscoeff[~b]/abscoeff[~b] *(1-exp(-abscoeff[~b]*new_path_length))
         radiance_noslit[b] = emisscoeff[b] * new_path_length  # optically thin limit
         unit = get_radiance_unit(units['emisscoeff'])
 
@@ -1663,7 +1659,7 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
         qns = q+'_noslit'
         qties = spec.get_vars()
         if q in qties and qns not in qties and not force:
-            raise KeyError('Cant rescale {0} if {1} not stored'.format(q, qns) +
+            raise KeyError('Cant rescale {0} if {1} not stored. '.format(q, qns) +
                            ' Use force=True to rescale anyway. {0}'.format(q) +
                            ' will be deleted')
             

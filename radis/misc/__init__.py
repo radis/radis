@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from .arrays import (norm, norm_on, scale_to, shift_array, calc_diff,
                      find_nearest, find_first, autoturn, centered_diff,
                      evenly_distributed, bining, count_nans, array_allclose,
-                     nantrapz, logspace)
+                     nantrapz, logspace, is_sorted, is_sorted_backward)
 from .basics import (key_max_val, exec_file, remove_duplicates, partition,
                      is_float, list_if_float, compare_dict, compare_lists, compare_paths,
                      merge_lists)

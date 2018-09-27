@@ -94,7 +94,7 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
     test_database_functions(
         plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
     test_plot_spec(plot=plot, close_plots=close_plots,
-                   ssverbose=verbose, *args, **kwargs)
+                   verbose=verbose, *args, **kwargs)
 
     return True
 

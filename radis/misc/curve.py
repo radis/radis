@@ -29,7 +29,7 @@ from __future__ import absolute_import
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.spatial.distance import cdist
-
+import warnings
 
 def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
     ''' Get a regularized euclidian distance from curve (w1, I1) to curve (w2, I2)
@@ -123,14 +123,14 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     Returns
     -------
 
-    w1, Idiff: array
-        difference interpolated on the second range
+    w1, Iadd: array
+        sum ``I1 + I2`` interpolated on the first range ``w1``
 
     '''
 
-    I1, I2 = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
+    I2_interp = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
 
-    return w1, I1 + I2
+    return w1, I1 + I2_interp
 
 
 def curve_substract(w1, I1, w2, I2, is_sorted=False, kind='linear'):
@@ -161,13 +161,13 @@ def curve_substract(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     -------
 
     w1, Idiff: array
-        difference interpolated on the second range
+        difference ``I1 - I2`` interpolated on the first range ``w1``
 
     '''
 
-    I1, I2 = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
+    I2_interp = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
 
-    return w1, I1 - I2
+    return w1, I1 - I2_interp
 
 
 def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind='linear'):
@@ -197,17 +197,17 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     Returns
     -------
 
-    w1, Idiff: array
-        difference interpolated on the second range
+    w1, Iproduct: array
+        product ``I1 * I2`` interpolated on the first range ``w1``
 
     '''
 
-    I1, I2 = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
+    I2_interp = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
 
-    return w1, I1 * I2
+    return w1, I1 * I2_interp
 
 
-def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear'):
+def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear', interpolation=1):
     ''' Divides curve (w1, I1) by (w2, I2)
     Linearly interpolates if the two ranges dont match. Fills out of bound 
     parameters with nan.
@@ -224,32 +224,61 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     w2, I2: array
         range and values for 2nd curve
 
+    Other Parameters
+    ----------------
+
     is_sorted: boolean
-        (optional) if True, doesnt sort input arrays
+        (optional) if ``True``, assumes that both input arrays are sorted already.
+        Default ``False``.
 
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
 
-
+    interpolation: int, optional
+        If 1, interpolate on w1, I1. Else, on w2, I2.
+        Default 1
+        
     Returns
     -------
 
-    w1, Idiff: array
-        difference interpolated on the second range
+    w1, Idiv: array
+        Division ``I1 / I2`` interpolated on the first or second range according to reverseInterpolation
 
     '''
+    if interpolation==1:
+        I2_interp = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
+        output = w1, I1 / I2_interp
+    else:
+        I1_interp = _curve_interpolate(w2, I2, w1, I1, is_sorted=is_sorted, kind=kind)
+        output = w2, I1_interp / I2
+    
+    if np.isnan(output[1]).any():
+        warnings.warn('Presence of NaN in curve_divide!\nThink about interpolation=2', UserWarning)
 
-    I1, I2 = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
-
-    return w1, I1 / I2
+    return output
 
 
 def _curve_interpolate(w1, I1, w2, I2, is_sorted=False, kind='linear'):
+    ''' Resample ``I2`` on ``w1``
+    
+    For the interpolation to work, this requires to first sort ``w1`` and ``w2``,
+    interpolate, then revert to the initial ``w1``
+    
+    Returns
+    -------
+    
+    I2_inter: np.array
+        ``I2`` interpolated on ``w1``. 
+    '''
 
     # First sort both
     if not is_sorted:
         b = np.argsort(w1)
         w1, I1 = w1[b], I1[b]
+        # Get reverse sorting array:
+        bm1 = np.zeros_like(w1, dtype=np.int64)
+        bm1[b] = np.arange(len(w1))
+        
         b = np.argsort(w2)
         w2, I2 = w2[b], I2[b]
 
@@ -257,5 +286,11 @@ def _curve_interpolate(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     if not np.array_equal(w1, w2):
         f = interp1d(w2, I2, kind=kind, bounds_error=False)
         I2 = f(w1)
-
-    return I1, I2
+    
+    # revert to initial array
+    if not is_sorted:
+        out = I2[bm1]
+    else:
+        out = I2
+        
+    return out

@@ -18,7 +18,7 @@ from numpy import hstack
 from scipy import interpolate
 from scipy.interpolate import interp1d
 from six.moves import map
-
+import numba
 
 # Normalize
 
@@ -48,7 +48,32 @@ def norm(a, normby=None, how='max'):
 
 
 def norm_on(a, w, wmin=None, wmax=None, how='max'):
-    ''' Normalize `a` on a specific range of `w` '''
+    ''' Normalize `a` on a specific range of `w` 
+    
+    Parameters
+    ----------
+    
+    a: array
+        array
+        
+    w: array
+        x-axis array
+        
+    Other Parameters
+    ----------------
+
+    wmin, wmax: float
+        crop range 
+        
+    how: 'mean', 'max'
+        how to normalize
+    
+    Returns
+    -------
+    
+    a_norm: array
+        normalized array
+    '''
     imin = np.argmin((w-wmin)**2) if wmin else None
     imax = np.argmin((w-wmax)**2) if wmax else None
     if imin is not None and imax is not None:
@@ -313,6 +338,38 @@ def evenly_distributed(w, tolerance=1e-5):
     '''
     mean_step = np.diff(w).mean()
     return (np.abs((np.diff(w)-mean_step)) > tolerance).sum() == 0
+
+
+    
+@numba.jit
+def is_sorted(a):
+    ''' Returns whether ``a`` is sorted in ascending order
+    
+    From B.M. answer on StackOverflow: https://stackoverflow.com/a/47004533/5622825
+    
+    See Also
+    --------
+    
+    :func:`~radis.misc.arrays.is_sorted_backward`
+    '''
+    for i in range(a.size-1):
+         if a[i+1] < a[i] :
+               return False
+    return True
+
+@numba.jit
+def is_sorted_backward(a):
+    ''' Returns whether ``a`` is sorted in descending order
+    
+    See Also
+    --------
+    
+    :func:`~radis.misc.arrays.is_sorted`
+    '''
+    for i in range(a.size-1):
+         if a[i+1] > a[i] :
+               return False
+    return True
 
 
 def bining(I, ymin=None, ymax=None, axis=1):

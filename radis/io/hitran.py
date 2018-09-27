@@ -970,7 +970,7 @@ def get_molecule(molecule_id):
     '''
 
     # assert str
-    id = '{0}'.format(molecule_id)
+    id = '{:d}'.format(int(molecule_id))
 
     trans = {'1': 'H2O',    '2': 'CO2',   '3': 'O3',      '4': 'N2O',
              '5': 'CO',    '6': 'CH4',   '7': 'O2',     '8': 'NO',

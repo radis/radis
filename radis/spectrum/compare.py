@@ -119,7 +119,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
         # allow fluctuation from diff_window units. Kinda compensates 
         # for experimental errors on x-axis
         diff_list = []
-        I2_interp = I1 + Idiff
+        I2_interp = I1 - Idiff
         for i in range(-diff_window, diff_window+1):
             diff_list.append(I2_interp-np.roll(I1, i))
         # get minimum in abs value
@@ -301,7 +301,12 @@ def get_residual(s1, s2, var,
 
     normalize: bool, or tuple
         if ``True``, normalize the two spectra before calculating the residual. 
-        If a tuple (ex: ``(4168, 4180)``), normalize on this range only 
+        If a tuple (ex: ``(4168, 4180)``), normalize on this range only. The unit
+        is that of the first Spectrum. Ex::
+            
+            s_exp   # in 'nm'
+            s_calc  # in 'cm-1'
+            get_residual(s_exp, s_calc, normalize=(4178, 4180))  # interpreted as 'nm'
 
     Notes
     -----
@@ -319,7 +324,6 @@ def get_residual(s1, s2, var,
         
         np.abs(dI).sum()/len(dI)
 
-
     See Also
     --------
 
@@ -330,9 +334,20 @@ def get_residual(s1, s2, var,
     :func:`~radis.spectrum.compare.get_residual_integral`, 
     :meth:`~radis.spectrum.spectrum.compare_with` 
     '''
-    
+
     if normalize:
-        raise NotImplementedError('normalize not implemented')
+        from radis.spectrum.operations import multiply
+        if isinstance(normalize, tuple):
+            wmin, wmax = normalize
+            w1, I1 = s1.get(var)
+            b = (w1 > wmin) & (w1 < wmax)
+            s1 = multiply(s1, 1/(I1[b].max()), var=var)
+            w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
+            b = (w2 > wmin) & (w2 < wmax)
+            s2 = multiply(s2, 1/(I2[b].max()), var=var)
+        else:
+            s1 = multiply(s1, 1/s1.get(var)[1].max(), var=var)
+            s2 = multiply(s2, 1/s2.get(var, Iunit=s1.units[var])[1].max(), var=var)
 
     # mask for 0
     wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)
@@ -340,11 +355,17 @@ def get_residual(s1, s2, var,
     if ignore_nan:
         b = np.isnan(dI)
         wdiff, dI = wdiff[~b], dI[~b]
-
+    warningText = 'NaN output in residual. You should use "ignore_nan=True". Read the help.'
     if norm == 'L2':
-        return np.sqrt((dI**2).sum())/len(dI)
+        output = np.sqrt((dI**2).sum())/len(dI)
+        if np.isnan(output):
+            warn(warningText, UserWarning)
+        return output
     elif norm == 'L1':
-        return (np.abs(dI)).sum()/len(dI)
+        output = (np.abs(dI)).sum()/len(dI)
+        if np.isnan(output):
+            warn.warning(warningText, UserWarning)
+        return output
     else:
         raise ValueError('unexpected value for norm')
 
@@ -444,7 +465,9 @@ def _get_defaults(s1, s2, var,
                   wunit='default', Iunit='default', medium='default',
                   assert_same_wavelength=False):
     # type: (Spectrum, Spectrum, str, str, str, bool) -> (np.array, np.array, np.array, np.array)
-    ''' See get_distance, get_diff '''
+    ''' Returns w1, I1, w2, I2  in the same waveunit, unit and medium.
+    
+    See get_distance, get_diff for more information '''
 
     # Check inputs, get defaults
     # ----
@@ -452,7 +475,7 @@ def _get_defaults(s1, s2, var,
         try:
             Iunit = s1.units[var]
         except KeyError:  # unit not defined in dictionary
-            raise KeyError('Iunit not defined in spectrum. Cant plot')
+            raise KeyError('Iunit not defined in spectrum for variable {0}'.format(var))
     # Format units
     if wunit == 'default':
         wunit = s1.get_waveunit()
@@ -464,7 +487,7 @@ def _get_defaults(s1, s2, var,
     # ----
     w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
     w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
-
+    
     if assert_same_wavelength:
         if not array_allclose(w1, w2):
             raise AssertionError(
@@ -478,7 +501,7 @@ def plot_diff(s1, s2, var=None,
               resample=True, method='diff', diff_window=0, show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
               normalize=False, verbose=True, save=False, show=True,
-              show_residual=False, lw_multiplier=1):
+              show_residual=False, lw_multiplier=1, diff_scale_multiplier=1):
     ''' Plot two spectra, and the difference between them
 
     If waveranges dont match, ``s2`` is interpolated over ``s1``. 
@@ -513,6 +536,10 @@ def plot_diff(s1, s2, var=None,
             with ``'distance'``, calculation scales as ~N^2 with N the number
             of points in a spectrum (against ~N with ``'diff'``). This can quickly 
             override all memory.
+            
+        Can also be a list::
+            
+            method=['diff', 'ratio']
 
     normalize: bool
         Normalize the spectra to be ploted 
@@ -554,6 +581,9 @@ def plot_diff(s1, s2, var=None,
         if ``True``, calculates and shows on the graph the residual in L2 norm. 
         See :func:`~radis.spectrum.compare.get_residual`. ``diff_window`` is 
         used in the residual calculation too. ``normalize`` has no effect. 
+        
+    diff_scale_multiplier: float
+        dilate the diff plot scale. Default ``1``s=
         
     Returns
     -------
@@ -610,18 +640,32 @@ def plot_diff(s1, s2, var=None,
             var = list(params)[0]
             if var.replace('_noslit', '') in params:
                 var = var.replace('_noslit', '')
+    # ... check variable exist
+    if var not in s1.get_vars():
+        raise ValueError('{0} not defined in Spectrum {1}. Use one of : {2}'.format(
+                var, s1.get_name(), s1.get_vars()))
+    if var not in s2.get_vars():
+        raise ValueError('{0} not defined in Spectrum {1}. Use one of : {2}'.format(
+                var, s2.get_name(), s2.get_vars()))
     if Iunit == 'default':
         try:
             Iunit = s1.units[var]
         except KeyError:  # unit not defined in dictionary
-            raise KeyError('Iunit not defined in spectrum. Cant plot')
+            raise KeyError('Iunit not defined in spectrum for variable {0}. '.format(var)+\
+                           "Cant use default unit. Specify unit in s.units['{0}'].".format(var))
     if wunit == 'default':
         wunit = s1.get_waveunit()
     if medium == 'default':
         medium = s1.conditions.get('medium', None)
+        
+    if isinstance(method, list):
+        methods = method
+    else:
+        methods = [method]
 
-    if diff_window != 0 and method != 'diff':
-        raise NotImplementedError('diff_window with method {0}'.format(method))
+    for method in methods:
+        if diff_window != 0 and method != 'diff':
+            raise NotImplementedError('diff_window with method {0}'.format(method))
         
     # Get data
     # ----
@@ -633,19 +677,27 @@ def plot_diff(s1, s2, var=None,
         w2, I2 = s2.get(var, copy=False)
         I1 /= np.max(I1)
         I2 /= np.max(I2)
-        
-    if method == 'distance':
-        wdiff, Idiff = get_distance(
-            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-    elif method == 'diff':
-        wdiff, Idiff = get_diff(
-            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium, 
-            diff_window=diff_window)
-    elif method == 'ratio':
-        wdiff, Idiff = get_ratio(
-            s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-    else:
-        raise ValueError('Unknown comparison method: {0}'.format(method))
+    
+    def get_wdiff_Idiff():
+        wdiffs, Idiffs = [], []
+        for method in methods:
+            if method == 'distance':
+                wdiff, Idiff = get_distance(
+                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+            elif method == 'diff':
+                wdiff, Idiff = get_diff(
+                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium, 
+                    diff_window=diff_window)
+            elif method == 'ratio':
+                wdiff, Idiff = get_ratio(
+                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+            else:
+                raise ValueError('Unknown comparison method: {0}'.format(method))
+            wdiffs.append(wdiff)
+            Idiffs.append(Idiff)
+        return wdiffs, Idiffs
+    
+    wdiffs, Idiffs = get_wdiff_Idiff()
 
     # Plot
     # ----
@@ -660,12 +712,15 @@ def plot_diff(s1, s2, var=None,
     # Init figure
     set_style('origin')
     fig = plt.figure(num=nfig, figsize=figsize)
-    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+    gs = gridspec.GridSpec(1+len(methods), 1, height_ratios=[3]+[1]*len(methods))
     ax0 = plt.subplot(gs[0])
-    ax1 = plt.subplot(gs[1])
-    ax1.get_shared_x_axes().join(ax0, ax1)
     ax0.ticklabel_format(useOffset=False)
-    ax1.ticklabel_format(useOffset=False)
+    ax1 = []
+    for i in range(len(methods)):
+        ax1i = plt.subplot(gs[i+1])
+        ax1i.get_shared_x_axes().join(ax0, ax1i)
+        ax1i.ticklabel_format(useOffset=False)
+        ax1.append(ax1i)
 
     # Plotting style
     if show_points:
@@ -678,8 +733,15 @@ def plot_diff(s1, s2, var=None,
         label1 = s1.get_name()
     if label2 is None:
         label2 = s2.get_name()
+    # Max label length:
+    if len(label1)>80:
+        label1 = label1[:78]+'...'
+    if len(label2)>80:
+        label2 = label2[:78]+'...'
+        
     # Plot compared spectra
     if normalize:
+        # TODO: add option to norm_on
         w1, I1 = s1.get(var, wunit, Iunit, medium)
         w2, I2 = s2.get(var, wunit, Iunit, medium)
         if verbose:
@@ -703,26 +765,12 @@ def plot_diff(s1, s2, var=None,
         ax0.set_ylim(bottom=0)
 
     # plot difference (sorted)
-    b = np.argsort(wdiff)
-    ax1.plot(wdiff[b], Idiff[b], style, color='k', lw=1*lw_multiplier)
-#    ax1.plot(wdiff[b], np.zeros(np.size(wdiff[b])), style, color='r', lw=1)
-    ax1.axhline(y=0, color='grey', zorder=-1)
-
-    if method == 'diff':
-        difftext = 'diff'
-    elif method == 'distance':
-        difftext = 'distance'
-    elif method == 'ratio':
-        difftext = 'ratio'
+    for ax1i, wdiff, Idiff in zip(ax1, wdiffs, Idiffs):
+        b = np.argsort(wdiff)
+        ax1i.plot(wdiff[b], Idiff[b], style, color='k', lw=1*lw_multiplier)
     
-    # Show residualget_residual
-    if show_residual:
-        difftext += ' (residual={0:.2g})'.format(get_residual(s1, s2, var=var, norm='L2',
-                      ignore_nan=True, diff_window=diff_window))
-    fig.text(0.09, 0.38, difftext)
-
     # Write labels
-    ax1.set_xlabel(make_up(xlabel))
+    ax1[-1].set_xlabel(make_up(xlabel))
     if normalize:
         fig.text(0.02, 0.5, 'Arb. Units',
                  va='center', rotation='vertical')
@@ -731,33 +779,62 @@ def plot_diff(s1, s2, var=None,
                  va='center', rotation='vertical')
 
     # Set limits of 'diff' window
-    if method == 'diff':
-        # symmetrize error scale:
-        ymin, ymax = ax1.get_ylim()
-        ymax = max(abs(ymin), abs(ymax))
-        ax1.set_ylim(-ymax, ymax)
-    elif method == 'distance':
-        ax1.set_ylim(bottom=0)
-    elif method == 'ratio':
-        # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
-        Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
-        ax1.set_ylim(bottom=Idiff_sorted[len(Idiff_sorted)//100] - 0.001, 
-                        top=Idiff_sorted[-len(Idiff_sorted)//100] + 0.001)
+    for i, method in enumerate(methods):
+        if method == 'diff':
+            # symmetrize error scale:
+            # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
+            Idiff = Idiffs[i]
+            Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
+            ymax = max(abs(Idiff_sorted[-len(Idiff_sorted)//100]), abs(Idiff_sorted[len(Idiff_sorted)//100]))
+            ax1[i].set_ylim(-ymax*diff_scale_multiplier, ymax*diff_scale_multiplier)
+        elif method == 'distance':
+            _, ymax = ax1[i].get_ylim()
+            ax1[i].set_ylim(0, ymax*diff_scale_multiplier)
+        elif method == 'ratio':
+            # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
+            Idiff = Idiffs[i]
+            Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
+            ax1[i].set_ylim(bottom=((Idiff_sorted[len(Idiff_sorted)//100]-1)*diff_scale_multiplier+1), 
+                            top=((Idiff_sorted[-len(Idiff_sorted)//100]-1)*diff_scale_multiplier+1))
+#            ymax = max(abs(Idiff_sorted[len(Idiff_sorted)//100]-1),
+#                       abs(Idiff_sorted[len(-Idiff_sorted)//100]-1))
+#            ax1[i].set_ylim(ymax*diff_scale_multiplier+1, -ymax*diff_scale_multiplier+1)
 
     if title:
         fig.suptitle(title)
 
     # Fix format
     fix_style('origin', ax=ax0)
-    fix_style('origin', ax=ax1)
+    for ax1i in ax1:
+        fix_style('origin', ax=ax1i)
     plt.tight_layout()
     if title:
         plt.subplots_adjust(left=0.15, top=0.92)
     else:
         plt.subplots_adjust(left=0.15)
 
+    # Plot difference text     
+    for i, method in enumerate(methods):
+        if method == 'diff':
+            difftext = 'diff'
+            ax1[i].axhline(y=0, color='grey', zorder=-1)
+        elif method == 'distance':
+            difftext = 'distance'
+            ax1[i].axhline(y=0, color='grey', zorder=-1)
+        elif method == 'ratio':
+            difftext = 'ratio'
+            ax1[i].axhline(y=1, color='grey', zorder=-1)
+                    
+        # Show residualget_residual
+        if show_residual:
+            difftext += ' (residual={0:.2g})'.format(get_residual(s1, s2, var=var, norm='L2',
+                          ignore_nan=True, diff_window=diff_window))
+        pos = ax1[i].get_position()
+        fig.text(0.09, pos.ymax+0.02, difftext)
+
     # Add cursors
-    fig.cursors = MultiCursor(fig.canvas, (ax0, ax1),
+    axes = [ax0] + ax1
+    fig.cursors = MultiCursor(fig.canvas, axes,
                               color='r', lw=1*lw_multiplier, alpha=0.2, horizOn=False,
                               vertOn=True)
     if show:
@@ -767,7 +844,8 @@ def plot_diff(s1, s2, var=None,
         if not show: 
             plt.close(fig) #to avoid memory load if 
 
-    return fig, [ax0, ax1]
+    # Return graphs
+    return fig, axes
 
 
 def averageDistance(s1, s2, var='radiance'):
@@ -997,8 +1075,8 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 if not b1 and verbose:
                     error = np.nanmax(abs(q/q0-1))
                     avgerr = np.nanmean(abs(q/q0-1))
-                    print('...', k, 'dont match (up to {0:.1f}% diff.,'.format(
-                        error*100)+' average {0:.1f}%)'.format(avgerr*100))
+                    print('...', k, 'dont match (up to {0:.3}% diff.,'.format(
+                        error*100)+' average {0:.3f}%)'.format(avgerr*100))
             b *= b1
 
             if plot:
@@ -1025,7 +1103,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 b1 *= _compare_variables(q, q0)
                 if not b1 and verbose:
                     error = np.nanmax(abs(q/q0-1))
-                    print('...', k, 'dont match (up to {0:.1f}% diff.)'.format(
+                    print('...', k, 'dont match (up to {0:.3f}% diff.)'.format(
                         error*100))
             b *= b1
 
@@ -1035,7 +1113,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                               normalize=normalize, verbose=verbose,
                               **kwargs)
                 except:
-                    print('... couldnt plot {0}'.format(k))
+                    print('... there was an error while plotting {0}'.format(k))
 
         # Compare conditions and units
         # -----------
