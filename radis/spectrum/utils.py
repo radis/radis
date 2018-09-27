@@ -117,11 +117,11 @@ def make_up(label):
     label = label.replace('I/I0', 'I/I$_\mathrm{0}$')    # transmittance unit
 
     # Improve text
-#    label = label.replace('_noslit', ' (unconvolved)')
-    label = label.replace('radiance', 'Radiance')     # make a small difference between no_slit and slit while plotting
-    label = label.replace('transmittance', 'Transmittance')     # make a small difference between no_slit and slit while plotting
-    # small hack: capitalize, to make a difference with non slit value
-    # Remove _noslit
+    if not '_noslit' in label:
+        # small hack: capitalize, to make a difference with non slit value
+        label = label.replace('radiance', 'Radiance')     # make a small difference between no_slit and slit while plotting
+        label = label.replace('transmittance', 'Transmittance')     # make a small difference between no_slit and slit while plotting
+    # ... Remove _noslit
     label = label.replace('_noslit', '')
     
     return label
