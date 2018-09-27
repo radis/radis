@@ -645,10 +645,10 @@ class Spectrum(object):
         Parameters    
         ----------
 
-        which: 'convoluted', 'non_convoluted', 'any'
+        which: 'convoluted', 'non_convoluted', ``'any'``
             return wavelength for convoluted quantities, non convoluted quantities, 
-            or any. If any and both are defined, they have to be the same else 
-            an error is raised. Default any.
+            or any. If ``any`` and both are defined, they have to be the same else 
+            an error is raised. Default ``any``.
 
         Other Parameters
         ----------------
@@ -3466,6 +3466,14 @@ class Spectrum(object):
 #        print(attrs)
 #        raise
 #        return _json_to_spec(attrs)
+
+    def __len__(self):
+        ''' Length of a Spectrum object = length of the wavespace if unique, 
+        else raises an error '''
+        
+        # raises an error if both convolved and non convolved are defined
+        return len(self._get_wavespace('any', copy=False))   
+        
 
 # %% Private functions
     
