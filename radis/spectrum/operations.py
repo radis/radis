@@ -8,10 +8,11 @@ Routine Listing
 
 Operators:
 
-- :py:func:`~radis.spectrum.operations.add_constant`
-- :py:func:`~radis.spectrum.operations.add_array`
-- :py:func:`~radis.spectrum.operations.add_spectra`
-- :py:func:`~radis.spectrum.operations.substract_spectra`
+- :py:func:`~radis.spectrum.operations.multiply` : simply use ``s*2``
+- :py:func:`~radis.spectrum.operations.add_constant` : simply use ``s+1``
+- :py:func:`~radis.spectrum.operations.add_array` : simply use ``s+a``
+- :py:func:`~radis.spectrum.operations.add_spectra` : simply use ``s1+s2`` 
+- :py:func:`~radis.spectrum.operations.substract_spectra` : simply use ``s1-s2``
 
 Note that these operators are purely algebraic and should not be used in place
 of the line-of-sight functions, i.e, :py:func:`~radis.los.slabs.SerialSlabs` (``>``)
@@ -80,7 +81,12 @@ def Transmittance(s):
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only the ``transmittance``,
         ``absorbance`` and/or ``abscoeff`` part of ``s``, where ``radiance_noslit`` ,
         ``emisscoeff`` and ``emissivity_noslit`` (if they exist) have been set to 0
- 
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.Transmittance_noslit`
+
     '''
 
     return s.copy(copy_lines=True, quantity='transmittance')
@@ -101,6 +107,10 @@ def Transmittance_noslit(s):
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only 
         ``transmittance_noslit`` defined
  
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.Transmittance`
     '''
 
     return s.copy(copy_lines=True, quantity='transmittance_noslit')
@@ -121,6 +131,10 @@ def Radiance(s):
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only ``radiance``
         defined
  
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.Radiance_noslit`
     '''
 
     return s.copy(copy_lines=True, quantity='radiance')
@@ -140,7 +154,12 @@ def Radiance_noslit(s):
     s_tr: Spectrum
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only ``radiance_noslit``
         defined
- 
+        
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.Radiance`
+
     '''
 
     return s.copy(copy_lines=True, quantity='radiance_noslit')
@@ -187,6 +206,8 @@ def PerfectAbsorber(s):
     And the contribution of ``s1`` would be::
         
         (s1 > PerfectAbsorber(s2>s3)).plot('radiance_noslit') 
+    
+    See more examples in :ref:`label_los_index`
     
     '''
     
@@ -399,7 +420,10 @@ def multiply(s, coef, var=None, name=None, inplace=False):
     return s
 
 def add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=False):
-    '''Return a new spectrum with a constant added to s[var] 
+    '''Return a new spectrum with a constant added to s[var]. 
+    Equivalent to::
+        
+        s + constant
 
     Parameters    
     ----------
@@ -429,8 +453,9 @@ def add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=F
 
     Notes   
     -----
+    
     Use only for rough work. If you want to work properly with spectrum 
-    objects, see MergeSlabs.
+    objects, see :py:meth:`~radis.los.slabs.MergeSlabs`.
     '''
     # Check input
     var = _get_unique_var(s, var, inplace)
@@ -453,7 +478,10 @@ def add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=F
     return s
 
 def add_array(s, a, unit=None, var=None, wunit='nm', name='None', inplace=False):
-    '''Return a new spectrum with a constant added to s[var] 
+    '''Return a new spectrum with a constant added to s[var]. 
+    Equivalent to::
+        
+        s + array
 
     Parameters    
     ----------
@@ -553,6 +581,11 @@ def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
     Notes    
     -----
     Use only for rough work. 
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.get_baseline`
     '''
     import numpy as np
     # Check input
@@ -579,12 +612,15 @@ def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
     return s
     
 def add_spectra(s1, s2, var=None, wunit='nm', name=None):
-    '''Return a new spectrum with s2 added to s1
+    '''Return a new spectrum with ``s2`` added to ``s1``. 
+    Equivalent to::
+        
+        s1 + s2
     
     .. warning::
-        we are just algebrically added the quantities. If you want to merge
+        we are just algebrically adding the quantities. If you want to merge
         spectra while preserving the radiative transfer equation, see 
-        :func:`~radis.los.slabs.MergeSlabs`
+        :func:`~radis.los.slabs.MergeSlabs` and :func:`~radis.los.slabs.SerialSlabs`
     
     Parameters    
     ----------
@@ -660,7 +696,10 @@ def add_spectra(s1, s2, var=None, wunit='nm', name=None):
     return sub
 
 def substract_spectra(s1, s2, var=None, wunit='nm', name=None):
-    '''Return a new spectrum with s2 substracted from s1
+    '''Return a new spectrum with ``s2`` substracted from ``s1``. 
+    Equivalent to::
+        
+        s1 - s2
     
     Parameters    
     ----------
@@ -748,6 +787,11 @@ def offset(s, offset, unit, name=None, inplace=False):
     s : Spectrum
         Spectrum object where cst is added to intensity of s['var']
         If ``inplace=True``, ``s`` has been modified directly.
+        
+    See Also
+    --------
+    
+    Call as a Spectrum method directly: :py:meth:`~radis.spectrum.spectrum.Spectrum.offset`
     '''
     
     has_var = len(s._q)>0
@@ -795,6 +839,11 @@ def get_baseline(s, var='radiance', wunit='nm', medium='air', Iunit=None):
     -------
     baseline: Spectrum
         Spectrum object where intenisity is the baseline of s is computed by peakutils
+        
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.sub_baseline`
     '''
     import peakutils 
     w1, I1 = s.get(var=var, Iunit=Iunit, wunit=wunit, medium=medium)

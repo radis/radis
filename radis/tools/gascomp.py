@@ -33,7 +33,7 @@ def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
             
              'N2:0.79, O2:0.21, CO2:363e-6'
              
-        Or: 
+        Or::
             
              'CO2:1'
              

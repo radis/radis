@@ -128,6 +128,8 @@ def SerialSlabs(*slabs, **kwargs):
 
     :func:`~radis.los.slabs.MergeSlabs`
 
+    See more examples in :ref:`label_los_index`
+    
     '''
     
     if 'resample_wavespace' in kwargs:
@@ -506,6 +508,9 @@ def MergeSlabs(*slabs, **kwargs):
     --------
 
     :func:`~radis.los.slabs.SerialSlabs`
+    
+    See more examples in :ref:`label_los_index`
+    
     '''
     
     # Deprecation warnings

@@ -1,3 +1,4 @@
+.. _label_los_index:
 
 **************************
 Line-of-sight (LOS) module
@@ -52,7 +53,7 @@ Below are some practical examples of the use of the Line-of-sight module:
 
     
 Build a large spectrum
-----------------------
+======================
 
 If you want to calculate a spectrum on a very large spectral range which 
 cannot be handled in memory at once, you can calculate partial, non-overlapping
@@ -70,7 +71,7 @@ definition range::
     
     
 Get the contribution of each slab along the LOS
------------------------------------------------
+===============================================
 
 Let's say you have a total line of sight::
 
