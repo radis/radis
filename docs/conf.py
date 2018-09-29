@@ -83,6 +83,10 @@ extensions = [
 # Reference other packages
 intersphinx_mapping = {'joblib': ('https://joblib.readthedocs.io/en/latest/', None),
                        'astroquery': ('http://astroquery.readthedocs.io/en/latest/', None),
+                       'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+                       'matplotlib': ('https://matplotlib.org/', None),
+                       'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+                       'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
                        }
 
 napoleon_google_docstring = False

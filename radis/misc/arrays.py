@@ -261,7 +261,24 @@ def calc_diff(t1, v1, t2, v2):
 
 
 def find_nearest(array, searched, returnarg=False):
-    ''' Return the closest elements in array of 'searched' array,Also returns a boolean index'''
+    ''' Return the closest elements in array of 'searched' array. 
+    Also returns a boolean index
+    
+    Examples
+    --------
+    
+    ::
+        
+        from numpy import array
+        find_nearest(array([1,2,3,4], array([2.1,2])
+        
+        >>> (array([2]), array([False, True, False, False], dtype=bool))
+        
+        find_nearest(np.array([1,2,3,4]), np.array([2.6,2]))
+        
+        >>> (array([2, 3]), array([False,  True,  True, False], dtype=bool))
+
+    '''
 
     b = np.zeros_like(array, dtype=bool)
 
@@ -299,10 +316,11 @@ def find_first(arr, treshold):
 
 
 def autoturn(data, key=-1):
-    ''' key value : 
-        0 don't transpose
-        1 : transpose
-        -1 : auto : make sure the vectors are along the longest dimension
+    ''' Turns array data. key value: 
+        
+    - ``0`` don't transpose
+    - ``1`` : transpose
+    - ``-1`` : auto : make sure the vectors are along the longest dimension
     '''
 
     if key == 0:
@@ -318,14 +336,16 @@ def autoturn(data, key=-1):
 
 
 def centered_diff(w):
-    ''' Return w[i+1]-w[i-1]/2, same size as w'''
+    ''' Return w[i+1]-w[i-1]/2, same size as w
+    
+    Similar to :py:function:`numpy.diff`, but does not change the array size. 
+    '''
     dw = np.diff(w)
     return (hstack((dw, dw[-1])) + hstack((dw[0], dw)))/2
 
 
 def evenly_distributed(w, tolerance=1e-5):
     ''' Make sure array `w` is evenly distributed
-
 
     Parameters    
     ----------
@@ -335,6 +355,12 @@ def evenly_distributed(w, tolerance=1e-5):
 
     tolerance: float
         absolute tolerance
+        
+    Returns
+    -------
+    
+    out: bool
+        ``True`` or ``False`` if ``w`` is evenly distributed.
     '''
     mean_step = np.diff(w).mean()
     return (np.abs((np.diff(w)-mean_step)) > tolerance).sum() == 0

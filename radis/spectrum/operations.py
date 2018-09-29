@@ -6,7 +6,46 @@ Handy functions for manipulation of :class:`~radis.spectrum.spectrum.Spectrum` o
 Routine Listing
 ---------------
 
-- :func:`~radis.spectrum.operations.substract`
+Operators:
+
+- :py:func:`~radis.spectrum.operations.add_constant`
+- :py:func:`~radis.spectrum.operations.add_array`
+- :py:func:`~radis.spectrum.operations.add_spectra`
+- :py:func:`~radis.spectrum.operations.substract_spectra`
+
+Note that these operators are purely algebraic and should not be used in place
+of the line-of-sight functions, i.e, :py:func:`~radis.los.slabs.SerialSlabs` (``>``)
+and :py:func:`~radis.los.slabs.MergeSlabs` (``//``)
+
+Functions to manipulate one spectrum:
+    
+- :py:func:`~radis.spectrum.operations.crop`
+- :py:func:`~radis.spectrum.operations.offset`
+
+Play with baselines:
+    
+- :py:func:`~radis.spectrum.operations.get_baseline`
+- :py:func:`~radis.spectrum.operations.sub_baseline`
+    
+Functions to discard all but one spectral quantity:
+    
+- :py:func:`~radis.spectrum.operations.Transmittance`
+- :py:func:`~radis.spectrum.operations.Transmittance_noslit`
+- :py:func:`~radis.spectrum.operations.Radiance`
+- :py:func:`~radis.spectrum.operations.Radiance_noslit`
+
+Keeps all spectral quantities, but make emission equal to 0 (useful when
+calculating contributions of line of sight slabs):
+    
+- :py:func:`~radis.spectrum.operations.PerfectAbsorber`
+
+
+Examples
+--------
+
+Most of these functions are implemented with the standard operators. Ex::
+    
+    ((s_exp - 0.1)*10).plot()   # works for a Spectrum s_exp
 
 -------------------------------------------------------------------------------
 
@@ -19,6 +58,8 @@ from radis.spectrum import Spectrum
 from radis.phys.convert import (cm2nm, nm2cm, cm2nm_air, nm_air2cm, air2vacuum, vacuum2air,
                                 dcm2dnm, dnm2dcm)
 from numpy import ones_like
+from warnings import warn
+
 
 # %% Filter Spectra
 
@@ -110,7 +151,7 @@ def PerfectAbsorber(s):
     ''' Makes a new Spectrum with the same transmittance/absorbance as Spectrum
     ``s``, but with radiance set to 0. 
     Useful to get contribution of different slabs in line-of-sight 
-    calculations)
+    calculations (see example).
     
     .. note:
         
@@ -133,6 +174,19 @@ def PerfectAbsorber(s):
         
     Examples
     --------
+    
+    Let's say you have a total line of sight::
+    
+        s_los = s1 > s2 > s3     
+        
+    If you now want to get the contribution of ``s2`` to the line-of-sight emission,
+    you can do::
+        
+        (s2 > PerfectAbsorber(s3)).plot('radiance_noslit')
+        
+    And the contribution of ``s1`` would be::
+        
+        (s1 > PerfectAbsorber(s2>s3)).plot('radiance_noslit') 
     
     '''
     
@@ -524,8 +578,6 @@ def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
 
     return s
     
-from warnings import warn
-
 def add_spectra(s1, s2, var=None, wunit='nm', name=None):
     '''Return a new spectrum with s2 added to s1
     
@@ -732,7 +784,7 @@ def offset(s, offset, unit, name=None, inplace=False):
     return s
 
 def get_baseline(s, var='radiance', wunit='nm', medium='air', Iunit=None):
-    '''Offset the spectrum by a wavelength or wavenumber 
+    '''Calculate and returns a baseline 
 
     Parameters    
     ----------

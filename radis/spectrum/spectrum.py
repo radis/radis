@@ -2411,16 +2411,36 @@ class Spectrum(object):
 
     def get_conditions(self):
         ''' Get all physical / computational parameters.
+        
+        See Also
+        --------
+        
+        :py:method:`~radis.spectrum.Spectrum.print_conditions`
         '''
 
         return self.conditions
 
-    def print_conditions(self):
-        ''' Prints all physical / computational parameters.
+    def print_conditions(self, **kwargs):
+        ''' Prints all physical / computational parameters. You can also simply
+        print the Spectrum object directly::
+            
+            print(s)
+            
+        Parameters
+        ----------
+        
+        kwargs: dict
+            refer to :py:function:`~radis.spectrum.utils.print_conditions`
 
+        See Also
+        --------
+        
+        :py:method:`~radis.spectrum.Spectrum.get_conditions`,
+        :py:function:`~radis.spectrum.utils.print_conditions`
+        
         '''
 
-        return print_conditions(self.get_conditions(), self.cond_units)
+        return print_conditions(self.get_conditions(), self.cond_units, **kwargs)
 
     def store(self, path, discard=['lines', 'populations'], compress=False,
               add_info=None, add_date=None, if_exists_then='error', verbose=True):
@@ -2485,13 +2505,6 @@ class Spectrum(object):
             Shouldnt rely on a Database. One may just want to store/load a Spectrum
             once.
             
-        # TODO
-        
-        - in case a spectrometer linear dispersion function is used in 
-        :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, it probably isn't 
-        stored with the current code. Find a workaround?
-
-
         Examples
         --------
 
@@ -2512,7 +2525,12 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.savetxt`
 
         '''
-        # Todo: maybe move most of the code here (filename writing) in database.py ?
+        # TODO
+        # 
+        # - in case a spectrometer linear dispersion function is used in 
+        # :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, it probably isn't 
+        # stored with the current code. Find a workaround?
+
 
         from radis.tools.database import save
 
