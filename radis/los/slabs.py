@@ -11,18 +11,22 @@ Classes to deal with multi-slabs configurations:
 
 One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object 
 
-Notes
------
 
-Todo:
-    
-- transport emisscoeff too 
-- emisscoeff default unit 
+Examples
+--------
+
+See more examples in the 
+`RADIS line-of-sight module <https://radis.readthedocs.io/en/latest/los/index.html>`__ 
 
 
 -------------------------------------------------------------------------------
 
 """
+# Todo:
+#    
+#- transport emisscoeff too 
+# - emisscoeff default unit 
+
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 

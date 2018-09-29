@@ -52,7 +52,9 @@ The line-of-sight (LOS) module
 This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
 as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
 or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
-line-of-sight experiments 
+line-of-sight experiments. The module allows combination of Spectra such as::
+
+    s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption) 
 
 .. toctree::
    :maxdepth: 2

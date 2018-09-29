@@ -16,7 +16,7 @@ How to combine slabs?
 Along the line-of-sight
 -----------------------
 
-Use the :func:`~radis.los.slabs.SerialSlabs` function: 
+Use the :func:`~radis.los.slabs.SerialSlabs` function::
 
     s1 = calc_spectrum(...)
     s2 = calc_spectrum(...)
@@ -34,7 +34,7 @@ At the same spatial position
 Use the :func:`~radis.los.slabs.MergeSlabs` function:
 
 Merge two spectra calculated with different species (true only if broadening
-coefficient dont change much):
+coefficient dont change much)::
 
     from radis import calc_spectrum, MergeSlabs
     s1 = calc_spectrum(...)
@@ -46,9 +46,10 @@ is equivalent to::
 
     s3 = s1 // s2 
     
-    
-Examples
-========
+-----------------------------------------------------------------------
+
+Below are some practical examples of the use of the Line-of-sight module:
+
     
 Build a large spectrum
 ----------------------
@@ -66,6 +67,27 @@ definition range::
         spectra.append(load_spec(f))
     s = MergeSlabs(*spectra, resample='full', out='transparent')
     s.plot()
+    
+    
+Get the contribution of each slab along the LOS
+-----------------------------------------------
+
+Let's say you have a total line of sight::
+
+    s_los = s1 > s2 > s3     
+    
+If you want to get the contribution of ``s2`` to the line-of-sight emission,
+you need to discard the emission of ``s3`` but take into account its absorption. 
+This is done using the :py:func:`~radis.spectrum.operations.PerfectAbsorber` 
+function, which returns a new Spectrum with all the emission features set to 0::
+    
+    from radis import PerfectAbsorber
+    (s2 > PerfectAbsorber(s3)).plot('radiance_noslit')
+    
+And the contribution of ``s1`` would be::
+    
+    (s1 > PerfectAbsorber(s2>s3)).plot('radiance_noslit') 
+
     
     
   

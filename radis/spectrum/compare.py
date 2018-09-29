@@ -502,7 +502,8 @@ def plot_diff(s1, s2, var=None,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
               normalize=False, verbose=True, save=False, show=True,
               show_residual=False, lw_multiplier=1, diff_scale_multiplier=1):
-    ''' Plot two spectra, and the difference between them
+    ''' Plot two spectra, and the difference between them. ``method=`` allows
+    you to plot the absolute difference, ratio, or both. 
 
     If waveranges dont match, ``s2`` is interpolated over ``s1``. 
 
@@ -526,7 +527,7 @@ def plot_diff(s1, s2, var=None,
     medium: ``'air'``, ``'vacuum'``, ``'default'``
         if ``'default'``, use first spectrum propagating medium
 
-    method: ``'distance'``, ``'diff'``, ``'ratio'``
+    method: ``'distance'``, ``'diff'``, ``'ratio'``, or list of them.
         If ``'diff'``, plot difference of the two spectra.
         If ``'distance'``, plot Euclidian distance (note that units are meaningless then)
         If ``'ratio'``, plot ratio of two spectra
@@ -583,7 +584,7 @@ def plot_diff(s1, s2, var=None,
         used in the residual calculation too. ``normalize`` has no effect. 
         
     diff_scale_multiplier: float
-        dilate the diff plot scale. Default ``1``s=
+        dilate the diff plot scale. Default ``1``
         
     Returns
     -------
@@ -597,14 +598,21 @@ def plot_diff(s1, s2, var=None,
         
     Examples
     --------
+    
+    Simple use::
+        
+        from radis import plot_diff
+        plot_diff(s10, s50)                # s10, s50 are two spectra
 
-    ::
+    Advanced use, plotting the total power in the label, and getting the figure 
+    and axes handle to edit them afterwards::
 
         Punit = 'mW/cm2/sr'
-        fig, axes = plot_diff(s10, s50, figsize=(18,6),
+        fig, axes = plot_diff(s10, s50, 'radiance_noslit', figsize=(18,6),
               label1='brd 10 cm-1, P={0:.2f} {1}'.format(s10.get_power(unit=Punit),Punit),
               label2='brd 50 cm-1, P={0:.2f} {1}'.format(s50.get_power(unit=Punit),Punit)
               )
+        # modify fig, axes..
 
 
     See Also
