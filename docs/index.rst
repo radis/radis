@@ -31,7 +31,8 @@ RADIS includes parsers and interfaces to read and return data in different forma
    :maxdepth: 2
    
    io/parsers
-
+   io/databases
+   io/thermo
 
 The line-by-line (LBL) module
 -----------------------------
