@@ -22,20 +22,8 @@ User documentation
 ==================
 
 
-Interfaces
-----------
-
-RADIS includes parsers and interfaces to read and return data in different formats: 
-
-.. toctree::
-   :maxdepth: 2
-   
-   io/parsers
-   io/databases
-   io/thermo
-
-The line-by-line (LBL) module
------------------------------
+Line-by-line (LBL) module
+-------------------------
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
@@ -47,8 +35,8 @@ are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class.
    lbl/index
 
    
-The line-of-sight (LOS) module
-------------------------------
+Line-of-sight (LOS) module
+--------------------------
 
 This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
 as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
@@ -87,6 +75,19 @@ Different tools to work with Spectrum objects
    
    tools/line_survey
    tools/database
+
+
+Interfaces
+----------
+
+RADIS includes parsers and interfaces to read and return data in different formats: 
+
+.. toctree::
+   :maxdepth: 2
+   
+   io/parsers
+   io/databases
+   io/thermo
 
 
 ===============
