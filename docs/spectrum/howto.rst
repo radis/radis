@@ -438,7 +438,7 @@ RADIS allows the combination of Spectra such as::
 
 Refer to the `line-of-sight module <https://radis.readthedocs.io/en/latest/los/index.html>`__ 
 
-
+.. _label_spectrum_howto_compare:
 Compare two Spectra
 -------------------
 
@@ -475,9 +475,21 @@ or the plot function :func:`~radis.spectrum.compare.plot_diff`::
 These functions usually require that the spectra are calculated on the same spectral 
 range. When comparing, let's say, a calculated spectrum with experimental data, 
 you may want to interpolate: you can have a look at the :py:meth:`~radis.spectrum.spectrum.Spectrum.resample` 
-method. See below for details
+method. See :ref:`label_spectrum_howto_interpolate` for details. 
+
+In :func:`~radis.spectrum.compare.plot_diff`, you can choose to plot the absolute difference
+(``method='diff'``), or the ratio (``method='ratio'``), or both::
+
+    # Below we compare 2 CO2 spectra s_cdsd and s_hitemp previously calculated with two different line databases. 
+    from radis import plot_diff
+    plot_diff(s_cdsd, s_hitemp, method=['diff', 'ratio']) 
+
+.. image:: ./cdsd4000_vs_hitemp_3409K.pdf
+    :alt: CO2 CDSD-4000 vs HITEMP-2010
 
 
+
+.. _label_spectrum_howto_interpolate:
 Interpolate a Spectrum on another
 ---------------------------------
 

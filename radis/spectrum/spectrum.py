@@ -2430,13 +2430,13 @@ class Spectrum(object):
         ----------
         
         kwargs: dict
-            refer to :py:function:`~radis.spectrum.utils.print_conditions`
+            refer to :py:func:`~radis.spectrum.utils.print_conditions`
 
         See Also
         --------
         
         :py:method:`~radis.spectrum.Spectrum.get_conditions`,
-        :py:function:`~radis.spectrum.utils.print_conditions`
+        :py:func:`~radis.spectrum.utils.print_conditions`
         
         '''
 

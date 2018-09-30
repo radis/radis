@@ -338,7 +338,7 @@ def autoturn(data, key=-1):
 def centered_diff(w):
     ''' Return w[i+1]-w[i-1]/2, same size as w
     
-    Similar to :py:function:`numpy.diff`, but does not change the array size. 
+    Similar to :py:func:`numpy.diff`, but does not change the array size. 
     '''
     dw = np.diff(w)
     return (hstack((dw, dw[-1])) + hstack((dw[0], dw)))/2
