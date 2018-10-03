@@ -686,24 +686,39 @@ def plot_diff(s1, s2, var=None,
         w2, I2 = s2.get(var, copy=False)
         I1 /= np.max(I1)
         I2 /= np.max(I2)
+        if verbose:
+            print(('Rescale factor: '+str(np.max(I1)/np.max(I2))))
     
     def get_wdiff_Idiff():
         wdiffs, Idiffs = [], []
         for method in methods:
-            if method == 'distance':
-                wdiff, Idiff = get_distance(
-                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
-            elif method == 'diff':
-                wdiff, Idiff = get_diff(
-                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium, 
-                    diff_window=diff_window)
-            elif method == 'ratio':
-                wdiff, Idiff = get_ratio(
-                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+            if not normalize:
+                if method == 'distance':
+                    wdiff, Idiff = get_distance(
+                        s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+                elif method == 'diff':
+                    wdiff, Idiff = get_diff(
+                        s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium, 
+                        diff_window=diff_window)
+                elif method == 'ratio':
+                    wdiff, Idiff = get_ratio(
+                        s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+                else:
+                    raise ValueError('Unknown comparison method: {0}'.format(method))
+                wdiffs.append(wdiff)
+                Idiffs.append(Idiff)
             else:
-                raise ValueError('Unknown comparison method: {0}'.format(method))
-            wdiffs.append(wdiff)
-            Idiffs.append(Idiff)
+                if method == 'distance':
+                    raise ValueError('{0} was not implemented yet for normalized spectra'.format(method))
+                elif method == 'diff':
+                    wdiff, Idiff = curve_substract(w1, I1, w2, I2)
+                elif method == 'ratio':
+                    wdiff, Idiff = get_ratio(
+                        s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+                else:
+                    raise ValueError('Unknown comparison method: {0}'.format(method))
+                wdiffs.append(wdiff)
+                Idiffs.append(Idiff)
         return wdiffs, Idiffs
     
     wdiffs, Idiffs = get_wdiff_Idiff()
@@ -751,12 +766,8 @@ def plot_diff(s1, s2, var=None,
     # Plot compared spectra
     if normalize:
         # TODO: add option to norm_on
-        w1, I1 = s1.get(var, wunit, Iunit, medium)
-        w2, I2 = s2.get(var, wunit, Iunit, medium)
-        if verbose:
-            print(('Rescale factor: '+str(np.max(I1)/np.max(I2))))
-        ax0.plot(w1, I1/np.max(I1), ls=style, color='k', lw=3*lw_multiplier, label=label1)
-        ax0.plot(w2, I2/np.max(I2), ls=style, color='r', lw=1*lw_multiplier, label=label2)
+        ax0.plot(w1, I1, ls=style, color='k', lw=3*lw_multiplier, label=label1)
+        ax0.plot(w2, I2, ls=style, color='r', lw=1*lw_multiplier, label=label2)
     else:
         ax0.plot(*s1.get(var, wunit, Iunit, medium),
                  ls=style, color='k', lw=3*lw_multiplier, label=label1)
