@@ -425,7 +425,8 @@ def MergeSlabs(*slabs, **kwargs):
     ----------
 
     slabs: list of Spectra, each representing a slab
-        If given in conditions, all ``path_length`` have to be the same.
+        ``path_length`` must be given in Spectrum conditions, and equal for all 
+        spectra.
         
         line-of-sight::
                 
@@ -553,9 +554,12 @@ def MergeSlabs(*slabs, **kwargs):
         for s in slabs:
             _check_valid(s)
 
-        # Just check all path_lengths are the same if they exist
-        path_lengths = [s.conditions['path_length']
-                        for s in slabs if 'path_length' in s.conditions]
+        # Check all path_lengths are defined and they exist
+        try:
+            path_lengths = [s.conditions['path_length'] for s in slabs]
+        except KeyError:
+            raise ValueError('path_length must be defined for all slabs in MergeSlabs. '+\
+                             "Set it with `s.conditions['path_length']=`. ")
         if not all([L == path_lengths[0] for L in path_lengths[1:]]):
             raise ValueError('path_length must be equal for all MergeSlabs inputs' +
                              '  (got {0})'.format(path_lengths))
