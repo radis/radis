@@ -251,7 +251,8 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
             del sjson[k]
             
     # Check that all conditions are jsonable, discard if not
-    for k,v in sjson['conditions'].items():
+    for k in list(sjson['conditions'].keys()):
+        v = sjson['conditions'][k]
         if not is_jsonable(v):
             if verbose:
                 printr('Discarded {0} from conditions as not jsonable ({1})'.format(
@@ -908,11 +909,8 @@ class SpecDatabase():
         :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`, 
             
         '''
-        # TODO @devs: add a method that allow to get the closest Spectrum to a SpecDatabase
-        # | Handy for fitting experimental spectra against a precomputed database
-        # | Maybe, use:
-        # | get_residual
-        # | SpecDatabase.map? 
+        # TODO @devs: generate a SpecDatabase from a dict. 
+        # use the key of the dict insted of the file. 
 
         # Assert name looks like a directory
         name, ext = splitext(path)
@@ -1298,6 +1296,7 @@ class SpecDatabase():
         return file
     
     def fit_spectrum(self, s_exp, residual=None, normalize=False,
+                     normalize_how='max',
                      conditions='', **kwconditions):
         ''' Returns the Spectrum in the database that has the lowest residual
         with s_exp
@@ -1313,7 +1312,10 @@ class SpecDatabase():
         
         residual: func, or ``None``
             which residual function to use. If ``None``, use 
-            :func:`~radis.spectrum.compare.get_residual`
+            :func:`~radis.spectrum.compare.get_residual` with option 
+            ``ignore_nan=True`` and options ``normalize`` and ``normalize_how``
+            as defined by the user. 
+            
             ``get_residual`` should have the form::
                     
                 lambda s_exp, s, normalize: func(s_exp, s, normalize=normalize)
@@ -1325,7 +1327,13 @@ class SpecDatabase():
             restrain fitting to only Spectrum that match the given conditions
             in the database. See :meth:`~radis.tools.database.SpecDatabase.get`
             for more information.
+            
+        normalize: bool, or Tuple
+            see :func:`~radis.spectrum.compare.get_residual`
 
+        normalize_how: 'max', 'area'
+            see :func:`~radis.spectrum.compare.get_residual`
+            
             
         Returns 
         -------
@@ -1352,11 +1360,14 @@ class SpecDatabase():
                                  '`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)')
             residual = lambda s_exp, s, normalize: get_residual(s_exp, s, 
                                                                 var=s_exp.get_vars()[0],
-                                                                normalize=normalize)
+                                                                ignore_nan=True,
+                                                                normalize=normalize,
+                                                                normalize_how=normalize_how)
             
         kwconditions.update({'inplace':True})  # dont copy Spectrum to be faster
         spectra = self.get(conditions=conditions, **kwconditions)
-        res = [residual(s_exp, s, normalize=normalize) for s in spectra]
+        res = np.array([residual(s_exp, s, normalize=normalize) for s in spectra])
+        assert not np.isnan(res).any()
         
         i = np.argmin(np.array(res))
 
@@ -1864,9 +1875,59 @@ class SpecDatabase():
         '''
 
         return list(self.to_dict().items())
+    
+    def plot(self, nfig=None, legend=True, **kwargs):
+        ''' Plot all spectra in database 
+        
+        Parameters
+        ----------
+        
+        nfig: str, or int, or ``None``
+            figure to plot on. Default ``None``: creates one
+            
+        Other Parameters
+        ----------------
+        
+        kwargs: dict
+            parameters forwarded to the Spectrum :meth:`~radis.spectrum.spectrum.plot` 
+            method
+            
+        legend: bool
+            if ``True``, plot legend. 
+        
+        Returns
+        -------
+        
+        fig, ax: matplotlib figure and ax
+            figure 
+            
+        Examples
+        --------
+        
+        Plot all spectra in a folder::
+            
+            db = SpecDatabase('my_folder')
+            db.plot(wunit='nm')
+            
+        See Also
+        --------
+        
+        Spectrum :meth:`~radis.spectrum.spectrum.plot` method
+            
+        '''
+        
+        fig = plt.figure(num=nfig)
+        ax = fig.gca()
+        for s in self:
+            s.plot(nfig='same', **kwargs)
+        
+        if legend:
+            plt.legend(loc='best')
+            
+        return fig, ax
 
-    def plot(self, cond_x, cond_y, z_value=None, nfig=None):
-        ''' Plot database points available:
+    def plot_cond(self, cond_x, cond_y, z_value=None, nfig=None):
+        ''' Plot database conditions available:
 
         Parameters
         ----------
