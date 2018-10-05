@@ -259,7 +259,7 @@ def get_distance(s1, s2, var,
 
 def get_residual(s1, s2, var, 
                  norm='L2', ignore_nan=False, diff_window=0,
-                 normalize=False):
+                 normalize=False, normalize_how='max'):
     # type: (Spectrum, Spectrum, str, bool, int) -> np.array, np.array
     ''' Returns L2 norm of ``s1`` and ``s2``
 
@@ -308,6 +308,10 @@ def get_residual(s1, s2, var,
             s_calc  # in 'cm-1'
             get_residual(s_exp, s_calc, normalize=(4178, 4180))  # interpreted as 'nm'
 
+    normalize_how: 'max', 'area'
+        how to normalize. 'max' is the default but may not be suited for very
+        noisy experimental spectra. 
+
     Notes
     -----
 
@@ -339,15 +343,31 @@ def get_residual(s1, s2, var,
         from radis.spectrum.operations import multiply
         if isinstance(normalize, tuple):
             wmin, wmax = normalize
-            w1, I1 = s1.get(var)
+            w1, I1 = s1.get(var, copy=False)  # (faster not to copy)
             b = (w1 > wmin) & (w1 < wmax)
-            s1 = multiply(s1, 1/(I1[b].max()), var=var)
+            if normalize_how == 'max':
+                norm1 = I1[b].max()
+            elif normalize_how == 'area':
+                norm1 = np.abs(np.trapz(I1[b], w1[b]))
+            # now normalize s2. Ensure we use the same unit system!
             w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
             b = (w2 > wmin) & (w2 < wmax)
-            s2 = multiply(s2, 1/(I2[b].max()), var=var)
+            if normalize_how == 'max':
+                norm2 = I2[b].max()
+            elif normalize_how == 'area':
+                norm2 = np.abs(np.trapz(I2[b], w2[b]))
+            s1 = multiply(s1, 1/norm1, var=var)
+            s2 = multiply(s2, 1/norm2, var=var)
         else:
-            s1 = multiply(s1, 1/s1.get(var)[1].max(), var=var)
-            s2 = multiply(s2, 1/s2.get(var, Iunit=s1.units[var])[1].max(), var=var)
+            if normalize_how == 'max':
+                norm1 = s1.get(var, copy=False)[1].max()
+                norm2 = s2.get(var)[1].max()
+            elif normalize_how == 'area':
+                norm1 = s1.get_integral(var)
+                norm2 = s2.get_integral(var, wunit=s1.get_waveunit(), Iunit=s1.units[var])
+            # Ensure we use the same unit system!
+            s1 = multiply(s1, 1/norm1, var=var)
+            s2 = multiply(s2, 1/norm2, var=var)
 
     # mask for 0
     wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)
@@ -501,7 +521,8 @@ def plot_diff(s1, s2, var=None,
               resample=True, method='diff', diff_window=0, show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
               normalize=False, verbose=True, save=False, show=True,
-              show_residual=False, lw_multiplier=1, diff_scale_multiplier=1):
+              show_residual=False, lw_multiplier=1, diff_scale_multiplier=1,
+              discard_centile=0):
     ''' Plot two spectra, and the difference between them. ``method=`` allows
     you to plot the absolute difference, ratio, or both. 
 
@@ -585,6 +606,18 @@ def plot_diff(s1, s2, var=None,
         
     diff_scale_multiplier: float
         dilate the diff plot scale. Default ``1``
+    
+    discard_centile: int
+        if not ``0``, discard the firsts and lasts centile when setting the limits
+        of the diff window. Example::
+            
+            discard_centile=1     #  --> discards the smallest 1% and largest 1%
+            discard_centile=10    #  --> discards the smallest 10% and largest 10%
+            
+        Useful to remove spikes in a ratio, for instance. 
+        Note that this does not change the values of the residual. It's just 
+        a plot feature.
+        Default ``0`` 
         
     Returns
     -------
@@ -804,18 +837,30 @@ def plot_diff(s1, s2, var=None,
             # symmetrize error scale:
             # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
             Idiff = Idiffs[i]
-            Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
-            ymax = max(abs(Idiff_sorted[-len(Idiff_sorted)//100]), abs(Idiff_sorted[len(Idiff_sorted)//100]))
+            if discard_centile:
+                Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
+                ymax = max(abs(Idiff_sorted[-int(discard_centile*len(Idiff_sorted)//100)]), 
+                           abs(Idiff_sorted[int(discard_centile*len(Idiff_sorted)//100)]))
+            else:
+                ymax = abs(Idiff).max()
             ax1[i].set_ylim(-ymax*diff_scale_multiplier, ymax*diff_scale_multiplier)
         elif method == 'distance':
+            if discard_centile:
+                raise NotImplementedError('discard_centile not implemented for method=distance')
             _, ymax = ax1[i].get_ylim()
             ax1[i].set_ylim(0, ymax*diff_scale_multiplier)
         elif method == 'ratio':
             # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
             Idiff = Idiffs[i]
-            Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
-            ax1[i].set_ylim(bottom=((Idiff_sorted[len(Idiff_sorted)//100]-1)*diff_scale_multiplier+1), 
-                            top=((Idiff_sorted[-len(Idiff_sorted)//100]-1)*diff_scale_multiplier+1))
+            if discard_centile:
+                Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
+                ymin = Idiff_sorted[int(discard_centile*len(Idiff_sorted)//100)]
+                ymax = Idiff_sorted[-int(discard_centile*len(Idiff_sorted)//100)]
+            else:
+                ymin = Idiff.min()
+                ymax = Idiff.max()
+            ax1[i].set_ylim(bottom=((ymin-1)*diff_scale_multiplier+1), 
+                            top=((ymax-1)*diff_scale_multiplier+1))
 #            ymax = max(abs(Idiff_sorted[len(Idiff_sorted)//100]-1),
 #                       abs(Idiff_sorted[len(-Idiff_sorted)//100]-1))
 #            ax1[i].set_ylim(ymax*diff_scale_multiplier+1, -ymax*diff_scale_multiplier+1)

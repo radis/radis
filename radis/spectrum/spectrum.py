@@ -1011,7 +1011,7 @@ class Spectrum(object):
     # Rescale functions
 
     def rescale_path_length(self, new_path_length, old_path_length=None,
-                            force=False):
+                            inplace=True, force=False):
         ''' Rescale spectrum to new path length. Starts from absorption coefficient
         and emission coefficient, and solves the RTE again for the new path length
         Convoluted values (with slit) are dropped in the process.
@@ -1030,10 +1030,20 @@ class Spectrum(object):
         Other Parameters
         ----------------
 
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+        
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
             Default ``False``
 
+        Returns
+        -------
+        
+        s: Spectrum 
+            Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
+            directly anyway.
 
         Notes
         -----
@@ -1047,10 +1057,11 @@ class Spectrum(object):
 
         return rescale_path_length(self, new_path_length=new_path_length,
                                    old_path_length=old_path_length,
+                                   inplace=inplace,
                                    force=force)
 
     def rescale_mole_fraction(self, new_mole_fraction, old_mole_fraction=None,
-                              ignore_warnings=False, force=False, verbose=True):
+                              inplace=True, ignore_warnings=False, force=False, verbose=True):
         ''' Update spectrum with new molar fraction
         Convoluted values (with slit) are dropped in the process.
 
@@ -1068,10 +1079,20 @@ class Spectrum(object):
         Other Parameters
         ----------------
 
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+        
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
             Default ``False``
 
+        Returns
+        -------
+        
+        s: Spectrum 
+            Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
+            directly anyway.
 
         Notes
         -----
@@ -1090,6 +1111,7 @@ class Spectrum(object):
         '''
         return rescale_mole_fraction(self, new_mole_fraction=new_mole_fraction,
                                      old_mole_fraction=old_mole_fraction,
+                                     inplace=inplace,
                                      ignore_warnings=ignore_warnings,
                                      force=force, verbose=verbose)
         
@@ -2786,7 +2808,7 @@ class Spectrum(object):
 
         return self.conditions['waveunit']
 
-    def is_at_equilibrium(self, check='warn'):
+    def is_at_equilibrium(self, check='warn', verbose=False):
         ''' Returns whether this spectrum is at (thermal) equilibrium. Reads the 
         ``thermal_equilibrium`` key in Spectrum conditions. 
         It does not imply chemical equilibrium (mole fractions are still arbitrary)
@@ -2807,6 +2829,10 @@ class Spectrum(object):
             what to do if Spectrum conditions dont match the given equilibrium state:
             raise a warning, raise an error, or just ignore and dont even check. 
             Default ``'warn'``.
+            
+        verbose: bool
+            if ``True``, print why is the spectrum is not at equilibrium, if 
+            applicable.
 
         '''
 
@@ -2836,6 +2862,15 @@ class Spectrum(object):
 
         except AssertionError:
             guess = False
+            if verbose:
+                # Print which equilibrium test failed
+                print('Spectrum not at equilibrium because the following test failed:')
+                import sys
+                import traceback
+                _, _, tb = sys.exc_info()
+                tb_info = traceback.extract_tb(sys.exc_info()[2])
+                print(tb_info[-1][-1])
+                # @dev: see https://stackoverflow.com/a/11587247/5622825
         except KeyError as err:
             warn('Condition missing to know if spectrum is at equilibrium: {0}'.format(err))
             guess = not equilibrium
