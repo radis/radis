@@ -34,7 +34,7 @@ def test_database_functions(verbose=True, plot=True, close_plots=True, warnings=
         print('{0} items in test database: {1}'.format(
             len(db), db.see(['Tvib', 'Trot'])))
     if plot:
-        db.plot('Tvib', 'Trot')
+        db.plot_cond('Tvib', 'Trot')
 
     # Database get methods
     db.get_closest(Tgas=1300, path_length=1)
