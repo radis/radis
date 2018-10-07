@@ -44,7 +44,7 @@ eps_0 = 8.854187817e-12
 '''float: Vacuum permittivity (Farads / m)'''
 
 hc_k = h*c/k_b*100  # 
-'''float:  cm to K conversion (~ 1.44 cm.K), used in Boltman factors'''
+'''float:  cm to K conversion (~ 1.44 K/cm), used in Boltman factors'''
 
 
 # %% HITRAN (CGS) units

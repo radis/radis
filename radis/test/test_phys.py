@@ -25,7 +25,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 from __future__ import absolute_import, unicode_literals, print_function
 import numpy as np
 from numpy import isclose
-from radis.phys.convert import (J2eV, J2cm, cm2J, eV2cm, eV2K, eV2nm, nm2eV,
+from radis.phys.convert import (J2eV, J2cm, cm2J, eV2cm, eV2K, eV2nm, nm2eV, cm2K, K2cm,
                                 dnm2dcm, nm2cm, dnm2dhz, dhz2dnm, cm2eV, eV2J, K2J,
                                 J2K, dcm2dnm, K2eV, hz2nm, nm2hz,
                                 torr2bar, torr2atm, bar2torr, bar2atm, atm2torr,
@@ -42,7 +42,10 @@ def test_convert(verbose=True, *args, **kwargs):
     assert (J2eV(K2J(J2K(eV2J(E)))) == E).all()
 
     E = 2150  # cm-1
-    assert J2cm(cm2J(E))
+    assert J2cm(cm2J(E)) == E
+    assert K2cm(cm2K(E)) == E
+    if verbose:
+        print('K -> cm: ~ {0:.2f} K/cm'.format(cm2K(1)))
 
     E = 1  # eV
     assert (eV2cm(E) == J2cm(eV2J(1)))
