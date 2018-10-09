@@ -415,7 +415,7 @@ class LevelsList(object):
 
         '''
 
-        from radis.lbl.slabs import MergeSlabs
+        from radis.los import MergeSlabs
 
         # Restart from a copy each time  (else reference bands are modified by rescaling
         # and we may loose information if rescaling to 0 for instance)
