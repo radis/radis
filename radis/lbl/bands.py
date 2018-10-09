@@ -1156,8 +1156,8 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
                 df.loc[:, 'viblvl_htrn_u'] = viblvl_u_hitran
                 df.loc[:, 'band_htrn'] = band_hitran
 
-        # 'neq' uses Dunham development based on v1v2l2v3 HITRAN convention
-        elif lvlformat in ['neq']:
+        # 'radis' uses Dunham development based on v1v2l2v3 HITRAN convention
+        elif lvlformat in ['radis']:
 
             if dbformat not in ['hitran', 'cdsd']:
                 raise NotImplementedError('lvlformat `{0}` not supported with dbformat `{1}`'.format(
@@ -1182,7 +1182,7 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         # Note. TODO. Move that in loader.py (or somewhere consistent with
         # classes defined in cdsd.py / hiparser)
 
-        if lvlformat in ['neq']:
+        if lvlformat in ['radis']:
 
             # ensures that vib_lvl_name functions wont crash
             if dbformat not in ['hitran']:

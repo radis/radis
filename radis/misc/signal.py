@@ -274,7 +274,7 @@ def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
 
     '''
 
-    from neq.test.utils import getTestFile
+    from radis.test.utils import getTestFile
     from radis.phys.convert import nm2cm, cm2nm
     import matplotlib.pyplot as plt
     from numpy import loadtxt, linspace

@@ -63,13 +63,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp
-import neq
 from radis.phys.constants import k_b, c, h
-from neq import OLDEST_COMPATIBLE_VERSION
+from radis.phys.constants import hc_k   # ~ 1.44 cm.K
+from radis import OLDEST_COMPATIBLE_VERSION
 from radis.io.hitran import (get_molecule_identifier,
                              HITRAN_CLASS1, HITRAN_CLASS2, HITRAN_CLASS3,
                              HITRAN_CLASS5, HITRAN_CLASS6)
-from neq.db.molecules import ElectronicState
+from radis.db.molecules import ElectronicState
 from radis.misc.basics import all_in
 from radis.misc.debug import printdbg
 from radis.misc.cache_files import load_h5_cache_file
@@ -86,17 +86,14 @@ from six import string_types
 from six.moves import range
 from collections import OrderedDict
 
-hc_k = h*c/k_b*100  # ~ 1.44 cm.K
-
-
 class RovibPartitionFunction(object):
     ''' General class from which all partition function calculators derive
 
     Parameters
     ----------
 
-    electronic_state: :class:`~neq.db.molecules.ElectronicState`
-        an :class:`~neq.db.molecules.ElectronicState` object, which is
+    electronic_state: :class:`~radis.db.molecules.ElectronicState`
+        an :class:`~radis.db.molecules.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data
 
     Notes
@@ -126,8 +123,8 @@ class RovibPartitionFunction(object):
 #        if type(molecule) is int:
 #            molecule = get_molecule(molecule)
 #
-#        # Get molecule from neq.db
-#        mol_list = import_from_module('neq.db.molecules', molecule)
+#        # Get molecule from radis.db
+#        mol_list = import_from_module('radis.db.molecules', molecule)
 #        try:
 #            mol = mol_list[isotope]
 #        except KeyError:
@@ -138,7 +135,7 @@ class RovibPartitionFunction(object):
         try:
             ElecState.Erovib
         except AttributeError:
-            raise AttributeError('{0} has no energy function defined in NeQ'.format(
+            raise AttributeError('{0} has no energy function defined in RADIS'.format(
                 ElecState.get_fullname()))
 
         # Store
@@ -190,8 +187,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
     Parameters
     ----------
 
-    electronic_state: :class:`~neq.db.molecules.ElectronicState`
-        an :class:`~neq.db.molecules.ElectronicState` object, which is
+    electronic_state: :class:`~radis.db.molecules.ElectronicState`
+        an :class:`~radis.db.molecules.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data
 
     '''
@@ -756,7 +753,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
         isotope identifier
 
     path: str
-        path to ``hapi.py``. If None, NeQ embedded ``hapi.py`` (``neq.io.hitran.hapi.py``)
+        path to ``hapi.py``. If None, RADIS embedded ``hapi.py`` (``neq.io.hitran.hapi.py``)
         is used.
 
     References
@@ -774,8 +771,8 @@ class PartFuncHAPI(RovibParFuncTabulator):
         if path is not None:
             partitionSum = self.import_from_file(path)
         else:
-            # Use NeQ embedded
-            from neq.io.hitran.hapi import partitionSum
+            # Use RADIS embedded
+            from radis.io.hitran.hapi import partitionSum
 
         # Check inputs
         if isinstance(M, string_types):
@@ -793,7 +790,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
 
     def import_from_file(self, path):
         ''' Import hapi.py from a given file (in case user wants to specify
-        a different HAPI version than the one embedded in NeQ) '''
+        a different HAPI version than the one embedded in RADIS) '''
         if sys.version == 2:
             import imp
             hapi = imp.load_source('hapi', path)
@@ -1058,26 +1055,26 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 #        return 1
 
     def gs(self):
-        from neq.db.degeneracies import gs
+        from radis.db.degeneracies import gs
         I = self.isotope
         return gs(2, I)
 
     def gi(self):
-        from neq.db.degeneracies import gi
+        from radis.db.degeneracies import gi
         I = self.isotope
         return gi(2, I)
 
 
 class PartFunc_Dunham(RovibParFuncCalculator):
     ''' Calculate partition functions from spectroscopic constants, if
-    molecule data is available in NeQ. Make sure you know what reference data 
-    is being used in NeQ! See molecule list in :data:`~neq.db.molecules.Molecules`
+    molecule data is available in RADIS. Make sure you know what reference data 
+    is being used in RADIS! See molecule list in :data:`~radis.db.molecules.Molecules`
     
     Parameters
     ----------
 
-    electronic_state: :class:`~neq.db.molecules.ElectronicState`
-        an :class:`~neq.db.molecules.ElectronicState` object, which is
+    electronic_state: :class:`~radis.db.molecules.ElectronicState`
+        an :class:`~radis.db.molecules.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data
 
     vmax: int, or ``None``
@@ -1130,14 +1127,14 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
     Validity:
 
-    So far, NeQ energy levels are only calculated from Dunham's expansion.
+    So far, RADIS energy levels are only calculated from Dunham's expansion.
     Above a certain vibrational level a Morse Potential may be used. See how
-    the molecule is defined in :mod:`~neq.db.molecules`
+    the molecule is defined in :mod:`~radis.db.molecules`
     
     See Also
     --------
     
-    :mod:`~neq.db.molecules`
+    :mod:`~radis.db.molecules`
     '''
 
     
@@ -1638,7 +1635,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # ----------------
 
         # ... remember: HITRAN convention with v2=l2 -> gvib degeneracy is "v2+1"
-        # TODO: make a function call to neq.db.degeneracies.gvib ?
+        # TODO: make a function call to radis.db.degeneracies.gvib ?
         df['gvib'] = df.v2 + 1
         df['gj'] = 2*df.j + 1
 
@@ -1766,10 +1763,10 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         See Also
         --------
 
-        :func:`~neq.db.degeneracies.gs`
+        :func:`~radis.db.degeneracies.gs`
         '''
 
-        from neq.db.degeneracies import gs
+        from radis.db.degeneracies import gs
         M, I = ElecState.id, ElecState.iso
         return gs(M, I)
 
@@ -1780,9 +1777,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         See Also
         --------
 
-        :func:`~neq.db.degeneracies.gi`
+        :func:`~radis.db.degeneracies.gi`
         '''
-        from neq.db.degeneracies import gi
+        from radis.db.degeneracies import gi
         M, I = ElecState.id, ElecState.iso
         return gi(M, I)
 
@@ -1790,5 +1787,5 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 # %% Test
 if __name__ == '__main__':
 
-    from neq.test.spec.test_partfunc import _run_testcases
+    from radis.test.spec.test_partfunc import _run_testcases
     print('Testing parfunc: {0}'.format(_run_testcases()))

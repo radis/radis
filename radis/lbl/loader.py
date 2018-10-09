@@ -58,14 +58,14 @@ PRIVATE METHODS - DATABASE LOADING
 # to force regenerating them after a given version. See radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-from neq.db import MolParams
+from radis.db import MolParams
 from radis.io.cdsd import cdsd2df
 from radis.io.hitran import hit2df, get_molecule, parse_global_quanta, parse_local_quanta
-from neq.io.hitran.hiparser import hit2dfTAB
+from radis.io.hitran.hiparser import hit2dfTAB
 from radis.lbl.warning import EmptyDatabaseError
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
-from neq.db.molecules import getMolecule
+from radis.db.molecules import getMolecule
 from radis.lbl.partfunc import (PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc, PartFuncHAPI,
                                PartFunc_Dunham, RovibParFuncTabulator, RovibParFuncCalculator)
 from radis.tools.database import SpecDatabase
@@ -93,10 +93,10 @@ KNOWN_DBFORMAT = ['cdsd', 'hitran',
                   'cdsd4000', 'hitran tab']
 '''list: Known formats for Line Databases'''
 
-KNOWN_LVLFORMAT = ['neq', 'cdsd-pc', 'cdsd-pcN', 'cdsd-hamil', None]
+KNOWN_LVLFORMAT = ['radis', 'cdsd-pc', 'cdsd-pcN', 'cdsd-hamil', None]
 '''list: Known formats for Energy Level Databases (used in non-equilibrium calculations):
 
-- ``'neq'``: energies calculated with Dunham expansions by 
+- ``'radis'``: energies calculated with Dunham expansions by 
     :class:`~radis.lbl.partfunc.PartFunc_Dunham`
 - ``'cdsd-pc'``: energies read from precomputed CDSD energies for CO2, with
     ``viblvl=(p,c)`` convention. See :class:`~radis.lbl.partfunc.PartFuncCO2_CDSDcalc`
@@ -133,7 +133,7 @@ See Also
 
 '''
 auto_drop_columns_for_levelsfmt = {
-        'neq':[],
+        'radis':[],
         'cdsd-pc':['v1u', 'v2u', 'l2u', 'v3u', 'ru',
                       'v1l', 'v2l', 'l2l', 'v3l', 'rl'
                       ],
@@ -151,7 +151,7 @@ Based on the value of ``lvlformat=``, some of these columns won't be used.
 See Also
 --------
 
-- 'neq': :data:`~radis.io.hitran.columns_2004`, 
+- 'radis': :data:`~radis.io.hitran.columns_2004`, 
 - 'cdsd-pc': :data:`~radis.io.hitran.columns_2004`, 
 - 'cdsd-pcN' (CDSD-HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
 - 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`, 
@@ -507,7 +507,7 @@ class DatabankLoader(object):
 
     def fetch_databank(self, source='astroquery', format='hitran',
                        parfunc=None, parfuncfmt='hapi',
-                       levels=None, levelsfmt='neq',
+                       levels=None, levelsfmt='radis',
                        load_energies=True, drop_non_numeric=True):
         ''' Fetch databank with Astroquery [1]_
 
@@ -523,21 +523,21 @@ class DatabankLoader(object):
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
-            your database is HITRAN data). HAPI is embedded into NeQ. Check the
+            your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version.
 
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
-            hapi.py file. If not given, then the hapi.py embedded in NeQ is used (check version)
+            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
 
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
             {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
 
-        levelsfmt: 'cdsd-pc', 'neq' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
+        levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
-            If ``neq``, energies are calculated using the diatomic constants in neq.db database
+            If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
             If None, non equilibrium calculations are not possible. Default ``None``.
 
@@ -631,8 +631,8 @@ class DatabankLoader(object):
         self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
 
         # If energy levels are given, initialize the partition function calculator
-        # (necessary for non-equilibrium). If levelsfmt == 'neq' then energies
-        # are calculated ab initio from NeQ internal species database constants
+        # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
+        # are calculated ab initio from radis internal species database constants
         if load_energies:      
             try:
                 self._init_rovibrational_energies(levels, levelsfmt)
@@ -704,21 +704,21 @@ class DatabankLoader(object):
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
-            your database is HITRAN data). HAPI is embedded into NeQ. Check the
+            your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version.
 
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
-            hapi.py file. If not given, then the hapi.py embedded in NeQ is used (check version)
+            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
 
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
             {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
 
-        levelsfmt: 'cdsd-pc', 'neq' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
+        levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
-            If ``neq``, energies are calculated using the diatomic constants in neq.db database
+            If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
             If None, non equilibrium calculations are not possible. Default ``None``.
 
@@ -839,8 +839,8 @@ class DatabankLoader(object):
             self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
 
             # If energy levels are given, initialize the partition function calculator
-            # (necessary for non-equilibrium). If levelsfmt == 'neq' then energies
-            # are calculated ab initio from NeQ internal species database constants
+            # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
+            # are calculated ab initio from radis internal species database constants
             if load_energies:
                 self._init_rovibrational_energies(levels, levelsfmt)
 
@@ -1073,13 +1073,13 @@ class DatabankLoader(object):
         parfuncfmt: 'cdsd', 'hapi' (see :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`)
             format to read tabulated partition function file. If `hapi`, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
-            your database is HITRAN data). HAPI is embedded into NeQ. Check the
+            your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version.
 
         parfunc: filename or None
             path to tabulated partition function to use.
             If ``parfuncfmt`` is ``hapi`` then ``parfunc`` should be the link to the
-            hapi.py file. If not given, then the hapi.py embedded in NeQ is used (check version)
+            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
 
         '''
 
@@ -1105,10 +1105,10 @@ class DatabankLoader(object):
             path to energy levels (needed for non-eq calculations). Format:
             {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
 
-        levelsfmt: 'cdsd-pc', 'neq' (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or None
+        levelsfmt: 'cdsd-pc', 'radis' (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or None
             how to read the previous file. Known formats: :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
-            If ```neq```, energies are calculated using the diatomic constants
-            in ``neq.db`` database. If available for given molecule. Look up
+            If ```radis```, energies are calculated using the diatomic constants
+            in ``radis.db`` database. If available for given molecule. Look up
             references there. If ``None``, non equilibrium calculations are not
             possible.
 
@@ -1127,7 +1127,7 @@ class DatabankLoader(object):
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
         # energy levels arent specified in a tabulated file, but we can still 
         # calculate them directly from Dunham expansions:
-        elif levelsfmt == 'neq':  
+        elif levelsfmt == 'radis':  
             for iso in self._get_isotope_list():
                 self.parsum_calc[molecule][iso] = {}
                 ParsumCalc = self._build_partition_function_calculator(None,
@@ -1650,7 +1650,7 @@ class DatabankLoader(object):
 
         isotope = int(isotope)
 
-        # Use HAPI (HITRAN Python interface, integrated in NeQ)
+        # Use HAPI (HITRAN Python interface, integrated in RADIS)
         if parfuncfmt == 'hapi':
             parsum = PartFuncHAPI(M=molecule, I=isotope, path=parfunc)
         elif parfuncfmt == 'cdsd':  # Use tabulated CDSD partition functions
@@ -1708,7 +1708,7 @@ class DatabankLoader(object):
                                           levelsfmt=levelsfmt)
             
         # calculate energy levels from RADIS Dunham parameters
-        elif levelsfmt == 'neq':  
+        elif levelsfmt == 'radis':  
             state = getMolecule(self.input.molecule, isotope,
                                 'X', verbose=self.verbose)
             parsum = PartFunc_Dunham(state,
@@ -1743,7 +1743,7 @@ class DatabankLoader(object):
         See Also
         --------
 
-        :class:`~neq.db.molparam.MolParams`
+        :class:`~radis.db.molparam.MolParams`
         '''
 
         # order database
@@ -1758,7 +1758,7 @@ class DatabankLoader(object):
         # for some reason this can be a small bottleneck
         # prefill:
         # 13.8 s without, 11s with. The bottleneck is definitly the preallocation.
-        # neq 0.9.23: managed to divide initial time by a factor of 10 with the 
+        # neq 0.9.23 (< radis 1.0): managed to divide initial time by a factor of 10 with the 
         # np.take() trick. Probably 1.4s now on this test case (but cant remember
         # which one it was, i'm using a different one)
             

@@ -268,7 +268,7 @@ def calc_spectrum(wavenum_min=None,
             # are supported!)
             sf.fetch_databank(source='astroquery', format='hitran',
                               parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
-                              levelsfmt='neq',     # built-in spectroscopic constants
+                              levelsfmt='radis',     # built-in spectroscopic constants
                               )
     else:   # manual mode: get from files defined in .radis
         sf.load_databank(databank, 
@@ -296,5 +296,5 @@ def calc_spectrum(wavenum_min=None,
 # --------------------------
 if __name__ == '__main__':
 
-    from neq.test.spec.test_calc import _run_testcases
+    from radis.test.spec.test_calc import _run_testcases
     print(_run_testcases(verbose=True))

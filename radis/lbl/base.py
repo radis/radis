@@ -27,8 +27,8 @@ PRIVATE METHODS - CALCULATE SPECTROSCOPIC PARAMETERS
 
 - _add_EvibErot
 - _add_EvibErot_CDSD
-- _add_EvibErot_NeQ_cls1
-- _add_Evib123Erot_NeQ_cls5
+- _add_EvibErot_RADIS_cls1
+- _add_Evib123Erot_RADIS_cls5
 - _add_ju
 - _add_Eu
 - _check_noneq_parameters
@@ -58,8 +58,7 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-import neq
-from neq.db import MolParams
+from radis.db import MolParams
 from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT
 from radis.lbl.labels import (vib_lvl_name_hitran_class1,
                              vib_lvl_name_hitran_class5)
@@ -266,8 +265,8 @@ class BaseFactory(DatabankLoader):
     # ---------------------------------
     # _add_EvibErot
     # _add_EvibErot_CDSD
-    # _add_EvibErot_NeQ_cls1
-    # _add_Evib123Erot_NeQ_cls5
+    # _add_EvibErot_RADIS_cls1
+    # _add_Evib123Erot_RADIS_cls5
     # _add_ju
     # _add_Eu
     # _check_noneq_parameters
@@ -318,10 +317,10 @@ class BaseFactory(DatabankLoader):
 
         # calculate directly with Dunham expansions, whose terms are included in
         # the radis.db database
-        elif self.params.levelsfmt == 'neq':    
+        elif self.params.levelsfmt == 'radis':    
             molecule = self.input.molecule
             if molecule in HITRAN_CLASS1:  # class 1
-                return self._add_EvibErot_NeQ_cls1(df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic)
+                return self._add_EvibErot_RADIS_cls1(df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic)
             elif molecule in HITRAN_CLASS5:
                 if __debug__:
                     printdbg(
@@ -329,9 +328,9 @@ class BaseFactory(DatabankLoader):
                 # TODO: write simplified function: doesnt need to fetch Evib1,2,3 here
                 # as only Evib is needed in this case
                 if calc_Evib_harmonic_anharmonic:
-                    return self._add_Evib123Erot_NeQ_cls5_harmonicanharmonic(df)
+                    return self._add_Evib123Erot_RADIS_cls5_harmonicanharmonic(df)
                 else:
-                    return self._add_Evib123Erot_NeQ_cls5(df)
+                    return self._add_Evib123Erot_RADIS_cls5(df)
             else:
                 raise NotImplementedError(
                     'Molecules not implemented: {0}'.format(molecule.name))  # TODO
@@ -363,12 +362,12 @@ class BaseFactory(DatabankLoader):
             raise NotImplementedError(
                 '3 Tvib mode for CDSD in pcN convention')  # TODO
 
-        elif self.params.levelsfmt == 'neq':    # calculate with Dunham expansions
+        elif self.params.levelsfmt == 'radis':    # calculate with Dunham expansions
             if self.input.molecule in HITRAN_CLASS5:  # class 1
                 if calc_Evib_harmonic_anharmonic:
-                    return self._add_Evib123Erot_NeQ_cls5_harmonicanharmonic(df)
+                    return self._add_Evib123Erot_RADIS_cls5_harmonicanharmonic(df)
                 else:
-                    return self._add_Evib123Erot_NeQ_cls5(df)
+                    return self._add_Evib123Erot_RADIS_cls5(df)
             else:
                 raise NotImplementedError(
                     'Molecules other than HITRAN class 5 (CO2) not implemented')  # TODO
@@ -471,9 +470,9 @@ class BaseFactory(DatabankLoader):
 
             # total:  ~ 15s on 460k lines   (probably faster since neq==0.9.20)
 #            try:
-            # ~ 6.6 s (probably faster since neq==0.9.20)
+            # ~ 6.6 s (probably faster since neq==0.9.20 (radis<1.0)
             df = df.groupby(by=['polyu', 'wangu']).apply(fillEvibu)
-            # ~ 6.6 s (probably faster since neq==0.9.20)
+            # ~ 6.6 s (probably faster since neq==0.9.20 (radis<1.0)
             df = df.groupby(by=['polyl', 'wangl']).apply(fillEvibl)
 #            except KeyError:
 #                import traceback
@@ -515,7 +514,7 @@ class BaseFactory(DatabankLoader):
         for iso, idx in df.groupby('iso').indices.items():
             df.loc[idx, ['Evibl', 'Evibu']] = get_Evib_CDSD_pc_1iso(df.loc[idx], iso)
             
-            if neq.DEBUG_MODE:
+            if radis.DEBUG_MODE:
                 assert (df.loc[idx, 'iso'] == iso).all()
 
         # Get rotational energy: better recalculate than look up the database
@@ -630,7 +629,7 @@ class BaseFactory(DatabankLoader):
         for iso, idx in df.groupby('iso').indices.items():
             df.loc[idx, ['Evibl', 'Evibu']] = get_Evib_CDSD_pcN_1iso(df.loc[idx], iso)
             
-            if neq.DEBUG_MODE:
+            if radis.DEBUG_MODE:
                 assert (df.loc[idx, 'iso'] == iso).all()
 
         # Get rotational energy: better recalculate than look up the database
@@ -752,7 +751,7 @@ class BaseFactory(DatabankLoader):
         for iso, idx in df.groupby('iso').indices.items():
             df.loc[idx, ['Evibl', 'Evibu']] = get_Evib_CDSD_pcJN_1iso(df.loc[idx], iso)
 
-            if neq.DEBUG_MODE:
+            if radis.DEBUG_MODE:
                 assert (df.loc[idx, 'iso'] == iso).all()
 
         # Get rotational energy: better recalculate than look up the database
@@ -925,7 +924,7 @@ class BaseFactory(DatabankLoader):
 
         return  # None: Dataframe updated
 
-    def _add_EvibErot_NeQ_cls1(self, df, calc_Evib_harmonic_anharmonic=False):
+    def _add_EvibErot_RADIS_cls1(self, df, calc_Evib_harmonic_anharmonic=False):
         ''' Calculate Evib & Erot in dataframe for HITRAN class 1 (diatomic) molecules
 
         Parameters
@@ -945,7 +944,7 @@ class BaseFactory(DatabankLoader):
         '''
         if __debug__:
             printdbg(
-                'called _add_EvibErot_NeQ_cls1(calc_Evib_harmonic_anharmonic={0})'.format(calc_Evib_harmonic_anharmonic))
+                'called _add_EvibErot_RADIS_cls1(calc_Evib_harmonic_anharmonic={0})'.format(calc_Evib_harmonic_anharmonic))
 
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
@@ -967,7 +966,7 @@ class BaseFactory(DatabankLoader):
                                      + ' with energies of known format: {0}'.format(KNOWN_LVLFORMAT)
                                      + '. See SpectrumFactory.load_databank() help for more details')
 
-        def get_Evib_NeQ_cls1_1iso(df, iso):
+        def get_Evib_RADIS_cls1_1iso(df, iso):
             ''' Calculate Evib & Erot for a given isotope (energies are specific
             to a given isotope) '''
             # TODO: implement with map() instead (much faster!! see get_Evib_CDSD_* )
@@ -1051,14 +1050,14 @@ class BaseFactory(DatabankLoader):
 #        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
 #        first_row['iso'] = (-1)            # HACK pandas #2936
 #        df = pd.concat((first_row, df))  # HACK pandas #2936
-#        df = df.groupby('iso').apply(lambda x: get_Evib_NeQ_cls1_1iso(x, x.name))
+#        df = df.groupby('iso').apply(lambda x: get_Evib_RADIS_cls1_1iso(x, x.name))
 #        df = df.iloc[1:]                 # HACK pandas #2936
 
         # Slower than the version below:
         df['Evibl'] = np.nan
         df['Evibu'] = np.nan
         for iso, idx in df.groupby('iso').indices.items():
-            df.loc[idx, ['Evibl', 'Evibu']] = get_Evib_NeQ_cls1_1iso(df.loc[idx], iso)
+            df.loc[idx, ['Evibl', 'Evibu']] = get_Evib_RADIS_cls1_1iso(df.loc[idx], iso)
 
         # Get rotational energy: better recalculate than look up the database (much faster!)
         df['Erotu'] = df.Eu - df.Evibu
@@ -1072,7 +1071,7 @@ class BaseFactory(DatabankLoader):
 
         return  # None: Dataframe updated
 
-    def _add_Evib123Erot_NeQ_cls5(self, df):
+    def _add_Evib123Erot_RADIS_cls5(self, df):
         ''' Calculate Evib & Erot in dataframe for HITRAN class 5 (linear triatomic
         with Fermi degeneracy... = CO2! ) molecules
 
@@ -1093,7 +1092,7 @@ class BaseFactory(DatabankLoader):
         '''
         if __debug__:
             printdbg(
-                'called _add_Evib123Erot_NeQ_cls5()')
+                'called _add_Evib123Erot_RADIS_cls5()')
 
         molecule = self.input.molecule
         state = self.input.state           # electronic state
@@ -1112,7 +1111,7 @@ class BaseFactory(DatabankLoader):
                                      + ' with energies of known format: {0}'.format(KNOWN_LVLFORMAT)
                                      + '. See SpectrumFactory.load_databank() help for more details')
 
-        def get_Evib123_NeQ_cls5_1iso(df, iso):
+        def get_Evib123_RADIS_cls5_1iso(df, iso):
             ''' Calculate Evib & Erot for a given isotope (energies are specific
             to a given isotope)
 
@@ -1207,7 +1206,7 @@ class BaseFactory(DatabankLoader):
 #        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
 #        first_row['iso'] = (-1)            # HACK pandas #2936
 #        df = pd.concat((first_row, df))  # HACK pandas #2936
-#        df = df.groupby('iso').apply(lambda x: get_Evib123_NeQ_cls5_1iso(x, x.name))
+#        df = df.groupby('iso').apply(lambda x: get_Evib123_RADIS_cls5_1iso(x, x.name))
 #        df = df.iloc[1:]                 # HACK pandas #2936
 
         # Slower than the version below:
@@ -1219,7 +1218,7 @@ class BaseFactory(DatabankLoader):
         df['Evib3u'] = np.nan
         for iso, idx in df.groupby('iso').indices.items():
             df.loc[idx, ['Evib1l', 'Evib2l', 'Evib3l', 'Evib1u', 'Evib2u', 'Evib3u']
-            ] = get_Evib123_NeQ_cls5_1iso(df.loc[idx], iso)
+            ] = get_Evib123_RADIS_cls5_1iso(df.loc[idx], iso)
 
         # Add total vibrational energy too (doesnt cost much, and can plot populations in spectrum)
         df['Evibu'] = df.Evib1u + df.Evib2u + df.Evib3u
@@ -1241,7 +1240,7 @@ class BaseFactory(DatabankLoader):
 
         return  # None: Dataframe updated
 
-    def _add_Evib123Erot_NeQ_cls5_harmonicanharmonic(self, df):
+    def _add_Evib123Erot_RADIS_cls5_harmonicanharmonic(self, df):
         ''' Calculate Evib & Erot in dataframe for HITRAN class 5 (linear triatomic
         with Fermi degeneracy... = CO2! ) molecules
 
@@ -1255,7 +1254,7 @@ class BaseFactory(DatabankLoader):
         '''
         if __debug__:
             printdbg(
-                'called _add_Evib123Erot_NeQ_cls5_harmonicanharmonic()')
+                'called _add_Evib123Erot_RADIS_cls5_harmonicanharmonic()')
 
         molecule = self.input.molecule
         state = self.input.state           # electronic state
@@ -1274,7 +1273,7 @@ class BaseFactory(DatabankLoader):
                                      + ' with energies of known format: {0}'.format(KNOWN_LVLFORMAT)
                                      + '. See SpectrumFactory.load_databank() help for more details')
 
-        def get_Evib123_NeQ_cls5_1iso_ah(df, iso):
+        def get_Evib123_RADIS_cls5_1iso_ah(df, iso):
             ''' Calculate Evib & Erot for a given isotope (energies are specific
             to a given isotope). Returns harmonic, anharmonic components
 
@@ -1372,7 +1371,7 @@ class BaseFactory(DatabankLoader):
 #        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
 #        first_row['iso'] = (-1)            # HACK pandas #2936
 #        df = pd.concat((first_row, df))  # HACK pandas #2936
-#        df = df.groupby('iso').apply(lambda x: get_Evib123_NeQ_cls5_1iso_ah(x, x.name))
+#        df = df.groupby('iso').apply(lambda x: get_Evib123_RADIS_cls5_1iso_ah(x, x.name))
 #        df = df.iloc[1:]                 # HACK pandas #2936
 
         # Slower than the version below:
@@ -1391,7 +1390,7 @@ class BaseFactory(DatabankLoader):
         for iso, idx in df.groupby('iso').indices.items():
             df.loc[idx, ['Evib1l_h', 'Evib1l_a', 'Evib2l_h', 'Evib2l_a', 'Evib3l_h', 'Evib3l_a',
                        'Evib1u_h', 'Evib1u_a', 'Evib2u_h', 'Evib2u_a', 'Evib3u_h', 'Evib3u_a']
-                ] = get_Evib123_NeQ_cls5_1iso_ah(df.loc[idx], iso)
+                ] = get_Evib123_RADIS_cls5_1iso_ah(df.loc[idx], iso)
 
         # Add total vibrational energy too (doesnt cost much, and can plot populations in spectrum)
         df['Evibu_a'] = df.Evib1u_a + df.Evib2u_a + df.Evib3u_a
@@ -1577,9 +1576,9 @@ class BaseFactory(DatabankLoader):
         See Also
         --------
         
-        :func:`~neq.db.degeneracies.gs`, :func:`~neq.db.degeneracies.gi`
+        :func:`~radis.db.degeneracies.gs`, :func:`~radis.db.degeneracies.gi`
         '''
-        from neq.db.degeneracies import gs, gi
+        from radis.db.degeneracies import gs, gi
 
 #        levelsfmt = self.params.levelsfmt
         dbformat = self.params.dbformat
@@ -1607,7 +1606,7 @@ class BaseFactory(DatabankLoader):
             df.loc[idx, 'grotu'] = dg.gju * _gs * _gi
             df.loc[idx, 'grotl'] = dg.gjl * _gs * _gi
             
-            if neq.DEBUG_MODE:
+            if radis.DEBUG_MODE:
                 assert (df.loc[idx, 'id'] == id).all()
                 assert (df.loc[idx, 'iso'] == iso).all()
                 
@@ -1632,7 +1631,7 @@ class BaseFactory(DatabankLoader):
 #                elif levelsfmt == 'cdsd-pcN':
 #                    gvibu = 1          # (p,j,c,N) is an injective nomenclature
 #                    gvibl = 1          # (p,j,c,N) is an injective nomenclature
-#                elif levelsfmt == 'neq':
+#                elif levelsfmt == 'radis':
 #                    gvibu = 1   # r.v2u+1   # v2 levels have a degeneracy
 #                    gvibl = 1   # r.v2l+1   # v2 levels have a degeneracy
 #                else:
@@ -1745,7 +1744,7 @@ class BaseFactory(DatabankLoader):
                 # ... note: do not update the populations here, so populations in the
                 # ... energy level list correspond to the one calculated for T and not Tref
     
-                if neq.DEBUG_MODE:
+                if radis.DEBUG_MODE:
                     assert (df.loc[idx, 'id'] == id).all()
                     assert (df.loc[idx, 'iso'] == iso).all()
                     
@@ -2059,7 +2058,7 @@ class BaseFactory(DatabankLoader):
                 molecule, iso, state)
             df1.loc[idx, 'Qgas'] = parsum.at(Tgas)
 
-            if neq.DEBUG_MODE:
+            if radis.DEBUG_MODE:
                 assert (df1.loc[idx, 'id'] == id).all()
                 assert (df1.loc[idx, 'iso'] == iso).all()
                 
@@ -2255,7 +2254,7 @@ class BaseFactory(DatabankLoader):
                 # ... note: the .map() version is about 3x faster than 
                 # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
     
-                if neq.DEBUG_MODE:
+                if radis.DEBUG_MODE:
                     assert (df.loc[idx, 'id'] == id).all()
                     assert (df.loc[idx, 'iso'] == iso).all()
 
@@ -2396,7 +2395,7 @@ class BaseFactory(DatabankLoader):
             df.loc[idx, 'Q'] = Q
 #            dg_list.append(dg)
             
-            if neq.DEBUG_MODE:
+            if radis.DEBUG_MODE:
                 assert (df.loc[idx, 'id'] == id).all()
                 assert (df.loc[idx, 'iso'] == iso).all()
 
@@ -2802,7 +2801,7 @@ class BaseFactory(DatabankLoader):
                     molecule, iso, state)
                 df.at[idx, 'Qref'] = parsum.at(Tref, update_populations=False)
                 
-                if neq.DEBUG_MODE:
+                if radis.DEBUG_MODE:
                     assert (df.loc[idx, 'id'] == id).all()
                     assert (df.loc[idx, 'iso'] == iso).all()
                 
@@ -3228,7 +3227,7 @@ def get_all_waveranges(medium, wavenum_min=None, wavenum_max=None, wavelength_mi
 
 
 if __name__ == '__main__':
-    from neq.test.spec.test_base import _run_testcases
+    from radis.test.spec.test_base import _run_testcases
     _run_testcases()
 
     _, _, wlmin, wlmax = get_all_waveranges('air', 2000, 2400)

@@ -130,5 +130,5 @@ def _format_str(*var):
 
 if __name__ == '__main__':
 
-    from neq.test.spec.test_labels import test_vibrational_levels_labelling
+    from radis.test.spec.test_labels import test_vibrational_levels_labelling
     test_vibrational_levels_labelling()

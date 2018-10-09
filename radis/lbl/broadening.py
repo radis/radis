@@ -1955,5 +1955,5 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
     #
 if __name__ == '__main__':
 
-    from neq.test.spec.test_broadening import _run_testcases
+    from radis.test.spec.test_broadening import _run_testcases
     print('Testing broadening.py:', _run_testcases(verbose=True, plot=True))

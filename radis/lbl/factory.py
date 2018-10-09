@@ -107,7 +107,7 @@ from radis.misc.basics import is_float, list_if_float
 from radis.phys.convert import conv2
 from radis.phys.constants import k_b
 from radis.phys.units import convert_rad2nm, convert_emi2nm
-from neq import get_version
+from radis import get_version
 from numpy import exp, arange
 from multiprocessing import cpu_count
 from time import time
@@ -1292,7 +1292,7 @@ def _generate_broadening_range(wstep, broadening_max_width):
 #
 #    '''
 #
-#    from neq.io import cdsd2df
+#    from radis.io import cdsd2df
 #    from os.path import splitext
 #    from radis.misc.printer import printr
 #
@@ -1320,5 +1320,5 @@ def _generate_broadening_range(wstep, broadening_max_width):
 
 # --------------------------
 if __name__ == '__main__':
-    from neq.test.spec.test_factory import _run_testcases
+    from radis.test.spec.test_factory import _run_testcases
     print('Testing factory:', _run_testcases(verbose=True))
