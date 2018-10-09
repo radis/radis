@@ -49,9 +49,6 @@ References
 # TODO: add a general class from which all Partitionfunction (included Tabulated)
 # inherit from...
 
-# TODO: now that we have access to the version under which cache files where generated,
-# add (default?) option to regenerate whenever we need it rather than raising an error
-
 # TODO: vectorize partition function caclulations for different temperatures. Would need
 # stuff like E = df.E.values.reshape((1,-1)), etc.
 
@@ -63,7 +60,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp
-from radis.phys.constants import k_b, c, h
+import radis
 from radis.phys.constants import hc_k   # ~ 1.44 cm.K
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.io.hitran import (get_molecule_identifier,
@@ -79,12 +76,10 @@ from radis.lbl.labels import (vib_lvl_name_hitran_class1, vib_lvl_name_hitran_cl
                              vib_lvl_name_cdsd_pcN, vib_lvl_name_cdsd_pcJN)
 #import json
 from warnings import warn
-import os
 from os.path import exists, join
 from radis.misc.progress_bar import ProgressBar
 from six import string_types
 from six.moves import range
-from collections import OrderedDict
 
 class RovibPartitionFunction(object):
     ''' General class from which all partition function calculators derive
@@ -753,7 +748,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
         isotope identifier
 
     path: str
-        path to ``hapi.py``. If None, RADIS embedded ``hapi.py`` (``neq.io.hitran.hapi.py``)
+        path to ``hapi.py``. If None, RADIS embedded ``hapi.py`` (``radis.io.hapi.py``)
         is used.
 
     References
@@ -772,7 +767,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
             partitionSum = self.import_from_file(path)
         else:
             # Use RADIS embedded
-            from radis.io.hitran.hapi import partitionSum
+            from radis.io.hapi import partitionSum
 
         # Check inputs
         if isinstance(M, string_types):
@@ -964,7 +959,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             return
 
         df = load_h5_cache_file(cachefile, use_cached, metadata=metadata,
-                             current_version=neq.__version__,
+                             current_version=radis.__version__,
                              last_compatible_version=OLDEST_COMPATIBLE_VERSION,
                              verbose=verbose)
 
@@ -976,7 +971,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         self.df = df  # Store
 
         if use_cached and not exists(cachefile):
-            save_to_hdf(self.df, cachefile, metadata=metadata, version=neq.__version__,
+            save_to_hdf(self.df, cachefile, metadata=metadata, version=radis.__version__,
                         key='df', overwrite=True)
 
         # Placeholder: correct energies for isotope 2
@@ -1191,7 +1186,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # If file is deprecated, regenerate it unless 'force' was used
 
         from radis.misc.utils import getProjectRoot
-        from radis.misc import make_folders
+        from radis.misc.basics import make_folders
         make_folders(join(getProjectRoot(), 'db'), molecule.upper())
         filename = '{0}_iso{1}_levels.h5'.format(molecule.lower(), isotope)
         cachefile = join(getProjectRoot(), 'db', molecule.upper(), filename)
@@ -1202,7 +1197,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             return
 
         self.df = load_h5_cache_file(cachefile, use_cached, metadata=metadata,
-                             current_version=neq.__version__,
+                             current_version=radis.__version__,
                              last_compatible_version=OLDEST_COMPATIBLE_VERSION,
                              verbose=verbose)
 
@@ -1235,7 +1230,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         # save files if use_cached
         if use_cached and not exists(cachefile):
-            save_to_hdf(self.df, cachefile, metadata=metadata, version=neq.__version__,
+            save_to_hdf(self.df, cachefile, metadata=metadata, version=radis.__version__,
                         key='df', overwrite=True)
 
         # Add extra columns (note that this is not saved to disk)

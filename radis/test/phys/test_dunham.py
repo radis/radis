@@ -5,8 +5,8 @@ Created on Tue Jul 31 14:24:27 2018
 @author: erwan
 """
 
-from neq.phys.dunham import EvJ
-from neq.db.utils import check_molecule_data_structure
+from radis.phys.dunham import EvJ
+from radis.db.utils import check_molecule_data_structure
 
 def test_EvJ(verbose=True, *args, **kwargs):
     
@@ -24,11 +24,11 @@ def test_dunham_co(verbose=True, *args, **kwargs):
     isotope = 1
     
     # %% Check molecule data JSON 
-    from neq.db.utils import get_dunham_coefficients
+    from radis.db.utils import get_dunham_coefficients
     dunham_coeffs = get_dunham_coefficients(molecule, isotope, 'X1SIG+')
     
 #    # Compare with results from Evj calculation in Herzberg notation
-    from neq.db.molecules import Molecules
+    from radis.db.molecules import Molecules
     CO_X = Molecules[molecule][isotope]['X']
 
 

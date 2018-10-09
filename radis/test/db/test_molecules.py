@@ -6,7 +6,7 @@ Created on Tue Jul 31 18:00:54 2018
 """
 
 import numpy as np
-from neq.db.molecules import getMolecule
+from radis.db.molecules import getMolecule
 import pytest
 
 @pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'    
@@ -28,24 +28,25 @@ def test_getMolecule(verbose=True, *args, **kwargs):
 
     return True
 
-@pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'    
-def test_CO_energies_Herzberg_vs_Dunham(verbose=True, *args, **kwargs):
-
-    from neq.db.molecules import CO_X_iso1_Herzberg, CO_X_iso1
-    
-    for (v, J) in [(0, 0), (1, 10), (10, 10)]:
-        if verbose:
-            print('v={0}, J={1}'.format(v,J))
-            print('CO_X_iso1_Herzberg: {0:.3f}cm-1'.format(CO_X_iso1_Herzberg.Erovib(v,J)))
-            print('CO_X_iso1_from_json: {0:.3f}cm-1'.format(CO_X_iso1.Erovib(v,J)))
-        assert np.isclose(CO_X_iso1_Herzberg.Erovib(v,J), CO_X_iso1.Erovib(v,J),
-                          rtol=1e-4)
+# Test defined in neq 0.9.24. Deactivated in the move to RADIS 1.0
+#@pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'    
+#def test_CO_energies_Herzberg_vs_Dunham(verbose=True, *args, **kwargs):
+#
+#    from radis.db.molecules import CO_X_iso1_Herzberg, CO_X_iso1
+#    
+#    for (v, J) in [(0, 0), (1, 10), (10, 10)]:
+#        if verbose:
+#            print('v={0}, J={1}'.format(v,J))
+#            print('CO_X_iso1_Herzberg: {0:.3f}cm-1'.format(CO_X_iso1_Herzberg.Erovib(v,J)))
+#            print('CO_X_iso1_from_json: {0:.3f}cm-1'.format(CO_X_iso1.Erovib(v,J)))
+#        assert np.isclose(CO_X_iso1_Herzberg.Erovib(v,J), CO_X_iso1.Erovib(v,J),
+#                          rtol=1e-4)
 
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_getMolecule(verbose=verbose, *args, **kwargs)
-    test_CO_energies_Herzberg_vs_Dunham(verbose=verbose, *args, **kwargs)
+#    test_CO_energies_Herzberg_vs_Dunham(verbose=verbose, *args, **kwargs)
 
     return True
 

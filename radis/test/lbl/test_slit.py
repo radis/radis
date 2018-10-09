@@ -17,7 +17,7 @@ Run only fast tests
 
 """
 
-from neq.spec import SpectrumFactory
+from radis.lbl import SpectrumFactory
 from radis.spectrum.spectrum import calculated_spectrum, transmittance_spectrum
 from radis.tools.database import load_spec
 from radis.los.slabs import SerialSlabs
@@ -25,8 +25,8 @@ from radis.tools.slit import (gaussian_slit, triangular_slit, trapezoidal_slit,
                               import_experimental_slit, convolve_with_slit)
 from radis.phys.units import is_homogeneous
 from radis.misc.utils import DatabankNotFound
-from neq.misc.printer import printm
-from neq.test.utils import setup_test_line_databases
+from radis.misc.printer import printm
+from radis.test.utils import setup_test_line_databases
 from radis.test.utils import IgnoreMissingDatabase
 import matplotlib.pyplot as plt
 import numpy as np

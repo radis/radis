@@ -768,5 +768,5 @@ def _test(verbose=True, plot=False, *args, **kwargs):
 
 if __name__ == '__main__':
 
-    from radis.test.spec.test_overp import run_testcases
+    from radis.test.lbl.test_overp import run_testcases
     print('test_overp.py:', run_testcases(plot=True))

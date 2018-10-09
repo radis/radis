@@ -495,5 +495,5 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
 # %% Test
 if __name__ == '__main__':
 
-    from radis.test.spec.test_line_survey import _run_testcases
+    from radis.test.lbl.test_line_survey import _run_testcases
     print('Testing line survey functions:', _run_testcases(plot=True))

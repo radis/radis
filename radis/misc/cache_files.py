@@ -35,7 +35,7 @@ import radis
 from warnings import warn
 from os.path import exists
 from radis.misc.basics import compare_dict, is_float
-from radis.misc.printer import printr
+from radis.misc.printer import printr, printm
 import pandas as pd
 
 
@@ -85,7 +85,7 @@ def load_h5_cache_file(cachefile, use_cached, metadata, current_version,
     last_compatible_version: str
         if file version is inferior to this, file is considered deprecated. 
         See ``use_cached`` to know how to handle deprecated files. 
-        Default :data:`~neq.OLDEST_COMPATIBLE_VERSION`. 
+        Default :data:`~radis.OLDEST_COMPATIBLE_VERSION`. 
         
     Returns
     -------
@@ -97,7 +97,7 @@ def load_h5_cache_file(cachefile, use_cached, metadata, current_version,
     See Also
     --------
     
-    :data:`~neq.OLDEST_COMPATIBLE_VERSION`
+    :data:`~radis.OLDEST_COMPATIBLE_VERSION`
         
     '''
 

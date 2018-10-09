@@ -43,8 +43,8 @@ from __future__ import absolute_import
 from __future__ import print_function
 from warnings import warn
 from radis.lbl.broadening import BroadenFactory
-from radis.lbl.spectrum import Spectrum
-from radis.lbl.formula import calc_radiance
+from radis.spectrum.equations import calc_radiance
+from radis.spectrum.spectrum import Spectrum
 from radis.phys.units import convert_rad2nm, convert_emi2nm
 from radis.io.hitran import get_molecule, HITRAN_CLASS1
 from radis.misc.basics import is_float

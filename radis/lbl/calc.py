@@ -296,5 +296,5 @@ def calc_spectrum(wavenum_min=None,
 # --------------------------
 if __name__ == '__main__':
 
-    from radis.test.spec.test_calc import _run_testcases
+    from radis.test.lbl.test_calc import _run_testcases
     print(_run_testcases(verbose=True))

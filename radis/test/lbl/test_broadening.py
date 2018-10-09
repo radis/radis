@@ -11,13 +11,13 @@ We're looking at CO(0->1) line 'R1' at 2150.86 cm-1
 """
 
 from __future__ import unicode_literals, print_function, absolute_import, division
-from neq.spec import SpectrumFactory, Spectrum
+from radis.lbl.factory import SpectrumFactory
+from radis.spectrum.spectrum import Spectrum
 from radis import plot_diff, get_residual_integral, get_residual
-from neq.io.hitran.hapi import (
-    db_begin, fetch, tableList, absorptionCoefficient_Voigt)
+from radis.io.hapi import db_begin, fetch, tableList, absorptionCoefficient_Voigt
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
-from neq.misc.printer import printm
+from radis.misc.printer import printm
 from os.path import join, dirname
 import matplotlib.pyplot as plt
 import pytest

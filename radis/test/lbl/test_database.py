@@ -25,8 +25,8 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 import os
 import matplotlib.pyplot as plt
 import sys
-from neq.spec import SpectrumFactory
-from neq.misc.printer import printm
+from radis.lbl import SpectrumFactory
+from radis.misc.printer import printm
 from radis.tools.database import load_spec
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase

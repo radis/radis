@@ -3,10 +3,10 @@
 Test names and labels
 """
 
-from neq.spec.labels import (vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5,
+from radis.lbl.labels import (vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5,
                              vib_lvl_name_hitran_class5_short, vib_lvl_name_cdsd_pc,
                              vib_lvl_name_cdsd_pcN)
-from neq.misc.printer import printm
+from radis.misc.printer import printm
 import pytest
 
 

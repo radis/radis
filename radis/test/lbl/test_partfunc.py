@@ -17,14 +17,14 @@ Run only fast tests (i.e: tests that a 'fast' label)
 
 """
 
-from neq.spec.partfunc import (PartFunc_Dunham, PartFuncHAPI,
+from radis.lbl.partfunc import (PartFunc_Dunham, PartFuncHAPI,
                                PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc)
-from neq.phys.const import hc_k
+from radis.phys.constants import hc_k
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase
-from neq.misc.printer import printm
+from radis.misc.printer import printm
 from radis.misc.cache_files import DeprecatedFileError
-from neq.db.molecules import Molecules
+from radis.db.molecules import Molecules
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp

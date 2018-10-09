@@ -21,7 +21,7 @@ import numpy as np
 from numpy import allclose, linspace
 import matplotlib.pyplot as plt
 from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
-from neq.misc.printer import printm
+from radis.misc.printer import printm
 from os.path import basename
 import pytest
 from warnings import filterwarnings, catch_warnings
@@ -35,8 +35,8 @@ fig_prefix = basename(__file__)+': '
 def test_populations(verbose=True, *args, **kwargs):
     ''' Test that vib and rovib populations are calculated correctly '''
 
-    from neq.spec import SpectrumFactory
-    from neq.misc.basics import all_in
+    from radis.lbl import SpectrumFactory
+    from radis.misc.basics import all_in
 
     export = ['vib', 'rovib']
     sf = SpectrumFactory(2000, 2300,
@@ -86,7 +86,7 @@ def test_rescaling_path_length(debug=False, plot=False, verbose=True, warnings=T
         plt.ion()
 
     try:
-        from neq.spec import SpectrumFactory
+        from radis.lbl import SpectrumFactory
 
         setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
 
@@ -134,7 +134,7 @@ def test_rescaling_mole_fraction(debug=False, plot=False, verbose=True, warnings
                                  *args, **kwargs):
     ''' Test rescaling functions '''
 
-    from neq.spec import SpectrumFactory
+    from radis.lbl import SpectrumFactory
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck
         plt.ion()
@@ -189,7 +189,7 @@ def test_rescaling_mole_fraction(debug=False, plot=False, verbose=True, warnings
 def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **kwargs):
     ''' Test effect of propagating medium '''
 
-    from neq.spec.factory import SpectrumFactory
+    from radis.lbl.factory import SpectrumFactory
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck
         plt.ion()

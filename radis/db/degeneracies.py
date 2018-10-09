@@ -127,7 +127,7 @@ def gs(M, I):
 #    if mol == 'CO2':
 #        if levelsfmt == 'cdsd':
 #            g = 1          # (p,j,c,n is an injective description)
-#        elif levelsfmt == 'neq':
+#        elif levelsfmt == 'radis':
 #            g = lines.v2+1   # v2 levels have a degeneracy
 #        else:
 #            raise NotImplementedError('unknown format: {0}'.format(levelsfmt))

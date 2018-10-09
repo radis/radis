@@ -94,7 +94,7 @@ TEST_DATABASES = {
         'path': [getTestFile(r'hitran_co_3iso_2000_2300cm.par')],
         'format': 'hitran',
         'parfuncfmt': 'hapi',
-        'levelsfmt': 'radis',s
+        'levelsfmt': 'radis',
     },
 }
 

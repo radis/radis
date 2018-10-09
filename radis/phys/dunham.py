@@ -196,8 +196,8 @@ def Fv(v, J, Be, De, alpha_e, beta_e, gamma_e=0, delta_e=0, epsilon_e=0,
 #    
 #    Read directly from a .json file::
 #            
-#        from neq.db.utils import get_dunham_coefficients
-#        from neq.phys.dunham import EvJ
+#        from radis.db.utils import get_dunham_coefficients
+#        from radis.phys.dunham import EvJ
 #        dunham_coeffs = get_dunham_coefficients('CO', 1, 'X1SIG+')
 #        
 #        # Now calculate energy
@@ -244,8 +244,8 @@ def EvJ(v, J, **Ykl_dict):
     
     Read directly from a .json file::
             
-        from neq.db.utils import get_dunham_coefficients
-        from neq.phys.dunham import EvJ
+        from radis.db.utils import get_dunham_coefficients
+        from radis.phys.dunham import EvJ
         dunham_coeffs = get_dunham_coefficients('CO', 1, 'X1SIG+')
         
         # Now calculate energy
@@ -264,6 +264,6 @@ def EvJ(v, J, **Ykl_dict):
 
 if __name__ == '__main__':
     
-    from neq.test.phys.test_dunham import _run_all_tests
+    from radis.test.phys.test_dunham import _run_all_tests
     print('Testing Dunham.py: ', _run_all_tests())
     

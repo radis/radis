@@ -353,5 +353,5 @@ class ParallelFactory(SpectrumFactory):
 # %% Main
 if __name__ == '__main__':
 
-    from radis.test.spec.test_parallel import test_parallel
+    from radis.test.lbl.test_parallel import test_parallel
     print(('Tested parallel.py:', test_parallel(plot=True)))

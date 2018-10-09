@@ -58,6 +58,7 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals
+import radis
 from radis.db import MolParams
 from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT
 from radis.lbl.labels import (vib_lvl_name_hitran_class1,
@@ -844,7 +845,7 @@ class BaseFactory(DatabankLoader):
                             all the same
                 r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
                          yields a x20 on performances (60s -> 3s)
-                (probably faster since neq==0.9.20)
+                (probably faster since neq==0.9.20) (radis<1.0)
                 '''
                 r['Evib1u'] = energies.at[(
                     r.polyu.iloc[0], r.wangu.iloc[0]), 'Evib1']
@@ -870,9 +871,9 @@ class BaseFactory(DatabankLoader):
     #        %timeit: 43.4s per loop
 
 #            try:  # total:  ~ 15s on 460k lines
-            # ~ 6.6 s   (probably faster since neq==0.9.20)
+            # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)
             df = df.groupby(by=['polyu', 'wangu']).apply(fillEvib123u)
-            # ~ 6.6 s   (probably faster since neq==0.9.20)
+            # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)
             df = df.groupby(by=['polyl', 'wangl']).apply(fillEvib123l)
 #            except KeyError:
 #                printr("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
@@ -998,7 +999,7 @@ class BaseFactory(DatabankLoader):
                             all the same
                 r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
                          yields a x20 on performances (60s -> 3s)
-                (probably faster since neq==0.9.20)
+                (probably faster since neq==0.9.20) (radis<1.0)
                 '''
                 viblvl = vib_lvl_name_hitran_class1(r.vu.iloc[0])
                 r['Evibu'] = energies.at[viblvl, 'Evib']
@@ -1162,7 +1163,7 @@ class BaseFactory(DatabankLoader):
                     r.ju.iloc[0]  not necessary (same Evib) but explicitely mentionning it
                              yields a x20 on performances (60s -> 3s)
                 In 0.9.20 the energy database was reduced to vibrational energies only
-                (probably faster since neq==0.9.20)
+                (probably faster since neq==0.9.20) (radis<1.0)
                 '''
                 viblvl = vib_lvl_name_hitran_class5(r.v1u.iloc[0],
                                                     r.v2u.iloc[0],
@@ -3227,7 +3228,7 @@ def get_all_waveranges(medium, wavenum_min=None, wavenum_max=None, wavelength_mi
 
 
 if __name__ == '__main__':
-    from radis.test.spec.test_base import _run_testcases
+    from radis.test.lbl.test_base import _run_testcases
     _run_testcases()
 
     _, _, wlmin, wlmax = get_all_waveranges('air', 2000, 2400)

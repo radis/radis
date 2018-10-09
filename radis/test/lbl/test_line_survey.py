@@ -17,8 +17,8 @@ Run only fast tests (i.e: tests that have a 'fast' label)
 
 """
 
-from neq.spec import SpectrumFactory
-from neq.misc.printer import printm
+from radis.lbl import SpectrumFactory
+from radis.misc.printer import printm
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase
 import pytest

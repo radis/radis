@@ -99,10 +99,10 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from six import string_types
 from warnings import warn
 from radis.io.hitran import get_molecule
-from radis.lbl.spectrum import Spectrum
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_all_waveranges
-from radis.lbl.formula import calc_radiance
+from radis.spectrum.spectrum import Spectrum
+from radis.spectrum.equations import calc_radiance
 from radis.misc.basics import is_float, list_if_float
 from radis.phys.convert import conv2
 from radis.phys.constants import k_b
@@ -1320,5 +1320,5 @@ def _generate_broadening_range(wstep, broadening_max_width):
 
 # --------------------------
 if __name__ == '__main__':
-    from radis.test.spec.test_factory import _run_testcases
+    from radis.test.lbl.test_factory import _run_testcases
     print('Testing factory:', _run_testcases(verbose=True))

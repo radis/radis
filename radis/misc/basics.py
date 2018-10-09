@@ -29,6 +29,31 @@ verbose = True
 
 # %%
 # ==============================================================================
+#  OS Functions
+# ==============================================================================
+
+def make_folders(path, folders):
+    ''' Make folders if not there
+
+    Parameters
+    ----------
+
+    path: str
+        where to create folders
+
+    folders: list or str
+        folders to create
+    '''
+    if type(folders) is str:
+        folders = [folders]
+    for folder in folders:
+        try:
+            os.mkdir(join(path, folder))
+        except OSError:
+            pass
+
+# %%
+# ==============================================================================
 # Basic Functions
 # ==============================================================================
 
@@ -332,7 +357,31 @@ def print_series(a):
 
     for i, k in enumerate(a.keys()):
         print(k, '\t', a.values[0][i])
-
+        
+def transfer_metadata(df1, df2, metadata):
+    ''' Transfer metadata between a DataFrame df1 and df2 
+    
+    For some reason metadata are sometimes not copied when a DataFrame is 
+    sliced or copied, even if they explicitely figure in the df._metadata 
+    attribute. Here we copy them back 
+    
+    Parameters
+    ----------
+    
+    df1: pandas DataFrame
+        copy from df1
+        
+    df2: pandas DataFrame 
+        copy to df2 
+    '''
+    
+    for k in metadata:
+        if __debug__ and k not in df1._metadata:
+            from radis.misc.debug import printdbg
+            printdbg('WARNING. {0} not in _metadata: {1}'.format(k, df1._metadata))
+        if not hasattr(df2, k):
+            assert k not in df1.columns   # point is not to copy columns!
+            setattr(df2, k, getattr(df1, k))
 # %%
 # ==============================================================================
 # Types

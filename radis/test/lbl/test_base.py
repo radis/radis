@@ -7,7 +7,7 @@ Created on Mon May  7 17:34:52 2018
 
 from __future__ import absolute_import
 from __future__ import print_function
-from neq.spec import SpectrumFactory
+from radis.lbl import SpectrumFactory
 from radis.misc.utils import DatabankNotFound
 from radis.misc.printer import printm
 from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
@@ -15,7 +15,7 @@ import pytest
 import numpy as np
 from radis.misc.progress_bar import ProgressBar
 from radis import get_residual, sPlanck
-import neq
+import radis
 import matplotlib.pyplot as plt
 
 @pytest.mark.fast
@@ -90,8 +90,8 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
     '''
     
     # Force DEBUG_MODE
-    DEBUG_MODE = neq.DEBUG_MODE
-    neq.DEBUG_MODE = True
+    DEBUG_MODE = radis.DEBUG_MODE
+    radis.DEBUG_MODE = True
     
     try:
         
@@ -160,7 +160,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
     
     finally:
         # Reset DEBUG_MODE
-        neq.DEBUG_MODE = DEBUG_MODE
+        radis.DEBUG_MODE = DEBUG_MODE
 
 @pytest.mark.needs_internet
 def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
@@ -183,8 +183,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     '''
     
     # Force DEBUG_MODE
-    DEBUG_MODE = neq.DEBUG_MODE
-    neq.DEBUG_MODE = True
+    DEBUG_MODE = radis.DEBUG_MODE
+    radis.DEBUG_MODE = True
     
     try:
         
@@ -254,7 +254,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     
     finally:
         # Reset DEBUG_MODE
-        neq.DEBUG_MODE = DEBUG_MODE
+        radis.DEBUG_MODE = DEBUG_MODE
 
 
 def _run_testcases(verbose=True, plot=True):

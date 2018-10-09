@@ -18,9 +18,8 @@ Run only fast tests (i.e: tests that have a 'fast' label)
 """
 
 from __future__ import unicode_literals, print_function, absolute_import, division
-import neq
-from neq.spec import SpectrumFactory
-from neq.misc.printer import printm
+from radis.lbl import SpectrumFactory
+from radis.misc.printer import printm
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from radis.spectrum import Spectrum
@@ -171,7 +170,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
         # ... >>> np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm', medium='air')).T[::10])
         # ... and header contains all input conditions:
         # ... >>> print(s)
-        from neq.test.utils import getTestFile
+        from radis.test.utils import getTestFile
         wref, Iref = np.loadtxt(getTestFile(
             'CO2abscoeff_300K_4150_4400nm.txt')).T
         match_reference = np.allclose(
@@ -225,9 +224,9 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
     We compare:
 
     - direct calculation of power integral with equilibrium code
-        :meth:`~neq.spec.SpectrumFactory.optically_thin_power` (T)
+        :meth:`~radis.lbl.SpectrumFactory.optically_thin_power` (T)
     - direct calculation of power integral with non equilibrium code  
-        :meth:`~neq.spec.SpectrumFactory.optically_thin_power` (T,T)
+        :meth:`~radis.lbl.SpectrumFactory.optically_thin_power` (T,T)
     - numerical integration of non equilibrium spectrum under optically thin conditions: 
         :meth:`~radis.spectrum.spectrum.Spectrum.get_power`
 
