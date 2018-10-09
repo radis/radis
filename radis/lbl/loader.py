@@ -61,8 +61,8 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.db import MolParams
 from radis.io.cdsd import cdsd2df
 from radis.io.hitran import hit2df, get_molecule, parse_global_quanta, parse_local_quanta
-from radis.io.hitran.hiparser import hit2dfTAB
-from radis.lbl.warning import EmptyDatabaseError
+#from radis.io.hitran import hit2dfTAB
+from radis.misc.warning import EmptyDatabaseError
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.db.molecules import getMolecule
@@ -81,7 +81,7 @@ import os
 from os.path import exists, abspath
 import pandas as pd
 from six import string_types
-from radis.lbl.warning import warn, default_warning_status
+from radis.misc.warning import warn, default_warning_status
 import warnings
 from warnings import catch_warnings, filterwarnings
 import numpy as np
@@ -1322,7 +1322,8 @@ class DatabankLoader(object):
                                     filename, wavenum_max))
                             continue
                     elif dbformat == 'hitran tab':
-                        df = hit2dfTAB(filename, cache=False, verbose=verbose)
+                        raise NotImplementedError('See Github PR!1')
+#                        df = hit2dfTAB(filename, cache=False, verbose=verbose)
                         # TODO: mettre à jour les noms de colonne
                         # TODO EP @ VB: ici il faut juste lire la 1ère ligne pour savoir 
                         # si ça vaut le coup de lire ce fichier. 

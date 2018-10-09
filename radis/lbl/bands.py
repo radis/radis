@@ -55,7 +55,7 @@ from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 from radis.lbl.labels import (vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5,
                              vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN,
                              vib_lvl_name_cdsd_pcJN)
-from radis.lbl.warning import reset_warnings
+from radis.misc.warning import reset_warnings
 import numpy as np
 from numpy import exp
 from time import time

@@ -1787,5 +1787,5 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 # %% Test
 if __name__ == '__main__':
 
-    from radis.test.spec.test_partfunc import _run_testcases
+    from radis.test.lbl.test_partfunc import _run_testcases
     print('Testing parfunc: {0}'.format(_run_testcases()))

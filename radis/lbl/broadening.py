@@ -48,7 +48,7 @@ from multiprocessing import Pool, cpu_count
 from time import time
 from warnings import warn
 from radis.misc.progress_bar import ProgressBar
-from radis.lbl.warning import reset_warnings
+from radis.misc.warning import reset_warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import sys

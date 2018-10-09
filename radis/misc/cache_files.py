@@ -51,6 +51,108 @@ assert radis.__version__ >= OLDEST_COMPATIBLE_VERSION
 
 # Utils
 
+def load_h5_cache_file(cachefile, use_cached, metadata, current_version, 
+                       last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+                       verbose=True):
+    ''' Function to load a h5 cache file
+    
+    Parameters
+    ----------
+    
+    cachefile: str
+        cache file path
+    
+    use_cached: str
+        use cache file if value is not ``False``:
+        
+        - if ``True``, use (and generate if doesnt exist) cache file.
+        - if ``'regen'``, delete cache file (if exists) so it is regenerated
+        - if ``'force'``, use cache file and raises an error if it doesnt exist
+        
+        if using the cache file, check if the file is deprecated. If it 
+        is deprecated, regenerate the file unless ``'force'`` was used
+        (in that case, raise an error)
+        
+    metadata: dict
+        values are compared to cache file attributes. If they dont match,
+        the file is considered deprecated. See ``use_cached`` to know
+        how to handle deprecated files
+        
+    current_version: str
+        version is compared to cache file version (part of attributes). 
+        If current version is superior, a simple warning is triggered.
+        
+    last_compatible_version: str
+        if file version is inferior to this, file is considered deprecated. 
+        See ``use_cached`` to know how to handle deprecated files. 
+        Default :data:`~neq.OLDEST_COMPATIBLE_VERSION`. 
+        
+    Returns
+    -------
+    
+    df: pandas DataFrame, or None
+        None if no cache file was found, or if it was deleted
+        
+        
+    See Also
+    --------
+    
+    :data:`~neq.OLDEST_COMPATIBLE_VERSION`
+        
+    '''
+
+    # 1. know if we have to load the file
+    if not use_cached:
+        return None
+    elif use_cached == 'regen' and exists(cachefile):
+        os.remove(cachefile)
+        if verbose:
+            printm('Deleted h5 cache file : {0}'.format(cachefile))
+        return None
+    
+    # 2. check the file is here
+    if not exists(cachefile):
+        if use_cached == 'force':
+            raise ValueError('Cache file {0} doesnt exist'.format(cachefile))
+        else:
+            return None   # File doesn't exist. It's okay. 
+        
+    # 3. read file attributes to know if it's deprecated
+    try:
+        check_not_deprecated(cachefile, metadata, current_version=current_version,
+                             last_compatible_version=last_compatible_version)
+    # ... if deprecated, raise an error only if 'force'
+    except DeprecatedFileError as err:
+        if use_cached == 'force':
+            raise err
+        else:
+            if verbose:
+                printr('File {0} deprecated:\n{1}\nDeleting it!'.format(
+                    cachefile, str(err)))
+            os.remove(cachefile)
+            return None
+    # 4. File is not not deprecated: read the content.
+    else:
+        df = None
+        if verbose:
+            printm('Reading cache file ({0})'.format(cachefile))
+        try:
+            df = pd.read_hdf(cachefile, 'df')
+        except KeyError as err:  # An error happened during file reading.
+            # Fail safe by deleting cache file (unless we explicitely wanted it
+            # with 'force')
+            if use_cached == 'force':
+                raise
+            else:
+                if verbose:
+                    printr('An error happened during cache file reading ' +
+                           '{0}:\n{1}\n'.format(cachefile, str(err)) +
+                           'Deleting cache file to regenerate it')
+                os.remove(cachefile)
+                df = None
+
+    return df
+
 def get_cache_file(fcache):
     ''' Load HDF5 cache file 
     
