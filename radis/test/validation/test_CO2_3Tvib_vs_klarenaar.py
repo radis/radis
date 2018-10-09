@@ -32,7 +32,7 @@ References
 from __future__ import absolute_import
 from radis.spectrum import Spectrum, plot_diff, get_residual
 from radis import SpectrumFactory
-from neq.test.utils import getValidationCase, printm
+from radis.test.utils import getValidationCase, printm
 from radis.test.utils import IgnoreMissingDatabase
 from radis.misc.utils import DatabankNotFound
 
