@@ -13,7 +13,7 @@ Examples
 
 See and get objects from database::
 
-    from neq.spec import SpecDatabase
+    from radis.lbl import SpecDatabase
     db = SpecDatabase(r"path/to/database")     # create or loads database
 
     db.update()  # in case something changed (like a file was added manually)

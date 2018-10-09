@@ -125,7 +125,7 @@ def sPlanck(wavenum_min=None, wavenum_max=None,
     radiance calculated by iPlanck. And you don't need to worry about units as
     they are handled internally.
 
-    See neq.spec.Spectrum documentation for more information
+    See radis.lbl.Spectrum documentation for more information
 
     Parameters
     ----------
