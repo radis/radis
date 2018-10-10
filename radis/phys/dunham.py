@@ -32,20 +32,31 @@ def Gv(v, we, wexe, weye, weze, weae=0, webe=0, gv=1):
     ''' Vibrational energy term 
     Dunham development (order 5 in v) in Herzberg notation
     
-    >>> Gv = we*(v+gv/2) - wexe*(v+gv/2)^2 + weye*(v+gv/2)^3 + weze*(v+gv/2)^4 + 
-    >>> weae*(v+gv/2)^5
+    .. math::
+    
+        G_v = w_e\\left(v+\\frac{g_v}{2}\\right) - w_ex_e\\left(v+\\frac{g_v}{2}\\right)^2 + 
+        w_ey_e\\left(v+\\frac{g_v}{2}\\right)^3  + w_ez_e\\left(v+\\frac{g_v}{2}\\right)^4 + 
+        w_ea_e\\left(v+\\frac{g_v}{2}\\right)^5
         
     Parameters
     ----------
     
-    v        vibrational quantum number
-    we 	    vibrational constant – first term (cm-1)
-    ωexe 	    vibrational constant – second term (cm-1)
-    ωeye 	    vibrational constant – third term (cm-1)
-    ωeze 	    vibrational constant – fourth term (cm-1)
-    weae     vibrational constant – fifth term (cm-1)
-    webe     vibrational constant – sixth term (cm-1)
-    gv       degeneracy   (usually 1, but 2 for CO2-v2) 
+    v: int
+        vibrational quantum number
+    we: float
+ 	    vibrational constant – first term (cm-1)
+    ωexe: float
+ 	    vibrational constant – second term (cm-1)
+    ωeye: float
+   	    vibrational constant – third term (cm-1)
+    ωeze: float
+ 	    vibrational constant – fourth term (cm-1)
+    weae: float
+       vibrational constant – fifth term (cm-1)
+    webe:
+        vibrational constant – sixth term (cm-1)
+    gv: int
+       degeneracy   (usually 1, but 2 for CO2-v2) 
     
     Returns
     -------
@@ -59,22 +70,34 @@ def Gv(v, we, wexe, weye, weze, weae=0, webe=0, gv=1):
     
     Validity:
 
-    For large vibrational levels Dunham's expansion is not valid. In Specair
-    Morse Potential is used above a certain vibrational level
+    For large vibrational levels Dunham's expansion is not valid. In other LBL codes, 
+    such as Specair, Morse Potential is used above a certain vibrational level. 
+    See :func:`~radis.phys.morse.morse_increment` for an implementation in RADIS. 
 
     .. warning::
 
         Although by convention prefactors share the same name throughout most of the litterature,
         signs can be different depending on the article. Make sure your Dunham expansion
-        has the same signs as the one we use here! Ex:
+        has the same signs as the one we use here! In particular, this function
+        uses a ``-wexe`` sign as in the usual Herzberg notation. Ex:
     
-        - Mantz and Maillard 1975 (CO)  uses opposite signs for **weze** and **webe**
+        - Mantz and Maillard 1975 (CO X)  uses opposite signs for **weze** and **webe**
 
     References
     ----------
 
     "Optical Diagnostics and Radiative Emission of Air Plasmas", C. Laux, 1993, p93
 
+    See Also
+    --------
+    
+    :py:func:`~radis.phys.dunham.Fv`
+    
+    List of :py:data:`~radis.db.conventions.herzberg_coefficients`
+
+    Get Herzberg coefficients for a molecule: :py:func:`~radis.db.utils.get_herzberg_coefficients`
+
+    Use Dunham coefficients instead: :py:func:`~radis.phys.dunham.EvJ`
     '''
 
     return we*(v+gv/2) - wexe*(v+gv/2)**2 + weye*(v+gv/2)**3 + weze*(v+gv/2)**4 + \
@@ -101,26 +124,38 @@ def Fv(v, J, Be, De, alpha_e, beta_e, gamma_e=0, delta_e=0, epsilon_e=0,
 
         H_{v}=H_{e}-\\eta_{e}\\left(v+\\frac{g_{v}}{2}\\right)
 
-    *generated from code with pytexit*
+    *generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
 
 
     Parameters
     ----------
 
-    v        vibrational quantum number
-    J        rotational quantum number
-    Be 	    rotational constant in equilibrium position (cm-1)
-    De 	    centrifugal distortion constant (cm-1)
-    alpha_e 	    rotational constant – first term (cm-1)
-    beta_e 	    rotational constant – first term, centrifugal force (cm-1)
-    gamma_e 	    rotation-vibration interaction constant (cm-1)
-    delta_e 	    (cm-1)
-    epsilon_e       (cm-1)
-    pi_e
-    He      third order correction factor
-    eta_e      
-
-    gv       degeneracy   (usually 1, but 2 for CO2-v2) 
+    v: int
+        vibrational quantum number
+    J: int
+        rotational quantum number
+    Be: float
+ 	    rotational constant in equilibrium position (cm-1)
+    De: float
+ 	    centrifugal distortion constant (cm-1)
+    alpha_e: float
+ 	    rotational constant – first term (cm-1)
+    beta_e: float
+ 	    rotational constant – first term, centrifugal force (cm-1)
+    gamma_e: float
+ 	    rotation-vibration interaction constant (cm-1)
+    delta_e: float
+ 	    (cm-1)
+    epsilon_e: float
+       (cm-1)
+    pi_e: float
+        (cm-1)
+    He: float
+        third order correction factor (cm-1)
+    eta_e: float
+        (float)     
+    gv: int
+       degeneracy   (usually 1, but 2 for CO2-v2) 
 
     Returns
     ------
@@ -149,6 +184,17 @@ def Fv(v, J, Be, De, alpha_e, beta_e, gamma_e=0, delta_e=0, epsilon_e=0,
 
     "Optical Diagnostics and Radiative Emission of Air Plasmas", C. Laux, 1993, p93
 
+    See Also
+    --------
+    
+    :py:func:`~radis.phys.dunham.Gv`
+    
+    List of :py:data:`~radis.db.conventions.herzberg_coefficients`
+
+    Get Herzberg coefficients for a molecule: :py:func:`~radis.db.utils.get_herzberg_coefficients`
+
+    Use Dunham coefficients instead: :py:func:`~radis.phys.dunham.EvJ`
+        
     '''
 
     B_e, D_e, H_e, g_v = Be, De, He, gv
@@ -251,6 +297,14 @@ def EvJ(v, J, **Ykl_dict):
         # Now calculate energy
         EvJ(v=0, J=0, **dunham_coeffs)
     
+    See Also
+    --------
+    
+    Get Dunham coefficients for a molecule: :py:func:`~radis.db.utils.get_dunham_coefficients`
+
+    Use Herzberg coefficients instead: :py:func:`~radis.phys.dunham.Gv`, 
+    :py:func:`~radis.phys.dunham.Fv`
+        
     '''
     
     E = 0

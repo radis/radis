@@ -638,10 +638,10 @@ class DatabankLoader(object):
                 self._init_rovibrational_energies(levels, levelsfmt)
             except KeyError as err:
                 print(err)
-                raise KeyError('Error while fetching rovibrational energies for'+\
+                raise KeyError('Error while fetching rovibrational energies for '+\
                                '{0}, iso={1} in RADIS built-in spectroscopic '.format(
                                        molecule, isotope)+\
-                               "constants (see details above) If you only need "+\
+                               "constants (see details above). If you only need "+\
                                "equilibrium spectra, try using 'load_energies=False' "+\
                                "in fetch_databank")
 

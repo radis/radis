@@ -31,14 +31,29 @@ conversion of Dunham spectroscopic coefficients to Herzberg convention '''
 ## Invert the dictionary.
 herzberg2dunham = {v:(sign,k) for k,(sign,v) in dunham2herzberg.items()}
 ''' dict: {Yij: (sign, coeff)
-conversion of Herberg convention to Dunham spectroscopic coefficients '''
+conversion of Herberg convention to Dunham spectroscopic coefficients 
+
+See Also
+--------
+
+:py:func:`~radis.db.utils.get_dunham_coefficients`,
+:py:func:`~radis.db.utils.get_herzberg_coefficients` 
+'''
 
 # Name of all Herzberg coefficients
 herzberg_coefficients = [
         'we', 'wexe', 'weye', 'weze', 'weae', 'webe', 
         'Be', 'De', 'He', 'Le', 
         'alpha_e', 'beta_e', 'gamma_e', 'delta_e', 'eta_e', 'pi_e']
-'''list: Herzberg coefficients'''
+'''list: Herzberg coefficients used to calculate rovibrational energies in
+:func:`~radis.phys.dunham.Fv`, :func:`~radis.phys.dunham.Gv`
+
+See Also
+--------
+
+:py:func:`~radis.db.utils.get_herzberg_coefficients` 
+
+'''
 
 
 # Sanity check (test coefficients defined in conversion dictionaries are valid
@@ -70,9 +85,16 @@ def get_convention(coefficients):
     
     from radis.misc.basics import partition
     
+    def ignore_trailing_number(coef):
+        ''' Used so that ``wexe1`` matches ``wexe`` as a well defined 
+        Herzberg coefficient '''
+        if str.isdigit(coef[-1]):
+            coef = coef[:-1]
+        return coef
+    
     assert len(coefficients) > 0
     
-    herzberg_coeffs, non_herzberg_coeffs = partition(lambda x: x in herzberg_coefficients,
+    herzberg_coeffs, non_herzberg_coeffs = partition(lambda x: ignore_trailing_number(x) in herzberg_coefficients,
                                                      coefficients)
     for k in non_herzberg_coeffs:
         if not k.startswith('Y'):
@@ -91,6 +113,7 @@ def get_convention(coefficients):
 if __name__ == '__main__':
     
     assert get_convention(['wexe']) == 'herzberg'
+    assert get_convention(['wexe1']) == 'herzberg'
     assert get_convention(['Y01', 'Y11']) == 'dunham'
     import pytest
     with pytest.raises(ValueError):

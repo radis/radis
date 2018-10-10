@@ -29,7 +29,7 @@ convolve them, apply them on all calculated range)
 Notes
 -----
 
-Formula in docstrings generated with::
+Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
     
     from pytexit import py2tex
     py2tex('...')
@@ -67,6 +67,8 @@ def gaussian_broadening_FWHM(wav, molar_mass, Tgas):
         2\\frac{w}{c} \\sqrt{\\frac{2N_a k_b T_{gas} \\ln(2)}{M}}
         
     with k and c in CGS
+
+    *generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
 
     Parameters
     ----------
@@ -122,6 +124,8 @@ def gaussian_lineshape(dg, w_centered):
         
         \\frac{1}{\\gamma_{db} \\sqrt{2\\pi}} \\operatorname{exp}\\left(-\\ln(2) 
         \\left(\\frac{w_{centered}}{\\gamma_{db}}\\right)^2\\right)
+
+    *generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
 
     Parameters
     ----------
@@ -261,6 +265,8 @@ def pressure_lineshape(dg, w_centered):
     .. math:: 
         
         \\frac{1}{\\pi} \\frac{\\gamma_{lb}}{\\gamma_{lb}^2+w_{centered}^2}
+
+    *generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
 
     Parameters
     ----------

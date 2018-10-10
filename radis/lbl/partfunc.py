@@ -1271,7 +1271,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     def build_energy_levels_class1(self):  # , ZPE=0):
         ''' in the case where only Ediss is given. Deal with vmax, Jmax later
 
-        Applies for molecules in :data:`~radis.io.hitran.HITRAN_CLASS1`
+        Applies to molecules in :data:`~radis.io.hitran.HITRAN_CLASS1`
 
         Returns
         -------
@@ -1404,6 +1404,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         calc_Evib_per_mode: boolean
             if ``True``, calculates Evib1, Evib2, Evib3
 
+        Other Parameters
+        ----------------
+
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculates Evib_h and Evib_a, harmonic and non harmonic
             components, to be used in Treanor distributions
@@ -1414,7 +1417,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             for CO2, (Evib, Erot) could as well as defined with::
                 
                 ['Evib1', 'Evib2', 'Evib3'],['Erot']
-                or
+            
+            or::
+                
                 ['Evib3'],['Evib1', 'Evib2', 'Erot']
                 
             depending on which levels are supposed to interact the most

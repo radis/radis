@@ -7,7 +7,22 @@ Created on Tue Jul 31 18:00:54 2018
 
 import numpy as np
 from radis.db.molecules import getMolecule
+from radis.db.utils import get_herzberg_coefficients
 import pytest
+
+@pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'    
+def test_herzberg_coefficients_CO2_json(verbose=True, *args, **kwargs):
+    ''' Check that default coefficients are found correctly
+    '''
+    # @dev: update this test if we ever are to change the default Herzberg
+    # coeffs in CO2/molecule_data.json
+    
+    assert set(get_herzberg_coefficients('CO2', 1, 'X1SIGu+')) == set(
+            ['we1', 'we2', 'we3', 'wexe1', 'wexe2', 'wexe3', 'Be', 'De', 'He'])
+
+    if verbose:
+        print('Herzberg coefficients defined for CO2(X)(iso=1):', get_herzberg_coefficients('CO2', 1, 'X1SIGu+'))
+
 
 @pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'    
 def test_getMolecule(verbose=True, *args, **kwargs):
@@ -45,6 +60,7 @@ def test_getMolecule(verbose=True, *args, **kwargs):
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
+    test_herzberg_coefficients_CO2_json(verbose=verbose, *args, **kwargs)
     test_getMolecule(verbose=verbose, *args, **kwargs)
 #    test_CO_energies_Herzberg_vs_Dunham(verbose=verbose, *args, **kwargs)
 

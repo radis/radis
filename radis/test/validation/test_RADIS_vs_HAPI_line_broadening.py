@@ -16,7 +16,7 @@ from __future__ import absolute_import
 from radis import SpectrumFactory, Spectrum
 from radis.io.hapi import (db_begin, fetch, tableList, absorptionCoefficient_Voigt,
                                 transmittanceSpectrum)
-from neq.test.utils import setup_test_line_databases, printm
+from radis.test.utils import setup_test_line_databases, printm
 from radis.io.hitran import get_molecule_identifier
 from radis.phys.convert import nm2cm
 import shutil
@@ -41,7 +41,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     '''
 
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
     # Conditions
     molecule = 'CO2'
