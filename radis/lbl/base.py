@@ -2028,7 +2028,7 @@ class BaseFactory(DatabankLoader):
 
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq`,
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq_multiTvib`,
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at`
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at`
 
         '''
 
@@ -2092,7 +2092,7 @@ class BaseFactory(DatabankLoader):
     def _calc_populations_noneq(self, Tvib, Trot, vib_distribution='boltzmann',
                                 rot_distribution='boltzmann', overpopulation=None):
         ''' Calculate upper and lower state population for all active transitions,
-        as well as all levels (through :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq`)
+        as well as all levels (through :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`)
 
         Parameters
         ----------
@@ -2130,14 +2130,14 @@ class BaseFactory(DatabankLoader):
         This method calculates populations of emitting and absorbing levels.
         Populations of all levels (even the one not active on the spectral
         range considered) are calculated during the Partition function calculation.
-        See: :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq`
+        See: :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`
 
         See Also
         --------
 
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_eq`,
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq_multiTvib`,
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq`
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`
 
         '''
 
@@ -2311,7 +2311,7 @@ class BaseFactory(DatabankLoader):
     def _calc_populations_noneq_multiTvib(self, Tvib, Trot, vib_distribution='boltzmann',
                                           rot_distribution='boltzmann', overpopulation=None):
         ''' Calculate upper and lower state population for all active transitions,
-        as well as all levels (through :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq`)
+        as well as all levels (through :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`)
 
         Parameters
         ----------
@@ -2343,7 +2343,7 @@ class BaseFactory(DatabankLoader):
         This method calculates populations of emitting and absorbing levels.
         Populations of all levels (even the one not active on the spectral
         range considered) are calculated during the Partition function calculation.
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq`
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`
 
         Todo someday:
 
@@ -2355,7 +2355,7 @@ class BaseFactory(DatabankLoader):
 
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_eq`,
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq`,
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
 
         '''
 

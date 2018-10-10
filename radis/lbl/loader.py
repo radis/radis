@@ -66,7 +66,7 @@ from radis.misc.warning import EmptyDatabaseError
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.db.molecules import getMolecule
-from radis.lbl.partfunc import (PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc, PartFuncHAPI,
+from radis.levels.partfunc import (PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc, PartFuncHAPI,
                                PartFunc_Dunham, RovibParFuncTabulator, RovibParFuncCalculator)
 from radis.tools.database import SpecDatabase
 from radis.misc.config import getDatabankEntries, printDatabankEntries, getDatabankList
@@ -97,15 +97,15 @@ KNOWN_LVLFORMAT = ['radis', 'cdsd-pc', 'cdsd-pcN', 'cdsd-hamil', None]
 '''list: Known formats for Energy Level Databases (used in non-equilibrium calculations):
 
 - ``'radis'``: energies calculated with Dunham expansions by 
-    :class:`~radis.lbl.partfunc.PartFunc_Dunham`
+    :class:`~radis.levels.partfunc.PartFunc_Dunham`
 - ``'cdsd-pc'``: energies read from precomputed CDSD energies for CO2, with
-    ``viblvl=(p,c)`` convention. See :class:`~radis.lbl.partfunc.PartFuncCO2_CDSDcalc`
+    ``viblvl=(p,c)`` convention. See :class:`~radis.levels.partfunc.PartFuncCO2_CDSDcalc`
 - ``'cdsd-pcN'``: energies read from precomputed CDSD energies for CO2, with
-    ``viblvl=(p,c,N)`` convention. See :class:`~radis.lbl.partfunc.PartFuncCO2_CDSDcalc`
+    ``viblvl=(p,c,N)`` convention. See :class:`~radis.levels.partfunc.PartFuncCO2_CDSDcalc`
 - ``'cdsd-hamil'``: energies read from precomputed CDSD energies for CO2, with
     ``viblvl=(p,c,J,N)`` convention, i.e., a each rovibrational level can have a 
     unique vibrational energy (this is needed when taking account Coupling terms)
-    See :class:`~radis.lbl.partfunc.PartFuncCO2_CDSDcalc`
+    See :class:`~radis.levels.partfunc.PartFuncCO2_CDSDcalc`
 - ``None``: means you can only do Equilibrium calculations.
  '''
 

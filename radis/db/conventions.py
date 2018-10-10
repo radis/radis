@@ -41,12 +41,20 @@ See Also
 '''
 
 # Name of all Herzberg coefficients
-herzberg_coefficients = [
-        'we', 'wexe', 'weye', 'weze', 'weae', 'webe', 
-        'Be', 'De', 'He', 'Le', 
-        'alpha_e', 'beta_e', 'gamma_e', 'delta_e', 'eta_e', 'pi_e']
+#herzberg_coefficients_elec = ['Te']
+#'''list: Herzberg coefficients used to calculate pure electronic energies'''
+herzberg_coefficients_vib = ['we', 'wexe', 'weye', 'weze', 'weae', 'webe']
+'''list: Herzberg coefficients used to calculate pure vibrational energies'''
+herzberg_coefficients_rot = ['Be', 'De', 'He', 'Le']
+'''list: Herzberg coefficients used to calculate pure rotational energies'''
+herzberg_coefficients_rovib = ['alpha_e', 'beta_e', 'gamma_e', 'delta_e', 'eta_e', 'pi_e']
+'''list: Herzberg coefficients used in vibrational-rotational coupling terms for 
+rovibrational energies'''
+
+herzberg_coefficients = (herzberg_coefficients_vib  +
+                         herzberg_coefficients_rot + herzberg_coefficients_rovib)
 '''list: Herzberg coefficients used to calculate rovibrational energies in
-:func:`~radis.phys.dunham.Fv`, :func:`~radis.phys.dunham.Gv`
+:func:`~radis.levels.dunham.Fv`, :func:`~radis.levels.dunham.Gv`
 
 See Also
 --------

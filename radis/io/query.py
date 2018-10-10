@@ -105,7 +105,8 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
             raise ValueError('An error occured during the download of HITRAN files ' +
                              'for {0} (id={1}), iso={2} between {3:.2f}-{4:.2f}cm-1. '.format(
                                  molecule, mol_id, isotope, wmin, wmax) +
-                             'See details of the error below: {0}'.format(_err_details))
+                             'Are you online?\n' + 
+                             'See details of the error below:\n\n {0}'.format(_err_details))
 
     # Rename columns from Astroquery to RADIS format
     rename_columns = {'molec_id': 'id',

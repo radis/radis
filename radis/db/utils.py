@@ -24,6 +24,7 @@ def getFile(*relpath):
 
     '''
     
+#    return os.path.join(os.path.dirname(__file__), *relpath)
     from radis.misc.utils import getProjectRoot
     return os.path.join(getProjectRoot(), 'db', *relpath)
 
@@ -105,15 +106,15 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='defau
         electronic state name
         
     jsonfile: str, or ``default``
-        path to json file. If ``default``, the ``molecule_data`` JSON file 
+        path to json file. If ``default``, the ``molecules_data`` JSON file 
         in the ``radis.db`` database is used::
         
-            radis\db\[molecule]\molecule_data.json
+            radis\db\[molecule]\molecules_data.json
     
     '''
 
     if jsonfile == 'default':
-        jsonfile = getFile('{0}/molecule_data.json'.format(molecule))
+        jsonfile = getFile('{0}/molecules_data.json'.format(molecule))
         
     check_molecule_data_structure(jsonfile, verbose=False)
     
@@ -167,10 +168,10 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
         electronic state name
         
     jsonfile: str, or ``default``
-        path to json file. If ``default``, the ``molecule_data`` JSON file 
+        path to json file. If ``default``, the ``molecules_data`` JSON file 
         in the ``radis.db`` database is used::
         
-            radis\db\[molecule]\molecule_data.json
+            radis\db\[molecule]\molecules_data.json
     
     See Also
     --------
@@ -182,7 +183,7 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
     from radis.db.conventions import herzberg_coefficients
 
     if jsonfile == 'default':
-        jsonfile = getFile('{0}/molecule_data.json'.format(molecule))
+        jsonfile = getFile('{0}/molecules_data.json'.format(molecule))
         
     check_molecule_data_structure(jsonfile, verbose=False)
     

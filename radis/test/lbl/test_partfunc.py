@@ -17,7 +17,7 @@ Run only fast tests (i.e: tests that a 'fast' label)
 
 """
 
-from radis.lbl.partfunc import (PartFunc_Dunham, PartFuncHAPI,
+from radis.levels.partfunc import (PartFunc_Dunham, PartFuncHAPI,
                                PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc)
 from radis.phys.constants import hc_k
 from radis.misc.utils import DatabankNotFound

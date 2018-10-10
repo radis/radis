@@ -19,19 +19,19 @@ Routine Listing
 
 Partition functions:
 
-- :class:`~radis.lbl.partfunc.PartFuncCO2_CDSDcalc`
-- :class:`~radis.lbl.partfunc.PartFuncCO2_CDSDtab`
-- :class:`~radis.lbl.partfunc.PartFuncHAPI`
-- :class:`~radis.lbl.partfunc.PartFunc_Dunham`
+- :class:`~radis.levels.partfunc.PartFuncCO2_CDSDcalc`
+- :class:`~radis.levels.partfunc.PartFuncCO2_CDSDtab`
+- :class:`~radis.levels.partfunc.PartFuncHAPI`
+- :class:`~radis.levels.partfunc.PartFunc_Dunham`
 
 Which inherit from:
 
-- :class:`~radis.lbl.partfunc.RovibParFuncCalculator`
-- :class:`~radis.lbl.partfunc.RovibParFuncTabulator`
+- :class:`~radis.levels.partfunc.RovibParFuncCalculator`
+- :class:`~radis.levels.partfunc.RovibParFuncTabulator`
 
 Which inherit from:
 
-- :class:`~radis.lbl.partfunc.RovibPartitionFunction`
+- :class:`~radis.levels.partfunc.RovibPartitionFunction`
 
 
 References
@@ -107,8 +107,8 @@ class RovibPartitionFunction(object):
     See Also
     --------
 
-    :class:`~radis.lbl.partfunc.RovibParFuncTabulator`,
-    :class:`~radis.lbl.partfunc.RovibParFuncCalculator`
+    :class:`~radis.levels.partfunc.RovibParFuncTabulator`,
+    :class:`~radis.levels.partfunc.RovibParFuncCalculator`
 
     '''
 
@@ -220,8 +220,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         See Also
         --------
 
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq`,
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`,
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
 
         '''
         if __debug__:
@@ -300,8 +300,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         See Also
         --------
 
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at`,
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at`,
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
 
         '''
         if __debug__:
@@ -504,8 +504,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         See Also
         --------
 
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at`,
-        :meth:`~radis.lbl.partfunc.RovibPartitionFunction.at_noneq`
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at`,
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`
 
         '''
         if __debug__:
@@ -724,7 +724,7 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
     def _at(self, T):
         ''' Get partition function at temperature T
 
-        Called by :meth:`radis.lbl.partfunc.RovibParFuncTabulator.at`
+        Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         '''
         try:
             assert(self._inrange(T))
@@ -799,7 +799,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
     def _at(self, T):
         ''' Get partition function of species M, isotope I at temperature T
 
-        Called by :meth:`radis.lbl.partfunc.RovibParFuncTabulator.at`
+        Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         '''
         return self.partitionSum(self.M, self.I, T)
 

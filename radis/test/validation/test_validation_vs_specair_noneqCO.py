@@ -10,10 +10,11 @@ under non-equilibrium conditions
 
 from __future__ import absolute_import
 import matplotlib.pyplot as plt
-from neq import cm2nm, dnm2dcm
+from radis.phys.convert import cm2nm, dnm2dcm
 from radis import SpectrumFactory
 from radis import Spectrum, plot_diff, get_diff, load_spec
-from neq.test.utils import getValidationCase, setup_test_line_databases, printm
+from radis.test.utils import getValidationCase, setup_test_line_databases
+from radis.misc.printer import printm
 import numpy as np
 from os.path import join
 import pytest

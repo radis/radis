@@ -31,7 +31,8 @@ from radis import SpectrumFactory, ParallelFactory
 from radis.spectrum import experimental_spectrum, get_residual
 from radis.los import SerialSlabs, MergeSlabs
 from radis.phys.convert import nm2cm
-from radis.test.utils import getValidationCase, printm
+from radis.test.utils import getValidationCase
+from radis.misc.printer import printm
 from radis.test.utils import IgnoreMissingDatabase
 from radis.misc.utils import DatabankNotFound
 from six.moves import zip

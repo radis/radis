@@ -4,6 +4,7 @@
         "1": {
             "electronic_level":{
                 "001":{
+                    "Te_cm-1": 0.0, 
                     "dzero_cm^-1": 44600, 
                     "g_e": 1.0, 
                     "index": 1, 
@@ -28,6 +29,7 @@
         "2": {
             "electronic_level":{
                 "001":{
+                    "Te_cm-1": 0.0, 
                     "dzero_cm^-1": 44600, 
                     "g_e": 1.0, 
                     "index": 1, 
@@ -52,6 +54,7 @@
         "3": {
             "electronic_level":{
                 "001":{
+                    "Te_cm-1": 0.0, 
                     "dzero_cm^-1": 44600, 
                     "g_e": 1.0, 
                     "index": 1, 
@@ -76,6 +79,7 @@
         "4": {
             "electronic_level":{
                 "001":{
+                    "Te_cm-1": 0.0, 
                     "dzero_cm^-1": 44600, 
                     "g_e": 1.0, 
                     "index": 1, 

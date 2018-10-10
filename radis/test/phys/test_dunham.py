@@ -5,7 +5,7 @@ Created on Tue Jul 31 14:24:27 2018
 @author: erwan
 """
 
-from radis.phys.dunham import EvJ
+from radis.levels.dunham import EvJ
 from radis.db.utils import check_molecule_data_structure
 
 def test_EvJ(verbose=True, *args, **kwargs):

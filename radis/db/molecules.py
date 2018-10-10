@@ -45,7 +45,7 @@ import inspect
 import re
 from six import string_types
 from radis.io.hitran import get_molecule, get_molecule_identifier
-from radis.phys.dunham import Gv, Fv, EvJ
+from radis.levels.dunham import Gv, Fv, EvJ
 from radis.db.utils import get_dunham_coefficients, get_herzberg_coefficients
 from radis.db.conventions import get_convention
 
@@ -323,7 +323,7 @@ class ElectronicState(Isotope):
             E(v,J) = G(v) + F(v,J)
             
         Works with Herzberg convention for the spectroscopic coefficients used 
-        in :func:`~radis.phys.dunham.Gv`, :func:`~radis.phys.dunham.Fv` ::
+        in :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv` ::
             
             
         
@@ -351,7 +351,7 @@ class ElectronicState(Isotope):
         See Also
         --------
 
-        :func:`~radis.phys.dunham.Gv`, :func:`~radis.phys.dunham.Fv`
+        :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv`
         
         '''
         
@@ -506,6 +506,7 @@ from radis.phys.convert import eV2cm
 # CO
 # ----------
 
+# Define with default diatomic constants
 CO_X_iso1 = ElectronicState('CO', isotope=1, state='X', term_symbol='1Σ+',
                             spectroscopic_constants=get_dunham_coefficients('CO', 1, 'X1SIG+'),
                             vmax=17,        # max level for Dunham's expansion
@@ -528,24 +529,64 @@ CO_X_iso3 = ElectronicState('CO', isotope=3, state='X', term_symbol='1Σ+',
 # CO2
 # ----------
 
+# Generate the energy
 
 #from radis.db.CO2.energies import E_CO2_626_X1SIGg, Ehaj123_CO2_626_X1SIGg
-CO2_X_626 = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
-#                            isotope_name='^16O^12C^16O',
-#                            Erovib=E_CO2_626_X1SIGg, 
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
-                            #              vmax = 17,        # max level for Dunham's expansion
-#                            Ehaj=Ehaj123_CO2_626_X1SIGg,      # for Treanor
+from radis.levels.vibrating_rotor import EvJ_uncoupled_vibrating_rotor, EvJah_uncoupled_vibrating_rotor
+
+def build_CO2_X(isotope):
+    coeff_dict =get_herzberg_coefficients('CO2', isotope, 'X1SIGu+')
+    # Update standard vibrating rotor formula with CO2 specific generacies and 
+    # Herzberb coeffs
+    def Erovib_CO2(v1, v2, l2, v3, J, offset=True):
+        ''' Rovibrational energies.
+        See :py:func:`~radis.levels.vibrating_rotor.EvJ_uncoupled_vibrating_rotor` 
+        '''
+        return EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict=coeff_dict,
+                                             gv1=1, gv2=2, gv3=1, offset=offset)
+    def Ehaj_CO2(v1, v2, l2, v3, J, offset=True):
+        ''' Harmonic and anharmonic parts of rovibrational energies.
+        See :py:func:`~radis.levels.vibrating_rotor.EvJah_uncoupled_vibrating_rotor` 
+        '''
+        return EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict=coeff_dict,
+                                             #gv1=1, gv2=2, gv3=1,   # TODO: look up gv
+                                             offset=offset)
+    return ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
+#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
+                            Erovib=Erovib_CO2,
+                            Ehaj=Ehaj_CO2,  # for Treanor
                             Ediss=44600,
                             )
-CO2_X_636 = ElectronicState('CO2', isotope=2, state='X', term_symbol='1Σu+',
-#                            isotope_name='^16O^12C^16O',
-#                            Erovib=E_CO2_626_X1SIGg, 
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 2, 'X1SIGu+'),
-                            #              vmax = 17,        # max level for Dunham's expansion
-#                            Ehaj=Ehaj123_CO2_626_X1SIGg,      # for Treanor
-                            Ediss=44600,
-                            )
+
+CO2_X_626 = build_CO2_X(1)
+CO2_X_636 = build_CO2_X(2)
+CO2_X_628 = build_CO2_X(3)
+CO2_X_627 = build_CO2_X(4)
+
+#CO2_X_626 = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
+#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
+#                            Erovib=EvJ_uncoupled_vibrating_rotor,
+#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
+#                            Ediss=44600,
+#                            )
+#CO2_X_636 = ElectronicState('CO2', isotope=2, state='X', term_symbol='1Σu+',
+#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 2, 'X1SIGu+'),
+#                            Erovib=EvJ_uncoupled_vibrating_rotor,
+#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
+#                            Ediss=44600,
+#                            )
+#CO2_X_628 = ElectronicState('CO2', isotope=3, state='X', term_symbol='1Σu+',
+#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 3, 'X1SIGu+'),
+#                            Erovib=EvJ_uncoupled_vibrating_rotor,
+#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
+#                            Ediss=44600,
+#                            )
+#CO2_X_627 = ElectronicState('CO2', isotope=4, state='X', term_symbol='1Σu+',
+#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 4, 'X1SIGu+'),
+#                            Erovib=EvJ_uncoupled_vibrating_rotor,
+#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
+#                            Ediss=44600,
+#                            )
 
 
 # %% Dictionary of predefined molecules
@@ -567,6 +608,10 @@ Molecules = {
             'X': CO2_X_626},
         2:      {
             'X': CO2_X_636},
+        3:      {
+            'X': CO2_X_628},
+        4:      {
+            'X': CO2_X_627},
     },
 }
 '''dict: list of Electronic states whose energy levels can be calculated with RADIS
