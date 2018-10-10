@@ -38,7 +38,9 @@ from radis.misc.utils import DatabankNotFound
 from six.moves import zip
 from time import time
 from multiprocessing import cpu_count
+import pytest
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_compare_torch_CO2(verbose=True, plot=False, save=False, warnings=True,
                            use_cache=True, *args, **kwargs):
     ''' Reproduce the plasma torch experiment of Packan 2003 in in atmospheric air 

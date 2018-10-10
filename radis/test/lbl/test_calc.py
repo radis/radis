@@ -56,6 +56,7 @@ def test_sPlanck_conversions(verbose=True, *args, **kwargs):
     assert np.allclose(I_nm2nm, I_cm2nm)
 
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_calc_spectrum(verbose=True, plot=True, warnings=True,
                        *args, **kwargs):
     ''' Basic example, used as a non-regression test
@@ -190,6 +191,7 @@ def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_all_calc_methods(verbose=True, plot=False, warnings=True, rtol=1e-3,
                           *args, **kwargs):
     ''' Test same spectrum for 3 different calculation variants (equilibrium, 
@@ -256,6 +258,7 @@ def test_all_calc_methods(verbose=True, plot=False, warnings=True, rtol=1e-3,
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True,
                              *args, **kwargs):
     ''' Test same spectrum for 2 different calculation codes (equilibrium, 

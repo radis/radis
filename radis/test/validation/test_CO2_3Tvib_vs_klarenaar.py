@@ -36,8 +36,9 @@ from radis.test.utils import getValidationCase
 from radis.misc.printer import printm
 from radis.test.utils import IgnoreMissingDatabase
 from radis.misc.utils import DatabankNotFound
+import pytest
 
-
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_klarenaar_validation_case(verbose=True, plot=False, warnings=True,
                                    *args, **kwargs):
 

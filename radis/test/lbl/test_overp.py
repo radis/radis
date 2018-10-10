@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 import pytest
 
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_direct_overpopulation_vs_recombined_bands(verbose=True, plot=False, warnings=True,
                                                    rtol=0.05, *args, **kwargs):
     ''' Compare a non-equilibrium spectrum calculated directly with overpopulations, 

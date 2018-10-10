@@ -35,6 +35,7 @@ fig_prefix = basename(__file__)+': '
 # ---------------------
 
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
     ''' Test spectrum generation
     Can be used as a base to generate spectra in your codes

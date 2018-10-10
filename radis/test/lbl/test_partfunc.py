@@ -113,6 +113,7 @@ def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
         printm('... True: cache file was updated for new input parameters (vmax=11)')
 
 @pytest.mark.fast
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     ''' Test 1: compare calculated PartFunc to the tabulated one '''
 
@@ -199,6 +200,7 @@ def test_calculatedQ_match_HAPI(vmax=11, jmax=300, plot=False, verbose=True,
 
 
 @pytest.mark.fast
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
     ''' Test partition functions calculated with CDSD energy levels against 
     hardcoded values '''
@@ -321,6 +323,7 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(verbose=True, warnings=Tr
 
 
 @pytest.mark.fast
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=True, warnings=True, *args, **kwargs):
     ''' 
     Calculate vibrational and rotational partition functions:
@@ -377,6 +380,7 @@ def test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=True, warnings=True, *args, 
 
 
 @pytest.mark.fast
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=True, warnings=True, *args, **kwargs):
     ''' 
     Calculate vibrational and rotational partition functions:

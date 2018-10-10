@@ -147,6 +147,7 @@ def test_voigt_broadening_methods(verbose=True, plot=False, *args, **kwargs):
         assert res < 2e-4
         
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     ''' 
     Test calculation with pseudo-continuum
@@ -213,6 +214,7 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     ''' 
     Test calculation with pseudo-continuum under nonequilibrium

@@ -41,6 +41,7 @@ fig_prefix = basename(__file__)+': '
 # -----------------------------------------------------------------------------
 
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_constant_source(verbose=True, plot=True, warnings=True, *args, **kwargs):
     ''' Test transmittance = radiance pour une source égale à 1  '''
 
