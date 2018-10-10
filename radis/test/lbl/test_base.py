@@ -22,6 +22,9 @@ import matplotlib.pyplot as plt
 def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
     ''' See wavelength difference in air and vacuum '''
 
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
     try:
         if verbose:
             printm('>>> _test_media_line_shift')
@@ -69,7 +72,7 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
-@pytest.mark.needs_internet
+@pytest.mark.needs_connection
 def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
     ''' Test that we find Planck in the optically thick limit 
     
@@ -89,6 +92,9 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
     
     '''
     
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
     # Force DEBUG_MODE
     DEBUG_MODE = radis.DEBUG_MODE
     radis.DEBUG_MODE = True
@@ -162,7 +168,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         # Reset DEBUG_MODE
         radis.DEBUG_MODE = DEBUG_MODE
 
-@pytest.mark.needs_internet
+@pytest.mark.needs_connection
 def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     ''' Test that we find Planck in the optically thick limit 
     
@@ -182,6 +188,9 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     
     '''
     
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
     # Force DEBUG_MODE
     DEBUG_MODE = radis.DEBUG_MODE
     radis.DEBUG_MODE = True

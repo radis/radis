@@ -842,7 +842,7 @@ def plot_diff(s1, s2, var=None,
                 ymax = max(abs(Idiff_sorted[-int(discard_centile*len(Idiff_sorted)//100)]), 
                            abs(Idiff_sorted[int(discard_centile*len(Idiff_sorted)//100)]))
             else:
-                ymax = abs(Idiff).max()
+                ymax = np.nanmax(abs(Idiff))
             ax1[i].set_ylim(-ymax*diff_scale_multiplier, ymax*diff_scale_multiplier)
         elif method == 'distance':
             if discard_centile:
@@ -857,8 +857,8 @@ def plot_diff(s1, s2, var=None,
                 ymin = Idiff_sorted[int(discard_centile*len(Idiff_sorted)//100)]
                 ymax = Idiff_sorted[-int(discard_centile*len(Idiff_sorted)//100)]
             else:
-                ymin = Idiff.min()
-                ymax = Idiff.max()
+                ymin = np.nanmin(Idiff)
+                ymax = np.nanmax(Idiff)
             ax1[i].set_ylim(bottom=((ymin-1)*diff_scale_multiplier+1), 
                             top=((ymax-1)*diff_scale_multiplier+1))
 #            ymax = max(abs(Idiff_sorted[len(Idiff_sorted)//100]-1),
