@@ -33,15 +33,10 @@ class ProgressBar():
 
     See test in progress_bar.py
 
-    Notes
-    -----
-
-    Todo:
-
-    - One day extend for multiprocss with several progress values? 
-      https://stackoverflow.com/questions/7392779/is-it-possible-to-print-a-string-at-a-certain-screen-position-inside-idle
-
     '''
+    # Todo: One day extend for multiprocss with several progress values? 
+    # https://stackoverflow.com/questions/7392779/is-it-possible-to-print-a-string-at-a-certain-screen-position-inside-idle
+
 
     def __init__(self, N, active=True):
         ''' 

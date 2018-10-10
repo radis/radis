@@ -35,12 +35,6 @@ def printdbg(*args, **kwargs):
 
          python -O *.py
 
-     Notes
-     -----
-
-     Todo: 
-
-     - no idea how this performs in multiprocessing mode
      '''
 
     from radis import DEBUG_MODE

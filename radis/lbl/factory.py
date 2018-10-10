@@ -215,8 +215,6 @@ class SpectrumFactory(BandFactory):
         if not None, store populations in Spectrum. Either store vibrational
         populations ('vib') or rovibrational populations ('rovib'). Default ``None``
 
-    # TODO: make it possible to export both 'vib' and 'rovib'
-
     export_lines: boolean
         if ``True``, saves lines in Spectrum. Default ``True``.
 
@@ -292,6 +290,8 @@ class SpectrumFactory(BandFactory):
     
     
     '''
+    # TODO: make it possible to export both 'vib' and 'rovib'
+
 
     # TODO
     # -------
@@ -1282,39 +1282,6 @@ def _generate_broadening_range(wstep, broadening_max_width):
     assert len(wbroad_centered) % 2 == 1
 
     return wbroad_centered
-
-# def generate_cache_files(database):
-#    ''' Generate special database cache files with :
-#    - precalculated Tvib and Trot
-#    - already filtered by isotope
-#
-#    # TODO: integrate that better
-#
-#    '''
-#
-#    from radis.io import cdsd2df
-#    from os.path import splitext
-#    from radis.misc.printer import printr
-#
-#    fac = SpectrumFactory()
-#
-#    for fname in database:
-#        df = cdsd2df(fname, cache=False)
-#
-#        # Select correct isotope
-#        isotope=[float(k) for k in fac.isotope.split(',')]
-#        df = df[df.iso.isin(isotope)]
-#
-#        fac._add_ju(df)
-#        fac._add_Eu(df)
-#        df = fac._get_EvibErot(df)
-#        fcache = splitext(fname)[0]+'.h5'
-#        print('Generating cached file: {0}'.format(fcache))
-#        try:
-#            df.to_hdf(fcache, 'df', format='fixed')
-#        except:
-#            printr('An error occured in cache file generation. Lookup access rights')
-
 
 # %% Test
 

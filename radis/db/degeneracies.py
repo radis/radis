@@ -6,12 +6,9 @@ Created on Sat Oct 28 18:47:39 2017
 
 State-dependant and state-independant degeneracies for molecules 
 
-Notes
------
-
-#TODO: Make it a JSON file
 
 """
+#TODO: Make it a JSON file
 
 
 def gi(M, I):
@@ -105,37 +102,3 @@ def gs(M, I):
         raise NotImplementedError('undefined state-dependant degeneracy for ' +
                                   'molecule[isotope]: {0}[{1}]'.format(M, I))
 
-
-# def gvib(M, I, lines=None, levelsfmt=None):
-#    ''' 'Return vibrational degeneracy for molecule M, isotope I, and based
-#    on lines info 'lines' if given/needed
-#
-#    Input
-#    --------
-#
-#    levelsfmt:
-#        Energy level nomenclature. e.g:
-#        For CO2 in standard nomenclature, gvib = v2+1
-#        In (p,j,c,n) CDSD nomenclature, gvib=1 as the Fermi degenerated levels
-#        are all included
-#
-#    '''
-#
-#    mol = get_molecule(M)
-#
-#    # CO2
-#    if mol == 'CO2':
-#        if levelsfmt == 'cdsd':
-#            g = 1          # (p,j,c,n is an injective description)
-#        elif levelsfmt == 'radis':
-#            g = lines.v2+1   # v2 levels have a degeneracy
-#        else:
-#            raise NotImplementedError('unknown format: {0}'.format(levelsfmt))
-#
-#    # Diatomic molecules
-#    elif mol in HITRAN_CLASS1+HITRAN_CLASS2+HITRAN_CLASS3:
-#        g = 1
-#    else:
-#        raise NotImplementedError('Not implemented molecule: {0}'.format(mol))
-#
-#    return g

@@ -136,13 +136,13 @@ class ElectronicState(Isotope):
     Notes
     -----
     
-    # TODO  (major code rewritting...)
-
     To allow for more flexibility, ElectronicState should also inherit from some 
     built-in Symmetry / species class, Sigma / Pi / Delta etc... where the energy 
     is calculated appropriately.  (ex: Rigid Rotor, Symmetric Top etc.)
 
     '''
+    # TODO  (major code rewritting...)
+
 
     def __init__(self, molecule_name, isotope, state, term_symbol='',
                  g_e=None, spectroscopic_constants={}, Erovib=None, Ehaj=None,
@@ -264,6 +264,10 @@ class ElectronicState(Isotope):
         ''' Finds appropriate Electrorovibrational energy function for this molecule ,
         based on which convention is used for spectroscopic coefficients 
         (Dunham, or Herzberg)
+        
+        Default methods only work for diatomic molecules. For polyatomic molecules,
+        you should give the energy function directly (see how CO2 is defined in 
+        radis.db.molecules.py) 
         
         Returns
         -------

@@ -671,18 +671,13 @@ def get_FWHM(w, I, return_index=False):
     [xmin, xmax]: int
 
 
-    Notes
-    -----
-
-    # TODO: Linearly interpolate at the boundary? insignificant for large number of points
-
-    
     See Also
     --------
     
     :func:`~radis.tools.slit.get_effective_FWHM`
     
     '''
+    # TODO: Linearly interpolate at the boundary? insignificant for large number of points
 
     upper = np.argwhere(I >= I.max()/2)
 

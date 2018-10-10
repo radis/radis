@@ -33,10 +33,9 @@ def _get_supported_molecules_nonequilibrium():
     (see radis.db)
     '''
 
-    # Hardcoded for the moment.
-    # TODO Look up radis.db once it's merged here
+    from radis.db.molecules import Molecules
 
-    return ['CO', 'CO2']
+    return list(Molecules.keys())
 
 
 MOLECULES_LIST_EQUILIBRIUM = __supported_molecules_equilibrium__ = _get_supported_molecules_equilibrium()
@@ -44,4 +43,10 @@ MOLECULES_LIST_EQUILIBRIUM = __supported_molecules_equilibrium__ = _get_supporte
 Basically, all HITRAN species are available. '''
 MOLECULES_LIST_NONEQUILIBRIUM = __supported_molecules_nonequilibrium__ = _get_supported_molecules_nonequilibrium()
 ''' list: molecules that can be calculated in RADIS at nonequilibrium. Built-in
-spectroscopic constants to calculate energy levels are needed '''
+spectroscopic constants to calculate energy levels are needed 
+
+See Also
+--------
+
+:py:data:`~radis.db.molecules.Molecules`
+'''

@@ -25,19 +25,13 @@ PRIVATE METHODS
 - _calc_broadening_bands
 - _calc_broadening_noneq_bands
 
-Notes
------
-
-Implementation:
-
-# TODO: merge common parts of BandList.eq_bands  and SpectrumFactory.eq_spectrum,
-under a same function call
-
 
 ----------
 
 
 """
+# TODO: merge common parts of BandList.eq_bands  and SpectrumFactory.eq_spectrum,
+# under a same function call
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -1180,7 +1174,7 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
 
     elif molecule in HITRAN_CLASS1:   # includes 'CO'
         # Note. TODO. Move that in loader.py (or somewhere consistent with
-        # classes defined in cdsd.py / hiparser)
+        # classes defined in cdsd.py / hitran.py)
 
         if lvlformat in ['radis']:
 
