@@ -54,7 +54,7 @@ from radis.phys.air import vacuum2air, air2vacuum
 from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES,
                                   make_up, cast_waveunit, print_conditions)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
-#from neq.spec.base import print_conditions
+#from radis.lbl.base import print_conditions
 from radis.misc.arrays import (evenly_distributed, count_nans, 
                                is_sorted, is_sorted_backward)
 from radis.misc.debug import printdbg

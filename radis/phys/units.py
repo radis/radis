@@ -13,9 +13,9 @@ Performance test with pint:
 Examples
 --------
 
-Import neq.phys.units to get access to::
+Import radis.phys.units to get access to::
 
-    from neq.phys.units import Q_
+    from radis.phys.units import Q_
     a = Q_(np.array([5,4,2]),'cm')
     a.to_base_units()
 

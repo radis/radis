@@ -114,6 +114,9 @@ See Also
 :func:`~radis.tools.database._update_to_latest_format`
 '''
 
+OLDEST_COMPATIBLE_VERSION = '1.0.0'
+'''str: forces to regenerate cache files that were created in a previous version'''
+
 # %% Version
 
 

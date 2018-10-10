@@ -86,7 +86,7 @@ TEST_DATABASES = {
         'path': [getTestFile(r'hitran_co2_626_bandhead_4165_4200nm.par')],
         'format': 'hitran',
         'parfuncfmt': 'hapi',
-        'levelsfmt': 'neq',  # TODO: replace with 'radis'
+        'levelsfmt': 'radis',
     },
     'HITRAN-CO-TEST': {
         'info': 'HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), ' +\
@@ -94,7 +94,7 @@ TEST_DATABASES = {
         'path': [getTestFile(r'hitran_co_3iso_2000_2300cm.par')],
         'format': 'hitran',
         'parfuncfmt': 'hapi',
-        'levelsfmt': 'neq',  # TODO: replace with 'radis'
+        'levelsfmt': 'radis',
     },
 }
 

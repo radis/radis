@@ -20,7 +20,7 @@ from numpy import log as ln
 from numpy import inf, exp
 from radis.misc.debug import printdbg
 from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
-from radis.lbl.equations import calc_radiance
+from radis.spectrum.equations import calc_radiance
 from radis.misc.basics import all_in, any_in
 from radis.misc.basics import compare_lists
 from warnings import warn

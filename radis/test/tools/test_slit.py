@@ -19,7 +19,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-#from neq.spec import SpectrumFactory
+#from radis.lbl import SpectrumFactory
 from radis.spectrum.spectrum import calculated_spectrum, transmittance_spectrum
 from radis.tools.database import load_spec
 from radis.los.slabs import SerialSlabs
