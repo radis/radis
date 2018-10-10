@@ -239,7 +239,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
         if verbose:
             printm('>>> _test_power_integral')
 
-        setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
         sf = SpectrumFactory(wavelength_min=4300, wavelength_max=4666,
                              wstep=0.001,
@@ -294,7 +294,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         if verbose:
             printm('>>> _test_media_line_shift')
 
-        setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
         sf = SpectrumFactory(wavelength_min=4500, wavelength_max=4600,
                              wstep=0.001,

@@ -88,7 +88,7 @@ def test_rescaling_path_length(debug=False, plot=False, verbose=True, warnings=T
     try:
         from radis.lbl import SpectrumFactory
 
-        setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
         Tgas = 1500
         sf = SpectrumFactory(
@@ -140,7 +140,7 @@ def test_rescaling_mole_fraction(debug=False, plot=False, verbose=True, warnings
         plt.ion()
 
     try:
-        setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
         Tgas = 1500
         sf = SpectrumFactory(
@@ -197,7 +197,7 @@ def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **k
     T = 300
 
     try:
-        setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
         pl = SpectrumFactory(
             wavenum_min=2171.5,

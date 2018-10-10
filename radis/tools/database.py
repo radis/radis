@@ -1701,7 +1701,7 @@ class SpecDatabase():
 
             # Get spectrum with minimum distance to target conditions
             # type: Spectrum
-            sout = self.df.ix[dg['_d'].idxmin(), 'Spectrum']
+            sout = self.df.loc[dg['_d'].idxmin(), 'Spectrum']
         finally:
             del dg['_d']
 

@@ -273,10 +273,10 @@ def _parse_HITRAN_class1(df):
     
     # 1. Parse
     dgu = df['globu'].str.extract(
-        '[ ]{13}(?P<vu>[\d ]{2})',
+        r'[ ]{13}(?P<vu>[\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
-        '[ ]{13}(?P<vl>[\d ]{2})',
+        r'[ ]{13}(?P<vl>[\d ]{2})',
         expand=True)
     
     # 2. Convert to numeric
@@ -376,10 +376,10 @@ def _parse_HITRAN_class4(df):
     
     # 1. Parse
     dgu = df['globu'].str.extract(
-        '[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})',
+        r'[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
-        '[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})',
+        r'[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})',
         expand=True)
     
     # 2. Convert to numeric
@@ -421,10 +421,10 @@ def _parse_HITRAN_class5(df):
     
     # 1. Parse
     dgu = df['globu'].str.extract(
-        '[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)',
+        r'[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)',
         expand=True)
     dgl = df['globl'].str.extract(
-        '[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)',
+        r'[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)',
         expand=True)
     
     # 2. Convert to numeric
@@ -467,11 +467,11 @@ def _parse_HITRAN_class6(df):
     # 1. Parse
     dgu = df['globu'].str.extract(
 #        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
-        '[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})',
+        r'[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
 #        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
-        '[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})',
+        r'[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})',
         expand=True)
     # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are 
     # ... somehow negative. The regex above is adapted to catch negation signs with \-
@@ -630,14 +630,14 @@ def _parse_HITRAN_group1(df):
     # J'  | Ka' | Kc' | F'  | Sym'
     # I3  | I3  | I3  | A5  | A1
     dgu = df['locu'].str.extract(
-        '(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)',
+        r'(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)',
         expand=True)
     # Ref [1] : locl
     # --------------
     # J'' | Ka''| Kc''| F'' | Sym''
     # I3  | I3  | I3  | A5  | A1
     dgl = df['locl'].str.extract(
-        '(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)',
+        r'(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)',
         expand=True)
     # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
     # ... be negative. The regex above is adapted to catch negation signs with \-

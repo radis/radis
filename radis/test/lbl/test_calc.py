@@ -126,6 +126,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
+@pytest.mark.needs_db_CDSD_HITEMP
 def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
                                        *args, **kwargs):
     ''' Non-regression test: 

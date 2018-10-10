@@ -34,7 +34,7 @@ def test_broadening(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
     # Conditions
     T = 3000
@@ -101,7 +101,7 @@ def test_voigt_broadening_methods(verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
     # Conditions
     T = 3000
