@@ -119,10 +119,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
             db_use_cached=True,
             isotope=iso)  # 0.2)
         pl.warnings['MissingSelfBroadeningWarning'] = 'ignore'
-#        pl._broadening_method='convolve'  # 'voigt', 'convolve'
-#        pl.load_databank('CDSD-HITEMP')
         pl.fetch_databank(format='hitran', load_energies=False)
-    #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
     
         s = pl.eq_spectrum(Tgas=T)  # , Ttrans=300)
         s.name = 'RADIS'
@@ -154,12 +151,6 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
         
         if save:
             fig.savefig('out/test_RADIS_vs_HAPI_line_broadening.pdf')
-        
-#        s.line_survey(overlay='transmittance_noslit', barwidth=0.01)
-
-    # %%
-#    s.plot('abscoeff', lw=3, label='RADIS', medium='vacuum')
-    #s_hapi.plot('abscoeff', nfig='same', label='HAPI', medium='vacuum')
 
     # Compare integrals
     diff = abs(s.get_integral('transmittance_noslit', medium='vacuum') /

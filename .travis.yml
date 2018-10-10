@@ -32,7 +32,7 @@ script:
   # Your test script goes here
   - echo ">>> Running tests"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - xvfb-run pytest -m "not needs_db_CDSD-HITEMP" --cov=./             
+  - xvfb-run pytest -m "not needs_db_CDSD_HITEMP" --cov=./             
   
 # safelist
 branches:

@@ -49,25 +49,6 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False,
                                                        'specair_CO_IR_Tvib2000_Trot300.spec')),
                                 binary=True)
 
-#    specair_300_300 = Spectrum.from_txt(getValidationCase(join('test_validation_vs_specair_noneqCO_data',
-#                                                               'specair_Tvib300_Trot300_wavelength_vacuum.txt')),
-#                                        'abscoeff', 'nm', 'cm_1',
-#                                        conditions={'mole_fraction': 1,
-#                                                    'medium': 'vacuum'},
-#                                        name='SPECAIR')
-#    specair_300_2000 = Spectrum.from_txt(getValidationCase(join('test_validation_vs_specair_noneqCO_data',
-#                                                                'specair_Tvib300_Trot2000_wavelength_vacuum.txt')),
-#                                         'abscoeff', 'nm', 'cm_1',
-#                                         conditions={'mole_fraction': 1,
-#                                                     'medium': 'vacuum'},
-#                                         name='SPECAIR')
-#    specair_2000_300 = Spectrum.from_txt(getValidationCase(join('test_validation_vs_specair_noneqCO_data',
-#                                                                'specair_Tvib2000_Trot300_wavelength_vacuum.txt')),
-#                                         'abscoeff', 'nm', 'cm_1',
-#                                         conditions={'mole_fraction': 1,
-#                                                     'medium': 'vacuum'},
-#                                         name='SPECAIR')
-
     article_version = False   # just for the article
     
     # %% Compare with RADIS
