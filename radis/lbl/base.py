@@ -60,7 +60,7 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 from __future__ import print_function, absolute_import, division, unicode_literals
 import radis
 from radis.db import MolParams
-from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT
+from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT, df_metadata
 from radis.lbl.labels import (vib_lvl_name_hitran_class1,
                              vib_lvl_name_hitran_class5)
 from radis.phys.constants import c_CGS, h_CGS
@@ -2984,8 +2984,7 @@ class BaseFactory(DatabankLoader):
         # ... alternative 
         # Ensures abundance, molar mass and partition functions are transfered
         # (needed if they are attributes and not isotopes)
-        transfer_metadata(df, self.df1, ['Ia', 'molar_mass']+
-                          [k for k in ['Qref', 'Qvib', 'Q'] if hasattr(df, k)])
+        transfer_metadata(df, self.df1, [k for k in df_metadata if hasattr(df, k)])
         
         # Store number of lines cut (for information)
         self._Nlines_cutoff = Nlines_cutoff
@@ -3049,10 +3048,10 @@ class BaseFactory(DatabankLoader):
         # (only 1 molecule, 1 isotope) and not a column (line specific) in the database
         # @dev: this brings a lot of performance improvement, but sometimes fail. 
         # | here we ensure that the DataFrame has the values:
-        transfer_metadata(self.df0, self.df1, ['Ia', 'molar_mass'])
+        transfer_metadata(self.df0, self.df1, [k for k in df_metadata if hasattr(self.df0, k)])
         assert hasattr(self.df1, 'molar_mass')
         assert hasattr(self.df1, 'Ia')
-
+        
         # Clean objects to save memory
         if self.save_memory:
             del self.df0

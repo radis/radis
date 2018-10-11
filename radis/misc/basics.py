@@ -382,6 +382,34 @@ def transfer_metadata(df1, df2, metadata):
         if not hasattr(df2, k):
             assert k not in df1.columns   # point is not to copy columns!
             setattr(df2, k, getattr(df1, k))
+            
+def expand_metadata(df, metadata):
+    ''' Turn metadata from a float to a column
+    
+    For some reason metadata are sometimes not copied when a DataFrame is 
+    sliced or copied, even if they explicitely figure in the df._metadata 
+    attribute. Here we add them as column before such operations. 
+    
+    Parameters
+    ----------
+    
+    df: pandas DataFrame
+        ...
+        
+    Returns
+    -------
+    
+    None: 
+        df modified in place
+        
+    '''
+    
+    for k in metadata:
+        if __debug__ and k not in df._metadata:
+            from radis.misc.debug import printdbg
+            printdbg('WARNING. {0} not in _metadata: {1}'.format(k, df._metadata))
+        df[k] = getattr(df, k)
+
 # %%
 # ==============================================================================
 # Types

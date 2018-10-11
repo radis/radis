@@ -44,6 +44,8 @@ from warnings import warn
 import os
 from six.moves import zip
 from uuid import uuid1
+from radis.lbl.loader import df_metadata
+from radis.misc.basics import expand_metadata
 
 
 def _distribute_eq_spectrum(args):
@@ -226,6 +228,10 @@ class ParallelFactory(SpectrumFactory):
         Tgas = args.pop('Tgas')
         mole_fraction = args.pop('mole_fraction')
         path_length = args.pop('path_length')
+        
+        # Expand metadata before copy, else it will be lost. 
+        # @dev: See :py:data:`~radis.lbl.loader.df_metadata` for more explanations
+        expand_metadata(self.df0, [k for k in df_metadata if hasattr(self.df0, k)])
 
         N = len(Tgas)
         cast_factory = [self]*N  # note that this is the copy of a same object!
@@ -305,6 +311,10 @@ class ParallelFactory(SpectrumFactory):
         mole_fraction = args['mole_fraction']
         path_length = args['path_length']
         
+        # Expand metadata before copy, else it will be lost. 
+        # @dev: See :py:data:`~radis.lbl.loader.df_metadata` for more explanations
+        expand_metadata(self.df0, [k for k in df_metadata if hasattr(self.df0, k)])
+
         N = len(Tvib)
         cast_factory = [self]*N  # note that this is the copy of a same object!
 

@@ -372,6 +372,36 @@ def format_paths(s):
 
 TEMP_FILE_PREFIX = '.radis_'
 
+df_metadata = ['Ia', 'molar_mass', 'Qref', 'Qvib', 'Q']
+''' list: metadata of line DataFrames :py:attr:`~radis.lbl.loader.DatabankLoader.df0`, 
+:py:attr:`~radis.lbl.loader.DatabankLoader.df1`.
+@dev: when having only 1 molecule, 1 isotope, these parameters are 
+constant for all rovibrational lines. Thus, it's faster and much more
+memory efficient to transport them as attributes of the DataFrame 
+rather than columns. The syntax is the same, thus the operations do 
+not change, i.e::
+    
+    k_b / df.molar_mass
+    
+will work whether molar_mass is a float or a column. 
+
+.. warning:: 
+    
+    However, in the current Pandas implementation of :py:class:`~pandas.DataFrame`,
+    attributes are lost whenever the DataFrame is recreated, transposed,
+    pickled.
+    
+Thus, we use :py:func:`~radis.misc.basics.transfer_metadata` to keep
+the attributes after an operation, and :py:func:`~radis.misc.basics.expand_metadata` 
+to make them columns before a Serializing operation (ex: multiprocessing)
+@dev: all of that is a high-end optimization. Users should not deal 
+with internal DataFrames. 
+
+References
+----------
+https://stackoverflow.com/q/13250499/5622825    
+'''
+
 
 class DatabankLoader(object):
     '''
@@ -433,8 +463,8 @@ class DatabankLoader(object):
             pass
 
         # Variables that will hold the dataframes.
-        self.df0 = None   # initial database data
-        self.df1 = None   # scaled with populations + linestrength cutoff
+        self.df0 = None   #: DataFrame : initial database data
+        self.df1 = None   #: DataFrame : scaled with populations + linestrength cutoff
 
         # Temp variable to store databanks information
         self._databank_args = []

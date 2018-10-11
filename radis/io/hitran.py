@@ -686,14 +686,14 @@ def _parse_HITRAN_group2(df):
     #     | F'  |
     # 10X | A5  |
     dgu = df['locu'].str.extract(
-        '[ ]{10}(?P<Fu>.{5})',
+        r'[ ]{10}(?P<Fu>.{5})',
         expand=True)
     # Ref [1] : locl
     # --------------
     #     | Br  | J'' | Sym''| F'' |
     # 5X  | A1  | I3  | A1   | A5  |
     dgl = df['locl'].str.extract(
-        '[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})',
+        r'[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})',
         expand=True)
 
     # 2. Convert to numeric
