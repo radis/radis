@@ -4,23 +4,26 @@ Created on Mon Nov 20 10:16:13 2017
 
 @author: erwan
 
-Use
-------
+Examples
+--------
 
-Run all tests:
+Run all tests::
 
->>> pytest       (in command line, in project folder)
+    pytest       (in command line, in project folder)
 
-Run only fast tests (i.e: tests that a 'fast' label)
+Run only fast tests (i.e: tests that a 'fast' label)::
 
->>> pytest -m fast
+    pytest -m fast
+
+
+-------------------------------------------------------------------------------
 
 """
 
 from __future__ import absolute_import
 from __future__ import print_function
-from radis.levels.partfunc import (PartFunc_Dunham, PartFuncHAPI,
-                               PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc)
+from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
+from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc
 from radis.phys.constants import hc_k
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase
