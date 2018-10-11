@@ -130,10 +130,10 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
     try:
         T = 1500
 
-        iso = [1, 2]
+        iso = [1]  
         sf = SpectrumFactory(
-            2380, 2400,
-            #                          wstep=0.001, #02,
+            wavenum_min=2380, 
+            wavenum_max=2400,
             pressure=20*1e-3,
             db_use_cached=True,
             cutoff=1e-25,
