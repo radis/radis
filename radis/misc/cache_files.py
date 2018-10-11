@@ -15,7 +15,8 @@ Routine Listing
 See Also
 --------
 
-:func:`~radis.io.hitran.hit2df`, :func:`~radis.io.cdsd.cdsd2df`
+:py:func:`~radis.io.hitran.hit2df`, 
+:py:func:`~radis.io.cdsd.cdsd2df`
 
 -------------------------------------------------------------------------------
 

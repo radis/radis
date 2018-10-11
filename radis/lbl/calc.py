@@ -191,11 +191,23 @@ def calc_spectrum(wavenum_min=None,
     Examples
     --------
 
-    Calc a CO spectrum::
+    Calculate a CO spectrum from the HITRAN database ::
 
-        calc_spectrum(2100, 2300, Tgas=2000, 
-                      databank='HITRAN-CO', isotope=[1,2], cutoff=1e-25,
-                       *plot='radiance_noslit')
+        s = calc_spectrum(1900, 2300,         # cm-1
+                          molecule='CO',
+                          isotope='1,2,3',
+                          pressure=1.01325,   # bar
+                          Tgas=1000, 
+                          mole_fraction=0.1, 
+                          )
+        s.apply_slit(0.5, 'nm')
+        s.plot('radiance')
+        
+    This example uses the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` 
+    and :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` methods. See also
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`:: 
+        
+        s.line_survey(overlay='radiance')
 
     '''
 

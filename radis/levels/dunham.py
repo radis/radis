@@ -157,7 +157,7 @@ def Fv(v, J, Be=0, De=0, alpha_e=0, beta_e=0, gamma_e=0, delta_e=0, epsilon_e=0,
        degeneracy   (usually 1, but 2 for CO2-v2) 
 
     Returns
-    ------
+    -------
     
     Fv: float
         Energy (cm-1)

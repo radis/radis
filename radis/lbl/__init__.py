@@ -12,4 +12,3 @@ from .factory import SpectrumFactory
 from .parallel import ParallelFactory
 from .calc import calc_spectrum
 from .overp import LevelsList
-from .line_survey import LineSurvey

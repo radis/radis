@@ -7,13 +7,15 @@ Created on Mon Nov 20 09:59:55 2017
 Examples
 --------
 
-Run all tests:
+Run all tests::
 
->>> pytest       (in command line, in project folder)
+    pytest       (in command line, in project folder)
 
-Run only fast tests (i.e: tests that have a 'fast' label)
+Run only fast tests (i.e: tests that have a 'fast' label)::
 
->>> pytest -m fast
+    pytest -m fast
+    
+------------------------------------------------------------------------
 
 """
 
@@ -46,8 +48,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
     This is not a validation case (30/12/2017 results are not a physically validated
     case), but it makes sure results dont change over time
 
-    Conditions (30/12/2017)
-    --------
+    Conditions (30/12/2017)::
 
         Physical Conditions
         ----------------------------------------

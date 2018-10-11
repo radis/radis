@@ -1102,13 +1102,8 @@ class Spectrum(object):
             similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
             Note that this is valid only for small changes in mole fractions. Then,
             the change in line broadening becomes significant
-
-
-        Todo
-        ----
-
-        Add warning when too large rescaling
         '''
+
         return rescale_mole_fraction(self, new_mole_fraction=new_mole_fraction,
                                      old_mole_fraction=old_mole_fraction,
                                      inplace=inplace,

@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb 15 19:38:14 2017
-
-@author: erwan
+Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is 
+the core of the RADIS Line-by-Line module. 
 
 Examples
 --------
 
-See _test() for more details on how to calculate spectrum
+Calculate a CO Spectrum, fetching the lines from HITRAN ::
 
     # This is how you get a spectrum (see spectrum.py for front-end functions
     # that do just that)
     sf = SpectrumFactory(2125, 2249.9,
                          parallel=False,bplot=False,
+                         molecule='CO', 
+                         isotope=1,
                          cutoff=1e-30,   # for faster calculations. See
                                          # `plot_linestrength_hist` for more details
                          **kwargs)
-    sf.load_databank('HITRAN-CO')        # choose your own databank file. It's possible you
-                                         # won't have the default one.
+    sf.fetch_databank()        # autodownload from HITRAN 
     s = sf.eq_spectrum(Tgas=300)
     s.plot('abscoeff')
 
@@ -26,10 +26,13 @@ See _test() for more details on how to calculate spectrum
                        Iunit='µW/cm2/sr/nm',  # Iunit is arbitrary. Use whatever makes sense
                        show_points=True)  # show_points to have an idea of the resolution
 
+See :py:mod:`radis.test.lbl.test_factory` for more examples
+
+
 Routine Listing
 ---------------
-(on Spyder IDE navigate between sections easily as # XXX makes a reference
-(on the slide bar on the right)
+*(the following sections are marked on the slider bar in the Spyder IDE with
+the # XXX symbol)*
 
 PUBLIC METHODS
 
@@ -39,12 +42,8 @@ PUBLIC METHODS
 - :meth:`~radis.lbl.factory.SpectrumFactory.print_conditions`        >>> get all calculation conditions
 - :meth:`~radis.lbl.factory.SpectrumFactory.plot_linestrength_hist`  >>> plot distribution of linestrengths
 
-EXTRA FUNCTIONS
-
-(not really used anymore)
-- generate_cache_files      # commented
-
-Most methods are written in inherited class with the following inheritance scheme:
+Most methods are written in inherited class with the following inheritance scheme::
+    
     DatabaseLoader > BaseFactory > BroadenFactory > BandFactory > SpectrumFactory
     > ParallelFactory
 
@@ -77,19 +76,10 @@ choice on how we normalize the instrumental slit function:
 
 for Developers:
 
-To implement new database formats, see the databases parsers in cdsd.py / hiparser.py,
-and the partition function interpolators / calculators methods of SpectrumFactory:
-_build_partition_function_calculator and SpectrumFactory._build_partition_function_interpolator
-
-History:
-
-- I started from Sean McGuire's Matlab code for equilibrium CO2 calculation 
-and converted it into Python
-
-Main differences with his code:
-- we use a CDSD database file directly (no need for a converted version...
-the conversion is done on the fly, but it may be a little longer)
-- code is fully vectorized and parallelized
+- To implement new database formats, see the databases parsers in cdsd.py / hitran.py,
+  and the partition function interpolators / calculators methods of SpectrumFactory:
+  :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_calculator` and 
+  :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_interpolator`
 
 
 ----------
@@ -1022,14 +1012,14 @@ class SpectrumFactory(BandFactory):
 
         .. warning::
         
-            : this is a fast implementation that doesnt take into account
-            the broadening of neighbouring lines. It is valid for spectral ranges
+            this is a fast implementation that doesnt take into account
+            the contribution of lines outside the given spectral range. It is valid for spectral ranges
             surrounded by no lines, and spectral ranges much broaded than the typical
             line broadening (~ 1-10 cm-1 in the infrared)
 
-        If what you're looking for is an accurate simulation on a narrow band
+        If what you're looking for is an accurate simulation on a narrow spectral range
         you better calculate the spectrum (that does take all of that into account)
-        and integrate it
+        and integrate it with :py:meth:`~radis.spectrum.spectrum.Spectrum.get_power`
 
         Parameters
         ----------
@@ -1069,8 +1059,10 @@ class SpectrumFactory(BandFactory):
         See Also
         --------
 
-        :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
-
+        :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`, 
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.get_power`, 
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.get_integral`
+        
         '''
 
         try:
@@ -1187,7 +1179,8 @@ class SpectrumFactory(BandFactory):
 # EXTRA FUNCTIONS
 # ---------------------
 #
-# generate_cache_files
+# _generate_wavenumber_range
+# _generate_broadening_range
 #
 # XXX =====================================================================
 

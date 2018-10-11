@@ -2,11 +2,42 @@
 RADIS
 =====
 
-A code to simulate infrared spectra of molecules.
+RADIS is a nonequilibrium infrared emission and absorption line-by-line (LBL) code, for use 
+by spectroscopic who want to compare line databases, or experimentalist 
+who want to fit their experimental line-of-sight (LOS) spectra.
 
-RADIS is nonequilibrium emission and absorption line-by-line code, for use 
-by infrared spectroscopic that want to compare line databases, or experimentalist 
-that want to fit their experimental line-of-sight spectra.
+
+
+Calculate a CO equilibrium spectrum from the HITRAN database, using the
+:py:func:`~radis.lbl.calc.calc_spectrum` function::
+
+    from radis import calc_spectrum
+    s = calc_spectrum(1900, 2300,         # cm-1
+                      molecule='CO',
+                      isotope='1,2,3',
+                      pressure=1.01325,   # bar
+                      Tgas=1000,          # K
+                      mole_fraction=0.1, 
+                      )
+    s.apply_slit(0.5, 'nm')
+    s.plot('radiance')
+    
+Calculate a CO **nonequilibrium** spectrum from the HITRAN database
+(on your first call, this will calculate and cache the CO(X) rovibrational
+energies) ::
+
+    s = calc_spectrum(1900, 2300,         # cm-1
+                      molecule='CO',
+                      isotope='1,2,3',
+                      pressure=1.01325,   # bar
+                      Tvib=1000,          # K
+                      Trot=300,           # K
+                      mole_fraction=0.1, 
+                      )
+    s.apply_slit(0.5, 'nm')
+    s.plot('radiance', nfig='same')    # compare with previous
+
+
 
 - Docs: http://radis.readthedocs.io/
 - Source: https://github.com/radis/radis
@@ -34,6 +65,8 @@ results from various plasma sources are included.
 
 The code will soon be fully available on this repository under 
 `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`_
+
+
 
 Examples
 --------
