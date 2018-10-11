@@ -44,7 +44,7 @@
                     "Be_cm-1":  0.39024,
                     "De_cm-1":  0.1332e-6,
                     "He_cm-1":  0.0090e-12,
-                    "ZPE_cm-1": 2505.545
+                    "ZPE_cm-1": 2454.245
                     }
                 },
             "electronic_levels_names": [
@@ -69,7 +69,7 @@
                     "Be_cm-1":  0.36819,
                     "De_cm-1":  0.1187e-6,
                     "He_cm-1":  0.0075e-12,
-                    "ZPE_cm-1": 2505.545
+                    "ZPE_cm-1": 2473.02
                     }
                 },
             "electronic_levels_names": [
@@ -94,7 +94,7 @@
                     "Be_cm-1":  0.37862,
                     "De_cm-1":  0.1255e-6,
                     "He_cm-1":  0.0082e-12,
-                    "ZPE_cm-1": 2505.545
+                    "ZPE_cm-1": 2420.98
                     }
                 },
             "electronic_levels_names": [

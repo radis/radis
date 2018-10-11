@@ -48,5 +48,5 @@ spectroscopic constants to calculate energy levels are needed
 See Also
 --------
 
-:py:data:`~radis.db.molecules.Molecules`
+:py:data:`~radis.db.classes.Molecules`
 '''

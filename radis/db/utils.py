@@ -85,6 +85,79 @@ def check_molecule_data_structure(fname, verbose=True):
     if verbose: print('Structure of {0} looks correct'.format(fname))
 
 
+def get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile='default',
+                           remove_trailing_cm1=True):
+    ''' Returns all rovib coefficients for ``molecule``, ``isotope``, ``electronic_state`` 
+    by parsing a JSON file of molecule data. 
+    
+    Parameters
+    ----------
+    
+    molecule: str
+        molecule name
+        
+    isotope: int
+        isotope number
+        
+    electronic_state: str
+        electronic state name
+        
+    jsonfile: str, or ``default``
+        path to json file. If ``default``, the ``molecules_data`` JSON file 
+        in the ``radis.db`` database is used::
+        
+            radis\db\[molecule]\molecules_data.json
+            
+    Other Parameters
+    ----------------
+    
+    remove_trailing_cm1: bool
+        if ``True``, remove the trailing '_cm-1' in the spectroscopic coefficient name, 
+        if defined. Ex:: 
+            
+            ('we1_cm-1', 1333.93)
+            >>> ('we1', 1333.93)
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.db.utils.get_dunham_coefficients`, 
+    :py:func:`~radis.db.utils.get_herzberg_coefficients`, 
+    '''
+
+    if jsonfile == 'default':
+        jsonfile = getFile('{0}/molecules_data.json'.format(molecule))
+        
+    check_molecule_data_structure(jsonfile, verbose=False)
+    
+    with open(jsonfile) as f:
+        db = json.load(f, object_pairs_hook=OrderedDict)
+
+    # Get Dunham coefficients in 001 state (X)
+    elec_state_names = db[molecule]['isotopes'][str(isotope)]['electronic_levels_names']
+    
+    try:
+        elec_state_index = elec_state_names.index(electronic_state)
+    except ValueError:
+        raise ValueError("{0} not in the electronic state list for {1}(iso={2}): {3}".format(
+                electronic_state, molecule, isotope, elec_state_names))
+    else:
+        elec_state_index = '{:03d}'.format(elec_state_index+1)  # 1 based index
+    
+    rovib_coeffs = db[molecule]['isotopes'][str(isotope)]['electronic_level'][elec_state_index]
+    
+    if remove_trailing_cm1:
+        
+        def remove_cm1(coef):
+            ''' Remove the trailing '_cm-1' in the spectroscopic coefficient name, 
+            if defined '''
+            if coef.endswith('_cm-1'):
+                coef = coef[:-5]
+            return coef
+                
+        rovib_coeffs = {remove_cm1(k):v for (k,v) in rovib_coeffs.items()}
+        
+    return rovib_coeffs
 
 def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='default'):
     ''' Returns Dunham coefficients ``Yij`` for ``molecule``, ``isotope``, ``electronic_state`` 
@@ -113,28 +186,10 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='defau
     
     '''
 
-    if jsonfile == 'default':
-        jsonfile = getFile('{0}/molecules_data.json'.format(molecule))
-        
-    check_molecule_data_structure(jsonfile, verbose=False)
+    rovib_coeffs = get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile=jsonfile)
     
-    with open(jsonfile) as f:
-        db = json.load(f, object_pairs_hook=OrderedDict)
-
-    # Get Dunham coefficients in 001 state (X)
-    elec_state_names = db[molecule]['isotopes'][str(isotope)]['electronic_levels_names']
-    
-    try:
-        elec_state_index = elec_state_names.index(electronic_state)
-    except ValueError:
-        raise ValueError("{0} not in the electronic state list for {1}(iso={2}): {3}".format(
-                electronic_state, molecule, isotope, elec_state_names))
-    else:
-        elec_state_index = '{:03d}'.format(elec_state_index+1)  # 1 based index
-    
-    dunham_coeffs = db[molecule]['isotopes'][str(isotope)]['electronic_level'][elec_state_index]
     # Only get Dunham coeffs, i.e, these that start with Y
-    dunham_coeffs = {k:v for (k, v) in dunham_coeffs.items() if k.startswith('Y')}
+    dunham_coeffs = {k:v for (k, v) in rovib_coeffs.items() if k.startswith('Y')}
 
     if len(dunham_coeffs) == 0:
         raise ValueError('No Dunham coefficients found for {0}{1}(iso={2})'.format(
@@ -182,34 +237,8 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
     
     from radis.db.conventions import herzberg_coefficients
 
-    if jsonfile == 'default':
-        jsonfile = getFile('{0}/molecules_data.json'.format(molecule))
-        
-    check_molecule_data_structure(jsonfile, verbose=False)
+    rovib_coeffs = get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile=jsonfile)
     
-    with open(jsonfile) as f:
-        db = json.load(f, object_pairs_hook=OrderedDict)
-
-    # Get Dunham coefficients in 001 state (X)
-    elec_state_names = db[molecule]['isotopes'][str(isotope)]['electronic_levels_names']
-    
-    try:
-        elec_state_index = elec_state_names.index(electronic_state)
-    except ValueError:
-        raise ValueError("{0} not in the electronic state list for {1}(iso={2}): {3}".format(
-                electronic_state, molecule, isotope, elec_state_names))
-    else:
-        elec_state_index = '{:03d}'.format(elec_state_index+1)  # 1 based index
-    
-    def remove_cm1(coef):
-        ''' Remove the trailing '_cm-1' in the spectroscopic coefficient name, 
-        if defined '''
-        if coef.endswith('_cm-1'):
-            coef = coef[:-5]
-        return coef
-        
-    herzberg_coeffs = {remove_cm1(k):v for (k,v) in 
-                     db[molecule]['isotopes'][str(isotope)]['electronic_level'][elec_state_index].items()}
 #    # Only get Herzberg coeffs, i.e, these that are defined in :py:data:`~radis.db.conventions.herzberg_coefficients`
     
     def ignore_trailing_number(coef):
@@ -219,7 +248,7 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
             coef = coef[:-1]
         return coef
     
-    herzberg_coeffs = {k:v for (k, v) in herzberg_coeffs.items() if ignore_trailing_number(k) in herzberg_coefficients}
+    herzberg_coeffs = {k:v for (k, v) in rovib_coeffs.items() if ignore_trailing_number(k) in herzberg_coefficients}
 
     if len(herzberg_coeffs) == 0:
         raise ValueError('No Herzberg spectroscopic coefficients found for {0}{1}(iso={2})'.format(

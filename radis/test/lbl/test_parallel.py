@@ -65,7 +65,7 @@ def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
         pf.warnings['NegativeEnergiesWarning'] = 'ignore'
         pf.warnings['EmptyDatabaseWarning'] = 'ignore'
         pf.load_databank('HITRAN-CO2-TEST')
-        
+
         t0 = time()
         s_parallel = pf.non_eq_spectrum(Tvib, Trot, path_length=path_length, 
                                         mole_fraction=mole_fraction)
@@ -95,8 +95,8 @@ def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
             printm(
                 ('\nParallelFactory performance test ({0} cases)'.format(len(Trot))))
             printm('-------------------')
-            printm(('Parallel version: {0:.1f}'.format(t0)))
-            printm(('Normal version: {0:.1f}'.format(t1)))
+            printm(('Parallel version: {0:.1f}s'.format(t0)))
+            printm(('Normal version: {0:.1f}s'.format(t1)))
             printm('-------------------')
 
         # Assert that spectra are the same

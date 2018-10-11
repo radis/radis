@@ -7,8 +7,8 @@ Created on Tue Jul 18 16:15:03 2017
 Summary
 -------
 
-Define :py:class:`~radis.db.molecules.Molecule`, :py:class:`~radis.db.molecules.Isotope` 
-and :py:class:`~radis.db.molecules.ElectronicStates` classes 
+Define :py:class:`~radis.db.classes.Molecule`, :py:class:`~radis.db.classes.Isotope` 
+and :py:class:`~radis.db.classes.ElectronicState` classes 
 
 ElectronicState has:
 
@@ -45,6 +45,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 import re
 from six import string_types
 from radis.io.hitran import get_molecule, get_molecule_identifier
+from radis.io.hitran import HITRAN_CLASS1, HITRAN_CLASS5
 from radis.levels.dunham import Gv, Fv, EvJ
 from radis.db.conventions import get_convention
 
@@ -221,19 +222,23 @@ class ElectronicState(Isotope):
         self.term_symbol = term_symbol
         self.g_e = g_e
 
-        self._parse_constants(spectroscopic_constants)
+        self._parse_rovib_constants(spectroscopic_constants)
 
         self.Erovib = None   #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
-        self._assign_E(Erovib)
-        self.Ehaj = Ehaj
+        self.Ehaj = None     #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
+        self._assign_E(Erovib, Ehaj)
         self.state = state
         self.vmax = vmax
         self.vmax_morse = vmax_morse
         self.Jmax = Jmax
         self.Ediss = Ediss
 
-    def _parse_constants(self, spectroscopic_constants):
+    def _parse_rovib_constants(self, spectroscopic_constants):
         ''' Parse spectroscopic constants 
+        
+        Stores :py:attr:`~radis.db.classes.ElectronicState.Te` and 
+        :py:attr:`~radis.db.classes.ElectronicState.re` as electronic state 
+        attributes, and the rest under :py:attr:`~radis.db.classes.ElectronicState.rovib_constants` 
         
         Parameters
         ----------
@@ -245,7 +250,7 @@ class ElectronicState(Isotope):
         -------
         
         None: 
-            but constants are stored under :py:attr:`~radis.db.molecules.ElectronicState.rovib_constants`
+            but constants are stored under :py:attr:`~radis.db.classes.ElectronicState.rovib_constants`
         
         '''
         
@@ -264,7 +269,7 @@ class ElectronicState(Isotope):
 
     # Default method to calculate energy
 
-    def _assign_E(self, Erovib):
+    def _assign_E(self, Erovib, Ehaj):
         ''' Finds appropriate Electrorovibrational energy function for this molecule ,
         based on which convention is used for spectroscopic coefficients 
         (Dunham, or Herzberg)
@@ -280,36 +285,78 @@ class ElectronicState(Isotope):
             but assigns the ``self.Erovib`` function to the molecule
             
         '''
+        # Check input
+        if Erovib is None and Ehaj is not None:
+            raise ValueError("If giving Ehaj (harmonic and anharmonic component calculation) "+\
+                             "you must also supply Erovib (total rovibrational energy)")
         
         if Erovib is not None:
             # overwrite energy calculation
             self.Erovib = Erovib
+            self.Ehaj = Ehaj
             if self.verbose>=2:
                 print('{0}: overwritting Energy calculation with {1}'.format(
                         self.get_fullname(), Erovib))
         else:
+            # Autofind which energy model to use for the given molecule
             c = self.rovib_constants
             if len(c) == 0:
                 self.Erovib = self._E_None
                 if self.verbose>=2:
                     print('{0}: No rovibconstants found'.format(
                             self.get_fullname()))
-            elif get_convention(c) == 'herzberg':
-                self.Erovib = self._E_Herzberg
-                if self.verbose>=2:
-                    print('{0}: using Herzberg coefficients for Energy calculation'.format(
-                            self.get_fullname()))
-            else:
-                self.Erovib = self._E_Dunham
-                if self.verbose>=2:
-                    print('{0}: using Dunham coefficients for Energy calculation'.format(
-                            self.get_fullname()))
-                # TODO: reformat these methods as external functions, but keep docstrings
+            else: 
+                convention = get_convention(c)   # Herzberg or Dunham
+                    
+                if self.name in HITRAN_CLASS1:
+                    if convention == 'herzberg':
+                        self.Erovib = self._E_Herzberg
+                        self.Ehaj = None     # NotImplemented
+                        if self.verbose>=2:
+                            print('{0}: using Herzberg coefficients for Energy calculation'.format(
+                                    self.get_fullname()))
+                    else:
+                        self.Erovib = self._E_Dunham
+                        self.Ehaj = None     # NotImplemented
+                        if self.verbose>=2:
+                            print('{0}: using Dunham coefficients for Energy calculation'.format(
+                                    self.get_fullname()))
+                        # TODO: reformat these methods as external functions, but keep docstrings
+                elif self.name in HITRAN_CLASS5:
+                    if convention == 'herzberg':
+                        from radis.levels.energies_co2 import EvJ_co2, EvJah_co2
+                        self._Erovib = EvJ_co2
+                        self._Ehaj = EvJah_co2
+                        self.Erovib = self._Erovib_default_coefs
+#                        self.Erovib.__doc__ == EvJ_co2.__doc__
+                        self.Ehaj = self._Ehaj_default_coefs
+#                        self.Ehaj.__doc__ == EvJah_co2.__doc__
+                    else:
+                        raise NotImplementedError('Only Herzberg convention spectroscopic '+\
+                                                  'constants defined for {0}. '.format(self.name)+\
+                                                  'You still define your own Erovib function '+\
+                                                  'and overwrite the ElectronicState class one.')
+                    
                 
     def _E_None(self, *args, **kwargs):
         ''' Rovibrational Energy '''
         raise NotImplementedError('No spectroscopic coefficients given for '+\
                                   'molecule {0}'.format(self.get_fullname()))
+        
+    def _Erovib_default_coefs(self, *args, **kwargs):
+        assert 'coeff_dict' not in kwargs
+        kwargs.update({'coeff_dict':self.rovib_constants})
+        
+        return self._Erovib(*args, **kwargs)
+        
+    def _Ehaj_default_coefs(self, *args, **kwargs):
+        ''' Call default _Ehaj() function with default rovib_constants coefficients
+        '''
+        
+        assert 'coeff_dict' not in kwargs
+        kwargs.update({'coeff_dict':self.rovib_constants})
+        
+        return self._Ehaj(*args, **kwargs)
         
     def _E_Dunham(self, v, J, offset=True):
         
@@ -485,75 +532,26 @@ class ElectronicState(Isotope):
         return '{0}({1}{2})(iso{3})'.format(self.name, self.state,
                                             self.term_symbol, self.iso)
 
-
-
-
-
-def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
-    ''' Get an ElectronicState object the RADIS Molecules list. 
-
-    Parameters
-    ----------
-
-    molecule: str
-        molecule name
-
-    isotope: int, or ``None``
-        isotope number. if None, only one isotope must exist in database. Else, 
-        an error is raised
-
-    electronic_state: str
-        if None, only one electronic state must exist in database. Else, an error 
-        is raised
-
-    verbose: boolean
-        if ``True``, print which electronic state we got
-
-    '''
-
-    # molecule
-    try:
-        mol = Molecules[molecule]
-    except KeyError:
-        raise KeyError('{0} is not defined in molecules with built-in '.format(molecule) +
-                       'spectroscopic constants. Choose one of: {0}'.format(list(Molecules.keys())))
-
-    # isotope
-    if isotope is None:
-        if len(list(mol.keys())) != 1:
-            raise ValueError('Please precise which isotope among: {0}'.format(
-                list(mol.keys())))
-        isotope = list(mol.keys())[0]
-    try:
-        iso = mol[isotope]
-    except KeyError:
-        raise KeyError('Isotope {0} is not defined for molecule {1}. Choose one of: {2}'.format(
-            isotope, molecule, list(mol.keys())))
-
-    # electronic state
-    if electronic_state is None:
-        if len(list(iso.keys())) != 1:
-            raise ValueError('Please choose which electronic state among: {0}'.format(
-                list(iso.keys())))
-        electronic_state = list(iso.keys())[0]
-    try:
-        state = iso[electronic_state]
-    except KeyError:
-        raise KeyError('{0} is not defined for molecule {1}(iso={2}). Choose one of: {3}'.format(
-            electronic_state, molecule, isotope, list(mol.keys())))
-
-    # print name
-    if verbose:
-        print('Found {0} in RADIS database'.format(state.get_fullname()))
-
-    # Return
-    return state
-
-
-# %% Test
-
-
-if __name__ == '__main__':
-    
-    from radis.test.db.test_molecules import _run_testcases
-    print('Testing molecules.py', _run_testcases())
+    def get_statename_utf(self):
+        ''' Returns Electronic state name in UTF format, used in the standard
+        RADIS JSON databases. Examples::
+            
+           'X', '1Σ+' 
+           >>> X1SIG+
+           
+           'C', '3Πu' 
+           >>> C3PIu
+           
+        '''
+        
+        state = self.state
+        term = self.term_symbol
+        
+        replace_utf = {'Σ':'SIG',
+                       'Π':'PI',
+                       'Δ':'DEL'}
+        
+        for k, v in replace_utf.items():
+            term = term.replace(k, v)
+            
+        return state+term

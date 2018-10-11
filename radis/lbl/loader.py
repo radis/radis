@@ -826,7 +826,8 @@ class DatabankLoader(object):
             # Check the molecule is what we expected
             if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
                 raise NotImplementedError('Only 1 molecule at a time is currently supported ' +
-                                          'in RADIS')
+                                          'in RADIS. Calculate them independently then '+\
+                                          'use MergeSlabs')
             if self.input.molecule not in ['', None]:
                 assert self.input.molecule == get_molecule(
                     self.df0.id[0])   # assert molecule is what we expected

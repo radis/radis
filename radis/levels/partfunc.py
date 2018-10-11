@@ -88,8 +88,8 @@ class RovibPartitionFunction(object):
     Parameters
     ----------
 
-    electronic_state: :class:`~radis.db.molecules.ElectronicState`
-        an :class:`~radis.db.molecules.ElectronicState` object, which is
+    electronic_state: :class:`~radis.db.classes.ElectronicState`
+        an :class:`~radis.db.classes.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data
 
     Notes
@@ -183,8 +183,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
     Parameters
     ----------
 
-    electronic_state: :class:`~radis.db.molecules.ElectronicState`
-        an :class:`~radis.db.molecules.ElectronicState` object, which is
+    electronic_state: :class:`~radis.db.classes.ElectronicState`
+        an :class:`~radis.db.classes.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data
 
     '''
@@ -1064,13 +1064,13 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 class PartFunc_Dunham(RovibParFuncCalculator):
     ''' Calculate partition functions from spectroscopic constants, if
     molecule data is available in RADIS. Make sure you know what reference data 
-    is being used in RADIS! See molecule list in :data:`~radis.db.molecules.Molecules`
+    is being used in RADIS! See molecule list in :data:`~radis.db.classes.Molecules`
     
     Parameters
     ----------
 
-    electronic_state: :class:`~radis.db.molecules.ElectronicState`
-        an :class:`~radis.db.molecules.ElectronicState` object, which is
+    electronic_state: :class:`~radis.db.classes.ElectronicState`
+        an :class:`~radis.db.classes.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data
 
     vmax: int, or ``None``
@@ -1222,7 +1222,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                           'time')
             if molecule in HITRAN_CLASS1:
                 self.build_energy_levels_class1()
-            elif molecule in HITRAN_CLASS5:
+            elif molecule in HITRAN_CLASS5:   # CO2
                 self.build_energy_levels_class5(calc_Evib_per_mode=calc_Evib_per_mode,
                                                 calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
                                                 group_energy_modes_in_2T_model=group_energy_modes)

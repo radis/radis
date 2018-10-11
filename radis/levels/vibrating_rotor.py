@@ -7,10 +7,16 @@ Created on Tue Jul 18 17:59:45 2017
 
 Rovibrational Energy for Vibrating Rotor
 
-CO2 X(1Σ+) state
+Ex: used for CO2 X(1Σ+) state
 
 References
 ----------
+
+
+
+
+
+-----------------------------------------------------------------------------
 
 
 """
@@ -125,7 +131,7 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, offset=True):
     Each energy is a tuple (E_harmonic, E_nonharmonic) to be
     used for instance in a Treanor distribution
 
-    Klarenaar et al. version [1]_
+    Defined for CO2 only. See:  Klarenaar et al. [1]_
 
     Energy of CO2 X(1Σg+) state with an independant harmonic oscillator
     approximation  (CO2-626 = first isotope)
