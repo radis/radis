@@ -269,27 +269,30 @@ def _magn(x):
 
 
 def _assertK(E):
-    try:
-        m = _magn(E)
-        assert(((0 <= m) & (m <= 6)).all())
-    except AssertionError:
-        print(('Warning. Input values may not be in Kelvin', E, 'K?'))
+    if E != 0:
+        try:
+            m = _magn(E)
+            assert(((0 <= m) & (m <= 6)).all())
+        except AssertionError:
+            print(('Warning. Input values may not be in Kelvin', E, 'K?'))
 
 
 def _assertcm(E):
-    try:
-        m = _magn(E)
-        assert(((1 <= m) & (m <= 5)).all())
-    except AssertionError:
-        print(('Warning. Input values may not be in cm-1', E, 'cm-1?'))
+    if E != 0:
+        try:
+            m = _magn(E)
+            assert(((1 <= m) & (m <= 5)).all())
+        except AssertionError:
+            print(('Warning. Input values may not be in cm-1', E, 'cm-1?'))
 
 
 def _asserteV(E):
-    try:
-        m = _magn(E)
-        assert(((0 <= m) & (m <= 2)).all())
-    except AssertionError:
-        print(('Warning. Input values may not be in eV', E, 'eV?'))
+    if E != 0:
+        try:
+            m = _magn(E)
+            assert(((0 <= m) & (m <= 2)).all())
+        except AssertionError:
+            print(('Warning. Input values may not be in eV', E, 'eV?'))
 
 
 # %% Test
