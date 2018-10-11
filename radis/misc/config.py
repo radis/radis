@@ -227,7 +227,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
                          '. Cant add it')
 
     # Add entries to parser
-    config = ConfigParser()
+    config = configparser.ConfigParser()
     config[dbname] = {}
 
     if 'info' in dict_entries:  # optional
@@ -287,7 +287,7 @@ def _addDatabankEntries_py27(dbname, dict_entries, verbose=True):
                          '. Cant add it')
 
     # Add entries to parser
-    config = ConfigParser()
+    config = configparser.ConfigParser()
     config.add_section(dbname) # = {}
 
     if 'info' in dict_entries:  # optional
