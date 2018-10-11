@@ -10,6 +10,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 import os
 import json
 from collections import OrderedDict
+from radis.misc.basics import is_number
 
 
 def getFile(*relpath):
@@ -241,13 +242,6 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
     
 #    # Only get Herzberg coeffs, i.e, these that are defined in :py:data:`~radis.db.conventions.herzberg_coefficients`
     
-    def ignore_trailing_number(coef):
-        ''' Used so that ``wexe1`` matches ``wexe`` as a well defined 
-        Herzberg coefficient '''
-        if str.isdigit(coef[-1]):
-            coef = coef[:-1]
-        return coef
-    
     herzberg_coeffs = {k:v for (k, v) in rovib_coeffs.items() if ignore_trailing_number(k) in herzberg_coefficients}
 
     if len(herzberg_coeffs) == 0:
@@ -255,3 +249,11 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
                 molecule, isotope, electronic_state))
 
     return herzberg_coeffs
+
+def ignore_trailing_number(coef):
+    ''' Used so that ``wexe1`` matches ``wexe`` as a well defined 
+    Herzberg coefficient '''
+    
+    if is_number(coef[-1]):
+        coef = coef[:-1]
+    return coef

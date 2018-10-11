@@ -93,13 +93,7 @@ def get_convention(coefficients):
     '''
     
     from radis.misc.basics import partition
-    
-    def ignore_trailing_number(coef):
-        ''' Used so that ``wexe1`` matches ``wexe`` as a well defined 
-        Herzberg coefficient '''
-        if str.isdigit(coef[-1]):
-            coef = coef[:-1]
-        return coef
+    from radis.db.utils import ignore_trailing_number
     
     assert len(coefficients) > 0
     

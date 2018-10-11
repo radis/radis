@@ -404,6 +404,15 @@ def is_float(a):
     ''' Returns True if a has float-like type: float, np.float64, np.int64, etc.)'''
     return type(a) in [float, np.float64, np.int32, np.float32, int, np.int64]
 
+def is_number(s):
+    ''' Return True if ``s`` is a number. Works for strings, floats, int, 
+    and is compatible with Python 2/3'''
+    
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 def to_str(a):
     if isinstance(a, binary_type):
