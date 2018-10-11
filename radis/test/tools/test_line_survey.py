@@ -41,7 +41,7 @@ def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
     return True
 
 @pytest.mark.fast
-def test_line_survey_CO2(verbose=True, plot=False, warnings=True, *args, **kwargs):
+def test_line_survey_CO2(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     try:
         pl = SpectrumFactory(
