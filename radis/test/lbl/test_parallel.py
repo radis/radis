@@ -24,6 +24,7 @@ from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase
 from time import time
 from warnings import warn
+from six.moves import range
 
 # %% Main
 

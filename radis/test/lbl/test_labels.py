@@ -3,6 +3,7 @@
 Test names and labels
 """
 
+from __future__ import absolute_import
 from radis.lbl.labels import (vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5,
                              vib_lvl_name_hitran_class5_short, vib_lvl_name_cdsd_pc,
                              vib_lvl_name_cdsd_pcN)

@@ -88,6 +88,7 @@ import numpy as np
 from time import time
 import gc
 from uuid import uuid1
+from six.moves import range
 
 KNOWN_DBFORMAT = ['cdsd', 'hitran',
                   'cdsd4000', 'hitran tab']
@@ -1809,7 +1810,7 @@ class DatabankLoader(object):
                 
             else:
             
-                iso_arr = range(max(iso_set)+1)
+                iso_arr = list(range(max(iso_set)+1))
                 
                 Ia_arr = np.empty_like(iso_arr, dtype=np.float64)
                 molarmass_arr = np.empty_like(iso_arr, dtype=np.float64)

@@ -17,6 +17,8 @@ Run only fast tests (i.e: tests that a 'fast' label)
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from radis.levels.partfunc import (PartFunc_Dunham, PartFuncHAPI,
                                PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc)
 from radis.phys.constants import hc_k
@@ -49,8 +51,8 @@ def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs
                 cachefile = energies.cachefile
                 if exists(cachefile):
                     os.remove(cachefile)
-                    print('Cleaned cached energies for {0}'.format(
-                            ElecState.get_fullname()))
+                    print(('Cleaned cached energies for {0}'.format(
+                            ElecState.get_fullname())))
 
 
 @pytest.mark.fast

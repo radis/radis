@@ -14,6 +14,7 @@ Run only fast tests
 
 """
 
+from __future__ import absolute_import
 from radis.spectrum import calculated_spectrum
 from radis.phys.convert import nm2cm
 from radis.misc.utils import DatabankNotFound
@@ -51,17 +52,17 @@ def test_populations(verbose=True, *args, **kwargs):
     s = sf.non_eq_spectrum(2000, 2000)
 
     pops = sf.get_populations(export)
-    if not all_in(['rovib', 'vib'], pops['CO'][1]['X'].keys()):
+    if not all_in(['rovib', 'vib'], list(pops['CO'][1]['X'].keys())):
         raise AssertionError(
             'vib and rovib levels should be defined after non_eq_spectrum calculation!')
-    if not 'nvib' in pops['CO'][1]['X']['vib'].keys():
+    if not 'nvib' in list(pops['CO'][1]['X']['vib'].keys()):
         raise AssertionError(
             'Vib populations should be defined after non_eq_spectrum calculation!')
 
     s = sf.eq_spectrum(300)
 
     pops = sf.get_populations(export)
-    if 'nvib' in pops['CO'][1]['X']['vib'].keys():
+    if 'nvib' in list(pops['CO'][1]['X']['vib'].keys()):
         raise AssertionError(
             'Vib levels should not be defined anymore after eq_spectrum calculation!')
 

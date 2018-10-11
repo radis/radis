@@ -55,6 +55,7 @@ import sys
 from six.moves import zip
 from numba import jit, float64
 from radis.misc.debug import printdbg
+from six.moves import range
 
 # %% Broadening functions
 

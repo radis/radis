@@ -9,6 +9,7 @@ under non-equilibrium conditions
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 import matplotlib.pyplot as plt
 from radis.phys.convert import cm2nm, dnm2dcm
 from radis import SpectrumFactory

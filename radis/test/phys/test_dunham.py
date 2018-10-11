@@ -5,6 +5,8 @@ Created on Tue Jul 31 14:24:27 2018
 @author: erwan
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from radis.levels.dunham import EvJ
 from radis.db.utils import check_molecule_data_structure
 
@@ -36,13 +38,13 @@ def test_dunham_co(verbose=True, *args, **kwargs):
 
     v, J = 0, 0
     if verbose: 
-        print('Energies for CO(X) v, J=', v, J)
+        print(('Energies for CO(X) v, J=', v, J))
         
         # ... calculate with Molecular Data from JSON (new format)
-        print('... from JSON: {0:.5f} cm-1'.format(EvJ(v, J, **dunham_coeffs)))
+        print(('... from JSON: {0:.5f} cm-1'.format(EvJ(v, J, **dunham_coeffs))))
 
         # ... calculate with hardcoded Dunham expansion (legacy)
-        print('... from hardcoded Herzberg constants {0:.5f} cm-1'.format(CO_X.Erovib(v, J, offset=False)))
+        print(('... from hardcoded Herzberg constants {0:.5f} cm-1'.format(CO_X.Erovib(v, J, offset=False))))
 
     import numpy as np
     assert np.isclose(EvJ(v, J, **dunham_coeffs), CO_X.Erovib(v, J, offset=False))

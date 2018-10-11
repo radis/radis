@@ -80,6 +80,7 @@ from os.path import exists, join
 from radis.misc.progress_bar import ProgressBar
 from six import string_types
 from six.moves import range
+from six.moves import zip
 
 class RovibPartitionFunction(object):
     ''' General class from which all partition function calculators derive
@@ -408,7 +409,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
                 # get rotational populations
                 # ... reindexing dfQrot to get a direct access by viblvl
-                dfQrot_dict = dict(zip(dfQrot.index, dfQrot.Qrot))
+                dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
     
                 # ... Add Qrot
                 df_viblvl = df.set_index(['viblvl'], inplace=False)

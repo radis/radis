@@ -5,6 +5,8 @@ Created on Tue Jul 31 18:00:54 2018
 @author: erwan
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 from radis.db.molecules import getMolecule
 from radis.db.utils import get_herzberg_coefficients
@@ -21,7 +23,7 @@ def test_herzberg_coefficients_CO2_json(verbose=True, *args, **kwargs):
             ['we1', 'we2', 'we3', 'wexe1', 'wexe2', 'wexe3', 'Be', 'De', 'He'])
 
     if verbose:
-        print('Herzberg coefficients defined for CO2(X)(iso=1):', get_herzberg_coefficients('CO2', 1, 'X1SIGu+'))
+        print(('Herzberg coefficients defined for CO2(X)(iso=1):', get_herzberg_coefficients('CO2', 1, 'X1SIGu+')))
 
 
 @pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'    

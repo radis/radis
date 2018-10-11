@@ -19,6 +19,7 @@ from scipy import interpolate
 from scipy.interpolate import interp1d
 from six.moves import map
 import numba
+from six.moves import range
 
 # Normalize
 

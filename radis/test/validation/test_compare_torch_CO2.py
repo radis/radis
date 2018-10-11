@@ -25,6 +25,7 @@ Temperatures and concentrations of all slabs are stored in
 """
 
 from __future__ import absolute_import
+from __future__ import print_function
 import matplotlib.pyplot as plt
 import pandas as pd
 from radis import SpectrumFactory, ParallelFactory
@@ -259,7 +260,7 @@ def test_compare_torch_CO2(verbose=True, plot=False, save=False, warnings=True,
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
     if verbose: 
-        print('Finished test_compare_torch_CO2 in {0:.0f}s'.format(time()-t0))
+        print(('Finished test_compare_torch_CO2 in {0:.0f}s'.format(time()-t0)))
         
 if __name__ == '__main__':
     printm('test_compare_torch_CO2:',

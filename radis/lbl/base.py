@@ -81,6 +81,8 @@ from time import time
 from six import string_types
 import matplotlib.pyplot as plt
 import pandas as pd
+from six.moves import range
+from six.moves import zip
 
 
 class BaseFactory(DatabankLoader):
@@ -598,7 +600,7 @@ class BaseFactory(DatabankLoader):
 
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
             energies.set_index(index, inplace=True)
-            Evib_dict = dict(zip(energies.index, energies.Evib))
+            Evib_dict = dict(list(zip(energies.index, energies.Evib)))
 
             # Add lower state energy
             df_pcN = df.set_index(['polyl', 'wangl', 'rankl'])
@@ -719,7 +721,7 @@ class BaseFactory(DatabankLoader):
             # ... (it seems groupby().apply() is building some cache variables and 
             # ... I cant reset the index of energies properly)
             energies = energies.set_index(index, inplace=False)
-            Evib_dict = dict(zip(energies.index, energies.Evib))
+            Evib_dict = dict(list(zip(energies.index, energies.Evib)))
             
             # Add lower state energy
             df_pcJN = df.set_index(['polyl', 'wangl', 'jl', 'rankl'])
@@ -1948,7 +1950,7 @@ class BaseFactory(DatabankLoader):
             
             else:
                     
-                iso_arr = range(max(iso_set)+1)
+                iso_arr = list(range(max(iso_set)+1))
                 
                 Qref_arr = np.empty_like(iso_arr, dtype=np.float64)
                 Qgas_arr = np.empty_like(iso_arr, dtype=np.float64)
@@ -2198,7 +2200,7 @@ class BaseFactory(DatabankLoader):
             # reindexing to get a direct access to Qrot database
             # create the lookup dictionary
             # dfQrot index is already 'viblvl'
-            dfQrot_dict = dict(zip(dfQrot.index, dfQrot.Qrot))
+            dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
             
             dg = df.loc[:]
 
@@ -2241,7 +2243,7 @@ class BaseFactory(DatabankLoader):
                 # reindexing to get a direct access to Qrot database
                 # create the lookup dictionary
                 # dfQrot index is already 'viblvl'
-                dfQrot_dict = dict(zip(dfQrot.index, dfQrot.Qrot))
+                dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
                 
                 dg = df.loc[idx]
     
