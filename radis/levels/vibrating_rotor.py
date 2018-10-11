@@ -28,7 +28,7 @@ from radis.db.conventions import (herzberg_coefficients_rot, herzberg_coefficien
                                   herzberg_coefficients_vib)
 
 def EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, gv1=1, gv2=1, gv3=1, 
-                                  offset=True):
+                                  remove_ZPE=True):
     ''' Rovibrational energy of an uncoupled vibrating rotor
     
     Parameters
@@ -68,7 +68,7 @@ def EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, gv1=1, gv2=1, g
             
             1,2,1 for CO2
     
-    offset: boolean
+    remove_ZPE: boolean
         if ``True``, removes energy of ground state vibrational level (zero-point-energy)
 
     Returns
@@ -118,7 +118,7 @@ def EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, gv1=1, gv2=1, g
     G = G1 + G2 + G3
     F = Fv(0, J, **coeffs_rot)      # Uncoupled model: v dependance ignored
     
-    if offset:
+    if remove_ZPE:
         ZPE = (Gv(0, **coeffs_vib1) + Gv(0, gv=2, **coeffs_vib2) + Gv(0, **coeffs_vib3))
     else:
         ZPE = 0
@@ -126,7 +126,7 @@ def EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, gv1=1, gv2=1, g
     return G + F - ZPE   # cm-1
 
 
-def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, offset=True):
+def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=True):
     ''' Return rovibrationalenergies for nu_1, nu_2, nu_3 vibrational modes
     Each energy is a tuple (E_harmonic, E_nonharmonic) to be
     used for instance in a Treanor distribution
@@ -157,7 +157,7 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, offset=True):
     J: int
         rotational state
 
-    offset: boolean
+    remove_ZPE: boolean
         if ``True``, removes energy of ground state vibrational level (zero-point-energy)
 
     Returns
@@ -216,7 +216,7 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, offset=True):
     Hv = He
     F = Bv*J*(J+1) - Dv*J**2*(J+1)**2 + Hv*J**3*(J+1)**3
 
-    if offset:
+    if remove_ZPE:
         ZPE = 0  # by construction here
     else:
         raise NotImplementedError

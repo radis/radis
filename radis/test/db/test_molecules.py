@@ -79,10 +79,10 @@ def test_ZPE(verbose=True, *args, **kwargs):
                     # the molecule. @dev: we use inspect to get the number of 
                     # parameters
                     from radis.misc.utils import getarglist
-                    params = [k for k in getarglist(ElecState._Erovib) if k not in ['offset', 'coeff_dict']]
+                    params = [k for k in getarglist(ElecState._Erovib) if k not in ['remove_ZPE', 'coeff_dict']]
                     # Calculate ZPE:
                     params = [0]*len(params)
-                    assert ElecState.Erovib(*params, offset=False) == coeffs['ZPE']
+                    assert ElecState.Erovib(*params, remove_ZPE=False) == coeffs['ZPE']
                     if verbose:
                         print('ZPE calculated for {0} matches value in database ({1:.2f} cm-1)'.format(
                                 ElecState.get_fullname(), coeffs['ZPE']))

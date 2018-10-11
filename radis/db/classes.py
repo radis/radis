@@ -225,7 +225,7 @@ class ElectronicState(Isotope):
         self._parse_rovib_constants(spectroscopic_constants)
 
         self.Erovib = None   #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
-        self.Ehaj = None     #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
+        self.Ehaj = None     #: func: overwrittenwww by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
         self._assign_E(Erovib, Ehaj)
         self.state = state
         self.vmax = vmax
@@ -358,18 +358,18 @@ class ElectronicState(Isotope):
         
         return self._Ehaj(*args, **kwargs)
         
-    def _E_Dunham(self, v, J, offset=True):
+    def _E_Dunham(self, v, J, remove_ZPE=True):
         
         c = self.rovib_constants
         
-        if offset:
+        if remove_ZPE:
             ZPE = EvJ(0, 0, **c)
         else:
             ZPE = 0
 
         return EvJ(v, J, **c) - ZPE
         
-    def _E_Herzberg(self, v, J, offset=True):
+    def _E_Herzberg(self, v, J, remove_ZPE=True):
         ''' Calculate rovibrational energy of molecule 
         
         .. math::
@@ -393,7 +393,7 @@ class ElectronicState(Isotope):
         J: int
             rotational state
 
-        offset: boolean
+        remove_ZPE: boolean
             if ``True``, removes energy of v=0,J=0 vibrational level (zero-point-energy)
             Default ``True``
 
@@ -442,7 +442,7 @@ class ElectronicState(Isotope):
             F = Fv(v, J, Be, De, alpha_e, beta_e, gamma_e, delta_e, pi_e=pi_e,
                    He=He, eta_e=eta_e)    # rotational energy
 
-            if offset:
+            if remove_ZPE:
                 ZPE = Gv(0, we, wexe, weye, weze)
             else:
                 ZPE = 0

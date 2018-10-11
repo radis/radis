@@ -54,18 +54,18 @@ from radis.levels.vibrating_rotor import EvJ_uncoupled_vibrating_rotor, EvJah_un
 #    coeff_dict =get_herzberg_coefficients('CO2', isotope, 'X1SIGu+')
 #    # Update standard vibrating rotor formula with CO2 specific generacies and 
 #    # Herzberb coeffs
-#    def Erovib_CO2(v1, v2, l2, v3, J, offset=True):
+#    def Erovib_CO2(v1, v2, l2, v3, J, remove_ZPE=True):
 #        ''' Rovibrational energies.
 #        See :py:func:`~radis.levels.vibrating_rotor.EvJ_uncoupled_vibrating_rotor` 
 #        '''
 #        return EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict=coeff_dict,
-#                                             gv1=1, gv2=2, gv3=1, offset=offset)
-#    def Ehaj_CO2(v1, v2, l2, v3, J, offset=True):
+#                                             gv1=1, gv2=2, gv3=1, remove_ZPE=remove_ZPE)
+#    def Ehaj_CO2(v1, v2, l2, v3, J, remove_ZPE=True):
 #        ''' Harmonic and anharmonic parts of rovibrational energies.
 #        See :py:func:`~radis.levels.vibrating_rotor.EvJah_uncoupled_vibrating_rotor` 
 #        '''
 #        return EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict=coeff_dict,
-#                                             offset=offset)
+#                                             remove_ZPE=remove_ZPE)
 #    return ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
 ##                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
 #                            Erovib=Erovib_CO2,

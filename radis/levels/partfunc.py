@@ -1302,7 +1302,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # First get max vib level  (to be calculated with Dunham expansion)
         if vmax is None:
             vmax = 0
-            while ElecState.Erovib(vmax, J=0, offset=True) < Ediss:
+            while ElecState.Erovib(vmax, J=0, remove_ZPE=True) < Ediss:
                 vmax += 1
         if Jmax is None:
             Jmax = np.nan         # no limit
@@ -1312,11 +1312,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # ------------
         # format: (v, j, E, Evib)   # g, Erot calculated at the end (faster)
         levels = []
-        Evib = ElecState.Erovib(v=0, J=0, offset=True)   # no Zero-point-energy
+        Evib = ElecState.Erovib(v=0, J=0, remove_ZPE=True)   # no Zero-point-energy
 
         # ... Loop over vibrational levels:
         for v in range(0, vmax+1):
-            Evib = ElecState.Erovib(v, J=0, offset=True)     # no Zero-point-energy
+            Evib = ElecState.Erovib(v, J=0, remove_ZPE=True)     # no Zero-point-energy
             if __debug__:
                 printdbg('Calculating Evib for ' +
                          'v={0}: {1:.2f}cm-1 (Dunham expansion)'.format(v, Evib))
@@ -1328,7 +1328,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                 levels.append([v, J, E, Evib])
                 # calculate new one:
                 J += 1
-                E = ElecState.Erovib(v, J, offset=True)     # no Zero-point-energy
+                E = ElecState.Erovib(v, J, remove_ZPE=True)     # no Zero-point-energy
             Jmaxcalc = max(Jmaxcalc, J)
 
         # If defined, calculate upper rovibrational levels with Morse potential
@@ -1363,7 +1363,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     # calculate new one:
                     J += 1
                     # no Zero-point-energy
-                    Erot = ElecState.Erovib(0, J, offset=True)
+                    Erot = ElecState.Erovib(0, J, remove_ZPE=True)
                     E = Evib + Erot
                 Jmaxcalc = max(Jmaxcalc, J)
 
@@ -1463,11 +1463,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         v1max = 0
         v2max = 0
         v3max = 0
-        while ElecState.Erovib(v1max, 0, 0, 0, J=0, offset=True) < Ediss:
+        while ElecState.Erovib(v1max, 0, 0, 0, J=0, remove_ZPE=True) < Ediss:
             v1max += 1
-        while ElecState.Erovib(0, v2max, v2max, 0, J=0, offset=True) < Ediss:
+        while ElecState.Erovib(0, v2max, v2max, 0, J=0, remove_ZPE=True) < Ediss:
             v2max += 1
-        while ElecState.Erovib(0, 0, 0, v3max, J=0, offset=True) < Ediss:
+        while ElecState.Erovib(0, 0, 0, v3max, J=0, remove_ZPE=True) < Ediss:
             v3max += 1
         if vmax is not None:
             v1max = min(vmax, v1max)

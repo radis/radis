@@ -44,10 +44,10 @@ def test_dunham_co(verbose=True, *args, **kwargs):
         print(('... from JSON: {0:.5f} cm-1'.format(EvJ(v, J, **dunham_coeffs))))
 
         # ... calculate with hardcoded Dunham expansion (legacy)
-        print(('... from hardcoded Herzberg constants {0:.5f} cm-1'.format(CO_X.Erovib(v, J, offset=False))))
+        print(('... from hardcoded Herzberg constants {0:.5f} cm-1'.format(CO_X.Erovib(v, J, remove_ZPE=False))))
 
     import numpy as np
-    assert np.isclose(EvJ(v, J, **dunham_coeffs), CO_X.Erovib(v, J, offset=False))
+    assert np.isclose(EvJ(v, J, **dunham_coeffs), CO_X.Erovib(v, J, remove_ZPE=False))
 
 
 
