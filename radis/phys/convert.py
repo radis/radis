@@ -269,7 +269,7 @@ def _magn(x):
 
 
 def _assertK(E):
-    if E != 0:
+    if np.sum(np.abs(E)) != 0:   # check E != 0 for both floats and arrays
         try:
             m = _magn(E)
             assert(((0 <= m) & (m <= 6)).all())
@@ -278,7 +278,7 @@ def _assertK(E):
 
 
 def _assertcm(E):
-    if E != 0:
+    if np.sum(np.abs(E)) != 0:   # check E != 0 for both floats and arrays
         try:
             m = _magn(E)
             assert(((1 <= m) & (m <= 5)).all())
@@ -287,7 +287,7 @@ def _assertcm(E):
 
 
 def _asserteV(E):
-    if E != 0:
+    if np.sum(np.abs(E)) != 0:   # check E != 0 for both floats and arrays
         try:
             m = _magn(E)
             assert(((0 <= m) & (m <= 2)).all())
