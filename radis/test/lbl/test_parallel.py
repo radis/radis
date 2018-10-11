@@ -25,10 +25,12 @@ from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from time import time
 from warnings import warn
 from six.moves import range
+import pytest
 
 # %% Main
 
 
+@pytest.mark.python3_only
 def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
     ''' Core of the parallel test routine 
     
@@ -59,7 +61,7 @@ def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
                              cutoff=cutoff,
                              db_use_cached=True,
                              lvl_use_cached=True,
-                             isotope='1,2',
+                             isotope='1',
                              broadening_max_width=broadening_max_width,
                              wstep=wstep,
                              verbose=verbose)

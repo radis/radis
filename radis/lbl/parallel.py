@@ -36,6 +36,7 @@ from radis.misc.basics import is_list, is_float
 from radis.misc.utils import FileNotFoundError
 from multiprocessing import Pool, cpu_count
 #from multiprocessing.pool import ThreadPool
+import sys
 from time import time
 import numpy as np
 from copy import deepcopy
@@ -86,6 +87,7 @@ class ParallelFactory(SpectrumFactory):
 
     More info: https://stackoverflow.com/questions/18204782/runtimeerror-on-windows-trying-python-multiprocessing
 
+    Parallel is only implemented on Python 3. 
 
     Parameters
     ----------
@@ -233,9 +235,17 @@ class ParallelFactory(SpectrumFactory):
             print(
                 ('Calculate {0} spectra on {1} procs'.format(len(Tgas), Nprocs)))
         t1 = time()
-        with Pool(Nprocs) as p:
-            spec_list = p.map(_distribute_eq_spectrum, list(
-                zip(cast_factory, Tgas, mole_fraction, path_length)))
+        
+        try:
+            with Pool(Nprocs) as p: # Python 3 only
+                spec_list = p.map(_distribute_eq_spectrum, list(
+                    zip(cast_factory, Tgas, mole_fraction, path_length)))
+        except AttributeError:
+            if sys.version_info[0] == 2:
+                raise NotImplementedError('parallel is only implemented in Python 3. Time to switch!')
+            else:
+                raise
+        
         if self.verbose:
             print(('{0} spectra calculated in {1:.1f}s'.format(N, time()-t1)))
 
@@ -303,8 +313,16 @@ class ParallelFactory(SpectrumFactory):
             print(
                 ('Calculate {0} spectra on {1} procs'.format(len(Tvib), Nprocs)))
         t1 = time()
-        with Pool(Nprocs) as p:
-            spec_list = p.map(_distribute_noneq_spectrum, list(zip(cast_factory, Tvib, Trot, mole_fraction, path_length)))
+        
+        try:
+            with Pool(Nprocs) as p:          # Note: Python 3 syntax only
+                spec_list = p.map(_distribute_noneq_spectrum, list(zip(cast_factory, Tvib, Trot, mole_fraction, path_length)))
+        except AttributeError:
+            if sys.version_info[0] == 2:
+                raise NotImplementedError('parallel is only implemented in Python 3. Time to switch!')
+            else:
+                raise
+        
         if self.verbose:
             print(('{0} spectra calculated in {1:.1f}s'.format(N, time()-t1)))
 

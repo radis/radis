@@ -17,7 +17,7 @@ Run only fast tests
 
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.lbl import SpectrumFactory
 from radis.spectrum.spectrum import calculated_spectrum, transmittance_spectrum
 from radis.tools.database import load_spec

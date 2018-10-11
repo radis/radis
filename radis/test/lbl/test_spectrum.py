@@ -14,7 +14,7 @@ Run only fast tests
 
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.spectrum import calculated_spectrum
 from radis.phys.convert import nm2cm
 from radis.misc.utils import DatabankNotFound

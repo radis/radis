@@ -4,16 +4,16 @@ Created on Mon Nov 20 10:59:49 2017
 
 @author: erwan
 
-Use
-------
+Examples
+--------
 
-Run all tests:
+Run all tests::
 
->>> pytest       (in command line, in project folder)
+    pytest       (in command line, in project folder)
 
-Run only fast tests (i.e: tests that a 'fast' label)
+Run only fast tests (i.e: tests that a 'fast' label)::
 
->>> pytest -m fast
+    pytest -m fast
 
 
 -------------------------------------------------------------------------------
