@@ -1087,7 +1087,9 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
         try:
             assert_frame_equal(df1.sort_index(axis=0).sort_index(axis=1),
                                df2.sort_index(axis=0).sort_index(axis=1),
-                               check_names=True)
+                               check_names=True, 
+                               check_column_type=False,  # solves problem in Python 2/3 dataframes (unicode/str)
+                               )
             out = True
 
         except AssertionError as err:

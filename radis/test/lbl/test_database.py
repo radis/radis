@@ -53,7 +53,7 @@ def test_load_spectrum(plot=False, verbose=True, warnings=True, *args, **kwargs)
             wavelength_max=4200,
             mole_fraction=400e-6,
             path_length=0.1,  # cm
-            isotope=[1, 2],
+            isotope=[1],
             db_use_cached=True,
             cutoff=1e-20,
             verbose=verbose)
