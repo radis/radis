@@ -89,8 +89,8 @@ def getarglist(function):
     '''
     
     if sys.version_info[0] == 2:
-        from inspect import getfullargspec
-        return getfullargspec(function).args
+        from inspect import getargspec
+        return getargspec(function).args
     
     else:
         from inspect import signature

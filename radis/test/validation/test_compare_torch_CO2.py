@@ -170,7 +170,9 @@ def test_compare_torch_CO2(verbose=True, plot=False, save=False, warnings=True,
         # Solve ETR along line of sight
         # --------
         # two semi profile, + room absortion
-        stot = SerialSlabs(*slabstot[1:][::-1], *slabstot, s0)
+        line_of_sight = slabstot[1:][::-1]+slabstot+[s0]
+        stot = SerialSlabs(*line_of_sight)
+#        stot = SerialSlabs(*slabstot[1:][::-1], *slabstot, s0)  # Python 3 syntax only
 
         # Also calculate the contribution of pure CO
         # ---------
@@ -178,7 +180,9 @@ def test_compare_torch_CO2(verbose=True, plot=False, save=False, warnings=True,
         s0tr.conditions['thermal_equilibrium'] = False
         s0tr._q['radiance_noslit'] *= 0    # hack to remove CO2 emission
         s0tr._q['emisscoeff'] *= 0    # hack to remove CO2 emission
-        sco = SerialSlabs(*slabsco[1:][::-1], *slabsco, s0tr)
+        line_of_sight = slabsco[1:][::-1] + slabsco + [s0tr]
+        sco = SerialSlabs(line_of_sight)
+#        sco = SerialSlabs(*slabsco[1:][::-1], *slabsco, s0tr)  # Python 3 syntax only
 
         # Generate Slit
         # ------
