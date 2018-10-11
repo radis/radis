@@ -27,7 +27,7 @@ from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.spectrum import plot_diff
 from radis.misc import DatabankNotFound
-from radis.test.utils import IgnoreMissingDatabase
+from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 import numpy as np
 import matplotlib.pyplot as plt
 import pytest
@@ -126,6 +126,8 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
+        
+    setup_test_line_databases()
 
     try:
         T = 1500

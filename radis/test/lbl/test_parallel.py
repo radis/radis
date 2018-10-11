@@ -21,7 +21,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.lbl.parallel import ParallelFactory, SpectrumFactory
 from radis.misc.printer import printm, printr
 from radis.misc.utils import DatabankNotFound
-from radis.test.utils import IgnoreMissingDatabase
+from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from time import time
 from warnings import warn
 from six.moves import range
@@ -40,6 +40,8 @@ def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         import matplotlib.pyplot as plt
         plt.ion()
+        
+    setup_test_line_databases()
 
     try:
         # Performance test

@@ -8,7 +8,7 @@ Test that line survey works
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.utils import DatabankNotFound
-from radis.test.utils import getTestFile, IgnoreMissingDatabase
+from radis.test.utils import getTestFile, IgnoreMissingDatabase, setup_test_line_databases
 from radis.misc.printer import printm
 from radis import SpectrumFactory
 from radis.tools.database import load_spec
@@ -42,6 +42,8 @@ def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_line_survey_CO2(verbose=True, plot=True, warnings=True, *args, **kwargs):
+
+    setup_test_line_databases()
 
     try:
         pl = SpectrumFactory(

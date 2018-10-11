@@ -29,7 +29,7 @@ from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.tools.database import load_spec
 from radis.misc.utils import DatabankNotFound
-from radis.test.utils import IgnoreMissingDatabase
+from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from os.path import basename, exists
 fig_prefix = basename(__file__)+': '
 
@@ -41,6 +41,8 @@ def test_load_spectrum(plot=False, verbose=True, warnings=True, *args, **kwargs)
 
     Fast version: dont save lines / populations, compare spectra only 
     '''
+    
+    setup_test_line_databases()
 
     temp_file_name = '_test_database_co2_tempfile.spec'
     assert(not exists(temp_file_name))
