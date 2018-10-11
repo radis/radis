@@ -31,7 +31,7 @@ Routine Listing
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
-from radis.misc.utils import FileNotFoundError, DatabankNotFound, configparser
+from radis.misc.utils import FileNotFoundError, DatabankNotFound, configparser, ConfigParser
 from os.path import expanduser, join, exists, dirname
 from six import string_types
 from radis.misc.basics import compare_lists, compare_dict, stdpath
@@ -84,7 +84,7 @@ def getConfig():
     Config file name is harcoded: `~/.radis`
     '''
 
-    config = configparser.ConfigParser()
+    config = ConfigParser()
     configpath = CONFIG_PATH
 
     # Test ~/.radis exists
@@ -227,7 +227,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
                          '. Cant add it')
 
     # Add entries to parser
-    config = configparser.ConfigParser()
+    config = ConfigParser()
     config[dbname] = {}
 
     if 'info' in dict_entries:  # optional

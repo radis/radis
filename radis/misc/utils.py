@@ -72,16 +72,44 @@ class Chdir:
 
 
 if sys.version_info[0] == 2:
-    import six.moves.configparser as configparser
     # FileNotFoundError doesn't exist in Python 2....
     FileNotFoundError = OSError
     PermissionError = IOError   # PermissionError doesn't exist in Python 2....
 else:
-    import configparser
     FileNotFoundError = FileNotFoundError
     PermissionError = PermissionError
 
-
+# Config Parser
+if sys.version_info[0] == 2:
+    import six.moves.configparser as configparser
+    from configparser import ConfigParser
+else:
+    import configparser
+    from configparser import ConfigParser
+#    class ConfigParser(configparser.ConfigParser):
+#        ''' placeholder for a Python 2/3 compatible syntax'''
+#        # TOOD: switch to JSON anyway for ~/.radis
+#        def get(self, *args):
+#            if len(args) == 1:
+#                return self[args[0]]
+#            elif len(args) == 2:
+#                return self[args[0]][args[1]]
+#            elif len(args) == 3:
+#                return self[args[0]][args[1]][args[2]]
+#            
+#        def add_section(self, section):
+#            self[section] = {}
+#        
+#        def set(self, *args):
+#            value = args[-1]
+#            if len(args) == 2:
+#                self[args[0]] = value
+#            elif len(args) == 3:
+#                self[args[0]][args[1]] = value
+#            elif len(args) == 4:
+#                self[args[0]][args[1]][args[2]] = value
+            
+            
 def getarglist(function):
     ''' Get list of arguments in a function 
     
