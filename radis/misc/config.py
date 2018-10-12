@@ -75,8 +75,12 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
 --------------------------""")
 '''str: Typical expected format of a ~/.radis entry
 
+Refer to the documentation: :ref:`label_lvl_config_file`
+
 See Also
 --------
+
+:ref:`label_lvl_config_file`
 
 :py:func:`~radis.misc.config.getConfig`
 

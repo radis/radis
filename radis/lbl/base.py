@@ -302,7 +302,9 @@ class BaseFactory(DatabankLoader):
 
         '''
         if self.verbose:
-            print('Fetching Evib & Erot. If using this code several' +
+            print('Fetching Evib & Erot.')
+            if self.verbose >= 2: 
+                  printg('If using this code several' +
                   ' times you should consider updating the database' +
                   ' directly. See functions in factory.py ')
 

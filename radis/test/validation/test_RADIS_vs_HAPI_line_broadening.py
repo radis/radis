@@ -14,8 +14,6 @@ same database (HITRAN 2016)
 
 from __future__ import absolute_import
 from radis import SpectrumFactory, Spectrum
-from radis.io.hapi import (db_begin, fetch, tableList, absorptionCoefficient_Voigt,
-                                transmittanceSpectrum)
 from radis.test.utils import setup_test_line_databases
 from radis.misc.printer import printm
 from radis.io.hitran import get_molecule_identifier
@@ -41,6 +39,8 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     
     '''
 
+    from radis.io.hapi import (db_begin, fetch, tableList, absorptionCoefficient_Voigt,
+                                    transmittanceSpectrum)
 
     setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 

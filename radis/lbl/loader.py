@@ -97,7 +97,13 @@ from six.moves import range
 
 KNOWN_DBFORMAT = ['cdsd', 'hitran',
                   'cdsd4000', 'hitran tab']
-'''list: Known formats for Line Databases'''
+'''list: Known formats for Line Databases
+
+See Also
+--------
+
+:ref:`label_lvl_config_file`
+'''
 
 KNOWN_LVLFORMAT = ['radis', 'cdsd-pc', 'cdsd-pcN', 'cdsd-hamil', None]
 '''list: Known formats for Energy Level Databases (used in non-equilibrium calculations):
@@ -113,12 +119,23 @@ KNOWN_LVLFORMAT = ['radis', 'cdsd-pc', 'cdsd-pcN', 'cdsd-hamil', None]
     unique vibrational energy (this is needed when taking account Coupling terms)
     See :class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
 - ``None``: means you can only do Equilibrium calculations.
+
+See Also
+--------
+
+:ref:`label_lvl_config_file`
  '''
 
 KNOWN_PARFUNCFORMAT = ['cdsd', 'hapi']
 '''list: Known formats for partition function (tabulated files to read), or 'hapi'
 to fetch Partition Functions using HITRAN Python interface instead of reading
-a tabulated file.'''
+a tabulated file.
+
+See Also
+--------
+
+:ref:`label_lvl_config_file`
+'''
 
 auto_drop_columns_for_dbformat = {
         'hitran':['ierr', 'iref', 'lmix', 'gp', 'gpp'],
@@ -704,7 +721,8 @@ class DatabankLoader(object):
                       db_use_cached=None, db_assumed_sorted=True,
                       load_energies=True,
                       **options):
-        ''' Loads databank from shortname (in `~/.radis`) or manually
+        ''' Loads databank from shortname in the :ref:`label_lvl_config_file` 
+        (`~/.radis`), or by manually setting all attributes.
 
         Databank includes:
 
@@ -721,10 +739,11 @@ class DatabankLoader(object):
 
         name: a section name specified in your ``~/.radis``
             ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
-            not None, all other arguments are discarded.
+            not ``None``, all other arguments are discarded.
             Note that all files in database will be loaded and it may takes some
             time. Better limit the database size if you already know what
-            range you need. See :data:`~radis.misc.config.DBFORMAT` for expected 
+            range you need. See :ref:`label_lvl_config_file` and 
+            :data:`~radis.misc.config.DBFORMAT` for expected 
             ``~/.radis`` format
 
 
@@ -817,11 +836,13 @@ class DatabankLoader(object):
 
         See Also
         --------
-
+        
         - Only load when needed: :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
         - Download from HITRAN: :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
         
-        All database formats: :data:`~radis.misc.config.DBFORMAT`
+        :ref:`label_lvl_config_file` with:
+        - all line database formats: :py:data:`~radis.misc.config.DBFORMAT`
+        - all energy levels database formats: :py:data:`~radis.misc.config.LVLFORMAT`
 
         References
         ----------

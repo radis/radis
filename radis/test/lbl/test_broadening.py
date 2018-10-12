@@ -14,7 +14,6 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 from radis.lbl.factory import SpectrumFactory
 from radis.spectrum.spectrum import Spectrum
 from radis import plot_diff, get_residual_integral, get_residual
-from radis.io.hapi import db_begin, fetch, tableList, absorptionCoefficient_Voigt
 from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from radis.misc.printer import printm
@@ -30,6 +29,7 @@ def test_broadening(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
 
     We're looking at CO(0->1) line 'R1' at 2150.86 cm-1
     '''
+    from radis.io.hapi import db_begin, fetch, tableList, absorptionCoefficient_Voigt
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()

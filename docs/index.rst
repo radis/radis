@@ -52,7 +52,7 @@ Calculate a CO *nonequilibrium* spectrum from the HITRAN database
 (on your first call, this will calculate and cache the CO(X) rovibrational
 energies) ::
 
-    s = calc_spectrum(1900, 2300,         # cm-1
+    s2 = calc_spectrum(1900, 2300,         # cm-1
                       molecule='CO',
                       isotope='1,2,3',
                       pressure=1.01325,   # bar
@@ -60,10 +60,10 @@ energies) ::
                       Trot=300,           # K
                       mole_fraction=0.1, 
                       )
-    s.apply_slit(0.5, 'nm')
-    s.plot('radiance', nfig='same')    # compare with previous
+    s2.apply_slit(0.5, 'nm')
+    s2.plot('radiance', nfig='same')    # compare with previous
 
-More complex examples will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
+More complex :ref:`label_examples` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
 class, which is the core of RADIS line-by-line calculations. 
 :py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
 for the simple cases. 
@@ -72,13 +72,9 @@ For high temperature cases (> 1000 K), you will also need to use other Line data
 [HITEMP-2010]_ or [CDSD-4000]_. These databases must be described with the correct
 :py:data:`~radis.misc.config.DBFORMAT` in a ``~/.radis`` config file. 
 
+Refer to the :ref:`label_examples` section for more examples, and to :ref:`label_dev_architecture`
+for an overview of the RADIS calculation flow chart. 
 
-.. toctree::
-   :maxdepth: 2
-   
-   examples
-
-   
 ==================
 User documentation
 ==================
@@ -137,7 +133,7 @@ store or retrieve from a Spectrum database, plot or compare with another Spectru
 
    
 Tools
-------------------
+-----
 
 Different tools to work with Spectrum objects
 
@@ -161,6 +157,15 @@ RADIS includes parsers and interfaces to read and return data in different forma
    io/thermo
 
 
+Examples
+--------
+   
+.. toctree::
+   :maxdepth: 2
+   
+   examples
+
+   
 ===============
 Developer Guide
 ===============
@@ -169,6 +174,7 @@ Developer Guide
 .. toctree::
    :maxdepth: 2
    
+   dev/architecture
    dev/test
    
 ==========

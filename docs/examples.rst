@@ -1,3 +1,5 @@
+.. _label_examples
+
 Examples
 --------
 
@@ -24,7 +26,11 @@ class and the associated compare and load functions
 
    .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
 
-Run the example in `radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py`
+The final spectrum calculated can be found in the validation case `radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py`, which
+can be run with (you will previously need to have defined the appropriate CO2 line database)::
+
+    pytest radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py
+ 
 
 Line Survey
 ~~~~~~~~~~~

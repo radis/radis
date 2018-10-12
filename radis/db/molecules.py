@@ -242,7 +242,7 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
             electronic_state, molecule, isotope, list(mol.keys())))
 
     # print name
-    if verbose:
+    if verbose>=2:
         print(('Found {0} in RADIS database'.format(state.get_fullname())))
 
     # Return

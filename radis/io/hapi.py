@@ -78,7 +78,7 @@ HAPI_VERSION = '1.1.0.6'
 
 # version header
 print('HAPI version: %s' % HAPI_VERSION)
-print('To get the most up-to-date version please check http://hitran.org/hapi')
+#print('To get the most up-to-date version please check http://hitran.org/hapi')
 
 # define precision
 __ComplexType__ = complex128

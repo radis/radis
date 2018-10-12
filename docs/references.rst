@@ -30,6 +30,9 @@ Bibliography
           A comprehensive approach to working with spectroscopic data, Journal of Quantitative Spectroscopy 
           and Radiative Transfer 177 (2016) 15–30, ISSN 00224073, doi:10.1016/j.jqsrt.2016.03.005.
 
+.. [RADIS-2018] E. Pannier, C. O. Laux, RADIS: A Nonequilibrium Line-by-Line Radiative Code for CO2 and 
+                HITRAN-like database species", , Journal of Quantitative Spectroscopy and Radiative Transfer
+                (2018) doi:10.1016/j.jqsrt.2018.09.027
 
 Useful Links
 ------------

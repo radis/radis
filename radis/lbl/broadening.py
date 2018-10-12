@@ -702,7 +702,7 @@ class BroadenFactory(BaseFactory):
 
         # Check self broadening is here
         if not 'Tdpsel' in list(df.keys()):
-            self.warn('Self-broadening temperature coefficient Tdpsel not given: used Tdpair',
+            self.warn('Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead',
                       'MissingSelfBroadeningWarning')
             Tdpsel = None
         else:
@@ -749,7 +749,7 @@ class BroadenFactory(BaseFactory):
         
         # Check self broadening is here
         if not 'Tdpsel' in list(df.keys()):
-            self.warn('Self-broadening temperature coefficient Tdpsel not given: used Tdpair',
+            self.warn('Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead',
                       'MissingSelfBroadeningWarning')
             Tdpsel = None
         else:

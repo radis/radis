@@ -135,7 +135,7 @@ def load_h5_cache_file(cachefile, use_cached, metadata, current_version,
     # 4. File is not not deprecated: read the content.
     else:
         df = None
-        if verbose:
+        if verbose>=2:
             printm('Reading cache file ({0})'.format(cachefile))
         try:
             df = pd.read_hdf(cachefile, 'df')
