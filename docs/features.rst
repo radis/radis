@@ -18,6 +18,12 @@ to be compared. See the list of supported line databases formats:
 :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
 and refer to the :ref:`Configuration file <label_lbl_config_file>` on how to use them. 
 
+See the comparison of two CO2 spectra calculated with [HITEMP-2010]_ and [CDSD-4000]_ 
+below:
+
+.. image:: spectrum/cdsd4000_vs_hitemp_3409K.svg
+    :alt: Figure CO2 CDSD-4000 vs HITEMP-2010
+
 
 Performance
 -----------
