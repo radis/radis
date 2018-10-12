@@ -123,10 +123,6 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
         
     See the output in :ref:`Examples <label_examples>`
     
-    .. only:: html
-    
-        <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
-    	
     References
     ----------
 

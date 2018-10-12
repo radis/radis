@@ -2361,10 +2361,8 @@ class Spectrum(object):
             s.apply_slit(0.5)
             s.line_survey(overlay='radiance_noslit', barwidth=0.01)
         
-        .. raw:: html
-        
-            <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
-        	
+        See the output in :ref:`Examples <label_examples>`
+    
 
         References
         ----------
