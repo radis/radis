@@ -29,5 +29,6 @@ however the user needs to download them manually.
 The ``~/.radis`` is then used to properly handle the line databases 
 on the User environment. 
 
-See the :py:mod:`radis.misc.config` module and the 
-:py:func:`~radis.misc.config.getDatabankList` function for more information. 
+See the :ref:`Configuration file <label_lbl_config_file>` section, as well as 
+the :py:mod:`radis.misc.config` module and the :py:func:`~radis.misc.config.getDatabankList` 
+function for more information. 
