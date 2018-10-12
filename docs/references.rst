@@ -11,6 +11,11 @@ Bibliography
               Toolkit for Chemical Kinetics, Thermodynamics, and Transport Processes,
               http://www.cantera.org, doi:10.5281/zenodo.170284, 2017.
               
+.. [HITRAN-2016] I. Gordon, L. Rothman, C. Hill, R. Kochanov, Y. Tan, P. Bernath, V. Boudon, A. Campargue,
+                 B. Drouin, J. M. Flaud, R. Gamache, J. Hodges, V. Perevalov, K. Shine, M.-a. Smith, 
+                 The HITRAN2016 Molecular Spectroscopic Database, Journal of Quantitative Spectroscopy and Radiative
+                 Transfer 6 (38) (2017) 3–69, ISSN 00224073, doi:10.1016/j.jqsrt.2017.06.038.
+              
 .. [HITEMP-2010] L. S. Rothman, I. E. Gordon, R. J. Barber, H. Dothe, R. R. Gamache, A. Goldman, V. I. Perevalov,
                  S. A. Tashkun, J. Tennyson, HITEMP, the high-temperature molecular spectroscopic database, 
                  Journal of Quantitative Spectroscopy and Radiative Transfer 111 (15) (2010) 

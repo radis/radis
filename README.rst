@@ -1,8 +1,12 @@
 
-***************************************************
-`RADIS User Guide <https://radis.readthedocs.io/>`_
-***************************************************
+.. image:: https://github.com/radis/radis/blob/master/docs/radis_ico.png
+    :target: https://radis.readthedocs.io/
+    :scale: 50 %
+    :alt: RADIS logo
 
+*****************************************
+`RADIS <https://radis.readthedocs.io/>`__
+*****************************************
 
 .. image:: https://img.shields.io/pypi/v/radis.svg
     :target: https://pypi.python.org/pypi/radis
@@ -19,32 +23,11 @@
 .. image:: https://readthedocs.org/projects/radis/badge/
     :target: https://radis.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
-  
-
-=====
-RADIS
-=====
-
-A code to simulate infrared spectra of molecules.
-
-.. warning::
-    Deployment is still in progress, not all modules are available yet. The
-    documentation will be updated as more modules are included. 
-
-Documentation
--------------
-
-User guide, install procedure and examples are available on the RADIS Website:
-
-    http://radis.readthedocs.io/
-
 
 Description
 -----------
     
-RADIS is nonequilibrium emission and absorption line-by-line code, for use 
-by infrared spectroscopic that want to compare line databases, or experimentalist 
-that want to fit their experimental line-of-sight spectra.
+RADIS is a nonequilibrium infrared emission and absorption line-by-line code.
 
 Written as a general purpose radiative solver, the code is built around the HITRAN, 
 HITEMP and CDSD databases for molecules in their electronic ground state. Energy 
@@ -58,6 +41,18 @@ interface with a look-up database to improve fitting convergence times, and a
 multi-slab module with a radiative transfer equation solver to reproduce line-of-sight 
 experiments. Validation cases against existing spectral codes and experimental 
 results from various plasma sources are included.
+
+The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
+under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
+i.e., that modifications must remain public. 
+
+Documentation
+-------------
+
+User guide, install procedure and examples are available on the RADIS Website:
+
+    http://radis.readthedocs.io/
+
 
 
 Examples
@@ -81,12 +76,18 @@ The code will soon be fully available on this repository under
 Links
 -----
 
-- Documentation: http://radis.readthedocs.io/
-- Source files: https://github.com/radis
-- PyPi project: https://pypi.python.org/pypi/radis
-- Test status: https://travis-ci.org/radis/radis
-- Test coverage: https://codecov.io/gh/radis/radis
+RADIS:
 
+- Documentation: http://radis.readthedocs.io/
+- Source Code: https://github.com/radis/radis
+- Article: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
+
+And also:
+
+- Test Status: https://travis-ci.org/radis/radis
+- Test Coverage: https://codecov.io/gh/radis/radis
+- PyPi Repository: https://pypi.org/project/radis/
+- Interactive Examples: https://github.com/radis/radis-examples
 
 .. |CO2| replace:: CO\ :sub:`2`
 

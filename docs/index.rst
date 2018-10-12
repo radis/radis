@@ -76,6 +76,14 @@ For high temperature cases (> 1000 K), you will also need to use other databases
    
    examples
 
+   
+   
+.. toctree::
+
+   :maxdepth: 2
+   
+   features
+   
 
 
 ==================
