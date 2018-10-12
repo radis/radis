@@ -3,7 +3,7 @@
 Summary
 -------
 
-Functions to parse ~/.radis file
+Functions to parse the ``~/.radis`` :ref:`label_lbl_config_file`
 
 Notes
 -----
@@ -22,6 +22,7 @@ Routine Listing
 - :func:`~radis.misc.config.diffDatabankEntries`
 - :func:`~radis.misc.config.printDatabankEntries`
 - :func:`~radis.misc.config.printDatabankList`
+
 
 
 -------------------------------------------------------------------------------
@@ -75,12 +76,12 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
 --------------------------""")
 '''str: Typical expected format of a ~/.radis entry
 
-Refer to the documentation: :ref:`label_lvl_config_file`
+Refer to the documentation: :ref:`label_lbl_config_file`
 
 See Also
 --------
 
-:ref:`label_lvl_config_file`
+:ref:`label_lbl_config_file`
 
 :py:func:`~radis.misc.config.getConfig`
 

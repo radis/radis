@@ -49,7 +49,7 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 - _calc_emission_integral
 - _cutoff_linestrength
 
-Most methods are written in inherited class with the following inheritance scheme::
+Most methods are written in inherited class with the following inheritance scheme:
     
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 

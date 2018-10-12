@@ -39,10 +39,8 @@ PUBLIC METHODS
 - :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`             >>> calc equilibrium spectrum
 - :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`         >>> calc non equilibrium spectrum
 - :meth:`~radis.lbl.factory.SpectrumFactory.optically_thin_power`    >>> get total power (equilibrium or non eq)
-- :meth:`~radis.lbl.factory.SpectrumFactory.print_conditions`        >>> get all calculation conditions
-- :meth:`~radis.lbl.factory.SpectrumFactory.plot_linestrength_hist`  >>> plot distribution of linestrengths
 
-Most methods are written in inherited class with the following inheritance scheme::
+Most methods are written in inherited class with the following inheritance scheme:
     
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
@@ -62,18 +60,8 @@ Performance:
 
 Fast version: iterate over chunks of dataframe
 Note that we can't use the full dataframe because it's too big and takes too much memory
+See :ref:`label_lbl_performance` for more details. 
 
-
-Units:
-
-Note on units: in Specair measured radiance (actually, spectral radiance) is
-given in `mW/cm2/sr`. Here they are in `mW/cm2/sr/nm`. This is just a matter of
-choice on how we normalize the instrumental slit function:
-    
-- normalize by area = 1 (conserves energy and unit)
-- normalize so that equivalent triangular slit function has max = 1. Units ->
-    divide by FWHM units (e.g: nm in wavelength space).
-    To switch from one to another is a matter of multiplying by FWHM.
 
 for Developers:
 

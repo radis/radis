@@ -31,14 +31,14 @@ and then calculate several spectra in batch using
     s2 = sf.eq_spectrum(Tgas=2000)
     s3 = sf.non_eq_spectrum(Tvib=2000, Trot=300)
     
-.. _label_lvl_config_file
-Configuration file .radis 
--------------------------
+.. _label_lbl_config_file:
+Configuration file
+------------------
 
 The ``~/.radis`` configuration file is used to store the list and attributes of the Line databases 
 available on your computer. 
 Without a configuration file, you are forced to download the corresponding [HITRAN-2016]_ line database 
-files everytime, either through the :py::meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method 
+files everytime, either through the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method 
 of :py:class:`~radis.lbl.factory.SpectrumFactory`, or the (default) ``databank='fetch'`` option in 
 :py:func:`~radis.lbl.calc.calc_spectrum`
 
@@ -51,8 +51,24 @@ of :py:class:`~radis.lbl.factory.SpectrumFactory`, or the (default) ``databank='
 A ``~/.radis`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which 
 is specific to a given molecule. It typically looks like::
 
+    # The CO2 CDSD-HITEMP files have been retrieved from ftp://cfa-ftp.harvard.edu/pub/HITEMP-2010/
+    [CDSD-HITEMP]
+    info = CDSD-HITEMP database, with energy levels calculated from Dunham expansions
+    path = 
+           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_07
+           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_08
+           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_09
+    format = cdsd
+    parfunc =  PATH_TO\CDSD-4000\partition_functions.txt
+    parfuncfmt = cdsd
+    levelsfmt = radis
+
+In the former example, RADIS built-in spectroscopic constants are used to calculate the 
+energy levels for CO2. It is also possible to use your own Energy level database::
+
+
     # List of databases
-    [CDSD]
+    [CDSD-HITEMP-HAMILTONIAN]
     info = CDSD-HITEMP database
     path = 
            D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_07
@@ -65,11 +81,12 @@ is specific to a given molecule. It typically looks like::
     levels_iso2 = D:\PATH_TO\CDSD-4000\636_PJCNn_TvibTrot.levels
     levelsfmt = cdsd
     levelsZPE = 2531.828
-    
+
 The up-to-date format is given in :py:data:`~radis.misc.config.DBFORMAT`:
 
 - ``path`` corresponds to Line databases (here: downloaded from [HITEMP-2010]_) and the ``levels_iso``
-  are user generated Energy databases (here: calculated from the [CDSD-4000]_ Hamiltonian on non-distributed code). 
+  are user generated Energy databases (here: calculated from the [CDSD-4000]_ Hamiltonian on non-distributed code,
+  which takes into account non diagonal coupling terms). 
 
 - ``format`` is the databank text file format. It can be one of ``cdsd``, ``hapi``. See full list in 
   :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT` 
@@ -79,19 +96,20 @@ The up-to-date format is given in :py:data:`~radis.misc.config.DBFORMAT`:
    See full list in :py:data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT` 
  
 - ``parfunc`` is the path to the tabulated partition function to use in in equilibrium calculations 
-  (:py:meth:`~radis.lbl.factory.eq_spectrum`). If ``parfuncfmt`` is `hapi` then `parfunc` should be
+  (:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`). If ``parfuncfmt`` is `hapi` then `parfunc` should be
   the link to the hapi.py file. If not given, then the :py:mod:`~radis.io.hitran.hapi` embedded in RADIS 
   is used (check version)
   
 - ``levels_iso#`` are the path to the energy levels to use for each isotope, which are needed for 
-   nonequilibrium calculations (:py:meth:`~radis.lbl.factory.non_eq_spectrum`).
+   nonequilibrium calculations (:py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`).
 
 - ``levelsfmt`` is the energy levels database format. Typically, ``radis``, and various implementation of [CDSD-4000]_ 
   nonequilibrium partitioning of vibrational and rotational energy: ``cdsd-pc``, ``cdsd-pcN``, ``cdsd-hamil``. 
   See full list in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
 
   
-A default ``~/.radis`` can be generated with two test databases:: 
+A default ``~/.radis`` can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which 
+creates two test databases from fragments of [HITRAN-2016]_ line databases:: 
 
     from radis.test.utils import setup_test_line_databases
     setup_test_line_databases()
@@ -115,19 +133,30 @@ which will result in ::
     levelsfmt = radis
 
 If you configuration file exists already, the test databases will simply be appended. 
-    
 These databases are used in some of the tests cases of RADIS, and the ``~/.radis`` may already contain 
 them if you ever started the test suite with::
 
     cd radis 
     pytest 
-    
-************
-Advanced Use
-************
 
 
+Spectroscopic constants
+-----------------------
 
+For nonequilibrium calculations, you can either let RADIS calculate rovibrational energies
+with its built-in spectroscopic constants, or supply an energy level database. 
+
+For the first case, see the ``molecules_data.json`` files in ``radis/db/[MOLECULE]`` 
+to see (or modifiy) the spectroscopic constants used. Refer to the [RADIS-2018]_ article 
+for the references used. 
+
+In the second case, see the :ref:`label_lbl_config_file` . 
+
+The list of molecules implemented for nonequilibrium calculations if found in :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
+Refer to :ref:`label_dev_architecture` for an overview of how nonequilibrium calculations are conducted. 
+
+
+.. _label_lbl_performance:
 ***********
 Performance
 ***********
@@ -142,16 +171,23 @@ impact on the calculation performances are:
 
 - The ``broadening_max_width``, which defines the spectral range over which the broadening is calculated. 
 - The linestrength ``cutoff``, which defines which low intensity lines should be discarded. See 
-  :meth:`~radis.lbl.factory.SpectrumFactory.plot_linestrength_hist` to choose a correct cutoff. 
+  :meth:`~radis.lbl.base.BaseFactory.plot_linestrength_hist` to choose a correct cutoff. 
   
-Other strategies are possible, such as calculating the weak lines in a pseudo-continuum. See the:
+Check the [RADIS-2018]_ article for a quantitative assessment of the influence of the different parameters. 
+
+Other strategies are possible, such as calculating the weak lines in a pseudo-continuum. This can 
+result in orders of magnitude improvements in computation performances.:
 
 - The ``pseudo_continuum_threshold`` defines which treshold should be used. 
 
-Check the [RADIS-2018]_ article for a quantitative assessment of the influence of the different parameters. 
+See the :py:func:`~radis.test.lbl.test_broadening.test_abscoeff_continuum` case in ``radis/test/lbl/test_broadening.py`` 
+for an example, which can be run with (you will need the CDSD-HITEMP database installed) ::
 
-Line databases 
---------------
+    pytest radis/test/lbl/test_broadening.py -m "test_abscoeff_continuum"
+
+
+Database loading
+----------------
 
 Line database can be a performance bottleneck, especially for large polyatomic molecules in the [HITEMP-2010]_ 
 or [CDSD-4000]_ databases. 
@@ -246,3 +282,9 @@ You can set ``verbose=2`` to print the time spent on different operations. Examp
     >>> process done in 0.4s
     >>> ... 
 
+.. _label_lbl_precompute_spectra:
+Precompute Spectra
+------------------
+
+See :py:meth:`~radis.lbl.loader.DatabankLoader.init_database`, which is the direct integration 
+of :py:class:`~radis.tools.database.SpecDatabase` in a :py:class:`~radis.lbl.factory.SpectrumFactory` 

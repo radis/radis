@@ -3,6 +3,8 @@
 Line databases
 **************
 
+List of supported line databases formats: :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+
 HITRAN
 ------
 

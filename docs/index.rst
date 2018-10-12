@@ -170,13 +170,23 @@ Examples
 Developer Guide
 ===============
 
+Architecture
+------------
    
 .. toctree::
    :maxdepth: 2
    
    dev/architecture
+   
+Tests
+-----
+   
+.. toctree::
+   :maxdepth: 2
+   
    dev/test
    
+
 ==========
 References
 ==========

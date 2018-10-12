@@ -33,7 +33,7 @@ Install
 
 You can either install RADIS from `pip`, the Python package manager. But if 
 you want to modify the code and contribute, we suggest to clone the source 
-from Github.  
+from [GitHub](https://github.com/radis/radis).  
 
 **Use-only version** (not recommended): cant modify the code
 
@@ -60,8 +60,9 @@ Test
 ====
 
 To make sure the install worked, run the following command from the console in
-the ``radis\radis`` directory::
+the ``radis`` directory::
 
+    cd radis
     pytest
 
 
@@ -73,7 +74,8 @@ With Pip you can keep the package up-to-date with::
     pip install radis --upgrade
 
 
-In the developer version (installed with `pip -e`), use git to `pull` the latest changes from Github. 
+In the developer version (installed with `pip -e`), use git to `pull` the latest changes from 
+[GitHub](https://github.com/radis/radis). 
 
 
 
