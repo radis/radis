@@ -18,7 +18,7 @@ PUBLIC METHODS
 - :meth:`~radis.lbl.base.BaseFactory.print_conditions`         >>> get all calculation conditions
 - :meth:`~radis.lbl.base.BaseFactory.get_energy_levels`        >>> return energy database
 - :meth:`~radis.lbl.base.BaseFactory.get_abundance`            >>> return energy database
-- :meth:`~radis.lbl.base.BaseFactory.plot_linestrength_hist`   >>> get all linestrength distribution
+- :meth:`~radis.lbl.base.BaseFactory.plot_linestrength_hist`   >>>  plot distribution of linestrengths
 - :meth:`~radis.lbl.base.BaseFactory.plot_hist`                >>> same
 
 PRIVATE METHODS - CALCULATE SPECTROSCOPIC PARAMETERS
@@ -48,6 +48,12 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 - _calc_linestrength_noneq
 - _calc_emission_integral
 - _cutoff_linestrength
+
+Most methods are written in inherited class with the following inheritance scheme::
+    
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 
 

@@ -44,8 +44,9 @@ PUBLIC METHODS
 
 Most methods are written in inherited class with the following inheritance scheme::
     
-    DatabaseLoader > BaseFactory > BroadenFactory > BandFactory > SpectrumFactory
-    > ParallelFactory
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 Notes
 -----

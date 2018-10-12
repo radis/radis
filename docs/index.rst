@@ -11,10 +11,71 @@
 Getting Started
 ===============
 
+Install
+-------
+
+Assuming you have Python installed with the Anaconda distribution, just use::
+
+    pip install radis 
+    
+**That's it!**. If you ever encounter any issue, please follow the detailed 
+installation procedure and requirements below:
+
 .. toctree::
    :maxdepth: 2
 
    install
+
+   
+Quick Start
+-----------
+
+
+Calculate a CO equilibrium spectrum from the HITRAN database, using the
+:py:func:`~radis.lbl.calc.calc_spectrum` function::
+
+    from radis import calc_spectrum
+    s = calc_spectrum(1900, 2300,         # cm-1
+                      molecule='CO',
+                      isotope='1,2,3',
+                      pressure=1.01325,   # bar
+                      Tgas=1000,          # K
+                      mole_fraction=0.1, 
+                      )
+    s.apply_slit(0.5, 'nm')
+    s.plot('radiance')
+
+.. figure:: examples/co_spectrum_1000K.png
+    :scale: 20 %
+
+Calculate a CO **nonequilibrium** spectrum from the HITRAN database
+(on your first call, this will calculate and cache the CO(X) rovibrational
+energies) ::
+
+    s = calc_spectrum(1900, 2300,         # cm-1
+                      molecule='CO',
+                      isotope='1,2,3',
+                      pressure=1.01325,   # bar
+                      Tvib=1000,          # K
+                      Trot=300,           # K
+                      mole_fraction=0.1, 
+                      )
+    s.apply_slit(0.5, 'nm')
+    s.plot('radiance', nfig='same')    # compare with previous
+
+More complex examples will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
+class, which is the core of RADIS line-by-line calculations. 
+
+For high temperature cases (> 1000 K), you will also need to use other databases such as 
+[HITEMP-2010] or [CDSD-4000]. These databases must be described with the correct
+:py:data:`~radis.misc.config.DBFORMAT` in a ``~.radis`` config file. 
+
+
+.. toctree::
+   :maxdepth: 2
+   
+   examples
+
 
 
 ==================
@@ -100,6 +161,15 @@ Developer Guide
    
    dev/test
    
+==========
+References
+==========
+
+.. toctree::
+    :maxdepth: 2
+    
+    references
+
    
 
 =====================

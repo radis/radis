@@ -25,6 +25,12 @@ PRIVATE METHODS
 - _calc_broadening_bands
 - _calc_broadening_noneq_bands
 
+Most methods are written in inherited class with the following inheritance scheme::
+    
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+
 
 ----------
 

@@ -15,6 +15,15 @@ core only. This is more suited to calculations of large number of small spectra.
 If you want to calculate only one large spectra consider using a single SpectrumFactory
 in parallel mode
 
+Routine Listing
+---------------
+
+Most methods are written in inherited class with the following inheritance scheme::
+    
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+
 Examples
 --------
 

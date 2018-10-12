@@ -30,7 +30,6 @@ PUBLIC METHODS
 
 - :meth:`~radis.lbl.loader.DatabankLoader.load_databank`           >>> load line database
 - :meth:`~radis.lbl.loader.DatabankLoader.init_database`           >>> to interact / generate a SpectrumDatabase
-- :meth:`~radis.lbl.loader.DatabankLoader.plot_linestrength_hist`  >>> plot distribution of linestrengths
 - :meth:`~radis.lbl.loader.DatabankLoader.get_conditions`
 - :meth:`~radis.lbl.loader.DatabankLoader.get_partition_function_interpolator`
 - :meth:`~radis.lbl.loader.DatabankLoader.get_partition_function_calculator`
@@ -46,6 +45,12 @@ PRIVATE METHODS - DATABASE LOADING
 - _fetch_molecular_parameters
 - _get_temp_file
 - _clean_temp_file
+
+Most methods are written in inherited class with the following inheritance scheme::
+    
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 
 -------------------------------------------------------------------------------

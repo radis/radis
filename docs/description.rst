@@ -2,50 +2,6 @@
 RADIS
 =====
 
-RADIS is a nonequilibrium infrared emission and absorption line-by-line (LBL) code, for use 
-by spectroscopic who want to compare line databases, or experimentalist 
-who want to fit their experimental line-of-sight (LOS) spectra.
-
-
-
-Calculate a CO equilibrium spectrum from the HITRAN database, using the
-:py:func:`~radis.lbl.calc.calc_spectrum` function::
-
-    from radis import calc_spectrum
-    s = calc_spectrum(1900, 2300,         # cm-1
-                      molecule='CO',
-                      isotope='1,2,3',
-                      pressure=1.01325,   # bar
-                      Tgas=1000,          # K
-                      mole_fraction=0.1, 
-                      )
-    s.apply_slit(0.5, 'nm')
-    s.plot('radiance')
-    
-Calculate a CO **nonequilibrium** spectrum from the HITRAN database
-(on your first call, this will calculate and cache the CO(X) rovibrational
-energies) ::
-
-    s = calc_spectrum(1900, 2300,         # cm-1
-                      molecule='CO',
-                      isotope='1,2,3',
-                      pressure=1.01325,   # bar
-                      Tvib=1000,          # K
-                      Trot=300,           # K
-                      mole_fraction=0.1, 
-                      )
-    s.apply_slit(0.5, 'nm')
-    s.plot('radiance', nfig='same')    # compare with previous
-
-
-
-- Docs: http://radis.readthedocs.io/
-- Source: https://github.com/radis/radis
-- PyPi: https://pypi.python.org/pypi/radis
-
-.. warning::
-    Deployment is still in progress, not all modules are available yet. The
-    documentation will be updated as more modules are included. 
 
 Description
 -----------
@@ -63,56 +19,12 @@ multi-slab module with a radiative transfer equation solver to reproduce line-of
 experiments. Validation cases against existing spectral codes and experimental 
 results from various plasma sources are included.
 
-The code will soon be fully available on this repository under 
-`GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`_
+The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
+under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
+i.e., that modifications must remain public. 
+
+.. warning::
+    Deployment is still in progress, not all modules are available yet. The
+    documentation will be updated as more modules are included. 
 
 
-
-Examples
---------
-
-
-Multi Temperature Fit
-~~~~~~~~~~~~~~~~~~~~~
-
-A 3 temperature fitting example reproducing the validation case of Klarenaar 2017 [1]_, who calculated a transmittance
-spectrum from the initial data of Dang 1973 [2]_, with a 1 rotational temperature + 
-3 vibrational temperature (Treanor distributions) model. 
-
-.. [1] Klarenaar et al 2017, "Time evolution of vibrational temperatures in a CO2 glow 
-       discharge measured with infrared absorption spectroscopy" doi/10.1088/1361-6595/aa902e
-
-.. [2] Dang et al 1982, "Detailed vibrational population distributions in a CO2 laser 
-        discharge as measured with a tunable diode laser" doi/10.1007/BF00694640
-
-|CO2| Energies are calculated from Dunham developments in an uncoupled harmonic oscillator - rigid rotor model. 
-The example is based on one of `RADIS validation cases <https://github.com/radis/radis/tree/master/radis/test/validation>`_.
-It makes use of the RADIS `Spectrum <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`_
-class and the associated compare and load functions
-
-.. only:: html
-
-   .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
-
-More examples can be found in the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
-
-
-Line Survey
-~~~~~~~~~~~
-
-
-Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` tool:
-
-.. raw:: html
-
-    <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
-	
-.. |CO2| replace:: CO\ :sub:`2`
-.. |H2O| replace:: H\ :sub:`2`\ O
-
-
-
-Interactive Examples
-~~~~~~~~~~~~~~~~~~~~
-
-RADIS in-the-browser sessions can be run from the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 

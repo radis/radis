@@ -73,7 +73,15 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
                                  # energies. Default 0 (if not given)
 
 --------------------------""")
-'''str: Typical expected format of a ~/.radis entry'''
+'''str: Typical expected format of a ~/.radis entry
+
+See Also
+--------
+
+:py:func:`~radis.misc.config.getConfig`
+
+Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
+'''
 
 CONFIG_PATH = join(expanduser("~"), ".radis")
 

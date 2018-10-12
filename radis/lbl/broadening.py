@@ -11,6 +11,12 @@ BroadenFactory is inherited by SpectrumFactory eventually
 Routine Listing
 ---------------
 
+Most methods are written in inherited class with the following inheritance scheme::
+    
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+
 PRIVATE METHODS - BROADENING
 (all computational-heavy functions: calculates all lines broadening,
 convolve them, apply them on all calculated range)
