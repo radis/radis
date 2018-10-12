@@ -121,7 +121,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
         s.apply_slit(0.5)
         s.line_survey(overlay='radiance_noslit', barwidth=0.01)
         
-    See the output in :ref:`label_examples`
+    See the output in :ref:`Examples <label_examples>`
     
     .. only:: html
     

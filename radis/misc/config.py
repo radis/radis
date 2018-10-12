@@ -3,7 +3,7 @@
 Summary
 -------
 
-Functions to parse the ``~/.radis`` :ref:`label_lbl_config_file`
+Functions to parse the ``~/.radis`` :ref:`Configuration file <label_lbl_config_file>`
 
 Notes
 -----
@@ -76,12 +76,12 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
 --------------------------""")
 '''str: Typical expected format of a ~/.radis entry
 
-Refer to the documentation: :ref:`label_lbl_config_file`
+Refer to the documentation: :ref:`Configuration file <label_lbl_config_file>`
 
 See Also
 --------
 
-:ref:`label_lbl_config_file`
+:ref:`Configuration file <label_lbl_config_file>`
 
 :py:func:`~radis.misc.config.getConfig`
 

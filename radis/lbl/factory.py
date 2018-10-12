@@ -60,7 +60,7 @@ Performance:
 
 Fast version: iterate over chunks of dataframe
 Note that we can't use the full dataframe because it's too big and takes too much memory
-See :ref:`label_lbl_performance` for more details. 
+See :ref:`Performance <label_lbl_performance>` for more details. 
 
 
 for Developers:

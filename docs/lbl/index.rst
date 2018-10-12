@@ -5,7 +5,7 @@ Line-by-line (LBL) module
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
-The detailed RADIS calculation flow chart is given in :ref:`label_dev_architecture`. 
+The detailed RADIS calculation flow chart is given in :ref:`Architecture <label_dev_architecture>`. 
 
 The Spectrum Factory
 --------------------
@@ -150,10 +150,10 @@ For the first case, see the ``molecules_data.json`` files in ``radis/db/[MOLECUL
 to see (or modifiy) the spectroscopic constants used. Refer to the [RADIS-2018]_ article 
 for the references used. 
 
-In the second case, see the :ref:`label_lbl_config_file` . 
+In the second case, see the :ref:`Configuration file <label_lbl_config_file>` . 
 
 The list of molecules implemented for nonequilibrium calculations if found in :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
-Refer to :ref:`label_dev_architecture` for an overview of how nonequilibrium calculations are conducted. 
+Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how nonequilibrium calculations are conducted. 
 
 
 .. _label_lbl_performance:

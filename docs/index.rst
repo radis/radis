@@ -5,7 +5,11 @@
 
 .. |logo_png| image:: radis_ico.png
 
-.. include:: description.rst
+=====
+RADIS
+=====
+
+A nonequilibrium infrared emission and absorption line-by-line code.
 
 ===============
 Getting Started
@@ -63,21 +67,23 @@ energies) ::
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous
 
-More complex :ref:`label_examples` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
+More complex :ref:`Examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
 class, which is the core of RADIS line-by-line calculations. 
 :py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
 for the simple cases. 
 
 For high temperature cases (> 1000 K), you will also need to use other Line databases such as 
-[HITEMP-2010]_ or [CDSD-4000]_. These databases must be described with the correct
-:py:data:`~radis.misc.config.DBFORMAT` in a ``~/.radis`` config file. 
+[HITEMP-2010]_ or [CDSD-4000]_. These databases must be described in a ``~/.radis`` 
+:ref:`Configuration file <label_lbl_config_file>`. 
 
-Refer to the :ref:`label_examples` section for more examples, and to :ref:`label_dev_architecture`
+Refer to the :ref:`Examples <label_examples>` section for more examples, and to :ref:`Architecture <label_dev_architecture>`
 for an overview of the RADIS calculation flow chart. 
 
 ==================
 User documentation
 ==================
+
+.. include:: description.rst
 
 Features
 --------
@@ -190,13 +196,27 @@ Tests
 ==========
 References
 ==========
-
+   
+Bibliography
+------------
+   
 .. toctree::
     :maxdepth: 2
     
     references
 
-   
+Source code and Licence
+-----------------------
+
+The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
+under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
+i.e., that modifications must remain public and under LGPLv3. 
+
+Cite this work
+--------------
+
+[RADIS-2018]_
+
 
 =====================
 Access Module Methods

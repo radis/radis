@@ -475,7 +475,7 @@ or the plot function :func:`~radis.spectrum.compare.plot_diff`::
 These functions usually require that the spectra are calculated on the same spectral 
 range. When comparing, let's say, a calculated spectrum with experimental data, 
 you may want to interpolate: you can have a look at the :py:meth:`~radis.spectrum.spectrum.Spectrum.resample` 
-method. See :ref:`label_spectrum_howto_interpolate` for details. 
+method. See :ref:`Interpolate a Spectrum on another <label_spectrum_howto_interpolate>` for details. 
 
 In :func:`~radis.spectrum.compare.plot_diff`, you can choose to plot the absolute difference
 (``method='diff'``), or the ratio (``method='ratio'``), or both::

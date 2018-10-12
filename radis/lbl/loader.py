@@ -102,7 +102,7 @@ KNOWN_DBFORMAT = ['cdsd', 'hitran',
 See Also
 --------
 
-:ref:`label_lbl_config_file`
+:ref:`Configuration file <label_lbl_config_file>`
 '''
 
 KNOWN_LVLFORMAT = ['radis', 'cdsd-pc', 'cdsd-pcN', 'cdsd-hamil', None]
@@ -123,7 +123,7 @@ KNOWN_LVLFORMAT = ['radis', 'cdsd-pc', 'cdsd-pcN', 'cdsd-hamil', None]
 See Also
 --------
 
-:ref:`label_lbl_config_file`
+:ref:`Configuration file <label_lbl_config_file>`
  '''
 
 KNOWN_PARFUNCFORMAT = ['cdsd', 'hapi']
@@ -134,7 +134,7 @@ a tabulated file.
 See Also
 --------
 
-:ref:`label_lbl_config_file`
+:ref:`Configuration file <label_lbl_config_file>`
 '''
 
 auto_drop_columns_for_dbformat = {
@@ -721,7 +721,7 @@ class DatabankLoader(object):
                       db_use_cached=None, db_assumed_sorted=True,
                       load_energies=True,
                       **options):
-        ''' Loads databank from shortname in the :ref:`label_lbl_config_file` 
+        ''' Loads databank from shortname in the :ref:`Configuration file <label_lbl_config_file>` 
         (`~/.radis`), or by manually setting all attributes.
 
         Databank includes:
@@ -742,7 +742,7 @@ class DatabankLoader(object):
             not ``None``, all other arguments are discarded.
             Note that all files in database will be loaded and it may takes some
             time. Better limit the database size if you already know what
-            range you need. See :ref:`label_lbl_config_file` and 
+            range you need. See :ref:`Configuration file <label_lbl_config_file>` and 
             :data:`~radis.misc.config.DBFORMAT` for expected 
             ``~/.radis`` format
 
@@ -840,7 +840,7 @@ class DatabankLoader(object):
         - Only load when needed: :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
         - Download from HITRAN: :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
         
-        :ref:`label_lbl_config_file` with:
+        :ref:`Configuration file <label_lbl_config_file>` with:
         - all line database formats: :py:data:`~radis.misc.config.DBFORMAT`
         - all energy levels database formats: :py:data:`~radis.misc.config.LVLFORMAT`
 

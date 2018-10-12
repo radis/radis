@@ -1,9 +1,3 @@
-=====
-RADIS
-=====
-
-A nonequilibrium infrared emission and absorption line-by-line code.
-
 Description
 -----------
     
@@ -21,10 +15,6 @@ to improve fitting convergence times, and a
 multi-slab module with a radiative transfer equation solver to reproduce line-of-sight 
 experiments. Validation cases against existing spectral codes and experimental 
 results from various plasma sources are included.
-
-The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
-under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
-i.e., that modifications must remain public. 
 
 .. |CO2| replace:: CO\ :sub:`2`
 

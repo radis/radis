@@ -648,7 +648,7 @@ def plot_diff(s1, s2, var=None,
               )
         # modify fig, axes..
 
-    See an example output in :ref:`label_spectrum_howto_compare`
+    See an example output in :ref:`Compare two Spectra <label_spectrum_howto_compare>`
 
     See Also
     --------

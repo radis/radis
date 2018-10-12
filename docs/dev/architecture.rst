@@ -37,7 +37,7 @@ are the input parameters of the different RADIS front-ends:
 -------------------------------------------------------------------------
 
 The Input databases are either automatically downloaded from [HITRAN-2016]_, or defined
-locally in a :ref:`label_lbl_config_file`
+locally in a :ref:`Configuration file <label_lbl_config_file>`
 
 -------------------------------------------------------------------------
 
