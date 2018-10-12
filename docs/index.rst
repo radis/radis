@@ -18,7 +18,7 @@ Assuming you have Python installed with the Anaconda distribution, just use::
 
     pip install radis 
     
-**That's it!**. If you ever encounter any issue, please follow the detailed 
+**That's it!** If you encounter any issue, please follow the detailed 
 installation procedure and requirements below:
 
 .. toctree::
@@ -48,7 +48,7 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
 .. figure:: examples/co_spectrum_1000K.png
     :scale: 20 %
 
-Calculate a CO **nonequilibrium** spectrum from the HITRAN database
+Calculate a CO *nonequilibrium* spectrum from the HITRAN database
 (on your first call, this will calculate and cache the CO(X) rovibrational
 energies) ::
 
@@ -65,10 +65,12 @@ energies) ::
 
 More complex examples will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
 class, which is the core of RADIS line-by-line calculations. 
+:py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
+for the simple cases. 
 
-For high temperature cases (> 1000 K), you will also need to use other databases such as 
-[HITEMP-2010] or [CDSD-4000]. These databases must be described with the correct
-:py:data:`~radis.misc.config.DBFORMAT` in a ``~.radis`` config file. 
+For high temperature cases (> 1000 K), you will also need to use other Line databases such as 
+[HITEMP-2010]_ or [CDSD-4000]_. These databases must be described with the correct
+:py:data:`~radis.misc.config.DBFORMAT` in a ``~/.radis`` config file. 
 
 
 .. toctree::
@@ -77,6 +79,12 @@ For high temperature cases (> 1000 K), you will also need to use other databases
    examples
 
    
+==================
+User documentation
+==================
+
+Features
+--------
    
 .. toctree::
 
@@ -84,12 +92,6 @@ For high temperature cases (> 1000 K), you will also need to use other databases
    
    features
    
-
-
-==================
-User documentation
-==================
-
 
 Line-by-line (LBL) module
 -------------------------

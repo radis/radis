@@ -1,6 +1,18 @@
 # -*- coding: utf-8 -*-
 
 '''
+RADIS includes [HAPI]_ for calculation of partition functions
+at equilibrium, and comparaison with the RADIS LBL code in validation 
+cases.  
+
+References
+----------
+
+[HAPI]_
+
+
+--------------------------------------------------------------------------------
+
 This module provides an access to the HITRAN data.
 Data is downloaded and cached.
 

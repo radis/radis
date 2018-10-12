@@ -24,14 +24,27 @@ class and the associated compare and load functions
 
    .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
 
-More examples can be found in the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
-
+Run the example in `radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py`
 
 Line Survey
 ~~~~~~~~~~~
 
 
-Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` tool:
+Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` tool::
+
+    from radis import SpectrumFactory
+    sf = SpectrumFactory(
+                         wavenum_min=2380,
+                         wavenum_max=2400,
+                         mole_fraction=400e-6,
+                         path_length=100,  # cm
+                         isotope=[1],
+                         ) 
+    sf.load_databank('HITRAN-CO2-TEST')
+    s = sf.eq_spectrum(Tgas=1500)
+    s.apply_slit(0.5)
+    s.line_survey(overlay='radiance_noslit', barwidth=0.01)
+
 
 .. raw:: html
 

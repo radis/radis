@@ -24,7 +24,11 @@ Bibliography
 .. [CDSD-4000] S. A. Tashkun, V. I. Perevalov, CDSD-4000: High-resolution, high-temperature carbon dioxide 
                spectroscopic databank, Journal of Quantitative Spectroscopy and Radiative Transfer 112 (9) (2011) 
                1403–1410, ISSN 00224073, doi:10.1016/j.jqsrt.2011.03.005
-             
+
+.. [HAPI] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
+          R. Kochanov, I. Gordon, L. Rothman, P. Wcisło, C. Hill, J. Wilzewski, HITRAN Application Programming Interface (HAPI): 
+          A comprehensive approach to working with spectroscopic data, Journal of Quantitative Spectroscopy 
+          and Radiative Transfer 177 (2016) 15–30, ISSN 00224073, doi:10.1016/j.jqsrt.2016.03.005.
 
 
 Useful Links

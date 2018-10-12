@@ -120,7 +120,11 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
         s = sf.eq_spectrum(Tgas=1500)
         s.apply_slit(0.5)
         s.line_survey(overlay='radiance_noslit', barwidth=0.01)
-
+    
+    .. raw:: html
+    
+        <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
+    	
     References
     ----------
 

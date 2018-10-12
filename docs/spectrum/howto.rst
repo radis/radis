@@ -438,7 +438,7 @@ RADIS allows the combination of Spectra such as::
 
 Refer to the `line-of-sight module <https://radis.readthedocs.io/en/latest/los/index.html>`__ 
 
-.. _label_spectrum_howto_compare:
+.. _label_spectrum_howto_compare
 Compare two Spectra
 -------------------
 
@@ -489,7 +489,7 @@ In :func:`~radis.spectrum.compare.plot_diff`, you can choose to plot the absolut
 
 
 
-.. _label_spectrum_howto_interpolate:
+.. _label_spectrum_howto_interpolate
 Interpolate a Spectrum on another
 ---------------------------------
 

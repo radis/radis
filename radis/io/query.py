@@ -5,15 +5,13 @@
 Notes
 -----
 
-Astroquery [R1]_ is itself based on HAPI [R2]_ 
+Astroquery [R1]_ is itself based on [HAPI]_
     
 
 References
 ----------
 
 .. [R1] `Astroquery <https://astroquery.readthedocs.io>`_ 
-
-.. [R2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
 
 
 -------------------------------------------------------------------------------
@@ -36,7 +34,7 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
     Notes
     -----
 
-    Astroquery [1]_ is itself based on HAPI [2]_ 
+    Astroquery [1]_ is itself based on [HAPI]_
 
     Parameters
     ----------
@@ -60,9 +58,6 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
     ----------
 
     .. [1] `Astroquery <https://astroquery.readthedocs.io>`_ 
-
-    .. [2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
-
 
     See Also
     --------
