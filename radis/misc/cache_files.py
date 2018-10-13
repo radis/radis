@@ -156,12 +156,25 @@ def load_h5_cache_file(cachefile, use_cached, metadata, current_version,
 def get_cache_file(fcache, verbose=True):
     ''' Load HDF5 cache file 
     
+    Parameters
+    ----------
+    
+    fcache: str
+        file name
+    
+    Other Parameters
+    ----------------
+    
+    verbose: bool
+        If >=2, also warns if non numeric values are present (it would make 
+        calculations slower)
+
     Notes
     -----
     
     we could start using FEATHER format instead. See notes in cache_files.py 
     '''
-    
+
     # Load file
     
     df = pd.read_hdf(fcache, 'df')
@@ -339,9 +352,10 @@ def _warn_if_object_columns(df, fname):
     if len(objects) > 0:
         warn('Dataframe in {0} contains `object` format columns: {1}. '.format(
                 fname, objects)+'Operations will be slower. Try to convert them to numeric.')
-        
 
-def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
+
+def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True,
+                verbose=True):
     ''' Save energy levels to HDF5 file. Add metadata and version 
 
     Parameters
@@ -370,6 +384,13 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
     overwrite: boolean
         if ``True``, overwrites file. Else, raise an error if it exists.
 
+    Other Parameters
+    ----------------
+    
+    verbose: bool
+        If >=2, also warns if non numeric values are present (it would make 
+        calculations slower)
+
     Notes
     -----
 
@@ -381,7 +402,8 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
     assert fname.endswith('.h5')
     assert 'version' not in metadata
     # ... 'object' columns slow everything down (not fixed format strings!)
-    _warn_if_object_columns(df, fname)
+    if verbose >= 2:
+        _warn_if_object_columns(df, fname)
 
     # Update metadata format
     metadata = _h5_compatible(metadata)

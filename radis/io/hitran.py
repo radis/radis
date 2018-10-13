@@ -232,7 +232,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
             print('Generating cached file: {0}'.format(fcache))
         try:
             save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
-                        key='df', overwrite=True)
+                        key='df', overwrite=True, verbose=verbose)
         except:
             if verbose:
                 print(sys.exc_info())

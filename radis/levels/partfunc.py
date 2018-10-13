@@ -906,7 +906,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # save files if use_cached
         if use_cached and not exists(cachefile):
             save_to_hdf(self.df, cachefile, metadata=metadata, version=radis.__version__,
-                        key='df', overwrite=True)
+                        key='df', overwrite=True, verbose=verbose)
 
         # Add extra columns (note that this is not saved to disk)
         self._add_extra()

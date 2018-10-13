@@ -283,7 +283,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
         if use_cached and not exists(cachefile):
             save_to_hdf(self.df, cachefile, metadata=metadata, version=radis.__version__,
-                        key='df', overwrite=True)
+                        key='df', overwrite=True, verbose=verbose)
 
         # Placeholder: correct energies for isotope 2
         # Note that this is done on loaded database, never on the saved file

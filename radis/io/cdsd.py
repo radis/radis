@@ -231,7 +231,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
             print('Generating cached file: {0}'.format(fcache))
         try:
             save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
-                        key='df', overwrite=True)
+                        key='df', overwrite=True, verbose=verbose)
         except:
             if verbose:
                 print('An error occured in cache file generation. Lookup access rights')
