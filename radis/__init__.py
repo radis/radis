@@ -158,9 +158,9 @@ def get_version(verbose=False, add_git_number=True):
 __version__ = get_version(add_git_number=False)
 
 
-from .db import *              # database of molecules
 from .spectrum import *        # Spectrum object
 from .io import *              # input / output
+from .db import *              # database of molecules
 from .lbl import *             # line-by-line module
 from .los import *             # line-of-sight module
 from .levels import *          # rovibrational energies and partition functions

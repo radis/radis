@@ -25,5 +25,5 @@ comment:
   behavior: default
   require_changes: no
 
-  ignore:
-  - "radis/io/hapi.py"  # ignore HAPI (not our code)
+ignore:
+- "radis/io/hapi.py"
