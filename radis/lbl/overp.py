@@ -41,7 +41,13 @@ _IGNORE_KEYS = ['band', 'band_htrn', 'viblvl_u', 'viblvl_l']
 
 class LevelsList(object):
     ''' A class to generate a Spectrum from a list of precalculated bands at 
-    a given reference temperature '''
+    a given reference temperature 
+    
+    .. warning::
+        
+        only valid under optically thin conditions!!
+    
+    '''
 
     # hardcode attribute names, but can save a lot of memory
     __slots__ = ['Tvib_ref', 'Trot_ref', 'vib_distribution_ref',
@@ -361,7 +367,12 @@ class LevelsList(object):
 
     def eq_spectrum(self, Tgas, overpopulation=None, mole_fraction=None, path_length=None,
                     save_rescaled_bands=False):
-        '''
+        ''' See :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
+        
+        .. warning::
+            
+            only valid under optically thin conditions!!
+        
         Parameters
         ----------
 
@@ -390,7 +401,12 @@ class LevelsList(object):
                         vib_distribution='boltzmann', overpopulation=None,
                         mole_fraction=None, path_length=None,
                         save_rescaled_bands=False):
-        ''' 
+        ''' See :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
+        
+        .. warning::
+            
+            only valid under optically thin conditions!!
+        
         Parameters
         ----------
 

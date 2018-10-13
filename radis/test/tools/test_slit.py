@@ -464,8 +464,11 @@ def test_linear_dispersion_effect(verbose=True, plot=True, close_plots=True, *ar
     reciprocal function) on the slit function '''
 
     from radis.test.utils import getTestFile
+    from publib import set_style, fix_style
+    
     
     if plot:
+        set_style('origin')
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
         if close_plots:
             plt.close('all')

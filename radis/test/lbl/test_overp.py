@@ -32,9 +32,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pytest
 
-#@pytest.mark.needs_config_file
-#@pytest.mark.needs_db_CDSD_HITEMP
-@pytest.mark.needs_connection
+@pytest.mark.needs_config_file
+@pytest.mark.needs_db_CDSD_HITEMP_PCN
+#@pytest.mark.needs_connection
 def test_direct_overpopulation_vs_recombined_bands(verbose=True, plot=False, warnings=True,
                                                    rtol=0.05, *args, **kwargs):
     ''' Compare a non-equilibrium spectrum calculated directly with overpopulations, 
@@ -48,17 +48,18 @@ def test_direct_overpopulation_vs_recombined_bands(verbose=True, plot=False, war
     when x_CO2 = 1e-3, radiance in both cases match
     when x_CO2 = 1, they dont
 
-    Notes
-    -----
-    
-    On the old NeQ package the test used [HITEMP-2010]_
-    
-    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
-    is not valid for these temperatures but can be more conveniently 
-    downloaded automatically and thus executed everytime with [Travis]_
-    
     '''
 
+#    Notes
+#    -----
+#    
+#    On the old NeQ package the test used [HITEMP-2010]_
+#    
+#    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
+#    is not valid for these temperatures but can be more conveniently 
+#    downloaded automatically and thus executed everytime with [Travis]_
+#    
+    
     # Note: only with iso1 at the moment
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -84,8 +85,8 @@ def test_direct_overpopulation_vs_recombined_bands(verbose=True, plot=False, war
         )
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         sf.warnings['NegativeEnergiesWarning'] = 'ignore'
-#        sf.load_databank('CDSD-HITEMP-PC')
-        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+        sf.load_databank('CDSD-HITEMP-PCN')
+#        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
 
         # Generate bands to recombine
         parfunc = sf.parsum_calc['CO2'][iso]['X']
@@ -96,9 +97,9 @@ def test_direct_overpopulation_vs_recombined_bands(verbose=True, plot=False, war
 
         # Compare ab initio and recombined from bands at M = 1e-3
         s_recombined = lvlist.non_eq_spectrum(
-            Tvib=Tref, Trot=Tref, overpopulation={'(4,1)': 3})
+            Tvib=Tref, Trot=Tref, overpopulation={'(4,1,3)': 3})
         sref = sf.non_eq_spectrum(
-            Tvib=Tref, Trot=Tref, overpopulation={'(4,1)': 1})
+            Tvib=Tref, Trot=Tref, overpopulation={'(4,1,3)': 1})
 
         if verbose:
             printm('Testing x_CO2 = 1e-3: ab initio ~ recombined bands (<{0:.1f}%):\t'.format(

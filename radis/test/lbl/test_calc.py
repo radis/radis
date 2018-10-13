@@ -231,7 +231,9 @@ def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
-@pytest.mark.needs_connection
+@pytest.mark.needs_config_file
+@pytest.mark.needs_db_CDSD_HITEMP_PC
+#@pytest.mark.needs_connection
 def test_all_calc_methods(verbose=True, plot=False, warnings=True, rtol=1e-3,
                           *args, **kwargs):
     ''' Test same spectrum for 3 different calculation variants (equilibrium, 
@@ -260,8 +262,8 @@ def test_all_calc_methods(verbose=True, plot=False, warnings=True, rtol=1e-3,
             verbose=verbose)
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         sf.warnings['NegativeEnergiesWarning'] = 'ignore'
-        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
-#        sf.load_databank('HITEMP-CO2-DUNHAM')
+#        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+        sf.load_databank('CDSD-HITEMP-PC')
 
         s_bands = sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
         lvl = LevelsList(sf.parsum_calc['CO2'][iso]
