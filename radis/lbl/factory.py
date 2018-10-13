@@ -247,6 +247,8 @@ class SpectrumFactory(BandFactory):
         s.rescale_path_length(0.01)
         s.plot('radiance_noslit', Iunit='µW/cm2/sr/nm')
 
+    Refer to the online :ref:`Examples <label_examples>` for more cases. 
+
     See Also
     --------
 

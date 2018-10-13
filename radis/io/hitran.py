@@ -185,7 +185,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     fcache = splitext(fname)[0]+'.h5'
     check_cache_file(cache, fcache=fcache, verbose=verbose)
     if cache and exists(fcache):
-        return get_cache_file(fcache)
+        return get_cache_file(fcache, verbose=verbose)
 
     # Detect the molecule by reading the start of the file
     with open(fname) as f:

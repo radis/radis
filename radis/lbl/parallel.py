@@ -165,6 +165,12 @@ class ParallelFactory(SpectrumFactory):
         the multiplication of lines over all spectral range takes too much memory
         and slows the system down. Chuncksize let you change the default chunck
         size. Default 3e7
+        
+    Examples
+    --------
+    
+    Refer to the online :ref:`Examples <label_examples>`. 
+
 
     See Also
     --------

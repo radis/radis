@@ -41,7 +41,9 @@ from time import time
 from multiprocessing import cpu_count
 import pytest
 
-@pytest.mark.needs_db_CDSD_HITEMP
+@pytest.mark.needs_config_file
+@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
+@pytest.mark.needs_db_HITEMP_CO_DUNHAM
 def test_compare_torch_CO2(verbose=True, plot=False, save=False, warnings=True,
                            use_cache=True, *args, **kwargs):
     ''' Reproduce the plasma torch experiment of Packan 2003 in in atmospheric air 
@@ -119,7 +121,7 @@ def test_compare_torch_CO2(verbose=True, plot=False, save=False, warnings=True,
 #        if use_cache:
 #            sf.init_database('test_compare_torch_CO2_SpectrumDatabase_HITEMP_1e25',
 #                             add_info=['Tgas'])
-        sf.init_databank('CDSD-HITEMP', load_energies=False)  # saves some memory
+        sf.init_databank('HITEMP-CO2-DUNHAM', load_energies=False)  # saves some memory
     #    sf.init_databank('CDSD-4000')
 
         # CO
@@ -181,7 +183,7 @@ def test_compare_torch_CO2(verbose=True, plot=False, save=False, warnings=True,
         s0tr._q['radiance_noslit'] *= 0    # hack to remove CO2 emission
         s0tr._q['emisscoeff'] *= 0    # hack to remove CO2 emission
         line_of_sight = slabsco[1:][::-1] + slabsco + [s0tr]
-        sco = SerialSlabs(line_of_sight)
+        sco = SerialSlabs(*line_of_sight)
 #        sco = SerialSlabs(*slabsco[1:][::-1], *slabsco, s0tr)  # Python 3 syntax only
 
         # Generate Slit

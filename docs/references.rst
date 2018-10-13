@@ -45,9 +45,11 @@ RADIS:
 
 And also:
 
-- Test Status: https://travis-ci.org/radis/radis
-- Test Coverage: https://codecov.io/gh/radis/radis
-- PyPi Repository: https://pypi.org/project/radis/
-- Interactive Examples: https://github.com/radis/radis-examples
+.. [Travis] Automatic testing: https://travis-ci.org/radis/radis
+
+.. [Coverage] Test coverage: https://codecov.io/gh/radis/radis
 
 .. [Issues] `Report issues on GitHub <https://github.com/radis/radis/issues>`_
+
+- PyPi Repository: https://pypi.org/project/radis/
+- Interactive Examples: https://github.com/radis/radis-examples

@@ -214,7 +214,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
     fcache = splitext(fname)[0]+'.h5'
     check_cache_file(cache, fcache=fcache, verbose=verbose)
     if cache and exists(fcache):
-        return get_cache_file(fcache)
+        return get_cache_file(fcache, verbose=verbose)
 
     # %% Start reading the full file
 

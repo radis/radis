@@ -30,7 +30,7 @@ install:
 
 script:
   # Your test script goes here
-  - echo ">>> Running tests"
+  - echo ">>> Run tests"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       xvfb-run pytest -m "not needs_db_CDSD_HITEMP and not python3_only" --cov=./;

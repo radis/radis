@@ -116,8 +116,9 @@ def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
     if verbose:
         printm('... True: cache file was updated for new input parameters (vmax=11)')
 
+@pytest.mark.needs_config_file
 @pytest.mark.fast
-@pytest.mark.needs_db_CDSD_HITEMP
+@pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     ''' Test 1: compare calculated PartFunc to the tabulated one '''
 
@@ -126,7 +127,7 @@ def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     try:
 
         iso = 1
-        database = 'CDSD-HITEMP-PCN'
+        database = 'CDSD-HITEMP-PC'
         
         # Compare tab to hardcoded
         parfunc = getDatabankEntries(database)['parfunc']
@@ -203,8 +204,9 @@ def test_calculatedQ_match_HAPI(vmax=11, jmax=300, plot=False, verbose=True,
     return True
 
 
+@pytest.mark.needs_config_file
 @pytest.mark.fast
-@pytest.mark.needs_db_CDSD_HITEMP
+@pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
     ''' Test partition functions calculated with CDSD energy levels against 
     hardcoded values '''
@@ -326,63 +328,65 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(verbose=True, warnings=Tr
     return True
 
 
-@pytest.mark.fast
-@pytest.mark.needs_db_CDSD_HITEMP
-def test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=True, warnings=True, *args, **kwargs):
-    ''' 
-    Calculate vibrational and rotational partition functions:
-        
-    - in CDSD with (p,c,N) convention for vibrational levels 
-    - under nonequilibrium
-    
-    Calculate total rovibrational partition function, and compare
+#@pytest.mark.needs_config_file
+#@pytest.mark.fast
+#@pytest.mark.needs_db_CDSD_HITEMP
+#def test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=True, warnings=True, *args, **kwargs):
+#    ''' 
+#    Calculate vibrational and rotational partition functions:
+#        
+#    - in CDSD with (p,c,N) convention for vibrational levels 
+#    - under nonequilibrium
+#    
+#    Calculate total rovibrational partition function, and compare
+#
+#    Test if partition function can be recomputed correctly from vibrational
+#    populations and rotational partition function (note that we are in a coupled
+#    case so partition function is not simply the product of Qvib, Qrot) 
+#    '''
+#
+#    from radis.misc.config import getDatabankEntries
+#
+#    iso = 1
+#
+#    try:
+#        energies = getDatabankEntries('CDSD-HITEMP-PCN')['levels']
+#        levelsfmt = getDatabankEntries('CDSD-HITEMP-PCN')['levelsfmt']
+#
+#        Tvib = 1500
+#        Trot = 300
+#
+#        Qf = PartFuncCO2_CDSDcalc(energies[iso],
+#                                  isotope=iso,
+#                                  use_cached=True,
+#                                  levelsfmt=levelsfmt)
+#        Q = Qf.at_noneq(Tvib, Trot)
+#        _, Qvib, dfQrot = Qf.at_noneq(Tvib, Trot, returnQvibQrot=True)
+#        if verbose:
+#            printm('Q', Q)
+#        if verbose:
+#            printm('Qvib', Qvib)
+#
+#        # 1) Test Q vs Q recomputed from Qrot, Qvib
+#
+#        # Recompute Qtot
+#        df = dfQrot
+#        Q2 = ((df.gvib*exp(-df.Evib*hc_k/Tvib))*df.Qrot).sum()
+#        # Todo: non Boltzmann case
+#
+#        assert np.isclose(Q, Q2)
+#
+#        if verbose:
+#            printm('Tested Q vs recomputed from (Qvib, Qrot) are the same: OK')
+#
+#        return True
+#
+#    except DatabankNotFound as err:
+#        assert IgnoreMissingDatabase(err, __file__, warnings)
 
-    Test if partition function can be recomputed correctly from vibrational
-    populations and rotational partition function (note that we are in a coupled
-    case so partition function is not simply the product of Qvib, Qrot) 
-    '''
-
-    from radis.misc.config import getDatabankEntries
-
-    iso = 1
-
-    try:
-        energies = getDatabankEntries('CDSD-HITEMP-PCN')['levels']
-        levelsfmt = getDatabankEntries('CDSD-HITEMP-PCN')['levelsfmt']
-
-        Tvib = 1500
-        Trot = 300
-
-        Qf = PartFuncCO2_CDSDcalc(energies[iso],
-                                  isotope=iso,
-                                  use_cached=True,
-                                  levelsfmt=levelsfmt)
-        Q = Qf.at_noneq(Tvib, Trot)
-        _, Qvib, dfQrot = Qf.at_noneq(Tvib, Trot, returnQvibQrot=True)
-        if verbose:
-            printm('Q', Q)
-        if verbose:
-            printm('Qvib', Qvib)
-
-        # 1) Test Q vs Q recomputed from Qrot, Qvib
-
-        # Recompute Qtot
-        df = dfQrot
-        Q2 = ((df.gvib*exp(-df.Evib*hc_k/Tvib))*df.Qrot).sum()
-        # Todo: non Boltzmann case
-
-        assert np.isclose(Q, Q2)
-
-        if verbose:
-            printm('Tested Q vs recomputed from (Qvib, Qrot) are the same: OK')
-
-        return True
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
-
+@pytest.mark.needs_config_file
 @pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP
 def test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=True, warnings=True, *args, **kwargs):
@@ -534,7 +538,7 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(verbose=verbose, warnings=warnings)
     test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(verbose=verbose, warnings=warnings)
     test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
-    test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)
+    #test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)  # ignore in released version 
 
     # Test 6:
     test_Q_1Tvib_vs_Q_3Tvib(verbose=verbose, warnings=warnings)

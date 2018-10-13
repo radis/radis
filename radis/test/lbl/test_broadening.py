@@ -147,12 +147,22 @@ def test_voigt_broadening_methods(verbose=True, plot=False, *args, **kwargs):
         assert res < 2e-4
         
 
-@pytest.mark.needs_db_CDSD_HITEMP
+#@pytest.mark.needs_config_file
+#@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
+@pytest.mark.needs_connection
 def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     ''' 
     Test calculation with pseudo-continuum
 
-    Assert results on abscoeff dont change much
+    Assert results on abscoeff dont change
+    
+    
+    Notes
+    -----
+    
+    Uses HITRAN so it can deployed and tested on [Travis]_, but we should switch
+    to HITEMP if some HITEMP files can be downloaded automatically at the 
+    execution time. 
 
     '''
 
@@ -165,7 +175,9 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
 
         sf = SpectrumFactory(wavelength_min=4200, wavelength_max=4500,
                              parallel=False, bplot=False, cutoff=1e-23,
-                             isotope='1,2', db_use_cached=True,
+                             molecule='CO2',
+                             isotope='1,2', 
+                             db_use_cached=True,
                              broadening_max_width=10,
                              path_length=0.1,
                              mole_fraction=1e-3,
@@ -175,7 +187,8 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
             'MissingSelfBroadeningWarning': 'ignore',
             'NegativeEnergiesWarning': 'ignore',
             'LinestrengthCutoffWarning': 'ignore'})
-        sf.load_databank('CDSD-HITEMP')
+        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+#        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
         sf._export_continuum = True   # activate it 
 
         # Calculate one without pseudo-continuum
@@ -201,8 +214,8 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
             s2.plot('abscoeff', label=s2.name,
                     nfig='test_abscoeff_continuum: show continuum')
             s2.plot('abscoeff_continuum', nfig='same', label='Pseudo-continuum (aggreg. {0:g} lines)'.format(
-                    s2.conditions['lines_in_continuum'],
-                    force=True))
+                    s2.conditions['lines_in_continuum']),
+                    force=True)
 
         # Compare
         res = get_residual(s1, s2, 'abscoeff')
@@ -214,12 +227,22 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
-@pytest.mark.needs_db_CDSD_HITEMP
+#@pytest.mark.needs_config_file
+#@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
+@pytest.mark.needs_connection
 def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     ''' 
     Test calculation with pseudo-continuum under nonequilibrium
 
-    Assert results on emisscoeff dont change much
+    Assert results on emisscoeff dont change
+
+    
+    Notes
+    -----
+    
+    Uses HITRAN so it can deployed and tested on [Travis]_, but we should switch
+    to HITEMP if some HITEMP files can be downloaded automatically at the 
+    execution time. 
 
     '''
    
@@ -232,6 +255,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
 
         sf = SpectrumFactory(wavelength_min=4200, wavelength_max=4500,
                              parallel=False, bplot=False, cutoff=1e-23,
+                             molecule='CO2',
                              isotope='1,2', db_use_cached=True,
                              broadening_max_width=10,
                              path_length=0.1,
@@ -242,7 +266,8 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
             'MissingSelfBroadeningWarning': 'ignore',
             'NegativeEnergiesWarning': 'ignore',
             'LinestrengthCutoffWarning': 'ignore'})
-        sf.load_databank('CDSD-HITEMP')
+        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+#        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
         sf._export_continuum = True   # activate it 
 
         # Calculate one without pseudo-continuum
@@ -269,7 +294,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
             s2.plot('emisscoeff', label=s2.name,
                     nfig='test_noneq_continuum: show continuum')
             s2.plot('emisscoeff_continuum', nfig='same', label='Pseudo-continuum (aggreg. {0:g} lines)'.format(
-                    s2.conditions['lines_in_continuum']))
+                    s2.conditions['lines_in_continuum']), force=True)
 
         # Compare
         res = get_residual(s1, s2, 'abscoeff') + get_residual(s1, s2, 'emisscoeff')

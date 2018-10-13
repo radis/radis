@@ -123,7 +123,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
                              pressure=P,
                              verbose=False)
         sf.fetch_databank('astroquery')
-#        sf.load_databank('CDSD-HITEMP-DUNHAM')
+#        sf.load_databank('HITEMP-CO2-DUNHAM')
         pb = ProgressBar(3, active=verbose)
         s_eq = sf.eq_spectrum(Tgas=Tgas,  mole_fraction=1, 
                               name='Equilibrium')
@@ -167,8 +167,9 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         # Reset DEBUG_MODE
         radis.DEBUG_MODE = DEBUG_MODE
 
+#@pytest.mark.needs_connection
+#@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
-@pytest.mark.needs_db_CDSD_HITEMP
 def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     ''' Test that we find Planck in the optically thick limit 
     
@@ -220,8 +221,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
                              pseudo_continuum_threshold=0,
                              pressure=P,
                              verbose=False)
-#        sf.fetch_databank('astroquery')
-        sf.load_databank('CDSD-HITEMP-DUNHAM')
+        sf.fetch_databank('astroquery')
+#        sf.load_databank('HITEMP-CO2-DUNHAM')
         pb = ProgressBar(3, active=verbose)
         s_eq = sf.eq_spectrum(Tgas=Tgas,  mole_fraction=1, 
                               name='Equilibrium')

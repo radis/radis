@@ -52,12 +52,13 @@ A ``~/.radis`` is user-dependant, and machine-dependant. It contains a list of d
 is specific to a given molecule. It typically looks like::
 
     # The CO2 CDSD-HITEMP files have been retrieved from ftp://cfa-ftp.harvard.edu/pub/HITEMP-2010/
-    [CDSD-HITEMP]
+    # Partition function are that of CDSD-4000, retrived from ftp://ftp.iao.ru/pub/CDSD-4000
+    [HITEMP-CO2-DUNHAM]
     info = CDSD-HITEMP database, with energy levels calculated from Dunham expansions
     path = 
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_07
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_08
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_09
+           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_07
+           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_08
+           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_09
     format = cdsd
     parfunc =  PATH_TO\CDSD-4000\partition_functions.txt
     parfuncfmt = cdsd

@@ -99,7 +99,7 @@ def test_hitemp(verbose=True, warnings=True, **kwargs):
     ''' Analyse some default files to make sure everything still works'''
 
     # 1. Load
-    df = cdsd2df(getTestFile('cdsd_hitemp_09.txt'), cache='regen',
+    df = cdsd2df(getTestFile('cdsd_hitemp_09_header.txt'), cache='regen',
                  drop_non_numeric=True)
     if verbose:
         print(df.head())

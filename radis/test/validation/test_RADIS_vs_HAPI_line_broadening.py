@@ -24,7 +24,7 @@ import pytest
 
 
 @pytest.mark.fast
-@pytest.mark.needs_http_connection  # ignored by pytest with argument -m "not needs_http_connection"
+@pytest.mark.needs_connection  # ignored by pytest with argument -m "not needs_http_connection"
 def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     '''
     Plot absorption coefficient (cm-1) of CO at high temperature (2000 K) with 

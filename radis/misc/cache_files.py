@@ -153,7 +153,7 @@ def load_h5_cache_file(cachefile, use_cached, metadata, current_version,
 
     return df
 
-def get_cache_file(fcache):
+def get_cache_file(fcache, verbose=True):
     ''' Load HDF5 cache file 
     
     Notes
@@ -169,7 +169,8 @@ def get_cache_file(fcache):
     # Check file
     
     # ... 'object' columns slow everything down (not fixed format strings!)
-    _warn_if_object_columns(df, fcache)
+    if verbose >= 2:
+        _warn_if_object_columns(df, fcache)
     
     return df
 
@@ -304,7 +305,7 @@ def check_not_deprecated(file, metadata, current_version=None,
     elif current_version == file_version:
         out = True
     else:
-        raise ValueError('Cache file ({0}) generated with a future version ({1} > {2})?'.format(
+        raise ValueError('Cache file ({0}) generated with a future version ({1} > {2})? '.format(
                             file, file_version, current_version)+\
                          "Do you own a DeLorean? Delete the file manually if you understand what happened")
 

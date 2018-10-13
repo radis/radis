@@ -37,6 +37,7 @@ fig_prefix = basename(__file__)+': '
 # ---------------------
 
 
+@pytest.mark.needs_config_file
 @pytest.mark.needs_db_CDSD_HITEMP
 def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
     ''' Test spectrum generation
@@ -149,7 +150,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
                              verbose=verbose)
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         sf.warnings['NegativeEnergiesWarning'] = 'ignore'
-        sf.load_databank('CDSD-HITEMP',
+        sf.load_databank('HITEMP-CO2-DUNHAM',
                          load_energies=False,  # no need to load energies at equilibrium
                          )
         s = sf.eq_spectrum(Tgas=300)
@@ -187,7 +188,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
 
         # Plot comparison
         if plot:
-            plt.figure(fig_prefix+'Reference spectrum CDSD-HITEMP (abscoeff)')
+            plt.figure(fig_prefix+'Reference spectrum (abscoeff)')
             # , show_points=True)  # show_points to have an
             s.plot('abscoeff', wunit='nm', medium='air',
                    nfig='same', lw=3, label='RADIS, this version')

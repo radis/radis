@@ -34,13 +34,24 @@ from radis.spectrum import Spectrum, plot_diff, get_residual
 from radis import SpectrumFactory
 from radis.test.utils import getValidationCase
 from radis.misc.printer import printm
-from radis.test.utils import IgnoreMissingDatabase
+from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from radis.misc.utils import DatabankNotFound
-import pytest
 
-@pytest.mark.needs_db_CDSD_HITEMP
 def test_klarenaar_validation_case(verbose=True, plot=False, warnings=True,
                                    *args, **kwargs):
+    ''' Reproduce the Klarenaar 2018 validation case, as given in the 
+    [RADIS-2018]_ article. 
+    
+    References
+    ----------
+
+    Klarenaar et al, "Time evolution of vibrational temperatures in a CO 2 glow 
+    discharge measured with infrared absorption spectroscopy", doi 10.1088/1361-6595/aa902e,
+    and the references there in.
+    
+    '''
+    
+    setup_test_line_databases()
 
     try:
         # %% Data from Dang, adapted by Klarenaar
@@ -57,6 +68,7 @@ def test_klarenaar_validation_case(verbose=True, plot=False, warnings=True,
                              pressure=20*1e-3,           # bar
                              db_use_cached=True,
                              cutoff=1e-25,
+                             molecule='CO2',
                              isotope='1,2',
                              path_length=10,             # cm-1
                              # warning! 10% in mass fraction -> less in mole fraction
@@ -66,7 +78,8 @@ def test_klarenaar_validation_case(verbose=True, plot=False, warnings=True,
                              export_populations='vib',
                              )
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
-        sf.load_databank('CDSD-HITEMP-DUNHAM')
+#        sf.load_databank('HITEMP-CO2-DUNHAM')
+        sf.load_databank('HITEMP-CO2-TEST')
 
         # Calculate with Klarenaar fitted values
         T12 = 517
@@ -82,6 +95,8 @@ def test_klarenaar_validation_case(verbose=True, plot=False, warnings=True,
     #        plt.savefig('test_CO2_3Tvib_vs_klarenaar.png')
 
         assert get_residual(s, s_exp, 'transmittance_noslit', ignore_nan=True) < 0.003
+        
+        return True
 
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)

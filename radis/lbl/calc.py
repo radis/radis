@@ -209,6 +209,8 @@ def calc_spectrum(wavenum_min=None,
         
         s.line_survey(overlay='radiance')
 
+    Refer to the online :ref:`Examples <label_examples>` for more cases. 
+
     '''
 
     # Check inputs

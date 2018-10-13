@@ -5,12 +5,13 @@ Test
 Run tests
 ---------
 
-Test routines are performed automatically by Travis CI whenever a push is 
-made to the ``develop`` or ``master`` GitHub branch. See current test status:
+Test routines are performed automatically by `Travis CI <https://travis-ci.org/radis/radis>`_ 
+whenever a push is made to the ``develop`` or ``master`` 
+`GitHub <https://github.com/radis/radis>`_ branch. See current test status:
 
 .. image:: https://img.shields.io/travis/radis/radis.svg
     :target: https://travis-ci.org/radis/radis
-    :alt: Continuous Integration
+    :alt: https://travis-ci.org/radis/radis
     
 
 It is a good practice to perform these tests locally to detect potential 
@@ -35,6 +36,7 @@ the current code coverage status:
     
 .. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/radis/radis
+  :alt: https://codecov.io/gh/radis/radis
   
  
 If you want to see the test coverage report locally use ``codecov`` that 
@@ -44,6 +46,32 @@ is interfaced with pytest through the ``--cov=./`` command::
     cd radis/test
     pytest --cov=./
 
+You can select or ignore some tests with the ``-m`` option, for instance 
+run only the fast tests with::
+
+    pytest -m fast --cov=./
+    
+The list of tags is:
+
+- fast : each test should run under 1s 
+- needs_connection : requires an internet connection
+- needs_python3 : a Python-3 only test 
+- needs_config_file: needs ``~/.radis`` to be defined.
+
+Plus some tags for user-defined [HITEMP-2010]_ databases, as given in the :ref:`Configuration file <label_lbl_config_file>`
+section
+
+- needs_db_HITEMP_CO2_DUNHAM : requires HITEMP-CO2-DUNHAM database in ``~/.radis``
+- needs_db_HITEMP_CO_DUNHAM : requires HITEMP-CO-DUNHAM database in ``~/.radis`` 
+- needs_db_CDSD_HITEMP_PC : requires CDSD-HITEMP-PC database in ``~/.radis``
+
+The default test routine run on `Travis CI <https://travis-ci.org/radis/radis>`_ 
+is (see the ``radis/.gitlab-ci.yml`file)::
+
+    pytest -m "not needs_config_file" --cov=./;
+
+Which ignores all test that rely on the [HITEMP-2010]_ databases, as they cannot (yet) be downloaded
+automatically on the test machine. 
 
 Write new tests
 ---------------

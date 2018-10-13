@@ -56,7 +56,9 @@ def test_sPlanck_conversions(verbose=True, *args, **kwargs):
     assert np.allclose(I_nm2nm, I_cm2nm)
 
 
-@pytest.mark.needs_db_CDSD_HITEMP
+#@pytest.mark.needs_config_file
+#@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
+@pytest.mark.needs_connection
 def test_calc_spectrum(verbose=True, plot=True, warnings=True,
                        *args, **kwargs):
     ''' Basic example, used as a non-regression test
@@ -67,18 +69,29 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
     
     Notes
     -----
-
-    Performance test. How long it tooks to calculate this Spectrum?
     
-    0.9.20: 18.7s
+    How long it tooks to calculate this Spectrum?
 
-    0.9.20*: 15.4s   (removed 2nd loop on 1st isotope because of groupby().apply())
+    Performance test on old NeQ package, with the [CDSD-HITEMP-JMIN] databank.
+    See the caveats in the E. Pannier "Limits of CO2 NonEquilibrium Models" paper.
+    (just used here as a performance monitoring)
+    
+    - 0.9.20: 18.7s
 
-    0.9.20**: 11.7s  (after replacing fill_Evib with map() ) 
+    - 0.9.20*: 15.4s   (removed 2nd loop on 1st isotope because of groupby().apply())
 
-    0.9.21: 9.4s     (improve Qrot / nrot fetching performance) 
+    - 0.9.20**: 11.7s  (after replacing fill_Evib with map() ) 
 
-    0.9.22: 8.4s     
+    - 0.9.21: 9.4s     (improve Qrot / nrot fetching performance) 
+
+    - 0.9.22: 8.4s     
+    
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
+    is not valid for these temperatures but can be more conveniently 
+    downloaded automatically and thus executed everytime with [Travis]_
+    
+    (we also expect the test to be much faster than above, but that's just 
+    because the database is smaller!)
 
     '''
 
@@ -91,12 +104,14 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
 
     try:
         s = calc_spectrum(wavelength_min=4165, wavelength_max=4200,
-                          databank='CDSD-HITEMP',
+#                          databank='CDSD-HITEMP-JMIN',
+                          databank='fetch',    # not appropriate for these temperatures, but convenient for automatic testing
                           Tgas=300,
                           Tvib=1700,
                           Trot=1550,
                           path_length=0.1,
                           mole_fraction=0.5,
+                          molecule='CO2',
                           isotope='1,2',
                           wstep=0.01,
                           cutoff=1e-25,
@@ -111,10 +126,17 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
         w, I = s.get('radiance', wunit='nm')
         w_ref = w[::100]
         # Compare against hardcoded results (neq 0.9.22, 28/06/18)
-        I_ref = np.array([0.28694463, 0.29141711, 0.32461613, 0.32909566, 0.21939511, 0.18606445,
-                          0.19740763, 0.16948599, 0.16780345, 0.15572173, 0.16770853, 0.14966064,
-                          0.13041356, 0.11751016, 0.10818072, 0.11592531, 0.04666677, 0.00177108,
-                          0.00069339])
+#        I_ref = np.array([0.28694463, 0.29141711, 0.32461613, 0.32909566, 0.21939511, 0.18606445,
+#                          0.19740763, 0.16948599, 0.16780345, 0.15572173, 0.16770853, 0.14966064,
+#                          0.13041356, 0.11751016, 0.10818072, 0.11592531, 0.04666677, 0.00177108,
+#                          0.00069339])
+        # Harcoded results changed for RADIS v1.0.1  with the change of 
+        # database (HITEMP-2010 -> HITRAN-2016) and of Tvib model 
+        # CDSD with (P,C,Jmin,N) in CDSD polyad -> RADIS built-in constants)
+        I_ref = np.array([ 0.29148768,  0.29646856,  0.32999337,  0.32249701,  0.2078451 ,
+                          0.18974631,  0.2019285 ,  0.17346687,  0.17211401,  0.15939359,
+                          0.17240575,  0.15395179,  0.13374185,  0.11997065,  0.10858693,
+                          0.11114162,  0.04575873,  0.00163863,  0.00062654])
         if plot:
             plt.plot(w_ref, I_ref, 'or', label='ref')
             plt.legend()
@@ -126,22 +148,30 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
-@pytest.mark.needs_db_CDSD_HITEMP
+#@pytest.mark.needs_db_CDSD_HITEMP_PCN
+@pytest.mark.needs_connection
 def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
                                        *args, **kwargs):
     ''' Non-regression test: 
         
     Example using overpopulation of the 001 asymmetric stretch first level of CO2,
-    which is written (p,c,n) = (3,1,4) in CDSD notation
+    which is written (p,c,N) = (3,1,4) in [CDSD-4000]_ notation
     
     Notes
     -----
     
-    the test uses a CDSD-PCN notation for vibrational energy assignation, which 
-    is not really recommended (see the Limits of CO2 NonEq models paper). Better 
-    use the assignation scheme suggested in the paper.
+    In old Neq package (before RADIS):
     
+    the test uses a CDSD-PCN notation for vibrational energy assignation, i.e,
+    Evib = minimal energy of a (p,c,N) polyad. See the discussion on the implications
+    in the E. Pannier "Limits of CO2 NonEquilibrium models" paper. 
+    Better use the assignation scheme suggested in the paper. 
     But it's okay here as a non-regression test.
+    
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
+    is not valid for these temperatures but can be more conveniently 
+    downloaded automatically and thus executed everytime with [Travis]_
+    
     '''
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -150,14 +180,16 @@ def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
 
     try:
         s = calc_spectrum(wavelength_min=4165, wavelength_max=4200,
-                          databank='CDSD-HITEMP-PCN',
+#                          databank='CDSD-HITEMP-PCN',
+                          databank='fetch',    # not appropriate for these temperatures, but convenient for automatic testings
                           Tgas=300,
                           Tvib=1700,
                           Trot=1550,
-                          overpopulation={'(3,1,4)': 3,   # 00'0'1 in HITRAN notation
-                                          },
+#                          overpopulation={'(3,1,4)': 3},  # 00'0'1 in spectroscopic notation
+                          overpopulation={'(0,0,0,1)': 3},  # 00'0'1 in spectroscopic notation
                           path_length=0.1,
                           mole_fraction=0.5,
+                          molecule='CO2',
                           isotope='1,2',
                           wstep=0.01,
                           cutoff=1e-25,
@@ -176,6 +208,13 @@ def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
                           0.56727691, 0.60361258, 0.51549598, 0.51012651, 0.47133131,
                           0.50770568, 0.45093953, 0.39129824, 0.35125324, 0.32238316,
                           0.34542781, 0.13908073, 0.00506012, 0.00189535])
+        # Harcoded results changed for RADIS v1.0.1  with the change of 
+        # database (HITEMP-2010 -> HITRAN-2016) and of Tvib model 
+        # CDSD with (P,C,Jmin,N) in CDSD polyad -> RADIS built-in constants)
+        I_ref = np.array([ 0.62299838,  0.66229013,  0.81037059,  0.79899315,  0.57215806,
+                          0.57626389,  0.61424273,  0.52454807,  0.5200812 ,  0.47920924,
+                          0.51843533,  0.46058817,  0.3983277 ,  0.35582979,  0.32095204,
+                          0.32821575,  0.13525543,  0.00469489,  0.00174166])
         if plot:
             plt.plot(w_ref, I_ref, 'or', label='ref')
             plt.legend()
@@ -185,14 +224,14 @@ def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
 
         if verbose:
             printm('Test overpopulations: OK')
-
+            
         return True
 
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
-@pytest.mark.needs_db_CDSD_HITEMP
+@pytest.mark.needs_connection
 def test_all_calc_methods(verbose=True, plot=False, warnings=True, rtol=1e-3,
                           *args, **kwargs):
     ''' Test same spectrum for 3 different calculation variants (equilibrium, 
@@ -214,14 +253,15 @@ def test_all_calc_methods(verbose=True, plot=False, warnings=True, rtol=1e-3,
             mole_fraction=1,
             path_length=0.025,
             cutoff=1e-25,
+            molecule='CO2',
             isotope=iso,
             db_use_cached=True,
             lvl_use_cached=True,
             verbose=verbose)
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         sf.warnings['NegativeEnergiesWarning'] = 'ignore'
-        sf.load_databank('CDSD-HITEMP')
-#        sf.load_databank('CDSD-HITEMP-DUNHAM')
+        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+#        sf.load_databank('HITEMP-CO2-DUNHAM')
 
         s_bands = sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
         lvl = LevelsList(sf.parsum_calc['CO2'][iso]
@@ -259,11 +299,21 @@ def test_all_calc_methods(verbose=True, plot=False, warnings=True, rtol=1e-3,
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
-@pytest.mark.needs_db_CDSD_HITEMP
+@pytest.mark.needs_connection
 def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True,
                              *args, **kwargs):
     ''' Test same spectrum for 2 different calculation codes (equilibrium, 
     non-equilibrium) in the presence of isotopes 
+    
+    Notes
+    -----
+    
+    On the old NeQ package the test used [HITEMP-2010]_
+    
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
+    is not valid for these temperatures but can be more conveniently 
+    downloaded automatically and thus executed everytime with [Travis]_
+    
     '''
 
     try:
@@ -275,12 +325,14 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True,
             mole_fraction=1,
             path_length=1,
             cutoff=1e-25,
+            molecule='CO2',
             isotope='1,2',
             db_use_cached=True,
             verbose=verbose)
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         sf.warnings['NegativeEnergiesWarning'] = 'ignore'
-        sf.load_databank('CDSD-HITEMP')
+        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+#        sf.load_databank('HITEMP-CO2-DUNHAM')
         s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name='Non-eq')
         s_eq = sf.eq_spectrum(Tgas=Tgas, name='Eq')
 
