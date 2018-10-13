@@ -3,8 +3,7 @@
 Print functions, with colors
 """
 
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals, print_function, division
 from termcolor import colored
 from six import StringIO
 import sys

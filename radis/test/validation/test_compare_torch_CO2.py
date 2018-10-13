@@ -24,8 +24,7 @@ Temperatures and concentrations of all slabs are stored in
     
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, unicode_literals, print_function, division
 import matplotlib.pyplot as plt
 import pandas as pd
 from radis import SpectrumFactory, ParallelFactory

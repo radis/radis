@@ -29,13 +29,14 @@ References
 
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals, print_function, division
 from radis.spectrum import Spectrum, plot_diff, get_residual
 from radis import SpectrumFactory
 from radis.test.utils import getValidationCase
 from radis.misc.printer import printm
 from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from radis.misc.utils import DatabankNotFound
+from os.path import join
 
 def test_klarenaar_validation_case(verbose=True, plot=False, warnings=True,
                                    *args, **kwargs):
@@ -55,8 +56,8 @@ def test_klarenaar_validation_case(verbose=True, plot=False, warnings=True,
 
     try:
         # %% Data from Dang, adapted by Klarenaar
-        s_exp = Spectrum.from_txt(getValidationCase('test_CO2_3Tvib_vs_klarenaar_data' +
-                                                    '\klarenaar_2017_digitized_data.csv'),
+        s_exp = Spectrum.from_txt(getValidationCase(join('test_CO2_3Tvib_vs_klarenaar_data', 
+                                                    'klarenaar_2017_digitized_data.csv')),
                                   'transmittance_noslit', waveunit='cm-1', unit='I/I0',
                                   delimiter=',',
                                   name='Klarenaar 2017')
