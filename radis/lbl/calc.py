@@ -25,6 +25,7 @@ from radis.phys.convert import nm2cm
 from radis.misc.utils import DatabankNotFound
 import numpy as np
 from numpy import exp, arange, allclose, abs, diff, zeros_like, ones_like
+from warnings import warn
 
 # %%
 
@@ -116,9 +117,14 @@ def calc_spectrum(wavenum_min=None,
         can be either: 
 
         - the name of a spectral database to use (must be registered 
-          in your ``~/.radis``)    
+          in your ``~/.radis``). See :ref:`Configuration file <label_lbl_config_file>`.
 
-        - ``'fetch'``, to fetch automatically from HITRAN through astroquery. 
+        - ``'fetch'``, to fetch automatically from [HITRAN-2016]_ through astroquery. 
+        
+        .. warning::
+            
+            [HITRAN-2016]_ is validd for low temperatures (typically < 700 K). For higher
+            temperatures you may need [HITEMP-2010]_ 
 
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
@@ -218,7 +224,7 @@ def calc_spectrum(wavenum_min=None,
     # ... wavelengths / wavenumbers
     if ((wavelength_min is not None or wavelength_max is not None) and
             (wavenum_min is not None or wavenum_max is not None)):
-        raise ValueError('Wavenumber and Wavelength both given... you twart')
+        raise ValueError("Wavenumber and Wavelength both given... it's time to choose!")
 
     if (wavenum_min is None and wavenum_max is None):
         assert(wavelength_max is not None)
@@ -237,7 +243,14 @@ def calc_spectrum(wavenum_min=None,
 
     if Tvib is None and Trot is not None or Tvib is not None and Trot is None:
         raise ValueError('Choose both Tvib and Trot')
-
+        
+    if databank == 'fetch' and ((Tgas is not None and Tgas > 700) or 
+                                (Tvib is not None and Tvib > 700) or 
+                                (Trot is not None and Trot > 700)):
+        warn("HITRAN is valid for low temperatures (typically < 700 K). "+\
+             "For higher temperatures you may need HITEMP or CDSD. See the "+\
+             "'databank=' parameter")
+        
     # ... others
     if databank is None:
         raise ValueError('Give a databank name')

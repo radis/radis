@@ -46,6 +46,7 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
                       pressure=1.01325,   # bar
                       Tgas=1000,          # K
                       mole_fraction=0.1, 
+                      path_length=1,      # cm
                       )
     s.apply_slit(0.5, 'nm')
     s.plot('radiance')
@@ -64,6 +65,7 @@ energies) ::
                       Tvib=1000,          # K
                       Trot=300,           # K
                       mole_fraction=0.1, 
+                      path_length=1,      # cm
                       )
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous
@@ -73,8 +75,9 @@ class, which is the core of RADIS line-by-line calculations.
 :py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
 for the simple cases. 
 
-For high temperature cases (> 1000 K), you will also need to use other Line databases such as 
-[HITEMP-2010]_ or [CDSD-4000]_. These databases must be described in a ``~/.radis`` 
+The examples above download the line databases from [HITRAN-2016]_ automatically, which is valid for temperatures below 700 K. 
+For *high temperature* cases, you may need to use other line databases such as 
+[HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
 :ref:`Configuration file <label_lbl_config_file>`. 
 
 Refer to the :ref:`Examples <label_examples>` section for more examples, and to :ref:`Architecture <label_dev_architecture>`
