@@ -207,7 +207,7 @@ def PerfectAbsorber(s):
         
         (s1 > PerfectAbsorber(s2>s3)).plot('radiance_noslit') 
     
-    See more examples in :ref:`label_los_index`
+    See more examples in :ref:`Line-of-Sight module <label_los_index>`
     
     '''
     

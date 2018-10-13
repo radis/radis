@@ -35,6 +35,7 @@ import h5py
 import radis
 from warnings import warn
 from os.path import exists
+from radis import OLDEST_COMPATIBLE_VERSION
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printr, printm
 import pandas as pd
@@ -43,8 +44,6 @@ import pandas as pd
 class DeprecatedFileError(DeprecationWarning):
     pass
 
-
-OLDEST_COMPATIBLE_VERSION = '0.1.22'
 '''str: forces to regenerate cache files that were created in a previous version'''
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
@@ -262,7 +261,7 @@ def check_not_deprecated(file, metadata, current_version=None,
 
     last_backward_compatible_version: str
         If the file was generated in a non-compatible version, an error is raised.
-        Default :data:`~radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION`
+        Default :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
 
     '''
 
@@ -305,7 +304,9 @@ def check_not_deprecated(file, metadata, current_version=None,
     elif current_version == file_version:
         out = True
     else:
-        raise ValueError('File generated with a future version?')
+        raise ValueError('Cache file ({0}) generated with a future version ({1} > {2})?'.format(
+                            file, file_version, current_version)+\
+                         "Do you own a DeLorean? Delete the file manually if you understand what happened")
 
     # Compare metadata
     metadata = _h5_compatible(metadata)
@@ -360,7 +361,7 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
         file version. If ``None``, the current :data:`radis.__version__` is used. 
         On file loading, a warning will be raised if the current version is 
         posterior, or an error if the file version is set to be uncompatible.
-        See :data:`~radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION`
+        See :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
 
     key: str
         dataset name. Default ``'df'`` 

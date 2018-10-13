@@ -46,7 +46,7 @@ The bottom part includes the post-processing modules of RADIS, in particular:
 
 - The various methods associated with the :py:class:`~radis.spectrum.spectrum.Spectrum` class. 
 
-- The :ref:`label_los_index` module 
+- The :ref:`Line-of-Sight module <label_los_index>` module 
 
 - The :py:class:`~radis.tools.line_survey.LineSurvey` tool.
 

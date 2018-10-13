@@ -53,14 +53,17 @@ Most methods are written in inherited class with the following inheritance schem
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 
+Notes
+-----
+
+RADIS includes automatic rebuilding of Deprecated cache files + a global variable
+to force regenerating them after a given version. See :py:data:`radis.OLDEST_COMPATIBLE_VERSION`
+
 -------------------------------------------------------------------------------
 
 """
-
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
-# 0.9.20 includes automatic rebuilding of Deprecated cache files + a global variable
-# to force regenerating them after a given version. See radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.db import MolParams

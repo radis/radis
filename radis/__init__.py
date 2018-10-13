@@ -115,7 +115,13 @@ See Also
 '''
 
 OLDEST_COMPATIBLE_VERSION = '0.9.9'
-'''str: forces to regenerate cache files that were created in a previous version'''
+'''str: forces to regenerate cache files that were created in a previous version
+
+See Also
+--------
+
+:py:func:`~radis.misc.cache_files.load_h5_cache_file`
+'''
 
 # %% Version
 

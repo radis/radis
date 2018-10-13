@@ -128,7 +128,7 @@ def SerialSlabs(*slabs, **kwargs):
 
     :func:`~radis.los.slabs.MergeSlabs`
 
-    See more examples in :ref:`label_los_index`
+    See more examples in :ref:`Line-of-Sight module <label_los_index>`
     
     '''
     
@@ -510,7 +510,7 @@ def MergeSlabs(*slabs, **kwargs):
 
     :func:`~radis.los.slabs.SerialSlabs`
     
-    See more examples in :ref:`label_los_index`
+    See more examples in :ref:`Line-of-Sight module <label_los_index>`
     
     '''
     
