@@ -198,6 +198,15 @@ Tests
 References
 ==========
    
+Spectroscopic constants 
+-----------------------
+
+.. toctree::
+    :maxdepth: 2
+    
+    db/constants
+
+
 Bibliography
 ------------
    

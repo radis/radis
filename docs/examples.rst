@@ -110,3 +110,28 @@ Interactive Examples
 ~~~~~~~~~~~~~~~~~~~~
 
 RADIS in-the-browser sessions can be run from the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
+
+
+
+
+Get rovibrational energies
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+RADIS can simply be used to calculate the rovibrational energies of molecules, using the 
+built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`. 
+See the :py:func:`~radis.db.molecules.getMolecule` function,  
+and the :py:data:`~radis.db.molecules.Molecules` list containing all :py:class:`~radis.db.classes.ElectronicState` 
+objects. 
+
+Here we get the energy of the asymmetric mode of CO2::
+
+    from radis import getMolecule
+    CO2 = getMolecule('CO2', 1, 'X')
+    print(CO2.Erovib(0, 0, 0, 1, 0))
+    >>> 2324.2199999
+
+Here we get the energy of the v=6, J=3 level of the 2nd isotope of CO::
+
+    CO = getMolecule('CO', 2, 'X')
+    print(CO.Erovib(6, 3))
+    >>> 12218.8130906978

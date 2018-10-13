@@ -10,6 +10,4 @@ CNRS UPR 288
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .utils import getFile
-from .molparam import MolParams
 from .molecules import Molecules, getMolecule

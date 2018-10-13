@@ -64,8 +64,9 @@ is specific to a given molecule. It typically looks like::
     parfuncfmt = cdsd
     levelsfmt = radis
 
-In the former example, RADIS built-in spectroscopic constants are used to calculate the 
-energy levels for CO2. It is also possible to use your own Energy level database::
+In the former example, RADIS built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>` 
+are used to calculate the energy levels for CO2. 
+It is also possible to use your own Energy level database::
 
 
     # List of databases
@@ -145,11 +146,12 @@ Spectroscopic constants
 -----------------------
 
 For nonequilibrium calculations, you can either let RADIS calculate rovibrational energies
-with its built-in spectroscopic constants, or supply an energy level database. 
+with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`, 
+or supply an energy level database. 
 
 For the first case, see the ``molecules_data.json`` files in ``radis/db/[MOLECULE]`` 
-to see (or modifiy) the spectroscopic constants used. Refer to the [RADIS-2018]_ article 
-for the references used. 
+to see (or modifiy) the :ref:`spectroscopic constants <label_db_spectroscopic_constants>` used. 
+Refer to the [RADIS-2018]_ article for the references used. 
 
 In the second case, see the :ref:`Configuration file <label_lbl_config_file>` . 
 

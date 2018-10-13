@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 
-Predefined molecules
+Predefined molecules using RADIS built-in
+:ref:`spectroscopic constants <label_db_spectroscopic_constants>`
 
 See :py:data:`~radis.db.molecules.Molecules`
 
@@ -155,11 +156,8 @@ Molecules = {
     },
 }
 '''dict: list of Electronic states whose energy levels can be calculated with RADIS
-with spectroscopic constants. For references refer to the definition of each
-molecule. 
-
-See Also
---------
+built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`. 
+For references refer to the definition of each molecule:
 
 CO:
 
@@ -174,6 +172,10 @@ CO2:
 - :py:data:`~radis.db.molecules.CO2_X_628`
 - :py:data:`~radis.db.molecules.CO2_X_627`
 
+See Also
+--------
+
+:py:func:`~radis.db.molecules.getMolecule`
 
 '''
 
@@ -182,8 +184,9 @@ CO2:
 
 
 def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
-    ''' Get an ElectronicState object in the RADIS :py:data:`~radis.db.molecules.Molecules`
-    list. 
+    ''' Get an :py:class:`~radis.db.classes.ElectronicState` object in the 
+    RADIS :py:data:`~radis.db.molecules.Molecules` list, which use the defaults
+    :ref:`spectroscopic constants <label_db_spectroscopic_constants>`.
 
     Parameters
     ----------
@@ -207,6 +210,11 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
     
     state: ElectronicState
         an :py:class:`~radis.db.classes.ElectronicState` object. 
+
+    See Also
+    --------
+    
+    :py:data:`~radis.db.molecules.Molecules`
 
     '''
 

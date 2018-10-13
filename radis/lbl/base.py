@@ -65,7 +65,7 @@ Most methods are written in inherited class with the following inheritance schem
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 import radis
-from radis.db import MolParams
+from radis.db.molparam import MolParams
 from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT, df_metadata
 from radis.lbl.labels import (vib_lvl_name_hitran_class1,
                              vib_lvl_name_hitran_class5)

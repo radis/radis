@@ -52,23 +52,30 @@ from radis.db.conventions import get_convention
 # %% Molecule class
 
 class Molecule(object):
+    ''' Define a new molecule
 
+    Parameters
+    ----------
+
+    name: str, int
+        molecule name, or HITRAN identifier
+
+    Other Parameters
+    ----------------
+    
+    verbose: boolean
+        more blabla
+            
+    See Also
+    --------
+    
+    :py:class:`~radis.db.classes.Isotope`, :py:class:`~radis.db.classes.ElectronicState`,
+    :py:func:`~radis.db.molecules.getMolecule`
+
+    '''
+    
     def __init__(self, name, verbose=True):    # @dev: no optional kwargs here (final stop)
-        ''' Define a new molecule
 
-        Parameters
-        ----------
-
-        name: str, int
-            molecule name, or HITRAN identifier
-
-        Other Parameters
-        ----------------
-        
-        verbose: boolean
-            more blabla
-        '''
-        
         self.verbose = verbose
 
         # Get name and integer id
@@ -92,31 +99,36 @@ class Molecule(object):
 # %% Isotope class
 
 class Isotope(Molecule):
+    ''' Create an isotope of a given :py:class:`~radis.db.classes.Molecule`
+
+    Parameters
+    ----------
+
+    molecule_name: str, or int
+        molecule name or HITRAN identifier
+
+    isotope: int
+        isotope identifier, sorted by decreasing abundance (cf HITRAN 
+        nomenclature)
+        
+    Other Parameters
+    ----------------
+
+    isotope_name: str
+        (optional) isotope name. Default ''
+
+    abundance: float
+        isotopologue abundance. Default ``None``
+
+    See Also
+    --------
+    
+    :py:class:`~radis.db.classes.ElectronicState`, :py:class:`~radis.db.classes.Molecule`,
+    :py:func:`~radis.db.molecules.getMolecule`
+    '''
 
     def __init__(self, molecule_name, isotope, isotope_name='', abundance=None,
                  **kwargs):
-        ''' Create an isotope 
-
-        Parameters
-        ----------
-
-        molecule_name: str, or int
-            molecule name or HITRAN identifier
-
-        isotope: int
-            isotope identifier, sorted by decreasing abundance (cf HITRAN 
-            nomenclature)
-            
-        Other Parameters
-        ----------------
-
-        isotope_name: str
-            (optional) isotope name. Default ''
-
-        abundance: float
-            isotopologue abundance. Default ``None``
-
-        '''
 
         super(Isotope, self).__init__(
             name=molecule_name, **kwargs)  # initialize Molecule
@@ -135,84 +147,92 @@ class Isotope(Molecule):
 
 
 class ElectronicState(Isotope):
-    ''' 
-    Notes
-    -----
+    ''' Define an electronic state of an :py:class:`~radis.db.classes.Isotope` 
+    of a :py:class:`~radis.db.classes.Molecule` 
+
+    Parameters
+    ----------
+
+    molecule_name: str, int
+        molecule name, or HITRAN identifier
+
+    isotope: int
+        isotope number of the molecule (sorted by abundance on Earth, HITRAN
+        convention).
+
+    state: str
+        Electronic state name
+
+    term_symbol: str
+        Term symbol. Default ''
+
+    g_e: int
+        Degeneracy. Default ``None``
+
+    spectroscopic_constants: dict
+        spectroscopic constants for given (molecule, isotope, electronic state)
+        Expected:
+            
+            Yij: cm-1
+                rovibrational coefficients in Dunham convention
+            
+        or
+        
+            wexe, Be, etc. : cm-1
+                rovibrational coefficients in Herzberg convention
+            
+        or 
+                  
+            Te: cm-1
+                electronic energy. Default ``None`` if not given
+                
+        The default RADIS :ref:`spectroscopic constants <label_db_spectroscopic_constants>` 
+        can be used, but others can be supplied too.
+
+    Erovib: function
+        Rovibrational energy of the molecule. Accessible with, typically, Mol.Erovib(v,J)
+
+    Ehaj: function
+        To return vibrational energy in harmonic and anharmonic component, 
+        plus rotational energy. Used to build Treanor distributions
+
+    vmax, vmax_morse: int, or ``None``
+        maximum vibrational number (required for partition function calculation)
+        to be calculated with Dunham expansion, and Morse potential
+        If None, number will be infered from dissociation energy
+
+    Jmax: int, or ``None``
+        maximum rotational number (required for partition function calculation)
+        If None, number will be infered from dissociation energy
+
+    Ediss: cm-1
+        dissociation energy. Required for partition function calculation 
+        if neither vmax nor Jmax are given
+
+    kwargs: **dict
+        forwarded to parent class
+
+    See Also
+    --------
     
-    To allow for more flexibility, ElectronicState should also inherit from some 
-    built-in Symmetry / species class, Sigma / Pi / Delta etc... where the energy 
-    is calculated appropriately.  (ex: Rigid Rotor, Symmetric Top etc.)
+    :py:class:`~radis.db.classes.Isotope`, :py:class:`~radis.db.classes.Molecule`,
+    :py:func:`~radis.db.molecules.getMolecule`
 
     '''
-    # TODO : see above (major code rewritting...)
+
+    #''' 
+    # TODO
+    #To allow for more flexibility, ElectronicState should also inherit from some 
+    #built-in Symmetry / species class, Sigma / Pi / Delta etc... where the energy 
+    #is calculated appropriately.  (ex: Rigid Rotor, Symmetric Top etc.)
+
+    # (major code rewritting ahead...)
     # That should be part of RADIS extension to non Sigma electronic states. 
 
 
     def __init__(self, molecule_name, isotope, state, term_symbol='',
                  g_e=None, spectroscopic_constants={}, Erovib=None, Ehaj=None,
                  vmax=None, vmax_morse=None, Jmax=None, Ediss=None, **kwargs):
-        ''' Define an electronic state of an isotope of a molecule
-
-        Parameters
-        ----------
-
-        molecule_name: str, int
-            molecule name, or HITRAN identifier
-
-        isotope: int
-            isotope number of the molecule (sorted by abundance on Earth, HITRAN
-            convention).
-
-        state: str
-            Electronic state name
-
-        term_symbol: str
-            Term symbol. Default ''
-
-        g_e: int
-            Degeneracy. Default ``None``
-
-        spectroscopic_constants: dict
-            spectroscopic constants for given (molecule, isotope, electronic state)
-            Expected:
-                
-                Yij: cm-1
-                    rovibrational coefficients in Dunham convention
-                
-            or
-            
-                wexe, Be, etc. : cm-1
-                    rovibrational coefficients in Herzberg convention
-                
-            or 
-                      
-                Te: cm-1
-                    electronic energy. Default ``None`` if not given
-
-        Erovib: function
-            Rovibrational energy of the molecule. Accessible with, typically, Mol.Erovib(v,J)
-
-        Ehaj: function
-            To return vibrational energy in harmonic and anharmonic component, 
-            plus rotational energy. Used to build Treanor distributions
-
-        vmax, vmax_morse: int, or ``None``
-            maximum vibrational number (required for partition function calculation)
-            to be calculated with Dunham expansion, and Morse potential
-            If None, number will be infered from dissociation energy
-
-        Jmax: int, or ``None``
-            maximum rotational number (required for partition function calculation)
-            If None, number will be infered from dissociation energy
-
-        Ediss: cm-1
-            dissociation energy. Required for partition function calculation 
-            if neither vmax nor Jmax are given
-
-        kwargs: **dict
-            forwarded to parent class
-
-        '''
 
         super(ElectronicState, self).__init__(molecule_name=molecule_name,
                                               isotope=isotope, **kwargs)    # initialize Isotope
@@ -224,8 +244,8 @@ class ElectronicState(Isotope):
 
         self._parse_rovib_constants(spectroscopic_constants)
 
-        self.Erovib = None   #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
-        self.Ehaj = None     #: func: overwrittenwww by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
+#        self.Erovib = None   #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
+        self.Ehaj = None     #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
         self._assign_E(Erovib, Ehaj)
         self.state = state
         self.vmax = vmax
@@ -274,6 +294,9 @@ class ElectronicState(Isotope):
         based on which convention is used for spectroscopic coefficients 
         (Dunham, or Herzberg)
         
+        Replaces the :py:meth:`~radis.db.classes.ElectronicState.Erovib` template
+        with the appropriate function for this molecule / isotope / electronic state.
+        
         Default methods only work for diatomic molecules. For polyatomic molecules,
         you should give the energy function directly (see how CO2 is defined in 
         radis.db.molecules.py) 
@@ -301,6 +324,7 @@ class ElectronicState(Isotope):
             # Autofind which energy model to use for the given molecule
             c = self.rovib_constants
             if len(c) == 0:
+                pass    # keep the default function, that will raise an error on first call.
                 self.Erovib = self._E_None
                 if self.verbose>=2:
                     print('{0}: No rovibconstants found'.format(
@@ -336,14 +360,100 @@ class ElectronicState(Isotope):
                                                   'constants defined for {0}. '.format(self.name)+\
                                                   'You still define your own Erovib function '+\
                                                   'and overwrite the ElectronicState class one.')
-                    
-                
-    def _E_None(self, *args, **kwargs):
-        ''' Rovibrational Energy '''
-        raise NotImplementedError('No spectroscopic coefficients given for '+\
-                                  'molecule {0}'.format(self.get_fullname()))
+                        
+    def Erovib(self, v, J, remove_ZPE=True):
+        ''' Calculate rovibrational energy of molecule 
+        
+        .. math::
+            
+            E(v,J) = G(v) + F(v,J)
+            
+        Works with Herzberg convention for the spectroscopic coefficients used 
+        in :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv` ::
+        
+        Parameters
+        ----------
+
+        v: int
+            vibrational state 
+            For polyatomic molecules, use ``v1, v2, v3, etc.`` instead of ``v``. 
+        
+        J: int
+            rotational state
+
+        remove_ZPE: boolean
+            if ``True``, removes energy of v=0,J=0 vibrational level (zero-point-energy)
+            Default ``True``
+
+        Returns
+        -------
+
+        energy of state in cm-1 
+        
+        Notes
+        -----
+        
+        Method is overwritten on molecule creation for polyatomic molecules. 
+        Refer to the correct method below: 
+            
+        - CO2: :py:func:`~radis.levels.energies_co2.EvJ_co2`
+        
+        
+        See Also
+        --------
+
+        :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv`
+
+        
+        '''
+        
+        raise NotImplementedError('Rovibrational energy not implemented for {0}'.format(
+                self.get_fullname))  # @dev: see radis.db.classes.ElectronicState._assign_E
         
     def _Erovib_default_coefs(self, *args, **kwargs):
+        ''' Calculate rovibrational energy of molecule 
+        
+        .. math::
+            
+            E(v,J) = G(v) + F(v,J)
+            
+        Works with Herzberg convention for the spectroscopic coefficients used 
+        in :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv` ::
+        
+        Parameters
+        ----------
+
+        v: int
+            vibrational state 
+            For polyatomic molecules, use ``v1, v2, v3, etc.`` instead of ``v``. 
+        
+        J: int
+            rotational state
+
+        remove_ZPE: boolean
+            if ``True``, removes energy of v=0,J=0 vibrational level (zero-point-energy)
+            Default ``True``
+
+        Returns
+        -------
+
+        energy of state in cm-1 
+        
+        Notes
+        -----
+        
+        Method is overwritten on molecule creation for polyatomic molecules. 
+        Refer to the correct method below: 
+            
+        - CO2: :py:func:`~radis.levels.energies_co2.EvJ_co2`
+        
+        
+        See Also
+        --------
+
+        :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv`
+
+        '''
         assert 'coeff_dict' not in kwargs
         kwargs.update({'coeff_dict':self.rovib_constants})
         
@@ -359,6 +469,7 @@ class ElectronicState(Isotope):
         return self._Ehaj(*args, **kwargs)
         
     def _E_Dunham(self, v, J, remove_ZPE=True):
+        # TODO: move in levels.energies as was done for CO2
         
         c = self.rovib_constants
         
@@ -370,6 +481,7 @@ class ElectronicState(Isotope):
         return EvJ(v, J, **c) - ZPE
         
     def _E_Herzberg(self, v, J, remove_ZPE=True):
+        # TODO: move in levels.energies as was done for CO2
         ''' Calculate rovibrational energy of molecule 
         
         .. math::
@@ -378,8 +490,6 @@ class ElectronicState(Isotope):
             
         Works with Herzberg convention for the spectroscopic coefficients used 
         in :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv` ::
-            
-            
         
         Only works for diatomic molecules. Method should be overwritten on molecule
         creation for other molecules 
@@ -555,3 +665,14 @@ class ElectronicState(Isotope):
             term = term.replace(k, v)
             
         return state+term
+    
+    
+    
+
+# %% Test
+
+
+if __name__ == '__main__':
+    
+    from radis.test.db.test_molecules import _run_testcases
+    print(('Testing molecules.py', _run_testcases()))

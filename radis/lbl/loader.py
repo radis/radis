@@ -66,7 +66,7 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # cache files
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-from radis.db import MolParams
+from radis.db.molparam import MolParams
 from radis.io.cdsd import cdsd2df
 from radis.io.hitran import hit2df, get_molecule, parse_global_quanta, parse_local_quanta
 #from radis.io.hitran import hit2dfTAB
