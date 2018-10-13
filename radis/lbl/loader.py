@@ -1097,6 +1097,12 @@ class DatabankLoader(object):
             if ``True``, Spectrum are read and written in binary format. This is faster,
             and takes less memory space. Default ``True``
 
+        Returns
+        -------
+        
+        db: SpecDatabase
+            the database where spectra will be stored or retrieved
+
         '''
 
         db = SpecDatabase(path, add_info=add_info, add_date=add_date, binary=compress)
@@ -2008,4 +2014,5 @@ class DatabankLoader(object):
 
 if __name__ == '__main__':
 
-    pass
+    from radis.test.lbl.test_loader import _run_testcases
+    print('Testing loading functions:', _run_testcases())
