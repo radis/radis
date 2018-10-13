@@ -325,7 +325,6 @@ class ElectronicState(Isotope):
             c = self.rovib_constants
             if len(c) == 0:
                 pass    # keep the default function, that will raise an error on first call.
-                self.Erovib = self._E_None
                 if self.verbose>=2:
                     print('{0}: No rovibconstants found'.format(
                             self.get_fullname()))
