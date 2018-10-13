@@ -50,12 +50,8 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
     s.apply_slit(0.5, 'nm')
     s.plot('radiance')
 
-.. only:: html 
-    .. figure:: examples/co_spectrum_1000K.png
-       :scale: 20 %
-
-.. only:: not html 
-    .. figure:: examples/co_spectrum_1000K.png
+.. figure:: examples/co_spectrum_1000K.png
+    :scale: 20 %
 
 Calculate a CO *nonequilibrium* spectrum from the HITRAN database
 (on your first call, this will calculate and cache the CO(X) rovibrational
