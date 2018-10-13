@@ -29,6 +29,8 @@ Typical results on an XPS 15 laptop here::
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from radis import SpectrumFactory, Spectrum, plot_diff
 from radis.io.hapi import (fetch_by_ids, fetch, absorptionCoefficient_Voigt, db_begin, 
                                 tableList, VARIABLES, ISO_ID)
@@ -64,8 +66,8 @@ if __name__ == '__main__':
     
     
     # Print our HWHM for comparison (a posteriori)
-    print('HWHM max {0:.2f} cm-1'.format(sf.df1.fwhm_voigt.max()/2))
-    print('WavenumberWingHW/HWHM', int(sf.params.broadening_max_width/(sf.df1.fwhm_voigt.max()/2)))
+    print(('HWHM max {0:.2f} cm-1'.format(sf.df1.fwhm_voigt.max()/2)))
+    print(('WavenumberWingHW/HWHM', int(sf.params.broadening_max_width/(sf.df1.fwhm_voigt.max()/2))))
     assert (int(sf.params.broadening_max_width/(sf.df1.fwhm_voigt.max()/2))) == benchmark_line_brd_ratio
     
     
@@ -93,14 +95,14 @@ if __name__ == '__main__':
     t0 = time()
     nu, coef = calc_hapi()
     t0 = time() - t0
-    print('Calculated with HAPI in {0:.2f}s'.format(t0))
+    print(('Calculated with HAPI in {0:.2f}s'.format(t0)))
     
     s_hapi = Spectrum.from_array(nu, coef, 'abscoeff', waveunit='cm-1', unit='cm-1')
     s_hapi.name = 'HAPI ({0:.1f}s)'.format(t0)
     
     plot_diff(s_hapi, s, 'abscoeff')
     
-    print('Calculated with RADIS in {0:.2f}s'.format(s.conditions['calculation_time']))
-    print('Number of lines in RADIS:', len(sf.df0))
+    print(('Calculated with RADIS in {0:.2f}s'.format(s.conditions['calculation_time'])))
+    print(('Number of lines in RADIS:', len(sf.df0)))
     
 #    plt.savefig('radis_vs_hapi_test_large_ch4.pdf')

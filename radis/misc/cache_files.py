@@ -28,7 +28,9 @@ See Also
 # https://gist.github.com/gansanay/4514ec731da1a40d8811a2b3c313f836
 # and pd.read_feather(file, nthreads=3)
 
-from __future__ import absolute_import, unicode_literals, print_function, division
+from __future__ import absolute_import, print_function, division
+# Note: don't import unicode_literals because it breaks the df.to_hdf of 
+# save_to_hdf because of a stupid unicode/str error in Python 2.7
 import os
 import h5py
 import radis
