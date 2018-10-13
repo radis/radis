@@ -484,8 +484,8 @@ In :func:`~radis.spectrum.compare.plot_diff`, you can choose to plot the absolut
     from radis import plot_diff
     plot_diff(s_cdsd, s_hitemp, method=['diff', 'ratio']) 
 
-.. image:: ./cdsd4000_vs_hitemp_3409K.svg
-    :alt: Figure CO2 CDSD-4000 vs HITEMP-2010
+.. image:: ./cdsd4000_vs_hitemp_3409K.*
+    :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
 
 
