@@ -153,7 +153,8 @@ def test_compare_torch_CO2(verbose=True, plot=False, save=False, warnings=True,
         slabsco = sfco.non_eq_spectrum(list(conds.T_K), list(conds.T_K), mole_fraction=list(conds.CO), path_length=slab_width)
     
         # Room absorption
-        s0 = sf.eq_spectrum(Tgas=300, mole_fraction=330e-6, path_length=600)[0]
+        with pytest.warns(UserWarning):   # we expect a "using ParallelFactory for single case" warning
+            s0 = sf.eq_spectrum(Tgas=300, mole_fraction=330e-6, path_length=600)[0]
         # Warning: This slab includes the CO2 emission from the 300 K air
         # within the spectrometer. But experimentally it is substracted
         # by there the chopper (this is corrected below)

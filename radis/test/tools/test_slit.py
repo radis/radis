@@ -532,6 +532,7 @@ def test_auto_correct_dispersion(f=750, phi=-6, gr=2400,
 
     from radis.test.utils import getTestFile
     from publib import set_style, fix_style
+    from radis.misc.warning import SlitDispersionWarning
     
     if plot:
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
@@ -559,7 +560,8 @@ def test_auto_correct_dispersion(f=750, phi=-6, gr=2400,
     
     # Compare 2 spectra
         s.plot(nfig='Linear dispersion effect', color='r', label='not corrected')
-    s.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
+    with pytest.warns(SlitDispersionWarning):   # expect a "large slit dispersion" warning
+        s.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
     if plot:
         s.plot(nfig='same', color='k', label='corrected')
         plt.legend()
@@ -657,38 +659,38 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
 
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
-    # Validation
-    test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
-                                     *args, **kwargs)
-    
-    # Different modes
-    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, 
-                            *args, **kwargs)
-    
-    # Resampling
-    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, 
-                                  *args, **kwargs)
-    
-    # Linear dispersion
-    test_linear_dispersion_effect(plot=plot, close_plots=close_plots, verbose=verbose, 
-                                  *args, **kwargs)
+#    # Validation
+#    test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
+#                                     *args, **kwargs)
+#    
+#    # Different modes
+#    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, 
+#                            *args, **kwargs)
+#    
+#    # Resampling
+#    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, 
+#                                  *args, **kwargs)
+#    
+#    # Linear dispersion
+#    test_linear_dispersion_effect(plot=plot, close_plots=close_plots, verbose=verbose, 
+#                                  *args, **kwargs)
     test_auto_correct_dispersion(plot=plot, close_plots=close_plots, verbose=verbose, 
                                  *args, **kwargs)
     
-    
-    # Different shapes
-    test_all_slit_shapes(plot=plot, close_plots=close_plots,
-                         verbose=verbose, *args, **kwargs)
-    
-    # Units
-    test_slit_unit_conversions_spectrum_in_cm(
-        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
-    test_slit_unit_conversions_spectrum_in_nm(
-        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
-    test_convoluted_quantities_units(*args, **kwargs)
-    
-    
-    test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
+#    
+#    # Different shapes
+#    test_all_slit_shapes(plot=plot, close_plots=close_plots,
+#                         verbose=verbose, *args, **kwargs)
+#    
+#    # Units
+#    test_slit_unit_conversions_spectrum_in_cm(
+#        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
+#    test_slit_unit_conversions_spectrum_in_nm(
+#        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
+#    test_convoluted_quantities_units(*args, **kwargs)
+#    
+#    
+#    test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 
