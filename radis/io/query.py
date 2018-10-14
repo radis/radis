@@ -23,7 +23,7 @@ from __future__ import print_function
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.misc import is_float
 from astroquery.hitran import read_hitran_file, cache_location, download_hitran
-from os.path import join
+from os.path import join, isfile
 import numpy as np
 import pandas as pd
 
@@ -58,7 +58,7 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
     ----------
 
     .. [1] `Astroquery <https://astroquery.readthedocs.io>`_ 
-
+    
     See Also
     --------
     
@@ -124,7 +124,9 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
                       }
 
     if not empty_range:
-        tbl = read_hitran_file(join(cache_location, molecule+'.data'))
+        filename = join(cache_location, molecule+'.data')
+        _fix_astroquery_file_format(filename)
+        tbl = read_hitran_file(filename)
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)
     else:
@@ -145,6 +147,28 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
 
     return df
 
+def _fix_astroquery_file_format(filename):
+    '''
+    Notes
+    -----
+    
+    On some OS the astroquery lookup function may add extra lines. See:
+    https://github.com/astropy/astroquery/issues/1189
+    
+    In the meantime, we discard all empty lines here
+    
+    '''
+
+    if not isfile(filename):
+        raise("{} does not exist ".format(filename))
+    with open(filename) as filehandle:
+        lines = filehandle.readlines()
+        non_empty_lines = [l for l in lines if len(l) > 1]
+
+    if len(lines) != len(non_empty_lines):
+        # Re-write file    
+        with open(filename, 'w') as filehandle:            
+            filehandle.writelines(non_empty_lines)   
 
 if __name__ == '__main__':
     from radis.test.io.test_query import _run_testcases
