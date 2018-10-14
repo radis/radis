@@ -93,7 +93,7 @@ No installation needed. For instance, run the Quick Start example on the link be
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
 
-
+---------------------------------------------------------------------
 
 ==================
 User documentation
@@ -191,6 +191,8 @@ Examples
    examples
 
    
+---------------------------------------------------------------------
+
 ===============
 Developer Guide
 ===============
@@ -211,6 +213,7 @@ Tests
    
    dev/test
    
+---------------------------------------------------------------------
 
 ==========
 References
@@ -240,15 +243,19 @@ The code is available for use and modifications on `GitHub <https://github.com/r
 under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
 i.e., that modifications must remain public and under LGPLv3. 
 
-Cite this work
---------------
+Cite
+----
 
-[RADIS-2018]_
+If using RADIS for your work, cite the line-by-line code as [RADIS-2018]_, alongside the references of the line databases 
+used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
+
+If running nonequilibrium calculations, do not forget to mention the reference of the spectroscopic constants used 
+in the calculatation of the rovibrational energies (for instance, see the 
+:ref:`references for the RADIS built-in constants <_label_db_spectroscopic_constants>`)
 
 
-=====================
 Access Module Methods
-=====================
+---------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
