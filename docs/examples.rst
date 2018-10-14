@@ -117,6 +117,13 @@ For example, run the Quick Start :ref:`first example <label_first_example>` by c
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
 
+Or start a bare RADIS online session:
+    
+.. image:: https://mybinder.org/badge.svg 
+    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+
+    
 The full list on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
 
 

@@ -24,6 +24,11 @@
     :target: https://radis.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
+.. image:: https://mybinder.org/badge.svg 
+    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+
+    
     
 Description
 -----------
@@ -64,7 +69,7 @@ A `3-temperature fit <http://radis.readthedocs.io/en/latest/#multi-temperature-f
 .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
 
 Interactive RADIS sessions can be run directly from the Browser, without installing Python. 
-For instance:
+For instance, run the Quick Start example online:
 
 .. image:: https://mybinder.org/badge.svg 
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
