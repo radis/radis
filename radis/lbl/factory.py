@@ -131,9 +131,11 @@ class SpectrumFactory(BandFactory):
         path length in cm. Default 1.
 
     molecule: int, str, or ``None``
-        molecule id (HITRAN format) or name. If None, the molecule is infered
-        from the database files being loaded. It is just good practice to fill
-        it. Default ``None``.
+        molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
+        from the database files being loaded. See the list of supported molecules 
+        in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
+        and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`. 
+        Default ``None``. 
 
     isotope: int, list, str of the form '1,2', or 'all'
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).

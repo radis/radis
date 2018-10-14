@@ -946,7 +946,11 @@ def get_molecule_identifier(molecule_name):
     # Invert the dictionary.
     trans = {v: k for k, v in trans.items()}
 
-    return int(trans[molecule_name])
+    try:
+        return int(trans[molecule_name])
+    except KeyError:
+        raise NotImplementedError("Molecule '{0}' not supported. Choose one of {1}".format(
+                                    molecule_name, list(trans.keys())))
 
 
 def get_molecule(molecule_id):
@@ -985,7 +989,11 @@ def get_molecule(molecule_id):
              '41': 'CH3CN', '42': 'CF4',  '43': 'C4H2',   '44': 'HC3N',
              '45': 'H2',   '46': 'CS',   '47': 'SO3'}
 
-    return trans[id]
+    try:
+        return trans[id]
+    except KeyError:
+        raise NotImplementedError("Molecule ID '{0}' unknown. Choose one of {1}".format(
+                                    molecule_id, trans))
 
 # ======================================================
 # %% Test
