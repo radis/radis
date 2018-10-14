@@ -76,14 +76,19 @@ def test_broadening(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
         wstep=wstep,
         pressure=p,
         broadening_max_width=broadening_max_width,
-                         isotope=[1])  # 0.2)
+        isotope=[1],
+        warnings={'MissingSelfBroadeningWarning':'ignore',
+                  'NegativeEnergiesWarning':'ignore',
+                  'HighTemperatureWarning':'ignore',
+                  'GaussianBroadeningWarning':'ignore'}
+        )  # 0.2)
     sf.load_databank('HITRAN-CO-TEST')
 #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
     s = sf.eq_spectrum(Tgas=T, name='RADIS')
     
     
     if plot:  # plot broadening of line of largest linestrength
-        sf.plot_broadening(i=sf.df1.S.argmax())
+        sf.plot_broadening(i=sf.df1.S.idxmax())
 
     # Plot and compare
     res = abs(get_residual_integral(s, s_hapi, 'abscoeff'))
@@ -129,6 +134,10 @@ def test_voigt_broadening_methods(verbose=True, plot=False, *args, **kwargs):
             broadening_max_width=broadening_max_width,
             isotope='1',
             verbose=False,
+            warnings={'MissingSelfBroadeningWarning':'ignore',
+                      'NegativeEnergiesWarning':'ignore',
+                      'HighTemperatureWarning':'ignore',
+                      'GaussianBroadeningWarning':'ignore'}
             )  # 0.2)
         sf.load_databank('HITRAN-CO-TEST')
     #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
@@ -190,7 +199,8 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
         sf.warnings.update({
             'MissingSelfBroadeningWarning': 'ignore',
             'NegativeEnergiesWarning': 'ignore',
-            'LinestrengthCutoffWarning': 'ignore'})
+            'LinestrengthCutoffWarning': 'ignore',
+            'HighTemperatureWarning':'ignore'})
         sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
 #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
         sf._export_continuum = True   # activate it 
@@ -269,7 +279,8 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         sf.warnings.update({
             'MissingSelfBroadeningWarning': 'ignore',
             'NegativeEnergiesWarning': 'ignore',
-            'LinestrengthCutoffWarning': 'ignore'})
+            'LinestrengthCutoffWarning': 'ignore',
+            'HighTemperatureWarning':'ignore'})
         sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
 #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
         sf._export_continuum = True   # activate it 
@@ -316,11 +327,11 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
     # Test broadening
     test_broadening(plot=plot, verbose=verbose, *args, **kwargs)
-    test_voigt_broadening_methods(plot=plot, verbose=verbose, *args, **kwargs)
-
-    # Test pseudo-continuum
-    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
-    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_voigt_broadening_methods(plot=plot, verbose=verbose, *args, **kwargs)
+#
+#    # Test pseudo-continuum
+#    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 

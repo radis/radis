@@ -2966,7 +2966,7 @@ class BaseFactory(DatabankLoader):
             
             error = df.S[b].sum()/df.S.sum()*100
 
-            if verbose:
+            if verbose>=2:
                 print('Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))'.format(
                     Nlines_cutoff/len(df.S)*100, cutoff) +
                     ' Estimated error: {0:.2f}%, Expected time saved: {1:.1f}s'.format(
@@ -3092,17 +3092,32 @@ class BaseFactory(DatabankLoader):
                 # ... Reset it
                 parsum.reset_populations()
 
-    def _check_inputs(self, mole_fraction):
-        ''' Check spectrum inputs, add warnings if suspicious values
+    def _check_inputs(self, mole_fraction, Tmax):
+        ''' Check spectrum inputs, add warnings if suspicious values. 
+        
+        Also check that line databases look appropriate for the temperature Tmax
+        considered
+
+        Parameters
+        ----------
+        
+        Tmax: float
+            Tgas at equilibrium, or max(Tgas, Tvib, Trot) at nonequilibrium
 
         '''
 
-        # Check variables
+        # Check mole fractions
         if mole_fraction is None:
             raise ValueError('Set mole_fraction')
         if mole_fraction > 1:
             self.warn('mole_fraction is > 1',
                       'InputConditionsWarning')
+
+        # Check temperature range
+        if Tmax > 700 and self.params.dbformat in ['hitran', 'hitran_tab']:
+            self.warn("HITRAN is valid for low temperatures (typically < 700 K). "+\
+                 "For higher temperatures you may need HITEMP or CDSD. See the "+\
+                 "'databank=' parameter", "HighTemperatureWarning")
 
     def plot_populations(self, what='vib', isotope=None, nfig=None):
         ''' Plot populations currently calculated in factory.
@@ -3162,7 +3177,6 @@ class BaseFactory(DatabankLoader):
             else:
                 raise ValueError('either g, or gvib+grot must be defined to ' +
                                  'calculate total degeneracy. Got: {0}'.format(list(levels.keys())))
-
 
         # Plot
         set_style('origin')

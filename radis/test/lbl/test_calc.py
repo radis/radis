@@ -117,7 +117,10 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
                           cutoff=1e-25,
                           use_cached=True,
                           medium='vacuum',
-                          verbose=verbose)
+                          verbose=verbose,
+                          warnings={'MissingSelfBroadeningWarning':'ignore',
+                                    'NegativeEnergiesWarning':'ignore',
+                                    'HighTemperatureWarning':'ignore'})
         s.apply_slit((2, 2.5), 'nm', shape='trapezoidal')
 
         if plot:
@@ -195,7 +198,10 @@ def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
                           cutoff=1e-25,
                           use_cached=True,
                           medium='vacuum',
-                          verbose=verbose)
+                          verbose=verbose,
+                          warnings={'MissingSelfBroadeningWarning':'ignore',
+                                    'NegativeEnergiesWarning':'ignore',
+                                    'HighTemperatureWarning':'ignore'})
         s.apply_slit((2, 2.5), 'nm', shape='trapezoidal')
 
         if plot:
@@ -262,6 +268,7 @@ def test_all_calc_methods(verbose=True, plot=False, warnings=True, rtol=1e-3,
             verbose=verbose)
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         sf.warnings['NegativeEnergiesWarning'] = 'ignore'
+        sf.warnings['HighTemperatureWarning'] = 'ignore'
 #        sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
         sf.load_databank('CDSD-HITEMP-PC')
 
@@ -333,6 +340,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True,
             verbose=verbose)
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         sf.warnings['NegativeEnergiesWarning'] = 'ignore'
+        sf.warnings['HighTemperatureWarning'] = 'ignore'
         sf.fetch_databank()   # uses HITRAN: not really valid at this temperature, but runs on all machines without install
 #        sf.load_databank('HITEMP-CO2-DUNHAM')
         s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name='Non-eq')

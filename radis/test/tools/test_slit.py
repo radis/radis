@@ -20,7 +20,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 #from radis.lbl import SpectrumFactory
-from radis.spectrum.spectrum import calculated_spectrum, transmittance_spectrum
+from radis.spectrum.models import calculated_spectrum, transmittance_spectrum
 from radis.tools.database import load_spec
 from radis.tools.slit import (import_experimental_slit, convolve_with_slit,
                               get_FWHM, get_effective_FWHM)
@@ -461,7 +461,11 @@ def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
 @pytest.mark.fast
 def test_linear_dispersion_effect(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' A test case to show the effect of wavelength dispersion (cf spectrometer
-    reciprocal function) on the slit function '''
+    reciprocal function) on the slit function
+    
+    Test succeeds if a :py:data:`~radis.misc.warning.SlitDispersionWarning` 
+    is correctly triggered
+    '''
 
     from radis.test.utils import getTestFile
     from publib import set_style, fix_style
@@ -480,19 +484,22 @@ def test_linear_dispersion_effect(verbose=True, plot=True, close_plots=True, *ar
         plt.plot(w_slit, I_slit, '--k', label='Exp: FWHM @{0}nm: {1:.3f} nm'.format(632.8,
                                                                                     get_effective_FWHM(w_slit, I_slit)))
 
-    # Test how slit function FWHM scales with linear_dispersion
-    for w0, FWHM in zip([380, 1000, 4200, 5500],
-                        [0.396, 0.388, 0.282, 0.188]):
-        w, I = dirac(w0)
-
-        wc, Ic = convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
-                                    slit_dispersion=linear_dispersion,
-                                    verbose=False)
-        assert np.isclose(FWHM, get_effective_FWHM(wc, Ic), atol=0.001)
-
-        if plot:
-            plt.plot(wc, Ic, label='FWHM @{0:.2f} nm: {1:.3f} nm'.format(w0,
-                                                                         get_effective_FWHM(wc, Ic)))
+    from radis.misc.warning import SlitDispersionWarning
+    with pytest.warns(SlitDispersionWarning):   # expect a "large slit dispersion" warning
+        
+        # Test how slit function FWHM scales with linear_dispersion
+        for w0, FWHM in zip([380, 1000, 4200, 5500],
+                            [0.396, 0.388, 0.282, 0.188]):
+            w, I = dirac(w0)
+    
+            wc, Ic = convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
+                                        slit_dispersion=linear_dispersion,
+                                        verbose=False)
+            assert np.isclose(FWHM, get_effective_FWHM(wc, Ic), atol=0.001)
+    
+            if plot:
+                plt.plot(wc, Ic, label='FWHM @{0:.2f} nm: {1:.3f} nm'.format(w0,
+                                                                             get_effective_FWHM(wc, Ic)))
 
     if plot:
         plt.xlabel('Wavelength (nm)')
@@ -500,7 +507,7 @@ def test_linear_dispersion_effect(verbose=True, plot=True, close_plots=True, *ar
         plt.legend(loc='best', prop={'size': 15})
         fix_style('article')
 
-    return True  # nothing defined yet
+    return True
 
 
 @pytest.mark.fast

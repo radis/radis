@@ -12,9 +12,6 @@ with any unit
 Routine Listings
 ----------------
 
-:func:`~radis.spectrum.spectrum.calculated_spectrum`,
-:func:`~radis.spectrum.spectrum.experimental_spectrum`,
-:func:`~radis.spectrum.spectrum.transmittance_spectrum`,
 :func:`~radis.spectrum.spectrum.is_spectrum`
 
 
@@ -160,7 +157,7 @@ class Spectrum(object):
 
     Any tuple of numpy arrays (w, I) can also be converted into a Spectrum object
     from the :class:`~radis.spectrum.spectrum.Spectrum` class directly, or using 
-    the :func:`~radis.spectrum.spectrum.calculated_spectrum` function. 
+    the :func:`~radis.spectrum.models.calculated_spectrum` function. 
     All the following methods are equivalent::
 
         from radis import Spectrum, calculated_spectrum
@@ -212,9 +209,9 @@ class Spectrum(object):
     See Also
     --------
 
-    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-    :func:`~radis.spectrum.spectrum.experimental_spectrum`
+    :func:`~radis.spectrum.models.calculated_spectrum`, 
+    :func:`~radis.spectrum.models.transmittance_spectrum`, 
+    :func:`~radis.spectrum.models.experimental_spectrum`
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
@@ -373,9 +370,9 @@ class Spectrum(object):
         See Also
         --------
 
-        :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-        :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-        :func:`~radis.spectrum.spectrum.experimental_spectrum`
+        :func:`~radis.spectrum.models.calculated_spectrum`, 
+        :func:`~radis.spectrum.models.transmittance_spectrum`, 
+        :func:`~radis.spectrum.models.experimental_spectrum`
         :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
         :func:`~radis.tools.database.load_spec`
         """
@@ -473,9 +470,9 @@ class Spectrum(object):
         See Also
         --------
 
-        :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-        :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-        :func:`~radis.spectrum.spectrum.experimental_spectrum`,
+        :func:`~radis.spectrum.models.calculated_spectrum`, 
+        :func:`~radis.spectrum.models.transmittance_spectrum`, 
+        :func:`~radis.spectrum.models.experimental_spectrum`,
         :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
         :func:`~radis.tools.database.load_spec`
 

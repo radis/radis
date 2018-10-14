@@ -422,6 +422,15 @@ def list_if_float(a):
     else:
         return [a]
 
+def flatten(*args):
+    ''' Flatten list of lists of floats '''
+    out = []
+    for a in args:
+        if is_list(a):
+            out += list(a)
+        else:
+            out += [a]
+    return out
 
 def is_list(a):
     ''' Returns True if a has list-like type: list, np.array, tuple, set, etc.)'''

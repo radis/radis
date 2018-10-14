@@ -45,6 +45,7 @@ from numpy import exp, sqrt, trapz
 from numpy import log as ln
 from scipy.interpolate import splrep, splev
 from warnings import warn
+from radis.misc.warning import SlitDispersionWarning
 from radis.misc.arrays import evenly_distributed
 from radis.misc.basics import is_float
 from radis.misc.signal import resample_even
@@ -767,7 +768,8 @@ def offset_dilate_slit_function(w_slit_nm, I_slit, w_nm, slit_dispersion,
         if not 1-threshold < slit_dispersion(w_nm.max())/slit_dispersion(w_nm.min()) < 1+threshold:
             warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}nm'.format(
                 w_nm.min(), w_nm.max(), abs(slit_dispersion(w_nm.max())/slit_dispersion(w_nm.min())-1
-                                      )*100)+'. Consider splitting your spectrum')
+                                      )*100)+'. Consider splitting your spectrum',
+                SlitDispersionWarning)
 
     # Offset slit and correct for dispersion
     w_slit_nm = w0 + slit_dispersion(w0) / slit_dispersion(wslit0)*(w_slit_nm-wslit0)

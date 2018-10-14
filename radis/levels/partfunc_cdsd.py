@@ -131,6 +131,10 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
     isotope: int
         which isotope we're dealing with. Default 1
+        
+        .. warning::
+        
+            in the current implementation, 
 
     levelsfmt: ``'cdsd-p'``, ``'cdsd-pc'``, ``'cdsd-pcN'``, ``'cdsd-hamil'``, or ``None``
         the format of the Energy Database, and in particular how ``Evib`` and ``Erot``
@@ -162,14 +166,10 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
     Taskhkun database updated with ranking number (n) & total rank (N) of
     block, Evib and Erot (cm-1)  and jref
 
-    jref is the lowest rotational number for which Evib was calculated.
-    It should be 0 (so that Evib(p, c, j, n) = E(p, c, 0, n) but sometimes
-    a j=0 state is not present for a given (p, c, n) state. So Evib is
-    calculated using j=1 or j=2. It creates a small error!
-
-    This could be improved extrapolating the j=0 energy plotting all
-    E(p, c, j, n) = f_pcn(j)
-
+    Different strategies exist so as how to assign rotational and vibrational
+    energies in a CDSD database. See the E. Pannier "Limits on CO2 Nonequilibrium
+    model" article for a discussion on that.    
+    
     Example of table format::
 
         # calculated rovibrational energy levels of 12C16O2
@@ -285,16 +285,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             save_to_hdf(self.df, cachefile, metadata=metadata, version=radis.__version__,
                         key='df', overwrite=True, verbose=verbose)
 
-        # Placeholder: correct energies for isotope 2
-        # Note that this is done on loaded database, never on the saved file
-        if isotope == 2:
-            self.df.grot *= 2
-            if verbose:
-                print('Warning. Energies for isotope 2 are assumed to be equal '
-                      + 'to isotope 1 (degeneracy gs is still 2 instead of 1)')
-                # TODO. ask Tashkun for energy levels of all isotopes
-
-    def _add_degeneracies(self, df):
+    def _add_degeneracies(self, df, isotope):
         ''' Calculate and store degeneracies in database df
 
         Parameters
@@ -316,7 +307,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         # ... state dependant (forbidden rotational level are not in the database):
         gs = 1
         # ... state independant:
-        gi = 1             
+        gi = self.gi()
         grot = gj*gs*gi
 
         # Vibrational degeneracy
@@ -351,14 +342,6 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
                 'Unexpected viblvl_label value: {0}'.format(viblvl_label))
 
         return df
-
-#    def gvib(self):
-#        ''' Vibrational degeneracy
-#        1 in CDSD... but if using a HITRAN (v1v2'l2'v3) denomination remember
-#        that gvib = v2+1 for CO2
-#        '''
-#
-#        return 1
 
     def gs(self):
         from radis.db.degeneracies import gs

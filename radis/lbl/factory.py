@@ -82,7 +82,7 @@ from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_all_waveranges
 from radis.spectrum.spectrum import Spectrum
 from radis.spectrum.equations import calc_radiance
-from radis.misc.basics import is_float, list_if_float
+from radis.misc.basics import is_float, list_if_float, flatten
 from radis.phys.convert import conv2
 from radis.phys.constants import k_b
 from radis.phys.units import convert_rad2nm, convert_emi2nm
@@ -226,7 +226,18 @@ class SpectrumFactory(BandFactory):
         and slows the system down. Chunksize let you change the default chunck
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
-
+        
+    warnings: bool, or one of ``['warning', 'error', 'ignore']``, dict
+        If one of ``['warning', 'error', 'ignore']``, set the default behaviour
+        for all warnings. Can also be a dictionary to set specific warnings only.
+        Example::
+            
+            warnings = {'MissingSelfBroadeningWarning':'ignore',
+                        'NegativeEnergiesWarning':'ignore',
+                        'HighTemperatureWarning':'ignore'}
+            
+        See :py:data:`~radis.misc.warning.default_warning_status` for more 
+        information. 
 
     Examples
     --------
@@ -438,9 +449,11 @@ class SpectrumFactory(BandFactory):
         # (linestrength cutoff, broadening cutoff). These cannot be changed
         # from the Factory input, but can still be modified manually afterwards
         # TODO: replace everything with 'auto' modes.
-
+        
         # Set default behavior for warnings:
-        if warnings in [True, 'warning']:
+        if isinstance(warnings, dict):
+            self.warnings.update(warnings)
+        elif warnings in [True, 'warning']:
             self.warnings['default'] = 'warning'
         elif warnings == 'error':
             self.warnings['default'] = 'error'
@@ -556,7 +569,7 @@ class SpectrumFactory(BandFactory):
             verbose = self.verbose
 
             # Check variables
-            self._check_inputs(mole_fraction)
+            self._check_inputs(mole_fraction, max(flatten(Tgas)))
 
             # Retrieve Spectrum from database if it exists
             if self.autoretrievedatabase:
@@ -810,7 +823,7 @@ class SpectrumFactory(BandFactory):
             verbose = self.verbose
 
             # Check variables
-            self._check_inputs(mole_fraction)
+            self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
 
             # Retrieve Spectrum from database if it exists
             if self.autoretrievedatabase:

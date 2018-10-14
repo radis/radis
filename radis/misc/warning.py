@@ -12,6 +12,16 @@ from __future__ import absolute_import, unicode_literals, print_function, divisi
 import warnings
 from radis.misc.printer import printr
 
+# %% Spectrum warnings / errors
+# -----------------------------
+    
+class SlitDispersionWarning(UserWarning):
+    ''' Warning trigger if Slit dispersion is too large 
+    '''
+
+# %% Spectrum Factory warnings / errors
+# -------------------------------------
+
 # Errors
 
 class EmptyDatabaseError(ValueError):
@@ -37,6 +47,18 @@ class MemoryUsageWarning(UserWarning):
 
 class EmptyDatabaseWarning(UserWarning):
     ''' Trigger a warning if Line database is empty in the range considered '''
+    pass
+
+class OutOfRangeLinesWarning(UserWarning):
+    ''' Trigger a warning if out of range neighbouring lines, that could have 
+    an effect on the spectrume due to their broadening, cannot be found in the 
+    database '''
+    pass
+
+class HighTemperatureWarning(UserWarning):
+    ''' Warning triggered when the Line database seems inappropriate for the 
+    temperatures considered
+    '''
     pass
 
 
@@ -71,6 +93,8 @@ WarningClasses = {'default': UserWarning,
                   'VoigtBroadeningWarning': VoigtBroadeningWarning,
                   'MemoryUsageWarning': MemoryUsageWarning,
                   'EmptyDatabaseWarning': EmptyDatabaseWarning,
+                  'OutOfRangeLinesWarning': OutOfRangeLinesWarning,
+                  'HighTemperatureWarning': HighTemperatureWarning,
                   'NegativeEnergiesWarning': NegativeEnergiesWarning,
                   'MissingSelfBroadeningWarning': MissingSelfBroadeningWarning,
                   'LinestrengthCutoffWarning': LinestrengthCutoffWarning,
@@ -81,6 +105,11 @@ WarningClasses = {'default': UserWarning,
 
 You can selectively activate them by setting the warnings attribute of 
 :class:`radis.lbl.factory.SpectrumFactory` 
+
+See Also
+--------
+
+:py:data:`~radis.misc.warning.default_warning_status` 
 '''
 
 # Setup individual warnings. Value of keys can be:
@@ -98,6 +127,8 @@ default_warning_status = {
     'LinestrengthCutoffWarning': 'warn',
     'MemoryUsageWarning': 'warn',
     'EmptyDatabaseWarning': 'warn',
+    'OutOfRangeLinesWarning': 'warn',
+    'HighTemperatureWarning': 'warn',
     'NegativeEnergiesWarning': 'warn',    # warning if negative energies in database
     # warning if self-broadening abs coefficnet missing (Air is used instead)
     'MissingSelfBroadeningWarning': 'warn',
@@ -114,6 +145,13 @@ Value of keys can be:
 
 The key self.warnings['default'] will set the warning behavior for all
 other warnings
+
+See Also
+--------
+
+:py:data:`~radis.misc.warning.WarningClasses`, 
+:py:func:`~radis.misc.warning.reset_warnings`
+
 '''
 
 
@@ -136,7 +174,7 @@ def reset_warnings(status):
 
 def warn(message, category='default', status={}):
     ''' Trigger a warning, an error or just ignore based on the value defined
-    in the :attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
+    in the :py:attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
 
     The warnings can thus be deactivated selectively by setting the SpectrumFactory
      :attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute
@@ -183,3 +221,7 @@ def warn(message, category='default', status={}):
 # ... test warnings are well defined
 for k in default_warning_status.keys():
     assert k in WarningClasses
+
+# ... and reciprocally, but they all have a default value
+for k in WarningClasses.keys():
+    assert k in default_warning_status

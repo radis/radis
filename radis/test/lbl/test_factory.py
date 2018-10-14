@@ -250,7 +250,9 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
                              isotope=[1], db_use_cached=True,
                              broadening_max_width=10,
                              verbose=verbose)
-        sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
+        sf.warnings.update({'MissingSelfBroadeningWarning':'ignore',
+                            'OutOfRangeLinesWarning':'ignore',
+                            'HighTemperatureWarning':'ignore',})
         sf.load_databank('HITRAN-CO-TEST')
         unit = 'µW/sr/cm2'
         T = 600
@@ -307,6 +309,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
                              broadening_max_width=10,
                              verbose=verbose)
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
+        sf.warnings['GaussianBroadeningWarning'] = 'ignore'
         sf.load_databank('HITRAN-CO-TEST')
 
         # Calculate in Vacuum
@@ -337,7 +340,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
 
 
 def _run_testcases(plot=True, verbose=True, *args, **kwargs):
-
+#
     # Test power density
     test_power_integral(verbose=verbose, *args, **kwargs)
 
@@ -352,4 +355,5 @@ def _run_testcases(plot=True, verbose=True, *args, **kwargs):
 
 # --------------------------
 if __name__ == '__main__':
+    
     printm('Testing factory:', _run_testcases(verbose=True))

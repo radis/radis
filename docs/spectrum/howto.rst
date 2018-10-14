@@ -66,9 +66,9 @@ From a file, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
                                waveunit='nm', unit='mW/cm2/sr/nm')
 
 Convenience functions have been added to handle the usual cases: 
-:func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-:func:`~radis.spectrum.spectrum.transmittance_spectrum` and
-:func:`~radis.spectrum.spectrum.experimental_spectrum`::
+:func:`~radis.spectrum.models.calculated_spectrum`, 
+:func:`~radis.spectrum.models.transmittance_spectrum` and
+:func:`~radis.spectrum.models.experimental_spectrum`::
 
     # w, T, I are numpy arrays for wavelength, transmittance and radiance
     from radis import calculated_spectrum, transmittance_spectrum, experimental_spectrum

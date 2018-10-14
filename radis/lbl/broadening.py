@@ -704,7 +704,7 @@ class BroadenFactory(BaseFactory):
         if not 'Tdpsel' in list(df.keys()):
             self.warn('Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead',
                       'MissingSelfBroadeningWarning')
-            Tdpsel = None
+            Tdpsel = None     # if None, voigt_broadening_FWHM uses df.Tdpair
         else:
             Tdpsel = df.Tdpsel
 
@@ -809,11 +809,6 @@ class BroadenFactory(BaseFactory):
             line profile normalized with area = 1
 
         '''
-
-        # Check self broadening is here
-        if not 'Tdpsel' in list(dg.keys()):
-            warn('Self-broadening coefficient Tdpsel not given: used air Tdpair')
-            dg.Tdpsel = dg.Tdpair
 
         # Calculate broadening for all lines
         # -------

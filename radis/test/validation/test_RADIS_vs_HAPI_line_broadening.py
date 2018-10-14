@@ -119,6 +119,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
             db_use_cached=True,
             isotope=iso)  # 0.2)
         pl.warnings['MissingSelfBroadeningWarning'] = 'ignore'
+        pl.warnings['HighTemperatureWarning'] = 'ignore'
         pl.fetch_databank(format='hitran', load_energies=False)
     
         s = pl.eq_spectrum(Tgas=T)  # , Ttrans=300)

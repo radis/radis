@@ -57,6 +57,8 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
         lvl_use_cached=True,
         verbose=verbose)
     sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
+    sf.warnings['NegativeEnergiesWarning'] = 'ignore'
+    sf.warnings['HighTemperatureWarning'] = 'ignore'
     sf.fetch_databank()
 
     s_tot = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas)
@@ -100,4 +102,5 @@ def run_testcases(verbose=True, plot=False, warnings=True, *args, **kwargs):
 
 
 if __name__ == '__main__':
+
     printm('test_overp.py:', run_testcases(plot=True))

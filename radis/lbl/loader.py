@@ -1566,13 +1566,13 @@ class DatabankLoader(object):
             self.warn("There are not lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
                 wavenum_min, wavenum_min + broadening) + "to calculate the effect " +
                 "of neighboring lines. Did you add all lines in the database?",
-                "EmptyDatabaseWarning")
+                "OutOfRangeLinesWarning")
         if maxwavdb < wavenum_max - broadening:
             # no lines on right side
             self.warn("There are not lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
                 maxwavdb - broadening, maxwavdb) + "to calculate the effect " +
                 "of neighboring lines. Did you add all lines in the database?",
-                "EmptyDatabaseWarning")
+                "OutOfRangeLinesWarning")
 
         # Complete database with molecular parameters
         self._fetch_molecular_parameters(df)

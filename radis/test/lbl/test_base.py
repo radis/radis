@@ -140,8 +140,9 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
                              pseudo_continuum_threshold=0,
                              pressure=P,
                              verbose=False)
-        sf.fetch_databank('astroquery')
-#        sf.load_databank('HITEMP-CO2-DUNHAM')
+#        sf.fetch_databank('astroquery')
+        sf.warnings['NegativeEnergiesWarning'] = 'ignore'
+        sf.load_databank('HITEMP-CO2-TEST')
         pb = ProgressBar(3, active=verbose)
         s_eq = sf.eq_spectrum(Tgas=Tgas,  mole_fraction=1, 
                               name='Equilibrium')
@@ -251,6 +252,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
                              verbose=False)
 #        sf.fetch_databank('astroquery')
         sf.load_databank('HITEMP-CO2-TEST')
+        sf.warnings['NegativeEnergiesWarning'] = 'ignore'
+#        sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         pb = ProgressBar(3, active=verbose)
         s_eq = sf.eq_spectrum(Tgas=Tgas,  mole_fraction=1, 
                               name='Equilibrium')

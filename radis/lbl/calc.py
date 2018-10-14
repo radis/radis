@@ -25,7 +25,6 @@ from radis.phys.convert import nm2cm
 from radis.misc.utils import DatabankNotFound
 import numpy as np
 from numpy import exp, arange, allclose, abs, diff, zeros_like, ones_like
-from warnings import warn
 
 # %%
 
@@ -156,7 +155,9 @@ def calc_spectrum(wavenum_min=None,
         use cached files for line database and energy database. Default ``True``
 
     **kwargs: other inputs forwarded to SpectrumFactory
-        See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more details on input
+        For instance: ``warnings``. 
+        See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more 
+        details on input. 
 
     Example:
 
@@ -243,13 +244,6 @@ def calc_spectrum(wavenum_min=None,
 
     if Tvib is None and Trot is not None or Tvib is not None and Trot is None:
         raise ValueError('Choose both Tvib and Trot')
-        
-    if databank == 'fetch' and ((Tgas is not None and Tgas > 700) or 
-                                (Tvib is not None and Tvib > 700) or 
-                                (Trot is not None and Trot > 700)):
-        warn("HITRAN is valid for low temperatures (typically < 700 K). "+\
-             "For higher temperatures you may need HITEMP or CDSD. See the "+\
-             "'databank=' parameter")
         
     # ... others
     if databank is None:
