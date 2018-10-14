@@ -69,16 +69,23 @@ energies) ::
                       )
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous
+    
+You can run the previous examples directly in your browser on the 
+`RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
+
+.. image:: https://mybinder.org/badge.svg 
+    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+
+The Quick Start examples automatically download the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
+For *high temperature* cases, you may need to use other line databases such as 
+[HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
+:ref:`Configuration file <label_lbl_config_file>`. 
 
 More complex :ref:`Examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
 class, which is the core of RADIS line-by-line calculations. 
 :py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
 for the simple cases. 
-
-The examples above download the line databases from [HITRAN-2016]_ automatically, which is valid for temperatures below 700 K. 
-For *high temperature* cases, you may need to use other line databases such as 
-[HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
-:ref:`Configuration file <label_lbl_config_file>`. 
 
 Refer to the :ref:`Examples <label_examples>` section for more examples, and to :ref:`Architecture <label_dev_architecture>`
 for an overview of the RADIS calculation flow chart. 

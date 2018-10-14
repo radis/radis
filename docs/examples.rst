@@ -106,12 +106,18 @@ the calculation is typically 100 times faster in RADIS::
     >>> Calculated with RADIS in 1.65s
 
 
-Interactive Examples
+RADIS in-the-browser
 ~~~~~~~~~~~~~~~~~~~~
 
 RADIS in-the-browser sessions can be run from the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
 
+For example, run the Quick Start :ref:`first example <label_first_example>` by clicking on the link below:
 
+.. image:: https://mybinder.org/badge.svg 
+    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+
+The full list on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
 
 
 Get rovibrational energies
