@@ -158,6 +158,18 @@ In the second case, see the :ref:`Configuration file <label_lbl_config_file>` .
 The list of molecules implemented for nonequilibrium calculations if found in :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
 Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how nonequilibrium calculations are conducted. 
 
+********
+Advanced
+********
+
+Vibrational bands
+-----------------
+
+To calculate all vibrational bands of a given spectrum separately, use the  
+:meth:`~radis.lbl.bands.BandFactory.eq_bands` and  :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
+methods. See the :py:func:`~radis.test.lbl.test_bands.test_plot_all_CO2_bandheads` example in 
+``radis/test/lbl/test_bands.py`` for more information. 
+
 
 .. _label_lbl_performance:
 ***********

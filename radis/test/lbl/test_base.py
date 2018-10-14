@@ -41,11 +41,11 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
                              verbose=verbose)
         sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         sf.load_databank('HITRAN-CO-TEST')
-
-#        # Populations cannot be calculated at equilibrium (no access to energy levels)
-#        s = sf.eq_spectrum(300)
-#        with pytest.raises(ValueError):  # .. we expect this error here!
-#            pops = s.get_populations('CO', isotope=1, electronic_state='X')
+        
+        # Populations cannot be calculated at equilibrium (no access to energy levels)
+        s = sf.eq_spectrum(300)
+        with pytest.raises(ValueError):  # .. we expect this error here!
+            pops = s.get_populations('CO', isotope=1, electronic_state='X')
 
         # Calculate populations using the non-equilibrium module:
         s = sf.non_eq_spectrum(300, 300)
@@ -54,6 +54,15 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
             raise ValueError('Populations not calculated')
         if plot:
             s.plot_populations()
+            
+        # Compare with factory
+        # Plot populations:
+        with pytest.raises(ValueError):
+            sf.plot_populations()    # no isotope given: error expected
+        if plot:
+            sf.plot_populations('rovib', isotope=1)
+            plt.close()  # no need to keep it open, we just tested the function
+
             
         # Test calculated quantities are there
         assert hasattr(sf.df1, 'Qref')
@@ -269,7 +278,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
 def _run_testcases(verbose=True, plot=True):
     
-#    test_populations(plot=plot, verbose=verbose)
+    test_populations(plot=plot, verbose=verbose)
     test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
     test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
 

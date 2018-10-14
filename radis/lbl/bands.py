@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-Module that contains BandFactory, a class that features band-specific related
-functions
+Module that contains BandFactory, a class that features vibrational band-specific 
+functions, in particular the :meth:`~radis.lbl.bands.BandFactory.eq_bands` and 
+:meth:`~radis.lbl.bands.BandFactory.non_eq_bands` methods that return all 
+vibrational bands in a spectrum. 
 
 All of these are eventually integrated in SpectrumFactory which inherits from
 BandFactory
+
+Most methods are written in inherited class with the following inheritance scheme:
+    
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+
 
 Routine Listing
 ---------------
 
 PUBLIC METHODS
 
-- :meth:`~radis.lbl.bands.BandFactory.eq_bands`
+- :meth:`~radis.lbl.bands.BandFactory.eq_bands` 
 - :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
 - :meth:`~radis.lbl.bands.BandFactory.get_bands_weight`
 - :meth:`~radis.lbl.bands.BandFactory.get_band_list`
@@ -24,13 +33,6 @@ PRIVATE METHODS
 - _broaden_lines_noneq_bands
 - _calc_broadening_bands
 - _calc_broadening_noneq_bands
-
-Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
-
 
 ----------
 
@@ -316,17 +318,18 @@ class BandFactory(BroadenFactory):
                 # Add band name and hitran band name in conditions
                 conditions.update({'band': band})
 
-                def add_attr(attr):
-                    if attr in lines:
-                        if band == 'others':
-                            val = 'N/A'
-                        else:
-                            # all have to be the same
-                            val = lines[attr].iloc[0]
-                        conditions.update({attr: val})
-                add_attr('band_htrn')
-                add_attr('viblvl_l')
-                add_attr('viblvl_u')
+                if lines:
+                    def add_attr(attr):
+                        if attr in lines:
+                            if band == 'others':
+                                val = 'N/A'
+                            else:
+                                # all have to be the same
+                                val = lines[attr].iloc[0]
+                            conditions.update({attr: val})
+                    add_attr('band_htrn')
+                    add_attr('viblvl_l')
+                    add_attr('viblvl_u')
                 s = Spectrum(
                     quantities={
                         'abscoeff': (wavenumber, abscoeff),
@@ -1214,4 +1217,5 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
 
 if __name__ == '__main__':
 
-    pass
+    from radis.test.lbl.test_bands import run_testcases
+    print('test_bands.py:', run_testcases(plot=True))

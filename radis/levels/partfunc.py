@@ -591,46 +591,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             if k in self.df:
                 del self.df[k]
 
-    # %% Methods to plot populations of all states
-
-    def plot_populations(self, what='vib', nfig=None):
-        ''' Plot populations of all states featured in this PartFunc object
-
-        All states contribute to the partition function, but not all states may
-        be present in the lines. To see the latter, use the
-        :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` method
-
-        Parameters
-        ----------
-
-        what: ``'vib'``, ``'rovib'``
-            vibrational levels, or rovibrational levels
-
-        nfig: str, int or ``None``
-            which Figure to plot on
-
-        '''
-
-        assert what in ['vib', 'rovib']
-
-        # Get levels
-        if what == 'vib':
-            levels = self._get_vib_populations()
-        elif what == 'rovib':
-            levels = self._get_rovib_populations()
-
-        # Extract data
-        if what == 'vib':
-            E, n, g = levels['Evib'], levels['nvib'], levels['gvib']
-        elif what == 'rovib':
-            E, n, g = levels['E'], levels['n'], levels['g']
-
-        # Plot
-        plt.figure(num=nfig)
-        plt.plot(E, n/g, 'ok')
-        plt.xlabel('Energy (cm-1)')
-        plt.ylabel('Population (n / g)')
-        plt.yscale('log')
+    # %% Methods to get populations of all states
 
     def _get_vib_populations(self):
         ''' Return vibrational populations for all levels featured in given

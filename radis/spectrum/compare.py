@@ -792,10 +792,10 @@ def plot_diff(s1, s2, var=None,
     if label2 is None:
         label2 = s2.get_name()
     # Max label length:
-    if len(label1)>80:
-        label1 = label1[:78]+'...'
-    if len(label2)>80:
-        label2 = label2[:78]+'...'
+    if len(label1)>60:
+        label1 = label1[:58]+'...'
+    if len(label2)>60:
+        label2 = label2[:58]+'...'
         
     # Plot compared spectra
     if normalize:

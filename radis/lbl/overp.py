@@ -46,6 +46,9 @@ class LevelsList(object):
     .. warning::
         
         only valid under optically thin conditions!!
+        
+    See Also
+    --------
     
     '''
 

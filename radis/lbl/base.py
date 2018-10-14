@@ -3109,7 +3109,7 @@ class BaseFactory(DatabankLoader):
 
         Plot populations of all levels that participate in the partition function.
         Output is different from the
-        Spectrum.:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` method,
+        Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` method,
         where only the levels that directly contribute to the spectrum are shown
 
         Note: only valid after calculating non_eq spectrum as it uses the
@@ -3154,7 +3154,15 @@ class BaseFactory(DatabankLoader):
         if what == 'vib':
             E, n, g = levels['Evib'], levels['nvib'], levels['gvib']
         elif what == 'rovib':
-            E, n, g = levels['E'], levels['n'], levels['g']
+            E, n = levels['E'], levels['n']
+            if 'g' in levels.keys():
+                g = levels['g']
+            elif all_in(['gvib', 'grot'], levels.keys()):
+                g = levels['gvib'] * levels['grot']
+            else:
+                raise ValueError('either g, or gvib+grot must be defined to ' +
+                                 'calculate total degeneracy. Got: {0}'.format(list(levels.keys())))
+
 
         # Plot
         set_style('origin')
