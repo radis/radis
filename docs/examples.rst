@@ -109,7 +109,8 @@ the calculation is typically 100 times faster in RADIS::
 RADIS in-the-browser
 ~~~~~~~~~~~~~~~~~~~~
 
-RADIS in-the-browser sessions can be run from the `RADIS examples <https://github.com/radis/radis-examples>`_ project. 
+RADIS in-the-browser sessions can be run from the `RADIS examples <https://github.com/radis/radis-examples>`_ project.
+No installation needed, you don't even need Python on your computer. 
 
 For example, run the Quick Start :ref:`first example <label_first_example>` by clicking on the link below:
 
@@ -123,8 +124,7 @@ Or start a bare RADIS online session:
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
 
-    
-The full list on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
+The full list can be found on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
 
 
 Get rovibrational energies

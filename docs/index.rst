@@ -87,12 +87,19 @@ In the browser
 
 Alternatively, you can also run RADIS directly in the browser with the  
 `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
-No installation needed. For instance, run the Quick Start example on the link below:
+For instance, run the Quick Start example on the link below:
 
 .. image:: https://mybinder.org/badge.svg 
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
 
+Or start a bare RADIS online session (no installation needed!):
+    
+.. image:: https://mybinder.org/badge.svg 
+    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+
+   
 ---------------------------------------------------------------------
 
 ==================
