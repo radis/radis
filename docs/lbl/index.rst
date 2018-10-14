@@ -171,6 +171,13 @@ methods. See the :py:func:`~radis.test.lbl.test_bands.test_plot_all_CO2_bandhead
 ``radis/test/lbl/test_bands.py`` for more information. 
 
 
+Pseudo-continuum
+----------------
+
+To calculate your spectra with a pseudo-continuum, refer to the :ref:`Performance <label_lbl_performance>`
+section. 
+
+
 .. _label_lbl_performance:
 ***********
 Performance

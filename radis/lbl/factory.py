@@ -325,15 +325,6 @@ class SpectrumFactory(BandFactory):
         if 'use_cached' in kwargs:
             warn(DeprecationWarning('use_cached replaced with db_use_cached'))
             db_use_cached = kwargs0.pop('use_cached')
-        if 'isotope_identifier' in kwargs:
-            warn(DeprecationWarning('isotope_identifier replaced with isotope'))
-            isotope = kwargs0.pop('isotope_identifier')
-        if 'air_pressure_mbar' in kwargs:
-            raise DeprecationWarning(
-                'air_pressure_mbar replaced with pressure (in bar!)')
-        if 'slit_function_FWHM' in kwargs:
-            raise DeprecationWarning('slit_function_FWHM removed from inputs. Use ' +
-                                     'Spectrum.apply_slit() directly')
         if kwargs0 != {}:
             raise TypeError("__init__() got an unexpected keyword argument '{0}'".format
                             (list(kwargs0)[0]))

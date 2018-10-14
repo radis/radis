@@ -1072,7 +1072,7 @@ class BroadenFactory(BaseFactory):
 
     def plot_broadening(self, i=0, pressure_atm=None, mole_fraction=None,
                         Tgas=None):
-        ''' just for testing. Recalculate and plot broadening for line index i
+        ''' just for testing. Recalculate and plot broadening for line of index i
 
         Parameters
         ----------
@@ -1090,6 +1090,8 @@ class BroadenFactory(BaseFactory):
             if None, defaults to model translational temperature
 
         '''
+        
+        from publib import set_style, fix_style
 
         if pressure_atm is None:
             pressure_atm = self.input.pressure_mbar/1013.25
@@ -1113,6 +1115,7 @@ class BroadenFactory(BaseFactory):
         line_profile /= trapz(line_profile.T, x=wbroad.T)  # normalize
 
         # Plot!
+        set_style('origin')
         plt.figure()
         plt.plot(wbroad, pressure_profile, label='Pressure')
         plt.plot(wbroad, gaussian_profile, label='Doppler')
@@ -1123,6 +1126,7 @@ class BroadenFactory(BaseFactory):
         plt.title('Line {0}, T={1:.1f}K, P={2:.2f}atm'.format(i, Tgas,
                                                               pressure_atm))
         plt.legend()
+        fix_style('origin')
 
         return
 

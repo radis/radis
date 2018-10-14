@@ -80,6 +80,10 @@ def test_broadening(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
     sf.load_databank('HITRAN-CO-TEST')
 #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
     s = sf.eq_spectrum(Tgas=T, name='RADIS')
+    
+    
+    if plot:  # plot broadening of line of largest linestrength
+        sf.plot_broadening(i=sf.df1.S.argmax())
 
     # Plot and compare
     res = abs(get_residual_integral(s, s_hapi, 'abscoeff'))
