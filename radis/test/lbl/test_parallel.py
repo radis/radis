@@ -125,7 +125,7 @@ def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 @pytest.mark.python3_only
-def test_parallel_internal(plot=False, verbose=True, warnings=True, *args, **kwargs):
+def DISCARDED_test_parallel_internal(plot=False, verbose=True, warnings=True, *args, **kwargs):
     ''' Core of the parallel test routine 
     
     Test than parallel is at least faster than sequential mode. Note that 
