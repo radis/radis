@@ -155,7 +155,7 @@ def _fix_astroquery_file_format(filename):
     On some OS the astroquery lookup function may add extra lines. See:
     https://github.com/astropy/astroquery/issues/1189
     
-    In the meantime, we discard all empty lines here
+    In the meantime, we discard all empty lines here. 
     
     '''
 
@@ -163,7 +163,7 @@ def _fix_astroquery_file_format(filename):
         raise("{} does not exist ".format(filename))
     with open(filename) as filehandle:
         lines = filehandle.readlines()
-        non_empty_lines = [l for l in lines if len(l) > 1]
+        non_empty_lines = [l for l in lines if len(l) > 2]  # > 2 because there may be some line return characters
 
     if len(lines) != len(non_empty_lines):
         # Re-write file    
