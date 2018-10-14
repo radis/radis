@@ -10,6 +10,7 @@ from radis.lbl import SpectrumFactory
 from radis.misc.utils import DatabankNotFound
 from radis.misc.printer import printm
 from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
+from radis.phys.convert import cm2nm
 import pytest
 import numpy as np
 from radis.misc.progress_bar import ProgressBar
@@ -80,7 +81,7 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
-@pytest.mark.needs_connection
+#@pytest.mark.needs_connection
 def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
     ''' Test that we find Planck in the optically thick limit 
     
@@ -98,6 +99,12 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
     check that isotopes and molecule ids are what we expect in all the 
     groupby() loops that make the production code very fast. 
     
+    Notes
+    -----
+    
+    switched from large band calculation with [HITRAN-2016]_ to a calculation with 
+    the embedded [HITEMP-2010]_ fragment (shorter range, but no need to download files)
+    
     '''
     
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -109,11 +116,13 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
     
     try:
         
-        wavelength_min = 4500
-        wavelength_max = 4800
+#        wavelength_min = 4500
+#        wavelength_max = 4800
+        wavelength_min = cm2nm(2284.6)
+        wavelength_max = cm2nm(2284.2)
     
         P = 0.017     # bar
-        wstep = 1     # cm-1
+        wstep = 0.001     # cm-1
             
         Tgas = 1200
         
@@ -122,7 +131,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         sf = SpectrumFactory(wavelength_min=wavelength_min, wavelength_max=wavelength_max,
                              molecule='CO2',
                              mole_fraction=1, path_length=0.05, cutoff=1e-25,
-                             broadening_max_width=3,
+                             broadening_max_width=1,
                              export_populations = False, #'vib',
                              export_lines = False,
                              isotope=1,
@@ -143,8 +152,8 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         s_4T = sf.non_eq_spectrum(Tvib=(Tgas, Tgas, Tgas), Trot=Tgas, mole_fraction=1, 
                                   name='Noneq (4T)')
         pb.update(3)
-        s_plck = sPlanck(wavelength_min=wavelength_min, 
-                         wavelength_max=wavelength_max - wstep,   # thre is a border effcet on last point
+        s_plck = sPlanck(wavelength_min=2000, #=wavelength_min, 
+                         wavelength_max=5000, #=wavelength_max - wstep,   # there is a border effect on last point
                          T=Tgas)
         pb.done()
         
@@ -159,7 +168,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
                 
                 nfig = 'test_opt_thick_limit_1iso {0}'.format(s.name)
                 plt.figure(nfig).clear()
-                s.plot(wunit='nm', nfig=nfig, lw=3)
+                s.plot(wunit='nm', nfig=nfig, lw=4)
                 s_plck.plot(wunit='nm', nfig=nfig, Iunit='mW/cm2/sr/nm', lw=2)
                 plt.legend()
                 
@@ -167,7 +176,8 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
                 printm("Residual between opt. thick CO2 spectrum ({0}) and Planck: {1:.2g}".format(
                         s.name, get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True)))
             
-            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
+#            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
+            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 2e-5
             
         if verbose:
             printm('Tested optically thick limit is Planck (1 isotope): OK')
@@ -178,7 +188,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
 
 #@pytest.mark.needs_connection
 #@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
-@pytest.mark.needs_connection
+#@pytest.mark.needs_connection
 def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     ''' Test that we find Planck in the optically thick limit 
     
@@ -196,6 +206,12 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     check that isotopes and molecule ids are what we expect in all the 
     groupby() loops that make the production code very fast. 
     
+    Notes
+    -----
+    
+    switched from large band calculation with [HITRAN-2016]_ to a calculation with 
+    the embedded [HITEMP-2010]_ fragment (shorter range, but no need to download files)
+    
     '''
     
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -207,11 +223,14 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     
     try:
         
-        wavelength_min = 4500
-        wavelength_max = 4800
-    
+#        wavelength_min = 4500
+#        wavelength_max = 4800
+        wavelength_min = cm2nm(2284.6)
+        wavelength_max = cm2nm(2284.2)
+#    2284.2, 2284.6,
+#                             wstep=0.001,                # cm-1
         P = 0.017     # bar
-        wstep = 1     # cm-1
+        wstep = 0.001     # cm-1
         
             
         Tgas = 1200
@@ -220,7 +239,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
         # --------------
         sf = SpectrumFactory(wavelength_min=wavelength_min, wavelength_max=wavelength_max,
                              mole_fraction=1, path_length=0.05, cutoff=1e-25,
-                             broadening_max_width=3,
+                             broadening_max_width=1,
                              export_populations = False, #'vib',
                              export_lines = False,
                              molecule='CO2',
@@ -230,8 +249,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
                              pseudo_continuum_threshold=0,
                              pressure=P,
                              verbose=False)
-        sf.fetch_databank('astroquery')
-#        sf.load_databank('HITEMP-CO2-DUNHAM')
+#        sf.fetch_databank('astroquery')
+        sf.load_databank('HITEMP-CO2-TEST')
         pb = ProgressBar(3, active=verbose)
         s_eq = sf.eq_spectrum(Tgas=Tgas,  mole_fraction=1, 
                               name='Equilibrium')
@@ -242,8 +261,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
         s_4T = sf.non_eq_spectrum(Tvib=(Tgas, Tgas, Tgas), Trot=Tgas, mole_fraction=1, 
                                   name='Noneq (4T)')
         pb.update(3)
-        s_plck = sPlanck(wavelength_min=wavelength_min, 
-                         wavelength_max=wavelength_max - wstep,   # there is a border effect on last point
+        s_plck = sPlanck(wavelength_min=2000, #=wavelength_min, 
+                         wavelength_max=5000, #=wavelength_max - wstep,   # there is a border effect on last point
                          T=Tgas)
         pb.done()
         
@@ -258,7 +277,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
                 
                 nfig = 'test_opt_thick_limit_2iso {0}'.format(s.name)
                 plt.figure(nfig).clear()
-                s.plot(wunit='nm', nfig=nfig, lw=3)
+                s.plot(wunit='nm', nfig=nfig, lw=4)
                 s_plck.plot(wunit='nm', nfig=nfig, Iunit='mW/cm2/sr/nm', lw=2)
                 plt.legend()
                 
@@ -266,7 +285,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
                 printm("Residual between opt. thick CO2 spectrum ({0}) and Planck: {1:.2g}".format(
                         s.name, get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True)))
             
-            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
+#            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
+            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 2e-5
             
         if verbose:
             printm('Tested optically thick limit is Planck (2 isotopes): OK')

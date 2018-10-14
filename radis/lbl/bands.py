@@ -727,6 +727,11 @@ class BandFactory(BroadenFactory):
         Note: this function works with .df1 (scaled lines) instead of .df0
         (reference lines) as we may want the weight for different temperatures.
         .df1 is updated after *eq_spectrum or non_eq_spectrum is called
+        
+        See Also
+        --------
+        
+        :py:meth:`~radis.lbl.bands.BandFactory.get_bands`
         '''
 
         # Check bands are labelled

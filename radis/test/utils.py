@@ -133,6 +133,8 @@ def setup_test_line_databases(verbose=True):
     :ref:`Configuration file <label_lbl_config_file>`
 
     '''
+    # TODO: generate large band databases for the main species (let's say CO2, 
+    # H2O and CH4) and main isotopes by fetching the HITRAN 2016 database. 
 
     # Get list of databases
     try:
