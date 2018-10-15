@@ -128,7 +128,17 @@ See Also
 
 def get_version(verbose=False, add_git_number=True):
     ''' Reads __version.txt__ and retrieve version number
-    If ``add_git``, also appends Git commit number if we're on a gitted session '''
+    If ``add_git``, also appends Git commit number if we're on a gitted session 
+    
+    Examples
+    --------
+    
+    ::
+        
+        import radis
+        print(radis.get_version())
+        
+        '''
 
     # First get version
     with open(os.path.join(getProjectRoot(), '__version__.txt')) as version_file:

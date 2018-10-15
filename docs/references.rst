@@ -34,6 +34,7 @@ Bibliography
                 HITRAN-like database species", , Journal of Quantitative Spectroscopy and Radiative Transfer
                 (2018) doi:10.1016/j.jqsrt.2018.09.027
                 
+Use :py:func:`~radis.get_version` to get the RADIS version number.
                 
 Useful Links
 ------------
