@@ -22,9 +22,9 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
 
     pip install radis 
     
-**That's it!** Now run your :ref:`first example <label_first_example>`.
-If you encounter any issue, please refer to the 
-:ref:`detailed installation procedure <label_install>`. 
+**That's it!** You can now run your first example below.
+If you encounter any issue, or to upgrade the package later, please refer to the 
+:ref:`detailed installation procedure <label_install>` . 
 
 .. _label_first_example:
 Quick Start
@@ -47,7 +47,7 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
     s.plot('radiance')
 
 .. figure:: examples/co_spectrum_700K.png
-    :scale: 50 %
+    :scale: 60 %
 
 Calculate a CO *nonequilibrium* spectrum from the HITRAN database
 (on your first call, this will calculate and cache the CO(X) rovibrational
@@ -70,7 +70,7 @@ For *high temperature* cases, you may need to use other line databases such as
 [HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
 :ref:`Configuration file <label_lbl_config_file>`. 
 
-More complex :ref:`Examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
+More complex :ref:`examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
 class, which is the core of RADIS line-by-line calculations. 
 :py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
 for the simple cases. 
@@ -203,7 +203,7 @@ Sources
 -------
 
 To modify RADIS, you will need to clone the Git repository. 
-Please refer to the :ref:`detailed installation procedure <label_install>`:
+Please refer to the :ref:`detailed installation procedure <label_install>` :
 
 .. toctree::
    :maxdepth: 2
@@ -263,8 +263,8 @@ i.e., that modifications must remain public and under LGPLv3.
 Cite
 ----
 
-If using RADIS for your work, cite the line-by-line code as [RADIS-2018]_, alongside the references of the line databases 
-used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
+If using RADIS for your work, cite the line-by-line code as [RADIS-2018]_ with the :ref:`version number <label_version>`
+, alongside the references of the line databases used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
 
 If running nonequilibrium calculations, do not forget to mention the reference of the spectroscopic constants used 
 in the calculatation of the rovibrational energies (for instance, see the 

@@ -1,10 +1,4 @@
-
-.. toctree::
-   :maxdepth: 2
-   
-   install
-   
-.. _label_install
+.. _label_install:
 Requirements
 ============
 

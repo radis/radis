@@ -3,20 +3,13 @@
 Test
 ====
 
-The tests will be run automatically on any commit to the [GitHub repository](https://github.com/radis/radis)
-. See the current test status below:
-
-.. image:: https://img.shields.io/travis/radis/radis.svg
-    :target: https://travis-ci.org/radis/radis
-    :alt: https://travis-ci.org/radis/radis
     
-    
-Run tests
----------
+Test status
+-----------
 
 Test routines are performed automatically by `Travis CI <https://travis-ci.org/radis/radis>`_ 
-whenever a push is made to the ``develop`` or ``master`` 
-`GitHub <https://github.com/radis/radis>`_ branch. See current test status:
+whenever a change is made on the `GitHub <https://github.com/radis/radis>`_ repository. 
+See the current test status below:
 
 .. image:: https://img.shields.io/travis/radis/radis.svg
     :target: https://travis-ci.org/radis/radis
@@ -25,7 +18,7 @@ whenever a push is made to the ``develop`` or ``master``
 It is a good practice to perform these tests locally to detect potential 
 errors before pushing. 
 To run the tests locally, assuming you cloned the source code 
-(see the :ref:`Install section <label_install>), run the following command in
+(see the :ref:`Install section <label_install>` ), run the following command in
 the ``radis`` directory::
 
     cd radis
@@ -78,7 +71,7 @@ section
 - needs_db_CDSD_HITEMP_PC : requires CDSD-HITEMP-PC database in ``~/.radis``
 
 The default test routine run on `Travis CI <https://travis-ci.org/radis/radis>`_ 
-is (see the ``radis/.gitlab-ci.yml`file)::
+is (see the ``radis/.gitlab-ci.yml` file)::
 
     pytest -m "not needs_config_file" --cov=./;
 
@@ -103,4 +96,16 @@ adding the following lines within your test function::
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
         
 See: https://github.com/statsmodels/statsmodels/issues/3697
+
+
+
+
+Report errors
+-------------
+
+If you encounter any error, open an `Issue on GitHub <https://github.com/radis/radis/issues>`__
+
+
+
+
     
