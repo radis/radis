@@ -23,13 +23,8 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
     pip install radis 
     
 **That's it!** Now run your :ref:`first example <label_first_example>`.
-If you encounter any issue, please follow the detailed 
-installation procedure and requirements below:
-
-.. toctree::
-   :maxdepth: 2
-
-   install
+If you encounter any issue, please refer to the 
+:ref:`detailed installation procedure <label_install>`. 
 
 .. _label_first_example:
 Quick Start
@@ -44,15 +39,15 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
                       molecule='CO',
                       isotope='1,2,3',
                       pressure=1.01325,   # bar
-                      Tgas=1000,          # K
+                      Tgas=700,           # K
                       mole_fraction=0.1, 
                       path_length=1,      # cm
                       )
-    s.apply_slit(0.5, 'nm')
+    s.apply_slit(0.5, 'nm')       # simulate an experimental slit
     s.plot('radiance')
 
-.. figure:: examples/co_spectrum_1000K.png
-    :scale: 20 %
+.. figure:: examples/co_spectrum_700K.png
+    :scale: 50 %
 
 Calculate a CO *nonequilibrium* spectrum from the HITRAN database
 (on your first call, this will calculate and cache the CO(X) rovibrational
@@ -62,7 +57,7 @@ energies) ::
                       molecule='CO',
                       isotope='1,2,3',
                       pressure=1.01325,   # bar
-                      Tvib=1000,          # K
+                      Tvib=700,           # K
                       Trot=300,           # K
                       mole_fraction=0.1, 
                       path_length=1,      # cm
@@ -204,14 +199,29 @@ Examples
 Developer Guide
 ===============
 
+Sources
+-------
+
+To modify RADIS, you will need to clone the Git repository. 
+Please refer to the :ref:`detailed installation procedure <label_install>`:
+
+.. toctree::
+   :maxdepth: 2
+   
+   install
+   
+
 Architecture
 ------------
-   
+
+An overview of the different RADIS modules: 
+
 .. toctree::
    :maxdepth: 2
    
    dev/architecture
-   
+  
+
 Tests
 -----
    
@@ -243,8 +253,8 @@ Bibliography
     
     references
 
-Source code and Licence
------------------------
+Licence
+-------
 
 The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
 under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
@@ -258,7 +268,7 @@ used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
 
 If running nonequilibrium calculations, do not forget to mention the reference of the spectroscopic constants used 
 in the calculatation of the rovibrational energies (for instance, see the 
-:ref:`references for the RADIS built-in constants <_label_db_spectroscopic_constants>`)
+:ref:`references for the RADIS built-in constants <label_db_spectroscopic_constants>`)
 
 
 Access Module Methods

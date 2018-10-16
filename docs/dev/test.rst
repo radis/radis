@@ -3,6 +3,14 @@
 Test
 ====
 
+The tests will be run automatically on any commit to the [GitHub repository](https://github.com/radis/radis)
+. See the current test status below:
+
+.. image:: https://img.shields.io/travis/radis/radis.svg
+    :target: https://travis-ci.org/radis/radis
+    :alt: https://travis-ci.org/radis/radis
+    
+    
 Run tests
 ---------
 
@@ -13,39 +21,42 @@ whenever a push is made to the ``develop`` or ``master``
 .. image:: https://img.shields.io/travis/radis/radis.svg
     :target: https://travis-ci.org/radis/radis
     :alt: https://travis-ci.org/radis/radis
-    
-
+  
 It is a good practice to perform these tests locally to detect potential 
-errors before pushing. To run tests in RADIS use ``pytest``::
+errors before pushing. 
+To run the tests locally, assuming you cloned the source code 
+(see the :ref:`Install section <label_install>), run the following command in
+the ``radis`` directory::
 
-    cd radis/test
+    cd radis
     pytest
-    
-By convention in RADIS, test functions that run in less than 5s should have
-``fast`` in their name. You can use pytest filtering keys to run 
-only these. The whole test procedure should last about one or two minutes::
 
-    cd radis/test 
-    pytest -k fast 
-    
+The whole test procedure takes 5 - 10 min. You can use pytest filtering keys 
+to :ref:`run specific tests only <label_dev_select_test>`
+
 
 Code coverage 
 -------------
 
 Code coverage makes sure every line in RADIS is properly tested. See 
-the current code coverage status:
+the current code coverage status (click the badge for more details):
     
 .. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/radis/radis
   :alt: https://codecov.io/gh/radis/radis
   
- 
+
+
 If you want to see the test coverage report locally use ``codecov`` that 
 is interfaced with pytest through the ``--cov=./`` command::
 
     pip install codecov pytest-cov
     cd radis/test
     pytest --cov=./
+
+.. _label_dev_select_test:
+Select tests
+------------
 
 You can select or ignore some tests with the ``-m`` option, for instance 
 run only the fast tests with::

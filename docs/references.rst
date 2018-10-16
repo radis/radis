@@ -36,6 +36,11 @@ Bibliography
                 
 Use :py:func:`~radis.get_version` to get the RADIS version number.
                 
+Spectroscopic constants
+-----------------------
+
+See :ref:`references for the RADIS built-in constants <label_db_spectroscopic_constants>`
+                
 Useful Links
 ------------
 
