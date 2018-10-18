@@ -285,7 +285,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             save_to_hdf(self.df, cachefile, metadata=metadata, version=radis.__version__,
                         key='df', overwrite=True, verbose=verbose)
 
-    def _add_degeneracies(self, df, isotope):
+    def _add_degeneracies(self, df):
         ''' Calculate and store degeneracies in database df
 
         Parameters
