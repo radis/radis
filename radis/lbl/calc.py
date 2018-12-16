@@ -124,7 +124,7 @@ def calc_spectrum(wavenum_min=None,
         
         .. warning::
             
-            [HITRAN-2016]_ is validd for low temperatures (typically < 700 K). For higher
+            [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
             temperatures you may need [HITEMP-2010]_ 
 
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
