@@ -89,7 +89,7 @@ setup(name='radis',
                         'termcolor',     # terminal colors
                         'six',  # python 2-3 compatibility
                         'configparser', 
-                        'astroquery',   # to fetch HITRAN databases
+                        'astroquery>=0.3.9',   # to fetch HITRAN databases
                         'json-tricks',   # to deal with non jsonable formats
                         'numpydoc',     # for Jedi (autocompletion) to recognize
                                         # numpy docstrings

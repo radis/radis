@@ -22,7 +22,8 @@ from __future__ import absolute_import
 from __future__ import print_function
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.misc import is_float
-from astroquery.hitran import read_hitran_file, cache_location, download_hitran
+from astropy import units as u
+from astroquery.hitran import Hitran
 from os.path import join, isfile
 import numpy as np
 import pandas as pd
@@ -75,11 +76,19 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
     assert is_float(isotope)
 
     empty_range = False
-
-    # Download using the astroquery library
-    try:
-        download_hitran(mol_id, isotope, wmin, wmax)
-    except:
+    
+#    tbl = Hitran.query_lines_async(molecule_number=mol_id,
+#                                     isotopologue_number=isotope,
+#                                     min_frequency=wmin / u.cm,
+#                                     max_frequency=wmax / u.cm)
+    
+#    # Download using the astroquery library
+    response = Hitran.query_lines_async(molecule_number=mol_id,
+                                         isotopologue_number=isotope,
+                                         min_frequency=wmin / u.cm,
+                                         max_frequency=wmax / u.cm)
+    
+    if response.status_code == 404:
         # Maybe there are just no lines for this species in this range
         # In that case we usually end up with errors like:
 
@@ -87,10 +96,7 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
             # Not Found for url: http://hitran.org/lbl/api?numax=25000&numin=19000&iso_ids_list=69\n',),
             # <traceback object at 0x7f0967c91708>)
 
-        import sys
-        _err_class, _err_details, _err_obj = sys.exc_info()
-
-        if 'Not Found for url:' in str(_err_details):
+        if response.reason == 'Not Found':
             # Let's bet it's just that there are no lines in this range
             empty_range = True
             if verbose:
@@ -101,7 +107,7 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
                              'for {0} (id={1}), iso={2} between {3:.2f}-{4:.2f}cm-1. '.format(
                                  molecule, mol_id, isotope, wmin, wmax) +
                              'Are you online?\n' + 
-                             'See details of the error below:\n\n {0}'.format(_err_details))
+                             'See details of the error below:\n\n {0}'.format(response.reason))
 
     # Rename columns from Astroquery to RADIS format
     rename_columns = {'molec_id': 'id',
@@ -124,9 +130,12 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
                       }
 
     if not empty_range:
-        filename = join(cache_location, molecule+'.data')
-        _fix_astroquery_file_format(filename)
-        tbl = read_hitran_file(filename)
+#        _fix_astroquery_file_format(filename)
+        
+        # Note: as of 0.9.16 we're not fixing astroquery_file_format anymore. 
+        # maybe we should. 
+        
+        tbl = Hitran._parse_result(response)
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)
     else:
