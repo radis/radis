@@ -310,27 +310,27 @@ def crop(s, wmin=None, wmax=None, wunit=None, medium=None,
     wmin0, wmax0 = wmin, wmax
     if wunit == 'nm' and waveunit == 'cm-1':
         if medium == 'air':
-            if wmin: wmin = nm_air2cm(wmax0)   # reverted
-            if wmax: wmax = nm_air2cm(wmin0)   # reverted
+            if wmax0: wmin = nm_air2cm(wmax0)   # reverted
+            if wmin0: wmax = nm_air2cm(wmin0)   # reverted
         else:
-            if wmin: wmin = nm2cm(wmax0)   # reverted
-            if wmax: wmax = nm2cm(wmin0)   # reverted
+            if wmax0: wmin = nm2cm(wmax0)   # reverted
+            if wmin0: wmax = nm2cm(wmin0)   # reverted
     elif wunit == 'cm-1' and waveunit == 'nm':
         if s.get_medium() == 'air':
-            if wmin: wmin = cm2nm_air(wmax0)   # nm in air
-            if wmax: wmax = cm2nm_air(wmin0)   # nm in air
+            if wmax0: wmin = cm2nm_air(wmax0)   # nm in air
+            if wmin0: wmax = cm2nm_air(wmin0)   # nm in air
         else:
-            if wmin: wmin = cm2nm(wmax0)   # get nm in vacuum
-            if wmax: wmax = cm2nm(wmin0)   # get nm in vacuum
+            if wmax0: wmin = cm2nm(wmax0)   # get nm in vacuum
+            if wmin0: wmax = cm2nm(wmin0)   # get nm in vacuum
     elif wunit == 'nm' and waveunit == 'nm':
         if s.get_medium() == 'air' and medium == 'vacuum':
             # convert from given medium ('vacuum') to spectrum medium ('air')
-            if wmin: wmin = vacuum2air(wmin0)
-            if wmax: wmax = vacuum2air(wmax0)
+            if wmin0: wmin = vacuum2air(wmin0)
+            if wmax0: wmax = vacuum2air(wmax0)
         elif s.get_medium() == 'vacuum' and medium == 'air':
             # the other way around
-            if wmin: wmin = air2vacuum(wmin0)
-            if wmax: wmax = air2vacuum(wmax0)
+            if wmin0: wmin = air2vacuum(wmin0)
+            if wmax0: wmax = air2vacuum(wmax0)
     else:
         assert wunit == waveunit           # correct wmin, wmax
     
