@@ -100,6 +100,13 @@ def test_units(verbose=True, *args, **kwargs):
             print(('{0} {1} = {2} {3}'.format(a, f, cr, t)))
         assert isclose(cr, r)
 
+    # Ensures that an error is raised if units with angles are converted 
+    # (mathematically correct because angles are dimensionless, but prone 
+    # to user errors)
+    from radis.phys.units import DimensionalityError
+    with pytest.raises(DimensionalityError):
+        conv2(1, 'mW/cm2/sr/nm', 'mW/cm2/nm')
+        
     return True
 
 
@@ -113,3 +120,4 @@ def _run_testcases(*args, **kwargs):
 
 if __name__ == '__main__':
     print('testing phys.py:', _run_testcases(verbose=True))
+    
