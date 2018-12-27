@@ -1785,6 +1785,11 @@ class SpecDatabase():
 
     def __iter__(self):
         ''' Iterate over all Spectra in database 
+        
+        .. warning::
+            
+            returns the inplace object directly. If you modify them, the Spectra
+            are modified
 
         Examples
         --------
@@ -1816,7 +1821,7 @@ class SpecDatabase():
 
         '''
 
-        return self.get().__iter__()
+        return self.get(inplace=True).__iter__()
 
     def keys(self):
         ''' Iterate over all {path} in database 
