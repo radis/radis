@@ -88,6 +88,7 @@ class PerformanceWarning(UserWarning):
 
 
 WarningClasses = {'default': UserWarning,
+                  'SlitDispersionWarning': SlitDispersionWarning,
                   'GaussianBroadeningWarning': GaussianBroadeningWarning,
                   'CollisionalBroadeningWarning': CollisionalBroadeningWarning,
                   'VoigtBroadeningWarning': VoigtBroadeningWarning,
@@ -120,6 +121,7 @@ See Also
 # other warnings
 default_warning_status = {
     'default': 'warn',          # default
+    'SlitDispersionWarning': 'warn',
     'GaussianBroadeningWarning': 'once',          # once per Spectrum calculation
     'CollisionalBroadeningWarning': 'once',       # once per Spectrum calculation
     'VoigtBroadeningWarning': 'once',             # once per Spectrum calculation
