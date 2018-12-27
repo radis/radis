@@ -143,9 +143,9 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
         fig, [ax0, ax1] = plot_diff(s, s_hapi, var='transmittance_noslit', method='ratio',
                   show=plot)
         
-        ax0.annotate(r'[P64](00$^\mathrm{0}$0)$\rightarrow $(00$^\mathrm{0}$1)', (2286.945, 0.76), (2286.94, 0.8), 
+        ax0.annotate(r'[P64](00$^\mathregular{0}$0)$\rightarrow $(00$^\mathregular{0}$1)', (2286.945, 0.76), (2286.94, 0.8), 
                      arrowprops=dict(arrowstyle="->", facecolor='black'))
-        ax0.annotate(r'[P53](01$^\mathrm{1}$0)$\rightarrow $(01$^\mathrm{1}$1)', (2286.9, 0.78), (2286.9, 0.82), 
+        ax0.annotate(r'[P53](01$^\mathregular{1}$0)$\rightarrow $(01$^\mathregular{1}$1)', (2286.9, 0.78), (2286.9, 0.82), 
                      arrowprops=dict(arrowstyle="->", facecolor='black'),
                      horizontalalignment='right')
         ax1.set_ylim(0.95, 1.05)

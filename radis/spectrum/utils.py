@@ -111,10 +111,10 @@ def make_up(label):
 
     # Improve units
     label = label.replace('cm_1', 'cm-1')
-    label = label.replace('cm-1', 'cm$^{-1}$')
-    label = label.replace('m2', 'm$^2$')
-    label = label.replace('m3', 'm$^3$')
-    label = label.replace('I/I0', 'I/I$_\mathrm{0}$')    # transmittance unit
+    label = label.replace('cm-1', 'cm$^\mathregular{-1}$')
+    label = label.replace('m2', 'm$^\mathregular{2}$')
+    label = label.replace('m3', 'm$^\mathregular{3}$')
+    label = label.replace('I/I0', 'I/I$_\mathregular{0}$')    # transmittance unit
 
     # Improve text
     if not '_noslit' in label:
