@@ -593,6 +593,9 @@ class Spectrum(object):
         elif var in NON_CONVOLUTED_QUANTITIES:  # non convoluted
             vartype = 'non_convoluted'
             I = self._q[var]
+        elif var in self._q:   # not declared, but exists. Assumes it's non_convoluted?
+            vartype = 'non_convoluted'
+            I =self._q[var]
         else:
             raise ValueError('Unexpected quantity: {0}'.format(var))
 
@@ -1442,15 +1445,22 @@ class Spectrum(object):
         # they cannot be differenced. But at least this allows user to plot 
         # both on the same figure if they want to compare
         
+        def clean_error_msg(string):
+            string = string.replace('$^\mathregular{', '^')
+            string = string.replace('}$', '')
+            return string
+        
         if not force and (fig.gca().get_xlabel().lower() not in ['', xlabel.lower()]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
                              'on a same figure with different xlabel: {0}, {1}'.format(
-                            fig.gca().get_xlabel(), xlabel)+\
+                            clean_error_msg(fig.gca().get_xlabel()), 
+                            clean_error_msg(xlabel))+\
                             'Use force=True if you really want to plot')
         if not force and (fig.gca().get_ylabel().lower() not in ['', ylabel.lower()]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
                              'on a same figure with different ylabel: \n{0}\n{1}'.format(
-                            fig.gca().get_ylabel(), ylabel)+\
+                            clean_error_msg(fig.gca().get_ylabel()), 
+                            clean_error_msg(ylabel))+\
                             '\nUse force=True if you really want to plot')
         
         # Add extra plotting parameters
@@ -3166,7 +3176,8 @@ class Spectrum(object):
             self._q[name] = np.array(I)              # copy
 
         else:
-            raise ValueError('Unknown quantity: {0}'.format(name))
+            raise ValueError('Unknown quantity: {0}. Expected one of: {1}'.format(name,
+                             CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES))
 
         # also make the quantity accessible with s.[name] like Pandas dataframes (removed eventually)
        # setattr(self, name, quantity)   # Warning this makes another copy of it (it's a tuple!)
