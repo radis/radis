@@ -39,23 +39,22 @@ sys.path.insert(0, os.path.abspath('.'))
 # Reference: 
 # https://github.com/rtfd/readthedocs.org/issues/1139
 #
-# Note:
-# comment this section if running locally from gendocs.sh
 
-def run_apidoc(_):
-    from sphinx.apidoc import main
-    from os.path import join, abspath, dirname
-#    import sys
-#    sys.path.append(join(dirname(__file__), '..'))
-    cur_dir = abspath(dirname(__file__))
-    source_dir = abspath(join(cur_dir, 'source'))
-    module = join(cur_dir,"..","radis")
-    print(cur_dir)
-    print(source_dir)
-    main(['-e', '-o', source_dir, module, '--force'])
+if True:  # @EP comment this section if running locally from gendocs.sh (see above)
+    def run_apidoc(_):
+        from sphinx.apidoc import main
+        from os.path import join, abspath, dirname
+    #    import sys
+    #    sys.path.append(join(dirname(__file__), '..'))
+        cur_dir = abspath(dirname(__file__))
+        source_dir = abspath(join(cur_dir, 'source'))
+        module = join(cur_dir,"..","radis")
+        print(cur_dir)
+        print(source_dir)
+        main(['-e', '-o', source_dir, module, '--force'])
 
-def setup(app):
-    app.connect('builder-inited', run_apidoc)
+    def setup(app):
+        app.connect('builder-inited', run_apidoc)
 
 # %% --------------------------------------
 
@@ -77,12 +76,18 @@ extensions = [
     #'numpydoc', 
     #'sphinxcontrib.napoleon',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx',
+    'sphinx.ext.intersphinx'
 ]
 
 # Reference other packages
 intersphinx_mapping = {'joblib': ('https://joblib.readthedocs.io/en/latest/', None),
                        'astroquery': ('http://astroquery.readthedocs.io/en/latest/', None),
+                       'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+                       'matplotlib': ('https://matplotlib.org/', None),
+                       'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+                       'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
+                       'cantera': ('https://www.cantera.org/documentation/docs-2.4/sphinx/html/', None),
+                       'pytexit': ('https://pytexit.readthedocs.io/en/latest/', None)
                        }
 
 napoleon_google_docstring = False

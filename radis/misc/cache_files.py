@@ -15,7 +15,8 @@ Routine Listing
 See Also
 --------
 
-:func:`~radis.io.hitran.hit2df`, :func:`~radis.io.cdsd.cdsd2df`
+:py:func:`~radis.io.hitran.hit2df`, 
+:py:func:`~radis.io.cdsd.cdsd2df`
 
 -------------------------------------------------------------------------------
 
@@ -27,23 +28,23 @@ See Also
 # https://gist.github.com/gansanay/4514ec731da1a40d8811a2b3c313f836
 # and pd.read_feather(file, nthreads=3)
 
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function, division
+# Note: don't import unicode_literals because it breaks the df.to_hdf of 
+# save_to_hdf because of a stupid unicode/str error in Python 2.7
 import os
 import h5py
 import radis
 from warnings import warn
 from os.path import exists
+from radis import OLDEST_COMPATIBLE_VERSION
 from radis.misc.basics import compare_dict, is_float
-from radis.misc.printer import printr
+from radis.misc.printer import printr, printm
 import pandas as pd
 
 
 class DeprecatedFileError(DeprecationWarning):
     pass
 
-
-OLDEST_COMPATIBLE_VERSION = '0.1.22'
 '''str: forces to regenerate cache files that were created in a previous version'''
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
@@ -51,15 +52,130 @@ assert radis.__version__ >= OLDEST_COMPATIBLE_VERSION
 
 # Utils
 
-def get_cache_file(fcache):
+def load_h5_cache_file(cachefile, use_cached, metadata, current_version, 
+                       last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+                       verbose=True):
+    ''' Function to load a h5 cache file
+    
+    Parameters
+    ----------
+    
+    cachefile: str
+        cache file path
+    
+    use_cached: str
+        use cache file if value is not ``False``:
+        
+        - if ``True``, use (and generate if doesnt exist) cache file.
+        - if ``'regen'``, delete cache file (if exists) so it is regenerated
+        - if ``'force'``, use cache file and raises an error if it doesnt exist
+        
+        if using the cache file, check if the file is deprecated. If it 
+        is deprecated, regenerate the file unless ``'force'`` was used
+        (in that case, raise an error)
+        
+    metadata: dict
+        values are compared to cache file attributes. If they dont match,
+        the file is considered deprecated. See ``use_cached`` to know
+        how to handle deprecated files
+        
+    current_version: str
+        version is compared to cache file version (part of attributes). 
+        If current version is superior, a simple warning is triggered.
+        
+    last_compatible_version: str
+        if file version is inferior to this, file is considered deprecated. 
+        See ``use_cached`` to know how to handle deprecated files. 
+        Default :data:`~radis.OLDEST_COMPATIBLE_VERSION`. 
+        
+    Returns
+    -------
+    
+    df: pandas DataFrame, or None
+        None if no cache file was found, or if it was deleted
+        
+        
+    See Also
+    --------
+    
+    :data:`~radis.OLDEST_COMPATIBLE_VERSION`
+        
+    '''
+
+    # 1. know if we have to load the file
+    if not use_cached:
+        return None
+    elif use_cached == 'regen' and exists(cachefile):
+        os.remove(cachefile)
+        if verbose:
+            printm('Deleted h5 cache file : {0}'.format(cachefile))
+        return None
+    
+    # 2. check the file is here
+    if not exists(cachefile):
+        if use_cached == 'force':
+            raise ValueError('Cache file {0} doesnt exist'.format(cachefile))
+        else:
+            return None   # File doesn't exist. It's okay. 
+        
+    # 3. read file attributes to know if it's deprecated
+    try:
+        check_not_deprecated(cachefile, metadata, current_version=current_version,
+                             last_compatible_version=last_compatible_version)
+    # ... if deprecated, raise an error only if 'force'
+    except DeprecatedFileError as err:
+        if use_cached == 'force':
+            raise err
+        else:
+            if verbose:
+                printr('File {0} deprecated:\n{1}\nDeleting it!'.format(
+                    cachefile, str(err)))
+            os.remove(cachefile)
+            return None
+    # 4. File is not not deprecated: read the content.
+    else:
+        df = None
+        if verbose>=2:
+            printm('Reading cache file ({0})'.format(cachefile))
+        try:
+            df = pd.read_hdf(cachefile, 'df')
+        except KeyError as err:  # An error happened during file reading.
+            # Fail safe by deleting cache file (unless we explicitely wanted it
+            # with 'force')
+            if use_cached == 'force':
+                raise
+            else:
+                if verbose:
+                    printr('An error happened during cache file reading ' +
+                           '{0}:\n{1}\n'.format(cachefile, str(err)) +
+                           'Deleting cache file to regenerate it')
+                os.remove(cachefile)
+                df = None
+
+    return df
+
+def get_cache_file(fcache, verbose=True):
     ''' Load HDF5 cache file 
     
+    Parameters
+    ----------
+    
+    fcache: str
+        file name
+    
+    Other Parameters
+    ----------------
+    
+    verbose: bool
+        If >=2, also warns if non numeric values are present (it would make 
+        calculations slower)
+
     Notes
     -----
     
     we could start using FEATHER format instead. See notes in cache_files.py 
     '''
-    
+
     # Load file
     
     df = pd.read_hdf(fcache, 'df')
@@ -67,7 +183,8 @@ def get_cache_file(fcache):
     # Check file
     
     # ... 'object' columns slow everything down (not fixed format strings!)
-    _warn_if_object_columns(df, fcache)
+    if verbose >= 2:
+        _warn_if_object_columns(df, fcache)
     
     return df
 
@@ -159,7 +276,7 @@ def check_not_deprecated(file, metadata, current_version=None,
 
     last_backward_compatible_version: str
         If the file was generated in a non-compatible version, an error is raised.
-        Default :data:`~radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION`
+        Default :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
 
     '''
 
@@ -202,7 +319,9 @@ def check_not_deprecated(file, metadata, current_version=None,
     elif current_version == file_version:
         out = True
     else:
-        raise ValueError('File generated with a future version?')
+        raise ValueError('Cache file ({0}) generated with a future version ({1} > {2})? '.format(
+                            file, file_version, current_version)+\
+                         "Do you own a DeLorean? Delete the file manually if you understand what happened")
 
     # Compare metadata
     metadata = _h5_compatible(metadata)
@@ -234,9 +353,10 @@ def _warn_if_object_columns(df, fname):
     if len(objects) > 0:
         warn('Dataframe in {0} contains `object` format columns: {1}. '.format(
                 fname, objects)+'Operations will be slower. Try to convert them to numeric.')
-        
 
-def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
+
+def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True,
+                verbose=True):
     ''' Save energy levels to HDF5 file. Add metadata and version 
 
     Parameters
@@ -257,13 +377,20 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
         file version. If ``None``, the current :data:`radis.__version__` is used. 
         On file loading, a warning will be raised if the current version is 
         posterior, or an error if the file version is set to be uncompatible.
-        See :data:`~radis.misc.cache_files.OLDEST_COMPATIBLE_VERSION`
+        See :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
 
     key: str
         dataset name. Default ``'df'`` 
 
     overwrite: boolean
         if ``True``, overwrites file. Else, raise an error if it exists.
+
+    Other Parameters
+    ----------------
+    
+    verbose: bool
+        If >=2, also warns if non numeric values are present (it would make 
+        calculations slower)
 
     Notes
     -----
@@ -276,7 +403,8 @@ def save_to_hdf(df, fname, metadata, version=None, key='df', overwrite=True):
     assert fname.endswith('.h5')
     assert 'version' not in metadata
     # ... 'object' columns slow everything down (not fixed format strings!)
-    _warn_if_object_columns(df, fname)
+    if verbose >= 2:
+        _warn_if_object_columns(df, fname)
 
     # Update metadata format
     metadata = _h5_compatible(metadata)

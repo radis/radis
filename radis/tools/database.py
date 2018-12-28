@@ -13,7 +13,7 @@ Examples
 
 See and get objects from database::
 
-    from neq.spec import SpecDatabase
+    from radis.lbl import SpecDatabase
     db = SpecDatabase(r"path/to/database")     # create or loads database
 
     db.update()  # in case something changed (like a file was added manually)
@@ -156,7 +156,8 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
         parameters to discard. To save some memory.
 
     compress: boolean
-        if True, removes all quantities that can be regenerated with s.update(),
+        if ``True``, saves under binary format. Faster and takes less space.
+        If ``2``, removes all quantities that can be regenerated with s.update(),
         e.g, transmittance if abscoeff and path length are given, radiance if
         emisscoeff and abscoeff are given in non-optically thin case, etc.
         Default ``False``
@@ -234,6 +235,8 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     reproduced on loading .
 
     '''
+    # TODO: convert functions to text with marshal: 
+    # see: https://stackoverflow.com/a/51938459/5622825
 
     # Add all in a dictionary using json-tricks (that deals with numpy and pandas
     # array, as well as text: see 24/03/18 for former implementation that was
@@ -246,10 +249,19 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     for k in discard:
         if k in sjson:
             del sjson[k]
+            
+    # Check that all conditions are jsonable, discard if not
+    for k in list(sjson['conditions'].keys()):
+        v = sjson['conditions'][k]
+        if not is_jsonable(v):
+            if verbose:
+                printr('Discarded {0} from conditions as not jsonable ({1})'.format(
+                        k, type(v)))
+            del sjson['conditions'][k]
 
-    # if compress, remove unecessary spectral quantities (that can be recomputed
+    # if compress>=2, remove unecessary spectral quantities (that can be recomputed
     # from the rest)
-    if compress:
+    if compress>=2:
         sjson['_q'] = sjson['_q'].copy()
         sjson['_q_conv'] = sjson['_q_conv'].copy()
         sjson = _compress(s, sjson)
@@ -274,6 +286,8 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
         date = ''
 
     # ... add conditions info
+    if isinstance(add_info, string_types):
+        add_info = [add_info]
     if add_info not in [[], {}, None, False]:
         # complete name with info about calculation conditions
         info = []
@@ -344,7 +358,7 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
 
 
 def _compress(s, sjson):
-    ''' if True, removes all quantities that can be regenerated with s.update(),
+    ''' removes all quantities that can be regenerated with s.update(),
     e.g, transmittance if abscoeff and path length are given, radiance if
     emisscoeff and abscoeff are given in non-optically thin case, etc.
     Default ``False`` '''
@@ -379,27 +393,7 @@ def _compress(s, sjson):
 
 # %% Load functions
 
-def load(file, binary=False):
-    '''
-    Parameters
-    ----------
-
-    file: str
-        .spec file to load
-
-    binary: boolean
-        set to True if the file is encoded as binary. Default ``False``
-
-    (wrapper to :func:`radis.tools.database.load_spec`)
-
-    '''
-
-    warn(DeprecationWarning("load replaced with more explicit load_spec"))
-
-    return load_spec(file)
-
-
-def load_spec(file, binary=False):
+def load_spec(file, binary=False): #, return_binary_status=False):
     ''' Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object. 
     Adds ``file`` in the Spectrum :attr:`~radis.spectrum.spectrum.Spectrum.file` 
     attribute.
@@ -463,6 +457,12 @@ def load_spec(file, binary=False):
     if fixed:
         _update_to_latest_format(s, file, binary)
     
+#    if return_binary_status:   # feature discarded. Could be used to accelerate database reading, 
+                               # but we better raise a warning and catch it.
+#        out = s, binary
+#    else:
+#        out = s
+        
     return s
 
 
@@ -509,8 +509,8 @@ def _json_to_spec(sload, file=''):
     kwargs = {}
 
     # ... load slit if exists
-    if 'slit' in sload:
-        slit = {k: np.array(v) for k, v in sload['slit'].items()}
+    if '_slit' in sload:
+        slit = {k: np.array(v) for k, v in sload['_slit'].items()}
     else:
         slit = {}
 
@@ -730,7 +730,8 @@ def _update_to_latest_format(s, file, binary):
     
     binary: boolean
         the binary format that was used to open the object. Keep the same.
-        
+        if ``True``, saves under binary format. Faster and takes less space.
+        If ``2``.
         
     Examples
     --------
@@ -755,37 +756,61 @@ def _update_to_latest_format(s, file, binary):
         
     
 
-def plot_spec(file, what='radiance', title=True):
+def plot_spec(file, what='radiance', title=True, **kwargs):
     ''' Plot a .spec file. *
 
     Parameters
     ----------
 
-    file: str
-        .spec file to load
+    file: str,  or Spectrum object
+        .spec file to load, or Spectrum object directly 
 
+    Other Parameters
+    ----------------
+
+    kwargs: dict
+    	arguments forwarded to :meth:`~radis.spectrum.spectrum.Spectrum.plot`
+
+        
+    Returns
+    -------
+    
+    fig: matplotlib figure 
+        where the Spectrum has been plotted
+        
+    See Also
+    --------
+    
+    Uses the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method internally
+    
     '''
 
-    s = load_spec(file)
+    if isinstance(file, string_types):
+        s = load_spec(file)
+    elif isinstance(file, Spectrum):
+        s = file
+    else:
+        raise ValueError('file should be a string, or a Spectrum object directly. '+\
+                         'Got {0}'.format(type(file)))
 
     try:
-        s.plot(what)
+        s.plot(what, **kwargs)
     except KeyError:
         try:
             print((sys.exc_info()[0], sys.exc_info()[1]))
-            s.plot(what + '_noslit')  # who knows maybe it will work :)
+            s.plot(what + '_noslit', **kwargs)  # who knows maybe it will work :)
             print(('Printing {0} instead'.format(what + '_noslit')))
         except:
             print((sys.exc_info()[0], sys.exc_info()[1]))
             # Plot something
-            s.plot(s.get_vars()[0])
+            s.plot(s.get_vars()[0], **kwargs)
             print(('Printing {0} instead'.format(s.get_vars()[0])))
 
-    if title:
-        plt.title(basename(file))
+    if title and s.file:
+        plt.title(basename(s.file))
         plt.tight_layout()
 
-    return
+    return plt.gcf()
 
 # %% Database class
 # ... loads database and manipulate it
@@ -878,13 +903,14 @@ class SpecDatabase():
         :meth:`~radis.tools.database.SpecDatabase.add`, 
         :meth:`~radis.tools.database.SpecDatabase.compress_to`, 
         :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
-
+        
+        Compare another Spectrum to all spectra in the database:
+            
+        :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`, 
+            
         '''
-        # TODO @devs: add a method that allow to get the closest Spectrum to a SpecDatabase
-        # | Handy for fitting experimental spectra against a precomputed database
-        # | Maybe, use:
-        # | get_residual
-        # | SpecDatabase.map? 
+        # TODO @devs: generate a SpecDatabase from a dict. 
+        # use the key of the dict insted of the file. 
 
         # Assert name looks like a directory
         name, ext = splitext(path)
@@ -1054,7 +1080,7 @@ class SpecDatabase():
         # Print index
         self.print_index()
 
-    def compress_to(self, new_folder):
+    def compress_to(self, new_folder, compress=True):
         ''' Saves the Database in a new folder with all Spectrum objects under
         compressed (binary) format. Read/write is much faster. 
         After the operation, a new database should be initialized in the new_folder
@@ -1066,6 +1092,10 @@ class SpecDatabase():
         new_folder: str
             folder where to store the compressed SpecDatabase. If doesn't exist,
             it is created.
+            
+        compress: boolean, or 2
+            if ``True``, saves under binary format. Faster and takes less space.
+            If ``2``, additionaly remove all redundant quantities. 
 
         See Also
         --------
@@ -1082,7 +1112,7 @@ class SpecDatabase():
             os.makedirs(new_folder)
             
         for file, s in self.items():  # loop over all spectra
-            s.store(join(new_folder, file), compress=True)
+            s.store(join(new_folder, file), compress=compress)
         
         if self.verbose:
             print('Database compressed to {0}'.format(new_folder))
@@ -1132,7 +1162,7 @@ class SpecDatabase():
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
 
-    def add(self, spectrum, **kwargs):
+    def add(self, spectrum, store_name = None, **kwargs):
         ''' Add Spectrum to database, whether it's a Spectrum object or a file
         that stores one. Check it's not in database already.
 
@@ -1144,6 +1174,11 @@ class SpecDatabase():
             then adds the file
             if path to file: will first copy the file in database folder, then
             adds the file
+            
+        [Optionnal] 
+        
+        store_name: string
+            name of the file where the spectrum will be stored
 
         **kwargs: **dict
             extra parameters used in the case where spectrum is a file and a .spec object
@@ -1207,11 +1242,14 @@ class SpecDatabase():
         # ... input is a Spectrum. Store it in database and load it from there
         if is_spectrum(spectrum):
             # add defaults
-            if not 'add_info' in kwargs:
-                kwargs['add_info'] = self.add_info
-            if not 'add_date' in kwargs:
-                kwargs['add_date'] = self.add_date
-            file = spectrum.store(self.path, compress=compress, **kwargs)
+            if store_name == None:
+                if not 'add_info' in kwargs:
+                    kwargs['add_info'] = self.add_info
+                if not 'add_date' in kwargs:
+                    kwargs['add_date'] = self.add_date
+                file = spectrum.store(self.path, compress=compress, **kwargs)
+            else:
+                file = spectrum.store(self.path + '/' + str(store_name), compress=compress, **kwargs)
             # Note we could have added the Spectrum directly
             # (saves the load stage) but it also serves to
             # check the file we just stored is readable
@@ -1256,7 +1294,85 @@ class SpecDatabase():
         self.print_index()
 
         return file
+    
+    def fit_spectrum(self, s_exp, residual=None, normalize=False,
+                     normalize_how='max',
+                     conditions='', **kwconditions):
+        ''' Returns the Spectrum in the database that has the lowest residual
+        with s_exp
+        
+        Parameters
+        ----------
+        
+        s_exp: Spectrum
+            Spectrum to fit (typically: experimental spectrum)
+            
+        Other Parameters
+        ----------------
+        
+        residual: func, or ``None``
+            which residual function to use. If ``None``, use 
+            :func:`~radis.spectrum.compare.get_residual` with option 
+            ``ignore_nan=True`` and options ``normalize`` and ``normalize_how``
+            as defined by the user. 
+            
+            ``get_residual`` should have the form::
+                    
+                lambda s_exp, s, normalize: func(s_exp, s, normalize=normalize)
+                
+            where the output is a float. 
+            Default ``None``
+            
+        conditions, **kwconditions: str, **dict
+            restrain fitting to only Spectrum that match the given conditions
+            in the database. See :meth:`~radis.tools.database.SpecDatabase.get`
+            for more information.
+            
+        normalize: bool, or Tuple
+            see :func:`~radis.spectrum.compare.get_residual`
 
+        normalize_how: 'max', 'area'
+            see :func:`~radis.spectrum.compare.get_residual`
+            
+            
+        Returns 
+        -------
+        
+        s_best: Spectrum
+            closest Spectrum to s_exp
+            
+        Examples
+        --------
+        
+        ::
+            
+            from radis import get_residual
+            db = SpecDatabase('...')
+            db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
+        
+        '''
+        
+        if residual is None:
+            from radis.spectrum.compare import get_residual
+            if len(s_exp.get_vars()) != 1:
+                raise ValueError('Multiple variables in fitted Spectrum. Please '+\
+                                 'define which residual to use with, for instance: '+\
+                                 '`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)')
+            residual = lambda s_exp, s, normalize: get_residual(s_exp, s, 
+                                                                var=s_exp.get_vars()[0],
+                                                                ignore_nan=True,
+                                                                normalize=normalize,
+                                                                normalize_how=normalize_how)
+            
+        kwconditions.update({'inplace':True})  # dont copy Spectrum to be faster
+        spectra = self.get(conditions=conditions, **kwconditions)
+        res = np.array([residual(s_exp, s, normalize=normalize) for s in spectra])
+        assert not np.isnan(res).any()
+        
+        i = np.argmin(np.array(res))
+
+        return spectra[i].copy()       # dont forget to copy the Spectrum we return
+        
     def _load_files(self, files):
         ''' Parse files and generate a database
         
@@ -1333,12 +1449,14 @@ class SpecDatabase():
             the database
 
         conditions: str
-            a list of conditions
-            >>> get('Tvib==3000 & Trot==1500')
+            a list of conditions. Example::
+            
+                db.get('Tvib==3000 & Trot==1500')
 
         kwconditions: dict
-            an unfolded dict of conditions
-            >>> get(Tvib=3000, Trot=1500)
+            an unfolded dict of conditions. Example::
+            
+                db.get(Tvib=3000, Trot=1500)
 
         Other Parameters
         ----------------
@@ -1350,21 +1468,26 @@ class SpecDatabase():
         Examples
         --------
 
-        >>> spec_list = db.get('Tvib==3000 & Trot==1300')
+        ::
+        
+            spec_list = db.get('Tvib==3000 & Trot==1300')
 
-        or
+        or::
 
-        >>> spec_list = db.get(Tvib=3000, Trot=1300)
+            spec_list = db.get(Tvib=3000, Trot=1300)
 
 
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`
-        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`,
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`,
         :meth:`~radis.tools.database.SpecDatabase.items`
 
         '''
+
+        # type: bool, default False
+        inplace = kwconditions.pop('inplace', False)
 
         # Test inputs
         for (k, _) in kwconditions.items():
@@ -1375,52 +1498,51 @@ class SpecDatabase():
             warn('Empty database')
             return []
 
-        # type: bool, default False
-        inplace = kwconditions.pop('inplace', False)
-
         # Unique condition method
         if conditions != '' and kwconditions != {}:
             raise ValueError(
                 "Please choose one of the two input format (str or dict) exclusively")
 
         if conditions == '' and kwconditions == {}:
-            return list(self.df['Spectrum'])
-
-        # Find Spectrum that match conditions
-        if conditions != '':   # ... with input conditions query directly
-            dg = self.df.query(conditions)
-        else:                  # ... first write input conditions query
-            query = []
-            for (k, v) in kwconditions.items():
-                if isinstance(v, string_types):
-                    query.append("{0} == '{1}'".format(k, v))
-                else:
-                    #                    query.append('{0} == {1}'.format(k,v))
-                    query.append('{0} == {1}'.format(k, v.__repr__()))
-                    # ... for som reason {1}.format() would remove some digit
-                    # ... to floats in Python2. Calling .__repr__() keeps
-                    # ... the correct format, and has no other consequences as far
-                    # ... as I can tell
-
-            # There is a limitation in numpy: a max of 32 arguments is required.
-            # Below we write a workaround when the Spectrum has more than 32 conditions
-            if len(query) < 32:
-                query = ' & '.join(query)
-                if __debug__:
-                    printdbg('Database query: {0}'.format(query))
-                dg = self.df.query(query)
-            else:
-                # cut in <32-long parts
-                N = len(query)//32+1
-                querypart = ' & '.join(query[::N])
-                dg = self.df.query(querypart)
-                for i in range(1, N+1):
-                    querypart = ' & '.join(query[i::N])
+            # Get all Spectrum objects
+            out = list(self.df['Spectrum'])
+            
+        else:
+            # Find Spectrum that match conditions
+            if conditions != '':   # ... with input conditions query directly
+                dg = self.df.query(conditions)
+            else:                  # ... first write input conditions query
+                query = []
+                for (k, v) in kwconditions.items():
+                    if isinstance(v, string_types):
+                        query.append("{0} == '{1}'".format(k, v))
+                    else:
+                        #                    query.append('{0} == {1}'.format(k,v))
+                        query.append('{0} == {1}'.format(k, v.__repr__()))
+                        # ... for som reason {1}.format() would remove some digit
+                        # ... to floats in Python2. Calling .__repr__() keeps
+                        # ... the correct format, and has no other consequences as far
+                        # ... as I can tell
+    
+                # There is a limitation in numpy: a max of 32 arguments is required.
+                # Below we write a workaround when the Spectrum has more than 32 conditions
+                if len(query) < 32:
+                    query = ' & '.join(query)
                     if __debug__:
-                        printdbg('Database query: {0}'.format(querypart))
-                    dg = dg.query(querypart)
-
-        out = list(dg['Spectrum'])
+                        printdbg('Database query: {0}'.format(query))
+                    dg = self.df.query(query)
+                else:
+                    # cut in <32-long parts
+                    N = len(query)//32+1
+                    querypart = ' & '.join(query[::N])
+                    dg = self.df.query(querypart)
+                    for i in range(1, N+1):
+                        querypart = ' & '.join(query[i::N])
+                        if __debug__:
+                            printdbg('Database query: {0}'.format(querypart))
+                        dg = dg.query(querypart)
+    
+            out = list(dg['Spectrum'])
 
         if not inplace:
             out = [s.copy() for s in out]
@@ -1440,7 +1562,7 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get`,
         :meth:`~radis.tools.database.SpecDatabase.get_closest`
 
         '''
@@ -1496,7 +1618,7 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecDatabase.get`,
         :meth:`~radis.tools.database.SpecDatabase.get_unique`
 
         '''
@@ -1579,7 +1701,7 @@ class SpecDatabase():
 
             # Get spectrum with minimum distance to target conditions
             # type: Spectrum
-            sout = self.df.ix[dg['_d'].idxmin(), 'Spectrum']
+            sout = self.df.loc[dg['_d'].idxmin(), 'Spectrum']
         finally:
             del dg['_d']
 
@@ -1663,6 +1785,11 @@ class SpecDatabase():
 
     def __iter__(self):
         ''' Iterate over all Spectra in database 
+        
+        .. warning::
+            
+            returns the inplace object directly. If you modify them, the Spectra
+            are modified
 
         Examples
         --------
@@ -1687,14 +1814,14 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`
-        :meth:`~radis.tools.database.SpecDatabase.values`
-        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.values`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
         :meth:`~radis.tools.database.SpecDatabase.to_dict`
 
         '''
 
-        return self.get().__iter__()
+        return self.get(inplace=True).__iter__()
 
     def keys(self):
         ''' Iterate over all {path} in database 
@@ -1702,8 +1829,8 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.values`
-        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.values`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
         :meth:`~radis.tools.database.SpecDatabase.to_dict`
 
         '''
@@ -1716,8 +1843,8 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`
-        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
         :meth:`~radis.tools.database.SpecDatabase.to_dict`
 
         '''
@@ -1746,16 +1873,66 @@ class SpecDatabase():
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`
-        :meth:`~radis.tools.database.SpecDatabase.values`
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.values`,
         :meth:`~radis.tools.database.SpecDatabase.to_dict`
 
         '''
 
         return list(self.to_dict().items())
+    
+    def plot(self, nfig=None, legend=True, **kwargs):
+        ''' Plot all spectra in database 
+        
+        Parameters
+        ----------
+        
+        nfig: str, or int, or ``None``
+            figure to plot on. Default ``None``: creates one
+            
+        Other Parameters
+        ----------------
+        
+        kwargs: dict
+            parameters forwarded to the Spectrum :meth:`~radis.spectrum.spectrum.plot` 
+            method
+            
+        legend: bool
+            if ``True``, plot legend. 
+        
+        Returns
+        -------
+        
+        fig, ax: matplotlib figure and ax
+            figure 
+            
+        Examples
+        --------
+        
+        Plot all spectra in a folder::
+            
+            db = SpecDatabase('my_folder')
+            db.plot(wunit='nm')
+            
+        See Also
+        --------
+        
+        Spectrum :meth:`~radis.spectrum.spectrum.plot` method
+            
+        '''
+        
+        fig = plt.figure(num=nfig)
+        ax = fig.gca()
+        for s in self:
+            s.plot(nfig='same', **kwargs)
+        
+        if legend:
+            plt.legend(loc='best')
+            
+        return fig, ax
 
-    def plot(self, cond_x, cond_y, z_value=None, nfig=None):
-        ''' Plot database points available:
+    def plot_cond(self, cond_x, cond_y, z_value=None, nfig=None):
+        ''' Plot database conditions available:
 
         Parameters
         ----------

@@ -16,7 +16,7 @@ from .arrays import (norm, norm_on, scale_to, shift_array, calc_diff,
                      nantrapz, logspace, is_sorted, is_sorted_backward)
 from .basics import (key_max_val, exec_file, remove_duplicates, partition,
                      is_float, list_if_float, compare_dict, compare_lists, compare_paths,
-                     merge_lists)
+                     merge_lists, make_folders)
 from .curve import (curve_add, curve_substract, curve_divide, curve_multiply,
                     curve_distance)
 from .config import (getDatabankEntries,

@@ -164,7 +164,7 @@ def drop_object_format_columns(df, verbose=True):
     objects = [k for k,v in df.dtypes.items() if v == object]
     for k in objects:
         del df[k]
-    if verbose and len(objects)>0:
+    if verbose>=2 and len(objects)>0:
         print(('The following columns had the `object` format and were removed: {0}'.format(
                 objects)))
     return df

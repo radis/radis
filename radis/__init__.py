@@ -114,12 +114,31 @@ See Also
 :func:`~radis.tools.database._update_to_latest_format`
 '''
 
+OLDEST_COMPATIBLE_VERSION = '0.9.1'
+'''str: forces to regenerate cache files that were created in a previous version
+
+See Also
+--------
+
+:py:func:`~radis.misc.cache_files.load_h5_cache_file`
+'''
+
 # %% Version
 
 
 def get_version(verbose=False, add_git_number=True):
     ''' Reads __version.txt__ and retrieve version number
-    If ``add_git``, also appends Git commit number if we're on a gitted session '''
+    If ``add_git``, also appends Git commit number if we're on a gitted session 
+    
+    Examples
+    --------
+    
+    ::
+        
+        import radis
+        print(radis.get_version())
+        
+        '''
 
     # First get version
     with open(os.path.join(getProjectRoot(), '__version__.txt')) as version_file:
@@ -151,8 +170,10 @@ __version__ = get_version(add_git_number=False)
 
 from .spectrum import *        # Spectrum object
 from .io import *              # input / output
+from .db import *              # database of molecules
 from .lbl import *             # line-by-line module
 from .los import *             # line-of-sight module
+from .levels import *          # rovibrational energies and partition functions
 from .phys import *            # conversion functions, blackbody objects
 from .tools import *           # slit, database, line survey, etc.
 from .test import *            # test

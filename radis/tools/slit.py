@@ -45,6 +45,7 @@ from numpy import exp, sqrt, trapz
 from numpy import log as ln
 from scipy.interpolate import splrep, splev
 from warnings import warn
+from radis.misc.warning import SlitDispersionWarning
 from radis.misc.arrays import evenly_distributed
 from radis.misc.basics import is_float
 from radis.misc.signal import resample_even
@@ -316,19 +317,22 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
                                         waveunit=return_unit,
                                         scale=scale_slit,
                                         *args, **kwargs)
-
-    # Or import it
+       
+        
+    # Or import it from file or numpy input
     # ------------
-    elif isinstance(slit_function, string_types):  # import it
+    elif isinstance(slit_function, string_types) or isinstance(slit_function, np.ndarray):  # import it
         if __debug__:
             printdbg('get_slit_function: {0} in {1}, norm_by {2}, return in {3}'.format(
                 slit_function, unit, norm_by, return_unit))
+        
         wslit, Islit = import_experimental_slit(slit_function, norm_by=norm_by,  # norm is done later anyway
                                                 waveunit=unit, verbose=verbose,
                                                 auto_crop=auto_recenter_crop,
                                                 auto_recenter=auto_recenter_crop,
                                                 bplot=False,  # we will plot after resampling
                                                 *args, **kwargs)
+        
         # ... get unit
         # Normalize
         if norm_by == 'area':  # normalize by the area
@@ -671,18 +675,13 @@ def get_FWHM(w, I, return_index=False):
     [xmin, xmax]: int
 
 
-    Notes
-    -----
-
-    # TODO: Linearly interpolate at the boundary? insignificant for large number of points
-
-    
     See Also
     --------
     
     :func:`~radis.tools.slit.get_effective_FWHM`
     
     '''
+    # TODO: Linearly interpolate at the boundary? insignificant for large number of points
 
     upper = np.argwhere(I >= I.max()/2)
 
@@ -772,7 +771,8 @@ def offset_dilate_slit_function(w_slit_nm, I_slit, w_nm, slit_dispersion,
         if not 1-threshold < slit_dispersion(w_nm.max())/slit_dispersion(w_nm.min()) < 1+threshold:
             warn('Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}nm'.format(
                 w_nm.min(), w_nm.max(), abs(slit_dispersion(w_nm.max())/slit_dispersion(w_nm.min())-1
-                                      )*100)+'. Consider splitting your spectrum')
+                                      )*100)+'. Consider splitting your spectrum',
+                SlitDispersionWarning)
 
     # Offset slit and correct for dispersion
     w_slit_nm = w0 + slit_dispersion(w0) / slit_dispersion(wslit0)*(w_slit_nm-wslit0)
@@ -922,7 +922,7 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
     set_style('origin')
 
     try:
-        from neq.plot.toolbar import add_tools     # TODO: move in publib
+        from radis.plot.toolbar import add_tools     # TODO: move in publib
         add_tools()       # includes a Ruler to measure slit
     except:
         pass
@@ -1070,7 +1070,7 @@ def crop_slit(w_slit, I_slit, verbose=True):
 # %% Slit function models
 
 
-def import_experimental_slit(fname, norm_by='area', bplot=False,
+def import_experimental_slit(slit, norm_by='area', bplot=False,
                              waveunit='nm', auto_recenter=True, auto_crop=True,
                              center=None, scale=1, verbose=True):
     ''' Import instrumental slit function and normalize it
@@ -1079,7 +1079,7 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
     Parameters    
     ----------
 
-    fname: str
+    slit: str or numpy object (wslit, Islit)
         slit function spectrum
 
     norm_by: None, 'area', 'max'
@@ -1119,8 +1119,25 @@ def import_experimental_slit(fname, norm_by='area', bplot=False,
 
     '''
 
-    w_slit, I_slit = np.loadtxt(fname).T
+    #import
+    if isinstance(slit, string_types):
+        w_slit, I_slit = np.loadtxt(slit).T
+    #numpy input
+    elif isinstance(slit, np.ndarray):
+        a, b = np.shape(slit)
+        if a == 2:
+            w_slit, I_slit = slit
+        elif b == 2:
+            w_slit, I_slit = slit.T
+        else:
+            raise ValueError(
+            'Wrong format of slit_function. Should be 2 x n')
+    else:
+        raise TypeError(
+            'Unexpected type for slit function: {0}'.format(type(slit)))
 
+    assert np.shape(w_slit)==np.shape(I_slit)
+    
     # check sides are zeros
     if (not I_slit[0] == 0 and I_slit[-1] == 0):
         raise ValueError('Slit function must be null on each side. Fix it')

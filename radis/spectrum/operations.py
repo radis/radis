@@ -6,7 +6,47 @@ Handy functions for manipulation of :class:`~radis.spectrum.spectrum.Spectrum` o
 Routine Listing
 ---------------
 
-- :func:`~radis.spectrum.operations.substract`
+Operators:
+
+- :py:func:`~radis.spectrum.operations.multiply` : simply use ``s*2``
+- :py:func:`~radis.spectrum.operations.add_constant` : simply use ``s+1``
+- :py:func:`~radis.spectrum.operations.add_array` : simply use ``s+a``
+- :py:func:`~radis.spectrum.operations.add_spectra` : simply use ``s1+s2`` 
+- :py:func:`~radis.spectrum.operations.substract_spectra` : simply use ``s1-s2``
+
+Note that these operators are purely algebraic and should not be used in place
+of the line-of-sight functions, i.e, :py:func:`~radis.los.slabs.SerialSlabs` (``>``)
+and :py:func:`~radis.los.slabs.MergeSlabs` (``//``)
+
+Functions to manipulate one spectrum:
+    
+- :py:func:`~radis.spectrum.operations.crop`
+- :py:func:`~radis.spectrum.operations.offset`
+
+Play with baselines:
+    
+- :py:func:`~radis.spectrum.operations.get_baseline`
+- :py:func:`~radis.spectrum.operations.sub_baseline`
+    
+Functions to discard all but one spectral quantity:
+    
+- :py:func:`~radis.spectrum.operations.Transmittance`
+- :py:func:`~radis.spectrum.operations.Transmittance_noslit`
+- :py:func:`~radis.spectrum.operations.Radiance`
+- :py:func:`~radis.spectrum.operations.Radiance_noslit`
+
+Keeps all spectral quantities, but make emission equal to 0 (useful when
+calculating contributions of line of sight slabs):
+    
+- :py:func:`~radis.spectrum.operations.PerfectAbsorber`
+
+
+Examples
+--------
+
+Most of these functions are implemented with the standard operators. Ex::
+    
+    ((s_exp - 0.1)*10).plot()   # works for a Spectrum s_exp
 
 -------------------------------------------------------------------------------
 
@@ -18,7 +58,9 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.spectrum import Spectrum
 from radis.phys.convert import (cm2nm, nm2cm, cm2nm_air, nm_air2cm, air2vacuum, vacuum2air,
                                 dcm2dnm, dnm2dcm)
-from numpy import ones_like
+from numpy import ones_like, hstack
+from warnings import warn
+
 
 # %% Filter Spectra
 
@@ -39,7 +81,12 @@ def Transmittance(s):
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only the ``transmittance``,
         ``absorbance`` and/or ``abscoeff`` part of ``s``, where ``radiance_noslit`` ,
         ``emisscoeff`` and ``emissivity_noslit`` (if they exist) have been set to 0
- 
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.Transmittance_noslit`
+
     '''
 
     return s.copy(copy_lines=True, quantity='transmittance')
@@ -60,6 +107,10 @@ def Transmittance_noslit(s):
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only 
         ``transmittance_noslit`` defined
  
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.Transmittance`
     '''
 
     return s.copy(copy_lines=True, quantity='transmittance_noslit')
@@ -80,6 +131,10 @@ def Radiance(s):
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only ``radiance``
         defined
  
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.Radiance_noslit`
     '''
 
     return s.copy(copy_lines=True, quantity='radiance')
@@ -99,7 +154,12 @@ def Radiance_noslit(s):
     s_tr: Spectrum
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only ``radiance_noslit``
         defined
- 
+        
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.Radiance`
+
     '''
 
     return s.copy(copy_lines=True, quantity='radiance_noslit')
@@ -110,7 +170,7 @@ def PerfectAbsorber(s):
     ''' Makes a new Spectrum with the same transmittance/absorbance as Spectrum
     ``s``, but with radiance set to 0. 
     Useful to get contribution of different slabs in line-of-sight 
-    calculations)
+    calculations (see example).
     
     .. note:
         
@@ -133,6 +193,21 @@ def PerfectAbsorber(s):
         
     Examples
     --------
+    
+    Let's say you have a total line of sight::
+    
+        s_los = s1 > s2 > s3     
+        
+    If you now want to get the contribution of ``s2`` to the line-of-sight emission,
+    you can do::
+        
+        (s2 > PerfectAbsorber(s3)).plot('radiance_noslit')
+        
+    And the contribution of ``s1`` would be::
+        
+        (s1 > PerfectAbsorber(s2>s3)).plot('radiance_noslit') 
+    
+    See more examples in :ref:`Line-of-Sight module <label_los_index>`
     
     '''
     
@@ -235,27 +310,27 @@ def crop(s, wmin=None, wmax=None, wunit=None, medium=None,
     wmin0, wmax0 = wmin, wmax
     if wunit == 'nm' and waveunit == 'cm-1':
         if medium == 'air':
-            if wmin: wmin = nm_air2cm(wmax0)   # reverted
-            if wmax: wmax = nm_air2cm(wmin0)   # reverted
+            if wmax0: wmin = nm_air2cm(wmax0)   # reverted
+            if wmin0: wmax = nm_air2cm(wmin0)   # reverted
         else:
-            if wmin: wmin = nm2cm(wmax0)   # reverted
-            if wmax: wmax = nm2cm(wmin0)   # reverted
+            if wmax0: wmin = nm2cm(wmax0)   # reverted
+            if wmin0: wmax = nm2cm(wmin0)   # reverted
     elif wunit == 'cm-1' and waveunit == 'nm':
         if s.get_medium() == 'air':
-            if wmin: wmin = cm2nm_air(wmax0)   # nm in air
-            if wmax: wmax = cm2nm_air(wmin0)   # nm in air
+            if wmax0: wmin = cm2nm_air(wmax0)   # nm in air
+            if wmin0: wmax = cm2nm_air(wmin0)   # nm in air
         else:
-            if wmin: wmin = cm2nm(wmax0)   # get nm in vacuum
-            if wmax: wmax = cm2nm(wmin0)   # get nm in vacuum
+            if wmax0: wmin = cm2nm(wmax0)   # get nm in vacuum
+            if wmin0: wmax = cm2nm(wmin0)   # get nm in vacuum
     elif wunit == 'nm' and waveunit == 'nm':
         if s.get_medium() == 'air' and medium == 'vacuum':
             # convert from given medium ('vacuum') to spectrum medium ('air')
-            if wmin: wmin = vacuum2air(wmin0)
-            if wmax: wmax = vacuum2air(wmax0)
+            if wmin0: wmin = vacuum2air(wmin0)
+            if wmax0: wmax = vacuum2air(wmax0)
         elif s.get_medium() == 'vacuum' and medium == 'air':
             # the other way around
-            if wmin: wmin = air2vacuum(wmin0)
-            if wmax: wmax = air2vacuum(wmax0)
+            if wmin0: wmin = air2vacuum(wmin0)
+            if wmax0: wmax = air2vacuum(wmax0)
     else:
         assert wunit == waveunit           # correct wmin, wmax
     
@@ -305,7 +380,7 @@ def _get_unique_var(s, var, inplace):
                                  s.get_vars()))
     return var
 
-def multiply(s, coef, var=None, name=None, inplace=False):
+def multiply(s, coef, var=None, inplace=False):
     '''Multiply s[var] by the float 'coef'
 
     Parameters
@@ -317,8 +392,6 @@ def multiply(s, coef, var=None, name=None, inplace=False):
     var: str, or ``None``
         'radiance', 'transmittance', ... If ``None``, get the unique spectral
         quantity of ``s`` or raises an error if there is any ambiguity
-    name: str
-        name of output spectrum
     inplace: bool
         if ``True``, modifies ``s`` directly. Else, returns a copy.
         Default ``False``
@@ -335,8 +408,8 @@ def multiply(s, coef, var=None, name=None, inplace=False):
         
     if not inplace:
         s = s.copy(quantity=var)
-        if name is not None:
-            s.name = name
+#        if name is not None:
+#            s.name = name
     
     # Multiply inplace       ( @dev: we have copied already if needed )
     w, I = s.get(var, wunit=s.get_waveunit(), copy=False)  
@@ -344,8 +417,11 @@ def multiply(s, coef, var=None, name=None, inplace=False):
 
     return s
 
-def add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=False):
-    '''Return a new spectrum with a constant added to s[var] 
+def add_constant(s, cst, unit=None, var=None, wunit='nm', inplace=False):
+    '''Return a new spectrum with a constant added to s[var]. 
+    Equivalent to::
+        
+        s + constant
 
     Parameters    
     ----------
@@ -361,8 +437,6 @@ def add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=F
         quantity of ``s`` or raises an error if there is any ambiguity
     wunit: str
         'nm'or 'cm-1'
-    name: str
-        name of output spectrum
     inplace: bool
         if ``True``, modifies ``s`` directly. Else, returns a copy. 
         Default ``False``
@@ -375,8 +449,9 @@ def add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=F
 
     Notes   
     -----
+    
     Use only for rough work. If you want to work properly with spectrum 
-    objects, see MergeSlabs.
+    objects, see :py:meth:`~radis.los.slabs.MergeSlabs`.
     '''
     # Check input
     var = _get_unique_var(s, var, inplace)
@@ -395,11 +470,16 @@ def add_constant(s, cst, unit=None, var=None, wunit='nm', name='None', inplace=F
     w, I = s.get(var, wunit=s.get_waveunit(), copy=False)  
     I += cst
     # @dev: updates the Spectrum directly because of copy=False
+    
+#    s.name = '{0}+{1}'.format(s.get_name(), cst)
 
     return s
 
-def add_array(s, a, unit=None, var=None, wunit='nm', name='None', inplace=False):
-    '''Return a new spectrum with a constant added to s[var] 
+def add_array(s, a, unit=None, var=None, wunit='nm', inplace=False):
+    '''Return a new spectrum with a constant added to s[var]. 
+    Equivalent to::
+        
+        s + array
 
     Parameters    
     ----------
@@ -416,8 +496,6 @@ def add_array(s, a, unit=None, var=None, wunit='nm', name='None', inplace=False)
         quantity of ``s`` or raises an error if there is any ambiguity
     wunit: str
         'nm'or 'cm-1'
-    name: str
-        name of output spectrum
     inplace: bool
         if ``True``, modifies ``s`` directly. Else, returns a copy. 
         Default ``False``
@@ -462,7 +540,7 @@ def add_array(s, a, unit=None, var=None, wunit='nm', name='None', inplace=False)
 
     return s
 
-def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None', 
+def sub_baseline(s, left, right, unit=None, var=None, wunit='nm',
                   inplace=False):
     '''Return a new spectrum with a baseline substracted to s[var] 
     
@@ -483,8 +561,6 @@ def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
         quantity of ``s`` or raises an error if there is any ambiguity
     wunit: str
         'nm'or 'cm-1'
-    name: str
-        name of output spectrum
     inplace: bool
         if ``True``, modifies ``s`` directly. Else, returns a copy. 
         Default ``False``
@@ -499,7 +575,13 @@ def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
     Notes    
     -----
     Use only for rough work. 
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.get_baseline`
     '''
+    import numpy as np
     # Check input
     var = _get_unique_var(s, var, inplace)
         
@@ -523,15 +605,16 @@ def sub_baseline(s, left, right, unit=None, var=None, wunit='nm', name='None',
 
     return s
     
-from warnings import warn
-
-def add_spectra(s1, s2, var=None, wunit='nm', name=None):
-    '''Return a new spectrum with s2 added to s1
+def add_spectra(s1, s2, var=None, wunit='nm', force=False):
+    '''Return a new spectrum with ``s2`` added to ``s1``. 
+    Equivalent to::
+        
+        s1 + s2
     
     .. warning::
-        we are just algebrically added the quantities. If you want to merge
+        we are just algebrically adding the quantities. If you want to merge
         spectra while preserving the radiative transfer equation, see 
-        :func:`~radis.los.slabs.MergeSlabs`
+        :func:`~radis.los.slabs.MergeSlabs` and :func:`~radis.los.slabs.SerialSlabs`
     
     Parameters    
     ----------
@@ -544,8 +627,6 @@ def add_spectra(s1, s2, var=None, wunit='nm', name=None):
         quantity of ``s2``, or raises an error if there is any ambiguity
     wunit: str
         'nm'or 'cm-1'
-    name: str
-        name of output spectrum
         
     Returns    
     -------
@@ -574,10 +655,10 @@ def add_spectra(s1, s2, var=None, wunit='nm', name=None):
     if var not in s2.get_vars():
         raise KeyError('Variable {0} not in Spectrum {1}'.format(var, s1.get_name()))
         
-    if var in ['transmittance_noslit', 'transmittance']:
-        warn('It does not make much physical sense to sum transmittances. Are '+\
-             'you sure of what you are doing? See also // (MergeSlabs) and > '+\
-             '(SerialSlabs)')
+    if var in ['transmittance_noslit', 'transmittance'] and not force:
+        raise ValueError('It does not make much physical sense to sum transmittances. Are '+\
+                         'you sure of what you are doing? See also `//` (MergeSlabs), `>` '+\
+                         "(SerialSlabs) and `concat_spectra`. If you're sure, use `force=True`")
     
     # Use same units 
     Iunit = s1.units[var]            
@@ -606,8 +687,11 @@ def add_spectra(s1, s2, var=None, wunit='nm', name=None):
 #    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
-def substract_spectra(s1, s2, var=None, wunit='nm', name=None):
-    '''Return a new spectrum with s2 substracted from s1
+def substract_spectra(s1, s2, var=None, wunit='nm'):
+    '''Return a new spectrum with ``s2`` substracted from ``s1``. 
+    Equivalent to::
+        
+        s1 - s2
     
     Parameters    
     ----------
@@ -620,18 +704,20 @@ def substract_spectra(s1, s2, var=None, wunit='nm', name=None):
         quantity of ``s2``, or raises an error if there is any ambiguity
     wunit: str
         'nm'or 'cm-1'
-    name: str
-        name of output spectrum
         
     Returns    
     -------
     
     s: Spectrum
         Spectrum object with the same units and waveunits as ``s1``
+        
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.operations.add_spectra`
+    
     '''
 
-    from radis.spectrum.compare import get_diff
-    
     # Get variable
     if var is None:
         try:
@@ -672,6 +758,98 @@ def substract_spectra(s1, s2, var=None, wunit='nm', name=None):
 #    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
+
+def concat_spectra(s1, s2, var=None):
+    ''' Concatenate two spectra ``s1`` and ``s2`` side by side.
+    
+    Note: their spectral range should not overlap 
+    
+    Returns    
+    -------
+    
+    s: Spectrum
+        Spectrum object with the same units and waveunits as ``s1``
+        
+    Parameters    
+    ----------
+    
+    s1, s2: Spectrum objects
+        Spectrum you want to concatenate
+    var: str
+        quantity to manipulate: 'radiance', 'transmittance', ... If ``None``, 
+        get the unique spectral quantity of ``s1``, or the unique spectral
+        quantity of ``s2``, or raises an error if there is any ambiguity
+        
+    Notes
+    -----
+    
+    .. warning::
+        
+        the output Spectrum has the sum of the spectral ranges of s1 and s2. 
+        It won't be evenly spaced. This means that you cannot apply a slit without
+        side effects. Typically, you want to use this function for convolved 
+        quantities only, such as experimental spectra. Else, use
+        :func:`~radis.los.slabs.MergeSlabs` with the options 
+        ``resample='full', out='transparent'``
+        
+    See Also
+    --------
+    
+    :func:`~radis.spectrum.operations.add_spectra`, 
+    :func:`~radis.los.slabs.MergeSlabs`
+    
+    '''
+    
+    # Get variable
+    if var is None:
+        try:
+            var = _get_unique_var(s2, var, inplace=False)    # unique variable of 2nd spectrum  
+        except KeyError:
+            var = _get_unique_var(s1, var, inplace=False)    # if doesnt exist, unique variable of 1st spectrum
+            # if it fails, let it fail
+    # Make sure it is in both Spectra
+    if var not in s1.get_vars():
+        raise KeyError('Variable {0} not in Spectrum {1}'.format(var, s1.get_name()))
+    if var not in s2.get_vars():
+        raise KeyError('Variable {0} not in Spectrum {1}'.format(var, s1.get_name()))
+        
+    if var in ['transmittance_noslit', 'transmittance']:
+        warn('It does not make much physical sense to sum transmittances. Are '+\
+             'you sure of what you are doing? See also // (MergeSlabs) and > '+\
+             '(SerialSlabs)')
+    
+    # Use same units 
+    Iunit = s1.units[var]            
+    wunit = s1.get_waveunit()
+    medium = s1.get_medium()
+
+    # Get the value, on the same wunit)
+    w1, I1 = s1.get(var=var, copy=False)  # @dev: faster to just get the stored value. 
+                                          # it's copied in hstack() below anyway). 
+    w2, I2 = s2.get(var=var, Iunit=Iunit, wunit=wunit, medium=medium)
+    
+    if not (w1.max() < w2.min() or w2.max() > w1.min()):
+        raise ValueError("You cannot use concat_spectra for overlapping spectral ranges. "+\
+                         "Got: {0:.2f}-{1:.2f} and {2:.2f}-{3:.2f} {4}. ".format(w1.min(), w1.max(),
+                                                               w2.min(), w2.max(),
+                                                               wunit)+\
+                         "Use MergeSlabs instead, with the correct `out=` parameter "+\
+                         "for your case")
+                         
+    w_tot = hstack((w1, w2))
+    I_tot = hstack((I1, I2))
+
+    name = s1.get_name()+'&'+s2.get_name()     # use "&" instead of "+" 
+    
+    concat = Spectrum.from_array(w_tot, I_tot, var, 
+                               waveunit=wunit, 
+                               unit=Iunit,
+                               conditions={'medium' : medium}, 
+                               name=name)
+    
+    return concat
+    
+
 def offset(s, offset, unit, name=None, inplace=False):
     # type: (Spectrum, float, str, str, bool) -> Spectrum
     '''Offset the spectrum by a wavelength or wavenumber 
@@ -695,31 +873,39 @@ def offset(s, offset, unit, name=None, inplace=False):
     s : Spectrum
         Spectrum object where cst is added to intensity of s['var']
         If ``inplace=True``, ``s`` has been modified directly.
+        
+    See Also
+    --------
+    
+    call as a Spectrum method directly: :py:meth:`~radis.spectrum.spectrum.Spectrum.offset`
     '''
+    
+    has_var = len(s._q)>0
+    has_conv_var = len(s._q_conv)>0
     
     # Convert to correct unit:
     if unit == 'nm' and s.get_waveunit() == 'cm-1':
         # Note @EP: technically we should check the medium is air or vacuum...  TODO
         # Note @EP: here we're offsetting by a constant value in 'cm-1', which is
         # not a constant value in 'nm'. We end of with offset as an array 
-        offset_q = - dnm2dcm(offset, s.get_wavelength(which='non_convoluted'))  # this is an array
-        offset_qconv = - dnm2dcm(offset, s.get_wavelength(which='convoluted'))  # this is an array
+        if has_var: offset_q = - dnm2dcm(offset, s.get_wavelength(which='non_convoluted'))  # this is an array
+        if has_conv_var: offset_qconv = - dnm2dcm(offset, s.get_wavelength(which='convoluted'))  # this is an array
     elif unit == 'cm-1' and s.get_waveunit() == 'nm':
-        offset_q = - dcm2dnm(offset, s.get_wavenumber(which='non_convoluted'))  # this is an array
-        offset_qconv = - dcm2dnm(offset, s.get_wavenumber(which='convoluted'))  # this is an array
+        if has_var: offset_q = - dcm2dnm(offset, s.get_wavenumber(which='non_convoluted'))  # this is an array
+        if has_conv_var: offset_qconv = - dcm2dnm(offset, s.get_wavenumber(which='convoluted'))  # this is an array
     else:
         assert unit == s.get_waveunit()
-        offset_q = offset
-        offset_qconv = offset
+        if has_var: offset_q = offset
+        if has_conv_var: offset_qconv = offset
         
     if not inplace:
         s = s.copy()
         
     # Update all variables
-    if 'wavespace' in s._q:
+    if has_var:
         s._q['wavespace'] += offset_q
         # @dev: updates the Spectrum directly because of copy=False
-    if 'wavespace' in s._q_conv:
+    if has_conv_var:
         s._q_conv['wavespace'] += offset_qconv
         
     if name:
@@ -727,7 +913,33 @@ def offset(s, offset, unit, name=None, inplace=False):
         
     return s
 
+def get_baseline(s, var='radiance', wunit='nm', medium='air', Iunit=None):
+    '''Calculate and returns a baseline 
 
+    Parameters    
+    ----------
+    s: Spectrum
+        Spectrum which needs a baseline
+
+    Returns    
+    -------
+    baseline: Spectrum
+        Spectrum object where intenisity is the baseline of s is computed by peakutils
+        
+    See Also
+    --------
+    
+    :py:func:`~radis.spectrum.operations.sub_baseline`
+    '''
+    import peakutils 
+    w1, I1 = s.get(var=var, Iunit=Iunit, wunit=wunit, medium=medium)
+    baseline = peakutils.baseline(I1, deg=1, max_it = 500)
+    baselineSpectrum = Spectrum.from_array(w1, baseline, var, 
+                               waveunit=wunit, 
+                               unit=Iunit,
+                               conditions={'medium' : medium}, 
+                               name=s.get_name()+'_baseline')
+    return baselineSpectrum
 # %% Tests
 
 def test_multiplyAndAddition(*args, **kwargs):

@@ -13,9 +13,9 @@ Performance test with pint:
 Examples
 --------
 
-Import neq.phys.units to get access to::
+Import radis.phys.units to get access to::
 
-    from neq.phys.units import Q_
+    from radis.phys.units import Q_
     a = Q_(np.array([5,4,2]),'cm')
     a.to_base_units()
 
@@ -93,17 +93,40 @@ def conv2(quantity, fromunit, tounit):
     Note
     ----
 
+    1.
+    
     The output is still non dimensional. We don't transform `quantity` 
     into a pint array (or neq.phys.uarray) because this may create a performance
     drop in computationaly-expensive task. Instead, we assume we know for 
     sure the units in which some of our quantities will be created, and just
     want to let the users choose another output unit 
 
+    2. 
+    
+    because angles are dimensionless a 'mW/cm2/sr/nm' > 'mW/cm2/nm' conversion 
+    is considered  valid, while we expected the Luminance to be converted to 
+    an exitance/irradiance and thus multiplied by Pi !
+    Here we prevent this behavior by considering 
+        
+    
+
     '''
 
     try:
         a = Q_(quantity, fromunit)
         a = a.to(tounit)
+        
+        # Hardcoded: 'pint' considers angles to be dimensionless (which they are)
+        # so a 'mW/cm2/sr/nm' > 'mW/cm2/nm' conversion is then considered  valid,
+        # while we expected the Luminance to be converted to an Exitance/Irradiance 
+        # and thus multiplied by Pi !! 
+        # Here we prevent this behavior:
+        
+        if 'sr' in fromunit and 'sr' not in tounit:
+            raise DimensionalityError(fromunit, tounit)
+        if 'sr' in tounit and 'sr' not in fromunit:
+            raise DimensionalityError(fromunit, tounit)
+        
     except TypeError:
         if 'cm-1' in fromunit or 'cm-1' in tounit:
             #            raise TypeError('Use cm_1 instead of cm-1 else it triggers errors in '+\
@@ -428,5 +451,5 @@ def convert_universal(I, from_unit, to_unit, spec=None,
 
 # %% Test
 if __name__ == '__main__':
-    from radis.test.test_phys import test_units__fast
-    print(('Test :', test_units__fast()))
+    from radis.test.test_phys import test_units
+    print(('Test :', test_units()))

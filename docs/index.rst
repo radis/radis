@@ -5,36 +5,119 @@
 
 .. |logo_png| image:: radis_ico.png
 
-.. include:: description.rst
+=====
+RADIS
+=====
+
+A nonequilibrium infrared emission and absorption line-by-line code.
 
 ===============
 Getting Started
 ===============
 
-.. toctree::
-   :maxdepth: 2
+Install
+-------
 
-   install
+Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution just use::
 
+    pip install radis 
+    
+**That's it!** You can now run your first example below.
+If you encounter any issue, or to upgrade the package later, please refer to the 
+:ref:`detailed installation procedure <label_install>` . 
+
+.. _label_first_example:
+Quick Start
+-----------
+
+
+Calculate a CO equilibrium spectrum from the HITRAN database, using the
+:py:func:`~radis.lbl.calc.calc_spectrum` function::
+
+    from radis import calc_spectrum
+    s = calc_spectrum(1900, 2300,         # cm-1
+                      molecule='CO',
+                      isotope='1,2,3',
+                      pressure=1.01325,   # bar
+                      Tgas=700,           # K
+                      mole_fraction=0.1, 
+                      path_length=1,      # cm
+                      )
+    s.apply_slit(0.5, 'nm')       # simulate an experimental slit
+    s.plot('radiance')
+
+.. figure:: examples/co_spectrum_700K.png
+    :scale: 60 %
+
+Calculate a CO *nonequilibrium* spectrum from the HITRAN database
+(on your first call, this will calculate and cache the CO(X) rovibrational
+energies) ::
+
+    s2 = calc_spectrum(1900, 2300,         # cm-1
+                      molecule='CO',
+                      isotope='1,2,3',
+                      pressure=1.01325,   # bar
+                      Tvib=700,           # K
+                      Trot=300,           # K
+                      mole_fraction=0.1, 
+                      path_length=1,      # cm
+                      )
+    s2.apply_slit(0.5, 'nm')
+    s2.plot('radiance', nfig='same')    # compare with previous
+    
+The Quick Start examples automatically download the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
+For *high temperature* cases, you may need to use other line databases such as 
+[HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
+:ref:`Configuration file <label_lbl_config_file>`. 
+
+More complex :ref:`examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
+class, which is the core of RADIS line-by-line calculations. 
+:py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
+for the simple cases. 
+
+Refer to the :ref:`Examples <label_examples>` section for more examples. 
+
+In the browser
+--------------
+
+Alternatively, you can also run RADIS directly in the browser with the  
+`RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
+For instance, run the Quick Start example on the link below:
+
+.. image:: https://mybinder.org/badge.svg 
+    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+
+Or start a bare RADIS online session (no installation needed!):
+    
+.. image:: https://mybinder.org/badge.svg 
+    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+
+   
+---------------------------------------------------------------------
 
 ==================
 User documentation
 ==================
 
+.. include:: description.rst
 
-Interfaces
-----------
+See the :ref:`Architecture <label_dev_architecture>` section for an overview of the RADIS calculation 
+steps. 
 
-RADIS includes parsers and interfaces to read and return data in different formats: 
-
+Features
+--------
+   
 .. toctree::
+
    :maxdepth: 2
    
-   io/parsers
+   features
+   
 
-
-The line-by-line (LBL) module
------------------------------
+Line-by-line (LBL) module
+-------------------------
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
@@ -46,13 +129,15 @@ are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class.
    lbl/index
 
    
-The line-of-sight (LOS) module
-------------------------------
+Line-of-sight (LOS) module
+--------------------------
 
 This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
 as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
 or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
-line-of-sight experiments 
+line-of-sight experiments. The module allows combination of Spectra such as::
+
+    s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption) 
 
 .. toctree::
    :maxdepth: 2
@@ -75,7 +160,7 @@ store or retrieve from a Spectrum database, plot or compare with another Spectru
 
    
 Tools
-------------------
+-----
 
 Different tools to work with Spectrum objects
 
@@ -86,21 +171,108 @@ Different tools to work with Spectrum objects
    tools/database
 
 
+Interfaces
+----------
+
+RADIS includes parsers and interfaces to read and return data in different formats: 
+
+.. toctree::
+   :maxdepth: 2
+   
+   io/parsers
+   io/databases
+   io/thermo
+
+
+Examples
+--------
+   
+.. toctree::
+   :maxdepth: 2
+   
+   examples
+
+   
+---------------------------------------------------------------------
+
 ===============
 Developer Guide
 ===============
 
+Sources
+-------
+
+To modify RADIS, you will need to clone the Git repository. 
+Please refer to the :ref:`detailed installation procedure <label_install>` :
+
+.. toctree::
+   :maxdepth: 2
+   
+   install
+   
+
+Architecture
+------------
+
+An overview of the different RADIS modules: 
+
+.. toctree::
+   :maxdepth: 2
+   
+   dev/architecture
+  
+
+Tests
+-----
    
 .. toctree::
    :maxdepth: 2
    
    dev/test
    
-   
+---------------------------------------------------------------------
 
-=====================
+==========
+References
+==========
+   
+Spectroscopic constants 
+-----------------------
+
+.. toctree::
+    :maxdepth: 2
+    
+    db/constants
+
+
+Bibliography
+------------
+   
+.. toctree::
+    :maxdepth: 2
+    
+    references
+
+Licence
+-------
+
+The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
+under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
+i.e., that modifications must remain public and under LGPLv3. 
+
+Cite
+----
+
+If using RADIS for your work, cite the line-by-line code as [RADIS-2018]_ with the :ref:`version number <label_version>`
+, alongside the references of the line databases used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
+
+If running nonequilibrium calculations, do not forget to mention the reference of the spectroscopic constants used 
+in the calculatation of the rovibrational energies (for instance, see the 
+:ref:`references for the RADIS built-in constants <label_db_spectroscopic_constants>`)
+
+
 Access Module Methods
-=====================
+---------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

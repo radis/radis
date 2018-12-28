@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 26 11:52:15 2015
 
-Erwan Pannier
-EM2C, CentraleSupélec, 2015
-CNRS UPR 288
+-------------------------------------------------------------------------------
 
 """
 
@@ -17,7 +14,7 @@ from .cdsd import cdsd2df
 # %% Get list of supported molecules
 def _get_supported_molecules_equilibrium():
     ''' Molecules supported in RADIS equilibrium calculations
-    Basically, all HITRAN species
+    Basically, all [HITRAN-2016]_ species
     '''
     # Add all HITRAN species
     from radis.io.hitran import (HITRAN_CLASS1, HITRAN_CLASS2, HITRAN_CLASS3,
@@ -36,14 +33,21 @@ def _get_supported_molecules_nonequilibrium():
     (see radis.db)
     '''
 
-    # Hardcoded for the moment.
-    # TODO Look up radis.db once it's merged here
+    from radis.db.molecules import Molecules
 
-    return ['CO', 'CO2']
+    return list(Molecules.keys())
 
 
 MOLECULES_LIST_EQUILIBRIUM = __supported_molecules_equilibrium__ = _get_supported_molecules_equilibrium()
-''' list: molecules that can be calculated in RADIS at equilibrium '''
+''' list: molecules that can be calculated in RADIS at equilibrium. 
+Basically, all [HITRAN-2016]_ species are available. '''
 MOLECULES_LIST_NONEQUILIBRIUM = __supported_molecules_nonequilibrium__ = _get_supported_molecules_nonequilibrium()
 ''' list: molecules that can be calculated in RADIS at nonequilibrium. Built-in
-spectroscopic constants to calculate energy levels are needed '''
+spectroscopic constants to calculate energy levels are needed 
+
+See Also
+--------
+
+:py:data:`~radis.db.molecules.Molecules`,
+:py:func:`~radis.db.molecules.getMolecule`
+'''

@@ -12,9 +12,6 @@ with any unit
 Routine Listings
 ----------------
 
-:func:`~radis.spectrum.spectrum.calculated_spectrum`,
-:func:`~radis.spectrum.spectrum.experimental_spectrum`,
-:func:`~radis.spectrum.spectrum.transmittance_spectrum`,
 :func:`~radis.spectrum.spectrum.is_spectrum`
 
 
@@ -54,7 +51,7 @@ from radis.phys.air import vacuum2air, air2vacuum
 from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES,
                                   make_up, cast_waveunit, print_conditions)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
-#from neq.spec.base import print_conditions
+#from radis.lbl.base import print_conditions
 from radis.misc.arrays import (evenly_distributed, count_nans, 
                                is_sorted, is_sorted_backward)
 from radis.misc.debug import printdbg
@@ -160,7 +157,7 @@ class Spectrum(object):
 
     Any tuple of numpy arrays (w, I) can also be converted into a Spectrum object
     from the :class:`~radis.spectrum.spectrum.Spectrum` class directly, or using 
-    the :func:`~radis.spectrum.spectrum.calculated_spectrum` function. 
+    the :func:`~radis.spectrum.models.calculated_spectrum` function. 
     All the following methods are equivalent::
 
         from radis import Spectrum, calculated_spectrum
@@ -212,9 +209,9 @@ class Spectrum(object):
     See Also
     --------
 
-    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-    :func:`~radis.spectrum.spectrum.experimental_spectrum`
+    :func:`~radis.spectrum.models.calculated_spectrum`, 
+    :func:`~radis.spectrum.models.transmittance_spectrum`, 
+    :func:`~radis.spectrum.models.experimental_spectrum`
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
@@ -373,9 +370,9 @@ class Spectrum(object):
         See Also
         --------
 
-        :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-        :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-        :func:`~radis.spectrum.spectrum.experimental_spectrum`
+        :func:`~radis.spectrum.models.calculated_spectrum`, 
+        :func:`~radis.spectrum.models.transmittance_spectrum`, 
+        :func:`~radis.spectrum.models.experimental_spectrum`
         :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
         :func:`~radis.tools.database.load_spec`
         """
@@ -473,9 +470,9 @@ class Spectrum(object):
         See Also
         --------
 
-        :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-        :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-        :func:`~radis.spectrum.spectrum.experimental_spectrum`,
+        :func:`~radis.spectrum.models.calculated_spectrum`, 
+        :func:`~radis.spectrum.models.transmittance_spectrum`, 
+        :func:`~radis.spectrum.models.experimental_spectrum`,
         :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
         :func:`~radis.tools.database.load_spec`
 
@@ -596,6 +593,9 @@ class Spectrum(object):
         elif var in NON_CONVOLUTED_QUANTITIES:  # non convoluted
             vartype = 'non_convoluted'
             I = self._q[var]
+        elif var in self._q:   # not declared, but exists. Assumes it's non_convoluted?
+            vartype = 'non_convoluted'
+            I =self._q[var]
         else:
             raise ValueError('Unexpected quantity: {0}'.format(var))
 
@@ -645,10 +645,10 @@ class Spectrum(object):
         Parameters    
         ----------
 
-        which: 'convoluted', 'non_convoluted', 'any'
+        which: 'convoluted', 'non_convoluted', ``'any'``
             return wavelength for convoluted quantities, non convoluted quantities, 
-            or any. If any and both are defined, they have to be the same else 
-            an error is raised. Default any.
+            or any. If ``any`` and both are defined, they have to be the same else 
+            an error is raised. Default ``any``.
 
         Other Parameters
         ----------------
@@ -1011,7 +1011,7 @@ class Spectrum(object):
     # Rescale functions
 
     def rescale_path_length(self, new_path_length, old_path_length=None,
-                            force=False):
+                            inplace=True, force=False):
         ''' Rescale spectrum to new path length. Starts from absorption coefficient
         and emission coefficient, and solves the RTE again for the new path length
         Convoluted values (with slit) are dropped in the process.
@@ -1030,10 +1030,20 @@ class Spectrum(object):
         Other Parameters
         ----------------
 
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+        
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
             Default ``False``
 
+        Returns
+        -------
+        
+        s: Spectrum 
+            Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
+            directly anyway.
 
         Notes
         -----
@@ -1047,10 +1057,11 @@ class Spectrum(object):
 
         return rescale_path_length(self, new_path_length=new_path_length,
                                    old_path_length=old_path_length,
+                                   inplace=inplace,
                                    force=force)
 
     def rescale_mole_fraction(self, new_mole_fraction, old_mole_fraction=None,
-                              ignore_warnings=False, force=False, verbose=True):
+                              inplace=True, ignore_warnings=False, force=False, verbose=True):
         ''' Update spectrum with new molar fraction
         Convoluted values (with slit) are dropped in the process.
 
@@ -1068,10 +1079,20 @@ class Spectrum(object):
         Other Parameters
         ----------------
 
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+        
         force: boolean
             if False, won't allow rescaling to 0 (not to loose information).
             Default ``False``
 
+        Returns
+        -------
+        
+        s: Spectrum 
+            Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
+            directly anyway.
 
         Notes
         -----
@@ -1081,15 +1102,11 @@ class Spectrum(object):
             similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
             Note that this is valid only for small changes in mole fractions. Then,
             the change in line broadening becomes significant
-
-
-        Todo
-        ----
-
-        Add warning when too large rescaling
         '''
+
         return rescale_mole_fraction(self, new_mole_fraction=new_mole_fraction,
                                      old_mole_fraction=old_mole_fraction,
+                                     inplace=inplace,
                                      ignore_warnings=ignore_warnings,
                                      force=force, verbose=verbose)
         
@@ -1376,7 +1393,7 @@ class Spectrum(object):
             else:
                 # or plot the first variable we find
                 var = list(params)[0]
-                if var.replace('_noslit', '') in params:
+                if var.replace('_noslit', '') in params:  # favour convolved quantities
                     var = var.replace('_noslit', '')
 
         if wunit == 'default':
@@ -1428,15 +1445,22 @@ class Spectrum(object):
         # they cannot be differenced. But at least this allows user to plot 
         # both on the same figure if they want to compare
         
+        def clean_error_msg(string):
+            string = string.replace('$^\mathregular{', '^')
+            string = string.replace('}$', '')
+            return string
+        
         if not force and (fig.gca().get_xlabel().lower() not in ['', xlabel.lower()]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
                              'on a same figure with different xlabel: {0}, {1}'.format(
-                            fig.gca().get_xlabel(), xlabel)+\
+                            clean_error_msg(fig.gca().get_xlabel()), 
+                            clean_error_msg(xlabel))+\
                             'Use force=True if you really want to plot')
         if not force and (fig.gca().get_ylabel().lower() not in ['', ylabel.lower()]):
             raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
                              'on a same figure with different ylabel: \n{0}\n{1}'.format(
-                            fig.gca().get_ylabel(), ylabel)+\
+                            clean_error_msg(fig.gca().get_ylabel()), 
+                            clean_error_msg(ylabel))+\
                             '\nUse force=True if you really want to plot')
         
         # Add extra plotting parameters
@@ -2343,7 +2367,9 @@ class Spectrum(object):
             s = sf.eq_spectrum(Tgas=1500)
             s.apply_slit(0.5)
             s.line_survey(overlay='radiance_noslit', barwidth=0.01)
-
+        
+        See the output in :ref:`Examples <label_examples>`
+    
 
         References
         ----------
@@ -2411,16 +2437,36 @@ class Spectrum(object):
 
     def get_conditions(self):
         ''' Get all physical / computational parameters.
+        
+        See Also
+        --------
+        
+        :py:method:`~radis.spectrum.Spectrum.print_conditions`
         '''
 
         return self.conditions
 
-    def print_conditions(self):
-        ''' Prints all physical / computational parameters.
+    def print_conditions(self, **kwargs):
+        ''' Prints all physical / computational parameters. You can also simply
+        print the Spectrum object directly::
+            
+            print(s)
+            
+        Parameters
+        ----------
+        
+        kwargs: dict
+            refer to :py:func:`~radis.spectrum.utils.print_conditions`
 
+        See Also
+        --------
+        
+        :py:method:`~radis.spectrum.Spectrum.get_conditions`,
+        :py:func:`~radis.spectrum.utils.print_conditions`
+        
         '''
 
-        return print_conditions(self.get_conditions(), self.cond_units)
+        return print_conditions(self.get_conditions(), self.cond_units, **kwargs)
 
     def store(self, path, discard=['lines', 'populations'], compress=False,
               add_info=None, add_date=None, if_exists_then='error', verbose=True):
@@ -2485,13 +2531,6 @@ class Spectrum(object):
             Shouldnt rely on a Database. One may just want to store/load a Spectrum
             once.
             
-        # TODO
-        
-        - in case a spectrometer linear dispersion function is used in 
-        :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, it probably isn't 
-        stored with the current code. Find a workaround?
-
-
         Examples
         --------
 
@@ -2512,7 +2551,12 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.savetxt`
 
         '''
-        # Todo: maybe move most of the code here (filename writing) in database.py ?
+        # TODO
+        # 
+        # - in case a spectrometer linear dispersion function is used in 
+        # :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, it probably isn't 
+        # stored with the current code. Find a workaround?
+
 
         from radis.tools.database import save
 
@@ -2768,7 +2812,7 @@ class Spectrum(object):
 
         return self.conditions['waveunit']
 
-    def is_at_equilibrium(self, check='warn'):
+    def is_at_equilibrium(self, check='warn', verbose=False):
         ''' Returns whether this spectrum is at (thermal) equilibrium. Reads the 
         ``thermal_equilibrium`` key in Spectrum conditions. 
         It does not imply chemical equilibrium (mole fractions are still arbitrary)
@@ -2789,6 +2833,10 @@ class Spectrum(object):
             what to do if Spectrum conditions dont match the given equilibrium state:
             raise a warning, raise an error, or just ignore and dont even check. 
             Default ``'warn'``.
+            
+        verbose: bool
+            if ``True``, print why is the spectrum is not at equilibrium, if 
+            applicable.
 
         '''
 
@@ -2818,6 +2866,15 @@ class Spectrum(object):
 
         except AssertionError:
             guess = False
+            if verbose:
+                # Print which equilibrium test failed
+                print('Spectrum not at equilibrium because the following test failed:')
+                import sys
+                import traceback
+                _, _, tb = sys.exc_info()
+                tb_info = traceback.extract_tb(sys.exc_info()[2])
+                print(tb_info[-1][-1])
+                # @dev: see https://stackoverflow.com/a/11587247/5622825
         except KeyError as err:
             warn('Condition missing to know if spectrum is at equilibrium: {0}'.format(err))
             guess = not equilibrium
@@ -3119,7 +3176,8 @@ class Spectrum(object):
             self._q[name] = np.array(I)              # copy
 
         else:
-            raise ValueError('Unknown quantity: {0}'.format(name))
+            raise ValueError('Unknown quantity: {0}. Expected one of: {1}'.format(name,
+                             CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES))
 
         # also make the quantity accessible with s.[name] like Pandas dataframes (removed eventually)
        # setattr(self, name, quantity)   # Warning this makes another copy of it (it's a tuple!)
@@ -3309,6 +3367,8 @@ class Spectrum(object):
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
             return multiply(self, other, inplace=False)
+        elif isinstance(other, Spectrum):
+            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
         else:
             raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
                         type(other)))
@@ -3319,6 +3379,8 @@ class Spectrum(object):
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
             return multiply(self, other, inplace=False)
+        elif isinstance(other, Spectrum):
+            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
         else:
             raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
@@ -3335,6 +3397,8 @@ class Spectrum(object):
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
             return multiply(self, other, inplace=True)
+        elif isinstance(other, Spectrum):
+            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
         else:
             raise NotImplementedError('*= not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
@@ -3461,6 +3525,14 @@ class Spectrum(object):
 #        raise
 #        return _json_to_spec(attrs)
 
+    def __len__(self):
+        ''' Length of a Spectrum object = length of the wavespace if unique, 
+        else raises an error '''
+        
+        # raises an error if both convolved and non convolved are defined
+        return len(self._get_wavespace('any', copy=False))   
+        
+
 # %% Private functions
     
 # to cut 
@@ -3574,8 +3646,11 @@ def is_spectrum(a):
     isinstance() comparison fails
 
     '''
-
-    return (isinstance(a, Spectrum) or
+    
+#    return isinstance(a, Spectrum)
+    # removed: was used initially in the early RADIS development phase. Spectrum 
+    # object would not be recognized if the library was modified
+    return (isinstance(a, Spectrum) or     
             repr(a.__class__) == repr(Spectrum))
 
 

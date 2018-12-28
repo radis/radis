@@ -83,13 +83,13 @@ setup(name='radis',
 #                        'pandas',        # let the user install it 
 #                        'sympy',         # let the user install it 
                         'pint>=0.7.2',  # Unit aware calculations
-                        'publib>=0.3.1', # Plotting styles for Matplotlib
+                        'publib>=0.3.2', # Plotting styles for Matplotlib
                         'plotly>=2.5.1',    # for line survey HTML output  
                         # TODO: update to >=2.5.1 as soon as https://github.com/plotly/plotly.py/issues/963 is fixed
                         'termcolor',     # terminal colors
                         'six',  # python 2-3 compatibility
                         'configparser', 
-                        'astroquery',   # to fetch HITRAN databases
+                        'astroquery>=0.3.9',   # to fetch HITRAN databases
                         'json-tricks',   # to deal with non jsonable formats
                         'numpydoc',     # for Jedi (autocompletion) to recognize
                                         # numpy docstrings
@@ -110,6 +110,6 @@ setup(name='radis',
         'Programming Language :: Python :: 3.6',
         "Operating System :: OS Independent"],
 	  include_package_data=True,  # add non .py data files in MANIFEST.in
-      package_data={'radis': ['radis/phys/units.txt']},
+      #package_data={'radis': ['radis/phys/units.txt']},
       zip_safe=False,  # impossible as long as we have external files read with __file__ syntax
       platforms='any')

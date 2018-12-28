@@ -23,7 +23,7 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
 from __future__ import absolute_import, division, unicode_literals
 from __future__ import print_function
 import numpy as np
-from radis.phys.constants import eV, h, c, k_b
+from radis.phys.constants import eV, h, c, k_b, hc_k
 # Make conv2 accessible from .convert:
 from radis.phys.units import conv2
 from radis.phys.air import air2vacuum, vacuum2air
@@ -81,12 +81,24 @@ def K2J(E):
     _assertK(E)
     return E * k_b
 
+def K2cm(E):
+    '''K to cm-1
+    '''
+    _assertK(E)
+    return E / hc_k
 
 def cm2J(E):
     'cm-1 to J'
     _assertcm(E)
     return (E * 100) * (h * c)
 
+def cm2K(E):
+    '''cm-1 to K
+    
+    That's the classical 1.44 K/cm-1. See :data:`~radis.phys.constants.hc_k`
+    '''
+    _assertcm(E)
+    return E * hc_k
 
 def cm2eV(E):
     'cm-1 to eV'
@@ -257,30 +269,33 @@ def _magn(x):
 
 
 def _assertK(E):
-    try:
-        m = _magn(E)
-        assert(((0 <= m) & (m <= 6)).all())
-    except AssertionError:
-        print(('Warning. Input values may not be in Kelvin', E, 'K?'))
+    if np.sum(np.abs(E)) != 0:   # check E != 0 for both floats and arrays
+        try:
+            m = _magn(E)
+            assert(((0 <= m) & (m <= 6)).all())
+        except AssertionError:
+            print(('Warning. Input values may not be in Kelvin', E, 'K?'))
 
 
 def _assertcm(E):
-    try:
-        m = _magn(E)
-        assert(((1 <= m) & (m <= 5)).all())
-    except AssertionError:
-        print(('Warning. Input values may not be in cm-1', E, 'cm-1?'))
+    if np.sum(np.abs(E)) != 0:   # check E != 0 for both floats and arrays
+        try:
+            m = _magn(E)
+            assert(((1 <= m) & (m <= 5)).all())
+        except AssertionError:
+            print(('Warning. Input values may not be in cm-1', E, 'cm-1?'))
 
 
 def _asserteV(E):
-    try:
-        m = _magn(E)
-        assert(((0 <= m) & (m <= 2)).all())
-    except AssertionError:
-        print(('Warning. Input values may not be in eV', E, 'eV?'))
+    if np.sum(np.abs(E)) != 0:   # check E != 0 for both floats and arrays
+        try:
+            m = _magn(E)
+            assert(((0 <= m) & (m <= 2)).all())
+        except AssertionError:
+            print(('Warning. Input values may not be in eV', E, 'eV?'))
 
 
 # %% Test
 if __name__ == '__main__':
-    from radis.test.test_phys import test_convert__fast
-    print(('Test :', test_convert__fast()))
+    from radis.test.test_phys import test_convert
+    print(('Test :', test_convert()))

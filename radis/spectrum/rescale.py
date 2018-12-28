@@ -20,7 +20,7 @@ from numpy import log as ln
 from numpy import inf, exp
 from radis.misc.debug import printdbg
 from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
-from radis.lbl.equations import calc_radiance
+from radis.spectrum.equations import calc_radiance
 from radis.misc.basics import all_in, any_in
 from radis.misc.basics import compare_lists
 from warnings import warn
@@ -1598,7 +1598,8 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
                                  'contains: {0}'.format(rescaled_list))
 
 
-def rescale_path_length(spec, new_path_length, old_path_length=None, force=False):
+def rescale_path_length(spec, new_path_length, old_path_length=None, inplace=False, 
+                        force=False):
     ''' Rescale spectrum to new path length. Starts from absorption coefficient
     and emission coefficient, and solves the RTE again for the new path length
     Convoluted values (with slit) are dropped in the process.
@@ -1619,10 +1620,21 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
     Other Parameters
     ----------------
 
+    inplace: boolean
+        if ``True``, modifies the Spectrum object directly. Else, returns
+        a copy. Default ``False``.
+    
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
         Default ``False``
 
+    Returns
+    -------
+    
+    s_rescaled: Spectrum
+        a rescaled Spectrum.
+        if ``inplace=True``, then ``s`` has been rescaled already and 
+        ``s_rescaled`` is ``s``
 
     Notes
     -----
@@ -1633,6 +1645,9 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
         be recomputed, and what has to be recalculated
 
     '''
+    
+    if not inplace:
+        spec = spec.copy()
 
     # Check inputs
     # ----------
@@ -1659,7 +1674,7 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
         qns = q+'_noslit'
         qties = spec.get_vars()
         if q in qties and qns not in qties and not force:
-            raise KeyError('Cant rescale {0} if {1} not stored'.format(q, qns) +
+            raise KeyError('Cant rescale {0} if {1} not stored. '.format(q, qns) +
                            ' Use force=True to rescale anyway. {0}'.format(q) +
                            ' will be deleted')
             
@@ -1671,10 +1686,12 @@ def rescale_path_length(spec, new_path_length, old_path_length=None, force=False
 
     # Update conditions
     spec.conditions['path_length'] = new_path_length
+    
+    return spec
 
 
 def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
-                          ignore_warnings=False, force=False, verbose=True):
+                          inplace=False, ignore_warnings=False, force=False, verbose=True):
     ''' Update spectrum with new molar fraction
     Convoluted values (with slit) are dropped in the process.
 
@@ -1694,10 +1711,21 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
     Other Parameters
     ----------------
 
+    inplace: boolean
+        if ``True``, modifies the Spectrum object directly. Else, returns
+        a copy. Default ``False``.
+    
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
         Default ``False``
 
+    Returns
+    -------
+    
+    s_rescaled: Spectrum
+        a rescaled Spectrum.
+        if ``inplace=True``, then ``s`` has been rescaled already and 
+        ``s_rescaled`` is ``s``
 
     Notes
     -----
@@ -1708,12 +1736,10 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
         Note that this is valid only for small changes in mole fractions. Then,
         the change in line broadening becomes significant
 
-
-    Todo
-    -------
-
-    Add warning when too large rescaling
     '''
+    
+    if not inplace:
+        spec = spec.copy()
 
     # Check inputs
     # ---------
@@ -1772,6 +1798,8 @@ def rescale_mole_fraction(spec, new_mole_fraction, old_mole_fraction=None,
 
     # Update conditions
     spec.conditions['mole_fraction'] = new_mole_fraction
+    
+    return spec
 
 
 if __name__ == '__main__':

@@ -15,8 +15,8 @@ if __name__ == '__main__':
 
     # %% Generate carbon monoxide files
 
-    from neq import SpectrumFactory
-    setup_test_line_databases()  # add HITRAN-CO-TEST in neq.rc if not there
+    from radis import SpectrumFactory
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
     Tgas = 1500
     sf = SpectrumFactory(

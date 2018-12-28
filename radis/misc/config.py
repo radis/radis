@@ -3,7 +3,7 @@
 Summary
 -------
 
-Functions to parse ~/.radis file
+Functions to parse the ``~/.radis`` :ref:`Configuration file <label_lbl_config_file>`
 
 Notes
 -----
@@ -22,6 +22,7 @@ Routine Listing
 - :func:`~radis.misc.config.diffDatabankEntries`
 - :func:`~radis.misc.config.printDatabankEntries`
 - :func:`~radis.misc.config.printDatabankList`
+
 
 
 -------------------------------------------------------------------------------
@@ -73,7 +74,19 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
                                  # energies. Default 0 (if not given)
 
 --------------------------""")
-'''str: Typical expected format of a ~/.radis entry'''
+'''str: Typical expected format of a ~/.radis entry
+
+Refer to the documentation: :ref:`Configuration file <label_lbl_config_file>`
+
+See Also
+--------
+
+:ref:`Configuration file <label_lbl_config_file>`
+
+:py:func:`~radis.misc.config.getConfig`
+
+Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
+'''
 
 CONFIG_PATH = join(expanduser("~"), ".radis")
 
@@ -266,6 +279,69 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
 
     return
 
+def _addDatabankEntries_py27(dbname, dict_entries, verbose=True):
+    ''' Add database dbname with entries from dict_entries. If database 
+    already exists in ~/.radis, raises an error
+    '''
+
+    # Get ~/.radis if exists, else create it
+    try:
+        dbnames = getDatabankList()
+    except FileNotFoundError:
+        # generate ~/.radis:
+        dbnames = []
+        open(CONFIG_PATH, 'a').close()
+        if verbose:
+            print('Created ~/.radis in {0}'.format(dirname(CONFIG_PATH)))
+
+    # Check database doesnt exist
+    if dbname in dbnames:
+        raise ValueError('Database already exists: {0}'.format(dbname) +
+                         '. Cant add it')
+
+    # Add entries to parser
+    config = configparser.ConfigParser()
+    config.add_section(dbname) # = {}
+
+    if 'info' in dict_entries:  # optional
+        config.set(dbname, 'info', dict_entries.pop('info'))
+
+    # ... Parse paths correctly
+    if dict_entries['path'] in string_types:
+        config.set(dbname, 'path', dict_entries.pop('path'))
+    else:  # list
+        config.set(dbname, 'path', '\n       '.join(dict_entries.pop('path')))
+
+    config.set(dbname, 'format', dict_entries.pop('format'))
+    config.set(dbname, 'parfuncfmt', dict_entries.pop('parfuncfmt'))
+
+    # Optional:
+    # ... Split all isotopes in separate keys
+    levels_dict = dict_entries.pop('levels', {})
+    for iso, levels_iso in levels_dict.items():
+        dict_entries['levels_iso{0}'.format(iso)] = levels_iso
+
+    if 'levelsfmt' in dict_entries:
+        config.set(dbname, 'levelsfmt', dict_entries.pop('levelsfmt'))
+
+    # Check nothing is left
+    if dict_entries != {}:
+        raise ValueError('Unexpected keys: {0}'.format(
+            list(dict_entries.keys())))
+
+    # Write to ~/.radis
+    # ... Note: what if there is a PermissionError here? Try/except pass?
+    with open(CONFIG_PATH, 'a') as configfile:
+        configfile.write('\n')
+        config.write(configfile)
+    if verbose:
+        print("Added {0} database in {1}".format(dbname, CONFIG_PATH))
+
+    return
+
+import sys
+if sys.version_info[0] == 2:
+    addDatabankEntries = _addDatabankEntries_py27
 
 def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
     ''' Compare two Databank entries under dict format (i.e: output of 

@@ -72,14 +72,36 @@ class Chdir:
 
 
 if sys.version_info[0] == 2:
-    import six.moves.configparser as configparser
     # FileNotFoundError doesn't exist in Python 2....
     FileNotFoundError = OSError
     PermissionError = IOError   # PermissionError doesn't exist in Python 2....
 else:
-    import configparser
     FileNotFoundError = FileNotFoundError
     PermissionError = PermissionError
+
+# Config Parser
+if sys.version_info[0] == 2:
+    import six.moves.configparser as configparser
+else:
+    import configparser
+
+def getarglist(function):
+    ''' Get list of arguments in a function 
+    
+    See https://stackoverflow.com/a/41188411/5622825
+    '''
+    
+    if sys.version_info[0] == 2:
+        from inspect import getargspec
+        return getargspec(function).args
+    
+    else:
+        from inspect import signature
+        return list(signature(function).parameters)
+        
+
+
+
 
 # %% Other stuff
 

@@ -15,10 +15,10 @@ from radis.io.query import fetch_astroquery
 @pytest.mark.needs_connection
 def test_fetch_astroquery(verbose=True, *args, **kwargs):
     ''' Test astroquery '''
-    fetch_astroquery('CO2', 1, 2200, 2400, verbose=verbose)
+    df = fetch_astroquery('CO2', 1, 2200, 2400, verbose=verbose)
 
-    if verbose:
-        print('test_fetch_astroquery: no test defined')
+    assert df.iloc[0].id == 2
+    assert df.iloc[0].iso == 1
 
     return
 

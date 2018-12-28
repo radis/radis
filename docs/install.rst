@@ -1,3 +1,4 @@
+.. _label_install:
 Requirements
 ============
 
@@ -33,9 +34,9 @@ Install
 
 You can either install RADIS from `pip`, the Python package manager. But if 
 you want to modify the code and contribute, we suggest to clone the source 
-from Github.  
+from [GitHub](https://github.com/radis/radis) .  
 
-**Use-only version** (not recommended): cant modify the code
+**Use-only version** : cant modify the code
 
 In a terminal, run::
 
@@ -44,7 +45,7 @@ In a terminal, run::
 The 'pip' module has to be installed (by default if you've installed Python
 with Anaconda). 
 
-**Developer version** (recommended): to modify the code and contribute to the 
+**Developer version**: to modify the code and contribute to the 
 project. 
 
 In a terminal, run::
@@ -53,16 +54,21 @@ In a terminal, run::
     cd radis
     pip install -e .
 
-The `-e` (editable) command creates a link from your /radis folder into Python 
+The `-e` (editable) command creates a link from the local folder `./` folder into Python 
 site-packages.
+
+To make sure the install worked, run the :ref:`first example <label_first_example>`
+from the Quick Start page. Then, you're all set. 
+
 
 Test 
 ====
 
-To make sure the install worked, run the following command from the console in
-the ``radis\radis`` directory::
+If you want to modify the source code, you need to ensure that you don't break
+any of the existing tests. 
+Refer to the :ref:`Test Section <label_dev_test>` to learn how to run the 
+tests locally. 
 
-    pytest
 
 
 Update 
@@ -73,7 +79,8 @@ With Pip you can keep the package up-to-date with::
     pip install radis --upgrade
 
 
-In the developer version (installed with `pip -e`), use git to `pull` the latest changes from Github. 
+In the developer version (installed with `pip -e`), use git to `pull` the latest changes from 
+[GitHub](https://github.com/radis/radis). 
 
 
 

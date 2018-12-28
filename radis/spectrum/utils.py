@@ -75,7 +75,13 @@ INFORMATIVE_PARAMS = [
 ''' list: Informative parameters. Parameters that should be saved in the Spectrum 
 objects, but ignored when comparing two spectra. Should be written here only 
 these parameters that cannot affect the physical result. In particular, all 
-parameters relative to performance should be added here.'''
+parameters relative to performance should be added here.
+
+Notes
+-----
+
+units for these parameters are stored in Spectrum.cond_units and are defined
+by the generating class (ex: SpectrumFactory)'''
 
 # %% Util functions
 
@@ -105,16 +111,18 @@ def make_up(label):
 
     # Improve units
     label = label.replace('cm_1', 'cm-1')
-    label = label.replace('cm-1', 'cm$^{-1}$')
-    label = label.replace('m2', 'm$^2$')
-    label = label.replace('m3', 'm$^3$')
-    label = label.replace('I/I0', 'I/I$_\mathrm{0}$')    # transmittance unit
+    label = label.replace('cm-1', 'cm$^\mathregular{-1}$')
+    label = label.replace('m2', 'm$^\mathregular{2}$')
+    label = label.replace('m3', 'm$^\mathregular{3}$')
+    label = label.replace('I/I0', 'I/I$_\mathregular{0}$')    # transmittance unit
 
     # Improve text
-#    label = label.replace('_noslit', ' (unconvolved)')
-    label = label.replace('radiance_noslit', 'Radiance')     # make no difference between no_slit and slit while plotting
-    label = label.replace('transmittance_noslit', 'Transmittance')     # make no difference between no_slit and slit while plotting
-    # small hack: capitalize, to make a difference with non slit value
+    if not '_noslit' in label:
+        # small hack: capitalize, to make a difference with non slit value
+        label = label.replace('radiance', 'Radiance')     # make a small difference between no_slit and slit while plotting
+        label = label.replace('transmittance', 'Transmittance')     # make a small difference between no_slit and slit while plotting
+    # ... Remove _noslit
+    label = label.replace('_noslit', '')
     
     return label
 

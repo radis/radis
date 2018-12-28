@@ -23,6 +23,7 @@ install:
 
   # Create conda environment
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest numpy scipy matplotlib pandas plotly h5py numba
+  # TODO: use an environment.yml instead (but we need 2 depending on the Python version!)
   - source activate test-environment
   - conda install -c astropy astroquery
   - pip install pytest-cov
@@ -30,9 +31,13 @@ install:
 
 script:
   # Your test script goes here
-  - echo ">>> Running tests"
+  - echo ">>> Run tests"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - xvfb-run pytest --cov=./            
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      xvfb-run pytest -m "not needs_config_file and not python3_only" --cov=./;
+    else
+      xvfb-run pytest -m "not needs_config_file and not python2_only" --cov=./;
+    fi
   
 # safelist
 branches:

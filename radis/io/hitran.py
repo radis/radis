@@ -185,7 +185,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     fcache = splitext(fname)[0]+'.h5'
     check_cache_file(cache, fcache=fcache, verbose=verbose)
     if cache and exists(fcache):
-        return get_cache_file(fcache)
+        return get_cache_file(fcache, verbose=verbose)
 
     # Detect the molecule by reading the start of the file
     with open(fname) as f:
@@ -232,7 +232,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
             print('Generating cached file: {0}'.format(fcache))
         try:
             save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
-                        key='df', overwrite=True)
+                        key='df', overwrite=True, verbose=verbose)
         except:
             if verbose:
                 print(sys.exc_info())
@@ -273,10 +273,10 @@ def _parse_HITRAN_class1(df):
     
     # 1. Parse
     dgu = df['globu'].str.extract(
-        '[ ]{13}(?P<vu>[\d ]{2})',
+        r'[ ]{13}(?P<vu>[\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
-        '[ ]{13}(?P<vl>[\d ]{2})',
+        r'[ ]{13}(?P<vl>[\d ]{2})',
         expand=True)
     
     # 2. Convert to numeric
@@ -376,10 +376,10 @@ def _parse_HITRAN_class4(df):
     
     # 1. Parse
     dgu = df['globu'].str.extract(
-        '[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})',
+        r'[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
-        '[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})',
+        r'[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})',
         expand=True)
     
     # 2. Convert to numeric
@@ -421,10 +421,10 @@ def _parse_HITRAN_class5(df):
     
     # 1. Parse
     dgu = df['globu'].str.extract(
-        '[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)',
+        r'[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)',
         expand=True)
     dgl = df['globl'].str.extract(
-        '[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)',
+        r'[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)',
         expand=True)
     
     # 2. Convert to numeric
@@ -467,11 +467,11 @@ def _parse_HITRAN_class6(df):
     # 1. Parse
     dgu = df['globu'].str.extract(
 #        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
-        '[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})',
+        r'[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})',
         expand=True)
     dgl = df['globl'].str.extract(
 #        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
-        '[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})',
+        r'[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})',
         expand=True)
     # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are 
     # ... somehow negative. The regex above is adapted to catch negation signs with \-
@@ -630,14 +630,14 @@ def _parse_HITRAN_group1(df):
     # J'  | Ka' | Kc' | F'  | Sym'
     # I3  | I3  | I3  | A5  | A1
     dgu = df['locu'].str.extract(
-        '(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)',
+        r'(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)',
         expand=True)
     # Ref [1] : locl
     # --------------
     # J'' | Ka''| Kc''| F'' | Sym''
     # I3  | I3  | I3  | A5  | A1
     dgl = df['locl'].str.extract(
-        '(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)',
+        r'(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)',
         expand=True)
     # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
     # ... be negative. The regex above is adapted to catch negation signs with \-
@@ -686,14 +686,14 @@ def _parse_HITRAN_group2(df):
     #     | F'  |
     # 10X | A5  |
     dgu = df['locu'].str.extract(
-        '[ ]{10}(?P<Fu>.{5})',
+        r'[ ]{10}(?P<Fu>.{5})',
         expand=True)
     # Ref [1] : locl
     # --------------
     #     | Br  | J'' | Sym''| F'' |
     # 5X  | A1  | I3  | A1   | A5  |
     dgl = df['locl'].str.extract(
-        '[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})',
+        r'[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})',
         expand=True)
 
     # 2. Convert to numeric
@@ -946,7 +946,11 @@ def get_molecule_identifier(molecule_name):
     # Invert the dictionary.
     trans = {v: k for k, v in trans.items()}
 
-    return int(trans[molecule_name])
+    try:
+        return int(trans[molecule_name])
+    except KeyError:
+        raise NotImplementedError("Molecule '{0}' not supported. Choose one of {1}".format(
+                                    molecule_name, list(trans.keys())))
 
 
 def get_molecule(molecule_id):
@@ -970,7 +974,7 @@ def get_molecule(molecule_id):
     '''
 
     # assert str
-    id = '{0}'.format(molecule_id)
+    id = '{:d}'.format(int(molecule_id))
 
     trans = {'1': 'H2O',    '2': 'CO2',   '3': 'O3',      '4': 'N2O',
              '5': 'CO',    '6': 'CH4',   '7': 'O2',     '8': 'NO',
@@ -985,7 +989,11 @@ def get_molecule(molecule_id):
              '41': 'CH3CN', '42': 'CF4',  '43': 'C4H2',   '44': 'HC3N',
              '45': 'H2',   '46': 'CS',   '47': 'SO3'}
 
-    return trans[id]
+    try:
+        return trans[id]
+    except KeyError:
+        raise NotImplementedError("Molecule ID '{0}' unknown. Choose one of {1}".format(
+                                    molecule_id, trans))
 
 # ======================================================
 # %% Test

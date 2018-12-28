@@ -17,6 +17,10 @@
 *.pdf
 *.tif
 *.h5
+radis/test/test.nfig
+radis/test/*.png
+radis/test/validation/*.png
+.pytest_cache/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

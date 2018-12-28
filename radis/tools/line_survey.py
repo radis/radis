@@ -120,7 +120,9 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
         s = sf.eq_spectrum(Tgas=1500)
         s.apply_slit(0.5)
         s.line_survey(overlay='radiance_noslit', barwidth=0.01)
-
+        
+    See the output in :ref:`Examples <label_examples>`
+    
     References
     ----------
 
@@ -248,20 +250,20 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
 
         # Get global labels        
         if molecule in HITRAN_CLASS1:
-            label = ('{molec}[iso{iso}] [{branch}{jl}]({vl})->({vu})'.format(
+            label = ('{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})'.format(
                 **dict([(k, row[k]) for k in ['vu', 'vl',
                                               'jl', 'iso']]+
                         [('molec',molecule),
                          ('branch',_fix_branch_format[row['branch']])])))
         elif molecule in HITRAN_CLASS4:
-            label = ('{molec}[iso{iso}] [{branch}{jl}]({v1l}{v2l}`{l2l}`{v3l})->({v1u}{v2u}`{l2u}`{v3u})'.format(
+            label = ('{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})'.format(
                 **dict([(k, row[k]) for k in ['v1u', 'v2u', 'l2u', 'v3u',
                                               'v1l', 'v2l', 'l2l', 'v3l',
                                               'jl', 'iso']]+
                         [('molec',molecule),
                          ('branch',_fix_branch_format[row['branch']])])))
         elif molecule in HITRAN_CLASS5:
-            label = ('{molec}[iso{iso}] [{branch}{jl}]({v1l}{v2l}`{l2l}`{v3l} {rl})->({v1u}{v2u}`{l2u}`{v3u} {ru})'.format(
+            label = ('{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f} {rl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f} {ru:.0f})'.format(
                 **dict([(k, row[k]) for k in ['v1u', 'v2u', 'l2u', 'v3u',
                                               'v1l', 'v2l', 'l2l', 'v3l',
                                               'rl', 'ru',
@@ -281,72 +283,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
 
         return label
     
-    
-#    def get_label_hitran_locglob(row, details):
-#        ''' 
-#        Todo
-#        -------
-#
-#        replace with simple astype(str) statements and str operations
-#
-#        ex:        
-#        > '['+df[locl].astype(str)+']('+df[globl].astype(str)+'->'+
-#        >     df[globu].astype(str)'+)'
-#
-#        will be much faster! 
-#        '''
-#
-#        molecule = get_molecule(row.id)
-#
-#        label = ('{0}[iso{1}]'.format(molecule, row['iso']) +
-#                 '[{locl}]({globl})->({globu})'.format(
-#            **dict([(k, row[k]) for k in ['locl', 'globl', 'globu']])))
-#
-#        for k in details:
-#            name, _, unit = details[k]
-#            if is_float(row[k]):
-#                label += '\n{0} {1}: {2:.3g} {3}'.format(k, name, row[k], unit)
-#            else:
-#                label += '\n{0} {1}: {2} {3}'.format(k, name, row[k], unit)
-#
-#        return label
-#
-#    def get_label_hitran_branchjglob(row, details):
-#        molecule = get_molecule(row.id)
-#
-#        label = ('{0}[iso{1}] '.format(molecule, row['iso']) +
-#                 '[{branch}{jl}]({globl})->({globu})'.format(
-#            **dict([(k, row[k]) for k in ['jl', 'globl', 'globu']]+
-#                    [('branch',_fix_branch_format[row['branch']])])))
-#
-#        for k in details:
-#            name, _, unit = details[k]
-#            if is_float(row[k]):
-#                label += '\n{0} {1}: {2:.3g} {3}'.format(k, name, row[k], unit)
-#            else:
-#                label += '\n{0} {1}: {2} {3}'.format(k, name, row[k], unit)
-#
-#        return label
-#
-#    def get_label_hitran_branchjv(row, details):
-#        molecule = get_molecule(row.id)
-#
-#        label = ('{0}[iso{1}]'.format(molecule, row['iso']) +
-#                 '[{branch}{jl}]({v1l})->({v1u})'.format(
-#            **dict([(k, row[k]) for k in ['jl', 'v1l', 'v1u']]+
-#                    [('branch',_fix_branch_format[row['branch']])])))
-#
-#        for k in details:
-#            name, _, unit = details[k]
-#            if is_float(row[k]):
-#                label += '\n{0} {1}: {2:.3g} {3}'.format(k, name, row[k], unit)
-#            else:
-#                label += '\n{0} {1}: {2} {3}'.format(k, name, row[k], unit)
-#
-#        return label
-
     def get_label_cdsd(row, details):
-        label = ('CO2[iso{iso}] [{branch}{jl}]({v1l}{v2l}`{l2l}`{v3l})->({v1u}{v2u}`{l2u}`{v3u})'.format(
+        label = ('CO2[iso{iso}] [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})'.format(
             **dict([(k, row[k]) for k in ['v1u', 'v2u', 'l2u', 'v3u',
                                           'v1l', 'v2l', 'l2l', 'v3l',
                                           'jl', 'iso']]+
@@ -369,8 +307,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
     if columndescriptor:
         for k in lineinfo:
             if not k in sp.columns:
-                raise KeyError('{0} not a {1} databank entry: {2}'.format(k,
-                                                                          columndescriptor, dbformat.upper()))
+                raise KeyError('{0} not a {1} databank entry ({2} format)'.format(k,
+                                                    columndescriptor, dbformat.upper()))
             try:  # to find units and real name (if exists in initial databank)
                 _, ktype, name, unit = columndescriptor[k]
                 details[k] = (name, ktype, ' [{0}]'.format(unit))
@@ -380,20 +318,6 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
     # Get label
     if dbformat == 'hitran':
         sp['label'] = sp.apply(lambda r: get_label_hitran(r, details), axis=1)
-        
-#        # Different labels for different hitran molecules
-#        if 'locl' in sp and 'globl' in sp and 'globu' in sp:  # General case, non parsed
-#            sp['label'] = sp.apply(
-#                lambda r: get_label_hitran_locglob(r, details), axis=1)
-#        elif 'branch' in sp and 'jl' in sp and 'globu' in sp and 'globl' in sp:  # ex: Group2 class 1
-#            sp['label'] = sp.apply(
-#                lambda r: get_label_hitran_branchjglob(r, details), axis=1)
-#        elif 'branch' in sp and 'jl' in sp and 'v1u' in sp and 'v1l' in sp:  # ex: Group2 class 1
-#            sp['label'] = sp.apply(
-#                lambda r: get_label_hitran_branchjv(r, details), axis=1)
-#        else:
-#            raise ValueError('Unknown hitran molecule format')
-
     elif dbformat in ['cdsd', 'cdsd-4000']:
         sp['label'] = sp.apply(lambda r: get_label_cdsd(r, details), axis=1)
     else:
@@ -495,5 +419,5 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
 # %% Test
 if __name__ == '__main__':
 
-    from neq.test.spec.test_line_survey import _run_testcases
+    from radis.test.tools.test_line_survey import _run_testcases
     print('Testing line survey functions:', _run_testcases(plot=True))

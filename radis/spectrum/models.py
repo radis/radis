@@ -12,6 +12,9 @@ Routine Listing
 - :func:`~radis.spectrum.models.Transmittance`
 - :func:`~radis.spectrum.models.Radiance`
 
+- :func:`~radis.spectrum.models.calculated_spectrum`,
+- :func:`~radis.spectrum.models.experimental_spectrum`,
+- :func:`~radis.spectrum.models.transmittance_spectrum`,
 
 -------------------------------------------------------------------------------
 
@@ -117,8 +120,8 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     See Also
     --------
 
-    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-    :func:`~radis.spectrum.spectrum.experimental_spectrum`,
+    :func:`~radis.spectrum.models.calculated_spectrum`, 
+    :func:`~radis.spectrum.models.experimental_spectrum`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`

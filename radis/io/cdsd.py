@@ -214,7 +214,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
     fcache = splitext(fname)[0]+'.h5'
     check_cache_file(cache, fcache=fcache, verbose=verbose)
     if cache and exists(fcache):
-        return get_cache_file(fcache)
+        return get_cache_file(fcache, verbose=verbose)
 
     # %% Start reading the full file
 
@@ -231,7 +231,7 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
             print('Generating cached file: {0}'.format(fcache))
         try:
             save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
-                        key='df', overwrite=True)
+                        key='df', overwrite=True, verbose=verbose)
         except:
             if verbose:
                 print('An error occured in cache file generation. Lookup access rights')

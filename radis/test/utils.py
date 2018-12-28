@@ -86,7 +86,7 @@ TEST_DATABASES = {
         'path': [getTestFile(r'hitran_co2_626_bandhead_4165_4200nm.par')],
         'format': 'hitran',
         'parfuncfmt': 'hapi',
-        'levelsfmt': 'neq',  # TODO: replace with 'radis'
+        'levelsfmt': 'radis',
     },
     'HITRAN-CO-TEST': {
         'info': 'HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), ' +\
@@ -94,28 +94,47 @@ TEST_DATABASES = {
         'path': [getTestFile(r'hitran_co_3iso_2000_2300cm.par')],
         'format': 'hitran',
         'parfuncfmt': 'hapi',
-        'levelsfmt': 'neq',  # TODO: replace with 'radis'
+        'levelsfmt': 'radis',
+    },
+    'HITEMP-CO2-TEST': {
+        'info': 'HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), ' +
+        '2283.7-2285.1 cm-1',
+        'path': [getTestFile(r'cdsd_hitemp_09_fragment.txt')],
+        'format': 'cdsd',    # CDSD-HITEMP, actually. 
+        'parfuncfmt': 'hapi',
+        'levelsfmt': 'radis',
     },
 }
+'''dict: test databases added in the :ref:`Configuration file <label_lbl_config_file>`
+by :py:func:`~radis.test.utils.setup_test_line_databases`
+'''
 
 # %% Utils to test spec module
 
 
 def setup_test_line_databases(verbose=True):
-    ''' Build test databases and add them in ~/.radis. Generate the file if it 
-    doesnt exist
+    ''' Build :py:data:`~radis.test.utils.TEST_DATABASES` and add them in ~/.radis. 
+    Generate the file if it  doesnt exist
 
     In particular:
 
     - HITRAN-CO2-TEST: CO2, HITRAN 2016, 4165-4200 nm 
     - HITRAN-CO-TEST: CO, HITRAN 2016, 2000-2300 cm-1
+    - HITEMP-CO2-TEST: CO2, HITEMP-2010, 2283.7-2285.1 cm-1, 3 isotopes
 
     These test databases are used to run the different test routines. They can
     obviously be used by Users to run simulations, but we suggest Users to download
     their own line databases files and add them to ~/.radis so they have more control
     on it
+    
+    See Also
+    --------
+    
+    :ref:`Configuration file <label_lbl_config_file>`
 
     '''
+    # TODO: generate large band databases for the main species (let's say CO2, 
+    # H2O and CH4) and main isotopes by fetching the HITRAN 2016 database. 
 
     # Get list of databases
     try:

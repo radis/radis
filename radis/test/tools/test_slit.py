@@ -19,15 +19,17 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-#from neq.spec import SpectrumFactory
-from radis.spectrum.spectrum import calculated_spectrum, transmittance_spectrum
+#from radis.lbl import SpectrumFactory
+from radis.spectrum.models import calculated_spectrum, transmittance_spectrum
 from radis.tools.database import load_spec
-from radis.los.slabs import SerialSlabs
-from radis.tools.slit import (gaussian_slit, triangular_slit, trapezoidal_slit,
-                              import_experimental_slit, convolve_with_slit,
+from radis.tools.slit import (import_experimental_slit, convolve_with_slit,
                               get_FWHM, get_effective_FWHM)
 from radis.phys.units import is_homogeneous
 from radis.phys.convert import dcm2dnm, dnm2dcm
+from radis.misc.printer import printm
+from radis.lbl.factory import SpectrumFactory
+from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
+from radis.misc.utils import DatabankNotFound
 #from radis.misc.utils import DatabankNotFound
 #from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 import matplotlib.pyplot as plt
@@ -459,12 +461,18 @@ def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
 @pytest.mark.fast
 def test_linear_dispersion_effect(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     ''' A test case to show the effect of wavelength dispersion (cf spectrometer
-    reciprocal function) on the slit function '''
+    reciprocal function) on the slit function
+    
+    Test succeeds if a :py:data:`~radis.misc.warning.SlitDispersionWarning` 
+    is correctly triggered
+    '''
 
     from radis.test.utils import getTestFile
-    from publib import fix_style
+    from publib import set_style, fix_style
+    
     
     if plot:
+        set_style('origin')
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
         if close_plots:
             plt.close('all')
@@ -476,19 +484,22 @@ def test_linear_dispersion_effect(verbose=True, plot=True, close_plots=True, *ar
         plt.plot(w_slit, I_slit, '--k', label='Exp: FWHM @{0}nm: {1:.3f} nm'.format(632.8,
                                                                                     get_effective_FWHM(w_slit, I_slit)))
 
-    # Test how slit function FWHM scales with linear_dispersion
-    for w0, FWHM in zip([380, 1000, 4200, 5500],
-                        [0.396, 0.388, 0.282, 0.188]):
-        w, I = dirac(w0)
-
-        wc, Ic = convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
-                                    slit_dispersion=linear_dispersion,
-                                    verbose=False)
-        assert np.isclose(FWHM, get_effective_FWHM(wc, Ic), atol=0.001)
-
-        if plot:
-            plt.plot(wc, Ic, label='FWHM @{0:.2f} nm: {1:.3f} nm'.format(w0,
-                                                                         get_effective_FWHM(wc, Ic)))
+    from radis.misc.warning import SlitDispersionWarning
+    with pytest.warns(SlitDispersionWarning):   # expect a "large slit dispersion" warning
+        
+        # Test how slit function FWHM scales with linear_dispersion
+        for w0, FWHM in zip([380, 1000, 4200, 5500],
+                            [0.396, 0.388, 0.282, 0.188]):
+            w, I = dirac(w0)
+    
+            wc, Ic = convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
+                                        slit_dispersion=linear_dispersion,
+                                        verbose=False)
+            assert np.isclose(FWHM, get_effective_FWHM(wc, Ic), atol=0.001)
+    
+            if plot:
+                plt.plot(wc, Ic, label='FWHM @{0:.2f} nm: {1:.3f} nm'.format(w0,
+                                                                             get_effective_FWHM(wc, Ic)))
 
     if plot:
         plt.xlabel('Wavelength (nm)')
@@ -496,7 +507,7 @@ def test_linear_dispersion_effect(verbose=True, plot=True, close_plots=True, *ar
         plt.legend(loc='best', prop={'size': 15})
         fix_style('article')
 
-    return True  # nothing defined yet
+    return True
 
 
 @pytest.mark.fast
@@ -521,6 +532,7 @@ def test_auto_correct_dispersion(f=750, phi=-6, gr=2400,
 
     from radis.test.utils import getTestFile
     from publib import set_style, fix_style
+    from radis.misc.warning import SlitDispersionWarning
     
     if plot:
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
@@ -548,7 +560,8 @@ def test_auto_correct_dispersion(f=750, phi=-6, gr=2400,
     
     # Compare 2 spectra
         s.plot(nfig='Linear dispersion effect', color='r', label='not corrected')
-    s.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
+    with pytest.warns(SlitDispersionWarning):   # expect a "large slit dispersion" warning
+        s.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
     if plot:
         s.plot(nfig='same', color='k', label='corrected')
         plt.legend()
@@ -560,41 +573,123 @@ def test_auto_correct_dispersion(f=750, phi=-6, gr=2400,
     return True  # nothing defined yet
 
 
+
+@pytest.mark.fast
+def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **kwargs):
+    ''' Test what happens when a spectrum in nm or cm-1, is convolved
+    with a slit function in nm. In particular, slit function is generated
+    in the spectrum unit, and spectrum is resampled if not evenly spaced'''
+
+    if verbose:
+        printm('Test auto resampling')
+
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+    try:
+
+        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+
+        plCO = SpectrumFactory(
+            wavenum_min=2230,
+            wavenum_max=2260,
+            mole_fraction=0.02,
+            path_length=100,  # cm
+            broadening_max_width=20,  # cm^-1
+            wstep=0.02,
+            isotope=[1, 2, 3],
+            verbose=verbose,
+        )
+        plCO.warnings['MissingSelfBroadeningWarning'] = 'ignore'
+        plCO.load_databank('HITRAN-CO-TEST')
+        sCO = plCO.eq_spectrum(Tgas=300)
+
+        w_nm, T_nm = sCO.get('transmittance_noslit', wunit='nm', medium='air')
+        w_nm, I_nm = sCO.get('radiance_noslit', wunit='nm',
+                             Iunit='mW/cm2/sr/nm')
+        sCO_nm = transmittance_spectrum(w_nm, T_nm, wunit='nm',
+                                        conditions={'medium': 'air'})  # a new spectrum stored in nm
+        # sCO_nm = theoretical_spectrum(w_nm, I_nm, wunit='nm', Iunit='mW/cm2/sr/nm') #  a new spectrum stored in nm
+
+        if plot:
+            fig = plt.figure(fig_prefix+'auto-resampling')
+            sCO.plot('transmittance_noslit', wunit='cm-1', nfig=fig.number,
+                     marker='o', color='k', lw=3, ms=10, label='(stored in cm-1)')
+            plt.title('No slit function')
+            sCO_nm.plot('transmittance_noslit', wunit='cm-1', nfig=fig.number,
+                        marker='o', color='r', label='(stored in nm)')
+#            plt.xlim((2246.58, 2247.52))
+#            plt.ylim((0.87, 1.01))
+            plt.legend()
+
+        slit_function = 0.8
+        slit_unit = 'cm-1'
+        sCO.apply_slit(slit_function, unit=slit_unit)
+        sCO_nm.apply_slit(slit_function, unit=slit_unit)
+
+        if plot:
+            fig = plt.figure(fig_prefix+'auto-resampling (after convolution)')
+            sCO.plot('transmittance', wunit='cm-1', nfig=fig.number,
+                     marker='o', color='k', lw=3, ms=10, label='(stored in cm-1)')
+            plt.title('Slit function: {0} {1}'.format(
+                slit_function, slit_unit))
+            sCO_nm.plot('transmittance', wunit='cm-1', nfig=fig.number,
+                        marker='o', color='r', label='(stored in nm)')
+
+#            plt.xlim((2246.58, 2247.52))
+#            plt.ylim((0.87, 1.01))
+            plt.legend()
+
+        w_conv, T_conv = sCO.get('transmittance', wunit='cm-1')
+        w_nm_conv, T_nm_conv = sCO_nm.get('transmittance', wunit='cm-1')
+
+        error = abs((trapz(1-T_conv, w_conv)-trapz(1-T_nm_conv,
+                                                   w_nm_conv))/trapz(1-T_nm_conv, w_nm_conv))
+
+        if verbose:
+            printm('\n>>> _test_resampling\n')
+        if verbose:
+            printm('Error between 2 spectra ({0:.2f}%) < {1:.2f}%: {2}'.format(error*100,
+                                                                               rtol*100, bool(error < rtol)))
+        assert bool(error < rtol)
+
+    except DatabankNotFound as err:
+        assert IgnoreMissingDatabase(err, __file__, warnings)
+
+
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
-    # Validation
-    test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
-                                     *args, **kwargs)
-    
-    # Different modes
-    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, 
-                            *args, **kwargs)
-    
-    # Resampling
-    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, 
-                                  *args, **kwargs)
-    
-    # Linear dispersion
-    test_linear_dispersion_effect(plot=plot, close_plots=close_plots, verbose=verbose, 
-                                  *args, **kwargs)
+#    # Validation
+#    test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
+#                                     *args, **kwargs)
+#    
+#    # Different modes
+#    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, 
+#                            *args, **kwargs)
+#    
+#    # Resampling
+#    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, 
+#                                  *args, **kwargs)
+#    
+#    # Linear dispersion
+#    test_linear_dispersion_effect(plot=plot, close_plots=close_plots, verbose=verbose, 
+#                                  *args, **kwargs)
     test_auto_correct_dispersion(plot=plot, close_plots=close_plots, verbose=verbose, 
                                  *args, **kwargs)
     
-    
-#    test_constant_source(plot=plot, verbose=verbose, *args, **kwargs)
-    
-    # Different shapes
-    test_all_slit_shapes(plot=plot, close_plots=close_plots,
-                         verbose=verbose, *args, **kwargs)
-    
-    # Units
-    test_slit_unit_conversions_spectrum_in_cm(
-        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
-    test_slit_unit_conversions_spectrum_in_nm(
-        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
-    test_convoluted_quantities_units(*args, **kwargs)
-    
-    
+#    
+#    # Different shapes
+#    test_all_slit_shapes(plot=plot, close_plots=close_plots,
+#                         verbose=verbose, *args, **kwargs)
+#    
+#    # Units
+#    test_slit_unit_conversions_spectrum_in_cm(
+#        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
+#    test_slit_unit_conversions_spectrum_in_nm(
+#        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
+#    test_convoluted_quantities_units(*args, **kwargs)
+#    
+#    
 #    test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
