@@ -309,9 +309,10 @@ def get_residual(s1, s2, var,
             s_calc  # in 'cm-1'
             get_residual(s_exp, s_calc, normalize=(4178, 4180))  # interpreted as 'nm'
 
-    normalize_how: 'max', 'area'
-        how to normalize. 'max' is the default but may not be suited for very
-        noisy experimental spectra. 
+    normalize_how: ``'max'``, ``'area'``, ``'mean'``
+        how to normalize. ``'max'`` is the default but may not be suited for very
+        noisy experimental spectra. ``'area'`` will normalize the integral to 1.
+        ``'mean'`` will normalize by the mean amplitude value
 
     Notes
     -----
@@ -348,24 +349,37 @@ def get_residual(s1, s2, var,
             b = (w1 > wmin) & (w1 < wmax)
             if normalize_how == 'max':
                 norm1 = I1[b].max()
+            elif normalize_how == 'mean':
+                norm1 = I1[b].mean()
             elif normalize_how == 'area':
                 norm1 = np.abs(np.trapz(I1[b], w1[b]))
+            else:
+                raise ValueError('Unexpected `normalize_how`: {0}'.format(normalize_how))
             # now normalize s2. Ensure we use the same unit system!
             w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
             b = (w2 > wmin) & (w2 < wmax)
             if normalize_how == 'max':
                 norm2 = I2[b].max()
+            elif normalize_how == 'mean':
+                norm2 = I2[b].mean()
             elif normalize_how == 'area':
                 norm2 = np.abs(np.trapz(I2[b], w2[b]))
+            else:
+                raise ValueError('Unexpected `normalize_how`: {0}'.format(normalize_how))
             s1 = multiply(s1, 1/norm1, var=var)
             s2 = multiply(s2, 1/norm2, var=var)
         else:
             if normalize_how == 'max':
                 norm1 = s1.get(var, copy=False)[1].max()
                 norm2 = s2.get(var)[1].max()
+            if normalize_how == 'mean':
+                norm1 = s1.get(var, copy=False)[1].mean()
+                norm2 = s2.get(var)[1].mean()
             elif normalize_how == 'area':
                 norm1 = s1.get_integral(var)
                 norm2 = s2.get_integral(var, wunit=s1.get_waveunit(), Iunit=s1.units[var])
+            else:
+                raise ValueError('Unexpected `normalize_how`: {0}'.format(normalize_how))
             # Ensure we use the same unit system!
             s1 = multiply(s1, 1/norm1, var=var)
             s2 = multiply(s2, 1/norm2, var=var)
