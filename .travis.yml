@@ -24,7 +24,7 @@ install:
   # Update python version in environment 
   - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
   # Create conda environment
-  - conda create create -n radis-env -f environment.yml
+  - conda create -n radis-env -f environment.yml
   # Activate and install test-only dependencies
   - source activate radis-env
   - pip install pytest-cov
