@@ -21,11 +21,12 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
+  # Update python version in environment 
+  - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
   # Create conda environment
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest numpy scipy matplotlib pandas plotly h5py numba
-  # TODO: use an environment.yml instead (but we need 2 depending on the Python version!)
-  - source activate test-environment
-  - conda install -c astropy astroquery
+  - conda create -f environment.yml
+  # Activate and install test-only dependencies
+  - source activate radis-env
   - pip install pytest-cov
   - python setup.py install
 
