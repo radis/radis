@@ -1,15 +1,12 @@
 # .readthedocs.yml
 
-build:
-  image: latest
-
 python:
   version: 3.6
-  setup_py_install: true
+  pip_install: true
+
+conda:
+  file: environment.yml
 
   # Build PDF
 formats:
     - pdf
-
-conda:
-  file: environment.yml
