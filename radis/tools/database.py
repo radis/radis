@@ -817,7 +817,7 @@ def plot_spec(file, what='radiance', title=True, **kwargs):
 # %% SpecList class
 # ... loads a list of spectra and manipulate them
 
-class SpecList():
+class SpecList(object):
     def __init__(self, *spectra, **kwargs):
         ''' A list of Spectrum, with various methods to manage them
         
@@ -2104,19 +2104,5 @@ def in_database(smatch, db='.', filt='.spec'):
 # %% Test
 if __name__ == '__main__':
 
-#    from radis.test.tools.test_database import _run_testcases
-#    print('Testing database.py: ', _run_testcases())
-#    
-
-    from radis.test.utils import getTestFile
-#    from os.path imo
-
-    # Get a list of test files
-    spec_list = SpecDatabase(getTestFile('.')).get()
-    
-    # Now generate a SpecList
-    dbl = SpecList(*spec_list)
-    # check methods work:
-    dbl.get_closest(Trot=1550)
-    
-    
+    from radis.test.tools.test_database import _run_testcases
+    print('Testing database.py: ', _run_testcases())

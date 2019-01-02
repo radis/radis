@@ -9,11 +9,27 @@ Test that :class:`~radis.tools.database.SpecDatabase` works
 from __future__ import print_function, absolute_import, division, unicode_literals
 #from radis.misc.utils import DatabankNotFound
 from radis.test.utils import getTestFile
-from radis.tools.database import load_spec, SpecDatabase
+from radis.tools.database import load_spec, SpecDatabase, SpecList
 import os
 from os.path import exists, dirname, basename
 import pytest
 
+
+@pytest.mark.fast
+def test_speclist(*args, **kwargs):
+    
+    from radis.test.utils import getTestFile
+#    from os.path imo
+
+    # Get a list of test files
+    spec_list = SpecDatabase(getTestFile('.')).get()
+    
+    # Now generate a SpecList
+    dbl = SpecList(*spec_list)
+    # check methods work:
+    dbl.get_closest(Trot=1550)
+    
+    
 
 @pytest.mark.fast
 def test_database_functions(verbose=True, plot=True, close_plots=True, warnings=True, *args, **kwargs):
@@ -91,6 +107,7 @@ def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
 
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
+    test_speclist(*args, **kwargs)
     test_database_functions(
         plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
     test_plot_spec(plot=plot, close_plots=close_plots,
