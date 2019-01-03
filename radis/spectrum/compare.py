@@ -50,7 +50,7 @@ from six.moves import zip
 def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
              resample=True, diff_window=0):
     # type: (Spectrum, Spectrum, str, str, str, str, bool, int) -> np.array, np.array
-    ''' Get the difference between 2 spectra
+    ''' Get the difference between 2 spectra. 
     Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
 
@@ -66,7 +66,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
         2 spectra to compare.
 
     var: str
-        spectral quantity (ex: 'radiance', 'transmittance'...)
+        spectral quantity (ex: ``'radiance'``, ``'transmittance'``...)
 
     wunit: 'nm', 'cm-1'
         waveunit to compare in
@@ -86,14 +86,14 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     
     diff_window: int
         If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
-        units on either side, and returns the minimum. Kinda compensates for experimental
-        errors on the w axis. Default 0. (look up code to understand...)
+        units on either side, and returns the minimum. Compensates for experimental
+        errors on the w axis. Default 0. (look up code for more details...)
 
     Returns    
     -------
 
     w1, Idiff: array
-        difference interpolated on the second range(order?)
+        difference interpolated on the wavespace range of the first Spectrum
     
     Notes
     -----

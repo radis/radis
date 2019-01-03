@@ -82,7 +82,7 @@ More examples can be found in the `documentation <http://radis.readthedocs.io/>`
 License
 -------
 
-The code will soon be fully available on this repository under 
+The code is available on this repository under 
 `GNU LESSER GENERAL PUBLIC LICENSE (v3) <./LICENSE>`_
 
 
@@ -92,14 +92,38 @@ Links
 RADIS:
 
 - Documentation: http://radis.readthedocs.io/
+
+.. image:: https://readthedocs.org/projects/radis/badge/
+    :target: https://radis.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 - Source Code: https://github.com/radis/radis
 - Article: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
+
+.. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
+    :alt: Article
 
 And also:
 
 - Test Status: https://travis-ci.org/radis/radis
+
+.. image:: https://img.shields.io/travis/radis/radis.svg
+    :target: https://travis-ci.org/radis/radis
+    :alt: Tests
+    
 - Test Coverage: https://codecov.io/gh/radis/radis
+
+.. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/radis/radis
+    :alt: Coverage
+  
 - PyPi Repository: https://pypi.org/project/radis/
+
+.. image:: https://img.shields.io/pypi/v/radis.svg
+    :target: https://pypi.python.org/pypi/radis
+    :alt: PyPI
+
 - Interactive Examples: https://github.com/radis/radis-examples
 
 .. |CO2| replace:: CO\ :sub:`2`
