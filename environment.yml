@@ -1,0 +1,16 @@
+# See https://github.com/binder-examples/conda
+name: radis-env
+channels:
+- conda-forge
+- astropy
+dependencies:
+- python=3.6
+- numpy
+- scipy
+- matplotlib
+- pandas
+- plotly
+- h5py
+- numba
+- pytest
+- astroquery>=0.3.9

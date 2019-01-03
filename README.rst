@@ -1,9 +1,4 @@
 
-.. image:: https://github.com/radis/radis/blob/master/docs/radis_ico.png
-    :target: https://radis.readthedocs.io/
-    :scale: 50 %
-    :alt: RADIS logo
-
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
 *****************************************
@@ -27,6 +22,10 @@
 .. image:: https://mybinder.org/badge.svg 
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+
+.. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
+    :alt: Article
 
     
     
@@ -105,3 +104,10 @@ And also:
 
 .. |CO2| replace:: CO\ :sub:`2`
 
+
+
+
+.. image:: https://github.com/radis/radis/blob/master/docs/radis_ico.png
+    :target: https://radis.readthedocs.io/
+    :scale: 50 %
+    :alt: RADIS logo

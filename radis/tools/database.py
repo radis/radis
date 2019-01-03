@@ -80,6 +80,8 @@ from six.moves import zip
 from joblib import Parallel, delayed
 
 
+_scalable_inputs = ['mole_fraction', 'path_length']
+
 # %% Tools
 
 def is_jsonable(x):
@@ -812,11 +814,718 @@ def plot_spec(file, what='radiance', title=True, **kwargs):
 
     return plt.gcf()
 
+# %% SpecList class
+# ... loads a list of spectra and manipulate them
+
+class SpecList(object):
+    def __init__(self, *spectra, **kwargs):
+        ''' A list of Spectrum, with various methods to manage them
+        
+        .. warning::
+            still new in 0.9.17 
+        '''
+        
+        # get defaults
+        verbose = kwargs.pop('verbose', True)
+    
+        self.df = self._create_df(*spectra)
+        self.verbose = verbose
+        
+    def _create_df(self, *spectra):
+        ''' Returns Dataframe of spectra with conditions
+        
+        Parameters
+        ----------
+        
+        spectra: list of Spectrum
+            all spectra 
+            
+        '''
+        
+        # TODO: deal with case where SpecList(list) was called (see below for first attempt)
+        
+#        # in case SpecList(list) was called instead of SpecList(*list)
+#        if isinstance(spectra, tuple):
+#            assert len(spectra) == 1
+#            spectra = spectra[0]
+        
+        
+        db = []
+    
+        for s in spectra:
+            params = s.get_conditions().copy()
+            params.update({'id':id(s), 'Spectrum':s})
+            db.append(params)
+            
+        return pd.DataFrame(db)
+
+
+    def conditions(self):
+        ''' Show conditions in database '''
+
+        cond = list(self.df.columns)
+
+        if len(cond) > 0:
+            if 'file' in cond: cond.remove('file')
+            cond.remove('Spectrum')
+
+        return cond
+
+    def see(self, columns=None, *args):
+        ''' Shows Spectrum database with all conditions (``columns=None``) or
+        specific conditions
+
+        Parameters
+        ----------
+
+        columns: str, list of str, or None
+            shows the conditions value for all cases in database. If None, all
+            conditions are shown. Default ``None``
+            e.g.::
+                
+                db.see(['Tvib', 'Trot'])
+
+        Notes
+        -----
+
+        Makes the 'file' column the index, and also discard the 'Spectrum' column
+        (that holds all the data) for readibility
+
+
+        '''
+
+        if len(self) == 0:
+            raise ValueError('Database is empty')
+
+        if isinstance(columns, string_types):
+            columns = [columns]+[k for k in args]
+
+        dg = self.df.set_index('file')  # note that this is a copy already.
+        # dont try to modify the output of "see"
+        del dg['Spectrum']          # for visibility"
+
+        if columns is None:
+            return dg
+
+        for c in columns:
+            if not c in self.df.columns:
+                raise ValueError('`{0}` is not a column name. Use one of {1}'.format(c,
+                                                                                     self.df.columns))
+
+        return dg.reindex(columns=columns)
+
+    def view(self, columns=None, *args):
+        ''' alias of :meth:`~radis.tools.database.SpecDatabase.see`
+
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecDatabase.see`
+        '''
+
+        return self.see(columns=columns, *args)
+
+    def map(self, function):
+        ''' Apply ``function`` to all Spectra in database. 
+        
+        Examples
+        --------
+        
+        Add a missing parameter::
+            
+            db = SpecDatabase('...')
+            
+            def add_condition(s):
+                s.conditions['exp_run'] = 1
+                return s
+            
+            db.map(add_condition)
+            
+
+        '''
+        
+        # TODO: If ``function`` 
+        #returns a :class:`~radis.spectrum.spectrum.Spectrum` object then the 
+        # database is updated. 
+
+        
+        for s in self:
+            function(s)
+        
+    def get(self, conditions='', **kwconditions):
+        '''   Returns a list of spectra that match given conditions
+
+        Parameters
+        ----------
+
+        database: list of Spectrum objects
+            the database
+
+        conditions: str
+            a list of conditions. Example::
+            
+                db.get('Tvib==3000 & Trot==1500')
+
+        kwconditions: dict
+            an unfolded dict of conditions. Example::
+            
+                db.get(Tvib=3000, Trot=1500)
+
+        Other Parameters
+        ----------------
+
+        inplace: boolean
+            if True, return the actual object in the database. Else, return
+            copies. Default ``False``
+            
+        verbose: bool
+            blabla
+
+        scale_if_possible: boolean
+            if ``True``, spectrum is scaled for parameters that can be computed 
+            directly from spectroscopic quantities (e.g: ``'path_length'``, ``'molar_fraction'``)
+            Default ``False``
+
+        Examples
+        --------
+
+        ::
+        
+            spec_list = db.get('Tvib==3000 & Trot==1300')
+
+        or::
+
+            spec_list = db.get(Tvib=3000, Trot=1300)
+
+
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`,
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`,
+        :meth:`~radis.tools.database.SpecDatabase.items`
+
+        '''
+
+        # type: bool, default False
+        verbose = kwconditions.pop('verbose', True)         #: type: bool
+        inplace = kwconditions.pop('inplace', False)
+        scale_if_possible = kwconditions.pop('scale_if_possible', False)
+
+        # Test inputs
+        for (k, _) in kwconditions.items():
+            if not k in self.df.columns:
+                raise ValueError('{0} not a correct condition name. Use one of: {1}'.format(k,
+                                                                                            self.df.columns))
+        if len(self.df) == 0:
+            warn('Empty database')
+            return []
+
+        if scale_if_possible:
+            scaled_inputs = {}
+            # Remove scalable inputs from required keys (we scale them at the end instead)
+            for k in _scalable_inputs:
+                if k in kwconditions and len(kwconditions)>1:
+                    scaled_inputs[k] = kwconditions.pop(k)
+
+        # Unique condition method
+        if conditions != '' and kwconditions != {}:
+            raise ValueError(
+                "Please choose one of the two input format (str or dict) exclusively")
+
+        if conditions == '' and kwconditions == {}:
+            # Get all Spectrum objects
+            out = list(self.df['Spectrum'])
+            
+        else:
+            # Find Spectrum that match conditions
+            if conditions != '':   # ... with input conditions query directly
+                dg = self.df.query(conditions)
+            else:                  # ... first write input conditions query
+                query = []
+                for (k, v) in kwconditions.items():
+                    if isinstance(v, string_types):
+                        query.append("{0} == '{1}'".format(k, v))
+                    else:
+                        #                    query.append('{0} == {1}'.format(k,v))
+                        query.append('{0} == {1}'.format(k, v.__repr__()))
+                        # ... for som reason {1}.format() would remove some digit
+                        # ... to floats in Python2. Calling .__repr__() keeps
+                        # ... the correct format, and has no other consequences as far
+                        # ... as I can tell
+    
+                # There is a limitation in numpy: a max of 32 arguments is required.
+                # Below we write a workaround when the Spectrum has more than 32 conditions
+                if len(query) < 32:
+                    query = ' & '.join(query)
+                    if __debug__:
+                        printdbg('Database query: {0}'.format(query))
+                    dg = self.df.query(query)
+                else:
+                    # cut in <32-long parts
+                    N = len(query)//32+1
+                    querypart = ' & '.join(query[::N])
+                    dg = self.df.query(querypart)
+                    for i in range(1, N+1):
+                        querypart = ' & '.join(query[i::N])
+                        if __debug__:
+                            printdbg('Database query: {0}'.format(querypart))
+                        dg = dg.query(querypart)
+
+            out = list(dg['Spectrum'])
+
+        if not inplace:
+            out = [s.copy() for s in out]
+
+        # Scale scalable conditions
+        if scale_if_possible:
+            for s in out:
+                for k,v in scaled_inputs.items():
+                    if k=='path_length':
+                        s.rescale_path_length(v)
+                    elif k=='mole_fraction':
+                        s.rescale_mole_fraction(v)
+                    else:
+                        raise KeyError('cant rescale this: {0}'.format(k))
+
+        return out
+
+    def get_unique(self, conditions='', scale_if_possible=False, **kwconditions):
+        ''' Returns a spectrum that match given conditions. Raises an error
+        if the spectrum is not unique 
+
+        Parameters
+        ----------
+
+        see meth:`~radis.tools.database.SpecDatabase.get` for more details 
+
+
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecDatabase.get`,
+        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+
+        '''
+
+        out = self.get(conditions, scale_if_possible=scale_if_possible, **kwconditions)
+
+        if len(out) == 0:
+            # Give a better error message before crashing:
+            kwconditions['verbose'] = True
+            self.get_closest(**kwconditions) # note: wont work with conditions=..
+            raise ValueError('Spectrum not found. See closest above. Use get_closest()')
+        elif len(out) > 1:
+            raise ValueError('Spectrum is not unique ({0} match found)'.format(
+                len(out))+' Think about using "db.find_duplicates()"')
+        else:
+            return out[0]
+
+    def get_closest(self, scale_if_possible=True, **kwconditions):
+        '''   Returns the Spectra in the database that is the closest to the input conditions
+
+        Note that for non-numeric values only equals should be given.
+        To calculate the distance all numeric values are scaled by their
+        mean value in the database
+
+        Parameters
+        ----------
+
+        kwconditions: named arguments 
+            i.e: Tgas=300, path_length=1.5
+
+        scale_if_possible: boolean
+            if ``True``, spectrum is scaled for parameters that can be computed 
+            directly from spectroscopic quantities (e.g: ``'path_length'``, ``'molar_fraction'``)
+            Default ``True``
+
+        Other Parameters
+        ----------------
+
+        verbose: boolean
+            print messages. Default ``True``
+
+        inplace: boolean
+            if ``True``, returns the actual object in database. Else, return a copy
+            Default ``False``
+            
+#        split_columns: list of str. 
+#            slits a comma separated column in multiple columns, and number them. 
+#            Typically::
+#                
+#                db.get_closest(..., split_columns=['Tvib'])    # in multi temperature modes
+#                
+#            splits ``Tvib:'1200,1300,1000'``, in ``Tvib1:1200, Tvib2:1300, Tvib3:1000``
+#            Default ``[]``
+
+
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecDatabase.get`,
+        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+
+        '''
+        # TODO: make it possible to choose only certain parameters, fix others. 
+        # Maybe first generate a SpecDatabase of output of spectra with get(), 
+        # then get_closest() for the parameters we dont want to fix 
+
+        # Test inputs
+        if kwconditions == {}:
+            raise ValueError(
+                'Please specify filtering conditions. e.g: Tgas=300')
+
+        # Inputs:
+        verbose = kwconditions.pop('verbose', True)         #: type: bool
+        inplace = kwconditions.pop('inplace', False)        #: type: bool
+#        split_columns = kwconditions.pop('split_columns', [])     #: type: bool
+
+        # Check all conditions exist
+        for (k, _) in kwconditions.items():
+            if not k in self.df.columns:
+                raise ValueError('{0} not a correct condition name. Use one of: {1}'.format(k,
+                                                                                            self.df.columns))
+
+        dg = self.df.reindex(columns=list(self.df.columns))
+
+        if scale_if_possible:
+            # Remove scalable inputs from distance calculation variables (unless
+            # they're the last variable, because then it may screw things up)
+            for k in _scalable_inputs:
+                if len(dg.columns) == 1:
+                    break
+                try:
+                    del dg[k]
+                except KeyError:
+                    pass
+                
+#        raise
+
+        mean = dict(dg.mean())
+        std = dict(dg.std())
+        assert '_d' not in dg.columns
+        dg['_d'] = 0  # distance (squared, actually)
+        try:
+            for k, v in kwconditions.items():
+                if not k in dg.columns:
+                    continue
+    #            # add distance to all conditions planes. We regularize the different
+    #            # dimensions by working on normalized quantities:
+    #            #     a  ->   (a-mean)/std  € [0-1]
+    #            # Distance becomes:
+    #            #     d^2 ->  sum((a-target)/std)^2
+    #            # Problem when std == 0! That means this dimension is not discrimant
+    #            # anyway
+    #            if std[k] == 0:
+    #                # for this conditions all parameters have the same value.
+    #                dg['_d'] += (dg[k]-v)**2
+    #            else:
+    #                dg['_d'] += (dg[k]-v)**2/(std[k])**2
+                # Eventually I chose to scale database with mean only (there was
+                # an obvious problem with standard deviation scaling in the case of
+                # a non important feature containing very close datapoints that would
+                # result in inappropriately high weights)
+                
+                try:
+                    dg['_d'] += (dg[k]-v)**2/mean[k]**2
+                except TypeError as err:
+                    # Deal with case where formats dont match:
+                    try:
+                        dg[k]-v
+                    except TypeError:
+                        print(sys.exc_info())
+                        raise TypeError('An error occured (see above) when calculating '+\
+                                        '(dg[{0}]-{1}). Example: '.format(k, v)+\
+                                        '({0} - {1}). '.format(dg[k].iloc[0], v)+\
+                                         'Check that your requested conditions match '+\
+                                         'the database format')
+                    else:
+                        raise(err)
+
+            # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
+
+            # Get spectrum with minimum distance to target conditions
+            # type: Spectrum
+            sout = self.df.loc[dg['_d'].idxmin(), 'Spectrum']
+        finally:
+            del dg['_d']
+
+        if not inplace:
+            sout = sout.copy()
+
+        # Scale scalable conditions
+        if scale_if_possible:
+            if 'path_length' in kwconditions:
+                sout.rescale_path_length(kwconditions['path_length'])
+            if 'mole_fraction' in kwconditions:
+                sout.rescale_mole_fraction(kwconditions['mole_fraction'])
+
+        if verbose:
+            print(
+                ('------- \t'+'\t'.join(['{0}'.format(k) for k in kwconditions.keys()])))
+            print(
+                ('Look up \t'+'\t'.join(['{0:.3g}'.format(v) for v in kwconditions.values()])))
+            print(
+                ('Got     \t'+'\t'.join(['{0:.3g}'.format(sout.conditions[k]) for k in kwconditions.keys()])))
+
+        return sout
+    
+    def get_items(self, condition):
+        ''' Returns all Spectra in database under a dictionary; indexed by ``condition``
+        
+        Requires that ``condition`` is unique
+        
+        Parameters
+        ----------
+        
+        condition: str
+            condition. Ex: ``Trot``
+            
+        Returns
+        -------
+        
+        out: dict
+            {condition:Spectrum}
+            
+        See Also
+        --------
+        
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`,
+        :meth:`~radis.tools.database.SpecDatabase.get`
+        
+        '''
+        
+        if not self.df[condition].is_unique:
+            raise ValueError('Values in {0} must be unique to use get_items(). Got {1}'.format(
+                             condition, self.see(condition)[self.see(condition).duplicated()]))
+            
+        return dict(zip(self.df[condition], self.df.Spectrum))
+
+    def __iter__(self):
+        ''' Iterate over all Spectra in database 
+        
+        .. warning::
+            
+            returns the inplace object directly. If you modify them, the Spectra
+            are modified
+
+        Examples
+        --------
+
+        Print name of all Spectra in dictionary::
+
+            db = SpecDatabase('.')
+            for s in db:
+                print(s.name)
+
+        Note that this is equivalent to::
+
+            db = SpecDatabase('.')
+            for s in db.get():
+                print(s.name)
+                
+        or::
+            
+            db = SpecDatabase('.')
+            db.map(lambda s: print(s.name))
+
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.values`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+
+        '''
+
+        return self.get(inplace=True).__iter__()
+
+    def keys(self):
+        ''' Iterate over all {path} in database 
+
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecDatabase.values`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+
+        '''
+
+        return list(self.to_dict().keys())
+
+    def values(self):
+        ''' Iterate over all {Spectrum} in database 
+
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.items`,
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+
+        '''
+
+        return list(self.to_dict().values())
+
+    def items(self):
+        ''' Iterate over all {path:Spectrum} in database 
+
+        Examples
+        --------
+
+        Print name of all Spectra in dictionary::
+
+            db = SpecDatabase('.')
+            for path, s in db.items():
+                print(path, s.name)
+
+        Update all spectra in current folder with a new condition ('author')::
+
+            db = SpecDatabase('.')
+            for path, s in db.items():
+                s.conditions['author'] = 'me'
+                s.store(path, if_exists_then='replace')
+
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecDatabase.keys`,
+        :meth:`~radis.tools.database.SpecDatabase.values`,
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+
+        '''
+
+        return list(self.to_dict().items())
+    
+    def plot(self, nfig=None, legend=True, **kwargs):
+        ''' Plot all spectra in database 
+        
+        Parameters
+        ----------
+        
+        nfig: str, or int, or ``None``
+            figure to plot on. Default ``None``: creates one
+            
+        Other Parameters
+        ----------------
+        
+        kwargs: dict
+            parameters forwarded to the Spectrum :meth:`~radis.spectrum.spectrum.plot` 
+            method
+            
+        legend: bool
+            if ``True``, plot legend. 
+        
+        Returns
+        -------
+        
+        fig, ax: matplotlib figure and ax
+            figure 
+            
+        Examples
+        --------
+        
+        Plot all spectra in a folder::
+            
+            db = SpecDatabase('my_folder')
+            db.plot(wunit='nm')
+            
+        See Also
+        --------
+        
+        Spectrum :meth:`~radis.spectrum.spectrum.plot` method
+            
+        '''
+        
+        fig = plt.figure(num=nfig)
+        ax = fig.gca()
+        for s in self:
+            s.plot(nfig='same', **kwargs)
+        
+        if legend:
+            plt.legend(loc='best')
+            
+        return fig, ax
+
+    def plot_cond(self, cond_x, cond_y, z_value=None, nfig=None):
+        ''' Plot database conditions available:
+
+        Parameters
+        ----------
+
+        cond_x, cond_y: str
+            columns (conditions) of database.
+
+        z_value: array, or None
+            if not None, colors the 2D map with z_value. z_value is ordered
+            so that z_value[i] corresponds to row[i] in database.
+
+        Examples
+        --------
+
+        >>> db.plot(Tvib, Trot)     # plot all points calculated
+
+
+        >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
+                                              # procedure...
+
+        '''
+        # %%
+
+        x = self.df[cond_x]
+        y = self.df[cond_y]
+
+        # Default
+        fig = plt.figure(num=nfig)
+        ax = fig.gca()
+        ax.plot(x, y, 'ok')
+        ax.set_xlabel(cond_x)
+        ax.set_ylabel(cond_y)
+        title = basename(self.path)
+
+        # Overlay color
+        if z_value is not None:
+            assert(len(z_value)) == len(self.df)
+
+            z = np.array(z_value)**0.5  # because the lower the better
+
+#            norm = cm.colors.Normalize(vmax=z.max(), vmin=z.min())
+#            cmap = cm.PRGn
+
+            xarr = np.linspace(min(x), max(x))
+            yarr = np.linspace(min(y), max(y))
+            mx, my = np.meshgrid(xarr, yarr)
+            zgrid = griddata((x, y), z, (mx, my), method='linear')
+            levels = np.linspace(min(z), max(z), 20)
+            cs0 = ax.contourf(mx, my, zgrid,  levels=levels,
+                              # linewidths=1,linestyles='dashed',
+                              extend='both')
+
+            ix0, iy0 = np.where(zgrid == zgrid.min())
+            plt.plot((xarr[ix0], xarr[ix0]), (yarr.min(),
+                                              yarr.max()), color='white', lw=0.5)
+            plt.plot((xarr.min(), xarr.max()),
+                     (yarr[iy0], yarr[iy0]), color='white', lw=0.5)
+            # lbls = plt.clabel(cs0, inline=1, fontsize=16,fmt='%.0fK',colors='k',manual=False)     # show labels
+
+            # %%
+
+        plt.title(title)
+        plt.tight_layout()
+
+    def __len__(self):
+        return len(self.df)
+
+        
 # %% Database class
 # ... loads database and manipulate it
+# ... similar to SpecList, but associated and synchronized with a folder 
+# ... on the disk
 
 
-class SpecDatabase():
+class SpecDatabase(SpecList):
 
     def __init__(self, path='.', filt='.spec', add_info=None, add_date='%Y%m%d',
                  verbose=True, binary=True, nJobs=-2, batch_size='auto'):
@@ -826,6 +1535,9 @@ class SpecDatabase():
         dataframe structure on top to serve as an efficient index to visualize
         the spectra input conditions, and slice through the Dataframe with
         easy queries
+        
+        Similar to :class:`~radis.tools.database.SpecList`, but associated and 
+        synchronized with a folder 
 
         Parameters
         ----------
@@ -931,8 +1643,8 @@ class SpecDatabase():
 
         self.name = basename(name)
         self.path = path
-        self.df = None
-        self.verbose = verbose
+#        self.df = None               # created in SpecList.__init__()
+#        self.verbose = verbose       # created in SpecList.__init__()
         self.binary = binary
 
         # default
@@ -944,101 +1656,11 @@ class SpecDatabase():
         self.batch_size = batch_size
         self.minimum_nfiles = 6    #: type: int. If there are less files, don't use parallel mode.
 
+        # init with 0 spectra
+        super(SpecDatabase, self).__init__()   
+        # now load from the folder with the update() function
         self.update(force_reload=True, filt=filt)
 
-    def conditions(self):
-        ''' Show conditions in database '''
-
-        cond = list(self.df.columns)
-
-        if len(cond) > 0:
-            cond.remove('file')
-            cond.remove('Spectrum')
-
-        return cond
-
-    def see(self, columns=None, *args):
-        ''' Shows Spectrum database with all conditions (``columns=None``) or
-        specific conditions
-
-        Parameters
-        ----------
-
-        columns: str, list of str, or None
-            shows the conditions value for all cases in database. If None, all
-            conditions are shown. Default ``None``
-            e.g.::
-                
-                db.see(['Tvib', 'Trot'])
-
-        Notes
-        -----
-
-        Makes the 'file' column the index, and also discard the 'Spectrum' column
-        (that holds all the data) for readibility
-
-
-        '''
-
-        if len(self) == 0:
-            raise ValueError('Database is empty')
-
-        if isinstance(columns, string_types):
-            columns = [columns]+[k for k in args]
-
-        dg = self.df.set_index('file')  # note that this is a copy already.
-        # dont try to modify the output of "see"
-        del dg['Spectrum']          # for visibility"
-
-        if columns is None:
-            return dg
-
-        for c in columns:
-            if not c in self.df.columns:
-                raise ValueError('`{0}` is not a column name. Use one of {1}'.format(c,
-                                                                                     self.df.columns))
-
-        return dg.reindex(columns=columns)
-
-    def view(self, columns=None, *args):
-        ''' alias of :meth:`~radis.tools.database.SpecDatabase.see`
-
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecDatabase.see`
-        '''
-
-        return self.see(columns=columns, *args)
-
-    def map(self, function):
-        ''' Apply ``function`` to all Spectra in database. 
-        
-        Examples
-        --------
-        
-        Add a missing parameter::
-            
-            db = SpecDatabase('...')
-            
-            def add_condition(s):
-                s.conditions['exp_run'] = 1
-                return s
-            
-            db.map(add_condition)
-            
-
-        '''
-        
-        # TODO: If ``function`` 
-        #returns a :class:`~radis.spectrum.spectrum.Spectrum` object then the 
-        # database is updated. 
-
-        
-        for s in self:
-            function(s)
-        
-        
     def update(self, force_reload=False, filt='.spec'):
         ''' Reloads database, updates internal index structure and export it
         in ``<database>.csv``. 
@@ -1299,13 +1921,14 @@ class SpecDatabase():
                      normalize_how='max',
                      conditions='', **kwconditions):
         ''' Returns the Spectrum in the database that has the lowest residual
-        with s_exp
+        with ``s_exp``
         
         Parameters
         ----------
         
         s_exp: Spectrum
-            Spectrum to fit (typically: experimental spectrum)
+            :class:`~radis.spectrum.spectrum.Spectrum` to fit (typically: 
+            experimental spectrum)
             
         Other Parameters
         ----------------
@@ -1339,7 +1962,7 @@ class SpecDatabase():
         -------
         
         s_best: Spectrum
-            closest Spectrum to s_exp
+            closest Spectrum to ``s_exp``
             
         Examples
         --------
@@ -1439,323 +2062,6 @@ class SpecDatabase():
         self.df = pd.DataFrame(new_conditions_list)
         
 
-    def get(self, conditions='', **kwconditions):
-        '''   Returns a list of spectra that match given conditions
-
-        Parameters
-        ----------
-
-        database: list of Spectrum objects
-            the database
-
-        conditions: str
-            a list of conditions. Example::
-            
-                db.get('Tvib==3000 & Trot==1500')
-
-        kwconditions: dict
-            an unfolded dict of conditions. Example::
-            
-                db.get(Tvib=3000, Trot=1500)
-
-        Other Parameters
-        ----------------
-
-        inplace: boolean
-            if True, return the actual object in the database. Else, return
-            copies. Default ``False``
-
-        Examples
-        --------
-
-        ::
-        
-            spec_list = db.get('Tvib==3000 & Trot==1300')
-
-        or::
-
-            spec_list = db.get(Tvib=3000, Trot=1300)
-
-
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`,
-        :meth:`~radis.tools.database.SpecDatabase.get_closest`,
-        :meth:`~radis.tools.database.SpecDatabase.items`
-
-        '''
-
-        # type: bool, default False
-        inplace = kwconditions.pop('inplace', False)
-
-        # Test inputs
-        for (k, _) in kwconditions.items():
-            if not k in self.df.columns:
-                raise ValueError('{0} not a correct condition name. Use one of: {1}'.format(k,
-                                                                                            self.df.columns))
-        if len(self.df) == 0:
-            warn('Empty database')
-            return []
-
-        # Unique condition method
-        if conditions != '' and kwconditions != {}:
-            raise ValueError(
-                "Please choose one of the two input format (str or dict) exclusively")
-
-        if conditions == '' and kwconditions == {}:
-            # Get all Spectrum objects
-            out = list(self.df['Spectrum'])
-            
-        else:
-            # Find Spectrum that match conditions
-            if conditions != '':   # ... with input conditions query directly
-                dg = self.df.query(conditions)
-            else:                  # ... first write input conditions query
-                query = []
-                for (k, v) in kwconditions.items():
-                    if isinstance(v, string_types):
-                        query.append("{0} == '{1}'".format(k, v))
-                    else:
-                        #                    query.append('{0} == {1}'.format(k,v))
-                        query.append('{0} == {1}'.format(k, v.__repr__()))
-                        # ... for som reason {1}.format() would remove some digit
-                        # ... to floats in Python2. Calling .__repr__() keeps
-                        # ... the correct format, and has no other consequences as far
-                        # ... as I can tell
-    
-                # There is a limitation in numpy: a max of 32 arguments is required.
-                # Below we write a workaround when the Spectrum has more than 32 conditions
-                if len(query) < 32:
-                    query = ' & '.join(query)
-                    if __debug__:
-                        printdbg('Database query: {0}'.format(query))
-                    dg = self.df.query(query)
-                else:
-                    # cut in <32-long parts
-                    N = len(query)//32+1
-                    querypart = ' & '.join(query[::N])
-                    dg = self.df.query(querypart)
-                    for i in range(1, N+1):
-                        querypart = ' & '.join(query[i::N])
-                        if __debug__:
-                            printdbg('Database query: {0}'.format(querypart))
-                        dg = dg.query(querypart)
-    
-            out = list(dg['Spectrum'])
-
-        if not inplace:
-            out = [s.copy() for s in out]
-
-        return out
-
-    def get_unique(self, conditions='', **kwconditions):
-        ''' Returns a spectrum that match given conditions. Raises an error
-        if the spectrum is not unique 
-
-        Parameters
-        ----------
-
-        see meth:`~radis.tools.database.SpecDatabase.get` for more details 
-
-
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecDatabase.get`,
-        :meth:`~radis.tools.database.SpecDatabase.get_closest`
-
-        '''
-
-        out = self.get(conditions, **kwconditions)
-
-        if len(out) == 0:
-            raise ValueError('Spectrum not found')
-        elif len(out) > 1:
-            raise ValueError('Spectrum is not unique ({0} match found)'.format(
-                len(out))+' Think about using "db.find_duplicates()"')
-        else:
-            return out[0]
-
-    def get_closest(self, scale_if_possible=True, **kwconditions):
-        '''   Returns the Spectra in the database that is the closest to the input conditions
-
-        Note that for non-numeric values only equals should be given.
-        To calculate the distance all numeric values are scaled by their
-        mean value in the database
-
-        Parameters
-        ----------
-
-        kwconditions: named arguments 
-            i.e: Tgas=300, path_length=1.5
-
-        scale_if_possible: boolean
-            if True, spectrum is scaled for parameters that can be computed 
-            directly from spectroscopic quantities (e.g: 'path_length', 'molar_fraction')
-            Default ``True``
-
-        Other Parameters
-        ----------------
-
-        verbose: boolean
-            print messages. Default ``True``
-
-        inplace: boolean
-            if ``True``, returns the actual object in database. Else, return a copy
-            Default ``False``
-            
-#        split_columns: list of str. 
-#            slits a comma separated column in multiple columns, and number them. 
-#            Typically::
-#                
-#                db.get_closest(..., split_columns=['Tvib'])    # in multi temperature modes
-#                
-#            splits ``Tvib:'1200,1300,1000'``, in ``Tvib1:1200, Tvib2:1300, Tvib3:1000``
-#            Default ``[]``
-
-
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecDatabase.get`,
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`
-
-        '''
-
-        scalable_inputs = ['mole_fraction', 'path_length']
-
-        # Test inputs
-        if kwconditions == {}:
-            raise ValueError(
-                'Please specify filtering conditions. e.g: Tgas=300')
-
-        # Inputs:
-        verbose = kwconditions.pop('verbose', True)         #: type: bool
-        inplace = kwconditions.pop('inplace', False)        #: type: bool
-#        split_columns = kwconditions.pop('split_columns', [])     #: type: bool
-
-        # Check all conditions exist
-        for (k, _) in kwconditions.items():
-            if not k in self.df.columns:
-                raise ValueError('{0} not a correct condition name. Use one of: {1}'.format(k,
-                                                                                            self.df.columns))
-
-        dg = self.df.reindex(columns=list(self.df.columns))
-
-        if scale_if_possible:
-            # Remove scalable inputs from distance calculation variables (unless
-            # they're the last variable, because then it may screw things up)
-            for k in scalable_inputs:
-                if len(dg.columns) == 1:
-                    break
-                try:
-                    del dg[k]
-                except KeyError:
-                    pass
-                
-#        raise
-
-        mean = dict(dg.mean())
-        std = dict(dg.std())
-        assert '_d' not in dg.columns
-        dg['_d'] = 0  # distance (squared, actually)
-        try:
-            for k, v in kwconditions.items():
-                if not k in dg.columns:
-                    continue
-    #            # add distance to all conditions planes. We regularize the different
-    #            # dimensions by working on normalized quantities:
-    #            #     a  ->   (a-mean)/std  € [0-1]
-    #            # Distance becomes:
-    #            #     d^2 ->  sum((a-target)/std)^2
-    #            # Problem when std == 0! That means this dimension is not discrimant
-    #            # anyway
-    #            if std[k] == 0:
-    #                # for this conditions all parameters have the same value.
-    #                dg['_d'] += (dg[k]-v)**2
-    #            else:
-    #                dg['_d'] += (dg[k]-v)**2/(std[k])**2
-                # Eventually I chose to scale database with mean only (there was
-                # an obvious problem with standard deviation scaling in the case of
-                # a non important feature containing very close datapoints that would
-                # result in inappropriately high weights)
-                
-                try:
-                    dg['_d'] += (dg[k]-v)**2/mean[k]**2
-                except TypeError as err:
-                    # Deal with case where formats dont match:
-                    try:
-                        dg[k]-v
-                    except TypeError:
-                        print(sys.exc_info())
-                        raise TypeError('An error occured (see above) when calculating '+\
-                                        '(dg[{0}]-{1}). Example: '.format(k, v)+\
-                                        '({0} - {1}). '.format(dg[k].iloc[0], v)+\
-                                         'Check that your requested conditions match '+\
-                                         'the database format')
-                    else:
-                        raise(err)
-
-            # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
-
-            # Get spectrum with minimum distance to target conditions
-            # type: Spectrum
-            sout = self.df.loc[dg['_d'].idxmin(), 'Spectrum']
-        finally:
-            del dg['_d']
-
-        if not inplace:
-            sout = sout.copy()
-
-        # Scale scalable conditions
-        if scale_if_possible:
-            if 'path_length' in kwconditions:
-                sout.rescale_path_length(kwconditions['path_length'])
-            if 'mole_fraction' in kwconditions:
-                sout.rescale_mole_fraction(kwconditions['mole_fraction'])
-
-        if verbose:
-            print(
-                ('------- \t'+'\t'.join(['{0}'.format(k) for k in kwconditions.keys()])))
-            print(
-                ('Look up \t'+'\t'.join(['{0:.3g}'.format(v) for v in kwconditions.values()])))
-            print(
-                ('Got     \t'+'\t'.join(['{0:.3g}'.format(sout.conditions[k]) for k in kwconditions.keys()])))
-
-        return sout
-    
-    def get_items(self, condition):
-        ''' Returns all Spectra in database under a dictionary; indexed by ``condition``
-        
-        Requires that ``condition`` is unique
-        
-        Parameters
-        ----------
-        
-        condition: str
-            condition. Ex: ``Trot``
-            
-        Returns
-        -------
-        
-        out: dict
-            {condition:Spectrum}
-            
-        See Also
-        --------
-        
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`,
-        :meth:`~radis.tools.database.SpecDatabase.get`
-        
-        '''
-        
-        if not self.df[condition].is_unique:
-            raise ValueError('Values in {0} must be unique to use get_items(). Got {1}'.format(
-                             condition, self.see(condition)[self.see(condition).duplicated()]))
-            
-        return dict(zip(self.df[condition], self.df.Spectrum))
-
     def to_dict(self):
         ''' Returns all Spectra in database under a dictionary, indexed by file. 
 
@@ -1782,223 +2088,6 @@ class SpecDatabase():
         '''
 
         return dict(list(zip(self.df.file, self.df.Spectrum)))
-
-    def __iter__(self):
-        ''' Iterate over all Spectra in database 
-        
-        .. warning::
-            
-            returns the inplace object directly. If you modify them, the Spectra
-            are modified
-
-        Examples
-        --------
-
-        Print name of all Spectra in dictionary::
-
-            db = SpecDatabase('.')
-            for s in db:
-                print(s.name)
-
-        Note that this is equivalent to::
-
-            db = SpecDatabase('.')
-            for s in db.get():
-                print(s.name)
-                
-        or::
-            
-            db = SpecDatabase('.')
-            db.map(lambda s: print(s.name))
-
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecDatabase.keys`,
-        :meth:`~radis.tools.database.SpecDatabase.values`,
-        :meth:`~radis.tools.database.SpecDatabase.items`,
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`
-
-        '''
-
-        return self.get(inplace=True).__iter__()
-
-    def keys(self):
-        ''' Iterate over all {path} in database 
-
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecDatabase.values`,
-        :meth:`~radis.tools.database.SpecDatabase.items`,
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`
-
-        '''
-
-        return list(self.to_dict().keys())
-
-    def values(self):
-        ''' Iterate over all {Spectrum} in database 
-
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecDatabase.keys`,
-        :meth:`~radis.tools.database.SpecDatabase.items`,
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`
-
-        '''
-
-        return list(self.to_dict().values())
-
-    def items(self):
-        ''' Iterate over all {path:Spectrum} in database 
-
-        Examples
-        --------
-
-        Print name of all Spectra in dictionary::
-
-            db = SpecDatabase('.')
-            for path, s in db.items():
-                print(path, s.name)
-
-        Update all spectra in current folder with a new condition ('author')::
-
-            db = SpecDatabase('.')
-            for path, s in db.items():
-                s.conditions['author'] = 'me'
-                s.store(path, if_exists_then='replace')
-
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecDatabase.keys`,
-        :meth:`~radis.tools.database.SpecDatabase.values`,
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`
-
-        '''
-
-        return list(self.to_dict().items())
-    
-    def plot(self, nfig=None, legend=True, **kwargs):
-        ''' Plot all spectra in database 
-        
-        Parameters
-        ----------
-        
-        nfig: str, or int, or ``None``
-            figure to plot on. Default ``None``: creates one
-            
-        Other Parameters
-        ----------------
-        
-        kwargs: dict
-            parameters forwarded to the Spectrum :meth:`~radis.spectrum.spectrum.plot` 
-            method
-            
-        legend: bool
-            if ``True``, plot legend. 
-        
-        Returns
-        -------
-        
-        fig, ax: matplotlib figure and ax
-            figure 
-            
-        Examples
-        --------
-        
-        Plot all spectra in a folder::
-            
-            db = SpecDatabase('my_folder')
-            db.plot(wunit='nm')
-            
-        See Also
-        --------
-        
-        Spectrum :meth:`~radis.spectrum.spectrum.plot` method
-            
-        '''
-        
-        fig = plt.figure(num=nfig)
-        ax = fig.gca()
-        for s in self:
-            s.plot(nfig='same', **kwargs)
-        
-        if legend:
-            plt.legend(loc='best')
-            
-        return fig, ax
-
-    def plot_cond(self, cond_x, cond_y, z_value=None, nfig=None):
-        ''' Plot database conditions available:
-
-        Parameters
-        ----------
-
-        cond_x, cond_y: str
-            columns (conditions) of database.
-
-        z_value: array, or None
-            if not None, colors the 2D map with z_value. z_value is ordered
-            so that z_value[i] corresponds to row[i] in database.
-
-        Examples
-        --------
-
-        >>> db.plot(Tvib, Trot)     # plot all points calculated
-
-
-        >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
-                                              # procedure...
-
-        '''
-        # %%
-
-        x = self.df[cond_x]
-        y = self.df[cond_y]
-
-        # Default
-        fig = plt.figure(num=nfig)
-        ax = fig.gca()
-        ax.plot(x, y, 'ok')
-        ax.set_xlabel(cond_x)
-        ax.set_ylabel(cond_y)
-        title = basename(self.path)
-
-        # Overlay color
-        if z_value is not None:
-            assert(len(z_value)) == len(self.df)
-
-            z = np.array(z_value)**0.5  # because the lower the better
-
-#            norm = cm.colors.Normalize(vmax=z.max(), vmin=z.min())
-#            cmap = cm.PRGn
-
-            xarr = np.linspace(min(x), max(x))
-            yarr = np.linspace(min(y), max(y))
-            mx, my = np.meshgrid(xarr, yarr)
-            zgrid = griddata((x, y), z, (mx, my), method='linear')
-            levels = np.linspace(min(z), max(z), 20)
-            cs0 = ax.contourf(mx, my, zgrid,  levels=levels,
-                              # linewidths=1,linestyles='dashed',
-                              extend='both')
-
-            ix0, iy0 = np.where(zgrid == zgrid.min())
-            plt.plot((xarr[ix0], xarr[ix0]), (yarr.min(),
-                                              yarr.max()), color='white', lw=0.5)
-            plt.plot((xarr.min(), xarr.max()),
-                     (yarr[iy0], yarr[iy0]), color='white', lw=0.5)
-            # lbls = plt.clabel(cs0, inline=1, fontsize=16,fmt='%.0fK',colors='k',manual=False)     # show labels
-
-            # %%
-
-        plt.title(title)
-        plt.tight_layout()
-
-    def __len__(self):
-        return len(self.df)
 
 
 def in_database(smatch, db='.', filt='.spec'):

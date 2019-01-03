@@ -1,0 +1,15 @@
+# .readthedocs.yml
+
+build:
+    image: latest
+
+python:
+  version: 3.6
+  pip_install: true
+  use_system_site_packages: true
+  
+requirements_file: docs/requirements.txt
+
+  # Build PDF
+formats:
+    - pdf
