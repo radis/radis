@@ -15,7 +15,7 @@
     :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
     :alt: Article
     
-
+::
 
 .. image:: https://img.shields.io/travis/radis/radis.svg
     :target: https://travis-ci.org/radis/radis
@@ -33,7 +33,7 @@
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
 
-    
+::  
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
