@@ -7,6 +7,16 @@
     :target: https://pypi.python.org/pypi/radis
     :alt: PyPI
 
+.. image:: https://img.shields.io/badge/License-LGPL3-blue.svg
+    :target: ./License
+    :alt: License
+
+.. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
+    :alt: Article
+    
+
+
 .. image:: https://img.shields.io/travis/radis/radis.svg
     :target: https://travis-ci.org/radis/radis
     :alt: Tests
@@ -23,10 +33,15 @@
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
 
-.. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
-    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
-    :alt: Article
+    
 
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+    :target: https://gitter.im/radis-radiation/community
+    :alt: Gitter
+
+    
+    
+[![Gitter]()](https://gitter.im/PlasmaPy/Lobby)
     
     
 Description
@@ -85,6 +100,10 @@ License
 The code is available on this repository under 
 `GNU LESSER GENERAL PUBLIC LICENSE (v3) <./LICENSE>`_
 
+.. image:: https://img.shields.io/badge/License-LGPL3-blue.svg
+    :target: ./License
+    :alt: License
+
 
 Links
 -----
@@ -129,6 +148,21 @@ And also:
 .. |CO2| replace:: CO\ :sub:`2`
 
 
+Support
+-------
+
+If encountering any problem, first refer to the list of known 
+<Issues `https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue`>__ on GitHub.
+We appreciate your feedback and suggestions!
+
+For any question, please join the discussion channel on Gitter:
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+    :target: https://gitter.im/radis-radiation/community
+    :alt: Gitter
+
+    
+--------
 
 
 .. image:: https://github.com/radis/radis/blob/master/docs/radis_ico.png
