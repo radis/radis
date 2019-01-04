@@ -14,8 +14,7 @@
 .. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
     :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
     :alt: Article
-    
-::
+ 
 
 .. image:: https://img.shields.io/travis/radis/radis.svg
     :target: https://travis-ci.org/radis/radis
@@ -32,8 +31,7 @@
 .. image:: https://mybinder.org/badge.svg 
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
-
-::  
+  
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
@@ -108,36 +106,36 @@ RADIS:
 
 - Documentation: http://radis.readthedocs.io/
 
-.. image:: https://readthedocs.org/projects/radis/badge/
-    :target: https://radis.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
+  .. image:: https://readthedocs.org/projects/radis/badge/
+      :target: https://radis.readthedocs.io/en/latest/?badge=latest
+      :alt: Documentation Status
 
 - Source Code: https://github.com/radis/radis
 - Article: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
 
-.. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
-    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
-    :alt: Article
+  .. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+      :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
+      :alt: Article
 
 And also:
 
 - Test Status: https://travis-ci.org/radis/radis
 
-.. image:: https://img.shields.io/travis/radis/radis.svg
-    :target: https://travis-ci.org/radis/radis
-    :alt: Tests
+  .. image:: https://img.shields.io/travis/radis/radis.svg
+      :target: https://travis-ci.org/radis/radis
+      :alt: Tests
     
 - Test Coverage: https://codecov.io/gh/radis/radis
 
-.. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/radis/radis
-    :alt: Coverage
+  .. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
+      :target: https://codecov.io/gh/radis/radis
+      :alt: Coverage
   
 - PyPi Repository: https://pypi.org/project/radis/
 
-.. image:: https://img.shields.io/pypi/v/radis.svg
-    :target: https://pypi.python.org/pypi/radis
-    :alt: PyPI
+  .. image:: https://img.shields.io/pypi/v/radis.svg
+      :target: https://pypi.python.org/pypi/radis
+      :alt: PyPI
 
 - Interactive Examples: https://github.com/radis/radis-examples
 
@@ -148,7 +146,7 @@ Support
 -------
 
 If encountering any problem, first refer to the list of known 
-<Issues `https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue`>__ on GitHub.
+`Issues <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`__ on GitHub.
 We appreciate your feedback and suggestions!
 
 For any question, please join the discussion channel on Gitter:
