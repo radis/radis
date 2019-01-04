@@ -40,10 +40,6 @@
     :alt: Gitter
 
     
-    
-[![Gitter]()](https://gitter.im/PlasmaPy/Lobby)
-    
-    
 Description
 -----------
     
