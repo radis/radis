@@ -93,7 +93,7 @@ setup(name='radis',
                         'json-tricks',   # to deal with non jsonable formats
                         'numpydoc',     # for Jedi (autocompletion) to recognize
                                         # numpy docstrings
-                        'tables',       # for pandas to HDF5 export
+                        #'tables',       # for pandas to HDF5 export
                         'pytest',       # to run test suite
                         'h5py',         # to write HDF5 files
                         'joblib',       # for parallel loading of SpecDatabase
