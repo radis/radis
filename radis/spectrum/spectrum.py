@@ -1329,8 +1329,8 @@ class Spectrum(object):
         ----------
 
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, etc.)
-            For full list see get_vars(). If None, plot the first thing in
-            the Spectrum (with a preference for non convoluted quantities)
+            For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.  
+            If ``None``, plot the first thing in the Spectrum. Default ``None``.
 
         wunit: `default`, `cm-1`, `nm`
             wavelength or wavenumber unit. If `default`, Spectrum waveunit is used.
@@ -1347,7 +1347,7 @@ class Spectrum(object):
         Plot parameters inputs:
 
         show_points: boolean
-            show calculated points. Default ``True``
+            show calculated points. Default ``True``.
 
         nfig: int, None, or 'same'
             plot on a particular figure. 'same' plots on current figure.
@@ -2341,7 +2341,7 @@ class Spectrum(object):
         barwidth: float
             With of bars in LineSurvey. Default 0.07
 
-        See :func:`~radis.tools.line_survey.LineSurvey` documentation
+        See :py:func:`~radis.tools.line_survey.LineSurvey` documentation
 
 
         Returns

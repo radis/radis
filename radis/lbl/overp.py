@@ -581,6 +581,9 @@ def rescale_updown_levels(spec, new_nu, old_nu, new_nl, old_nl,
     This is only valid for emission quantities, under optically thin conditions,
     as rescaling doesnt correct for induced emission. 
 
+    .. warning::
+        experimental feature
+
     Parameters
     ----------
 
@@ -617,8 +620,8 @@ def rescale_updown_levels(spec, new_nu, old_nu, new_nl, old_nl,
     when infering emission quantities from absorption quantities this may
     ends up in error in overpopulation rescaling.
 
-    # TODO: Add warning when too large rescaling
     '''
+    # TODO: Add warning when too large rescaling
 
     # Check inputs
     # ---------
