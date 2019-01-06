@@ -180,7 +180,7 @@ html_theme = 'alabaster' #'bizstyle' #'nature'
 # documentation.
 html_theme_options = {
     'description': "Radiative Solver",
-    'logo': 'radis_ico.png',
+    #'logo': 'radis_ico.png',
     'logo_name': True, 
     'github_user': 'radis',
     'github_repo': 'radis',
