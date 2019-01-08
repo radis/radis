@@ -51,7 +51,7 @@ if True:  # @EP comment this section if running locally from gendocs.sh (see abo
         module = join(cur_dir,"..","radis")
         print(cur_dir)
         print(source_dir)
-        main(['-e', '-o', source_dir, module, '--force'])
+        main(['-e', '-o', source_dir, module, '--force', '--separate'])
 
     def setup(app):
         app.connect('builder-inited', run_apidoc)
@@ -78,6 +78,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx'
 ]
+
 
 # Reference other packages
 intersphinx_mapping = {'joblib': ('https://joblib.readthedocs.io/en/latest/', None),
