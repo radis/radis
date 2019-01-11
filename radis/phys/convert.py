@@ -112,6 +112,11 @@ def cm2nm(wl_cm1):
     'cm-1 to (vacuum) nm'
     return 1 / wl_cm1 * 1e9 / 100
 
+def cm2hz(wl_cm1):
+    ''' wavenumber to frequency
+    wl_cm1, output in hz '''
+    return wl_cm1 * c * 100
+
 def nm2cm(wl_nm):
     '(vacuum) nm to cm-1'
     return 1 / wl_nm * 1e9 / 100
@@ -147,6 +152,10 @@ def hz2nm(f_Hz):
     f in Hz, output in nm '''
     return c*1e9/f_Hz
 
+def hz2cm(f_Hz):
+    ''' frequency to wavenumber
+    f in Hz, output in cm-1 '''
+    return f_Hz / c / 100
 
 def nm2hz(lbd_nm):
     ''' wavelength to frequency 
