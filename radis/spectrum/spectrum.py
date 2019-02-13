@@ -229,6 +229,8 @@ class Spectrum(object):
         # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I, 
         # 'transmittance':T, etc.} directly too (instead of {'radiance':(w,I), etc.})
 
+        # TODO: add help on creating a Spectrum from a dictionary
+
         # Check inputs
         # ... Replace None attributes with dictionaries
         if conditions is None:
@@ -366,10 +368,21 @@ class Spectrum(object):
             s = Spectrum.from_array(w, I, 'radiance_noslit', 
                                    waveunit='nm', unit='mW/cm2/sr/nm')
 
+        To create a spectrum with absorption and emission components 
+        (e.g: ``radiance_noslit`` and ``transmittance_noslit``, or ``emisscoeff``
+        and ``abscoeff``) call the :class:`~radis.spectrum.spectrum.Spectrum`
+        class directly. Ex::
+            
+            from radis import Spectrum
+            s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
+                         units={'abscoeff': 'cm_1', 'emisscoeff':'W/cm2/sr/nm'},
+                         waveunit='nm')
+
 
         See Also
         --------
 
+        :class:`~radis.spectrum.spectrum.Spectrum`,
         :func:`~radis.spectrum.models.calculated_spectrum`, 
         :func:`~radis.spectrum.models.transmittance_spectrum`, 
         :func:`~radis.spectrum.models.experimental_spectrum`
@@ -459,13 +472,22 @@ class Spectrum(object):
                                       unit='W/cm2/sr/nm')
 
 
+        To create a spectrum with absorption and emission components 
+        (e.g: ``radiance_noslit`` and ``transmittance_noslit``, or ``emisscoeff``
+        and ``abscoeff``) call the :class:`~radis.spectrum.spectrum.Spectrum`
+        class directly. Ex::
+            
+            from radis import Spectrum
+            s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
+                         units={'abscoeff': 'cm_1', 'emisscoeff':'W/cm2/sr/nm'},
+                         waveunit='nm')
+
         Notes
         -----
 
         Internally, the numpy ``loadtxt`` function is used and transposed::
 
             w, I = np.loadtxt(file).T
-
 
         See Also
         --------

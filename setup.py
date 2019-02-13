@@ -73,7 +73,7 @@ setup(name='radis',
       author='Erwan Pannier',
       author_email='erwan.pannier@gmail.com',
       license='GNU Lesser General Public License v3 (LGPLv3)',
-      keywords=["spectrum", "infrared", "spectra", "radiation", "nonequilibrium"],
+      keywords=["spectrum", "infrared", "spectra", "radiation", "nonequilibrium", "spectroscopy", "molecules", "HITRAN"],
       packages=find_packages(),
       install_requires=[
 				 'mpldatacursor',
@@ -93,7 +93,7 @@ setup(name='radis',
                         'json-tricks',   # to deal with non jsonable formats
                         'numpydoc',     # for Jedi (autocompletion) to recognize
                                         # numpy docstrings
-                        #'tables',       # for pandas to HDF5 export
+                        'tables',       # for pandas to HDF5 export
                         'pytest',       # to run test suite
                         'h5py',         # to write HDF5 files
                         'joblib',       # for parallel loading of SpecDatabase

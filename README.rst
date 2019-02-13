@@ -41,7 +41,7 @@
 Description
 -----------
     
-RADIS is a nonequilibrium infrared emission and absorption line-by-line code.
+RADIS is an emission and absorption code for line-by-line infrared molecular spectroscopy.
 
 Written as a general purpose radiative solver, the code is built around the HITRAN, 
 HITEMP and CDSD databases for molecules in their electronic ground state. Energy 
@@ -85,7 +85,7 @@ For instance, run the Quick Start example online:
 
 
 More examples can be found in the `documentation <http://radis.readthedocs.io/>`_ or in the 
-`RADIS Inteactive examples <https://github.com/radis/radis-examples>`_ project. 
+`RADIS Interactive examples <https://github.com/radis/radis-examples>`_ project. 
 
 
 License
