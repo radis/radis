@@ -134,8 +134,8 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
                                name=name)
 
 
-def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
-                          conditions=None, cond_units=None, name=None): # -> Spectrum:
+def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
+                          conditions={}, cond_units=None, name=None): # -> Spectrum:
     ''' Convert (w, I) into a Spectrum object that has unit conversion and plotting
     capabilities. Convolution is not available as the spectrum is assumed to
     be measured experimentally (hence deconvolution of the slit function would
@@ -158,6 +158,9 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     Other Parameters
     ----------------
 
+    medium: 'air', 'vacuum'
+        which medium. Default 'air'
+
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum
 
@@ -178,7 +181,12 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     :func:`~radis.tools.database.load_spec`
 
     '''
-
+    
+    if 'medium' in conditions:
+        assert conditions['medium'] == medium
+    else:
+        conditions.update({'medium':medium})
+        
     return Spectrum.from_array(np.array(w), np.array(I), 'radiance',
                                waveunit=wunit, unit=Iunit,
                                conditions=conditions, cond_units=cond_units,
