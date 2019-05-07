@@ -372,7 +372,7 @@ def get_residual(s1, s2, var,
             if normalize_how == 'max':
                 norm1 = s1.get(var, copy=False)[1].max()
                 norm2 = s2.get(var)[1].max()
-            if normalize_how == 'mean':
+            elif normalize_how == 'mean':
                 norm1 = s1.get(var, copy=False)[1].mean()
                 norm2 = s2.get(var)[1].mean()
             elif normalize_how == 'area':
@@ -403,7 +403,6 @@ def get_residual(s1, s2, var,
         return output
     else:
         raise ValueError('unexpected value for norm')
-
 
 def get_residual_integral(s1, s2, var, 
                           ignore_nan=False):
