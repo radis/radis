@@ -1112,9 +1112,11 @@ class SpecList(object):
 
         if len(out) == 0:
             # Give a better error message before crashing:
+            prevVerbose = kwconditions['verbose']
             kwconditions['verbose'] = True
             self.get_closest(**kwconditions) # note: wont work with conditions=..
             raise ValueError('Spectrum not found. See closest above. Use get_closest()')
+            kwconditions['verbose'] = prevVerbose
         elif len(out) > 1:
             raise ValueError('Spectrum is not unique ({0} match found)'.format(
                 len(out))+' Think about using "db.find_duplicates()"')
