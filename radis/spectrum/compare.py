@@ -731,10 +731,11 @@ def plot_diff(s1, s2, var=None,
         s2 = s2.copy()
         w1, I1 = s1.get(var, copy=False)
         w2, I2 = s2.get(var, copy=False)
+        ratio = np.max(I1)/np.max(I2)
         I1 /= np.max(I1)
         I2 /= np.max(I2)
         if verbose:
-            print(('Rescale factor: '+str(np.max(I1)/np.max(I2))))
+            print(('Rescale factor: '+str(ratio)))
     
     def get_wdiff_Idiff():
         wdiffs, Idiffs = [], []
