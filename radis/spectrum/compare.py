@@ -1157,7 +1157,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 if not b1 and verbose:
                     error = np.nanmax(abs(q/q0-1))
                     avgerr = np.nanmean(abs(q/q0-1))
-                    print('...', k, 'dont match (up to {0:.3}% diff.,'.format(
+                    print('...', k, "don't match (up to {0:.3}% diff.,".format(
                         error*100)+' average {0:.3f}%)'.format(avgerr*100))
             b *= b1
 
@@ -1167,7 +1167,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                               normalize=normalize, verbose=verbose,
                               **kwargs)
                 except:
-                    print('... couldnt plot {0}'.format(k))
+                    print("... couldn't plot {0}".format(k))
 
     else:
         # Compare spectral variables
@@ -1185,8 +1185,9 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 b1 *= _compare_variables(q, q0)
                 if not b1 and verbose:
                     error = np.nanmax(abs(q/q0-1))
-                    print('...', k, 'dont match (up to {0:.3f}% diff.)'.format(
-                        error*100))
+                    avgerr = np.nanmean(abs(q/q0-1))
+                    print('...', k, "don't match (up to {0:.3}% diff.,".format(
+                        error*100)+' average {0:.3f}%)'.format(avgerr*100))
             b *= b1
 
             if plot:
@@ -1204,11 +1205,11 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
         b2 = (compare_dict(first.cond_units, other.cond_units, verbose=verbose_dict) == 1)
         b3 = (compare_dict(first.units, other.units, verbose=verbose_dict) == 1)
         if not b1 and verbose:
-            print('... conditions dont match')
+            print("... conditions don't match")
         if not b2 and verbose:
-            print('... conditions units dont match')
+            print("... conditions units don't match")
         if not b3 and verbose:
-            print('... units dont match')
+            print("... units don't match")
         b *= b1 * b2 * b3
 
         # Compare lines
