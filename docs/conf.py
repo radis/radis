@@ -61,13 +61,8 @@ extensions = [
     #'sphinxcontrib.napoleon',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-    'sphinxcontrib.apidoc',
+    'sphinxcontrib.apidoc'
 ]
-apidoc_module_dir = '../radis'
-apidoc_output_dir = 'source'
-apidoc_excluded_paths = []
-apidoc_separate_modules = True
-apidoc_extra_args = ['-f']
 
 
 # %% ------------------------------------
@@ -81,17 +76,14 @@ apidoc_extra_args = ['-f']
 #
 
 def run_apidoc(_):
-    ignore_paths = [
-    ]
 
     argv = [
         "-f",
-        "-T",
         "-e",
-        "-M",
         "-o", "source",
-        ".."
-    ] + ignore_paths
+        "--separate",
+        "../radis", 
+    ]
 
     try:
         # Sphinx 1.7+
