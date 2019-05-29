@@ -73,7 +73,10 @@ class Spectrum(object):
     ''' This class holds result from a SpectrumFactory calculation. It can be
     used to plot different quantities a posteriori, or manipulate output units
     (for instance convert a spectral radiance per wavelength units to a
-    spectral radiance per wavenumber)
+    spectral radiance per wavenumber). 
+    
+    See more information on how to generate, edit or combine Spectrum objects 
+    on the [Spectrum] page.
 
     Parameters
     ----------
@@ -167,6 +170,8 @@ class Spectrum(object):
         s3 = Spectrum({'radiance_noslit': (w, I)}, 
                       units={'radiance_noslit':'mW/cm2/sr/nm'},
                       waveunit='nm')
+                      
+    See more examples in the [Spectrum] page.
 
     Spectrum objects can be stored, retrieved, rescaled, resampled::
 
@@ -216,6 +221,11 @@ class Spectrum(object):
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
 
+    
+    References
+    ----------
+    
+    .. [Spectrum] :ref:`Spectrum object page <label_spectrum>` 
 
     '''
 
