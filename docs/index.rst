@@ -9,7 +9,8 @@
 RADIS
 =====
 
-A nonequilibrium infrared emission and absorption line-by-line code.
+A nonequilibrium infrared emission and absorption line-by-line code, and a 
+post-processing library to manipulate experimental and calculated spectra.
 
 
 ===============
@@ -33,7 +34,8 @@ Quick Start
 
 
 Calculate a CO equilibrium spectrum from the HITRAN database, using the
-:py:func:`~radis.lbl.calc.calc_spectrum` function::
+:py:func:`~radis.lbl.calc.calc_spectrum` function. Output is a 
+:ref:`Spectrum object <label_spectrum>` ::
 
     from radis import calc_spectrum
     s = calc_spectrum(1900, 2300,         # cm-1
@@ -158,7 +160,6 @@ store or retrieve from a Spectrum database, plot or compare with another Spectru
    
    spectrum/spectrum
 
-   
 Tools
 -----
 

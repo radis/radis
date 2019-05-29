@@ -32,8 +32,8 @@ import numpy as np
 def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
                         conditions=None, cond_units=None, populations=None,
                         name=None): # -> Spectrum:
-    ''' Convert (w, I) into a Spectrum object that has unit conversion, plotting
-    and slit convolution capabilities
+    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
+    object that has unit conversion, plotting and slit convolution capabilities
 
 
     Parameters    
@@ -87,8 +87,8 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
 def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
                            conditions=None, cond_units=None,
                            name=None): # -> Spectrum:
-    ''' Convert (w, I) into a Spectrum object that has unit conversion, plotting
-    and slit convolution capabilities
+    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
+    object that has unit conversion, plotting and slit convolution capabilities
 
 
     Parameters    
@@ -136,7 +136,8 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
 
 def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
                           conditions={}, cond_units=None, name=None): # -> Spectrum:
-    ''' Convert (w, I) into a Spectrum object that has unit conversion and plotting
+    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum` 
+    object that has unit conversion and plotting
     capabilities. Convolution is not available as the spectrum is assumed to
     be measured experimentally (hence deconvolution of the slit function would
     be required)

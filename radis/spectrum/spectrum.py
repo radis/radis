@@ -70,13 +70,14 @@ from six.moves import zip
 
 
 class Spectrum(object):
-    ''' This class holds result from a SpectrumFactory calculation. It can be
+    ''' This class holds results calculated with the :py:class:`~radis.lbl.factory.SpectrumFactory`
+    calculation, with other radiative codes, or experimental data. It can be
     used to plot different quantities a posteriori, or manipulate output units
     (for instance convert a spectral radiance per wavelength units to a
     spectral radiance per wavenumber). 
     
     See more information on how to generate, edit or combine Spectrum objects 
-    on the [Spectrum] page.
+    on the [Spectrum]_ page.
 
     Parameters
     ----------
@@ -171,7 +172,7 @@ class Spectrum(object):
                       units={'radiance_noslit':'mW/cm2/sr/nm'},
                       waveunit='nm')
                       
-    See more examples in the [Spectrum] page.
+    See more examples in the [Spectrum]_ page.
 
     Spectrum objects can be stored, retrieved, rescaled, resampled::
 
@@ -225,7 +226,7 @@ class Spectrum(object):
     References
     ----------
     
-    .. [Spectrum] :ref:`Spectrum object page <label_spectrum>` 
+    .. [Spectrum] See the :ref:`Spectrum object page <label_spectrum>` 
 
     '''
 
