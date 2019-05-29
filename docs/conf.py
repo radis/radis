@@ -67,7 +67,7 @@ apidoc_module_dir = '../radis'
 apidoc_output_dir = 'source'
 apidoc_excluded_paths = []
 apidoc_separate_modules = True
-
+apidoc_extra_args = '-f'
 
 # Reference other packages
 intersphinx_mapping = {'joblib': ('https://joblib.readthedocs.io/en/latest/', None),
