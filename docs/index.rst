@@ -5,12 +5,12 @@
 
 .. |logo_png| image:: radis_ico.png
 
-=====
+*****
 RADIS
-=====
+*****
 
-A nonequilibrium infrared emission and absorption line-by-line code.
-A post-processing library to manipulate experimental and calculated spectra.
+A nonequilibrium infrared emission and absorption line-by-line code ... 
+and a post-processing library to manipulate experimental and calculated spectra.
 
 
 ===============
@@ -100,184 +100,23 @@ Or start a bare RADIS online session (no installation needed!):
    
 ---------------------------------------------------------------------
 
-==================
-User documentation
-==================
-
-.. include:: description.rst
-
-See the :ref:`Architecture <label_dev_architecture>` section for an overview of the RADIS calculation 
-steps. 
-
-Features
---------
-   
-.. toctree::
-
-   :maxdepth: 2
-   
-   features
-   
-
-Line-by-line (LBL) module
--------------------------
-
-This is the core of RADIS: it calculates the spectral densities for a homogeneous
-slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
-are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class. 
+=======
+Summary
+=======
 
 .. toctree::
    :maxdepth: 2
    
-   lbl/index
-
+   user
+   developer
+   references
    
-Line-of-sight (LOS) module
---------------------------
-
-This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
-as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
-or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
-line-of-sight experiments. The module allows combination of Spectra such as::
-
-    s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption) 
-
-.. toctree::
-   :maxdepth: 2
    
-   los/index
-
-   
-The Spectrum class
-------------------
-
-This module contains the :class:`~radis.spectrum.spectrum.Spectrum` object itself, with several methods that can be 
-applied after the Spectrum was calculated: rescale, apply instrumental slit function, 
-store or retrieve from a Spectrum database, plot or compare with another Spectrum object. 
-
-.. toctree::
-   :maxdepth: 2
-   
-   spectrum/spectrum
-
-Tools
------
-
-Different tools to work with Spectrum objects
-
-.. toctree::
-   :maxdepth: 2
-   
-   tools/line_survey
-   tools/database
-
-
-Interfaces
-----------
-
-RADIS includes parsers and interfaces to read and return data in different formats: 
-
-.. toctree::
-   :maxdepth: 2
-   
-   io/parsers
-   io/databases
-   io/thermo
-
-
-Examples
---------
-   
-.. toctree::
-   :maxdepth: 2
-   
-   examples
-
-   
----------------------------------------------------------------------
-
-===============
-Developer Guide
-===============
-
-Sources
--------
-
-To modify RADIS, you will need to clone the Git repository. 
-Please refer to the :ref:`detailed installation procedure <label_install>` :
-
-.. toctree::
-   :maxdepth: 2
-   
-   install
-   
-
-Architecture
-------------
-
-An overview of the different RADIS modules: 
-
-.. toctree::
-   :maxdepth: 2
-   
-   dev/architecture
-  
-
-Tests
------
-   
-.. toctree::
-   :maxdepth: 2
-   
-   dev/test
-   
----------------------------------------------------------------------
-
-==========
-References
-==========
-   
-Spectroscopic constants 
------------------------
-
-.. toctree::
-    :maxdepth: 2
-    
-    db/constants
-
-
-Bibliography
-------------
-   
-.. toctree::
-    :maxdepth: 2
-    
-    references
-
-Licence
--------
-
-The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
-under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
-i.e., that modifications must remain public and under LGPLv3. 
-
-Cite
-----
-
-If using RADIS for your work, cite the line-by-line code as [RADIS-2018]_ with the :ref:`version number <label_version>`
-, alongside the references of the line databases used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
-
-If running nonequilibrium calculations, do not forget to mention the reference of the spectroscopic constants used 
-in the calculatation of the rovibrational energies (for instance, see the 
-:ref:`references for the RADIS built-in constants <label_db_spectroscopic_constants>`)
-
-
 Access Module Methods
 ---------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
 
 

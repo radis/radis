@@ -205,9 +205,11 @@ html_theme_options = {
     'github_user': 'radis',
     'github_repo': 'radis',
     'github_button': True, 
+    'github_type': 'watch',
     'github_banner': False,
     'travis_button': True,
-    'codecov_button': True
+    'codecov_button': True,
+    'sidebar_includehidden': False,
     }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -248,8 +250,16 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
-
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        #'relations.html',
+        #'description.html',
+        #'example.html',
+        'searchbox.html',
+    ]
+}
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 #html_additional_pages = {}
