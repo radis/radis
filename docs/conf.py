@@ -40,22 +40,6 @@ sys.path.insert(0, os.path.abspath('.'))
 # https://github.com/rtfd/readthedocs.org/issues/1139
 #
 
-if True:  # @EP comment this section if running locally from gendocs.sh (see above)
-    def run_apidoc(_):
-        from sphinx.apidoc import main
-        from os.path import join, abspath, dirname
-    #    import sys
-    #    sys.path.append(join(dirname(__file__), '..'))
-        cur_dir = abspath(dirname(__file__))
-        source_dir = abspath(join(cur_dir, 'source'))
-        module = join(cur_dir,"..","radis")
-        print(cur_dir)
-        print(source_dir)
-        main(['-e', '-o', source_dir, module, '--force', '--separate'])
-
-    def setup(app):
-        app.connect('builder-inited', run_apidoc)
-
 # %% --------------------------------------
 
 
@@ -76,7 +60,8 @@ extensions = [
     #'numpydoc', 
     #'sphinxcontrib.napoleon',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinxcontrib.apidoc',
 ]
 
 
