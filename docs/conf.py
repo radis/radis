@@ -63,6 +63,10 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinxcontrib.apidoc',
 ]
+apidoc_module_dir = '../radis'
+apidoc_output_dir = 'source'
+apidoc_excluded_paths = []
+apidoc_separate_modules = True
 
 
 # Reference other packages
