@@ -11,12 +11,6 @@ RADIS
 
 A nonequilibrium infrared emission and absorption line-by-line code.
 
-.. toctree::
-
-   :maxdepth: 1
-   
-   self
-   
 
 ===============
 Getting Started
