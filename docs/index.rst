@@ -11,6 +11,13 @@ RADIS
 
 A nonequilibrium infrared emission and absorption line-by-line code.
 
+.. toctree::
+
+   :maxdepth: 1
+   
+   self
+   
+
 ===============
 Getting Started
 ===============
@@ -156,7 +163,6 @@ store or retrieve from a Spectrum database, plot or compare with another Spectru
    :maxdepth: 2
    
    spectrum/spectrum
-   spectrum/howto
 
    
 Tools
