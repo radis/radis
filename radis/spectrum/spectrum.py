@@ -70,10 +70,14 @@ from six.moves import zip
 
 
 class Spectrum(object):
-    ''' This class holds result from a SpectrumFactory calculation. It can be
+    ''' This class holds results calculated with the :py:class:`~radis.lbl.factory.SpectrumFactory`
+    calculation, with other radiative codes, or experimental data. It can be
     used to plot different quantities a posteriori, or manipulate output units
     (for instance convert a spectral radiance per wavelength units to a
-    spectral radiance per wavenumber)
+    spectral radiance per wavenumber). 
+    
+    See more information on how to generate, edit or combine Spectrum objects 
+    on the [Spectrum]_ page.
 
     Parameters
     ----------
@@ -167,6 +171,8 @@ class Spectrum(object):
         s3 = Spectrum({'radiance_noslit': (w, I)}, 
                       units={'radiance_noslit':'mW/cm2/sr/nm'},
                       waveunit='nm')
+                      
+    See more examples in the [Spectrum]_ page.
 
     Spectrum objects can be stored, retrieved, rescaled, resampled::
 
@@ -216,6 +222,11 @@ class Spectrum(object):
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
     :func:`~radis.tools.database.load_spec`
 
+    
+    References
+    ----------
+    
+    .. [Spectrum] See the :ref:`Spectrum object page <label_spectrum>` 
 
     '''
 
@@ -228,6 +239,8 @@ class Spectrum(object):
                  name=None, warnings=True):
         # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I, 
         # 'transmittance':T, etc.} directly too (instead of {'radiance':(w,I), etc.})
+
+        # TODO: add help on creating a Spectrum from a dictionary
 
         # Check inputs
         # ... Replace None attributes with dictionaries
@@ -366,10 +379,21 @@ class Spectrum(object):
             s = Spectrum.from_array(w, I, 'radiance_noslit', 
                                    waveunit='nm', unit='mW/cm2/sr/nm')
 
+        To create a spectrum with absorption and emission components 
+        (e.g: ``radiance_noslit`` and ``transmittance_noslit``, or ``emisscoeff``
+        and ``abscoeff``) call the :class:`~radis.spectrum.spectrum.Spectrum`
+        class directly. Ex::
+            
+            from radis import Spectrum
+            s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
+                         units={'abscoeff': 'cm_1', 'emisscoeff':'W/cm2/sr/nm'},
+                         waveunit='nm')
+
 
         See Also
         --------
 
+        :class:`~radis.spectrum.spectrum.Spectrum`,
         :func:`~radis.spectrum.models.calculated_spectrum`, 
         :func:`~radis.spectrum.models.transmittance_spectrum`, 
         :func:`~radis.spectrum.models.experimental_spectrum`
@@ -459,13 +483,22 @@ class Spectrum(object):
                                       unit='W/cm2/sr/nm')
 
 
+        To create a spectrum with absorption and emission components 
+        (e.g: ``radiance_noslit`` and ``transmittance_noslit``, or ``emisscoeff``
+        and ``abscoeff``) call the :class:`~radis.spectrum.spectrum.Spectrum`
+        class directly. Ex::
+            
+            from radis import Spectrum
+            s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
+                         units={'abscoeff': 'cm_1', 'emisscoeff':'W/cm2/sr/nm'},
+                         waveunit='nm')
+
         Notes
         -----
 
         Internally, the numpy ``loadtxt`` function is used and transposed::
 
             w, I = np.loadtxt(file).T
-
 
         See Also
         --------
@@ -1329,8 +1362,8 @@ class Spectrum(object):
         ----------
 
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, etc.)
-            For full list see get_vars(). If None, plot the first thing in
-            the Spectrum (with a preference for non convoluted quantities)
+            For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.  
+            If ``None``, plot the first thing in the Spectrum. Default ``None``.
 
         wunit: `default`, `cm-1`, `nm`
             wavelength or wavenumber unit. If `default`, Spectrum waveunit is used.
@@ -1347,7 +1380,7 @@ class Spectrum(object):
         Plot parameters inputs:
 
         show_points: boolean
-            show calculated points. Default ``True``
+            show calculated points. Default ``True``.
 
         nfig: int, None, or 'same'
             plot on a particular figure. 'same' plots on current figure.
@@ -2341,7 +2374,7 @@ class Spectrum(object):
         barwidth: float
             With of bars in LineSurvey. Default 0.07
 
-        See :func:`~radis.tools.line_survey.LineSurvey` documentation
+        See :py:func:`~radis.tools.line_survey.LineSurvey` documentation
 
 
         Returns

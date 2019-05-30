@@ -50,7 +50,7 @@ from six.moves import zip
 def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
              resample=True, diff_window=0):
     # type: (Spectrum, Spectrum, str, str, str, str, bool, int) -> np.array, np.array
-    ''' Get the difference between 2 spectra
+    ''' Get the difference between 2 spectra. 
     Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
 
@@ -66,7 +66,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
         2 spectra to compare.
 
     var: str
-        spectral quantity (ex: 'radiance', 'transmittance'...)
+        spectral quantity (ex: ``'radiance'``, ``'transmittance'``...)
 
     wunit: 'nm', 'cm-1'
         waveunit to compare in
@@ -86,14 +86,14 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     
     diff_window: int
         If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
-        units on either side, and returns the minimum. Kinda compensates for experimental
-        errors on the w axis. Default 0. (look up code to understand...)
+        units on either side, and returns the minimum. Compensates for experimental
+        errors on the w axis. Default 0. (look up code for more details...)
 
     Returns    
     -------
 
     w1, Idiff: array
-        difference interpolated on the second range(order?)
+        difference interpolated on the wavespace range of the first Spectrum
     
     Notes
     -----
@@ -372,7 +372,7 @@ def get_residual(s1, s2, var,
             if normalize_how == 'max':
                 norm1 = s1.get(var, copy=False)[1].max()
                 norm2 = s2.get(var)[1].max()
-            if normalize_how == 'mean':
+            elif normalize_how == 'mean':
                 norm1 = s1.get(var, copy=False)[1].mean()
                 norm2 = s2.get(var)[1].mean()
             elif normalize_how == 'area':
@@ -403,7 +403,6 @@ def get_residual(s1, s2, var,
         return output
     else:
         raise ValueError('unexpected value for norm')
-
 
 def get_residual_integral(s1, s2, var, 
                           ignore_nan=False):
@@ -732,10 +731,11 @@ def plot_diff(s1, s2, var=None,
         s2 = s2.copy()
         w1, I1 = s1.get(var, copy=False)
         w2, I2 = s2.get(var, copy=False)
+        ratio = np.max(I1)/np.max(I2)
         I1 /= np.max(I1)
         I2 /= np.max(I2)
         if verbose:
-            print(('Rescale factor: '+str(np.max(I1)/np.max(I2))))
+            print(('Rescale factor: '+str(ratio)))
     
     def get_wdiff_Idiff():
         wdiffs, Idiffs = [], []
@@ -1157,7 +1157,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 if not b1 and verbose:
                     error = np.nanmax(abs(q/q0-1))
                     avgerr = np.nanmean(abs(q/q0-1))
-                    print('...', k, 'dont match (up to {0:.3}% diff.,'.format(
+                    print('...', k, "don't match (up to {0:.3}% diff.,".format(
                         error*100)+' average {0:.3f}%)'.format(avgerr*100))
             b *= b1
 
@@ -1167,7 +1167,7 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                               normalize=normalize, verbose=verbose,
                               **kwargs)
                 except:
-                    print('... couldnt plot {0}'.format(k))
+                    print("... couldn't plot {0}".format(k))
 
     else:
         # Compare spectral variables
@@ -1185,8 +1185,9 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 b1 *= _compare_variables(q, q0)
                 if not b1 and verbose:
                     error = np.nanmax(abs(q/q0-1))
-                    print('...', k, 'dont match (up to {0:.3f}% diff.)'.format(
-                        error*100))
+                    avgerr = np.nanmean(abs(q/q0-1))
+                    print('...', k, "don't match (up to {0:.3}% diff.,".format(
+                        error*100)+' average {0:.3f}%)'.format(avgerr*100))
             b *= b1
 
             if plot:
@@ -1204,11 +1205,11 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
         b2 = (compare_dict(first.cond_units, other.cond_units, verbose=verbose_dict) == 1)
         b3 = (compare_dict(first.units, other.units, verbose=verbose_dict) == 1)
         if not b1 and verbose:
-            print('... conditions dont match')
+            print("... conditions don't match")
         if not b2 and verbose:
-            print('... conditions units dont match')
+            print("... conditions units don't match")
         if not b3 and verbose:
-            print('... units dont match')
+            print("... units don't match")
         b *= b1 * b2 * b3
 
         # Compare lines

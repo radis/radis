@@ -27,7 +27,7 @@ import numpy as np
 from numpy import isclose
 from radis.phys.convert import (J2eV, J2cm, cm2J, eV2cm, eV2K, eV2nm, nm2eV, cm2K, K2cm,
                                 dnm2dcm, nm2cm, dnm2dhz, dhz2dnm, cm2eV, eV2J, K2J,
-                                J2K, dcm2dnm, K2eV, hz2nm, nm2hz,
+                                J2K, dcm2dnm, K2eV, hz2nm, nm2hz, hz2cm, cm2hz,
                                 torr2bar, torr2atm, bar2torr, bar2atm, atm2torr,
                                 atm2bar)
 from radis.phys.units import uarray, Q_, conv2
@@ -73,6 +73,10 @@ def test_convert(verbose=True, *args, **kwargs):
     assert atm2bar(1) == 1.01325
     assert isclose(torr2bar(atm2torr(bar2atm(1))), 1)
     assert isclose(torr2atm(bar2torr(atm2bar(1))), 1)
+
+    # Hz
+    assert isclose(1/hz2cm(1e9), 30, atol=0.1)   # 1 Ghz is about 30 cm 
+    assert hz2cm(cm2hz(600)) == 600
 
     return True
 

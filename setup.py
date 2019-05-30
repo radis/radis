@@ -73,7 +73,7 @@ setup(name='radis',
       author='Erwan Pannier',
       author_email='erwan.pannier@gmail.com',
       license='GNU Lesser General Public License v3 (LGPLv3)',
-      keywords=["spectrum", "infrared", "spectra", "radiation", "nonequilibrium"],
+      keywords=["spectrum", "infrared", "spectra", "radiation", "nonequilibrium", "spectroscopy", "molecules", "HITRAN"],
       packages=find_packages(),
       install_requires=[
 				 'mpldatacursor',

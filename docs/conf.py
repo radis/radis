@@ -40,22 +40,6 @@ sys.path.insert(0, os.path.abspath('.'))
 # https://github.com/rtfd/readthedocs.org/issues/1139
 #
 
-if True:  # @EP comment this section if running locally from gendocs.sh (see above)
-    def run_apidoc(_):
-        from sphinx.apidoc import main
-        from os.path import join, abspath, dirname
-    #    import sys
-    #    sys.path.append(join(dirname(__file__), '..'))
-        cur_dir = abspath(dirname(__file__))
-        source_dir = abspath(join(cur_dir, 'source'))
-        module = join(cur_dir,"..","radis")
-        print(cur_dir)
-        print(source_dir)
-        main(['-e', '-o', source_dir, module, '--force'])
-
-    def setup(app):
-        app.connect('builder-inited', run_apidoc)
-
 # %% --------------------------------------
 
 
@@ -76,9 +60,45 @@ extensions = [
     #'numpydoc', 
     #'sphinxcontrib.napoleon',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinxcontrib.apidoc'
 ]
 
+
+# %% ------------------------------------
+# Added EP 2018:
+# Auto-generate files with sphinx.apidoc
+# (else it requires /docs/source files to be generated manually and commited
+# to the git directory)
+# 
+# Reference: 
+# https://github.com/rtfd/readthedocs.org/issues/1139
+#
+
+def run_apidoc(_):
+
+    argv = [
+        "-f",
+        "-e",
+        "-o", "source",
+        "--separate",
+        "../radis", 
+    ]
+
+    try:
+        # Sphinx 1.7+
+        from sphinx.ext import apidoc
+        apidoc.main(argv)
+    except ImportError:
+        # Sphinx 1.6 (and earlier)
+        from sphinx import apidoc
+        argv.insert(0, apidoc.__file__)
+        apidoc.main(argv)
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
+# %%
+    
 # Reference other packages
 intersphinx_mapping = {'joblib': ('https://joblib.readthedocs.io/en/latest/', None),
                        'astroquery': ('http://astroquery.readthedocs.io/en/latest/', None),
@@ -180,14 +200,16 @@ html_theme = 'alabaster' #'bizstyle' #'nature'
 # documentation.
 html_theme_options = {
     'description': "Radiative Solver",
-    'logo': 'radis_ico.png',
+    #'logo': 'radis_ico.png',
     'logo_name': True, 
     'github_user': 'radis',
     'github_repo': 'radis',
     'github_button': True, 
+    'github_type': 'watch',
     'github_banner': False,
     'travis_button': True,
-    'codecov_button': True
+    'codecov_button': True,
+    'sidebar_includehidden': False,
     }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -202,7 +224,7 @@ html_theme_options = {
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = 'radis_ico.png'
+html_logo = 'radis_ico.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -228,8 +250,16 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
-
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        #'relations.html',
+        #'description.html',
+        #'example.html',
+        'searchbox.html',
+    ]
+}
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 #html_additional_pages = {}

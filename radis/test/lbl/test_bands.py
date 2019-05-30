@@ -42,7 +42,6 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    verbose=True
     Tgas = 1000
 
     sf = SpectrumFactory(
@@ -90,7 +89,7 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     s_bands_eq = sf.eq_bands(Tgas)
     s_merged_eq = MergeSlabs(*list(s_bands_eq.values()))
     
-    assert get_residual(s_tot, s_merged_eq, 'radiance_noslit') < 1e-5
+    assert get_residual(s_tot, s_merged_eq, 'radiance_noslit') < 1.5e-5
 
     return True
 

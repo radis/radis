@@ -920,7 +920,7 @@ class SpecList(object):
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.see`
+        :meth:`~radis.tools.database.SpecList.see`
         '''
 
         return self.see(columns=columns, *args)
@@ -1001,9 +1001,9 @@ class SpecList(object):
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`,
-        :meth:`~radis.tools.database.SpecDatabase.get_closest`,
-        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecList.get_unique`,
+        :meth:`~radis.tools.database.SpecList.get_closest`,
+        :meth:`~radis.tools.database.SpecList.items`
 
         '''
 
@@ -1097,14 +1097,14 @@ class SpecList(object):
         Parameters
         ----------
 
-        see meth:`~radis.tools.database.SpecDatabase.get` for more details 
+        see meth:`~radis.tools.database.SpecList.get` for more details 
 
 
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`,
-        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        :meth:`~radis.tools.database.SpecList.get`,
+        :meth:`~radis.tools.database.SpecList.get_closest`
 
         '''
 
@@ -1112,9 +1112,11 @@ class SpecList(object):
 
         if len(out) == 0:
             # Give a better error message before crashing:
+            prevVerbose = kwconditions['verbose']
             kwconditions['verbose'] = True
             self.get_closest(**kwconditions) # note: wont work with conditions=..
             raise ValueError('Spectrum not found. See closest above. Use get_closest()')
+            kwconditions['verbose'] = prevVerbose
         elif len(out) > 1:
             raise ValueError('Spectrum is not unique ({0} match found)'.format(
                 len(out))+' Think about using "db.find_duplicates()"')
@@ -1162,8 +1164,8 @@ class SpecList(object):
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`,
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`
+        :meth:`~radis.tools.database.SpecList.get`,
+        :meth:`~radis.tools.database.SpecList.get_unique`
 
         '''
         # TODO: make it possible to choose only certain parameters, fix others. 
@@ -1290,8 +1292,8 @@ class SpecList(object):
         See Also
         --------
         
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`,
-        :meth:`~radis.tools.database.SpecDatabase.get`
+        :meth:`~radis.tools.database.SpecList.to_dict`,
+        :meth:`~radis.tools.database.SpecList.get`
         
         '''
         
@@ -1332,10 +1334,10 @@ class SpecList(object):
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`,
-        :meth:`~radis.tools.database.SpecDatabase.values`,
-        :meth:`~radis.tools.database.SpecDatabase.items`,
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        :meth:`~radis.tools.database.SpecList.keys`,
+        :meth:`~radis.tools.database.SpecList.values`,
+        :meth:`~radis.tools.database.SpecList.items`,
+        :meth:`~radis.tools.database.SpecList.to_dict`
 
         '''
 
@@ -1347,9 +1349,9 @@ class SpecList(object):
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.values`,
-        :meth:`~radis.tools.database.SpecDatabase.items`,
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        :meth:`~radis.tools.database.SpecList.values`,
+        :meth:`~radis.tools.database.SpecList.items`,
+        :meth:`~radis.tools.database.SpecList.to_dict`
 
         '''
 
@@ -1361,9 +1363,9 @@ class SpecList(object):
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`,
-        :meth:`~radis.tools.database.SpecDatabase.items`,
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        :meth:`~radis.tools.database.SpecList.keys`,
+        :meth:`~radis.tools.database.SpecList.items`,
+        :meth:`~radis.tools.database.SpecList.to_dict`
 
         '''
 
@@ -1391,9 +1393,9 @@ class SpecList(object):
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.keys`,
-        :meth:`~radis.tools.database.SpecDatabase.values`,
-        :meth:`~radis.tools.database.SpecDatabase.to_dict`
+        :meth:`~radis.tools.database.SpecList.keys`,
+        :meth:`~radis.tools.database.SpecList.values`,
+        :meth:`~radis.tools.database.SpecList.to_dict`
 
         '''
 
@@ -1604,13 +1606,13 @@ class SpecDatabase(SpecList):
         
         Methods to retrieve objects:
             
-        :meth:`~radis.tools.database.SpecDatabase.get`, 
-        :meth:`~radis.tools.database.SpecDatabase.get_closest`,
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`,  
+        :meth:`~radis.tools.database.SpecList.get`, 
+        :meth:`~radis.tools.database.SpecList.get_closest`,
+        :meth:`~radis.tools.database.SpecList.get_unique`,  
         
         Methods to manipulate the SpecDatabase:
             
-        :meth:`~radis.tools.database.SpecDatabase.see`, 
+        :meth:`~radis.tools.database.SpecList.see`, 
         :meth:`~radis.tools.database.SpecDatabase.update`, 
         :meth:`~radis.tools.database.SpecDatabase.add`, 
         :meth:`~radis.tools.database.SpecDatabase.compress_to`, 
@@ -1848,9 +1850,9 @@ class SpecDatabase(SpecList):
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`,
-        :meth:`~radis.tools.database.SpecDatabase.get_unique`,
-        :meth:`~radis.tools.database.SpecDatabase.get_closest`
+        :meth:`~radis.tools.database.SpecList.get`,
+        :meth:`~radis.tools.database.SpecList.get_unique`,
+        :meth:`~radis.tools.database.SpecList.get_closest`
 
         '''
 
@@ -1948,7 +1950,7 @@ class SpecDatabase(SpecList):
             
         conditions, **kwconditions: str, **dict
             restrain fitting to only Spectrum that match the given conditions
-            in the database. See :meth:`~radis.tools.database.SpecDatabase.get`
+            in the database. See :meth:`~radis.tools.database.SpecList.get`
             for more information.
             
         normalize: bool, or Tuple
@@ -2074,16 +2076,16 @@ class SpecDatabase(SpecList):
         Note
         ----
 
-        ``SpecDatabase.items().values()`` is equivalent to ``SpecDatabase.get()`` 
+        ``SpecList.items().values()`` is equivalent to ``SpecList.get()`` 
 
 
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecDatabase.get`,
-        :meth:`~radis.tools.database.SpecDatabase.keys`,
-        :meth:`~radis.tools.database.SpecDatabase.values`,
-        :meth:`~radis.tools.database.SpecDatabase.items`
+        :meth:`~radis.tools.database.SpecList.get`,
+        :meth:`~radis.tools.database.SpecList.keys`,
+        :meth:`~radis.tools.database.SpecList.values`,
+        :meth:`~radis.tools.database.SpecList.items`
 
         '''
 

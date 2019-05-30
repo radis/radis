@@ -6,7 +6,7 @@ Created on Mon Jan  8 16:29:18 2018
 
 Operations on Curves, where a curve is a (w, I) array tuple
 
-Similar to Origin Simple Curve Math operators
+Similar to OriginPro's Simple Curve Math operators
 
 
 Routine Listing
@@ -101,7 +101,7 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     Linearly interpolates if the two ranges dont match. Fills out of bound 
     parameters with nan.
 
-    Similar to Origin "Simple Curve Math Substract"
+    Similar to OriginPro's "Simple Curve Math Substract"
 
 
     Parameters    
@@ -138,7 +138,7 @@ def curve_substract(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     Linearly interpolates if the two ranges dont match. Fills out of bound 
     parameters with nan.
 
-    Similar to Origin "Simple Curve Math Substract"
+    Similar to OriginPro's "Simple Curve Math Substract"
 
 
     Parameters    
@@ -175,7 +175,7 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind='linear'):
     Linearly interpolates if the two ranges dont match. Fills out of bound 
     parameters with nan.
 
-    Similar to Origin "Simple Curve Math Substract"
+    Similar to OriginPro's "Simple Curve Math Substract"
 
 
     Parameters    
@@ -212,7 +212,7 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind='linear', interpolation=1
     Linearly interpolates if the two ranges dont match. Fills out of bound 
     parameters with nan.
 
-    Similar to Origin "Simple Curve Math Substract"
+    Similar to OriginPro's "Simple Curve Math Substract"
 
 
     Parameters    
