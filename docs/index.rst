@@ -101,7 +101,7 @@ Or start a bare RADIS online session (no installation needed!):
 ---------------------------------------------------------------------
 
 =======
-Summary
+Content
 =======
 
 .. toctree::
