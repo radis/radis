@@ -40,7 +40,7 @@ import codecs
 import io
 import re
 import os
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname, join, exists
 import sys
 from setuptips import yield_sphinx_only_markup
 
@@ -56,11 +56,19 @@ except ImportError:
                       'matplotlib pandas')
 
 # Build description from README (PyPi compatible)
-# (note: README.rst has been converted to README.md by register.py, and cleaned afterwards )
 description = 'A non-equilibrium Radiative Solver for HITRAN-like database species '
-this_directory = abspath(dirname(__file__))
-with open(join(this_directory, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+readme_path = join(abspath(dirname(__file__)), 'README.md')
+if exists(readme_path):
+    # Markdown format (for Pypi)
+    # (note: README.rst has been converted to README.md by register.py, and cleaned afterwards )
+    readme_lines = codecs.open(readme_path, encoding="utf-8").read()
+    long_description = readme_lines
+    long_description_content_type = 'text/markdown'
+else:
+    # Rst format (for the rest)
+    readme_lines = codecs.open(readme_path.replace('.md', '.rst'), encoding="utf-8").readlines()
+    long_description = ''.join(yield_sphinx_only_markup(readme_lines))
+    long_description_content_type = 'text/x-rst'
     
 # Read version number from file
 with open(join(dirname(__file__),'radis', '__version__.txt')) as version_file:
