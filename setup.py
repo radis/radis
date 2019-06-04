@@ -40,6 +40,7 @@ import codecs
 import io
 import re
 import os
+import io
 from os.path import abspath, dirname, join, exists
 import sys
 from setuptips import yield_sphinx_only_markup
@@ -62,7 +63,7 @@ readme_path = join(abspath(dirname(__file__)), 'README.md')
 if not exists(readme_path):
     long_description = description
 else:
-    with open(readme_path, encoding='utf-8') as f:
+    with io.open(readme_path, encoding='utf-8') as f:
         long_description = f.read()
     
 # Read version number from file
