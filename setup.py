@@ -40,7 +40,7 @@ import codecs
 import io
 import re
 import os
-from os.path import dirname, join
+from os.path import abspath, dirname, join
 import sys
 from setuptips import yield_sphinx_only_markup
 
@@ -56,10 +56,12 @@ except ImportError:
                       'matplotlib pandas')
 
 # Build description from README (PyPi compatible)
+# (note: README.rst has been converted to README.md by register.py, and cleaned afterwards )
 description = 'A non-equilibrium Radiative Solver for HITRAN-like database species '
-readme_lines = codecs.open('README.rst', encoding="utf-8").readlines()
-long_description = ''.join(yield_sphinx_only_markup(readme_lines))
-
+this_directory = abspath(dirname(__file__))
+with open(join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+    
 # Read version number from file
 with open(join(dirname(__file__),'radis', '__version__.txt')) as version_file:
     __version__ = version_file.read().strip()
@@ -68,7 +70,8 @@ with open(join(dirname(__file__),'radis', '__version__.txt')) as version_file:
 setup(name='radis',
       version=__version__,
       description=description,
-    	long_description=long_description,
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       url='https://github.com/radis/radis',
       author='Erwan Pannier',
       author_email='erwan.pannier@gmail.com',
@@ -109,7 +112,7 @@ setup(name='radis',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.6',
         "Operating System :: OS Independent"],
-	  include_package_data=True,  # add non .py data files in MANIFEST.in
+	   include_package_data=True,  # add non .py data files in MANIFEST.in
       #package_data={'radis': ['radis/phys/units.txt']},
       zip_safe=False,  # impossible as long as we have external files read with __file__ syntax
       platforms='any')

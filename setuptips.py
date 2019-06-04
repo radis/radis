@@ -65,7 +65,7 @@ def yield_sphinx_only_markup(lines):
         (r'\|version\|',              r'x.x.x'),
         
         ## added to make RADIS docs Pypi compatible
-        (r'\.\. image::',          r'.. '),
+#        (r'\.\. image::',          r'.. '),
 #        (r'\.\. |CO2| replace:: CO\ :sub:`2`',          r'.. '),
     ]
 
@@ -83,3 +83,10 @@ def yield_sphinx_only_markup(lines):
 
     for line in lines:
         yield clean_line(line)
+
+
+if __name__ == '__main__':
+    import codecs
+    readme_lines = codecs.open('README.rst', encoding="utf-8").readlines()
+    long_description = ''.join(yield_sphinx_only_markup(readme_lines))
+    print(long_description)
