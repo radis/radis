@@ -40,7 +40,7 @@ import codecs
 import io
 import re
 import os
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname, join, exists
 import sys
 from setuptips import yield_sphinx_only_markup
 
@@ -58,9 +58,12 @@ except ImportError:
 # Build description from README (PyPi compatible)
 # (note: README.rst has been converted to README.md by register.py, and cleaned afterwards )
 description = 'A non-equilibrium Radiative Solver for HITRAN-like database species '
-this_directory = abspath(dirname(__file__))
-with open(join(this_directory, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+readme_path = join(abspath(dirname(__file__)), 'README.md')
+if not exists(readme_path):
+    long_description = description
+else:
+    with open(readme_path, encoding='utf-8') as f:
+        long_description = f.read()
     
 # Read version number from file
 with open(join(dirname(__file__),'radis', '__version__.txt')) as version_file:

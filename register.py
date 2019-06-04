@@ -31,5 +31,3 @@ finally:
     os.remove('README.md')
     shutil.rmtree('dist')
 
-
-print('All done')
