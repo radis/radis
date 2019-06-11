@@ -24,11 +24,11 @@ and experimental slit function importer:
 functions to manipulate slit functions (plot, get_FWHM, get_effective_FWHM,
 recenter_slit, crop_slit):
 
-:func:`~radis.tools.slit.get_FWHM`
-:func:`~radis.tools.slit.get_effective_FWHM`
-:func:`~radis.tools.slit.plot_slit`
-:func:`~radis.tools.slit.recenter_slit`
-:func:`~radis.tools.slit.crop_slit`
+- :func:`~radis.tools.slit.get_FWHM`
+- :func:`~radis.tools.slit.get_effective_FWHM`
+- :func:`~radis.tools.slit.plot_slit`
+- :func:`~radis.tools.slit.recenter_slit`
+- :func:`~radis.tools.slit.crop_slit`
 
 
 -------------------------------------------------------------------------------
@@ -55,6 +55,8 @@ from radis.spectrum.spectrum import cast_waveunit
 from six import string_types
 
 SLIT_SHAPES = ['triangular', 'trapezoidal', 'gaussian']
+'''list : list of predefined slit shapes 
+'''
 
 # %% Get slit function
 
@@ -91,14 +93,16 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
         the outptut spectrum unit, e.g. from 'mW/cm2/sr/µm' to 'mW/cm2/sr')
         None doesnt normalize. Default ``'area'``
 
-    shape: 'triangular', 'trapezoidal', 'gaussian'
-        which shape to use when generating a slit. Default 'triangular'
+    shape: ``'triangular'``, ``'trapezoidal'``, ``'gaussian'``
+        which shape to use when generating a slit. Default ``'triangular'``. 
+        Should be one of :py:data:`~radis.tools.slit.SLIT_SHAPES`. 
 
     center_wavespace: float, or None
         center of slit when generated (in unit). Not used if slit is imported.
 
-    return_unit: 'nm', 'cm-1', or 'same'
-        if not 'same', slit is converted to the given wavespace.
+    return_unit: ``'nm'``, ``'cm-1'``, or ``'same'``
+        if not ``'same'``, slit is converted to the given wavespace. 
+        Default ``'same'``.
 
     wstep: float
         which discretization step to use (in return_unit) when generating a slit
@@ -150,24 +154,24 @@ def get_slit_function(slit_function, unit='nm', norm_by='area', shape='triangula
     Notes
     -----
 
-    In norm_by 'max' mode, slit is normalized by slit max. In RADIS, this is done
+    In ``norm_by='max'`` mode, slit is normalized by slit max. In RADIS, this is done
     in the spectrum wavespace (to avoid errors that would be caused by interpolating
     the spectrum). 
 
     A problem arise if the spectrum wavespace is different from the slit wavespace:
-    typically, slit is in 'nm' but a spectrum calculated by RADIS is stored in 
-    'cm-1': in that case, the convoluted spectrum is multiplied by /int(Islit*dν)
-    instead of /int(Islit*dλ). The output unit is then [radiance]*[spec_unit]
-    instead of [radiance]*[slit_unit], i.e, typically, [mW/cm2/sr/nm]*[cm-1]
-    instead of [mW/cm2/sr/nm]*[nm]=[mW/cm2/sr]
+    typically, slit is in ``'nm'`` but a spectrum calculated by RADIS is stored in 
+    ``'cm-1'``: in that case, the convoluted spectrum is divided by ``int(Islit*dν)``
+    instead of ``int(Islit*dλ)``. The output unit is then ``[radiance]*[spec_unit]``
+    instead of ``[radiance]*[slit_unit]``, i.e. typically, ``[mW/cm2/sr/nm]*[cm-1]``
+    instead of ``[mW/cm2/sr/nm]*[nm]=[mW/cm2/sr]``
 
     While this remains true if the units are taken into account, this is not the
     expected behaviour. For instance, Specair users are used to having a FWHM(nm) 
     factor between spectra convolved with slit normalized by max and slit normalized
     by area.
 
-    The norm_by='max' behaviour adds a correction factor
-    `/int(Islit*dλ)/int(Islit*dν)` to maintain an output spectrum in [radiance]*[slit_unit]
+    The ``norm_by='max'`` behaviour adds a correction factor
+    ```/int(Islit*dλ)/int(Islit*dν)``` to maintain an output spectrum in ``[radiance]*[slit_unit]``
 
     See Also
     --------
@@ -504,7 +508,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
         order of spline interpolation. 3: cubic, 1: linear. Default 1.
 
     bplot: boolean
-        if True, plots the convolve slit function (for debugging)
+        if ``True``, plots the convolve slit function (for debugging)
 
     verbose: boolean
         more blabla
@@ -514,7 +518,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
         ``assert_evenly_spaced=True``, then we check this is the case, and resample
         ``w`` and ``I`` if needed. Recommended, but it takes some time. 
 
-    waveunit: 'nm', 'cm-1'
+    waveunit: ``'nm'``, ``'cm-1'``
         just for printing messages. However, ``w`` and ``w_slit`` should be in the
         same wavespace.
 
@@ -523,7 +527,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
 
     w_conv, I_conv: arrays
         convoluted quantity. w_conv is defined on a valid range 
-        (sides are cut) if mode='valid'
+        (sides are cut) if ``mode='valid'``
 
     Notes
     -----
@@ -656,7 +660,7 @@ def convolve_with_slit(w, I, w_slit, I_slit, norm_by='area',
 
 
 def get_FWHM(w, I, return_index=False):
-    ''' Calculate full width half maximum by comparing amplitudes
+    ''' Calculate full width half maximum (FWHM) by comparing amplitudes
 
 
     Parameters    
@@ -671,6 +675,7 @@ def get_FWHM(w, I, return_index=False):
     -------
 
     FWHM: float
+        full width at half maximum 
 
     [xmin, xmax]: int
 
@@ -678,7 +683,13 @@ def get_FWHM(w, I, return_index=False):
     See Also
     --------
     
-    :func:`~radis.tools.slit.get_effective_FWHM`
+    :py:func:`~radis.tools.slit.get_effective_FWHM`, 
+    :py:func:`~radis.tools.slit.offset_dilate_slit_function`, 
+    :py:func:`~radis.tools.slit.normalize_slit`, 
+    :py:func:`~radis.tools.slit.remove_boundary`, 
+    :py:func:`~radis.tools.slit.plot_slit`, 
+    :py:func:`~radis.tools.slit.recenter_slit`, 
+    :py:func:`~radis.tools.slit.crop_slit`
     
     '''
     # TODO: Linearly interpolate at the boundary? insignificant for large number of points
@@ -695,7 +706,8 @@ def get_FWHM(w, I, return_index=False):
 
 
 def get_effective_FWHM(w, I):
-    ''' Calculate FWHM of a triangular slit of same area and height 1
+    ''' Calculate full-width-at-half-maximum (FWHM) of a triangular 
+    slit of same area and height 1
 
 
     Parameters    
@@ -703,11 +715,22 @@ def get_effective_FWHM(w, I):
 
     w, I: arrays
     
+    Returns
+    -------
     
+    fwhm: float
+        effective FWHM
+        
     See Also
     --------
     
-    :func:`~radis.tools.slit.get_FWHM`
+    :py:func:`~radis.tools.slit.get_FWHM`, 
+    :py:func:`~radis.tools.slit.offset_dilate_slit_function`, 
+    :py:func:`~radis.tools.slit.normalize_slit`, 
+    :py:func:`~radis.tools.slit.remove_boundary`, 
+    :py:func:`~radis.tools.slit.plot_slit`, 
+    :py:func:`~radis.tools.slit.recenter_slit`, 
+    :py:func:`~radis.tools.slit.crop_slit`
     
     '''
 
@@ -752,7 +775,7 @@ def offset_dilate_slit_function(w_slit_nm, I_slit, w_nm, slit_dispersion,
     ----------------
     
     threshold: float
-        if not None, that slit dispersion is about constant (< ``threshold`` change) 
+        if not ``None``, that slit dispersion is about constant (< ``threshold`` change) 
         on the calculated range. Default 0.01 (1%)
         
     Returns
@@ -761,6 +784,17 @@ def offset_dilate_slit_function(w_slit_nm, I_slit, w_nm, slit_dispersion,
     w_slit, I_slit: np.array
         dilated wavelength (or wavenumber), slit intensity (renormalized)
         
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.get_FWHM`, 
+    :py:func:`~radis.tools.slit.get_effective_FWHM`, 
+    :py:func:`~radis.tools.slit.normalize_slit`, 
+    :py:func:`~radis.tools.slit.remove_boundary`, 
+    :py:func:`~radis.tools.slit.plot_slit`, 
+    :py:func:`~radis.tools.slit.recenter_slit`, 
+    :py:func:`~radis.tools.slit.crop_slit`
+    
     '''
     w0 = w_nm[len(w_nm)//2]
     wslit0 = w_slit_nm[len(w_slit_nm)//2]
@@ -805,6 +839,17 @@ def normalize_slit(w_slit, I_slit, norm_by='area'):
     w_slit, I_slit: np.array
         wavelength, and normalized slit intensity
 
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.get_FWHM`, 
+    :py:func:`~radis.tools.slit.get_effective_FWHM`, 
+    :py:func:`~radis.tools.slit.offset_dilate_slit_function`, 
+    :py:func:`~radis.tools.slit.remove_boundary`, 
+    :py:func:`~radis.tools.slit.plot_slit`, 
+    :py:func:`~radis.tools.slit.recenter_slit`, 
+    :py:func:`~radis.tools.slit.crop_slit`
+    
     '''
     
     # Renormalize
@@ -858,6 +903,17 @@ def remove_boundary(w, I_conv, mode, len_I=None, len_I_slit_interp=None,
     w_conv, I_conv: numpy arrays
         cropped waverange and quantity
         
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.get_FWHM`, 
+    :py:func:`~radis.tools.slit.get_effective_FWHM`, 
+    :py:func:`~radis.tools.slit.offset_dilate_slit_function`, 
+    :py:func:`~radis.tools.slit.normalize_slit`,  
+    :py:func:`~radis.tools.slit.plot_slit`, 
+    :py:func:`~radis.tools.slit.recenter_slit`, 
+    :py:func:`~radis.tools.slit.crop_slit`
+    
     '''
 
     # Remove boundary effects with the x-axis changed accordingly
@@ -916,6 +972,17 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
     fix, ax: matplotlib objects
         figure and ax
 
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.get_FWHM`, 
+    :py:func:`~radis.tools.slit.get_effective_FWHM`, 
+    :py:func:`~radis.tools.slit.offset_dilate_slit_function`, 
+    :py:func:`~radis.tools.slit.normalize_slit`, 
+    :py:func:`~radis.tools.slit.remove_boundary`, 
+    :py:func:`~radis.tools.slit.recenter_slit`, 
+    :py:func:`~radis.tools.slit.crop_slit`
+    
     '''
     
     from publib import set_style
@@ -1013,6 +1080,18 @@ def plot_slit(w, I=None, waveunit='', plot_unit='same', Iunit=None, warnings=Tru
 def recenter_slit(w_slit, I_slit, verbose=True):
     ''' Recenters the slit on the maximum calculated from the two
     FWHM limits. To recenter, zeros are added on the shorter side (zero padding)
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.get_FWHM`, 
+    :py:func:`~radis.tools.slit.get_effective_FWHM`, 
+    :py:func:`~radis.tools.slit.offset_dilate_slit_function`, 
+    :py:func:`~radis.tools.slit.normalize_slit`, 
+    :py:func:`~radis.tools.slit.remove_boundary`, 
+    :py:func:`~radis.tools.slit.plot_slit`, 
+    :py:func:`~radis.tools.slit.crop_slit`
+    
     '''
 
     _, xmin, xmax = get_FWHM(w_slit, I_slit, return_index=True)
@@ -1047,6 +1126,18 @@ def recenter_slit(w_slit, I_slit, verbose=True):
 def crop_slit(w_slit, I_slit, verbose=True):
     ''' Removes unnecessary zeros on the side for a faster convolution.
     (remove as many zeros on the left as on the right).
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.get_FWHM`, 
+    :py:func:`~radis.tools.slit.get_effective_FWHM`, 
+    :py:func:`~radis.tools.slit.offset_dilate_slit_function`, 
+    :py:func:`~radis.tools.slit.normalize_slit`, 
+    :py:func:`~radis.tools.slit.remove_boundary`, 
+    :py:func:`~radis.tools.slit.plot_slit`, 
+    :py:func:`~radis.tools.slit.recenter_slit`
+    
     '''
 
     nzeros_index = np.argwhere(I_slit != 0)
@@ -1080,12 +1171,16 @@ def import_experimental_slit(slit, norm_by='area', bplot=False,
     ----------
 
     slit: str or numpy object (wslit, Islit)
-        slit function spectrum
+        slit function spectrum. 
+        If ``str``, the slit is loaded from the corresponding file with::
+        
+            w_slit, I_slit = np.loadtxt(slit).T
 
-    norm_by: None, 'area', 'max'
-        normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
-        done in Specair and changes units. None doesnt normalize
-        experimental slit. Default ``'area'``
+    norm_by: ``None``, ``'area'``, ``'max'``
+        normalisation type. ``'area'`` divides by the area (conserves energy / units
+        are unchanged). ``'max'`` divides by the peak value (similar to what is
+        done in Specair / changes units). ``None`` does not normalize the 
+        experimental slit function. Default ``'area'``
 
     bplot: boolean
         plot normalized slit function (for debugging). Default ``False``
@@ -1116,6 +1211,20 @@ def import_experimental_slit(slit, norm_by='area', bplot=False,
 
     verbose: boolean
         Display messages
+        
+    Returns
+    -------
+    
+    w_slit, I_slit: numpy arrays
+        wavelength and intensity of normalized slit function 
+        
+    See Also
+    --------
+     
+    :py:func:`~radis.tools.slit.triangular_slit`, 
+    :py:func:`~radis.tools.slit.trapezoidal_slit`, 
+    :py:func:`~radis.tools.slit.gaussian_slit` 
+    
 
     '''
 
@@ -1220,7 +1329,8 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     Returns
     -------
 
-    Slit function of shape
+    w, I: numpy arrays
+        Slit function of shape
 
                ^
               / \
@@ -1229,7 +1339,7 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
        -a-f -a 0  a  a+f
 
 
-    with FWHM = (a+1/2)*wstep, `f` spacing on left & right
+        with FWHM = (a+1/2)*wstep, `f` spacing on left & right
 
 
     Notes
@@ -1239,6 +1349,13 @@ def triangular_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     maximum. This may result in sightly different FWHM if wstep is too large.
     However, slit is corrected so that effective FWHM is preserved.
 
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.import_experimental_slit`, 
+    :py:func:`~radis.tools.slit.trapezoidal_slit`, 
+    :py:func:`~radis.tools.slit.gaussian_slit`
+    
     '''
 
     # Build first half
@@ -1325,7 +1442,9 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
     Returns
     -------
 
-    Slit function of shape
+    w, I: numpy arrays
+        Slit function of shape
+
                  _______
                 /       \
                / :     : \
@@ -1335,8 +1454,8 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
        -b-f     -t     t     b+f
 
 
-    with `t`and `b` the half-top and half-base in number of elements, `f` spacing
-    on left & right. FWHM = (t+b+1)*wstep
+        with `t`and `b` the half-top and half-base in number of elements, `f` spacing
+        on left & right. FWHM = (t+b+1)*wstep
 
 
     Notes
@@ -1346,6 +1465,13 @@ def trapezoidal_slit(top, base, wstep, center=0, norm_by='area', bplot=False,
     maximum. This may result in sightly different FWHM if wstep is too large.
     However, slit is corrected so that effective FWHM is preserved.
 
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.import_experimental_slit`, 
+    :py:func:`~radis.tools.slit.triangular_slit`, 
+    :py:func:`~radis.tools.slit.gaussian_slit`
+    
     """
 
     if top > base:
@@ -1446,7 +1572,8 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     Returns
     -------
 
-    Slit function of shape
+    w, I: numpy arrays
+        Slit function of shape
 
                  .-.
                 /   \
@@ -1457,7 +1584,7 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
        -c-f -c    0     c  c+f          (c : calc_range)
 
 
-   with `c` cutoff in number of elements, `f` spacing on left & right
+        with `c` cutoff in number of elements, `f` spacing on left & right
 
 
     Notes
@@ -1466,6 +1593,13 @@ def gaussian_slit(FWHM, wstep, center=0, norm_by='area', bplot=False,
     slit is generated with an odd number of elements and centered on its
     maximum. This may result in sightly different FWHM if wstep is too large.
 
+    See Also
+    --------
+    
+    :py:func:`~radis.tools.slit.import_experimental_slit`, 
+    :py:func:`~radis.tools.slit.triangular_slit`, 
+    :py:func:`~radis.tools.slit.trapezoidal_slit`
+    
 
     '''
 
