@@ -78,7 +78,17 @@ class, which is the core of RADIS line-by-line calculations.
 :py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
 for the simple cases. 
 
-Refer to the :ref:`Examples <label_examples>` section for more examples. 
+Experimental spectra can be loaded using the :py:func:`~radis.spectrum.models.experimental_spectrum` function 
+and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For instance::
+
+    from numpy import loadtxt
+    from radis import experimental_spectrum, plot_diff
+    w, I = loadtxt('my_file.txt').T    # assuming 2 columns 
+    sexp = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
+    plot_diff(sexp, s)    # comparing with previously spectrum 's' calculated previously 
+
+Refer to the :ref:`Examples <label_examples>` section for more examples, and to the  
+:ref:`Spectrum page <label_spectrum>` for more post-processing functions. 
 
 In the browser
 --------------

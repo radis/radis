@@ -97,11 +97,11 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     w, I: np.array
         wavelength and transmittance (no slit)
 
-    wunit: 'nm', 'cm-1'
+    wunit: ``'nm'``, ``'cm-1'``
         wavespace unit
 
     Iunit: str
-        intensity unit. Default 'I/I0'
+        intensity unit. Default ``'I/I0'``
 
 
     Other Parameters
@@ -139,8 +139,7 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
     ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum` 
     object that has unit conversion and plotting
     capabilities. Convolution is not available as the spectrum is assumed to
-    be measured experimentally (hence deconvolution of the slit function would
-    be required)
+    have be measured experimentally (hence it is already convolved with the slit function)
 
 
     Parameters    
@@ -171,6 +170,17 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
     name: str
         (optional) give a name
 
+    Examples
+    --------
+    
+    Load and plot an experimental spectrum::
+    
+        from numpy import loadtxt
+        from radis import experimental_spectrum
+        w, I = loadtxt('my_file.txt').T    # assuming 2 columns 
+        s = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
+        s.plot()
+        
 
     See Also
     --------
