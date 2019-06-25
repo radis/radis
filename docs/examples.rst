@@ -2,6 +2,8 @@
 Examples
 --------
 
+Examples are available on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
+
 
 Multi Temperature Fit
 ~~~~~~~~~~~~~~~~~~~~~

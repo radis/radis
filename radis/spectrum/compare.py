@@ -661,7 +661,9 @@ def plot_diff(s1, s2, var=None,
               )
         # modify fig, axes..
 
-    See an example output in :ref:`Compare two Spectra <label_spectrum_howto_compare>`
+    See an example in :ref:`label_spectrum_howto_compare`, which produces the output below:
+
+    .. image:: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
     See Also
     --------
