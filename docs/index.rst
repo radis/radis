@@ -9,8 +9,8 @@
 RADIS
 *****
 
-A nonequilibrium infrared emission and absorption line-by-line code ... 
-and a post-processing library to manipulate experimental and calculated spectra.
+A nonequilibrium infrared emission and absorption line-by-line code &
+a post-processing library to compare experimental and calculated spectra.
 
 
 ===============
@@ -78,10 +78,27 @@ class, which is the core of RADIS line-by-line calculations.
 :py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
 for the simple cases. 
 
-Refer to the :ref:`Examples <label_examples>` section for more examples. 
+Experimental spectra can be loaded using the :py:func:`~radis.spectrum.models.experimental_spectrum` function 
+and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For instance::
 
-In the browser
---------------
+    from numpy import loadtxt
+    from radis import experimental_spectrum, plot_diff
+    w, I = loadtxt('my_file.txt').T    # assuming 2 columns 
+    sexp = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
+    plot_diff(sexp, s)    # comparing with a spectrum 's' calculated previously 
+
+Typical output of :py:func:`~radis.spectrum.compare.plot_diff`:
+
+.. image:: docs/spectrum/cdsd4000_vs_hitemp_3409K.svg
+    :scale: 60 %
+    :target: https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#compare-two-spectra
+    :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
+
+Refer to the :ref:`Examples <label_examples>` section for more examples, and to the  
+:ref:`Spectrum page <label_spectrum>` for more post-processing functions. 
+
+In the browser (no installation needed!)
+----------------------------------------
 
 Alternatively, you can also run RADIS directly in the browser with the  
 `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
@@ -91,7 +108,7 @@ For instance, run the Quick Start example on the link below:
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
 
-Or start a bare RADIS online session (no installation needed!):
+Or start a bare RADIS online session:
     
 .. image:: https://mybinder.org/badge.svg 
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
@@ -101,7 +118,7 @@ Or start a bare RADIS online session (no installation needed!):
 ---------------------------------------------------------------------
 
 =======
-Summary
+Content
 =======
 
 .. toctree::

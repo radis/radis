@@ -661,7 +661,9 @@ def plot_diff(s1, s2, var=None,
               )
         # modify fig, axes..
 
-    See an example output in :ref:`Compare two Spectra <label_spectrum_howto_compare>`
+    See an example in :ref:`label_spectrum_howto_compare`, which produces the output below:
+
+    .. image:: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
     See Also
     --------
@@ -1129,7 +1131,12 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
             out = np.allclose(I, Ie, rtol=rtol, atol=0)
 
         return bool(out)
-
+    def _display_difference(q, q0):
+        error = np.nanmax(abs(q/q0-1))
+        avgerr = np.nanmean(abs(q/q0-1))
+        print('...', k, "don't match (up to {0:.3}% diff.,".format(
+            error*100)+' average {0:.3f}%)'.format(avgerr*100))
+                    
     b = True
     if isinstance(spectra_only, string_types):  # compare this quantity
         vars = [spectra_only]
@@ -1150,15 +1157,26 @@ def compare_spectra(first, other, spectra_only=False, plot=True, wunit='default'
                 print(
                     'Wavespaces have different length (for {0}: {1} vs {2})'.format(
                             k, len(w), len(w0)))
-                b1 = False
-            else:
+                print('We interpolate one spectrum on the other one')
+                
+                from scipy.interpolate import interp1d
+                if len(q) > len(q0):
+                    f = interp1d(w, q, kind='cubic')
+                    new_q = f(w0)
+                    b1 = _compare_variables(new_q, q0)
+                    if not b1 and verbose: _display_difference(new_q, q0)
+                else:
+                    f = interp1d(w0, q0, kind='cubic')
+                    new_q0 = f(w)
+                    b1 = _compare_variables(q, new_q0)
+                    if not b1 and verbose: _display_difference(q, new_q0)               
+                
+                    
+            else: #no need to interpolate
                 b1 = np.allclose(w, w0, rtol=rtol, atol=0)
                 b1 *= _compare_variables(q, q0)
-                if not b1 and verbose:
-                    error = np.nanmax(abs(q/q0-1))
-                    avgerr = np.nanmean(abs(q/q0-1))
-                    print('...', k, "don't match (up to {0:.3}% diff.,".format(
-                        error*100)+' average {0:.3f}%)'.format(avgerr*100))
+                
+                if not b1 and verbose: _display_difference(q, q0)
             b *= b1
 
             if plot:

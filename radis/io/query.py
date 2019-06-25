@@ -169,7 +169,7 @@ def _fix_astroquery_file_format(filename):
     '''
 
     if not isfile(filename):
-        raise("{} does not exist ".format(filename))
+        raise "{} does not exist "
     with open(filename) as filehandle:
         lines = filehandle.readlines()
         non_empty_lines = [l for l in lines if len(l) > 2]  # > 2 because there may be some line return characters

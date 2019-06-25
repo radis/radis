@@ -84,7 +84,7 @@ DEBUG_MODE = False
     import radis
     radis.DEBUG_MODE = True
 
-Use the printdbg() function in radis.misc, typically with::
+Use the :py:func:`~radis.misc.debug.printdbg` function in ``radis.misc``, typically with::
     
     if __debug__: printdbg(...)
 

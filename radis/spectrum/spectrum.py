@@ -1333,6 +1333,19 @@ class Spectrum(object):
         # remove wavespace
         varlist = [k for k in varlist if k != 'wavespace']
         return varlist
+    
+    def get_quantities(self, which='any'):
+        ''' Returns all spectral quantities stored in this object (convoluted or 
+        non convoluted). Wrapper to :py:meth:`~radis.spectrum.spectrum.get_vars`
+
+        Parameters
+        ----------
+
+        which: 'any', 'convoluted', 'non convoluted' 
+
+        '''
+        
+        return self.get_vars(which=which)
 
     def _get_items(self):
         ''' Return a dictionary of tuples, e.g::
@@ -1827,8 +1840,9 @@ class Spectrum(object):
                    *args, **kwargs):
         ''' Apply an instrumental slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see ``shape=``) or imported from an
-        experimental slit function. Convoluted spectra are thinner than non 
-        convoluted spectra, to remove side effects. See ``mode=`` to change
+        experimental slit function (path to a text file or numpy array of shape n*2). 
+        Convoluted spectra are cut on the edge compared to non-convoluted spectra, 
+        to remove side effects. See ``mode=`` to change
         this behaviour. 
 
         Warning with units: read about ``'unit'`` and ``'return_unit'`` parameters.
@@ -1837,14 +1851,15 @@ class Spectrum(object):
         Parameters    
         ----------
 
-        slit_function: float or str
+        slit_function: float or str or array
             If ``float``:
                 generate slit function with FWHM of slit function (in nm or
                 cm-1 depending on ``unit=``)
             If ``.txt``:
                 import experimental slit function from .txt file: format must be 2-columns with
                 wavelengths and intensity (doesn't have to be normalized)
-
+            If ``array``:
+                format must be 2-columns with wavelengths and intensity (doesn't have to be normalized)
         unit: ``'nm'`` or ``'cm-1'``
             unit of slit_function (FWHM, or imported file)
 

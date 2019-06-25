@@ -3170,9 +3170,9 @@ class BaseFactory(DatabankLoader):
             E, n, g = levels['Evib'], levels['nvib'], levels['gvib']
         elif what == 'rovib':
             E, n = levels['E'], levels['n']
-            if 'g' in levels.keys():
+            if 'g' in list(levels.keys()):
                 g = levels['g']
-            elif all_in(['gvib', 'grot'], levels.keys()):
+            elif all_in(['gvib', 'grot'], list(levels.keys())):
                 g = levels['gvib'] * levels['grot']
             else:
                 raise ValueError('either g, or gvib+grot must be defined to ' +

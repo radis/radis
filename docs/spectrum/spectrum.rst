@@ -1,8 +1,8 @@
 .. _label_spectrum:
 
-*******************
+===================
 The Spectrum object
-*******************
+===================
 
 This module shows how to use the :class:`~radis.spectrum.spectrum.Spectrum` class, 
 and the different methods that are associated: 

@@ -22,7 +22,7 @@ See and get objects from database::
     s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
     db.add(s)  # update database (and raise error because duplicate!)
     
-Note that SpectrumFactory objects can be configured to automatically update
+Note that :py:class:`~radis.lbl.factory.SpectrumFactory` objects can be configured to automatically update
 a database
 
 Edit database: 
@@ -38,21 +38,18 @@ a condition was added afterwards to the Spectrum class)::
        s.conditions['medium'] = 'vacuum'
        s.store(join(db,f), if_exists_then='replace')
 
-Notes
------
-       
-# TODO: 
-
-- Alert if case already in database when generating from a SpectrumFactory / ParallelFactory
-connected to a SpecDatabase
-
-- Implement a h5py version of load / store 
-
 
 -------------------------------------------------------------------------------
 
 
 """
+     
+# TODO: 
+
+# - Alert if case already in database when generating from a SpectrumFactory / ParallelFactory 
+# connected to a SpecDatabase
+
+# - Implement a h5py version of load / store 
 
 from __future__ import absolute_import, print_function, division, unicode_literals
 import json
@@ -1097,7 +1094,8 @@ class SpecList(object):
         Parameters
         ----------
 
-        see meth:`~radis.tools.database.SpecList.get` for more details 
+        args: 
+            see meth:`~radis.tools.database.SpecList.get` for more details 
 
 
         See Also
@@ -1372,7 +1370,7 @@ class SpecList(object):
         return list(self.to_dict().values())
 
     def items(self):
-        ''' Iterate over all {path:Spectrum} in database 
+        ''' Iterate over all ``{path:Spectrum}`` in database 
 
         Examples
         --------
@@ -1787,8 +1785,8 @@ class SpecDatabase(SpecList):
         return onlyDuplicatedFiles
 
     def add(self, spectrum, store_name = None, **kwargs):
-        ''' Add Spectrum to database, whether it's a Spectrum object or a file
-        that stores one. Check it's not in database already.
+        ''' Add Spectrum to database, whether it's a :py:class:`~radis.spectrum.spectrum.Spectrum`
+        object or a file that stores one. Check it's not in database already.
 
         Parameters
         ----------
@@ -1799,8 +1797,9 @@ class SpecDatabase(SpecList):
             if path to file: will first copy the file in database folder, then
             adds the file
             
-        [Optionnal] 
-        
+        Other Parameters
+        ----------------
+
         store_name: string
             name of the file where the spectrum will be stored
 
@@ -1808,15 +1807,13 @@ class SpecDatabase(SpecList):
             extra parameters used in the case where spectrum is a file and a .spec object
             has to be created (useless if `spectrum` is a file already). kwargs
             are forwarded to Spectrum.store() method. See :meth:`~radis.spectrum.spectrum.Spectrum.store` 
-            or database.:meth:`~radis.tools.database.SpecDatabase.save` for more information
+            or database :meth:`~radis.tools.database.SpecDatabase.save` methods for more information
 
-        Other Parameters
-        ----------------
-
-        :meth:`~radis.spectrum.spectrum.Spectrum.store` parameters given as kwargs arguments. 
+        Other :meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given 
+        as kwargs arguments :
 
         compress: boolean
-            if ``True``, removes all quantities that can be regenerated with s.update(),
+            if ``True``, removes all quantities that can be regenerated with ``s.update()``,
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
             If not given, use the value of ``SpecDatabase.binary``
@@ -1852,7 +1849,8 @@ class SpecDatabase(SpecList):
 
         :meth:`~radis.tools.database.SpecList.get`,
         :meth:`~radis.tools.database.SpecList.get_unique`,
-        :meth:`~radis.tools.database.SpecList.get_closest`
+        :meth:`~radis.tools.database.SpecList.get_closest`,
+        :meth:`~spectrum.spectrum.Spectrum.update`
 
         '''
 
