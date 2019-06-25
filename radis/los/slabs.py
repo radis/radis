@@ -58,8 +58,24 @@ def SerialSlabs(*slabs, **kwargs):
     ''' Adds several slabs along the line-of-sight. 
     You can also use::
         
-        s1>s2>s3 
+        s1>s2
 
+    Serial spectrum ``1>2`` is calculated with Eqn (4.2) of the [RADIS-2018]_ article, 
+    generalized to N slabs :
+        
+    .. math::
+        I_{\lambda, 1>2} = I_{\lambda, 1} \\tau_{\lambda, 2} + I_{\lambda, 2}
+        
+        \\tau_{\lambda, 1+2} = \\tau_{\lambda, 1} \cdot \\tau_{\lambda, 2}
+        
+    where
+    
+        .. math:: I_{\lambda}, \\tau_{\lambda}
+        
+    are the radiance and transmittance of the two slabs ``1`` and ``2``. 
+    Radiance and transmittance are calculated if not given in the 
+    initial slabs (if possible). 
+    
 
     Parameters    
     ----------
@@ -93,6 +109,11 @@ def SerialSlabs(*slabs, **kwargs):
         
         Default ``'nan'``
 
+    Other Parameters
+    ----------------
+    
+    verbose: bool
+        if ``True``, more blabla. Default ``False``
 
     Returns
     -------
@@ -115,22 +136,15 @@ def SerialSlabs(*slabs, **kwargs):
         
         s3 = s1>s2
 
-    Notes
-    -----
-
-    Todo:
-
-    - rewrite with 'recompute' list like in MergeSlabs
-
-
     See Also
     --------
 
     :func:`~radis.los.slabs.MergeSlabs`
 
-    See more examples in :ref:`Line-of-Sight module <label_los_index>`
+    See more examples in the :ref:`Line-of-Sight module <label_los_index>`
     
     '''
+    # TODO: rewrite with 'recompute' list like in MergeSlabs ?
     
     if 'resample_wavespace' in kwargs:
         warn(DeprecationWarning("'resample_wavespace' replaced with 'resample'"))
@@ -141,7 +155,8 @@ def SerialSlabs(*slabs, **kwargs):
 
     # Check inputs, get defaults
     resample_wavespace = kwargs.pop('resample', 'never')   # default 'never'
-    out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'
+    out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'    
+    verbose = kwargs.pop('verbose', False)                   # type: bool
     if len(kwargs) > 0:
         raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
 
@@ -199,14 +214,14 @@ def SerialSlabs(*slabs, **kwargs):
 
         # ... get sn quantities
         try:
-            sn.update('transmittance_noslit', verbose=False)
+            sn.update('transmittance_noslit', verbose=verbose)
         except ValueError:
             pass
         else:
             Tn = sn.get('transmittance_noslit', wunit=waveunit,
                            Iunit=unitsn['transmittance_noslit'])[1]
         try:
-            sn.update('radiance_noslit', verbose=False)
+            sn.update('radiance_noslit', verbose=verbose)
         except ValueError:
             pass
         else:
@@ -214,14 +229,14 @@ def SerialSlabs(*slabs, **kwargs):
                             Iunit=unitsn['radiance_noslit'])[1]
         # ... get s quantities
         try:
-            s.update('transmittance_noslit', verbose=False)
+            s.update('transmittance_noslit', verbose=verbose)
         except ValueError:
             pass
         else:
             T = s.get('transmittance_noslit', wunit=waveunit,
                          Iunit=unitsn['transmittance_noslit'])[1]
         try:
-            s.update('radiance_noslit', verbose=False)
+            s.update('radiance_noslit', verbose=verbose)
         except ValueError:
             pass
         else:
@@ -421,6 +436,23 @@ def MergeSlabs(*slabs, **kwargs):
         
         s1//s2 
 
+    Merged spectrum ``1+2`` is calculated with Eqn (4.3) of the [RADIS-2018]_ article, 
+    generalized to N slabs :
+        
+    .. math::
+        
+        j_{\lambda, 1+2} = j_{\lambda, 1} + j_{\lambda, 2}
+        
+        k_{\lambda, 1+2} = k_{\lambda, 1} + k_{\lambda, 2}
+        
+    where 
+    
+    .. math:: j_{\lambda}, k_{\lambda}
+        
+    are the emission coefficient and absorption coefficient of the two slabs ``1`` and ``2``. 
+    Emission and absorption coefficients are calculated if not given in the 
+    initial slabs (if possible). 
+    
     Parameters    
     ----------
 
@@ -465,7 +497,7 @@ def MergeSlabs(*slabs, **kwargs):
         if ``True``, merge slabs in optically thin mode. Default ``False`` 
 
     verbose: boolean
-        if ``True``, print messages and warnings. Default ``True``
+        if ``True``, print messages and warnings. Default ``False``
 
 
     Returns
@@ -513,7 +545,7 @@ def MergeSlabs(*slabs, **kwargs):
     See more examples in :ref:`Line-of-Sight module <label_los_index>`
     
     '''
-    
+
     # Deprecation warnings
     if 'resample_wavespace' in kwargs:
         warn(DeprecationWarning("'resample_wavespace' replaced with 'resample'"))
@@ -527,7 +559,7 @@ def MergeSlabs(*slabs, **kwargs):
     resample_wavespace = kwargs.pop('resample', 'never')   # default 'never'
     out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'
     optically_thin = kwargs.pop('optically_thin', False)             # default False
-    verbose = kwargs.pop('verbose', True)             # type: bool
+    verbose = kwargs.pop('verbose', False)             # type: bool
     debug = kwargs.pop('debug', False)                # type: bool
     if len(kwargs) > 0:
         raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
@@ -586,7 +618,7 @@ def MergeSlabs(*slabs, **kwargs):
             # units = intersect(units0, s.units)  # we're actually using [slabs0].units insteads
 
         # %% Get quantities that should be calculated
-
+        # Try to keep all the quantities of the initial slabs:
         requested = merge_lists([s.get_vars() for s in slabs])
         recompute = requested[:]  # copy
         if ('radiance_noslit' in requested and not optically_thin):
@@ -595,7 +627,7 @@ def MergeSlabs(*slabs, **kwargs):
         if 'abscoeff' in recompute and 'path_length' in conditions:
             recompute.append('absorbance')
             recompute.append('transmittance_noslit')
-
+                
         # To make it easier, we start from abscoeff and emisscoeff of all slabs
         # Let's recompute them all
         # TODO: if that changes the initial Spectra, maybe we should just work on copies
@@ -608,10 +640,7 @@ def MergeSlabs(*slabs, **kwargs):
                 s.update('emisscoeff', verbose=False)
                 # same
 
-        path_length = conditions['path_length']
-
-        # %% Calculate new quantites from emisscoeff and abscoeff
-        # TODO: rewrite all of the above with simple calls to .update()
+        # %% Calculate total emisscoeff and abscoeff
         added = {}
 
         # ... absorption coefficient (cm-1)
@@ -624,131 +653,37 @@ def MergeSlabs(*slabs, **kwargs):
             assert len(w_noconv) == len(abscoeff_eq)
             added['abscoeff'] = (w_noconv, abscoeff_eq)
 
-        if 'absorbance' in recompute:
-            if 'abscoeff' in added:
-                if __debug__:
-                    printdbg('... merge: calculating absorbance A=k*L')
-                _, abscoeff_eq = added['abscoeff']
-                absorbance_eq = abscoeff_eq*path_length
-            else:
-                raise NotImplementedError('recalculate abscoeff first')
-            added['absorbance'] = (w_noconv, absorbance_eq)
-
-        # ... transmittance
-        if 'transmittance_noslit' in recompute:
-            if 'absorbance' in added:
-                if __debug__:
-                    printdbg('... merge: calculating transmittance T=exp(-A)')
-                _, absorbance_eq = added['absorbance']
-                transmittance_noslit_eq = exp(-absorbance_eq)
-            else:
-                raise NotImplementedError('recalculate absorbance first')
-            added['transmittance_noslit'] = (w_noconv, transmittance_noslit_eq)
-
         # ... emission coefficient
         if 'emisscoeff' in recompute:
-            emisscoeff_eq = np.zeros_like(w_noconv)
-            for i, s in enumerate(slabs):
-                # Manual loop in case all Slabs dont have the same keys
-                # Could also do a slab.update() first then sum emisscoeff directly
-                if 'emisscoeff' in list(s._q.keys()):
-                    if __debug__:
-                        printdbg('... merge: calculating emisscoeff: j+=j_i')
-                    _, emisscoeff = s.get(
-                        'emisscoeff', wunit=waveunit, Iunit=units0['emisscoeff'])
-                elif optically_thin and 'radiance_noslit' in list(s._q.keys()):
-                    if __debug__:
-                        printdbg('... merge: calculating emisscoeff: j+=I_i/L ' +
-                                 '(optically thin case)')
-                    _, I = s.get('radiance_noslit', wunit=waveunit,
-                                 Iunit=units0['radiance_noslit'])
-                    emisscoeff = I/path_length
-                    emisscoeff_eq += emisscoeff
-                else:
-                    wI, I = s.get('radiance_noslit', wunit=waveunit,
-                                  Iunit=units0['radiance_noslit'])
-                    if __debug__:
-                        printdbg(
-                            '... merge: calculating emisscoeff j+=[k*I/(1-T)]_i)')
-                    try:
-                        wT, T = s.get('transmittance_noslit', wunit=waveunit,
-                                      Iunit=units0['transmittance_noslit'])
-                        wk, k = s.get('abscoeff', wunit=waveunit,
-                                      Iunit=units0['abscoeff'])
-                    except KeyError:
-                        raise KeyError('Need transmittance_noslit and abscoeff to ' +
-                                       'recompute emission coefficient')
-                    b = (T == 1)  # optically thin mask
-                    emisscoeff = np.zeros_like(T)
-                    emisscoeff[b] = I[b]/path_length     # optically thin case
-                    emisscoeff[~b] = I[~b]/(1-T[~b])*k[~b]
-                emisscoeff_eq += emisscoeff
+            if __debug__:
+                printdbg('... merge: calculating emisscoeff j=sum(j_i)')
+            emisscoeff_eq = np.sum([s.get('emisscoeff', wunit=waveunit, Iunit=units0['emisscoeff'])[
+                                 1] for s in slabs], axis=0)
+            assert len(w_noconv) == len(emisscoeff_eq)
             added['emisscoeff'] = (w_noconv, emisscoeff_eq)
-
-        # ... derive global radiance (result of analytical RTE solving)
-        if 'radiance_noslit' in recompute:
-            if 'emisscoeff' in added and optically_thin:
-                if __debug__:
-                    printdbg(
-                        '... merge: recalculating radiance_noslit I=j*L(optically_thin)')
-                (_, emisscoeff_eq) = added['emisscoeff']
-                radiance_noslit_eq = emisscoeff_eq * path_length  # optically thin
-            elif ('emisscoeff' in added and 'transmittance_noslit' in added and
-                  'abscoeff' in added):
-                if __debug__:
-                    printdbg(
-                        '... merge: recalculating radiance_noslit I=j/k*(1-T)')
-                (_, emisscoeff_eq) = added['emisscoeff']
-                (_, abscoeff_eq) = added['abscoeff']
-                (_, transmittance_noslit_eq) = added['transmittance_noslit']
-                b = (abscoeff_eq == 0)  # optically thin mask
-                radiance_noslit_eq = np.zeros_like(emisscoeff_eq)
-                radiance_noslit_eq[b] = emisscoeff_eq[b] * \
-                    path_length  # optically thin limit
-                radiance_noslit_eq[~b] = emisscoeff_eq[~b]/abscoeff_eq[~b]*(1 -
-                                                                            transmittance_noslit_eq[~b])
-            elif optically_thin:
-                if __debug__:
-                    printdbg(
-                        '... merge: recalculating radiance_noslit I=sum(I_i) (optically thin)')
-                radiance_noslit_eq = np.zeros_like(w_noconv)
-                for s in slabs:
-                    if 'radiance_noslit' in list(s._q.keys()):
-                        radiance_noslit_eq += s.get('radiance_noslit', wunit=waveunit,
-                                                    Iunit=units0['radiance_noslit'])[1]
-                    else:
-                        raise KeyError('Need radiance_noslit for all slabs to ' +
-                                       'recalculate for the MergeSlab (could also ' +
-                                       'get it from emisscoeff but not implemented)')
-            else:
-                if optically_thin:
-                    raise ValueError('Missing data to recalculate radiance_noslit' +
-                                     '. Try optically_thin mode?')
-                else:
-                    raise ValueError(
-                        'Missing data to recalculate radiance_noslit')
-            added['radiance_noslit'] = (w_noconv, radiance_noslit_eq)
-
-        # ... emissivity no slit
-        if 'emissivity_noslit' in requested:
-            added['emissivity_noslit'] = w_noconv, np.ones_like(
-                w_noconv)*np.nan
-#            if verbose:
-#                warn('emissivity dropped during MergeSlabs')
-            # Todo: deal with equilibrium cases?
-
-        # Store output
-        quantities = {}
-        for k in requested:
-            quantities[k] = added[k]
-
+    
         # name
         name = '//'.join([s.get_name() for s in slabs])
         
         # TODO: check units are consistent in all slabs inputs
-        return Spectrum(quantities=quantities, conditions=conditions,
+        s = Spectrum(quantities=added, conditions=conditions,
                         cond_units=cond_units, units=units0,
                         name=name)
+        
+        # %% Calculate all quantities from emisscoeff and abscoeff
+        
+        if 'emissivity_noslit' in requested and (
+                'thermal_equilibrium' not in s.conditions or s.is_at_equilibrium() != True):
+            requested.remove('emissivity_noslit')
+            if __debug__:
+                printdbg('... merge: all slabs are not proven to be at equilibrium. '+\
+                         'Emissivity was not calculated')
+                
+        # Add the rest of the spectral quantities afterwards:
+        s.update([k for k in requested if k not in ['emisscoeff', 'abscoeff']], 
+                  optically_thin=optically_thin, verbose=verbose)
+
+        return s
 
 
 # %% Tests

@@ -482,12 +482,14 @@ def update(spec, quantity='all', optically_thin='default', assume_equilibrium='d
 
     spec: Spectrum
 
-    quantity: str
-        name of the spectral quantity to recompute. If 'same', only the quantities
-        in the Spectrum are recomputed. If 'all', then all quantities that can
-        be derived are recomputed. Default 'all'. 
+    quantity: str, ``'same'``, ``'all'``, or list of str
+        name of the spectral quantity to recompute. If ``'same'``, only the quantities
+        in the Spectrum are recomputed. If ``'all'``, then all quantities that can
+        be derived are recomputed. Default ``'all'``. See 
+        :py:data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
+        and :py:data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`
 
-    optically_thin: True, False, or 'default'
+    optically_thin: True, False, or ``'default'``
         determines whether to calculate radiance with or without self absorption.
         If 'default', the value is determined from the self_absorption key
         in Spectrum.conditions. If not given, False is taken. Default 'default'
@@ -1037,52 +1039,6 @@ def rescale_transmittance(spec, rescaled, initial, old_mole_fraction, new_mole_f
         apply_slit = True
     else:
         raise NotImplementedError('rescale transmittance not implemented')
-#    # Rescale
-#    if 'absorbance' in rescaled:
-#        if __debug__: printdbg('... rescale: transmittance_noslit T2 = exp(-A2)')
-#        absorbance = rescaled['absorbance'] # N and L already scaled
-#        transmittance_noslit = exp(-absorbance)           # recalculate
-#        unit = get_unit()
-#    elif 'transmittance_noslit' in initial:
-#        if __debug__: printdbg('... rescale: transmittance_noslit T2 = '+\
-#                        'exp( ln(T1) * N2/N1 * L2/L1)')
-#        # get transmittance from initial transmittance
-#        _, T1 = spec.get('transmittance_noslit', wunit=waveunit, Iunit=units['transmittance_noslit'])
-#
-#
-#        # We'll have a problem if the spectrum is optically thick
-#        b = (T1 == 0)  # optically thick mask
-#        if b.sum()>0 and (new_mole_fraction < old_mole_fraction or
-#                new_path_length < old_path_length):
-#            # decreasing mole fractions/ path length could increase the transmittance
-#            # but this information was lost in the saturation
-#            msg = 'Transmittance is saturated. Cant rescale. Please give absorbance'
-#            if 'transmittance_noslit' in extra: # cant calculate this one but let it go
-#                transmittance_noslit = None
-#                if __debug__: printdbg(msg)
-#            else:
-#                raise ValueError(msg)
-#        # Else, just get absorbance
-#        absorbance = -ln(T1)
-#        absorbance *= new_mole_fraction / old_mole_fraction     # rescale
-#        absorbance *= new_path_length / old_path_length         # rescale
-#        transmittance_noslit = exp(-absorbance)
-#    else:
-#        msg = 'Missing data to rescale transmittance. Expected scaled absorbance ({0})'.format(
-#                'absorbance' in rescaled)
-# +' or scaled abscoeff ({0}) and true_path_length ({1})'.format(
-# 'abscoeff' in rescaled, true_path_length)
-#        if 'transmittance_noslit' in extra: # cant calculate this one but let it go
-#            transmittance_noslit = None
-#            if __debug__: printdbg(msg)
-#        else:
-#            raise ValueError(msg)
-#
-#    # Export rescaled value
-#    if transmittance_noslit is not None:
-#        rescaled['transmittance_noslit'] = transmittance_noslit
-#    if unit is not None:
-#        units['transmittance_noslit'] = unit
 
     return rescaled, units, apply_slit
 
@@ -1230,73 +1186,6 @@ def rescale_radiance(spec, rescaled, initial, old_mole_fraction, new_mole_fracti
         apply_slit = True
     else:
         raise NotImplementedError('rescale radiance not implemented yet')
-#    if 'emisscoeff' in rescaled and true_path_length and optically_thin:
-#        if __debug__: printdbg('... rescale: radiance_noslit I2 = j2 * L2 '+\
-#                        '(optically thin)')
-#        emisscoeff = rescaled['emisscoeff']    # mole_fraction already scaled
-#        radiance_noslit = emisscoeff*new_path_length      # recalculate
-#        unit = get_unit(units['emisscoeff'])
-#
-#    elif ('emisscoeff' in rescaled and 'transmittance_noslit' in rescaled
-#          and 'abscoeff' in rescaled and true_path_length and not optically_thin): # not optically thin
-#        if __debug__: printdbg('... rescale: radiance_noslit I2 = j2*(1-T2)/k2')
-#        emisscoeff = rescaled['emisscoeff']    # mole_fraction already scaled
-#        abscoeff = rescaled['abscoeff']        # mole_fraction already scaled
-#        transmittance_noslit = rescaled['transmittance_noslit']  # mole_fraction, path_length already scaled
-#        b = (abscoeff == 0)  # optically thin mask
-#        radiance_noslit = np.empty_like(emisscoeff)         # calculate
-#        radiance_noslit[~b] = emisscoeff[~b]/abscoeff[~b]*(1-transmittance_noslit[~b])
-#        radiance_noslit[b] = emisscoeff[b]*new_path_length # optically thin limit
-#        unit = get_unit(units['emisscoeff'])
-#
-#    elif ('emisscoeff' in rescaled and 'abscoeff' in rescaled and true_path_length
-#          and not optically_thin): # not optically thin
-#        if __debug__: printdbg('... rescale: radiance_noslit I2 = j2*(1-exp(-k2*L2))/k2')
-#        emisscoeff = rescaled['emisscoeff']    # mole_fraction already scaled
-#        abscoeff = rescaled['abscoeff']        # mole_fraction already scaled
-#        b = (abscoeff == 0)  # optically thin mask
-#        radiance_noslit = np.empty_like(emisscoeff)         # calculate
-#        radiance_noslit[~b] = emisscoeff[~b]/abscoeff[~b]*(1-exp(-abscoeff[~b]*new_path_length))
-#        radiance_noslit[b] = emisscoeff[b]*new_path_length # optically thin limit
-#        unit = get_unit(units['emisscoeff'])
-#
-#    elif 'radiance_noslit' in initial and optically_thin:
-#        if __debug__: printdbg('... rescale: radiance_noslit I2 = I1*N2/N1*L2/L1 '+\
-#                        '(optically thin)')
-#        _, radiance_noslit = spec.get('radiance_noslit', wunit=waveunit, Iunit=units['radiance_noslit'])
-#        radiance_noslit *= new_mole_fraction / old_mole_fraction    # rescale
-#        radiance_noslit *= new_path_length / old_path_length        # rescale
-#
-#    else:
-#        if optically_thin:
-#            msg = 'Missing data to rescale radiance_noslit in '+\
-#                             'optically thin mode. You need at least initial '+\
-#                             'radiance_noslit ({0}), or scaled emission coefficient ({1}) '.format(
-#                                     'radiance_noslit' in initial, 'emisscoeff' in rescaled)+\
-#                             'and true path length ({0}).'.format(true_path_length)
-#            if 'radiance_noslit' in extra: # cant calculate this one but let it go
-#                radiance_noslit = None
-#                if __debug__: printdbg(msg)
-#            else:
-#                raise ValueError(msg)
-#        else:
-#            msg = 'Missing data to recalculate radiance_noslit. You need at least '+\
-#                  'scaled emisscoeff ({0}), scaled transmittance_noslit ({1}) '.format(
-#                          'emisscoeff' in rescaled, 'transmittance_noslit' in rescaled)+\
-#                  'scaled abscoeff ({0}) and true_path_length ({1}). '.format(
-#                          'abscoeff' in rescaled, true_path_length)+\
-#                             'Try in optically thin mode'
-#            if 'radiance_noslit' in extra:
-#                radiance_noslit = None
-#                if __debug__: printdbg(msg)
-#            else:
-#                raise ValueError(msg)
-#
-#    # Export rescaled value
-#    if radiance_noslit is not None:
-#        rescaled['radiance_noslit'] = radiance_noslit
-#    if unit is not None:
-#        units['radiance_noslit'] = unit
 
     return rescaled, units, apply_slit
 
@@ -1361,10 +1250,11 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
     spec: Spectrum
         the Spectrum object to recompute
 
-    quantity: str
+    quantity: str, ``'same'``, ``'all'``, or list of str
         name of the spectral quantity to recompute. If ``'same'``, only the quantities
         in the Spectrum are recomputed. If ``'all'``, then all quantities that can
-        be derived are recomputed. 
+        be derived are recomputed. See :py:data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
+        and :py:data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`
 
     true_path_length: boolean
         if ``False``, only relative rescaling (new/old) is allowed. For instance,
@@ -1388,9 +1278,15 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         printdbg('... rescale: optically_thin: {0}'.format(optically_thin))
         printdbg('... rescale: initial quantities: {0}'.format(initial))
 
-    # Check inputs
-    assert quantity in CONVOLUTED_QUANTITIES + \
-        NON_CONVOLUTED_QUANTITIES + ['all', 'same']
+    # Check that inputs are valid names
+    _check_quantity = quantity
+    if isinstance(quantity, list):
+        _check_quantity = quantity
+    else:
+        _check_quantity = [quantity]
+    for k in _check_quantity:
+        assert k in CONVOLUTED_QUANTITIES + \
+            NON_CONVOLUTED_QUANTITIES + ['all', 'same']
     # ... make sure we're not trying to rescale a Spectrum that has non scalable
     # ... quantities
     if any_in(initial, non_rescalable_keys):
@@ -1410,6 +1306,9 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
         greedy = False
     elif isinstance(quantity, string_types):
         wanted = [quantity]
+        greedy = False
+    elif isinstance(quantity, list):
+        wanted = quantity
         greedy = False
     else:
         raise ValueError('unexpected type for quantity: expected str, got ' +
@@ -1550,7 +1449,7 @@ def _recalculate(spec, quantity, new_path_length, old_path_length,
 
     # Reapply slit if needed
     # TODO: replace with directly convolving with slit stored in conditions
-    # TODO: first, add an option to give arrays to apply_slit
+    # TODO: first, add an option to give arrays to apply_slit (see Issue #30)
     if apply_slit:
         if not ('slit_function' in spec.conditions and 'slit_unit' in spec.conditions
                 and 'norm_by' in spec.conditions):

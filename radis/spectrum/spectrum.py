@@ -1333,6 +1333,19 @@ class Spectrum(object):
         # remove wavespace
         varlist = [k for k in varlist if k != 'wavespace']
         return varlist
+    
+    def get_quantities(self, which='any'):
+        ''' Returns all spectral quantities stored in this object (convoluted or 
+        non convoluted). Wrapper to :py:meth:`~radis.spectrum.spectrum.get_vars`
+
+        Parameters
+        ----------
+
+        which: 'any', 'convoluted', 'non convoluted' 
+
+        '''
+        
+        return self.get_vars(which=which)
 
     def _get_items(self):
         ''' Return a dictionary of tuples, e.g::
