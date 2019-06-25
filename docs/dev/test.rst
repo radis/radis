@@ -107,5 +107,9 @@ If you encounter any error, open an `Issue on GitHub <https://github.com/radis/r
 
 
 
+Debugging
+---------
 
+See the :py:func:`~radis.misc.debug.printdbg` function in ``radis.misc``, and
+the :py:data:`~radis.DEBUG_MODE` global variable. 
     

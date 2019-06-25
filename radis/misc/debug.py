@@ -34,6 +34,12 @@ def printdbg(*args, **kwargs):
      optimize mode::
 
          python -O *.py
+         
+     See Also
+     --------
+     
+     :py:data:`~radis.DEBUG_MODE`
+    
 
      '''
 
