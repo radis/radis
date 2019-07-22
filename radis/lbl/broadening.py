@@ -870,6 +870,7 @@ class BroadenFactory(BaseFactory):
         area = trapz(lineshape.T, x=wbroad_centered.T)
         err = abs((area-1))
         if self.warnings['GaussianBroadeningWarning'] != 'ignore':
+        # In a "performance" mode (vs "safe" mode), these warnings would be disabled
             if (err > self.misc.warning_broadening_threshold).any():
                 self.warn('Large error ({0:.1f}%) '.format(err.max()*100) +
                           'in Doppler broadening. Increase broadening width / reduce wstep. ' +
@@ -926,27 +927,6 @@ class BroadenFactory(BaseFactory):
         # -------
         lineshape = voigt_lineshape(dg, wbroad_centered, jit=jit)
 
-#        # Normalize
-#        # ----------
-#        # ... Whiting's empirical approximation is supposely normalized, but
-#        # ... at least this conserves energy (even in bad spectral grid cases)
-#        # ... and it isnt much longer to calculate
-#        if self.warnings['VoigtBroadeningWarning'] != 'ignore':
-#            area = trapz(lineshape.T, x=wbroad_centered.T)
-#            err = abs((area-1))
-#            if (err > self.misc.warning_broadening_threshold).any():
-#                self.warn('Large error ({0:.1f}%) '.format(err.max()*100) +
-#                          'in Voigt broadening. Increase broadening width / reduce wstep. ' +
-#                          'Use .plot_broadening() to visualize each line broadening',
-#                          'VoigtBroadeningWarning')
-#                # Note that although there may be an error here the total broadening
-#                # is normalized anyway, so the energy is conserved. If we're only
-#                # looking at a slit-function broadened spectrum (slit>>FWHM) it
-#                # wont change much. However it does impact multi-slabs calculations
-        # Removed: this is now done by default in voigt_lineshape
-        # TODO: calculate new normalizing function as in Whiting, but adapted for wavenumbers
-        # In a "performance" mode (vs "safe" mode), these warnings would be disabled
-        
         return lineshape
 
     # %% Function to calculate lineshapes from FWHM
