@@ -1283,7 +1283,8 @@ class BroadenFactory(BaseFactory):
         except MemoryError:
             import traceback
             traceback.print_exc()
-            raise MemoryError('See details above. Try to use or reduce the chunksize parameter')
+            raise MemoryError('See details above. Try to use or reduce the '+\
+                              'chunksize parameter (current={0})'.format(chunksize))
 
         return wavenumber, abscoeff
 

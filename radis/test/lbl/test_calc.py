@@ -63,10 +63,6 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
                        *args, **kwargs):
     ''' Basic example, used as a non-regression test
 
-    Note: test case not physically valid as overpopulation is currently calculated
-    with a post processing method that is only valid in optically thin cases
-    
-    
     Notes
     -----
     
