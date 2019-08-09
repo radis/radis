@@ -25,6 +25,7 @@ from radis.phys.convert import nm2cm
 from radis.misc.utils import DatabankNotFound
 import numpy as np
 from numpy import exp, arange, allclose, abs, diff, zeros_like, ones_like
+from os.path import exists
 
 # %%
 
@@ -49,6 +50,7 @@ def calc_spectrum(wavenum_min=None,
                   wstep=0.01,
                   name=None,
                   use_cached=True,
+                  verbose=True,
                   **kwargs):
     ''' Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
     under equilibrium, or non-equilibrium, with or without overpopulation. 
@@ -117,15 +119,19 @@ def calc_spectrum(wavenum_min=None,
     databank: str
         can be either: 
 
-        - the name of a spectral database to use (must be registered 
-          in your ``~/.radis``). See :ref:`Configuration file <label_lbl_config_file>`.
-
         - ``'fetch'``, to fetch automatically from [HITRAN-2016]_ through astroquery. 
         
         .. warning::
             
             [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
             temperatures you may need [HITEMP-2010]_ 
+
+        - the name of a valid database file, in which case the format is inferred. 
+          For instance, ``.par`` is recognized as ``hitran/hitemp`` format. 
+
+        - the name of a spectral database registered in your ``~/.radis`` 
+          configuration file. This allows to use multiple database files.
+          See :ref:`Configuration file <label_lbl_config_file>`.
 
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
@@ -156,12 +162,16 @@ def calc_spectrum(wavenum_min=None,
     use_cached: boolean
         use cached files for line database and energy database. Default ``True``
 
+    verbose: boolean, or int
+        If ``False``, stays quiet. If ``True``, tells what is going on. 
+        If ``>=2``, gives more detailed messages (for instance, details of 
+        calculation times). Default ``True``. 
+
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``. 
         See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more 
         details on input. 
-
-    Example:
+        For instance:
 
     pseudo_continuum_threshold: float
         if not 0, first calculate a rough approximation of the spectrum, then
@@ -293,7 +303,30 @@ def calc_spectrum(wavenum_min=None,
                               parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
                               levelsfmt='radis',     # built-in spectroscopic constants
                               )
-    else:   # manual mode: get from files defined in .radis
+    elif exists(databank):
+        # Guess format
+        if databank.endswith('.par'):
+            if verbose: print('Infered {0} is a HITRAN file.'.format(databank))
+            # If non-equilibrium we'll also need to load the energy levels. 
+            if _equilibrium:
+                # Get partition functions from HAPI
+                sf.load_databank(path=databank, format='hitran',
+                                 parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
+                                 levelsfmt=None,      # no need to load energies
+                                 )
+            else:
+                # calculate partition functions with energy levels from built-in 
+                # constants (not all molecules are supported!)
+                sf.load_databank(path=databank, format='hitran',
+                                 parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
+                                 levelsfmt='radis',    # built-in spectroscopic constants
+                                 )
+        else:
+            raise ValueError("Couldnt infer the format of the line database: {0}. ".format(databank)+
+                             "Create a user-defined database in your ~/.radis file "+\
+                             "and define the format there.")
+        
+    else:   # manual mode: get from user-defined line databases defined in ~/.radis
         sf.load_databank(databank, 
                          load_energies=not _equilibrium   # no need to load/calculate energies at eq.
                          )

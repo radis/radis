@@ -240,6 +240,11 @@ class SpectrumFactory(BandFactory):
             
         See :py:data:`~radis.misc.warning.default_warning_status` for more 
         information. 
+        
+    verbose: boolean, or int
+        If ``False``, stays quiet. If ``True``, tells what is going on. 
+        If ``>=2``, gives more detailed messages (for instance, details of 
+        calculation times). Default ``True``. 
 
     Examples
     --------
