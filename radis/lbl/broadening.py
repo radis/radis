@@ -17,19 +17,31 @@ Most methods are written in inherited class with the following inheritance schem
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
+PUBLIC FUNCTIONS - BROADENING
+
+- :py:func:`radis.lbl.broadening.gaussian_broadening_FWHM`
+- :py:func:`radis.lbl.broadening.gaussian_lineshape`
+- :py:func:`radis.lbl.broadening.pressure_broadening_FWHM`
+- :py:func:`radis.lbl.broadening.pressure_lineshape`
+- :py:func:`radis.lbl.broadening.voigt_broadening_FWHM`
+- :py:func:`radis.lbl.broadening.voigt_lineshape`
+
 PRIVATE METHODS - BROADENING
 (all computational-heavy functions: calculates all lines broadening,
 convolve them, apply them on all calculated range)
 
-- _collisional_lineshape
-- _gaussian_lineshape
-- _broaden_lines
-- _broaden_lines_noneq
-- _calc_lineshape
-- :meth:`~radis.lbl.broadening.BroadenFactory.plot_broadening`    #  (public, debugging function)
-- _apply_lineshape
-- _calc_broadening
-- _calc_broadening_noneq
+- :py:func:`radis.lbl.broadening._whiting`
+- :py:func:`radis.lbl.broadening._whiting_jit` : precompiled version
+- :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_FWHM`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._add_voigt_broadening_FWHM`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._voigt_broadening`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._calc_lineshape`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_noneq`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._find_weak_lines`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._calculate_pseudo_continuum`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._add_pseudo_continuum`
 
 
 Notes
@@ -118,11 +130,9 @@ def gaussian_broadening_FWHM(wav, molar_mass, Tgas):
     # ... Reference: either Wikipedia (in cm-1), or former Sean's code (HITRAN based)
     # ... in CGS, or Laux 2003 (in nm). Both give the same results. Here we
     # ... use the CGS nomenclature (reminder: dg.molar_mass in g/mol)
-    gamma_db = (wav/c_CGS)*sqrt((2*Na*k_b_CGS*Tgas*ln(2)) /
-                                molar_mass)  # HWHM (cm-1)
+    gamma_db = (wav/c_CGS)*sqrt((2*Na*k_b_CGS*Tgas*ln(2)) / molar_mass)  # HWHM (cm-1)
 
     return 2 * gamma_db
-
 
 def gaussian_lineshape(dg, w_centered):
     ''' Computes Doppler (Gaussian) lineshape over all lines with [1]_, [2]_
@@ -397,17 +407,15 @@ def voigt_broadening_FWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass,
 
     # Doppler Broadening HWHM:
     # ... Doppler broadened half-width:
-    # ... Reference: either Wikipedia (in cm-1), or former Sean's code (HITRAN based)
-    # ... in CGS, or Laux 2003 (in nm). Both give the same results.
-    # ... use the CGS nomenclature (reminder: dg.molar_mass in g/mol)
-    gamma_db = (wav/c_CGS)*sqrt((2*Na*k_b_CGS*Tgas*ln(2)) /
-                                   molar_mass)  # HWHM (cm-1)
+    # ... Reference: either HITRAN (in CGS), or Laux 2003 (in nm). Both are equivalent. 
+    # ... Here we use the CGS nomenclature (reminder: dg.molar_mass in g/mol)
+    gamma_db = (wav/c_CGS)*sqrt((2*Na*k_b_CGS*Tgas*ln(2)) / molar_mass)  # HWHM (cm-1)
 
     # Calculate broadening
     # -------
     # ... Reference Whiting 1968  Equation (5)
     # ... note that formula is given in wavelength (nm) [doesnt change anything]
-    # ... and uses full width half maximum
+    # ... and uses full width half maximum (FWHM)
     wg = 2*gamma_db          # HWHM > FWHM
     wl = 2*gamma_lb          # HWHM > FWHM
 #    wv = wl/2 + sqrt((1/4*wl**2+wg**2))
@@ -643,6 +651,8 @@ class BroadenFactory(BaseFactory):
 
         Notes
         -----
+        
+        Called in :py:meth:`radis.lbl.factory.eq_spectrum`, :py:meth:`radis.lbl.factory.non_eq_spectrum`
 
         Run this method before using `_calc_lineshape`
         '''
@@ -770,7 +780,7 @@ class BroadenFactory(BaseFactory):
         Returns
         -------
 
-        Input pandas Dataframe 'df' is updated with keys: 
+        None: input pandas Dataframe 'df' is updated with keys: 
 
             - fwhm_gauss
 
@@ -1031,8 +1041,7 @@ class BroadenFactory(BaseFactory):
             line_profile = np.empty_like(pressure_profile)     # size (B, N)
             for i, (x, y) in enumerate(zip(pressure_profile.T, gaussian_profile.T)):
                 line_profile[:, i] = np.convolve(x, y, 'same')
-            line_profile = line_profile / \
-                trapz(line_profile.T, x=wbroad.T)  # normalize
+            line_profile = line_profile / trapz(line_profile.T, x=wbroad.T)  # normalize
             # ... Note that normalization should not be needed as broadening profiles
             # ... are created normalized already. However, we do normalize to reduce
             # ... the impact of any error in line_profiles (due to wstep too big or
@@ -1148,8 +1157,7 @@ class BroadenFactory(BaseFactory):
 
         # Vectorize the chunk of lines
         S = broadened_param.values.reshape((1, -1))
-        shifted_wavenum = shifted_wavenum.values.reshape(
-            (1, -1))  # make it a row vector
+        shifted_wavenum = shifted_wavenum.values.reshape((1, -1))  # make it a row vector
 
         # Get broadening array
         wbroad_centered = self.wbroad_centered  # size (B,)
@@ -1163,8 +1171,7 @@ class BroadenFactory(BaseFactory):
         # Apply line profile
 
         # ... First get closest matching line:
-        idcenter = np.searchsorted(
-            wavenumber_calc, shifted_wavenum.T, side="left").ravel()
+        idcenter = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel()
 
         # ... Then distribute the line over the correct location. All of that vectorized
         sumoflines_calc = zeros_like(wavenumber_calc)

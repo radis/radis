@@ -28,23 +28,25 @@ Routine Listings
 
 PUBLIC METHODS
 
-- :meth:`~radis.lbl.loader.DatabankLoader.load_databank`           >>> load line database
-- :meth:`~radis.lbl.loader.DatabankLoader.init_database`           >>> to interact / generate a SpectrumDatabase
-- :meth:`~radis.lbl.loader.DatabankLoader.get_conditions`
-- :meth:`~radis.lbl.loader.DatabankLoader.get_partition_function_interpolator`
-- :meth:`~radis.lbl.loader.DatabankLoader.get_partition_function_calculator`
+- :py:meth:`radis.lbl.loader.DatabankLoader.load_databank`           >>> load line database
+- :py:meth:`radis.lbl.loader.DatabankLoader.init_databank`           >>> load loader 
+- :py:meth:`radis.lbl.loader.DatabankLoader.fetch_databank`           >>> fetch from HITRAN online
+- :py:meth:`radis.lbl.loader.DatabankLoader.init_database`           >>> to interact / generate a SpectrumDatabase
+- :py:meth:`radis.lbl.loader.DatabankLoader.get_conditions`
+- :py:meth:`radis.lbl.loader.DatabankLoader.get_partition_function_interpolator`
+- :py:meth:`radis.lbl.loader.DatabankLoader.get_partition_function_calculator`
 
 PRIVATE METHODS - DATABASE LOADING
 
-- _load_databank
-- _reload_databank
-- _check_line_databank
-- _retrieve_from_database
-- _build_partition_function_interpolator
-- _build_partition_function_calculator
-- _fetch_molecular_parameters
-- _get_temp_file
-- _clean_temp_file
+- :py:meth:`radis.lbl.loader.DatabankLoader._load_databank`
+- :py:meth:`radis.lbl.loader.DatabankLoader._reload_databank`
+- :py:meth:`radis.lbl.loader.DatabankLoader._check_line_databank`
+- :py:meth:`radis.lbl.loader.DatabankLoader._retrieve_from_database`
+- :py:meth:`radis.lbl.loader.DatabankLoader._build_partition_function_interpolator`
+- :py:meth:`radis.lbl.loader.DatabankLoader._build_partition_function_calculator`
+- :py:meth:`radis.lbl.loader.DatabankLoader._fetch_molecular_parameters`
+- :py:meth:`radis.lbl.loader.DatabankLoader._get_temp_file`
+- :py:meth:`radis.lbl.loader.DatabankLoader._clean_temp_file`
 
 Most methods are written in inherited class with the following inheritance scheme:
     

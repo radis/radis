@@ -166,6 +166,11 @@ class RovibParFuncTabulator(RovibPartitionFunction):
 
         Q: float
             partition function interpolated  at temperature T
+            
+        See Also
+        --------
+        
+        :py:class:`~radis.levels.partfunc.PartFuncHAPI`
         '''
 
         # defined individually for each class Variants (one per database)
@@ -186,6 +191,10 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         an :class:`~radis.db.classes.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data
 
+    See Also
+    --------
+    
+    :py:class:`~radis.levels.partfunc.PartFunc_Dunham`
     '''
 
     def __init__(self, electronic_state):

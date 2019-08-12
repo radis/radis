@@ -160,28 +160,28 @@ class SpectrumFactory(BandFactory):
     self_absorption: boolean
         self absorption
 
-    broadening_max_width: cm-1
+    broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
         a huge performance drop (because convolutions are not vectorized).
         Also, the calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default ``10`` cm-1.
 
-    wstep: cm-1
-        Spacing of calculated spectrum. Default 0.01 cm-1
+    wstep: float (cm-1)
+        Spacing of calculated spectrum. Default ``0.01`` cm-1
 
     cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
         discard linestrengths that are lower that this, to reduce calculation
-        times. 1e-27 is what is generally used to generate databases such as
-        CDSD. If 0, no cutoff. Default 1e-27.
+        times. ``1e-27`` is what is generally used to generate databases such as
+        CDSD. If ``0``, no cutoff. Default ``1e-27``.
 
     pseudo_continuum_threshold: float
-        if not 0, first calculate a rough approximation of the spectrum, then
+        if not ``0``, first calculate a rough approximation of the spectrum, then
         moves all lines whose linestrength intensity is less than this threshold
         of the maximum in a semi-continuum. Values above 0.01 can yield significant
         errors, mostly in highly populated areas. 80% of the lines can typically
-        be moved in a continuum, resulting in 5 times faster spectra. If 0,
-        no semi-continuum is used. Default 0.
+        be moved in a continuum, resulting in 5 times faster spectra. If ``0``,
+        no semi-continuum is used. Default ``0``.
 
     bplot: boolean
         plot intermediary results (like slit function generation). Default ``False``.

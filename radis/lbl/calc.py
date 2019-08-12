@@ -286,6 +286,7 @@ def calc_spectrum(wavenum_min=None,
                          pressure=pressure,
                          wstep=wstep,
                          db_use_cached=use_cached,
+                         verbose=verbose,
                          **kwargs)
     if databank == 'fetch':       # mode to get databank without relying on  Line databases
         if _equilibrium:

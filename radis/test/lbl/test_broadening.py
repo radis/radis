@@ -23,6 +23,7 @@ import pytest
 
 
 @pytest.mark.fast
+@pytest.mark.needs_connection
 def test_broadening(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
     '''
     Test broadening against HAPI and tabulated data
