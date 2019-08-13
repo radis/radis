@@ -1584,6 +1584,14 @@ class BroadenFactory(BaseFactory):
         spectrum main features in the less intense parts, what an absolute
         cutoff such as the linestrength 'cutoff' cannot do
 
+        Weak line criteria: "average linestrength S much smaller (parameter alpha) 
+        than the approximate spectrum I without its own contribution": 
+            
+        .. math::
+            
+            S_{avg} < \\alpha \\times (I - S_{avg})
+        
+
         Returns
         -------
 
@@ -1602,8 +1610,9 @@ class BroadenFactory(BaseFactory):
             t0 = time()
 
         # Get approximate spectral absorption coefficient
-        rough_spectrum, S_density_on_grid, line2grid_proj = project_lines_on_grid(
+        rough_spectrum, S_density_on_grid, line2grid_proj_left = project_lines_on_grid(
                                                        df, wavenumber_calc, wstep)
+
         #     :
         # ~ 1/(#.cm-2)
         # Sizes:
@@ -1614,11 +1623,18 @@ class BroadenFactory(BaseFactory):
         # Weak line criteria
         # ... Compare line density (in 1/(#.cm-2) to sum)
         line_is_weak = S_density_on_grid < (
-                weak_rel_intensity_threshold * rough_spectrum[line2grid_proj])   # size N
-
+                weak_rel_intensity_threshold * (rough_spectrum[line2grid_proj_left] - S_density_on_grid))   # size N
+        
+#        # DEBUG: plot weak lines and strong lines
+#        plt.figure()
+#        plt.plot(wavenumber_calc, rough_spectrum)
+#        for i, w in enumerate(df.shiftwav):
+#            ls = '--' if line_is_weak[i] else '-'
+#            plt.axvline(w, color='k', ls=ls)
+        
         # ... Store weak line label in df
         df['weak_line'] = line_is_weak
-
+        
         if self.verbose>=2:
             printg('... {0:,d} lines classified as weak lines ({1:.2f}%) in {2:.1f}s'.format(
                 line_is_weak.sum(), line_is_weak.sum()/len(line_is_weak)*100,
@@ -1792,6 +1808,9 @@ def project_lines_on_grid(df, wavenumber, wstep):
     to fwhm_voigt and a spectral absorption coefficient value so that linestrength 
     is conserved
     
+    i.e. profiles are approximated as a rectangle of width Alpha*FWHM_Voigt, 
+    and same linestrength.
+    
     Parameters
     ----------
     
@@ -1826,37 +1845,55 @@ def project_lines_on_grid(df, wavenumber, wstep):
     S = df.S.values                     # cm/#  ~   cm-1/(#.cm-2)  ,   size N
     wv = df.fwhm_voigt.values           # FWHM
 
-    # ... First get closest matching line:
-    iwav_on_grid = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel()
+    # ... First get closest matching line (left, and right):
+    iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1
+    iwav_on_grid_right = np.minimum(iwav_on_grid_left + 1, len(wavenumber)-1)
+
+    # ... Get the fraction of each line distributed to the left and to the right.
+    frac_left = (shiftwav-wavenumber[iwav_on_grid_left]).flatten()  # distance to left
+    frac_right = (wavenumber[iwav_on_grid_right]-shiftwav).flatten()  # distance to right
+    dv = frac_left+frac_right
+    frac_left, frac_right = frac_right/dv, frac_left/dv
 
     # ... express FWHM (in nm) in index 
-    ihwhm_on_grid = np.asarray(wv / 2 // wstep, dtype=np.int64)
+    ALPHA = 2   # arbitrary. 
+    ihwhm_on_grid = np.asarray(ALPHA * wv / 2 // wstep, dtype=np.int64)
     ifwhm_on_grid = ihwhm_on_grid * 2 + 1   # make it odd (conserves center)
     # ... infer min and max index to project lines (sides may be out of range)
-    imin_broadened_wav_on_grid = iwav_on_grid - ihwhm_on_grid
-    imax_broadened_wav_on_grid = iwav_on_grid + ihwhm_on_grid
+    imin_broadened_wav_on_grid_left = iwav_on_grid_left - ihwhm_on_grid
+    imax_broadened_wav_on_grid_left = iwav_on_grid_left + ihwhm_on_grid
+    imin_broadened_wav_on_grid_right = iwav_on_grid_right - ihwhm_on_grid
+    imax_broadened_wav_on_grid_right = iwav_on_grid_right + ihwhm_on_grid
 
-    # Get average intensity, assuming a rectangular profile
+    # Get average intensity, assuming a rectangular profile of width FWHM
     S_density_on_grid = S/(ifwhm_on_grid*wstep)               # ~ 1/(#.cm-2)
 
     # Cut out of range points
-    # ... you should see imin_broadened_wav_on_grid as a projection array, with
+    # ... @dev: you should see imin_broadened_wav_on_grid as a projection array, with
     # ... indexes where Intensity will be summed afterwards. 
     # ... here we project the out of range intensities to index -1 and len_grid+1
     # ... (this is faster than )
     len_grid = len(wavenumber)
-    imin_broadened_wav_offset = imin_broadened_wav_on_grid
-    imax_broadened_wav_offset = imax_broadened_wav_on_grid
-    imin_broadened_wav_offset[imin_broadened_wav_offset < 0] = -1
-    imax_broadened_wav_offset[imax_broadened_wav_offset > len_grid] = len_grid
-    imin_broadened_wav_offset += 1
-    imax_broadened_wav_offset += 1
+    imin_broadened_wav_offset_left = imin_broadened_wav_on_grid_left
+    imax_broadened_wav_offset_left = imax_broadened_wav_on_grid_left
+    imin_broadened_wav_offset_right = imin_broadened_wav_on_grid_right
+    imax_broadened_wav_offset_right = imax_broadened_wav_on_grid_right
+    imin_broadened_wav_offset_left[imin_broadened_wav_offset_left < 0] = -1
+    imin_broadened_wav_offset_right[imin_broadened_wav_offset_right < 0] = -1
+    imax_broadened_wav_offset_left[imax_broadened_wav_offset_left > len_grid] = len_grid
+    imax_broadened_wav_offset_right[imax_broadened_wav_offset_right > len_grid] = len_grid
+    imin_broadened_wav_offset_left += 1
+    imax_broadened_wav_offset_left += 1
+    imin_broadened_wav_offset_right += 1
+    imax_broadened_wav_offset_right += 1
 
-    line2grid_projection = iwav_on_grid          # size N (number of lines)
+    line2grid_projection_left = iwav_on_grid_left          # size N (number of lines)
+    line2grid_projection_right = iwav_on_grid_right        # size N (number of lines)
     # ... deal with case where a new point is created (we dont want that)
     # ... just offset it by one unit (we're working with wavenumber_calc anyway,
     # ... these boundary points will be cropped by RADIS at the end of the calculation)
-    line2grid_projection[line2grid_projection==len(wavenumber)] = len(wavenumber) - 1
+    line2grid_projection_left[line2grid_projection_left==len(wavenumber)] = len(wavenumber) - 1
+    line2grid_projection_right[line2grid_projection_right==len(wavenumber)] = len(wavenumber) - 1
 
     @jit(float64[:](), nopython=True)
     def rough_sum_on_grid():
@@ -1873,21 +1910,33 @@ def project_lines_on_grid(df, wavenumber, wstep):
         # rough_spectrum has len_grid+2 because two points are used for out of 
         # range intensities. We crop at the end
         rough_spectrum = np.zeros(len_grid+2)
-        for i, Iline_density in enumerate(S_density_on_grid):
-            imin = imin_broadened_wav_offset[i]
-            imax = imax_broadened_wav_offset[i]
-            rough_spectrum[imin:imax+1] += Iline_density
+        for i, (fr_left, fr_right, Iline_density) in enumerate(
+                zip(frac_left, frac_right, S_density_on_grid)):
+            imin_left = imin_broadened_wav_offset_left[i]
+            imax_left = imax_broadened_wav_offset_left[i]
+            imin_right = imin_broadened_wav_offset_right[i]
+            imax_right = imax_broadened_wav_offset_right[i]
+            rough_spectrum[imin_left:imax_left+1] += fr_left*Iline_density
+            rough_spectrum[imin_right:imax_right+1] += fr_right*Iline_density
+            
+        # Nomenclature for lines above:
+        # - min/max: start/end of a lineshape
+        # - left/right: closest spectral grid point on the left/right
+
         # crop out of range points
         return rough_spectrum[1:-1]
 
     k_rough_spectrum = rough_sum_on_grid()
 
-    return k_rough_spectrum, S_density_on_grid, line2grid_projection
+    return k_rough_spectrum, S_density_on_grid, line2grid_projection_left
 
 def project_lines_on_grid_noneq(df, wavenumber, wstep):
     ''' Quickly sums all lines on wavespace grid as rectangles of FWHM corresponding
     to fwhm_voigt and a spectral absorption coefficient value so that linestrength 
     is conserved
+    
+    i.e. profiles are approximated as a rectangle of width Alpha*FWHM_Voigt, 
+    and same linestrength.
     
     Parameters
     ----------
@@ -1928,6 +1977,13 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
         closest index of the center of each line in ``df`` on the spectral grid 
         ``wavenumber``. Size ``N`` 
         
+    Notes
+    -----
+    
+    Similar to :py:func:`~radis.lbl.broadening.project_lines_on_grid` except
+    that we also calculate the approximate emission intensity (noneq > it cannot 
+    be recomputed from the linestrength). 
+        
     '''
 
     shiftwav = df.shiftwav.values       # cm-1  ,   size N (number of lines)
@@ -1935,38 +1991,56 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
     Ei = df.Ei.values                   # mW/cm3/sr
     wv = df.fwhm_voigt.values           # FWHM
 
-    # ... First get closest matching line:
-    iwav_on_grid = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel()
+    # ... First get closest matching line (left, and right):
+    iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1
+    iwav_on_grid_right = np.minimum(iwav_on_grid_left + 1, len(wavenumber)-1)
+
+    # ... Get the fraction of each line distributed to the left and to the right.
+    frac_left = (shiftwav-wavenumber[iwav_on_grid_left]).flatten()  # distance to left
+    frac_right = (wavenumber[iwav_on_grid_right]-shiftwav).flatten()  # distance to right
+    dv = frac_left+frac_right
+    frac_left, frac_right = frac_right/dv, frac_left/dv
 
     # ... express FWHM (in nm) in index 
-    ihwhm_on_grid = np.asarray(wv / 2 // wstep, dtype=np.int64)
+    ALPHA = 2   # arbitrary. 
+    ihwhm_on_grid = np.asarray(ALPHA * wv / 2 // wstep, dtype=np.int64)
     ifwhm_on_grid = ihwhm_on_grid * 2 + 1   # make it odd (conserves center)
     # ... infer min and max index to project lines (sides may be out of range)
-    imin_broadened_wav_on_grid = iwav_on_grid - ihwhm_on_grid
-    imax_broadened_wav_on_grid = iwav_on_grid + ihwhm_on_grid
+    imin_broadened_wav_on_grid_left = iwav_on_grid_left - ihwhm_on_grid
+    imax_broadened_wav_on_grid_left = iwav_on_grid_left + ihwhm_on_grid
+    imin_broadened_wav_on_grid_right = iwav_on_grid_right - ihwhm_on_grid
+    imax_broadened_wav_on_grid_right = iwav_on_grid_right + ihwhm_on_grid
 
-    # Get average intensity, assuming a rectangular profile
+    # Get average intensity, assuming a rectangular profile of width FWHM
     S_density_on_grid = S/(ifwhm_on_grid*wstep)               # ~ 1/(#.cm-2)
     Ei_density_on_grid = Ei/(ifwhm_on_grid*wstep)               # mW/cm3/sr/cm-1
 
     # Cut out of range points
-    # ... you should see imin_broadened_wav_on_grid as a projection array, with
+    # ... @dev: you should see imin_broadened_wav_on_grid as a projection array, with
     # ... indexes where Intensity will be summed afterwards. 
     # ... here we project the out of range intensities to index -1 and len_grid+1
     # ... (this is faster than )
     len_grid = len(wavenumber)
-    imin_broadened_wav_offset = imin_broadened_wav_on_grid
-    imax_broadened_wav_offset = imax_broadened_wav_on_grid
-    imin_broadened_wav_offset[imin_broadened_wav_offset < 0] = -1
-    imax_broadened_wav_offset[imax_broadened_wav_offset > len_grid] = len_grid
-    imin_broadened_wav_offset += 1
-    imax_broadened_wav_offset += 1
+    imin_broadened_wav_offset_left = imin_broadened_wav_on_grid_left
+    imax_broadened_wav_offset_left = imax_broadened_wav_on_grid_left
+    imin_broadened_wav_offset_right = imin_broadened_wav_on_grid_right
+    imax_broadened_wav_offset_right = imax_broadened_wav_on_grid_right
+    imin_broadened_wav_offset_left[imin_broadened_wav_offset_left < 0] = -1
+    imin_broadened_wav_offset_right[imin_broadened_wav_offset_right < 0] = -1
+    imax_broadened_wav_offset_left[imax_broadened_wav_offset_left > len_grid] = len_grid
+    imax_broadened_wav_offset_right[imax_broadened_wav_offset_right > len_grid] = len_grid
+    imin_broadened_wav_offset_left += 1
+    imax_broadened_wav_offset_left += 1
+    imin_broadened_wav_offset_right += 1
+    imax_broadened_wav_offset_right += 1
 
-    line2grid_projection = iwav_on_grid          # size N (number of lines)
+    line2grid_projection_left = iwav_on_grid_left          # size N (number of lines)
+    line2grid_projection_right = iwav_on_grid_right        # size N (number of lines)
     # ... deal with case where a new point is created (we dont want that)
     # ... just offset it by one unit (we're working with wavenumber_calc anyway,
     # ... these boundary points will be cropped by RADIS at the end of the calculation)
-    line2grid_projection[line2grid_projection==len(wavenumber)] = len(wavenumber) - 1
+    line2grid_projection_left[line2grid_projection_left==len(wavenumber)] = len(wavenumber) - 1
+    line2grid_projection_right[line2grid_projection_right==len(wavenumber)] = len(wavenumber) - 1
 
     @jit(nopython=True)
     def rough_sum_on_grid():
@@ -1985,17 +2059,21 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
         k_rough_spectrum = np.zeros(len_grid+2)
         j_rough_spectrum = np.zeros(len_grid+2)
         for i in range(len(S_density_on_grid)):
-            imin = imin_broadened_wav_offset[i]
-            imax = imax_broadened_wav_offset[i]
-            k_rough_spectrum[imin:imax+1] += S_density_on_grid[i]
-            j_rough_spectrum[imin:imax+1] += Ei_density_on_grid[i]
+            imin_left = imin_broadened_wav_offset_left[i]
+            imax_left = imax_broadened_wav_offset_left[i]
+            imin_right = imin_broadened_wav_offset_right[i]
+            imax_right = imax_broadened_wav_offset_right[i]
+            k_rough_spectrum[imin_left:imax_left+1] += frac_left[i]*S_density_on_grid[i]
+            k_rough_spectrum[imin_right:imax_right+1] += frac_right[i]*S_density_on_grid[i]
+            j_rough_spectrum[imin_left:imax_left+1] += frac_left[i]*Ei_density_on_grid[i]
+            j_rough_spectrum[imin_right:imax_right+1] += frac_right[i]*Ei_density_on_grid[i]
         # crop out of range points
         return k_rough_spectrum[1:-1], j_rough_spectrum[1:-1]
 
     k_rough_spectrum, j_rough_spectrum = rough_sum_on_grid()
 
     return (k_rough_spectrum, j_rough_spectrum, S_density_on_grid, Ei_density_on_grid, 
-            line2grid_projection)
+            line2grid_projection_left)
 
     #
 if __name__ == '__main__':

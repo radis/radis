@@ -164,7 +164,7 @@ def test_voigt_broadening_methods(verbose=True, plot=False, *args, **kwargs):
 #@pytest.mark.needs_config_file
 #@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
-def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
+def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, threshold=0.1, *args, **kwargs):
     ''' 
     Test calculation with pseudo-continuum
 
@@ -187,7 +187,8 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
         if verbose:
             printm('>>> test_abscoeff_continuum')
 
-        sf = SpectrumFactory(wavelength_min=4200, wavelength_max=4500,
+        sf = SpectrumFactory(wavelength_min=4200, 
+                             wavelength_max=4500,
                              parallel=False, bplot=False, cutoff=1e-23,
                              molecule='CO2',
                              isotope='1,2', 
@@ -214,11 +215,11 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
         assert s1.conditions['pseudo_continuum_threshold'] == 0
 
         # Calculate one with pseudo-continuum
-        sf.params.pseudo_continuum_threshold = 0.05
+        sf.params.pseudo_continuum_threshold = threshold
         s2 = sf.eq_spectrum(Tgas=2000)
         s2.name = 'Semi-continuum + {0} lines ({1:.1f}s)'.format(s2.conditions['lines_calculated'],
                                                                  s2.conditions['calculation_time'])
-        assert s2.conditions['pseudo_continuum_threshold'] == 0.05
+        assert s2.conditions['pseudo_continuum_threshold'] == threshold
         assert 'abscoeff_continuum' in s2.get_vars()
 
         # Plot
@@ -226,18 +227,21 @@ def test_abscoeff_continuum(plot=False, verbose=2, warnings=True, *args, **kwarg
             plot_diff(s1, s2, 'radiance_noslit', Iunit='µW/cm2/sr/nm',
                       nfig='test_abscoeff_continuum: diff')
 
-            s2.plot('abscoeff', label=s2.name,
-                    nfig='test_abscoeff_continuum: show continuum')
-            s2.plot('abscoeff_continuum', nfig='same', label='Pseudo-continuum (aggreg. {0:g} lines)'.format(
+            s2.plot('abscoeff', label='Full spectrum',
+                    nfig='test_abscoeff_continuum: show continuum', force=True)
+            s2.plot('abscoeff_continuum', nfig='same', label='Pseudo-continuum'.format(
                     s2.conditions['lines_in_continuum']),
                     force=True)
+            plt.legend()
 
         # Compare
         res = get_residual(s1, s2, 'abscoeff')
         if verbose:
             printm('residual:', res)
 
-        assert res < 1e-6
+        globals().update(locals())
+
+        assert res < 1.32e-6
 
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
@@ -317,7 +321,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         if verbose:
             printm('residual:', res)
 
-        assert res < 5e-6
+        assert res < 5.2e-6
 
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
@@ -328,11 +332,11 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
     # Test broadening
     test_broadening(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_voigt_broadening_methods(plot=plot, verbose=verbose, *args, **kwargs)
-#
+    test_voigt_broadening_methods(plot=plot, verbose=verbose, *args, **kwargs)
+
 #    # Test pseudo-continuum
-#    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 
