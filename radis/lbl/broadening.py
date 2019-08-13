@@ -999,16 +999,13 @@ class BroadenFactory(BaseFactory):
 
         '''
 
+        if __debug__:
+            t0 = time()
+            
         # Init variables
         if self.input.Tgas is None:
             raise AttributeError(
                 "Tgas not defined. Make sure the parent function creates it")
-#        Tgas = self.input.Tgas
-
-#        pressure_mbar = self.input.pressure_mbar
-#        mole_fraction = self.input.mole_fraction
-#        pressure_atm = pressure_mbar/1013.25     # convert from mbar to atm for linebroadening calculation
-#        Tref = self.input.Tref                         # coefficients tabulation temperature
 
         # Generate broadening array (so that it is as large as `broadening_max_width`
         # in cm-1, and keeps the same spacing as the final output wavelength vector)
@@ -1029,14 +1026,20 @@ class BroadenFactory(BaseFactory):
         wbroad_centered = np.outer(wbroad_centered_oneline, np.ones(N))
         wbroad = wbroad_centered+shifted_wavenum
 
+        if __debug__:
+            t1 = time()
+            
         # Calculate lineshape (using precomputed FWHM)
         if self._broadening_method == 'voigt':
-            line_profile = self._voigt_broadening(dg, wbroad_centered)
+            jit = True
+            line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
         elif self._broadening_method == 'convolve':
             # Get pressure and gaussian profiles
             pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
+            if __debug__: t11 = time()
             gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
-
+            if __debug__: t12 = time()
+                
             # Convolve and get final line profile:
             line_profile = np.empty_like(pressure_profile)     # size (B, N)
             for i, (x, y) in enumerate(zip(pressure_profile.T, gaussian_profile.T)):
@@ -1051,6 +1054,17 @@ class BroadenFactory(BaseFactory):
         else:
             raise ValueError('Unexpected broadening calculation method: {0}'.format(
                 self._broadening_method))
+
+        if __debug__:
+            t2 = time()
+            if self.verbose >= 3: 
+                printg('... Initialized vectors in {0:.1f}s'.format(t1-t0))
+                if self._broadening_method == 'voigt':
+                    printg('... Calculated Voigt profile (jit={1}) in {0:.1f}s'.format(t2-t1, jit))
+                elif self._broadening_method == 'convolve':
+                    printg('... Calculated Lorentzian profile in {0:.1f}s'.format(t11-t1))
+                    printg('... Calculated Gaussian profile in {0:.1f}s'.format(t12-t11))
+                    printg('... Convolved both profiles in {0:.1f}s'.format(t2-t12))
 
         return line_profile
 
@@ -1169,25 +1183,37 @@ class BroadenFactory(BaseFactory):
 
         # ---------------------------
         # Apply line profile
+        
+        if __debug__:
+            t1 = time()
 
-        # ... First get closest matching line:
-        idcenter = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel()
+        # ... First get closest matching line (on the left, and on the right)
+        idcenter_left = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel() - 1
+        idcenter_right = np.minimum(idcenter_left + 1, len(wavenumber_calc)-1)
 
-        # ... Then distribute the line over the correct location. All of that vectorized
+        # ... Get the fraction of each line distributed to the left and to the right.
+        frac_left = (shifted_wavenum-wavenumber_calc[idcenter_left]).flatten()  # distance to left
+        frac_right = (wavenumber_calc[idcenter_right]-shifted_wavenum).flatten()  # distance to right
+        dv = frac_left+frac_right
+        frac_left, frac_right = frac_right/dv, frac_left/dv
+
+        # ... Initialize array on which to distribute the lineshapes
         sumoflines_calc = zeros_like(wavenumber_calc)
-
-        # Note on performance: it isn't easy to vectorize this part as all
-        # lines are to be plotted on a different place.
-
-        # to avoid the If / Else condition in the loop, we do a vectorized
+        
+        # Note on performance: it isn't straightforward to vectorize the summation
+        # of all lineshapes on the spectral range as some lines may be parly outside 
+        # the spectral range. 
+        # to avoid an If / Else condition in the loop, we do a vectorized
         # comparison beforehand and run 3 different loops
-
+       
         # reminder: wavenumber_calc has size [iwbroad_half+vec_length+iwbroad_half]
         assert len(wavenumber_calc) == vec_length+2*iwbroad_half
-        boffrangeleft = (idcenter <= iwbroad_half)
-        boffrangeright = (idcenter >= vec_length+iwbroad_half)
-        binrange = np.ones_like(idcenter, dtype=bool) ^ (
-            boffrangeleft + boffrangeright)
+        boffrangeleft = (idcenter_left <= iwbroad_half)
+        boffrangeright = (idcenter_right >= vec_length+iwbroad_half)
+        binrange = np.ones_like(idcenter_left, dtype=bool) ^ (boffrangeleft + boffrangeright)
+
+        if __debug__:
+            t2 = time()
 
 #        # Performance for lines below
 #        # ----------
@@ -1196,43 +1222,61 @@ class BroadenFactory(BaseFactory):
 #        # normal: ~ 36 ms  called 9 times
 #        # with @jit : ~ 200 ms called 9 times (worse!)
         
+        # In range: aggregate both wings
+        lines_in = profile_S.T[binrange]
+        if len(lines_in) > 0:
+            I_low_in_left = idcenter_left[binrange]-iwbroad_half
+            I_low_in_right = idcenter_right[binrange]-iwbroad_half
+            I_high_in_left = I_low_in_left+2*iwbroad_half
+            I_high_in_right = I_low_in_right+2*iwbroad_half
+            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_in)):
+                sumoflines_calc[I_low_in_left[i]:I_high_in_left[i]+1] += fr_left*profS
+                sumoflines_calc[I_low_in_right[i]:I_high_in_right[i]+1] += fr_right*profS
+
+        # Nomenclature for lines above:
+        # - low/high: start/end of a lineshape
+        # - left/right: closest spectral grid point on the left/right
+
+        if __debug__:
+            t3 = time()
+
         # Off Range, left : only aggregate the Right wing
+        # @dev: the only difference with In range is the extra mask to cut the left wing.
         lines_l = profile_S.T[boffrangeleft]
         if len(lines_l) > 0:
-            I_low_l = idcenter[boffrangeleft]+1
-            # idcenter[boffrangeleft]+iwbroad_half
-            I_high_l = I_low_l + iwbroad_half - 1
-            for i, profS in enumerate(lines_l):
-                # cut left wing + peak
-                sumoflines_calc[I_low_l[i]:I_high_l[i] +
-                                1] += profS[iwbroad_half+1:]
-#                assert(len(absorption_calc[I_low_l[i]:I_high_l[i]+1])==iwbroad_half)
-#                assert(len(profS[iwbroad_half+1:])==iwbroad_half)
+            I_low_l_left = idcenter_left[boffrangeleft]+1
+            I_low_l_right = idcenter_right[boffrangeleft]+1
+            I_high_l_left = I_low_l_left + iwbroad_half - 1
+            I_high_l_right = I_low_l_right + iwbroad_half - 1
+            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_l)):
+                # cut left wing & peak  with the [iwbroad_half+1:] mask
+                sumoflines_calc[I_low_l_left[i]:I_high_l_left[i] + 1] += fr_left*profS[iwbroad_half+1:]
+                sumoflines_calc[I_low_l_right[i]:I_high_l_right[i] + 1] += fr_right*profS[iwbroad_half+1:]
 
         # Off Range, Right : only aggregate the left wing
         lines_r = profile_S.T[boffrangeright]
         if len(lines_r) > 0:
-            I_low_r = idcenter[boffrangeright]-iwbroad_half
-            I_high_r = I_low_r + iwbroad_half - \
-                1      # idcenter[boffrangeright]-1
-            for i, profS in enumerate(lines_r):
-                # cut right wing + peak
-                sumoflines_calc[I_low_r[i]:I_high_r[i] +
-                                1] += profS[:iwbroad_half]
-#                assert(len(profS[:iwbroad_half])==iwbroad_half)
+            I_low_r_left = idcenter_left[boffrangeright]-iwbroad_half
+            I_low_r_right = idcenter_right[boffrangeright]-iwbroad_half
+            I_high_r_left = I_low_r_left + iwbroad_half - 1      # idcenter[boffrangeright]-1
+            I_high_r_right = I_low_r_right + iwbroad_half - 1      # idcenter[boffrangeright]-1
+            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_r)):
+                # cut right wing & peak  with the [:iwbroad_half] mask
+                sumoflines_calc[I_low_r_left[i]:I_high_r_left[i] + 1] += fr_left*profS[:iwbroad_half]
+                sumoflines_calc[I_low_r_right[i]:I_high_r_right[i] + 1] += fr_right*profS[:iwbroad_half]
 
-        # In range: aggregate both wings
-        lines_i = profile_S.T[binrange]
-        if len(lines_i) > 0:
-            I_low_i = idcenter[binrange]-iwbroad_half
-            # idcenter[binrange]+iwbroad_half
-            I_high_i = I_low_i+2*iwbroad_half
-            for i, profS in enumerate(lines_i):
-                sumoflines_calc[I_low_i[i]:I_high_i[i]+1] += profS
-#                assert(len(profS)==2*iwbroad_half+1)
-
+        if __debug__:
+            t4 = time()
+            
         # Get valid range (discard wings)
         sumoflines = sumoflines_calc[self.woutrange]
+        
+        if __debug__:
+            if self.verbose >= 3: 
+                printg('... Initialized vectors in {0:.1f}s'.format(t1-t0))
+                printg('... Get closest matching line & fraction in {0:.1f}s'.format(t2-t1))
+                printg('... Aggregate center lines in {0:.1f}s'.format(t3-t2))
+                printg('... Aggregate wing lines in {0:.1f}s'.format(t4-t3))
 
         return wavenumber, sumoflines
 
@@ -1265,8 +1309,9 @@ class BroadenFactory(BaseFactory):
         
         try:
             if chunksize is None:
+                
                 # Deal with all lines directly (usually faster)
-                line_profile = self._calc_lineshape(df)
+                line_profile = self._calc_lineshape(df)       # usually the bottleneck
                 (wavenumber, abscoeff) = self._apply_lineshape(
                                         df.S, line_profile, df.shiftwav)
 
