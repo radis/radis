@@ -842,7 +842,7 @@ def plot_diff(s1, s2, var=None,
     # Write labels
     ax1[-1].set_xlabel(make_up(xlabel))
     if normalize:
-        fig.text(0.02, 0.5, 'Arb. Units',
+        fig.text(0.02, 0.5, ('{0} (norm.)'.format(make_up(var))),
                  va='center', rotation='vertical')
     else:
         fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),

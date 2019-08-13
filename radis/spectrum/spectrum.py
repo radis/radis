@@ -1200,8 +1200,9 @@ class Spectrum(object):
         
         if wunit == 'default':
             wunit = self.get_waveunit()
-            if wunit == 'cm-1' and medium == 'default':  # no need to worry about propagation medium
-                medium = None
+        if wunit == 'cm-1' and self.get_waveunit() == 'cm-1' and medium == 'default':  
+            # no need to know the propagation medium:
+            medium = None
         if medium == 'default':
             medium = self.get_medium()
         
