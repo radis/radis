@@ -1309,7 +1309,7 @@ class DatabankLoader(object):
 
         # Init variables
         verbose = self.verbose
-        warnings = self.warnings['default']
+        warnings = self.warnings['default'] if self.warnings else False
         wavenum_min = self.params.wavenum_min_calc
         wavenum_max = self.params.wavenum_max_calc
 

@@ -832,7 +832,7 @@ class BroadenFactory(BaseFactory):
         # ... Here we compute the integral to check the error that is made
         area = trapz(lineshape.T, x=wbroad_centered.T)
         err = abs((area-1))
-        if self.warnings['CollisionalBroadeningWarning'] != 'ignore':
+        if self.warnings and self.warnings['CollisionalBroadeningWarning'] != 'ignore':
             if (err > self.misc.warning_broadening_threshold).any():
                 self.warn('Large error ({0:.1f}%) '.format(err.max()*100) +
                           'in pressure broadening. Increase broadening width / reduce wstep. ' +
@@ -879,7 +879,7 @@ class BroadenFactory(BaseFactory):
         # ... Here we compute the integral to check the error that is made
         area = trapz(lineshape.T, x=wbroad_centered.T)
         err = abs((area-1))
-        if self.warnings['GaussianBroadeningWarning'] != 'ignore':
+        if self.warnings and self.warnings['GaussianBroadeningWarning'] != 'ignore':
         # In a "performance" mode (vs "safe" mode), these warnings would be disabled
             if (err > self.misc.warning_broadening_threshold).any():
                 self.warn('Large error ({0:.1f}%) '.format(err.max()*100) +

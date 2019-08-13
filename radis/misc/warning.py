@@ -159,6 +159,7 @@ See Also
 
 def reset_warnings(status):
     ''' Reactivate warnings that are set 'once' per session in the Factory
+    (unless all warnings have been set to False)
 
     Parameters
     ----------
@@ -167,6 +168,9 @@ def reset_warnings(status):
         dictionary of Warnings with associated status
 
     '''
+    
+    if status == False:
+        return
 
     for k, v in status.items():
         if v == 'once':
@@ -179,7 +183,8 @@ def warn(message, category='default', status={}):
     in the :py:attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
 
     The warnings can thus be deactivated selectively by setting the SpectrumFactory
-     :attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute
+    :attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute. All warnings
+    can be disabled by setting it to False.
 
     Parameters
     ----------
@@ -195,6 +200,9 @@ def warn(message, category='default', status={}):
         ``'print'``, ``'error'``
 
     '''
+    
+    if status == False:
+        return
 
     action = status[category]
 
