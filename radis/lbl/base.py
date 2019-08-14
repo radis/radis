@@ -2794,8 +2794,16 @@ class BaseFactory(DatabankLoader):
         # @dev: this brings a lot of performance improvement, but sometimes fail. 
         # | here we ensure that the DataFrame has the values:
         transfer_metadata(self.df0, self.df1, [k for k in df_metadata if hasattr(self.df0, k)])
-        assert hasattr(self.df1, 'molar_mass')
-        assert hasattr(self.df1, 'Ia')
+        try:
+            assert hasattr(self.df1, 'molar_mass')
+            assert hasattr(self.df1, 'Ia')
+        except AssertionError:
+            raise AssertionError('Attributes `molar_mass` or `Ia` are missing in line '+\
+                                 'dataframe sf.df1. Make sure you didnt overwrite the line '+\
+                                 'dataframe sf.df0 or sf.df1 manually. If so, replace any '+\
+                                 '`sf.df0=...` line with inplace operations such as '+\
+                                 '`sf.df0.drop(..., inplace=True)`. See '+\
+                                 'https://stackoverflow.com/q/33103988')
         
         # Clean objects to save memory
         if self.save_memory:

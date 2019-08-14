@@ -227,6 +227,34 @@ and only load them if needed. This is useful if used in conjonction with
 :py:meth:`~radis.lbl.loader.DatabankLoader.init_database`, which will retrieve precomputed spectra from 
 a database if they exist. 
 
+
+Manipulate the database
+-----------------------
+
+If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting 
+by a particular level), you need to access the :py:attr:`~radis.lbl.factory.SpectrumFactory.df0` attribute of 
+:py:class:`~radis.lbl.factory.SpectrumFactory`. 
+
+.. warning::
+
+    never overwrite the ``df0`` attribute, else some metadata may be lost in the process. Only use inplace operations. 
+    
+For instance::
+
+    sf = SpectrumFactory(
+        wavenum_min= 2150.4,
+        wavenum_max=2151.4,
+        pressure=1,
+        isotope=1)
+    sf.load_databank('HITRAN-CO-TEST')
+    sf.df0.drop(sf.df0[sf.df0.vu!=1].index, inplace=True)   # keep lines emitted by v'=1 only
+    sf.eq_spectrum(Tgas=3000, name='vu=1').plot()
+
+:py:attr:`~radis.lbl.factory.SpectrumFactory.df0` contains the lines as they are loaded from the database. 
+:py:attr:`~radis.lbl.factory.SpectrumFactory.df1` is generated during the spectrum calculation, after the 
+line database reduction steps, population calculation, and scaling of intensity and broadening parameters 
+with the calculated conditions. 
+
 Parallelization
 ---------------
 
