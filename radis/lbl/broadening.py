@@ -1176,12 +1176,13 @@ class BroadenFactory(BaseFactory):
             IG = [gaussian_lineshape(wbroad, wG[i]/2) for i in range(len(wG))]  # TODO: vectorize later # FWHM>HWHM
 
             # Get all combinations of Voigt lineshapes
-            line_profile_DLM = np.empty((len(wbroad), len(wL), len(wG)))
+            line_profile_DLM = {}
             for i in range(len(wL)):
+                line_profile_DLM[i] = {}
                 for j in range(len(wG)):
                     lineshape = np.convolve(IL[i], IG[j], mode='same')
                     lineshape /= np.trapz(lineshape, x=wbroad)
-                    line_profile_DLM[:, i, j] = lineshape
+                    line_profile_DLM[i][j] = lineshape
             
             return line_profile_DLM
 
@@ -1569,9 +1570,6 @@ class BroadenFactory(BaseFactory):
                     iwL0, iwL1, iwG0, iwG1,
                         frac_left, frac_right, awV00, awV10, awV01, awV11)):
             
-            if __debug__:
-                t20 = time()
-            
             if iv_low0 < 0 or iv_low1 <0 or iv_high0 >= len(wavenumber_calc) or iv_high1 >= len(wavenumber_calc):
                 continue
             
@@ -1579,13 +1577,13 @@ class BroadenFactory(BaseFactory):
                 t21= time()
             
             # get approximate lineshape
-            lineshape = S_i*(frac00*DLM[:, iwL0_i, iwG0_i]+frac10*DLM[:, iwL1_i, iwG0_i]+
-                             frac01*DLM[:, iwL0_i, iwG1_i]+frac11*DLM[:, iwL1_i, iwG1_i])
+            lineshape = S_i*(frac00*DLM[iwL0_i][iwG0_i]+frac10*DLM[iwL1_i][iwG0_i]+
+                             frac01*DLM[iwL0_i][iwG1_i]+frac11*DLM[iwL1_i][iwG1_i])
             
             if __debug__:
                 t22 = time()
     
-            # Sum line
+            # Sum lineshape on the spectral grid
 #            # test case 200k spectral points x 57k lines: ~ 12s
             # ... after further approximation: reduced ~3.5s
             sumoflines_calc[iv_low0:iv_high0+1] += wfr0*lineshape
@@ -1593,7 +1591,6 @@ class BroadenFactory(BaseFactory):
             
             if __debug__:
                 t23 = time()
-                dt21 += t21 - t20
                 dt22 += t22 - t21
                 dt23 += t23 - t22
             
@@ -1645,7 +1642,6 @@ class BroadenFactory(BaseFactory):
                 printg('... Aggregate center lines in {0:.1f}s'.format(t3-t2))
                 
             if self.verbose >= 4: 
-                printg('... ...  get grid profile {0:.1f}s'.format(dt21))
                 printg('... ...  calc lineshape from DLM {0:.1f}s'.format(dt22))
                 printg('... ...  sum on spectral range {0:.1f}s'.format(dt23))
                 
