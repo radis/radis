@@ -249,6 +249,71 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
         
         assert res < 2e-4
         
+        
+@pytest.mark.fast
+def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
+    '''
+    Test use of lineshape template for broadening calculation. 
+    '''
+
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+
+    # Conditions
+    T = 3000
+    p = 1
+    wstep = 0.002
+    wmin = 2150  # cm-1
+    wmax = 2152  # cm-1
+    broadening_max_width = 10  # cm-1
+
+    # %% Calculate with RADIS
+    # ----------
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        mole_fraction=1,
+        path_length=1,   # doesnt change anything
+        wstep=wstep,
+        pressure=p,
+        broadening_max_width=broadening_max_width,
+        isotope='1',
+        verbose=False,
+        warnings={'MissingSelfBroadeningWarning':'ignore',
+                  'NegativeEnergiesWarning':'ignore',
+                  'HighTemperatureWarning':'ignore',
+                  'GaussianBroadeningWarning':'ignore'}
+        )  # 0.2)
+    sf.load_databank('HITRAN-CO-TEST')
+    
+    # Manual convolve (Voigt not implemented for DLM yet) # TODO
+    sf._broadening_method = 'convolve'
+    
+    # Reference: calculate without DLM 
+    assert sf.misc['chunksize'] is None
+    s_ref = sf.eq_spectrum(Tgas=T)
+    s_ref.name = 'Reference ({0:.2f}s)'.format(s_ref.conditions['calculation_time'])
+    
+    # DLM:
+    sf.misc['chunksize'] = 'DLM'
+    s_dlm = sf.eq_spectrum(Tgas=T)
+    s_dlm.name = 'DLM ({0:.2f}s)'.format(s_dlm.conditions['calculation_time'])
+    
+    # Compare
+    res = get_residual(s_ref, s_dlm, 'abscoeff')
+    
+    if verbose:
+        print('Residual:', res)
+
+    # plot the last one    
+    if plot:
+        plot_diff(s_ref, s_dlm, 'abscoeff')
+        plt.legend()
+    
+    assert res < 1e-5
+
 
 #@pytest.mark.needs_config_file
 #@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
@@ -420,14 +485,16 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
-    # Test broadening
-    test_broadening(plot=plot, verbose=verbose, *args, **kwargs)
-    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
-    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
-
-    # Test pseudo-continuum
-    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
-    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
+    
+#    # Test broadening
+#    test_broadening(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
+#
+#    # Test pseudo-continuum
+#    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 

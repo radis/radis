@@ -183,6 +183,47 @@ section.
 Performance
 ***********
 
+Different strategies and parameters are used to improve performances:
+
+Line Database Reduction Strategies
+----------------------------------
+
+- *linestrength cutoff* : lines with low linestrength are discarded after the new 
+populations are calculated. 
+Parameter: :py:attr:`~radis.lbl.loader.Input.cutoff` 
+(see the default value in the arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`)
+
+- *weak lines*: lines which are close to a much stronger line are called weak lines. 
+They are added to a pseudo-continuum and their lineshape is calculated with a simple 
+rectangular approximation.  
+See the default value in the arguments of :py:attr:`~radis.lbl.loader.Parameters.pseudo_continuum_threshold` 
+(see arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`)
+
+
+Lineshape optimizations
+-----------------------
+
+- *broadening width* : lineshapes are calculated on a reduced spectral range. 
+Voigt computation calculation times scale linearly with that parameter. 
+Gaussian x Lorentzian calculation times scale as a square with that parameter. 
+parameters: broadening_max_width
+
+- *Voigt approximation* : Voigt is calculated with an analytical approximation. 
+Parameter : :py:attr:`~radis.lbl.loader.Parameters.broadening_max_width` and 
+default values in the arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`. 
+See :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+
+- *Fortran precompiled* : previous Voigt analytical approximation is 
+precompiled in Fortran to improve performance times. This is always the 
+case and cannot be changed on the user side at the moment. See the source code
+of :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+
+- *DLM* :  lineshape templates are calculated to reduce the number of calculated 
+lines from millions to a few dozens. Implementation in progress. 
+parameters: ``res_L``, ``res_G``
+
+More details on the parameters below:
+
 Computation parameters
 ----------------------
 

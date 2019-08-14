@@ -714,8 +714,7 @@ class BroadenFactory(BaseFactory):
                 df, pressure_atm, mole_fraction, Tgas, Tref)
         elif self._broadening_method == 'convolve':
             # Adds hwhm_lorentz:
-            self._add_collisional_broadening_HWHM(
-                df, pressure_atm, mole_fraction, Tgas, Tref)
+            self._add_collisional_broadening_HWHM(df, pressure_atm, mole_fraction, Tgas, Tref)
             # Add hwhm_gauss:
             self._add_doppler_broadening_HWHM(df, Tgas)
 
@@ -1147,6 +1146,48 @@ class BroadenFactory(BaseFactory):
 
         return line_profile
 
+    def _calc_lineshape_DLM(self, wL, wG):
+        ''' 
+        Parameters
+        ----------
+        
+        wavenumber: array
+            wavenumbers
+            
+        wL: array
+            Lorentzian FWHM
+            
+        wG: array
+            Gaussian FWHM
+            
+        '''
+        # TODO: Fourier version 
+#        wavenumber_calc = self.wavenumber_calc
+        wbroad = self.wbroad_centered
+                    
+        if self._broadening_method == 'voigt':
+#                        jit = True
+#                        line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
+            raise NotImplementedError('Broadening method with DLM: {0}'.format(self._broadening_method))
+            
+            
+        elif self._broadening_method == 'convolve':
+            IL = [gaussian_lineshape(wbroad, wL[i]/2) for i in range(len(wL))]  # TODO: vectorize later   # FWHM>HWHM
+            IG = [lorentzian_lineshape(wbroad, wG[i]/2) for i in range(len(wG))]  # TODO: vectorize later # FWHM>HWHM
+
+            # Get all combinations of Voigt lineshapes
+            line_profile_DLM = np.empty((len(wbroad), len(wL), len(wG)))
+            for i in range(len(wL)):
+                for j in range(len(wG)):
+                    lineshape = np.convolve(IL[i], IG[j], mode='same')
+                    lineshape /= np.trapz(lineshape, x=wbroad)
+                    line_profile_DLM[:, i, j] = lineshape
+            
+            return line_profile_DLM
+
+        else:
+            raise NotImplementedError('Broadening method with DLM: {0}'.format(self._broadening_method))
+        
     def plot_broadening(self, i=0, pressure_atm=None, mole_fraction=None,
                         Tgas=None):
         ''' just for testing. Recalculate and plot broadening for line of index i
@@ -1359,6 +1400,240 @@ class BroadenFactory(BaseFactory):
 
         return wavenumber, sumoflines
 
+    def _apply_lineshape_DLM(self, broadened_param, line_profile_DLM, shifted_wavenum,
+                             wL, wG, wL_dat, wG_dat):
+        ''' Multiply `broadened_param` by `line_profile` and project it on the
+        correct wavelength given by `shifted_wavenum`
+
+        Parameters
+        ----------
+
+        broadened_param: pandas Series (or numpy array)   [size N = number of lines]
+            Series to apply lineshape to. Typically linestrength `S` for absorption,
+            or `nu * Aul / 4pi * DeltaE` for emission
+
+        line_profile_DLM:   (1/cm-1)        3D array of lines_profiles for all lines
+                size (B,  DG, DL) with B = width of lineshape, DG = number 
+                of Gaussian widths in DLM, DG = number of Lorentzian points in DLM
+
+        shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
+            center wavelength (used to project broaded lineshapes )
+
+        wL: array       (size DL)
+            array of all Lorentzian widths in DLM
+
+        wG: array       (size DG)
+            array of all Gaussian widths in DLM
+
+        wL_dat: array    (size N)
+            FWHM of all lines. Used to lookup the DLM
+            
+        wG_dat: array    (size N)
+            FWHM of all lines. Used to lookup the DLM
+            
+        Returns
+        -------
+
+        sumoflines: array (size W  = size of output wavenumbers)
+            sum of (broadened_param x line_profile)
+
+        Notes
+        -----
+
+        Units change during convolution::
+
+            [sumoflines] = [broadened_param] * cm
+
+        '''
+        
+        if __debug__:
+            t0 = time()
+
+#        # Get spectrum range
+        wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
+        wavenumber_calc = self.wavenumber_calc
+        # generate the vector of wavenumbers (shape W + space B on the sides)
+        vec_length = len(wavenumber)
+
+        # Vectorize the chunk of lines
+        S = broadened_param.values.reshape((1, -1))
+        shifted_wavenum = shifted_wavenum.values.reshape((1, -1))  # make it a row vector
+
+        # Get broadening array
+        wbroad_centered = self.wbroad_centered  # size (B,)
+        # index of broadening half width
+        iwbroad_half = len(wbroad_centered)//2
+
+        # ---------------------------
+        # Apply line profile
+        
+        if __debug__:
+            t1 = time()
+            
+            '''
+DLM = _map_DLM(wavenumber,wL,wG,
+               df.shiftwav.values,
+               df.int.values,
+               2*df.hwhm_lorentz.values,  # HWHM > FWHM
+               2*df.hwhm_gauss.values,    # HWHM > FWHM
+               )
+_map_DLM(v,wL,wG,v_dat,I_dat,wL_dat,wG_dat):
+    
+    v_dat = df.shiftwav.values
+    I_dat = df.int.values  # S here
+    wL_dat = 2*df.hwhm_lorentz.values
+    wG_dat = 2*df.hwhm_gauss.values
+    '''
+                
+        # ... First get closest matching line (on the left, and on the right)
+        idcenter_left = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel() - 1
+        idcenter_right = np.minimum(idcenter_left + 1, len(wavenumber_calc)-1)
+        # TODO: rename _left _right with 0 1 : will be easier to read. 
+        
+        # DLM: First we calculate the fractional index of the DLM 
+        #      that corresponds with this line:
+        iwL = np.interp(wL_dat,wL,np.arange(len(wL)))
+        iwG = np.interp(wG_dat,wG,np.arange(len(wG)))
+        iwL0 = iwL.astype(int)            # size [N],   number of values defined by res_L
+        iwG0 = iwG.astype(int)            # size [N],   number of values defined by res_G
+        iwL1 = iwL0 + 1
+        iwG1 = iwG0 + 1
+        # note: idcenter_left is equivalent of iv0    in FSS
+        # note: idcenter_right is equivalent of iv1   in FSS 
+
+
+        # ... Get the fraction of each line distributed to the left and to the right.
+        frac_left = (shifted_wavenum-wavenumber_calc[idcenter_left]).flatten()  # distance to left
+        frac_right = (wavenumber_calc[idcenter_right]-shifted_wavenum).flatten()  # distance to right
+        dv = frac_left+frac_right
+        frac_left, frac_right = frac_right/dv, frac_left/dv
+        
+        #DLM : Next calculate how the line is distributed over
+        #   the 2x2x2 bins we have:
+        awL = (iwL - iwL0) * (wL[iwL1] / wL_dat)
+        awG = (iwG - iwG0) * (wG[iwG1] / wG_dat) 
+        # ... fractions on DLM grid (equivalent to frac_left & frac_right for spectral grid)
+        awV00 = (1-awL) * (1-awG)
+        awV10 =    awL  * (1-awG)
+        awV01 = (1-awL) *    awG
+        awV11 =    awL  *    awG
+
+        # ... Initialize array on which to distribute the lineshapes
+        sumoflines_calc = zeros_like(wavenumber_calc)
+        
+        # Note on performance: it isn't straightforward to vectorize the summation
+        # of all lineshapes on the spectral range as some lines may be parly outside 
+        # the spectral range. 
+        # to avoid an If / Else condition in the loop, we do a vectorized
+        # comparison beforehand and run 3 different loops
+       
+        # reminder: wavenumber_calc has size [iwbroad_half+vec_length+iwbroad_half]
+        assert len(wavenumber_calc) == vec_length+2*iwbroad_half
+        boffrangeleft = (idcenter_left <= iwbroad_half)
+        boffrangeright = (idcenter_right >= vec_length+iwbroad_half)
+        binrange = np.ones_like(idcenter_left, dtype=bool) ^ (boffrangeleft + boffrangeright)
+
+        if __debug__:
+            t2 = time()
+
+#        # Performance for lines below
+#        # ----------
+#        #
+#        # on test case: 6.5k lines x 18.6k grid length
+#        # normal: ~ 36 ms  called 9 times
+#        # with @jit : ~ 200 ms called 9 times (worse!)
+        
+        # In range: aggregate both wings
+            
+        DLM = line_profile_DLM
+        # Remember: DLM[wavenumbers, Lorentzian, Gaussian]
+
+        # Loop on all lines
+        for i in range(len(broadened_param)):
+            # Get corresponding profile from Dataframe
+            S_i = float(S.T[i])
+            # Get spectral grid index
+            iv_low0 = idcenter_left[i]-iwbroad_half
+            iv_low1 = idcenter_left[i]-iwbroad_half
+            iv_high0 = iv_low0+2*iwbroad_half
+            iv_high1 = iv_low0+2*iwbroad_half
+            if iv_low0 < 0 or iv_low1 <0 or iv_high0 >= len(wavenumber_calc) or iv_high1 >= len(wavenumber_calc):
+                continue
+            # Get spectral grid fraction
+            wfr0 = frac_left[i]
+            wfr1 = frac_right[i]
+            
+            # Get line profiles in DLM
+            line_profile_i00 = DLM[:, iwL0[i], iwG0[i]]
+            line_profile_i10 = DLM[:, iwL1[i], iwG0[i]]
+            line_profile_i01 = DLM[:, iwL0[i], iwG1[i]]
+            line_profile_i11 = DLM[:, iwL1[i], iwG1[i]]
+            # Get DLM fraction
+            frac00 = awV00[i]
+            frac10 = awV10[i]
+            frac01 = awV01[i]
+            frac11 = awV11[i]
+            
+            # Sum line
+            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*frac00*line_profile_i00*S_i
+            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*frac00*line_profile_i00*S_i
+            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*frac10*line_profile_i10*S_i
+            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*frac10*line_profile_i10*S_i
+            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*frac01*line_profile_i01*S_i
+            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*frac01*line_profile_i01*S_i
+            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*frac11*line_profile_i11*S_i
+            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*frac11*line_profile_i11*S_i
+            
+            
+        # Separate in range later. For the moment assume everything is in range. 
+        
+        # Nomenclature for lines above:
+        # - low/high: start/end of a lineshape
+        # - left/right: closest spectral grid point on the left/right  # TODO replace by 0/1
+
+        if __debug__:
+            t3 = time()
+
+#        # Off Range, left : only aggregate the Right wing
+#        # @dev: the only difference with In range is the extra mask to cut the left wing.
+#        lines_l = profile_S.T[boffrangeleft]
+#        if len(lines_l) > 0:
+#            I_low_l_left = idcenter_left[boffrangeleft]+1
+#            I_low_l_right = idcenter_right[boffrangeleft]+1
+#            I_high_l_left = I_low_l_left + iwbroad_half - 1
+#            I_high_l_right = I_low_l_right + iwbroad_half - 1
+#            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_l)):
+#                # cut left wing & peak  with the [iwbroad_half+1:] mask
+#                sumoflines_calc[I_low_l_left[i]:I_high_l_left[i] + 1] += fr_left*profS[iwbroad_half+1:]
+#                sumoflines_calc[I_low_l_right[i]:I_high_l_right[i] + 1] += fr_right*profS[iwbroad_half+1:]
+#
+#        # Off Range, Right : only aggregate the left wing
+#        lines_r = profile_S.T[boffrangeright]
+#        if len(lines_r) > 0:
+#            I_low_r_left = idcenter_left[boffrangeright]-iwbroad_half
+#            I_low_r_right = idcenter_right[boffrangeright]-iwbroad_half
+#            I_high_r_left = I_low_r_left + iwbroad_half - 1      # idcenter[boffrangeright]-1
+#            I_high_r_right = I_low_r_right + iwbroad_half - 1      # idcenter[boffrangeright]-1
+#            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_r)):
+#                # cut right wing & peak  with the [:iwbroad_half] mask
+#                sumoflines_calc[I_low_r_left[i]:I_high_r_left[i] + 1] += fr_left*profS[:iwbroad_half]
+#                sumoflines_calc[I_low_r_right[i]:I_high_r_right[i] + 1] += fr_right*profS[:iwbroad_half]
+
+        if __debug__:
+            t4 = time()
+            
+        # Get valid range (discard wings)
+        sumoflines = sumoflines_calc[self.woutrange]
+        
+        if __debug__:
+            if self.verbose >= 3: 
+                printg('... Initialized vectors in {0:.1f}s'.format(t1-t0))
+                printg('... Get closest matching line & fraction in {0:.1f}s'.format(t2-t1))
+                printg('... Aggregate center lines in {0:.1f}s'.format(t3-t2))
+                printg('... Aggregate wing lines in {0:.1f}s'.format(t4-t3))
+
+        return wavenumber, sumoflines
+
     def _broaden_lines(self, df):
         ''' Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
@@ -1383,7 +1658,11 @@ class BroadenFactory(BaseFactory):
         # Init arrays
         wavenumber = self.wavenumber
         # Get number of groups for memory splitting
-        chunksize = self.misc.chunksize
+        chunksize = self.misc.chunksize   
+        # TEMP: @EP use chunksize as the parameter for the broadening optimization strategy: 
+        # - None
+        # - if number: split the number of lines
+        # - if 'DLM': use DLM strategy
         
         
         try:
@@ -1391,10 +1670,49 @@ class BroadenFactory(BaseFactory):
                 
                 # Deal with all lines directly (usually faster)
                 line_profile = self._calc_lineshape(df)       # usually the bottleneck
-                (wavenumber, abscoeff) = self._apply_lineshape(
-                                        df.S, line_profile, df.shiftwav)
+                (wavenumber, abscoeff) = self._apply_lineshape(df.S, line_profile, df.shiftwav)
+            
+            elif chunksize == 'DLM':
+                # Use DLM
+                                
+                def lorentzian_step(res_L):
+                    return (res_L/0.20)**0.5
+                
+                def gaussian_step(res_G):
+                    return (res_G/0.46)**0.5
 
-            else:
+                def init_w_axis(w_dat,w_step):
+                    f = 1 + w_step
+                    N = max(1,int(np.log(max(w_dat) / min(w_dat))/np.log(f))+1)+1
+                    return min(w_dat) * f ** np.arange(N)
+
+                # TODO: move previously where calc_...FWHM is calculated @EP
+                res_L = 0.01    # DLM user params
+                res_G = 0.01    # DLM user params
+                
+                wL_dat = df.hwhm_lorentz*2    # FWHM
+                wG_dat = df.hwhm_gauss*2      # FWHM
+                 
+                wL_step = lorentzian_step(res_L)
+                wG_step = gaussian_step(res_G)
+                
+                wL = init_w_axis(wL_dat,wL_step)      # FWHM
+                wG = init_w_axis(wG_dat,wG_step)      # FWHM
+                
+#                IL_FT,IG_FT = _calc_lineshape_DLM_FT(wavenumber,wL, wG) # TODO: Fourier version
+#                DLM = _map_DLM(wavenumber,wL,wG,
+#                               df.shiftwav.values,
+#                               df.int.values,
+#                               2*df.hwhm_lorentz.values,  # HWHM > FWHM
+#                               2*df.hwhm_gauss.values,    # HWHM > FWHM
+#                               )
+#                (wavenumber, abscoeff)  = _apply_lineshape_DLM_FT(DLM,IL_FT,IG_FT)
+                
+                line_profile_DLM = self._calc_lineshape_DLM(wL, wG) # TODO: Fourier version
+                (wavenumber, abscoeff) = self._apply_lineshape_DLM(df.S, line_profile_DLM, 
+                                            df.shiftwav, wL, wG, wL_dat, wG_dat)
+            
+            elif isinstance(chunksize, int):
                 # Cut lines in smaller bits for better memory handling
                 N = int(len(df)*len(wavenumber)/chunksize)+1
                 # Too big may be faster but overload memory.
@@ -1411,12 +1729,15 @@ class BroadenFactory(BaseFactory):
                     pb.update(i)
                 pb.done()
                 
+            else:
+                raise ValueError('Unexpected value for chunksize: {0}'.format(chunksize))
+                
         except MemoryError:
             import traceback
             traceback.print_exc()
             raise MemoryError('See details above. Try to use or reduce the '+\
                               'chunksize parameter (current={0})'.format(chunksize))
-
+            
         return wavenumber, abscoeff
 
     def _broaden_lines_noneq(self, df):
@@ -1440,13 +1761,11 @@ class BroadenFactory(BaseFactory):
         try:
             if chunksize is None:
                 # Deal with all lines directly (usually faster)
-                line_profile = self._calc_lineshape(df)
-                (wavenumber, abscoeff) = self._apply_lineshape(
-                            df.S, line_profile, df.shiftwav)
-                (_, emisscoeff) = self._apply_lineshape(
-                            df.Ei, line_profile, df.shiftwav)
+                line_profile = self._calc_lineshape(df)       # usually the bottleneck
+                (wavenumber, abscoeff) = self._apply_lineshape(df.S, line_profile, df.shiftwav)
+                (_, emisscoeff) = self._apply_lineshape(df.Ei, line_profile, df.shiftwav)
             
-            else:
+            elif isinstance(chunksize, int):
                 # Cut lines in smaller bits for better memory handling
                 
                 # Get size of numpy array for vectorialization
@@ -1468,7 +1787,10 @@ class BroadenFactory(BaseFactory):
                     emisscoeff += emission
                     pb.update(i)
                 pb.done()
-
+                
+            else:
+                raise ValueError('Unexpected value for chunksize: {0}'.format(chunksize))
+                
         except MemoryError:
             import traceback
             traceback.print_exc()
