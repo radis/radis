@@ -1410,10 +1410,6 @@ class DatabankLoader(object):
                 elif dbformat == 'hitran':
                     df = hit2df(filename, cache=db_use_cached, verbose=verbose,
                                 drop_non_numeric=True)
-                elif dbformat == 'hitran tab':
-                    df = hit2dfTAB(
-                        filename, cache=db_use_cached, verbose=verbose)
-                    # TODO: mettre à jour les noms de colonne
                 else:
                     raise ValueError('Unknown dbformat: {0}'.format(dbformat))
                     
@@ -1824,35 +1820,14 @@ class DatabankLoader(object):
             printg('... Fetching molecular parameters for all transitions')
             t0 = time()
             
-        # Performance
-        # for some reason this can be a small bottleneck
         # prefill:
-        # 13.8 s without, 11s with. The bottleneck is definitly the preallocation.
-        # neq 0.9.23 (< radis 1.0): managed to divide initial time by a factor of 10 with the 
-        # np.take() trick. Probably 1.4s now on this test case (but cant remember
-        # which one it was, i'm using a different one)
-            
-#        dgb = df.groupby(by=['id', 'iso'])
-#        
-#        # Prefill with first molecule/isotope values
-#        # (saves some time!)
-#        id1, iso1 = list(dgb.indices.keys())[0]
-#        params1 = molpar.df.loc[(id1, iso1)]  # fetch all table directly
-#        df['Ia'] = params1.abundance
-#        df['molar_mass'] = params1.mol_mass
-#        
-#        for (id, iso), idx in dgb.indices.items():
-#            if (id, iso) == (id1, iso1):
-#                continue
-#            params = molpar.df.loc[(id, iso)]  # fetch all table directly
-#            df.loc[idx, 'Ia'] = params.abundance
-#            df.loc[idx, 'molar_mass'] = params.mol_mass
-           
+
         # Use the fact that isotopes are int, and thus can be considered as 
         # index in an array.
         # ... in the following we exploit this to use the np.take function,
         # ... which is amazingly fast 
         # ... Read https://stackoverflow.com/a/51388828/5622825 to understand more
+        # ... @dev: old versions: see radis <= 0.9.19
         id_set = df.id.unique()
         
         if len(id_set) == 1:
