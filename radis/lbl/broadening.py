@@ -19,11 +19,11 @@ Most methods are written in inherited class with the following inheritance schem
 
 PUBLIC FUNCTIONS - BROADENING
 
-- :py:func:`radis.lbl.broadening.gaussian_broadening_FWHM`
+- :py:func:`radis.lbl.broadening.doppler_broadening_HWHM`
 - :py:func:`radis.lbl.broadening.gaussian_lineshape`
-- :py:func:`radis.lbl.broadening.pressure_broadening_FWHM`
-- :py:func:`radis.lbl.broadening.pressure_lineshape`
-- :py:func:`radis.lbl.broadening.voigt_broadening_FWHM`
+- :py:func:`radis.lbl.broadening.pressure_broadening_HWHM`
+- :py:func:`radis.lbl.broadening.lorentzian_lineshape`
+- :py:func:`radis.lbl.broadening.voigt_broadening_HWHM`
 - :py:func:`radis.lbl.broadening.voigt_lineshape`
 
 PRIVATE METHODS - BROADENING
@@ -32,8 +32,8 @@ convolve them, apply them on all calculated range)
 
 - :py:func:`radis.lbl.broadening._whiting`
 - :py:func:`radis.lbl.broadening._whiting_jit` : precompiled version
-- :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_FWHM`
-- :py:meth:`radis.lbl.broadening.BroadenFactory._add_voigt_broadening_FWHM`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_HWHM`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._add_voigt_broadening_HWHM`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._voigt_broadening`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_lineshape`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape`
@@ -77,17 +77,14 @@ from six.moves import range
 
 # %% Broadening functions
 
-
-def gaussian_broadening_FWHM(wav, molar_mass, Tgas):
-    ''' Computes Doppler (Gaussian) broadening FWHM over all lines with [1]_, [2]_
+def doppler_broadening_HWHM(wav, molar_mass, Tgas):
+    ''' Computes Gaussian (Doppler) broadening HWHM over all lines with [1]_, [2]_
 
     .. math::
         
-        2\\frac{w}{c} \\sqrt{\\frac{2N_a k_b T_{gas} \\ln(2)}{M}}
+        \\frac{w}{c} \\sqrt{\\frac{2N_a k_b T_{gas} \\ln 2}{M}}
         
-    with k and c in CGS
-
-    *generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
+    with ``k`` and ``c`` in CGS
 
     Parameters
     ----------
@@ -96,7 +93,7 @@ def gaussian_broadening_FWHM(wav, molar_mass, Tgas):
         transition waverange  [length N = number of lines]
 
     molar_mass: array like (g/mol)
-        molar mass for isotope of given transition   [length N]
+        molar mass for isotope of given transition, in ``g/mol``   [length N]
 
     Tgas: float (K)
         (translational) gas temperature
@@ -104,24 +101,50 @@ def gaussian_broadening_FWHM(wav, molar_mass, Tgas):
     Returns
     -------
 
-    fwhm_gauss: numpy array        [shape N]
-        gaussian FWHM for all lines
+    hwhm_gauss: numpy array    (nm / cm-1)    [shape N]
+        gaussian HWHM for all lines
 
     References
     ----------
 
-    $$ I_{gaussian} = exp(- ln2 (Δw/HWHM)^2 )) $$
+    .. math::
 
-    with HWHM full-width half maximum
+        f_{G} = \\frac{1}{\\alpha} \\sqrt{\\frac{\\ln 2}{\\pi}} exp\\left(- \\ln 2 \\left(\\frac{w - w_0}{\\alpha}\\right)^2 \\right)
 
-    .. [1] `Wikipedia <https://en.wikipedia.org/wiki/Doppler_broadening>`_ (in cm-1)
+    with α the full-width half maximum (HWHM) calculated in ``cm-1``, ``nm`` 
+    or ``Hz``:
 
+    .. [1] `HITRAN.org <https://hitran.org/docs/definitions-and-units/>`_
+           Eqn. (5)  [in cm-1]. ``c`` in CGS, HWHM \\alpha in ``nm``, M in ``g/mol``:
+         
+        .. math::
+            
+            \\alpha w_G= \\frac{w}{c_{CGS}} \\sqrt{\\frac{2N_a k_b T \\ln 2}{M}}
+               
     .. [2] `Laux et al, 2003, "Optical diagnostics of atmospheric pressure air plasmas" <http://iopscience.iop.org/article/10.1088/0963-0252/12/2/301/meta>`_
-           (in nm)
+           Eqn. (6)  [in nm]. FWHM \\Delta in ``nm``, M in ``g/mol``:
+               
+        .. math::
+            
+            \\alpha \\lambda_G=3.58\\times 10^{-07}  \\lambda \\sqrt{\\frac{T}{M}}
 
-    Both give the same results. Here we use the CGS nomenclature 
-    (reminder: molar_mass in g/mol)
+    .. [3] `Wikipedia <https://en.wikipedia.org/wiki/Doppler_broadening>`_ [in Hz]
 
+        .. math::
+
+            \\alpha f_G=\\frac{1}{2} \\sqrt{\\frac{8 k T \\ln 2}{m c^2}} f_0
+
+    Here we work in ``cm-1`` with the CGS nomenclature (molar mass M in ``g/mol``)
+
+    Notes
+    -----
+          
+    *equation generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
+
+    See Also
+    --------
+    
+    :py:func:`~radis.lbl.broadening.gaussian_lineshape`
 
     '''
 
@@ -130,28 +153,26 @@ def gaussian_broadening_FWHM(wav, molar_mass, Tgas):
     # ... Reference: either Wikipedia (in cm-1), or former Sean's code (HITRAN based)
     # ... in CGS, or Laux 2003 (in nm). Both give the same results. Here we
     # ... use the CGS nomenclature (reminder: dg.molar_mass in g/mol)
-    gamma_db = (wav/c_CGS)*sqrt((2*Na*k_b_CGS*Tgas*ln(2)) / molar_mass)  # HWHM (cm-1)
+    hwhm_gauss = (wav/c_CGS)*sqrt((2*Na*k_b_CGS*Tgas*ln(2)) / molar_mass)  # HWHM (cm-1)
 
-    return 2 * gamma_db
+    return hwhm_gauss     # HWHM (in wav unit)
 
-def gaussian_lineshape(dg, w_centered):
+def gaussian_lineshape(w_centered, hwhm):
     ''' Computes Doppler (Gaussian) lineshape over all lines with [1]_, [2]_
 
     .. math::
         
-        \\frac{1}{\\gamma_{db} \\sqrt{2\\pi}} \\operatorname{exp}\\left(-\\ln(2) 
-        \\left(\\frac{w_{centered}}{\\gamma_{db}}\\right)^2\\right)
-
-    *generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
+        \\frac{1}{\\alpha_g} \\sqrt{\\frac{\\ln(2)}{\\pi}} 
+        \\operatorname{exp}\\left(-\\ln 2 {\\left(\\frac{w_{centered}}{\\alpha_g}\\right)}^2\\right)
 
     Parameters
     ----------
 
-    dg: pandas Dataframe    [length N]
-        list of lines   (must includes `gamma_db` for broadening calculation)
-
-    w_centered: array       [one per line: shape W x N]
-        waverange (nm / cm-1) (centered on 0, broadening width size)
+    w_centered: 2D array       [one per line: shape W x N]
+        waverange (nm / cm-1) (centered on 0, size W = broadening width size)
+        
+    hwhm:  array   [shape N = number of lines]
+        half-width at half-maximum (HWHM)
 
     Tgas: K
         (translational) gas temperature
@@ -159,7 +180,7 @@ def gaussian_lineshape(dg, w_centered):
     Returns
     -------
 
-    lineshape: pandas Series        [shape N x W]
+    lineshape: array          [shape N x W]
         line profile  
 
     References
@@ -174,39 +195,33 @@ def gaussian_lineshape(dg, w_centered):
     .. [2] `Laux et al, 2003, "Optical diagnostics of atmospheric pressure air plasmas" <http://iopscience.iop.org/article/10.1088/0963-0252/12/2/301/meta>`_
            (in nm)
 
-    Both give the same results. Here we use the CGS nomenclature 
-    (reminder: molar_mass in g/mol)
+    Both give the same results. 
+    
+    Notes
+    -----
+    
+    *formula generated from the Python equation with* :py:func:`~pytexit.pytexit.py2tex`
 
+    See Also
+    --------
+    
+    :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`, 
+    :py:func:`~radis.lbl.broadening.lorentzian_lineshape`, 
+    :py:func:`~radis.lbl.broadening.voigt_lineshape`, 
 
     '''
 
-    # Prepare coefficients, vectorize
-    # --------
-
-    # Broadening parameter:
-    # ... Doppler broadened half-width:
-    # ... Reference: either Wikipedia (in cm-1), or former Sean's code (HITRAN based)
-    # ... in CGS, or Laux 2003 (in nm). Both give the same results. Here we
-    # ... use the CGS nomenclature (reminder: dg.molar_mass in g/mol)
-    gamma_db = dg.fwhm_gauss / 2     # FWHM > HWHM
-
-    # Prepare vectorized operations:
-    try:  # make it a (1,N) row vector
-        gamma_db = gamma_db.values.reshape((1, -1))
-    except AttributeError:  # probably not a dataframe: assert there is one line only.
-        assert type(gamma_db) is np.float64
-
     # Calculate broadening
     # ------
-    lineshape = (1/(gamma_db*sqrt(2*pi)))*exp(-ln(2)*(w_centered/gamma_db)**2)
+    lineshape = 1/hwhm*sqrt(ln(2)/pi)*exp(-ln(2)*(w_centered/hwhm)**2)
 
     return lineshape
 
 
-def pressure_broadening_FWHM(airbrd, selbrd, Tdpair, Tdpsel, 
+def pressure_broadening_HWHM(airbrd, selbrd, Tdpair, Tdpsel, 
                              pressure_atm, mole_fraction, Tgas, Tref):
-    ''' Calculates collisional broadening FWHM over all lines by scaling 
-    tabulated FWHM for new pressure and mole fractions conditions [1]_
+    ''' Calculates collisional broadening HWHM over all lines by scaling 
+    tabulated HWHM for new pressure and mole fractions conditions [1]_
 
     Note that collisional broadening is computed with a different coefficient
     for air broadening and self broadening. In the case of non-air mixtures,
@@ -245,13 +260,18 @@ def pressure_broadening_FWHM(airbrd, selbrd, Tdpair, Tdpsel,
     -------
 
     lineshape: pandas Series        [shape N x W]
-        line profile  
+        Lorentzian half-width at half-maximum (FWHM) for each line profile  
 
     References
     ----------
 
     .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
+    See Also
+    --------
+    
+    :py:func:`~radis.lbl.broadening.lorentzian_lineshape`
+    
     '''
 
     # Prepare coefficients, vectorize
@@ -273,35 +293,30 @@ def pressure_broadening_FWHM(airbrd, selbrd, Tdpair, Tdpsel,
         gamma_lb = (((Tref/Tgas)**Tdpair)*(airbrd*pressure_atm*(1-mole_fraction)) +
                     ((Tref/Tgas)**Tdpsel)*(selbrd*pressure_atm*mole_fraction))
 
-    return 2*gamma_lb
+    return gamma_lb
 
 
-def pressure_lineshape(dg, w_centered):
+def lorentzian_lineshape(w_centered, gamma_lb):
     ''' Computes collisional broadening over all lines [1]_
 
     .. math:: 
         
         \\frac{1}{\\pi} \\frac{\\gamma_{lb}}{\\gamma_{lb}^2+w_{centered}^2}
 
-    *generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
-
     Parameters
     ----------
 
-    dg: pandas Dataframe    [length N]
-        list of lines. Columns should includes 
-
-        - fwhm_lorentz   (cm-1)
-            full-width half max coefficient (FWHM) for pressure broadening 
-            calculation)
-
-    w_centered: array       [one per line: shape W x N]
+    w_centered: 2D array       [one per line: shape W x N]
         waverange (nm / cm-1) (centered on 0)
+        
+    gamma_lb: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for pressure broadening 
+        calculation
 
     Returns
     -------
 
-    lineshape: pandas Series        [shape N x W]
+    lineshape: array        [shape N x W]
         line profile  
 
     References
@@ -309,16 +324,19 @@ def pressure_lineshape(dg, w_centered):
 
     .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
+    Notes
+    -----
+    
+    *formula generated from the Python equation with* :py:func:`~pytexit.pytexit.py2tex`
+
+    See Also
+    --------
+    
+    :py:func:`~radis.lbl.broadening.pressure_broadening_HWHM`, 
+    :py:func:`~radis.lbl.broadening.gaussian_lineshape`, 
+    :py:func:`~radis.lbl.broadening.voigt_lineshape`, 
+
     '''
-
-    # Get collisional broadening HWHM
-    gamma_lb = dg.fwhm_lorentz / 2        # FWHM > HWHM
-
-    # Prepare vectorized operations:
-    try:  # make it a (1, N) row vector
-        gamma_lb = gamma_lb.values.reshape((1, -1))
-    except AttributeError:  # probably not a dataframe: assert there is one line only.
-        assert type(gamma_lb) is np.float64
 
     # Calculate broadening
     # -------
@@ -327,9 +345,9 @@ def pressure_lineshape(dg, w_centered):
     return lineshape
 
 
-def voigt_broadening_FWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass, 
+def voigt_broadening_HWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass, 
                           pressure_atm, mole_fraction, Tgas, Tref):
-    ''' Calculate Voigt profile FWHM for lines in df from the Gaussian and 
+    ''' Calculate Voigt profile half-width at half-maximum (HWHM) from the Gaussian and 
     Collisional broadening with the empirical formula of Olivero [1]_
 
     Gaussian broadening is calculated with [2]_, Collisional broadening with [3]_
@@ -360,11 +378,13 @@ def voigt_broadening_FWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass,
     molar_mass:   np.array  [length N]   (g/mol)
         molar mass for isotope of given transition 
 
-    Environment parameters:
+    Environment parameters
 
     pressure_atm: float  [atm]
+        pressure
 
     mole_fraction: float [0-1]
+        mole fraction
 
     Tgas: K
         (translational) gas temperature
@@ -376,44 +396,40 @@ def voigt_broadening_FWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass,
     Returns
     -------
 
-    wv, wl, wg: numpy array
-        Voigt, Lorentz, and Gaussian FWHM    
+    gamma_voigt, gamma_lb, gamma_db: numpy array
+        Voigt, Lorentz, and Gaussian HWHM    
 
     References
     ----------
+    
+    Notes: Olivero [1] uses FWHM. 
 
     .. [1] `Olivero 1977 "Empirical fits to the Voigt line width: A brief review" <https://www.sciencedirect.com/science/article/pii/0022407377901613>`_
+           Also found in NEQAIR96 Manual.
 
     .. [2] `Wikipedia <https://en.wikipedia.org/wiki/Doppler_broadening>`_ (in cm-1)
 
     .. [3] `Rothman 1998 (HITRAN 1996) eq (A.12) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
+    See Also
+    --------
+    
+    :py:func:`~radis.lbl.broadening.pressure_broadening_HWHM`, 
+    :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`, 
+    :py:func:`~radis.lbl.broadening.voigt_lineshape`
+
     '''
 
     # Collisional broadening HWHM
-    # ... Temperature and pressure dependent half width
-    # ... Reference: Rothman 1998 (HITRAN 1996) eq (A.12)
-    # ... Hypothesis: we only consider self broadening, and air broadening,
-    # ... weighted with mole fractions
-    # Note: if not Tdpsel in dg Tdpair is used. Lookup parent function
-        # | dev note: in that case we simplify the expression by calculation the 
-        # | power function once only.
-    if Tdpsel is None:
-        gamma_lb = ((Tref/Tgas)**Tdpair)*((airbrd*pressure_atm*(1-mole_fraction)) +
-                                          (selbrd*pressure_atm*mole_fraction))
-    else:
-        gamma_lb = (((Tref/Tgas)**Tdpair)*(airbrd*pressure_atm*(1-mole_fraction)) +
-                    ((Tref/Tgas)**Tdpsel)*(selbrd*pressure_atm*mole_fraction))
+    gamma_lb = pressure_broadening_HWHM(airbrd, selbrd, Tdpair, Tdpsel, 
+                                        pressure_atm, mole_fraction, Tgas, Tref)
 
     # Doppler Broadening HWHM:
-    # ... Doppler broadened half-width:
-    # ... Reference: either HITRAN (in CGS), or Laux 2003 (in nm). Both are equivalent. 
-    # ... Here we use the CGS nomenclature (reminder: dg.molar_mass in g/mol)
-    gamma_db = (wav/c_CGS)*sqrt((2*Na*k_b_CGS*Tgas*ln(2)) / molar_mass)  # HWHM (cm-1)
-
+    gamma_db = doppler_broadening_HWHM(wav, molar_mass, Tgas)
+    
     # Calculate broadening
     # -------
-    # ... Reference Whiting 1968  Equation (5)
+    # ... Reference Olivero 1977, also in NEQAIR 96 manual Eqn. (D2)
     # ... note that formula is given in wavelength (nm) [doesnt change anything]
     # ... and uses full width half maximum (FWHM)
     wg = 2*gamma_db          # HWHM > FWHM
@@ -423,10 +439,10 @@ def voigt_broadening_FWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass,
     wv = (1 - 0.18121 * (1 - sd**2) - (0.023665 * exp(0.6*sd) + 0.00418 * exp(-1.9*sd))
           * sin(pi * sd))*(wl + wg)
 
-    return wv, wl, wg
+    return wv/2, gamma_lb, gamma_db
 
 
-def voigt_lineshape(dg, w_centered, jit=True):
+def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     ''' Calculates Voigt lineshape using the approximation of the Voigt profile of
     Whiting [1]_, [2]_ that maintains a good accuracy in the far wings. Exact for a pure 
     Gaussian and pure Lorentzian
@@ -434,20 +450,22 @@ def voigt_lineshape(dg, w_centered, jit=True):
     Parameters
     ----------
 
-    dg: pandas Dataframe    [length N]
-        list of lines. Columns should include:
-
-        - `fwhm_voigt`: Voigt full-width half max coefficient (HWHM )
-            calculated by calc_voigt_broadening_FWHM)
-
-    w_centered: array      [one per line: shape W x N]
+    w_centered: 2D array       [one per line: shape W x N]
         waverange (nm / cm-1) (centered on 0)
+        
+    hwhm_lorentz: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for Lorentzian broadening
+
+    hwhm_voigt: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for Voigt broadening,
+        calculated by :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
 
     Other Parameters
     ----------------
     
     jit: boolean
-        if ``True``, use just in time compiler. Usually faster when > 10k lines
+        if ``True``, use just in time compiler. Usually faster when > 10k lines.
+        Default ``True``.
 
     Returns
     -------
@@ -457,39 +475,27 @@ def voigt_lineshape(dg, w_centered, jit=True):
 
     References
     ----------
-
+    
     .. [1] `NEQAIR 1996 User Manual, Appendix D <https://ntrs.nasa.gov/search.jsp?R=19970004690>`_
 
     .. [2] `Whiting 1968 "An empirical approximation to the Voigt profile", JQSRT <https://www.sciencedirect.com/science/article/pii/0022407368900812>`_
 
+    See Also
+    --------
+    
+     :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
+
     '''
 
-    # Prepare coefficients, vectorize
-    # --------
-    # Get Voigt FWHM
-    if not 'fwhm_voigt' in list(dg.keys()):
-        raise KeyError('fwhm_voigt: Calculate broadening with ' +
-                       'calc_voigt_broadening_FWHM first')
-    if not 'fwhm_lorentz' in list(dg.keys()):
-        raise KeyError('fwhm_lorentz: Calculate broadening with ' +
-                       'calc_voigt_broadening_FWHM first')
-    wv = dg.fwhm_voigt
-    wl = dg.fwhm_lorentz
-
-    # Prepare vectorized operations:
-    try:  # make it a (1, N) row vector
-        wl = wl.values.reshape((1, -1))
-#        wg = wg.values.reshape((1,-1))
-        wv = wv.values.reshape((1, -1))
-    except AttributeError:  # probably not a dataframe: assert there is one line only.
-        assert type(wl) is np.float64
-#        assert type(wg) is np.float64
-        assert type(wl) is np.float64
-
+    # Note: Whiting and Olivero use FWHM. Here we keep HWHM in all public function
+    # arguments for consistency. 
+    wl = 2*hwhm_lorentz       # HWHM > FWHM
+    wv = 2*hwhm_voigt         # HWHM > FWHM
+    
     if jit:
-        lineshape = _whiting_jit(wl, wv, w_centered)
+        lineshape = _whiting_jit(w_centered, wl, wv)
     else:
-        lineshape = _whiting(wl, wv, w_centered)
+        lineshape = _whiting(w_centered, wl, wv)
 
     # Normalization
 #    integral = wv*(1.065+0.447*(wl/wv)+0.058*(wl/wv)**2)
@@ -509,8 +515,20 @@ def voigt_lineshape(dg, w_centered, jit=True):
 
 # Pseudo-voigts approximations:
 
-def _whiting(wl, wv, w_centered):
+def _whiting(w_centered, wl, wv):
     ''' 
+    Parameters
+    ----------
+    
+    wl: array
+        Lorentzian FWHM
+        
+    wv: array
+        Voigt FWHM
+        
+    w_centered: 2D array
+        broadening spectral range for all lines
+    
     Notes
     -----
     
@@ -539,8 +557,20 @@ def _whiting(wl, wv, w_centered):
     return lineshape
 
 @jit(float64[:,:](float64[:,:], float64[:,:], float64[:,:]), nopython=True, cache=True) #, parallel=True)
-def _whiting_jit(wl, wv, w_centered):
+def _whiting_jit(w_centered, wl, wv):
     ''' 
+    Parameters
+    ----------
+    
+    wl: array
+        Lorentzian FWHM
+        
+    wv: array
+        Voigt FWHM
+        
+    w_centered: 2D array
+        broadening spectral range for all lines
+    
     Notes
     -----
     
@@ -631,17 +661,16 @@ class BroadenFactory(BaseFactory):
     # Only collisional & gaussian at the moment, but it is fairly easy to add
     # new ones if needed (e.g: Stark...)
 
-    # %% Functions to calculate broadening FWHM
+    # %% Functions to calculate broadening HWHM
 
-    def _calc_broadening_FWHM(self):
-        ''' Calculate broadening FWHM and store in line dataframe (df1)
+    def _calc_broadening_HWHM(self):
+        ''' Calculate broadening HWHM and store in line dataframe (df1)
 
         Parameters
         ----------
 
         df: pandas Dataframe
             lines dataframe 
-
 
         Returns
         -------
@@ -664,7 +693,7 @@ class BroadenFactory(BaseFactory):
             return  # no lines
         
         if self.verbose >= 2:
-            printg('Calculate broadening FWHM')
+            printg('Calculate broadening HWHM')
             t0 = time()
 
         if self.input.Tgas is None:
@@ -680,21 +709,21 @@ class BroadenFactory(BaseFactory):
 
         # Get broadenings
         if self._broadening_method == 'voigt':
-            # Adds fwhm_voigt, fwhm_gauss, fwhm_lorentz:
-            self._add_voigt_broadening_FWHM(
+            # Adds hwhm_voigt, hwhm_gauss, hwhm_lorentz:
+            self._add_voigt_broadening_HWHM(
                 df, pressure_atm, mole_fraction, Tgas, Tref)
         elif self._broadening_method == 'convolve':
-            # Adds fwhm_lorentz:
-            self._add_collisional_broadening_FWHM(
+            # Adds hwhm_lorentz:
+            self._add_collisional_broadening_HWHM(
                 df, pressure_atm, mole_fraction, Tgas, Tref)
-            # Add fwhm_gauss:
-            self._add_gaussian_broadening_FWHM(df, Tgas)
+            # Add hwhm_gauss:
+            self._add_doppler_broadening_HWHM(df, Tgas)
 
         if self.verbose >= 2:
-            printg('Calculated broadening FWHM in {0:.1f}s'.format(time()-t0))
+            printg('Calculated broadening HWHM in {0:.1f}s'.format(time()-t0))
 
-    def _add_voigt_broadening_FWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
-        ''' Update dataframe with Voigt FWHM
+    def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
+        ''' Update dataframe with Voigt HWHM
 
         Returns
         -------
@@ -702,11 +731,11 @@ class BroadenFactory(BaseFactory):
         Note:
             But input pandas Dataframe ``'df'`` is updated with keys: 
 
-            - fwhm_voigt
+            - ``hwhm_voigt``
 
-            - fwhm_lorentz
+            - ``hwhm_lorentz``
 
-            - fwhm_gauss
+            - ``hwhm_gauss``
 
         '''
 
@@ -714,31 +743,31 @@ class BroadenFactory(BaseFactory):
         if not 'Tdpsel' in list(df.keys()):
             self.warn('Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead',
                       'MissingSelfBroadeningWarning')
-            Tdpsel = None     # if None, voigt_broadening_FWHM uses df.Tdpair
+            Tdpsel = None     # if None, voigt_broadening_HWHM uses df.Tdpair
         else:
             Tdpsel = df.Tdpsel
 
         # Calculate broadening FWHM
-        wv, wl, wg = voigt_broadening_FWHM(df.airbrd, df.selbrd, df.Tdpair, Tdpsel, 
+        wv, wl, wg = voigt_broadening_HWHM(df.airbrd, df.selbrd, df.Tdpair, Tdpsel, 
                                            df.wav, df.molar_mass,
                                            pressure_atm, mole_fraction, Tgas, Tref)
         
         # Update dataframe
-        df['fwhm_voigt'] = wv
-        df['fwhm_lorentz'] = wl
-        df['fwhm_gauss'] = wg
+        df['hwhm_voigt'] = wv
+        df['hwhm_lorentz'] = wl
+        df['hwhm_gauss'] = wg
 
         return
 
-    def _add_collisional_broadening_FWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
-        ''' Update dataframe with collisional FWHM [1]_
+    def _add_collisional_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
+        ''' Update dataframe with collisional HWHM [1]_
 
         Returns
         -------
 
-        Input pandas Dataframe 'df' is updated with keys: 
+        Input pandas Dataframe ``df`` is updated with keys: 
 
-            - fwhm_lorentz
+            - hwhm_lorentz
 
         Notes
         -----
@@ -748,7 +777,7 @@ class BroadenFactory(BaseFactory):
         Hypothesis: we only consider self broadening, and air broadening,
         weighted with mole fractions
 
-        If not Tdpsel in dg use Tdpair
+        If not ``Tdpsel``, ``Tdpair`` is used
 
         References
         ----------
@@ -765,32 +794,33 @@ class BroadenFactory(BaseFactory):
         else:
             Tdpsel = df.Tdpsel
 
-        # Calculate broadening FWHM
-        wl = pressure_broadening_FWHM(df.airbrd, df.selbrd, df.Tdpair, Tdpsel,
+        # Calculate broadening HWHM
+        wl = pressure_broadening_HWHM(df.airbrd, df.selbrd, df.Tdpair, Tdpsel,
                                       pressure_atm, mole_fraction, Tgas, Tref)
 
         # Update dataframe
-        df['fwhm_lorentz'] = wl
+        df['hwhm_lorentz'] = wl
 
         return
 
-    def _add_gaussian_broadening_FWHM(self, df, Tgas):
-        ''' Update dataframe with Gaussian FWHM
+    def _add_doppler_broadening_HWHM(self, df, Tgas):
+        ''' Update dataframe with Gaussian HWHM
 
         Returns
         -------
 
         None: input pandas Dataframe 'df' is updated with keys: 
 
-            - fwhm_gauss
+            - ``hwhm_gauss``
 
         '''
 
-        # Calculate broadening FWHM
-        wg = gaussian_broadening_FWHM(df.wav, df.molar_mass, Tgas)
+        # Calculate broadening HWHM
+        wg = doppler_broadening_HWHM(df.wav, df.molar_mass, Tgas)
+        # Note @EP: should we use the pressure-shifted wavenumber instead of df.wav?
 
         # Update dataframe
-        df['fwhm_gauss'] = wg
+        df['hwhm_gauss'] = wg
 
         return
 
@@ -819,10 +849,19 @@ class BroadenFactory(BaseFactory):
             line profile normalized with area = 1
 
         '''
+    
+        # Get collisional broadening HWHM
+        gamma_lb = dg.hwhm_lorentz
+    
+        # Prepare vectorized operations:
+        try:  # make it a (1, N) row vector
+            gamma_lb = gamma_lb.values.reshape((1, -1))
+        except AttributeError:  # probably not a dataframe: assert there is one line only.
+            assert type(gamma_lb) is np.float64
 
         # Calculate broadening for all lines
         # -------
-        lineshape = pressure_lineshape(dg, wbroad_centered)
+        lineshape = lorentzian_lineshape(wbroad_centered, gamma_lb)
 
         # Normalize
         # ---------
@@ -867,10 +906,26 @@ class BroadenFactory(BaseFactory):
             line profile normalized with area = 1
 
         '''
+ 
+        # Prepare coefficients, vectorize
+        # --------
+
+        # Broadening parameter:
+        # ... Doppler broadened half-width:
+        # ... Reference: either Wikipedia (in cm-1), or former Sean's code (HITRAN based)
+        # ... in CGS, or Laux 2003 (in nm). Both give the same results. Here we
+        # ... use the CGS nomenclature (reminder: dg.molar_mass in g/mol)
+        gamma_db = dg.hwhm_gauss
+
+        # Prepare vectorized operations:
+        try:  # make it a (1,N) row vector
+            gamma_db = gamma_db.values.reshape((1, -1))
+        except AttributeError:  # probably not a dataframe: assert there is one line only.
+            assert type(gamma_db) is np.float64
 
         # Calculate broadening for all lines
         # -------
-        lineshape = gaussian_lineshape(dg, wbroad_centered)
+        lineshape = gaussian_lineshape(wbroad_centered, gamma_db)
 
         # Normalize
         # ---------
@@ -932,14 +987,37 @@ class BroadenFactory(BaseFactory):
         .. [2] `Whiting 1968 "An empirical approximation to the Voigt profile", JQSRT <https://www.sciencedirect.com/science/article/pii/0022407368900812>`_
 
         '''
+    
+        # Prepare coefficients, vectorize
+        # --------
+        # Get Voigt HWHM
+        if not 'hwhm_voigt' in list(dg.keys()):
+            raise KeyError('hwhm_voigt: Calculate broadening with ' +
+                           'calc_voigt_broadening_HWHM first')
+        if not 'hwhm_lorentz' in list(dg.keys()):
+            raise KeyError('hwhm_lorentz: Calculate broadening with ' +
+                           'calc_voigt_broadening_HWHM first')
+            
+        hwhm_lorentz = dg.hwhm_lorentz
+        hwhm_voigt = dg.hwhm_voigt
+
+        # Prepare vectorized operations:
+        try:  # make it a (1, N) row vector
+            hwhm_lorentz = hwhm_lorentz.values.reshape((1, -1))
+    #        wg = wg.values.reshape((1,-1))
+            hwhm_voigt = hwhm_voigt.values.reshape((1, -1))
+        except AttributeError:  # probably not a dataframe: assert there is one line only.
+            assert type(hwhm_lorentz) is np.float64
+    #        assert type(wg) is np.float64
+            assert type(hwhm_lorentz) is np.float64
 
         # Calculate broadening for all lines
         # -------
-        lineshape = voigt_lineshape(dg, wbroad_centered, jit=jit)
+        lineshape = voigt_lineshape(wbroad_centered, hwhm_lorentz, hwhm_voigt, jit=jit)
 
         return lineshape
 
-    # %% Function to calculate lineshapes from FWHM
+    # %% Function to calculate lineshapes from HWHM
 
     def _calc_lineshape(self, dg):
         ''' Sum over each line (trying to use vectorize operations to be faster)
@@ -970,7 +1048,7 @@ class BroadenFactory(BaseFactory):
         - The broadening uses a `nearest` interpolation. It can induce an error
           if the wavenumber spacing is not small enough (I'd recommend ~ 10 wsteps
           per line FWHM). So far there is no automatic check that this criteria
-          is applied.  # TODO
+          is applied.  
 
         Sizes of elements:
 
@@ -998,6 +1076,7 @@ class BroadenFactory(BaseFactory):
                 | outer                 8s
 
         '''
+        # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
         if __debug__:
             t0 = time()
@@ -1029,7 +1108,7 @@ class BroadenFactory(BaseFactory):
         if __debug__:
             t1 = time()
             
-        # Calculate lineshape (using precomputed FWHM)
+        # Calculate lineshape (using precomputed HWHM)
         if self._broadening_method == 'voigt':
             jit = True
             line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
@@ -1804,8 +1883,8 @@ class BroadenFactory(BaseFactory):
 
 
 def project_lines_on_grid(df, wavenumber, wstep):
-    ''' Quickly sums all lines on wavespace grid as rectangles of FWHM corresponding
-    to fwhm_voigt and a spectral absorption coefficient value so that linestrength 
+    ''' Quickly sums all lines on wavespace grid as rectangles of HWHM corresponding
+    to hwhm_voigt and a spectral absorption coefficient value so that linestrength 
     is conserved
     
     i.e. profiles are approximated as a rectangle of width Alpha*FWHM_Voigt, 
@@ -1815,8 +1894,8 @@ def project_lines_on_grid(df, wavenumber, wstep):
     ----------
     
     df: pandas Dataframe
-        Contains ``shiftwav`` (wavenumbers) and ``S`` (linestrengths) and ``wv`` 
-        (Voigt FWHM) size ``N`` (number of lines)
+        Contains ``shiftwav`` (wavenumbers) and ``S`` (linestrengths) and ``hwhm_voigt`` 
+        (Voigt HWHM) size ``N`` (number of lines)
         
     wavenumber: np.array
         spectral grid. Size ``W``. Expected to be regular
@@ -1843,7 +1922,7 @@ def project_lines_on_grid(df, wavenumber, wstep):
 
     shiftwav = df.shiftwav.values       # cm-1  ,   size N (number of lines)
     S = df.S.values                     # cm/#  ~   cm-1/(#.cm-2)  ,   size N
-    wv = df.fwhm_voigt.values           # FWHM
+    wv = df.hwhm_voigt.values*2         # HWHM > FWHM
 
     # ... First get closest matching line (left, and right):
     iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1
@@ -1931,8 +2010,8 @@ def project_lines_on_grid(df, wavenumber, wstep):
     return k_rough_spectrum, S_density_on_grid, line2grid_projection_left
 
 def project_lines_on_grid_noneq(df, wavenumber, wstep):
-    ''' Quickly sums all lines on wavespace grid as rectangles of FWHM corresponding
-    to fwhm_voigt and a spectral absorption coefficient value so that linestrength 
+    ''' Quickly sums all lines on wavespace grid as rectangles of HWHM corresponding
+    to hwhm_voigt and a spectral absorption coefficient value so that linestrength 
     is conserved
     
     i.e. profiles are approximated as a rectangle of width Alpha*FWHM_Voigt, 
@@ -1942,8 +2021,8 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
     ----------
     
     df: pandas Dataframe
-        Contains ``shiftwav`` (wavenumbers) and ``S`` (linestrengths) and ``wv`` 
-        (Voigt FWHM) size ``N`` (number of lines)
+        Contains ``shiftwav`` (wavenumbers) and ``S`` (linestrengths) and ``hwhm_voigt`` 
+        (Voigt HWHM) size ``N`` (number of lines)
         
     wavenumber: np.array
         spectral grid. Size ``W``. Expected to be regular
@@ -1989,7 +2068,7 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
     shiftwav = df.shiftwav.values       # cm-1  ,   size N (number of lines)
     S = df.S.values                     # cm/#  ~   cm-1/(#.cm-2)  ,   size N
     Ei = df.Ei.values                   # mW/cm3/sr
-    wv = df.fwhm_voigt.values           # FWHM
+    wv = df.hwhm_voigt.values*2         # HWHM > FWHM
 
     # ... First get closest matching line (left, and right):
     iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1

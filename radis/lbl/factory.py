@@ -610,8 +610,8 @@ class SpectrumFactory(BandFactory):
             # ----------------------------------------------------------------------
             # Line broadening
 
-            # ... calculate broadening  FWHM
-            self._calc_broadening_FWHM()
+            # ... calculate broadening  HWHM
+            self._calc_broadening_HWHM()
 
             # ... find weak lines and calculate semi-continuum (optional)
             I_continuum = self._calculate_pseudo_continuum()
@@ -884,8 +884,8 @@ class SpectrumFactory(BandFactory):
 
             # Line broadening
 
-            # ... calculate broadening  FWHM
-            self._calc_broadening_FWHM()
+            # ... calculate broadening  HWHM
+            self._calc_broadening_HWHM()
 
             # ... find weak lines and calculate semi-continuum (optional)
             k_continuum, j_continuum = self._calculate_pseudo_continuum(noneq=True)

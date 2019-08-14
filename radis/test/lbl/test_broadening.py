@@ -18,6 +18,7 @@ from radis.misc.utils import DatabankNotFound
 from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from radis.misc.printer import printm
 from os.path import join, dirname
+from numpy import isclose
 import matplotlib.pyplot as plt
 import pytest
 
@@ -103,9 +104,98 @@ def test_broadening(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
 
 
 @pytest.mark.fast
-def test_voigt_broadening_methods(verbose=True, plot=False, *args, **kwargs):
+def test_broadening_methods_different_conditions(verbose=True, plot=False, *args, **kwargs):
     '''
     Test direct Voigt broadening vs convolution of Gaussian x Lorentzian
+    for different spectral grid resolution
+    
+    Notes
+    ----- 
+    
+    Reference broadening calculated manually with the HWHM formula of 
+    `HITRAN.org <https://hitran.org/docs/definitions-and-units/>`_
+    '''
+
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+
+    # Conditions
+    wstep = 0.005
+    wmin = 2150.4  # cm-1
+    wmax = 2151.4  # cm-1
+    broadening_max_width = 2  # cm-1
+    
+    
+    for (T, p, fwhm_lorentz, fwhm_gauss) in [
+         # K, bar, expected FWHM for Lotentz, gauss (cm-1)
+         (3000, 1,      0.02849411,      0.01594728),
+         (300,  1,      0.16023415,      0.00504297),
+         (3000, 0.01,   0.00028494,      0.01594728),
+         ]:
+
+        # %% Calculate with RADIS
+        # ----------
+        sf = SpectrumFactory(
+            wavenum_min=wmin,
+            wavenum_max=wmax,
+            mole_fraction=1,
+            path_length=1,   # doesnt change anything
+            wstep=wstep,
+            pressure=p,
+            broadening_max_width=broadening_max_width,
+            isotope='1',
+            verbose=False,
+            warnings={'MissingSelfBroadeningWarning':'ignore',
+                      'NegativeEnergiesWarning':'ignore',
+                      'HighTemperatureWarning':'ignore',
+                      'OutOfRangeLinesWarning':'ignore',
+                      'GaussianBroadeningWarning':'ignore',
+                      'CollisionalBroadeningWarning':'ignore'}
+            )
+        sf.load_databank('HITRAN-CO-TEST')
+        # Manually filter line database, keep one line only:
+        sf.df0.drop(sf.df0[sf.df0.vu!=1].index, inplace=True)
+        assert isclose(sf.df0.wav, 2150.856008)
+        
+        # Calculate spectra (different broadening methods)
+        sf._broadening_method = 'voigt'
+        s_voigt = sf.eq_spectrum(Tgas=T, name='direct')
+        
+        # assert broadening FWHM are correct
+        assert isclose(2*float(sf.df1.hwhm_gauss), fwhm_gauss)
+        assert isclose(2*float(sf.df1.hwhm_lorentz), fwhm_lorentz)
+        
+        
+        sf._broadening_method = 'convolve'
+        s_convolve = sf.eq_spectrum(Tgas=T, name='convolve')
+    
+        # assert broadening FWHM are correct
+        assert isclose(2*float(sf.df1.hwhm_gauss), fwhm_gauss)
+        assert isclose(2*float(sf.df1.hwhm_lorentz), fwhm_lorentz)
+        
+        
+        res = get_residual(s_voigt, s_convolve, 'abscoeff')
+        
+        if verbose:
+            print('{0} K, {1} bar: FWHM lorentz = {2:.3f} cm-1, FWHM gauss = {3:.3f} cm-1'.format(
+                    T, p, 2*float(sf.df1.hwhm_lorentz), 2*float(sf.df1.hwhm_gauss)))
+
+        if plot:
+            plot_diff(s_voigt, s_convolve, 'abscoeff', 
+                      title=r'T {0} K, p {1} bar: w$_\mathrm{{L}}$ {2:.3f}, w$_\mathrm{{G}}$ {3:.3f} cm$^{{-1}}$'.format(
+                      T, p, 2*float(sf.df1.hwhm_lorentz), float(sf.df1.hwhm_gauss)))
+        
+        # assert all broadening methods match
+        assert res < 2e-4
+        
+        
+@pytest.mark.fast
+def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **kwargs):
+    '''
+    Test direct Voigt broadening vs convolution of Gaussian x Lorentzian
+    for different spectral grid resolution
     '''
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -116,7 +206,6 @@ def test_voigt_broadening_methods(verbose=True, plot=False, *args, **kwargs):
     # Conditions
     T = 3000
     p = 1
-    wstep = 0.1
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
     broadening_max_width = 10  # cm-1
@@ -311,6 +400,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
             plot_diff(s1, s2, 'radiance_noslit', Iunit='µW/cm2/sr/nm',
                       nfig='test_noneq_continuum: diff')
 
+            plt.figure('test_noneq_continuum: show continuum').clear()
             s2.plot('emisscoeff', label=s2.name,
                     nfig='test_noneq_continuum: show continuum')
             s2.plot('emisscoeff_continuum', nfig='same', label='Pseudo-continuum (aggreg. {0:g} lines)'.format(
@@ -332,9 +422,10 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
     # Test broadening
     test_broadening(plot=plot, verbose=verbose, *args, **kwargs)
-    test_voigt_broadening_methods(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
 
-#    # Test pseudo-continuum
+    # Test pseudo-continuum
     test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
     test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
 

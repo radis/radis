@@ -66,9 +66,9 @@ if __name__ == '__main__':
     
     
     # Print our HWHM for comparison (a posteriori)
-    print(('HWHM max {0:.2f} cm-1'.format(sf.df1.fwhm_voigt.max()/2)))
-    print(('WavenumberWingHW/HWHM', int(sf.params.broadening_max_width/(sf.df1.fwhm_voigt.max()/2))))
-    assert (int(sf.params.broadening_max_width/(sf.df1.fwhm_voigt.max()/2))) == benchmark_line_brd_ratio
+    print(('HWHM max {0:.2f} cm-1'.format(sf.df1.hwhm_voigt.max())))
+    print(('WavenumberWingHW/HWHM', int(sf.params.broadening_max_width/(sf.df1.hwhm_voigt.max()))))
+    assert (int(sf.params.broadening_max_width/(sf.df1.hwhm_voigt.max()))) == benchmark_line_brd_ratio
     
     
     # %% Run HAPI
