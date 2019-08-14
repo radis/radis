@@ -1533,83 +1533,79 @@ class BroadenFactory(BaseFactory):
         DLM = line_profile_DLM
         # Remember: DLM[wavenumbers, Lorentzian, Gaussian]
         
-        dt21 = 0
-        dt22 = 0
-        dt23 = 0
+        if __debug__:
+            dt21 = 0
+            dt22 = 0
+            dt23 = 0
+        
+        id_low_left = idcenter_left - iwbroad_half
+        id_low_right = idcenter_right - iwbroad_half
+        id_high_left = id_low_left+2*iwbroad_half
+        id_high_right = id_low_right+2*iwbroad_half
+        
+        S = S.flatten()
 
-        # Loop on all lines
-        for i in range(len(broadened_param)):
+        # Array version for inrange  (# TODO later)
+#        b = ~((id_low_left < 0) | (id_low_right < 0) | (id_high_left >= len(wavenumber_calc)) | 
+#                (id_high_right >= len(wavenumber_calc)))
+#        S = S.flatten()[b]
+#        id_low_left = id_low_left[b]
+#        id_low_right = id_low_right[b]
+#        id_high_left = id_high_left[b]
+#        id_high_right = id_high_right[b]
+#        frac_left = frac_left[b]
+#        frac_right = frac_right[b]
+#        awV00 = awV00[b]
+#        awV10 = awV10[b]
+#        awV01 = awV01[b]
+#        awV11 = awV11[b]
+        
+        # Loop on all lines    
+
+        for i, (S_i,  iv_low0, iv_low1, iv_high0, iv_high1, 
+                    iwL0_i, iwL1_i, iwG0_i, iwG1_i,
+                        wfr0, wfr1, frac00, frac10, frac01, frac11) in enumerate(zip(
+                S, id_low_left, id_low_right, id_high_left, id_high_right, 
+                    iwL0, iwL1, iwG0, iwG1,
+                        frac_left, frac_right, awV00, awV10, awV01, awV11)):
             
-            t20 = time()
+            if __debug__:
+                t20 = time()
             
-            # Get corresponding profile from Dataframe
-            S_i = float(S.T[i])
-            # Get spectral grid index
-            iv_low0 = idcenter_left[i]-iwbroad_half
-            iv_low1 = idcenter_left[i]-iwbroad_half
-            iv_high0 = iv_low0+2*iwbroad_half
-            iv_high1 = iv_low0+2*iwbroad_half
             if iv_low0 < 0 or iv_low1 <0 or iv_high0 >= len(wavenumber_calc) or iv_high1 >= len(wavenumber_calc):
                 continue
-            # Get spectral grid fraction
-            wfr0 = frac_left[i]
-            wfr1 = frac_right[i]
             
-            t21= time()
+            if __debug__:
+                t21= time()
             
-            # Get line profiles in DLM
-            line_profile_i00 = DLM[:, iwL0[i], iwG0[i]]
-            line_profile_i10 = DLM[:, iwL1[i], iwG0[i]]
-            line_profile_i01 = DLM[:, iwL0[i], iwG1[i]]
-            line_profile_i11 = DLM[:, iwL1[i], iwG1[i]]
-            # Get DLM fraction
-            frac00 = awV00[i]
-            frac10 = awV10[i]
-            frac01 = awV01[i]
-            frac11 = awV11[i]
+            # get approximate lineshape
+            lineshape = S_i*(frac00*DLM[:, iwL0_i, iwG0_i]+frac10*DLM[:, iwL1_i, iwG0_i]+
+                             frac01*DLM[:, iwL0_i, iwG1_i]+frac11*DLM[:, iwL1_i, iwG1_i])
             
-            t22 = time()
-            
+            if __debug__:
+                t22 = time()
+    
             # Sum line
 #            # test case 200k spectral points x 57k lines: ~ 12s
-            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*S_i*(frac00*line_profile_i00+
-                                                             frac10*line_profile_i10+
-                                                             frac01*line_profile_i01+
-                                                             frac11*line_profile_i11)
-            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*S_i*(frac00*line_profile_i00+
-                                                             frac10*line_profile_i10+
-                                                             frac01*line_profile_i01+
-                                                             frac11*line_profile_i11)
+            # ... after further approximation: reduced ~3.5s
+            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*lineshape
+            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*lineshape
             
-#            # alternative : 
-#            # test case 200k spectral points x 57k lines: ~ 120s (much worse)
-#            indices0 = np.arange(iv_low0, iv_high0+1)
-#            indices1 = np.arange(iv_low1, iv_high1+1)
-#            np.add.at(sumoflines_calc, indices0, wfr0*frac00*line_profile_i00*S_i)
-#            np.add.at(sumoflines_calc, indices1, wfr1*frac00*line_profile_i00*S_i)
-#            np.add.at(sumoflines_calc, indices0, wfr0*frac10*line_profile_i10*S_i)
-#            np.add.at(sumoflines_calc, indices1, wfr1*frac10*line_profile_i10*S_i)
-#            np.add.at(sumoflines_calc, indices0, wfr0*frac01*line_profile_i01*S_i)
-#            np.add.at(sumoflines_calc, indices1, wfr1*frac01*line_profile_i01*S_i)
-#            np.add.at(sumoflines_calc, indices0, wfr0*frac11*line_profile_i11*S_i)
-#            np.add.at(sumoflines_calc, indices1, wfr1*frac11*line_profile_i11*S_i)
+            if __debug__:
+                t23 = time()
+                dt21 += t21 - t20
+                dt22 += t22 - t21
+                dt23 += t23 - t22
             
-            
-            t23 = time()
-            
-            
-            dt21 += t21 - t20
-            dt22 += t22 - t21
-            dt23 += t23 - t22
-            
-        # Separate in range later. For the moment assume everything is in range. 
-        
         # Nomenclature for lines above:
         # - low/high: start/end of a lineshape
         # - left/right: closest spectral grid point on the left/right  # TODO replace by 0/1
 
         if __debug__:
             t3 = time()
+
+        # TODO : same as above, for for lines outside the range. 
+        # May try with a comparison inside the loop first. 
 
 #        # Off Range, left : only aggregate the Right wing
 #        # @dev: the only difference with In range is the extra mask to cut the left wing.
@@ -1648,9 +1644,10 @@ class BroadenFactory(BaseFactory):
                 printg('... Get closest matching line & fraction in {0:.1f}s'.format(t2-t1))
                 printg('... Aggregate center lines in {0:.1f}s'.format(t3-t2))
                 
+            if self.verbose >= 4: 
                 printg('... ...  get grid profile {0:.1f}s'.format(dt21))
-                printg('... ...  get DLM fraction {0:.1f}s'.format(dt22))
-                printg('... ...  sum lines {0:.1f}s'.format(dt23))
+                printg('... ...  calc lineshape from DLM {0:.1f}s'.format(dt22))
+                printg('... ...  sum on spectral range {0:.1f}s'.format(dt23))
                 
                 
                 printg('... Aggregate wing lines in {0:.1f}s'.format(t4-t3))
@@ -1713,8 +1710,8 @@ class BroadenFactory(BaseFactory):
                 res_L = 0.01    # DLM user params
                 res_G = 0.01    # DLM user params
                 
-                wL_dat = df.hwhm_lorentz*2    # FWHM
-                wG_dat = df.hwhm_gauss*2      # FWHM
+                wL_dat = df.hwhm_lorentz.values*2    # FWHM
+                wG_dat = df.hwhm_gauss.values*2      # FWHM
                  
                 wL_step = lorentzian_step(res_L)
                 wG_step = gaussian_step(res_G)
