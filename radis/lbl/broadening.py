@@ -1172,8 +1172,8 @@ class BroadenFactory(BaseFactory):
             
             
         elif self._broadening_method == 'convolve':
-            IL = [gaussian_lineshape(wbroad, wL[i]/2) for i in range(len(wL))]  # TODO: vectorize later   # FWHM>HWHM
-            IG = [lorentzian_lineshape(wbroad, wG[i]/2) for i in range(len(wG))]  # TODO: vectorize later # FWHM>HWHM
+            IL = [lorentzian_lineshape(wbroad, wL[i]/2) for i in range(len(wL))]  # TODO: vectorize later   # FWHM>HWHM
+            IG = [gaussian_lineshape(wbroad, wG[i]/2) for i in range(len(wG))]  # TODO: vectorize later # FWHM>HWHM
 
             # Get all combinations of Voigt lineshapes
             line_profile_DLM = np.empty((len(wbroad), len(wL), len(wG)))
@@ -1469,22 +1469,7 @@ class BroadenFactory(BaseFactory):
         
         if __debug__:
             t1 = time()
-            
-            '''
-DLM = _map_DLM(wavenumber,wL,wG,
-               df.shiftwav.values,
-               df.int.values,
-               2*df.hwhm_lorentz.values,  # HWHM > FWHM
-               2*df.hwhm_gauss.values,    # HWHM > FWHM
-               )
-_map_DLM(v,wL,wG,v_dat,I_dat,wL_dat,wG_dat):
-    
-    v_dat = df.shiftwav.values
-    I_dat = df.int.values  # S here
-    wL_dat = 2*df.hwhm_lorentz.values
-    wG_dat = 2*df.hwhm_gauss.values
-    '''
-                
+
         # ... First get closest matching line (on the left, and on the right)
         idcenter_left = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel() - 1
         idcenter_right = np.minimum(idcenter_left + 1, len(wavenumber_calc)-1)
@@ -1547,9 +1532,16 @@ _map_DLM(v,wL,wG,v_dat,I_dat,wL_dat,wG_dat):
             
         DLM = line_profile_DLM
         # Remember: DLM[wavenumbers, Lorentzian, Gaussian]
+        
+        dt21 = 0
+        dt22 = 0
+        dt23 = 0
 
         # Loop on all lines
         for i in range(len(broadened_param)):
+            
+            t20 = time()
+            
             # Get corresponding profile from Dataframe
             S_i = float(S.T[i])
             # Get spectral grid index
@@ -1563,6 +1555,8 @@ _map_DLM(v,wL,wG,v_dat,I_dat,wL_dat,wG_dat):
             wfr0 = frac_left[i]
             wfr1 = frac_right[i]
             
+            t21= time()
+            
             # Get line profiles in DLM
             line_profile_i00 = DLM[:, iwL0[i], iwG0[i]]
             line_profile_i10 = DLM[:, iwL1[i], iwG0[i]]
@@ -1574,16 +1568,39 @@ _map_DLM(v,wL,wG,v_dat,I_dat,wL_dat,wG_dat):
             frac01 = awV01[i]
             frac11 = awV11[i]
             
-            # Sum line
-            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*frac00*line_profile_i00*S_i
-            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*frac00*line_profile_i00*S_i
-            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*frac10*line_profile_i10*S_i
-            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*frac10*line_profile_i10*S_i
-            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*frac01*line_profile_i01*S_i
-            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*frac01*line_profile_i01*S_i
-            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*frac11*line_profile_i11*S_i
-            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*frac11*line_profile_i11*S_i
+            t22 = time()
             
+            # Sum line
+#            # test case 200k spectral points x 57k lines: ~ 12s
+            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*S_i*(frac00*line_profile_i00+
+                                                             frac10*line_profile_i10+
+                                                             frac01*line_profile_i01+
+                                                             frac11*line_profile_i11)
+            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*S_i*(frac00*line_profile_i00+
+                                                             frac10*line_profile_i10+
+                                                             frac01*line_profile_i01+
+                                                             frac11*line_profile_i11)
+            
+#            # alternative : 
+#            # test case 200k spectral points x 57k lines: ~ 120s (much worse)
+#            indices0 = np.arange(iv_low0, iv_high0+1)
+#            indices1 = np.arange(iv_low1, iv_high1+1)
+#            np.add.at(sumoflines_calc, indices0, wfr0*frac00*line_profile_i00*S_i)
+#            np.add.at(sumoflines_calc, indices1, wfr1*frac00*line_profile_i00*S_i)
+#            np.add.at(sumoflines_calc, indices0, wfr0*frac10*line_profile_i10*S_i)
+#            np.add.at(sumoflines_calc, indices1, wfr1*frac10*line_profile_i10*S_i)
+#            np.add.at(sumoflines_calc, indices0, wfr0*frac01*line_profile_i01*S_i)
+#            np.add.at(sumoflines_calc, indices1, wfr1*frac01*line_profile_i01*S_i)
+#            np.add.at(sumoflines_calc, indices0, wfr0*frac11*line_profile_i11*S_i)
+#            np.add.at(sumoflines_calc, indices1, wfr1*frac11*line_profile_i11*S_i)
+            
+            
+            t23 = time()
+            
+            
+            dt21 += t21 - t20
+            dt22 += t22 - t21
+            dt23 += t23 - t22
             
         # Separate in range later. For the moment assume everything is in range. 
         
@@ -1630,6 +1647,12 @@ _map_DLM(v,wL,wG,v_dat,I_dat,wL_dat,wG_dat):
                 printg('... Initialized vectors in {0:.1f}s'.format(t1-t0))
                 printg('... Get closest matching line & fraction in {0:.1f}s'.format(t2-t1))
                 printg('... Aggregate center lines in {0:.1f}s'.format(t3-t2))
+                
+                printg('... ...  get grid profile {0:.1f}s'.format(dt21))
+                printg('... ...  get DLM fraction {0:.1f}s'.format(dt22))
+                printg('... ...  sum lines {0:.1f}s'.format(dt23))
+                
+                
                 printg('... Aggregate wing lines in {0:.1f}s'.format(t4-t3))
 
         return wavenumber, sumoflines
