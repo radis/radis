@@ -60,6 +60,7 @@ from radis.lbl.base import BaseFactory
 from radis.phys.constants import Na
 from radis.phys.constants import k_b_CGS, c_CGS
 from radis.misc.printer import printg
+from radis.misc.basics import is_float
 from numpy import (exp, arange, zeros_like, trapz, pi, sqrt, sin)
 from numpy import log as ln
 from multiprocessing import Pool, cpu_count
@@ -1728,7 +1729,7 @@ class BroadenFactory(BaseFactory):
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(df.S, line_profile_DLM, 
                                             df.shiftwav, wL, wG, wL_dat, wG_dat)
             
-            elif isinstance(chunksize, int):
+            elif is_float(chunksize):
                 # Cut lines in smaller bits for better memory handling
                 N = int(len(df)*len(wavenumber)/chunksize)+1
                 # Too big may be faster but overload memory.
@@ -1781,7 +1782,7 @@ class BroadenFactory(BaseFactory):
                 (wavenumber, abscoeff) = self._apply_lineshape(df.S, line_profile, df.shiftwav)
                 (_, emisscoeff) = self._apply_lineshape(df.Ei, line_profile, df.shiftwav)
             
-            elif isinstance(chunksize, int):
+            elif is_float(chunksize):
                 # Cut lines in smaller bits for better memory handling
                 
                 # Get size of numpy array for vectorialization
