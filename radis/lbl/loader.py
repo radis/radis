@@ -1720,7 +1720,7 @@ class DatabankLoader(object):
 
         # Use HAPI (HITRAN Python interface, integrated in RADIS)
         if parfuncfmt == 'hapi':
-            parsum = PartFuncHAPI(M=molecule, I=isotope, path=parfunc)
+            parsum = PartFuncHAPI(M=molecule, I=isotope, path=parfunc, verbose=self.verbose)
         elif parfuncfmt == 'cdsd':  # Use tabulated CDSD partition functions
             assert molecule == 'CO2'
             parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
