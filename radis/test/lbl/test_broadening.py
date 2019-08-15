@@ -25,7 +25,7 @@ import pytest
 
 @pytest.mark.fast
 @pytest.mark.needs_connection
-def test_broadening(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
+def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
     '''
     Test broadening against HAPI and tabulated data
 
@@ -254,6 +254,8 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
 def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     '''
     Test use of lineshape template for broadening calculation. 
+    
+    Ensures that results are the same with and without DLM.
     '''
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -288,9 +290,6 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
         )  # 0.2)
     sf.load_databank('HITRAN-CO-TEST')
     
-    # Manual convolve (Voigt not implemented for DLM yet) # TODO
-    sf._broadening_method = 'convolve'
-    
     # Reference: calculate without DLM 
     assert sf.misc['chunksize'] is None
     s_ref = sf.eq_spectrum(Tgas=T)
@@ -298,11 +297,17 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     
     # DLM:
     sf.misc['chunksize'] = 'DLM'
+    sf._broadening_method = 'convolve'
     s_dlm = sf.eq_spectrum(Tgas=T)
     s_dlm.name = 'DLM ({0:.2f}s)'.format(s_dlm.conditions['calculation_time'])
+    # DLM Voigt with Whiting approximation:
+    sf._broadening_method = 'voigt'
+    s_dlm_voigt = sf.eq_spectrum(Tgas=T)
+    s_dlm_voigt.name = 'DLM Whiting ({0:.2f}s)'.format(s_dlm_voigt.conditions['calculation_time'])
     
     # Compare
     res = get_residual(s_ref, s_dlm, 'abscoeff')
+    res_voigt = get_residual(s_dlm, s_dlm_voigt, 'abscoeff')
     
     if verbose:
         print('Residual:', res)
@@ -311,8 +316,10 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     if plot:
         plot_diff(s_ref, s_dlm, 'abscoeff')
         plt.legend()
+        plot_diff(s_dlm, s_dlm_voigt, 'abscoeff')
     
-    assert res < 1e-5
+    assert res < 1.2e-5
+    assert res_voigt < 1e-5
 
 
 #@pytest.mark.needs_config_file
@@ -485,17 +492,16 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
-    test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
-    
 #    # Test broadening
-#    test_broadening(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
-#
-#    # Test pseudo-continuum
-#    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_vs_hapi(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
 
+    # Test pseudo-continuum
+    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+    
     return True
 
 

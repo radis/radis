@@ -361,6 +361,8 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None           #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = 'cm-1'             #: waverange unit: should be cm-1.
         self.wstep = None                  #: float: spectral resolution (cm-1)
+        self.dlm_res_L = 0.01              #: float (cm-1): Lorentzian step for DLM lineshape database. Default 0.01 cm-1
+        self.dlm_res_G = 0.01              #: float (cm-1): DLM Gaussian step DLM lineshape database. Default 0.01 cm-1
         
 class MiscParams(ConditionDict):
     ''' A class to hold Spectrum calculation descriptive parameters. Unlike 

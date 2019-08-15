@@ -415,6 +415,7 @@ def voigt_broadening_HWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass,
     See Also
     --------
     
+    :py:func:`~radis.lbl.broadening.olivero_1977`,
     :py:func:`~radis.lbl.broadening.pressure_broadening_HWHM`, 
     :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`, 
     :py:func:`~radis.lbl.broadening.voigt_lineshape`
@@ -435,12 +436,42 @@ def voigt_broadening_HWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass,
     # ... and uses full width half maximum (FWHM)
     wg = 2*gamma_db          # HWHM > FWHM
     wl = 2*gamma_lb          # HWHM > FWHM
+    
+    return olivero_1977(wg, wl)/2, gamma_lb, gamma_db       # FWHM > HWHM
+
+def olivero_1977(wg, wl):
+    ''' Calculate approximate Voigt FWHM with Olivero 77, also in NEQAIR 96 manual Eqn. (D2)
+    Note that formula is given in wavelength (nm) [doesnt change anything]
+    and uses full width half maximum (FWHM) of Gaussian and Lorentzian profiles.
+    
+    For use with the Whiting formula of :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+    
+    Parameters
+    ----------
+    
+    wg: numpy array
+        Gaussian profile FWHM
+        
+    wl: numpy array
+        Lorentzian profile FWHM
+    
+    Returns
+    -------
+
+    gamma_voigt: numpy array
+        Voigt FWHM
+        
+    See Also
+    --------
+    
+    :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`, 
+    :py:func:`~radis.lbl.broadening.voigt_lineshape`
+    '''
 #    wv = wl/2 + sqrt((1/4*wl**2+wg**2))
     sd = (wl-wg)/(wl+wg)
     wv = (1 - 0.18121 * (1 - sd**2) - (0.023665 * exp(0.6*sd) + 0.00418 * exp(-1.9*sd))
           * sin(pi * sd))*(wl + wg)
-
-    return wv/2, gamma_lb, gamma_db
+    return wv
 
 
 def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
@@ -1009,7 +1040,7 @@ class BroadenFactory(BaseFactory):
         except AttributeError:  # probably not a dataframe: assert there is one line only.
             assert type(hwhm_lorentz) is np.float64
     #        assert type(wg) is np.float64
-            assert type(hwhm_lorentz) is np.float64
+            assert type(hwhm_voigt) is np.float64
 
         # Calculate broadening for all lines
         # -------
@@ -1147,37 +1178,95 @@ class BroadenFactory(BaseFactory):
 
         return line_profile
 
-    def _calc_lineshape_DLM(self, wL, wG):
-        ''' 
+    def _calc_lineshape_DLM(self, df):
+        ''' Generate the lineshape database using the steps defined by the 
+        parameters :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L` and 
+        :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
+        
         Parameters
         ----------
         
-        wavenumber: array
-            wavenumbers
+        df: pandas DataFrame
+            line database
             
-        wL: array
-            Lorentzian FWHM
+        Returns
+        -------
+        
+        wL, wG: array
+            Lorentzian and Gaussian FWHM in DLM
             
-        wG: array
-            Gaussian FWHM
+        wL_dat, wG_dat: array
+            Lorentzian and Gaussian FWHM of data lines. 
             
         '''
+  
+        if __debug__:
+            t0 = time()
+                    
+        # Prepare steps for Lineshape database
+        # ------------------------------------
+        
+        def lorentzian_step(res_L):
+            return (res_L/0.20)**0.5
+        
+        def gaussian_step(res_G):
+            return (res_G/0.46)**0.5
+
+        def init_w_axis(w_dat,w_step):
+            f = 1 + w_step
+            N = max(1,int(np.log(max(w_dat) / min(w_dat))/np.log(f))+1)+1
+            return min(w_dat) * f ** np.arange(N)
+
+        res_L = self.params.dlm_res_L    # DLM user params
+        res_G = self.params.dlm_res_G    # DLM user params
+        
+        wL_dat = df.hwhm_lorentz.values*2    # FWHM
+        wG_dat = df.hwhm_gauss.values*2      # FWHM
+         
+        wL_step = lorentzian_step(res_L)
+        wG_step = gaussian_step(res_G)
+        
+        wL = init_w_axis(wL_dat,wL_step)      # FWHM
+        wG = init_w_axis(wG_dat,wG_step)      # FWHM
+        
+        # Calculate the Lineshape
+        # -----------------------
+        
         # TODO: Fourier version 
 #        wavenumber_calc = self.wavenumber_calc
         wbroad = self.wbroad_centered
-                    
+        line_profile_DLM = {}
+        
         if self._broadening_method == 'voigt':
-#                        jit = True
-#                        line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
-            raise NotImplementedError('Broadening method with DLM: {0}'.format(self._broadening_method))
+            jit = False  # not enough lines to make the just-in-time FORTRAN compilation useful
             
+            # TODO: vectorized version (WIP below)
+#            # Get all combinations of Voigt lineshapes
+#            wG_arr, wL_arr = np.meshgrid(wG, wL)
+#            wV_arr = olivero_1977(wG_arr, wL_arr)   # FWHM
+#            
+#            # Prepare vectorized operations:
+#            try:  # make it a (1, N) row vector
+#                wL_arr = wL_arr.reshape((1, -1))
+#                wV_arr = wV_arr.reshape((1, -1))
+#            except AttributeError:  # probably not an array: assert there is one line only.
+#                assert type(wL_arr) is np.float64
+#                assert type(wV_arr) is np.float64
+#    
+#            lineshape_arr = voigt_lineshape(wbroad, wL_arr/2, wV_arr/2, jit=jit)  # FWHM > HWHM
+
+            for i in range(len(wL)):
+                line_profile_DLM[i] = {}
+                for j in range(len(wG)):
+                    wV_ij = olivero_1977(wG[j], wL[i])     # FWHM
+                    lineshape = voigt_lineshape(wbroad, wL[i]/2, wV_ij/2, jit=jit)  # FWHM > HWHM
+                    line_profile_DLM[i][j] = lineshape
             
         elif self._broadening_method == 'convolve':
-            IL = [lorentzian_lineshape(wbroad, wL[i]/2) for i in range(len(wL))]  # TODO: vectorize later   # FWHM>HWHM
-            IG = [gaussian_lineshape(wbroad, wG[i]/2) for i in range(len(wG))]  # TODO: vectorize later # FWHM>HWHM
+            IL = [lorentzian_lineshape(wbroad, wL[i]/2) for i in range(len(wL))] # TODO: vectorize later   # FWHM>HWHM
+            IG = [gaussian_lineshape(wbroad, wG[i]/2) for i in range(len(wG))]   # TODO: vectorize later # FWHM>HWHM
 
             # Get all combinations of Voigt lineshapes
-            line_profile_DLM = {}
             for i in range(len(wL)):
                 line_profile_DLM[i] = {}
                 for j in range(len(wG)):
@@ -1185,10 +1274,13 @@ class BroadenFactory(BaseFactory):
                     lineshape /= np.trapz(lineshape, x=wbroad)
                     line_profile_DLM[i][j] = lineshape
             
-            return line_profile_DLM
-
         else:
             raise NotImplementedError('Broadening method with DLM: {0}'.format(self._broadening_method))
+        
+        if __debug__ and self.verbose >= 3:
+            printg('... Precomputed DLM lineshapes in {0:.1f}s'.format(time()-t0))
+
+        return line_profile_DLM, wL, wG, wL_dat, wG_dat
         
     def plot_broadening(self, i=0, pressure_atm=None, mole_fraction=None,
                         Tgas=None):
@@ -1292,8 +1384,8 @@ class BroadenFactory(BaseFactory):
         vec_length = len(wavenumber)
 
         # Vectorize the chunk of lines
-        S = broadened_param.values.reshape((1, -1))
-        shifted_wavenum = shifted_wavenum.values.reshape((1, -1))  # make it a row vector
+        S = broadened_param.reshape((1, -1))
+        shifted_wavenum = shifted_wavenum.reshape((1, -1))  # make it a row vector
 
         # Get broadening array
         wbroad_centered = self.wbroad_centered  # size (B,)
@@ -1456,8 +1548,7 @@ class BroadenFactory(BaseFactory):
         wavenumber_calc = self.wavenumber_calc
 
         # Vectorize the chunk of lines
-        S = broadened_param.values
-        shifted_wavenum = shifted_wavenum.values
+        S = broadened_param
 
         # ---------------------------
         # Apply line profile
@@ -1499,7 +1590,7 @@ class BroadenFactory(BaseFactory):
         # ... Initialize array on which to distribute the lineshapes
         DLM = np.zeros((len(wavenumber_calc), len(wL), len(wG)))
             
-        # Distribute all line intensities on the 2x2x2 bins. 
+        # Distribute all line intensities on the 2x2x2 bins.
         np.add.at(DLM,(iv0,iwL0,iwG0),Iv0*awV00)
         np.add.at(DLM,(iv1,iwL0,iwG0),Iv1*awV00)
         np.add.at(DLM,(iv0,iwL1,iwG0),Iv0*awV10)
@@ -1579,47 +1670,18 @@ class BroadenFactory(BaseFactory):
                 
                 # Deal with all lines directly (usually faster)
                 line_profile = self._calc_lineshape(df)       # usually the bottleneck
-                (wavenumber, abscoeff) = self._apply_lineshape(df.S, line_profile, df.shiftwav)
+                (wavenumber, abscoeff) = self._apply_lineshape(df.S.values, line_profile, 
+                                                               df.shiftwav.values)
             
             elif chunksize == 'DLM':
                 # Use DLM
-                                
-                def lorentzian_step(res_L):
-                    return (res_L/0.20)**0.5
-                
-                def gaussian_step(res_G):
-                    return (res_G/0.46)**0.5
-
-                def init_w_axis(w_dat,w_step):
-                    f = 1 + w_step
-                    N = max(1,int(np.log(max(w_dat) / min(w_dat))/np.log(f))+1)+1
-                    return min(w_dat) * f ** np.arange(N)
-
-                # TODO: move previously where calc_...FWHM is calculated @EP
-                res_L = 0.01    # DLM user params
-                res_G = 0.01    # DLM user params
-                
-                wL_dat = df.hwhm_lorentz.values*2    # FWHM
-                wG_dat = df.hwhm_gauss.values*2      # FWHM
-                 
-                wL_step = lorentzian_step(res_L)
-                wG_step = gaussian_step(res_G)
-                
-                wL = init_w_axis(wL_dat,wL_step)      # FWHM
-                wG = init_w_axis(wG_dat,wG_step)      # FWHM
-                
-#                IL_FT,IG_FT = _calc_lineshape_DLM_FT(wavenumber,wL, wG) # TODO: Fourier version
-#                DLM = _map_DLM(wavenumber,wL,wG,
-#                               df.shiftwav.values,
-#                               df.int.values,
-#                               2*df.hwhm_lorentz.values,  # HWHM > FWHM
-#                               2*df.hwhm_gauss.values,    # HWHM > FWHM
-#                               )
-#                (wavenumber, abscoeff)  = _apply_lineshape_DLM_FT(DLM,IL_FT,IG_FT)
-                
-                line_profile_DLM = self._calc_lineshape_DLM(wL, wG) # TODO: Fourier version
-                (wavenumber, abscoeff) = self._apply_lineshape_DLM(df.S, line_profile_DLM, 
-                                            df.shiftwav, wL, wG, wL_dat, wG_dat)
+                              
+                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df) # wL, wG) # TODO: Fourier version
+                (wavenumber, abscoeff) = self._apply_lineshape_DLM(df.S.values, 
+                                                                   line_profile_DLM, 
+                                                                   df.shiftwav.values, 
+                                                                   wL, wG, 
+                                                                   wL_dat, wG_dat)
             
             elif is_float(chunksize):
                 # Cut lines in smaller bits for better memory handling
@@ -1632,8 +1694,9 @@ class BroadenFactory(BaseFactory):
                 pb = ProgressBar(N, active=self.verbose)
                 for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                     line_profile = self._calc_lineshape(dg)
-                    (wavenumber, absorption) = self._apply_lineshape(
-                        dg.S, line_profile, dg.shiftwav)
+                    (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
+                                                                     line_profile, 
+                                                                     dg.shiftwav.values)
                     abscoeff += absorption
                     pb.update(i)
                 pb.done()
@@ -1671,8 +1734,12 @@ class BroadenFactory(BaseFactory):
             if chunksize is None:
                 # Deal with all lines directly (usually faster)
                 line_profile = self._calc_lineshape(df)       # usually the bottleneck
-                (wavenumber, abscoeff) = self._apply_lineshape(df.S, line_profile, df.shiftwav)
-                (_, emisscoeff) = self._apply_lineshape(df.Ei, line_profile, df.shiftwav)
+                (wavenumber, abscoeff) = self._apply_lineshape(df.S.values, 
+                                                               line_profile, 
+                                                               df.shiftwav.values)
+                (_, emisscoeff) = self._apply_lineshape(df.Ei.values,
+                                                        line_profile, 
+                                                        df.shiftwav.values)
             
             elif is_float(chunksize):
                 # Cut lines in smaller bits for better memory handling
@@ -1688,10 +1755,12 @@ class BroadenFactory(BaseFactory):
                 pb = ProgressBar(N, active=self.verbose)
                 for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                     line_profile = self._calc_lineshape(dg)
-                    (wavenumber, absorption) = self._apply_lineshape(
-                        dg.S, line_profile, dg.shiftwav)
-                    (_, emission) = self._apply_lineshape(
-                        dg.Ei, line_profile, dg.shiftwav)
+                    (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
+                                                                     line_profile, 
+                                                                     dg.shiftwav.values)
+                    (_, emission) = self._apply_lineshape(dg.Ei.values, 
+                                                          line_profile, 
+                                                          dg.shiftwav.values)
                     abscoeff += absorption       #
                     emisscoeff += emission
                     pb.update(i)
