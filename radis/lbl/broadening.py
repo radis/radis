@@ -1214,8 +1214,8 @@ class BroadenFactory(BaseFactory):
 
         def init_w_axis(w_dat,w_step):
             f = 1 + w_step
-            N = max(1,int(np.log(max(w_dat) / min(w_dat))/np.log(f))+1)+1
-            return min(w_dat) * f ** np.arange(N)
+            N = max(1,int(np.log(w_dat.max() / w_dat.min())/np.log(f))+1)+1
+            return np.min(w_dat) * f ** np.arange(N)
 
         res_L = self.params.dlm_res_L    # DLM user params
         res_G = self.params.dlm_res_G    # DLM user params
@@ -1234,44 +1234,58 @@ class BroadenFactory(BaseFactory):
         
         # TODO: Fourier version 
 #        wavenumber_calc = self.wavenumber_calc
-        wbroad = self.wbroad_centered
+        
+#        ''' TODO move that differently selon que Voigt ou Convolve 
         line_profile_DLM = {}
         
         if self._broadening_method == 'voigt':
             jit = False  # not enough lines to make the just-in-time FORTRAN compilation useful
-            
-            # TODO: vectorized version (WIP below)
-#            # Get all combinations of Voigt lineshapes
-#            wG_arr, wL_arr = np.meshgrid(wG, wL)
-#            wV_arr = olivero_1977(wG_arr, wL_arr)   # FWHM
-#            
-#            # Prepare vectorized operations:
-#            try:  # make it a (1, N) row vector
-#                wL_arr = wL_arr.reshape((1, -1))
-#                wV_arr = wV_arr.reshape((1, -1))
-#            except AttributeError:  # probably not an array: assert there is one line only.
-#                assert type(wL_arr) is np.float64
-#                assert type(wV_arr) is np.float64
-#    
-#            lineshape_arr = voigt_lineshape(wbroad, wL_arr/2, wV_arr/2, jit=jit)  # FWHM > HWHM
 
+            N = len(wG)*len(wL)        # number of lineshape templates in DLM 
+            
+            # Generate broadening array (so that it is as large as `broadening_max_width`
+            # in cm-1, and with one array per lineshape template)
+            wbroad_centered = np.outer(self.wbroad_centered, np.ones(N))
+            
+            # Get all combinations of Voigt lineshapes
+            wL_arr, wG_arr = np.meshgrid(wL, wG)
+            wV_arr = olivero_1977(wG_arr, wL_arr)   # FWHM
+            
+#            # Prepare vectorized operations:
+            assert wL_arr.shape == (len(wG), len(wL))
+            wL_arr = wL_arr.reshape((1, -1))
+            wV_arr = wV_arr.reshape((1, -1))
+    
+            lineshape_arr = voigt_lineshape(wbroad_centered, wL_arr/2, wV_arr/2, jit=jit)  # FWHM > HWHM
+
+            counter = 0
             for i in range(len(wL)):
                 line_profile_DLM[i] = {}
-                for j in range(len(wG)):
-                    wV_ij = olivero_1977(wG[j], wL[i])     # FWHM
-                    lineshape = voigt_lineshape(wbroad, wL[i]/2, wV_ij/2, jit=jit)  # FWHM > HWHM
-                    line_profile_DLM[i][j] = lineshape
+            for j in range(len(wG)):
+                for i in range(len(wL)):
+                    line_profile_DLM[i][j] = lineshape_arr[:, counter]
+                    counter += 1 
+
+            # Non vectorized loop. Probably slightly slower, but this is not the bottleneck anyway:
+#            for i in range(len(wL)):
+#                line_profile_DLM[i] = {}
+#                for j in range(len(wG)):
+#                    wV_ij = olivero_1977(wG[j], wL[i])     # FWHM
+#                    lineshape = voigt_lineshape(wbroad, wL[i]/2, wV_ij/2, jit=jit)  # FWHM > HWHM
+#                    line_profile_DLM[i][j] = lineshape
             
         elif self._broadening_method == 'convolve':
-            IL = [lorentzian_lineshape(wbroad, wL[i]/2) for i in range(len(wL))] # TODO: vectorize later   # FWHM>HWHM
-            IG = [gaussian_lineshape(wbroad, wG[i]/2) for i in range(len(wG))]   # TODO: vectorize later # FWHM>HWHM
+            wbroad_centered = self.wbroad_centered
+            
+            IL = [lorentzian_lineshape(wbroad_centered, wL[i]/2) for i in range(len(wL))] # TODO: vectorize later   # FWHM>HWHM
+            IG = [gaussian_lineshape(wbroad_centered, wG[i]/2) for i in range(len(wG))]   # TODO: vectorize later # FWHM>HWHM
 
             # Get all combinations of Voigt lineshapes
             for i in range(len(wL)):
                 line_profile_DLM[i] = {}
                 for j in range(len(wG)):
                     lineshape = np.convolve(IL[i], IG[j], mode='same')
-                    lineshape /= np.trapz(lineshape, x=wbroad)
+                    lineshape /= np.trapz(lineshape, x=wbroad_centered)
                     line_profile_DLM[i][j] = lineshape
             
         else:
