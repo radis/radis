@@ -1233,52 +1233,28 @@ class BroadenFactory(BaseFactory):
         # -----------------------
         
         # TODO: Fourier version 
-#        wavenumber_calc = self.wavenumber_calc
-        
-#        ''' TODO move that differently selon que Voigt ou Convolve 
+
         line_profile_DLM = {}
         
         if self._broadening_method == 'voigt':
             jit = False  # not enough lines to make the just-in-time FORTRAN compilation useful
-
-            N = len(wG)*len(wL)        # number of lineshape templates in DLM 
+            wbroad_centered = self.wbroad_centered
             
-            # Generate broadening array (so that it is as large as `broadening_max_width`
-            # in cm-1, and with one array per lineshape template)
-            wbroad_centered = np.outer(self.wbroad_centered, np.ones(N))
-            
-            # Get all combinations of Voigt lineshapes
-            wL_arr, wG_arr = np.meshgrid(wL, wG)
-            wV_arr = olivero_1977(wG_arr, wL_arr)   # FWHM
-            
-#            # Prepare vectorized operations:
-            assert wL_arr.shape == (len(wG), len(wL))
-            wL_arr = wL_arr.reshape((1, -1))
-            wV_arr = wV_arr.reshape((1, -1))
-    
-            lineshape_arr = voigt_lineshape(wbroad_centered, wL_arr/2, wV_arr/2, jit=jit)  # FWHM > HWHM
-
-            counter = 0
+            # Non vectorized loop. Probably slightly slower, but this is not the bottleneck anyway.
+            # see commit 6474cb7e on 15/08/2019 for a vectorized version
             for i in range(len(wL)):
                 line_profile_DLM[i] = {}
-            for j in range(len(wG)):
-                for i in range(len(wL)):
-                    line_profile_DLM[i][j] = lineshape_arr[:, counter]
-                    counter += 1 
-
-            # Non vectorized loop. Probably slightly slower, but this is not the bottleneck anyway:
-#            for i in range(len(wL)):
-#                line_profile_DLM[i] = {}
-#                for j in range(len(wG)):
-#                    wV_ij = olivero_1977(wG[j], wL[i])     # FWHM
-#                    lineshape = voigt_lineshape(wbroad, wL[i]/2, wV_ij/2, jit=jit)  # FWHM > HWHM
-#                    line_profile_DLM[i][j] = lineshape
+                for j in range(len(wG)):
+                    wV_ij = olivero_1977(wG[j], wL[i])     # FWHM
+                    lineshape = voigt_lineshape(wbroad_centered, wL[i]/2, wV_ij/2, jit=jit)  # FWHM > HWHM
+                    line_profile_DLM[i][j] = lineshape
             
         elif self._broadening_method == 'convolve':
             wbroad_centered = self.wbroad_centered
             
-            IL = [lorentzian_lineshape(wbroad_centered, wL[i]/2) for i in range(len(wL))] # TODO: vectorize later   # FWHM>HWHM
-            IG = [gaussian_lineshape(wbroad_centered, wG[i]/2) for i in range(len(wG))]   # TODO: vectorize later # FWHM>HWHM
+            IL = [lorentzian_lineshape(wbroad_centered, wL[i]/2) for i in range(len(wL))] # FWHM>HWHM
+            IG = [gaussian_lineshape(wbroad_centered, wG[i]/2) for i in range(len(wG))]   # FWHM>HWHM
+            # Non vectorized. See Voigt for vectorized.
 
             # Get all combinations of Voigt lineshapes
             for i in range(len(wL)):
