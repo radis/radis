@@ -1454,17 +1454,10 @@ class BroadenFactory(BaseFactory):
 #        # Get spectrum range
         wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
         wavenumber_calc = self.wavenumber_calc
-        # generate the vector of wavenumbers (shape W + space B on the sides)
-        vec_length = len(wavenumber)
 
         # Vectorize the chunk of lines
-        S = broadened_param.values.reshape((1, -1))
-        shifted_wavenum = shifted_wavenum.values.reshape((1, -1))  # make it a row vector
-
-        # Get broadening array
-        wbroad_centered = self.wbroad_centered  # size (B,)
-        # index of broadening half width
-        iwbroad_half = len(wbroad_centered)//2
+        S = broadened_param.values
+        shifted_wavenum = shifted_wavenum.values
 
         # ---------------------------
         # Apply line profile
@@ -1472,11 +1465,12 @@ class BroadenFactory(BaseFactory):
         if __debug__:
             t1 = time()
 
-        # ... First get closest matching line (on the left, and on the right)
-        idcenter_left = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel() - 1
-        idcenter_right = np.minimum(idcenter_left + 1, len(wavenumber_calc)-1)
-        # TODO: rename _left _right with 0 1 : will be easier to read. 
-        
+        # ... First get closest matching spectral point  (on the left, and on the right)
+#         ... @dev: np.interp about 30% - 50% faster than np.searchsorted
+        iv = np.interp(shifted_wavenum, wavenumber_calc, np.arange(len(wavenumber_calc)))
+        iv0 = iv.astype(int)            # size [N]
+        iv1 = iv0  + 1
+
         # DLM: First we calculate the fractional index of the DLM 
         #      that corresponds with this line:
         iwL = np.interp(wL_dat,wL,np.arange(len(wL)))
@@ -1485,154 +1479,58 @@ class BroadenFactory(BaseFactory):
         iwG0 = iwG.astype(int)            # size [N],   number of values defined by res_G
         iwL1 = iwL0 + 1
         iwG1 = iwG0 + 1
-        # note: idcenter_left is equivalent of iv0    in FSS
-        # note: idcenter_right is equivalent of iv1   in FSS 
 
-
-        # ... Get the fraction of each line distributed to the left and to the right.
-        frac_left = (shifted_wavenum-wavenumber_calc[idcenter_left]).flatten()  # distance to left
-        frac_right = (wavenumber_calc[idcenter_right]-shifted_wavenum).flatten()  # distance to right
-        dv = frac_left+frac_right
-        frac_left, frac_right = frac_right/dv, frac_left/dv
-        
-        #DLM : Next calculate how the line is distributed over
-        #   the 2x2x2 bins we have:
+        #DLM : Next calculate how the line is distributed over the 2x2x2 bins we have:
+        av  =  iv  - iv0
         awL = (iwL - iwL0) * (wL[iwL1] / wL_dat)
         awG = (iwG - iwG0) * (wG[iwG1] / wG_dat) 
-        # ... fractions on DLM grid (equivalent to frac_left & frac_right for spectral grid)
+        # ... fractions on DLM grid
         awV00 = (1-awL) * (1-awG)
         awV10 =    awL  * (1-awG)
         awV01 = (1-awL) *    awG
         awV11 =    awL  *    awG
 
-        # ... Initialize array on which to distribute the lineshapes
-        sumoflines_calc = zeros_like(wavenumber_calc)
-        
-        # Note on performance: it isn't straightforward to vectorize the summation
-        # of all lineshapes on the spectral range as some lines may be parly outside 
-        # the spectral range. 
-        # to avoid an If / Else condition in the loop, we do a vectorized
-        # comparison beforehand and run 3 different loops
-       
-        # reminder: wavenumber_calc has size [iwbroad_half+vec_length+iwbroad_half]
-        assert len(wavenumber_calc) == vec_length+2*iwbroad_half
-        boffrangeleft = (idcenter_left <= iwbroad_half)
-        boffrangeright = (idcenter_right >= vec_length+iwbroad_half)
-        binrange = np.ones_like(idcenter_left, dtype=bool) ^ (boffrangeleft + boffrangeright)
+        Iv0 = S * (1-av)
+        Iv1 = S *    av
 
         if __debug__:
             t2 = time()
 
-#        # Performance for lines below
-#        # ----------
-#        #
-#        # on test case: 6.5k lines x 18.6k grid length
-#        # normal: ~ 36 ms  called 9 times
-#        # with @jit : ~ 200 ms called 9 times (worse!)
-        
-        # In range: aggregate both wings
+        # ... Initialize array on which to distribute the lineshapes
+        DLM = np.zeros((len(wavenumber_calc), len(wL), len(wG)))
             
-        DLM = line_profile_DLM
-        # Remember: DLM[wavenumbers, Lorentzian, Gaussian]
+        # Distribute all line intensities on the 2x2x2 bins. 
+        np.add.at(DLM,(iv0,iwL0,iwG0),Iv0*awV00)
+        np.add.at(DLM,(iv1,iwL0,iwG0),Iv1*awV00)
+        np.add.at(DLM,(iv0,iwL1,iwG0),Iv0*awV10)
+        np.add.at(DLM,(iv1,iwL1,iwG0),Iv1*awV10)
+        np.add.at(DLM,(iv0,iwL0,iwG1),Iv0*awV01)
+        np.add.at(DLM,(iv1,iwL0,iwG1),Iv1*awV01)
+        np.add.at(DLM,(iv0,iwL1,iwG1),Iv0*awV11)
+        np.add.at(DLM,(iv1,iwL1,iwG1),Iv1*awV11)
         
+        # All lines within each bins are convolved with the same lineshape. 
+        # Let's do it:
+
         if __debug__:
-            dt21 = 0
-            dt22 = 0
-            dt23 = 0
-        
-        id_low_left = idcenter_left - iwbroad_half
-        id_low_right = idcenter_right - iwbroad_half
-        id_high_left = id_low_left+2*iwbroad_half
-        id_high_right = id_low_right+2*iwbroad_half
-        
-        S = S.flatten()
+            t21 = time()
 
-        # Array version for inrange  (# TODO later)
-#        b = ~((id_low_left < 0) | (id_low_right < 0) | (id_high_left >= len(wavenumber_calc)) | 
-#                (id_high_right >= len(wavenumber_calc)))
-#        S = S.flatten()[b]
-#        id_low_left = id_low_left[b]
-#        id_low_right = id_low_right[b]
-#        id_high_left = id_high_left[b]
-#        id_high_right = id_high_right[b]
-#        frac_left = frac_left[b]
-#        frac_right = frac_right[b]
-#        awV00 = awV00[b]
-#        awV10 = awV10[b]
-#        awV01 = awV01[b]
-#        awV11 = awV11[b]
+        # ... Initialize array on which to distribute the lineshapes
+        sumoflines_calc = zeros_like(wavenumber_calc)
         
-        # Loop on all lines    
-
-        for i, (S_i,  iv_low0, iv_low1, iv_high0, iv_high1, 
-                    iwL0_i, iwL1_i, iwG0_i, iwG1_i,
-                        wfr0, wfr1, frac00, frac10, frac01, frac11) in enumerate(zip(
-                S, id_low_left, id_low_right, id_high_left, id_high_right, 
-                    iwL0, iwL1, iwG0, iwG1,
-                        frac_left, frac_right, awV00, awV10, awV01, awV11)):
+        # For each value from the DLM, retrieve the lineshape and convolve all 
+        # corresponding lines with it before summing.
+        for i in range(len(wL)):
+            for j in range(len(wG)):
+                lineshape = line_profile_DLM[i][j]
+                sumoflines_calc += np.convolve(DLM[:, i, j], lineshape, 'same')
+        # TODO: try with Fourier transform too. However direct convolution 
+        # is generally faster when array size are different (here the lineshape
+        # is usually smaller than the full spectral range)
             
-            if iv_low0 < 0 or iv_low1 <0 or iv_high0 >= len(wavenumber_calc) or iv_high1 >= len(wavenumber_calc):
-                continue
-            
-            if __debug__:
-                t21= time()
-            
-            # get approximate lineshape
-            lineshape = S_i*(frac00*DLM[iwL0_i][iwG0_i]+frac10*DLM[iwL1_i][iwG0_i]+
-                             frac01*DLM[iwL0_i][iwG1_i]+frac11*DLM[iwL1_i][iwG1_i])
-            
-            if __debug__:
-                t22 = time()
-    
-            # Sum lineshape on the spectral grid
-#            # test case 200k spectral points x 57k lines: ~ 12s
-            # ... after further approximation: reduced ~3.5s
-            sumoflines_calc[iv_low0:iv_high0+1] += wfr0*lineshape
-            sumoflines_calc[iv_low1:iv_high1+1] += wfr1*lineshape
-            
-            if __debug__:
-                t23 = time()
-                dt22 += t22 - t21
-                dt23 += t23 - t22
-            
-        # Nomenclature for lines above:
-        # - low/high: start/end of a lineshape
-        # - left/right: closest spectral grid point on the left/right  # TODO replace by 0/1
-
         if __debug__:
             t3 = time()
 
-        # TODO : same as above, for for lines outside the range. 
-        # May try with a comparison inside the loop first. 
-
-#        # Off Range, left : only aggregate the Right wing
-#        # @dev: the only difference with In range is the extra mask to cut the left wing.
-#        lines_l = profile_S.T[boffrangeleft]
-#        if len(lines_l) > 0:
-#            I_low_l_left = idcenter_left[boffrangeleft]+1
-#            I_low_l_right = idcenter_right[boffrangeleft]+1
-#            I_high_l_left = I_low_l_left + iwbroad_half - 1
-#            I_high_l_right = I_low_l_right + iwbroad_half - 1
-#            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_l)):
-#                # cut left wing & peak  with the [iwbroad_half+1:] mask
-#                sumoflines_calc[I_low_l_left[i]:I_high_l_left[i] + 1] += fr_left*profS[iwbroad_half+1:]
-#                sumoflines_calc[I_low_l_right[i]:I_high_l_right[i] + 1] += fr_right*profS[iwbroad_half+1:]
-#
-#        # Off Range, Right : only aggregate the left wing
-#        lines_r = profile_S.T[boffrangeright]
-#        if len(lines_r) > 0:
-#            I_low_r_left = idcenter_left[boffrangeright]-iwbroad_half
-#            I_low_r_right = idcenter_right[boffrangeright]-iwbroad_half
-#            I_high_r_left = I_low_r_left + iwbroad_half - 1      # idcenter[boffrangeright]-1
-#            I_high_r_right = I_low_r_right + iwbroad_half - 1      # idcenter[boffrangeright]-1
-#            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_r)):
-#                # cut right wing & peak  with the [:iwbroad_half] mask
-#                sumoflines_calc[I_low_r_left[i]:I_high_r_left[i] + 1] += fr_left*profS[:iwbroad_half]
-#                sumoflines_calc[I_low_r_right[i]:I_high_r_right[i] + 1] += fr_right*profS[:iwbroad_half]
-
-        if __debug__:
-            t4 = time()
-            
         # Get valid range (discard wings)
         sumoflines = sumoflines_calc[self.woutrange]
         
@@ -1640,14 +1538,8 @@ class BroadenFactory(BaseFactory):
             if self.verbose >= 3: 
                 printg('... Initialized vectors in {0:.1f}s'.format(t1-t0))
                 printg('... Get closest matching line & fraction in {0:.1f}s'.format(t2-t1))
-                printg('... Aggregate center lines in {0:.1f}s'.format(t3-t2))
-                
-            if self.verbose >= 4: 
-                printg('... ...  calc lineshape from DLM {0:.1f}s'.format(dt22))
-                printg('... ...  sum on spectral range {0:.1f}s'.format(dt23))
-                
-                
-                printg('... Aggregate wing lines in {0:.1f}s'.format(t4-t3))
+                printg('... Distribute lines over DLM {0:.1f}s'.format(t21-t2))
+                printg('... Convolve and sum on spectral range {0:.1f}s'.format(t3-t21))
 
         return wavenumber, sumoflines
 
