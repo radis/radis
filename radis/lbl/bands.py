@@ -813,9 +813,9 @@ class BandFactory(BroadenFactory):
 
         add_bands(df, dbformat, lvlformat, verbose=verbose)  # updates df
 
-        # Store
-        self.df0 = df
+        return None  #  df already updated
 
+        
     # Broadening functions: band specific
 
     def _broaden_lines_bands(self, df):
