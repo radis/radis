@@ -1730,6 +1730,38 @@ class BroadenFactory(BaseFactory):
                 (_, emisscoeff) = self._apply_lineshape(df.Ei.values,
                                                         line_profile, 
                                                         df.shiftwav.values)
+                        
+            elif chunksize == 'DLM':
+                # Use DLM
+                              
+                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df) # wL, wG) # TODO: Fourier version
+                (wavenumber, abscoeff) = self._apply_lineshape_DLM(df.S.values, 
+                                                                   line_profile_DLM, 
+                                                                   df.shiftwav.values, 
+                                                                   wL, wG, 
+                                                                   wL_dat, wG_dat)
+                (_, emisscoeff) = self._apply_lineshape_DLM(df.Ei.values, 
+                                                            line_profile_DLM, 
+                                                            df.shiftwav.values, 
+                                                            wL, wG, 
+                                                            wL_dat, wG_dat)
+                # Note @dev: typical results is:
+                # >>> abscoeff:
+                # ... Precomputed DLM lineshapes in 0.0s
+                # ... Initialized vectors in 0.0s
+                # ... Get closest matching line & fraction in 0.3s
+                # ... Distribute lines over DLM 2.1s
+                # ... Convolve and sum on spectral range 0.4s
+                # >>> emisscoeff
+                # ... Initialized vectors in 0.0s
+                # ... Get closest matching line & fraction in 0.2s
+                # ... Distribute lines over DLM 2.1s
+                # ... Convolve and sum on spectral range 0.3s
+                # @EP: #performance. 
+                # unlike in the non DLM case, the nonequilibruum case here is ~2x 
+                # the equilibrium case: only the closest matching line is common to the
+                # absorption & emission steps. The bottleneck is the distribution
+                # of the line over the DLM, which has to be done for both abscoeff & emisscoeff. 
             
             elif is_float(chunksize):
                 # Cut lines in smaller bits for better memory handling

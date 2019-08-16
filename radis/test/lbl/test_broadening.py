@@ -321,6 +321,66 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     assert res < 1.2e-5
     assert res_voigt < 1e-5
 
+@pytest.mark.fast
+def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
+    '''
+    Test Noneq version of DLM and makes sure it gives the same results as the eq
+    one when used with Tvib=Trot 
+    
+    '''
+
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+    setup_test_line_databases()  # add HITRAN-CO2-TEST in ~/.radis if not there
+
+    # Conditions
+    p = 1
+    wstep = 0.002
+    wmin = 2380  # cm-1
+    wmax = 2400  # cm-1
+    broadening_max_width = 10  # cm-1
+
+    # %% Calculate with RADIS
+    # ----------
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        mole_fraction=1,
+        path_length=1,   # doesnt change anything
+        wstep=wstep,
+        pressure=p,
+        broadening_max_width=broadening_max_width,
+        isotope='1',
+        verbose=3,
+        warnings={'MissingSelfBroadeningWarning':'ignore',
+                  'NegativeEnergiesWarning':'ignore',
+                  'HighTemperatureWarning':'ignore',
+                  'GaussianBroadeningWarning':'ignore'}
+        )  # 0.2)
+    sf.load_databank('HITRAN-CO2-TEST')
+    
+    # DLM:
+    sf.misc['chunksize'] = 'DLM'
+    s_dlm_eq = sf.eq_spectrum(Tgas=3000)
+    s_dlm_eq.name = 'DLM eq ({0:.2f}s)'.format(s_dlm_eq.conditions['calculation_time'])
+    
+    s_dlm_noneq = sf.non_eq_spectrum(Tvib=3000, Trot=3000)
+    s_dlm_noneq.name = 'DLM noneq ({0:.2f}s)'.format(s_dlm_noneq.conditions['calculation_time'])
+    
+    # Compare
+    res = get_residual(s_dlm_eq, s_dlm_noneq, 'radiance_noslit')
+    
+    if verbose:
+        print('Residual:', res)
+
+    # plot
+    if plot:
+        plot_diff(s_dlm_eq, s_dlm_noneq)
+    
+    assert res <= 4e-5 
+
+
 
 #@pytest.mark.needs_config_file
 #@pytest.mark.needs_db_HITEMP_CO2_DUNHAM
@@ -492,13 +552,14 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
-#    # Test broadening
+##    # Test broadening
     test_broadening_vs_hapi(plot=plot, verbose=verbose, *args, **kwargs)
     test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
     test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
     test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
 
-    # Test pseudo-continuum
+#    # Test pseudo-continuum
     test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
     test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
     
