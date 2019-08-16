@@ -379,12 +379,12 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     if verbose:
         print('Residual:', res)
 
-    # plot the last one    
+    # plot    
     if plot:
         plot_diff(s_dlm, s_dlm_fft, 'abscoeff')
         plt.legend()
         
-    assert res < 1e-5
+    assert res < 5e-6
 
 @pytest.mark.fast
 def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
@@ -617,21 +617,20 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
-###    # Test broadening
-#    test_broadening_vs_hapi(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
+   # Test broadening
+    test_broadening_vs_hapi(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
     test_broadening_DLM_FT(plot=plot, verbose=3, *args, **kwargs)
-#    test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
-#
-##    # Test pseudo-continuum
-#    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
-#    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
+
+    # Test pseudo-continuum
+    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
     
     return True
 
 
 if __name__ == '__main__':
-    printm('test_broadening: ', _run_testcases(
-        plot=True, verbose=True, debug=False))
+    printm('test_broadening: ', _run_testcases(plot=True, verbose=True, debug=False))

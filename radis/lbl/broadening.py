@@ -173,7 +173,7 @@ def gaussian_lineshape(w_centered, hwhm):
         waverange (nm / cm-1) (centered on 0, size W = broadening width size)
         
     hwhm:  array   [shape N = number of lines]
-        half-width at half-maximum (HWHM)
+        Half-width at half-maximum (HWHM) of Gaussian
 
     Tgas: K
         (translational) gas temperature
@@ -217,6 +217,31 @@ def gaussian_lineshape(w_centered, hwhm):
     lineshape = 1/hwhm*sqrt(ln(2)/pi)*exp(-ln(2)*(w_centered/hwhm)**2)
 
     return lineshape
+
+def gaussian_FT(w_centered, hwhm):
+    ''' Fourier Transform of a Gaussian lineshape 
+    
+    Parameters
+    ----------
+
+    w_centered: 2D array       [one per line: shape W x N]
+        waverange (nm / cm-1) (centered on 0)
+        
+    hwhm:  array   [shape N = number of lines]
+        Half-width at half-maximum (HWHM) of Gaussian
+
+    See Also
+    --------
+    
+    :py:func:`~radis.lbl.broadneing.gaussian_lineshape`
+    '''
+    
+    # FT of w*np.sqrt(np.log(2)/np.pi)*np.exp(-np.log(2)*((v-v0)/w)**2)*dv
+    n = len(w_centered)
+    I = np.zeros(n)
+    I[:n//2+n%2] = np.exp(-(np.pi*w_centered[:n//2+n%2]*hwhm)**2/(np.log(2)))
+    I[-(n//2): ] = I[n//2:0:-1]
+    return I
 
 
 def pressure_broadening_HWHM(airbrd, selbrd, Tdpair, Tdpsel, 
@@ -335,7 +360,7 @@ def lorentzian_lineshape(w_centered, gamma_lb):
     
     :py:func:`~radis.lbl.broadening.pressure_broadening_HWHM`, 
     :py:func:`~radis.lbl.broadening.gaussian_lineshape`, 
-    :py:func:`~radis.lbl.broadening.voigt_lineshape`, 
+    :py:func:`~radis.lbl.broadening.voigt_lineshape`
 
     '''
 
@@ -344,6 +369,32 @@ def lorentzian_lineshape(w_centered, gamma_lb):
     lineshape = 1/pi*gamma_lb/((gamma_lb**2)+(w_centered**2))
 
     return lineshape
+
+def lorentzian_FT(w_centered, gamma_lb):
+    ''' Fourier Transform of a Lorentzian lineshape 
+    
+    Parameters
+    ----------
+
+    w_centered: 2D array       [one per line: shape W x N]
+        waverange (nm / cm-1) (centered on 0)
+        
+    gamma_lb: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for pressure broadening 
+        calculation
+
+    See Also
+    --------
+    
+    :py:func:`~radis.lbl.broadneing.lorentzian_lineshape`
+    '''
+    
+    # FT of (1/np.pi) * w / ((v-v0)**2 + w**2)*dv
+    n = len(w_centered)
+    I = np.zeros(n)
+    I[:n//2+n%2] = np.exp(-np.pi*w_centered[:n//2+n%2]*2*gamma_lb)
+    I[-(n//2): ] = I[n//2:0:-1]
+    return I
 
 
 def voigt_broadening_HWHM(airbrd, selbrd, Tdpair, Tdpsel, wav, molar_mass, 
@@ -744,13 +795,11 @@ class BroadenFactory(BaseFactory):
             # Adds hwhm_voigt, hwhm_gauss, hwhm_lorentz:
             self._add_voigt_broadening_HWHM(
                 df, pressure_atm, mole_fraction, Tgas, Tref)
-        elif self._broadening_method == 'convolve':
+        elif self._broadening_method in ['convolve', 'fft']:
             # Adds hwhm_lorentz:
             self._add_collisional_broadening_HWHM(df, pressure_atm, mole_fraction, Tgas, Tref)
             # Add hwhm_gauss:
             self._add_doppler_broadening_HWHM(df, Tgas)
-        elif self._broadening_method == 'fft':
-            raise NotImplementedError('FFT')
         else:
             raise ValueError('Unexpected broadening calculation method: {0}'.format(
                 self._broadening_method))
@@ -1111,6 +1160,11 @@ class BroadenFactory(BaseFactory):
                 | convolve              16s
                 | outer                 8s
 
+        See Also
+        --------
+        
+        :py:meth:`~radis.lbl.broadening.BroadenFactory._apply_lineshape`
+        
         '''
         # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
@@ -1201,12 +1255,22 @@ class BroadenFactory(BaseFactory):
         Returns
         -------
         
+        line_profile_DLM: dict
+            dictionary of Voigt profile template. 
+            If ``self._broadening_method == 'fft'``, templates are calculated
+            in Fourier space.
+    
         wL, wG: array
             Lorentzian and Gaussian FWHM in DLM
             
         wL_dat, wG_dat: array
             Lorentzian and Gaussian FWHM of data lines. 
-            
+        
+        See Also
+        --------
+        
+        :py:meth:`~radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
+        
         '''
   
         if __debug__:
@@ -1241,8 +1305,6 @@ class BroadenFactory(BaseFactory):
         # Calculate the Lineshape
         # -----------------------
         
-        # TODO: Fourier version 
-
         line_profile_DLM = {}
         
         if self._broadening_method == 'voigt':
@@ -1274,13 +1336,26 @@ class BroadenFactory(BaseFactory):
                     line_profile_DLM[i][j] = lineshape
             
         elif self._broadening_method == 'fft':
-            raise NotImplementedError('FFT')
+            # Unlike real space methods ('convolve', 'voigt'), here we calculate
+            # the lineshape on the full spectral range. 
+            w = self.wavenumber_calc
+            wstep = self.params.wstep
+            w_lineshape_ft  = np.arange(2*len(w)) / ((2*len(w))*wstep)
             
+            IL_FT = [lorentzian_FT(w_lineshape_ft, wL[i]/2) for i in range(len(wL))] # FWHM>HWHM
+            IG_FT = [gaussian_FT(w_lineshape_ft, wG[i]/2) for i in range(len(wG))]   # FWHM>HWHM
+
+            # Get all combinations of Voigt lineshapes (in Fourier space)
+            for i in range(len(wL)):
+                line_profile_DLM[i] = {}
+                for j in range(len(wG)):
+                    line_profile_DLM[i][j] = IL_FT[i]*IG_FT[j]
+
         else:
             raise NotImplementedError('Broadening method with DLM: {0}'.format(self._broadening_method))
         
         if __debug__ and self.verbose >= 3:
-            printg('... Precomputed DLM lineshapes in {0:.1f}s'.format(time()-t0))
+            printg('... Precomputed DLM lineshapes ({1}) in {0:.1f}s'.format(time()-t0, len(wL)*len(wG)))
 
         return line_profile_DLM, wL, wG, wL_dat, wG_dat
         
@@ -1304,7 +1379,8 @@ class BroadenFactory(BaseFactory):
             if None, defaults to model translational temperature
 
         '''
-        
+        # TODO #clean: make it a standalone function.
+
         from publib import set_style, fix_style
 
         if pressure_atm is None:
@@ -1374,6 +1450,11 @@ class BroadenFactory(BaseFactory):
 
             [sumoflines] = [broadened_param] * cm
 
+        See Also
+        --------
+        
+        :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape`
+        
         '''
         
         if __debug__:
@@ -1508,9 +1589,13 @@ class BroadenFactory(BaseFactory):
             Series to apply lineshape to. Typically linestrength `S` for absorption,
             or `nu * Aul / 4pi * DeltaE` for emission
 
-        line_profile_DLM:   (1/cm-1)        3D array of lines_profiles for all lines
-                size (B,  DG, DL) with B = width of lineshape, DG = number 
-                of Gaussian widths in DLM, DG = number of Lorentzian points in DLM
+        line_profile_DLM:  dict  
+            dict of line profiles ::
+                
+                lineshape = line_profile_DLM[gaussian_index][lorentzian_index]
+
+            If ``self._broadening_method == 'fft'``, templates are given
+            in Fourier space.
 
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
             center wavelength (used to project broaded lineshapes )
@@ -1539,6 +1624,11 @@ class BroadenFactory(BaseFactory):
         Units change during convolution::
 
             [sumoflines] = [broadened_param] * cm
+            
+        See Also
+        --------
+        
+        :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape_DLM`
 
         '''
         
@@ -1561,6 +1651,10 @@ class BroadenFactory(BaseFactory):
         # ... First get closest matching spectral point  (on the left, and on the right)
 #         ... @dev: np.interp about 30% - 50% faster than np.searchsorted
         iv = np.interp(shifted_wavenum, wavenumber_calc, np.arange(len(wavenumber_calc)))
+        if self._broadening_method == 'fft':
+            iv += len(wavenumber_calc)//2        # FFT is done on 2x wavenumber_calc
+        
+        
         iv0 = iv.astype(int)            # size [N]
         iv1 = iv0  + 1
 
@@ -1590,7 +1684,12 @@ class BroadenFactory(BaseFactory):
             t2 = time()
 
         # ... Initialize array on which to distribute the lineshapes
-        DLM = np.zeros((len(wavenumber_calc), len(wL), len(wG)))
+        if self._broadening_method in ['voigt', 'convolve']:
+            DLM = np.zeros((len(wavenumber_calc), len(wL), len(wG)))
+        elif self._broadening_method == 'fft':
+            DLM = np.zeros((2*len(wavenumber_calc), len(wL), len(wG)))
+        else:
+            raise NotImplementedError(self._broadening_method)
             
         # Distribute all line intensities on the 2x2x2 bins.
         np.add.at(DLM,(iv0,iwL0,iwG0),Iv0*awV00)
@@ -1608,18 +1707,32 @@ class BroadenFactory(BaseFactory):
         if __debug__:
             t21 = time()
 
-        # ... Initialize array on which to distribute the lineshapes
-        sumoflines_calc = zeros_like(wavenumber_calc)
-        
         # For each value from the DLM, retrieve the lineshape and convolve all 
         # corresponding lines with it before summing.
-        for i in range(len(wL)):
-            for j in range(len(wG)):
-                lineshape = line_profile_DLM[i][j]
-                sumoflines_calc += np.convolve(DLM[:, i, j], lineshape, 'same')
-        # TODO: try with Fourier transform too. However direct convolution 
-        # is generally faster when array size are different (here the lineshape
-        # is usually smaller than the full spectral range)
+        if self._broadening_method in ['voigt', 'convolve']:
+            
+            # ... Initialize array on which to distribute the lineshapes
+            sumoflines_calc = zeros_like(wavenumber_calc)
+            
+            for i in range(len(wL)):
+                for j in range(len(wG)):
+                    lineshape = line_profile_DLM[i][j]
+                    sumoflines_calc += np.convolve(DLM[:, i, j], lineshape, 'same')
+                    
+        elif self._broadening_method == 'fft':
+            # ... Initialize array in FT space
+            Idlm_FT = 1j*np.zeros(len(line_profile_DLM[0][0]))
+            for i in range(len(wL)):
+                for j in range(len(wG)):
+                    lineshape_FT = line_profile_DLM[i][j]
+                    Idlm_FT += np.fft.fft(np.fft.fftshift(DLM[:,i,j])) * lineshape_FT
+            # Back in real space:
+            sumoflines_calc = np.fft.ifftshift(np.fft.ifft(Idlm_FT).real)
+            sumoflines_calc = sumoflines_calc[len(wavenumber_calc)//2:len(wavenumber_calc)//2+len(wavenumber_calc)]
+            sumoflines_calc /= self.params.wstep
+
+        else:
+            raise NotImplementedError(self._broadening_method)
             
         if __debug__:
             t3 = time()
@@ -2338,6 +2451,9 @@ def project_lines_on_grid(df, wavenumber, wstep):
 
         # crop out of range points
         return rough_spectrum[1:-1]
+    # TODO: @dev #performance 
+    # ... try with k_rough_spectrum.add.at()  ? 
+    # ... but it probably wont ever be comparable with DLM. 
 
     k_rough_spectrum = rough_sum_on_grid()
 
