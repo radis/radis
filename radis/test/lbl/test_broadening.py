@@ -322,6 +322,70 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     assert res_voigt < 1e-5
 
 @pytest.mark.fast
+def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
+    '''
+    Test use of DLM with and without Fourier Transform
+    
+    Ensures that results are the same, and compare calculation times.
+    '''
+
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+
+    # Conditions
+    T = 3000
+    p = 1
+    wstep = 0.002
+    wmin = 2000  # cm-1
+    wmax = 2300  # cm-1
+    broadening_max_width = 10  # cm-1
+
+    # %% Calculate with RADIS
+    # ----------
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        mole_fraction=1,
+        path_length=1,   # doesnt change anything
+        wstep=wstep,
+        pressure=p,
+        broadening_max_width=broadening_max_width,
+        isotope='1',
+        verbose=False,
+        warnings={'MissingSelfBroadeningWarning':'ignore',
+                  'NegativeEnergiesWarning':'ignore',
+                  'HighTemperatureWarning':'ignore',
+                  'GaussianBroadeningWarning':'ignore'}
+        )  # 0.2)
+    sf.load_databank('HITRAN-CO-TEST')
+    
+    # DLM, real space
+    sf.misc['chunksize'] = 'DLM'
+    sf._broadening_method = 'convolve'
+    s_dlm = sf.eq_spectrum(Tgas=T)
+    s_dlm.name = 'DLM ({0:.2f}s)'.format(s_dlm.conditions['calculation_time'])
+    
+    # DLM , with Fourier
+    sf._broadening_method = 'fft'
+    s_dlm_fft = sf.eq_spectrum(Tgas=T)
+    s_dlm_fft.name = 'DLM FFT ({0:.2f}s)'.format(s_dlm_fft.conditions['calculation_time'])
+    
+    # Compare
+    res = get_residual(s_dlm, s_dlm_fft, 'abscoeff')
+    
+    if verbose:
+        print('Residual:', res)
+
+    # plot the last one    
+    if plot:
+        plot_diff(s_dlm, s_dlm_fft, 'abscoeff')
+        plt.legend()
+        
+    assert res < 1e-5
+
+@pytest.mark.fast
 def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     '''
     Test Noneq version of DLM and makes sure it gives the same results as the eq
@@ -552,16 +616,17 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
-##    # Test broadening
-    test_broadening_vs_hapi(plot=plot, verbose=verbose, *args, **kwargs)
-    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
-    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
-    test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
-    test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
-
-#    # Test pseudo-continuum
-    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
-    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+###    # Test broadening
+#    test_broadening_vs_hapi(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_DLM_FT(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
+#
+##    # Test pseudo-continuum
+#    test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
+#    test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
     
     return True
 

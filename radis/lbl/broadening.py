@@ -749,6 +749,11 @@ class BroadenFactory(BaseFactory):
             self._add_collisional_broadening_HWHM(df, pressure_atm, mole_fraction, Tgas, Tref)
             # Add hwhm_gauss:
             self._add_doppler_broadening_HWHM(df, Tgas)
+        elif self._broadening_method == 'fft':
+            raise NotImplementedError('FFT')
+        else:
+            raise ValueError('Unexpected broadening calculation method: {0}'.format(
+                self._broadening_method))
 
         if self.verbose >= 2:
             printg('Calculated broadening HWHM in {0:.1f}s'.format(time()-t0))
@@ -1161,6 +1166,8 @@ class BroadenFactory(BaseFactory):
             # ... broadening_width too small): at least the energy is conserved, even
             # ... if not perfectly distributed (spectrally). A warning is raised by the
             # ... broadening functions.
+        elif self._broadening_method == 'fft':
+            raise NotImplementedError('FFT')
         else:
             raise ValueError('Unexpected broadening calculation method: {0}'.format(
                 self._broadening_method))
@@ -1175,6 +1182,8 @@ class BroadenFactory(BaseFactory):
                     printg('... Calculated Lorentzian profile in {0:.1f}s'.format(t11-t1))
                     printg('... Calculated Gaussian profile in {0:.1f}s'.format(t12-t11))
                     printg('... Convolved both profiles in {0:.1f}s'.format(t2-t12))
+                elif self._broadening_method == 'fft':
+                    raise NotImplementedError('FFT')
 
         return line_profile
 
@@ -1263,6 +1272,9 @@ class BroadenFactory(BaseFactory):
                     lineshape = np.convolve(IL[i], IG[j], mode='same')
                     lineshape /= np.trapz(lineshape, x=wbroad_centered)
                     line_profile_DLM[i][j] = lineshape
+            
+        elif self._broadening_method == 'fft':
+            raise NotImplementedError('FFT')
             
         else:
             raise NotImplementedError('Broadening method with DLM: {0}'.format(self._broadening_method))
