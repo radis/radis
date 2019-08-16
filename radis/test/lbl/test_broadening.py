@@ -353,7 +353,8 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
         pressure=p,
         broadening_max_width=broadening_max_width,
         isotope='1',
-        verbose=False,
+        verbose=verbose,
+        chunksize='DLM',
         warnings={'MissingSelfBroadeningWarning':'ignore',
                   'NegativeEnergiesWarning':'ignore',
                   'HighTemperatureWarning':'ignore',
@@ -362,12 +363,12 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     sf.load_databank('HITRAN-CO-TEST')
     
     # DLM, real space
-    sf.misc['chunksize'] = 'DLM'
-    sf._broadening_method = 'convolve'
+    if verbose: print('\nConvolve version \n')
     s_dlm = sf.eq_spectrum(Tgas=T)
     s_dlm.name = 'DLM ({0:.2f}s)'.format(s_dlm.conditions['calculation_time'])
     
     # DLM , with Fourier
+    if verbose: print('\nFFT version \n')
     sf._broadening_method = 'fft'
     s_dlm_fft = sf.eq_spectrum(Tgas=T)
     s_dlm_fft.name = 'DLM FFT ({0:.2f}s)'.format(s_dlm_fft.conditions['calculation_time'])
@@ -621,7 +622,7 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 #    test_broadening_methods_different_conditions(plot=plot, verbose=verbose, *args, **kwargs)
 #    test_broadening_methods_different_wstep(plot=plot, verbose=verbose, *args, **kwargs)
 #    test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
-    test_broadening_DLM_FT(plot=plot, verbose=verbose, *args, **kwargs)
+    test_broadening_DLM_FT(plot=plot, verbose=3, *args, **kwargs)
 #    test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
 #
 ##    # Test pseudo-continuum
