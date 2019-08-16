@@ -229,6 +229,12 @@ class SpectrumFactory(BandFactory):
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
         
+        .. note::
+            in version 0.9.20 this parameter is temporarily used to accept the ``'DLM'`` 
+            argument: in this case, the DLM optimization for lineshape calculation 
+            is used. Broadening method is automatically set to ``'fft'``. 
+            See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
+        
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
@@ -418,6 +424,15 @@ class SpectrumFactory(BandFactory):
         self.misc.export_populations = export_populations
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
+
+        # in version 0.9.20 the 'chunksize' parameter is temporarily used to accept the ``'DLM'`` 
+        # argument: in this case, the DLM optimization for lineshape calculation 
+        # is used. Broadening method is automatically set to ``'fft'``. 
+        # See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
+        if chunksize == 'DLM':
+            self._broadening_method = 'fft'
+            if self.verbose >= 3: print('DLM used. Defaulting broadening method to FFT')
+            # TODO: make it a proper parameter in self.misc or self.params 
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize

@@ -706,7 +706,7 @@ class BroadenFactory(BaseFactory):
         self.woutrange = None
 
         self._broadening_method = 'voigt'
-        '''str: 'voigt', 'convolve'
+        '''str: 'voigt', 'convolve', 'fft'
         
         Calculates broadening with a direct voigt approximation ('voigt') or
         by convoluting independantly calculated Doppler and collisional
@@ -715,7 +715,15 @@ class BroadenFactory(BaseFactory):
         you can edit the SpectrumFactory manually::
             
             sf = SpectrumFactory(...)
-            sf._broadening_method = 'voigt'  
+            sf._broadening_method = 'voigt'
+            
+        Fast fourier transform ``'fft'`` is only available if using the DLM lineshape  
+        calculation optimisation. Because the DLM convolves all lines at the same time,  
+        and thus operates on large arrays, ``'fft'`` becomes more appropriate than
+        convolutions in real space (``'voit'``, ``'convolve'`` )
+        
+        ``'fft'`` is automatically selected if DLM is used. 
+
         '''
 
         # Predict broadening times (helps trigger warnings for optimization)
@@ -1397,7 +1405,7 @@ class BroadenFactory(BaseFactory):
         wbroad = wbroad_centered+dg.shiftwav
 #        convolve_profile = self._calc_lineshape(dg)
         # Get Voigt from empirical approximation
-        voigt_profile = self._voigt_broadening(dg, wbroad_centered, jit=False)
+        if 'hwhm_voigt' in dg: voigt_profile = self._voigt_broadening(dg, wbroad_centered, jit=False)
         # Get Voigt from convolution
         pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
         gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
@@ -1410,7 +1418,7 @@ class BroadenFactory(BaseFactory):
         plt.plot(wbroad, pressure_profile, label='Pressure')
         plt.plot(wbroad, gaussian_profile, label='Doppler')
         plt.plot(wbroad, line_profile, label='Voigt (convolved)', lw=3)
-        plt.plot(wbroad, voigt_profile, label='Voigt (approximation)')
+        if 'hwhm_voigt' in dg: plt.plot(wbroad, voigt_profile, label='Voigt (approximation)')
         plt.xlabel('Wavenumber (cm-1)')
         plt.ylabel('Broadening coefficient')
         plt.title('Line {0}, T={1:.1f}K, P={2:.2f}atm'.format(i, Tgas,
