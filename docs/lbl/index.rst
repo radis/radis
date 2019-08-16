@@ -220,7 +220,8 @@ of :py:func:`~radis.lbl.broadening.voigt_lineshape`.
 
 - *DLM* :  lineshape templates are calculated to reduce the number of calculated 
 lines from millions to a few dozens. Implementation in progress. 
-parameters: ``res_L``, ``res_G``
+parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`, 
+:py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`. 
 
 More details on the parameters below:
 

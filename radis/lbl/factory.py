@@ -222,7 +222,7 @@ class SpectrumFactory(BandFactory):
     Nprocs, Ngroups: int
         parameters used in parallel processing mode. Default ``None``
 
-    chunksize: float, or ``None``
+    chunksize: int, or ``None``
         Splits the lines database in several chuncks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
         and slows the system down. Chunksize let you change the default chunck
@@ -662,7 +662,7 @@ class SpectrumFactory(BandFactory):
                                'lines_cutoff': self._Nlines_cutoff,
                                'lines_in_continuum': self._Nlines_in_continuum,
                                'thermal_equilibrium':True,
-                               'neq_version':get_version(add_git_number=False)})
+                               'radis_version':get_version(add_git_number=False)})
 
             # Get populations of levels as calculated in RovibrationalPartitionFunctions
             # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -956,7 +956,7 @@ class SpectrumFactory(BandFactory):
                                'lines_cutoff': self._Nlines_cutoff,
                                'lines_in_continuum': self._Nlines_in_continuum,
                                'thermal_equilibrium': False, # dont even try to guess if it's at equilibrium
-                               'neq_version':get_version(add_git_number=False)})
+                               'radis_version':get_version(add_git_number=False)})
 
             # Get populations of levels as calculated in RovibrationalPartitionFunctions
             populations = self.get_populations(self.misc.export_populations)
