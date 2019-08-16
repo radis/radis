@@ -219,8 +219,8 @@ class BandFactory(BroadenFactory):
 
             # Line broadening
 
-            # ... calculate broadening  FWHM
-            self._calc_broadening_FWHM()
+            # ... calculate broadening  HWHM
+            self._calc_broadening_HWHM()
 
             # ... find weak lines and calculate semi-continuum (optional)
             I_continuum = self._calculate_pseudo_continuum()
@@ -537,8 +537,8 @@ class BandFactory(BroadenFactory):
 
             # Line broadening
 
-            # ... calculate broadening  FWHM
-            self._calc_broadening_FWHM()
+            # ... calculate broadening  HWHM
+            self._calc_broadening_HWHM()
 
             # ... find weak lines and calculate semi-continuum (optional)
             I_continuum = self._calculate_pseudo_continuum()
@@ -845,8 +845,9 @@ class BandFactory(BroadenFactory):
         pb=ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
             line_profile = self._calc_lineshape(dg)
-            (wavenumber, absorption) = self._apply_lineshape(
-                dg.S, line_profile, dg.shiftwav)
+            (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
+                                                             line_profile, 
+                                                             dg.shiftwav.values)
             abscoeff_bands[band] = absorption
             pb.update(i)
         pb.done()
@@ -882,10 +883,12 @@ class BandFactory(BroadenFactory):
         pb = ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
             line_profile = self._calc_lineshape(dg)
-            (wavenumber, absorption) = self._apply_lineshape(
-                dg.S, line_profile, dg.shiftwav)
-            (_, emission) = self._apply_lineshape(
-                dg.Ei, line_profile, dg.shiftwav)
+            (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
+                                                             line_profile, 
+                                                             dg.shiftwav.values)
+            (_, emission) = self._apply_lineshape(dg.Ei.values, 
+                                                  line_profile, 
+                                                  dg.shiftwav.values)
             abscoeff_bands[band] = absorption       #
             emisscoeff_bands[band] = emission
             pb.update(i)

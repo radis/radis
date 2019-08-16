@@ -1286,7 +1286,7 @@ class DatabankLoader(object):
 #        # Reset index
 #        #    (cost ~ 1 ms but is needed if the user manually edited the database
 #        #    in between the load_database() and the calculation command
-        self.df0 = self.df0.reset_index()
+        self.df0.reset_index(inplace=True, drop=True)  # drop: don't add old index
         # Finally commented: code may crash if users edit the database manually
         # (ex: modify broadening coefficients) and forgot to reset the index,
         # but that's for advanced users anyway. The cost (time+dont know what

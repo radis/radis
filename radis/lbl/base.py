@@ -1439,7 +1439,7 @@ class BaseFactory(DatabankLoader):
         else:
             if (not all_in(['Evib1u', 'Evib2u', 'Evib3u', 'Erotu',
                            'Evib1l', 'Evib2l', 'Evib3l', 'Erotl'], df) or
-                calc_Evib_harmonic_anharmonic and not all_in(['Evib1u_a', 'Evib1u_h', 'Erotu_a', 'Erotu_h',
+                    calc_Evib_harmonic_anharmonic and not all_in(['Evib1u_a', 'Evib1u_h', 'Erotu_a', 'Erotu_h',
                                          'Evib1l_a', 'Evib1l_h', 'Erotl_a', 'Erotl_h',
                                          'Evib2u_a', 'Evib2u_h', 'Evib3u_a', 'Evib3u_h',
                                          'Evib2l_a', 'Evib2l_h', 'Erot3l_a', 'Erot3l_h'], df)):
