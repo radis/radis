@@ -273,7 +273,7 @@ Manipulate the database
 -----------------------
 
 If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting 
-by a particular level), you need to access the :py:attr:`~radis.lbl.factory.SpectrumFactory.df0` attribute of 
+by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of 
 :py:class:`~radis.lbl.factory.SpectrumFactory`. 
 
 .. warning::
@@ -291,8 +291,8 @@ For instance::
     sf.df0.drop(sf.df0[sf.df0.vu!=1].index, inplace=True)   # keep lines emitted by v'=1 only
     sf.eq_spectrum(Tgas=3000, name='vu=1').plot()
 
-:py:attr:`~radis.lbl.factory.SpectrumFactory.df0` contains the lines as they are loaded from the database. 
-:py:attr:`~radis.lbl.factory.SpectrumFactory.df1` is generated during the spectrum calculation, after the 
+:py:attr:`~radis.lbl.loader.DatabankLoader.df0` contains the lines as they are loaded from the database. 
+:py:attr:`~radis.lbl.loader.DatabankLoader.df1` is generated during the spectrum calculation, after the 
 line database reduction steps, population calculation, and scaling of intensity and broadening parameters 
 with the calculated conditions. 
 

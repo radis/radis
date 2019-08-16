@@ -471,6 +471,8 @@ class DatabankLoader(object):
         # The key self.warnings['default'] will set the warning behavior for all
         # other warnings
         self.warnings = default_warning_status
+        ''' dict: Default warnings for SpectrumFactory. See 
+        :py:data:`~radis.misc.warnings.default_warning_status`'''
 
         # Generate unique id for Factory
         self._id = uuid1()
@@ -492,8 +494,51 @@ class DatabankLoader(object):
             pass
 
         # Variables that will hold the dataframes.
-        self.df0 = None   #: DataFrame : initial database data
-        self.df1 = None   #: DataFrame : scaled with populations + linestrength cutoff
+        self.df0 = None
+        '''pandas DataFrame : initial line database after loading.
+                
+        If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting 
+        by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of 
+        :py:class:`~radis.lbl.factory.SpectrumFactory`. 
+        
+        .. warning::
+        
+            never overwrite the ``df0`` attribute, else some metadata may be lost in the process. 
+            Only use inplace operations. If reducing the number of lines, add
+            a df0.reset_index()
+            
+        For instance::
+        
+            sf = SpectrumFactory(
+                wavenum_min= 2150.4,
+                wavenum_max=2151.4,
+                pressure=1,
+                isotope=1)
+            sf.load_databank('HITRAN-CO-TEST')
+            sf.df0.drop(sf.df0[sf.df0.vu!=1].index, inplace=True)   # keep lines emitted by v'=1 only
+            sf.eq_spectrum(Tgas=3000, name='vu=1').plot()
+        
+        :py:attr:`~radis.lbl.loader.DatabankLoader.df0` contains the lines as they are loaded from the database. 
+        :py:attr:`~radis.lbl.loader.DatabankLoader.df1` is generated during the spectrum calculation, after the 
+        line database reduction steps, population calculation, and scaling of intensity and broadening parameters 
+        with the calculated conditions. 
+
+        See Also
+        --------
+        
+        :py:attr:`~self.radis.lbl.loader.DatabankLoader.df1`
+        
+        '''
+        self.df1 = None
+        '''DataFrame : line database, scaled with populations + linestrength cutoff
+        Never edit manually. See all comments about :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
+        
+        See Also
+        --------
+        
+        :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
+        
+        '''
 
         # Temp variable to store databanks information
         self._databank_args = []
@@ -758,12 +803,13 @@ class DatabankLoader(object):
         ----------------
 
         path: str, list of str, None
-            list of database files.
+            list of database files, or name of a predefined database in the 
+            :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
 
-        format: ``'cdsd'``, ``'hitran'``, ``'cdsd4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-            database type. Default ``'cdsd'``
+        format: ``'hitran'``, ``'cdsd'``, ``'cdsd4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            database type. 
 
-        parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+        parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
@@ -1240,11 +1286,21 @@ class DatabankLoader(object):
 #        # Reset index
 #        #    (cost ~ 1 ms but is needed if the user manually edited the database
 #        #    in between the load_database() and the calculation command
-#        self.df0 = self.df0.reset_index()
+        self.df0 = self.df0.reset_index()
         # Finally commented: code may crash if users edit the database manually
         # (ex: modify broadening coefficients) and forgot to reset the index,
         # but that's for advanced users anyway. The cost (time+dont know what
         # side effects may occur) is not worth it
+        # @EP: reactivated after f014007
+        
+        # Check format
+        # (it can happen that they changed if database was edited manually. That can break
+        # the code during look-up of levels later on.)
+        for k in ['vu', 'vl', 'v1u', 'v1l', 'v2u', 'v2l', 'l2u', 'l2l', 'v3u', 'v3l', 'ru', 'rl']:
+            if k in self.df0.columns and self.df0.dtypes[k] != np.int64:
+                self.warn('Format of column {0} was {1} instead of int. Changed to int'.format(
+                        k, self.df0.dtypes[k]))
+                self.df0[k] = self.df0[k].astype(np.int64)
 
     def _load_databank(self, database, dbformat, levelsfmt, db_use_cached,
                        db_assumed_sorted=False, buffer='RAM',
@@ -1956,7 +2012,7 @@ class DatabankLoader(object):
             
         return vardict
 
-    def warn(self, message, category):  # ='default'):
+    def warn(self, message, category='default'):
         ''' Trigger a warning, an error or just ignore based on the value defined
         in the :attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
 
@@ -1970,7 +2026,7 @@ class DatabankLoader(object):
             what to print
 
         category: str
-            one of the keys of self.warnings
+            one of the keys of self.warnings. See :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
 
         Notes
         -----
@@ -1978,6 +2034,11 @@ class DatabankLoader(object):
         All warnings in the SpectrumFactory should call to this method rather
         than the default warnings.warn() method, because it allows easier runtime
         modification of how to deal with warnings
+        
+        See Also
+        --------
+
+        :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
 
         '''
 

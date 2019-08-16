@@ -229,8 +229,8 @@ class SpectrumFactory(BandFactory):
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
         
-    warnings: bool, or one of ``['warning', 'error', 'ignore']``, dict
-        If one of ``['warning', 'error', 'ignore']``, set the default behaviour
+    warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
+        If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
         Example::
             
@@ -460,8 +460,8 @@ class SpectrumFactory(BandFactory):
         # Set default behavior for warnings:
         if isinstance(warnings, dict):
             self.warnings.update(warnings)
-        elif warnings in [True, 'warning']:
-            self.warnings['default'] = 'warning'
+        elif warnings in [True, 'warn', 'warning']:
+            self.warnings['default'] = 'warn'
         elif warnings == 'error':
             self.warnings['default'] = 'error'
         elif warnings in [False, 'ignore']:
