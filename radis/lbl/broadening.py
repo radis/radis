@@ -61,6 +61,7 @@ from radis.phys.constants import Na
 from radis.phys.constants import k_b_CGS, c_CGS
 from radis.misc.printer import printg
 from radis.misc.basics import is_float
+from radis.misc.arrays import is_sorted
 from numpy import (exp, arange, zeros_like, trapz, pi, sqrt, sin)
 from numpy import log as ln
 from multiprocessing import Pool, cpu_count
@@ -1494,6 +1495,7 @@ class BroadenFactory(BaseFactory):
 
         # ... First get closest matching line (on the left, and on the right)
         idcenter_left = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel() - 1
+        # ... note @dev: wavenumber_calc must be sorted, which it is by construction.
         idcenter_right = np.minimum(idcenter_left + 1, len(wavenumber_calc)-1)
 
         # ... Get the fraction of each line distributed to the left and to the right.
@@ -1534,7 +1536,9 @@ class BroadenFactory(BaseFactory):
             I_low_in_right = idcenter_right[binrange]-iwbroad_half
             I_high_in_left = I_low_in_left+2*iwbroad_half
             I_high_in_right = I_low_in_right+2*iwbroad_half
-            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_in)):
+            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left[binrange], 
+                                                               frac_right[binrange], 
+                                                               lines_in)):
                 sumoflines_calc[I_low_in_left[i]:I_high_in_left[i]+1] += fr_left*profS
                 sumoflines_calc[I_low_in_right[i]:I_high_in_right[i]+1] += fr_right*profS
 
@@ -1553,7 +1557,9 @@ class BroadenFactory(BaseFactory):
             I_low_l_right = idcenter_right[boffrangeleft]+1
             I_high_l_left = I_low_l_left + iwbroad_half - 1
             I_high_l_right = I_low_l_right + iwbroad_half - 1
-            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_l)):
+            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left[boffrangeleft], 
+                                                               frac_right[boffrangeleft], 
+                                                               lines_l)):
                 # cut left wing & peak  with the [iwbroad_half+1:] mask
                 sumoflines_calc[I_low_l_left[i]:I_high_l_left[i] + 1] += fr_left*profS[iwbroad_half+1:]
                 sumoflines_calc[I_low_l_right[i]:I_high_l_right[i] + 1] += fr_right*profS[iwbroad_half+1:]
@@ -1565,7 +1571,9 @@ class BroadenFactory(BaseFactory):
             I_low_r_right = idcenter_right[boffrangeright]-iwbroad_half
             I_high_r_left = I_low_r_left + iwbroad_half - 1      # idcenter[boffrangeright]-1
             I_high_r_right = I_low_r_right + iwbroad_half - 1      # idcenter[boffrangeright]-1
-            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left, frac_right, lines_r)):
+            for i, (fr_left, fr_right, profS) in enumerate(zip(frac_left[boffrangeright], 
+                                                               frac_right[boffrangeright], 
+                                                               lines_r)):
                 # cut right wing & peak  with the [:iwbroad_half] mask
                 sumoflines_calc[I_low_r_left[i]:I_high_r_left[i] + 1] += fr_left*profS[:iwbroad_half]
                 sumoflines_calc[I_low_r_right[i]:I_high_r_right[i] + 1] += fr_right*profS[:iwbroad_half]
@@ -1799,7 +1807,7 @@ class BroadenFactory(BaseFactory):
             elif chunksize == 'DLM':
                 # Use DLM
                               
-                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df) # wL, wG) # TODO: Fourier version
+                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(df.S.values, 
                                                                    line_profile_DLM, 
                                                                    df.shiftwav.values, 
@@ -1867,7 +1875,7 @@ class BroadenFactory(BaseFactory):
             elif chunksize == 'DLM':
                 # Use DLM
                               
-                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df) # wL, wG) # TODO: Fourier version
+                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(df.S.values, 
                                                                    line_profile_DLM, 
                                                                    df.shiftwav.values, 
