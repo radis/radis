@@ -40,6 +40,7 @@ from radis import OLDEST_COMPATIBLE_VERSION
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printr, printm
 import pandas as pd
+from packaging.version import parse
 
 
 class DeprecatedFileError(DeprecationWarning):
@@ -311,20 +312,20 @@ def check_not_deprecated(file, metadata, current_version=None,
     # If file version is anterior to a major change
     # ... Update here versions afterwhich Deprecated cache file is not safe
     # ... (example: a key name was changed)
-    if file_version < last_compatible_version:
+    if parse(file_version) < parse(last_compatible_version):
         raise DeprecatedFileError('File {0} has been generated in a deprecated '.format(file) +
                                   'version ({0}). Oldest compatible version is {1}. '.format(
             file_version, last_compatible_version) +
             'Delete the file to regenerate it on next run')
 
     # If file version is outdated: Warning, but no error
-    if current_version > file_version:
+    if parse(current_version) > parse(file_version):
         warn(DeprecationWarning('File {0} has been generated in '.format(file) +
                                 'a deprecated version ({0}) compared to current ({1})'.format(
             file_version, current_version) +
             '. Delete it to regenerate it on next run'))
         out = False
-    elif current_version == file_version:
+    elif parse(current_version) == parse(file_version):
         out = True
     else:
         raise ValueError('Cache file ({0}) generated with a future version ({1} > {2})? '.format(
