@@ -843,11 +843,22 @@ class BandFactory(BroadenFactory):
 
         abscoeff_bands = {}
         pb=ProgressBar(len(gb), active=self.verbose)
+        chunksize = self.misc.chunksize     # used for DLM keyword in 0.9.20 until proper implementation is done
+            
+        
         for i, (band, dg) in enumerate(gb):
-            line_profile = self._calc_lineshape(dg)
-            (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
-                                                             line_profile, 
-                                                             dg.shiftwav.values)
+            if chunksize == 'DLM':
+                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
+                (wavenumber, absorption) = self._apply_lineshape_DLM(dg.S.values, 
+                                                                   line_profile_DLM, 
+                                                                   dg.shiftwav.values, 
+                                                                   wL, wG, 
+                                                                   wL_dat, wG_dat)
+            else:
+                line_profile = self._calc_lineshape(dg)
+                (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
+                                                                 line_profile, 
+                                                                 dg.shiftwav.values)
             abscoeff_bands[band] = absorption
             pb.update(i)
         pb.done()
@@ -879,16 +890,31 @@ class BandFactory(BroadenFactory):
         emisscoeff_bands = {}
 
         gb = df.groupby('band')
+        chunksize = self.misc.chunksize     # used for DLM keyword in 0.9.20 until proper implementation is done
 
         pb = ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
-            line_profile = self._calc_lineshape(dg)
-            (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
-                                                             line_profile, 
-                                                             dg.shiftwav.values)
-            (_, emission) = self._apply_lineshape(dg.Ei.values, 
-                                                  line_profile, 
-                                                  dg.shiftwav.values)
+            if chunksize == 'DLM':
+                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
+                (wavenumber, absorption) = self._apply_lineshape_DLM(dg.S.values, 
+                                                                   line_profile_DLM, 
+                                                                   dg.shiftwav.values, 
+                                                                   wL, wG, 
+                                                                   wL_dat, wG_dat)
+                (_, emission) = self._apply_lineshape_DLM(dg.Ei.values, 
+                                                            line_profile_DLM, 
+                                                            dg.shiftwav.values, 
+                                                            wL, wG, 
+                                                            wL_dat, wG_dat)
+                
+            else:
+                line_profile = self._calc_lineshape(dg)
+                (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
+                                                                 line_profile, 
+                                                                 dg.shiftwav.values)
+                (_, emission) = self._apply_lineshape(dg.Ei.values, 
+                                                      line_profile, 
+                                                      dg.shiftwav.values)
             abscoeff_bands[band] = absorption       #
             emisscoeff_bands[band] = emission
             pb.update(i)
