@@ -834,11 +834,10 @@ class DatabankLoader(object):
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
             improves performances a lot. But! ... be sure to delete these files
-            to regenerate them if you happen to change the database. If 'regen',
+            to regenerate them if you happen to change the database. If ``'regen'``,
             existing cached files are removed and regenerated.
-            From 0.9.16 it is also used to load energy levels from .h5 cache file
-            if exist
-            If None, the value given on Factory creation is used. Default ``None``
+            It is also used to load energy levels from ``.h5`` cache file if exist.
+            If ``None``, the value given on Factory creation is used. Default ``None``
 
         db_assumed_sorted: boolean
             load_databank first reads the first line and check it's relevant.
@@ -852,15 +851,13 @@ class DatabankLoader(object):
 
         Other arguments related to how to open the files are given in options:
 
-        buffer: ``'auto'``, ``'RAM'``, ``'h5'``, ``'direct'``
+        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
             Different modes for loading up database: either directly in 'RAM' mode,
             or in 'h5' mode.
 
             - 'RAM': is faster but memory hunger
             - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
-            risks of MemoryErrors 
-            - 'auto': choose depending on your number of files in database. If>30 files,
-            swith to 'h5'. Former default function, I know switched back to RAM. 
+              risks of MemoryErrors 
             - 'direct': file is read directly from a single h5 file under key 'df'
               Fastest of all, doesnt check the database validity or format. Use only
               if you have a single, already formatted database file (used by Factory
@@ -903,7 +900,7 @@ class DatabankLoader(object):
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
 
         '''
-
+        # TODO remove tempfile option to clean the code. 
         try:
 
             # %% Check inputs
@@ -922,7 +919,6 @@ class DatabankLoader(object):
                                                  db_assumed_sorted=db_assumed_sorted,
                                                  load_energies=load_energies,
                                                  **options)
-
             # Now that we're all set, let's load everything
 
             # %% Line database
@@ -1066,7 +1062,7 @@ class DatabankLoader(object):
             
         # Get other options  (see _load_databank docs)
         drop_columns = options.pop('drop_columns', 'auto') # see _load_databank docs
-        buffer = options.pop('buffer', 'RAM')          # see _load_databank docs
+        buffer = options.pop('buffer',             'RAM')  # see _load_databank docs
         if len(options)>0:
             raise ValueError('Unexpected values in options: {0}'.format(list(options.keys())))
         
@@ -1320,16 +1316,16 @@ class DatabankLoader(object):
             improves performances a lot. But! ... be sure to delete these files
             to regenerate them if you happen to change the database. Default ``False``
 
-        buffer: ``'auto'``, ``'RAM'``, ``'h5'``, ``'direct'``
-            Different modes for loading up database: either directly in 'RAM' mode,
-            or in 'h5' mode.
+        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
+            Different modes for loading up a database: either directly in ``'RAM'`` mode,
+            or in ``'h5'`` mode.
 
-            - 'RAM': is faster but memory hunger
-            - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
+            - ``'RAM'``: is faster but memory hunger
+            - ``'h5'``: handles better a bigger database (> 1M lines): slower (up to 3x), but less
             risks of MemoryErrors 
-            - 'auto': choose depending on your number of files in database. If>30 files,
+            - ``'auto'``: choose depending on your number of files in database. If>30 files,
             swith to 'h5'. Former default function, I know switched back to RAM. 
-            - 'direct': file is read directly from a single h5 file under key 'df'
+            - ``'direct'``: file is read directly from a single h5 file under key ``'df'``
               Fastest of all, doesnt check the database validity or format. Use only
               if you have a single, already formatted database file (used by Factory
               when reloading database)
@@ -1359,7 +1355,7 @@ class DatabankLoader(object):
         
         # Check inputs
         assert db_use_cached in [True, False, 'regen']
-        assert buffer in ['auto', 'RAM', 'h5', 'direct']
+        assert buffer in ['RAM', 'h5', 'direct']
         
         if self.verbose >= 2:
             printg('Loading Line databank')
@@ -1372,11 +1368,6 @@ class DatabankLoader(object):
         wavenum_max = self.params.wavenum_max_calc
 
         # Check inputs
-        if buffer == 'auto':
-            if len(database) >= 30:
-                buffer = 'h5'
-            else:
-                buffer = 'RAM'
         if buffer == 'direct':
             assert len(database) == 1
             assert database[0].endswith('h5')
@@ -1387,8 +1378,8 @@ class DatabankLoader(object):
         # subroutine load_and_concat 
         # -------------------------------------- 
         def load_and_concat(files, buffer):
-            ''' Two modes of storage: either directly in 'RAM' mode, or in 'h5'
-            mode. 'RAM' is faster but memory hunger, 'h5' handles better
+            ''' Two modes of storage: either directly in ``'RAM'`` mode, or in ``'h5'``
+            mode. ``'RAM'`` is faster but memory hunger, ``'h5'`` handles better
             a bigger database
 
             Parameters
@@ -1397,7 +1388,7 @@ class DatabankLoader(object):
             files: str
                 path
 
-            buffer: `direct`, `h5`, `RAM`
+            buffer: ``'direct'``, ``'h5'``, ``'RAM'``
                 see _load_databank info
 
             '''
@@ -1448,17 +1439,12 @@ class DatabankLoader(object):
                                 print('Database file {0} > {1:.6f}cm-1: irrelevant and not loaded'.format(
                                     filename, wavenum_max))
                             continue
-                    elif dbformat == 'hitran tab':
-                        raise NotImplementedError('See Github PR!1')
-#                        df = hit2dfTAB(filename, cache=False, verbose=verbose)
-                        # TODO: mettre à jour les noms de colonne
-                        # TODO EP @ VB: ici il faut juste lire la 1ère ligne pour savoir 
-                        # si ça vaut le coup de lire ce fichier. 
                     else:
                         raise ValueError(
                             'The database format is unknown: {0}'.format(dbformat))
 
                 # Now read all the lines
+                # ... this is where the cache files are read/generated. 
                 if dbformat == 'cdsd':
                     df = cdsd2df(filename, version='hitemp', cache=db_use_cached,
                                  verbose=verbose, drop_non_numeric=True)
@@ -1485,7 +1471,7 @@ class DatabankLoader(object):
                     if k in df:
                         del df[k]
                         dropped.append(k)
-                if verbose and len(dropped)>0:
+                if verbose>=2 and len(dropped)>0:
                     print('Dropped columns: {0}'.format(dropped))
 
                 # Crop to the wavenumber of interest
@@ -1522,16 +1508,7 @@ class DatabankLoader(object):
                 except KeyError:  # happens if database is empty. A database empty error
                     # will be raised a few lines below
                     df = pd.DataFrame()
-                if self.save_memory:
-                    # we're trying to save RAM so reference dataframe (df0)
-                    # will be deleted after scaled database (df1) is created.
-                    # This prevents from calculating a new spectrum without
-                    # reloading database: in that case, we keep the temporary
-                    # file for some time so it can be reloaded directly
-                    # (will be deleted on Factory closing anyway)
-                    pass
-                else:
-                    os.remove(tempfile)
+                os.remove(tempfile)
                 if 'Unnamed: 0' in df:
                     # there is no ignore_index option in HDF...
                     # so an index column can be created, so we delete it and regenerate one
@@ -1644,9 +1621,6 @@ class DatabankLoader(object):
         impossible to calculate another spectrum afterwards, without reloading
         the database: in that case, we have kept the temporary file for some time
         and try to regenerate df0 here '''
-
-#        path = self.params.dbpath
-#        path = path.split(',')   # str > list
 
         path = self._get_temp_file()
         if not exists(path):
