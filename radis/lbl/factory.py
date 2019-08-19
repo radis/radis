@@ -546,7 +546,7 @@ class SpectrumFactory(BandFactory):
         References
         ----------
 
-        .. [1] RADIS doc: `Spectrum how to? <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`__
+        .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
 
         See Also
@@ -792,7 +792,7 @@ class SpectrumFactory(BandFactory):
         References
         ----------
 
-        .. [1] RADIS doc: `Spectrum how to? <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`__
+        .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
         See Also
         --------
