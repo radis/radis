@@ -1,3 +1,4 @@
+.. _label_user_documentation:
 
 ==================
 User documentation

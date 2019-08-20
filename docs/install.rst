@@ -4,7 +4,7 @@ Requirements
 
 RADIS has the following strict requirements:
 
-- `python <https://www.python.org/>`_ 2.7 or 3.6
+- `python <https://www.python.org/>`_ 3
 - `numpy <http://www.numpy.org/>`_
 - `scipy <https://www.scipy.org/>`_ 
 - `matplotlib <https://matplotlib.org/>`_
@@ -80,7 +80,13 @@ With Pip you can keep the package up-to-date with::
 
 
 In the developer version (installed with `pip -e`), use git to `pull` the latest changes from 
-[GitHub](https://github.com/radis/radis). 
+`GitHub <https://github.com/radis/radis>`_.
+
+
+Help
+====
+
+If you encounter any problem, please `report an Issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_ on GitHub.  
 
 
 

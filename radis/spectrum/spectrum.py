@@ -398,7 +398,8 @@ class Spectrum(object):
         :func:`~radis.spectrum.models.transmittance_spectrum`, 
         :func:`~radis.spectrum.models.experimental_spectrum`
         :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
-        :func:`~radis.tools.database.load_spec`
+        :func:`~radis.tools.database.load_spec`,
+        :ref:`the Spectrum page <label_spectrum>`
         """
 
         # TODO: if medium not defined and quantities are given in cm-1, use vacuum
@@ -507,7 +508,8 @@ class Spectrum(object):
         :func:`~radis.spectrum.models.transmittance_spectrum`, 
         :func:`~radis.spectrum.models.experimental_spectrum`,
         :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
-        :func:`~radis.tools.database.load_spec`
+        :func:`~radis.tools.database.load_spec`,
+        :ref:`the Spectrum page <label_spectrum>`
 
         """
 
@@ -595,19 +597,16 @@ class Spectrum(object):
             _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
                          medium='air')  
 
-        Notes
-        -----
-
-        TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
-        by FWHM.
-
         See Also
         --------
 
         :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance`,
-        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`,
+        :ref:`the Spectrum page <label_spectrum>`
 
         '''
+        # TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
+        # by FWHM.
 
         # check input
         if not var in self.get_vars():
@@ -757,14 +756,17 @@ class Spectrum(object):
             if ``True``, returns a copy of the stored waverange (modifying it wont
             change the Spectrum object). Default ``True``.
 
-
-
         Returns
         -------
 
         w: array_like
             (a copy of) spectrum wavelength for convoluted or non convoluted
             quantities
+            
+        See Also
+        --------
+        
+        :ref:`the Spectrum page <label_spectrum>`
         '''
 
         # Check input
@@ -843,7 +845,6 @@ class Spectrum(object):
             if ``True``, returns a copy of the stored waverange (modifying it wont
             change the Spectrum object). Default ``True``.
 
-
         Returns
         -------
 
@@ -890,7 +891,8 @@ class Spectrum(object):
         --------
 
         :meth:`~radis.spectrum.spectrum.Spectrum.get`,
-        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`,
+        :ref:`the Spectrum page <label_spectrum>`
 
         '''
 
@@ -921,7 +923,8 @@ class Spectrum(object):
         --------
 
         :meth:`~radis.spectrum.spectrum.Spectrum.get`,
-        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance`
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance`,
+        :ref:`the Spectrum page <label_spectrum>`
 
 
         '''
@@ -990,7 +993,8 @@ class Spectrum(object):
         --------
 
         :meth:`~radis.spectrum.spectrum.Spectrum.store`, 
-        :meth:`~radis.spectrum.spectrum.Spectrum.save`
+        :meth:`~radis.spectrum.spectrum.Spectrum.save`,
+        :ref:`the Spectrum page <label_spectrum>`
         '''
 
         # Get units to export
@@ -1036,6 +1040,10 @@ class Spectrum(object):
             Also updates the self_absorption value in conditions (creates it if 
             doesnt exist)
 
+        See Also
+        --------
+        
+        :ref:`the Spectrum page <label_spectrum>`
         '''
 
         return update(self, quantity=quantity, optically_thin=optically_thin,
@@ -1086,6 +1094,10 @@ class Spectrum(object):
             To deal with all the input cases, we first make a list of what has to
             be recomputed, and what has to be recalculated
 
+        See Also
+        --------
+        
+        :ref:`the Spectrum page <label_spectrum>`
         '''
 
         return rescale_path_length(self, new_path_length=new_path_length,
@@ -1135,6 +1147,11 @@ class Spectrum(object):
             similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
             Note that this is valid only for small changes in mole fractions. Then,
             the change in line broadening becomes significant
+            
+        See Also
+        --------
+        
+        :ref:`the Spectrum page <label_spectrum>`
         '''
 
         return rescale_mole_fraction(self, new_mole_fraction=new_mole_fraction,
@@ -1238,7 +1255,8 @@ class Spectrum(object):
         See Also
         --------
         
-        :func:`radis.spectrum.operations.offset`
+        :func:`radis.spectrum.operations.offset`,
+        :ref:`the Spectrum page <label_spectrum>`
         
         '''
         
@@ -1279,7 +1297,8 @@ class Spectrum(object):
         See Also
         --------
         
-        :meth:`~radis.spectrum.spectrum.Spectrum.get_power`
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_power`,
+        :ref:`the Spectrum page <label_spectrum>`
         '''
 
         w, I = self.get(var, wunit=wunit, Iunit=Iunit, **kwargs)
@@ -1303,7 +1322,8 @@ class Spectrum(object):
         See Also
         --------
         
-        :meth:`~radis.spectrum.spectrum.Spectrum.get_integral`
+        :meth:`~radis.spectrum.spectrum.Spectrum.get_integral`,
+        :ref:`the Spectrum page <label_spectrum>`
         
         '''
 
@@ -1420,6 +1440,11 @@ class Spectrum(object):
         
         line: 
             line plot
+            
+        See Also
+        --------
+        
+        :ref:`the Spectrum page <label_spectrum>`
 
         '''
 
@@ -2015,7 +2040,8 @@ class Spectrum(object):
         --------
 
         :func:`~radis.tools.slit.get_slit_function`, 
-        :func:`~radis.tools.slit.convolve_with_slit`
+        :func:`~radis.tools.slit.convolve_with_slit`,
+        :ref:`the Spectrum page <label_spectrum>`
 
 
         '''
@@ -2273,6 +2299,11 @@ class Spectrum(object):
         
         fix, ax: matplotlib objects
             figure and ax
+            
+        See Also
+        --------
+        
+        :ref:`the Spectrum page <label_spectrum>`
 
         '''
 
@@ -2433,7 +2464,8 @@ class Spectrum(object):
         See Also
         --------
 
-        :func:`~radis.tools.line_survey.LineSurvey`
+        :func:`~radis.tools.line_survey.LineSurvey`,
+        :ref:`the Spectrum page <label_spectrum>`
 
 
         '''
@@ -2492,7 +2524,8 @@ class Spectrum(object):
         See Also
         --------
         
-        :py:method:`~radis.spectrum.Spectrum.print_conditions`
+        :py:method:`~radis.spectrum.Spectrum.print_conditions`,
+        :ref:`the Spectrum page <label_spectrum>`
         '''
 
         return self.conditions
@@ -2512,8 +2545,9 @@ class Spectrum(object):
         See Also
         --------
         
-        :py:method:`~radis.spectrum.Spectrum.get_conditions`,
-        :py:func:`~radis.spectrum.utils.print_conditions`
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.get_conditions`,
+        :py:func:`~radis.spectrum.utils.print_conditions`,
+        :ref:`the Spectrum page <label_spectrum>`
         
         '''
 
