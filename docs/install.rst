@@ -88,6 +88,8 @@ Help
 
 If you encounter any problem, please `report an Issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_ on GitHub.  
 
+You can also ask questions on the community chat:
 
-
-
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+    :target: https://gitter.im/radis-radiation/community
+    :alt: Gitter

@@ -44,8 +44,6 @@ def calc_spectrum(wavenum_min=None,
                   mole_fraction=1,
                   path_length=1,
                   databank='fetch',
-                  slit=None,
-                  plot=None,
                   medium='air',
                   wstep=0.01,
                   name=None,
@@ -60,42 +58,42 @@ def calc_spectrum(wavenum_min=None,
     Parameters
     ----------
 
-    wavenum_min: float (cm-1)
+    wavenum_min: float [cm-1]
         minimum wavenumber to be processed in cm^-1
-    wavenum_max: float (cm-1)
+    wavenum_max: float [cm-1]
         maximum wavenumber to be processed in cm^-1
 
-    wavelength_min: float (nm)
-        minimum wavelength to be processed in nm. Wavelength if in 'air' or 
-        'vacuum' depending of the value of the parameter 'medium='
+    wavelength_min: float [nm]
+        minimum wavelength to be processed in nm. Wavelength in ``'air'`` or 
+        'vacuum' depending of the value of the parameter ``'medium='``
 
-    wavelength_max: float (nm)
-        maximum wavelength to be processed in nm. Wavelength if in 'air' or 
-        'vacuum' depending of the value of the parameter 'medium='
+    wavelength_max: float [nm]
+        maximum wavelength to be processed in nm. Wavelength in ``'air'`` or 
+        'vacuum' depending of the value of the parameter ``'medium='``
 
-    Tgas: float (K)
+    Tgas: float [K]
         Gas temperature. If non equilibrium, is used for Ttranslational. 
-        Default 300K
+        Default ``300`` K
 
-    Tvib: float (K)
-        Vibrational temperature. If None, equilibrium calculation is run with Tgas
+    Tvib: float [K]
+        Vibrational temperature. If ``None``, equilibrium calculation is run with Tgas
 
-    Trot: float (K)
-        Rotational temperature. If None, equilibrium calculation is run with Tgas
+    Trot: float [K]
+        Rotational temperature. If ``None``, equilibrium calculation is run with Tgas
 
-    pressure: (bar)
-        partial pressure of gas in bar. Default 1.01325 (1 atm)
+    pressure: float [bar]
+        partial pressure of gas in bar. Default ``1.01325`` (1 atm)
 
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature. 
         Ex with CO2::
 
-        >>> overpopulation = {
-        >>>    '(00`0`0)->(00`0`1)': 2.5,
-        >>>     '(00`0`1)->(00`0`2)': 1,
-        >>>     '(01`1`0)->(01`1`1)': 1,
-        >>>     '(01`1`1)->(01`1`2)': 1,
-        >>>     }
+            overpopulation = {
+            '(00`0`0)->(00`0`1)': 2.5,
+                '(00`0`1)->(00`0`2)': 1,
+                '(01`1`0)->(01`1`1)': 1,
+                '(01`1`1)->(01`1`2)': 1,
+                }
 
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
@@ -104,17 +102,17 @@ def calc_spectrum(wavenum_min=None,
         and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`. 
         Default ``None``. 
 
-    isotope: int, list, str of the form '1,2', or 'all'
+    isotope: int, list, str of the form ``'1,2'``, or ``'all'``
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2016]_ documentation for isotope list for all species. If 'all',
+        See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
-        times!). Default 'all'
+        times!). Default ``'all'``
 
     mole_fraction: float
-        database species mole fraction. Default 1
+        database species mole fraction. Default ``1``
 
-    path_length: float (cm)
-        slab size. Default 1.
+    path_length: float [cm]
+        slab size. Default ``1``.
 
     databank: str
         can be either: 
@@ -136,14 +134,6 @@ def calc_spectrum(wavenum_min=None,
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
         your ``~/.radis`` file format 
-
-    slit: float, str, or ``None``
-        if float, FWHM of a triangular slit function. If str, path to an 
-        experimenta slit function. If None, no slit is applied. Default ``None``.
-
-    plot: str
-        any parameter such as 'radiance' (if slit is given), 'radiance_noslit', 
-        'absorbance', etc...   Default ``None``
 
     medium: 'air', vacuum'
         propagating medium: choose whether to return wavelength in air or vacuum.
@@ -183,23 +173,17 @@ def calc_spectrum(wavenum_min=None,
 
     Returns
     -------
-
-    Returns a :class:`~radis.spectrum.spectrum.Spectrum` object::
     
-    Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something 
-    among ['radiance', 'radiance_noslit', 'absorbance', etc...]
+    s: :class:`~radis.spectrum.spectrum.Spectrum`
+        Output spectrum.
 
-    Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method 
-    to plot it
+        Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a 
+        spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
 
-    See [1]_ to get an overview of all Spectrum methods
+        Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
+        directly.
 
-    Notes
-    -----
-
-    Calculate line strenghts correcting the CDSD reference one. Then call
-    the main routine that sums over all lines
-
+        See [1]_ to get an overview of all Spectrum methods
 
     References
     ----------
@@ -210,7 +194,7 @@ def calc_spectrum(wavenum_min=None,
     Examples
     --------
 
-    Calculate a CO spectrum from the HITRAN database ::
+    Calculate a CO spectrum from the HITRAN database::
 
         s = calc_spectrum(1900, 2300,         # cm-1
                           molecule='CO',
@@ -228,8 +212,14 @@ def calc_spectrum(wavenum_min=None,
         
         s.line_survey(overlay='radiance')
 
-    Refer to the online :ref:`Examples <label_examples>` for more cases. 
+    Refer to the online :ref:`Examples <label_examples>` for more cases, and to 
+    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods. 
 
+    See Also
+    --------
+    
+    :class:`~radis.lbl.factory.SpectrumFactory`, 
+    the :ref:`Spectrum page <label_spectrum>`
     '''
 
     # Check inputs
@@ -343,10 +333,6 @@ def calc_spectrum(wavenum_min=None,
                                path_length=path_length,
                                name=name)
 
-    if slit is not None:
-        s.apply_slit(slit)
-    if plot is not None and plot is not False:
-        s.plot(plot)
     return s
 
 

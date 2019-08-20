@@ -33,3 +33,19 @@ Tests
    
    dev/test
    
+
+Contribute
+----------
+
+RADIS is an open-source project, and therefore anyone can contribute. 
+See the `list of contributors <https://github.com/radis/radis/graphs/contributors>`__ 
+on GitHub. 
+
+A good way to contribute is to start from the currently 
+`opened issues <https://github.com/radis/radis/issues>`__. 
+
+You can also join the community chat: 
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+    :target: https://gitter.im/radis-radiation/community
+    :alt: Gitter

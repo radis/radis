@@ -2401,15 +2401,16 @@ class Spectrum(object):
             wavelength / wavenumber units
 
         medium: {'air', 'vacuum', 'default'}
-            Choose whether wavelength are shown in air or vacuum. If 'default'  
+            Choose whether wavelength are shown in air or vacuum. If ``'default'``  
             lines are shown as stored in the spectrum. 
-
-        Other inputs are passed to :func:`~radis.tools.line_survey.LineSurvey`
 
         Other Parameters
         ----------------
 
-        ex:
+        kwargs:: dict
+            Other inputs are passed to :func:`~radis.tools.line_survey.LineSurvey`.
+            Example below (see :py:func:`~radis.tools.line_survey.LineSurvey` 
+            documentation for more details):
 
         Iunit: `hitran`, `splot` 
             Linestrength output units:
@@ -2423,8 +2424,7 @@ class Spectrum(object):
         barwidth: float
             With of bars in LineSurvey. Default 0.07
 
-        See :py:func:`~radis.tools.line_survey.LineSurvey` documentation
-
+        
 
         Returns
         -------
