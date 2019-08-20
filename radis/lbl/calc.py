@@ -48,8 +48,6 @@ def calc_spectrum(wavenum_min=None,
                   wstep=0.01,
                   lineshape_optimization='DLM',
                   name=None,
-                  slit=None,
-                  plot=None,
                   use_cached=True,
                   verbose=True,
                   **kwargs):
