@@ -1278,9 +1278,9 @@ class BroadenFactory(BaseFactory):
         Reference
         ---------
         
-        DLM implemented based on a code snippet from D.v.d. Bekerom.
+        DLM implemented based on a code snippet from D.v.d.Bekerom.
         See: https://github.com/radis/radis/issues/37
-        
+
         See Also
         --------
         
@@ -1650,7 +1650,7 @@ class BroadenFactory(BaseFactory):
         Reference
         ---------
         
-        DLM implemented based on a code snippet from D.v.d. Bekerom.
+        DLM implemented based on a code snippet from D.v.d.Bekerom.
         See: https://github.com/radis/radis/issues/37
             
         See Also
