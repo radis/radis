@@ -5,11 +5,19 @@ The Spectrum object
 ===================
 
 This module shows how to use the :class:`~radis.spectrum.spectrum.Spectrum` class, 
-and the different methods that are associated: 
+different post-processing methods (
 :py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length`,
 :py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_mole_fraction`, 
 :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, 
-:py:meth:`~radis.spectrum.spectrum.Spectrum.store`, etc. 
+:py:meth:`~radis.spectrum.spectrum.Spectrum.crop`, 
+:py:meth:`~radis.spectrum.spectrum.Spectrum.store`, 
+etc.  ) 
+and functions to manipulate multiple spectra (
+:py:func:`~radis.spectrum.operations.substract_spectra`, 
+:py:func:`~radis.los.slabs.SerialSlabs`, 
+:py:func:`~radis.spectrum.compare.plot_diff`, 
+:py:func:`~radis.spectrum.compare.get_residual`, etc. 
+)
 
 The :class:`~radis.spectrum.spectrum.Spectrum` class in RADIS primarily 
 holds the result from a :class:`~radis.lbl.factory.SpectrumFactory` calculation, but 
@@ -19,7 +27,8 @@ It can be used to recalculate spectral quantities or change output units
 radiance per wavenumber). Spectrum objects can be combined along the line of sight 
 with the :func:`~radis.los.slabs.MergeSlabs` and :func:`~radis.los.slabs.SerialSlabs` methods. 
 Spectrum objects can be quickly compared with the :func:`~radis.spectrum.compare.plot_diff` 
-function. Finally, they can be stored in JSON files and in :class:`~radis.tools.database.SpecDatabase`.
+function. Finally, they can be stored in JSON files in a folder to be 
+manipulated all together as a :class:`~radis.tools.database.SpecDatabase`.
 
 However, a :class:`~radis.spectrum.spectrum.Spectrum` object can also be 
 generated from text files, or numpy arrays, or directly from other radiation
@@ -539,11 +548,11 @@ folder as an argument, and converts it in a list of
 :class:`~radis.spectrum.spectrum.Spectrum` objects. Then, you can:
 
 - see the properties of all spectra within this folder with
-  :py:meth:`~radis.tools.database.SpecDatabase.see`
+  :py:meth:`~radis.tools.database.SpecList.see`
 - select the Spectrum that match a given set of conditions with 
-  :py:meth:`~radis.tools.database.SpecDatabase.get`, 
-  :py:meth:`~radis.tools.database.SpecDatabase.get_unique` and 
-  :py:meth:`~radis.tools.database.SpecDatabase.get_closest`
+  :py:meth:`~radis.tools.database.SpecList.get`, 
+  :py:meth:`~radis.tools.database.SpecList.get_unique` and 
+  :py:meth:`~radis.tools.database.SpecList.get_closest`
 - fit an experimental spectrum against all precomputed spectra in 
   the folder with :py:meth:`~radis.tools.database.SpecDatabase.fit_spectrum`
     

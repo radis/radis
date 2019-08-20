@@ -7,7 +7,8 @@ Summary
 A class to aggregate methods to calculate spectroscopic parameter and
 populations (and unload factory.py)
 
-BaseFactory is inherited by BroadenFactory eventually
+:py:class:`~radis.lbl.base.BaseFactory` is inherited by 
+:py:class:`~radis.lbl.broadening.BroadenFactory` eventually
 
 Routine Listing
 ---------------
@@ -15,39 +16,39 @@ Routine Listing
 
 PUBLIC METHODS
 
-- :meth:`~radis.lbl.base.BaseFactory.print_conditions`         >>> get all calculation conditions
-- :meth:`~radis.lbl.base.BaseFactory.get_energy_levels`        >>> return energy database
-- :meth:`~radis.lbl.base.BaseFactory.get_abundance`            >>> return energy database
-- :meth:`~radis.lbl.base.BaseFactory.plot_linestrength_hist`   >>>  plot distribution of linestrengths
-- :meth:`~radis.lbl.base.BaseFactory.plot_hist`                >>> same
+- :py:meth:`radis.lbl.base.BaseFactory.print_conditions`         >>> get all calculation conditions
+- :py:meth:`radis.lbl.base.BaseFactory.get_energy_levels`        >>> return energy database
+- :py:meth:`radis.lbl.base.BaseFactory.get_abundance`            >>> return energy database
+- :py:meth:`radis.lbl.base.BaseFactory.plot_linestrength_hist`   >>>  plot distribution of linestrengths
+- :py:meth:`radis.lbl.base.BaseFactory.plot_hist`                >>> same
 
 PRIVATE METHODS - CALCULATE SPECTROSCOPIC PARAMETERS
 (everything that doesnt depend on populations / temperatures)
 (computation: work & update with 'df0' and called before eq_spectrum()  )
 
-- _add_EvibErot
-- _add_EvibErot_CDSD
-- _add_EvibErot_RADIS_cls1
-- _add_Evib123Erot_RADIS_cls5
-- _add_ju
-- _add_Eu
-- _check_noneq_parameters
-- _calc_noneq_parameters
-- _calc_weighted_trans_moment
-- _calc_einstein_coefficients
+- :py:meth:`radis.lbl.base.BaseFactory._add_EvibErot`
+- :py:meth:`radis.lbl.base.BaseFactory._add_EvibErot_CDSD`
+- :py:meth:`radis.lbl.base.BaseFactory._add_EvibErot_RADIS_cls1`
+- :py:meth:`radis.lbl.base.BaseFactory._add_Evib123Erot_RADIS_cls5`
+- :py:meth:`radis.lbl.base.BaseFactory._add_ju`
+- :py:meth:`radis.lbl.base.BaseFactory._add_Eu`
+- :py:meth:`radis.lbl.base.BaseFactory._check_noneq_parameters`
+- :py:meth:`radis.lbl.base.BaseFactory._calc_noneq_parameters`
+- :py:meth:`radis.lbl.base.BaseFactory._calc_weighted_trans_moment`
+- :py:meth:`radis.lbl.base.BaseFactory._calc_einstein_coefficients`
 
 PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 (all functions that depends upon T or P)
 (calculates populations, linestrength & radiance, lineshift)
 (computation: work on df1, called by or after eq_spectrum() )
 
-- _calc_lineshift
-- _calc_linestrength_eq
-- _calc_populations_eq
-- _calc_populations_noneq
-- _calc_linestrength_noneq
-- _calc_emission_integral
-- _cutoff_linestrength
+- :py:meth:`radis.lbl.base.BaseFactory._calc_lineshift`
+- :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_eq`
+- :py:meth:`radis.lbl.base.BaseFactory._calc_populations_eq`
+- :py:meth:`radis.lbl.base.BaseFactory._calc_populations_noneq`
+- :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_noneq`
+- :py:meth:`radis.lbl.base.BaseFactory._calc_emission_integral`
+- :py:meth:`radis.lbl.base.BaseFactory._cutoff_linestrength`
 
 Most methods are written in inherited class with the following inheritance scheme:
     
@@ -61,6 +62,7 @@ Most methods are written in inherited class with the following inheritance schem
 
 
 """
+# TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals
@@ -435,10 +437,6 @@ class BaseFactory(DatabankLoader):
             ''' Calculate Evib for a given isotope (energies are specific
             to a given isotope) '''
 
-#            # (dev) HACK pandas #2936
-#            if iso == -1:
-#                return df
-
             # list of energy levels for given isotope
             energies = self.get_energy_levels(molecule, iso, state)
 
@@ -510,15 +508,7 @@ class BaseFactory(DatabankLoader):
 
             return df.loc[idx, ['Evibl', 'Evibu']]
 
-#        # (dev) HACK pandas #2936
-#        # apply() test twice the first group to determine the path to choose. 
-#        # until we can force it not to do that (see #2936), we create a fake first 
-#        # group
-#        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
-#        first_row['iso'] = (-1)            # HACK pandas #2936
-#        df = pd.concat((first_row, df))  # HACK pandas #2936
 #        df = df.groupby('iso').apply(lambda x: add_Evib_CDSD_pc_1iso(x, x.name))
-#        df = df.iloc[1:]                 # HACK pandas #2936
 
         df['Evibl'] = np.nan
         df['Evibu'] = np.nan
@@ -593,10 +583,6 @@ class BaseFactory(DatabankLoader):
             ''' Calculate Evib for a given isotope (energies are specific
             to a given isotope) '''
 
-#            # (dev) HACK pandas #2936
-#            if iso == -1:
-#                return df
-
             # list of energy levels for given isotope
             energies = self.get_energy_levels(molecule, iso, state)
 
@@ -625,15 +611,7 @@ class BaseFactory(DatabankLoader):
 
             return df.loc[idx, ['Evibl', 'Evibu']]
 
-#        # (dev) HACK pandas #2936
-#        # apply() test twice the first group to determine the path to choose. 
-#        # until we can force it not to do that (see #2936), we create a fake first 
-#        # group
-#        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
-#        first_row['iso'] = (-1)            # HACK pandas #2936
-#        df = pd.concat((first_row, df))  # HACK pandas #2936
 #        df = df.groupby('iso').apply(lambda x: get_Evib_CDSD_pcN_1iso(x, x.name))
-#        df = df.iloc[1:]                 # HACK pandas #2936
 
         df['Evibl'] = np.nan
         df['Evibu'] = np.nan
@@ -716,10 +694,6 @@ class BaseFactory(DatabankLoader):
             
             '''
             
-#             # (dev) HACK pandas #2936
-#            if iso == -1:
-#                return df
-
             # list of energy levels for given isotope
             energies = self.get_energy_levels(molecule, iso, state)
 
@@ -746,15 +720,7 @@ class BaseFactory(DatabankLoader):
 
             return df.loc[:, ['Evibl', 'Evibu']]
 
-#        # (dev) HACK pandas #2936
-#        # apply() test twice the first group to determine the path to choose. 
-#        # until we can force it not to do that (see #2936), we create a fake first 
-#        # group
-#        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
-#        first_row['iso'] = (-1)            # HACK pandas #2936
-#        df = pd.concat((first_row, df))  # HACK pandas #2936
 #        df = df.groupby('iso').apply(lambda x: get_Evib_CDSD_pcJN_1iso(x, x.name))
-#        df = df.iloc[1:]                 # HACK pandas #2936
             
         # slower than the following:
         df['Evibl'] = np.nan
@@ -827,10 +793,6 @@ class BaseFactory(DatabankLoader):
             to a given isotope) '''
             # TODO: implement with map() instead (much faster!! see get_Evib_CDSD_* )
             
-#            # (dev) HACK pandas #2936
-#            if iso == -1:
-#                return df
-
             energies = self.get_energy_levels(molecule, iso, state)
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
 
@@ -894,15 +856,8 @@ class BaseFactory(DatabankLoader):
             
             return df.loc[:, ['Evib1l', 'Evib2l', 'Evib3l', 'Evib1u', 'Evib2u', 'Evib3u']]
 
-#        # (dev) HACK pandas #2936
-#        # apply() test twice the first group to determine the path to choose. 
-#        # until we can force it not to do that (see #2936), we create a fake first 
-#        # group
-#        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
-#        first_row['iso'] = (-1)            # HACK pandas #2936
-#        df = pd.concat((first_row, df))  # HACK pandas #2936
 #        df = df.groupby('iso').apply(lambda x: get_Evib123_CDSD_pc_1iso(x, x.name))
-#        df = df.iloc[1:]                 # HACK pandas #2936
+            
         # Slower than the version below:
         df['Evib1l'] = np.nan
         df['Evib2l'] = np.nan
@@ -982,10 +937,6 @@ class BaseFactory(DatabankLoader):
             to a given isotope) '''
             # TODO: implement with map() instead (much faster!! see get_Evib_CDSD_* )
 
-#            # (dev) HACK pandas #2936
-#            if iso == -1:
-#                return df
-
             energies = self.get_energy_levels(molecule, iso, state)
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
@@ -1054,16 +1005,8 @@ class BaseFactory(DatabankLoader):
 
             return df.loc[:, ['Evibl', 'Evibu']]
 
-#        # (dev) HACK pandas #2936
-#        # apply() test twice the first group to determine the path to choose. 
-#        # until we can force it not to do that (see #2936), we create a fake first 
-#        # group
-#        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
-#        first_row['iso'] = (-1)            # HACK pandas #2936
-#        df = pd.concat((first_row, df))  # HACK pandas #2936
 #        df = df.groupby('iso').apply(lambda x: get_Evib_RADIS_cls1_1iso(x, x.name))
-#        df = df.iloc[1:]                 # HACK pandas #2936
-
+        
         # Slower than the version below:
         df['Evibl'] = np.nan
         df['Evibu'] = np.nan
@@ -1133,92 +1076,42 @@ class BaseFactory(DatabankLoader):
             and fetch the corresponding vibrational energy from the Energy Level
             Database.
             '''
-            # TODO: implement with map() instead (much faster!! see get_Evib_CDSD_* )
-
-#            # (dev) HACK pandas #2936
-#            if iso == -1:
-#                return df
-
+            # old loop version with groupby.apply() replaced after commit f014007 (15/08/19)
+            
             # Get the Energy Level Database
             energies = self.get_energy_levels(molecule, iso, state)
 
             # only keep vibrational energies
-            index = ['viblvl']
-            energies = energies.drop_duplicates(index, inplace=False)
             # (work on a copy)
+            energies = energies.drop_duplicates('viblvl', inplace=False)
 
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
+            index = ['v1', 'v2', 'l2', 'v3']
             energies.set_index(index, inplace=True)
+            Evib1_dict = dict(list(zip(energies.index, energies.Evib1)))
+            Evib2_dict = dict(list(zip(energies.index, energies.Evib2)))
+            Evib3_dict = dict(list(zip(energies.index, energies.Evib3)))
 
-            # Calculate vibrational / rotational levels for all transitions
-            def fillEvib123u(r):
-                ''' Add vibrational energy Evib1, Evib2, Evib3 for the levels
-                in group r.
-
-                Group r corresponds to levels of a same (v1, v2, l2, v3): they
-                have the same vibrational energy.
-
-                Notes
-                -----
-
-                (v1, v2, l2, v3, j) is a partition and we just did a groupby(these)
-                # so all r.vu are the same
-
-                Implementation:
-
-                How to fetch the corresponding rovib level in the Energy Database? ::
-
-                    r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
-                                all the same
-                    r.ju.iloc[0]  not necessary (same Evib) but explicitely mentionning it
-                             yields a x20 on performances (60s -> 3s)
-                In 0.9.20 the energy database was reduced to vibrational energies only
-                (probably faster since neq==0.9.20) (radis<1.0)
-                '''
-                viblvl = vib_lvl_name_hitran_class5(r.v1u.iloc[0],
-                                                    r.v2u.iloc[0],
-                                                    r.l2u.iloc[0],
-                                                    r.v3u.iloc[0])
-
-                # Fill group r with vibrational energy of 1st rovibrational
-                # level in the group
-                r['Evib1u'] = energies.at[viblvl, 'Evib1']
-                r['Evib2u'] = energies.at[viblvl, 'Evib2']
-                r['Evib3u'] = energies.at[viblvl, 'Evib3']
-
-                return r
-
-            def fillEvib123l(r):
-                ''' cf description above. Same here for lower levels in energy'''
-                # Not: (v1, v2, l2, v3, j) is a partition and we just did a groupby(these)
-                # so all r.vl, etc. are the same
-                viblvl = vib_lvl_name_hitran_class5(r.v1l.iloc[0],
-                                                    r.v2l.iloc[0],
-                                                    r.l2l.iloc[0],
-                                                    r.v3l.iloc[0])
-
-                r['Evib1l'] = energies.at[viblvl, 'Evib1']
-                r['Evib2l'] = energies.at[viblvl, 'Evib2']
-                r['Evib3l'] = energies.at[viblvl, 'Evib3']
-
-                return r
-
-            df = df.groupby(by=['v1u', 'v2u', 'l2u', 'v3u']).apply(
-                fillEvib123u)
-            df = df.groupby(by=['v1l', 'v2l', 'l2l', 'v3l']).apply(
-                fillEvib123l)
-
+            # Add lower state energy
+            df_v1v2l2v3 = df.set_index(['v1l', 'v2l', 'l2l', 'v3l'])
+#            for i in df.index:
+#                df.loc[i, 'Evib1l'] = energies.at[i, 'Evib1']
+            # the map below is crazy fast compared to above loop
+            df['Evib1l'] = df_v1v2l2v3.index.map(Evib1_dict.get).values
+            df['Evib2l'] = df_v1v2l2v3.index.map(Evib2_dict.get).values
+            df['Evib3l'] = df_v1v2l2v3.index.map(Evib3_dict.get).values
+                # TODO @dev # performance: try getting all 3 values at the same time? 
+                # with:  Evib123_dict = dict(list(zip(energies.index, (energies.Evib1, energies.Evib2, energies.Evib3))))
+        
+            # Add upper state energy
+            df_v1v2l2v3 = df.set_index(['v1u', 'v2u', 'l2u', 'v3u'])
+            df['Evib1u'] = df_v1v2l2v3.index.map(Evib1_dict.get).values 
+            df['Evib2u'] = df_v1v2l2v3.index.map(Evib2_dict.get).values 
+            df['Evib3u'] = df_v1v2l2v3.index.map(Evib3_dict.get).values 
+            
             return df.loc[:, ['Evib1l', 'Evib2l', 'Evib3l', 'Evib1u', 'Evib2u', 'Evib3u']]
 
-#        # (dev) HACK pandas #2936
-#        # apply() test twice the first group to determine the path to choose. 
-#        # until we can force it not to do that (see #2936), we create a fake first 
-#        # group
-#        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
-#        first_row['iso'] = (-1)            # HACK pandas #2936
-#        df = pd.concat((first_row, df))  # HACK pandas #2936
 #        df = df.groupby('iso').apply(lambda x: get_Evib123_RADIS_cls5_1iso(x, x.name))
-#        df = df.iloc[1:]                 # HACK pandas #2936
 
         # Slower than the version below:
         df['Evib1l'] = np.nan
@@ -1297,10 +1190,6 @@ class BaseFactory(DatabankLoader):
             '''
             # TODO: implement with map() instead (much faster!! see get_Evib_CDSD_* )
 
-#            # (dev) HACK pandas #2936
-#            if iso == -1:
-#                return df
-
             # Get the Energy Level Database
             energies = self.get_energy_levels(molecule, iso, state)
 
@@ -1375,15 +1264,7 @@ class BaseFactory(DatabankLoader):
             return df.loc[:, ['Evib1l_h', 'Evib1l_a', 'Evib2l_h', 'Evib2l_a', 'Evib3l_h', 'Evib3l_a',
                               'Evib1u_h', 'Evib1u_a', 'Evib2u_h', 'Evib2u_a', 'Evib3u_h', 'Evib3u_a']]
 
-#        # (dev) HACK pandas #2936
-#        # apply() test twice the first group to determine the path to choose. 
-#        # until we can force it not to do that (see #2936), we create a fake first 
-#        # group
-#        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
-#        first_row['iso'] = (-1)            # HACK pandas #2936
-#        df = pd.concat((first_row, df))  # HACK pandas #2936
 #        df = df.groupby('iso').apply(lambda x: get_Evib123_RADIS_cls5_1iso_ah(x, x.name))
-#        df = df.iloc[1:]                 # HACK pandas #2936
 
         # Slower than the version below:
         df['Evib1l_h'] = np.nan
@@ -1461,10 +1342,10 @@ class BaseFactory(DatabankLoader):
                                      'If using cache files, regenerate them?')
 
 #        df['ju'] = df.jl
-#        df.loc[df.branch=='P','ju'] -= 1
-#        df.loc[df.branch=='R','ju'] += 1
+#        df.loc[df.branch==-1,'ju'] -= 1    # branch P
+#        df.loc[df.branch==1,'ju'] += 1     # branch R
 
-        # slightly less readable but ~ 20% faster than above:
+#        # slightly less readable but ~ 20% faster than above:
         dgb = df.groupby('branch')
         df['ju'] = df.jl
         for branch, idx in dgb.indices.items():
@@ -1558,7 +1439,7 @@ class BaseFactory(DatabankLoader):
         else:
             if (not all_in(['Evib1u', 'Evib2u', 'Evib3u', 'Erotu',
                            'Evib1l', 'Evib2l', 'Evib3l', 'Erotl'], df) or
-                calc_Evib_harmonic_anharmonic and not all_in(['Evib1u_a', 'Evib1u_h', 'Erotu_a', 'Erotu_h',
+                    calc_Evib_harmonic_anharmonic and not all_in(['Evib1u_a', 'Evib1u_h', 'Erotu_a', 'Erotu_h',
                                          'Evib1l_a', 'Evib1l_h', 'Erotl_a', 'Erotl_h',
                                          'Evib2u_a', 'Evib2u_h', 'Evib3u_a', 'Evib3u_h',
                                          'Evib2l_a', 'Evib2l_h', 'Erot3l_a', 'Erot3l_h'], df)):
@@ -1574,12 +1455,9 @@ class BaseFactory(DatabankLoader):
 
         # ... Make sure degeneracies are calculated
         if not all_in(['gju', 'gjl', 'gvibu', 'gvibl', 'gu', 'gl'], df):
-            df = self._calc_degeneracies(df)
+            self._calc_degeneracies(df)
 
-        # Update main database
-        self.df0 = df
-
-        return
+        return None   # dataframe already updated
 
     def _calc_degeneracies(self, df):
         ''' Calculate vibrational and rotational degeneracies
@@ -1601,15 +1479,14 @@ class BaseFactory(DatabankLoader):
         dgb = df.groupby(by=['id', 'iso'])
         for (id, iso), idx in dgb.indices.items():
             _gs = gs(id, iso)
-            # TODO: slightly wrong for the moment. There can be different degeneracies. 
-            # Look up if level is symmetric()
             if isinstance(_gs, tuple):
-                if id not in [2]: # CO2, CO
+                # Molecules that have alternating degeneracy. 
+                if id not in [2]: # CO2
                     raise NotImplementedError
-                # normally we should find whether the level is symmetric 
+                # normally we should find whether the rovibrational level is symmetric 
                 # or asymmetric. Here we just assume it's symmetric, because 
-                # CO2 asymmetric levels dont exist (gs=0) and they should be
-                # in the line database. APPROXIMATION! (forbidden transitions?)
+                # CO2 asymmetric levels dont exist (gs=0) and they should not be
+                # in the line database.
                 _gs = _gs[0]
             
             dg = df.loc[idx]
@@ -1624,41 +1501,6 @@ class BaseFactory(DatabankLoader):
 
 
         # %%
-
-        # A molecule dependant assignation of Vibrational degeneracy
-        # Discarded as HITRAN is rovibrational complete (see below)
-#        def add_gvib(r):
-#            ''' Add degeneracies for lines in ``r``, which correspond to a
-#            unique molecule (as ``add_gvib`` was applied to ``groupby('id')``) '''
-#            # TODO: change to 1 in any case as HITRAN has complete assigment
-#            # of rovibrational levels '''
-#            M = r.id.iloc[0]
-#            mol = get_molecule(M)
-#
-#            # CO2
-#            if mol == 'CO2':
-#                if levelsfmt == 'cdsd':
-#                    raise NotImplementedError()
-#                elif levelsfmt == 'cdsd-pcN':
-#                    gvibu = 1          # (p,j,c,N) is an injective nomenclature
-#                    gvibl = 1          # (p,j,c,N) is an injective nomenclature
-#                elif levelsfmt == 'radis':
-#                    gvibu = 1   # r.v2u+1   # v2 levels have a degeneracy
-#                    gvibl = 1   # r.v2l+1   # v2 levels have a degeneracy
-#                else:
-#                    raise NotImplementedError('unknown format: {0}'.format(levelsfmt))
-#            # Diatomic molecules
-#            elif mol in HITRAN_CLASS1+HITRAN_CLASS2+HITRAN_CLASS3:
-#                gvibu = 1
-#                gvibl = 1
-#            else:
-#                raise NotImplementedError('Not implemented molecule: {0}'.format(mol))
-#
-#            r['gvibu'] = gvibu
-#            r['gvibl'] = gvibl
-#
-#            return r
-#        df = df.groupby(by=['id']).apply(add_gvib)
 
         if dbformat in ['hitran', 'cdsd', 'cdsd4000']:
             # In HITRAN, AFAIK all molecules have a complete assignment of rovibrational
@@ -1677,7 +1519,7 @@ class BaseFactory(DatabankLoader):
         df['gu'] = df.gvibu * df.grotu
         df['gl'] = df.gvibl * df.grotl
 
-        return df
+        return None   # dataframe updated directly
 
     def _calc_weighted_trans_moment(self):
         ''' Calculate weighted transition-moment squared R (in ``Debye^2``)
@@ -1699,31 +1541,6 @@ class BaseFactory(DatabankLoader):
             t0 = time()
             printg('Calculate weighted transition moment')
             
-#        def fill_Qref(x):
-#            (id, iso) = x.name
-#            if (id, iso) == (-1, -1):   # HACK pandas #2936
-#                return x
-#            molecule = get_molecule(id)
-#            state = self.input.state
-#            parsum = self.get_partition_function_calculator(
-#                molecule, iso, state)    # partition function
-#            x['Qref'] = parsum.at(Tref, update_populations=False)
-#            # ... note: do not update the populations here, so populations in the
-#            # ... energy level list correspond to the one calculated for T and not Tref
-#
-#            return x
-#            
-#        # (dev) HACK pandas #2936
-#        # apply() test twice the first group to determine the path to choose. 
-#        # until we can force it not to do that (see #2936), we create a fake first 
-#        # group
-#        first_row = pd.DataFrame(df.iloc[0], index=[-1])     # HACK pandas #2936
-#        first_row['iso'] = int(-1)            # HACK pandas #2936
-#        first_row['id'] = int(-1)            # HACK pandas #2936
-#        df = pd.concat((first_row, df))  # HACK pandas #2936
-#        df = df.groupby(['id', 'iso']).apply(fill_Qref)
-#        df = df.iloc[1:]                 # HACK pandas #2936
-
         id_set = df.id.unique()
         iso_set = self._get_isotope_list(self.input.molecule)  #df1.iso.unique()
         if len(id_set) == 1 and len(iso_set) == 1:
@@ -1742,7 +1559,7 @@ class BaseFactory(DatabankLoader):
         else:
             
             # normal method
-            # still much faster than the commented groupby().apply() method above
+            # still much faster than the groupby().apply() method (see radis<=0.9.19)
             # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
                 
             dgb = df.groupby(by=['id', 'iso'])
@@ -1766,16 +1583,13 @@ class BaseFactory(DatabankLoader):
         Ia = df.Ia
         h = h_CGS  # erg.s
         c = c_CGS
-        S = df.int   # reference linetrength
+        S = df.int   # reference linestrength
         Qref = df.Qref
 
         weighted_trans_moment_sq = ((3*h*c/8/pi**3) / nu / (Ia*gl*exp(-hc_k*El/Tref)/Qref)
                                     / (1-exp(-hc_k*nu/Tref)) * 1e36) * S
 
         df['Rs2'] = weighted_trans_moment_sq
-
-#        # Store lines with weighted trans momet under df0 again
-#        self.df0 = df
 
         if self.verbose >= 2:
             printg('Calculated weighted transition moment in {0:.1f}'.format(time() - t0))
@@ -1817,10 +1631,7 @@ class BaseFactory(DatabankLoader):
         df['Bul'] = 8*pi**3/(3*h**2)*gl/gu*Rs2*1e-36*1e7  # cm3/(J.s^2)
         df['Aul'] = 64*pi**4/(3*h)*nu**3*gl/gu*Rs2*1e-36  # s-1
 
-        # Store in first dataframe
-        self.df0 = df
-
-        return
+        return None  # dataframe updated directly
 
     # %% ======================================================================
     # PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
@@ -1858,17 +1669,14 @@ class BaseFactory(DatabankLoader):
         air_pressure = self.input.pressure_mbar/1013.25  # convert from mbar to atm
         df['shiftwav'] = df.wav.values + (df.Pshft.values*air_pressure)
 
-#        # Store lines with lineshift under df1
-#        self.df1 = df
-
         if self.verbose >= 2:
             printg('Calculated lineshift in {0:.1f}s'.format(time()-t0))
             
         return
 
     def _calc_linestrength_eq(self, Tgas):
-        ''' Calculate linestrength at temperature Tgas correcting the tabulating
-        linestrength
+        ''' Calculate linestrength at temperature Tgas correcting the database
+        linestrength tabulated at temperature Tref 
 
         Parameters
         ----------
@@ -1906,30 +1714,7 @@ class BaseFactory(DatabankLoader):
             printg('Scaling equilibrium linestrength')
 
         # %% Load partition function values
-#        dgb = df1.groupby(by=['id', 'iso'])
-#        
-#        # ... optimize by filling all with first isotope first
-#        id1, iso1 = list(dgb.indices.keys())[0]
-#        molecule1 = get_molecule(id1)
-#        state = self.input.state
-#        parsum1 = self.get_partition_function_interpolator(
-#            molecule1, iso1, state)
-#        df1['Qref'] = parsum1.at(Tref)
-#        df1['Qgas'] = parsum1.at(Tgas)
-#        
-#        # ... now fill the rest:
-#        for (id, iso), idx in dgb.indices.items():
-#            if (id, iso) == (id1, iso1):
-#                continue
-#            molecule = get_molecule(id)
-#            state = self.input.state
-#            parsum = self.get_partition_function_interpolator(
-#                molecule, iso, state)
-#            df1.loc[idx, 'Qref'] = parsum.at(Tref)
-#            # ... note: do not update the populations here, so populations in the
-#            # ... energy level list correspond to the one calculated for T and not Tref
-#            df1.loc[idx, 'Qgas'] = parsum.at(Tgas)
-        
+
         id_set = df1.id.unique()
         if len(id_set) == 1:
             id = list(id_set)[0]
@@ -1981,24 +1766,21 @@ class BaseFactory(DatabankLoader):
             # TODO: Implement. Read https://stackoverflow.com/a/51388828/5622825 to understand more
                 
         # Note on performance: few times faster than doing a groupby().apply()
-        # here. But may raise Keyerrors if base is reindexed ?
 
         # %% Calculate line strength at desired temperature
-        # ----------------------------------------------------------------------
+        # -------------------------------------------------
 
         # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
         # 60, No. 5, pp. 665-710"
+        # An alternative strategy would be to calculate the linestrength from the 
+        # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
         
         # correct for Partition Function
         line_strength = df1.int*(df1.Qref/df1.Qgas)
         # ratio of Boltzman populations
-        line_strength *= exp(-hc_k*df1.El/Tgas)
-        # ratio of Boltzman populationsq
-        line_strength /= exp(-hc_k*df1.El/Tref)
+        line_strength *= exp(-hc_k*df1.El*(1/Tgas-1/Tref))
         # effect of stimulated emission
-        line_strength *= (1 - exp(-hc_k*df1.wav/Tgas))
-        # effect of stimulated emission
-        line_strength /= (1 - exp(-hc_k*df1.wav/Tref))
+        line_strength *= (1 - exp(-hc_k*df1.wav/Tgas)) / (1 - exp(-hc_k*df1.wav/Tref))
         df1['S'] = line_strength                # [cm-1/(molecules/cm-2)]
 
         assert 'S' in self.df1
@@ -2080,7 +1862,7 @@ class BaseFactory(DatabankLoader):
             self._add_ju(df1)
 
         if not 'gu' in df1:
-            df1 = self._calc_degeneracies(df1)
+            self._calc_degeneracies(df1)
 
         # ... Make sure upper energy level is calculated (needed to compute populations)
         if not 'Eu' in df1:
@@ -2274,13 +2056,11 @@ class BaseFactory(DatabankLoader):
         #  Derive populations
         # ... vibrational distribution
         if vib_distribution == 'boltzmann':
-            df['nu_vib'] = (df.gvibu * exp(-hc_k*df.Evibu/Tvib) / df.Qvib)
-            df['nl_vib'] = (df.gvibl * exp(-hc_k*df.Evibl/Tvib) / df.Qvib)
+            df['nu_vib'] = df.gvibu * exp(-hc_k*df.Evibu/Tvib) / df.Qvib
+            df['nl_vib'] = df.gvibl * exp(-hc_k*df.Evibl/Tvib) / df.Qvib
         elif vib_distribution == 'treanor':
-            df['nu_vib'] = (
-                df.gvibu * exp(-hc_k*(df.Evibu_h/Tvib+df.Evibu_a/Trot)) / df.Qvib)
-            df['nl_vib'] = (
-                df.gvibl * exp(-hc_k*(df.Evibl_h/Tvib+df.Evibl_a/Trot)) / df.Qvib)
+            df['nu_vib'] = df.gvibu * exp(-hc_k*(df.Evibu_h/Tvib+df.Evibu_a/Trot)) / df.Qvib
+            df['nl_vib'] = df.gvibl * exp(-hc_k*(df.Evibl_h/Tvib+df.Evibl_a/Trot)) / df.Qvib
         else:
             raise ValueError(
                 'Unknown vibrational distribution: {0}'.format(vib_distribution))
@@ -2304,9 +2084,6 @@ class BaseFactory(DatabankLoader):
         df['nu'] = df.nu_vib * df.nu_rot * (df.Qrotu * df.Qvib / df.Q)
         df['nl'] = df.nl_vib * df.nl_rot * (df.Qrotl * df.Qvib / df.Q)
 
-#        # Store lines with new populations under df1
-#        self.df1 = df
-        
         assert 'nu' in self.df1
         assert 'nl' in self.df1
         assert not pd.isna(df.nu).any()
@@ -2413,12 +2190,6 @@ class BaseFactory(DatabankLoader):
         #  Derive populations
         # ... vibrational distribution
         if vib_distribution == 'boltzmann':
-            #            df['nu_vib1'] = (df.gvibu * exp(-df.Evib1u*hc_k/Tvib1) / df.Qvib1)
-            #            df['nl_vib1'] = (df.gvibl * exp(-df.Evib1l*hc_k/Tvib1) / df.Qvib1)
-            #            df['nu_vib2'] = (df.gvibu * exp(-df.Evib2u*hc_k/Tvib2) / df.Qvib2)
-            #            df['nl_vib2'] = (df.gvibl * exp(-df.Evib2l*hc_k/Tvib2) / df.Qvib2)
-            #            df['nu_vib3'] = (df.gvibu * exp(-df.Evib3u*hc_k/Tvib3) / df.Qvib3)
-            #            df['nl_vib3'] = (df.gvibl * exp(-df.Evib3l*hc_k/Tvib3) / df.Qvib3)
             nu_vib1Qvib1 = df.gvibu * exp(-hc_k*df.Evib1u/Tvib1)
             nl_vib1Qvib1 = df.gvibl * exp(-hc_k*df.Evib1l/Tvib1)
             nu_vib2Qvib2 = df.gvibu * exp(-hc_k*df.Evib2u/Tvib2)
@@ -2464,9 +2235,6 @@ class BaseFactory(DatabankLoader):
             raise ValueError(
                 'Unknown rotational distribution: {0}'.format(rot_distribution))
 
-##        # Store lines with new populations under df0
-#        self.df1 = df   # (dev) need to reassign  because of pd.concat
-            
         assert 'nu' in self.df1
         assert 'nl' in self.df1
 
@@ -2574,135 +2342,6 @@ class BaseFactory(DatabankLoader):
         # exported in a Spectrum but still connected to the Factory
         return pops
 
-#    def _get_active_vib_populations(self, df1):
-#        ''' Return vibrational populations for all levels featured in given
-#        line set.
-#        Note that this doesnt give the populations of all levels as non visible
-#        levels are not featured '''
-#
-#        def get_vib_populations_isotope(df1):
-#            ''' Populations for one isotope
-#
-#            Assumes that 'viblvl' is a unique identifier for a vibrational
-#            level
-#            '''
-#
-#            if not ('viblvl_u' in df1 and not 'viblvl_l' in df1.keys()):
-#                from radis.lbl.bands import add_bands
-#                if self.verbose: print('Getting bands on already computed lines')
-##                df1 = get_bands(df1, dbformat=self.params.dbformat, verbose=self.verbose)
-#                add_bands(df1, dbformat=self.params.dbformat, verbose=self.verbose)
-#
-#            if not all_in(['viblvl_l', 'viblvl_u', 'nl_vib', 'nu_vib', 'Evibl', 'Evibu'], df1.keys()):
-##                if __debug__: printdbg('Missing keys to compute vibrational populations')
-#                if self.verbose: print('Missing keys to compute vibrational populations')
-#                return {}
-#
-#            n_l = dict(zip(df1.viblvl_l, df1.nl_vib))  # removes duplicates in the process
-#            n = dict(zip(df1.viblvl_u, df1.nu_vib))  # removes duplicates in the process
-#            n.update(n_l)      # merge all
-#            E_l = dict(zip(df1.viblvl_l, df1.Evibl))  # removes duplicates in the process
-#            E = dict(zip(df1.viblvl_u, df1.Evibu))  # removes duplicates in the process
-#            E.update(E_l)      # merge all
-#            gvib_l = dict(zip(df1.viblvl_l, df1.gvibl))
-#            gvib = dict(zip(df1.viblvl_u, df1.gvibu))
-#            gvib.update(gvib_l)
-#
-#            # Export
-#            levels = pd.DataFrame({#'viblvl':list(n_u.keys()),
-#                               'nvib':list(n.values()),
-#                               'gvib':list(gvib.values()),
-#                               'Evib':list(E.values())},
-#                index=list(E.keys())
-#                )
-#
-#            return levels
-#
-#        levels = []
-#        # Stock by abundance
-#        for Ia, dg in df1.groupby(by=['Ia']):
-#            dg.is_copy = False  # removes pandas SettingWithCopyWarning
-#            levels_iso = get_vib_populations_isotope(dg)
-#            if len(levels_iso) > 0:
-#                levels_iso['Ia'] = Ia
-#                levels.append(levels_iso)
-#        if len(levels) > 0:
-#            levels = pd.concat(levels)
-#        else:
-#            levels = {}
-#
-#        return levels
-
-#    def _get_active_rovib_populations(self, df1):
-#        ''' Return rovibrational populations for all levels featured in given
-#        line set.
-#        Note that this doesnt give the populations of all levels as non visible
-#        levels are not featured '''
-#
-#        def get_rovib_populations_isotope(df1):
-#            ''' Populations for one isotope
-#
-#            Assumes that ('viblvl','j') is a unique identifier for a rovibrational level
-#            '''
-#
-#            if not ('viblvl_u' in df1 and not 'viblvl_l' in df1.keys()):
-#                from radis.lbl.bands import add_bands
-#                if self.verbose: print('Getting bands on already computed lines')
-#                add_bands(df1, dbformat=self.params.dbformat, verbose=self.verbose)
-#
-#            if not all_in(['viblvl_l', 'viblvl_u', 'jl', 'ju', 'nl', 'nu', 'El', 'Eu'], df1.keys()):
-#                if __debug__: printdbg('Missing keys to compute rovibrational populations')
-#                return {}
-#
-#            from radis.misc.basics import merge_rename_columns
-#
-#            levels = merge_rename_columns(df1, ['viblvl_u', 'ju', 'Eu', 'nu', 'gu', 'gju'],
-#                                               ['viblvl_l', 'jl', 'El', 'nl', 'gl', 'gjl'],
-#                                               ['viblvl',   'j',  'E',  'n',  'g',  'gj']
-#                                               )
-#            return levels.set_index(['viblvl', 'j'])
-#
-#        levels = []
-#        # Stock by abundance
-#        for Ia, dg in df1.groupby(by=['Ia']):
-#            dg.is_copy = False  # removes pandas SettingWithCopyWarning
-#            levels_iso = get_rovib_populations_isotope(dg)
-#            if len(levels_iso) > 0:
-#                levels_iso['Ia'] = Ia
-#                levels.append(levels_iso)
-#        if len(levels) > 0:
-#            levels = pd.concat(levels)
-#        else:
-#            levels = {}
-#
-#        return levels
-
-#    def _get_vib_populations_3Tvib(self, df1):
-#        ''' Return vibrational populations for all levels featured in given
-#        line set.
-#        Note that this doesnt give the populations of all levels as non visible
-#        levels are not featured '''
-#
-#        if not ('viblvl_l' in df1 and 'viblvl_u' in df1 and 'nl_vib' in df1 and
-#                'nu_vib' in df1 and 'Evibl' in df1 and 'Evibu' in df1):
-#            if __debug__: printdbg('Missing keys to compute populations')
-#            return {}
-#
-#        n_l = dict(zip(df1.viblvl_l, df1.nl_vib))  # removes duplicates in the process
-#        n_u = dict(zip(df1.viblvl_u, df1.nu_vib))  # removes duplicates in the process
-#        n_u.update(n_l)      # merge all
-#        E_l = dict(zip(df1.viblvl_l, df1.Evibl))  # removes duplicates in the process
-#        E_u = dict(zip(df1.viblvl_u, df1.Evibu))  # removes duplicates in the process
-#        E_u.update(E_l)      # merge all
-#        #df = pd.DataFrame({'viblvl':n_u.keys(), 'n_vib':n_u.values(), 'Evib':E_u.values()})
-#        levels = pd.DataFrame({#'viblvl':list(n_u.keys()),
-#                           'nvib':list(n_u.values()),
-#                           'Evib':list(E_u.values())},
-#            index=list(E_u.keys())
-#            )
-#
-#        return levels
-
     def _calc_linestrength_noneq(self):
         '''
         Parameters
@@ -2773,34 +2412,9 @@ class BaseFactory(DatabankLoader):
             assert 'Qref' not in df.columns
             
         else:
-                    
-#            def fill_Qref(r):
-#    #            print(r.name)
-#                id, iso = r.name
-#                if (id, iso) == (-1, -1):    # HACK pandas #2936s
-#                    return r
-#                molecule = get_molecule(id)
-#                state = self.input.state
-#                parsum = self.get_partition_function_calculator(
-#                    molecule, iso, state)
-#                r['Qref'] = parsum.at(Tref, update_populations=False)
-#                # ... note: do not update the populations here, so populations in the
-#                # ... energy level list correspond to the one calculated for T and not Tref
-#                return r
-#
-#            # (dev) HACK pandas #2936
-#            # apply() test twice the first group to determine the path to choose. 
-#            # until we can force it not to do that (see #2936), we create a fake first 
-#            # group
-#            new_row = pd.DataFrame(df.iloc[-1])     # HACK pandas #2936
-#            new_row['iso'] = int(-1)            # HACK pandas #2936
-#            new_row['id'] = int(-1)            # HACK pandas #2936
-#            df = df.append(new_row, ignore_index=True)
-#            df = df.groupby(['id', 'iso']).apply(fill_Qref)
-#            df = df.iloc[:-1]                 # HACK pandas #2936
-            
+
 #            # normal method
-#            # still much faster than the commented groupby().apply() method above
+#            # still much faster than the groupby().apply() method (see radis<=0.9.19)
 #            # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
 #                
             # partition function
@@ -3057,13 +2671,21 @@ class BaseFactory(DatabankLoader):
         # @dev: this brings a lot of performance improvement, but sometimes fail. 
         # | here we ensure that the DataFrame has the values:
         transfer_metadata(self.df0, self.df1, [k for k in df_metadata if hasattr(self.df0, k)])
-        assert hasattr(self.df1, 'molar_mass')
-        assert hasattr(self.df1, 'Ia')
+        try:
+            assert hasattr(self.df1, 'molar_mass')
+            assert hasattr(self.df1, 'Ia')
+        except AssertionError:
+            raise AssertionError('Attributes `molar_mass` or `Ia` are missing in line '+\
+                                 'dataframe sf.df1. Make sure you didnt overwrite the line '+\
+                                 'dataframe sf.df0 or sf.df1 manually. If so, replace any '+\
+                                 '`sf.df0=...` line with inplace operations such as '+\
+                                 '`sf.df0.drop(..., inplace=True)`. See '+\
+                                 'https://stackoverflow.com/q/33103988')
         
         # Clean objects to save memory
         if self.save_memory:
+#            self.df0 = None
             del self.df0
-            self.df0 = None
         else:
             try:
                 if sys.getsizeof(self.df1) > 500e6:

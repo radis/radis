@@ -20,7 +20,7 @@ spectrum from the initial data of Dang 1973 [2]_, with a 1 rotational temperatur
 
 |CO2| Energies are calculated from Dunham developments in an uncoupled harmonic oscillator - rigid rotor model. 
 The example is based on one of `RADIS validation cases <https://github.com/radis/radis/tree/master/radis/test/validation>`_.
-It makes use of the RADIS `Spectrum <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`_
+It makes use of the RADIS `Spectrum <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`_
 class and the associated compare and load functions
 
 .. only:: html

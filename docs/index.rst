@@ -25,8 +25,9 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
     pip install radis 
     
 **That's it!** You can now run your first example below.
-If you encounter any issue, or to upgrade the package later, please refer to the 
-:ref:`detailed installation procedure <label_install>` . 
+If you encounter any problem, or to upgrade the package later, please refer to the 
+:ref:`detailed installation procedure <label_install>` or 
+`report an issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_. 
 
 .. _label_first_example:
 Quick Start
@@ -68,16 +69,6 @@ energies): ::
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous
     
-The Quick Start examples automatically download the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
-For *high temperature* cases, you may need to use other line databases such as 
-[HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
-:ref:`Configuration file <label_lbl_config_file>`. 
-
-More complex :ref:`examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
-class, which is the core of RADIS line-by-line calculations. 
-:py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
-for the simple cases. 
-
 Experimental spectra can be loaded using the :py:func:`~radis.spectrum.models.experimental_spectrum` function 
 and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For instance::
 
@@ -89,13 +80,18 @@ and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For
 
 Typical output of :py:func:`~radis.spectrum.compare.plot_diff`:
 
-.. image:: docs/spectrum/cdsd4000_vs_hitemp_3409K.svg
+.. image:: spectrum/cdsd4000_vs_hitemp_3409K.*
     :scale: 60 %
     :target: https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#compare-two-spectra
     :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
-Refer to the :ref:`Examples <label_examples>` section for more examples, and to the  
-:ref:`Spectrum page <label_spectrum>` for more post-processing functions. 
+Refer to the :ref:`Spectrum page <label_spectrum>` for more post-processing functions
+(:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.crop`, 
+:py:func:`~radis.spectrum.operations.substract_spectra`, 
+:py:func:`~radis.los.slabs.SerialSlabs`, 
+:py:func:`~radis.spectrum.compare.get_residual`, etc. 
+)
 
 In the browser (no installation needed!)
 ----------------------------------------
@@ -113,6 +109,22 @@ Or start a bare RADIS online session:
 .. image:: https://mybinder.org/badge.svg 
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+
+More examples
+-------------
+
+The Quick Start examples above automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
+For *high temperature* cases, you may need to use other line databases such as 
+[HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
+:ref:`Configuration file <label_lbl_config_file>`. 
+
+More complex :ref:`examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
+class, which is the core of RADIS line-by-line calculations. 
+:py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
+for the simple cases. 
+
+Refer to the :ref:`Examples <label_examples>` section for more examples, and to the 
+:ref:`User Documentation <label_user_documentation>` for more details on the code.
 
    
 ---------------------------------------------------------------------

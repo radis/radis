@@ -160,28 +160,28 @@ class SpectrumFactory(BandFactory):
     self_absorption: boolean
         self absorption
 
-    broadening_max_width: cm-1
+    broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
         a huge performance drop (because convolutions are not vectorized).
         Also, the calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default ``10`` cm-1.
 
-    wstep: cm-1
-        Spacing of calculated spectrum. Default 0.01 cm-1
+    wstep: float (cm-1)
+        Spacing of calculated spectrum. Default ``0.01`` cm-1
 
     cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
         discard linestrengths that are lower that this, to reduce calculation
-        times. 1e-27 is what is generally used to generate databases such as
-        CDSD. If 0, no cutoff. Default 1e-27.
+        times. ``1e-27`` is what is generally used to generate databases such as
+        CDSD. If ``0``, no cutoff. Default ``1e-27``.
 
     pseudo_continuum_threshold: float
-        if not 0, first calculate a rough approximation of the spectrum, then
+        if not ``0``, first calculate a rough approximation of the spectrum, then
         moves all lines whose linestrength intensity is less than this threshold
         of the maximum in a semi-continuum. Values above 0.01 can yield significant
         errors, mostly in highly populated areas. 80% of the lines can typically
-        be moved in a continuum, resulting in 5 times faster spectra. If 0,
-        no semi-continuum is used. Default 0.
+        be moved in a continuum, resulting in 5 times faster spectra. If ``0``,
+        no semi-continuum is used. Default ``0``.
 
     bplot: boolean
         plot intermediary results (like slit function generation). Default ``False``.
@@ -222,15 +222,21 @@ class SpectrumFactory(BandFactory):
     Nprocs, Ngroups: int
         parameters used in parallel processing mode. Default ``None``
 
-    chunksize: float, or ``None``
+    chunksize: int, or ``None``
         Splits the lines database in several chuncks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
         and slows the system down. Chunksize let you change the default chunck
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
         
-    warnings: bool, or one of ``['warning', 'error', 'ignore']``, dict
-        If one of ``['warning', 'error', 'ignore']``, set the default behaviour
+        .. note::
+            in version 0.9.20 this parameter is temporarily used to accept the ``'DLM'`` 
+            argument: in this case, the DLM optimization for lineshape calculation 
+            is used. Broadening method is automatically set to ``'fft'``. 
+            See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
+        
+    warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
+        If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
         Example::
             
@@ -240,6 +246,11 @@ class SpectrumFactory(BandFactory):
             
         See :py:data:`~radis.misc.warning.default_warning_status` for more 
         information. 
+        
+    verbose: boolean, or int
+        If ``False``, stays quiet. If ``True``, tells what is going on. 
+        If ``>=2``, gives more detailed messages (for instance, details of 
+        calculation times). Default ``True``. 
 
     Examples
     --------
@@ -414,6 +425,15 @@ class SpectrumFactory(BandFactory):
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
 
+        # in version 0.9.20 the 'chunksize' parameter is temporarily used to accept the ``'DLM'`` 
+        # argument: in this case, the DLM optimization for lineshape calculation 
+        # is used. Broadening method is automatically set to ``'fft'``. 
+        # See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
+        if chunksize == 'DLM':
+            self._broadening_method = 'fft'
+            if self.verbose >= 3: print('DLM used. Defaulting broadening method to FFT')
+            # TODO: make it a proper parameter in self.misc or self.params 
+
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
         if parallel:
@@ -455,8 +475,8 @@ class SpectrumFactory(BandFactory):
         # Set default behavior for warnings:
         if isinstance(warnings, dict):
             self.warnings.update(warnings)
-        elif warnings in [True, 'warning']:
-            self.warnings['default'] = 'warning'
+        elif warnings in [True, 'warn', 'warning']:
+            self.warnings['default'] = 'warn'
         elif warnings == 'error':
             self.warnings['default'] = 'error'
         elif warnings in [False, 'ignore']:
@@ -526,7 +546,7 @@ class SpectrumFactory(BandFactory):
         References
         ----------
 
-        .. [1] RADIS doc: `Spectrum how to? <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`__
+        .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
 
         See Also
@@ -605,8 +625,8 @@ class SpectrumFactory(BandFactory):
             # ----------------------------------------------------------------------
             # Line broadening
 
-            # ... calculate broadening  FWHM
-            self._calc_broadening_FWHM()
+            # ... calculate broadening  HWHM
+            self._calc_broadening_HWHM()
 
             # ... find weak lines and calculate semi-continuum (optional)
             I_continuum = self._calculate_pseudo_continuum()
@@ -657,7 +677,7 @@ class SpectrumFactory(BandFactory):
                                'lines_cutoff': self._Nlines_cutoff,
                                'lines_in_continuum': self._Nlines_in_continuum,
                                'thermal_equilibrium':True,
-                               'neq_version':get_version(add_git_number=False)})
+                               'radis_version':get_version(add_git_number=False)})
 
             # Get populations of levels as calculated in RovibrationalPartitionFunctions
             # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -772,7 +792,7 @@ class SpectrumFactory(BandFactory):
         References
         ----------
 
-        .. [1] RADIS doc: `Spectrum how to? <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`__
+        .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
         See Also
         --------
@@ -879,8 +899,8 @@ class SpectrumFactory(BandFactory):
 
             # Line broadening
 
-            # ... calculate broadening  FWHM
-            self._calc_broadening_FWHM()
+            # ... calculate broadening  HWHM
+            self._calc_broadening_HWHM()
 
             # ... find weak lines and calculate semi-continuum (optional)
             k_continuum, j_continuum = self._calculate_pseudo_continuum(noneq=True)
@@ -951,7 +971,7 @@ class SpectrumFactory(BandFactory):
                                'lines_cutoff': self._Nlines_cutoff,
                                'lines_in_continuum': self._Nlines_in_continuum,
                                'thermal_equilibrium': False, # dont even try to guess if it's at equilibrium
-                               'neq_version':get_version(add_git_number=False)})
+                               'radis_version':get_version(add_git_number=False)})
 
             # Get populations of levels as calculated in RovibrationalPartitionFunctions
             populations = self.get_populations(self.misc.export_populations)

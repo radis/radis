@@ -731,8 +731,8 @@ def plot_diff(s1, s2, var=None,
         # copy before modifying directly in spectrum
         s1 = s1.copy()
         s2 = s2.copy()
-        w1, I1 = s1.get(var, copy=False)
-        w2, I2 = s2.get(var, copy=False)
+        w1, I1 = s1.get(var, wunit=wunit, copy=False)
+        w2, I2 = s2.get(var, wunit=wunit, copy=False)
         ratio = np.max(I1)/np.max(I2)
         I1 /= np.max(I1)
         I2 /= np.max(I2)
@@ -816,13 +816,13 @@ def plot_diff(s1, s2, var=None,
     # Plot compared spectra
     if normalize:
         # TODO: add option to norm_on
-        ax0.plot(w1, I1, ls=style, color='k', lw=3*lw_multiplier, label=label1)
-        ax0.plot(w2, I2, ls=style, color='r', lw=1*lw_multiplier, label=label2)
+        ax0.plot(w1, I1, style, color='k', lw=3*lw_multiplier, label=label1)
+        ax0.plot(w2, I2, style, color='r', lw=1*lw_multiplier, label=label2)
     else:
-        ax0.plot(*s1.get(var, wunit, Iunit, medium),
-                 ls=style, color='k', lw=3*lw_multiplier, label=label1)
-        ax0.plot(*s2.get(var, wunit, Iunit, medium),
-                 ls=style, color='r', lw=1*lw_multiplier, label=label2)
+        ax0.plot(*s1.get(var, wunit=wunit, Iunit=Iunit, medium=medium),
+                 style, color='k', lw=3*lw_multiplier, label=label1)
+        ax0.plot(*s2.get(var, wunit=wunit, Iunit=Iunit, medium=medium),
+                 style, color='r', lw=1*lw_multiplier, label=label2)
 
     Iunit = make_up(Iunit)  # cosmetic changes
 
@@ -842,7 +842,7 @@ def plot_diff(s1, s2, var=None,
     # Write labels
     ax1[-1].set_xlabel(make_up(xlabel))
     if normalize:
-        fig.text(0.02, 0.5, 'Arb. Units',
+        fig.text(0.02, 0.5, ('{0} (norm.)'.format(make_up(var))),
                  va='center', rotation='vertical')
     else:
         fig.text(0.02, 0.5, ('{0} ({1})'.format(make_up(var), Iunit)),

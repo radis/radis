@@ -183,7 +183,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
 
     # Use cache file if possible
     fcache = splitext(fname)[0]+'.h5'
-    check_cache_file(cache, fcache=fcache, verbose=verbose)
+    check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
     if cache and exists(fcache):
         return get_cache_file(fcache, verbose=verbose)
 

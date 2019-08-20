@@ -146,7 +146,8 @@ Value of keys can be:
 - 'ignore'  (do nothing)
 
 The key self.warnings['default'] will set the warning behavior for all
-other warnings
+other warnings. All warnings can be disabled by setting the SpectrumFactory
+:py:attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute to ``False``.
 
 See Also
 --------
@@ -159,6 +160,7 @@ See Also
 
 def reset_warnings(status):
     ''' Reactivate warnings that are set 'once' per session in the Factory
+    (unless all warnings have been set to False)
 
     Parameters
     ----------
@@ -167,6 +169,9 @@ def reset_warnings(status):
         dictionary of Warnings with associated status
 
     '''
+    
+    if status == False:
+        return
 
     for k, v in status.items():
         if v == 'once':
@@ -179,7 +184,8 @@ def warn(message, category='default', status={}):
     in the :py:attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
 
     The warnings can thus be deactivated selectively by setting the SpectrumFactory
-     :attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute
+    :attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute. All warnings
+    can be disabled by setting it to ``False``.
 
     Parameters
     ----------
@@ -188,19 +194,22 @@ def warn(message, category='default', status={}):
         what to print
 
     category: str
-        one of the keys of self.warnings
+        one of the keys of self.warnings.
 
     status: dict
         status for all warning categories. Can be one of ``'warn'``, ``'ignore'``,
         ``'print'``, ``'error'``
 
     '''
+    
+    if status == False:
+        return
 
     action = status[category]
 
     WarningType = WarningClasses[category]
 
-    if action == 'warn':
+    if action in 'warn':
         warnings.warn(WarningType(message))
     elif action == 'once':
         warnings.warn(WarningType(message))

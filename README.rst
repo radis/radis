@@ -122,7 +122,7 @@ and compared with the `plot_diff <https://radis.readthedocs.io/en/latest/source/
 
 Typical output of `plot_diff <https://radis.readthedocs.io/en/latest/source/radis.spectrum.compare.html#radis.spectrum.compare.plot_diff>`__:
 
-.. image:: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
+.. image:: docs/spectrum/cdsd4000_vs_hitemp_3409K.svg
     :scale: 60 %
     :target: https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#compare-two-spectra
     :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
@@ -243,19 +243,7 @@ And also:
 Other Spectroscopic tools
 -------------------------
 
-Similar packages or softwares you could be interested in (please reference your own if not there!) : 
-
-- `specutil <https://github.com/astropy/specutils>`__: a Python package for spectral analysis in astronomy 
-- `pyspeckit <https://github.com/pyspeckit/pyspeckit>`__: a python spectroscopic toolkit 
-- `rampy <https://github.com/charlesll/rampy>`__: a Python package for spectral data processing (IR, Raman, XAS...) 
-- `scikit-spectra <https://github.com/hugadams/scikit-spectra>`__: Python pandas-based toolkit for explorative spectroscopy, in particular UVVis spectroscopic data. 
-- `WrightTools <https://joss.theoj.org/papers/a82637112ac3e03df961d4494bc927d4>`__: a Python package for multidimensional spectroscopy 
-- `spectools <https://pyhdust.readthedocs.io/en/latest/spectools.html#module-pyhdust.spectools>`__: Python tools of the BeACoN group
-- `SpectroscoPyx <https://github.com/PlasmaPy/SpectroscoPyx>`__: a Python package for spectroscopy
-- `Spectragryph <https://www.effemm2.de/spectragryph/index.html>`__: software for FTIR / organic spectroscopy 
-
-And in general the list of `GitHub spectroscopy related packages <https://github.com/topics/spectroscopy>`__
-
+.. include:: docs/reference/similar_tools.rst
 
 
 

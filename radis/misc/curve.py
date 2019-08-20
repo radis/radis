@@ -32,7 +32,7 @@ from scipy.spatial.distance import cdist
 import warnings
 
 def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
-    ''' Get a regularized euclidian distance from curve (w1, I1) to curve (w2, I2)
+    r''' Get a regularized euclidian distance from curve (w1, I1) to curve (w2, I2)
 
     .. math::
 

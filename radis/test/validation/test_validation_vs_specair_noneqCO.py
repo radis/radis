@@ -55,7 +55,7 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False,
     # %% Compare with RADIS
     # ----------
 
-    wstep = 0.005
+    wstep = 0.002
     pl = SpectrumFactory(
         wavelength_min=4400,
         wavelength_max=4900,

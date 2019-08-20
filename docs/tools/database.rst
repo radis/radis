@@ -46,15 +46,15 @@ Both methods below are equivalent. Directly iterating over the database::
     for s in db:
         print(s.name)
 
-Or using the :meth:`~radis.tools.database.SpecDatabase.get` method with 
+Or using the :meth:`~radis.tools.database.SpecList.get` method with 
 no filtering condition::
 
     db = SpecDatabase('.')
     for s in db.get():
         print(s.name)
         
-You can also use dictionary-like methods: :meth:`~radis.tools.database.SpecDatabase.keys`,
-:meth:`~radis.tools.database.SpecDatabase.values` and :meth:`~radis.tools.database.SpecDatabase.items`
+You can also use dictionary-like methods: :meth:`~radis.tools.database.SpecList.keys`,
+:meth:`~radis.tools.database.SpecList.values` and :meth:`~radis.tools.database.SpecList.items`
 where Spectrum are returned under a ``{path:Spectrum}`` dictionary.
         
         
@@ -63,9 +63,9 @@ Filter spectra that match certain conditions
 
 If you want to get Spectra in your database that match certain conditions 
 (e.g: a particular temperature), you may want to have a look at the 
-:meth:`~radis.tools.database.SpecDatabase.get`, 
-:meth:`~radis.tools.database.SpecDatabase.get_unique` and 
-:meth:`~radis.tools.database.SpecDatabase.get_closest` methods
+:py:meth:`~radis.tools.database.SpecList.get`, 
+:py:meth:`~radis.tools.database.SpecList.get_unique` and 
+:py:meth:`~radis.tools.database.SpecList.get_closest` methods
 
 
 Updating a database

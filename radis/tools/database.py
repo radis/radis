@@ -22,8 +22,8 @@ See and get objects from database::
     s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
     db.add(s)  # update database (and raise error because duplicate!)
     
-Note that :py:class:`~radis.lbl.factory.SpectrumFactory` objects can be configured to automatically update
-a database
+Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to 
+automatically look-up and update a database when spectra are calculated.
 
 Edit database: 
     
@@ -163,19 +163,22 @@ def save(s, path, discard=[], compress=False, add_info=None, add_date=None,
 
     add_info: list, or None/False
         append these parameters and their values if they are in conditions.
-        e.g:
-        >>> add_info = ['Tvib', 'Trot']
+        e.g::
+        
+            add_info = ['Tvib', 'Trot']
 
     add_date: str, or None/False
         adds date in strftime format to the beginning of the filename.
-        e.g:
-        >>> add_date = '%Y%m%d'
+        e.g::
+        
+            add_date = '%Y%m%d'
+        
         Default ''
 
-    if_exists_then: 'increment', 'replace', 'error'
-        what to do if file already exists. If increment an incremental digit
-        is added. If replace file is replaced (yeah). If error (or anything else)
-        an error is raised. Default `increment`
+    if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
+        what to do if file already exists. If ``'increment'`` an incremental digit
+        is added. If ``'replace'`` file is replaced (!). If ``'error'`` (or anything else)
+        an error is raised. Default ``'increment'``
 
     Returns
     -------
@@ -756,7 +759,9 @@ def _update_to_latest_format(s, file, binary):
     
 
 def plot_spec(file, what='radiance', title=True, **kwargs):
-    ''' Plot a .spec file. *
+    ''' Plot a .spec file. Uses the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` 
+    method internally
+    
 
     Parameters
     ----------
@@ -780,7 +785,7 @@ def plot_spec(file, what='radiance', title=True, **kwargs):
     See Also
     --------
     
-    Uses the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method internally
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
     
     '''
 
@@ -912,12 +917,12 @@ class SpecList(object):
         return dg.reindex(columns=columns)
 
     def view(self, columns=None, *args):
-        ''' alias of :meth:`~radis.tools.database.SpecDatabase.see`
+        ''' alias of :py:meth:`~radis.tools.database.SpecList.see`
 
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecList.see`
+        :py:meth:`~radis.tools.database.SpecList.see`
         '''
 
         return self.see(columns=columns, *args)
@@ -971,17 +976,17 @@ class SpecList(object):
         Other Parameters
         ----------------
 
-        inplace: boolean
+        inplace: ``bool``
             if True, return the actual object in the database. Else, return
             copies. Default ``False``
             
-        verbose: bool
-            blabla
+        verbose: ``bool``
+            more blabla
 
-        scale_if_possible: boolean
+        scale_if_possible: ``bool``
             if ``True``, spectrum is scaled for parameters that can be computed 
-            directly from spectroscopic quantities (e.g: ``'path_length'``, ``'molar_fraction'``)
-            Default ``False``
+            directly from spectroscopic quantities (e.g: ``'path_length'``, 
+            ``'molar_fraction'``). Default ``False``
 
         Examples
         --------
@@ -1095,14 +1100,14 @@ class SpecList(object):
         ----------
 
         args: 
-            see meth:`~radis.tools.database.SpecList.get` for more details 
+            see :py:meth:`~radis.tools.database.SpecList.get` for more details 
 
 
         See Also
         --------
 
-        :meth:`~radis.tools.database.SpecList.get`,
-        :meth:`~radis.tools.database.SpecList.get_closest`
+        :py:meth:`~radis.tools.database.SpecList.get`,
+        :py:meth:`~radis.tools.database.SpecList.get_closest`
 
         '''
 
@@ -1132,11 +1137,11 @@ class SpecList(object):
         ----------
 
         kwconditions: named arguments 
-            i.e: Tgas=300, path_length=1.5
+            i.e: ``Tgas=300, path_length=1.5``
 
         scale_if_possible: boolean
             if ``True``, spectrum is scaled for parameters that can be computed 
-            directly from spectroscopic quantities (e.g: ``'path_length'``, ``'molar_fraction'``)
+            directly from spectroscopic quantities (e.g: ``'path_length'``, ``'molar_fraction'``). 
             Default ``True``
 
         Other Parameters
@@ -1146,9 +1151,16 @@ class SpecList(object):
             print messages. Default ``True``
 
         inplace: boolean
-            if ``True``, returns the actual object in database. Else, return a copy
+            if ``True``, returns the actual object in database. Else, return a copy.
             Default ``False``
             
+        See Also
+        --------
+
+        :meth:`~radis.tools.database.SpecList.get`,
+        :meth:`~radis.tools.database.SpecList.get_unique`
+
+        '''
 #        split_columns: list of str. 
 #            slits a comma separated column in multiple columns, and number them. 
 #            Typically::
@@ -1159,13 +1171,6 @@ class SpecList(object):
 #            Default ``[]``
 
 
-        See Also
-        --------
-
-        :meth:`~radis.tools.database.SpecList.get`,
-        :meth:`~radis.tools.database.SpecList.get_unique`
-
-        '''
         # TODO: make it possible to choose only certain parameters, fix others. 
         # Maybe first generate a SpecDatabase of output of spectra with get(), 
         # then get_closest() for the parameters we dont want to fix 
@@ -1202,7 +1207,7 @@ class SpecList(object):
 #        raise
 
         mean = dict(dg.mean())
-        std = dict(dg.std())
+#        std = dict(dg.std())
         assert '_d' not in dg.columns
         dg['_d'] = 0  # distance (squared, actually)
         try:
@@ -1241,8 +1246,6 @@ class SpecList(object):
                                          'the database format')
                     else:
                         raise(err)
-
-            # self.plot('Tvib', 'Trot', dg['_d'])  # for debugging
 
             # Get spectrum with minimum distance to target conditions
             # type: Spectrum
@@ -1370,7 +1373,8 @@ class SpecList(object):
         return list(self.to_dict().values())
 
     def items(self):
-        ''' Iterate over all ``{path:Spectrum}`` in database 
+        ''' Iterate over all :py:class:`~radis.spectrum.spectrum.Spectrum` 
+        in database 
 
         Examples
         --------
@@ -1435,7 +1439,7 @@ class SpecList(object):
         See Also
         --------
         
-        Spectrum :meth:`~radis.spectrum.spectrum.plot` method
+        Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method
             
         '''
         
@@ -1581,10 +1585,10 @@ class SpecDatabase(SpecList):
 
             >>> s = db.get('Tvib==3000')[0]  # get a Spectrum back
             >>> db.add(s)  # update database (and raise error because duplicate!)
-
-        Note that SpectrumFactory objects can be configured to automatically update
-        a database. 
-
+        
+        Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to 
+        automatically look-up and update a database when spectra are calculated.
+        
         The function to auto retrieve a Spectrum from database on calculation
         time is a method of DatabankLoader class
 
@@ -1760,7 +1764,13 @@ class SpecDatabase(SpecList):
 
     def find_duplicates(self, columns=None):
         ''' Find spectra with same conditions. The first duplicated spectrum 
-        will be 'False', the following will be 'True' (see .duplicated()).
+        will be ``'False'``, the following will be ``'True'`` (see .duplicated()).
+        
+        Parameters
+        ----------
+        
+        columns: list, or ``None``
+            columns to find duplicates on. If ``None``, use all conditions. 
         
         Examples
         --------
@@ -1791,26 +1801,29 @@ class SpecDatabase(SpecList):
         Parameters
         ----------
 
-        spectrum: path to .spec file, or Spectrum object
-            if Spectrum object: stores it in database first (using Spectrum.store()),
-            then adds the file
-            if path to file: will first copy the file in database folder, then
-            adds the file
+        spectrum: path to a .spec file (``str``), or :py:class:`~radis.spectrum.spectrum.Spectrum` object
+            if a :py:class:`~radis.spectrum.spectrum.Spectrum` object: 
+            stores it in the database (using the :py:meth:`~radis.spectrum.spectrum.Spectrum.store` 
+            method), then adds the file to the database folder. 
+            if a path to a file (``str``): first copy the file to the database folder, 
+            then loads the copied file to the database.
             
         Other Parameters
         ----------------
 
-        store_name: string
-            name of the file where the spectrum will be stored
+        store_name: ``str``, or ``None``
+            name of the file where the spectrum will be stored. If ``None``, 
+            name is generated automatically from the Spectrum conditions (see
+            ``add_info=`` and ``if_exists_then=``)
 
         **kwargs: **dict
             extra parameters used in the case where spectrum is a file and a .spec object
             has to be created (useless if `spectrum` is a file already). kwargs
-            are forwarded to Spectrum.store() method. See :meth:`~radis.spectrum.spectrum.Spectrum.store` 
-            or database :meth:`~radis.tools.database.SpecDatabase.save` methods for more information
-
-        Other :meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given 
-        as kwargs arguments :
+            are forwarded to Spectrum.store() method. See the :meth:`~radis.spectrum.spectrum.Spectrum.store` 
+            method for more information.
+            
+            Other :py:meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given 
+            as kwargs arguments:
 
         compress: boolean
             if ``True``, removes all quantities that can be regenerated with ``s.update()``,
@@ -1829,12 +1842,12 @@ class SpecDatabase(SpecList):
             Default ``['lines', 'populations']``: retrieved Spectrum will loose the 
             :meth:`~radis.spectrum.spectrum.Spectrum.line_survey` and 
             :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` methods 
-            (but it saves a ton of memory!)
-
+            (but it saves a ton of memory!).
+    
         if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
-            what to do if file already exists. If increment an incremental digit
-            is added. If replace file is replaced (yeah). If error (or anything else)
-            an error is raised. Default ``'error'``
+            what to do if file already exists. If ``'increment'`` an incremental digit
+            is added. If ``'replace'`` file is replaced (!). If ``'error'`` (or anything else)
+            an error is raised. Default ``'increment'``.
 
         Examples
         --------

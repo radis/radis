@@ -25,6 +25,7 @@ from radis.phys.convert import nm2cm
 from radis.misc.utils import DatabankNotFound
 import numpy as np
 from numpy import exp, arange, allclose, abs, diff, zeros_like, ones_like
+from os.path import exists
 
 # %%
 
@@ -43,12 +44,14 @@ def calc_spectrum(wavenum_min=None,
                   mole_fraction=1,
                   path_length=1,
                   databank='fetch',
-                  slit=None,
-                  plot=None,
                   medium='air',
                   wstep=0.01,
+                  lineshape_optimization='DLM',
                   name=None,
+                  slit=None,
+                  plot=None,
                   use_cached=True,
+                  verbose=True,
                   **kwargs):
     ''' Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
     under equilibrium, or non-equilibrium, with or without overpopulation. 
@@ -58,42 +61,42 @@ def calc_spectrum(wavenum_min=None,
     Parameters
     ----------
 
-    wavenum_min: float (cm-1)
+    wavenum_min: float [cm-1]
         minimum wavenumber to be processed in cm^-1
-    wavenum_max: float (cm-1)
+    wavenum_max: float [cm-1]
         maximum wavenumber to be processed in cm^-1
 
-    wavelength_min: float (nm)
-        minimum wavelength to be processed in nm. Wavelength if in 'air' or 
-        'vacuum' depending of the value of the parameter 'medium='
+    wavelength_min: float [nm]
+        minimum wavelength to be processed in nm. Wavelength in ``'air'`` or 
+        'vacuum' depending of the value of the parameter ``'medium='``
 
-    wavelength_max: float (nm)
-        maximum wavelength to be processed in nm. Wavelength if in 'air' or 
-        'vacuum' depending of the value of the parameter 'medium='
+    wavelength_max: float [nm]
+        maximum wavelength to be processed in nm. Wavelength in ``'air'`` or 
+        'vacuum' depending of the value of the parameter ``'medium='``
 
-    Tgas: float (K)
+    Tgas: float [K]
         Gas temperature. If non equilibrium, is used for Ttranslational. 
-        Default 300K
+        Default ``300`` K
 
-    Tvib: float (K)
-        Vibrational temperature. If None, equilibrium calculation is run with Tgas
+    Tvib: float [K]
+        Vibrational temperature. If ``None``, equilibrium calculation is run with Tgas
 
-    Trot: float (K)
-        Rotational temperature. If None, equilibrium calculation is run with Tgas
+    Trot: float [K]
+        Rotational temperature. If ``None``, equilibrium calculation is run with Tgas
 
-    pressure: (bar)
-        partial pressure of gas in bar. Default 1.01325 (1 atm)
+    pressure: float [bar]
+        partial pressure of gas in bar. Default ``1.01325`` (1 atm)
 
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature. 
         Ex with CO2::
 
-        >>> overpopulation = {
-        >>>    '(00`0`0)->(00`0`1)': 2.5,
-        >>>     '(00`0`1)->(00`0`2)': 1,
-        >>>     '(01`1`0)->(01`1`1)': 1,
-        >>>     '(01`1`1)->(01`1`2)': 1,
-        >>>     }
+            overpopulation = {
+            '(00`0`0)->(00`0`1)': 2.5,
+                '(00`0`1)->(00`0`2)': 1,
+                '(01`1`0)->(01`1`1)': 1,
+                '(01`1`1)->(01`1`2)': 1,
+                }
 
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
@@ -102,23 +105,20 @@ def calc_spectrum(wavenum_min=None,
         and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`. 
         Default ``None``. 
 
-    isotope: int, list, str of the form '1,2', or 'all'
+    isotope: int, list, str of the form ``'1,2'``, or ``'all'``
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2016]_ documentation for isotope list for all species. If 'all',
+        See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
-        times!). Default 'all'
+        times!). Default ``'all'``
 
     mole_fraction: float
-        database species mole fraction. Default 1
+        database species mole fraction. Default ``1``
 
-    path_length: float (cm)
-        slab size. Default 1.
+    path_length: float [cm]
+        slab size. Default ``1``.
 
     databank: str
         can be either: 
-
-        - the name of a spectral database to use (must be registered 
-          in your ``~/.radis``). See :ref:`Configuration file <label_lbl_config_file>`.
 
         - ``'fetch'``, to fetch automatically from [HITRAN-2016]_ through astroquery. 
         
@@ -127,28 +127,51 @@ def calc_spectrum(wavenum_min=None,
             [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
             temperatures you may need [HITEMP-2010]_ 
 
+        - the name of a valid database file, in which case the format is inferred. 
+          For instance, ``.par`` is recognized as ``hitran/hitemp`` format. 
+
+        - the name of a spectral database registered in your ``~/.radis`` 
+          configuration file. This allows to use multiple database files.
+          See :ref:`Configuration file <label_lbl_config_file>`.
+
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
         your ``~/.radis`` file format 
-
-    slit: float, str, or ``None``
-        if float, FWHM of a triangular slit function. If str, path to an 
-        experimenta slit function. If None, no slit is applied. Default ``None``.
-
-    plot: str
-        any parameter such as 'radiance' (if slit is given), 'radiance_noslit', 
-        'absorbance', etc...   Default ``None``
 
     medium: 'air', vacuum'
         propagating medium: choose whether to return wavelength in air or vacuum.
         Note that the  input wavelength range ("wavenum_min", "wavenum_max") changes. 
         Default 'air'
 
+    wstep: cm-1
+        Spacing of calculated spectrum. Default 0.01 cm-1
+
     Other Parameters
     ----------------
 
-    wstep: cm-1
-        Spacing of calculated spectrum. Default 0.01 cm-1
+    lineshape_optimization: int, ``None``, ``'DLM'``, or ``'auto'``.
+        Optimizations for the calculation of the lineshapes:
+        
+            - If ``None``, all lineshapes are calculated at the same time (can 
+              create memory errors). 
+            - If ``int``, is given as the ``chunksize`` parameter of 
+              :py:class:`~radis.lbl.factory.SpectrumFactory`` to split the line database 
+              in several parts so that the number of ``lines * spectral grid points`` is 
+              less than ``chunksize`` (reduces memory consumption). Typical values: 
+              ``lineshape_optimization=1e6``.
+            - If ``'DLM'``, only typical lineshapes are calculated. This can 
+              result of speedups of orders of magnitude.  See more about DLM in 
+              :ref:`Performance <label_lbl_performance>`. 
+              
+        Default ``'DLM'``.
+
+    slit: float, str, or ``None``
+        if float, FWHM of a triangular slit function. If str, path to an 
+        experimental slit function. If None, no slit is applied. Default ``None``.
+
+    plot: str
+        any parameter such as 'radiance' (if slit is given), 'radiance_noslit', 
+        'absorbance', etc...   Default ``None``
 
     name: str
         name of the case. If None, a unique ID is generated. Default ``None``
@@ -156,12 +179,16 @@ def calc_spectrum(wavenum_min=None,
     use_cached: boolean
         use cached files for line database and energy database. Default ``True``
 
+    verbose: boolean, or int
+        If ``False``, stays quiet. If ``True``, tells what is going on. 
+        If ``>=2``, gives more detailed messages (for instance, details of 
+        calculation times). Default ``True``. 
+
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``. 
         See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more 
         details on input. 
-
-    Example:
+        For instance:
 
     pseudo_continuum_threshold: float
         if not 0, first calculate a rough approximation of the spectrum, then
@@ -173,34 +200,28 @@ def calc_spectrum(wavenum_min=None,
 
     Returns
     -------
-
-    Returns a :class:`~radis.spectrum.spectrum.Spectrum` object::
     
-    Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something 
-    among ['radiance', 'radiance_noslit', 'absorbance', etc...]
+    s: :class:`~radis.spectrum.spectrum.Spectrum`
+        Output spectrum.
 
-    Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method 
-    to plot it
+        Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a 
+        spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
 
-    See [1]_ to get an overview of all Spectrum methods
+        Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
+        directly.
 
-    Notes
-    -----
-
-    Calculate line strenghts correcting the CDSD reference one. Then call
-    the main routine that sums over all lines
-
+        See [1]_ to get an overview of all Spectrum methods
 
     References
     ----------
 
-    .. [1] RADIS doc: `Spectrum how to? <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`__
+    .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
 
     Examples
     --------
 
-    Calculate a CO spectrum from the HITRAN database ::
+    Calculate a CO spectrum from the HITRAN database::
 
         s = calc_spectrum(1900, 2300,         # cm-1
                           molecule='CO',
@@ -218,8 +239,14 @@ def calc_spectrum(wavenum_min=None,
         
         s.line_survey(overlay='radiance')
 
-    Refer to the online :ref:`Examples <label_examples>` for more cases. 
+    Refer to the online :ref:`Examples <label_examples>` for more cases, and to 
+    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods. 
 
+    See Also
+    --------
+    
+    :class:`~radis.lbl.factory.SpectrumFactory`, 
+    the :ref:`Spectrum page <label_spectrum>`
     '''
 
     # Check inputs
@@ -255,8 +282,10 @@ def calc_spectrum(wavenum_min=None,
         # no need to save intermediary results as 
          # factory is used once only
         kwargs['save_memory'] = True
-       
-
+    
+    if 'chunksize' in kwargs:
+        raise DeprecationWarning('use lineshape_optimization= instead of chunksize=')
+    
     def _is_at_equilibrium():
         try:
             assert Tvib is None or Tvib == Tgas
@@ -276,6 +305,8 @@ def calc_spectrum(wavenum_min=None,
                          pressure=pressure,
                          wstep=wstep,
                          db_use_cached=use_cached,
+                         verbose=verbose,
+                         chunksize=lineshape_optimization, #  if lineshape_optimization != 'auto' else None, #@EP: NotImplemented. DLM use all the time by default
                          **kwargs)
     if databank == 'fetch':       # mode to get databank without relying on  Line databases
         if _equilibrium:
@@ -293,10 +324,41 @@ def calc_spectrum(wavenum_min=None,
                               parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
                               levelsfmt='radis',     # built-in spectroscopic constants
                               )
-    else:   # manual mode: get from files defined in .radis
+    elif exists(databank):
+        # Guess format
+        if databank.endswith('.par'):
+            if verbose: print('Infered {0} is a HITRAN file.'.format(databank))
+            # If non-equilibrium we'll also need to load the energy levels. 
+            if _equilibrium:
+                # Get partition functions from HAPI
+                sf.load_databank(path=databank, format='hitran',
+                                 parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
+                                 levelsfmt=None,      # no need to load energies
+                                 )
+            else:
+                # calculate partition functions with energy levels from built-in 
+                # constants (not all molecules are supported!)
+                sf.load_databank(path=databank, format='hitran',
+                                 parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
+                                 levelsfmt='radis',    # built-in spectroscopic constants
+                                 )
+        else:
+            raise ValueError("Couldnt infer the format of the line database: {0}. ".format(databank)+
+                             "Create a user-defined database in your ~/.radis file "+\
+                             "and define the format there.")
+        
+    else:   # manual mode: get from user-defined line databases defined in ~/.radis
         sf.load_databank(databank, 
                          load_energies=not _equilibrium   # no need to load/calculate energies at eq.
                          )
+        
+#    # Get optimisation strategies
+#    if lineshape_optimization == 'auto':        # NotImplemented: finally we use DLM all the time as default.
+#        if len(sf.df0) > 1e5:
+#            lineshape_optimization = 'DLM'
+#        else:
+#            lineshape_optimization = None
+#        sf.params['chunksize'] = lineshape_optimization
 
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
@@ -309,12 +371,7 @@ def calc_spectrum(wavenum_min=None,
                                path_length=path_length,
                                name=name)
 
-    if slit is not None:
-        s.apply_slit(slit)
-    if plot is not None and plot is not False:
-        s.plot(plot)
     return s
-
 
 # --------------------------
 if __name__ == '__main__':

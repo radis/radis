@@ -245,7 +245,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
                              export_lines = False,
                              molecule='CO2',
                              isotope=[1,2],
-                             use_cached=True,
+                             db_use_cached=True,
                              wstep=wstep,
                              pseudo_continuum_threshold=0,
                              pressure=P,

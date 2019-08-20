@@ -170,7 +170,8 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
             plt.xlabel('xspace')
             plt.ylabel('vector')
             plt.legend()
-            raise ValueError('Energy conservation ({0:.5g}%) below tolerance level ({1:.5g}%)'.format(
+            raise ValueError('Error in resampling: '+\
+                'energy conservation ({0:.5g}%) below tolerance level ({1:.5g}%)'.format(
                 (1-energy_ratio)*100, energy_threshold*100)+'. Check graph 101. ' +
                 'Increasing energy_threshold is possible but not recommended')
     if print_conservation:

@@ -20,16 +20,21 @@ References
 
 from __future__ import absolute_import
 from __future__ import print_function
+import radis
 from radis.io.hitran import get_molecule, get_molecule_identifier
+from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc import is_float
 from astropy import units as u
 from astroquery.hitran import Hitran
-from os.path import join, isfile
+from os.path import join, isfile, exists
 import numpy as np
 import pandas as pd
+import sys
 
+CACHE_FILE_NAME = 'tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5'
 
-def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
+def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
+                     cache=True, metadata={}):
     ''' Wrapper to Astroquery [1]_ fetch function to download a line database 
 
     Notes
@@ -48,12 +53,23 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
 
     wmin, wmax: float  (cm-1)
         wavenumber min and max 
-
+    
     Other Parameters
     ----------------
 
     verbose: boolean
         Default ``True``
+
+    cache: boolean
+        if ``True``, tries to find a ``.h5`` cache file in the Astroquery 
+        :py:attr:`~astroquery.query.BaseQuery.cache_location`, that would match 
+        the requirements. If not found, downloads it and saves the line dataframe 
+        as a ``.h5`` file in the Astroquery.
+
+    metadata: dict
+        if ``cache=True``, check that the metadata in the cache file correspond
+        to these attributes. Arguments ``molecule``, ``isotope``, ``wmin``, ``wmax``
+        are already added by default. 
 
     References
     ----------
@@ -63,7 +79,9 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
     See Also
     --------
     
-    :func:`astroquery.hitran.reader.download_hitran`, :func:`astroquery.hitran.reader.read_hitran_file`
+    :py:func:`astroquery.hitran.reader.download_hitran`, 
+    :py:func:`astroquery.hitran.reader.read_hitran_file`, 
+    :py:attr:`~astroquery.query.BaseQuery.cache_location`
 
     '''
 
@@ -77,6 +95,22 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
 
     empty_range = False
     
+    # If cache, tries to find from Astroquery:
+    if cache:    
+        # Update metadata with physical properties from the database. 
+        metadata.update({'molecule': molecule,
+                         'isotope':isotope,
+                         'wmin':wmin,
+                         'wmax':wmax})
+    
+        fcache = join(Hitran.cache_location, CACHE_FILE_NAME.format(**{'molecule':molecule,
+                                                                       'isotope':isotope,
+                                                                       'wmin':wmin,
+                                                                       'wmax':wmax}))
+        check_cache_file(fcache=fcache, use_cached=cache, metadata=metadata, verbose=verbose)
+        if exists(fcache):
+            return get_cache_file(fcache, verbose=verbose)
+
 #    tbl = Hitran.query_lines_async(molecule_number=mol_id,
 #                                     isotopologue_number=isotope,
 #                                     min_frequency=wmin / u.cm,
@@ -153,6 +187,19 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True):
                  }
     for c, typ in cast_type.items():
         df[c] = df[c].astype(typ)
+
+    # cached file mode but cached file doesn't exist yet (else we had returned)
+    if cache:
+        if verbose:
+            print('Generating cached file: {0}'.format(fcache))
+        try:
+            save_to_hdf(df, fcache, metadata=metadata, version=radis.__version__,
+                        key='df', overwrite=True, verbose=verbose)
+        except:
+            if verbose:
+                print(sys.exc_info())
+                print('An error occured in cache file generation. Lookup access rights')
+            pass
 
     return df
 

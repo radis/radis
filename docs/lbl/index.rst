@@ -183,6 +183,48 @@ section.
 Performance
 ***********
 
+Different strategies and parameters are used to improve performances:
+
+Line Database Reduction Strategies
+----------------------------------
+
+- *linestrength cutoff* : lines with low linestrength are discarded after the new 
+populations are calculated. 
+Parameter: :py:attr:`~radis.lbl.loader.Input.cutoff` 
+(see the default value in the arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`)
+
+- *weak lines*: lines which are close to a much stronger line are called weak lines. 
+They are added to a pseudo-continuum and their lineshape is calculated with a simple 
+rectangular approximation.  
+See the default value in the arguments of :py:attr:`~radis.lbl.loader.Parameters.pseudo_continuum_threshold` 
+(see arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`)
+
+
+Lineshape optimizations
+-----------------------
+
+- *broadening width* : lineshapes are calculated on a reduced spectral range. 
+Voigt computation calculation times scale linearly with that parameter. 
+Gaussian x Lorentzian calculation times scale as a square with that parameter. 
+parameters: broadening_max_width
+
+- *Voigt approximation* : Voigt is calculated with an analytical approximation. 
+Parameter : :py:attr:`~radis.lbl.loader.Parameters.broadening_max_width` and 
+default values in the arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`. 
+See :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+
+- *Fortran precompiled* : previous Voigt analytical approximation is 
+precompiled in Fortran to improve performance times. This is always the 
+case and cannot be changed on the user side at the moment. See the source code
+of :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+
+- *DLM* :  lineshape templates are calculated to reduce the number of calculated 
+lines from millions to a few dozens. Implementation in progress. 
+parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`, 
+:py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`. 
+
+More details on the parameters below:
+
 Computation parameters
 ----------------------
 
@@ -226,6 +268,34 @@ You can also use :py:meth:`~radis.lbl.loader.DatabankLoader.init_databank` inste
 and only load them if needed. This is useful if used in conjonction with 
 :py:meth:`~radis.lbl.loader.DatabankLoader.init_database`, which will retrieve precomputed spectra from 
 a database if they exist. 
+
+
+Manipulate the database
+-----------------------
+
+If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting 
+by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of 
+:py:class:`~radis.lbl.factory.SpectrumFactory`. 
+
+.. warning::
+
+    never overwrite the ``df0`` attribute, else some metadata may be lost in the process. Only use inplace operations. 
+    
+For instance::
+
+    sf = SpectrumFactory(
+        wavenum_min= 2150.4,
+        wavenum_max=2151.4,
+        pressure=1,
+        isotope=1)
+    sf.load_databank('HITRAN-CO-TEST')
+    sf.df0.drop(sf.df0[sf.df0.vu!=1].index, inplace=True)   # keep lines emitted by v'=1 only
+    sf.eq_spectrum(Tgas=3000, name='vu=1').plot()
+
+:py:attr:`~radis.lbl.loader.DatabankLoader.df0` contains the lines as they are loaded from the database. 
+:py:attr:`~radis.lbl.loader.DatabankLoader.df1` is generated during the spectrum calculation, after the 
+line database reduction steps, population calculation, and scaling of intensity and broadening parameters 
+with the calculated conditions. 
 
 Parallelization
 ---------------
