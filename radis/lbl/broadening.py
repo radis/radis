@@ -1275,6 +1275,12 @@ class BroadenFactory(BaseFactory):
         wL_dat, wG_dat: array
             Lorentzian and Gaussian FWHM of data lines. 
         
+        Reference
+        ---------
+        
+        DLM implemented based on a code snippet from D.v.d. Bekerom.
+        See: https://github.com/radis/radis/issues/37
+        
         See Also
         --------
         
@@ -1640,6 +1646,12 @@ class BroadenFactory(BaseFactory):
         Units change during convolution::
 
             [sumoflines] = [broadened_param] * cm
+            
+        Reference
+        ---------
+        
+        DLM implemented based on a code snippet from D.v.d. Bekerom.
+        See: https://github.com/radis/radis/issues/37
             
         See Also
         --------
