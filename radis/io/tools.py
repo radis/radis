@@ -173,30 +173,27 @@ def drop_object_format_columns(df, verbose=True):
 
 
 def replace_PQR_with_m101(df):
-    ''' Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric 
-    database. This improves performances quite a lot, as Pandas doesnt have a 
-    fixed-string dtype hence would use the slow ``object`` dtype. 
-    
+    """Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric
+    database. This improves performances quite a lot, as Pandas doesnt have a
+    fixed-string dtype hence would use the slow ``object`` dtype.
+
     Parameters
     ----------
-    
+
     df: pandas Dataframe
         ``branch`` must be a column name
-    
+
     Returns
     -------
-    
+
     None:
-        ``df`` is is modified in place 
-    '''
-        
+        ``df`` is is modified in place
+    """
+
     # Note: somehow pandas updates dtype automatically. We have to check
-    
-    if df.dtypes['branch'] != np.int64:
-        df.loc[df.branch=='P', 'branch'] = -1
-    if df.dtypes['branch'] != np.int64:
-        df.loc[df.branch=='Q', 'branch'] = 0
-    if df.dtypes['branch'] != np.int64:
-        df.loc[df.branch=='R', 'branch'] = 1
-    
-    assert df.dtypes['branch'] == np.int64  
+    # We just have to replace the column:
+    if df.dtypes["branch"] != np.int64:
+        new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
+        df["branch"] = new_col
+
+    assert df.dtypes["branch"] == np.int64
