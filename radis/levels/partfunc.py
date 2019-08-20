@@ -659,13 +659,16 @@ class PartFuncHAPI(RovibParFuncTabulator):
 
     '''
 
-    def __init__(self, M, I, path=None):
+    def __init__(self, M, I, path=None, verbose=True):
+        
+        self.verbose = verbose
 
         if path is not None:
             partitionSum = self.import_from_file(path)
         else:
             # Use RADIS embedded
-            from radis.io.hapi import partitionSum
+            from radis.io.hapi import partitionSum, HAPI_VERSION
+            if self.verbose>=2: print('HAPI version: %s' % HAPI_VERSION)
 
         # Check inputs
         if isinstance(M, string_types):

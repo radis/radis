@@ -361,6 +361,8 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None           #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = 'cm-1'             #: waverange unit: should be cm-1.
         self.wstep = None                  #: float: spectral resolution (cm-1)
+        self.dlm_res_L = 0.01              #: float (cm-1): Lorentzian step for DLM lineshape database. Default 0.01 cm-1
+        self.dlm_res_G = 0.01              #: float (cm-1): DLM Gaussian step DLM lineshape database. Default 0.01 cm-1
         
 class MiscParams(ConditionDict):
     ''' A class to hold Spectrum calculation descriptive parameters. Unlike 
@@ -469,6 +471,8 @@ class DatabankLoader(object):
         # The key self.warnings['default'] will set the warning behavior for all
         # other warnings
         self.warnings = default_warning_status
+        ''' dict: Default warnings for SpectrumFactory. See 
+        :py:data:`~radis.misc.warnings.default_warning_status`'''
 
         # Generate unique id for Factory
         self._id = uuid1()
@@ -490,8 +494,51 @@ class DatabankLoader(object):
             pass
 
         # Variables that will hold the dataframes.
-        self.df0 = None   #: DataFrame : initial database data
-        self.df1 = None   #: DataFrame : scaled with populations + linestrength cutoff
+        self.df0 = None
+        '''pandas DataFrame : initial line database after loading.
+                
+        If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting 
+        by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of 
+        :py:class:`~radis.lbl.factory.SpectrumFactory`. 
+        
+        .. warning::
+        
+            never overwrite the ``df0`` attribute, else some metadata may be lost in the process. 
+            Only use inplace operations. If reducing the number of lines, add
+            a df0.reset_index()
+            
+        For instance::
+        
+            sf = SpectrumFactory(
+                wavenum_min= 2150.4,
+                wavenum_max=2151.4,
+                pressure=1,
+                isotope=1)
+            sf.load_databank('HITRAN-CO-TEST')
+            sf.df0.drop(sf.df0[sf.df0.vu!=1].index, inplace=True)   # keep lines emitted by v'=1 only
+            sf.eq_spectrum(Tgas=3000, name='vu=1').plot()
+        
+        :py:attr:`~radis.lbl.loader.DatabankLoader.df0` contains the lines as they are loaded from the database. 
+        :py:attr:`~radis.lbl.loader.DatabankLoader.df1` is generated during the spectrum calculation, after the 
+        line database reduction steps, population calculation, and scaling of intensity and broadening parameters 
+        with the calculated conditions. 
+
+        See Also
+        --------
+        
+        :py:attr:`~self.radis.lbl.loader.DatabankLoader.df1`
+        
+        '''
+        self.df1 = None
+        '''DataFrame : line database, scaled with populations + linestrength cutoff
+        Never edit manually. See all comments about :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
+        
+        See Also
+        --------
+        
+        :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
+        
+        '''
 
         # Temp variable to store databanks information
         self._databank_args = []
@@ -756,12 +803,13 @@ class DatabankLoader(object):
         ----------------
 
         path: str, list of str, None
-            list of database files.
+            list of database files, or name of a predefined database in the 
+            :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
 
-        format: ``'cdsd'``, ``'hitran'``, ``'cdsd4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-            database type. Default ``'cdsd'``
+        format: ``'hitran'``, ``'cdsd'``, ``'cdsd4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            database type. 
 
-        parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+        parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
@@ -786,11 +834,10 @@ class DatabankLoader(object):
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
             improves performances a lot. But! ... be sure to delete these files
-            to regenerate them if you happen to change the database. If 'regen',
+            to regenerate them if you happen to change the database. If ``'regen'``,
             existing cached files are removed and regenerated.
-            From 0.9.16 it is also used to load energy levels from .h5 cache file
-            if exist
-            If None, the value given on Factory creation is used. Default ``None``
+            It is also used to load energy levels from ``.h5`` cache file if exist.
+            If ``None``, the value given on Factory creation is used. Default ``None``
 
         db_assumed_sorted: boolean
             load_databank first reads the first line and check it's relevant.
@@ -804,15 +851,13 @@ class DatabankLoader(object):
 
         Other arguments related to how to open the files are given in options:
 
-        buffer: ``'auto'``, ``'RAM'``, ``'h5'``, ``'direct'``
+        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
             Different modes for loading up database: either directly in 'RAM' mode,
             or in 'h5' mode.
 
             - 'RAM': is faster but memory hunger
             - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
-            risks of MemoryErrors 
-            - 'auto': choose depending on your number of files in database. If>30 files,
-            swith to 'h5'. Former default function, I know switched back to RAM. 
+              risks of MemoryErrors 
             - 'direct': file is read directly from a single h5 file under key 'df'
               Fastest of all, doesnt check the database validity or format. Use only
               if you have a single, already formatted database file (used by Factory
@@ -855,7 +900,7 @@ class DatabankLoader(object):
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
 
         '''
-
+        # TODO remove tempfile option to clean the code. 
         try:
 
             # %% Check inputs
@@ -874,7 +919,6 @@ class DatabankLoader(object):
                                                  db_assumed_sorted=db_assumed_sorted,
                                                  load_energies=load_energies,
                                                  **options)
-
             # Now that we're all set, let's load everything
 
             # %% Line database
@@ -1018,7 +1062,7 @@ class DatabankLoader(object):
             
         # Get other options  (see _load_databank docs)
         drop_columns = options.pop('drop_columns', 'auto') # see _load_databank docs
-        buffer = options.pop('buffer', 'RAM')          # see _load_databank docs
+        buffer = options.pop('buffer',             'RAM')  # see _load_databank docs
         if len(options)>0:
             raise ValueError('Unexpected values in options: {0}'.format(list(options.keys())))
         
@@ -1238,11 +1282,21 @@ class DatabankLoader(object):
 #        # Reset index
 #        #    (cost ~ 1 ms but is needed if the user manually edited the database
 #        #    in between the load_database() and the calculation command
-#        self.df0 = self.df0.reset_index()
+        self.df0.reset_index(inplace=True, drop=True)  # drop: don't add old index
         # Finally commented: code may crash if users edit the database manually
         # (ex: modify broadening coefficients) and forgot to reset the index,
         # but that's for advanced users anyway. The cost (time+dont know what
         # side effects may occur) is not worth it
+        # @EP: reactivated after f014007
+        
+        # Check format
+        # (it can happen that they changed if database was edited manually. That can break
+        # the code during look-up of levels later on.)
+        for k in ['vu', 'vl', 'v1u', 'v1l', 'v2u', 'v2l', 'l2u', 'l2l', 'v3u', 'v3l', 'ru', 'rl']:
+            if k in self.df0.columns and self.df0.dtypes[k] != np.int64:
+                self.warn('Format of column {0} was {1} instead of int. Changed to int'.format(
+                        k, self.df0.dtypes[k]))
+                self.df0[k] = self.df0[k].astype(np.int64)
 
     def _load_databank(self, database, dbformat, levelsfmt, db_use_cached,
                        db_assumed_sorted=False, buffer='RAM',
@@ -1262,16 +1316,16 @@ class DatabankLoader(object):
             improves performances a lot. But! ... be sure to delete these files
             to regenerate them if you happen to change the database. Default ``False``
 
-        buffer: ``'auto'``, ``'RAM'``, ``'h5'``, ``'direct'``
-            Different modes for loading up database: either directly in 'RAM' mode,
-            or in 'h5' mode.
+        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
+            Different modes for loading up a database: either directly in ``'RAM'`` mode,
+            or in ``'h5'`` mode.
 
-            - 'RAM': is faster but memory hunger
-            - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
+            - ``'RAM'``: is faster but memory hunger
+            - ``'h5'``: handles better a bigger database (> 1M lines): slower (up to 3x), but less
             risks of MemoryErrors 
-            - 'auto': choose depending on your number of files in database. If>30 files,
+            - ``'auto'``: choose depending on your number of files in database. If>30 files,
             swith to 'h5'. Former default function, I know switched back to RAM. 
-            - 'direct': file is read directly from a single h5 file under key 'df'
+            - ``'direct'``: file is read directly from a single h5 file under key ``'df'``
               Fastest of all, doesnt check the database validity or format. Use only
               if you have a single, already formatted database file (used by Factory
               when reloading database)
@@ -1301,7 +1355,7 @@ class DatabankLoader(object):
         
         # Check inputs
         assert db_use_cached in [True, False, 'regen']
-        assert buffer in ['auto', 'RAM', 'h5', 'direct']
+        assert buffer in ['RAM', 'h5', 'direct']
         
         if self.verbose >= 2:
             printg('Loading Line databank')
@@ -1314,11 +1368,6 @@ class DatabankLoader(object):
         wavenum_max = self.params.wavenum_max_calc
 
         # Check inputs
-        if buffer == 'auto':
-            if len(database) >= 30:
-                buffer = 'h5'
-            else:
-                buffer = 'RAM'
         if buffer == 'direct':
             assert len(database) == 1
             assert database[0].endswith('h5')
@@ -1329,8 +1378,8 @@ class DatabankLoader(object):
         # subroutine load_and_concat 
         # -------------------------------------- 
         def load_and_concat(files, buffer):
-            ''' Two modes of storage: either directly in 'RAM' mode, or in 'h5'
-            mode. 'RAM' is faster but memory hunger, 'h5' handles better
+            ''' Two modes of storage: either directly in ``'RAM'`` mode, or in ``'h5'``
+            mode. ``'RAM'`` is faster but memory hunger, ``'h5'`` handles better
             a bigger database
 
             Parameters
@@ -1339,7 +1388,7 @@ class DatabankLoader(object):
             files: str
                 path
 
-            buffer: `direct`, `h5`, `RAM`
+            buffer: ``'direct'``, ``'h5'``, ``'RAM'``
                 see _load_databank info
 
             '''
@@ -1390,17 +1439,12 @@ class DatabankLoader(object):
                                 print('Database file {0} > {1:.6f}cm-1: irrelevant and not loaded'.format(
                                     filename, wavenum_max))
                             continue
-                    elif dbformat == 'hitran tab':
-                        raise NotImplementedError('See Github PR!1')
-#                        df = hit2dfTAB(filename, cache=False, verbose=verbose)
-                        # TODO: mettre à jour les noms de colonne
-                        # TODO EP @ VB: ici il faut juste lire la 1ère ligne pour savoir 
-                        # si ça vaut le coup de lire ce fichier. 
                     else:
                         raise ValueError(
                             'The database format is unknown: {0}'.format(dbformat))
 
                 # Now read all the lines
+                # ... this is where the cache files are read/generated. 
                 if dbformat == 'cdsd':
                     df = cdsd2df(filename, version='hitemp', cache=db_use_cached,
                                  verbose=verbose, drop_non_numeric=True)
@@ -1410,10 +1454,6 @@ class DatabankLoader(object):
                 elif dbformat == 'hitran':
                     df = hit2df(filename, cache=db_use_cached, verbose=verbose,
                                 drop_non_numeric=True)
-                elif dbformat == 'hitran tab':
-                    df = hit2dfTAB(
-                        filename, cache=db_use_cached, verbose=verbose)
-                    # TODO: mettre à jour les noms de colonne
                 else:
                     raise ValueError('Unknown dbformat: {0}'.format(dbformat))
                     
@@ -1431,7 +1471,7 @@ class DatabankLoader(object):
                     if k in df:
                         del df[k]
                         dropped.append(k)
-                if verbose and len(dropped)>0:
+                if verbose>=2 and len(dropped)>0:
                     print('Dropped columns: {0}'.format(dropped))
 
                 # Crop to the wavenumber of interest
@@ -1468,16 +1508,7 @@ class DatabankLoader(object):
                 except KeyError:  # happens if database is empty. A database empty error
                     # will be raised a few lines below
                     df = pd.DataFrame()
-                if self.save_memory:
-                    # we're trying to save RAM so reference dataframe (df0)
-                    # will be deleted after scaled database (df1) is created.
-                    # This prevents from calculating a new spectrum without
-                    # reloading database: in that case, we keep the temporary
-                    # file for some time so it can be reloaded directly
-                    # (will be deleted on Factory closing anyway)
-                    pass
-                else:
-                    os.remove(tempfile)
+                os.remove(tempfile)
                 if 'Unnamed: 0' in df:
                     # there is no ignore_index option in HDF...
                     # so an index column can be created, so we delete it and regenerate one
@@ -1590,9 +1621,6 @@ class DatabankLoader(object):
         impossible to calculate another spectrum afterwards, without reloading
         the database: in that case, we have kept the temporary file for some time
         and try to regenerate df0 here '''
-
-#        path = self.params.dbpath
-#        path = path.split(',')   # str > list
 
         path = self._get_temp_file()
         if not exists(path):
@@ -1722,7 +1750,7 @@ class DatabankLoader(object):
 
         # Use HAPI (HITRAN Python interface, integrated in RADIS)
         if parfuncfmt == 'hapi':
-            parsum = PartFuncHAPI(M=molecule, I=isotope, path=parfunc)
+            parsum = PartFuncHAPI(M=molecule, I=isotope, path=parfunc, verbose=self.verbose)
         elif parfuncfmt == 'cdsd':  # Use tabulated CDSD partition functions
             assert molecule == 'CO2'
             parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
@@ -1824,35 +1852,14 @@ class DatabankLoader(object):
             printg('... Fetching molecular parameters for all transitions')
             t0 = time()
             
-        # Performance
-        # for some reason this can be a small bottleneck
         # prefill:
-        # 13.8 s without, 11s with. The bottleneck is definitly the preallocation.
-        # neq 0.9.23 (< radis 1.0): managed to divide initial time by a factor of 10 with the 
-        # np.take() trick. Probably 1.4s now on this test case (but cant remember
-        # which one it was, i'm using a different one)
-            
-#        dgb = df.groupby(by=['id', 'iso'])
-#        
-#        # Prefill with first molecule/isotope values
-#        # (saves some time!)
-#        id1, iso1 = list(dgb.indices.keys())[0]
-#        params1 = molpar.df.loc[(id1, iso1)]  # fetch all table directly
-#        df['Ia'] = params1.abundance
-#        df['molar_mass'] = params1.mol_mass
-#        
-#        for (id, iso), idx in dgb.indices.items():
-#            if (id, iso) == (id1, iso1):
-#                continue
-#            params = molpar.df.loc[(id, iso)]  # fetch all table directly
-#            df.loc[idx, 'Ia'] = params.abundance
-#            df.loc[idx, 'molar_mass'] = params.mol_mass
-           
+
         # Use the fact that isotopes are int, and thus can be considered as 
         # index in an array.
         # ... in the following we exploit this to use the np.take function,
         # ... which is amazingly fast 
         # ... Read https://stackoverflow.com/a/51388828/5622825 to understand more
+        # ... @dev: old versions: see radis <= 0.9.19
         id_set = df.id.unique()
         
         if len(id_set) == 1:
@@ -1979,7 +1986,7 @@ class DatabankLoader(object):
             
         return vardict
 
-    def warn(self, message, category):  # ='default'):
+    def warn(self, message, category='default'):
         ''' Trigger a warning, an error or just ignore based on the value defined
         in the :attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
 
@@ -1993,7 +2000,7 @@ class DatabankLoader(object):
             what to print
 
         category: str
-            one of the keys of self.warnings
+            one of the keys of self.warnings. See :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
 
         Notes
         -----
@@ -2001,6 +2008,11 @@ class DatabankLoader(object):
         All warnings in the SpectrumFactory should call to this method rather
         than the default warnings.warn() method, because it allows easier runtime
         modification of how to deal with warnings
+        
+        See Also
+        --------
+
+        :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
 
         '''
 

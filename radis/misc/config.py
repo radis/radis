@@ -39,7 +39,7 @@ from radis.misc.basics import compare_lists, compare_dict, stdpath
 
 # %% Functions to parse ~/.radis file
 
-DBFORMAT = ("""
+DBFORMAT = (r"""
 --------------------------
 
 [CDSD]                           #  your databank name
@@ -115,7 +115,7 @@ def getConfig():
 
 
 def getDatabankEntries(dbname):
-    ''' Read ~/.radis config file and returns a dictionary of entries.
+    r''' Read ~/.radis config file and returns a dictionary of entries.
 
 
     Notes

@@ -146,7 +146,8 @@ Value of keys can be:
 - 'ignore'  (do nothing)
 
 The key self.warnings['default'] will set the warning behavior for all
-other warnings
+other warnings. All warnings can be disabled by setting the SpectrumFactory
+:py:attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute to ``False``.
 
 See Also
 --------
@@ -184,7 +185,7 @@ def warn(message, category='default', status={}):
 
     The warnings can thus be deactivated selectively by setting the SpectrumFactory
     :attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute. All warnings
-    can be disabled by setting it to False.
+    can be disabled by setting it to ``False``.
 
     Parameters
     ----------
@@ -193,7 +194,7 @@ def warn(message, category='default', status={}):
         what to print
 
     category: str
-        one of the keys of self.warnings
+        one of the keys of self.warnings.
 
     status: dict
         status for all warning categories. Can be one of ``'warn'``, ``'ignore'``,
@@ -208,7 +209,7 @@ def warn(message, category='default', status={}):
 
     WarningType = WarningClasses[category]
 
-    if action == 'warn':
+    if action in 'warn':
         warnings.warn(WarningType(message))
     elif action == 'once':
         warnings.warn(WarningType(message))

@@ -72,15 +72,15 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
     See the caveats in the E. Pannier "Limits of CO2 NonEquilibrium Models" paper.
     (just used here as a performance monitoring)
     
-    - 0.9.20: 18.7s
+    - neq 0.9.20: 18.7s
 
-    - 0.9.20*: 15.4s   (removed 2nd loop on 1st isotope because of groupby().apply())
+    - neq 0.9.20*: 15.4s   (removed 2nd loop on 1st isotope because of groupby().apply())
 
-    - 0.9.20**: 11.7s  (after replacing fill_Evib with map() ) 
+    - neq 0.9.20**: 11.7s  (after replacing fill_Evib with map() ) 
 
-    - 0.9.21: 9.4s     (improve Qrot / nrot fetching performance) 
+    - neq 0.9.21: 9.4s     (improve Qrot / nrot fetching performance) 
 
-    - 0.9.22: 8.4s     
+    - neq 0.9.22: 8.4s     
     
     Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
     is not valid for these temperatures but can be more conveniently 
@@ -88,7 +88,9 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
     
     (we also expect the test to be much faster than above, but that's just 
     because the database is smaller!)
-
+    
+    - radis 0.9.20 : 
+    
     '''
 
     if verbose:
@@ -129,13 +131,19 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True,
 #                          0.19740763, 0.16948599, 0.16780345, 0.15572173, 0.16770853, 0.14966064,
 #                          0.13041356, 0.11751016, 0.10818072, 0.11592531, 0.04666677, 0.00177108,
 #                          0.00069339])
-        # Harcoded results changed for RADIS v1.0.1  with the change of 
+        # Harcoded results changed for RADIS  with the change of 
         # database (HITEMP-2010 -> HITRAN-2016) and of Tvib model 
         # CDSD with (P,C,Jmin,N) in CDSD polyad -> RADIS built-in constants)
-        I_ref = np.array([ 0.29148768,  0.29646856,  0.32999337,  0.32249701,  0.2078451 ,
-                          0.18974631,  0.2019285 ,  0.17346687,  0.17211401,  0.15939359,
-                          0.17240575,  0.15395179,  0.13374185,  0.11997065,  0.10858693,
-                          0.11114162,  0.04575873,  0.00163863,  0.00062654])
+#        I_ref = np.array([ 0.29148768,  0.29646856,  0.32999337,  0.32249701,  0.2078451 ,
+#                          0.18974631,  0.2019285 ,  0.17346687,  0.17211401,  0.15939359,
+#                          0.17240575,  0.15395179,  0.13374185,  0.11997065,  0.10858693,
+#                          0.11114162,  0.04575873,  0.00163863,  0.00062654])
+        # Updated again in RADIS 0.9.20 (19/08/19) to account for the use of DLM (difference
+        # not significant)
+        I_ref = np.array([ 0.29060991,  0.29756722,  0.32972058,  0.3206278 ,  0.20696867,
+                           0.19218358,  0.20155747,  0.17336405,  0.17218653,  0.1589136 ,
+                           0.17110649,  0.15403513,  0.13376804,  0.11932659,  0.10882006,
+                           0.11112725,  0.0458288 ,  0.00247956,  0.00144128])
         if plot:
             plt.plot(w_ref, I_ref, 'or', label='ref')
             plt.legend()
@@ -206,17 +214,24 @@ def test_calc_spectrum_overpopulations(verbose=True, plot=False, warnings=True,
         w, I = s.get('radiance', wunit='nm')
         w_ref = w[::100]
         # Compare against hardcoded results (neq 0.9.22, 28/06/18)
-        I_ref = np.array([0.61826008, 0.65598262, 0.79760003, 0.7958013 , 0.5792486 ,
-                          0.56727691, 0.60361258, 0.51549598, 0.51012651, 0.47133131,
-                          0.50770568, 0.45093953, 0.39129824, 0.35125324, 0.32238316,
-                          0.34542781, 0.13908073, 0.00506012, 0.00189535])
+#        I_ref = np.array([0.61826008, 0.65598262, 0.79760003, 0.7958013 , 0.5792486 ,
+#                          0.56727691, 0.60361258, 0.51549598, 0.51012651, 0.47133131,
+#                          0.50770568, 0.45093953, 0.39129824, 0.35125324, 0.32238316,
+#                          0.34542781, 0.13908073, 0.00506012, 0.00189535])
         # Harcoded results changed for RADIS v1.0.1  with the change of 
         # database (HITEMP-2010 -> HITRAN-2016) and of Tvib model 
         # CDSD with (P,C,Jmin,N) in CDSD polyad -> RADIS built-in constants)
-        I_ref = np.array([ 0.62299838,  0.66229013,  0.81037059,  0.79899315,  0.57215806,
-                          0.57626389,  0.61424273,  0.52454807,  0.5200812 ,  0.47920924,
-                          0.51843533,  0.46058817,  0.3983277 ,  0.35582979,  0.32095204,
-                          0.32821575,  0.13525543,  0.00469489,  0.00174166])
+        # 
+#        I_ref = np.array([ 0.62299838,  0.66229013,  0.81037059,  0.79899315,  0.57215806,
+#                          0.57626389,  0.61424273,  0.52454807,  0.5200812 ,  0.47920924,
+#                          0.51843533,  0.46058817,  0.3983277 ,  0.35582979,  0.32095204,
+#                          0.32821575,  0.13525543,  0.00469489,  0.00174166])
+        # Updated again in RADIS 0.9.20 (16/08/19) to account for the use of DLM (difference
+        # not significant)
+        I_ref = np.array([ 0.62134142,  0.66722021,  0.81016539,  0.79387937,  0.56974945,
+                           0.58280035,  0.6120114 ,  0.52319075,  0.5193041 ,  0.47686282,
+                           0.51374777,  0.46022548,  0.3979033 ,  0.3534643 ,  0.32129239,
+                           0.32786479,  0.1351593 ,  0.0068877 ,  0.00387545])
         if plot:
             plt.plot(w_ref, I_ref, 'or', label='ref')
             plt.legend()

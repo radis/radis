@@ -20,6 +20,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 """
 
 from __future__ import unicode_literals, print_function, absolute_import, division
+import radis
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.misc.utils import DatabankNotFound
@@ -127,6 +128,14 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
     - 0.9.23 (normal code) >>> 7.2s   (added jit in Voigt broadening)
                            >>> 7.1s   (chunksize = None)  (and much faster for more lines)
              (with pseudo_continuum_threshold=0.01) >>> 4.9s
+             
+    RADIS:
+        
+    - 0.9.19 (normal code) >>> 6.3 s
+    
+    - 0.9.20 (normal code) >>> 6.3 s
+             (with pseudo_continuum_threshold=0.01) >>> ???
+             (with DLM) >>> 2.3 s
     
     '''
 
@@ -145,6 +154,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
                              parallel=False, bplot=False, cutoff=1e-27,
                              isotope='1,2', db_use_cached=True,
                              broadening_max_width=50,
+#                             chunksize='DLM',
 #                             pseudo_continuum_threshold=0.01,
                              medium='vacuum',
                              verbose=verbose)
@@ -170,9 +180,10 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
 
         # Compare with harcoded results
         # ... code previously used to export hardcoded results:
-        # ... >>> np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm', medium='air')).T[::10])
         # ... and header contains all input conditions:
-        # ... >>> print(s)
+#        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm', medium='air')).T[::10])
+#        print(s)
+        # ................
         from radis.test.utils import getTestFile
         wref, Iref = np.loadtxt(getTestFile(
             'CO2abscoeff_300K_4150_4400nm.txt')).T
@@ -183,7 +194,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
             printm('Error: {0:.2f}%'.format(np.mean(abs(s.get('abscoeff', wunit='nm',
                                                               medium='air')[1][::10]/Iref-1))*100))
             # Store the faulty spectrum
-            s.store('test_factory_failed_{0}.spec'.format(neq.get_version()),
+            s.store('test_factory_failed_{0}.spec'.format(radis.get_version()),
                     if_exists_then='replace')
 
         # Plot comparison

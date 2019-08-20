@@ -46,7 +46,10 @@ def calc_spectrum(wavenum_min=None,
                   databank='fetch',
                   medium='air',
                   wstep=0.01,
+                  lineshape_optimization='DLM',
                   name=None,
+                  slit=None,
+                  plot=None,
                   use_cached=True,
                   verbose=True,
                   **kwargs):
@@ -140,11 +143,35 @@ def calc_spectrum(wavenum_min=None,
         Note that the  input wavelength range ("wavenum_min", "wavenum_max") changes. 
         Default 'air'
 
+    wstep: cm-1
+        Spacing of calculated spectrum. Default 0.01 cm-1
+
     Other Parameters
     ----------------
 
-    wstep: cm-1
-        Spacing of calculated spectrum. Default 0.01 cm-1
+    lineshape_optimization: int, ``None``, ``'DLM'``, or ``'auto'``.
+        Optimizations for the calculation of the lineshapes:
+        
+            - If ``None``, all lineshapes are calculated at the same time (can 
+              create memory errors). 
+            - If ``int``, is given as the ``chunksize`` parameter of 
+              :py:class:`~radis.lbl.factory.SpectrumFactory`` to split the line database 
+              in several parts so that the number of ``lines * spectral grid points`` is 
+              less than ``chunksize`` (reduces memory consumption). Typical values: 
+              ``lineshape_optimization=1e6``.
+            - If ``'DLM'``, only typical lineshapes are calculated. This can 
+              result of speedups of orders of magnitude.  See more about DLM in 
+              :ref:`Performance <label_lbl_performance>`. 
+              
+        Default ``'DLM'``.
+
+    slit: float, str, or ``None``
+        if float, FWHM of a triangular slit function. If str, path to an 
+        experimental slit function. If None, no slit is applied. Default ``None``.
+
+    plot: str
+        any parameter such as 'radiance' (if slit is given), 'radiance_noslit', 
+        'absorbance', etc...   Default ``None``
 
     name: str
         name of the case. If None, a unique ID is generated. Default ``None``
@@ -188,7 +215,7 @@ def calc_spectrum(wavenum_min=None,
     References
     ----------
 
-    .. [1] RADIS doc: `Spectrum how to? <http://radis.readthedocs.io/en/latest/#the-spectrum-class>`__
+    .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
 
     Examples
@@ -255,8 +282,10 @@ def calc_spectrum(wavenum_min=None,
         # no need to save intermediary results as 
          # factory is used once only
         kwargs['save_memory'] = True
-       
-
+    
+    if 'chunksize' in kwargs:
+        raise DeprecationWarning('use lineshape_optimization= instead of chunksize=')
+    
     def _is_at_equilibrium():
         try:
             assert Tvib is None or Tvib == Tgas
@@ -277,6 +306,7 @@ def calc_spectrum(wavenum_min=None,
                          wstep=wstep,
                          db_use_cached=use_cached,
                          verbose=verbose,
+                         chunksize=lineshape_optimization, #  if lineshape_optimization != 'auto' else None, #@EP: NotImplemented. DLM use all the time by default
                          **kwargs)
     if databank == 'fetch':       # mode to get databank without relying on  Line databases
         if _equilibrium:
@@ -321,6 +351,14 @@ def calc_spectrum(wavenum_min=None,
         sf.load_databank(databank, 
                          load_energies=not _equilibrium   # no need to load/calculate energies at eq.
                          )
+        
+#    # Get optimisation strategies
+#    if lineshape_optimization == 'auto':        # NotImplemented: finally we use DLM all the time as default.
+#        if len(sf.df0) > 1e5:
+#            lineshape_optimization = 'DLM'
+#        else:
+#            lineshape_optimization = None
+#        sf.params['chunksize'] = lineshape_optimization
 
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
@@ -334,7 +372,6 @@ def calc_spectrum(wavenum_min=None,
                                name=name)
 
     return s
-
 
 # --------------------------
 if __name__ == '__main__':

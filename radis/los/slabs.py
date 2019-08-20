@@ -55,7 +55,7 @@ def intersect(a, b):
 
 def SerialSlabs(*slabs, **kwargs):
     # type: (*Spectrum, **dict) -> Spectrum
-    ''' Adds several slabs along the line-of-sight. 
+    r''' Adds several slabs along the line-of-sight. 
     You can also use::
         
         s1>s2
@@ -64,13 +64,13 @@ def SerialSlabs(*slabs, **kwargs):
     generalized to N slabs :
         
     .. math::
-        I_{\lambda, 1>2} = I_{\lambda, 1} \\tau_{\lambda, 2} + I_{\lambda, 2}
+        I_{\lambda, 1>2} = I_{\lambda, 1} \tau_{\lambda, 2} + I_{\lambda, 2}
         
-        \\tau_{\lambda, 1+2} = \\tau_{\lambda, 1} \cdot \\tau_{\lambda, 2}
+        \tau_{\lambda, 1+2} = \tau_{\lambda, 1} \cdot \tau_{\lambda, 2}
         
     where
     
-        .. math:: I_{\lambda}, \\tau_{\lambda}
+        .. math:: I_{\lambda}, \tau_{\lambda}
         
     are the radiance and transmittance of the two slabs ``1`` and ``2``. 
     Radiance and transmittance are calculated if not given in the 
