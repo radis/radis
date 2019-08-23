@@ -9,7 +9,7 @@
 RADIS
 *****
 
-A nonequilibrium infrared emission and absorption line-by-line code &
+A (non)equilibrium infrared emission and absorption line-by-line code &
 a post-processing library to compare experimental and calculated spectra.
 
 

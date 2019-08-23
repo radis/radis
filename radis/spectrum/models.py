@@ -39,8 +39,11 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     Parameters    
     ----------
 
-    w, I: np.array
-        wavelength and intensity
+    w: np.array
+        wavelength, or wavenumber
+        
+    I: np.array 
+        intensity (no slit)
 
     wunit: 'nm', 'cm-1'
         wavespace unit
@@ -94,8 +97,11 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     Parameters    
     ----------
 
-    w, I: np.array
-        wavelength and transmittance (no slit)
+    w: np.array
+        wavelength, or wavenumber
+        
+    T: np.array 
+        transmittance (no slit)
 
     wunit: ``'nm'``, ``'cm-1'``
         wavespace unit
@@ -145,8 +151,11 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
     Parameters    
     ----------
 
-    w, I: np.array
-        wavelength and intensity
+    w: np.array
+        wavelength, or wavenumber
+        
+    I: np.array 
+        intensity
 
     wunit: 'nm', 'cm-1'
         wavespace unit

@@ -104,7 +104,7 @@ energies): ::
 The Quick Start examples automatically download the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/bibliography.html#hitran-2016>`__, which is valid for temperatures below 700 K. 
 For *high temperature* cases, you may need to use other line databases such as 
 `HITEMP-2010 <https://radis.readthedocs.io/en/latest/bibliography.html#hitemp-2010>`__ (typically T < 2000 K) or `CDSD-4000 <https://radis.readthedocs.io/en/latest/bibliography.html#cdsd-4000>`__ (T < 5000 K). These databases must be described in a ``~/.radis`` 
-`Configuration file <https://radis.readthedocs.io/en/latest/lbl/index.html#label-lbl-config-file>`__. 
+`Configuration file <https://radis.readthedocs.io/en/latest/lbl/index.html#configuration-file>`__. 
 
 More complex `examples <https://radis.readthedocs.io/en/latest/examples.html#label-examples>`__ will require to use the `SpectrumFactory <https://radis.readthedocs.io/en/latest/source/radis.lbl.factory.html#radis.lbl.factory.SpectrumFactory>`__
 class, which is the core of RADIS line-by-line calculations. 
@@ -118,7 +118,7 @@ and compared with the `plot_diff <https://radis.readthedocs.io/en/latest/source/
     from radis import experimental_spectrum, plot_diff
     w, I = loadtxt('my_file.txt').T    # assuming 2 columns 
     sexp = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
-    plot_diff(sexp, s)    # comparing with previously spectrum 's' calculated previously 
+    plot_diff(sexp, s)    # comparing with spectrum 's' calculated previously 
 
 Typical output of `plot_diff <https://radis.readthedocs.io/en/latest/source/radis.spectrum.compare.html#radis.spectrum.compare.plot_diff>`__:
 
