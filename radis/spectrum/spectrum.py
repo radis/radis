@@ -2252,7 +2252,7 @@ class Spectrum(object):
         # TODO: probably removed after Spectrum is stored. 
         self.conditions['norm_by'] = norm_by
 
-        return
+        return self   # to be able to chain: s.apply_slit().plot() 
 
     def get_slit(self, unit='same'):
         ''' Get slit function that was applied to the Spectrum 
@@ -3532,6 +3532,20 @@ class Spectrum(object):
             
     # Line of sight operations
     
+    def __bool__(self):
+        ''' This prevents behaviors such as::
+            
+            s1 > s2 > s3 
+            
+        which are actually interpreted by Python as "s1 > s2  and s2 > s3"
+        and would return a wrong result  (probably s2 > s3  ? ) 
+        '''
+        raise ArithmeticError('A Spectrum cannot be evaluated as a boolean. '+\
+                              'You may have tried using syntax such as `s1>s2>s3` '+\
+                              'which Python interpets as `s1>s2 and s2>s3`. '+\
+                              'Use `(s1>s2)>s3)` or SerialSlabs(s1, s2, s3) instead.')
+    
+    
     def __gt__(self, other):
         ''' Overloads '>' behavior
         no comparison: here we use > to define a ``Line of sight``.
@@ -3554,6 +3568,7 @@ class Spectrum(object):
         else:
             raise NotImplementedError('> not implemented for a Spectrum and a {0} object'.format(
                     type(other)))
+                
             
 #    def __rgt__(self, other):
 #        ''' Right side > '''
@@ -3614,8 +3629,11 @@ class Spectrum(object):
         ''' Length of a Spectrum object = length of the wavespace if unique, 
         else raises an error '''
         
-        # raises an error if both convolved and non convolved are defined
-        return len(self._get_wavespace('any', copy=False))   
+        # raises ValueError if both convolved and non convolved are defined
+        try:
+            return len(self._get_wavespace('any', copy=False))   
+        except ValueError:
+            raise ValueError('All quantities do not have the same length in the Spectrum')
         
 
 # %% Private functions

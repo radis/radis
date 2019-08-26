@@ -56,7 +56,7 @@ def intersect(a, b):
 def SerialSlabs(*slabs, **kwargs):
     # type: (*Spectrum, **dict) -> Spectrum
     r''' Adds several slabs along the line-of-sight. 
-    You can also use::
+    If adding two slabs only, you can also use::
         
         s1>s2
 
