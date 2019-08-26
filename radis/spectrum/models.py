@@ -67,13 +67,24 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
 
     name: str
         (optional) give a name
+        
+        
+    Examples
+    --------
+    
+    :: 
+    
+        # w, I are numpy arrays for wavelength and radiance
+        from radis import calculated_spectrum
+        s = calculated_spectrum(w, I, wunit='nm', Iunit='W/cm2/sr/nm')     # creates 'radiance_noslit'  
+        
 
 
     See Also
     --------
 
-    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
-    :func:`~radis.spectrum.spectrum.experimental_spectrum`,
+    :func:`~radis.spectrum.models.transmittance_spectrum`, 
+    :func:`~radis.spectrum.models.experimental_spectrum`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
@@ -121,6 +132,17 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
 
     name: str
         (optional) give a name
+
+        
+    Examples
+    --------
+    
+    :: 
+    
+        # w, T are numpy arrays for wavelength and transmittance
+        from radis import transmittance_spectrum
+        s2 = transmittance_spectrum(w, T, wunit='nm')                       # creates 'transmittance_noslit'
+        
 
 
     See Also
@@ -187,15 +209,15 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
         from numpy import loadtxt
         from radis import experimental_spectrum
         w, I = loadtxt('my_file.txt').T    # assuming 2 columns 
-        s = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
+        s = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')             # creates 'radiance'    
         s.plot()
         
 
     See Also
     --------
 
-    :func:`~radis.spectrum.spectrum.calculated_spectrum`, 
-    :func:`~radis.spectrum.spectrum.transmittance_spectrum`, 
+    :func:`~radis.spectrum.models.calculated_spectrum`, 
+    :func:`~radis.spectrum.models.transmittance_spectrum`, 
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`

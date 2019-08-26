@@ -245,7 +245,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
 # %% Hitran global quanta classes
 
 def _parse_HITRAN_class1(df):
-    ''' Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
+    r''' Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
 
 
     Parameters
@@ -291,7 +291,7 @@ def _parse_HITRAN_class1(df):
 
 
 def _parse_HITRAN_class2(df):
-    ''' Diatomic molecules with different electronic levels: O2
+    r''' Diatomic molecules with different electronic levels: O2
 
 
     Parameters
@@ -320,7 +320,7 @@ def _parse_HITRAN_class2(df):
 
 
 def _parse_HITRAN_class3(df):
-    ''' Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
+    r''' Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
 
 
     Parameters
@@ -349,7 +349,7 @@ def _parse_HITRAN_class3(df):
 
 
 def _parse_HITRAN_class4(df):
-    ''' Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
+    r''' Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
 
     Parameters
     ----------
@@ -394,7 +394,7 @@ def _parse_HITRAN_class4(df):
 
 
 def _parse_HITRAN_class5(df):
-    ''' Parse linear triatomic with large Fermi resonance in HITRAN [1]_: CO2
+    r''' Parse linear triatomic with large Fermi resonance in HITRAN [1]_: CO2
 
     Parameters
     ----------
@@ -439,7 +439,7 @@ def _parse_HITRAN_class5(df):
 
 
 def _parse_HITRAN_class6(df):
-    ''' Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
+    r''' Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
 
     Parameters
     ----------
@@ -488,7 +488,7 @@ def _parse_HITRAN_class6(df):
 
 
 def _parse_HITRAN_class7(df):
-    ''' Parse linear tetratomic in HITRAN [1]_: C2H2
+    r''' Parse linear tetratomic in HITRAN [1]_: C2H2
 
     Parameters
     ----------
@@ -514,7 +514,7 @@ def _parse_HITRAN_class7(df):
 
 
 def _parse_HITRAN_class8(df):
-    ''' Pyramidal tetratomic in HITRAN [1]_: NH3, PH3
+    r''' Pyramidal tetratomic in HITRAN [1]_: NH3, PH3
 
 
     Parameters
@@ -542,7 +542,7 @@ def _parse_HITRAN_class8(df):
 
 
 def _parse_HITRAN_class9(df):
-    ''' Non-linear tetratomic in HITRAN [1]_: H2CO, H2O2, COF2
+    r''' Non-linear tetratomic in HITRAN [1]_: H2CO, H2O2, COF2
 
 
     Parameters
@@ -570,7 +570,7 @@ def _parse_HITRAN_class9(df):
 
 
 def _parse_HITRAN_class10(df):
-    ''' Pentatomic or greater polyatomic in HITRAN [1]_
+    r''' Pentatomic or greater polyatomic in HITRAN [1]_
 
 
     Parameters
@@ -600,7 +600,7 @@ def _parse_HITRAN_class10(df):
 
 
 def _parse_HITRAN_group1(df):
-    ''' 
+    r''' 
 
     Parameters
     ----------
@@ -656,7 +656,7 @@ def _parse_HITRAN_group1(df):
 
 
 def _parse_HITRAN_group2(df):
-    ''' 
+    r''' 
 
     Parameters
     ----------
@@ -718,7 +718,7 @@ def _parse_HITRAN_group2(df):
 
 
 def _parse_HITRAN_group3(df):
-    ''' 
+    r''' 
 
     Parameters
     ----------
@@ -745,7 +745,7 @@ def _parse_HITRAN_group3(df):
 
 
 def _parse_HITRAN_group4(df):
-    ''' 
+    r''' 
 
     Parameters
     ----------
@@ -772,7 +772,7 @@ def _parse_HITRAN_group4(df):
 
 
 def _parse_HITRAN_group5(df):
-    ''' 
+    r''' 
 
     Parameters
     ----------
@@ -799,7 +799,7 @@ def _parse_HITRAN_group5(df):
 
 
 def _parse_HITRAN_group6(df):
-    ''' 
+    r''' 
 
     Parameters
     ----------
@@ -829,7 +829,7 @@ def _parse_HITRAN_group6(df):
 
 
 def parse_local_quanta(df, mol):
-    '''
+    r'''
     Parameters
     ----------
 
@@ -863,7 +863,7 @@ def parse_local_quanta(df, mol):
 
 
 def parse_global_quanta(df, mol):
-    ''' 
+    r''' 
 
     Parameters
     ----------
@@ -905,7 +905,7 @@ def parse_global_quanta(df, mol):
     return df
 
 def get_molecule_identifier(molecule_name):
-    '''
+    r'''
     For a given input molecular formula, return the corresponding HITRAN molecule 
     identifier number [1]_.
 
@@ -918,7 +918,7 @@ def get_molecule_identifier(molecule_name):
 
     Returns
     -------
-    M : int
+    M: int
         The HITRAN molecular identified number.
 
 
@@ -954,7 +954,7 @@ def get_molecule_identifier(molecule_name):
 
 
 def get_molecule(molecule_id):
-    '''
+    r'''
     For a given input molecular identifier, return the corresponding HITRAN 
     molecule name [1]_.
 
@@ -962,7 +962,7 @@ def get_molecule(molecule_id):
     Parameters    
     ----------
 
-    molecular_id : str
+    molecular_id: str
         Hitran identifier of the molecule.
 
 

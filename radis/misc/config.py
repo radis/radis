@@ -74,7 +74,42 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
                                  # energies. Default 0 (if not given)
 
 --------------------------""")
-'''str: Typical expected format of a ~/.radis entry
+'''str: Typical expected format of a ``~/.radis`` entry::
+
+    --------------------------
+
+    [CDSD]                           #  your databank name
+    info = CDSD-HITEMP databank      #  whatever you want
+    path =                           #  no "", multipath allowed
+           D:\Databases\CDSD-HITEMP\cdsd_hitemp_07
+           D:\Databases\CDSD-HITEMP\cdsd_hitemp_08
+           D:\Databases\CDSD-HITEMP\cdsd_hitemp_09
+    format = cdsd                    #  'hitran' or 'cdsd' (no ")
+                                     # databank text file format. More info in
+                                     # SpectrumFactory.load_databank function.
+    parfuncfmt:                      #  'cdsd', 'hapi', etc.
+                                     # format to read tabulated partition function 
+                                     # file. If `hapi`, then HAPI (HITRAN Python 
+                                     # interface) is used to retrieve them (valid if
+                                     # your databank is HITRAN data). HAPI is embedded 
+                                     # into RADIS. Check the version.            
+    # Optional
+    # ----------
+    parfunc:                         #  path to tabulated partition function to use.
+                                     # If `parfuncfmt` is `hapi` then `parfunc` 
+                                     # should be the link to the hapi.py file. If 
+                                     # not given, then the hapi.py embedded in RADIS 
+                                     # is used (check version)
+    levels_iso1                      #  path to energy levels (needed for non-eq 
+                                     # calculations). Default None
+    levels_iso2                      # etc
+    levels_iso4                      # etc
+    levelsfmt:                       #  'cdsd', etc. 
+                                     # how to read the previous file. Default None.
+    levelsZPE:                       #  zero-point-energy (cm-1): offset for all level 
+                                     # energies. Default 0 (if not given)
+
+    --------------------------
 
 Refer to the documentation: :ref:`Configuration file <label_lbl_config_file>`
 

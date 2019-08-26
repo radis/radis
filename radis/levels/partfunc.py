@@ -50,9 +50,6 @@ References
 
 """
 
-# TODO: add a general class from which all Partitionfunction (included Tabulated)
-# inherit from...
-
 # TODO: vectorize partition function caclulations for different temperatures. Would need
 # stuff like E = df.E.values.reshape((1,-1)), etc.
 

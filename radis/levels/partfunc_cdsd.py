@@ -130,12 +130,9 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         path to energy levels (to calculate Partition Function) for ``isotope``
 
     isotope: int
-        which isotope we're dealing with. Default 1
+        which isotope we're dealing with. Default ``1``. In the current implementation
+        only isotope 1 and 2 are defined.
         
-        .. warning::
-        
-            in the current implementation, 
-
     levelsfmt: ``'cdsd-p'``, ``'cdsd-pc'``, ``'cdsd-pcN'``, ``'cdsd-hamil'``, or ``None``
         the format of the Energy Database, and in particular how ``Evib`` and ``Erot``
         have been calculated. A vibrational level in the CDSD (p,c,J,N) nomenclature
@@ -166,7 +163,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
     Taskhkun database updated with ranking number (n) & total rank (N) of
     block, Evib and Erot (cm-1)  and jref
 
-    Different strategies exist so as how to assign rotational and vibrational
+    For nonequilibrium, different strategies exist so as how to assign rotational and vibrational
     energies in a CDSD database. See the E. Pannier "Limits on CO2 Nonequilibrium
     model" article for a discussion on that.    
     

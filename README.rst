@@ -10,7 +10,6 @@
 .. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
     :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
     :alt: Article
- 
 
 .. image:: https://img.shields.io/travis/radis/radis.svg
     :target: https://travis-ci.org/radis/radis
@@ -27,11 +26,17 @@
 .. image:: https://mybinder.org/badge.svg 
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
-  
+
+.. image:: https://img.shields.io/pypi/dw/radis.svg
+    :target: https://pypistats.org/packages/radis
+    :alt: Downloads
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
     :alt: Gitter
+    
+    
+
 
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
@@ -233,6 +238,10 @@ And also:
   .. image:: https://img.shields.io/pypi/v/radis.svg
       :target: https://pypi.python.org/pypi/radis
       :alt: PyPI
+
+  .. image:: https://img.shields.io/pypi/dw/radis.svg
+      :target: https://pypistats.org/packages/radis
+      :alt: Downloads
 
 - Interactive Examples: https://github.com/radis/radis-examples
 

@@ -125,6 +125,12 @@ for the simple cases.
 
 Refer to the :ref:`Examples <label_examples>` section for more examples, and to the 
 :ref:`User Documentation <label_user_documentation>` for more details on the code.
+You can also ask questions on the community chat:
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+    :target: https://gitter.im/radis-radiation/community
+    :alt: Gitter
+
 
    
 ---------------------------------------------------------------------
