@@ -43,12 +43,12 @@ DBFORMAT = (r"""
 --------------------------
 
 [CDSD]                           #  your databank name
-info = CDSD-HITEMP databank      #  whatever you want
+info = HITEMP 2010 databank      #  whatever you want
 path =                           #  no "", multipath allowed
-       D:\Databases\CDSD-HITEMP\cdsd_hitemp_07
-       D:\Databases\CDSD-HITEMP\cdsd_hitemp_08
-       D:\Databases\CDSD-HITEMP\cdsd_hitemp_09
-format = cdsd                    #  'hitran' or 'cdsd' (no ")
+       D:\Databases\HITEMP-CO2\hitemp_07
+       D:\Databases\HITEMP-CO2\hitemp_08
+       D:\Databases\HITEMP-CO2\hitemp_09
+format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                  # databank text file format. More info in
                                  # SpectrumFactory.load_databank function.
 parfuncfmt:                      #  'cdsd', 'hapi', etc.
@@ -74,17 +74,16 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
                                  # energies. Default 0 (if not given)
 
 --------------------------""")
-'''str: Typical expected format of a ``~/.radis`` entry::
-
+'''str: Typical expected format of a ~/.radis entry::
     --------------------------
-
+    
     [CDSD]                           #  your databank name
-    info = CDSD-HITEMP databank      #  whatever you want
+    info = HITEMP 2010 databank      #  whatever you want
     path =                           #  no "", multipath allowed
-           D:\Databases\CDSD-HITEMP\cdsd_hitemp_07
-           D:\Databases\CDSD-HITEMP\cdsd_hitemp_08
-           D:\Databases\CDSD-HITEMP\cdsd_hitemp_09
-    format = cdsd                    #  'hitran' or 'cdsd' (no ")
+           D:\Databases\HITEMP-CO2\hitemp_07
+           D:\Databases\HITEMP-CO2\hitemp_08
+           D:\Databases\HITEMP-CO2\hitemp_09
+    format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                      # databank text file format. More info in
                                      # SpectrumFactory.load_databank function.
     parfuncfmt:                      #  'cdsd', 'hapi', etc.
@@ -108,19 +107,19 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
                                      # how to read the previous file. Default None.
     levelsZPE:                       #  zero-point-energy (cm-1): offset for all level 
                                      # energies. Default 0 (if not given)
-
+    
     --------------------------
 
 Refer to the documentation: :ref:`Configuration file <label_lbl_config_file>`
 
+Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
+
 See Also
 --------
 
-:ref:`Configuration file <label_lbl_config_file>`
-
-:py:func:`~radis.misc.config.getConfig`
-
-Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
+:ref:`Configuration file <label_lbl_config_file>`,
+:py:func:`~radis.misc.config.getConfig`,
+:py:meth:`~radis.lbl.loader.load_databank`
 '''
 
 CONFIG_PATH = join(expanduser("~"), ".radis")
@@ -159,12 +158,12 @@ def getDatabankEntries(dbname):
     Databank format:
 
         [CDSD]                           # your databank name
-        info = CDSD-HITEMP databank      # whatever you want
+        info = HITEMP 2010 databank      # whatever you want
         path =                           # no "", multipath allowed
-               D:\Databases\CDSD-HITEMP\cdsd_hitemp_07
-               D:\Databases\CDSD-HITEMP\cdsd_hitemp_08
-               D:\Databases\CDSD-HITEMP\cdsd_hitemp_09
-        format = cdsd                    # 'hitran' or 'cdsd' (no ")
+               D:\Databases\HITEMP-CO2\hitemp_07
+               D:\Databases\HITEMP-CO2\hitemp_08
+               D:\Databases\HITEMP-CO2\hitemp_09
+        format = hitemp                  # 'hitran' (HITRAN / HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                          # Databank text file format. More info in
                                          # SpectrumFactory.load_databank function.
 

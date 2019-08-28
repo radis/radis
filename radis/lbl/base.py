@@ -1502,7 +1502,7 @@ class BaseFactory(DatabankLoader):
 
         # %%
 
-        if dbformat in ['hitran', 'cdsd', 'cdsd4000']:
+        if dbformat in ['hitran', 'cdsd-hitemp', 'cdsd-4000']:
             # In HITRAN, AFAIK all molecules have a complete assignment of rovibrational
             # levels hence gvib=1 for all vibrational levels.
             #

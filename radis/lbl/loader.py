@@ -100,9 +100,13 @@ import gc
 from uuid import uuid1
 from six.moves import range
 
-KNOWN_DBFORMAT = ['cdsd', 'hitran',
-                  'cdsd4000', 'hitran tab']
-'''list: Known formats for Line Databases
+KNOWN_DBFORMAT = ['hitran', 'cdsd-hitemp', 
+                  'cdsd-4000']
+'''list: Known formats for Line Databases:
+
+- ``'hitran'`` : for HITRAN and HITEMP-2010 
+- ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
+- ``'cdsd-4000'`` : CDSD-4000 (CO2 only)
 
 See Also
 --------
@@ -144,9 +148,8 @@ See Also
 
 auto_drop_columns_for_dbformat = {
         'hitran':['ierr', 'iref', 'lmix', 'gp', 'gpp'],
-        'hitran tab':['ierr', 'iref', 'lmix', 'gp', 'gpp'],
-        'cdsd4000':['wang2'],
-        'cdsd':['wang2','lsrc'],
+        'cdsd-4000':['wang2'],
+        'cdsd-hitemp':['wang2','lsrc'],
                 }
 ''' dict: drop these columns if using ``drop_columns='auto'`` in load_databank 
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -154,10 +157,9 @@ Based on the value of ``dbformat=``, some of these columns won't be used.
 See Also
 --------
 
-- 'hitran': :data:`~radis.io.hitran.columns_2004`, 
-- 'hitran tab': :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd' (CDSD-HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
-- 'cdsd-4000': :data:`~radis.io.cdsd.columns_4000`, 
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`, 
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`, 
 
 '''
 auto_drop_columns_for_levelsfmt = {
@@ -559,10 +561,97 @@ class DatabankLoader(object):
         ''' Method to init databank parameters but only load them when needed.
         Databank is reloaded by :meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
 
+        Same inputs Parameters as :meth:`~radis.lbl.loader.DatabankLoader.load_databank`:
+
+
         Parameters
         ----------
 
-        see :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
+        name: a section name specified in your ``~/.radis``
+            ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
+            not ``None``, all other arguments are discarded.
+            Note that all files in database will be loaded and it may takes some
+            time. Better limit the database size if you already know what
+            range you need. See :ref:`Configuration file <label_lbl_config_file>` and 
+            :data:`~radis.misc.config.DBFORMAT` for expected 
+            ``~/.radis`` format
+
+
+        Other Parameters
+        ----------------
+
+        path: str, list of str, None
+            list of database files, or name of a predefined database in the 
+            :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
+
+        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'`` 
+            and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
+
+        parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+            format to read tabulated partition function file. If ``hapi``, then
+            HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
+            your database is HITRAN data). HAPI is embedded into RADIS. Check the
+            version.
+
+        parfunc: filename or None
+            path to tabulated partition function to use.
+            If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
+            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
+
+        levels: dict of str or None
+            path to energy levels (needed for non-eq calculations). Format:
+            {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
+
+        levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
+            how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
+            If ``radis``, energies are calculated using the diatomic constants in radis.db database
+            if available for given molecule. Look up references there.
+            If None, non equilibrium calculations are not possible. Default ``None``.
+
+        db_use_cached: boolean, or ``None``
+            if ``True``, a pandas-readable csv file is generated on first access,
+            and later used. This saves on the datatype cast and conversion and
+            improves performances a lot. But! ... be sure to delete these files
+            to regenerate them if you happen to change the database. If ``'regen'``,
+            existing cached files are removed and regenerated.
+            It is also used to load energy levels from ``.h5`` cache file if exist.
+            If ``None``, the value given on Factory creation is used. Default ``None``
+
+        db_assumed_sorted: boolean
+            load_databank first reads the first line and check it's relevant.
+            This improves database loading times if not all files are required,
+            but it assumes database files are sorted in wavenumber!
+            Default ``True``
+            
+        load_energies: boolean
+            if ``False``, dont load energy levels. This means that nonequilibrium
+            spectra cannot be calculated, but it saves some memory. Default ``True``
+
+        Other arguments related to how to open the files are given in options:
+
+        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
+            Different modes for loading up database: either directly in 'RAM' mode,
+            or in 'h5' mode.
+
+            - 'RAM': is faster but memory hunger
+            - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
+              risks of MemoryErrors 
+            - 'direct': file is read directly from a single h5 file under key 'df'
+              Fastest of all, doesnt check the database validity or format. Use only
+              if you have a single, already formatted database file (used by Factory
+              when reloading database)
+              
+            Default ``'RAM'``
+
+        drop_columns: list
+            columns names to drop from Line DataFrame after loading the file. 
+            Not recommended to use, unless you explicitely want to drop information 
+            (for instance if dealing with too large databases). If ``[]``, nothing 
+            is dropped. If ``'auto'``, parameters considered unnecessary 
+            are dropped. See :data:`~radis.lbl.loader.auto_drop_columns_for_dbformat`
+            and :data:`~radis.lbl.loader.auto_drop_columns_for_levelsfmt`. 
+            Default ``'auto'``.
 
 
         Notes
@@ -622,8 +711,9 @@ class DatabankLoader(object):
         source: ``'astroquery'``
             where to download database from
 
-        format: ``'cdsd'``, ``'hitran'``, ``'cdsd4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-            database type. Default 'hitran'
+        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'`` 
+            and ``'cdsd-4000'`` for the different CDSD versions. Default 'hitran'
 
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
@@ -806,8 +896,9 @@ class DatabankLoader(object):
             list of database files, or name of a predefined database in the 
             :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
 
-        format: ``'hitran'``, ``'cdsd'``, ``'cdsd4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-            database type. 
+        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'`` 
+            and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
 
         parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
@@ -1032,6 +1123,13 @@ class DatabankLoader(object):
         if isinstance(path, string_types):  # make it a list
             path = [path]
         if dbformat not in KNOWN_DBFORMAT:
+            # >>>>>>>>>>>
+            # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
+            if dbformat == 'cdsd':
+                raise ValueError('`cdsd` database format was renamed `cdsd-hitemp` after 0.9.21')
+            if dbformat == 'cdsd4000':
+                raise ValueError('`cdsd4000` database format was renamed `cdsd-4000` after 0.9.21')
+            # <<<<<<<<<<<
             raise ValueError('Database format ({0}) not in known list: {1}'.format(
                 dbformat, KNOWN_DBFORMAT))
         if levels is not None and levelsfmt not in KNOWN_LVLFORMAT:
@@ -1415,7 +1513,7 @@ class DatabankLoader(object):
                 if db_assumed_sorted:
                     # Note on performance: reading the first line of .txt file is still
                     # much faster than reading the whole hdf5 file
-                    if dbformat == 'cdsd':
+                    if dbformat == 'cdsd-hitemp':
                         df = cdsd2df(filename, version='hitemp', count=1, cache=False,
                                      verbose=False, drop_non_numeric=False)
                         if df.wav.loc[0] > wavenum_max:
@@ -1423,7 +1521,7 @@ class DatabankLoader(object):
                                 print('Database file {0} > {1:.6f}cm-1: irrelevant and not loaded'.format(
                                     filename, wavenum_max))
                             continue
-                    elif dbformat == 'cdsd4000':
+                    elif dbformat == 'cdsd-4000':
                         df = cdsd2df(filename, version='4000', count=1, cache=False,
                                      verbose=False, drop_non_numeric=False)
                         if df.wav.loc[0] > wavenum_max:
@@ -1445,10 +1543,10 @@ class DatabankLoader(object):
 
                 # Now read all the lines
                 # ... this is where the cache files are read/generated. 
-                if dbformat == 'cdsd':
+                if dbformat == 'cdsd-hitemp':
                     df = cdsd2df(filename, version='hitemp', cache=db_use_cached,
                                  verbose=verbose, drop_non_numeric=True)
-                elif dbformat == 'cdsd4000':
+                elif dbformat == 'cdsd-4000':
                     df = cdsd2df(filename, version='4000', cache=db_use_cached,
                                  verbose=verbose, drop_non_numeric=True)
                 elif dbformat == 'hitran':
