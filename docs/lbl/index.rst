@@ -51,22 +51,22 @@ of :py:class:`~radis.lbl.factory.SpectrumFactory`, or the (default) ``databank='
 A ``~/.radis`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which 
 is specific to a given molecule. It typically looks like::
 
-    # The CO2 CDSD-HITEMP files have been retrieved from ftp://cfa-ftp.harvard.edu/pub/HITEMP-2010/
+    # The CO2 HITEMP 2010 files have been retrieved from ftp://cfa-ftp.harvard.edu/pub/HITEMP-2010/
     # Partition function are that of CDSD-4000, retrived from ftp://ftp.iao.ru/pub/CDSD-4000
-    [HITEMP-CO2-DUNHAM]
+    [HITEMP-CO2]
     info = CDSD-HITEMP database, with energy levels calculated from Dunham expansions
     path = 
            D:\PATH_TO\HITEMP-2010\cdsd_hitemp_07
            D:\PATH_TO\HITEMP-2010\cdsd_hitemp_08
            D:\PATH_TO\HITEMP-2010\cdsd_hitemp_09
-    format = cdsd
+    format = hitran
     parfunc =  PATH_TO\CDSD-4000\partition_functions.txt
     parfuncfmt = cdsd
     levelsfmt = radis
 
 In the former example, RADIS built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>` 
 are used to calculate the energy levels for CO2. 
-It is also possible to use your own Energy level database::
+It is also possible to use your own Energy level database. For instance::
 
 
     # List of databases
@@ -90,23 +90,24 @@ The up-to-date format is given in :py:data:`~radis.misc.config.DBFORMAT`:
   are user generated Energy databases (here: calculated from the [CDSD-4000]_ Hamiltonian on non-distributed code,
   which takes into account non diagonal coupling terms). 
 
-- ``format`` is the databank text file format. It can be one of ``cdsd``, ``hapi``. See full list in 
-  :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT` 
+- ``format`` is the databank text file format. It can be one of ``'hitran'`` (for HITRAN / HITEMP 2010), 
+  ``'cdsd-hitemp'`` and ``'cdsd-4000'`` for the different CDSD versions (for CO2 only). See full list in 
+  :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`. 
   
 - ``parfuncfmt``: ``cdsd``, ``hapi`` is the format of the tabulated partition functions used. 
-   If `hapi`, then [HAPI]_ is used to retrieve them (valid if your databank is HITRAN data). 
+   If ``'hapi'``, then [HAPI]_ is used to retrieve them (valid if your databank is HITRAN data). 
    See full list in :py:data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT` 
  
 - ``parfunc`` is the path to the tabulated partition function to use in in equilibrium calculations 
-  (:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`). If ``parfuncfmt`` is `hapi` then `parfunc` should be
+  (:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`). If ``parfuncfmt`` is ``'hapi'`` then `parfunc` should be
   the link to the hapi.py file. If not given, then the :py:mod:`~radis.io.hitran.hapi` embedded in RADIS 
   is used (check version)
   
 - ``levels_iso#`` are the path to the energy levels to use for each isotope, which are needed for 
    nonequilibrium calculations (:py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`).
 
-- ``levelsfmt`` is the energy levels database format. Typically, ``radis``, and various implementation of [CDSD-4000]_ 
-  nonequilibrium partitioning of vibrational and rotational energy: ``cdsd-pc``, ``cdsd-pcN``, ``cdsd-hamil``. 
+- ``levelsfmt`` is the energy levels database format. Typically, ``'radis'``, and various implementation of [CDSD-4000]_ 
+  nonequilibrium partitioning of vibrational and rotational energy: ``'cdsd-pc'``, ``'cdsd-pcN'``, ``'cdsd-hamil'``. 
   See full list in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
 
   
@@ -133,6 +134,15 @@ which will result in ::
     format = hitran
     parfuncfmt = hapi
     levelsfmt = radis
+
+
+    [HITEMP-CO2-TEST]
+    info = HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
+    path = D:\GitHub\radis\radis\test\files\cdsd_hitemp_09_fragment.txt
+    format = cdsd-hitemp
+    parfuncfmt = hapi
+    levelsfmt = radis
+
 
 If you configuration file exists already, the test databases will simply be appended. 
 These databases are used in some of the tests cases of RADIS, and the ``~/.radis`` may already contain 
