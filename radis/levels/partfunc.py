@@ -357,8 +357,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             if vib_distribution == 'boltzmann':
                 df['nvibQvib'] = gvib * exp(-df.Evib*hc_k/Tvib)
             elif vib_distribution == 'treanor':
-                df['nvibQvib'] = gvib * \
-                    exp(-hc_k*(df.Evib_h/Tvib+df.Evib_a/Trot))
+                df['nvibQvib'] = gvib * exp(-hc_k*(df.Evib_h/Tvib+df.Evib_a/Trot))
             else:
                 raise NotImplementedError
             # ... Rotational populations
@@ -448,10 +447,9 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             g = gvib * grot
 
             if vib_distribution == 'boltzmann' and rot_distribution == 'boltzmann':
-                nQ = g * exp(-hc_k*df.Evib/Tvib) * exp(-hc_k*df.Erot/Trot)
+                nQ = g * exp(-hc_k*(df.Evib/Tvib + df.Erot/Trot))
             elif vib_distribution == 'treanor' and rot_distribution == 'boltzmann':
-                nQ = g * exp(-hc_k*(df.Evib_h/Tvib+df.Evib_a/Trot)
-                             ) * exp(-hc_k*df.Erot/Trot)
+                nQ = g * exp(-hc_k*(df.Evib_h/Tvib + (df.Evib_a+df.Erot)/Trot))
             else:
                 raise NotImplementedError
 
@@ -567,13 +565,11 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             g = gvib * grot
 
             if vib_distribution == 'boltzmann' and rot_distribution == 'boltzmann':
-                nQ = g * (exp(-hc_k*df.Evib1/Tvib1) * exp(-hc_k*df.Evib2/Tvib2) *
-                          exp(-hc_k*df.Evib3/Tvib3) * exp(-hc_k*df.Erot/Trot))
+                nQ = g * exp(-hc_k*(df.Evib1/Tvib1 + df.Evib2/Tvib2 + df.Evib3/Tvib3 + 
+                                    df.Erot/Trot))
             elif vib_distribution == 'treanor' and rot_distribution == 'boltzmann':
-                nQ = g * (exp(-hc_k*(df.Evib1_h/Tvib1+df.Evib1_a/Trot)) *
-                          exp(-hc_k*(df.Evib2_h/Tvib2+df.Evib2_a/Trot)) *
-                          exp(-hc_k*(df.Evib3_h/Tvib3+df.Evib3_a/Trot)) *
-                          exp(-hc_k*df.Erot/Trot))
+                nQ = g * exp(-hc_k*(df.Evib1_h/Tvib1 + df.Evib2_h/Tvib2 + df.Evib3_h/Tvib3 +
+                                    (df.Evib1_a+df.Evib2_a+df.Evib3_a+df.Erot)/Trot))
             else:
                 raise NotImplementedError
 
