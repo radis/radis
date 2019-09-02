@@ -155,9 +155,9 @@ def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
 
 
 @pytest.mark.fast
-def test_calculatedQ_match_HAPI(vmax=11, jmax=300, plot=False, verbose=True,
+def test_calculatedQ_match_HAPI_CO(vmax=11, jmax=300, plot=False, verbose=True,
                                 *args, **kwargs):
-    ''' Tested that Q_CO ab_initio (Dunham) match HAPI '''
+    ''' Tested that Q ab_initio (Dunham) match HAPI for CO at different temperatures'''
 
     vmax = 11
     vmax_morse = 48
@@ -199,7 +199,60 @@ def test_calculatedQ_match_HAPI(vmax=11, jmax=300, plot=False, verbose=True,
     assert np.allclose(us, hap, rtol=0.02)
 
     if verbose:
-        printm('Tested Q_CO ab_initio (Dunham) matches HAPI: OK')
+        printm('Tested Q_CO ab_initio (Dunham) matches HAPI for 300 - 3000 K: OK')
+
+    return True
+
+@pytest.mark.fast
+def test_calculatedQ_match_HAPI(plot=False, verbose=True,
+                                *args, **kwargs):
+    ''' Tested that Q ab_initio (Dunham) match HAPI for different molecules 
+    and isotopes'''
+
+    # molecule, isotope, temperature, absolute tolerance 
+    for molecule, iso, T, atol in [('CO2', 1, 300,  0.9),
+                                   ('CO2', 1, 1000, 2.0),
+                                   ('CO2', 1, 3000, 2000),
+                                   ('CO2', 2, 300,  1.8),
+                                   ('CO2', 2, 1000, 25),
+                                   ('CO2', 2, 3000, 4962),
+                                   ('CO', 1, 300,   0.16),
+                                   ('CO', 1, 1000,  1.9),
+                                   ('CO', 1, 3000,  27),
+                                   ('CO', 2, 300,   0.31),
+                                   ('CO', 2, 1000,  4.1),
+                                   ('CO', 2, 3000,  56.9),
+                                   ('CO', 3, 300,   0.16),
+                                   ('CO', 3, 1000,  2.1),
+                                   ('CO', 3, 3000,  28.6),
+                                   ]:
+
+        S = Molecules[molecule][iso]['X']
+    
+        # Dont use cached: force recalculating
+        db = PartFunc_Dunham(S)
+    
+        from radis.io.hitran import get_molecule_identifier
+        hapi = PartFuncHAPI(M=get_molecule_identifier(molecule),
+                            I=iso
+                            )
+        
+        Q_radis = db.at(T)
+        Q_hapi = hapi.at(T)
+
+        if verbose:
+            print('Q({0},iso={1},{2}K)\tRADIS: {3:.2f}\tHAPI={4:.2f}'.format(
+                    molecule, iso, T, Q_radis, Q_hapi))
+    
+        try:
+            assert np.isclose(Q_radis, Q_hapi, atol=atol)
+        except AssertionError:
+            raise AssertionError('Partition function for {0}, iso={1} '.format(molecule, iso)+\
+                                 'at {0}K doesnt match in RADIS '.format(T)+\
+                                 '({0:.4f}) and HAPI ({1:.4f})'.format(Q_radis, Q_hapi))
+
+    if verbose:
+        printm('Tested Q ab_initio (Dunham) matches HAPI: OK')
 
     return True
 
@@ -527,6 +580,8 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_cache_file_generation_and_update(verbose=verbose, warnings=warnings)
 
     # Test 2: compare calculated PartFunc for CO to HAPI
+    test_calculatedQ_match_HAPI_CO()
+    # Test 2b: compare for many molecules and isotopes
     test_calculatedQ_match_HAPI()
 
     # Test 3: compare calculated PartFunc to the tabulated one with CDSD
@@ -550,7 +605,6 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
 
 if __name__ == '__main__':
-
     printm('Testing parfunc: {0}'.format(_run_testcases()))
     
     verbose=True
