@@ -148,7 +148,7 @@ class RovibPartitionFunction(object):
 
 class RovibParFuncTabulator(RovibPartitionFunction):
 
-    def at(self, T):
+    def at(self, T, **kwargs):
         ''' Get partition function at temperature T under equilibrium conditions,
         from tabulated data
 
@@ -157,7 +157,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
 
         T: float
             equilibrium temperature
-
+            
         Returns
         -------
 
@@ -169,6 +169,14 @@ class RovibParFuncTabulator(RovibPartitionFunction):
         
         :py:class:`~radis.levels.partfunc.PartFuncHAPI`
         '''
+        
+        # For compatibility with the syntax of RovibParFuncCalculator.at() 
+        update_populations = kwargs.pop('update_populations', False)
+        if kwargs != {}:
+            raise TypeError('RovibParFuncTabulator.at() got an unexpected keyword: {0}'.format(kwargs.keys()))
+        if update_populations != False:
+            raise ValueError('Cannot use update_populations with tabulated partition functions. '+\
+                             'Use a direct summation instead. See RovibParFuncCalculator')
 
         # defined individually for each class Variants (one per database)
         return self._at(T)

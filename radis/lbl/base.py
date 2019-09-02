@@ -2427,8 +2427,23 @@ class BaseFactory(DatabankLoader):
 
         # %% Calculation
         
+        if self.verbose >= 3:
+            t1 = time()
+            
         id_set = df.id.unique()
         iso_set = self._get_isotope_list()  #df1.iso.unique()
+        
+        def get_parsum(molecule, iso, state):
+            ''' Get function that calculates the partition function. 
+            By default, try to get the tabulated version. If does not exist, 
+            returns the direct summation version
+            '''
+            try:
+                return self.get_partition_function_interpolator(molecule, iso, state)
+            except KeyError:
+                return self.get_partition_function_calculator(molecule, iso, state)
+
+            
         # TODO for multi-molecule code: add above line in the loop
         if len(id_set) == 1 and len(iso_set) == 1:
             
@@ -2438,7 +2453,7 @@ class BaseFactory(DatabankLoader):
             
             molecule = get_molecule(id_set[0])
             state = self.input.state
-            parsum = self.get_partition_function_calculator(molecule, iso_set[0], state)    # partition function
+            parsum = get_parsum(molecule, iso_set[0], state)    # partition function
             df.Qref = parsum.at(Tref, update_populations=False)     # stored as attribute, not column    
             assert 'Qref' not in df.columns
             
@@ -2453,13 +2468,17 @@ class BaseFactory(DatabankLoader):
             for (id, iso), idx in dgb.indices.items():
                 molecule = get_molecule(id)
                 state = self.input.state
-                parsum = self.get_partition_function_calculator(molecule, iso, state)
+                parsum = get_parsum(molecule, iso, state)
                 df.at[idx, 'Qref'] = parsum.at(Tref, update_populations=False)
                 
                 if radis.DEBUG_MODE:
                     assert (df.loc[idx, 'id'] == id).all()
                     assert (df.loc[idx, 'iso'] == iso).all()
                 
+        if self.verbose >= 3:
+            printg('... map partition functions in {0:.2f}s'.format(time()-t1))
+            t1 = time()
+            
         # Correct linestrength
 
         # ... populations without abundance dependance (already in linestrength)
@@ -2478,13 +2497,13 @@ class BaseFactory(DatabankLoader):
         line_strength *= (1 - df.gl / df.gu * nu / nl)
         df['S'] = line_strength
 
-#        # %% Store lines with linestrengths under df1
-#        self.df1 = df
-
+        if self.verbose >= 3:
+            printg('... corrected for populations and stimulated emission in {0:.2f}s'.format(time()-t1))
+            
         if self.verbose >= 2:
             printg('scaled nonequilibrium linestrength in {0:.2f}s'.format(time()-t0))
 
-        return
+        return    # df1 automatically updated
 
     # %%
     def _calc_emission_integral(self):
