@@ -2621,13 +2621,14 @@ class BaseFactory(DatabankLoader):
                                  'cm-1/(#.cm-2)). See histogram')
         
         # update df1:
-        self.df1 = df[~b]
+        self.df1 = pd.DataFrame(df[~b])
 #        df.drop(b.index, inplace=True)   # performance: was not faster
-        # ... performance: quite long to select here, but I couldn't find a faster
+        # ... @dev performance: quite long to select here, but I couldn't find a faster
         # ... alternative 
+        # TODO: remove useless columns in df1 to save memory 
+        
         # Ensures abundance, molar mass and partition functions are transfered
         # (needed if they are attributes and not isotopes)
-        self.df1.reset_index(drop=True, inplace=True)
         transfer_metadata(df, self.df1, [k for k in df_metadata if hasattr(df, k)])
         
         # Store number of lines cut (for information)
