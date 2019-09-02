@@ -1667,10 +1667,11 @@ class BaseFactory(DatabankLoader):
 
         # Calculate
         air_pressure = self.input.pressure_mbar/1013.25  # convert from mbar to atm
-        df['shiftwav'] = df.wav.values + (df.Pshft.values*air_pressure)
+#        df['shiftwav'] = df.wav.values + (df.Pshft.values*air_pressure)
+        df['shiftwav'] = df.wav + (df.Pshft*air_pressure)
 
         if self.verbose >= 2:
-            printg('Calculated lineshift in {0:.1f}s'.format(time()-t0))
+            printg('Calculated lineshift in {0:.2f}s'.format(time()-t0))
             
         return
 
@@ -1786,7 +1787,7 @@ class BaseFactory(DatabankLoader):
         assert 'S' in self.df1
         
         if self.verbose >= 2:
-            printg('Scaled equilibrium linestrength in {0:.1f}s'.format(time()-t0))
+            printg('Scaled equilibrium linestrength in {0:.2f}s'.format(time()-t0))
 
         return
 
@@ -1876,7 +1877,7 @@ class BaseFactory(DatabankLoader):
         assert 'nu' in self.df1
 
         if self.verbose >= 2:
-            printg('Calculated equilibrium populations in {0:.1f}s'.format(time()-t0))
+            printg('Calculated equilibrium populations in {0:.2f}s'.format(time()-t0))
 
         return
 
@@ -1942,6 +1943,8 @@ class BaseFactory(DatabankLoader):
         if self.verbose >= 2:
             t0 = time()
             printg('Calculating nonequilibrium populations')
+            if self.verbose >= 3:
+                t1 = t0
 
         if len(df) == 0:
             return      # no lines in database, no need to go further
@@ -2013,6 +2016,7 @@ class BaseFactory(DatabankLoader):
             dgb = df.groupby(by=['id', 'iso'])
             
             for (id, iso), idx in dgb.indices.items():
+                        
                 # Get partition function for all lines
                 molecule = get_molecule(id)
                 state = self.input.state
@@ -2024,12 +2028,13 @@ class BaseFactory(DatabankLoader):
                                                   overpopulation=overpopulation,
                                                   returnQvibQrot=True,
                                                   update_populations=self.misc.export_populations)
+                
                 # ... make sure PartitionFunction above is calculated with the same
                 # ... temperatures, rovibrational distributions and overpopulations
                 # ... as the populations of active levels (somewhere below)
                 df.at[idx, 'Qvib'] = Qvib
                 df.at[idx, 'Q'] = Q
-    
+            
                 # reindexing to get a direct access to Qrot database
                 # create the lookup dictionary
                 # dfQrot index is already 'viblvl'
@@ -2050,6 +2055,10 @@ class BaseFactory(DatabankLoader):
                 if radis.DEBUG_MODE:
                     assert (df.loc[idx, 'id'] == id).all()
                     assert (df.loc[idx, 'iso'] == iso).all()
+
+        if self.verbose >= 3:
+            printg('... partition functions in {0:.1f}s'.format(time()-t1))
+            t1 = time()
 
 # %%
 
@@ -2090,7 +2099,9 @@ class BaseFactory(DatabankLoader):
         assert not pd.isna(df.nl).any()
         
         if self.verbose >= 2:
-            printg('Calculated nonequilibrium populations in {0:.1f}s'.format(time()-t0))
+            if self.verbose >= 3:
+                printg('... populations in {0:.1f}s'.format(time()-t1))
+            printg('Calculated nonequilibrium populations in {0:.2f}s'.format(time()-t0))
 
         return
 
@@ -2157,6 +2168,8 @@ class BaseFactory(DatabankLoader):
         if self.verbose >= 2:
             t0 = time()
             printg('Calculating nonequilibrium populations (multiTvib)')
+            if self.verbose >= 3:
+                t1 = t0
 
         if len(df) == 0:
             return      # no lines in database, no need to go further
@@ -2170,6 +2183,7 @@ class BaseFactory(DatabankLoader):
         # TODO: optimize with np.take trick (see equilibrium case)
         
         for (id, iso), idx in dgb.indices.items():
+
             molecule = get_molecule(id)
             state = self.input.state
             parsum = self.get_partition_function_calculator(
@@ -2179,6 +2193,7 @@ class BaseFactory(DatabankLoader):
                                       rot_distribution=rot_distribution,
                                       overpopulation=overpopulation,
                                       update_populations=self.misc.export_populations)
+            
 #            df.loc[idx, 'Qvib'] = Qvib
             df.loc[idx, 'Q'] = Q
 #            dg_list.append(dg)
@@ -2187,6 +2202,10 @@ class BaseFactory(DatabankLoader):
                 assert (df.loc[idx, 'id'] == id).all()
                 assert (df.loc[idx, 'iso'] == iso).all()
 
+        if self.verbose >= 3:
+            printg('... partition functions in {0:.2f}s'.format(time()-t1))
+            t1 = time()
+            
         #  Derive populations
         # ... vibrational distribution
         if vib_distribution == 'boltzmann':
@@ -2239,7 +2258,9 @@ class BaseFactory(DatabankLoader):
         assert 'nl' in self.df1
 
         if self.verbose >= 2:
-            printg('Calculated equilibrium populations (multiTvib) in {0:.1f}s'.format(time()-t0))
+            if self.verbose >= 3:
+                printg('... populations in {0:.1f}s'.format(time()-t1))
+            printg('Calculated nonequilibrium populations (multiTvib) in {0:.2f}s'.format(time()-t0))
 
         return
 
@@ -2452,7 +2473,7 @@ class BaseFactory(DatabankLoader):
 #        self.df1 = df
 
         if self.verbose >= 2:
-            printg('scaled nonequilibrium linestrength in {0:.1f}s'.format(time()-t0))
+            printg('scaled nonequilibrium linestrength in {0:.2f}s'.format(time()-t0))
 
         return
 
@@ -2518,7 +2539,7 @@ class BaseFactory(DatabankLoader):
 #        self.df1 = df
 
         if self.verbose >= 2:
-            printg('calculated emissionh integral in {0:.1f}s'.format(time()-t0))
+            printg('calculated emission integral in {0:.2f}s'.format(time()-t0))
 
         return
 
@@ -2606,6 +2627,7 @@ class BaseFactory(DatabankLoader):
         # ... alternative 
         # Ensures abundance, molar mass and partition functions are transfered
         # (needed if they are attributes and not isotopes)
+        self.df1.reset_index(drop=True, inplace=True)
         transfer_metadata(df, self.df1, [k for k in df_metadata if hasattr(df, k)])
         
         # Store number of lines cut (for information)

@@ -372,7 +372,7 @@ You can set ``verbose=2`` to print the time spent on different operations. Examp
     >>> scale nonequilibrium linestrength
     >>> scaled nonequilibrium linestrength in 0.0s
     >>> calculated emission integral
-    >>> calculated emissionh integral in 0.0s
+    >>> calculated emission integral in 0.0s
     >>> Applying linestrength cutoff
     >>> Applied linestrength cutoff in 0.0s (expected time saved ~ 0.0s)
     >>> Calculating lineshift

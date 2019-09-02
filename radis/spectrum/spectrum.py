@@ -477,11 +477,12 @@ class Spectrum(object):
         Examples
         --------
 
-        Generate an experimental spectrum from txt::
+        Generate an experimental spectrum from txt. In that example the 
+        ``delimiter`` key is forwarded to :py:func:`~numpy.loadtxt`::
 
             from radis import Spectrum
             s = Spectrum.from_txt('spectrum.csv', 'radiance', waveunit='nm',
-                                      unit='W/cm2/sr/nm')
+                                      unit='W/cm2/sr/nm', delimiter=',')
 
 
         To create a spectrum with absorption and emission components 
@@ -497,7 +498,7 @@ class Spectrum(object):
         Notes
         -----
 
-        Internally, the numpy ``loadtxt`` function is used and transposed::
+        Internally, the numpy :py:func:`~numpy.loadtxt` function is used and transposed::
 
             w, I = np.loadtxt(file).T
 

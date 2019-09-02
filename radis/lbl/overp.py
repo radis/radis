@@ -223,7 +223,7 @@ class LevelsList(object):
 
         t0 = time()
         vib_levels = vib_levels.apply(add_viblvl, axis=1)
-        print('Added viblvl in {0:.1f}s'.format(time()-t0))
+        print('Added viblvl in {0:.2f}s'.format(time()-t0))
 
         #vib_levels = vib_levels.set_index(['p', 'c', 'N'])
         vib_levels = vib_levels.set_index(['viblvl'])

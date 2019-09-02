@@ -1737,7 +1737,7 @@ class DatabankLoader(object):
 
         if __debug__:
             printdbg(
-                'Databank reloaded from temporary h5 file in {0:.1f}s'.format(time()-t0))
+                'Databank reloaded from temporary h5 file in {0:.2f}s'.format(time()-t0))
 
     def _get_isotope_list(self, molecule=None, df=None):
         ''' Returns list of isotopes for given molecule 
@@ -2007,7 +2007,7 @@ class DatabankLoader(object):
             # TODO: Implement. Read https://stackoverflow.com/a/51388828/5622825 to understand more
               
         if self.verbose >= 2:
-            printg('... Fetched molecular params in {0:.1f}s'.format(time()-t0))
+            printg('... Fetched molecular params in {0:.2f}s'.format(time()-t0))
 
         return
 

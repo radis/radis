@@ -251,7 +251,7 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
 
     # print name
     if verbose>=2:
-        print(('Found {0} in RADIS database'.format(state.get_fullname())))
+        print(r'Found {0} in RADIS database'.format(state.get_fullname()))
 
     # Return
     return state

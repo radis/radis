@@ -165,7 +165,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
                          )
         s = sf.eq_spectrum(Tgas=300)
         if verbose:
-            printm('>>> _test_spec_generation: Spectrum calculated in {0:.1f}s'.format(time()-t0))
+            printm('>>> _test_spec_generation: Spectrum calculated in {0:.2f}s'.format(time()-t0))
             
         if plot:
             plt.figure(fig_prefix+'Reference spectrum CDSD-HITEMP (radiance)')

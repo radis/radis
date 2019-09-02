@@ -814,7 +814,7 @@ class BroadenFactory(BaseFactory):
                 self._broadening_method))
 
         if self.verbose >= 2:
-            printg('Calculated broadening HWHM in {0:.1f}s'.format(time()-t0))
+            printg('Calculated broadening HWHM in {0:.2f}s'.format(time()-t0))
 
     def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
         ''' Update dataframe with Voigt HWHM
@@ -2044,7 +2044,7 @@ class BroadenFactory(BaseFactory):
             (wavenumber, abscoeff) = self._broaden_lines(df)
 
         if self.verbose>=2:
-            printg('Calculated line broadening in {0:.1f}s'.format(time()-t0))
+            printg('Calculated line broadening in {0:.2f}s'.format(time()-t0))
 
         return wavenumber, abscoeff
 
@@ -2117,7 +2117,7 @@ class BroadenFactory(BaseFactory):
             (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
 
         if self.verbose>=2:
-            printg('Calculated line broadening in {0:.1f}s'.format(time()-t0))
+            printg('Calculated line broadening in {0:.2f}s'.format(time()-t0))
 
         return wavenumber, abscoeff, emisscoeff
 

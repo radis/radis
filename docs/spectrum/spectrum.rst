@@ -405,6 +405,11 @@ functions can be used to discard all but one spectral quantity:
 - :py:func:`~radis.spectrum.operations.Radiance`
 - :py:func:`~radis.spectrum.operations.Radiance_noslit`
 
+For instance, the following line is a valid RADIS command to plot 
+the spectral radiance of a spectrum with a low resolution::
+
+    (10*Radiance(s.apply_slit(10, 'nm'))).plot()
+
 Offset, crop
 ------------
 
