@@ -1375,6 +1375,9 @@ class BaseFactory(DatabankLoader):
         ''' Make sure database has non equilibrium quantities (Evib, Erot, etc.)
         '''
 
+        if self.verbose >= 2:
+            t0 = time()
+
         df = self.df0
         if len(df) == 0:
             return      # no lines
@@ -1398,6 +1401,9 @@ class BaseFactory(DatabankLoader):
             self._calc_weighted_trans_moment()
             self._calc_einstein_coefficients()
             
+        if self.verbose >= 2:
+            printg('Checked nonequilibrium parameters in {0:.2f}s'.format(time()-t0))
+
     def _calc_noneq_parameters(self, singleTvibmode=True, calc_Evib_harmonic_anharmonic=False):
         ''' Update database with Evib, Erot, and degeneracies
         
@@ -1592,7 +1598,7 @@ class BaseFactory(DatabankLoader):
         df['Rs2'] = weighted_trans_moment_sq
 
         if self.verbose >= 2:
-            printg('Calculated weighted transition moment in {0:.1f}'.format(time() - t0))
+            printg('Calculated weighted transition moment in {0:.2f}'.format(time() - t0))
             
         return
 
@@ -1661,7 +1667,7 @@ class BaseFactory(DatabankLoader):
         
         if self.verbose >= 2:
             t0 = time()
-            printg('Calculating lineshift')
+#            printg('> Calculating lineshift')
 
         df = self.df1
 
@@ -1829,7 +1835,7 @@ class BaseFactory(DatabankLoader):
         
         if self.verbose >= 2:
             t0 = time()
-            printg('Calculating equilibrium populations')
+#            printg('> Calculating equilibrium populations')
 
         # Load partition function values
         dgb = df1.groupby(by=['id', 'iso'])
@@ -1942,7 +1948,7 @@ class BaseFactory(DatabankLoader):
 
         if self.verbose >= 2:
             t0 = time()
-            printg('Calculating nonequilibrium populations')
+#            printg('> Calculating nonequilibrium populations')
             if self.verbose >= 3:
                 t1 = t0
 
@@ -2167,7 +2173,7 @@ class BaseFactory(DatabankLoader):
 
         if self.verbose >= 2:
             t0 = time()
-            printg('Calculating nonequilibrium populations (multiTvib)')
+#            printg('> Calculating nonequilibrium populations (multiTvib)')
             if self.verbose >= 3:
                 t1 = t0
 
@@ -2282,7 +2288,7 @@ class BaseFactory(DatabankLoader):
         ----------
 
         levels: ``'vib'``, ``'rovib'``, list of these, or ``None``
-            what levels to get. Note that ``'rovib'`` can yield large objects.
+            what levels to get. Note that ``'rovib'`` can yield large Spectrum objects.
 
         Returns
         -------
@@ -2307,6 +2313,11 @@ class BaseFactory(DatabankLoader):
             return {}
         if isinstance(levels, string_types):
             levels = [levels]
+        for l in levels:
+            EXPECTED = ['vib', 'rovib']
+            if l not in EXPECTED:
+                raise ValueError('Unexpect type of levels to return {0}. Expected one of {1}'.format(
+                        l, EXPECTED))
 
         # To get isotopic abundance
         # placeholder # TODO: replace with attributes of Isotope>ElectronicState objects
@@ -2407,7 +2418,7 @@ class BaseFactory(DatabankLoader):
 
         if self.verbose >= 2:
             t0 = time()
-            printg('scale nonequilibrium linestrength')
+#            printg('> scale nonequilibrium linestrength')
 
         try:
             df['nl']
@@ -2427,8 +2438,7 @@ class BaseFactory(DatabankLoader):
             
             molecule = get_molecule(id_set[0])
             state = self.input.state
-            parsum = self.get_partition_function_calculator(
-                molecule, iso_set[0], state)    # partition function
+            parsum = self.get_partition_function_calculator(molecule, iso_set[0], state)    # partition function
             df.Qref = parsum.at(Tref, update_populations=False)     # stored as attribute, not column    
             assert 'Qref' not in df.columns
             
@@ -2443,8 +2453,7 @@ class BaseFactory(DatabankLoader):
             for (id, iso), idx in dgb.indices.items():
                 molecule = get_molecule(id)
                 state = self.input.state
-                parsum = self.get_partition_function_calculator(
-                    molecule, iso, state)
+                parsum = self.get_partition_function_calculator(molecule, iso, state)
                 df.at[idx, 'Qref'] = parsum.at(Tref, update_populations=False)
                 
                 if radis.DEBUG_MODE:
@@ -2510,7 +2519,7 @@ class BaseFactory(DatabankLoader):
 
         if self.verbose >= 2:
             t0 = time()
-            printg('calculated emission integral')
+#            printg('> calculated emission integral')
 
         if len(df) == 0:
             return      # no lines in database, no need to go further
@@ -2584,7 +2593,8 @@ class BaseFactory(DatabankLoader):
             return      # dont update self.df1
 
         if self.verbose >= 2:
-            printg('Applying linestrength cutoff')
+#            printg('> Applying linestrength cutoff')
+            pass
         t0 = time()
 
         # Cutoff:

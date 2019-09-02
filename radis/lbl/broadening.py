@@ -785,7 +785,7 @@ class BroadenFactory(BaseFactory):
             return  # no lines
         
         if self.verbose >= 2:
-            printg('Calculate broadening HWHM')
+#            printg('> Calculate broadening HWHM')
             t0 = time()
 
         if self.input.Tgas is None:
@@ -2005,7 +2005,7 @@ class BroadenFactory(BaseFactory):
         df = self.df1
         
         if self.verbose>=2:
-            printg('Calculating line broadening ({0} lines: expect ~ {1:.1f}s on 1 CPU)'.format(
+            printg('> Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)'.format(
                     len(df), self._broadening_time_ruleofthumb*len(df)*len(self.wbroad_centered)))
             t0 = time()
 
@@ -2083,7 +2083,7 @@ class BroadenFactory(BaseFactory):
         df = self.df1
 
         if self.verbose>=2:
-            printg('Calculating line broadening ({0:,d} lines: expect ~ {1:.1f}s on 1 CPU)'.format(
+            printg('Calculating line broadening ({0:,d} lines: expect ~ {1:.2f}s on 1 CPU)'.format(
                     len(df), self._broadening_time_ruleofthumb*len(df)*len(self.wbroad_centered)))
             t0 = time()
 
