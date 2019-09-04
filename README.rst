@@ -42,8 +42,11 @@
 `RADIS <https://radis.readthedocs.io/>`__
 *****************************************
 
-A nonequilibrium infrared emission and absorption line-by-line code &
-a post-processing library to compare experimental and calculated spectra.
+RADIS is a fast line-by-line code for high resolution infrared molecular spectra (emission / absorption, 
+equilibrium / nonequilibrium). 
+
+Includes post-processing tools to compare experimental spectra and spectra calculated 
+with RADIS or other spectral codes.
 
 User guide, install procedure and examples are available on the `RADIS Website <http://radis.readthedocs.io/>`__:
 
@@ -252,9 +255,7 @@ And also:
 Other Spectroscopic tools
 -------------------------
 
-.. include:: docs/reference/similar_tools.rst
-
-
+See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__
 
 --------
 
