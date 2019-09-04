@@ -205,7 +205,7 @@ html_theme_options = {
     'github_user': 'radis',
     'github_repo': 'radis',
     'github_button': True, 
-    'github_type': 'watch',
+    'github_type': 'star',
     'github_banner': False,
     'travis_button': True,
     'codecov_button': True,

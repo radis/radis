@@ -52,7 +52,7 @@ from radis.db.conventions import get_convention
 # %% Molecule class
 
 class Molecule(object):
-    ''' Define a new molecule
+    r''' Define a new molecule
 
     Parameters
     ----------
@@ -99,7 +99,7 @@ class Molecule(object):
 # %% Isotope class
 
 class Isotope(Molecule):
-    ''' Create an isotope of a given :py:class:`~radis.db.classes.Molecule`
+    r''' Create an isotope of a given :py:class:`~radis.db.classes.Molecule`
 
     Parameters
     ----------
@@ -147,7 +147,7 @@ class Isotope(Molecule):
 
 
 class ElectronicState(Isotope):
-    ''' Define an electronic state of an :py:class:`~radis.db.classes.Isotope` 
+    r''' Define an electronic state of an :py:class:`~radis.db.classes.Isotope` 
     of a :py:class:`~radis.db.classes.Molecule` 
 
     Parameters
@@ -254,7 +254,7 @@ class ElectronicState(Isotope):
         self.Ediss = Ediss
 
     def _parse_rovib_constants(self, spectroscopic_constants):
-        ''' Parse spectroscopic constants 
+        r''' Parse spectroscopic constants 
         
         Stores :py:attr:`~radis.db.classes.ElectronicState.Te` and 
         :py:attr:`~radis.db.classes.ElectronicState.re` as electronic state 
@@ -290,7 +290,7 @@ class ElectronicState(Isotope):
     # Default method to calculate energy
 
     def _assign_E(self, Erovib, Ehaj):
-        ''' Finds appropriate Electrorovibrational energy function for this molecule ,
+        r''' Finds appropriate Electrorovibrational energy function for this molecule ,
         based on which convention is used for spectroscopic coefficients 
         (Dunham, or Herzberg)
         
@@ -361,7 +361,7 @@ class ElectronicState(Isotope):
                                                   'and overwrite the ElectronicState class one.')
                         
     def Erovib(self, v, J, remove_ZPE=True):
-        ''' Calculate rovibrational energy of molecule 
+        r''' Calculate rovibrational energy of molecule 
         
         .. math::
             
@@ -410,7 +410,7 @@ class ElectronicState(Isotope):
                 self.get_fullname))  # @dev: see radis.db.classes.ElectronicState._assign_E
         
     def _Erovib_default_coefs(self, *args, **kwargs):
-        ''' Calculate rovibrational energy of molecule 
+        r''' Calculate rovibrational energy of molecule 
         
         .. math::
             
@@ -481,7 +481,7 @@ class ElectronicState(Isotope):
         
     def _E_Herzberg(self, v, J, remove_ZPE=True):
         # TODO: move in levels.energies as was done for CO2
-        ''' Calculate rovibrational energy of molecule 
+        r''' Calculate rovibrational energy of molecule 
         
         .. math::
             
@@ -568,7 +568,7 @@ class ElectronicState(Isotope):
     # %% Informative methods
 
     def get_Morse_inc(self):
-        ''' Get Morse potential energy increment correction for given molecule
+        r''' Get Morse potential energy increment correction for given molecule
 
         Examples
         --------
@@ -638,11 +638,11 @@ class ElectronicState(Isotope):
                                weae=weae, webe=webe, wece=wece)
 
     def get_fullname(self):
-        return '{0}({1}{2})(iso{3})'.format(self.name, self.state,
-                                            self.term_symbol, self.iso)
+        return r'{0}({1}{2})(iso{3})'.format(self.name, self.state,
+                                             self.term_symbol, self.iso)
 
     def get_statename_utf(self):
-        ''' Returns Electronic state name in UTF format, used in the standard
+        r''' Returns Electronic state name in UTF format, used in the standard
         RADIS JSON databases. Examples::
             
            'X', '1Σ+' 
