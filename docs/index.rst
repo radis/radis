@@ -160,41 +160,60 @@ Access Module Methods
 
 ---------------------------------------------------------------------
 
+|badge_stars|
 
-.. image:: https://img.shields.io/pypi/v/radis.svg
-    :target: https://pypi.python.org/pypi/radis
-    :alt: PyPI
-
-.. image:: https://img.shields.io/badge/License-LGPL3-blue.svg
-    :target: ./License
-    :alt: License
-
-.. image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
-    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
-    :alt: Article
-
-.. image:: https://img.shields.io/travis/radis/radis.svg
-    :target: https://travis-ci.org/radis/radis
-    :alt: Tests
+|badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_travis| |badge_coverage| |badge_binder| |badge_gitter|
     
-.. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/radis/radis
-    :alt: Coverage
-  
-.. image:: https://readthedocs.org/projects/radis/badge/
-    :target: https://radis.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
 
-.. image:: https://mybinder.org/badge.svg 
-    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
-    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+.. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/
+                :target: https://radis.readthedocs.io/en/latest/?badge=latest
+                :alt: Documentation Status
 
-.. image:: https://img.shields.io/pypi/dw/radis.svg
-    :target: https://pypistats.org/packages/radis
-    :alt: Downloads
+.. |badge_article| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+                   :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
+                   :alt: Article
 
-.. image:: https://badges.gitter.im/Join%20Chat.svg
-    :target: https://gitter.im/radis-radiation/community
-    :alt: Gitter
-    
+.. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star&maxAge=2592000
+                :target: https://github.com/radis/radis/stargazers
+                :alt: GitHub
+   
+.. |badge_contributors| image:: https://img.shields.io/github/contributors/radis/radis.svg
+                        :target: https://github.com/radis/radis/stargazers
+                        :alt: Contributors
+
+.. |badge_license| image:: https://img.shields.io/badge/License-LGPL3-blue.svg
+                   :target: ./License.md
+                   :alt: License
+
+.. |badge_travis| image:: https://img.shields.io/travis/radis/radis.svg
+                  :target: https://travis-ci.org/radis/radis
+                  :alt: Tests
+
+.. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
+                    :target: https://codecov.io/gh/radis/radis
+                    :alt: Coverage
+
+.. |badge_pypi| image:: https://img.shields.io/pypi/v/radis.svg
+                :target: https://pypi.python.org/pypi/radis
+                :alt: PyPI
+
+.. |badge_pypistats| image:: https://img.shields.io/pypi/dw/radis.svg
+                     :target: https://pypistats.org/packages/radis
+                     :alt: Downloads
+
+.. |badge_examples| image:: https://img.shields.io/github/stars/radis/radis-examples.svg?style=social&label=Star&maxAge=2592000
+                :target: https://github.com/radis/radis-examples
+                :alt: Examples
+
+.. |badge_awesome_spectra| image:: https://img.shields.io/github/stars/erwanp/awesome-spectra.svg?style=social&label=Star&maxAge=2592000
+                           :target: https://github.com/erwanp/awesome-spectra
+                           :alt: Examples
+
+.. |badge_binder| image:: https://mybinder.org/badge.svg 
+                  :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+                  :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+
+.. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
+                  :target: https://gitter.im/radis-radiation/community
+                  :alt: Gitter
     
