@@ -201,7 +201,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
                    :alt: Article
 
-.. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star&maxAge=2592000
+.. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star
                 :target: https://github.com/radis/radis/stargazers
                 :alt: GitHub
    
@@ -229,11 +229,11 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                      :target: https://pypistats.org/packages/radis
                      :alt: Downloads
 
-.. |badge_examples| image:: https://img.shields.io/github/stars/radis/radis-examples.svg?style=social&label=Star&maxAge=2592000
+.. |badge_examples| image:: https://img.shields.io/github/stars/radis/radis-examples.svg?style=social&label=Star
                 :target: https://github.com/radis/radis-examples
                 :alt: Examples
 
-.. |badge_awesome_spectra| image:: https://img.shields.io/github/stars/erwanp/awesome-spectra.svg?style=social&label=Star&maxAge=2592000
+.. |badge_awesome_spectra| image:: https://img.shields.io/github/stars/erwanp/awesome-spectra.svg?style=social&label=Star
                            :target: https://github.com/erwanp/awesome-spectra
                            :alt: Examples
 
