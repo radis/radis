@@ -273,7 +273,7 @@ def Fv(v, J, Be=0, De=0, alpha_e=0, beta_e=0, gamma_e=0, delta_e=0, epsilon_e=0,
 # only allowed formats: Y01
 def EvJ(v, J, **Ykl_dict):
     ''' Calculates rovibrational energy reading from Dunham coefficients in 
-    Ykl notation
+    Ykl notation, for diatomic molecules.
     
     Parameters
     ----------
