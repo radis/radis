@@ -83,6 +83,11 @@ def EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, gv1=1, gv2=1, g
     Klarenaar et al, "Time evolution of vibrational temperatures in a CO 2 glow 
     discharge measured with infrared absorption spectroscopy", doi 10.1088/1361-6595/aa902e,
     and the references there in.
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.levels.energies_co2.EvJ_co2`
 
     '''
     
