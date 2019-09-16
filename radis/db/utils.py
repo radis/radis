@@ -193,7 +193,7 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='defau
     dunham_coeffs = {k:v for (k, v) in rovib_coeffs.items() if k.startswith('Y')}
 
     if len(dunham_coeffs) == 0:
-        raise ValueError('No Dunham coefficients found for {0}{1}(iso={2})'.format(
+        raise ValueError('No Dunham coefficients found for {0} {2}(iso={1})'.format(
                 molecule, isotope, electronic_state))
 
     return dunham_coeffs
@@ -245,7 +245,7 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
     herzberg_coeffs = {k:v for (k, v) in rovib_coeffs.items() if ignore_trailing_number(k) in herzberg_coefficients}
 
     if len(herzberg_coeffs) == 0:
-        raise ValueError('No Herzberg spectroscopic coefficients found for {0}{1}(iso={2})'.format(
+        raise ValueError('No Herzberg spectroscopic coefficients found for {0} {2}(iso={1})'.format(
                 molecule, isotope, electronic_state))
 
     return herzberg_coeffs
