@@ -198,40 +198,63 @@ Different strategies and parameters are used to improve performances:
 Line Database Reduction Strategies
 ----------------------------------
 
-- *linestrength cutoff* : lines with low linestrength are discarded after the new 
-populations are calculated. 
-Parameter: :py:attr:`~radis.lbl.loader.Input.cutoff` 
-(see the default value in the arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`)
+By default:
 
-- *weak lines*: lines which are close to a much stronger line are called weak lines. 
-They are added to a pseudo-continuum and their lineshape is calculated with a simple 
-rectangular approximation.  
-See the default value in the arguments of :py:attr:`~radis.lbl.loader.Parameters.pseudo_continuum_threshold` 
-(see arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`)
+- *linestrength cutoff* : lines with low linestrength are discarded after the new 
+  populations are calculated. 
+  Parameter: :py:attr:`~radis.lbl.loader.Input.cutoff` 
+  (see the default value in the arguments of :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`)
+
+Additional strategies (deactivated by default):
+
+- *weak lines* (pseudo-continuum): lines which are close to a much stronger line are called weak lines. 
+  They are added to a pseudo-continuum and their lineshape is calculated with a simple 
+  rectangular approximation.  
+  See the default value in the arguments of :py:attr:`~radis.lbl.loader.Parameters.pseudo_continuum_threshold` 
+  (see arguments of :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`)
 
 
 Lineshape optimizations
 -----------------------
 
+Lineshape convolution is usually the performance bottleneck in any line-by-line code. 
+
+Two approaches can be used:
+
+- improve the convolution efficiency. This involves using an efficient convolution algorithm,
+  using a reduced convolution kernel, analytical approximations, or multiple spectral grid.
+- reduce the number of convolutions (for a given number of lines): this is done using the DLM strategy. 
+
+RADIS implements the two approaches as well as various strategies and parameters 
+to calculate the lineshapes efficiently. 
+
 - *broadening width* : lineshapes are calculated on a reduced spectral range. 
-Voigt computation calculation times scale linearly with that parameter. 
-Gaussian x Lorentzian calculation times scale as a square with that parameter. 
-parameters: broadening_max_width
+  Voigt computation calculation times scale linearly with that parameter. 
+  Gaussian x Lorentzian calculation times scale as a square with that parameter. 
+  parameters: broadening_max_width
 
 - *Voigt approximation* : Voigt is calculated with an analytical approximation. 
-Parameter : :py:attr:`~radis.lbl.loader.Parameters.broadening_max_width` and 
-default values in the arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`. 
-See :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+  Parameter : :py:attr:`~radis.lbl.loader.Parameters.broadening_max_width` and 
+  default values in the arguments of :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`. 
+  See :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
 
 - *Fortran precompiled* : previous Voigt analytical approximation is 
-precompiled in Fortran to improve performance times. This is always the 
-case and cannot be changed on the user side at the moment. See the source code
-of :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+  precompiled in Fortran to improve performance times. This is always the 
+  case and cannot be changed on the user side at the moment. See the source code
+  of :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+  
+- *Multiple spectral grids* : many LBL codes use different spectral grids to 
+  calculate the lineshape wings with a lower resolution. This strategy is not 
+  implemented in RADIS. 
 
-- *DLM* :  lineshape templates are calculated to reduce the number of calculated 
-lines from millions to a few dozens. Implementation in progress. 
-parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`, 
-:py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`. 
+- *DLM* :  lines are projected on a Lineshape database to reduce the number of calculated 
+  lineshapes from millions to a few dozens.
+  With this optimization strategy, the lineshape convolution becomes almost instantaneous 
+  and all the other strategies are rendered useless. Projection of all lines on the lineshape 
+  database becomes the performance bottleneck.
+  parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`, 
+  :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`. 
+  (this is the default strategy implemented in RADIS)
 
 More details on the parameters below:
 

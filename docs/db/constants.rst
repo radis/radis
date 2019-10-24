@@ -11,6 +11,10 @@ Table 2,3 and the references therein. These constants have been compiled for Tre
 
 https://raw.githubusercontent.com/radis/radis/master/radis/db/CO2/molecules_data.json
 
+.. include:: https://raw.githubusercontent.com/radis/radis/master/radis/db/CO2/molecules_data.json
+    :literal:
+    :end-line: 20
+
 In version 1.0, RADIS will use the spectroscopic constants of [Suzuki1968]_
 
 CO
@@ -20,8 +24,12 @@ CO uses the Dunham coefficients of Guelachvili 1983 (doi/10.1016/0022-2852(83)90
 
 https://raw.githubusercontent.com/radis/radis/master/radis/db/CO/molecules_data.json
 
+.. include:: https://raw.githubusercontent.com/radis/radis/master/radis/db/CO/molecules_data.json
+    :literal:
+    :end-line: 20
 
 
+You can use your own set of spectroscopic constants, or precompute energy levels and use them directly.
 
 
 References

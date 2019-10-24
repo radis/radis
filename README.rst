@@ -115,6 +115,14 @@ Or start a bare RADIS online session:
 |badge_binder|
 
 
+Cite
+----
+
+Article is available at |badge_article| 
+
+For reproducibility, do not forget to cite the line database used, and the spectroscopic constants 
+if running nonquilibrium  calculations. See `How to cite? <https://radis.readthedocs.io/en/latest/references.html#cite>`__
+
 ---------------------------------------------------------------------
 
 ===============
