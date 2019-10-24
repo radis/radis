@@ -426,6 +426,7 @@ class Spectrum(object):
         ----------
 
         file: str
+            file name
 
         quantity: str
             spectral quantity name
@@ -434,15 +435,27 @@ class Spectrum(object):
             spectral quantity unit
 
         *args, **kwargs
-            the following inputs are forwarded to loadtxt: 'delimiter', 'skiprows'
+            the following inputs are forwarded to loadtxt: ``'delimiter'``, ``'skiprows'``
             The rest if forwarded to Spectrum. see :class:`~radis.spectrum.spectrum.Spectrum`
             doc
 
 
         Other Parameters
         ----------------
-
-        Optional parameters:
+        
+        Optional loadtxt parameters:
+            
+        delimiter: ``','``, etc.  
+            see :py:func:`numpy.loadtxt`
+            
+        skiprows: int
+            see :py:func:`numpy.loadtxt`
+            
+        argsort: bool
+            sorts the arrays in ``file`` by wavespace. Convenient way to load
+            a file where points have been manually added at the end. Default ``False``.
+        
+        Optional Spectrum parameters:
 
         conditions: dict
             physical conditions and calculation parameters
@@ -501,6 +514,8 @@ class Spectrum(object):
         Internally, the numpy :py:func:`~numpy.loadtxt` function is used and transposed::
 
             w, I = np.loadtxt(file).T
+            
+        You can use ``'delimiter'`` and '``skiprows'`` as arguments.
 
         See Also
         --------
@@ -519,8 +534,12 @@ class Spectrum(object):
         for k in ['delimiter', 'skiprows']:
             if k in kwargs:
                 kwloadtxt[k] = kwargs.pop(k)
+        argsort = kwargs.pop('argsort', False)
 
         w, I = np.loadtxt(file, **kwloadtxt).T
+        if argsort:
+            b = np.argsort(w)
+            w, I = w[b], I[b]
         quantities = {quantity: (w, I)}
         units = {quantity: unit}
 
