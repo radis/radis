@@ -24,8 +24,10 @@ import radis
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc import is_float
+from radis.misc.printer import printr
 from astropy import units as u
 from astroquery.hitran import Hitran
+import os
 from os.path import join, isfile, exists
 import numpy as np
 import pandas as pd
@@ -109,7 +111,13 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
                                                                        'wmax':wmax}))
         check_cache_file(fcache=fcache, use_cached=cache, metadata=metadata, verbose=verbose)
         if exists(fcache):
-            return get_cache_file(fcache, verbose=verbose)
+            try:
+                return get_cache_file(fcache, verbose=verbose)
+            except Exception as err:
+                if verbose:
+                    printr('Problem reading cache file {0}:\n{1}\nDeleting it!'.format(
+                        fcache, str(err)))
+                os.remove(fcache)
 
 #    tbl = Hitran.query_lines_async(molecule_number=mol_id,
 #                                     isotopologue_number=isotope,
