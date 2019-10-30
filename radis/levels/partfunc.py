@@ -710,6 +710,20 @@ class PartFuncHAPI(RovibParFuncTabulator):
 
 # %% Calculated partition functions (either from energy levels, or ab initio)
 
+def _get_cachefile_name(ElecState):
+    ''' Get name of cache file for calculated rovibrational energies 
+    
+    Basically store it alongside the jsonfile of the ElecState with:
+        
+        [jsonfile]_[molecule_name]_[isotope]_[electronic state]_levels.h5 
+    '''
+    molecule = ElecState.name
+    isotope = ElecState.iso
+    state = ElecState.state
+    jsonfile = ElecState.jsonfile
+    filename = '{0}_{1}_iso{2}_{3}_levels.h5'.format(jsonfile.replace('.json', ''), 
+                molecule, isotope, state)
+    return filename
 
 class PartFunc_Dunham(RovibParFuncCalculator):
     ''' Calculate partition functions from spectroscopic constants, if
@@ -853,11 +867,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # ... if file doesnt exist.
         # If file is deprecated, regenerate it unless 'force' was used
 
-        from radis.misc.utils import getProjectRoot
-        from radis.misc.basics import make_folders
-        make_folders(join(getProjectRoot(), 'db'), molecule.upper())
-        filename = '{0}_iso{1}_levels.h5'.format(molecule.lower(), isotope)
-        cachefile = join(getProjectRoot(), 'db', molecule.upper(), filename)
+        cachefile = _get_cachefile_name(ElecState)
         self.cachefile = cachefile
 
         # If return, return after cachefile generated (used for tests)
