@@ -1,5 +1,6 @@
 {
 "spectroscopic_constants":{
-    "CO2": "molecule_data.json"
+    "CO2": "molecules_data.json",
+    "CO": "molecules_data.json"
     }
 }

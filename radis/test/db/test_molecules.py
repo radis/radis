@@ -9,7 +9,7 @@ from __future__ import absolute_import, unicode_literals, division
 from __future__ import print_function
 import numpy as np
 from radis.db.molecules import getMolecule, Molecules
-from radis.db.utils import get_herzberg_coefficients, get_rovib_coefficients
+from radis.db.utils import get_herzberg_coefficients, _get_rovib_coefficients, _get_default_jsonfile
 import pytest
 
 @pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'    
@@ -72,7 +72,9 @@ def test_ZPE(verbose=True, *args, **kwargs):
             continue
         for iso, elecstates in isotopes.items():
             for state, ElecState in elecstates.items():
-                coeffs = get_rovib_coefficients(M, iso, ElecState.get_statename_utf(), remove_trailing_cm1=True)
+                jsonfile = _get_default_jsonfile(M)
+                coeffs = _get_rovib_coefficients(M, iso, ElecState.get_statename_utf(), 
+                                                 jsonfile=jsonfile, remove_trailing_cm1=True)
                 if 'ZPE' in coeffs:
                     # Calculate ZPE by setting all parameters to 0. Note that 
                     # the number of parameters in ElecState.Erovib depends on 

@@ -11,6 +11,7 @@ import os
 import json
 from collections import OrderedDict
 from radis.misc.basics import is_number
+from os.path import abspath
 
 
 def getFile(*relpath):
@@ -86,7 +87,7 @@ def check_molecule_data_structure(fname, verbose=True):
     if verbose: print('Structure of {0} looks correct'.format(fname))
 
 
-def get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile='default',
+def _get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile,
                            remove_trailing_cm1=True):
     ''' Returns all rovib coefficients for ``molecule``, ``isotope``, ``electronic_state`` 
     by parsing a JSON file of molecule data. 
@@ -104,10 +105,7 @@ def get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile='defaul
         electronic state name
         
     jsonfile: str, or ``default``
-        path to json file. If ``default``, the ``molecules_data`` JSON file 
-        in the ``radis.db`` database is used::
-        
-            radis\db\[molecule]\molecules_data.json
+        path to json file. 
             
     Other Parameters
     ----------------
@@ -126,9 +124,6 @@ def get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile='defaul
     :py:func:`~radis.db.utils.get_herzberg_coefficients`, 
     '''
 
-    if jsonfile == 'default':
-        jsonfile = getFile('{0}/molecules_data.json'.format(molecule))
-        
     check_molecule_data_structure(jsonfile, verbose=False)
     
     with open(jsonfile) as f:
@@ -160,6 +155,25 @@ def get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile='defaul
         
     return rovib_coeffs
 
+def _get_default_jsonfile(molecule):
+    ''' Return full path of default jsonfile for spectroscopic constants for a 
+    molecule.
+    
+    These are stored in:
+        
+            radis\db\[molecule]\*.json
+            
+    and defined in radis/config.json
+    '''
+    
+    from radis import config
+    
+    name = config['spectroscopic_constants'][molecule]
+    
+    return abspath(getFile('{0}/{1}'.format(molecule, name)))
+    
+
+
 def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='default'):
     ''' Returns Dunham coefficients ``Yij`` for ``molecule``, ``isotope``, ``electronic_state`` 
     by parsing a JSON file of molecule data. 
@@ -180,14 +194,20 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='defau
         electronic state name
         
     jsonfile: str, or ``default``
-        path to json file. If ``default``, the ``molecules_data`` JSON file 
-        in the ``radis.db`` database is used::
-        
-            radis\db\[molecule]\molecules_data.json
+        path to json file. If ``default``, the default JSON file 
+        defined in radis/config.json is used. See :py:func:`~get_default_jsonfile`
+            
+    See Also
+    --------
+    
+    :py:func:`~radis.db.utils.get_herzberg_coefficients`
     
     '''
+    
+    if jsonfile == 'default':
+        jsonfile = _get_default_jsonfile(molecule)
 
-    rovib_coeffs = get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile=jsonfile)
+    rovib_coeffs = _get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile=jsonfile)
     
     # Only get Dunham coeffs, i.e, these that start with Y
     dunham_coeffs = {k:v for (k, v) in rovib_coeffs.items() if k.startswith('Y')}
@@ -225,20 +245,22 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
         
     jsonfile: str, or ``default``
         path to json file. If ``default``, the ``molecules_data`` JSON file 
-        in the ``radis.db`` database is used::
-        
-            radis\db\[molecule]\molecules_data.json
+        in the ``radis.db`` database is used. See :py:func:`~get_default_jsonfile`
     
     See Also
     --------
     
-    :py:data:`~radis.db.conventions.herzberg_coefficients`
+    :py:data:`~radis.db.conventions.herzberg_coefficients`,
+    :py:func:`~radis.db.utils.get_dunham_coefficients`
     
     '''
     
     from radis.db.conventions import herzberg_coefficients
 
-    rovib_coeffs = get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile=jsonfile)
+    if jsonfile == 'default':
+        jsonfile = _get_default_jsonfile(molecule)
+        
+    rovib_coeffs = _get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile=jsonfile)
     
 #    # Only get Herzberg coeffs, i.e, these that are defined in :py:data:`~radis.db.conventions.herzberg_coefficients`
     
