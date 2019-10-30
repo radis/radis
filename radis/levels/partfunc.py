@@ -53,6 +53,8 @@ References
 # TODO: vectorize partition function caclulations for different temperatures. Would need
 # stuff like E = df.E.values.reshape((1,-1)), etc.
 
+# TODO: store molecule_data.json in the H5 file metadata. If not done already.
+
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 import sys
@@ -708,6 +710,20 @@ class PartFuncHAPI(RovibParFuncTabulator):
 
 # %% Calculated partition functions (either from energy levels, or ab initio)
 
+def _get_cachefile_name(ElecState):
+    ''' Get name of cache file for calculated rovibrational energies 
+    
+    Basically store it alongside the jsonfile of the ElecState with:
+        
+        [jsonfile]_[molecule_name]_[isotope]_[electronic state]_levels.h5 
+    '''
+    molecule = ElecState.name
+    isotope = ElecState.iso
+    state = ElecState.state
+    jsonfile = ElecState.jsonfile
+    filename = '{0}_{1}_iso{2}_{3}_levels.h5'.format(jsonfile.replace('.json', ''), 
+                molecule, isotope, state)
+    return filename
 
 class PartFunc_Dunham(RovibParFuncCalculator):
     ''' Calculate partition functions from spectroscopic constants, if
@@ -784,12 +800,20 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     
     
     def __init__(self, electronic_state, vmax=None, vmax_morse=None, Jmax=None,
+                 spectroscopic_constants='default', 
                  use_cached=True, verbose=True,
                  calc_Evib_per_mode=True, calc_Evib_harmonic_anharmonic=True,
                  group_energy_modes_in_2T_model={'CO2':(['Evib1', 'Evib2', 'Evib3'],['Erot'])}):  # , ZPE=None):
         # TODO: find a way to initialize calc_Evib_per_mode or calc_Evib_harmonic_anharmonic from
         # the SpectrumFactory on Spectrum generation time...
         # Maybe recompute the cache file if needed?
+        
+        # TODO @dev: refactor : move group_energy_modes_in_2T_model in radis/config.json ?
+        
+        # WIP @erwan: spectroscopic_constants: NOT USED for the moment
+        # parameter to change the constants
+        # used to calculate the electronic_state energies. An alternative strategy
+        # be to adjust the constants in electronic_state directly.
 
         # %% Init
         super(PartFunc_Dunham, self).__init__(
@@ -822,10 +846,19 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         self.group_energy_modes_in_2T_model = group_energy_modes_in_2T_model
 
         # Get variables to store in metadata  (after default values have been set)
-        _discard = ['self', 'verbose', 'ElecState', 'electronic_state', 'use_json',
-                    'use_cached']
-        metadata = filter_metadata(locals(), discard_variables=_discard)
-
+        # ... this ensures that cache files generated with different metadata 
+        # ... will not be used (in particular: different rovib_constants)
+        metadata = {'molecule':molecule,
+                    'isotope':isotope, 
+                    'rovib_constants':ElecState.rovib_constants,
+                    'vmax':vmax,
+                    'vmax_morse':vmax_morse,
+                    'Jmax':Jmax,
+                    'group_energy_modes':group_energy_modes, 
+                    'group_energy_modes_in_2T_model': group_energy_modes_in_2T_model,
+                    'calc_Evib_harmonic_anharmonic':calc_Evib_harmonic_anharmonic, 
+                    'calc_Evib_per_mode':calc_Evib_per_mode}
+        
         # get cache file path
 
         # Function of use_cached value:
@@ -834,11 +867,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # ... if file doesnt exist.
         # If file is deprecated, regenerate it unless 'force' was used
 
-        from radis.misc.utils import getProjectRoot
-        from radis.misc.basics import make_folders
-        make_folders(join(getProjectRoot(), 'db'), molecule.upper())
-        filename = '{0}_iso{1}_levels.h5'.format(molecule.lower(), isotope)
-        cachefile = join(getProjectRoot(), 'db', molecule.upper(), filename)
+        cachefile = _get_cachefile_name(ElecState)
         self.cachefile = cachefile
 
         # If return, return after cachefile generated (used for tests)
@@ -866,8 +895,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                 print('Calculating energy levels with Dunham expansion for {0}'.format(
                     ElecState.get_fullname()))
                 if not use_cached:
-                    print('Set use_cached to True next time not to recompute levels every ' +
-                          'time')
+                    print('Tip: set ``use_cached=True`` next time not to recompute levels every time')
             if molecule in HITRAN_CLASS1:
                 self.build_energy_levels_class1()
             elif molecule in HITRAN_CLASS5:   # CO2
@@ -1138,10 +1166,12 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     # It follows than gvib = v2+1
                     # This is added later
                     for v3 in range(v3max+1):
-                        # Spectroscopic rule
-                        # ------------------
-                        # J>=l2: as in the symmetric rotor
-                        # ------------------
+                        '''
+                        Spectroscopic rule
+                        ------------------
+                        J>=l2: as in the symmetric rotor
+                        ------------------
+                        '''
                         viblvl = vib_lvl_name(v1, v2, l2, v3)
                         
                         # First calculate vibrational energy only, for 2-T models

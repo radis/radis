@@ -875,6 +875,8 @@ class SpectrumFactory(BandFactory):
             # Check line database and parameters, reset populations and scaled line dataframe
             # ----------
             self._check_line_databank()
+            # add nonequilibrium energies if needed (this may be a bottleneck
+            # for a first calculation):
             self._check_noneq_parameters(vib_distribution, singleTvibmode)
             self._reinitialize()   # creates scaled dataframe df1 from df0
 
@@ -891,13 +893,9 @@ class SpectrumFactory(BandFactory):
                                                        rot_distribution=rot_distribution,
                                                        overpopulation=overpopulation)
             
-#            assert not (self.df1.Qref.is_monotonic and self.df1.wav.is_monotonic)
-            
             self._calc_linestrength_noneq()
             self._calc_emission_integral()
 
-#            assert not (self.df1.Qref.is_monotonic and self.df1.wav.is_monotonic)
-            
             # ----------------------------------------------------------------------
             # Cutoff linestrength
             self._cutoff_linestrength()

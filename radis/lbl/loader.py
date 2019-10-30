@@ -451,8 +451,8 @@ class DatabankLoader(object):
 
         self.verbose = True         #: bool, or int: increase verbose level. 0, 1, 2 supported at the moment
         self.save_memory = False    #: bool: if True, tries to save RAM memory (but may take a little for time, saving stuff to files instead of RAM for instance)
-        self.parsum_tab = {}    #: store all partition function tabulators, per isotope
-        self.parsum_calc = {}   #: store all partition function calculators, per isotope
+        self.parsum_tab = {}    #: dict: store all partition function tabulators, per isotope
+        self.parsum_calc = {}   #: dict: store all partition function calculators, per isotope
 
         # in particular input conditions:
         # ... means all values that can have an impact on the calculated Spectrum
@@ -1906,7 +1906,7 @@ class DatabankLoader(object):
         # calculate energy levels from RADIS Dunham parameters
         elif levelsfmt == 'radis':  
             state = getMolecule(self.input.molecule, isotope,
-                                'X', verbose=self.verbose)
+                                self.input.state, verbose=self.verbose)
             parsum = PartFunc_Dunham(state,
                                      use_cached=self.params.lvl_use_cached,
                                      verbose=self.verbose)
