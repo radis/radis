@@ -854,10 +854,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     'vmax':vmax,
                     'vmax_morse':vmax_morse,
                     'Jmax':Jmax,
-                    'group_energy_modes':group_energy_modes, 
                     'group_energy_modes_in_2T_model': group_energy_modes_in_2T_model,
                     'calc_Evib_harmonic_anharmonic':calc_Evib_harmonic_anharmonic, 
                     'calc_Evib_per_mode':calc_Evib_per_mode}
+        if molecule in group_energy_modes_in_2T_model:
+            metadata.update({'group_energy_modes':group_energy_modes}) 
         
         # get cache file path
 
