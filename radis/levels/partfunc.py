@@ -786,6 +786,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     
     
     def __init__(self, electronic_state, vmax=None, vmax_morse=None, Jmax=None,
+                 spectroscopic_constants='default', 
                  use_cached=True, verbose=True,
                  calc_Evib_per_mode=True, calc_Evib_harmonic_anharmonic=True,
                  group_energy_modes_in_2T_model={'CO2':(['Evib1', 'Evib2', 'Evib3'],['Erot'])}):  # , ZPE=None):
@@ -794,6 +795,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # Maybe recompute the cache file if needed?
         
         # TODO @dev: refactor : move group_energy_modes_in_2T_model in radis/config.json ?
+        
+        # WIP @erwan: spectroscopic_constants: NOT USED for the moment
+        # parameter to change the constants
+        # used to calculate the electronic_state energies. An alternative strategy
+        # be to adjust the constants in electronic_state directly.
 
         # %% Init
         super(PartFunc_Dunham, self).__init__(
@@ -826,10 +832,19 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         self.group_energy_modes_in_2T_model = group_energy_modes_in_2T_model
 
         # Get variables to store in metadata  (after default values have been set)
-        _discard = ['self', 'verbose', 'ElecState', 'electronic_state', 'use_json',
-                    'use_cached']
-        metadata = filter_metadata(locals(), discard_variables=_discard)
-
+        # ... this ensures that cache files generated with different metadata 
+        # ... will not be used (in particular: different rovib_constants)
+        metadata = {'molecule':molecule,
+                    'isotope':isotope, 
+                    'rovib_constants':ElecState.rovib_constants,
+                    'vmax':vmax,
+                    'vmax_morse':vmax_morse,
+                    'Jmax':Jmax,
+                    'group_energy_modes':group_energy_modes, 
+                    'group_energy_modes_in_2T_model': group_energy_modes_in_2T_model,
+                    'calc_Evib_harmonic_anharmonic':calc_Evib_harmonic_anharmonic, 
+                    'calc_Evib_per_mode':calc_Evib_per_mode}
+        
         # get cache file path
 
         # Function of use_cached value:
