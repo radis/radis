@@ -52,8 +52,12 @@ def check_molecule_data_structure(fname, verbose=True):
     '''
 
     with open(fname) as f:
-        db = json.load(f) #, object_pairs_hook=OrderedDict)
-            
+        try:
+            db = json.load(f) #, object_pairs_hook=OrderedDict)
+        except json.JSONDecodeError as err:
+            raise json.JSONDecodeError("Error reading '{0}' (line {2} col {3}): \n{1}".format(
+                    fname, err.msg, err.lineno, err.colno), err.doc, err.pos) from err
+
     for molecule, db_molec in db.items():
         # ... Check number of isotopes is correct
         isotope_names = db_molec['isotopes_names']
@@ -127,7 +131,11 @@ def _get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile,
     check_molecule_data_structure(jsonfile, verbose=False)
     
     with open(jsonfile) as f:
-        db = json.load(f, object_pairs_hook=OrderedDict)
+        try:
+            db = json.load(f, object_pairs_hook=OrderedDict)
+        except json.JSONDecodeError as err:
+            raise json.JSONDecodeError("Error reading '{0}' (line {2} col {3}): \n{1}".format(
+                    jsonfile, err.msg, err.lineno, err.colno), err.doc, err.pos) from err
 
     # Get Dunham coefficients in 001 state (X)
     elec_state_names = db[molecule]['isotopes'][str(isotope)]['electronic_levels_names']

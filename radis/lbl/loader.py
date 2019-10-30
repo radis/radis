@@ -1906,7 +1906,7 @@ class DatabankLoader(object):
         # calculate energy levels from RADIS Dunham parameters
         elif levelsfmt == 'radis':  
             state = getMolecule(self.input.molecule, isotope,
-                                'X', verbose=self.verbose)
+                                self.input.state, verbose=self.verbose)
             parsum = PartFunc_Dunham(state,
                                      use_cached=self.params.lvl_use_cached,
                                      verbose=self.verbose)

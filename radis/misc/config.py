@@ -45,7 +45,11 @@ def get_config():
     ''' Read the config.json file '''
     jsonfile = join(getProjectRoot(), 'config.json')
     with open(jsonfile) as f:
-        config = json.load(f)
+        try:
+            config = json.load(f)
+        except json.JSONDecodeError as err:
+            raise json.JSONDecodeError("Error reading '{0}' (line {2} col {3}): \n{1}".format(
+                    jsonfile, err.msg, err.lineno, err.colno), err.doc, err.pos) from err
     return config
 
 
