@@ -168,6 +168,18 @@ In the second case, see the :ref:`Configuration file <label_lbl_config_file>` .
 The list of molecules implemented for nonequilibrium calculations if found in :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
 Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how nonequilibrium calculations are conducted. 
 
+An example of how to use your own spectroscopic constants::
+
+    from radis import calc_spectrum
+    from radis.db.molecules import Molecules, ElectronicState
+
+    Molecules['CO2'][1]['X'] = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
+                                spectroscopic_constants='my_constants.json',  # <<< YOUR FILE HERE 
+                                spectroscopic_constants_type='dunham',
+                                Ediss=44600,
+                                )
+    s = calc_spectrum(...)
+
 ********
 Advanced
 ********
