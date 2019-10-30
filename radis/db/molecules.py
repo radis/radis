@@ -13,7 +13,6 @@ See :py:data:`~radis.db.molecules.Molecules`
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 from radis.db.classes import ElectronicState
-from radis.db.utils import get_dunham_coefficients, get_herzberg_coefficients
 
 
 # %% Define some commonly used molecules
@@ -25,19 +24,22 @@ from radis.phys.convert import eV2cm
 
 # Define with default diatomic constants
 CO_X_iso1 = ElectronicState('CO', isotope=1, state='X', term_symbol='1Σ+',
-                            spectroscopic_constants=get_dunham_coefficients('CO', 1, 'X1SIG+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='dunham',
                             vmax=17,        # max level for Dunham's expansion
                             vmax_morse=48,
                             Ediss=eV2cm(11.16),
                             )
 CO_X_iso2 = ElectronicState('CO', isotope=2, state='X', term_symbol='1Σ+',
-                            spectroscopic_constants=get_dunham_coefficients('CO', 2, 'X1SIG+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='dunham',
                             vmax=17,        # max level for Dunham's expansion
                             vmax_morse=48,
                             Ediss=eV2cm(11.16),
                             )
 CO_X_iso3 = ElectronicState('CO', isotope=3, state='X', term_symbol='1Σ+',
-                            spectroscopic_constants=get_dunham_coefficients('CO', 3, 'X1SIG+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='dunham',
                             vmax=17,        # max level for Dunham's expansion
                             vmax_morse=48,
                             Ediss=eV2cm(11.16),
@@ -47,19 +49,23 @@ CO_X_iso3 = ElectronicState('CO', isotope=3, state='X', term_symbol='1Σ+',
 # ----------
 
 CO2_X_626 = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='herzberg',
                             Ediss=44600,
                             )
 CO2_X_636 = ElectronicState('CO2', isotope=2, state='X', term_symbol='1Σu+',
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 2, 'X1SIGu+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='herzberg',
                             Ediss=44600,
                             )
 CO2_X_628 = ElectronicState('CO2', isotope=3, state='X', term_symbol='1Σu+',
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 3, 'X1SIGu+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='herzberg',
                             Ediss=44600,
                             )
 CO2_X_627 = ElectronicState('CO2', isotope=4, state='X', term_symbol='1Σu+',
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 4, 'X1SIGu+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='herzberg',
                             Ediss=44600,
                             )
 

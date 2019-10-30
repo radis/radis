@@ -155,7 +155,7 @@ def _get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile,
         
     return rovib_coeffs
 
-def _get_default_jsonfile(molecule):
+def get_default_jsonfile(molecule):
     ''' Return full path of default jsonfile for spectroscopic constants for a 
     molecule.
     
@@ -195,7 +195,7 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='defau
         
     jsonfile: str, or ``default``
         path to json file. If ``default``, the default JSON file 
-        defined in radis/config.json is used. See :py:func:`~get_default_jsonfile`
+        defined in radis/config.json is used. See :py:func:`~radis.db.utils.get_default_jsonfile`
             
     See Also
     --------
@@ -205,7 +205,7 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='defau
     '''
     
     if jsonfile == 'default':
-        jsonfile = _get_default_jsonfile(molecule)
+        jsonfile = get_default_jsonfile(molecule)
 
     rovib_coeffs = _get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile=jsonfile)
     
@@ -213,8 +213,9 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='defau
     dunham_coeffs = {k:v for (k, v) in rovib_coeffs.items() if k.startswith('Y')}
 
     if len(dunham_coeffs) == 0:
-        raise ValueError('No Dunham coefficients found for {0} {2}(iso={1})'.format(
-                molecule, isotope, electronic_state))
+        raise ValueError('No Dunham coefficients (Yij) found for {0} {2}(iso={1}) in {3}'.format(
+                molecule, isotope, electronic_state, jsonfile)+\
+                '\n\nGot: {0}'.format(rovib_coeffs.keys()))
 
     return dunham_coeffs
 
@@ -245,7 +246,7 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
         
     jsonfile: str, or ``default``
         path to json file. If ``default``, the ``molecules_data`` JSON file 
-        in the ``radis.db`` database is used. See :py:func:`~get_default_jsonfile`
+        in the ``radis.db`` database is used. See :py:func:`~radis.db.utils.get_default_jsonfile`
     
     See Also
     --------
@@ -258,7 +259,7 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
     from radis.db.conventions import herzberg_coefficients
 
     if jsonfile == 'default':
-        jsonfile = _get_default_jsonfile(molecule)
+        jsonfile = get_default_jsonfile(molecule)
         
     rovib_coeffs = _get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile=jsonfile)
     
@@ -267,8 +268,9 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='def
     herzberg_coeffs = {k:v for (k, v) in rovib_coeffs.items() if ignore_trailing_number(k) in herzberg_coefficients}
 
     if len(herzberg_coeffs) == 0:
-        raise ValueError('No Herzberg spectroscopic coefficients found for {0} {2}(iso={1})'.format(
-                molecule, isotope, electronic_state))
+        raise ValueError('No Herzberg spectroscopic coefficients (we, Be, etc.) found for {0} {2}(iso={1}) in {3}'.format(
+                molecule, isotope, electronic_state, jsonfile)+\
+                '\n\nGot: {0}'.format(rovib_coeffs.keys()))
 
     return herzberg_coeffs
 
