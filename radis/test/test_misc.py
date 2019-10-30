@@ -27,12 +27,6 @@ from six.moves import range
 
 
 @pytest.mark.fast
-def test_config(*args, **kwargs):
-    from radis.misc.config import _test
-    return _test(*args, **kwargs)
-
-
-@pytest.mark.fast
 def test_utils(*args, **kwargs):
     from radis.misc.utils import _test
     return _test(*args, **kwargs)
