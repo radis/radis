@@ -1,0 +1,112 @@
+{
+"CO2": {
+    "isotopes":{
+        "1": {
+            "electronic_level":{
+                "001":{
+                    "Te_cm-1": 0.0, 
+                    "dzero_cm^-1": 44600, 
+                    "g_e": 1.0, 
+                    "index": 1, 
+                    "name": "X1SIGu+", 
+                    "#REF_Yij": "Klarenaar 2017 doi/10.1088/1361-6595/aa902e Table 2,3 and the references therein",
+                    "we1_cm-1":  1333.93,
+                    "we2_cm-1":  667.47,
+                    "we3_cm-1":  2349.16,
+                    "wexe1_cm-1":   2.93,
+                    "wexe2_cm-1":  -0.38,
+                    "wexe3_cm-1": 12.47,
+                    "Be_cm-1":  0.39022,
+                    "De_cm-1":  0.1333e-6,
+                    "He_cm-1":  0.0090e-12,
+                    "ZPE_cm-1": 2505.545
+                   }
+                },
+            "electronic_levels_names": [
+                "X1SIGu+"
+                ]
+            },
+        "2": {
+            "electronic_level":{
+                "001":{
+                    "Te_cm-1": 0.0, 
+                    "dzero_cm^-1": 44600, 
+                    "g_e": 1.0, 
+                    "index": 1, 
+                    "name": "X1SIGu+", 
+                    "#REF_Yij": "Klarenaar 2017 doi/10.1088/1361-6595/aa902e Table 2,3 and the references therein",
+                    "we1_cm-1":  1334.32,
+                    "we2_cm-1":  648.63,
+                    "we3_cm-1":  2283.49,
+                    "wexe1_cm-1":   2.93,
+                    "wexe2_cm-1":  -0.37,
+                    "wexe3_cm-1": 11.71,
+                    "Be_cm-1":  0.39024,
+                    "De_cm-1":  0.1332e-6,
+                    "He_cm-1":  0.0090e-12,
+                    "ZPE_cm-1": 2454.245
+                    }
+                },
+            "electronic_levels_names": [
+                "X1SIGu+"
+                ]
+            },
+        "3": {
+            "electronic_level":{
+                "001":{
+                    "Te_cm-1": 0.0, 
+                    "dzero_cm^-1": 44600, 
+                    "g_e": 1.0, 
+                    "index": 1, 
+                    "name": "X1SIGu+", 
+                    "#REF_Yij": "Klarenaar 2017 doi/10.1088/1361-6595/aa902e Table 2,3 and the references therein",
+                    "we1_cm-1":  1295.72,
+                    "we2_cm-1":  662.47,
+                    "we3_cm-1":  2332.15,
+                    "wexe1_cm-1":   2.76,
+                    "wexe2_cm-1":  -0.39,
+                    "wexe3_cm-1": 12.34,
+                    "Be_cm-1":  0.36819,
+                    "De_cm-1":  0.1187e-6,
+                    "He_cm-1":  0.0075e-12,
+                    "ZPE_cm-1": 2473.02
+                    }
+                },
+            "electronic_levels_names": [
+                "X1SIGu+"
+                ]
+            },
+        "4": {
+            "electronic_level":{
+                "001":{
+                    "Te_cm-1": 0.0, 
+                    "dzero_cm^-1": 44600, 
+                    "g_e": 1.0, 
+                    "index": 1, 
+                    "name": "X1SIGu+", 
+                    "#REF_Yij": "Klarenaar 2017 doi/10.1088/1361-6595/aa902e Table 2,3 and the references therein",
+                    "we1_cm-1":  1296.04,
+                    "we2_cm-1":  643.44,
+                    "we3_cm-1":  2265.98,
+                    "wexe1_cm-1":   2.93,
+                    "wexe2_cm-1":  -0.38,
+                    "wexe3_cm-1": 12.47,
+                    "Be_cm-1":  0.37862,
+                    "De_cm-1":  0.1255e-6,
+                    "He_cm-1":  0.0082e-12,
+                    "ZPE_cm-1": 2420.98
+                    }
+                },
+            "electronic_levels_names": [
+                "X1SIGu+"
+                ]
+            }
+        },
+    "isotopes_names":[
+        "626",
+        "636",
+        "628",
+        "627"
+        ]
+    }
+}
