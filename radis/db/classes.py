@@ -49,6 +49,7 @@ from radis.io.hitran import HITRAN_CLASS1, HITRAN_CLASS5
 from radis.levels.dunham import Gv, Fv, EvJ
 from radis.db.conventions import get_convention
 from radis.db.utils import get_default_jsonfile, get_dunham_coefficients, get_herzberg_coefficients
+from os.path import exists, join, dirname
 
 # %% Molecule class
 
@@ -324,8 +325,10 @@ class ElectronicState(Isotope):
         # Get file name
         if spectroscopic_constants == 'default':
             jsonfile = get_default_jsonfile(self.name)
-        else:
+        elif exists(spectroscopic_constants):  # absolute path
             jsonfile = spectroscopic_constants
+        else:  # assume a json file stored in the default folder
+            jsonfile = join(dirname(get_default_jsonfile(self.name)), spectroscopic_constants)
             
         # Parse file
         if spectroscopic_constants_type == 'dunham':
