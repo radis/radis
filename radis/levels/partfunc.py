@@ -53,6 +53,8 @@ References
 # TODO: vectorize partition function caclulations for different temperatures. Would need
 # stuff like E = df.E.values.reshape((1,-1)), etc.
 
+# TODO: store molecule_data.json in the H5 file metadata. If not done already.
+
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 import sys
@@ -790,6 +792,8 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # TODO: find a way to initialize calc_Evib_per_mode or calc_Evib_harmonic_anharmonic from
         # the SpectrumFactory on Spectrum generation time...
         # Maybe recompute the cache file if needed?
+        
+        # TODO @dev: refactor : move group_energy_modes_in_2T_model in radis/config.json ?
 
         # %% Init
         super(PartFunc_Dunham, self).__init__(
@@ -866,8 +870,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                 print('Calculating energy levels with Dunham expansion for {0}'.format(
                     ElecState.get_fullname()))
                 if not use_cached:
-                    print('Set use_cached to True next time not to recompute levels every ' +
-                          'time')
+                    print('Tip: set ``use_cached=True`` next time not to recompute levels every time')
             if molecule in HITRAN_CLASS1:
                 self.build_energy_levels_class1()
             elif molecule in HITRAN_CLASS5:   # CO2
@@ -1138,10 +1141,12 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     # It follows than gvib = v2+1
                     # This is added later
                     for v3 in range(v3max+1):
-                        # Spectroscopic rule
-                        # ------------------
-                        # J>=l2: as in the symmetric rotor
-                        # ------------------
+                        '''
+                        Spectroscopic rule
+                        ------------------
+                        J>=l2: as in the symmetric rotor
+                        ------------------
+                        '''
                         viblvl = vib_lvl_name(v1, v2, l2, v3)
                         
                         # First calculate vibrational energy only, for 2-T models

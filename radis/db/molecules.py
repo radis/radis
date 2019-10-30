@@ -46,88 +46,22 @@ CO_X_iso3 = ElectronicState('CO', isotope=3, state='X', term_symbol='1Σ+',
 # CO2
 # ----------
 
-# Generate the energy
-
-#from radis.db.CO2.energies import E_CO2_626_X1SIGg, Ehaj123_CO2_626_X1SIGg
-from radis.levels.vibrating_rotor import EvJ_uncoupled_vibrating_rotor, EvJah_uncoupled_vibrating_rotor
-
-#def build_CO2_X(isotope):
-#    coeff_dict =get_herzberg_coefficients('CO2', isotope, 'X1SIGu+')
-#    # Update standard vibrating rotor formula with CO2 specific generacies and 
-#    # Herzberb coeffs
-#    def Erovib_CO2(v1, v2, l2, v3, J, remove_ZPE=True):
-#        ''' Rovibrational energies.
-#        See :py:func:`~radis.levels.vibrating_rotor.EvJ_uncoupled_vibrating_rotor` 
-#        '''
-#        return EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict=coeff_dict,
-#                                             gv1=1, gv2=2, gv3=1, remove_ZPE=remove_ZPE)
-#    def Ehaj_CO2(v1, v2, l2, v3, J, remove_ZPE=True):
-#        ''' Harmonic and anharmonic parts of rovibrational energies.
-#        See :py:func:`~radis.levels.vibrating_rotor.EvJah_uncoupled_vibrating_rotor` 
-#        '''
-#        return EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict=coeff_dict,
-#                                             remove_ZPE=remove_ZPE)
-#    return ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
-##                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
-#                            Erovib=Erovib_CO2,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
-#                            Ediss=44600,
-#                            )
-
-
 CO2_X_626 = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
                             spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
-#                            Erovib=EvJah_uncoupled_vibrating_rotor,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
                             Ediss=44600,
                             )
 CO2_X_636 = ElectronicState('CO2', isotope=2, state='X', term_symbol='1Σu+',
                             spectroscopic_constants=get_herzberg_coefficients('CO2', 2, 'X1SIGu+'),
-#                            Erovib=EvJah_uncoupled_vibrating_rotor,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
                             Ediss=44600,
                             )
 CO2_X_628 = ElectronicState('CO2', isotope=3, state='X', term_symbol='1Σu+',
                             spectroscopic_constants=get_herzberg_coefficients('CO2', 3, 'X1SIGu+'),
-#                            Erovib=EvJah_uncoupled_vibrating_rotor,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
                             Ediss=44600,
                             )
 CO2_X_627 = ElectronicState('CO2', isotope=4, state='X', term_symbol='1Σu+',
                             spectroscopic_constants=get_herzberg_coefficients('CO2', 4, 'X1SIGu+'),
-#                            Erovib=EvJah_uncoupled_vibrating_rotor,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
                             Ediss=44600,
                             )
-#CO2_X_626 = build_CO2_X(1)
-#CO2_X_636 = build_CO2_X(2)
-#CO2_X_628 = build_CO2_X(3)
-#CO2_X_627 = build_CO2_X(4)
-
-#CO2_X_626 = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
-#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
-#                            Erovib=EvJ_uncoupled_vibrating_rotor,
-#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
-#                            Ediss=44600,
-#                            )
-#CO2_X_636 = ElectronicState('CO2', isotope=2, state='X', term_symbol='1Σu+',
-#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 2, 'X1SIGu+'),
-#                            Erovib=EvJ_uncoupled_vibrating_rotor,
-#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
-#                            Ediss=44600,
-#                            )
-#CO2_X_628 = ElectronicState('CO2', isotope=3, state='X', term_symbol='1Σu+',
-#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 3, 'X1SIGu+'),
-#                            Erovib=EvJ_uncoupled_vibrating_rotor,
-#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
-#                            Ediss=44600,
-#                            )
-#CO2_X_627 = ElectronicState('CO2', isotope=4, state='X', term_symbol='1Σu+',
-#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 4, 'X1SIGu+'),
-#                            Erovib=EvJ_uncoupled_vibrating_rotor,
-#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
-#                            Ediss=44600,
-#                            )
 
 
 # %% Dictionary of predefined molecules

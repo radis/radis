@@ -42,6 +42,7 @@ import json
 # %% Functions to parse radis/config.json
 
 def get_config():
+    ''' Read the config.json file '''
     jsonfile = join(getProjectRoot(), 'config.json')
     with open(jsonfile) as f:
         config = json.load(f)

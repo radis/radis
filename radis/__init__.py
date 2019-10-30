@@ -85,6 +85,17 @@ from .misc.config import get_config
 # the default one. 
 
 config = get_config()
+'''dict: RADIS configuration parameters
+
+Notes
+-----
+
+refactor in progress.
+So far there are config files in ~/.radis (for databanks), global variables
+here, and a radis/config.json file. 
+Everything should be merged in a user JSON file ~/.radis (json) overriding 
+the default one.
+'''
 
 
 # %% Global constants

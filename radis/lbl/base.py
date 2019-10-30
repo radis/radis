@@ -229,8 +229,7 @@ class BaseFactory(DatabankLoader):
 
         '''
 
-        energies = self.get_partition_function_calculator(
-            molecule, isotope, state).df
+        energies = self.get_partition_function_calculator(molecule, isotope, state).df
 
         if conditions is not None:
             energies = energies.query(conditions)
@@ -313,7 +312,7 @@ class BaseFactory(DatabankLoader):
         from radis.io.hitran import HITRAN_CLASS1, HITRAN_CLASS5
 
         # Different methods to get Evib and Erot:
-
+        
         # fetch energies from precomputed CDSD levels: one Evib per (p, c) group
         if self.params.levelsfmt == 'cdsd-pc':     
             return self._add_EvibErot_CDSD_pc(df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic)
@@ -891,7 +890,7 @@ class BaseFactory(DatabankLoader):
         return  # None: Dataframe updated
 
     def _add_EvibErot_RADIS_cls1(self, df, calc_Evib_harmonic_anharmonic=False):
-        ''' Calculate Evib & Erot in dataframe for HITRAN class 1 (diatomic) molecules
+        ''' Fetch Evib & Erot in dataframe for HITRAN class 1 (diatomic) molecules
 
         Parameters
         ----------
@@ -955,11 +954,13 @@ class BaseFactory(DatabankLoader):
                 # so all r.vu are the same
 
                 Implementation
-                ------
-                r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
-                            all the same
-                r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
-                         yields a x20 on performances (60s -> 3s)
+                --------------
+                
+                    r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
+                                all the same
+                    r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
+                             yields a x20 on performances (60s -> 3s)
+                             
                 (probably faster since neq==0.9.20) (radis<1.0)
                 '''
                 viblvl = vib_lvl_name_hitran_class1(r.vu.iloc[0])
@@ -1026,7 +1027,7 @@ class BaseFactory(DatabankLoader):
         return  # None: Dataframe updated
 
     def _add_Evib123Erot_RADIS_cls5(self, df):
-        ''' Calculate Evib & Erot in dataframe for HITRAN class 5 (linear triatomic
+        ''' Fetch Evib & Erot in dataframe for HITRAN class 5 (linear triatomic
         with Fermi degeneracy... = CO2! ) molecules
 
         Parameters
@@ -1066,7 +1067,7 @@ class BaseFactory(DatabankLoader):
                                      + '. See SpectrumFactory.load_databank() help for more details')
 
         def get_Evib123_RADIS_cls5_1iso(df, iso):
-            ''' Calculate Evib & Erot for a given isotope (energies are specific
+            ''' Fetch Evib & Erot for a given isotope (energies are specific
             to a given isotope)
 
             Notes
@@ -1132,12 +1133,13 @@ class BaseFactory(DatabankLoader):
         df['Erotu'] = df.Eu - df.Evibu
         df['Erotl'] = df.El - df.Evibl
 
-        assert np.isnan(df.Evib1u).sum() == 0
-        assert np.isnan(df.Evib2u).sum() == 0
-        assert np.isnan(df.Evib3u).sum() == 0
-        assert np.isnan(df.Evib1l).sum() == 0
-        assert np.isnan(df.Evib2l).sum() == 0
-        assert np.isnan(df.Evib3l).sum() == 0
+        if __debug__:
+            assert np.isnan(df.Evib1u).sum() == 0
+            assert np.isnan(df.Evib2u).sum() == 0
+            assert np.isnan(df.Evib3u).sum() == 0
+            assert np.isnan(df.Evib1l).sum() == 0
+            assert np.isnan(df.Evib2l).sum() == 0
+            assert np.isnan(df.Evib3l).sum() == 0
         
         if self.verbose>=2:
             printg('Fetched energies in {0:.0f}s'.format(time()-t0))
@@ -1145,9 +1147,9 @@ class BaseFactory(DatabankLoader):
         return  # None: Dataframe updated
 
     def _add_Evib123Erot_RADIS_cls5_harmonicanharmonic(self, df):
-        ''' Calculate Evib & Erot in dataframe for HITRAN class 5 (linear triatomic
-        with Fermi degeneracy... = CO2! ) molecules
-
+        ''' Fetch Evib & Erot in dataframe for HITRAN class 5 (linear triatomic
+        with Fermi degeneracy... i.e CO2 ) molecules
+        
         Parameters
         ----------
 
@@ -1178,7 +1180,7 @@ class BaseFactory(DatabankLoader):
                                      + '. See SpectrumFactory.load_databank() help for more details')
 
         def get_Evib123_RADIS_cls5_1iso_ah(df, iso):
-            ''' Calculate Evib & Erot for a given isotope (energies are specific
+            ''' Fetch Evib & Erot for a given isotope (energies are specific
             to a given isotope). Returns harmonic, anharmonic components
 
             Notes
@@ -1302,12 +1304,13 @@ class BaseFactory(DatabankLoader):
         df['Erotu'] = df.Eu - df.Evibu
         df['Erotl'] = df.El - df.Evibl
 
-        assert np.isnan(df.Evib1u).sum() == 0
-        assert np.isnan(df.Evib2u).sum() == 0
-        assert np.isnan(df.Evib3u).sum() == 0
-        assert np.isnan(df.Evib1l).sum() == 0
-        assert np.isnan(df.Evib2l).sum() == 0
-        assert np.isnan(df.Evib3l).sum() == 0
+        if __debug__:
+            assert np.isnan(df.Evib1u).sum() == 0
+            assert np.isnan(df.Evib2u).sum() == 0
+            assert np.isnan(df.Evib3u).sum() == 0
+            assert np.isnan(df.Evib1l).sum() == 0
+            assert np.isnan(df.Evib2l).sum() == 0
+            assert np.isnan(df.Evib3l).sum() == 0
         
         if self.verbose>=2:
             printg('Fetched energies in {0:.0f}s'.format(time()-t0))
@@ -1373,6 +1376,12 @@ class BaseFactory(DatabankLoader):
 
     def _check_noneq_parameters(self, vib_distribution, singleTvibmode):
         ''' Make sure database has non equilibrium quantities (Evib, Erot, etc.)
+        
+        Notes
+        -----
+        
+        This may be a bottleneck for a first calculation (has to calculate
+        the nonequilibrium energies)
         '''
 
         if self.verbose >= 2:
@@ -1384,6 +1393,8 @@ class BaseFactory(DatabankLoader):
 
         # Make sure database has pre-computed non equilibrium quantities
         # (Evib, Erot, etc.)
+        # This may be a bottleneck for a first calculation (has to calculate
+        # the nonequilibrium energies)
         calc_Evib_harmonic_anharmonic = (vib_distribution in ['treanor'])
 
         if singleTvibmode:
@@ -1421,6 +1432,9 @@ class BaseFactory(DatabankLoader):
         -----
 
         Update in 0.9.16: assign bands by default too '''
+        
+        # TODO @dev: refactor 
+        # 3 Tvib mode is CO2-specific. Shouldnt appear in this function yet?
 
         if __debug__:
             printdbg('called _calc_noneq_parameters(singleTvibmode=' +
@@ -1980,8 +1994,7 @@ class BaseFactory(DatabankLoader):
             
             molecule = get_molecule(id)
             state = self.input.state
-            parsum = self.get_partition_function_calculator(
-                molecule, iso, state)
+            parsum = self.get_partition_function_calculator(molecule, iso, state)
             Q, Qvib, dfQrot = parsum.at_noneq(Tvib, Trot,
                                               vib_distribution=vib_distribution,
                                               rot_distribution=rot_distribution,
@@ -2026,8 +2039,7 @@ class BaseFactory(DatabankLoader):
                 # Get partition function for all lines
                 molecule = get_molecule(id)
                 state = self.input.state
-                parsum = self.get_partition_function_calculator(
-                    molecule, iso, state)
+                parsum = self.get_partition_function_calculator(molecule, iso, state)
                 Q, Qvib, dfQrot = parsum.at_noneq(Tvib, Trot,
                                                   vib_distribution=vib_distribution,
                                                   rot_distribution=rot_distribution,
