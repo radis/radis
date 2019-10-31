@@ -6,6 +6,7 @@ include radis/test/files/*.txt
 include radis/test/files/*.spec
 include radis/test/files/*.par
 include radis/db/molparam.txt
+include radis/config.json
 recursive-include radis/db *.json
 include radis/test/validation/test_CO2_3Tvib_vs_klarenaar_data/*.csv
 include radis/test/validation/test_compare_torch_CO2_data/*.dat
