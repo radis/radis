@@ -12,11 +12,8 @@ steps.
 Features
 --------
    
-.. toctree::
-   :maxdepth: 2
-   
-   features
-   
+.. include:: features.rst
+
 
 Line-by-line (LBL) module
 -------------------------

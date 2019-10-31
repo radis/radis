@@ -7,10 +7,34 @@ This is the core of RADIS: it calculates the spectral densities for a homogeneou
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
 The detailed RADIS calculation flow chart is given in :ref:`Architecture <label_dev_architecture>`. 
 
+Nonequilibrium Calculations
+---------------------------
+
+Nonequilibrium calculations require to know the vibrational and rotational energies of each 
+level in order to calculate the nonequilibrium populations. 
+
+You can either let RADIS calculate rovibrational energies
+with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`, 
+or supply an energy level database. In the latter case, you need to edit the 
+:ref:`Configuration file <label_lbl_config_file>` . 
+
+
 The Spectrum Factory
 --------------------
 
-The :py:class:`~radis.lbl.factory.SpectrumFactory` allows you to 
+Most RADIS calculations can be done using the :py:func:`~radis.lbl.calc.calc_spectrum` function. 
+Advanced examples require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
+class, which is the core of RADIS line-by-line calculations. 
+:py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
+for the simple cases. 
+
+The :py:class:`~radis.lbl.factory.SpectrumFactory` allows you to :
+- calculate multiple spectra (batch processing) with a same line database 
+- edit the line database manually 
+- have access to intermediary calculation variables
+- connect to a database of precomputed spectra on your computer
+
+To use the :py:class:`~radis.lbl.factory.SpectrumFactory`, first 
 load your own line database with :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`, 
 and then calculate several spectra in batch using 
 :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum` and 
@@ -30,7 +54,7 @@ and then calculate several spectra in batch using
     s1 = sf.eq_spectrum(Tgas=300)
     s2 = sf.eq_spectrum(Tgas=2000)
     s3 = sf.non_eq_spectrum(Tvib=2000, Trot=300)
-    
+
 .. _label_lbl_config_file:
 Configuration file
 ------------------
@@ -152,40 +176,54 @@ them if you ever started the test suite with::
     pytest 
 
 
-Spectroscopic constants
------------------------
-
-For nonequilibrium calculations, you can either let RADIS calculate rovibrational energies
-with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`, 
-or supply an energy level database. 
-
-For the first case, see the ``molecules_data.json`` files in ``radis/db/[MOLECULE]`` 
-to see (or modifiy) the :ref:`spectroscopic constants <label_db_spectroscopic_constants>` used. 
-Refer to the [RADIS-2018]_ article for the references used. 
-
-In the second case, see the :ref:`Configuration file <label_lbl_config_file>` . 
-
-The list of molecules implemented for nonequilibrium calculations if found in :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
-Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how nonequilibrium calculations are conducted. 
-
 ********
 Advanced
 ********
 
+Calculation Flow Chart 
+----------------------
+
+Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how equilibrium
+and nonequilibrium calculations are conducted. 
+
+
+Use Custom Spectroscopic constants
+----------------------------------
+
+Spectroscopic constants are a property of the RADIS :py:class:`~radis.db.classes.ElectronicState` 
+class. All molecules are stored in the :py:class:`~radis.db.molecules.Molecules` dictionary.
+You need to update this dictionary before running your calculation in order to use your 
+own spectroscopic constants. 
+
+An example of how to use your own spectroscopic constants::
+
+    from radis import calc_spectrum
+    from radis.db.molecules import Molecules, ElectronicState
+
+    Molecules['CO2'][1]['X'] = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
+                                spectroscopic_constants='my_constants.json',  # <<< YOUR FILE HERE 
+                                spectroscopic_constants_type='dunham',
+                                Ediss=44600,
+                                )
+    s = calc_spectrum(...)
+
+
+
 Vibrational bands
 -----------------
 
-To calculate all vibrational bands of a given spectrum separately, use the  
+To calculate vibrational bands of a given spectrum separately, use the  
 :meth:`~radis.lbl.bands.BandFactory.eq_bands` and  :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
 methods. See the :py:func:`~radis.test.lbl.test_bands.test_plot_all_CO2_bandheads` example in 
 ``radis/test/lbl/test_bands.py`` for more information. 
 
 
-Pseudo-continuum
-----------------
+Connect to a Spectrum Database
+------------------------------
 
-To calculate your spectra with a pseudo-continuum, refer to the :ref:`Performance <label_lbl_performance>`
-section. 
+In RADIS, the same code can be used to retrieve precomputed spectra if they exist, 
+or calculate them and store them if they don't. See :ref:`Precompute Spectra <label_lbl_precompute_spectra>`
+
 
 
 .. _label_lbl_performance:
@@ -193,7 +231,9 @@ section.
 Performance
 ***********
 
-Different strategies and parameters are used to improve performances:
+RADIS is very optimized, making use of C-compiled libraries (NumPy, Numba) for computationally intensive steps, 
+and data analysis libraries (Pandas) to handle lines databases efficiently. 
+Additionaly, different strategies and parameters are used to improve performances further:
 
 Line Database Reduction Strategies
 ----------------------------------

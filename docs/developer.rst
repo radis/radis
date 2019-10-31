@@ -1,3 +1,5 @@
+.. _label_developer_guide:
+
 ===============
 Developer Guide
 ===============
