@@ -77,7 +77,7 @@ class Spectrum(object):
     spectral radiance per wavenumber). 
     
     See more information on how to generate, edit or combine Spectrum objects 
-    on :ref:`the Spectrum object <label_spectrum>`.
+    on :ref:`the Spectrum object guide <label_spectrum>`.
 
     Parameters
     ----------

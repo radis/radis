@@ -1,4 +1,5 @@
 .. _label_dev_test:
+
 ====
 Test
 ====
@@ -48,6 +49,7 @@ is interfaced with pytest through the ``--cov=./`` command::
     pytest --cov=./
 
 .. _label_dev_select_test:
+
 Select tests
 ------------
 

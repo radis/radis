@@ -33,6 +33,7 @@ If you encounter any problem, or to upgrade the package later, please refer to t
 `report an issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_. 
 
 .. _label_first_example:
+
 Quick Start
 -----------
 
@@ -130,11 +131,7 @@ for the simple cases.
 Refer to the :ref:`Examples <label_examples>` section for more examples, and to the 
 :ref:`User Documentation <label_user_documentation>` for more details on the code.
 You can also ask questions on the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
-or on the community chat:
-
-.. image:: https://badges.gitter.im/Join%20Chat.svg
-    :target: https://gitter.im/radis-radiation/community
-    :alt: Gitter
+or on the community chat: |badge_gitter|
 
 
    

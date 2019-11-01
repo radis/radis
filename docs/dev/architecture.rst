@@ -1,4 +1,5 @@
 .. _label_dev_architecture:
+
 ============
 Architecture
 ============

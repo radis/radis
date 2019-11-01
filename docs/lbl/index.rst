@@ -57,6 +57,7 @@ and then calculate several spectra in batch using
     s3 = sf.non_eq_spectrum(Tvib=2000, Trot=300)
 
 .. _label_lbl_config_file:
+
 Configuration file
 ------------------
 
@@ -228,6 +229,7 @@ or calculate them and store them if they don't. See :ref:`Precompute Spectra <la
 
 
 .. _label_lbl_performance:
+
 ***********
 Performance
 ***********
@@ -449,6 +451,7 @@ You can set ``verbose=2`` to print the time spent on different operations. Examp
     >>> ... 
 
 .. _label_lbl_precompute_spectra:
+
 Precompute Spectra
 ------------------
 

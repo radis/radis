@@ -1,4 +1,5 @@
 .. _label_los_index:
+
 **************************
 Line-of-sight (LOS) module
 **************************

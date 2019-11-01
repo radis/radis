@@ -35,6 +35,7 @@ Bibliography
                 (2018) `doi:10.1016/j.jqsrt.2018.09.027 <https://www.sciencedirect.com/science/article/pii/S0022407318305867?via%3Dihub>`__
 
 .. _label_version:
+
 Version
 -------
                 

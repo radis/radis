@@ -1,4 +1,5 @@
 .. _label_examples:
+
 Examples
 --------
 

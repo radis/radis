@@ -167,19 +167,19 @@ References
 Links
 -----
 
-Documentation: |badge_docs|
+- Documentation: |badge_docs|
 
-Help: chat |badge_gitter| or `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__)
+- Help: |badge_gitter| `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 
-Article: |badge_article|
+- Article: |badge_article|
 
-Source Code: |badge_stars| |badge_contributors| |badge_license|
+- Source Code: |badge_stars| |badge_contributors| |badge_license|
 
-Test Status: |badge_travis| |badge_coverage|
+- Test Status: |badge_travis| |badge_coverage|
  
-PyPi Repository: |badge_pypi|  |badge_pypistats|
+- PyPi Repository: |badge_pypi|  |badge_pypistats|
 
-Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
+- Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
 
 
 

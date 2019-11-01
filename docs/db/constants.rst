@@ -1,4 +1,5 @@
 .. _label_db_spectroscopic_constants:
+
 ***********************
 Spectroscopic constants
 ***********************
