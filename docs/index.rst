@@ -171,7 +171,7 @@ store or retrieve from a Spectrum database, plot or compare with another Spectru
 
 .. toctree::
    :maxdepth: 2
-   :hidden
+   :hidden:
    
    features/features
    lbl/lbl
