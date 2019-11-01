@@ -1,13 +1,14 @@
 .. _label_examples:
 
+========
 Examples
---------
+========
 
 Examples are available on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
 
 
 Multi Temperature Fit
-~~~~~~~~~~~~~~~~~~~~~
+=====================
 
 A 3 temperature fitting example reproducing the validation case of Klarenaar 2017 [1]_, who calculated a transmittance
 spectrum from the initial data of Dang 1973 [2]_, with a 1 rotational temperature + 
@@ -35,7 +36,7 @@ can be run with (you will previously need to have defined the appropriate CO2 li
  
 
 Line Survey
-~~~~~~~~~~~
+===========
 
 
 Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` tool::
@@ -64,7 +65,7 @@ Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` to
 
 
 CH4 Full Spectrum
-~~~~~~~~~~~~~~~~~
+=================
 
 Here we reproduce the full spectrum (0.001 - 11500 cm-1) of Methane for a ``broadening_max_width`` 
 corresponding to about 50 HWHMs, as in the Benchmark case of [HAPI]_, Table 7, Methane_III,
@@ -110,7 +111,7 @@ the calculation is typically 100 times faster in RADIS::
 
 
 RADIS in-the-browser
-~~~~~~~~~~~~~~~~~~~~
+====================
 
 RADIS in-the-browser sessions can be run from the `RADIS examples <https://github.com/radis/radis-examples>`_ project.
 No installation needed, you don't even need Python on your computer. 
@@ -131,7 +132,7 @@ The full list can be found on the `RADIS Interactive Examples <https://github.co
 
 
 Get rovibrational energies
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+==========================
 
 RADIS can simply be used to calculate the rovibrational energies of molecules, using the 
 built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`. 

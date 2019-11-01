@@ -43,7 +43,7 @@ the `GitHub issues <https://github.com/radis/radis/issues>`__ or the
 
 .. _label_howto_generate_spectrum:
 
-===========================
+
 How to generate a Spectrum?
 ===========================
 
@@ -146,8 +146,7 @@ If many spectra are stored in a folder, it may be time to set up a
 Spectrum conditions and get Spectrum that suits specific parameters 
  
     
-    
-====================================
+
 How to access a Spectrum properties?
 ====================================
 
@@ -237,7 +236,7 @@ Plot line survey
 ----------------
 
 Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` method.
-Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` tool::
+Example of output::
 
     from radis import SpectrumFactory
     sf = SpectrumFactory(
@@ -257,6 +256,7 @@ Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` to
 
     <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
 
+The method uses the :class:`~radis.tools.line_survey.LineSurvey` class. 
 
 .. _label_spectrum_store:
 
@@ -311,8 +311,7 @@ Example::
 
     s.savetxt('radiance_W_cm2_sr_um.csv', 'radiance_noslit', wunit='nm', Iunit='W/cm2/sr/µm')
     
-    
-================================
+
 How to modify a Spectrum object?
 ================================
    
@@ -499,8 +498,6 @@ looks up the declared spectrum conditions and ensures ``Tgas==Tvib==Trot``.
 It does not imply chemical equilibrium (mole fractions are still arbitrary)
     
 
-
-===============================
 How to handle multiple Spectra?
 ===============================
 
@@ -606,9 +603,12 @@ folder as an argument, and converts it in a list of
 - fit an experimental spectrum against all precomputed spectra in 
   the folder with :py:meth:`~radis.tools.database.SpecDatabase.fit_spectrum`
     
-
+See more information about databases below. 
     
-===================
+
+.. include:: database.rst
+
+
 Spectral quantities
 ===================
 
@@ -643,7 +643,7 @@ are given). Under equilibrium, only one quantity is needed. Missing quantities
 can be recomputed automatically with the :meth:`~radis.spectrum.spectrum.Spectrum.update` 
 method. 
 
-=====
+
 Units
 =====
 
@@ -659,7 +659,11 @@ was normalised. Several options are available in RADIS. Please refer to the docu
 of the :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` method. 
 
 
+
+
+
 .. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
                   :target: https://gitter.im/radis-radiation/community
                   :alt: Gitter
+
 

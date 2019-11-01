@@ -5,39 +5,23 @@ Developer Guide
 ===============
 
 Sources
--------
+=======
 
 To modify RADIS, you will need to clone the Git repository. 
-Please refer to the :ref:`detailed installation procedure <label_install>` :
+See the :ref:`detailed installation procedure <label_install>` below:
 
-.. toctree::
-   :maxdepth: 2
-   
-   install
-   
+.. include:: install.rst 
 
-Architecture
-------------
 
-An overview of the different RADIS modules: 
 
-.. toctree::
-   :maxdepth: 2
-   
-   dev/architecture
+.. include:: architecture.rst
   
 
-Tests
------
-   
-.. toctree::
-   :maxdepth: 2
-   
-   dev/test
+.. include:: test.rst
    
 
 Contribute
-----------
+==========
 
 RADIS is an open-source project, and therefore anyone can contribute. 
 See the `list of contributors <https://github.com/radis/radis/graphs/contributors>`__ 

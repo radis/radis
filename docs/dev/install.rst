@@ -1,7 +1,7 @@
 .. _label_install:
 
 Requirements
-============
+------------
 
 RADIS has the following strict requirements:
 
@@ -31,7 +31,7 @@ time:
 
 
 Install
-=======
+-------
 
 You can either install RADIS from `pip`, the Python package manager. But if 
 you want to modify the code and contribute, we suggest to clone the source 
@@ -63,7 +63,7 @@ from the Quick Start page. Then, you're all set.
 
 
 Test 
-====
+----
 
 If you want to modify the source code, you need to ensure that you don't break
 any of the existing tests. 
@@ -73,7 +73,7 @@ tests locally.
 
 
 Update 
-======
+------
 
 With Pip you can keep the package up-to-date with::
 
@@ -85,7 +85,7 @@ In the developer version (installed with `pip -e`), use git to `pull` the latest
 
 
 Help
-====
+----
 
 If you encounter any problem, please `report an Issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_ on GitHub.  
 

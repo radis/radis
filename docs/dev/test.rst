@@ -1,6 +1,5 @@
 .. _label_dev_test:
 
-====
 Test
 ====
 

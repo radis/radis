@@ -1,12 +1,15 @@
 .. _label_line_by_line:
 
-*************************
+=========================
 Line-by-line (LBL) module
-*************************
+=========================
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
 The detailed RADIS calculation flow chart is given in :ref:`Architecture <label_dev_architecture>`. 
+
+Calculating spectra 
+===================
 
 Nonequilibrium Calculations
 ---------------------------
@@ -178,11 +181,10 @@ them if you ever started the test suite with::
     pytest 
 
 
-********
 Advanced
-********
+========
 
-Calculation Flow Chart 
+Calculation Flow Chart
 ----------------------
 
 Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how equilibrium
@@ -230,9 +232,8 @@ or calculate them and store them if they don't. See :ref:`Precompute Spectra <la
 
 .. _label_lbl_performance:
 
-***********
 Performance
-***********
+===========
 
 RADIS is very optimized, making use of C-compiled libraries (NumPy, Numba) for computationally intensive steps, 
 and data analysis libraries (Pandas) to handle lines databases efficiently. 

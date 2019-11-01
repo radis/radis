@@ -1,5 +1,13 @@
+========
 Features
---------
+========
+
+.. include:: description.rst
+
+
+Features
+========
+
 
 RADIS is both an infrared :ref:`line-by-line code <label_line_by_line>` 
 and a :ref:`post-processing library <label_spectrum>`. 
@@ -32,7 +40,7 @@ on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ o
 
 
 Use Cases
-~~~~~~~~~
+---------
 
 Use RADIS to: 
 
@@ -59,3 +67,17 @@ Refer to the :ref:`Examples <label_examples>` section for more examples, or to
 the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
 
 
+
+
+See the :ref:`Architecture <label_dev_architecture>` section for an overview of the RADIS calculation 
+steps. 
+
+
+Interfaces
+==========
+
+RADIS includes parsers and interfaces to read and return data in different formats: 
+
+.. include:: databases
+
+.. include:: thermo

@@ -21,7 +21,7 @@ Getting Started
 ===============
 
 Install
--------
+=======
 
 Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution just use::
 
@@ -35,7 +35,7 @@ If you encounter any problem, or to upgrade the package later, please refer to t
 .. _label_first_example:
 
 Quick Start
------------
+===========
 
 
 Calculate a CO equilibrium spectrum from the HITRAN database, using the
@@ -99,7 +99,7 @@ Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-process
 
 
 In the browser (no installation needed!)
-----------------------------------------
+========================================
 
 Alternatively, you can also run RADIS directly in the browser with the  
 `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
@@ -116,7 +116,7 @@ Or start a bare RADIS online session:
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
 
 More examples
--------------
+=============
 
 The Quick Start examples above automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
 For *high temperature* cases, you may need to use other line databases such as 
@@ -129,32 +129,59 @@ class, which is the core of RADIS line-by-line calculations.
 for the simple cases. 
 
 Refer to the :ref:`Examples <label_examples>` section for more examples, and to the 
-:ref:`User Documentation <label_user_documentation>` for more details on the code.
+:ref:`User Documentation <label_line_by_line>` for more details on the code.
 You can also ask questions on the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
-or on the community chat: |badge_gitter|
+or on the `community chat <https://gitter.im/radis-radiation/community>`__ 
+
+|badge_gitter|
 
 
-   
+
 ---------------------------------------------------------------------
 
-=======
-Content
-=======
+
+Modules Detail
+==============
+
+* :ref:`modindex`
+
+:ref:`The Line-by-line (LBL) module<label_line_by_line>`
+
+This is the core of RADIS: it calculates the spectral densities for a homogeneous
+slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
+are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class. 
+
+
+:ref:`Line-of-sight (LOS) module<label_los_index>`
+
+This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
+as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
+or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
+line-of-sight experiments. The module allows combination of Spectra such as::
+
+    s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption) 
+
+
+:ref:`The Spectrum object guide<label_spectrum>`
+
+This module contains the :class:`~radis.spectrum.spectrum.Spectrum` object itself, with several methods that can be 
+applied after the Spectrum was calculated: rescale, apply instrumental slit function, 
+store or retrieve from a Spectrum database, plot or compare with another Spectrum object. 
+   
 
 .. toctree::
    :maxdepth: 2
+   :hidden
    
-   user
-   developer
-   references
-   
-   
-Access Module Methods
----------------------
+   features/features
+   lbl/lbl
+   spectrum/spectrum
+   los/los
+   examples/examples
+   dev/developer
+   references/references
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   
 
 
 ---------------------------------------------------------------------
