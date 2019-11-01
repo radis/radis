@@ -78,6 +78,6 @@ Interfaces
 
 RADIS includes parsers and interfaces to read and return data in different formats: 
 
-.. include:: databases
+.. include:: databases.rst
 
-.. include:: thermo
+.. include:: thermo.rst

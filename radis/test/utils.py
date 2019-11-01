@@ -6,12 +6,6 @@ Summary
 
 Tools to test RADIS library
 
-Todo
----- 
-
-add all files in a separetaly downloadble folder. getTestFile should check
-the file exist else suggest to download the folder
-
 Examples
 --------
 

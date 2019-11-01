@@ -145,41 +145,41 @@ Modules Detail
 
 * :ref:`modindex`
 
-:ref:`The Line-by-line (LBL) module<label_line_by_line>`
+- :ref:`The Line-by-line (LBL) module<label_line_by_line>`
 
-This is the core of RADIS: it calculates the spectral densities for a homogeneous
-slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
-are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class. 
-
-
-:ref:`Line-of-sight (LOS) module<label_los_index>`
-
-This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
-as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
-or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
-line-of-sight experiments. The module allows combination of Spectra such as::
-
-    s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption) 
+  This is the core of RADIS: it calculates the spectral densities for a homogeneous
+  slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
+  are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class. 
 
 
-:ref:`The Spectrum object guide<label_spectrum>`
+- :ref:`Line-of-sight (LOS) module<label_los_index>`
 
-This module contains the :class:`~radis.spectrum.spectrum.Spectrum` object itself, with several methods that can be 
-applied after the Spectrum was calculated: rescale, apply instrumental slit function, 
-store or retrieve from a Spectrum database, plot or compare with another Spectrum object. 
+  This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
+  as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
+  or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
+  line-of-sight experiments. The module allows combination of Spectra such as::
+  
+      s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption) 
+
+
+- :ref:`The Spectrum object guide<label_spectrum>`
+
+  This module contains the :class:`~radis.spectrum.spectrum.Spectrum` object itself, with several methods that can be 
+  applied after the Spectrum was calculated: rescale, apply instrumental slit function, 
+  store or retrieve from a Spectrum database, plot or compare with another Spectrum object. 
    
 
 .. toctree::
    :maxdepth: 2
    :hidden:
    
-   features/features
-   lbl/lbl
-   spectrum/spectrum
-   los/los
-   examples/examples
-   dev/developer
-   references/references
+   features/features.rst
+   lbl/lbl.rst
+   spectrum/spectrum.rst
+   los/los.rst
+   examples/examples.rst
+   dev/developer.rst
+   references/references.rst
 
    
 

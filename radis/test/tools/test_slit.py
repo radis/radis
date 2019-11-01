@@ -437,8 +437,9 @@ def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
     ''' dlambda / dx
     Default values correspond to Acton 750i
 
-    Input
-    -------
+    Parameters
+    ----------
+    
     f: focal length (mm)
          default 750 (SpectraPro 2750i)
 
