@@ -2,7 +2,7 @@
 Features
 ========
 
-.. include:: features/description.rst
+.. include:: description.rst
 
 
 Features
@@ -78,6 +78,6 @@ Interfaces
 
 RADIS includes parsers and interfaces to read and return data in different formats: 
 
-.. include:: features/databases.rst
+.. include:: databases.rst
 
-.. include:: features/thermo.rst
+.. include:: thermo.rst

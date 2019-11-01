@@ -1,8 +1,8 @@
 .. _label_los_index:
 
-==========================
-Line-of-sight (LOS) module
-==========================
+====================
+Line-of-sight module
+====================
 
 This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects as an input 
 and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 

@@ -177,13 +177,13 @@ Content
 .. toctree::
    :maxdepth: 2
    
-   features
-   lbl
-   spectrum
-   los
-   examples
-   developer
-   references
+   features/features
+   lbl/lbl
+   spectrum/spectrum
+   los/los
+   examples/examples
+   dev/developer
+   references/references
 
    
 
