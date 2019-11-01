@@ -1,11 +1,10 @@
 .. _label_db_spectroscopic_constants:
 
-***********************
 Spectroscopic constants
-***********************
+=======================
 
 CO2
-===
+---
 
 Version 0.9 uses uses the CO2 spectrosopic coefficients of [Klarenaar2017]_ ,
 Table 2,3 and the references therein. These constants have been compiled for Treanor distributions. 
@@ -19,7 +18,7 @@ https://raw.githubusercontent.com/radis/radis/master/radis/db/CO2/molecules_data
 In version 1.0, RADIS will use the spectroscopic constants of [Suzuki1968]_
 
 CO
-==
+--
 
 CO uses the Dunham coefficients of Guelachvili 1983 (doi/10.1016/0022-2852(83)90203-5)
 

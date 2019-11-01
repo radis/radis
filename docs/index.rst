@@ -173,13 +173,13 @@ Modules Detail
    :maxdepth: 2
    :hidden:
    
-   features/features.rst
-   lbl/lbl.rst
-   spectrum/spectrum.rst
-   los/los.rst
-   examples/examples.rst
-   dev/developer.rst
-   references/references.rst
+   features/features
+   lbl/lbl
+   spectrum/spectrum
+   los/los
+   examples/examples
+   dev/developer
+   references/references
 
    
 
