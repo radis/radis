@@ -1,9 +1,9 @@
 Features
-========
+--------
 
-RADIS is both an infrared calculation library and a post-processing library. 
-
-LBL module features: 
+RADIS is both an infrared :ref:`line-by-line code <label_line_by_line>` 
+and a :ref:`post-processing library <label_spectrum>`. 
+It includes: 
 
 - all [HITRAN-2016]_ species for equilibrium calculations (see :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`)
 - CO2 and CO for nonequilibrium calculations (see :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM` )
@@ -16,13 +16,15 @@ LBL module features:
 - in-the-browser calculations (no install needed: see the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project)
 
 RADIS does not include, so far: 
-- line-mixing effects and speed-dependant lineshapes. 
-- collisional-induced absorption (CIA) or emission. 
-- species other than electronic ground states
-- Hamiltonian calculations (a private module for CO2 is available `on request <mailto:erwan.pannier@gmail.com>`)
-- Raman spectra (contribute in `#43 <https://github.com/radis/radis/issues/43>`)
 
-Remarks and request for features can be done on `GitHub <https://github.com/radis/radis/issues>` or the Gitter community chat: 
+- line-mixing effects and speed-dependant lineshapes. [HAPI]_ is a Python alternative that does it. 
+- collisional-induced absorption (CIA) or emission. 
+- electronic states other than electronic ground states
+- Hamiltonian calculations (a private module for CO2 is available `on request <mailto:erwan.pannier@gmail.com>`__)
+- Raman spectra (contribute in `#43 <https://github.com/radis/radis/issues/43>`__)
+
+Remarks and request for features can be done on `GitHub <https://github.com/radis/radis/issues>`__ ,
+on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ or on the Gitter community chat: 
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
@@ -30,7 +32,7 @@ Remarks and request for features can be done on `GitHub <https://github.com/radi
 
 
 Use Cases
----------
+~~~~~~~~~
 
 Use RADIS to: 
 
@@ -48,7 +50,7 @@ Use RADIS to:
 
 
 - Use the RADIS post-processing methods with the calculation results of another spectral code. For instance, 
-  `pySpecair <https://spectralfit.gitlab.io/specair/>`, the Python interface to `SPECAIR <http://www.specair-radiation.net/>`,
+  `pySpecair <https://spectralfit.gitlab.io/specair/>`__, the Python interface to `SPECAIR <http://www.specair-radiation.net/>`__,
   uses the RADIS :py:class:`~radis.spectrum.spectrum.Spectrum` object for post-processing 
   (see :ref:`How to generate a Spectrum? <label_howto_generate_spectrum>`)
   

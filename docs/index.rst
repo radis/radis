@@ -9,11 +9,11 @@
 RADIS
 *****
 
-RADIS is a fast line-by-line code for high resolution infrared molecular spectra (emission / absorption, 
-equilibrium / nonequilibrium). See :ref:`the Line-by-Line guide <label_line_by_line>`.
+RADIS is a fast :ref:`line-by-line code <label_line_by_line>` for high resolution infrared molecular spectra (emission / absorption, 
+equilibrium / nonequilibrium).
 
-It includes post-processing tools to compare experimental spectra and spectra calculated 
-with RADIS or other spectral codes. See :ref:`the Spectrum object guide <label_spectrum>`.
+It also includes :ref:`post-processing tools <label_spectrum>` to compare experimental spectra and spectra calculated 
+with RADIS, or with other spectral codes.
 
 
 ===============
@@ -88,13 +88,14 @@ Typical output of :py:func:`~radis.spectrum.compare.plot_diff`:
     :target: https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#compare-two-spectra
     :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
-Refer to the :ref:`Spectrum page <label_spectrum>` for more post-processing functions
-(:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length`,
-:py:meth:`~radis.spectrum.spectrum.Spectrum.crop`, 
-:py:func:`~radis.spectrum.operations.substract_spectra`, 
-:py:func:`~radis.los.slabs.SerialSlabs`, 
-:py:func:`~radis.spectrum.compare.get_residual`, etc. 
-)
+Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-processing functions 
+(:ref:`rescale <label_spectrum_rescale>` , :ref:`crop<label_spectrum_offset_crop>`, 
+:ref:`remove baselines <label_spectrum_remove_baseline>, :ref:`store <label_spectrum_store>`, 
+:ref:`combine along the line-of-sight <label_spectrum_line_of_sight>`, 
+:ref:`identify each line <label_spectrum_linesurvey>`, 
+:ref:`manipulate multiple spectra at once <label_spectrum_database>`, etc.)
+
+
 
 In the browser (no installation needed!)
 ----------------------------------------
@@ -128,7 +129,8 @@ for the simple cases.
 
 Refer to the :ref:`Examples <label_examples>` section for more examples, and to the 
 :ref:`User Documentation <label_user_documentation>` for more details on the code.
-You can also ask questions on the community chat:
+You can also ask questions on the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
+or on the community chat:
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
@@ -160,10 +162,12 @@ Access Module Methods
 
 ---------------------------------------------------------------------
 
-|badge_stars|
+`Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
 
 |badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_travis| |badge_coverage| |badge_binder| |badge_gitter|
     
+|badge_stars|
+
 
 .. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/
                 :target: https://radis.readthedocs.io/en/latest/?badge=latest
@@ -216,4 +220,3 @@ Access Module Methods
 .. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
                   :target: https://gitter.im/radis-radiation/community
                   :alt: Gitter
-    

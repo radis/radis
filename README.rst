@@ -154,6 +154,8 @@ If encountering any problem, first refer to the list of known
 We appreciate your feedback and suggestions!
 
 For any question, please join the discussion channel on Gitter: |badge_gitter|
+or the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
+
 
 
 ---------------------------------------------------------------------
@@ -167,6 +169,8 @@ Links
 
 Documentation: |badge_docs|
 
+Help: chat |badge_gitter| or `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__)
+
 Article: |badge_article|
 
 Source Code: |badge_stars| |badge_contributors| |badge_license|
@@ -176,9 +180,6 @@ Test Status: |badge_travis| |badge_coverage|
 PyPi Repository: |badge_pypi|  |badge_pypistats|
 
 Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
-
-Help: |badge_gitter|
-
 
 
 

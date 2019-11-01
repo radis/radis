@@ -1,51 +1,46 @@
 .. _label_spectrum:
-
 ===================
 The Spectrum object
 ===================
 
-This module shows how to use the :class:`~radis.spectrum.spectrum.Spectrum` class, 
-different post-processing methods (
-:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length`,
-:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_mole_fraction`, 
-:py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, 
-:py:meth:`~radis.spectrum.spectrum.Spectrum.crop`, 
-:py:meth:`~radis.spectrum.spectrum.Spectrum.store`, 
-etc.  ) 
-and functions to manipulate multiple spectra (
-:py:func:`~radis.spectrum.operations.substract_spectra`, 
-:py:func:`~radis.los.slabs.SerialSlabs`, 
-:py:func:`~radis.spectrum.compare.plot_diff`, 
-:py:func:`~radis.spectrum.compare.get_residual`, etc. 
-)
+RADIS is also a powerful library to post-process spectral data created by 
+:ref:`the line-by-line module <label_line_by_line>` or by other spectral codes. 
 
-The :class:`~radis.spectrum.spectrum.Spectrum` class in RADIS primarily 
-holds the result from a :class:`~radis.lbl.factory.SpectrumFactory` calculation, but 
-can also be generated from other spectral codes or experimental data. 
-It can be used to recalculate spectral quantities or change output units
-(for instance convert a spectral radiance per wavelength units to a spectral 
-radiance per wavenumber). Spectrum objects can be combined along the line of sight 
-with the :func:`~radis.los.slabs.MergeSlabs` and :func:`~radis.los.slabs.SerialSlabs` methods. 
-Spectrum objects can be quickly compared with the :func:`~radis.spectrum.compare.plot_diff` 
-function. Finally, they can be stored in JSON files in a folder to be 
-manipulated all together as a :class:`~radis.tools.database.SpecDatabase`.
+At the core of the post-processing is the :class:`~radis.spectrum.spectrum.Spectrum` class, 
+which features methods to: 
 
-However, a :class:`~radis.spectrum.spectrum.Spectrum` object can also be 
-generated from text files, or numpy arrays, or directly from other radiation
-codes such as `SPECAIR <http://www.specair-radiation.net/>`_ . This allows to 
-immediatly have access to all the above functions, methods and features to any 
-experimental spectrum, or calculated spectrum from different radiation software, 
-or combination of them. 
+- :ref:`generate Spectrum objects <label_howto_generate_spectrum>` from text files or python arrays.
+- :ref:`rescale a spectrum <label_spectrum_rescale>` without redoing the line-by-line calculation.
+- apply :ref:`instrumental slit functions <label_spectrum_apply_slit>`.
+- :ref:`plot <label_spectrum_plot>` with one line and in whatever unit.
+- :ref:`crop, offset <label_spectrum_offset_crop>` or :ref:`interpolate <label_spectrum_howto_interpolate>`.
+- :ref:`remove baselines <label_spectrum_remove_baseline>.
+- multiply or add constants as simply as with `10*s` in Python (see :ref:`spectrum algebra <label_spectrum_algebra>`).
+- :ref:`store <label_spectrum_store>` an experimental or a calculated spectrum while retaining the metadata.
+- :ref:`compare different spectra <label_spectrum_howto_compare>`.
+- combine multiple spectra along the :ref:`line-of-sight <label_spectrum_line_of_sight>`.
+- manipulate a folder of spectra easily with :ref:`spectrum Databases <label_spectrum_database>`.
+- compute transmittance from absorbance, or whatever :ref:`missing spectral quantity <label_spectrum_missing_quantities>`)
+- use the :ref:`line survey <label_spectrum_linesurvey>` to identify each line.
+
+Refer to the guide below for an exhaustive list of all features: 
 
 .. toctree::
    :maxdepth: 2
    
    spectrum
+   
+For any other question you can use the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__,
+the `GitHub issues <https://github.com/radis/radis/issues>`__ or the 
+`community chat <https://gitter.im/radis-radiation/community>`__.
+
+ |badge_gitter|
+ 
+ 
 
 ---------------------------------------------------------------------
 
 .. _label_howto_generate_spectrum:
-
 ===========================
 How to generate a Spectrum?
 ===========================
@@ -210,7 +205,7 @@ You can also show the conditions only with
 	s.print_conditions()
 
     
-
+.. _label_spectrum_plot:
 Plot spectral quantities
 ------------------------
 
@@ -225,16 +220,6 @@ You can plot on the same figure as before using the convenient ``nfig`` paramete
 But for comparing different spectra you may want to use 
 :py:func:`~radis.spectrum.compare.plot_diff` directly.
     
-Plot the slit function that was applied
----------------------------------------
-
-Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. You can also
-change the unit::
-    
-    s.apply_slit(0.5, 'cm-1')    # for instance
-    s.plot_slit('nm')
-
-    
 Plot populations
 ----------------
 
@@ -244,7 +229,6 @@ Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`::
     
 
 .. _label_spectrum_linesurvey:
-
 Plot line survey
 ----------------
 
@@ -270,6 +254,7 @@ Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` to
     <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
 
 
+.. _label_spectrum_store:
 Save a Spectrum object
 ----------------------
 
@@ -326,7 +311,7 @@ Example::
 How to modify a Spectrum object?
 ================================
    
-    
+.. _label_spectrum_missing_quantities:
 Calculate missing quantities
 ----------------------------
 
@@ -356,7 +341,7 @@ Conditions can be updated *a posteriori* by modifying the dictionary::
 
     s.conditions['path_length'] = 10    # cm 
 
-
+.. _label_spectrum_rescale:
 Rescale Spectrum with new path length
 -------------------------------------
 
@@ -391,6 +376,7 @@ you will have to recalculate the spectrum from scratch.
     >>> s.rescale_mole_fraction(0.02)   # calculate for new mole fraction
 
 
+.. _label_spectrum_apply_slit:
 Apply instrumental slit function
 --------------------------------
 
@@ -402,7 +388,18 @@ By default, convoluted spectra are thinner than non convoluted spectra, to remov
 side effects. Use the ``mode=`` argument to change this behaviour. 
 
 
+Plot the slit function that was applied
+---------------------------------------
+
+Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. You can also
+change the unit::
     
+    s.apply_slit(0.5, 'cm-1')    # for instance
+    s.plot_slit('nm')
+
+    
+
+.. _label_spectrum_algebra:
 Multiply, substract
 -------------------
 
@@ -438,6 +435,8 @@ the spectral radiance of a spectrum with a low resolution::
 
     (10*Radiance(s.apply_slit(10, 'nm'))).plot()
 
+
+.. _label_spectrum_offset_crop:
 Offset, crop
 ------------
 
@@ -455,6 +454,7 @@ By default, using methods will modify the object inplace, using the functions wi
 generate a new Spectrum. 
     
 
+.. _label_spectrum_remove_baseline:
 Remove a baseline
 -----------------
 
@@ -493,6 +493,7 @@ It does not imply chemical equilibrium (mole fractions are still arbitrary)
 How to handle multiple Spectra?
 ===============================
 
+.. _label_spectrum_line_of_sight:
 Build a line-of-sight profile
 -----------------------------
 
@@ -573,6 +574,7 @@ in :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`.
 
 
 
+.. _label_spectrum_database:
 Create a database of Spectrum objects
 -------------------------------------
 

@@ -9,9 +9,7 @@ User documentation
 See the :ref:`Architecture <label_dev_architecture>` section for an overview of the RADIS calculation 
 steps. 
 
-Features
---------
-   
+
 .. include:: features.rst
 
 

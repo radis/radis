@@ -46,7 +46,8 @@ on GitHub.
 A good way to contribute is to start from the currently 
 `opened issues <https://github.com/radis/radis/issues>`__. 
 
-You can also join the community chat: 
+You can also see the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
+or join the community chat: 
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
