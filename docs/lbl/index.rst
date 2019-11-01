@@ -1,3 +1,4 @@
+.. _label_line_by_line:
 
 *************************
 Line-by-line (LBL) module
@@ -119,8 +120,8 @@ The up-to-date format is given in :py:data:`~radis.misc.config.DBFORMAT`:
   :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`. 
   
 - ``parfuncfmt``: ``cdsd``, ``hapi`` is the format of the tabulated partition functions used. 
-   If ``'hapi'``, then [HAPI]_ is used to retrieve them (valid if your databank is HITRAN data). 
-   See full list in :py:data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT` 
+  If ``'hapi'``, then [HAPI]_ is used to retrieve them (valid if your databank is HITRAN data). 
+  See full list in :py:data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT` 
  
 - ``parfunc`` is the path to the tabulated partition function to use in in equilibrium calculations 
   (:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`). If ``parfuncfmt`` is ``'hapi'`` then `parfunc` should be
@@ -128,7 +129,7 @@ The up-to-date format is given in :py:data:`~radis.misc.config.DBFORMAT`:
   is used (check version)
   
 - ``levels_iso#`` are the path to the energy levels to use for each isotope, which are needed for 
-   nonequilibrium calculations (:py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`).
+  nonequilibrium calculations (:py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`).
 
 - ``levelsfmt`` is the energy levels database format. Typically, ``'radis'``, and various implementation of [CDSD-4000]_ 
   nonequilibrium partitioning of vibrational and rotational energy: ``'cdsd-pc'``, ``'cdsd-pcN'``, ``'cdsd-hamil'``. 

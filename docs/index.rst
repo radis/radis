@@ -10,10 +10,10 @@ RADIS
 *****
 
 RADIS is a fast line-by-line code for high resolution infrared molecular spectra (emission / absorption, 
-equilibrium / nonequilibrium). 
+equilibrium / nonequilibrium). See :ref:`the Line-by-Line guide <label_line_by_line>`.
 
 It includes post-processing tools to compare experimental spectra and spectra calculated 
-with RADIS or other spectral codes.
+with RADIS or other spectral codes. See :ref:`the Spectrum object guide <label_spectrum>`.
 
 
 ===============
