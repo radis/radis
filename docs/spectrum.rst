@@ -10,19 +10,19 @@ RADIS has powerful tools to post-process spectra created by
 At the core of the post-processing is the :class:`~radis.spectrum.spectrum.Spectrum` class, 
 which features methods to: 
 
-- :ref:`generate Spectrum objects<how-to-generate-a-spectrum>` from text files or python arrays.
-- :ref:`rescale a spectrum<rescale-spectrum-with-new-path-length>` without redoing the line-by-line calculation.
-- apply :ref:`instrumental slit functions<apply-instrumental-slit-function>`.
-- :ref:`plot<plot-spectral-quantities>` with one line and in whatever unit.
-- :ref:`crop, offset<offset-crop>` or :ref:`interpolate <interpolate-a-spectrum-on-another>`.
-- :ref:`remove baselines<remove-a-baseline>`.
-- :ref:`multiply or add constants<multiply-substract>` as simply as with ``s=10*s`` or ``s=s+0.2`` in Python.
-- :ref:`store<save-a-spectrum-object>` an experimental or a calculated spectrum while retaining the metadata.
-- :ref:`compare different spectra<compare-two-spectra>`.
-- combine multiple spectra along the :ref:`line-of-sight<build-a-line-of-sight-profile>`.
-- manipulate a folder of spectra easily with :ref:`spectrum Databases<create-a-database-of-spectrum-objects>`.
-- compute transmittance from absorbance, or whatever :ref:`missing spectral quantity<calculate-missing-quantities>`.
-- use the :ref:`line survey<plot-line-survey>` tool to identify each line.
+- :ref:`generate Spectrum objects<label_howto_generate_spectrum>` from text files or python arrays.
+- :ref:`rescale a spectrum<label_spectrum_rescale>` without redoing the line-by-line calculation.
+- apply :ref:`instrumental slit functions<label_spectrum_apply_slit>`.
+- :ref:`plot<label_spectrum_plot>` with one line and in whatever unit.
+- :ref:`crop, offset<label_spectrum_offset_crop>` or :ref:`interpolate <label_spectrum_howto_interpolate>`.
+- :ref:`remove baselines<label_spectrum_remove_baseline>`.
+- :ref:`multiply or add constants<label_spectrum_algebra>` as simply as with ``s=10*s`` or ``s=s+0.2`` in Python.
+- :ref:`store<label_spectrum_store>` an experimental or a calculated spectrum while retaining the metadata.
+- :ref:`compare different spectra<label_spectrum_howto_compare>`.
+- combine multiple spectra along the :ref:`line-of-sight<label_spectrum_line_of_sight>`.
+- manipulate a folder of spectra easily with :ref:`spectrum Databases<label_spectrum_database>`.
+- compute transmittance from absorbance, or whatever :ref:`missing spectral quantity<label_spectrum_missing_quantities>`.
+- use the :ref:`line survey<label_spectrum_linesurvey>` tool to identify each line.
 
 Refer to the guide below for an exhaustive list of all features: 
 
