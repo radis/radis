@@ -210,7 +210,7 @@ html_theme_options = {
     'travis_button': True,
     'codecov_button': True,
     'sidebar_includehidden': False,
-    "fixed_sidebar": True,
+    "fixed_sidebar": False,
     }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -338,7 +338,7 @@ latex_documents = [
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
-#latex_use_parts = False
+latex_use_parts = True
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False
@@ -373,7 +373,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   (master_doc, 'RADIS', 'RADIS Documentation',
-   author, 'RADIS', 'One line description of project.',
+   author, 'RADIS', 'A fast line-by-line code for high resolution infrared molecular spectra',
    'Miscellaneous'),
 ]
 
