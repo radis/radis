@@ -5,7 +5,7 @@
 
 .. |logo_png| image:: radis_ico.png
 
-*****
+***** 
 RADIS
 *****
 
@@ -168,6 +168,11 @@ Modules Detail
   applied after the Spectrum was calculated: rescale, apply instrumental slit function, 
   store or retrieve from a Spectrum database, plot or compare with another Spectrum object. 
    
+
+
+=======
+Content
+=======
 
 .. toctree::
    :maxdepth: 2

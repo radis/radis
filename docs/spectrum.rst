@@ -10,10 +10,10 @@ RADIS has powerful tools to post-process spectra created by
 At the core of the post-processing is the :class:`~radis.spectrum.spectrum.Spectrum` class, 
 which features methods to: 
 
-- :ref:`generate Spectrum objects<how-to-generate-spectrum>` from text files or python arrays.
+- :ref:`generate Spectrum objects<how-to-generate-a-spectrum>` from text files or python arrays.
 - :ref:`rescale a spectrum<rescale-spectrum-with-new-path-length>` without redoing the line-by-line calculation.
 - apply :ref:`instrumental slit functions<apply-instrumental-slit-function>`.
-- :ref:`plot<plot-spectral-quantities` with one line and in whatever unit.
+- :ref:`plot<plot-spectral-quantities>` with one line and in whatever unit.
 - :ref:`crop, offset<offset-crop>` or :ref:`interpolate <interpolate-a-spectrum-on-another>`.
 - :ref:`remove baselines<remove-a-baseline>`.
 - :ref:`multiply or add constants<multiply-substract>` as simply as with ``s=10*s`` or ``s=s+0.2`` in Python.
