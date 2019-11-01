@@ -29,7 +29,7 @@ Refer to the guide below for an exhaustive list of all features:
 ---------------------------------------------------------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    spectrum
    
@@ -559,7 +559,7 @@ In :func:`~radis.spectrum.compare.plot_diff`, you can choose to plot the absolut
     from radis import plot_diff
     plot_diff(s_cdsd, s_hitemp, method=['diff', 'ratio']) 
 
-.. image:: ./cdsd4000_vs_hitemp_3409K.*
+.. image:: spectrum/cdsd4000_vs_hitemp_3409K.*
     :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
 
@@ -606,7 +606,7 @@ folder as an argument, and converts it in a list of
 See more information about databases below. 
     
 
-.. include:: database.rst
+.. include:: database/database.rst
 
 
 Spectral quantities

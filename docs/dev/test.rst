@@ -71,7 +71,7 @@ section
 - needs_db_HITEMP_CO_DUNHAM : requires HITEMP-CO-DUNHAM database in ``~/.radis`` 
 - needs_db_CDSD_HITEMP_PC : requires CDSD-HITEMP-PC database in ``~/.radis``
 
-The default test routine run on `Travis CI <https://travis-ci.org/radis/radis>`_ 
+The default test routine run on `Travis CI <https://travis-ci.org/radis/radis>`__
 is (see the ``radis/.gitlab-ci.yml` file)::
 
     pytest -m "not needs_config_file" --cov=./;

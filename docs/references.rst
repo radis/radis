@@ -2,9 +2,9 @@
 References
 ==========
    
-.. include:: constants.rst
+.. include:: references/constants.rst
 
-.. include:: bibliography.rst
+.. include:: references/bibliography.rst
 
 Licence
 =======
@@ -28,6 +28,6 @@ in the calculatation of the rovibrational energies (for instance, see the
 Other Spectroscopic Tools
 =========================
 
-.. include:: similar_tools.rst 
+.. include:: references/similar_tools.rst 
 
 

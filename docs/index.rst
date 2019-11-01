@@ -173,13 +173,13 @@ Modules Detail
    :maxdepth: 2
    :hidden:
    
-   features/features
-   lbl/lbl
-   spectrum/spectrum
-   los/los
-   examples/examples
-   dev/developer
-   references/references
+   features
+   lbl
+   spectrum
+   los
+   examples
+   developer
+   references
 
    
 

@@ -10,14 +10,14 @@ Sources
 To modify RADIS, you will need to clone the Git repository. 
 See the :ref:`detailed installation procedure <label_install>` below:
 
-.. include:: install.rst 
+.. include:: dev/install.rst 
 
 
 
-.. include:: architecture.rst
+.. include:: dev/architecture.rst
   
 
-.. include:: test.rst
+.. include:: dev/test.rst
    
 
 Contribute
