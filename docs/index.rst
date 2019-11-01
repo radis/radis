@@ -176,7 +176,6 @@ Content
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    
    features
    lbl
