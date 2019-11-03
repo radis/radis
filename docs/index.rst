@@ -140,10 +140,9 @@ or on the `community chat <https://gitter.im/radis-radiation/community>`__
 ---------------------------------------------------------------------
 
 
-Modules Detail
-==============
-
-* :ref:`modindex`
+=======
+Content
+=======
 
 - :ref:`The Line-by-line (LBL) module<label_line_by_line>`
 
@@ -169,10 +168,11 @@ Modules Detail
   store or retrieve from a Spectrum database, plot or compare with another Spectrum object. 
    
 
+---------------------------------------------------------------------
 
-=======
-Content
-=======
+* :ref:`modindex`
+
+---------------------------------------------------------------------
 
 .. toctree::
    :maxdepth: 2
