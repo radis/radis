@@ -46,6 +46,7 @@ def calc_spectrum(wavenum_min=None,
                   databank='fetch',
                   medium='air',
                   wstep=0.01,
+                  broadening_max_width=10, 
                   lineshape_optimization='DLM',
                   name=None,
                   use_cached=True,
@@ -143,6 +144,13 @@ def calc_spectrum(wavenum_min=None,
 
     wstep: cm-1
         Spacing of calculated spectrum. Default 0.01 cm-1
+
+    broadening_max_width: float (cm-1)
+        Full width over which to compute the broadening. Large values will create
+        a huge performance drop (scales as ~broadening_width^2 without DLM)
+        The calculated spectral range is increased (by broadening_max_width/2
+        on each side) to take into account overlaps from out-of-range lines.
+        Default ``10`` cm-1.
 
     Other Parameters
     ----------------
@@ -302,6 +310,7 @@ def calc_spectrum(wavenum_min=None,
                          molecule=molecule, isotope=isotope,
                          pressure=pressure,
                          wstep=wstep,
+                         broadening_max_width=broadening_max_width,
                          db_use_cached=use_cached,
                          verbose=verbose,
                          chunksize=lineshape_optimization, #  if lineshape_optimization != 'auto' else None, #@EP: NotImplemented. DLM use all the time by default

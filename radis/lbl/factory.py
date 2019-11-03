@@ -163,8 +163,8 @@ class SpectrumFactory(BandFactory):
 
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
-        a huge performance drop (because convolutions are not vectorized).
-        Also, the calculated spectral range is increased (by broadening_max_width/2
+        a huge performance drop (scales as ~broadening_width^2 without DLM)
+        The calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default ``10`` cm-1.
 
