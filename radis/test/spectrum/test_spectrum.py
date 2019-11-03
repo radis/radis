@@ -62,7 +62,6 @@ def test_spectrum_get_methods(verbose=True, plot=True, close_plots=True, *args, 
     assert s.get_power(
         unit='W/cm2/sr') == s.get_integral('radiance_noslit', Iunit='W/cm2/sr/nm')
     assert s.get_conditions()['Tgas'] == 1500
-    assert s.get_medium() == 'air'
     assert len(s.get_vars()) == 2
     assert s.is_at_equilibrium() == False
     assert s.is_optically_thin() == False

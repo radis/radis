@@ -16,6 +16,11 @@ from radis.misc.basics import partition
 # Waverange, wavespaces
 WAVENUM_UNITS = ['cm', 'cm-1', 'cm_1', 'wavenumber']
 WAVELEN_UNITS = ['nm', 'wavelength']
+WAVESPACE = ['nm', 'nm_vac', 'cm-1']
+''' list: wavespace:
+- ``'nm'``: wavelength (in air)
+- ``'nm_vac'``: wavelength (in vacuum)
+- ``'cm-1'``: wavenumber'''
 
 # Spectral quantities
 CONVOLUTED_QUANTITIES = ['radiance', 'transmittance', 'emissivity']
@@ -25,6 +30,9 @@ NON_CONVOLUTED_QUANTITIES = ['radiance_noslit', 'transmittance_noslit',
                              'absorbance', 'abscoeff',
                              'abscoeff_continuum', 'emissivity_noslit']
 '''list: name of spectral quantities not convolved with slit function'''
+SPECTRAL_QUANTITIES = CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
+'''list: all spectral quantities defined in a :class:`~radis.spectrum.spectrum.Spectrum` 
+object'''
 
 # note: it is hardcoded (and needed) that quantities that are convoluted are
 # generated from a non convoluted quantity with the same name + _noslit

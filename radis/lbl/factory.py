@@ -104,15 +104,15 @@ class SpectrumFactory(BandFactory):
     ----------
 
     wavenum_min: cm-1
-        minimum wavenumber to be processed in cm^-1. Note that this wavenumber
-        can be in 'air' or 'vacuum' depending on the value of the parameter
-        "medium="
+        minimum wavenumber to be processed in cm^-1. 
 
     wavenum_max: cm-1
         maximum wavenumber to be processed in cm^-1
 
     wavelength_min: nm
-        minimum wavelength to be processed in nm
+        minimum wavelength to be processed in nm. This wavelength
+        can be in ``'air'`` or ``'vacuum'`` depending on the value of the parameter
+        ``medium=``
 
     wavelength_max: nm
         maximum wavelength to be processed in nm
@@ -146,7 +146,7 @@ class SpectrumFactory(BandFactory):
 
     medium: ``'air'``, ``'vacuum'``
         propagating medium: choose whether to return wavelength in air or vacuum.
-        Note that the  input wavelength range ("wavenum_min", "wavenum_max") changes.
+        Used when the wavespace is given in wavelength (``wavenum_min=``, ``wavenum_max=``). 
         Default ``'air'``
 
     Other Parameters

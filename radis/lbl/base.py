@@ -2876,7 +2876,7 @@ class BaseFactory(DatabankLoader):
 
 def get_all_waveranges(medium, wavenum_min=None, wavenum_max=None, wavelength_min=None, wavelength_max=None):
     ''' Give either lambda_min, lambda_max or nu_min, nu_max and you get 
-    everything, in the request propagation ``medium`` 
+    everything, in the given propagation ``medium`` 
 
     Parameters
     ----------
@@ -2896,6 +2896,7 @@ def get_all_waveranges(medium, wavenum_min=None, wavenum_max=None, wavelength_mi
     wavenum_min, wavenum_max, wavelength_min, wavelength_max: float
         wavenumbers, wavelengths in given ``medium``
     '''
+    # TODO: can probably be removed after Refactor #49
 
     # Check input
     if (wavelength_min is None and wavelength_max is None and
