@@ -78,6 +78,7 @@ from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg
+from radis.misc.warning import OutOfBoundError
 # TODO: rename in get_molecule_name
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.spectrum.utils import print_conditions
@@ -1735,6 +1736,35 @@ class BaseFactory(DatabankLoader):
             printg('Scaling equilibrium linestrength')
 
         # %% Load partition function values
+        
+        def _calc_Q(molecule, iso, state):
+            ''' Get partition function from tabulated values, try with 
+            calculated one if Out of Bounds 
+            
+            Returns
+            -------
+            
+            Qref, Qgas: float
+                partition functions at reference temperature and gas temperature
+            '''
+            
+            try:  
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Qref = parsum.at(Tref)
+                Qgas = parsum.at(Tgas)
+            except OutOfBoundError as err:
+                # Try to calculate 
+                try:
+                    parsum = self.get_partition_function_calculator(molecule, iso, state)
+                    Qref = parsum.at(Tref)
+                    Qgas = parsum.at(Tgas)
+                except: # if an error occur, raise the initial error
+                    raise err
+                else:
+                    self.warn('Error with tabulated partition function'+\
+                              '({0}). Using calculated one instead'.format(err.args[0]),
+                              'OutOfBoundWarning')
+            return Qref, Qgas
 
         id_set = df1.id.unique()
         if len(id_set) == 1:
@@ -1747,11 +1777,9 @@ class BaseFactory(DatabankLoader):
             # faster!
             
             if len(iso_set) == 1:
-                state = self.input.state
-                parsum = self.get_partition_function_interpolator(
-                    molecule, iso_set[0], state)
-                df1.Qref = float(parsum.at(Tref))     # attribute, not column
-                df1.Qgas = float(parsum.at(Tgas))     # attribute, not column
+                Qref, Qgas = _calc_Q(molecule, iso_set[0], self.input.state)
+                df1.Qref = float(Qref)     # attribute, not column
+                df1.Qgas = float(Qgas)     # attribute, not column
                 assert 'Qref' not in df1.columns
                 assert 'Qgas' not in df1.columns
                 
@@ -1770,14 +1798,10 @@ class BaseFactory(DatabankLoader):
                 Qgas_arr = np.empty_like(iso_arr, dtype=np.float64)
                 for iso in iso_arr:
                     if iso in iso_set:
-                        molecule = get_molecule(id)
-                        state = self.input.state
-                        parsum = self.get_partition_function_interpolator(
-                            molecule, iso, state)
-                        # ... the trick below is that iso is used as index in the array
-                        Qref_arr[iso] = parsum.at(Tref)
-                        Qgas_arr[iso] = parsum.at(Tgas)
-        
+                        Qref, Qgas = _calc_Q(molecule, iso, self.input.state)
+                        Qref_arr[iso] = Qref
+                        Qgas_arr[iso] = Qgas
+                # ... the trick below is that iso is used as index in the array
                 df1['Qref'] = Qref_arr.take(df1.iso) 
                 df1['Qgas'] = Qgas_arr.take(df1.iso)
             

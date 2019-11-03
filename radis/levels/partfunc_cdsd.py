@@ -34,6 +34,7 @@ from radis.misc.cache_files import filter_metadata, save_to_hdf
 from radis.lbl.labels import (vib_lvl_name_cdsd_p, vib_lvl_name_cdsd_pc,
                              vib_lvl_name_cdsd_pcN, vib_lvl_name_cdsd_pcJN)
 from radis.levels.partfunc import RovibParFuncCalculator, RovibParFuncTabulator
+from radis.misc.warning import OutOfBoundError
 from warnings import warn
 from os.path import exists
 
@@ -96,17 +97,15 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
 
     def _inrange(self, T):
         ''' Allow for 5% extrapolation (ex: 296K / 300K) ) '''
-        return ((self.Tmin*0.95 <= T).all() and (self.Tmax*1.05 >= T).all())
+        return (self.Tmin*0.95 <= T) and (self.Tmax*1.05 >= T)
 
     def _at(self, T):
         ''' Get partition function at temperature T
 
         Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         '''
-        try:
-            assert(self._inrange(T))
-        except:
-            raise ValueError(
+        if not self._inrange(T):
+            raise OutOfBoundError(
                 'Temperature: {0} is out of bounds {1}-{2}'.format(T, self.Tmin, self.Tmax))
 
         return splev(T, self.tck)

@@ -72,6 +72,7 @@ from radis.misc.basics import all_in
 from radis.misc.debug import printdbg
 from radis.misc.cache_files import load_h5_cache_file
 from radis.misc.cache_files import filter_metadata, save_to_hdf
+from radis.misc.warning import OutOfBoundError
 from radis.lbl.labels import (vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5)
 from warnings import warn
 from os.path import exists, join

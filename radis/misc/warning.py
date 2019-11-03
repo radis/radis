@@ -22,6 +22,13 @@ class SlitDispersionWarning(UserWarning):
 # %% Spectrum Factory warnings / errors
 # -------------------------------------
 
+class OutOfBoundError(ValueError):
+    pass
+
+class OutOfBoundWarning(UserWarning):
+    ''' Out of bound (for partition functions)'''
+    pass
+
 # Errors
 
 class EmptyDatabaseError(ValueError):
@@ -101,6 +108,7 @@ WarningClasses = {'default': UserWarning,
                   'LinestrengthCutoffWarning': LinestrengthCutoffWarning,
                   'InputConditionsWarning': InputConditionsWarning,
                   'PerformanceWarning':PerformanceWarning,
+                  'OutOfBoundWarning':OutOfBoundWarning,
                   }
 ''' dict: warnings used in RADIS Spectrum calculations.
 
@@ -136,6 +144,7 @@ default_warning_status = {
     'MissingSelfBroadeningWarning': 'warn',
     'InputConditionsWarning': 'warn',
     'PerformanceWarning': 'warn',
+    'OutOfBoundWarning': 'warn',
 }
 ''' dict: default status of warnings used in RADIS Spectrum calculations.
 
