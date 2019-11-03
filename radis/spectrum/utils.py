@@ -112,6 +112,7 @@ def make_up(label):
     # Improve units
     label = label.replace(r'cm_1', r'cm-1')
     label = label.replace(r'cm-1', r'cm$^\mathregular{-1}$')
+    label = label.replace(r'm^-1', r'm$^\mathregular{-1}$')
     label = label.replace(r'm2', r'm$^\mathregular{2}$')
     label = label.replace(r'm3', r'm$^\mathregular{3}$')
     label = label.replace(r'I/I0', r'I/I$_\mathregular{0}$')    # transmittance unit
