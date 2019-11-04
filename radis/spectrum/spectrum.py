@@ -48,8 +48,9 @@ from publib import set_style, fix_style
 from radis.phys.convert import conv2, cm2nm, nm2cm
 from radis.phys.units import Q_, convert_universal
 from radis.phys.air import vacuum2air, air2vacuum
-from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES,
-                                  make_up, cast_waveunit, print_conditions)
+from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES, WAVESPACE,
+                                  make_up, cast_waveunit, print_conditions,
+                                  format_xlabel)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from radis.lbl.base import print_conditions
 from radis.misc.arrays import (evenly_distributed, count_nans, 
@@ -121,10 +122,11 @@ class Spectrum(object):
         linestrength in SpectrumFactory). Refer to the code to know what they mean
         (and their units)
 
-    wavespace: ``'nm'`` or ``'cm-1'``, or ``None``
-        define whether wavenumber or wavelength are used in 'quantities' tuples.
+    wavespace: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
+        wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). 
         Quantities should be evenly distributed along this space for fast
         convolution with the slit function
+        If ``None``, ``'wavespace'`` must be defined in ``conditions``. 
         (non-uniform slit function is not implemented anyway... )
         Defaults None (but raises an error if wavespace is not defined in
         conditions neither)
@@ -327,8 +329,9 @@ class Spectrum(object):
         quantity: str
             spectral quantity name
 
-        waveunit: ``'nm'``, ``'cm-1'``
-            unit of waverange
+        waveunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+            unit of waverange:         wavelength in air (``'nm'``), wavenumber 
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). 
 
         unit: str
             spectral quantity unit (arbitrary). Ex: 'mW/cm2/sr/nm' for radiance_noslit
@@ -402,14 +405,12 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
         """
 
-        # TODO: if medium not defined and quantities are given in cm-1, use vacuum
-
         quantities = {quantity: (w, I)}
         units = {quantity: unit}
 
         # Update Spectrum conditions
         conditions = kwargs.pop('conditions', {})
-        for k in ['path_length', 'medium']:   # usual conditions
+        for k in ['path_length']:   # usual conditions
             if k in kwargs:
                 conditions[k] = kwargs.pop(k)
 
@@ -430,6 +431,10 @@ class Spectrum(object):
 
         quantity: str
             spectral quantity name
+
+        waveunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+            unit of waverange: wavelength in air (``'nm'``), wavenumber 
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). 
 
         unit: str
             spectral quantity unit
@@ -545,7 +550,7 @@ class Spectrum(object):
 
         # Update Spectrum conditions
         conditions = kwargs.pop('conditions', {})
-        for k in ['path_length', 'medium']:   # usual conditions
+        for k in ['path_length']:   # usual conditions
             if k in kwargs:
                 conditions[k] = kwargs.pop(k)
 
@@ -561,8 +566,7 @@ class Spectrum(object):
     # ----------------
     # XXX =====================================================================
 
-    def get(self, var, wunit='nm', Iunit='default', medium='default',
-            copy=True):
+    def get(self, var, wunit='nm', Iunit='default', copy=True):
         ''' Retrieve a spectral quantity from a Spectrum object. You can select 
         wavespace unit, intensity unit, or propagation medium.
 
@@ -576,18 +580,15 @@ class Spectrum(object):
             To get the full list of quantities defined in this Spectrum object use
             the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars` method.
 
-        wunit: ``'cm'``, ``'nm'``
-            wavelength / wavenumber unit. Default ``nm``
+        wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
+            wavespace unit: wavelength in air (``'nm'``), wavenumber 
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). 
+            Default ``nm`` (wavelength in air).
 
         Iunit: unit for variable ``var``
             if 'default', default unit for quantity `var` is used. See Spectrum.units
             to get the units. for radiance, one can use per wavelength (~ 'W/m2/sr/nm')
             or per wavenumber (~ 'W/m2/sr/cm_1') units
-
-        medium: ``'air'``, ``'vacuum'``, ``'default'``
-            returns wavelength as seen in air, or vacuum. If 'default' the
-            value set in conditions is used. If None you better be sure of
-            what you're doing. Default ``'default'``
 
         Other Parameters
         ----------------
@@ -612,10 +613,9 @@ class Spectrum(object):
 
             w, I = s.get('transmittance_noslit', wunit='cm-1')  
 
-        Get radiance::
+        Get radiance (in wavelength in air)::
 
-            _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
-                         medium='air')  
+            _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm')  
 
         See Also
         --------
@@ -659,8 +659,12 @@ class Spectrum(object):
         wunit = cast_waveunit(wunit)
         if wunit == 'cm-1':
             w = self.get_wavenumber(vartype, copy=copy)
-        else:  # wunit == 'nm':
-            w = self.get_wavelength(medium, vartype, copy=copy)
+        elif wunit == 'nm':
+            w = self.get_wavelength(medium='air', which=vartype, copy=copy)
+        elif wunit == 'nm_vac':
+            w = self.get_wavelength(medium='vacuum', which=vartype, copy=copy)
+        else:
+            raise ValueError(wunit)
 
         # Convert y unit if necessary
         Iunit0 = self.units[var]
@@ -752,7 +756,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavelength(self, medium='default', which='any', copy=True):
+    def get_wavelength(self, medium='air', which='any', copy=True):
         ''' Return wavelength in defined medium 
 
 
@@ -764,10 +768,9 @@ class Spectrum(object):
             or any. If any and both are defined, they have to be the same else 
             an error is raised. Default any.
 
-        medium: ``'air'``, ``'vacuum'``, ``'default'``
-            returns wavelength as seen in air, or vacuum. If 'default' the
-            value set in conditions is used. If None you better be sure of
-            what you're doing.
+        medium: ``'air'``, ``'vacuum'``
+            returns wavelength as seen in air, or vacuum. Default ``'air'``.
+            See :func:`~radis.phys.air.vacuum2air`, :func:`~radis.phys.air.air2vacuum`
 
         Other Parameters
         ----------------
@@ -790,59 +793,36 @@ class Spectrum(object):
         '''
 
         # Check input
-        if not medium in ['default', 'air', 'vacuum']:
+        if not medium in ['air', 'vacuum']:
             raise NotImplementedError(
                 'Unknown propagating medium: {0}'.format(medium))
-        stored_medium = self.conditions.get('medium', None)
-        if not stored_medium in ['air', 'vacuum', None]:
-            raise NotImplementedError(
-                'Unknown propagating medium: {0}'.format(stored_medium))
 
-        # Now get wavespace
+        # Now convert stored wavespace to the output unit
         w = self._get_wavespace(which=which, copy=copy)
         if self.get_waveunit() == 'cm-1':
-            w = cm2nm(w)       # we get vacuum wavelength
-
+            w = cm2nm(w)       # vacuum wavelength
+            
             # Correct for propagation medium (air, vacuum)
-            if medium == 'default':
-                if stored_medium is None:
-                    raise ValueError('Medium not defined in Spectrum conditions. We cant ' +
-                                     'guess in which medium to show wavelengths. ' +
-                                     "Update conditions, explicitely use medium=" +
-                                     "'air'/'vacuum', or work with wavenumbers " +
-                                     "(wunit='cm-1')")
-                else:
-                    medium = stored_medium
-
-            # Now medium is either 'air' or 'vacuum'
             if medium == 'air':
                 w = vacuum2air(w)
             else:   # medium == 'vacuum'
                 pass  # no change needed
 
-        else:  # self.get_waveunit() == 'nm'
-            # we got w in 'stored_medium'
+        elif self.get_waveunit() == 'nm': # nm air
+            if medium == 'air':
+                pass   # no change needed
+            else:
+                w = air2vacuum(w)
+                
+        elif self.get_waveunit() == 'nm_vac':   # nm vacuum
+            if medium == 'air':
+                w = vacuum2air(w)
+            else:
+                pass  # no change needed
 
-            # Correct for propagation medium (air, vacuum) depending on the value of stored_medium
-            if stored_medium == 'vacuum':
-                if medium == 'air':
-                    # w is in nm since `w = cm2nm(w_cm)`
-                    w = vacuum2air(w)
-                else:
-                    pass  # no change needed
-            elif stored_medium == 'air':
-                if medium == 'vacuum':
-                    w = air2vacuum(w)
-                else:
-                    pass   # no change needed
-            else:  # stored_medium is None:
-                if medium != 'default':
-                    raise ValueError('Medium not defined in Spectrum conditions. We cant ' +
-                                     'convert wavelengths to {0}. '.format(medium) +
-                                     "Update conditions, or use medium='default'")
-                else:
-                    pass  # no change needed
-
+        else:
+            raise ValueError(self.get_waveunit())
+            
         return w
 
     def get_wavenumber(self, which='any', copy=True):
@@ -874,24 +854,19 @@ class Spectrum(object):
         '''
         w = self._get_wavespace(which=which, copy=copy)
 
-        if self.get_waveunit() == 'nm':     # we want w in vacuum before converting
-            # Correct for propagation medium (air, vacuum)
-            stored_medium = self.conditions.get('medium', None)
-            if stored_medium is None:
-                raise KeyError('Medium not defined in Spectrum conditions. We cant ' +
-                               'derive wavenumber if we dont know whether ' +
-                               'wavelengths are in vacuum or air. ' +
-                               "Update conditions")
-            elif stored_medium == 'vacuum':
-                pass
-            elif stored_medium == 'air':
-                w = air2vacuum(w)
-            else:
-                raise NotImplementedError(
-                    'Unknown propagating medium: {0}'.format(stored_medium))
-
-            # Convert to wavenumber
+        if self.get_waveunit() == 'cm-1':    #
+            pass
+        
+        elif self.get_waveunit() == 'nm':     # wavelength air
+            w = air2vacuum(w)
             w = nm2cm(w)
+             
+        elif self.get_waveunit() == 'nm_vac': # wavelength vacuum
+            w = nm2cm(w)
+            
+        else:
+            raise ValueError(self.get_waveunit())
+
         return w
 
     def get_radiance(self, Iunit='mW/cm2/sr/nm', copy=True):
@@ -918,14 +893,6 @@ class Spectrum(object):
 
         return self.get('radiance', Iunit=Iunit, copy=copy)[1]
 
-#        Iunit0 = self.units['radiance']
-#
-#        w_cm, I = self.get('radiance', wunit='cm-1', Iunit=Iunit0, copy=copy)
-#
-#        return convert_universal(I, Iunit0, Iunit, w_cm,
-#                                     per_nm_is_like='mW/sr/cm2/nm',
-#                                     per_cm_is_like='mW/sr/cm2/cm_1')
-
     def get_radiance_noslit(self, Iunit='mW/cm2/sr/nm', copy=True):
         ''' Return radiance (non convoluted) in whatever unit, and can even
         convert from ~1/nm to ~1/cm-1 (and the other way round)
@@ -951,13 +918,6 @@ class Spectrum(object):
 
         return self.get('radiance_noslit', Iunit=Iunit, copy=copy)[1]
 
-#        Iunit0 = self.units['radiance_noslit']
-#        w_cm, I = self.get('radiance_noslit', wunit='cm-1', Iunit=Iunit0, copy=copy)
-#
-#        return convert_universal(I, Iunit0, Iunit, w_cm,
-#                                     per_nm_is_like='mW/sr/cm2/nm',
-#                                     per_cm_is_like='mW/sr/cm2/cm_1')
-
     def get_name(self):
         ''' Return Spectrum name. If not defined, returns either the 
         :attr:`~radis.spectrum.spectrum.Spectrum.file` name if Spectrum was 
@@ -980,7 +940,7 @@ class Spectrum(object):
 
         return name
 
-    def savetxt(self, filename, var, wunit='nm', Iunit='default', medium='default'):
+    def savetxt(self, filename, var, wunit='nm', Iunit='default'):
         ''' Export spectral quantity var to filename
 
         (note that this will loose some information. You better save a Spectrum
@@ -1019,11 +979,14 @@ class Spectrum(object):
 
         # Get units to export
         wunit = cast_waveunit(wunit)
-        wmedium = ' [{0}]'.format(medium) if medium != 'default' else ''
         if wunit == 'cm-1':
             xlabel = 'Wavenumber (cm-1)'
-        else:  # wunit == 'nm'
-            xlabel = 'Wavelength (nm){0}'.format(wmedium)
+        elif wunit == 'nm':
+            xlabel = 'Wavelength [air] (nm)'
+        elif wunit == 'nm_vac':
+            xlabel = 'Wavelength [vacuum] (nm)'
+        else:
+            raise ValueError(wunit)
 
         if Iunit == 'default':
             try:
@@ -1035,8 +998,7 @@ class Spectrum(object):
 
         header = '{0}\t{1} ({2})'.format(xlabel, var, yunit)
 
-        np.savetxt(filename, np.vstack(self.get(var, wunit=wunit, Iunit=Iunit,
-                                                medium=medium)).T, header=header)
+        np.savetxt(filename, np.vstack(self.get(var, wunit=wunit, Iunit=Iunit)).T, header=header)
 
     def update(self, quantity='all', optically_thin='default', verbose=True):
         ''' Calculate missing quantities: ex: if path_length and emisscoeff
@@ -1181,7 +1143,7 @@ class Spectrum(object):
                                      force=force, verbose=verbose)
         
         
-    def crop(self, wmin=None, wmax=None, wunit='default', medium='default', inplace=True):
+    def crop(self, wmin=None, wmax=None, wunit='default', inplace=True):
         ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
         
         Parameters
@@ -1190,13 +1152,11 @@ class Spectrum(object):
         wmin, wmax: float, or None
             boundaries of spectral range (in ``wunit``)
             
-        wunit: ``'nm'``, ``'cm-1'``
-            which waveunit to use for ``wmin, wmax``. Default ``default``: 
-            just use the Spectrum wavespace. 
+        wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+            which waveunit to use for ``wmin, wmax``. If ``default``: 
+            use the default Spectrum wavespace defined with 
+            :meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`. 
             
-        medium: 'air', vacuum'
-            necessary if cropping in 'nm'
-        
         Other Parameters
         ----------------
         
@@ -1237,14 +1197,8 @@ class Spectrum(object):
         
         if wunit == 'default':
             wunit = self.get_waveunit()
-        if wunit == 'cm-1' and self.get_waveunit() == 'cm-1' and medium == 'default':  
-            # no need to know the propagation medium:
-            medium = None
-        if medium == 'default':
-            medium = self.get_medium()
         
-        return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, medium=medium, 
-                    inplace=inplace)
+        return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, inplace=inplace)
     
     def offset(self, offset, unit, inplace=True):
         # type: (Spectrum, float, str) -> Spectrum
@@ -1409,10 +1363,10 @@ class Spectrum(object):
         return items
 
     def plot(self, var=None, wunit='default', Iunit='default', show_points=False,
-             nfig=None, yscale='linear', medium='default',
+             nfig=None, yscale='linear', plot_medium='vacuum_only',
              normalize=False, force=False,
              **kwargs):
-        '''
+        ''' Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
 
         Parameters    
         ----------
@@ -1421,8 +1375,9 @@ class Spectrum(object):
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.  
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
 
-        wunit: `default`, `cm-1`, `nm`
-            wavelength or wavenumber unit. If `default`, Spectrum waveunit is used.
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, 
+            wavelength air, wavenumber, or wavelength vacuum. If ``'default'``, 
+            Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
 
         Iunit: unit for variable
             if `default`, default unit for quantity `var` is used.
@@ -1439,7 +1394,18 @@ class Spectrum(object):
             show calculated points. Default ``True``.
 
         nfig: int, None, or 'same'
-            plot on a particular figure. 'same' plots on current figure.
+            plot on a particular figure. 'same' plots on current figure. For 
+            instance::
+                
+                s1.plot()
+                s2.plot(nfig='same')
+
+        plot_medium: bool, ``'vacuum_only'``
+            if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
+            in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``, 
+            plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'`` 
+            (prevents from inadvertently plotting spectra with different propagation 
+            medium on the same graph).
 
         yscale: 'linear', 'log'
             plot yscale
@@ -1461,9 +1427,21 @@ class Spectrum(object):
         line: 
             line plot
             
+        Examples
+        --------
+        
+        Plot an :py:func:`~radis.spectrum.models.experimental_spectrum` in 
+        arbitrary units::
+            
+            s = experimental_spectrum(..., Iunit='mW/cm2/sr/nm')
+            s.plot(Iunit='W/cm2/sr/cm_1')
+            
+        See more examples in :ref:`the plot Spectral quantities page <label_spectrum_plot>`. 
+            
         See Also
         --------
         
+        :py:func:`~radis.spectrum.compare.plot_diff`,         
         :ref:`the Spectrum page <label_spectrum>`
 
         '''
@@ -1495,15 +1473,10 @@ class Spectrum(object):
         wunit = cast_waveunit(wunit)
 
         # Get variable
-        x, y = self.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
+        x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
         # Get labels
-        wmedium = ' [{0}]'.format(medium) if medium != 'default' else ''
-        if wunit == 'cm-1':
-            xlabel = 'Wavenumber (cm-1)'
-        else:  # wunit == 'nm'
-            xlabel = 'Wavelength (nm){0}'.format(wmedium)
-        xlabel = make_up(xlabel)
+        xlabel=format_xlabel(wunit, plot_medium)
 
         if Iunit == 'default':
             try:
@@ -2310,8 +2283,8 @@ class Spectrum(object):
         Parameters
         ----------
 
-        wunit: 'nm', 'cm-1', or None
-            plot slit in wavelength or wavenumber. If None, use the unit
+        wunit: ``'nm'``, ``'cm-1'``, or ``None``
+            plot slit in wavelength or wavenumber. If ``None``, use the unit
             the slit in which the slit function was given. Default ``None``
                 
         Returns
@@ -2331,7 +2304,9 @@ class Spectrum(object):
                                       normalize_slit)
 
         # Check inputs
-        assert wunit in ['nm', 'cm-1', None]
+        assert wunit in ['nm', 'cm-1', 'nm_vac', None]
+        # @dev: note: wunit in 'nm_vac' also implemented for consistency, 
+        # although not mentionned in docs. 
         if wunit is None:
             wunit = self.conditions['slit_unit']
 
@@ -2361,11 +2336,14 @@ class Spectrum(object):
             slit_dispersion = self.conditions['slit_dispersion']
             if slit_dispersion is not None:
                 waveunit = self.get_waveunit()
+                # Get slit in air wavelength:
                 if waveunit == 'nm':
                     wslit0_nm = wslit0
+                elif waveunit == 'nm_vac':
+                    wslit0_nm = vacuum2air(wslit0)
                 else:
                     wslit0_nm = cm2nm(wslit0)
-                w_nm = self.get_wavelength(medium='default', which='non_convoluted')
+                w_nm = self.get_wavelength(medium='air', which='non_convoluted')                
                 wings = len(wslit0)    # note: hardcoded. Make sure it's the same as in apply_slit
                 wings *= max(1, abs(int(np.diff(wslit0_nm).mean() / np.diff(w_nm).mean())))
                 slice_windows, wings_min, wings_max = _cut_slices(w_nm, slit_dispersion, wings=wings)
@@ -2391,6 +2369,8 @@ class Spectrum(object):
                     # Convert it back if needed
                     if waveunit == 'cm-1':
                         wslit = nm2cm(wslit)
+                    elif waveunit == 'nm_vac':
+                        wslit = air2vacuum(wslit)
                     # We need to renormalize now that Islit has changed
                     wslit, Islit = normalize_slit(wslit, Islit, norm_by=norm_by)
                     plot_slit(wslit, Islit, waveunit=waveunit, plot_unit=wunit,
@@ -2399,8 +2379,7 @@ class Spectrum(object):
                     
         return fig, ax
 
-    def line_survey(self, overlay=None, wunit='cm-1', cutoff=None, medium='default',
-                    xunit=None,  # deprecated
+    def line_survey(self, overlay=None, wunit='default', cutoff=None, 
                     *args, **kwargs):
         ''' Plot Line Survey (all linestrengths used for calculation)
         Output in Plotly (html) 
@@ -2417,9 +2396,10 @@ class Spectrum(object):
             Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
             method. Default ``None``. 
 
-        wunit: 'nm', 'cm-1'
-            wavelength / wavenumber units
-
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, 
+            wavelength air, wavenumber, or wavelength vacuum. If ``'default'``, 
+            Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
+            
         medium: {'air', 'vacuum', 'default'}
             Choose whether wavelength are shown in air or vacuum. If ``'default'``  
             lines are shown as stored in the spectrum. 
@@ -2493,14 +2473,8 @@ class Spectrum(object):
         from radis.tools.line_survey import LineSurvey
 
         # Check inputs
-        if xunit is not None:
-            warn(DeprecationWarning('xunit replaced with wunit'))
-            wunit = xunit
-        assert medium in ['air', 'vacuum', 'default']
-
-        # Plot lines in spectrum medium (air/vacuum) if available
-        if 'medium' in self.conditions and medium == 'default':
-            medium = self.conditions['medium']
+        if wunit == 'default':
+            wunit = self.get_waveunit()
 
         def get_overlay(overlay):
             ''' Overlay line survey with a spectral quantity (like radiance or 
@@ -2510,7 +2484,7 @@ class Spectrum(object):
                 if overlay not in self.get_vars():
                     raise AttributeError('{0} not in variables list: {1}'.format(overlay,
                                                                                  self.get_vars()))
-                w, I = self.get(overlay, wunit=wunit, medium=medium)
+                w, I = self.get(overlay, wunit=wunit)
                 name = overlay
                 units = self.units[overlay]
                 return (w, I, name, units)
@@ -2530,13 +2504,11 @@ class Spectrum(object):
 
             overlay = [get_overlay(ov) for ov in overlay]
 
-            return LineSurvey(self, overlay=overlay, wunit=wunit,
-                              cutoff=cutoff, medium=medium,
+            return LineSurvey(self, overlay=overlay, wunit=wunit, cutoff=cutoff, 
                               *args, **kwargs)
 
         else:
-            return LineSurvey(self, wunit=wunit, cutoff=cutoff, medium=medium,
-                              *args, **kwargs)
+            return LineSurvey(self, wunit=wunit, cutoff=cutoff, *args, **kwargs)
 
     def get_conditions(self):
         ''' Get all physical / computational parameters.
@@ -2677,7 +2649,7 @@ class Spectrum(object):
         return self.store(*args, **kwargs)
 
     def resample(self, w_new, unit='same', out_of_bounds='nan',
-                 if_conflict_drop='error', medium='default',
+                 if_conflict_drop='error', 
                  energy_threshold=1e-3, print_conservation=False,
                  inplace=True, **kwargs):
         ''' Resample spectrum over a new wavelength. 
@@ -2698,16 +2670,17 @@ class Spectrum(object):
         w_new: array,  or Spectrum
             new wavespace to resample the spectrum on. Must be inclosed in the
             current wavespace (we won't extrapolate)
-            One can also give a Spectrum directly.
+            One can also give a Spectrum directly::
+                
+                s1.resample(s2.get_wavenumber())
+                s1.resample(s2)            # also valid
 
-        unit: ``'same'``, ``'nm'``, ``'cm-1'``
+        unit: ``'same'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             unit of new wavespace. It ``'same'`` it is assumed to be the current
             waveunit. Default ``'same'``. The spectrum waveunit is changed to this
             unit after resampling (i.e: a spectrum calculated and stored in `cm-1`
             but resampled in `nm` will be stored in `nm` from now on). 
-            If 'nm', see also argument ``medium``
-            If a Spectrum has been given instead of ``w_new``, use that Spectrum
-            waveunit if using ``'same'``. 
+            If ``'nm'``, wavelength in air. If ``'nm_vac'``, wavelength in vacuum. 
 
         out_of_bounds: 'transparent', 'nan', 'error'
             what to do if resampling is out of bounds. 'transparent': fills with
@@ -2791,65 +2764,38 @@ class Spectrum(object):
                     raise ValueError('Unknown value for if_conflict_drop: {0}'.format(
                         if_conflict_drop))
 
-        # ... assert all values have the same wavespace
-        # Now true by construction
-#        quantities = list(s.values())
-#        for q in quantities[1:]:
-#            if not allclose(q[0], quantities[0][0]):
-#                raise ValueError('Not all wavespaces are the same. Cant resample')
-        
-        # Get wavelength
-        if isinstance(w_new, Spectrum):
-            raise NotImplementedError('cant use a Spectrum yet. Stick to arrays')
-#            assert medium == 'default'
-#            medium = w_new.get_medium()       # @EP: Error raised later if medium != default and get_wavenumber() is used
-#                                              # we could suppress it but better rewrite all medium mess with nm_air, nm_vac
-#            # ... in which unit?
-#            if unit == 'same':
-#                unit = w_new.get_waveunit() 
-#            else:
-#                unit = cast_waveunit(unit)
-#            # ... Get waverange
-#            if unit == 'nm':
-#                w_new = w_new.get_wavelength(medium=medium)
-#            elif unit == 'cm-1':
-#                w_new = w_new.get_wavenumber()
-#            else:
-#                raise ValueError('unexpected unit: {0}'.format(unit))
-            # TODO: @dev Rewrite this part after switching to medium=['cm-1', 'nm_air', 'nm_vac']
-            # and forgetting about this medium thing. 
-
         # Get wavespace units
-        waveunit = s.get_waveunit()   # spectrum unit
+        stored_waveunit = s.get_waveunit()   # spectrum unit
         if unit == 'same':               # resampled unit
-            unit = waveunit
+            unit = stored_waveunit
         else:
             unit = cast_waveunit(unit)
 
-        # Get current waverange in output unit, output medium   -> w
-        # if asking for wavelength, check in which medium (air or vacuum?)
-        if unit == 'nm':
-            # get defaults
-            current_medium = s.get_medium()
-            if medium == 'default':
-                medium = current_medium
-            # convert if needed
-            if medium == current_medium:
-                pass  # correct medium already, do nothing
+        # Get output wavespace (it's the w_new array, unless w_new is a Spectrum)
+        if isinstance(w_new, Spectrum):
+            if unit == 'nm':
+                w_new = w_new.get_wavelength(medium='air')
+            elif unit == 'nm_vac':
+                w_new = w_new.get_wavelength(medium='vacuum')
+            elif unit == 'cm-1':
+                w_new = w_new.get_wavenumber()
             else:
-                # update medium
-                s.conditions['medium'] = medium
-            w = s.get_wavelength(medium=medium)   # in correct medium
+                raise ValueError(unit)
+        else:  # wavespace already given as array:
+            w_new = w_new
+            
+        # Get current waverange in output unit   -> w
+        if unit == 'nm':
+            w = s.get_wavelength(medium='air')
+        elif unit == 'nm_vac':
+            w = s.get_wavelength(medium='vacuum')
         elif unit == 'cm-1':
-            if medium != 'default':
-                raise ValueError('resampling to cm-1 but `medium` is given. It ' +
-                                 'wont change wavenumbers, so just dont use it')
             w = s.get_wavenumber()
         else:
             raise ValueError('Unknown unit: {0}'.format(unit))
 
-        # Update waveunit to new unit
-        if unit != waveunit:
+        # Update stored_waveunit to new unit
+        if unit != stored_waveunit:
             s.conditions['waveunit'] = unit
 
         # Get wavespace
@@ -2993,17 +2939,6 @@ class Spectrum(object):
                 raise AssertionError(msg)
 
         return equilibrium
-
-    def get_medium(self):
-        ''' Returns in which medium the spectrum is calculated (air or vacuum), 
-        based on the value on the self_absorption key in conditions. If not given, raises an error'''
-
-        try:
-            return self.conditions['medium']
-        except KeyError:
-            raise KeyError("We need to know if Spectrum is calculated in air or vacuum, but " +
-                           "`medium` is not defined in conditions. Please add the " +
-                           "value manually")
 
     def is_optically_thin(self):
         ''' Returns whether the spectrum is optically thin, based on the value

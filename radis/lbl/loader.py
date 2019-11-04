@@ -309,7 +309,6 @@ class Input(ConditionDict):
         self.Tvib = None      #: float: vibrational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
         self.Trot = None      #: float: rotational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
         self.isotope = None   #: str: isotope list. Can be '1,2,3', etc. or 'all'
-        self.medium = 'vacuum'         #: str: propagation medium (air, vacuum)
         self.mole_fraction = None      #: float: mole fraction 
         self.molecule = None           #: str: molecule
         self.overpopulation = None     #: dict: overpopulation
@@ -319,8 +318,6 @@ class Input(ConditionDict):
         self.self_absorption = True    #: bool: self absorption (if True, not optically thin)
         self.state = None              #: str: electronic state 
         self.vib_distribution = 'boltzmann'  #: str: vibrational levels distribution (boltzmann, treanor)
-        self.wavelength_max = None     #: str: wavelength max (nm)
-        self.wavelength_min = None     #: str: wavelength min (nm)
         self.wavenum_max = None        #: str: wavenumber max (cm-1)
         self.wavenum_min = None        #: str: wavenumber min (cm-1)
 

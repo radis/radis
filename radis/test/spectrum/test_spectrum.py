@@ -62,7 +62,6 @@ def test_spectrum_get_methods(verbose=True, plot=True, close_plots=True, *args, 
     assert s.get_power(
         unit='W/cm2/sr') == s.get_integral('radiance_noslit', Iunit='W/cm2/sr/nm')
     assert s.get_conditions()['Tgas'] == 1500
-    assert s.get_medium() == 'air'
     assert len(s.get_vars()) == 2
     assert s.is_at_equilibrium() == False
     assert s.is_optically_thin() == False
@@ -181,14 +180,12 @@ def test_store_functions(verbose=True, *args, **kwargs):
         'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     s.update()
     try:
-        s.savetxt(temp_file, 'transmittance_noslit',
-                  wunit='nm', medium='vacuum')
+        s.savetxt(temp_file, 'transmittance_noslit', wunit='nm_vac')
         w, T = np.loadtxt(temp_file).T
     finally:
         os.remove(temp_file)
 
-    s2 = transmittance_spectrum(
-        w, T, wunit='nm', conditions={'medium': 'vacuum'})
+    s2 = transmittance_spectrum(w, T, wunit='nm_vac')
     assert s.compare_with(s2, spectra_only='transmittance_noslit', plot=False)
 
     # TODO: add test that ensures we can load a binary file without binary=True
@@ -211,8 +208,7 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
     w_cm = nm2cm(w_nm)
     I_nm = planck(w_nm, T=6000, unit='mW/sr/cm2/nm')
 
-    s = calculated_spectrum(w_nm, I_nm, wunit='nm', Iunit='mW/sr/cm2/nm',
-                            conditions={'medium': 'vacuum'})
+    s = calculated_spectrum(w_nm, I_nm, wunit='nm_vac', Iunit='mW/sr/cm2/nm',)
 
     # mW/sr/cm2/nm -> mW/sr/cm2/cm-1
     w, I = s.get('radiance_noslit', Iunit='mW/sr/cm2/cm_1')
@@ -295,8 +291,8 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
     s2 = s.copy()
     s2b = s.copy()
     s3 = s.copy()
-    s2.resample(np.linspace(4500, 4700, 10000), unit='nm', medium='vacuum')
-    s2b.resample(np.linspace(4500, 4700, 10000), unit='nm', medium='air')
+    s2.resample(np.linspace(4500, 4700, 10000), unit='nm_vac')
+    s2b.resample(np.linspace(4500, 4700, 10000), unit='nm')
     s3.resample(np.linspace(2127.2, 2227.7, 10000), unit='cm-1')
     s2.name = 'resampled in nm (vacuum)'
     s2b.name = 'resampled in nm (air)'

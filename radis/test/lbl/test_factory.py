@@ -181,18 +181,16 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
         # Compare with harcoded results
         # ... code previously used to export hardcoded results:
         # ... and header contains all input conditions:
-#        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm', medium='air')).T[::10])
+#        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm')).T[::10])
 #        print(s)
         # ................
         from radis.test.utils import getTestFile
         wref, Iref = np.loadtxt(getTestFile(
             'CO2abscoeff_300K_4150_4400nm.txt')).T
-        match_reference = np.allclose(
-            s.get('abscoeff', wunit='nm', medium='air')[1][::10], Iref)
+        match_reference = np.allclose(s.get('abscoeff', wunit='nm')[1][::10], Iref)
         if not match_reference:
             # give some more information before raising error
-            printm('Error: {0:.2f}%'.format(np.mean(abs(s.get('abscoeff', wunit='nm',
-                                                              medium='air')[1][::10]/Iref-1))*100))
+            printm('Error: {0:.2f}%'.format(np.mean(abs(s.get('abscoeff', wunit='nm')[1][::10]/Iref-1))*100))
             # Store the faulty spectrum
             s.store('test_factory_failed_{0}.spec'.format(radis.get_version()),
                     if_exists_then='replace')
@@ -323,27 +321,20 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         sf.warnings['GaussianBroadeningWarning'] = 'ignore'
         sf.load_databank('HITRAN-CO-TEST')
 
-        # Calculate in Vacuum
-        sv = sf.eq_spectrum(2000)
-        assert sv.conditions['medium'] == 'vacuum'
-
-        # Calculate in Air
-        # change input (not recommended to access this directly!)
-        sf.input.medium = 'air'
-        sa = sf.eq_spectrum(2000)
-        assert sa.conditions['medium'] == 'air'
+        # Calculate a spectrum
+        s = sf.eq_spectrum(2000)
 
         # Compare
         if plot:
             fig = plt.figure(fig_prefix+'Propagating media line shift')
-            sv.plot('radiance_noslit', nfig=fig.number, lw=2, label='Vacuum')
+            s.plot('radiance_noslit', wunit='nm_vac', nfig=fig.number, lw=2, label='Vacuum')
             plt.title('CO spectrum (2000 K)')
-            sa.plot('radiance_noslit', nfig=fig.number,
+            s.plot('radiance_noslit', wunit='nm', nfig=fig.number,
                     lw=2, color='r', label='Air')
 
         # ... there should be about ~1.25 nm shift at 4.5 µm:
-        assert np.isclose(sv.get('radiance_noslit', wunit='nm')[0][0] -
-                          sa.get('radiance_noslit', wunit='nm')[0][0],
+        assert np.isclose(s.get('radiance_noslit', wunit='nm_vac')[0][0] -
+                          s.get('radiance_noslit', wunit='nm')[0][0],
                           1.2540436086346745)
 
     except DatabankNotFound as err:

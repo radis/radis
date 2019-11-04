@@ -67,11 +67,11 @@ def calc_spectrum(wavenum_min=None,
 
     wavelength_min: float [nm]
         minimum wavelength to be processed in nm. Wavelength in ``'air'`` or 
-        'vacuum' depending of the value of the parameter ``'medium='``
+        ``'vacuum'`` depending of the value of the parameter ``'medium='``
 
     wavelength_max: float [nm]
         maximum wavelength to be processed in nm. Wavelength in ``'air'`` or 
-        'vacuum' depending of the value of the parameter ``'medium='``
+        ``'vacuum'`` depending of the value of the parameter ``'medium='``
 
     Tgas: float [K]
         Gas temperature. If non equilibrium, is used for Ttranslational. 
@@ -137,13 +137,12 @@ def calc_spectrum(wavenum_min=None,
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
         your ``~/.radis`` file format 
 
-    medium: 'air', vacuum'
-        propagating medium: choose whether to return wavelength in air or vacuum.
-        Note that the  input wavelength range ("wavenum_min", "wavenum_max") changes. 
-        Default 'air'
+    medium: ``'air'``, ``'vacuum'``
+        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``
 
-    wstep: cm-1
-        Spacing of calculated spectrum. Default 0.01 cm-1
+    wstep: float (cm-1)
+        Spacing of calculated spectrum. Default ``0.01 cm-1``
 
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create

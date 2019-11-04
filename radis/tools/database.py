@@ -596,6 +596,28 @@ def _fix_format(file, sload):
             raise KeyError("Spectrum 'conditions' dict should at least have a " +
                            "'waveunit' key. Got: {0}".format(list(sload['conditions'].keys())))
 
+    # propagation medium removed in 0.9.22, replaced with 'nm' and 'nm_vac' in 
+    # waveunit directly
+    if 'medium' in sload['conditions']:
+        printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
+             "medium removed in 0.9.22). Fixing this time, but regenerate " +
+             "database ASAP.") #, DeprecationWarning)
+        # Fix: rewrite waveunit
+        assert 'waveunit' in sload['conditions']
+        if sload['conditions']['waveunit'] == 'cm-1':
+            pass   # does not change anything, no need to report
+        else: # wavelength is in air or vacuum. 
+            assert sload['conditions']['waveunit'] == 'nm'
+            if sload['conditions']['medium'] == 'air':
+                sload['conditions']['waveunit'] = 'nm'
+            elif sload['conditions']['medium'] == 'vacuum':
+                sload['conditions']['waveunit'] = 'nm_vac'
+            else:
+                raise ValueError(sload['conditions']['medium'])
+        # fix: delete medium key
+        del sload['conditions']['medium']
+        fixed = True
+
     if 'isotope_identifier' in sload['conditions']:
         printr("File {0}".format(basename(file))+" has a deprecrated structure (key " +
              "isotope_identifier replaced with isotope). Fixed this time, but regenerate " +
