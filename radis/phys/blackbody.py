@@ -223,5 +223,5 @@ def sPlanck(wavenum_min=None, wavenum_max=None,
 
 
 if __name__ == '__main__':
-    from radis.test.phys.test_blackbody import test_planck
-    test_planck()
+    from radis.test.phys.test_blackbody import _run_testcases
+    _run_testcases(plot=True)
