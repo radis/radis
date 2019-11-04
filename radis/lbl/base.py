@@ -286,6 +286,19 @@ class BaseFactory(DatabankLoader):
     # _calc_einstein_coefficients
     # =========================================================================
 
+    @staticmethod
+    def assert_no_nan(df, column):
+        ''' Assert there are no nan in the column, and crash with a nice 
+        explanation if it is found'''
+        from radis.misc.printer import get_print_full
+        try:
+            assert np.isnan(df[column]).sum() == 0
+        except AssertionError:
+            index = np.isnan(df[column]).idxmax()
+            raise AssertionError('{0}=NaN in line database at index {1}'.format(column, index)+\
+                                 ' corresponding to Line:\n {1}'.format(
+                                         index, get_print_full(df.loc[index])))
+
     def _add_EvibErot(self, df, calc_Evib_harmonic_anharmonic=False):
         ''' Calculate Evib & Erot in Line dataframe
 
@@ -526,8 +539,9 @@ class BaseFactory(DatabankLoader):
         if self.verbose>=2:
             printg('Fetched energies in {0:.0f}s'.format(time()-t0))
         
-        assert np.isnan(df.Evibu).sum() == 0
-        assert np.isnan(df.Evibl).sum() == 0
+        if __debug__:
+            self.assert_no_nan(df, 'Evibu')
+            self.assert_no_nan(df, 'Evibl')
 
         return # None: Dataframe updated
 
@@ -629,9 +643,10 @@ class BaseFactory(DatabankLoader):
         if self.verbose>=2:
             printg('Fetched energies in {0:.0f}s'.format(time()-t0))
 
-        assert np.isnan(df.Evibu).sum() == 0
-        assert np.isnan(df.Evibl).sum() == 0
-        
+        if __debug__:
+            self.assert_no_nan(df, 'Evibu')
+            self.assert_no_nan(df, 'Evibl')
+
         return # None: Dataframe updated
 
     def _add_EvibErot_CDSD_pcJN(self, df, calc_Evib_harmonic_anharmonic=False):
@@ -739,9 +754,10 @@ class BaseFactory(DatabankLoader):
         if self.verbose>=2:
             printg('Fetched energies in {0:.0f}s'.format(time()-t0))
 
-        assert np.isnan(df.Evibu).sum() == 0
-        assert np.isnan(df.Evibl).sum() == 0
-        
+        if __debug__:
+            self.assert_no_nan(df, 'Evibu')
+            self.assert_no_nan(df, 'Evibl')
+
         return  # None: Dataframe updated
 
     def _add_Evib123Erot_CDSD_pc(self, df, calc_Evib_harmonic_anharmonic=False):
@@ -878,12 +894,13 @@ class BaseFactory(DatabankLoader):
         df['Erotu'] = df.Eu - df.Evibu
         df['Erotl'] = df.El - df.Evibl
 
-        assert np.isnan(df.Evib1u).sum() == 0
-        assert np.isnan(df.Evib2u).sum() == 0
-        assert np.isnan(df.Evib3u).sum() == 0
-        assert np.isnan(df.Evib1l).sum() == 0
-        assert np.isnan(df.Evib2l).sum() == 0
-        assert np.isnan(df.Evib3l).sum() == 0
+        if __debug__:
+            self.assert_no_nan(df, 'Evib1u')
+            self.assert_no_nan(df, 'Evib2u')
+            self.assert_no_nan(df, 'Evib3u')
+            self.assert_no_nan(df, 'Evib1l')
+            self.assert_no_nan(df, 'Evib2l')
+            self.assert_no_nan(df, 'Evib3l')
         
         if self.verbose>=2:
             printg('Fetched energies in {0:.0f}s'.format(time()-t0))
@@ -1135,12 +1152,12 @@ class BaseFactory(DatabankLoader):
         df['Erotl'] = df.El - df.Evibl
 
         if __debug__:
-            assert np.isnan(df.Evib1u).sum() == 0
-            assert np.isnan(df.Evib2u).sum() == 0
-            assert np.isnan(df.Evib3u).sum() == 0
-            assert np.isnan(df.Evib1l).sum() == 0
-            assert np.isnan(df.Evib2l).sum() == 0
-            assert np.isnan(df.Evib3l).sum() == 0
+            self.assert_no_nan(df, 'Evib1u')
+            self.assert_no_nan(df, 'Evib2u')
+            self.assert_no_nan(df, 'Evib3u')
+            self.assert_no_nan(df, 'Evib1l')
+            self.assert_no_nan(df, 'Evib2l')
+            self.assert_no_nan(df, 'Evib3l')
         
         if self.verbose>=2:
             printg('Fetched energies in {0:.0f}s'.format(time()-t0))
@@ -1306,13 +1323,13 @@ class BaseFactory(DatabankLoader):
         df['Erotl'] = df.El - df.Evibl
 
         if __debug__:
-            assert np.isnan(df.Evib1u).sum() == 0
-            assert np.isnan(df.Evib2u).sum() == 0
-            assert np.isnan(df.Evib3u).sum() == 0
-            assert np.isnan(df.Evib1l).sum() == 0
-            assert np.isnan(df.Evib2l).sum() == 0
-            assert np.isnan(df.Evib3l).sum() == 0
-        
+            self.assert_no_nan(df, 'Evib1u')
+            self.assert_no_nan(df, 'Evib2u')
+            self.assert_no_nan(df, 'Evib3u')
+            self.assert_no_nan(df, 'Evib1l')
+            self.assert_no_nan(df, 'Evib2l')
+            self.assert_no_nan(df, 'Evib3l')
+
         if self.verbose>=2:
             printg('Fetched energies in {0:.0f}s'.format(time()-t0))
 
