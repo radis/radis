@@ -154,8 +154,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
             fig.savefig('out/test_RADIS_vs_HAPI_line_broadening.pdf')
 
     # Compare integrals
-    diff = abs(s.get_integral('transmittance_noslit', medium='vacuum') /
-               s_hapi.get_integral('transmittance_noslit', medium='vacuum')-1)
+    diff = abs(s.get_integral('transmittance_noslit') / s_hapi.get_integral('transmittance_noslit')-1)
     b = diff < rtol
 
     if verbose:

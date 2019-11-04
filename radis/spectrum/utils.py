@@ -139,6 +139,24 @@ def make_up(label):
     
     return label
 
+def format_xlabel(wunit, plot_medium):
+    ''' Used by :py:meth:`radis.spectrum.spectrum.Spectrum.plot` and 
+    :py:func:`radis.spectrum.compare.plot_diff`
+    '''
+    if wunit == 'cm-1':
+        xlabel = 'Wavenumber (cm-1)'
+    else:  # wunit == 'nm'
+        if plot_medium:
+            if wunit == 'nm':
+                wmedium = ' [air]'
+            elif wunit == 'nm_vac':
+                wmedium = ' [vacuum]'
+            else:
+                raise ValueError(wunit)
+        else:
+            wmedium = ''
+        xlabel = 'Wavelength {0}(nm)'.format(wmedium)
+    return make_up(xlabel)
 
 def print_conditions(conditions, units,
                      phys_param_list=PHYSICAL_PARAMS, info_param_list=INFORMATIVE_PARAMS):

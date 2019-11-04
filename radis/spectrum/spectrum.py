@@ -49,7 +49,8 @@ from radis.phys.convert import conv2, cm2nm, nm2cm
 from radis.phys.units import Q_, convert_universal
 from radis.phys.air import vacuum2air, air2vacuum
 from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES, WAVESPACE,
-                                  make_up, cast_waveunit, print_conditions)
+                                  make_up, cast_waveunit, print_conditions,
+                                  format_xlabel)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 #from radis.lbl.base import print_conditions
 from radis.misc.arrays import (evenly_distributed, count_nans, 
@@ -1398,8 +1399,8 @@ class Spectrum(object):
                 s2.plot(nfig='same')
 
         plot_medium: bool
-            if ``True`` and ``wunit`` are wavelengths, plot whether it's air 
-            or vacuum. Default ``False``
+            if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
+            in the xaxis label (air or vacuum). Default ``False``
 
         yscale: 'linear', 'log'
             plot yscale
@@ -1470,20 +1471,7 @@ class Spectrum(object):
         x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
         # Get labels
-        if wunit == 'cm-1':
-            xlabel = 'Wavenumber (cm-1)'
-        else:  # wunit == 'nm'
-            if plot_medium:
-                if wunit == 'nm':
-                    wmedium = ' [air]'
-                elif wunit == 'nm_vac':
-                    wmedium = ' [vacuum]'
-                else:
-                    raise ValueError(wunit)
-            else:
-                wmedium = ''
-            xlabel = 'Wavelength {0}(nm)'.format(wmedium)
-        xlabel = make_up(xlabel)
+        xlabel=format_xlabel(wunit, plot_medium)
 
         if Iunit == 'default':
             try:

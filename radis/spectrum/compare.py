@@ -27,7 +27,8 @@ Routine Listings
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
-from radis.spectrum.spectrum import Spectrum, make_up, cast_waveunit, is_spectrum
+from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.utils import format_xlabel, make_up, cast_waveunit
 from radis.misc.basics import compare_lists, compare_dict
 from six import string_types
 
@@ -532,9 +533,9 @@ def plot_diff(s1, s2, var=None,
               wunit='default', Iunit='default', 
               resample=True, method='diff', diff_window=0, show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
-              normalize=False, verbose=True, save=False, show=True,
+              normalize=False, verbose=True, save=False, show=True, 
               show_residual=False, lw_multiplier=1, diff_scale_multiplier=1,
-              discard_centile=0):
+              discard_centile=0, plot_medium=False):
     ''' Plot two spectra, and the difference between them. ``method=`` allows
     you to plot the absolute difference, ratio, or both. 
 
@@ -629,6 +630,10 @@ def plot_diff(s1, s2, var=None,
         a plot feature.
         Default ``0`` 
         
+    plot_medium: bool
+        if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
+        in the xaxis label (air or vacuum). Default ``False``
+
     Returns
     -------
     
@@ -767,11 +772,7 @@ def plot_diff(s1, s2, var=None,
     # ----
 
     # Format units
-    wunit = cast_waveunit(wunit)
-    if wunit == 'cm-1':
-        xlabel = 'Wavenumber (cm-1)'
-    elif wunit == 'nm':
-        xlabel = 'Wavelength (nm)'
+    xlabel = format_xlabel(wunit, plot_medium)
 
     # Init figure
     set_style('origin')
