@@ -79,7 +79,7 @@ from six import string_types
 from warnings import warn
 from radis.io.hitran import get_molecule
 from radis.lbl.bands import BandFactory
-from radis.lbl.base import get_all_waveranges
+from radis.lbl.base import get_waverange
 from radis.spectrum.spectrum import Spectrum
 from radis.spectrum.equations import calc_radiance
 from radis.misc.basics import is_float, list_if_float, flatten
@@ -145,9 +145,8 @@ class SpectrumFactory(BandFactory):
         times!). Default 'all'
 
     medium: ``'air'``, ``'vacuum'``
-        propagating medium: choose whether to return wavelength in air or vacuum.
-        Used when the wavespace is given in wavelength (``wavenum_min=``, ``wavenum_max=``). 
-        Default ``'air'``
+        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``
 
     Other Parameters
     ----------------
@@ -365,9 +364,10 @@ class SpectrumFactory(BandFactory):
         # calculate waveranges
         # --------------------
 
-        # Get wavelength & wavenumbers in correct propagation medium
-        wavenum_min, wavenum_max, wavelength_min, wavelength_max = get_all_waveranges(
-            medium, wavenum_min, wavenum_max, wavelength_min, wavelength_max)
+        # Get wavenumber, based on whatever was given as input.
+        wavenum_min, wavenum_max = get_waverange(wavenum_min, wavenum_max, 
+                                                      wavelength_min, wavelength_max,
+                                                      medium)
 
         # calculated range is broader than output waverange to take into account off-range line broadening
         wavenumber, wavenumber_calc = _generate_wavenumber_range(wavenum_min, wavenum_max,
@@ -396,10 +396,6 @@ class SpectrumFactory(BandFactory):
         # Initialize input conditions
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
-        self.input.wavelength_min = wavelength_min
-        self.input.wavelength_max = wavelength_max
-        # propagating medium. Calculations are done in vacuum anyway
-        self.input.medium = medium
         self.input.Tref = Tref
         self.input.pressure_mbar = pressure*1e3
         self.input.mole_fraction = mole_fraction

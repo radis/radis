@@ -45,8 +45,9 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     I: np.array 
         intensity (no slit)
 
-    wunit: 'nm', 'cm-1'
-        wavespace unit
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        wavespace unit: wavelength in air (``'nm'``), wavenumber 
+        (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``. 
 
     Iunit: str
         intensity unit (can be 'counts', 'mW/cm2/sr/nm', etc...). Default
@@ -114,8 +115,9 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     T: np.array 
         transmittance (no slit)
 
-    wunit: ``'nm'``, ``'cm-1'``
-        wavespace unit
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        wavespace unit: wavelength in air (``'nm'``), wavenumber 
+        (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``. 
 
     Iunit: str
         intensity unit. Default ``'I/I0'``
@@ -162,7 +164,7 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
                                name=name)
 
 
-def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
+def experimental_spectrum(w, I, wunit='nm', Iunit='counts', 
                           conditions={}, cond_units=None, name=None): # -> Spectrum:
     ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum` 
     object that has unit conversion and plotting
@@ -179,8 +181,9 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
     I: np.array 
         intensity
 
-    wunit: 'nm', 'cm-1'
-        wavespace unit
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        wavespace unit: wavelength in air (``'nm'``), wavenumber 
+        (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``. 
 
     Iunit: str
         intensity unit (can be 'counts', 'mW/cm2/sr/nm', etc...). Default
@@ -188,9 +191,6 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
 
     Other Parameters
     ----------------
-
-    medium: 'air', 'vacuum'
-        which medium. Default 'air'
 
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum
@@ -223,12 +223,7 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts', medium='air',
     :func:`~radis.tools.database.load_spec`
 
     '''
-    
-    if 'medium' in conditions:
-        assert conditions['medium'] == medium
-    else:
-        conditions.update({'medium':medium})
-        
+
     return Spectrum.from_array(np.array(w), np.array(I), 'radiance',
                                waveunit=wunit, unit=Iunit,
                                conditions=conditions, cond_units=cond_units,

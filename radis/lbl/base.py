@@ -2874,9 +2874,10 @@ class BaseFactory(DatabankLoader):
         fix_style('origin')
 
 
-def get_all_waveranges(medium, wavenum_min=None, wavenum_max=None, wavelength_min=None, wavelength_max=None):
-    ''' Give either lambda_min, lambda_max or nu_min, nu_max and you get 
-    everything, in the given propagation ``medium`` 
+def get_waverange(wavenum_min=None, wavenum_max=None, wavelength_min=None, wavelength_max=None,
+                  medium='air'):
+    ''' Returns wavenumber based on whatever input was given: either ν_min, ν_max 
+    directly, or λ_min, λ_max  in the given propagation ``medium``.
 
     Parameters
     ----------
@@ -2884,19 +2885,19 @@ def get_all_waveranges(medium, wavenum_min=None, wavenum_max=None, wavelength_mi
     medium: ``'air'``, ``'vacuum'``
         propagation medium
 
-    wavenum_min, wavenum_max: float, or None
+    wavenum_min, wavenum_max: float, or ``None``
         wavenumbers
 
-    wavelength_min, wavelength_max: float, or None
+    wavelength_min, wavelength_max: float, or ``None``
         wavelengths in given ``medium``
 
     Returns
     -------
 
-    wavenum_min, wavenum_max, wavelength_min, wavelength_max: float
-        wavenumbers, wavelengths in given ``medium``
+    wavenum_min, wavenum_max,: float
+        wavenumbers
+
     '''
-    # TODO: can probably be removed after Refactor #49
 
     # Check input
     if (wavelength_min is None and wavelength_max is None and
@@ -2934,20 +2935,12 @@ def get_all_waveranges(medium, wavenum_min=None, wavenum_max=None, wavelength_mi
         # Test range is correct:
         assert wavenum_min < wavenum_max
 
-        wavelength_min_vac = cm2nm(wavenum_max)
-        wavelength_max_vac = cm2nm(wavenum_min)
-
-        # Convert to expected medium if needed:
-        if medium == 'air':
-            wavelength_min = vacuum2air(wavelength_min_vac)
-            wavelength_max = vacuum2air(wavelength_max_vac)
-
-    return wavenum_min, wavenum_max, wavelength_min, wavelength_max
+    return wavenum_min, wavenum_max
 
 
 if __name__ == '__main__':
     from radis.test.lbl.test_base import _run_testcases
     _run_testcases()
 
-    _, _, wlmin, wlmax = get_all_waveranges('air', 2000, 2400)
-    np.allclose((wlmin, wlmax), (4165.53069, 4998.6369))
+    _, _, wlmin, wlmax = get_waverange('air', 2000, 2400)
+    assert np.allclose((wlmin, wlmax), (4165.53069, 4998.6369))

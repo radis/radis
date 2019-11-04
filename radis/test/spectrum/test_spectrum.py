@@ -186,8 +186,7 @@ def test_store_functions(verbose=True, *args, **kwargs):
     finally:
         os.remove(temp_file)
 
-    s2 = transmittance_spectrum(
-        w, T, wunit='nm', conditions={'medium': 'vacuum'})
+    s2 = transmittance_spectrum(w, T, wunit='nm_vac')
     assert s.compare_with(s2, spectra_only='transmittance_noslit', plot=False)
 
     # TODO: add test that ensures we can load a binary file without binary=True
@@ -210,8 +209,7 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
     w_cm = nm2cm(w_nm)
     I_nm = planck(w_nm, T=6000, unit='mW/sr/cm2/nm')
 
-    s = calculated_spectrum(w_nm, I_nm, wunit='nm', Iunit='mW/sr/cm2/nm',
-                            conditions={'medium': 'vacuum'})
+    s = calculated_spectrum(w_nm, I_nm, wunit='nm_vac', Iunit='mW/sr/cm2/nm',)
 
     # mW/sr/cm2/nm -> mW/sr/cm2/cm-1
     w, I = s.get('radiance_noslit', Iunit='mW/sr/cm2/cm_1')

@@ -122,10 +122,11 @@ class Spectrum(object):
         linestrength in SpectrumFactory). Refer to the code to know what they mean
         (and their units)
 
-    wavespace: ``'nm'`` or ``'cm-1'``, or ``None``
-        define whether wavenumber or wavelength are used in 'quantities' tuples.
+    wavespace: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
+        wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). 
         Quantities should be evenly distributed along this space for fast
         convolution with the slit function
+        If ``None``, ``'wavespace'`` must be defined in ``conditions``. 
         (non-uniform slit function is not implemented anyway... )
         Defaults None (but raises an error if wavespace is not defined in
         conditions neither)
@@ -329,8 +330,8 @@ class Spectrum(object):
             spectral quantity name
 
         waveunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
-            unit of waverange: wavelength in air, wavenumber, or wavelength in 
-            vacuum.
+            unit of waverange:         wavelength in air (``'nm'``), wavenumber 
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). 
 
         unit: str
             spectral quantity unit (arbitrary). Ex: 'mW/cm2/sr/nm' for radiance_noslit
@@ -432,8 +433,8 @@ class Spectrum(object):
             spectral quantity name
 
         waveunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
-            unit of waverange: wavelength in air, wavenumber, or wavelength in 
-            vacuum.
+            unit of waverange: wavelength in air (``'nm'``), wavenumber 
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). 
 
         unit: str
             spectral quantity unit
@@ -580,7 +581,8 @@ class Spectrum(object):
             the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars` method.
 
         wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
-            wavespace unit: wavenumber, wavelength in air, wavelength in vacuum.
+            wavespace unit: wavelength in air (``'nm'``), wavenumber 
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). 
             Default ``nm`` (wavelength in air).
 
         Iunit: unit for variable ``var``

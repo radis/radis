@@ -323,27 +323,20 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         sf.warnings['GaussianBroadeningWarning'] = 'ignore'
         sf.load_databank('HITRAN-CO-TEST')
 
-        # Calculate in Vacuum
-        sv = sf.eq_spectrum(2000)
-        assert sv.conditions['medium'] == 'vacuum'
-
-        # Calculate in Air
-        # change input (not recommended to access this directly!)
-        sf.input.medium = 'air'
-        sa = sf.eq_spectrum(2000)
-        assert sa.conditions['medium'] == 'air'
+        # Calculate a spectrum
+        s = sf.eq_spectrum(2000)
 
         # Compare
         if plot:
             fig = plt.figure(fig_prefix+'Propagating media line shift')
-            sv.plot('radiance_noslit', nfig=fig.number, lw=2, label='Vacuum')
+            s.plot('radiance_noslit', wunit='nm_vac', nfig=fig.number, lw=2, label='Vacuum')
             plt.title('CO spectrum (2000 K)')
-            sa.plot('radiance_noslit', nfig=fig.number,
+            s.plot('radiance_noslit', wunit='nm', nfig=fig.number,
                     lw=2, color='r', label='Air')
 
         # ... there should be about ~1.25 nm shift at 4.5 µm:
-        assert np.isclose(sv.get('radiance_noslit', wunit='nm_vac')[0][0] -
-                          sa.get('radiance_noslit', wunit='nm')[0][0],
+        assert np.isclose(s.get('radiance_noslit', wunit='nm_vac')[0][0] -
+                          s.get('radiance_noslit', wunit='nm')[0][0],
                           1.2540436086346745)
 
     except DatabankNotFound as err:
