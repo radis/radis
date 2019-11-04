@@ -851,7 +851,7 @@ class Spectrum(object):
         '''
         w = self._get_wavespace(which=which, copy=copy)
 
-        if self.get_waveunit == 'cm-1':    #
+        if self.get_waveunit() == 'cm-1':    #
             pass
         
         elif self.get_waveunit() == 'nm':     # wavelength air
@@ -1360,10 +1360,10 @@ class Spectrum(object):
         return items
 
     def plot(self, var=None, wunit='default', Iunit='default', show_points=False,
-             nfig=None, yscale='linear', medium='default',
+             nfig=None, yscale='linear', plot_medium=False,
              normalize=False, force=False,
              **kwargs):
-        '''
+        ''' Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
 
         Parameters    
         ----------
@@ -1372,8 +1372,9 @@ class Spectrum(object):
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.  
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
 
-        wunit: `default`, `cm-1`, `nm`
-            wavelength or wavenumber unit. If `default`, Spectrum waveunit is used.
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, 
+            wavelength air, wavenumber, or wavelength vacuum. If ``'default'``, 
+            Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
 
         Iunit: unit for variable
             if `default`, default unit for quantity `var` is used.
@@ -1390,7 +1391,15 @@ class Spectrum(object):
             show calculated points. Default ``True``.
 
         nfig: int, None, or 'same'
-            plot on a particular figure. 'same' plots on current figure.
+            plot on a particular figure. 'same' plots on current figure. For 
+            instance::
+                
+                s1.plot()
+                s2.plot(nfig='same')
+
+        plot_medium: bool
+            if ``True`` and ``wunit`` are wavelengths, plot whether it's air 
+            or vacuum. Default ``False``
 
         yscale: 'linear', 'log'
             plot yscale
@@ -1412,9 +1421,21 @@ class Spectrum(object):
         line: 
             line plot
             
+        Examples
+        --------
+        
+        Plot an :py:func:`~radis.spectrum.models.experimental_spectrum` in 
+        arbitrary units::
+            
+            s = experimental_spectrum(..., Iunit='mW/cm2/sr/nm')
+            s.plot(Iunit='W/cm2/sr/cm_1')
+            
+        See more examples in :ref:`the plot Spectral quantities page <label_spectrum_plot>`. 
+            
         See Also
         --------
         
+        :py:func:`~radis.spectrum.compare.plot_diff`,         
         :ref:`the Spectrum page <label_spectrum>`
 
         '''
@@ -1446,14 +1467,22 @@ class Spectrum(object):
         wunit = cast_waveunit(wunit)
 
         # Get variable
-        x, y = self.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
+        x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
         # Get labels
-        wmedium = ' [{0}]'.format(medium) if medium != 'default' else ''
         if wunit == 'cm-1':
             xlabel = 'Wavenumber (cm-1)'
         else:  # wunit == 'nm'
-            xlabel = 'Wavelength (nm){0}'.format(wmedium)
+            if plot_medium:
+                if wunit == 'nm':
+                    wmedium = ' [air]'
+                elif wunit == 'nm_vac':
+                    wmedium = ' [vacuum]'
+                else:
+                    raise ValueError(wunit)
+            else:
+                wmedium = ''
+            xlabel = 'Wavelength {0}(nm)'.format(wmedium)
         xlabel = make_up(xlabel)
 
         if Iunit == 'default':
@@ -2261,8 +2290,8 @@ class Spectrum(object):
         Parameters
         ----------
 
-        wunit: 'nm', 'cm-1', or None
-            plot slit in wavelength or wavenumber. If None, use the unit
+        wunit: ``'nm'``, ``'cm-1'``, or ``None``
+            plot slit in wavelength or wavenumber. If ``None``, use the unit
             the slit in which the slit function was given. Default ``None``
                 
         Returns
@@ -2282,7 +2311,9 @@ class Spectrum(object):
                                       normalize_slit)
 
         # Check inputs
-        assert wunit in ['nm', 'cm-1', None]
+        assert wunit in ['nm', 'cm-1', 'nm_vac', None]
+        # @dev: note: wunit in 'nm_vac' also implemented for consistency, 
+        # although not mentionned in docs. 
         if wunit is None:
             wunit = self.conditions['slit_unit']
 
@@ -2312,11 +2343,14 @@ class Spectrum(object):
             slit_dispersion = self.conditions['slit_dispersion']
             if slit_dispersion is not None:
                 waveunit = self.get_waveunit()
+                # Get slit in air wavelength:
                 if waveunit == 'nm':
                     wslit0_nm = wslit0
+                elif waveunit == 'nm_vac':
+                    wslit0_nm = vacuum2air(wslit0)
                 else:
                     wslit0_nm = cm2nm(wslit0)
-                w_nm = self.get_wavelength(medium='default', which='non_convoluted')
+                w_nm = self.get_wavelength(medium='air', which='non_convoluted')                
                 wings = len(wslit0)    # note: hardcoded. Make sure it's the same as in apply_slit
                 wings *= max(1, abs(int(np.diff(wslit0_nm).mean() / np.diff(w_nm).mean())))
                 slice_windows, wings_min, wings_max = _cut_slices(w_nm, slit_dispersion, wings=wings)
@@ -2342,6 +2376,8 @@ class Spectrum(object):
                     # Convert it back if needed
                     if waveunit == 'cm-1':
                         wslit = nm2cm(wslit)
+                    elif waveunit == 'nm_vac':
+                        wslit = air2vacuum(wslit)
                     # We need to renormalize now that Islit has changed
                     wslit, Islit = normalize_slit(wslit, Islit, norm_by=norm_by)
                     plot_slit(wslit, Islit, waveunit=waveunit, plot_unit=wunit,
@@ -2350,8 +2386,7 @@ class Spectrum(object):
                     
         return fig, ax
 
-    def line_survey(self, overlay=None, wunit='cm-1', cutoff=None, medium='default',
-                    xunit=None,  # deprecated
+    def line_survey(self, overlay=None, wunit='default', cutoff=None, 
                     *args, **kwargs):
         ''' Plot Line Survey (all linestrengths used for calculation)
         Output in Plotly (html) 
@@ -2368,9 +2403,10 @@ class Spectrum(object):
             Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
             method. Default ``None``. 
 
-        wunit: 'nm', 'cm-1'
-            wavelength / wavenumber units
-
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, 
+            wavelength air, wavenumber, or wavelength vacuum. If ``'default'``, 
+            Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
+            
         medium: {'air', 'vacuum', 'default'}
             Choose whether wavelength are shown in air or vacuum. If ``'default'``  
             lines are shown as stored in the spectrum. 
@@ -2444,14 +2480,8 @@ class Spectrum(object):
         from radis.tools.line_survey import LineSurvey
 
         # Check inputs
-        if xunit is not None:
-            warn(DeprecationWarning('xunit replaced with wunit'))
-            wunit = xunit
-        assert medium in ['air', 'vacuum', 'default']
-
-        # Plot lines in spectrum medium (air/vacuum) if available
-        if 'medium' in self.conditions and medium == 'default':
-            medium = self.conditions['medium']
+        if wunit == 'default':
+            wunit = self.get_waveunit()
 
         def get_overlay(overlay):
             ''' Overlay line survey with a spectral quantity (like radiance or 
@@ -2461,7 +2491,7 @@ class Spectrum(object):
                 if overlay not in self.get_vars():
                     raise AttributeError('{0} not in variables list: {1}'.format(overlay,
                                                                                  self.get_vars()))
-                w, I = self.get(overlay, wunit=wunit, medium=medium)
+                w, I = self.get(overlay, wunit=wunit)
                 name = overlay
                 units = self.units[overlay]
                 return (w, I, name, units)
@@ -2481,13 +2511,11 @@ class Spectrum(object):
 
             overlay = [get_overlay(ov) for ov in overlay]
 
-            return LineSurvey(self, overlay=overlay, wunit=wunit,
-                              cutoff=cutoff, medium=medium,
+            return LineSurvey(self, overlay=overlay, wunit=wunit, cutoff=cutoff, 
                               *args, **kwargs)
 
         else:
-            return LineSurvey(self, wunit=wunit, cutoff=cutoff, medium=medium,
-                              *args, **kwargs)
+            return LineSurvey(self, wunit=wunit, cutoff=cutoff, *args, **kwargs)
 
     def get_conditions(self):
         ''' Get all physical / computational parameters.

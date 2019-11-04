@@ -14,8 +14,11 @@ from radis.misc.basics import partition
 # %% Definitions
 
 # Waverange, wavespaces
+# ... aliases:
 WAVENUM_UNITS = ['cm', 'cm-1', 'cm_1', 'wavenumber']
 WAVELEN_UNITS = ['nm', 'wavelength']
+WAVELENVAC_UNITS = ['nm_vac', 'nm_vacuum']
+# ... internal names
 WAVESPACE = ['nm', 'nm_vac', 'cm-1']
 ''' list: wavespace:
 - ``'nm'``: wavelength (in air)
@@ -98,11 +101,13 @@ def cast_waveunit(unit, force_match=True):
     ''' Standardize unit formats '''
     if unit in WAVELEN_UNITS:
         return 'nm'
+    if unit in WAVELENVAC_UNITS:
+        return 'nm_vac'
     elif unit in WAVENUM_UNITS:
         return 'cm-1'
     elif force_match:
-        raise ValueError('Unknown wavespace unit: {0}. Should be one of {1}'.format(unit,
-                                                                                    WAVELEN_UNITS+WAVENUM_UNITS))
+        raise ValueError('Unknown wavespace unit: {0}. Should be one of {1}'.format(
+                unit, WAVELEN_UNITS+WAVELENVAC_UNITS+WAVENUM_UNITS))
     else:
         return unit  # dont convert
 

@@ -47,7 +47,7 @@ from six.moves import zip
 # XXX =====================================================================
 
 
-def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
+def get_diff(s1, s2, var, wunit='default', Iunit='default',
              resample=True, diff_window=0):
     # type: (Spectrum, Spectrum, str, str, str, str, bool, int) -> np.array, np.array
     ''' Get the difference between 2 spectra. 
@@ -68,8 +68,8 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     var: str
         spectral quantity (ex: ``'radiance'``, ``'transmittance'``...)
 
-    wunit: 'nm', 'cm-1'
-        waveunit to compare in
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
 
     Iunit: str
         if ``'default'`` use s1 unit for variable var
@@ -112,7 +112,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
     '''
     
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
-                                   medium=medium, assert_same_wavelength=not resample)
+                                   assert_same_wavelength=not resample)
 
     # basically w1, I1 - I2 (on same range)
     w1, Idiff = curve_substract(w1, I1, w2, I2)
@@ -134,7 +134,7 @@ def get_diff(s1, s2, var, wunit='default', Iunit='default', medium='default',
 
 
 def get_ratio(s1, s2, var, 
-              wunit='default', Iunit='default', medium='default', resample=True):
+              wunit='default', Iunit='default', resample=True):
     # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
     ''' Get the ratio between two spectra
     Basically returns w1, I1 / I2 where (w1, I1) and (w2, I2) are the values of
@@ -149,18 +149,16 @@ def get_ratio(s1, s2, var,
     ----------
 
     s1, s2: Spectrum objects
+        :py:class:`~radis.spectrum.spectrum.Spectrum`
 
     var: str
         spectral quantity 
 
-    wunit: 'nm', 'cm-1'
-        waveunit to compare in
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
 
     Iunit: str
         if ``'default'`` use s1 unit for variable var
-
-    medium: 'air', 'vacuum', default'
-        propagating medium to compare in (if in wavelength)
 
     Notes
     -----
@@ -181,14 +179,14 @@ def get_ratio(s1, s2, var,
     '''
     
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
-                                   medium=medium, assert_same_wavelength=not resample)
+                                   assert_same_wavelength=not resample)
 
     # basically w1, I1 - I2 (on same range)
     return curve_divide(w1, I1, w2, I2)
 
 
 def get_distance(s1, s2, var, 
-                 wunit='default', Iunit='default', medium='default', resample=True):
+                 wunit='default', Iunit='default', resample=True):
     # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
     ''' Get a regularized Euclidian distance between two spectra ``s1`` and ``s2`` 
 
@@ -220,12 +218,13 @@ def get_distance(s1, s2, var,
     ----------
 
     s1, s2: Spectrum objects
+        :py:class:`~radis.spectrum.spectrum.Spectrum`
 
     var: str
         spectral quantity 
 
-    wunit: 'nm', 'cm-1'
-        waveunit to compare in
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
 
     Iunit: str
         if ``'default'`` use s1 unit for variable var
@@ -252,7 +251,7 @@ def get_distance(s1, s2, var,
     # TODO: normalize with Imax, wmax 
 
     w1, I1, w2, I2 = _get_defaults(s1, s2, var=var, wunit=wunit, Iunit=Iunit,
-                                   medium=medium, assert_same_wavelength=not resample)
+                                   assert_same_wavelength=not resample)
 
     # euclidian distance from w1, I1
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)
@@ -428,6 +427,7 @@ def get_residual_integral(s1, s2, var,
     ----------
 
     s1, s2: Spectrum objects
+        :py:class:`~radis.spectrum.spectrum.Spectrum`
 
     var: str
         spectral quantity
@@ -496,7 +496,7 @@ def get_residual_integral(s1, s2, var,
 
 
 def _get_defaults(s1, s2, var, 
-                  wunit='default', Iunit='default', medium='default',
+                  wunit='default', Iunit='default', 
                   assert_same_wavelength=False):
     # type: (Spectrum, Spectrum, str, str, str, bool) -> (np.array, np.array, np.array, np.array)
     ''' Returns w1, I1, w2, I2  in the same waveunit, unit and medium.
@@ -514,13 +514,11 @@ def _get_defaults(s1, s2, var,
     if wunit == 'default':
         wunit = s1.get_waveunit()
     wunit = cast_waveunit(wunit)
-    if medium == 'default':
-        medium = s1.conditions.get('medium', None)
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, medium=medium)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
     
     if assert_same_wavelength:
         if not array_allclose(w1, w2):
@@ -531,7 +529,7 @@ def _get_defaults(s1, s2, var,
 
 
 def plot_diff(s1, s2, var=None, 
-              wunit='default', Iunit='default', medium='default',
+              wunit='default', Iunit='default', 
               resample=True, method='diff', diff_window=0, show_points=False,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
               normalize=False, verbose=True, save=False, show=True,
@@ -553,14 +551,12 @@ def plot_diff(s1, s2, var=None,
         plot the first one in the Spectrum from ``'radiance'``, 
         ``'radiance_noslit'``, ``'transmittance'``, etc.
 
-    wunit: ``'default'``, ``'nm'``, ``'cm-1'``
-        if ``'default'``, use first spectrum wunit
+    wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        wavespace unit:  wavelength air, wavenumber, wavelength vacuum. 
+        If ``'default'``, use first spectrum wunit
 
     Iunit: str
         if ``'default'``, use first spectrum unit
-
-    medium: ``'air'``, ``'vacuum'``, ``'default'``
-        if ``'default'``, use first spectrum propagating medium
 
     method: ``'distance'``, ``'diff'``, ``'ratio'``, or list of them.
         If ``'diff'``, plot difference of the two spectra.
@@ -713,8 +709,6 @@ def plot_diff(s1, s2, var=None,
                            "Cant use default unit. Specify unit in s.units['{0}'].".format(var))
     if wunit == 'default':
         wunit = s1.get_waveunit()
-    if medium == 'default':
-        medium = s1.conditions.get('medium', None)
         
     if isinstance(method, list):
         methods = method
@@ -744,15 +738,12 @@ def plot_diff(s1, s2, var=None,
         for method in methods:
             if not normalize:
                 if method == 'distance':
-                    wdiff, Idiff = get_distance(
-                        s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+                    wdiff, Idiff = get_distance(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
                 elif method == 'diff':
-                    wdiff, Idiff = get_diff(
-                        s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium, 
+                    wdiff, Idiff = get_diff(s1, s2, var=var, wunit=wunit, Iunit=Iunit, 
                         diff_window=diff_window)
                 elif method == 'ratio':
-                    wdiff, Idiff = get_ratio(
-                        s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+                    wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
                 else:
                     raise ValueError('Unknown comparison method: {0}'.format(method))
                 wdiffs.append(wdiff)
@@ -763,8 +754,7 @@ def plot_diff(s1, s2, var=None,
                 elif method == 'diff':
                     wdiff, Idiff = curve_substract(w1, I1, w2, I2)
                 elif method == 'ratio':
-                    wdiff, Idiff = get_ratio(
-                        s1, s2, var=var, wunit=wunit, Iunit=Iunit, medium=medium)
+                    wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
                 else:
                     raise ValueError('Unknown comparison method: {0}'.format(method))
                 wdiffs.append(wdiff)
@@ -819,9 +809,9 @@ def plot_diff(s1, s2, var=None,
         ax0.plot(w1, I1, style, color='k', lw=3*lw_multiplier, label=label1)
         ax0.plot(w2, I2, style, color='r', lw=1*lw_multiplier, label=label2)
     else:
-        ax0.plot(*s1.get(var, wunit=wunit, Iunit=Iunit, medium=medium),
+        ax0.plot(*s1.get(var, wunit=wunit, Iunit=Iunit),
                  style, color='k', lw=3*lw_multiplier, label=label1)
-        ax0.plot(*s2.get(var, wunit=wunit, Iunit=Iunit, medium=medium),
+        ax0.plot(*s2.get(var, wunit=wunit, Iunit=Iunit),
                  style, color='r', lw=1*lw_multiplier, label=label2)
 
     Iunit = make_up(Iunit)  # cosmetic changes

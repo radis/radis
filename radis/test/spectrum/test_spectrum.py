@@ -294,8 +294,8 @@ def test_resampling_function(verbose=True, plot=True, close_plots=True, *args, *
     s2 = s.copy()
     s2b = s.copy()
     s3 = s.copy()
-    s2.resample(np.linspace(4500, 4700, 10000), unit='nm', medium='vacuum')
-    s2b.resample(np.linspace(4500, 4700, 10000), unit='nm', medium='air')
+    s2.resample(np.linspace(4500, 4700, 10000), unit='nm_vac')
+    s2b.resample(np.linspace(4500, 4700, 10000), unit='nm')
     s3.resample(np.linspace(2127.2, 2227.7, 10000), unit='cm-1')
     s2.name = 'resampled in nm (vacuum)'
     s2b.name = 'resampled in nm (air)'
