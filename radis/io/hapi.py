@@ -1420,7 +1420,7 @@ def subsetOfRowObject(ParameterNames, RowObject):
 
 
 #FORMAT_PYTHON_REGEX = '^\%([0-9]*)\.?([0-9]*)([dfs])$'
-FORMAT_PYTHON_REGEX = '^\%(\d*)(\.(\d*))?([edfsEDFS])$'
+FORMAT_PYTHON_REGEX = r'^\%(\d*)(\.(\d*))?([edfsEDFS])$'
 
 # Fortran string formatting
 #  based on a pythonic format string
@@ -1520,7 +1520,7 @@ def getRowObjectFromString(input_string, TableName):
         #print 'par_name: '+par_name #
         par_format = LOCAL_TABLE_CACHE[TableName]['header']['format'][par_name]
         #print 'par_format: '+par_format #
-        regex = '^\%([0-9]+)\.?[0-9]*([dfs])$'
+        regex = r'^\%([0-9]+)\.?[0-9]*([dfs])$'
         regex = FORMAT_PYTHON_REGEX
         #print 'par_name: '+par_name #
         (lng, trail, lngpnt, ty) = re.search(regex, par_format).groups()
@@ -1551,7 +1551,7 @@ def getRowObjectFromString(input_string, TableName):
             pos = 0
         for par_name in LOCAL_TABLE_CACHE[TableName]['header']['extra']:
             par_format = LOCAL_TABLE_CACHE[TableName]['header']['extra_format'][par_name]
-            regex = '^\%([0-9]+)\.?[0-9]*([dfs])$'
+            regex = r'^\%([0-9]+)\.?[0-9]*([dfs])$'
             regex = FORMAT_PYTHON_REGEX
             (lng, trail, lngpnt, ty) = re.search(regex, par_format).groups()
             lng = int(lng)
@@ -2954,10 +2954,10 @@ def group(TableName, DestinationTableName=QUERY_BUFFER, ParameterNames=None, Gro
 # EXTRACTING ========================================================
 
 
-REGEX_INTEGER = '[+-]?\d+'
-REGEX_STRING = '[^\s]+'
-REGEX_FLOAT_F = '[+-]?\d*\.?\d+'
-REGEX_FLOAT_E = '[+-]?\d*\.?\d+[eEfF]?[+-]?\d+'
+REGEX_INTEGER = r'[+-]?\d+'
+REGEX_STRING = r'[^\s]+'
+REGEX_FLOAT_F = r'[+-]?\d*\.?\d+'
+REGEX_FLOAT_E = r'[+-]?\d*\.?\d+[eEfF]?[+-]?\d+'
 
 
 def REGEX_INTEGER_FIXCOL(n): return '\d{%d}' % n
@@ -3082,7 +3082,7 @@ def extractColumns(TableName, SourceParameterName, ParameterFormats, ParameterNa
         def_val = getDefaultValue(par_type)
         LOCAL_TABLE_CACHE[TableName]['header']['default'][par_name] = def_val
         i += 1
-    format_regex = '\s*'.join(format_regex)
+    format_regex = r'\s*'.join(format_regex)
     # print 'format_regex='+str(format_regex)
     # return format_regex
     # loop through values of SourceParameter
