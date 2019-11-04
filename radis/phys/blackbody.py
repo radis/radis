@@ -28,6 +28,7 @@ from numpy import exp, arange, ones_like, zeros_like, inf
 from radis.phys.constants import k_b, c, h
 from radis.phys.constants import k_b_CGS, c_CGS, h_CGS
 from radis.phys.units import conv2, Q_
+from radis.phys.air import air2vacuum
 
 
 def planck(lmbda, T, eps=1, unit='mW/sr/cm2/nm'):
@@ -168,14 +169,19 @@ def sPlanck(wavenum_min=None, wavenum_max=None,
     # Check inputs
     if ((wavelength_min is not None or wavelength_max is not None) and
             (wavenum_min is not None or wavenum_max is not None)):
-        raise ValueError('Wavenumber and Wavelength both given... you twart')
+        raise ValueError('You cannot give both wavelengths and wavenumbers')
 
     if (wavenum_min is not None and wavenum_max is not None):
         assert(wavenum_min < wavenum_max)
         waveunit = 'cm-1'
     else:
         assert(wavelength_min < wavelength_max)
-        waveunit = 'nm'
+        if medium == 'air':
+            waveunit = 'nm'
+        elif medium == 'vacuum':
+            waveunit = 'nm_vac'
+        else:
+            raise ValueError(medium)
 
     if T is None:
         raise ValueError('T must be defined')
@@ -190,13 +196,17 @@ def sPlanck(wavenum_min=None, wavenum_max=None,
         Iunit = 'mW/sr/cm2/cm_1'
         I = planck_wn(w, T, eps=eps, unit=Iunit)
     else:
-        # generate the vector of wavenumbers (shape M)
+        # generate the vector of lengths (shape M)
         w = arange(wavelength_min, wavelength_max+wstep, wstep)
         Iunit = 'mW/sr/cm2/nm'
-        I = planck(w, T, eps=eps, unit=Iunit)
+        if waveunit == 'nm_vac':
+            w_vac = w
+        elif waveunit == 'nm':
+            w_vac = air2vacuum(w)
+        # calculate planck with wavelengths in vacuum
+        I = planck(w_vac, T, eps=eps, unit=Iunit)
 
-    conditions = {'wstep': wstep,
-                  'medium': medium}
+    conditions = {'wstep': wstep}
     # add all extra parameters in conditions (ex: path_length)
     conditions.update(**kwargs)
 
