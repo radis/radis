@@ -1363,7 +1363,7 @@ class Spectrum(object):
         return items
 
     def plot(self, var=None, wunit='default', Iunit='default', show_points=False,
-             nfig=None, yscale='linear', plot_medium=False,
+             nfig=None, yscale='linear', plot_medium='vacuum_only',
              normalize=False, force=False,
              **kwargs):
         ''' Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
@@ -1400,9 +1400,12 @@ class Spectrum(object):
                 s1.plot()
                 s2.plot(nfig='same')
 
-        plot_medium: bool
+        plot_medium: bool, ``'vacuum_only'``
             if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
-            in the xaxis label (air or vacuum). Default ``False``
+            in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``, 
+            plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'`` 
+            (prevents from inadvertently plotting spectra with different propagation 
+            medium on the same graph).
 
         yscale: 'linear', 'log'
             plot yscale

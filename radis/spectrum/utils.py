@@ -142,20 +142,37 @@ def make_up(label):
 def format_xlabel(wunit, plot_medium):
     ''' Used by :py:meth:`radis.spectrum.spectrum.Spectrum.plot` and 
     :py:func:`radis.spectrum.compare.plot_diff`
+
+    Parameters
+    ----------
+    
+    wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, 
+        wavelength air, wavenumber, or wavelength vacuum. If ``'default'``, 
+        Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
+
+    plot_medium: bool, ``'vacuum_only'``
+        if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
+        in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``, 
+        plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'`` 
+        (prevents from inadvertently plotting spectra with different propagation 
+        medium on the same graph).
+
     '''
     if wunit == 'cm-1':
         xlabel = 'Wavenumber (cm-1)'
-    else:  # wunit == 'nm'
-        if plot_medium:
-            if wunit == 'nm':
-                wmedium = ' [air]'
-            elif wunit == 'nm_vac':
-                wmedium = ' [vacuum]'
-            else:
-                raise ValueError(wunit)
+    elif wunit == 'nm':
+        if plot_medium and plot_medium != 'vacuum_only':
+            xlabel = 'Wavelength [air] (nm)'
         else:
-            wmedium = ''
-        xlabel = 'Wavelength {0}(nm)'.format(wmedium)
+            xlabel = 'Wavelength (nm)'
+    elif wunit == 'nm_vac':
+        if plot_medium and plot_medium != 'vacuum_only':
+            xlabel = 'Wavelength [vacuum] (nm)'
+        else:
+            xlabel = 'Wavelength (nm)'
+    else:
+        raise ValueError(wunit)
+
     return make_up(xlabel)
 
 def print_conditions(conditions, units,

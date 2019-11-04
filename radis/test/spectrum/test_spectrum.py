@@ -180,8 +180,7 @@ def test_store_functions(verbose=True, *args, **kwargs):
         'CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     s.update()
     try:
-        s.savetxt(temp_file, 'transmittance_noslit',
-                  wunit='nm', medium='vacuum')
+        s.savetxt(temp_file, 'transmittance_noslit', wunit='nm_vac')
         w, T = np.loadtxt(temp_file).T
     finally:
         os.remove(temp_file)

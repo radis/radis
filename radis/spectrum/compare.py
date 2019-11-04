@@ -535,7 +535,7 @@ def plot_diff(s1, s2, var=None,
               label1=None, label2=None, figsize=None, title=None, nfig=None,
               normalize=False, verbose=True, save=False, show=True, 
               show_residual=False, lw_multiplier=1, diff_scale_multiplier=1,
-              discard_centile=0, plot_medium=False):
+              discard_centile=0, plot_medium='vacuum_only'):
     ''' Plot two spectra, and the difference between them. ``method=`` allows
     you to plot the absolute difference, ratio, or both. 
 
@@ -629,10 +629,13 @@ def plot_diff(s1, s2, var=None,
         Note that this does not change the values of the residual. It's just 
         a plot feature.
         Default ``0`` 
-        
-    plot_medium: bool
+    
+    plot_medium: bool, ``'vacuum_only'``
         if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
-        in the xaxis label (air or vacuum). Default ``False``
+        in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``, 
+        plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'`` 
+        (prevents from inadvertently plotting spectra with different propagation 
+        medium on the same graph).
 
     Returns
     -------

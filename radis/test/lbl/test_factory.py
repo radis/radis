@@ -181,18 +181,16 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
         # Compare with harcoded results
         # ... code previously used to export hardcoded results:
         # ... and header contains all input conditions:
-#        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm', medium='air')).T[::10])
+#        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm')).T[::10])
 #        print(s)
         # ................
         from radis.test.utils import getTestFile
         wref, Iref = np.loadtxt(getTestFile(
             'CO2abscoeff_300K_4150_4400nm.txt')).T
-        match_reference = np.allclose(
-            s.get('abscoeff', wunit='nm', medium='air')[1][::10], Iref)
+        match_reference = np.allclose(s.get('abscoeff', wunit='nm')[1][::10], Iref)
         if not match_reference:
             # give some more information before raising error
-            printm('Error: {0:.2f}%'.format(np.mean(abs(s.get('abscoeff', wunit='nm',
-                                                              medium='air')[1][::10]/Iref-1))*100))
+            printm('Error: {0:.2f}%'.format(np.mean(abs(s.get('abscoeff', wunit='nm')[1][::10]/Iref-1))*100))
             # Store the faulty spectrum
             s.store('test_factory_failed_{0}.spec'.format(radis.get_version()),
                     if_exists_then='replace')
