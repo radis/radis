@@ -2960,16 +2960,16 @@ REGEX_FLOAT_F = r'[+-]?\d*\.?\d+'
 REGEX_FLOAT_E = r'[+-]?\d*\.?\d+[eEfF]?[+-]?\d+'
 
 
-def REGEX_INTEGER_FIXCOL(n): return '\d{%d}' % n
+def REGEX_INTEGER_FIXCOL(n): return r'\d{%d}' % n
 
 
-def REGEX_STRING_FIXCOL(n): return '[^\s]{%d}' % n
+def REGEX_STRING_FIXCOL(n): return r'[^\s]{%d}' % n
 
 
-def REGEX_FLOAT_F_FIXCOL(n): return '[\+\-\.\d]{%d}' % n
+def REGEX_FLOAT_F_FIXCOL(n): return r'[\+\-\.\d]{%d}' % n
 
 
-def REGEX_FLOAT_E_FIXCOL(n): return '[\+\-\.\deEfF]{%d}' % n
+def REGEX_FLOAT_E_FIXCOL(n): return r'[\+\-\.\deEfF]{%d}' % n
 
 # Extract sub-columns from string column
 

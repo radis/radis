@@ -1513,8 +1513,8 @@ class Spectrum(object):
         # both on the same figure if they want to compare
         
         def clean_error_msg(string):
-            string = string.replace('$^\mathregular{', '^')
-            string = string.replace('}$', '')
+            string = string.replace(r'$^\mathregular{', '^')
+            string = string.replace(r'}$', '')
             return string
         
         if not force and (fig.gca().get_xlabel().lower() not in ['', xlabel.lower()]):

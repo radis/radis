@@ -106,7 +106,7 @@ trans = {'1': 'H2O',    '2': 'CO2',     '3': 'O3',    '4': 'N2O',       '5': 'CO
          '41': 'CH3CN', '42': 'CF4',    '43': 'C4H2', '44': 'HC3N',     '45': 'H2', 
          '46': 'CS',    '47': 'SO3',    '48':'C2N2',  '49': 'COCl2'}
 HITRAN_MOLECULES = list(trans.values())
-''' str: list of [HITRAN2016]_ molecules. '''
+''' str: list of [HITRAN-2016]_ molecules. '''
 
 # %% Parsing functions
 
