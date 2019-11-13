@@ -151,7 +151,8 @@ def compare_dict(d1, d2, verbose='if_different', compare_as_paths=[], return_str
         ``'if_different'`` means results will be shown only if there is a difference. 
 
     return_string: boolean
-        if ``True``, returns message
+        if ``True``, returns message instead of just printing it (useful in error messages)
+        Default ``False``
 
     Returns
     -------
@@ -218,7 +219,7 @@ def compare_dict(d1, d2, verbose='if_different', compare_as_paths=[], return_str
         sys.stdout = old_stdout
 
 
-def compare_lists(l1, l2, verbose='if_different'):
+def compare_lists(l1, l2, verbose='if_different', return_string=False):
     ''' Compare 2 lists of elements that may not be of the same length, irrespective
     of order. Returns the ratio of elements [0-1] present in both lists. If verbose, 
     prints the differences 
@@ -240,6 +241,9 @@ def compare_lists(l1, l2, verbose='if_different'):
     verbose: boolean, or ``'if_different'``
         ``'if_different'`` means results will be shown only if there is a difference. 
 
+    return_string: boolean
+        if ``True``, returns message instead of just printing it (useful in error messages)
+        Default ``False``
 
     Returns
     -------
@@ -279,6 +283,9 @@ def compare_lists(l1, l2, verbose='if_different'):
         # Output
         if verbose == True or (verbose == 'if_different' and out != 1):
             print(string)
+
+        if return_string:
+            out = out, string
 
         return out
     except:

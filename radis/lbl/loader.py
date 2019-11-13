@@ -801,7 +801,8 @@ class DatabankLoader(object):
         else:
             df = pd.concat(frames, ignore_index=True)   # reindex
             if len(df) == 0:
-                raise EmptyDatabaseError('Dataframe is empty')
+                raise EmptyDatabaseError('Dataframe is empty on range '+\
+                                         '{0:.2f}-{1:.2f} cm-1'.format(wavenum_min, wavenum_max))
 
         df = parse_local_quanta(df, molecule)
         df = parse_global_quanta(df, molecule)

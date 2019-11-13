@@ -35,6 +35,7 @@ from radis.misc.cache_files import save_to_hdf, check_cache_file, get_cache_file
 # %% Hitran groups and classes
 # As defined in Rothman et al, "The HITRAN 2004 molecular spectroscopic database"
 # Tables 3 and 4
+# Groups and classes are needed to compute energy in nonequilibrium mode. 
 
 # Groups (define local quanta)
 
@@ -87,9 +88,25 @@ HITRAN_CLASS8 = ['NH3', 'PH3']
 HITRAN_CLASS9 = ['H2CO', 'H2O2', 'COF2']
 '''str: Non-linear tetratomic'''
 
-HITRAN_CLASS10 = ['CH4', 'CH3D', 'CH3Cl', 'C2H6', 'HNO3', 'SF6', 'HCOOH',
+HITRAN_CLASS10 = ['CH4', 'CH3Cl', 'C2H6', 'HNO3', 'SF6', 'HCOOH',
                   'ClONO2', 'C2H4', 'CH3OH']
 '''str: Pentatomic or greater polyatomic'''
+# 0.9.22: Removed CH3D has no HITRAN identifier
+
+# %% HITRAN ids 
+
+trans = {'1': 'H2O',    '2': 'CO2',     '3': 'O3',    '4': 'N2O',       '5': 'CO',    
+         '6': 'CH4',    '7': 'O2',      '8': 'NO',    '9': 'SO2',       '10': 'NO2',  
+         '11': 'NH3',   '12': 'HNO3',   '13': 'OH',   '14': 'HF',       '15': 'HCl',   
+         '16': 'HBr',   '17': 'HI',     '18': 'ClO',  '19': 'OCS',      '20': 'H2CO',
+         '21': 'HOCl',  '22': 'N2',     '23': 'HCN',  '24': 'CH3Cl',    '25': 'H2O2',  
+         '26': 'C2H2',  '27': 'C2H6',   '28': 'PH3',  '29': 'COF2',     '30': 'SF6',  
+         '31': 'H2S',   '32': 'HCOOH',  '33': 'HO2',  '34': 'O',        '35': 'ClONO2', 
+         '36': 'NO+',   '37': 'HOBr',   '38': 'C2H4', '39': 'CH3OH',    '40': 'CH3Br',
+         '41': 'CH3CN', '42': 'CF4',    '43': 'C4H2', '44': 'HC3N',     '45': 'H2', 
+         '46': 'CS',    '47': 'SO3',    '48':'C2N2',  '49': 'COCl2'}
+HITRAN_MOLECULES = list(trans.values())
+''' str: list of [HITRAN2016]_ molecules. '''
 
 # %% Parsing functions
 
@@ -931,26 +948,14 @@ def get_molecule_identifier(molecule_name):
 
     '''
 
-    trans = {'1': 'H2O',    '2': 'CO2',   '3': 'O3',      '4': 'N2O',
-             '5': 'CO',    '6': 'CH4',   '7': 'O2',     '8': 'NO',
-             '9': 'SO2',   '10': 'NO2',  '11': 'NH3',    '12': 'HNO3',
-             '13': 'OH',   '14': 'HF',   '15': 'HCl',   '16': 'HBr',
-             '17': 'HI',    '18': 'ClO',  '19': 'OCS',    '20': 'H2CO',
-             '21': 'HOCl', '22': 'N2',   '23': 'HCN',   '24': 'CH3Cl',
-             '25': 'H2O2',  '26': 'C2H2', '27': 'C2H6',   '28': 'PH3',
-             '29': 'COF2', '30': 'SF6',  '31': 'H2S',   '32': 'HCOOH',
-             '33': 'HO2',   '34': 'O',    '35': 'ClONO2', '36': 'NO+',
-             '37': 'HOBr', '38': 'C2H4', '39': 'CH3OH', '40': 'CH3Br',
-             '41': 'CH3CN', '42': 'CF4',  '43': 'C4H2',   '44': 'HC3N',
-             '45': 'H2',   '46': 'CS',   '47': 'SO3'}
     # Invert the dictionary.
-    trans = {v: k for k, v in trans.items()}
+    trans2 = {v: k for k, v in trans.items()}
 
     try:
-        return int(trans[molecule_name])
+        return int(trans2[molecule_name])
     except KeyError:
         raise NotImplementedError("Molecule '{0}' not supported. Choose one of {1}".format(
-                                    molecule_name, list(trans.keys())))
+                                    molecule_name, list(trans2.keys())))
 
 
 def get_molecule(molecule_id):
@@ -976,19 +981,6 @@ def get_molecule(molecule_id):
     # assert str
     id = '{:d}'.format(int(molecule_id))
 
-    trans = {'1': 'H2O',    '2': 'CO2',   '3': 'O3',      '4': 'N2O',
-             '5': 'CO',    '6': 'CH4',   '7': 'O2',     '8': 'NO',
-             '9': 'SO2',   '10': 'NO2',  '11': 'NH3',    '12': 'HNO3',
-             '13': 'OH',   '14': 'HF',   '15': 'HCl',   '16': 'HBr',
-             '17': 'HI',    '18': 'ClO',  '19': 'OCS',    '20': 'H2CO',
-             '21': 'HOCl', '22': 'N2',   '23': 'HCN',   '24': 'CH3Cl',
-             '25': 'H2O2',  '26': 'C2H2', '27': 'C2H6',   '28': 'PH3',
-             '29': 'COF2', '30': 'SF6',  '31': 'H2S',   '32': 'HCOOH',
-             '33': 'HO2',   '34': 'O',    '35': 'ClONO2', '36': 'NO+',
-             '37': 'HOBr', '38': 'C2H4', '39': 'CH3OH', '40': 'CH3Br',
-             '41': 'CH3CN', '42': 'CF4',  '43': 'C4H2',   '44': 'HC3N',
-             '45': 'H2',   '46': 'CS',   '47': 'SO3'}
-
     try:
         return trans[id]
     except KeyError:
@@ -1000,5 +992,6 @@ def get_molecule(molecule_id):
 
 
 if __name__ == '__main__':
+    
     from radis.test.test_io import _run_testcases
     print('Testing HITRAN parsing: ', _run_testcases())

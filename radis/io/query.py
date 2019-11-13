@@ -125,10 +125,14 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
 #                                     max_frequency=wmax / u.cm)
     
 #    # Download using the astroquery library
-    response = Hitran.query_lines_async(molecule_number=mol_id,
-                                         isotopologue_number=isotope,
-                                         min_frequency=wmin / u.cm,
-                                         max_frequency=wmax / u.cm)
+    try:
+        response = Hitran.query_lines_async(molecule_number=mol_id,
+                                             isotopologue_number=isotope,
+                                             min_frequency=wmin / u.cm,
+                                             max_frequency=wmax / u.cm)
+    except KeyError as err:
+        raise KeyError(str(err)+' <<w this error occured in Astroquery. Maybe these molecule '+\
+                       '({0}) and isotope ({1}) are not supported'.format(molecule, isotope)) from err
     
     if response.status_code == 404:
         # Maybe there are just no lines for this species in this range
