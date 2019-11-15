@@ -1388,7 +1388,8 @@ class DatabankLoader(object):
         # Check format
         # (it can happen that they changed if database was edited manually. That can break
         # the code during look-up of levels later on.)
-        for k in ['vu', 'vl', 'v1u', 'v1l', 'v2u', 'v2l', 'l2u', 'l2l', 'v3u', 'v3l', 'ru', 'rl']:
+        for k in ['vu', 'vl', 'v1u', 'v1l', 'v2u', 'v2l', 'l2u', 'l2l', 'v3u', 'v3l', 'ru', 'rl',
+                  'polyu', 'polyl', 'wangu', 'wangl', 'ranku', 'rankl']:
             if k in self.df0.columns and self.df0.dtypes[k] != np.int64:
                 self.warn('Format of column {0} was {1} instead of int. Changed to int'.format(
                         k, self.df0.dtypes[k]))
