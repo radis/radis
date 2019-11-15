@@ -1393,6 +1393,19 @@ class DatabankLoader(object):
                 self.warn('Format of column {0} was {1} instead of int. Changed to int'.format(
                         k, self.df0.dtypes[k]))
                 self.df0[k] = self.df0[k].astype(np.int64)
+                
+        # Check metadata ('molar_mass' and 'Ia' are either columns either 
+        # metadata. They can be lost when transfering object.)
+        try:
+            self.df0.molar_mass
+            self.df0.Ia
+        except AttributeError as err:
+            raise AttributeError(str(err)+' : attribute missing in line '+\
+                                 'dataframe sf.df0. Make sure you didnt overwrite the line '+\
+                                 'dataframe sf.df0 manually. If so, replace any '+\
+                                 '`sf.df0=...` line with inplace operations such as '+\
+                                 '`sf.df0.drop(..., inplace=True)`. See '+\
+                                 'https://stackoverflow.com/q/33103988')
 
     def _load_databank(self, database, dbformat, levelsfmt, db_use_cached,
                        db_assumed_sorted=False, buffer='RAM',

@@ -2152,10 +2152,11 @@ class BaseFactory(DatabankLoader):
         df['nu'] = df.nu_vib * df.nu_rot * (df.Qrotu * df.Qvib / df.Q)
         df['nl'] = df.nl_vib * df.nl_rot * (df.Qrotl * df.Qvib / df.Q)
 
-        assert 'nu' in self.df1
-        assert 'nl' in self.df1
-        assert not pd.isna(df.nu).any()
-        assert not pd.isna(df.nl).any()
+        if __debug__:
+            assert 'nu' in self.df1
+            assert 'nl' in self.df1
+            self.assert_no_nan(self.df1, 'nu')
+            self.assert_no_nan(self.df1, 'nl')
         
         if self.verbose >= 2:
             if self.verbose >= 3:
@@ -2777,10 +2778,10 @@ class BaseFactory(DatabankLoader):
         # | here we ensure that the DataFrame has the values:
         transfer_metadata(self.df0, self.df1, [k for k in df_metadata if hasattr(self.df0, k)])
         try:
-            assert hasattr(self.df1, 'molar_mass')
-            assert hasattr(self.df1, 'Ia')
-        except AssertionError:
-            raise AssertionError('Attributes `molar_mass` or `Ia` are missing in line '+\
+            self.df1.molar_mass
+            self.df1.Ia
+        except AttributeError as err:
+            raise AttributeError(str(err)+' : attribute missing in line '+\
                                  'dataframe sf.df1. Make sure you didnt overwrite the line '+\
                                  'dataframe sf.df0 or sf.df1 manually. If so, replace any '+\
                                  '`sf.df0=...` line with inplace operations such as '+\
