@@ -2766,17 +2766,28 @@ class BaseFactory(DatabankLoader):
         '''
         if __debug__:
             printdbg('called ._clean_factory()')
+            
+        keep_initial_database = not self.save_memory
 
-        # Create new line Dataframe
-        # ... Operate on a duplicate dataframe to make it possible to do different
-        # ... runs without reloading database
-        self.df1 = self.df0.copy()
+        if keep_initial_database:
+    
+            # Create new line Dataframe
+            # ... Operate on a duplicate dataframe to make it possible to do different
+            # ... runs without reloading database
+            self.df1 = self.df0.copy()
+            
+            # abundance and molar_mass should have been copied even if they are attributes 
+            # (only 1 molecule, 1 isotope) and not a column (line specific) in the database
+            # @dev: this brings a lot of performance improvement, but sometimes fail. 
+            # | here we ensure that the DataFrame has the values:
+            transfer_metadata(self.df0, self.df1, [k for k in df_metadata if hasattr(self.df0, k)])
+
         
-        # abundance and molar_mass should have been copied even if they are attributes 
-        # (only 1 molecule, 1 isotope) and not a column (line specific) in the database
-        # @dev: this brings a lot of performance improvement, but sometimes fail. 
-        # | here we ensure that the DataFrame has the values:
-        transfer_metadata(self.df0, self.df1, [k for k in df_metadata if hasattr(self.df0, k)])
+        else:
+            self.df1 = self.df0   # self.df0 will be deleted
+            del self.df0          # delete attribute name
+
+        # Check presence of attributes
         try:
             self.df1.molar_mass
             self.df1.Ia
@@ -2788,19 +2799,15 @@ class BaseFactory(DatabankLoader):
                                  '`sf.df0.drop(..., inplace=True)`. See '+\
                                  'https://stackoverflow.com/q/33103988')
         
-        # Clean objects to save memory
-        if self.save_memory:
-#            self.df0 = None
-            del self.df0
-        else:
-            try:
-                if sys.getsizeof(self.df1) > 500e6:
-                    self.warn('Line database is large: {0:.0f} Mb'.format(
-                        sys.getsizeof(self.df1)*1e-6)+'. Consider using save_memory ' +
-                        "option, if you don't need to reuse this factory to calculate new spectra",
-                        'MemoryUsageWarning')
-            except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
-                pass
+        # Check memory size
+        try:
+            if sys.getsizeof(self.df1) > 500e6:
+                self.warn('Line database is large: {0:.0f} Mb'.format(
+                    sys.getsizeof(self.df1)*1e-6)+'. Consider using save_memory ' +
+                    "option, if you don't need to reuse this factory to calculate new spectra",
+                    'MemoryUsageWarning')
+        except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
+            pass
 
         # Reset populations from RovibrationalPartitionFunctions objects
         molecule = self.input.molecule
