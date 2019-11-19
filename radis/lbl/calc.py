@@ -303,6 +303,12 @@ def calc_spectrum(wavenum_min=None,
             return False
 
     _equilibrium = _is_at_equilibrium()
+    
+    # which columns to keep when loading line database
+    if kwargs['save_memory'] >= 2 and _equilibrium:
+        drop_columns = 'all'
+    else:
+        drop_columns = 'auto'
 
     # Run calculations
     sf = SpectrumFactory(wavenum_min, wavenum_max, medium=medium,
@@ -340,6 +346,7 @@ def calc_spectrum(wavenum_min=None,
                 sf.load_databank(path=databank, format='hitran',
                                  parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
                                  levelsfmt=None,      # no need to load energies
+                                 drop_columns=drop_columns,
                                  )
             else:
                 # calculate partition functions with energy levels from built-in 
@@ -347,6 +354,7 @@ def calc_spectrum(wavenum_min=None,
                 sf.load_databank(path=databank, format='hitran',
                                  parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
                                  levelsfmt='radis',    # built-in spectroscopic constants
+                                 drop_columns=drop_columns,
                                  )
         else:
             raise ValueError("Couldnt infer the format of the line database: {0}. ".format(databank)+
@@ -355,7 +363,8 @@ def calc_spectrum(wavenum_min=None,
         
     else:   # manual mode: get from user-defined line databases defined in ~/.radis
         sf.load_databank(databank, 
-                         load_energies=not _equilibrium   # no need to load/calculate energies at eq.
+                         load_energies=not _equilibrium,   # no need to load/calculate energies at eq.
+                         drop_columns=drop_columns
                          )
         
 #    # Get optimisation strategies
