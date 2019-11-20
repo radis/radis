@@ -134,6 +134,7 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
         raise KeyError(str(err)+' <<w this error occured in Astroquery. Maybe these molecule '+\
                        '({0}) and isotope ({1}) are not supported'.format(molecule, isotope)) from err
     
+    # Deal with usual errors
     if response.status_code == 404:
         # Maybe there are just no lines for this species in this range
         # In that case we usually end up with errors like:
@@ -154,6 +155,12 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
                                  molecule, mol_id, isotope, wmin, wmax) +
                              'Are you online?\n' + 
                              'See details of the error below:\n\n {0}'.format(response.reason))
+    elif response.status_code == 500:
+        
+        raise ValueError('{0} while querying the HITRAN server: '.format(response.status_code)+\
+                         '\n\n{0}'.format(response.text))
+
+    # Process response
 
     # Rename columns from Astroquery to RADIS format
     rename_columns = {'molec_id': 'id',
@@ -174,13 +181,11 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
                       'gp': 'gp',
                       'gpp': 'gpp',
                       }
-
+    
     if not empty_range:
 #        _fix_astroquery_file_format(filename)
-        
         # Note: as of 0.9.16 we're not fixing astroquery_file_format anymore. 
         # maybe we should. 
-        
         tbl = Hitran._parse_result(response)
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)
