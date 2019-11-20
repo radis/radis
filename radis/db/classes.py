@@ -85,7 +85,7 @@ class Molecule(object):
             self.name = name
 
             # Get name without parenthesis (without state) for HITRAN identification
-            filtername = re.sub("[\(\[].*?[\)\]]", "", name)
+            filtername = re.sub(r"[\(\[].*?[\)\]]", "", name)
 
             try:
                 self.id = get_molecule_identifier(filtername)

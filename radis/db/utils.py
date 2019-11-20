@@ -15,7 +15,7 @@ from os.path import abspath
 
 
 def getFile(*relpath):
-    ''' Converts the relative path of a database file in a the full path.
+    r''' Converts the relative path of a database file in a the full path.
     Used by processing script not to worry about where the database is stored
 
     Examples of use::
@@ -164,7 +164,7 @@ def _get_rovib_coefficients(molecule, isotope, electronic_state, jsonfile,
     return rovib_coeffs
 
 def get_default_jsonfile(molecule):
-    ''' Return full path of default jsonfile for spectroscopic constants for a 
+    r''' Return full path of default jsonfile for spectroscopic constants for a 
     molecule.
     
     These are stored in:
@@ -183,7 +183,7 @@ def get_default_jsonfile(molecule):
 
 
 def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='default'):
-    ''' Returns Dunham coefficients ``Yij`` for ``molecule``, ``isotope``, ``electronic_state`` 
+    r''' Returns Dunham coefficients ``Yij`` for ``molecule``, ``isotope``, ``electronic_state`` 
     by parsing a JSON file of molecule data. 
     
     Dunham coefficients are identified as starting with ``Y`` (i.e. ``alpha_e``
@@ -228,7 +228,7 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile='defau
     return dunham_coeffs
 
 def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile='default'):
-    ''' Returns spectroscopic coefficients with Herzberg conventions for 
+    r''' Returns spectroscopic coefficients with Herzberg conventions for 
     ``molecule``, ``isotope``, ``electronic_state``  by parsing a JSON file of molecule data. 
     
     Herzberg coefficients are the usual:

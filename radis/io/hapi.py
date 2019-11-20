@@ -1693,7 +1693,7 @@ def getTableNamesFromStorage(StorageName):
     for file_name in file_names:
         # search all files with "header" extensions
         #matchObject = re.search('(\w+)\.header$',file_name)
-        matchObject = re.search('(.+)\.header$', file_name)
+        matchObject = re.search(r'(.+)\.header$', file_name)
         if matchObject:
             # print('matchObject.group(1)=',matchObject.group(1))
             table_names.append(matchObject.group(1))
@@ -1713,7 +1713,7 @@ def scanForNewParfiles(StorageName):
         # create dictionary of unique headers
         try:
             #fname,fext = re.search('(\w+)\.(\w+)',file_name).groups()
-            fname, fext = re.search('(.+)\.(\w+)', file_name).groups()
+            fname, fext = re.search(r'(.+)\.(\w+)', file_name).groups()
         except:
             continue
         if fext == 'header':
@@ -1722,7 +1722,7 @@ def scanForNewParfiles(StorageName):
         # check if extension is 'par' and the header is absent
         try:
             #fname,fext = re.search('(\w+)\.(\w+)',file_name).groups()
-            fname, fext = re.search('(.+)\.(\w+)', file_name).groups()
+            fname, fext = re.search(r'(.+)\.(\w+)', file_name).groups()
         except:
             continue
         if fext == 'par' and fname not in headers:
