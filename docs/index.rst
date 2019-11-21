@@ -218,7 +218,7 @@ Content
                    :alt: License
 
 .. |badge_travis| image:: https://img.shields.io/travis/radis/radis.svg
-                  :target: https://travis-ci.org/radis/radis
+                  :target: https://travis-ci.com/radis/radis
                   :alt: Tests
 
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg

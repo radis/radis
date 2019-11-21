@@ -74,7 +74,7 @@ Report or suggest:
 
 And also:
 
-.. [Travis] : Automatic testing: https://travis-ci.org/radis/radis
+.. [Travis] : Automatic testing: https://travis-ci.com/radis/radis
 
 .. [Coverage] : Test coverage: https://codecov.io/gh/radis/radis
 
