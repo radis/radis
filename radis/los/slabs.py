@@ -115,6 +115,10 @@ def SerialSlabs(*slabs, **kwargs):
     verbose: bool
         if ``True``, more blabla. Default ``False``
 
+    modify_inputs: False
+        if ``True``, slabs are modified directly when they are resampled. This
+        avoids making a copy so is slightly faster. Default ``False``.
+
     Returns
     -------
 
@@ -157,6 +161,7 @@ def SerialSlabs(*slabs, **kwargs):
     resample_wavespace = kwargs.pop('resample', 'never')   # default 'never'
     out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'    
     verbose = kwargs.pop('verbose', False)                   # type: bool
+    modify_inputs = kwargs.pop('modify_input', False)        # type: bool
     if len(kwargs) > 0:
         raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
 
@@ -183,7 +188,8 @@ def SerialSlabs(*slabs, **kwargs):
 
         # Recursively deal with the rest of Spectra --> call it s 
         sn = slabs.pop(-1)            # type: Spectrum
-        s = SerialSlabs(*slabs, resample=resample_wavespace, out=out_of_bounds)
+        s = SerialSlabs(*slabs, resample=resample_wavespace, out=out_of_bounds,
+                        modify_inputs=modify_inputs)
 
         # Now calculate sn and s in Serial
         quantities = {}
@@ -196,7 +202,7 @@ def SerialSlabs(*slabs, **kwargs):
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
-        s, sn = resample_slabs(waveunit, resample_wavespace, out_of_bounds,
+        s, sn = resample_slabs(waveunit, resample_wavespace, out_of_bounds, modify_inputs,
                                s, sn)
         try:
             w = s._q['wavespace']
@@ -316,7 +322,8 @@ def _has_quantity(quantity, *slabs):
         b *= quantity in slabs
     return b
 
-def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
+def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', modify_inputs=False, 
+                   *slabs):
     # type: (str, str, str, *Spectrum) -> *Spectrum
     ''' Resample slabs on the same wavespace: if the range are differents, 
     depending on the mode we may fill with optically thin media, or raise an
@@ -352,6 +359,13 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
 
     *slabs: list of Spectrum objects
 
+    Other Parameters
+    ----------------
+
+    modify_inputs: False
+        if ``True``, slabs are modified directly when they are resampled. This
+        avoids making a copy so is slightly faster. Default ``False``.
+
 
     Returns
     -------
@@ -371,7 +385,8 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', *slabs):
             return True
 
     # Work on copies
-    slabs = [s.copy() for s in slabs]
+    if not modify_inputs:
+        slabs = [s.copy() for s in slabs]
 
     # Get all keys
     keys = merge_lists([s.get_vars() for s in slabs])
@@ -499,6 +514,10 @@ def MergeSlabs(*slabs, **kwargs):
     verbose: boolean
         if ``True``, print messages and warnings. Default ``False``
 
+    modify_inputs: False
+        if ``True``, slabs are modified directly when they are resampled. This
+        avoids making a copy so is slightly faster. Default ``False``.
+
 
     Returns
     -------
@@ -561,6 +580,7 @@ def MergeSlabs(*slabs, **kwargs):
     optically_thin = kwargs.pop('optically_thin', False)             # default False
     verbose = kwargs.pop('verbose', False)             # type: bool
     debug = kwargs.pop('debug', False)                # type: bool
+    modify_inputs = kwargs.pop('modify_inputs', False)   # type: bool
     if len(kwargs) > 0:
         raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
 
@@ -601,7 +621,8 @@ def MergeSlabs(*slabs, **kwargs):
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
-        slabs = resample_slabs(waveunit, resample_wavespace, out_of_bounds, *slabs)
+        slabs = resample_slabs(waveunit, resample_wavespace, out_of_bounds, 
+                               modify_inputs, *slabs)
         w_noconv = slabs[0]._get_wavespace()
 
         # %%
