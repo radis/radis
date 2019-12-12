@@ -161,7 +161,7 @@ def SerialSlabs(*slabs, **kwargs):
     resample_wavespace = kwargs.pop('resample', 'never')   # default 'never'
     out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'    
     verbose = kwargs.pop('verbose', False)                   # type: bool
-    modify_inputs = kwargs.pop('modify_input', False)        # type: bool
+    modify_inputs = kwargs.pop('modify_inputs', False)        # type: bool
     if len(kwargs) > 0:
         raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
 
