@@ -6,12 +6,6 @@ Summary
 
 Tools to test RADIS library
 
-Todo
----- 
-
-add all files in a separetaly downloadble folder. getTestFile should check
-the file exist else suggest to download the folder
-
 Examples
 --------
 
@@ -100,7 +94,7 @@ TEST_DATABASES = {
         'info': 'HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), ' +
         '2283.7-2285.1 cm-1',
         'path': [getTestFile(r'cdsd_hitemp_09_fragment.txt')],
-        'format': 'cdsd',    # CDSD-HITEMP, actually. 
+        'format': 'cdsd-hitemp',    # CDSD-HITEMP version (same lines as HITEMP-2010). 
         'parfuncfmt': 'hapi',
         'levelsfmt': 'radis',
     },

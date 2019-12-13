@@ -2,32 +2,19 @@
 References
 ==========
    
-Spectroscopic constants 
------------------------
+.. include:: constants.rst
 
-.. toctree::
-    :maxdepth: 2
-    
-    db/constants
-
-
-Bibliography
-------------
-   
-.. toctree::
-    :maxdepth: 2
-    
-    bibliography
+.. include:: bibliography.rst
 
 Licence
--------
+=======
 
 The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
 under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
 i.e., that modifications must remain public and under LGPLv3. 
 
 Cite
-----
+====
 
 If using RADIS for your work, cite the line-by-line code as [RADIS-2018]_ with the :ref:`version number <label_version>`
 , alongside the references of the line databases used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
@@ -39,8 +26,8 @@ in the calculatation of the rovibrational energies (for instance, see the
 
 
 Other Spectroscopic Tools
--------------------------
+=========================
 
-.. include:: references/similar_tools.rst 
+.. include:: similar_tools.rst 
 
 

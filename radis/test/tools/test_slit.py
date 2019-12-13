@@ -60,8 +60,7 @@ def test_all_slit_shapes(FWHM=0.4, verbose=True, plot=True, close_plots=True, *a
     from radis.test.utils import getTestFile
     from radis.spectrum.spectrum import Spectrum
     s = Spectrum.from_txt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt'),
-                          quantity='radiance_noslit', waveunit='nm', unit='mW/cm2/sr/µm',
-                          conditions={'medium': 'air'})
+                          quantity='radiance_noslit', waveunit='nm', unit='mW/cm2/sr/µm')
     wstep = np.diff(s.get_wavelength())[0]
 
     # Plot all slits
@@ -174,8 +173,7 @@ def test_slit_unit_conversions_spectrum_in_nm(verbose=True, plot=True, close_plo
 
     s_nm = Spectrum.from_txt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt'),
                              quantity='radiance_noslit', waveunit='nm', unit='mW/cm2/sr/µm',
-                             conditions={'medium': 'air',
-                                         'self_absorption': False})
+                             conditions={'self_absorption': False})
 
     with catch_warnings():
         filterwarnings(
@@ -254,8 +252,7 @@ def test_against_specair_convolution(plot=True, close_plots=True, verbose=True, 
     # Plot calculated vs convolved with slit
     # Specair units: mW/cm2/sr/µm
     w, I = np.loadtxt(getTestFile('calc_N2C_spectrum_Trot1200_Tvib3000.txt')).T
-    s = calculated_spectrum(w, I, conditions={'Tvib': 3000, 'Trot': 1200,
-                                              'medium': 'air'},
+    s = calculated_spectrum(w, I, conditions={'Tvib': 3000, 'Trot': 1200},
                             Iunit='mW/cm2/sr/µm')
 
     if plot:
@@ -437,8 +434,9 @@ def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
     ''' dlambda / dx
     Default values correspond to Acton 750i
 
-    Input
-    -------
+    Parameters
+    ----------
+    
     f: focal length (mm)
          default 750 (SpectraPro 2750i)
 
@@ -604,11 +602,9 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
         plCO.load_databank('HITRAN-CO-TEST')
         sCO = plCO.eq_spectrum(Tgas=300)
 
-        w_nm, T_nm = sCO.get('transmittance_noslit', wunit='nm', medium='air')
-        w_nm, I_nm = sCO.get('radiance_noslit', wunit='nm',
-                             Iunit='mW/cm2/sr/nm')
-        sCO_nm = transmittance_spectrum(w_nm, T_nm, wunit='nm',
-                                        conditions={'medium': 'air'})  # a new spectrum stored in nm
+        w_nm, T_nm = sCO.get('transmittance_noslit', wunit='nm')
+        w_nm, I_nm = sCO.get('radiance_noslit', wunit='nm', Iunit='mW/cm2/sr/nm')
+        sCO_nm = transmittance_spectrum(w_nm, T_nm, wunit='nm')  # a new spectrum stored in nm
         # sCO_nm = theoretical_spectrum(w_nm, I_nm, wunit='nm', Iunit='mW/cm2/sr/nm') #  a new spectrum stored in nm
 
         if plot:
@@ -659,38 +655,38 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
 
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
-#    # Validation
-#    test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
-#                                     *args, **kwargs)
-#    
-#    # Different modes
-#    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, 
-#                            *args, **kwargs)
-#    
-#    # Resampling
-#    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, 
-#                                  *args, **kwargs)
-#    
-#    # Linear dispersion
-#    test_linear_dispersion_effect(plot=plot, close_plots=close_plots, verbose=verbose, 
-#                                  *args, **kwargs)
+    # Validation
+    test_against_specair_convolution(plot=plot, close_plots=close_plots, verbose=verbose,
+                                     *args, **kwargs)
+    
+    # Different modes
+    test_normalisation_mode(plot=plot, close_plots=close_plots, verbose=verbose, 
+                            *args, **kwargs)
+    
+    # Resampling
+    test_slit_energy_conservation(plot=plot, close_plots=close_plots, verbose=verbose, 
+                                  *args, **kwargs)
+    
+    # Linear dispersion
+    test_linear_dispersion_effect(plot=plot, close_plots=close_plots, verbose=verbose, 
+                                  *args, **kwargs)
     test_auto_correct_dispersion(plot=plot, close_plots=close_plots, verbose=verbose, 
                                  *args, **kwargs)
     
-#    
-#    # Different shapes
-#    test_all_slit_shapes(plot=plot, close_plots=close_plots,
-#                         verbose=verbose, *args, **kwargs)
-#    
-#    # Units
-#    test_slit_unit_conversions_spectrum_in_cm(
-#        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
-#    test_slit_unit_conversions_spectrum_in_nm(
-#        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
-#    test_convoluted_quantities_units(*args, **kwargs)
-#    
-#    
-#    test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
+    
+    # Different shapes
+    test_all_slit_shapes(plot=plot, close_plots=close_plots,
+                         verbose=verbose, *args, **kwargs)
+    
+    # Units
+    test_slit_unit_conversions_spectrum_in_cm(
+        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
+    test_slit_unit_conversions_spectrum_in_nm(
+        verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs)
+    test_convoluted_quantities_units(*args, **kwargs)
+    
+    
+    test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
 
     return True
 

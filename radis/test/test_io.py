@@ -28,7 +28,41 @@ from radis.io.cdsd import cdsd2df
 from radis.test.utils import getTestFile
 import pytest
 import numpy as np
+from warnings import warn
 
+@pytest.mark.fast
+def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
+    ''' Compare that HITRAN species defined in :mod:`radis.io.hitran` match
+    the nomenclature dictionary : :py:data:`radis.io.hitran.trans`.
+    
+    This should be ensured by developers when adding new species. 
+    '''
+    from radis.io.hitran import (HITRAN_CLASS1, HITRAN_CLASS2, HITRAN_CLASS3,
+                                 HITRAN_CLASS4, HITRAN_CLASS5, HITRAN_CLASS6,
+                                 HITRAN_CLASS7, HITRAN_CLASS8, HITRAN_CLASS9,
+                                 HITRAN_CLASS10)
+    from radis.io.hitran import HITRAN_MOLECULES
+    from radis.misc.basics import compare_lists
+
+    all_hitran = (HITRAN_CLASS1+HITRAN_CLASS2+HITRAN_CLASS3+HITRAN_CLASS4+HITRAN_CLASS5 +
+                  HITRAN_CLASS6+HITRAN_CLASS7+HITRAN_CLASS8+HITRAN_CLASS9+HITRAN_CLASS10)
+    all_hitran = list(set(all_hitran))
+    
+    # All species in HITRAN groups should be valid HITRAN_MOLECULES names
+    for m in all_hitran: 
+        if not m in HITRAN_MOLECULES:
+            raise ValueError('{0} is defined in HITRAN groups but has no HITRAN id'.format(m))
+    
+    # Species in 'HITRAN_MOLECULES' should be classified in groups, else nonequilibrium
+    # calculations are not possible.
+    if warnings and all_hitran != HITRAN_MOLECULES:
+        warn("Difference between HITRAN groups (left) and HITRAN id "+\
+                         "dictionary (right). Some HITRAN species are not classified in "+\
+                         "groups. Nonequilibrium calculations wont be possible for these!:\n"+\
+                         "{0}".format(compare_lists(all_hitran, HITRAN_MOLECULES, 
+                          verbose=False, return_string=True)[1]))
+    return 
+    
 
 @pytest.mark.fast
 def test_hitran_co(verbose=True, warnings=True, **kwargs):
@@ -115,10 +149,11 @@ def test_hitemp(verbose=True, warnings=True, **kwargs):
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-#    test_hitran_co(verbose=verbose, *args, **kwargs)
-#    test_hitran_co2(verbose=verbose, *args, **kwargs)
+    test_hitran_names_match(verbose=verbose, *args, **kwargs)
+    test_hitran_co(verbose=verbose, *args, **kwargs)
+    test_hitran_co2(verbose=verbose, *args, **kwargs)
     test_hitran_h2o(verbose=verbose, *args, **kwargs)
-#    test_hitemp(verbose=verbose, *args, **kwargs)
+    test_hitemp(verbose=verbose, *args, **kwargs)
 
     return True
 

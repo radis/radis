@@ -1420,7 +1420,7 @@ def subsetOfRowObject(ParameterNames, RowObject):
 
 
 #FORMAT_PYTHON_REGEX = '^\%([0-9]*)\.?([0-9]*)([dfs])$'
-FORMAT_PYTHON_REGEX = '^\%(\d*)(\.(\d*))?([edfsEDFS])$'
+FORMAT_PYTHON_REGEX = r'^\%(\d*)(\.(\d*))?([edfsEDFS])$'
 
 # Fortran string formatting
 #  based on a pythonic format string
@@ -1520,7 +1520,7 @@ def getRowObjectFromString(input_string, TableName):
         #print 'par_name: '+par_name #
         par_format = LOCAL_TABLE_CACHE[TableName]['header']['format'][par_name]
         #print 'par_format: '+par_format #
-        regex = '^\%([0-9]+)\.?[0-9]*([dfs])$'
+        regex = r'^\%([0-9]+)\.?[0-9]*([dfs])$'
         regex = FORMAT_PYTHON_REGEX
         #print 'par_name: '+par_name #
         (lng, trail, lngpnt, ty) = re.search(regex, par_format).groups()
@@ -1551,7 +1551,7 @@ def getRowObjectFromString(input_string, TableName):
             pos = 0
         for par_name in LOCAL_TABLE_CACHE[TableName]['header']['extra']:
             par_format = LOCAL_TABLE_CACHE[TableName]['header']['extra_format'][par_name]
-            regex = '^\%([0-9]+)\.?[0-9]*([dfs])$'
+            regex = r'^\%([0-9]+)\.?[0-9]*([dfs])$'
             regex = FORMAT_PYTHON_REGEX
             (lng, trail, lngpnt, ty) = re.search(regex, par_format).groups()
             lng = int(lng)
@@ -1693,7 +1693,7 @@ def getTableNamesFromStorage(StorageName):
     for file_name in file_names:
         # search all files with "header" extensions
         #matchObject = re.search('(\w+)\.header$',file_name)
-        matchObject = re.search('(.+)\.header$', file_name)
+        matchObject = re.search(r'(.+)\.header$', file_name)
         if matchObject:
             # print('matchObject.group(1)=',matchObject.group(1))
             table_names.append(matchObject.group(1))
@@ -1713,7 +1713,7 @@ def scanForNewParfiles(StorageName):
         # create dictionary of unique headers
         try:
             #fname,fext = re.search('(\w+)\.(\w+)',file_name).groups()
-            fname, fext = re.search('(.+)\.(\w+)', file_name).groups()
+            fname, fext = re.search(r'(.+)\.(\w+)', file_name).groups()
         except:
             continue
         if fext == 'header':
@@ -1722,7 +1722,7 @@ def scanForNewParfiles(StorageName):
         # check if extension is 'par' and the header is absent
         try:
             #fname,fext = re.search('(\w+)\.(\w+)',file_name).groups()
-            fname, fext = re.search('(.+)\.(\w+)', file_name).groups()
+            fname, fext = re.search(r'(.+)\.(\w+)', file_name).groups()
         except:
             continue
         if fext == 'par' and fname not in headers:
@@ -2954,22 +2954,22 @@ def group(TableName, DestinationTableName=QUERY_BUFFER, ParameterNames=None, Gro
 # EXTRACTING ========================================================
 
 
-REGEX_INTEGER = '[+-]?\d+'
-REGEX_STRING = '[^\s]+'
-REGEX_FLOAT_F = '[+-]?\d*\.?\d+'
-REGEX_FLOAT_E = '[+-]?\d*\.?\d+[eEfF]?[+-]?\d+'
+REGEX_INTEGER = r'[+-]?\d+'
+REGEX_STRING = r'[^\s]+'
+REGEX_FLOAT_F = r'[+-]?\d*\.?\d+'
+REGEX_FLOAT_E = r'[+-]?\d*\.?\d+[eEfF]?[+-]?\d+'
 
 
-def REGEX_INTEGER_FIXCOL(n): return '\d{%d}' % n
+def REGEX_INTEGER_FIXCOL(n): return r'\d{%d}' % n
 
 
-def REGEX_STRING_FIXCOL(n): return '[^\s]{%d}' % n
+def REGEX_STRING_FIXCOL(n): return r'[^\s]{%d}' % n
 
 
-def REGEX_FLOAT_F_FIXCOL(n): return '[\+\-\.\d]{%d}' % n
+def REGEX_FLOAT_F_FIXCOL(n): return r'[\+\-\.\d]{%d}' % n
 
 
-def REGEX_FLOAT_E_FIXCOL(n): return '[\+\-\.\deEfF]{%d}' % n
+def REGEX_FLOAT_E_FIXCOL(n): return r'[\+\-\.\deEfF]{%d}' % n
 
 # Extract sub-columns from string column
 
@@ -3082,7 +3082,7 @@ def extractColumns(TableName, SourceParameterName, ParameterFormats, ParameterNa
         def_val = getDefaultValue(par_type)
         LOCAL_TABLE_CACHE[TableName]['header']['default'][par_name] = def_val
         i += 1
-    format_regex = '\s*'.join(format_regex)
+    format_regex = r'\s*'.join(format_regex)
     # print 'format_regex='+str(format_regex)
     # return format_regex
     # loop through values of SourceParameter

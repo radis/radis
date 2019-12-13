@@ -8,11 +8,7 @@ install:
   # Install Anaconda 
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -34,11 +30,7 @@ script:
   # Your test script goes here
   - echo ">>> Run tests"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      xvfb-run pytest -m "not needs_config_file and not python3_only" --cov=./;
-    else
-      xvfb-run pytest -m "not needs_config_file and not python2_only" --cov=./;
-    fi
+  - xvfb-run pytest -m "not needs_config_file" --cov=./;
   
 # safelist
 branches:
@@ -48,8 +40,6 @@ branches:
   
  
 after_success:
-  # codecoverage for Python 3 only
-  - if [[ "$TRAVIS_PYTHON_VERSION" != "2.7" ]]; then
-      pip install codecov;
-      codecov;
-    fi
+  # codecoverage
+  - pip install codecov;
+  - codecov;

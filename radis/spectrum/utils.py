@@ -14,8 +14,16 @@ from radis.misc.basics import partition
 # %% Definitions
 
 # Waverange, wavespaces
+# ... aliases:
 WAVENUM_UNITS = ['cm', 'cm-1', 'cm_1', 'wavenumber']
 WAVELEN_UNITS = ['nm', 'wavelength']
+WAVELENVAC_UNITS = ['nm_vac', 'nm_vacuum']
+# ... internal names
+WAVESPACE = ['nm', 'nm_vac', 'cm-1']
+''' list: wavespace:
+- ``'nm'``: wavelength (in air)
+- ``'nm_vac'``: wavelength (in vacuum)
+- ``'cm-1'``: wavenumber'''
 
 # Spectral quantities
 CONVOLUTED_QUANTITIES = ['radiance', 'transmittance', 'emissivity']
@@ -25,6 +33,9 @@ NON_CONVOLUTED_QUANTITIES = ['radiance_noslit', 'transmittance_noslit',
                              'absorbance', 'abscoeff',
                              'abscoeff_continuum', 'emissivity_noslit']
 '''list: name of spectral quantities not convolved with slit function'''
+SPECTRAL_QUANTITIES = CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
+'''list: all spectral quantities defined in a :class:`~radis.spectrum.spectrum.Spectrum` 
+object'''
 
 # note: it is hardcoded (and needed) that quantities that are convoluted are
 # generated from a non convoluted quantity with the same name + _noslit
@@ -90,11 +101,13 @@ def cast_waveunit(unit, force_match=True):
     ''' Standardize unit formats '''
     if unit in WAVELEN_UNITS:
         return 'nm'
+    if unit in WAVELENVAC_UNITS:
+        return 'nm_vac'
     elif unit in WAVENUM_UNITS:
         return 'cm-1'
     elif force_match:
-        raise ValueError('Unknown wavespace unit: {0}. Should be one of {1}'.format(unit,
-                                                                                    WAVELEN_UNITS+WAVENUM_UNITS))
+        raise ValueError('Unknown wavespace unit: {0}. Should be one of {1}'.format(
+                unit, WAVELEN_UNITS+WAVELENVAC_UNITS+WAVENUM_UNITS))
     else:
         return unit  # dont convert
 
@@ -112,6 +125,7 @@ def make_up(label):
     # Improve units
     label = label.replace(r'cm_1', r'cm-1')
     label = label.replace(r'cm-1', r'cm$^\mathregular{-1}$')
+    label = label.replace(r'm^-1', r'm$^\mathregular{-1}$')
     label = label.replace(r'm2', r'm$^\mathregular{2}$')
     label = label.replace(r'm3', r'm$^\mathregular{3}$')
     label = label.replace(r'I/I0', r'I/I$_\mathregular{0}$')    # transmittance unit
@@ -126,6 +140,41 @@ def make_up(label):
     
     return label
 
+def format_xlabel(wunit, plot_medium):
+    ''' Used by :py:meth:`radis.spectrum.spectrum.Spectrum.plot` and 
+    :py:func:`radis.spectrum.compare.plot_diff`
+
+    Parameters
+    ----------
+    
+    wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, 
+        wavelength air, wavenumber, or wavelength vacuum. If ``'default'``, 
+        Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
+
+    plot_medium: bool, ``'vacuum_only'``
+        if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
+        in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``, 
+        plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'`` 
+        (prevents from inadvertently plotting spectra with different propagation 
+        medium on the same graph).
+
+    '''
+    if wunit == 'cm-1':
+        xlabel = 'Wavenumber (cm-1)'
+    elif wunit == 'nm':
+        if plot_medium and plot_medium != 'vacuum_only':
+            xlabel = 'Wavelength [air] (nm)'
+        else:
+            xlabel = 'Wavelength (nm)'
+    elif wunit == 'nm_vac':
+        if plot_medium and plot_medium != 'vacuum_only':
+            xlabel = 'Wavelength [vacuum] (nm)'
+        else:
+            xlabel = 'Wavelength (nm)'
+    else:
+        raise ValueError(wunit)
+
+    return make_up(xlabel)
 
 def print_conditions(conditions, units,
                      phys_param_list=PHYSICAL_PARAMS, info_param_list=INFORMATIVE_PARAMS):

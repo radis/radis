@@ -62,28 +62,28 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
         plot (w, I) on a secondary axis. Useful to compare linestrength with
         calculated / measured data 
 
-    xunit: 'nm', 'cm-1'
+    wunit: ``'nm'``, ``'cm-1'``
         wavelength / wavenumber units
 
-    Iunit: `hitran`, `splot` 
+    Iunit: ``'hitran'``, ``'splot'`` 
         Linestrength output units:
 
-        - `hitran`: (cm-1/(molecule/cm-2))
-        - `splot`: (cm-1/atm)   (Spectraplot units [2]_)
+        - ``'hitran'``: (cm-1/(molecule/cm-2))
+        - ``'splot'`` : (cm-1/atm)   (Spectraplot units [2]_)
 
         Note: if not None, cutoff criteria is applied in this unit.
         Not used if plot is not 'S'
 
-    medium: 'air', 'vacuum'
-        show wavelength either in air or vacuum. Default air
+    medium: ``'air'``, ``'vacuum'``
+        show wavelength either in air or vacuum. Default ``'air'``
 
     plot: str
-        what to plot. Default 'S' (scaled line intensity). But it can be 
-        any key in the lines, such as population ('nu'), or Einstein coefficient ('Aul')
+        what to plot. Default ``'S'`` (scaled line intensity). But it can be 
+        any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'Aul'``)
 
-    lineinfo: list, or 'all'
+    lineinfo: list, or ``'all'``
         extra line information to plot. Should be a column name in the databank
-        (s.lines). For instance: 'int', 'selbrd', etc... Default ['int']
+        (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
 
     Other Parameters
     ----------------
@@ -94,8 +94,8 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
     filename: str
         filename to save .html 
 
-    yscale: 'log', 'linear'
-        Default 'log'
+    yscale: ``'log'``, ``'linear'``
+        Default ``'log'``
 
     Returns
     -------
@@ -170,9 +170,9 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
     # Parsers to get units and more details
     if dbformat == 'hitran':
         columndescriptor = hitrancolumns
-    elif dbformat == 'cdsd':
+    elif dbformat == 'cdsd-hitemp':
         columndescriptor = cdsdcolumns
-    elif dbformat == 'cdsd4000':
+    elif dbformat == 'cdsd-4000':
         columndescriptor = cdsd4000columns
 
     # Apply cutoff, get ylabel
@@ -318,7 +318,7 @@ def LineSurvey(spec, overlay=None, wunit='cm-1', Iunit='hitran', medium='air',
     # Get label
     if dbformat == 'hitran':
         sp['label'] = sp.apply(lambda r: get_label_hitran(r, details), axis=1)
-    elif dbformat in ['cdsd', 'cdsd-4000']:
+    elif dbformat in ['cdsd-hitemp', 'cdsd-4000']:
         sp['label'] = sp.apply(lambda r: get_label_cdsd(r, details), axis=1)
     else:
         sp['label'] = sp.apply(get_label_none, axis=1)

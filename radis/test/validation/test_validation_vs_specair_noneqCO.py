@@ -112,10 +112,11 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False,
 
     if plot:
         plot_diff(specair_300_300, s_300_300,
-                  title='T$_\mathregular{vib}$ 300 K, T$_\mathregular{rot}$ 300 K',
+                  title=r'T$_\mathregular{vib}$ 300 K, T$_\mathregular{rot}$ 300 K',
                   diff_window=int(0.02//wstep),  # compensate for small shifts in both codes. we're comparing intensities here.
                   lw_multiplier=1, #0.75, 
-                  medium='vacuum',
+                  wunit='nm_vac',
+                  plot_medium=True,
                   )
         plt.xlim((4500, 4900))
         if article_version:
@@ -123,10 +124,11 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False,
             plt.savefig('out/test_validation_vs_specair_noneqCO_Tvib300_Trot300.pdf')
 
         plot_diff(specair_2000_300, s_2000_300,
-                  title='T$_\mathregular{vib}$ 2000 K, T$_\mathregular{rot}$ 300 K',
+                  title=r'T$_\mathregular{vib}$ 2000 K, T$_\mathregular{rot}$ 300 K',
                   diff_window=int(0.02//wstep),  # compensate for small shifts in both codes. we're comparing intensities here.
                   lw_multiplier=1, #0.75, 
-                  medium='vacuum',
+                  wunit='nm_vac',
+                  plot_medium=True,
                   )
         plt.xlim((4500, 4900))
         if article_version:
@@ -134,10 +136,11 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False,
             plt.savefig('out/test_validation_vs_specair_noneqCO_Tvib2000_Trot300.pdf')
 
         plot_diff(specair_300_2000, s_300_2000,
-                  title='T$_\mathregular{vib}$ 300 K, T$_\mathregular{rot}$ 2000 K',
+                  title=r'T$_\mathregular{vib}$ 300 K, T$_\mathregular{rot}$ 2000 K',
                   diff_window=int(0.02//wstep),  # compensate for small shifts in both codes. we're comparing intensities here.
                   lw_multiplier=1, #0.75, 
-                  medium='vacuum',
+                  wunit='nm_vac',
+                  plot_medium=True,
                   )
         plt.xlim((4500, 4900))
         if article_version:

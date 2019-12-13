@@ -1,10 +1,8 @@
-
-*******************
 Thermodynamic codes
-*******************
+-------------------
 
 Cantera
--------
+'''''''
 
 RADIS can compute equilibrium gas compositions using the [CANTERA]_
 :py:meth:`~cantera.ThermoPhase.equilibrate` functions. 

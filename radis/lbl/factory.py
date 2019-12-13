@@ -79,10 +79,11 @@ from six import string_types
 from warnings import warn
 from radis.io.hitran import get_molecule
 from radis.lbl.bands import BandFactory
-from radis.lbl.base import get_all_waveranges
+from radis.lbl.base import get_waverange
 from radis.spectrum.spectrum import Spectrum
 from radis.spectrum.equations import calc_radiance
 from radis.misc.basics import is_float, list_if_float, flatten
+from radis.misc.printer import printg
 from radis.phys.convert import conv2
 from radis.phys.constants import k_b
 from radis.phys.units import convert_rad2nm, convert_emi2nm
@@ -103,15 +104,15 @@ class SpectrumFactory(BandFactory):
     ----------
 
     wavenum_min: cm-1
-        minimum wavenumber to be processed in cm^-1. Note that this wavenumber
-        can be in 'air' or 'vacuum' depending on the value of the parameter
-        "medium="
+        minimum wavenumber to be processed in cm^-1. 
 
     wavenum_max: cm-1
         maximum wavenumber to be processed in cm^-1
 
     wavelength_min: nm
-        minimum wavelength to be processed in nm
+        minimum wavelength to be processed in nm. This wavelength
+        can be in ``'air'`` or ``'vacuum'`` depending on the value of the parameter
+        ``medium=``
 
     wavelength_max: nm
         maximum wavelength to be processed in nm
@@ -144,9 +145,8 @@ class SpectrumFactory(BandFactory):
         times!). Default 'all'
 
     medium: ``'air'``, ``'vacuum'``
-        propagating medium: choose whether to return wavelength in air or vacuum.
-        Note that the  input wavelength range ("wavenum_min", "wavenum_max") changes.
-        Default ``'air'``
+        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``
 
     Other Parameters
     ----------------
@@ -162,8 +162,8 @@ class SpectrumFactory(BandFactory):
 
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
-        a huge performance drop (because convolutions are not vectorized).
-        Also, the calculated spectral range is increased (by broadening_max_width/2
+        a huge performance drop (scales as ~broadening_width^2 without DLM)
+        The calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default ``10`` cm-1.
 
@@ -335,7 +335,7 @@ class SpectrumFactory(BandFactory):
                  verbose=True,
                  warnings=True,
                  save_memory=False,
-                 export_populations='vib',
+                 export_populations=None,
                  export_lines=True,
                  **kwargs):
 
@@ -364,9 +364,10 @@ class SpectrumFactory(BandFactory):
         # calculate waveranges
         # --------------------
 
-        # Get wavelength & wavenumbers in correct propagation medium
-        wavenum_min, wavenum_max, wavelength_min, wavelength_max = get_all_waveranges(
-            medium, wavenum_min, wavenum_max, wavelength_min, wavelength_max)
+        # Get wavenumber, based on whatever was given as input.
+        wavenum_min, wavenum_max = get_waverange(wavenum_min, wavenum_max, 
+                                                      wavelength_min, wavelength_max,
+                                                      medium)
 
         # calculated range is broader than output waverange to take into account off-range line broadening
         wavenumber, wavenumber_calc = _generate_wavenumber_range(wavenum_min, wavenum_max,
@@ -395,10 +396,6 @@ class SpectrumFactory(BandFactory):
         # Initialize input conditions
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
-        self.input.wavelength_min = wavelength_min
-        self.input.wavelength_max = wavelength_max
-        # propagating medium. Calculations are done in vacuum anyway
-        self.input.medium = medium
         self.input.Tref = Tref
         self.input.pressure_mbar = pressure*1e3
         self.input.mole_fraction = mole_fraction
@@ -643,6 +640,9 @@ class SpectrumFactory(BandFactory):
             # Calculate output quantities
             # ----------------------------------------------------------------------
 
+            if self.verbose >= 2:
+                t1 = time()
+                
             # incorporate density of molecules (see equation (A.16) )
             density = mole_fraction*((pressure_mbar*100)/(k_b*Tgas))*1e-6
             #  :
@@ -663,12 +663,17 @@ class SpectrumFactory(BandFactory):
             radiance_noslit = calc_radiance(wavenumber, emissivity_noslit, Tgas,
                                             unit=self.units['radiance_noslit'])
 
+            if self.verbose >= 2:
+                printg('Calculated other spectral quantities in {0:.2f}s'.format(time()-t1))
+
             # %% Export
             # --------------------------------------------------------------------
 
             t = round(time() - t0, 2)
             if verbose:
-                print('... process done in {0:.1f}s'.format(t))
+                print('Spectrum calculated in {0:.2f}s'.format(t))
+            if self.verbose >= 2:
+                t1 = time()
 
             # Get conditions
             conditions = self.get_conditions()
@@ -721,6 +726,9 @@ class SpectrumFactory(BandFactory):
                 # Tvib=Trot=Tgas... but this way names in a database
                 # generated with eq_spectrum are consistent with names
                 # in one generated with non_eq_spectrum
+
+            if self.verbose >= 2:
+                printg('Generated spectrum in {0:.2f}s'.format(time()-t1))
 
             return s
 
@@ -863,6 +871,8 @@ class SpectrumFactory(BandFactory):
             # Check line database and parameters, reset populations and scaled line dataframe
             # ----------
             self._check_line_databank()
+            # add nonequilibrium energies if needed (this may be a bottleneck
+            # for a first calculation):
             self._check_noneq_parameters(vib_distribution, singleTvibmode)
             self._reinitialize()   # creates scaled dataframe df1 from df0
 
@@ -879,13 +889,9 @@ class SpectrumFactory(BandFactory):
                                                        rot_distribution=rot_distribution,
                                                        overpopulation=overpopulation)
             
-#            assert not (self.df1.Qref.is_monotonic and self.df1.wav.is_monotonic)
-            
             self._calc_linestrength_noneq()
             self._calc_emission_integral()
 
-#            assert not (self.df1.Qref.is_monotonic and self.df1.wav.is_monotonic)
-            
             # ----------------------------------------------------------------------
             # Cutoff linestrength
             self._cutoff_linestrength()
@@ -918,6 +924,9 @@ class SpectrumFactory(BandFactory):
             # Calculate output quantities
             # ----------------------------------------------------------------------
 
+            if self.verbose >= 2:
+                t1 = time()
+                
             # incorporate density of molecules (see Rothman 1996 equation (A.16) )
             density = mole_fraction*((pressure_mbar*100)/(k_b*Tgas))*1e-6
             #  :
@@ -955,6 +964,9 @@ class SpectrumFactory(BandFactory):
             emisscoeff = convert_emi2nm(emisscoeff, wavenumber,
                                         'mW/sr/cm3/cm_1', 'mW/sr/cm3/nm')
 
+            if self.verbose >= 2:
+                printg('Calculated other spectral quantities in {0:.2f}s'.format(time()-t1))
+
             # Note: emissivity not defined under non equilibrium
 
             # %% Export
@@ -962,8 +974,10 @@ class SpectrumFactory(BandFactory):
 
             t = round(time() - t0, 2)
             if verbose:
-                print('... process done in {0:.1f}s'.format(t))
-
+                print('Spectrum calculated in {0:.2f}s'.format(t))
+            if self.verbose >= 2:
+                t1 = time()
+                
             # Get conditions
             conditions = self.get_conditions()
             conditions.update({'calculation_time': t,
@@ -1008,11 +1022,14 @@ class SpectrumFactory(BandFactory):
                 # is freshly baken so probably in a good format
                 name=name,
             )
-
+            
             # update database if asked so
             if self.autoupdatedatabase:
                 self.SpecDatabase.add(
                     s, add_info=['Tvib', 'Trot'], add_date='%Y%m%d', if_exists_then='increment')
+    
+            if self.verbose >= 2:
+                printg('Generated spectrum in {0:.2f}s'.format(time()-t1))
 
             return s
 

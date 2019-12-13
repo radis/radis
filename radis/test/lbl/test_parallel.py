@@ -30,7 +30,6 @@ import pytest
 # %% Main
 
 
-@pytest.mark.python3_only
 def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
     ''' Core of the parallel test routine 
     
@@ -124,7 +123,6 @@ def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
-@pytest.mark.python3_only
 def DISCARDED_test_parallel_internal(plot=False, verbose=True, warnings=True, *args, **kwargs):
     ''' Core of the parallel test routine 
     

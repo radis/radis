@@ -1,6 +1,7 @@
 .. _label_install:
+
 Requirements
-============
+------------
 
 RADIS has the following strict requirements:
 
@@ -30,11 +31,11 @@ time:
 
 
 Install
-=======
+-------
 
 You can either install RADIS from `pip`, the Python package manager. But if 
 you want to modify the code and contribute, we suggest to clone the source 
-from [GitHub](https://github.com/radis/radis) .  
+from `GitHub <https://github.com/radis/radis>`_.  
 
 **Use-only version** : cant modify the code
 
@@ -62,7 +63,7 @@ from the Quick Start page. Then, you're all set.
 
 
 Test 
-====
+----
 
 If you want to modify the source code, you need to ensure that you don't break
 any of the existing tests. 
@@ -72,7 +73,7 @@ tests locally.
 
 
 Update 
-======
+------
 
 With Pip you can keep the package up-to-date with::
 
@@ -84,11 +85,12 @@ In the developer version (installed with `pip -e`), use git to `pull` the latest
 
 
 Help
-====
+----
 
 If you encounter any problem, please `report an Issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_ on GitHub.  
 
-You can also ask questions on the community chat:
+You can also ask for advice on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
+or the community chat:
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community

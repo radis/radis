@@ -74,6 +74,28 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 from .misc.utils import getProjectRoot
 from .misc.utils import Chdir as _chdir
+from .misc.config import get_config
+
+# %% Config files
+
+# @dev: refactor in progress.
+# So far there are config files in ~/.radis (for databanks), global variables
+# here, and a radis/config.json file. 
+# Everything should be merged in a user JSON file ~/.radis (json) overriding 
+# the default one. 
+
+config = get_config()
+'''dict: RADIS configuration parameters
+
+Notes
+-----
+
+refactor in progress.
+So far there are config files in ~/.radis (for databanks), global variables
+here, and a radis/config.json file. 
+Everything should be merged in a user JSON file ~/.radis (json) overriding 
+the default one.
+'''
 
 
 # %% Global constants

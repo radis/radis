@@ -785,7 +785,7 @@ class BroadenFactory(BaseFactory):
             return  # no lines
         
         if self.verbose >= 2:
-            printg('Calculate broadening HWHM')
+#            printg('> Calculate broadening HWHM')
             t0 = time()
 
         if self.input.Tgas is None:
@@ -814,7 +814,7 @@ class BroadenFactory(BaseFactory):
                 self._broadening_method))
 
         if self.verbose >= 2:
-            printg('Calculated broadening HWHM in {0:.1f}s'.format(time()-t0))
+            printg('Calculated broadening HWHM in {0:.2f}s'.format(time()-t0))
 
     def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
         ''' Update dataframe with Voigt HWHM
@@ -2005,7 +2005,7 @@ class BroadenFactory(BaseFactory):
         df = self.df1
         
         if self.verbose>=2:
-            printg('Calculating line broadening ({0} lines: expect ~ {1:.1f}s on 1 CPU)'.format(
+            printg('> Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)'.format(
                     len(df), self._broadening_time_ruleofthumb*len(df)*len(self.wbroad_centered)))
             t0 = time()
 
@@ -2044,7 +2044,7 @@ class BroadenFactory(BaseFactory):
             (wavenumber, abscoeff) = self._broaden_lines(df)
 
         if self.verbose>=2:
-            printg('Calculated line broadening in {0:.1f}s'.format(time()-t0))
+            printg('Calculated line broadening in {0:.2f}s'.format(time()-t0))
 
         return wavenumber, abscoeff
 
@@ -2083,7 +2083,7 @@ class BroadenFactory(BaseFactory):
         df = self.df1
 
         if self.verbose>=2:
-            printg('Calculating line broadening ({0:,d} lines: expect ~ {1:.1f}s on 1 CPU)'.format(
+            printg('Calculating line broadening ({0:,d} lines: expect ~ {1:.2f}s on 1 CPU)'.format(
                     len(df), self._broadening_time_ruleofthumb*len(df)*len(self.wbroad_centered)))
             t0 = time()
 
@@ -2117,7 +2117,7 @@ class BroadenFactory(BaseFactory):
             (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
 
         if self.verbose>=2:
-            printg('Calculated line broadening in {0:.1f}s'.format(time()-t0))
+            printg('Calculated line broadening in {0:.2f}s'.format(time()-t0))
 
         return wavenumber, abscoeff, emisscoeff
 

@@ -182,7 +182,7 @@ def dcm2dnm(delta_nu, nu_0):
     -------
 
     delta_nm: float (nm)
-        broadening in wavelength
+        broadening in wavelength (vacuum)
 
     '''
     return cm2nm(nu_0-delta_nu/2)-cm2nm(nu_0+delta_nu/2)
@@ -196,10 +196,10 @@ def dnm2dcm(delta_lbd, lbd_0):
     ----------
 
     delta_lbd: float (nm)
-        wavelength broadening
+        wavelength broadening (vacuum)
 
     lbd_0: float (nm)
-        center wavelength
+        center wavelength (vacuum)
 
     Returns
     -------
@@ -209,6 +209,51 @@ def dnm2dcm(delta_lbd, lbd_0):
 
     '''
     return nm2cm(lbd_0-delta_lbd/2)-nm2cm(lbd_0+delta_lbd/2)
+
+def dcm2dnm_air(delta_nu, nu_0):
+    ''' Converts (ex: FWHM) from Δcm to Δnm
+
+
+    Parameters    
+    ----------
+
+    delta_nu: float (cm-1)
+        wavenumber broadening
+
+    nu_0: float (cm-1)
+        center wavenumber
+
+    Returns
+    -------
+
+    delta_nm: float (nm)
+        broadening in wavelength (air)
+
+    '''
+    return cm2nm_air(nu_0-delta_nu/2)-cm2nm_air(nu_0+delta_nu/2)
+
+
+def dnm_air2dcm(delta_lbd, lbd_0):
+    ''' Converts (ex: FWHM) from Δnm to Δcm
+
+
+    Parameters    
+    ----------
+
+    delta_lbd: float (nm)
+        wavelength broadening (air)
+
+    lbd_0: float (nm)
+        center wavelength (air)
+
+    Returns
+    -------
+
+    delta_cm: float (cm-1)
+        broadening in wavenumber
+
+    '''
+    return nm_air2cm(lbd_0-delta_lbd/2)-nm_air2cm(lbd_0+delta_lbd/2)
 
 
 def dhz2dnm(deltaf_hz, f_0):

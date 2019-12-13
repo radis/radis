@@ -1,16 +1,44 @@
+.. _label_line_by_line:
 
-*************************
+=========================
 Line-by-line (LBL) module
-*************************
+=========================
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
 The detailed RADIS calculation flow chart is given in :ref:`Architecture <label_dev_architecture>`. 
 
+Calculating spectra 
+===================
+
+Nonequilibrium Calculations
+---------------------------
+
+Nonequilibrium calculations require to know the vibrational and rotational energies of each 
+level in order to calculate the nonequilibrium populations. 
+
+You can either let RADIS calculate rovibrational energies
+with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`, 
+or supply an energy level database. In the latter case, you need to edit the 
+:ref:`Configuration file <label_lbl_config_file>` . 
+
+
 The Spectrum Factory
 --------------------
 
-The :py:class:`~radis.lbl.factory.SpectrumFactory` allows you to 
+Most RADIS calculations can be done using the :py:func:`~radis.lbl.calc.calc_spectrum` function. 
+Advanced examples require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
+class, which is the core of RADIS line-by-line calculations. 
+:py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
+for the simple cases. 
+
+The :py:class:`~radis.lbl.factory.SpectrumFactory` allows you to :
+- calculate multiple spectra (batch processing) with a same line database 
+- edit the line database manually 
+- have access to intermediary calculation variables
+- connect to a database of precomputed spectra on your computer
+
+To use the :py:class:`~radis.lbl.factory.SpectrumFactory`, first 
 load your own line database with :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`, 
 and then calculate several spectra in batch using 
 :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum` and 
@@ -30,8 +58,9 @@ and then calculate several spectra in batch using
     s1 = sf.eq_spectrum(Tgas=300)
     s2 = sf.eq_spectrum(Tgas=2000)
     s3 = sf.non_eq_spectrum(Tvib=2000, Trot=300)
-    
+
 .. _label_lbl_config_file:
+
 Configuration file
 ------------------
 
@@ -51,22 +80,22 @@ of :py:class:`~radis.lbl.factory.SpectrumFactory`, or the (default) ``databank='
 A ``~/.radis`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which 
 is specific to a given molecule. It typically looks like::
 
-    # The CO2 CDSD-HITEMP files have been retrieved from ftp://cfa-ftp.harvard.edu/pub/HITEMP-2010/
+    # The CO2 HITEMP 2010 files have been retrieved from ftp://cfa-ftp.harvard.edu/pub/HITEMP-2010/
     # Partition function are that of CDSD-4000, retrived from ftp://ftp.iao.ru/pub/CDSD-4000
-    [HITEMP-CO2-DUNHAM]
+    [HITEMP-CO2]
     info = CDSD-HITEMP database, with energy levels calculated from Dunham expansions
     path = 
            D:\PATH_TO\HITEMP-2010\cdsd_hitemp_07
            D:\PATH_TO\HITEMP-2010\cdsd_hitemp_08
            D:\PATH_TO\HITEMP-2010\cdsd_hitemp_09
-    format = cdsd
+    format = hitran
     parfunc =  PATH_TO\CDSD-4000\partition_functions.txt
     parfuncfmt = cdsd
     levelsfmt = radis
 
 In the former example, RADIS built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>` 
 are used to calculate the energy levels for CO2. 
-It is also possible to use your own Energy level database::
+It is also possible to use your own Energy level database. For instance::
 
 
     # List of databases
@@ -90,23 +119,24 @@ The up-to-date format is given in :py:data:`~radis.misc.config.DBFORMAT`:
   are user generated Energy databases (here: calculated from the [CDSD-4000]_ Hamiltonian on non-distributed code,
   which takes into account non diagonal coupling terms). 
 
-- ``format`` is the databank text file format. It can be one of ``cdsd``, ``hapi``. See full list in 
-  :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT` 
+- ``format`` is the databank text file format. It can be one of ``'hitran'`` (for HITRAN / HITEMP 2010), 
+  ``'cdsd-hitemp'`` and ``'cdsd-4000'`` for the different CDSD versions (for CO2 only). See full list in 
+  :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`. 
   
 - ``parfuncfmt``: ``cdsd``, ``hapi`` is the format of the tabulated partition functions used. 
-   If `hapi`, then [HAPI]_ is used to retrieve them (valid if your databank is HITRAN data). 
-   See full list in :py:data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT` 
+  If ``'hapi'``, then [HAPI]_ is used to retrieve them (valid if your databank is HITRAN data). 
+  See full list in :py:data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT` 
  
 - ``parfunc`` is the path to the tabulated partition function to use in in equilibrium calculations 
-  (:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`). If ``parfuncfmt`` is `hapi` then `parfunc` should be
+  (:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`). If ``parfuncfmt`` is ``'hapi'`` then `parfunc` should be
   the link to the hapi.py file. If not given, then the :py:mod:`~radis.io.hitran.hapi` embedded in RADIS 
   is used (check version)
   
 - ``levels_iso#`` are the path to the energy levels to use for each isotope, which are needed for 
-   nonequilibrium calculations (:py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`).
+  nonequilibrium calculations (:py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`).
 
-- ``levelsfmt`` is the energy levels database format. Typically, ``radis``, and various implementation of [CDSD-4000]_ 
-  nonequilibrium partitioning of vibrational and rotational energy: ``cdsd-pc``, ``cdsd-pcN``, ``cdsd-hamil``. 
+- ``levelsfmt`` is the energy levels database format. Typically, ``'radis'``, and various implementation of [CDSD-4000]_ 
+  nonequilibrium partitioning of vibrational and rotational energy: ``'cdsd-pc'``, ``'cdsd-pcN'``, ``'cdsd-hamil'``. 
   See full list in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
 
   
@@ -134,6 +164,15 @@ which will result in ::
     parfuncfmt = hapi
     levelsfmt = radis
 
+
+    [HITEMP-CO2-TEST]
+    info = HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
+    path = D:\GitHub\radis\radis\test\files\cdsd_hitemp_09_fragment.txt
+    format = cdsd-hitemp
+    parfuncfmt = hapi
+    levelsfmt = radis
+
+
 If you configuration file exists already, the test databases will simply be appended. 
 These databases are used in some of the tests cases of RADIS, and the ``~/.radis`` may already contain 
 them if you ever started the test suite with::
@@ -142,86 +181,124 @@ them if you ever started the test suite with::
     pytest 
 
 
-Spectroscopic constants
------------------------
-
-For nonequilibrium calculations, you can either let RADIS calculate rovibrational energies
-with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`, 
-or supply an energy level database. 
-
-For the first case, see the ``molecules_data.json`` files in ``radis/db/[MOLECULE]`` 
-to see (or modifiy) the :ref:`spectroscopic constants <label_db_spectroscopic_constants>` used. 
-Refer to the [RADIS-2018]_ article for the references used. 
-
-In the second case, see the :ref:`Configuration file <label_lbl_config_file>` . 
-
-The list of molecules implemented for nonequilibrium calculations if found in :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
-Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how nonequilibrium calculations are conducted. 
-
-********
 Advanced
-********
+========
+
+Calculation Flow Chart
+----------------------
+
+Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how equilibrium
+and nonequilibrium calculations are conducted. 
+
+
+Use Custom Spectroscopic constants
+----------------------------------
+
+Spectroscopic constants are a property of the RADIS :py:class:`~radis.db.classes.ElectronicState` 
+class. All molecules are stored in the :py:class:`~radis.db.molecules.Molecules` dictionary.
+You need to update this dictionary before running your calculation in order to use your 
+own spectroscopic constants. 
+
+An example of how to use your own spectroscopic constants::
+
+    from radis import calc_spectrum
+    from radis.db.molecules import Molecules, ElectronicState
+
+    Molecules['CO2'][1]['X'] = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
+                                spectroscopic_constants='my_constants.json',  # <<< YOUR FILE HERE 
+                                spectroscopic_constants_type='dunham',
+                                Ediss=44600,
+                                )
+    s = calc_spectrum(...)
+
+
 
 Vibrational bands
 -----------------
 
-To calculate all vibrational bands of a given spectrum separately, use the  
+To calculate vibrational bands of a given spectrum separately, use the  
 :meth:`~radis.lbl.bands.BandFactory.eq_bands` and  :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
 methods. See the :py:func:`~radis.test.lbl.test_bands.test_plot_all_CO2_bandheads` example in 
 ``radis/test/lbl/test_bands.py`` for more information. 
 
 
-Pseudo-continuum
-----------------
+Connect to a Spectrum Database
+------------------------------
 
-To calculate your spectra with a pseudo-continuum, refer to the :ref:`Performance <label_lbl_performance>`
-section. 
+In RADIS, the same code can be used to retrieve precomputed spectra if they exist, 
+or calculate them and store them if they don't. See :ref:`Precompute Spectra <label_lbl_precompute_spectra>`
+
 
 
 .. _label_lbl_performance:
-***********
-Performance
-***********
 
-Different strategies and parameters are used to improve performances:
+Performance
+===========
+
+RADIS is very optimized, making use of C-compiled libraries (NumPy, Numba) for computationally intensive steps, 
+and data analysis libraries (Pandas) to handle lines databases efficiently. 
+Additionaly, different strategies and parameters are used to improve performances further:
 
 Line Database Reduction Strategies
 ----------------------------------
 
-- *linestrength cutoff* : lines with low linestrength are discarded after the new 
-populations are calculated. 
-Parameter: :py:attr:`~radis.lbl.loader.Input.cutoff` 
-(see the default value in the arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`)
+By default:
 
-- *weak lines*: lines which are close to a much stronger line are called weak lines. 
-They are added to a pseudo-continuum and their lineshape is calculated with a simple 
-rectangular approximation.  
-See the default value in the arguments of :py:attr:`~radis.lbl.loader.Parameters.pseudo_continuum_threshold` 
-(see arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`)
+- *linestrength cutoff* : lines with low linestrength are discarded after the new 
+  populations are calculated. 
+  Parameter: :py:attr:`~radis.lbl.loader.Input.cutoff` 
+  (see the default value in the arguments of :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`)
+
+Additional strategies (deactivated by default):
+
+- *weak lines* (pseudo-continuum): lines which are close to a much stronger line are called weak lines. 
+  They are added to a pseudo-continuum and their lineshape is calculated with a simple 
+  rectangular approximation.  
+  See the default value in the arguments of :py:attr:`~radis.lbl.loader.Parameters.pseudo_continuum_threshold` 
+  (see arguments of :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`)
 
 
 Lineshape optimizations
 -----------------------
 
+Lineshape convolution is usually the performance bottleneck in any line-by-line code. 
+
+Two approaches can be used:
+
+- improve the convolution efficiency. This involves using an efficient convolution algorithm,
+  using a reduced convolution kernel, analytical approximations, or multiple spectral grid.
+- reduce the number of convolutions (for a given number of lines): this is done using the DLM strategy. 
+
+RADIS implements the two approaches as well as various strategies and parameters 
+to calculate the lineshapes efficiently. 
+
 - *broadening width* : lineshapes are calculated on a reduced spectral range. 
-Voigt computation calculation times scale linearly with that parameter. 
-Gaussian x Lorentzian calculation times scale as a square with that parameter. 
-parameters: broadening_max_width
+  Voigt computation calculation times scale linearly with that parameter. 
+  Gaussian x Lorentzian calculation times scale as a square with that parameter. 
+  parameters: broadening_max_width
 
 - *Voigt approximation* : Voigt is calculated with an analytical approximation. 
-Parameter : :py:attr:`~radis.lbl.loader.Parameters.broadening_max_width` and 
-default values in the arguments of :py:meth:`~radis.lbl.factory.eq_spectrum`. 
-See :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+  Parameter : :py:attr:`~radis.lbl.loader.Parameters.broadening_max_width` and 
+  default values in the arguments of :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`. 
+  See :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
 
 - *Fortran precompiled* : previous Voigt analytical approximation is 
-precompiled in Fortran to improve performance times. This is always the 
-case and cannot be changed on the user side at the moment. See the source code
-of :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+  precompiled in Fortran to improve performance times. This is always the 
+  case and cannot be changed on the user side at the moment. See the source code
+  of :py:func:`~radis.lbl.broadening.voigt_lineshape`. 
+  
+- *Multiple spectral grids* : many LBL codes use different spectral grids to 
+  calculate the lineshape wings with a lower resolution. This strategy is not 
+  implemented in RADIS. 
 
-- *DLM* :  lineshape templates are calculated to reduce the number of calculated 
-lines from millions to a few dozens. Implementation in progress. 
-parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`, 
-:py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`. 
+- *DLM* :  lines are projected on a Lineshape database to reduce the number of calculated 
+  lineshapes from millions to a few dozens.
+  With this optimization strategy, the lineshape convolution becomes almost instantaneous 
+  and all the other strategies are rendered useless. Projection of all lines on the lineshape 
+  database becomes the performance bottleneck.
+  parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`, 
+  :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`. 
+  (this is the default strategy implemented in RADIS)
 
 More details on the parameters below:
 
@@ -362,7 +439,7 @@ You can set ``verbose=2`` to print the time spent on different operations. Examp
     >>> scale nonequilibrium linestrength
     >>> scaled nonequilibrium linestrength in 0.0s
     >>> calculated emission integral
-    >>> calculated emissionh integral in 0.0s
+    >>> calculated emission integral in 0.0s
     >>> Applying linestrength cutoff
     >>> Applied linestrength cutoff in 0.0s (expected time saved ~ 0.0s)
     >>> Calculating lineshift
@@ -375,6 +452,7 @@ You can set ``verbose=2`` to print the time spent on different operations. Examp
     >>> ... 
 
 .. _label_lbl_precompute_spectra:
+
 Precompute Spectra
 ------------------
 

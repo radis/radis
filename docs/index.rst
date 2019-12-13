@@ -5,12 +5,15 @@
 
 .. |logo_png| image:: radis_ico.png
 
-*****
+***** 
 RADIS
 *****
 
-A nonequilibrium infrared emission and absorption line-by-line code &
-a post-processing library to compare experimental and calculated spectra.
+RADIS is a fast :ref:`line-by-line code <label_line_by_line>` for high resolution infrared molecular spectra (emission / absorption, 
+equilibrium / nonequilibrium).
+
+It also includes :ref:`post-processing tools <label_spectrum>` to compare experimental spectra and spectra calculated 
+with RADIS, or with other spectral codes.
 
 
 ===============
@@ -18,7 +21,7 @@ Getting Started
 ===============
 
 Install
--------
+=======
 
 Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution just use::
 
@@ -30,8 +33,9 @@ If you encounter any problem, or to upgrade the package later, please refer to t
 `report an issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_. 
 
 .. _label_first_example:
+
 Quick Start
------------
+===========
 
 
 Calculate a CO equilibrium spectrum from the HITRAN database, using the
@@ -85,16 +89,17 @@ Typical output of :py:func:`~radis.spectrum.compare.plot_diff`:
     :target: https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#compare-two-spectra
     :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
-Refer to the :ref:`Spectrum page <label_spectrum>` for more post-processing functions
-(:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length`,
-:py:meth:`~radis.spectrum.spectrum.Spectrum.crop`, 
-:py:func:`~radis.spectrum.operations.substract_spectra`, 
-:py:func:`~radis.los.slabs.SerialSlabs`, 
-:py:func:`~radis.spectrum.compare.get_residual`, etc. 
-)
+Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-processing functions 
+(:ref:`rescale <label_spectrum_rescale>` , :ref:`crop<label_spectrum_offset_crop>`, 
+:ref:`remove baselines <label_spectrum_remove_baseline>, :ref:`store <label_spectrum_store>`, 
+:ref:`combine along the line-of-sight <label_spectrum_line_of_sight>`, 
+:ref:`identify each line <label_spectrum_linesurvey>`, 
+:ref:`manipulate multiple spectra at once <label_spectrum_database>`, etc.)
+
+
 
 In the browser (no installation needed!)
-----------------------------------------
+========================================
 
 Alternatively, you can also run RADIS directly in the browser with the  
 `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
@@ -111,7 +116,7 @@ Or start a bare RADIS online session:
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
 
 More examples
--------------
+=============
 
 The Quick Start examples above automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
 For *high temperature* cases, you may need to use other line databases such as 
@@ -124,28 +129,122 @@ class, which is the core of RADIS line-by-line calculations.
 for the simple cases. 
 
 Refer to the :ref:`Examples <label_examples>` section for more examples, and to the 
-:ref:`User Documentation <label_user_documentation>` for more details on the code.
+:ref:`User Documentation <label_line_by_line>` for more details on the code.
+You can also ask questions on the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
+or on the `community chat <https://gitter.im/radis-radiation/community>`__ 
 
-   
+|badge_gitter|
+
+
+
 ---------------------------------------------------------------------
+
 
 =======
 Content
 =======
 
+- :ref:`The Line-by-line (LBL) module<label_line_by_line>`
+
+  This is the core of RADIS: it calculates the spectral densities for a homogeneous
+  slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
+  are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class. 
+
+
+- :ref:`Line-of-sight (LOS) module<label_los_index>`
+
+  This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects 
+  as input and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
+  or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce 
+  line-of-sight experiments. The module allows combination of Spectra such as::
+  
+      s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption) 
+
+
+- :ref:`The Spectrum object guide<label_spectrum>`
+
+  This module contains the :class:`~radis.spectrum.spectrum.Spectrum` object itself, with several methods that can be 
+  applied after the Spectrum was calculated: rescale, apply instrumental slit function, 
+  store or retrieve from a Spectrum database, plot or compare with another Spectrum object. 
+   
+
+---------------------------------------------------------------------
+
+* :ref:`modindex`
+
+---------------------------------------------------------------------
+
 .. toctree::
    :maxdepth: 2
    
-   user
-   developer
-   references
+   features/features
+   lbl/lbl
+   spectrum/spectrum
+   los/los
+   examples/examples
+   dev/developer
+   references/references
+
    
+
+
+---------------------------------------------------------------------
+
+`Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
+
+|badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_travis| |badge_coverage| |badge_binder| |badge_gitter|
+    
+|badge_stars|
+
+
+.. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/
+                :target: https://radis.readthedocs.io/en/latest/?badge=latest
+                :alt: Documentation Status
+
+.. |badge_article| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+                   :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
+                   :alt: Article
+
+.. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=GitHub
+                :target: https://github.com/radis/radis/stargazers
+                :alt: GitHub
    
-Access Module Methods
----------------------
+.. |badge_contributors| image:: https://img.shields.io/github/contributors/radis/radis.svg
+                        :target: https://github.com/radis/radis/stargazers
+                        :alt: Contributors
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. |badge_license| image:: https://img.shields.io/badge/License-LGPL3-blue.svg
+                   :target: ./License.md
+                   :alt: License
 
+.. |badge_travis| image:: https://img.shields.io/travis/radis/radis.svg
+                  :target: https://travis-ci.com/radis/radis
+                  :alt: Tests
 
+.. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
+                    :target: https://codecov.io/gh/radis/radis
+                    :alt: Coverage
+
+.. |badge_pypi| image:: https://img.shields.io/pypi/v/radis.svg
+                :target: https://pypi.python.org/pypi/radis
+                :alt: PyPI
+
+.. |badge_pypistats| image:: https://img.shields.io/pypi/dw/radis.svg
+                     :target: https://pypistats.org/packages/radis
+                     :alt: Downloads
+
+.. |badge_examples| image:: https://img.shields.io/github/stars/radis/radis-examples.svg?style=social&label=Star
+                :target: https://github.com/radis/radis-examples
+                :alt: Examples
+
+.. |badge_awesome_spectra| image:: https://img.shields.io/github/stars/erwanp/awesome-spectra.svg?style=social&label=Star
+                           :target: https://github.com/erwanp/awesome-spectra
+                           :alt: Examples
+
+.. |badge_binder| image:: https://mybinder.org/badge.svg 
+                  :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+                  :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+
+.. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
+                  :target: https://gitter.im/radis-radiation/community
+                  :alt: Gitter

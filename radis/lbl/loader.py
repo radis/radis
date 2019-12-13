@@ -83,7 +83,7 @@ from radis.misc.config import getDatabankEntries, printDatabankEntries, getDatab
 from radis.misc.utils import FileNotFoundError
 from radis.misc.basics import compare_dict, compare_lists
 from radis.misc.debug import printdbg
-from radis.misc.printer import printg
+from radis.misc.printer import printg, printr
 from radis.misc.log import printwarn
 from radis.misc.basics import transfer_metadata
 from radis.phys.convert import cm2nm
@@ -100,9 +100,13 @@ import gc
 from uuid import uuid1
 from six.moves import range
 
-KNOWN_DBFORMAT = ['cdsd', 'hitran',
-                  'cdsd4000', 'hitran tab']
-'''list: Known formats for Line Databases
+KNOWN_DBFORMAT = ['hitran', 'cdsd-hitemp', 
+                  'cdsd-4000']
+'''list: Known formats for Line Databases:
+
+- ``'hitran'`` : for HITRAN and HITEMP-2010 
+- ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
+- ``'cdsd-4000'`` : CDSD-4000 (CO2 only)
 
 See Also
 --------
@@ -142,11 +146,10 @@ See Also
 :ref:`Configuration file <label_lbl_config_file>`
 '''
 
-auto_drop_columns_for_dbformat = {
+drop_auto_columns_for_dbformat = {
         'hitran':['ierr', 'iref', 'lmix', 'gp', 'gpp'],
-        'hitran tab':['ierr', 'iref', 'lmix', 'gp', 'gpp'],
-        'cdsd4000':['wang2'],
-        'cdsd':['wang2','lsrc'],
+        'cdsd-4000':['wang2'],
+        'cdsd-hitemp':['wang2','lsrc'],
                 }
 ''' dict: drop these columns if using ``drop_columns='auto'`` in load_databank 
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -154,13 +157,12 @@ Based on the value of ``dbformat=``, some of these columns won't be used.
 See Also
 --------
 
-- 'hitran': :data:`~radis.io.hitran.columns_2004`, 
-- 'hitran tab': :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd' (CDSD-HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
-- 'cdsd-4000': :data:`~radis.io.cdsd.columns_4000`, 
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`, 
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`, 
 
 '''
-auto_drop_columns_for_levelsfmt = {
+drop_auto_columns_for_levelsfmt = {
         'radis':[],
         'cdsd-pc':['v1u', 'v2u', 'l2u', 'v3u', 'ru',
                       'v1l', 'v2l', 'l2l', 'v3l', 'rl'
@@ -185,11 +187,26 @@ See Also
 - 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`, 
 
 '''
+drop_all_but_these = ['id', 'iso', 'wav', 'int', 'airbrd', 'selbrd', 'Tdpair', 'Tdpsel', 
+                      'Pshft', 'El']
+''' dict: drop all columns but these if using ``drop_columns='all'`` in load_databank 
+
+Note: nonequilibrium calculations wont be possible anymore and it wont be possible
+to identify lines with :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
+    
+See Also
+--------
+
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`, 
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`, 
+
+'''
 
 # Sanity checks
 # (make sure all variables are defined everywhere)
-assert compare_lists(auto_drop_columns_for_dbformat, KNOWN_DBFORMAT) == 1
-assert compare_lists(auto_drop_columns_for_levelsfmt, KNOWN_LVLFORMAT) == 1
+assert compare_lists(drop_auto_columns_for_dbformat, KNOWN_DBFORMAT) == 1
+assert compare_lists(drop_auto_columns_for_levelsfmt, KNOWN_LVLFORMAT) == 1
 
 # %% Main class
 
@@ -307,7 +324,6 @@ class Input(ConditionDict):
         self.Tvib = None      #: float: vibrational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
         self.Trot = None      #: float: rotational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
         self.isotope = None   #: str: isotope list. Can be '1,2,3', etc. or 'all'
-        self.medium = 'vacuum'         #: str: propagation medium (air, vacuum)
         self.mole_fraction = None      #: float: mole fraction 
         self.molecule = None           #: str: molecule
         self.overpopulation = None     #: dict: overpopulation
@@ -317,8 +333,6 @@ class Input(ConditionDict):
         self.self_absorption = True    #: bool: self absorption (if True, not optically thin)
         self.state = None              #: str: electronic state 
         self.vib_distribution = 'boltzmann'  #: str: vibrational levels distribution (boltzmann, treanor)
-        self.wavelength_max = None     #: str: wavelength max (nm)
-        self.wavelength_min = None     #: str: wavelength min (nm)
         self.wavenum_max = None        #: str: wavenumber max (cm-1)
         self.wavenum_min = None        #: str: wavenumber min (cm-1)
 
@@ -449,8 +463,8 @@ class DatabankLoader(object):
 
         self.verbose = True         #: bool, or int: increase verbose level. 0, 1, 2 supported at the moment
         self.save_memory = False    #: bool: if True, tries to save RAM memory (but may take a little for time, saving stuff to files instead of RAM for instance)
-        self.parsum_tab = {}    #: store all partition function tabulators, per isotope
-        self.parsum_calc = {}   #: store all partition function calculators, per isotope
+        self.parsum_tab = {}    #: dict: store all partition function tabulators, per isotope
+        self.parsum_calc = {}   #: dict: store all partition function calculators, per isotope
 
         # in particular input conditions:
         # ... means all values that can have an impact on the calculated Spectrum
@@ -559,10 +573,97 @@ class DatabankLoader(object):
         ''' Method to init databank parameters but only load them when needed.
         Databank is reloaded by :meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
 
+        Same inputs Parameters as :meth:`~radis.lbl.loader.DatabankLoader.load_databank`:
+
+
         Parameters
         ----------
 
-        see :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
+        name: a section name specified in your ``~/.radis``
+            ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
+            not ``None``, all other arguments are discarded.
+            Note that all files in database will be loaded and it may takes some
+            time. Better limit the database size if you already know what
+            range you need. See :ref:`Configuration file <label_lbl_config_file>` and 
+            :data:`~radis.misc.config.DBFORMAT` for expected 
+            ``~/.radis`` format
+
+
+        Other Parameters
+        ----------------
+
+        path: str, list of str, None
+            list of database files, or name of a predefined database in the 
+            :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
+
+        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'`` 
+            and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
+
+        parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+            format to read tabulated partition function file. If ``hapi``, then
+            HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
+            your database is HITRAN data). HAPI is embedded into RADIS. Check the
+            version.
+
+        parfunc: filename or None
+            path to tabulated partition function to use.
+            If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
+            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
+
+        levels: dict of str or None
+            path to energy levels (needed for non-eq calculations). Format:
+            {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
+
+        levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
+            how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
+            If ``radis``, energies are calculated using the diatomic constants in radis.db database
+            if available for given molecule. Look up references there.
+            If None, non equilibrium calculations are not possible. Default ``None``.
+
+        db_use_cached: boolean, or ``None``
+            if ``True``, a pandas-readable csv file is generated on first access,
+            and later used. This saves on the datatype cast and conversion and
+            improves performances a lot. But! ... be sure to delete these files
+            to regenerate them if you happen to change the database. If ``'regen'``,
+            existing cached files are removed and regenerated.
+            It is also used to load energy levels from ``.h5`` cache file if exist.
+            If ``None``, the value given on Factory creation is used. Default ``None``
+
+        db_assumed_sorted: boolean
+            load_databank first reads the first line and check it's relevant.
+            This improves database loading times if not all files are required,
+            but it assumes database files are sorted in wavenumber!
+            Default ``True``
+            
+        load_energies: boolean
+            if ``False``, dont load energy levels. This means that nonequilibrium
+            spectra cannot be calculated, but it saves some memory. Default ``True``
+
+        Other arguments are related to how to open the files
+
+        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
+            Different modes for loading up database: either directly in 'RAM' mode,
+            or in 'h5' mode.
+
+            - 'RAM': is faster but memory hunger
+            - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
+              risks of MemoryErrors 
+            - 'direct': file is read directly from a single h5 file under key 'df'
+              Fastest of all, doesnt check the database validity or format. Use only
+              if you have a single, already formatted database file (used by Factory
+              when reloading database)
+              
+            Default ``'RAM'``
+
+        drop_columns: list
+            columns names to drop from Line DataFrame after loading the file. 
+            Not recommended to use, unless you explicitely want to drop information 
+            (for instance if dealing with too large databases). If ``[]``, nothing 
+            is dropped. If ``'auto'``, parameters considered unnecessary 
+            are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
+            and :data:`~radis.lbl.loader.drop_auto_columns_for_levelsfmt`. 
+            Default ``'auto'``.
 
 
         Notes
@@ -622,8 +723,9 @@ class DatabankLoader(object):
         source: ``'astroquery'``
             where to download database from
 
-        format: ``'cdsd'``, ``'hitran'``, ``'cdsd4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-            database type. Default 'hitran'
+        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'`` 
+            and ``'cdsd-4000'`` for the different CDSD versions. Default 'hitran'
 
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
@@ -714,7 +816,8 @@ class DatabankLoader(object):
         else:
             df = pd.concat(frames, ignore_index=True)   # reindex
             if len(df) == 0:
-                raise EmptyDatabaseError('Dataframe is empty')
+                raise EmptyDatabaseError('Dataframe is empty on range '+\
+                                         '{0:.2f}-{1:.2f} cm-1'.format(wavenum_min, wavenum_max))
 
         df = parse_local_quanta(df, molecule)
         df = parse_global_quanta(df, molecule)
@@ -772,7 +875,8 @@ class DatabankLoader(object):
                       levels=None, levelsfmt=None,
                       db_use_cached=None, db_assumed_sorted=True,
                       load_energies=True,
-                      **options):
+                      drop_columns='auto',
+                      buffer='RAM'):
         ''' Loads databank from shortname in the :ref:`Configuration file <label_lbl_config_file>` 
         (`~/.radis`), or by manually setting all attributes.
 
@@ -806,8 +910,9 @@ class DatabankLoader(object):
             list of database files, or name of a predefined database in the 
             :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
 
-        format: ``'hitran'``, ``'cdsd'``, ``'cdsd4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-            database type. 
+        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'`` 
+            and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
 
         parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
@@ -849,7 +954,7 @@ class DatabankLoader(object):
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
 
-        Other arguments related to how to open the files are given in options:
+        Other arguments are related to how to open the files:
 
         buffer: ``'RAM'``, ``'h5'``, ``'direct'``
             Different modes for loading up database: either directly in 'RAM' mode,
@@ -869,9 +974,13 @@ class DatabankLoader(object):
             columns names to drop from Line DataFrame after loading the file. 
             Not recommended to use, unless you explicitely want to drop information 
             (for instance if dealing with too large databases). If ``[]``, nothing 
-            is dropped. If ``'auto'``, parameters considered unnecessary 
-            are dropped. See :data:`~radis.lbl.loader.auto_drop_columns_for_dbformat`
-            and :data:`~radis.lbl.loader.auto_drop_columns_for_levelsfmt`. 
+            is dropped. If ``'auto'``, parameters considered useless
+            are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
+            and :data:`~radis.lbl.loader.drop_auto_columns_for_levelsfmt`. 
+            If ``'all'``, parameters considered unecessary for equilibrium calculations 
+            are dropped, including all information about lines that could be otherwise 
+            available in :py:meth:`~radis.spectrum.spectrum.Spectrum` method.
+            Warning: nonequilibrium calculations are not possible in this mode. 
             Default ``'auto'``.
 
         Notes
@@ -918,7 +1027,8 @@ class DatabankLoader(object):
                                                  db_use_cached=db_use_cached,
                                                  db_assumed_sorted=db_assumed_sorted,
                                                  load_energies=load_energies,
-                                                 **options)
+                                                 drop_columns=drop_columns,
+                                                 buffer=buffer)
             # Now that we're all set, let's load everything
 
             # %% Line database
@@ -966,6 +1076,13 @@ class DatabankLoader(object):
                                         db_assumed_sorted=db_assumed_sorted)
             return
 
+        except MemoryError as err:
+            # An error occured: clean before crashing
+            self._clean_temp_file()
+            printr(" Error while loading the database. Retry with "+\
+                              "`save_memory=True` option, or `save_memory=2` "+\
+                              "(warning: for equilibrium calculations only)")
+            raise err
         except:
             # An error occured: clean before crashing
             self._clean_temp_file()
@@ -976,7 +1093,8 @@ class DatabankLoader(object):
                                levels=None, levelsfmt=None,
                                db_use_cached=None, db_assumed_sorted=True,
                                load_energies=True,
-                               **options):
+                               drop_columns='auto',
+                               buffer='RAM'):
         ''' Check that database parameters are valid, in particular that
         paths exist. Loads all parameters if a Database from .radis config file
         was given
@@ -1032,6 +1150,13 @@ class DatabankLoader(object):
         if isinstance(path, string_types):  # make it a list
             path = [path]
         if dbformat not in KNOWN_DBFORMAT:
+            # >>>>>>>>>>>
+            # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
+            if dbformat == 'cdsd':
+                raise ValueError('`cdsd` database format was renamed `cdsd-hitemp` after 0.9.21')
+            if dbformat == 'cdsd4000':
+                raise ValueError('`cdsd4000` database format was renamed `cdsd-4000` after 0.9.21')
+            # <<<<<<<<<<<
             raise ValueError('Database format ({0}) not in known list: {1}'.format(
                 dbformat, KNOWN_DBFORMAT))
         if levels is not None and levelsfmt not in KNOWN_LVLFORMAT:
@@ -1060,12 +1185,6 @@ class DatabankLoader(object):
         if db_use_cached is None:
             db_use_cached = self.params.db_use_cached
             
-        # Get other options  (see _load_databank docs)
-        drop_columns = options.pop('drop_columns', 'auto') # see _load_databank docs
-        buffer = options.pop('buffer',             'RAM')  # see _load_databank docs
-        if len(options)>0:
-            raise ValueError('Unexpected values in options: {0}'.format(list(options.keys())))
-        
         return (name, path, dbformat, parfunc, parfuncfmt, levels, levelsfmt,
                 db_use_cached, db_assumed_sorted, drop_columns, buffer, load_energies)
 
@@ -1099,11 +1218,6 @@ class DatabankLoader(object):
         self.params.parfuncfmt = parfuncfmt
         self.params.db_assumed_sorted = db_assumed_sorted
         self.misc.load_energies = load_energies
-
-    def load_database(self, *args):
-        warnings.warn('Deprecated. Use load_databank()', DeprecationWarning)
-
-        return self.load_databank(*args)
 
     def init_database(self, path, autoretrieve=True, autoupdate=True,
                       add_info=['Tvib', 'Trot'], add_date='%Y%m%d',
@@ -1292,11 +1406,25 @@ class DatabankLoader(object):
         # Check format
         # (it can happen that they changed if database was edited manually. That can break
         # the code during look-up of levels later on.)
-        for k in ['vu', 'vl', 'v1u', 'v1l', 'v2u', 'v2l', 'l2u', 'l2l', 'v3u', 'v3l', 'ru', 'rl']:
+        for k in ['vu', 'vl', 'v1u', 'v1l', 'v2u', 'v2l', 'l2u', 'l2l', 'v3u', 'v3l', 'ru', 'rl',
+                  'polyu', 'polyl', 'wangu', 'wangl', 'ranku', 'rankl']:
             if k in self.df0.columns and self.df0.dtypes[k] != np.int64:
                 self.warn('Format of column {0} was {1} instead of int. Changed to int'.format(
                         k, self.df0.dtypes[k]))
                 self.df0[k] = self.df0[k].astype(np.int64)
+                
+        # Check metadata ('molar_mass' and 'Ia' are either columns either 
+        # metadata. They can be lost when transfering object.)
+        try:
+            self.df0.molar_mass
+            self.df0.Ia
+        except AttributeError as err:
+            raise AttributeError(str(err)+' : attribute missing in line '+\
+                                 'dataframe sf.df0. Make sure you didnt overwrite the line '+\
+                                 'dataframe sf.df0 manually. If so, replace any '+\
+                                 '`sf.df0=...` line with inplace operations such as '+\
+                                 '`sf.df0.drop(..., inplace=True)`. See '+\
+                                 'https://stackoverflow.com/q/33103988')
 
     def _load_databank(self, database, dbformat, levelsfmt, db_use_cached,
                        db_assumed_sorted=False, buffer='RAM',
@@ -1336,9 +1464,13 @@ class DatabankLoader(object):
             columns names to drop from Line DataFrame after loading the file. 
             Not recommended to use, unless you explicitely want to drop information 
             (for instance if dealing with too large databases). If ``[]``, nothing 
-            is dropped. If ``'auto'``, parameters considered unnecessary 
-            are dropped. See :data:`~radis.lbl.loader.auto_drop_columns_for_dbformat`
-            and :data:`~radis.lbl.loader.auto_drop_columns_for_levelsfmt`. 
+            is dropped. If ``'auto'``, parameters considered useless 
+            are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
+            and :data:`~radis.lbl.loader.drop_auto_columns_for_levelsfmt`. 
+            If ``'all'``, parameters considered unecessary for equilibrium calculations 
+            are dropped, including all information about lines that could be otherwise 
+            available in :py:meth:`~radis.spectrum.spectrum.Spectrum` method.
+            Warning: nonequilibrium calculations are not possible in this mode. 
             Default ``'auto'``.
 
         Notes
@@ -1363,7 +1495,7 @@ class DatabankLoader(object):
 
         # Init variables
         verbose = self.verbose
-        warnings = self.warnings['default'] if self.warnings else False
+        warnings_default = self.warnings['default'] if self.warnings else False
         wavenum_min = self.params.wavenum_min_calc
         wavenum_max = self.params.wavenum_max_calc
 
@@ -1372,8 +1504,8 @@ class DatabankLoader(object):
             assert len(database) == 1
             assert database[0].endswith('h5')
         if drop_columns == 'auto':
-            drop_columns = (auto_drop_columns_for_dbformat[dbformat] + 
-                            auto_drop_columns_for_levelsfmt[levelsfmt])
+            drop_columns = (drop_auto_columns_for_dbformat[dbformat] + 
+                            drop_auto_columns_for_levelsfmt[levelsfmt])
 
         # subroutine load_and_concat 
         # -------------------------------------- 
@@ -1415,7 +1547,7 @@ class DatabankLoader(object):
                 if db_assumed_sorted:
                     # Note on performance: reading the first line of .txt file is still
                     # much faster than reading the whole hdf5 file
-                    if dbformat == 'cdsd':
+                    if dbformat == 'cdsd-hitemp':
                         df = cdsd2df(filename, version='hitemp', count=1, cache=False,
                                      verbose=False, drop_non_numeric=False)
                         if df.wav.loc[0] > wavenum_max:
@@ -1423,7 +1555,7 @@ class DatabankLoader(object):
                                 print('Database file {0} > {1:.6f}cm-1: irrelevant and not loaded'.format(
                                     filename, wavenum_max))
                             continue
-                    elif dbformat == 'cdsd4000':
+                    elif dbformat == 'cdsd-4000':
                         df = cdsd2df(filename, version='4000', count=1, cache=False,
                                      verbose=False, drop_non_numeric=False)
                         if df.wav.loc[0] > wavenum_max:
@@ -1445,10 +1577,10 @@ class DatabankLoader(object):
 
                 # Now read all the lines
                 # ... this is where the cache files are read/generated. 
-                if dbformat == 'cdsd':
+                if dbformat == 'cdsd-hitemp':
                     df = cdsd2df(filename, version='hitemp', cache=db_use_cached,
                                  verbose=verbose, drop_non_numeric=True)
-                elif dbformat == 'cdsd4000':
+                elif dbformat == 'cdsd-4000':
                     df = cdsd2df(filename, version='4000', cache=db_use_cached,
                                  verbose=verbose, drop_non_numeric=True)
                 elif dbformat == 'hitran':
@@ -1467,10 +1599,10 @@ class DatabankLoader(object):
                         
                 # Drop columns (helps fix some Memory errors)
                 dropped = []
-                for k in drop_columns:
-                    if k in df:
-                        del df[k]
-                        dropped.append(k)
+                for col in df.columns:
+                    if col in drop_columns or (drop_columns=='all' and col not in drop_all_but_these):
+                        del df[col]
+                        dropped.append(col)
                 if verbose>=2 and len(dropped)>0:
                     print('Dropped columns: {0}'.format(dropped))
 
@@ -1588,7 +1720,7 @@ class DatabankLoader(object):
                         " has 0 lines in range ({0:.2f}-{1:.2f}cm-1)".format(
                         wavenum_min, wavenum_max)) +
                         ' for isotope {0}. Change your range or isotope options'.format(k))
-                    printwarn(msg, verbose, warnings)
+                    printwarn(msg, verbose, warnings_default)
 
         # ... check the database range looks correct
         # ... (i.e, there are some lines on each side of the requested range:
@@ -1639,7 +1771,7 @@ class DatabankLoader(object):
 
         if __debug__:
             printdbg(
-                'Databank reloaded from temporary h5 file in {0:.1f}s'.format(time()-t0))
+                'Databank reloaded from temporary h5 file in {0:.2f}s'.format(time()-t0))
 
     def _get_isotope_list(self, molecule=None, df=None):
         ''' Returns list of isotopes for given molecule 
@@ -1808,7 +1940,7 @@ class DatabankLoader(object):
         # calculate energy levels from RADIS Dunham parameters
         elif levelsfmt == 'radis':  
             state = getMolecule(self.input.molecule, isotope,
-                                'X', verbose=self.verbose)
+                                self.input.state, verbose=self.verbose)
             parsum = PartFunc_Dunham(state,
                                      use_cached=self.params.lvl_use_cached,
                                      verbose=self.verbose)
@@ -1909,7 +2041,7 @@ class DatabankLoader(object):
             # TODO: Implement. Read https://stackoverflow.com/a/51388828/5622825 to understand more
               
         if self.verbose >= 2:
-            printg('... Fetched molecular params in {0:.1f}s'.format(time()-t0))
+            printg('... Fetched molecular params in {0:.2f}s'.format(time()-t0))
 
         return
 

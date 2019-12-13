@@ -36,6 +36,22 @@ from radis.misc.utils import FileNotFoundError, DatabankNotFound, configparser
 from os.path import expanduser, join, exists, dirname
 from six import string_types
 from radis.misc.basics import compare_lists, compare_dict, stdpath
+from radis.misc.utils import getProjectRoot
+import json
+
+# %% Functions to parse radis/config.json
+
+def get_config():
+    ''' Read the config.json file '''
+    jsonfile = join(getProjectRoot(), 'config.json')
+    with open(jsonfile) as f:
+        try:
+            config = json.load(f)
+        except json.JSONDecodeError as err:
+            raise json.JSONDecodeError("Error reading '{0}' (line {2} col {3}): \n{1}".format(
+                    jsonfile, err.msg, err.lineno, err.colno), err.doc, err.pos) from err
+    return config
+
 
 # %% Functions to parse ~/.radis file
 
@@ -43,12 +59,12 @@ DBFORMAT = (r"""
 --------------------------
 
 [CDSD]                           #  your databank name
-info = CDSD-HITEMP databank      #  whatever you want
+info = HITEMP 2010 databank      #  whatever you want
 path =                           #  no "", multipath allowed
-       D:\Databases\CDSD-HITEMP\cdsd_hitemp_07
-       D:\Databases\CDSD-HITEMP\cdsd_hitemp_08
-       D:\Databases\CDSD-HITEMP\cdsd_hitemp_09
-format = cdsd                    #  'hitran' or 'cdsd' (no ")
+       D:\Databases\HITEMP-CO2\hitemp_07
+       D:\Databases\HITEMP-CO2\hitemp_08
+       D:\Databases\HITEMP-CO2\hitemp_09
+format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                  # databank text file format. More info in
                                  # SpectrumFactory.load_databank function.
 parfuncfmt:                      #  'cdsd', 'hapi', etc.
@@ -74,18 +90,52 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
                                  # energies. Default 0 (if not given)
 
 --------------------------""")
-'''str: Typical expected format of a ~/.radis entry
+'''str: Typical expected format of a ~/.radis entry::
+    --------------------------
+    
+    [CDSD]                           #  your databank name
+    info = HITEMP 2010 databank      #  whatever you want
+    path =                           #  no "", multipath allowed
+           D:\Databases\HITEMP-CO2\hitemp_07
+           D:\Databases\HITEMP-CO2\hitemp_08
+           D:\Databases\HITEMP-CO2\hitemp_09
+    format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                     # databank text file format. More info in
+                                     # SpectrumFactory.load_databank function.
+    parfuncfmt:                      #  'cdsd', 'hapi', etc.
+                                     # format to read tabulated partition function 
+                                     # file. If `hapi`, then HAPI (HITRAN Python 
+                                     # interface) is used to retrieve them (valid if
+                                     # your databank is HITRAN data). HAPI is embedded 
+                                     # into RADIS. Check the version.            
+    # Optional
+    # ----------
+    parfunc:                         #  path to tabulated partition function to use.
+                                     # If `parfuncfmt` is `hapi` then `parfunc` 
+                                     # should be the link to the hapi.py file. If 
+                                     # not given, then the hapi.py embedded in RADIS 
+                                     # is used (check version)
+    levels_iso1                      #  path to energy levels (needed for non-eq 
+                                     # calculations). Default None
+    levels_iso2                      # etc
+    levels_iso4                      # etc
+    levelsfmt:                       #  'cdsd', etc. 
+                                     # how to read the previous file. Default None.
+    levelsZPE:                       #  zero-point-energy (cm-1): offset for all level 
+                                     # energies. Default 0 (if not given)
+    
+    --------------------------
 
 Refer to the documentation: :ref:`Configuration file <label_lbl_config_file>`
+
+Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
 
 See Also
 --------
 
-:ref:`Configuration file <label_lbl_config_file>`
-
-:py:func:`~radis.misc.config.getConfig`
-
-Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
+:ref:`Configuration file <label_lbl_config_file>`,
+:py:func:`~radis.misc.config.getConfig`,
+:py:meth:`~radis.lbl.loader.load_databank`
 '''
 
 CONFIG_PATH = join(expanduser("~"), ".radis")
@@ -124,12 +174,12 @@ def getDatabankEntries(dbname):
     Databank format:
 
         [CDSD]                           # your databank name
-        info = CDSD-HITEMP databank      # whatever you want
+        info = HITEMP 2010 databank      # whatever you want
         path =                           # no "", multipath allowed
-               D:\Databases\CDSD-HITEMP\cdsd_hitemp_07
-               D:\Databases\CDSD-HITEMP\cdsd_hitemp_08
-               D:\Databases\CDSD-HITEMP\cdsd_hitemp_09
-        format = cdsd                    # 'hitran' or 'cdsd' (no ")
+               D:\Databases\HITEMP-CO2\hitemp_07
+               D:\Databases\HITEMP-CO2\hitemp_08
+               D:\Databases\HITEMP-CO2\hitemp_09
+        format = hitemp                  # 'hitran' (HITRAN / HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                          # Databank text file format. More info in
                                          # SpectrumFactory.load_databank function.
 
@@ -422,13 +472,6 @@ def printDatabankList():
 
 # %% Test
 
-
-def _test(*args, **kwargs):
-
-    printDatabankList()
-
-    return True
-
-
 if __name__ == '__main__':
-    _test()
+    from radis.test.misc.test_config import _run_testcases
+    _run_testcases(verbose=True)

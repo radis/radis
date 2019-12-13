@@ -1,7 +1,8 @@
 .. _label_los_index:
-**************************
-Line-of-sight (LOS) module
-**************************
+
+====================
+Line-of-sight module
+====================
 
 This module takes several :class:`~radis.spectrum.spectrum.Spectrum` objects as an input 
 and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`) 
@@ -48,11 +49,14 @@ is equivalent to::
     
 -----------------------------------------------------------------------
 
+Practical Examples
+==================
+
 Below are some practical examples of the use of the Line-of-sight module:
 
     
 Build a large spectrum
-======================
+----------------------
 
 If you want to calculate a spectrum on a very large spectral range which 
 cannot be handled in memory at once, you can calculate partial, non-overlapping
@@ -70,7 +74,7 @@ definition range::
     
     
 Get the contribution of each slab along the LOS
-===============================================
+-----------------------------------------------
 
 Let's say you have a total line of sight::
 

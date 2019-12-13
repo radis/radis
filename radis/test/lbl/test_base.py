@@ -178,7 +178,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
                         s.name, get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True)))
             
 #            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
-            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 2e-5
+            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 0.9e-4
             
         if verbose:
             printm('Tested optically thick limit is Planck (1 isotope): OK')
@@ -289,7 +289,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
                         s.name, get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True)))
             
 #            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
-            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 2e-5
+            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 0.9e-4
             
         if verbose:
             printm('Tested optically thick limit is Planck (2 isotopes): OK')

@@ -13,7 +13,6 @@ See :py:data:`~radis.db.molecules.Molecules`
 
 from __future__ import division, absolute_import, print_function, unicode_literals
 from radis.db.classes import ElectronicState
-from radis.db.utils import get_dunham_coefficients, get_herzberg_coefficients
 
 
 # %% Define some commonly used molecules
@@ -25,19 +24,22 @@ from radis.phys.convert import eV2cm
 
 # Define with default diatomic constants
 CO_X_iso1 = ElectronicState('CO', isotope=1, state='X', term_symbol='1Σ+',
-                            spectroscopic_constants=get_dunham_coefficients('CO', 1, 'X1SIG+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='dunham',
                             vmax=17,        # max level for Dunham's expansion
                             vmax_morse=48,
                             Ediss=eV2cm(11.16),
                             )
 CO_X_iso2 = ElectronicState('CO', isotope=2, state='X', term_symbol='1Σ+',
-                            spectroscopic_constants=get_dunham_coefficients('CO', 2, 'X1SIG+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='dunham',
                             vmax=17,        # max level for Dunham's expansion
                             vmax_morse=48,
                             Ediss=eV2cm(11.16),
                             )
 CO_X_iso3 = ElectronicState('CO', isotope=3, state='X', term_symbol='1Σ+',
-                            spectroscopic_constants=get_dunham_coefficients('CO', 3, 'X1SIG+'),
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='dunham',
                             vmax=17,        # max level for Dunham's expansion
                             vmax_morse=48,
                             Ediss=eV2cm(11.16),
@@ -46,88 +48,26 @@ CO_X_iso3 = ElectronicState('CO', isotope=3, state='X', term_symbol='1Σ+',
 # CO2
 # ----------
 
-# Generate the energy
-
-#from radis.db.CO2.energies import E_CO2_626_X1SIGg, Ehaj123_CO2_626_X1SIGg
-from radis.levels.vibrating_rotor import EvJ_uncoupled_vibrating_rotor, EvJah_uncoupled_vibrating_rotor
-
-#def build_CO2_X(isotope):
-#    coeff_dict =get_herzberg_coefficients('CO2', isotope, 'X1SIGu+')
-#    # Update standard vibrating rotor formula with CO2 specific generacies and 
-#    # Herzberb coeffs
-#    def Erovib_CO2(v1, v2, l2, v3, J, remove_ZPE=True):
-#        ''' Rovibrational energies.
-#        See :py:func:`~radis.levels.vibrating_rotor.EvJ_uncoupled_vibrating_rotor` 
-#        '''
-#        return EvJ_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict=coeff_dict,
-#                                             gv1=1, gv2=2, gv3=1, remove_ZPE=remove_ZPE)
-#    def Ehaj_CO2(v1, v2, l2, v3, J, remove_ZPE=True):
-#        ''' Harmonic and anharmonic parts of rovibrational energies.
-#        See :py:func:`~radis.levels.vibrating_rotor.EvJah_uncoupled_vibrating_rotor` 
-#        '''
-#        return EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict=coeff_dict,
-#                                             remove_ZPE=remove_ZPE)
-#    return ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
-##                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
-#                            Erovib=Erovib_CO2,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
-#                            Ediss=44600,
-#                            )
-
-
 CO2_X_626 = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
-#                            Erovib=EvJah_uncoupled_vibrating_rotor,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='herzberg',
                             Ediss=44600,
                             )
 CO2_X_636 = ElectronicState('CO2', isotope=2, state='X', term_symbol='1Σu+',
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 2, 'X1SIGu+'),
-#                            Erovib=EvJah_uncoupled_vibrating_rotor,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='herzberg',
                             Ediss=44600,
                             )
 CO2_X_628 = ElectronicState('CO2', isotope=3, state='X', term_symbol='1Σu+',
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 3, 'X1SIGu+'),
-#                            Erovib=EvJah_uncoupled_vibrating_rotor,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='herzberg',
                             Ediss=44600,
                             )
 CO2_X_627 = ElectronicState('CO2', isotope=4, state='X', term_symbol='1Σu+',
-                            spectroscopic_constants=get_herzberg_coefficients('CO2', 4, 'X1SIGu+'),
-#                            Erovib=EvJah_uncoupled_vibrating_rotor,
-#                            Ehaj=Ehaj_CO2,  # for Treanor
+                            spectroscopic_constants='default',
+                            spectroscopic_constants_type='herzberg',
                             Ediss=44600,
                             )
-#CO2_X_626 = build_CO2_X(1)
-#CO2_X_636 = build_CO2_X(2)
-#CO2_X_628 = build_CO2_X(3)
-#CO2_X_627 = build_CO2_X(4)
-
-#CO2_X_626 = ElectronicState('CO2', isotope=1, state='X', term_symbol='1Σu+',
-#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 1, 'X1SIGu+'),
-#                            Erovib=EvJ_uncoupled_vibrating_rotor,
-#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
-#                            Ediss=44600,
-#                            )
-#CO2_X_636 = ElectronicState('CO2', isotope=2, state='X', term_symbol='1Σu+',
-#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 2, 'X1SIGu+'),
-#                            Erovib=EvJ_uncoupled_vibrating_rotor,
-#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
-#                            Ediss=44600,
-#                            )
-#CO2_X_628 = ElectronicState('CO2', isotope=3, state='X', term_symbol='1Σu+',
-#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 3, 'X1SIGu+'),
-#                            Erovib=EvJ_uncoupled_vibrating_rotor,
-#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
-#                            Ediss=44600,
-#                            )
-#CO2_X_627 = ElectronicState('CO2', isotope=4, state='X', term_symbol='1Σu+',
-#                            spectroscopic_constants=get_herzberg_coefficients('CO2', 4, 'X1SIGu+'),
-#                            Erovib=EvJ_uncoupled_vibrating_rotor,
-#                            Ehaj=EvJah_uncoupled_vibrating_rotor,  # for Treanor
-#                            Ediss=44600,
-#                            )
 
 
 # %% Dictionary of predefined molecules
@@ -251,7 +191,7 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
 
     # print name
     if verbose>=2:
-        print(('Found {0} in RADIS database'.format(state.get_fullname())))
+        print(r'Found {0} in RADIS database'.format(state.get_fullname()))
 
     # Return
     return state

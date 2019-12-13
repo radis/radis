@@ -24,8 +24,10 @@ import radis
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc import is_float
+from radis.misc.printer import printr
 from astropy import units as u
 from astroquery.hitran import Hitran
+import os
 from os.path import join, isfile, exists
 import numpy as np
 import pandas as pd
@@ -109,7 +111,13 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
                                                                        'wmax':wmax}))
         check_cache_file(fcache=fcache, use_cached=cache, metadata=metadata, verbose=verbose)
         if exists(fcache):
-            return get_cache_file(fcache, verbose=verbose)
+            try:
+                return get_cache_file(fcache, verbose=verbose)
+            except Exception as err:
+                if verbose:
+                    printr('Problem reading cache file {0}:\n{1}\nDeleting it!'.format(
+                        fcache, str(err)))
+                os.remove(fcache)
 
 #    tbl = Hitran.query_lines_async(molecule_number=mol_id,
 #                                     isotopologue_number=isotope,
@@ -117,11 +125,16 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
 #                                     max_frequency=wmax / u.cm)
     
 #    # Download using the astroquery library
-    response = Hitran.query_lines_async(molecule_number=mol_id,
-                                         isotopologue_number=isotope,
-                                         min_frequency=wmin / u.cm,
-                                         max_frequency=wmax / u.cm)
+    try:
+        response = Hitran.query_lines_async(molecule_number=mol_id,
+                                             isotopologue_number=isotope,
+                                             min_frequency=wmin / u.cm,
+                                             max_frequency=wmax / u.cm)
+    except KeyError as err:
+        raise KeyError(str(err)+' <<w this error occured in Astroquery. Maybe these molecule '+\
+                       '({0}) and isotope ({1}) are not supported'.format(molecule, isotope)) from err
     
+    # Deal with usual errors
     if response.status_code == 404:
         # Maybe there are just no lines for this species in this range
         # In that case we usually end up with errors like:
@@ -142,6 +155,12 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
                                  molecule, mol_id, isotope, wmin, wmax) +
                              'Are you online?\n' + 
                              'See details of the error below:\n\n {0}'.format(response.reason))
+    elif response.status_code == 500:
+        
+        raise ValueError('{0} while querying the HITRAN server: '.format(response.status_code)+\
+                         '\n\n{0}'.format(response.text))
+
+    # Process response
 
     # Rename columns from Astroquery to RADIS format
     rename_columns = {'molec_id': 'id',
@@ -162,13 +181,11 @@ def fetch_astroquery(molecule, isotope, wmin, wmax, verbose=True,
                       'gp': 'gp',
                       'gpp': 'gpp',
                       }
-
+    
     if not empty_range:
 #        _fix_astroquery_file_format(filename)
-        
         # Note: as of 0.9.16 we're not fixing astroquery_file_format anymore. 
         # maybe we should. 
-        
         tbl = Hitran._parse_result(response)
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)

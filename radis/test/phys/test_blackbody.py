@@ -57,7 +57,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
     s = sPlanck(wavelength_min=300, wavelength_max=8000, T=T, eps=eps,
                 wstep=0.1)
 
-    w_nm = s.get_wavelength()
+    w_nm = s.get_wavelength(medium='vacuum')
     w_cm = s.get_wavenumber()
 
     Iunit_per_nm = 'W/sr/nm/m2'
@@ -90,7 +90,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
 
     # Check that max is correct
     # hardcoded for 2200 K, epsilon = 0.36 (~1.3 µm)
-    assert I_nm.max() == 75.987331723070341
+    assert I_nm.max() == 75.98733181512608
 
     # Test planck and planck_wn
     assert np.allclose(planck(w_nm, T, eps, unit=Iunit_per_nm), I_nm)

@@ -221,8 +221,8 @@ def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **k
 
         if plot:
             plt.figure(fig_prefix+'Propagating medium conversions')
-            s.plot(nfig='same', lw=3, medium='vacuum', label='vacuum')
-            s.plot(nfig='same', medium='air', label='air')
+            s.plot(wunit='nm_vac', nfig='same', lw=3, label='vacuum')
+            s.plot(wunit='nm', nfig='same', label='air')
 
         assert np.allclose(s.get_wavenumber(), s_air.get_wavenumber())
         assert np.allclose(s.get_wavelength(medium='vacuum'),

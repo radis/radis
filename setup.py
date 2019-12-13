@@ -58,7 +58,7 @@ except ImportError:
 
 # Build description from README (PyPi compatible)
 # (note: README.rst has been converted to README.md by register.py, and cleaned afterwards )
-description = 'A non-equilibrium Radiative Solver for HITRAN-like database species '
+description = 'A fast line-by-line code for high-resolution infrared molecular spectra'
 readme_path = join(abspath(dirname(__file__)), 'README.md')
 if not exists(readme_path):
     long_description = description
@@ -112,9 +112,10 @@ setup(name='radis',
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Topic :: Scientific/Engineering',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         "Operating System :: OS Independent"],
 	   include_package_data=True,  # add non .py data files in MANIFEST.in
       #package_data={'radis': ['radis/phys/units.txt']},

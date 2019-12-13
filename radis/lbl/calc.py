@@ -46,6 +46,7 @@ def calc_spectrum(wavenum_min=None,
                   databank='fetch',
                   medium='air',
                   wstep=0.01,
+                  broadening_max_width=10, 
                   lineshape_optimization='DLM',
                   name=None,
                   use_cached=True,
@@ -66,11 +67,11 @@ def calc_spectrum(wavenum_min=None,
 
     wavelength_min: float [nm]
         minimum wavelength to be processed in nm. Wavelength in ``'air'`` or 
-        'vacuum' depending of the value of the parameter ``'medium='``
+        ``'vacuum'`` depending of the value of the parameter ``'medium='``
 
     wavelength_max: float [nm]
         maximum wavelength to be processed in nm. Wavelength in ``'air'`` or 
-        'vacuum' depending of the value of the parameter ``'medium='``
+        ``'vacuum'`` depending of the value of the parameter ``'medium='``
 
     Tgas: float [K]
         Gas temperature. If non equilibrium, is used for Ttranslational. 
@@ -136,13 +137,19 @@ def calc_spectrum(wavenum_min=None,
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
         your ``~/.radis`` file format 
 
-    medium: 'air', vacuum'
-        propagating medium: choose whether to return wavelength in air or vacuum.
-        Note that the  input wavelength range ("wavenum_min", "wavenum_max") changes. 
-        Default 'air'
+    medium: ``'air'``, ``'vacuum'``
+        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``
 
-    wstep: cm-1
-        Spacing of calculated spectrum. Default 0.01 cm-1
+    wstep: float (cm-1)
+        Spacing of calculated spectrum. Default ``0.01 cm-1``
+
+    broadening_max_width: float (cm-1)
+        Full width over which to compute the broadening. Large values will create
+        a huge performance drop (scales as ~broadening_width^2 without DLM)
+        The calculated spectral range is increased (by broadening_max_width/2
+        on each side) to take into account overlaps from out-of-range lines.
+        Default ``10`` cm-1.
 
     Other Parameters
     ----------------
@@ -296,12 +303,19 @@ def calc_spectrum(wavenum_min=None,
             return False
 
     _equilibrium = _is_at_equilibrium()
+    
+    # which columns to keep when loading line database
+    if kwargs['save_memory'] >= 2 and _equilibrium:
+        drop_columns = 'all'
+    else:
+        drop_columns = 'auto'
 
     # Run calculations
     sf = SpectrumFactory(wavenum_min, wavenum_max, medium=medium,
                          molecule=molecule, isotope=isotope,
                          pressure=pressure,
                          wstep=wstep,
+                         broadening_max_width=broadening_max_width,
                          db_use_cached=use_cached,
                          verbose=verbose,
                          chunksize=lineshape_optimization, #  if lineshape_optimization != 'auto' else None, #@EP: NotImplemented. DLM use all the time by default
@@ -332,6 +346,7 @@ def calc_spectrum(wavenum_min=None,
                 sf.load_databank(path=databank, format='hitran',
                                  parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
                                  levelsfmt=None,      # no need to load energies
+                                 drop_columns=drop_columns,
                                  )
             else:
                 # calculate partition functions with energy levels from built-in 
@@ -339,6 +354,7 @@ def calc_spectrum(wavenum_min=None,
                 sf.load_databank(path=databank, format='hitran',
                                  parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
                                  levelsfmt='radis',    # built-in spectroscopic constants
+                                 drop_columns=drop_columns,
                                  )
         else:
             raise ValueError("Couldnt infer the format of the line database: {0}. ".format(databank)+
@@ -347,7 +363,8 @@ def calc_spectrum(wavenum_min=None,
         
     else:   # manual mode: get from user-defined line databases defined in ~/.radis
         sf.load_databank(databank, 
-                         load_energies=not _equilibrium   # no need to load/calculate energies at eq.
+                         load_energies=not _equilibrium,   # no need to load/calculate energies at eq.
+                         drop_columns=drop_columns
                          )
         
 #    # Get optimisation strategies

@@ -1,6 +1,5 @@
-*****************
 Spectrum Database
-*****************
+=================
 
 :class:`~radis.spectrum.spectrum.Spectrum` objects can be stored/loaded to/from 
 .spec JSON files using the :meth:`~radis.spectrum.spectrum.Spectrum.store` method 

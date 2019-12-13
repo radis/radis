@@ -1,5 +1,5 @@
 .. _label_dev_test:
-====
+
 Test
 ====
 
@@ -7,13 +7,13 @@ Test
 Test status
 -----------
 
-Test routines are performed automatically by `Travis CI <https://travis-ci.org/radis/radis>`_ 
+Test routines are performed automatically by `Travis CI <https://travis-ci.com/radis/radis>`_ 
 whenever a change is made on the `GitHub <https://github.com/radis/radis>`_ repository. 
 See the current test status below:
 
 .. image:: https://img.shields.io/travis/radis/radis.svg
-    :target: https://travis-ci.org/radis/radis
-    :alt: https://travis-ci.org/radis/radis
+    :target: https://travis-ci.com/radis/radis
+    :alt: https://travis-ci.com/radis/radis
   
 It is a good practice to perform these tests locally to detect potential 
 errors before pushing. 
@@ -48,6 +48,7 @@ is interfaced with pytest through the ``--cov=./`` command::
     pytest --cov=./
 
 .. _label_dev_select_test:
+
 Select tests
 ------------
 
@@ -70,7 +71,7 @@ section
 - needs_db_HITEMP_CO_DUNHAM : requires HITEMP-CO-DUNHAM database in ``~/.radis`` 
 - needs_db_CDSD_HITEMP_PC : requires CDSD-HITEMP-PC database in ``~/.radis``
 
-The default test routine run on `Travis CI <https://travis-ci.org/radis/radis>`_ 
+The default test routine run on `Travis CI <https://travis-ci.com/radis/radis>`__
 is (see the ``radis/.gitlab-ci.yml` file)::
 
     pytest -m "not needs_config_file" --cov=./;

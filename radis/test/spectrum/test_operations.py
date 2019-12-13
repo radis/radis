@@ -7,8 +7,12 @@ Created on Sun Aug  5 14:26:44 2018
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.tools.database import load_spec
-from radis.spectrum.operations import crop, Radiance_noslit, add_constant, multiply
+from radis.spectrum.operations import (crop, Radiance, Radiance_noslit, Transmittance_noslit, 
+                                       add_constant, multiply, offset, sub_baseline)
 from radis.test.utils import getTestFile
+from radis.los import SerialSlabs, MergeSlabs
+from radis.spectrum.compare import get_diff, plot_diff
+import numpy as np
 import pytest
 
 @pytest.mark.fast
@@ -48,7 +52,6 @@ def test_cut_recombine(verbose=True, *args, **kwargs):
     
     Assert we still get the same spectrum at the end
     '''
-    from radis import MergeSlabs
 
     s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
     # Cut in half
@@ -104,7 +107,125 @@ def test_operations_inplace(verbose=True, *args, **kwargs):
     if verbose:
         print('test_operations: s *= 10: OK')
     
-def _run_testcases(verbose=True, *args, **kwargs):
+@pytest.mark.fast
+def test_serial_operator(verbose=True, plot=False, *args, **kwargs):
+    import matplotlib.pyplot as plt
+    s=load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s.update()
+    s1 = s.rescale_path_length(10, inplace=False)   # make non optically thin
+    s2 = s.rescale_path_length(20, inplace=False)   # make non optically thin
+    s3 = s.rescale_path_length(30, inplace=False)   # make non optically thin
+    if plot:
+#        s.plot('radiance_noslit', lw=2, nfig='Line of sight (SerialSlabs): s > s > s')
+        plt.figure('test_serial_operator').clear()
+        SerialSlabs(s1,s2,s3).apply_slit(1).plot(nfig='same')
+        ((s1>s2)>s3).apply_slit(1).plot(nfig='same')
+    assert SerialSlabs(s1,s2,s3).compare_with((s1>s2)>s3, spectra_only=True, plot=False)
+    assert (s1>(s2>s3))==((s1>s2)>s3)
+    # Forbidden syntax:
+    with pytest.raises(ArithmeticError):
+        assert SerialSlabs(s1,s2,s3).compare_with(s1>s2>s3, spectra_only=True, plot=False)
+
+@pytest.mark.fast
+def test_multiplyAndAddition(verbose=True, plot=False, *args, **kwargs):
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update('radiance_noslit', verbose=False)
+    s.apply_slit(0.1)
+    s = Radiance(s)
+    assert s.units['radiance'] == 'mW/cm2/sr/nm'
+
+    s_bis = add_constant(s, 1, 'mW/cm2/sr/nm')
+    w, Idiff = get_diff(s_bis, s, 'radiance') 
+    test = Idiff[1]-1
+    assert np.all(test<1e-10)
+
+    s_ter = multiply(multiply(s, 50), 1/50)
+#    plot_diff(s_ter, s_5)
+    diff = get_diff(s_ter, s, 'radiance') 
+    ratio = abs(np.trapz(diff[1], x=diff[0])/s.get_integral('radiance'))
+    assert ratio<1e-10
+
+@pytest.mark.fast
+def test_offset(verbose=True, plot=False, *args, **kwargs):
+    
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update('radiance_noslit', verbose=False)
+    s.apply_slit(0.1)
+    
+    s2 = offset(s, 10, 'nm', name = 'offset_10nm')
+    if plot:
+        plot_diff(s, s2)
+    assert np.allclose(s2.get_wavelength(which='convoluted'), 
+                       s.get_wavelength(which='convoluted')+10)
+    assert np.allclose(s2.get_wavelength(which='non_convoluted'), 
+                       s.get_wavelength(which='non_convoluted')+10)
+    
+    # Test inplace version
+    s.offset(10, 'nm')
+    assert np.allclose(s2.get_wavelength(which='convoluted'), 
+                       s.get_wavelength(which='convoluted'))
+
+@pytest.mark.fast
+def test_other_algebraic_operations(verbose=True, plot=False, *args, **kwargs):
+    
+    # An implement of Spectrum Algebra
+    # Reload:
+    s=load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    s.update()
+
+    # Test addition of Spectra
+    s.plot(lw=2, nfig='Merge: s//s')
+    (s//s).plot(nfig='same')
+    
+    # Test substraction of Spectra
+    s_tr = Transmittance_noslit(s)
+    assert (s_tr-1.0*s_tr).get_integral('transmittance_noslit') == 0
+
+    # TODO: add test
+    # @EP: the test fails at the moment because multiply only works with radiance,
+    # and MergeSlabs only works with non convoluted quantities
+    # Do we want that? Up for discussion...
+    
+    # There should be an error if algebraic operations are used when 
+    # multiple quantities are defined:
+    with pytest.raises(KeyError):
+        2*s
+        
+    s.apply_slit(0.1, 'nm')
+    s_rad = Radiance(s)
+    
+    # Test multiplication with float
+    s.plot(lw=2, nfig='Multiplication (by scalar): 2*s', wunit='nm')
+#    (s*s).plot(nfig='same')
+    (2*s_rad).plot(nfig='same', wunit='nm')
+    
+    # Test algebraic addition (vs multiplication)
+    assert (s_rad+s_rad).compare_with(2*s_rad, spectra_only='radiance', plot=False)
+
+    # Test algebraic addition with different waveunits
+    s_rad_nm = s_rad.resample(s_rad.get_wavelength(), 'nm', inplace=False)
+    s_sum = (2*s_rad_nm-s_rad_nm)
+    s_sum.compare_with(s_rad, spectra_only='radiance', plot=True)
+    assert (s_rad_nm+s_rad_nm).compare_with(2*s_rad, spectra_only='radiance', plot=True,rtol=1e-3)
+    
+
+@pytest.mark.fast
+def test_TestBaseline(plot=False, *args, **kwargs):
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update('radiance_noslit', verbose=False)
+    s.apply_slit(0.1)
+    s = Radiance_noslit(s)
+    assert s.units['radiance'] == 'mW/cm2/sr/nm'
+    
+    s2 = sub_baseline(s, 2e-4, -2e-4)
+    if plot:
+        plot_diff(s, s2)
+    assert s2.get_radiance_noslit()[-1] == s.get_radiance_noslit()[-1] + 2e-4
+    assert s2.get_radiance_noslit()[0] == s.get_radiance_noslit()[0] - 2e-4
+
+def _run_testcases(verbose=True, plot=False, *args, **kwargs):
     ''' Test procedures
     '''
 
@@ -112,10 +233,15 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_cut_recombine(verbose=verbose, *args, **kwargs)
     test_invariants(verbose=verbose, *args, **kwargs)
     test_operations_inplace(verbose=verbose, *args, **kwargs)
+    test_serial_operator(verbose=verbose, plot=plot, *args, **kwargs)
+    test_multiplyAndAddition(verbose=verbose, plot=plot, *args, **kwargs)
+    test_offset(verbose=verbose, plot=plot, *args, **kwargs)
+    test_other_algebraic_operations(verbose=verbose, plot=plot, *args, **kwargs)
+    test_TestBaseline(verbose=verbose, plot=plot, *args, **kwargs)
     
     return True
 
 if __name__ == '__main__':
     
-    _run_testcases()
+    _run_testcases(plot=True)
     

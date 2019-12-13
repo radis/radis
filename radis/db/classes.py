@@ -48,11 +48,13 @@ from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.io.hitran import HITRAN_CLASS1, HITRAN_CLASS5
 from radis.levels.dunham import Gv, Fv, EvJ
 from radis.db.conventions import get_convention
+from radis.db.utils import get_default_jsonfile, get_dunham_coefficients, get_herzberg_coefficients
+from os.path import exists, join, dirname
 
 # %% Molecule class
 
 class Molecule(object):
-    ''' Define a new molecule
+    r''' Define a new molecule
 
     Parameters
     ----------
@@ -83,7 +85,7 @@ class Molecule(object):
             self.name = name
 
             # Get name without parenthesis (without state) for HITRAN identification
-            filtername = re.sub("[\(\[].*?[\)\]]", "", name)
+            filtername = re.sub(r"[\(\[].*?[\)\]]", "", name)
 
             try:
                 self.id = get_molecule_identifier(filtername)
@@ -99,7 +101,7 @@ class Molecule(object):
 # %% Isotope class
 
 class Isotope(Molecule):
-    ''' Create an isotope of a given :py:class:`~radis.db.classes.Molecule`
+    r''' Create an isotope of a given :py:class:`~radis.db.classes.Molecule`
 
     Parameters
     ----------
@@ -145,9 +147,26 @@ class Isotope(Molecule):
 
 # %% ElectronicState class
 
+_term_symbols = {
+        'Σ':'SIG',
+        'Π':'PI',
+        'Δ':'DEL'}
+
+def _format_term_symbol(term_symbol):
+    ''' standardized name of greek symbols'''
+    for k, v in _term_symbols.items():
+        term_symbol = term_symbol.replace(k, v)
+    return term_symbol
+    
+def _print_term_symbol(term_symbol):
+    ''' nice print of greek letters'''
+    for k, v in _term_symbols.items():
+        term_symbol = term_symbol.replace(v, k)
+    return term_symbol
+    
 
 class ElectronicState(Isotope):
-    ''' Define an electronic state of an :py:class:`~radis.db.classes.Isotope` 
+    r''' Define an electronic state of an :py:class:`~radis.db.classes.Isotope` 
     of a :py:class:`~radis.db.classes.Molecule` 
 
     Parameters
@@ -169,9 +188,10 @@ class ElectronicState(Isotope):
     g_e: int
         Degeneracy. Default ``None``
 
-    spectroscopic_constants: dict
-        spectroscopic constants for given (molecule, isotope, electronic state)
-        Expected:
+    spectroscopic_constants: str, or ``'default'``
+        filename of spectroscopic constants under Herzberg or Dunham format. 
+        
+        Expected in the file:
             
             Yij: cm-1
                 rovibrational coefficients in Dunham convention
@@ -186,9 +206,13 @@ class ElectronicState(Isotope):
             Te: cm-1
                 electronic energy. Default ``None`` if not given
                 
-        The default RADIS :ref:`spectroscopic constants <label_db_spectroscopic_constants>` 
-        can be used, but others can be supplied too.
+        If ``default``, the constants defined in 
+        :ref:`spectroscopic constants <label_db_spectroscopic_constants>` are used.
 
+        
+    spectroscopic_constants_type: ``'herzberg'``, ``'dunham'``
+        convention for spectroscopic constants. Default ``'herzberg'``
+        
     Erovib: function
         Rovibrational energy of the molecule. Accessible with, typically, Mol.Erovib(v,J)
 
@@ -231,18 +255,19 @@ class ElectronicState(Isotope):
 
 
     def __init__(self, molecule_name, isotope, state, term_symbol='',
-                 g_e=None, spectroscopic_constants={}, Erovib=None, Ehaj=None,
+                 g_e=None, spectroscopic_constants='default', 
+                 spectroscopic_constants_type='herzberg', Erovib=None, Ehaj=None,
                  vmax=None, vmax_morse=None, Jmax=None, Ediss=None, **kwargs):
 
         super(ElectronicState, self).__init__(molecule_name=molecule_name,
                                               isotope=isotope, **kwargs)    # initialize Isotope
-
+        
         # Initialize electronic state specific parameters
         self.state = state
         self.term_symbol = term_symbol
         self.g_e = g_e
 
-        self._parse_rovib_constants(spectroscopic_constants)
+        self._parse_rovib_constants(spectroscopic_constants, spectroscopic_constants_type)
 
 #        self.Erovib = None   #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
         self.Ehaj = None     #: func: overwritten by Erovib if given, or by default Dunham developments if spectroscopic_constants are given
@@ -253,8 +278,8 @@ class ElectronicState(Isotope):
         self.Jmax = Jmax
         self.Ediss = Ediss
 
-    def _parse_rovib_constants(self, spectroscopic_constants):
-        ''' Parse spectroscopic constants 
+    def _parse_rovib_constants(self, spectroscopic_constants, spectroscopic_constants_type):
+        r''' Parse spectroscopic constants 
         
         Stores :py:attr:`~radis.db.classes.ElectronicState.Te` and 
         :py:attr:`~radis.db.classes.ElectronicState.re` as electronic state 
@@ -262,23 +287,64 @@ class ElectronicState(Isotope):
         
         Parameters
         ----------
-        
-        spectroscopic_constants: dict
-            spectro constants in Herzberg or Dunham convention
+            
+        spectroscopic_constants: str, or ``'default'``
+            filename of spectroscopic constants under Herzberg or Dunham format. 
+            
+            Expected in the file:
+                
+                Yij: cm-1
+                    rovibrational coefficients in Dunham convention
+                
+            or
+            
+                wexe, Be, etc. : cm-1
+                    rovibrational coefficients in Herzberg convention
+                
+            or 
+                      
+                Te: cm-1
+                    electronic energy. Default ``None`` if not given
+                    
+            If ``default``, the constants defined in 
+            :ref:`spectroscopic constants <label_db_spectroscopic_constants>` are used.
+    
+            
+        spectroscopic_constants_type: ``'herzberg'``, ``'dunham'``
+            convention for spectroscopic constants. Default ``'herzberg'``
             
         Returns
         -------
         
         None: 
-            but constants are stored under :py:attr:`~radis.db.classes.ElectronicState.rovib_constants`
+            but constants are stored under :py:attr:`~radis.db.classes.ElectronicState.rovib_constants`,
+            and store json file in :py:attr:`~radis.db.classes.ElectronicState.jsonfile`
         
         '''
         
-        import re
+        # Get file name
+        if spectroscopic_constants == 'default':
+            jsonfile = get_default_jsonfile(self.name)
+        elif exists(spectroscopic_constants):  # absolute path
+            jsonfile = spectroscopic_constants
+        else:  # assume a json file stored in the default folder
+            jsonfile = join(dirname(get_default_jsonfile(self.name)), spectroscopic_constants)
+            
+        # Parse file
+        if spectroscopic_constants_type == 'dunham':
+            rovib_constants = get_dunham_coefficients(self.name, self.iso, self.get_statename_utf(),
+                                                      jsonfile=jsonfile)
+        elif spectroscopic_constants_type == 'herzberg':
+            rovib_constants = get_herzberg_coefficients(self.name, self.iso, self.get_statename_utf(),
+                                                      jsonfile=jsonfile)
+        else:
+            raise ValueError('Unexpected spectroscopic constant type: {0}'.format(spectroscopic_constants_type))
+            
         # Clean keys
         # In particular, remove trailing '_cm-1' if given in dict or database 
+        import re
         rovib_constants = {re.sub('_cm-1$', '', k):v 
-                           for (k,v) in spectroscopic_constants.items()}
+                           for (k,v) in rovib_constants.items()}
         
         # Get specific keys
         self.Te = rovib_constants.pop('Te', None)  # default None
@@ -286,11 +352,12 @@ class ElectronicState(Isotope):
         
         # Store
         self.rovib_constants = rovib_constants
+        self.jsonfile = jsonfile
 
     # Default method to calculate energy
 
     def _assign_E(self, Erovib, Ehaj):
-        ''' Finds appropriate Electrorovibrational energy function for this molecule ,
+        r''' Finds appropriate Electrorovibrational energy function for this molecule ,
         based on which convention is used for spectroscopic coefficients 
         (Dunham, or Herzberg)
         
@@ -361,7 +428,7 @@ class ElectronicState(Isotope):
                                                   'and overwrite the ElectronicState class one.')
                         
     def Erovib(self, v, J, remove_ZPE=True):
-        ''' Calculate rovibrational energy of molecule 
+        r''' Calculate rovibrational energy of molecule 
         
         .. math::
             
@@ -410,7 +477,7 @@ class ElectronicState(Isotope):
                 self.get_fullname))  # @dev: see radis.db.classes.ElectronicState._assign_E
         
     def _Erovib_default_coefs(self, *args, **kwargs):
-        ''' Calculate rovibrational energy of molecule 
+        r''' Calculate rovibrational energy of molecule 
         
         .. math::
             
@@ -481,7 +548,7 @@ class ElectronicState(Isotope):
         
     def _E_Herzberg(self, v, J, remove_ZPE=True):
         # TODO: move in levels.energies as was done for CO2
-        ''' Calculate rovibrational energy of molecule 
+        r''' Calculate rovibrational energy of molecule 
         
         .. math::
             
@@ -568,7 +635,7 @@ class ElectronicState(Isotope):
     # %% Informative methods
 
     def get_Morse_inc(self):
-        ''' Get Morse potential energy increment correction for given molecule
+        r''' Get Morse potential energy increment correction for given molecule
 
         Examples
         --------
@@ -638,11 +705,11 @@ class ElectronicState(Isotope):
                                weae=weae, webe=webe, wece=wece)
 
     def get_fullname(self):
-        return '{0}({1}{2})(iso{3})'.format(self.name, self.state,
-                                            self.term_symbol, self.iso)
+        return r'{0}({1}{2})(iso{3})'.format(self.name, self.state,
+                                             _print_term_symbol(self.term_symbol), self.iso)
 
     def get_statename_utf(self):
-        ''' Returns Electronic state name in UTF format, used in the standard
+        r''' Returns Electronic state name in UTF format, used in the standard
         RADIS JSON databases. Examples::
             
            'X', '1Σ+' 
@@ -653,17 +720,7 @@ class ElectronicState(Isotope):
            
         '''
         
-        state = self.state
-        term = self.term_symbol
-        
-        replace_utf = {'Σ':'SIG',
-                       'Π':'PI',
-                       'Δ':'DEL'}
-        
-        for k, v in replace_utf.items():
-            term = term.replace(k, v)
-            
-        return state+term
+        return self.state+_format_term_symbol(self.term_symbol)
     
     
     
