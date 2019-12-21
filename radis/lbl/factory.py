@@ -47,7 +47,8 @@ Most methods are written in inherited class with the following inheritance schem
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 
-.. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
+.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+   :parts: 1
 
 
 Notes
@@ -297,6 +298,8 @@ class SpectrumFactory(BandFactory):
     :meth:`~radis.lbl.band.BandFactory.eq_bands`, 
     :meth:`~radis.lbl.band.BandFactory.non_eq_bands`
     
+    .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+       :parts: 1
     
     '''
     # TODO: make it possible to export both 'vib' and 'rovib'

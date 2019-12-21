@@ -17,7 +17,8 @@ Most methods are written in inherited class with the following inheritance schem
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
-.. inheritance-diagram:: radis.lbl.broadening.BroadenFactory
+.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+   :parts: 1
 
 PUBLIC FUNCTIONS - BROADENING
 
