@@ -61,6 +61,7 @@ extensions = [
     #'sphinxcontrib.napoleon',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.inheritance_diagram',
     'sphinxcontrib.apidoc'
 ]
 
