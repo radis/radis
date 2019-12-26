@@ -278,6 +278,9 @@ class SpectrumFactory(BandFactory):
 
     Refer to the online :ref:`Examples <label_examples>` for more cases. 
 
+    .. inheritance-diagram:: radis.lbl.parallel.SpectrumFactory
+       :parts: 1
+    
     See Also
     --------
 
@@ -297,9 +300,6 @@ class SpectrumFactory(BandFactory):
     :meth:`~radis.lbl.loader.DatabankLoader.init_database`,
     :meth:`~radis.lbl.band.BandFactory.eq_bands`, 
     :meth:`~radis.lbl.band.BandFactory.non_eq_bands`
-    
-    .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
-       :parts: 1
     
     '''
     # TODO: make it possible to export both 'vib' and 'rovib'

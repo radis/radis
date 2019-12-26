@@ -692,6 +692,9 @@ class BroadenFactory(BaseFactory):
     ''' A class that holds all broadening methods, inherited by 
     :class:`~radis.lbl.factory.SpectrumFactory` eventually 
     
+    .. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
+       :parts: 1
+    
     See Also
     --------
 

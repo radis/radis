@@ -142,6 +142,12 @@ class BaseFactory(DatabankLoader):
     }
 
     def __init__(self):
+        '''
+                
+        .. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
+           :parts: 1
+        
+        '''
 
         super(BaseFactory, self).__init__()  # initialize parent class
 

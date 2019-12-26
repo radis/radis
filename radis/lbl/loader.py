@@ -450,6 +450,9 @@ https://stackoverflow.com/q/13250499/5622825
 
 class DatabankLoader(object):
     '''
+
+    .. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
+       :parts: 1
     
     See Also
     --------
