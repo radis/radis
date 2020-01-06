@@ -32,10 +32,14 @@ NON_CONVOLUTED_QUANTITIES = ['radiance_noslit', 'transmittance_noslit',
                              'emisscoeff', 'emisscoeff_continuum', 
                              'absorbance', 'abscoeff',
                              'abscoeff_continuum', 'emissivity_noslit']
-'''list: name of spectral quantities not convolved with slit function'''
+'''list: name of spectral quantities not convolved with slit function
+
+See :ref:`the description of spectral quantities <label_spectral_quantities>`'''
 SPECTRAL_QUANTITIES = CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
 '''list: all spectral quantities defined in a :class:`~radis.spectrum.spectrum.Spectrum` 
-object'''
+object.
+
+See :ref:`the description of spectral quantities <label_spectral_quantities>`'''
 
 # note: it is hardcoded (and needed) that quantities that are convoluted are
 # generated from a non convoluted quantity with the same name + _noslit
