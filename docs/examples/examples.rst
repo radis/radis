@@ -155,7 +155,7 @@ can be run with (you will previously need to have defined the appropriate CO2 li
 
     pytest radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py
  
- 
+ .. _label_examples_hitran_spectra:
  
 HITRAN spectra
 ==============
@@ -164,7 +164,7 @@ The absorption coefficient of all HITRAN species is calculated in `plot_all_hitr
 
 For instance:
 
-- Water (H2O) absorption coefficient at 300 K ::
+- 1 	``'H2O'`` : 	Water absorption coefficient at 300 K ::
 
     s = calc_spectrum(wavelength_min=1000, 
                       wavelength_max=20000,
@@ -176,11 +176,12 @@ For instance:
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
 
-.. image:: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png
    :width: 600
    :alt: Water H2O infrared absorption coefficient
+   :target: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png
 
-- Carbon dioxide (CO2) absorption coefficient at 300 K ::
+- 2 	``'CO2'`` : 	Carbon Dioxide absorption coefficient at 300 K ::
 
     s = calc_spectrum(wavelength_min=1000, 
                       wavelength_max=20000,
@@ -193,11 +194,71 @@ For instance:
     s.plot('abscoeff', wunit='nm')
 
 
-.. image:: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png
    :width: 600
    :alt: Carbon Dioxide CO2 infrared absorption coefficient
+   :target: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png
 
-- Methane (CH4) absorption coefficient at 300 K ::
+- 3 	``'O3'`` : 	Ozone 	
+
+    s = calc_spectrum(wavelength_min=1000, 
+                      wavelength_max=20000,
+                      Tgas=300,
+                      pressure=1,
+                      molecule='O3',
+                      lineshape_optimization=None,
+                      cutoff=1e-23,
+                      isotope='1')
+    s.plot('abscoeff', wunit='nm')
+
+
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/2%20-%20O3%20infrared%20spectrum.png
+   :width: 600
+   :alt: Ozone O3 infrared absorption coefficient
+   :target: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/2%20-%20O3%20infrared%20spectrum.png
+
+
+
+- 4 	``'N2O'`` : 	Nitrogen oxide absorption coefficient at 300 K ::
+
+    s = calc_spectrum(wavelength_min=1000, 
+                      wavelength_max=20000,
+                      Tgas=300,
+                      pressure=1,
+                      molecule='N2O',
+                      lineshape_optimization=None,
+                      cutoff=1e-23,
+                      isotope='1')
+    s.plot('abscoeff', wunit='nm')
+
+
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/3%20-%20N2O%20infrared%20spectrum.png
+   :width: 600
+   :alt: Nitrogen oxide N2O infrared absorption coefficient
+   :target: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/3%20-%20N2O%20infrared%20spectrum.png
+
+
+
+- 5 	``'CO'`` : 	Carbon Monoxide absorption coefficient at 300 K ::
+
+    s = calc_spectrum(wavelength_min=1000, 
+                      wavelength_max=20000,
+                      Tgas=300,
+                      pressure=1,
+                      molecule='CO',
+                      lineshape_optimization=None,
+                      cutoff=1e-23,
+                      isotope='1')
+    s.plot('abscoeff', wunit='nm')
+
+
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/4%20-%20CO%20infrared%20spectrum.png
+   :width: 600
+   :alt: Carbon Monoxide CO infrared absorption coefficient
+   :target: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/4%20-%20CO%20infrared%20spectrum.png
+
+
+- 6 	``'CH4'`` : 	Methane absorption coefficient at 300 K ::
 
     s = calc_spectrum(wavelength_min=1000, 
                       wavelength_max=20000,
@@ -210,9 +271,70 @@ For instance:
     s.plot('abscoeff', wunit='nm')
  
 
-.. image:: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/5%20-%20CH4%20infrared%20spectrum.png
    :width: 600
    :alt: Methane CH4 infrared absorption coefficient
+   :target: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/5%20-%20CH4%20infrared%20spectrum.png
 
 
+- 7 	``'O2'`` : 	Oxygen absorption coefficient at 300 K : no spectrum for isotope=1
+- 8 	``'NO'`` : 	Nitric Oxide absorption coefficient at 300 K ::
+
+    s = calc_spectrum(wavelength_min=1000, 
+                      wavelength_max=20000,
+                      Tgas=300,
+                      pressure=1,
+                      molecule='NO',
+                      lineshape_optimization=None,
+                      cutoff=1e-23,
+                      isotope='1')
+    s.plot('abscoeff', wunit='nm')
  
+
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/7%20-%20NO%20infrared%20spectrum.png
+   :width: 600
+   :alt: Methane CH4 infrared absorption coefficient
+   :target: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/7%20-%20NO%20infrared%20spectrum.png
+
+
+- 9 	``'SO2'`` : 	Sulfur Dioxide absorption coefficient at 300 K ::
+- 10 	``'NO2'`` : 	Nitrogen Dioxide absorption coefficient at 300 K ::
+- 11 	``'NH3'`` : 	Ammonia absorption coefficient at 300 K ::
+- 12 	``'HNO3'`` : 	Nitric Acid absorption coefficient at 300 K ::
+- 13 	``'OH'`` : 	Hydroxyl absorption coefficient at 300 K ::
+- 14 	``'HF'`` : 	Hydrogen Fluoride absorption coefficient at 300 K ::
+- 15 	``'HCl'`` : 	Hydrogen Chloride absorption coefficient at 300 K ::
+- 16 	``'HBr'`` : 	Hydrogen Bromide absorption coefficient at 300 K ::
+- 17 	``'HI'`` : 	Hydrogen Iodide absorption coefficient at 300 K ::
+- 18 	``'ClO'`` : 	Chlorine Monoxide absorption coefficient at 300 K ::
+- 19 	``'OCS'`` : 	Carbonyl Sulfide absorption coefficient at 300 K ::
+- 20 	``'H2CO'`` : 	Formaldehyde absorption coefficient at 300 K ::
+- 21 	``'HOCl'`` : 	Hypochlorous Acid absorption coefficient at 300 K ::
+- 22 	``'N2'`` : 	Nitrogen absorption coefficient at 300 K ::
+- 23 	``'HCN'`` : 	Hydrogen Cyanide absorption coefficient at 300 K ::
+- 24 	``'CH3Cl'`` : 	Methyl Chloride absorption coefficient at 300 K ::
+- 25 	``'H2O2'`` : 	Hydrogen Peroxide absorption coefficient at 300 K ::
+- 26 	``'C2H2'`` : 	Acetylene absorption coefficient at 300 K ::
+- 27 	``'C2H6'`` : 	Ethane absorption coefficient at 300 K ::
+- 28 	``'PH3'`` : 	Phosphine absorption coefficient at 300 K ::
+- 29 	``'COF2'`` : 	Carbonyl Fluoride absorption coefficient at 300 K ::
+- 30 	``'SF6'`` : 	Sulfur Hexafluoride absorption coefficient at 300 K ::
+- 31 	``'H2S'`` : 	Hydrogen Sulfide absorption coefficient at 300 K ::
+- 32 	``'HCOOH'`` : 	Formic Acid absorption coefficient at 300 K ::
+- 33 	``'HO2'`` : 	Hydroperoxyl absorption coefficient at 300 K ::
+- 34 	``'O'`` : 	Oxygen Atom absorption coefficient at 300 K ::
+- 35 	``'ClONO2'`` : 	Chlorine Nitrate absorption coefficient at 300 K ::
+- 36 	``'NO+'`` : 	Nitric Oxide Cation absorption coefficient at 300 K ::
+- 37 	``'HOBr'`` : 	Hypobromous Acid absorption coefficient at 300 K ::
+- 38 	``'C2H4'`` : 	Ethylene absorption coefficient at 300 K ::
+- 39 	``'CH3OH'`` : 	Methanol absorption coefficient at 300 K ::
+- 40 	``'CH3Br'`` : 	Methyl Bromide absorption coefficient at 300 K ::
+- 41 	``'CH3CN'`` : 	Acetonitrile absorption coefficient at 300 K ::
+- 42 	``'CF4'`` : 	CFC-14 absorption coefficient at 300 K ::
+- 43 	``'C4H2'`` : 	Diacetylene absorption coefficient at 300 K ::
+- 44 	``'HC3N'`` : 	Cyanoacetylene absorption coefficient at 300 K ::
+- 45 	``'H2'`` : 	Hydrogen absorption coefficient at 300 K ::
+- 46 	``'CS'`` : 	Carbon Monosulfide absorption coefficient at 300 K ::
+- 47 	``'SO3'`` : 	Sulfur trioxide absorption coefficient at 300 K ::
+- 48 	``'C2N2'`` : 	Cyanogen absorption coefficient at 300 K ::
+- 49 	``'COCl2'`` : 	Phosgene absorption coefficient at 300 K ::
