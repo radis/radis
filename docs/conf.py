@@ -129,7 +129,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'RADIS'
-copyright = '2018, Erwan Pannier'
+copyright = '2020, Erwan Pannier'
 author = 'Erwan Pannier'
 
 # The version info for the project you're documenting, acts as replacement for
