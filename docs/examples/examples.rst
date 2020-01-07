@@ -7,34 +7,6 @@ Examples
 Examples are available on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
 
 
-Multi Temperature Fit
-=====================
-
-A 3 temperature fitting example reproducing the validation case of Klarenaar 2017 [1]_, who calculated a transmittance
-spectrum from the initial data of Dang 1973 [2]_, with a 1 rotational temperature + 
-3 vibrational temperature (Treanor distributions) model. 
-
-.. [1] Klarenaar et al 2017, "Time evolution of vibrational temperatures in a CO2 glow 
-       discharge measured with infrared absorption spectroscopy" doi/10.1088/1361-6595/aa902e
-
-.. [2] Dang et al 1982, "Detailed vibrational population distributions in a CO2 laser 
-        discharge as measured with a tunable diode laser" doi/10.1007/BF00694640
-
-|CO2| Energies are calculated from Dunham developments in an uncoupled harmonic oscillator - rigid rotor model. 
-The example is based on one of `RADIS validation cases <https://github.com/radis/radis/tree/master/radis/test/validation>`_.
-It makes use of the RADIS `Spectrum <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`_
-class and the associated compare and load functions
-
-.. only:: html
-
-   .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
-
-The final spectrum calculated can be found in the validation case `radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py`, which
-can be run with (you will previously need to have defined the appropriate CO2 line database)::
-
-    pytest radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py
- 
-
 Line Survey
 ===========
 
@@ -69,7 +41,7 @@ CH4 Full Spectrum
 
 Here we reproduce the full spectrum (0.001 - 11500 cm-1) of Methane for a ``broadening_max_width`` 
 corresponding to about 50 HWHMs, as in the Benchmark case of [HAPI]_, Table 7, Methane_III,
-also featured in the [RADIS-2018] article ::
+also featured in the [RADIS-2018]_ article ::
 
     from radis import SpectrumFactory
     
@@ -152,3 +124,34 @@ Here we get the energy of the v=6, J=3 level of the 2nd isotope of CO::
     CO = getMolecule('CO', 2, 'X')
     print(CO.Erovib(6, 3))
     >>> 12218.8130906978
+
+
+
+
+Multi Temperature Fit
+=====================
+
+A 3 temperature fitting example reproducing the validation case of Klarenaar 2017 [1]_, who calculated a transmittance
+spectrum from the initial data of Dang 1973 [2]_, with a 1 rotational temperature + 
+3 vibrational temperature (Treanor distributions) model. 
+
+.. [1] Klarenaar et al 2017, "Time evolution of vibrational temperatures in a CO2 glow 
+       discharge measured with infrared absorption spectroscopy" doi/10.1088/1361-6595/aa902e
+
+.. [2] Dang et al 1982, "Detailed vibrational population distributions in a CO2 laser 
+        discharge as measured with a tunable diode laser" doi/10.1007/BF00694640
+
+|CO2| Energies are calculated from Dunham developments in an uncoupled harmonic oscillator - rigid rotor model. 
+The example is based on one of `RADIS validation cases <https://github.com/radis/radis/tree/master/radis/test/validation>`_.
+It makes use of the RADIS `Spectrum <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`_
+class and the associated compare and load functions
+
+.. only:: html
+
+   .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
+
+The final spectrum calculated can be found in the validation case `radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py`, which
+can be run with (you will previously need to have defined the appropriate CO2 line database)::
+
+    pytest radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py
+ 

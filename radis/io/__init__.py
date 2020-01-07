@@ -39,6 +39,12 @@ MOLECULES_LIST_EQUILIBRIUM = __supported_molecules_equilibrium__ = _get_supporte
 All [HITRAN-2016]_ species are available:
 
 - 1 	``'H2O'`` : 	Water 	
+
+.. image:: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png
+    :width: 600
+    :target: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png
+    :alt: Water H2O infrared spectrum
+
 - 2 	``'CO2'`` : 	Carbon Dioxide 	
 - 3 	``'O3'`` : 	Ozone 	
 - 4 	``'N2O'`` : 	Nitrogen oxide 	
