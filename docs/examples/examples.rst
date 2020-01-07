@@ -160,7 +160,9 @@ can be run with (you will previously need to have defined the appropriate CO2 li
 HITRAN spectra
 ==============
 
-The absorption coefficient of all HITRAN species is calculated in `plot_all_hitran_spectra.py <https://github.com/radis/radis-examples/blob/master/hitran_spectra/plot_all_hitran_spectra.py>`__ at 300 K, 1 atm for the first isotope.
+The absorption coefficient of all HITRAN species (see :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`)
+is calculated in `plot_all_hitran_spectra.py <https://github.com/radis/radis-examples/blob/master/hitran_spectra/plot_all_hitran_spectra.py>`__ 
+at 300 K, 1 atm for the first isotope.
 
 For instance:
 
@@ -443,10 +445,10 @@ For instance:
     s.plot('abscoeff', wunit='nm')
  
 
-.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/14%20-%20HCl%20infrared%20spectrum.png
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/15%20-%20HBr%20infrared%20spectrum.png
    :width: 600
    :alt: Hydrogen Bromide HBr infrared absorption coefficient
-   :target: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/14%20-%20HCl%20infrared%20spectrum.png
+   :target: https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/15%20-%20HBr%20infrared%20spectrum.png
 
 
 - 17 	``'HI'`` : 	Hydrogen Iodide absorption coefficient at 300 K ::
