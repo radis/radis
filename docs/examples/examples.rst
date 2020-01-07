@@ -155,3 +155,64 @@ can be run with (you will previously need to have defined the appropriate CO2 li
 
     pytest radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py
  
+ 
+ 
+HITRAN spectra
+==============
+
+The absorption coefficient of all HITRAN species is calculated in `plot_all_hitran_spectra.py <https://github.com/radis/radis-examples/blob/master/hitran_spectra/plot_all_hitran_spectra.py>`__ at 300 K, 1 atm for the first isotope.
+
+For instance:
+
+- Water (H2O) absorption coefficient at 300 K ::
+
+    s = calc_spectrum(wavelength_min=1000, 
+                      wavelength_max=20000,
+                      Tgas=300,
+                      pressure=1,
+                      molecule='H2O',
+                      lineshape_optimization=None,
+                      cutoff=1e-23,
+                      isotope='1')
+    s.plot('abscoeff', wunit='nm')
+
+.. image:: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png
+   :width: 600
+   :alt: Water H2O infrared absorption coefficient
+
+- Carbon dioxide (CO2) absorption coefficient at 300 K ::
+
+    s = calc_spectrum(wavelength_min=1000, 
+                      wavelength_max=20000,
+                      Tgas=300,
+                      pressure=1,
+                      molecule='CO2',
+                      lineshape_optimization=None,
+                      cutoff=1e-23,
+                      isotope='1')
+    s.plot('abscoeff', wunit='nm')
+
+
+.. image:: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png
+   :width: 600
+   :alt: Carbon Dioxide CO2 infrared absorption coefficient
+
+- Methane (CH4) absorption coefficient at 300 K ::
+
+    s = calc_spectrum(wavelength_min=1000, 
+                      wavelength_max=20000,
+                      Tgas=300,
+                      pressure=1,
+                      molecule='CH4',
+                      lineshape_optimization=None,
+                      cutoff=1e-23,
+                      isotope='1')
+    s.plot('abscoeff', wunit='nm')
+ 
+
+.. image:: https://github.com/radis/radis-examples/blob/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png
+   :width: 600
+   :alt: Methane CH4 infrared absorption coefficient
+
+
+ 
