@@ -1856,8 +1856,10 @@ class BroadenFactory(BaseFactory):
         except MemoryError:
             import traceback
             traceback.print_exc()
-            raise MemoryError('See details above. Try to use or reduce the '+\
-                              'chunksize parameter (current={0})'.format(chunksize))
+            raise MemoryError('Too many lines*wavepoints (see details above). Try to use or reduce the '+\
+                              'chunksize parameter (current={0}{1})'.format(chunksize,
+                              ' so {0:.3e} lines*wavepoints was used'.format(len(df)*len(wavenumber))
+                              if chunksize is None else ''))
             
         return wavenumber, abscoeff
 
