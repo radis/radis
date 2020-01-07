@@ -84,17 +84,16 @@ from radis.tools.database import SpecDatabase
 from radis.misc.config import getDatabankEntries, printDatabankEntries, getDatabankList
 from radis.misc.utils import FileNotFoundError
 from radis.misc.basics import compare_dict, compare_lists
+from radis.misc.arrays import count_nans
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg, printr
 from radis.misc.log import printwarn
-from radis.misc.basics import transfer_metadata
 from radis.phys.convert import cm2nm
 import os
 from os.path import exists, abspath
 import pandas as pd
 from six import string_types
 from radis.misc.warning import warn, default_warning_status
-import warnings
 from warnings import catch_warnings, filterwarnings
 import numpy as np
 from time import time
@@ -1413,7 +1412,7 @@ class DatabankLoader(object):
         # the code during look-up of levels later on.)
         for k in ['vu', 'vl', 'v1u', 'v1l', 'v2u', 'v2l', 'l2u', 'l2l', 'v3u', 'v3l', 'ru', 'rl',
                   'polyu', 'polyl', 'wangu', 'wangl', 'ranku', 'rankl']:
-            if k in self.df0.columns and self.df0.dtypes[k] != np.int64:
+            if k in self.df0.columns and self.df0.dtypes[k] != np.int64 and count_nans(self.df0[k])==0:
                 self.warn('Format of column {0} was {1} instead of int. Changed to int'.format(
                         k, self.df0.dtypes[k]))
                 self.df0[k] = self.df0[k].astype(np.int64)
