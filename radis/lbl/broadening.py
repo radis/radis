@@ -1482,10 +1482,8 @@ class BroadenFactory(BaseFactory):
             t0 = time()
 
 #        # Get spectrum range
-        wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
-        wavenumber_calc = self.wavenumber_calc
-        # generate the vector of wavenumbers (shape W + space B on the sides)
-        vec_length = len(wavenumber)
+        wavenumber = self.wavenumber  # final vector of wavenumbers (shape W)
+        wavenumber_calc = self.wavenumber_calc  # calculation vector of wavenumbers (shape W + space B on the sides)
 
         # Vectorize the chunk of lines
         S = broadened_param.reshape((1, -1))
@@ -1526,6 +1524,7 @@ class BroadenFactory(BaseFactory):
         # comparison beforehand and run 3 different loops
        
         # reminder: wavenumber_calc has size [iwbroad_half+vec_length+iwbroad_half]
+        vec_length = len(wavenumber)
         assert len(wavenumber_calc) == vec_length+2*iwbroad_half
         boffrangeleft = (idcenter_left <= iwbroad_half)
         boffrangeright = (idcenter_right >= vec_length+iwbroad_half)

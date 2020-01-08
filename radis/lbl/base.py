@@ -2861,6 +2861,15 @@ class BaseFactory(DatabankLoader):
             self.warn("HITRAN is valid for low temperatures (typically < 700 K). "+\
                  "For higher temperatures you may need HITEMP or CDSD. See the "+\
                  "'databank=' parameter", "HighTemperatureWarning")
+            
+        # Also check some computation parameters:
+        
+        # ... that wstep and broadening_max_width were not inadvertanly changed
+        # ... (would have no effect as the waverange is calculated on SpectrumFactory
+        # ... initialization)        
+        assert self._wstep == self.params.wstep
+        assert self._broadening_max_width == self.params.broadening_max_width
+
 
     def plot_populations(self, what='vib', isotope=None, nfig=None):
         ''' Plot populations currently calculated in factory.
