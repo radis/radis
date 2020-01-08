@@ -59,8 +59,7 @@ def test_spectrum_get_methods(verbose=True, plot=True, close_plots=True, *args, 
                s.get_wavenumber())
     assert s.get_power(unit='W/cm2/sr') == 2631.6288408588148
     assert s.get_waveunit() == 'nm'
-    assert s.get_power(
-        unit='W/cm2/sr') == s.get_integral('radiance_noslit', Iunit='W/cm2/sr/nm')
+    assert np.isclose(s.get_power(unit='W/cm2/sr'), s.get_integral('radiance_noslit', Iunit='W/cm2/sr/nm'))
     assert s.get_conditions()['Tgas'] == 1500
     assert len(s.get_vars()) == 2
     assert s.is_at_equilibrium() == False
@@ -342,36 +341,28 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, debug=False, warn
 
     '''
 
-#    # Test all Spectrum methods
-#    # -------------------------
-#    test_spectrum_get_methods(debug=debug, verbose=verbose,
-#                              plot=plot, close_plots=close_plots, *args, **kwargs)
-#    test_copy(verbose=verbose, *args, **kwargs)
-#    test_populations(verbose=verbose, plot=plot,
-#                     close_plots=close_plots, *args, **kwargs)
-#    test_store_functions(verbose=verbose, *args, **kwargs)
-#
-#    # Test populations
-#    # ----------
-##    test_populations(verbose=verbose, *args, **kwargs)
-#
-#    # Test conversion of intensity cm-1 works
-#    # -------------
-#    test_intensity_conversion(debug=debug, verbose=verbose, *args, **kwargs)
-#
-#    # Test updating / rescaling functions (no self absorption)
-#    # ---------
-#    test_rescaling_function(debug=debug, *args, **kwargs)
+    # Test all Spectrum methods
+    # -------------------------
+    test_spectrum_get_methods(debug=debug, verbose=verbose,
+                              plot=plot, close_plots=close_plots, *args, **kwargs)
+    test_copy(verbose=verbose, *args, **kwargs)
+    test_populations(verbose=verbose, plot=plot,
+                     close_plots=close_plots, *args, **kwargs)
+    test_store_functions(verbose=verbose, *args, **kwargs)
+
+    # Test populations
+    # ----------
+    test_populations(verbose=verbose, *args, **kwargs)
+
+    # Test conversion of intensity cm-1 works
+    # -------------
+    test_intensity_conversion(debug=debug, verbose=verbose, *args, **kwargs)
+
+    # Test updating / rescaling functions (no self absorption)
+    # ---------
+    test_rescaling_function(debug=debug, *args, **kwargs)
     test_resampling_function(debug=debug, plot=plot,
                              close_plots=close_plots, *args, **kwargs)
-#    test_rescaling_path_length(plot=plot, verbose=verbose, debug=debug,
-#                                     warnings=warnings, *args, **kwargs)
-#    test_rescaling_mole_fraction(plot=plot, verbose=verbose, debug=debug,
-#                                     warnings=warnings, *args, **kwargs)
-
-    # Test propagating medium
-#    test_medium(plot=plot, verbose=verbose, debug=debug,
-#                           warnings=warnings, *args, **kwargs)
 
     # Test plot firewalls:
     test_noplot_different_quantities(*args, **kwargs)
