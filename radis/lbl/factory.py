@@ -381,8 +381,11 @@ class SpectrumFactory(BandFactory):
                                                                  wstep, broadening_max_width)
         wbroad_centered = _generate_broadening_range(
             wstep, broadening_max_width)
+        # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
+        self._wstep = wstep
+        self._broadening_max_width = broadening_max_width
 
-        # Get boolean array to switch from `wavenumber_calc` to `wavenumber`
+        # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
         woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
         self.wbroad_centered = wbroad_centered
         self.wavenumber = wavenumber
@@ -1260,27 +1263,29 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
     assert wavenum_min < wavenum_max
 
     # Output range
-    # generate the vector of wavenumbers (shape M)
+    # generate the final vector of wavenumbers (shape M)
     wavenumber = arange(wavenum_min, wavenum_max+wstep, wstep)
 
-    # Calculation range
+    # generate the calculation vector of wavenumbers (shape M + space on the side)
+    # ... Calculation range
     wavenum_min_calc = wavenumber[0] - broadening_max_width/2     # cm-1
     wavenum_max_calc = wavenumber[-1] + broadening_max_width/2     # cm-1
     w_out_of_range_left = arange(
         wavenumber[0]-wstep, wavenum_min_calc-wstep, -wstep)[::-1]
     w_out_of_range_right = arange(
         wavenumber[-1]+wstep, wavenum_max_calc+wstep, wstep)
-#    w_out_of_range_right = -w_out_of_range_left + wavenumber[-1] + wstep - w_out_of_range_left[1]
-    wavenumber_calc = np.hstack(
-        (w_out_of_range_left, wavenumber, w_out_of_range_right))
-    
-    # deal with rounding errors: 1 side may have 1 more point
+
+    # ... deal with rounding errors: 1 side may have 1 more point
     if len(w_out_of_range_left) > len(w_out_of_range_right):
         w_out_of_range_left = w_out_of_range_left[1:]
     elif len(w_out_of_range_left) < len(w_out_of_range_right):
         w_out_of_range_right = w_out_of_range_right[:-1]
-
+        
+    wavenumber_calc = np.hstack(
+        (w_out_of_range_left, wavenumber, w_out_of_range_right))
+    
     assert len(w_out_of_range_left) == len(w_out_of_range_right)
+    assert len(wavenumber_calc) == len(wavenumber)+2*len(w_out_of_range_left)
 
     return wavenumber, wavenumber_calc
 
@@ -1312,7 +1317,7 @@ def _generate_broadening_range(wstep, broadening_max_width):
     wbroad_centered = np.hstack((-arange(wstep, 0.5*broadening_max_width+wstep, wstep)[::-1],
                                  [0],
                                  arange(wstep, 0.5*broadening_max_width+wstep, wstep)))
-
+    
     assert len(wbroad_centered) % 2 == 1
 
     return wbroad_centered
