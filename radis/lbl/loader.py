@@ -378,6 +378,9 @@ class Parameters(ConditionDict):
         self.wstep = None                  #: float: spectral resolution (cm-1)
         self.dlm_res_L = 0.01              #: float (cm-1): Lorentzian step for DLM lineshape database. Default 0.01 cm-1
         self.dlm_res_G = 0.01              #: float (cm-1): DLM Gaussian step DLM lineshape database. Default 0.01 cm-1
+        self.include_neighbouring_lines = True
+        '''bool: if ``True``, includes the contribution of off-range, neighbouring 
+        lines because of lineshape broadening. Default ``True``.'''
         
 class MiscParams(ConditionDict):
     ''' A class to hold Spectrum calculation descriptive parameters. Unlike 
@@ -643,6 +646,11 @@ class DatabankLoader(object):
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
+    
+        include_neighbouring_lines: bool
+            ``True``, includes off-range, neighbouring lines that contribute
+            because of lineshape broadening. The ``broadening_max_width`` 
+            parameter is used to determine the limit. Default ``True``.
 
         Other arguments are related to how to open the files
 
@@ -692,7 +700,7 @@ class DatabankLoader(object):
         # Check inputs
         (name, path, dbformat, parfunc, parfuncfmt, levels, levelsfmt,
          db_use_cached, db_assumed_sorted, drop_columns, buffer, load_energies,
-         ) = self._check_database_params(*args, **kwargs)
+         include_neighbouring_lines) = self._check_database_params(*args, **kwargs)
 
         # Store arguments for later. The database will only be loaded if a Spectrum
         # has to be calculated. See Factory.eq_spectrum() and non_eq_spectrum()
@@ -710,7 +718,8 @@ class DatabankLoader(object):
                                     levelsfmt=levelsfmt,
                                     db_use_cached=db_use_cached,
                                     db_assumed_sorted=db_assumed_sorted,
-                                    load_energies=load_energies)
+                                    load_energies=load_energies,
+                                    include_neighbouring_lines=include_neighbouring_lines)
 
         # Delete database
         self.df0 = None
@@ -718,7 +727,8 @@ class DatabankLoader(object):
     def fetch_databank(self, source='astroquery', format='hitran',
                        parfunc=None, parfuncfmt='hapi',
                        levels=None, levelsfmt='radis',
-                       load_energies=True, drop_non_numeric=True):
+                       load_energies=True, include_neighbouring_lines=True,
+                       drop_non_numeric=True):
         ''' Fetch databank with Astroquery [1]_
 
         Parameters
@@ -756,6 +766,11 @@ class DatabankLoader(object):
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
     
+        include_neighbouring_lines: bool
+            ``True``, includes off-range, neighbouring lines that contribute
+            because of lineshape broadening. The ``broadening_max_width`` 
+            parameter is used to determine the limit. Default ``True``.
+            
         Other Parameters
         ----------------
         
@@ -803,8 +818,12 @@ class DatabankLoader(object):
             raise ValueError("Please define isotope explicitely (cannot use 'all' with fetch_databank)")
         isotope_list = self._get_isotope_list()
 
-        wavenum_min = self.params.wavenum_min_calc
-        wavenum_max = self.params.wavenum_max_calc
+        if include_neighbouring_lines:
+            wavenum_min = self.params.wavenum_min_calc
+            wavenum_max = self.params.wavenum_max_calc
+        else:
+            wavenum_min = self.input.wavenum_min
+            wavenum_max = self.input.wavenum_max
 
         # %% Init Line database
         # ---------------------
@@ -879,6 +898,7 @@ class DatabankLoader(object):
                       levels=None, levelsfmt=None,
                       db_use_cached=None, db_assumed_sorted=True,
                       load_energies=True,
+                      include_neighbouring_lines=True,
                       drop_columns='auto',
                       buffer='RAM'):
         ''' Loads databank from shortname in the :ref:`Configuration file <label_lbl_config_file>` 
@@ -958,6 +978,11 @@ class DatabankLoader(object):
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
 
+        include_neighbouring_lines: bool
+            ``True``, includes off-range, neighbouring lines that contribute
+            because of lineshape broadening. The ``broadening_max_width`` 
+            parameter is used to determine the limit. Default ``True``.
+            
         Other arguments are related to how to open the files:
 
         buffer: ``'RAM'``, ``'h5'``, ``'direct'``
@@ -1020,8 +1045,9 @@ class DatabankLoader(object):
             # ---------
 
             (name, path, dbformat, parfunc, parfuncfmt, levels, levelsfmt,
-             db_use_cached, db_assumed_sorted, drop_columns, buffer, load_energies) = \
-                     self._check_database_params(name=name,
+             db_use_cached, db_assumed_sorted, drop_columns, buffer, load_energies,
+             include_neighbouring_lines) = self._check_database_params(
+                                                 name=name,
                                                  path=path,
                                                  format=format,
                                                  parfunc=parfunc,
@@ -1031,6 +1057,7 @@ class DatabankLoader(object):
                                                  db_use_cached=db_use_cached,
                                                  db_assumed_sorted=db_assumed_sorted,
                                                  load_energies=load_energies,
+                                                 include_neighbouring_lines=include_neighbouring_lines,
                                                  drop_columns=drop_columns,
                                                  buffer=buffer)
             # Now that we're all set, let's load everything
@@ -1040,7 +1067,8 @@ class DatabankLoader(object):
             self.df0 = self._load_databank(path, dbformat, levelsfmt=levelsfmt,
                                            db_use_cached=db_use_cached,
                                            db_assumed_sorted=db_assumed_sorted,
-                                           buffer=buffer, drop_columns=drop_columns)
+                                           buffer=buffer, drop_columns=drop_columns,
+                                           include_neighbouring_lines=include_neighbouring_lines)
 
             # Check the molecule is what we expected
             if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
@@ -1077,7 +1105,8 @@ class DatabankLoader(object):
                                         levels=levels,
                                         levelsfmt=levelsfmt,
                                         db_use_cached=db_use_cached,
-                                        db_assumed_sorted=db_assumed_sorted)
+                                        db_assumed_sorted=db_assumed_sorted,
+                                        include_neighbouring_lines=include_neighbouring_lines)
             return
 
         except MemoryError as err:
@@ -1097,6 +1126,7 @@ class DatabankLoader(object):
                                levels=None, levelsfmt=None,
                                db_use_cached=None, db_assumed_sorted=True,
                                load_energies=True,
+                               include_neighbouring_lines=True,
                                drop_columns='auto',
                                buffer='RAM'):
         ''' Check that database parameters are valid, in particular that
@@ -1190,13 +1220,14 @@ class DatabankLoader(object):
             db_use_cached = self.params.db_use_cached
             
         return (name, path, dbformat, parfunc, parfuncfmt, levels, levelsfmt,
-                db_use_cached, db_assumed_sorted, drop_columns, buffer, load_energies)
+                db_use_cached, db_assumed_sorted, drop_columns, buffer, load_energies,
+                include_neighbouring_lines)
 
     def _store_database_params(self, name=None, path=None, format=None,
                                parfunc=None, parfuncfmt=None,
                                levels=None, levelsfmt=None,
                                db_use_cached=None, db_assumed_sorted=True,
-                               load_energies=True):
+                               load_energies=True, include_neighbouring_lines=True):
         ''' store all params so they can be parsed by "get_conditions()"
         and saved in output spectra information
         
@@ -1221,6 +1252,7 @@ class DatabankLoader(object):
         self.params.parfuncpath = format_paths(parfunc)
         self.params.parfuncfmt = parfuncfmt
         self.params.db_assumed_sorted = db_assumed_sorted
+        self.params.include_neighbouring_lines = include_neighbouring_lines
         self.misc.load_energies = load_energies
 
     def init_database(self, path, autoretrieve=True, autoupdate=True,
@@ -1432,7 +1464,7 @@ class DatabankLoader(object):
 
     def _load_databank(self, database, dbformat, levelsfmt, db_use_cached,
                        db_assumed_sorted=False, buffer='RAM',
-                       drop_columns='auto'):
+                       drop_columns='auto', include_neighbouring_lines=True):
         ''' Loads all available database files and keep the relevant one. Returns
         a Pandas dataframe
 
@@ -1477,6 +1509,14 @@ class DatabankLoader(object):
             Warning: nonequilibrium calculations are not possible in this mode. 
             Default ``'auto'``.
 
+        Other Parameters
+        ----------------
+
+        include_neighbouring_lines: bool
+            ``True``, includes off-range, neighbouring lines that contribute
+            because of lineshape broadening. The ``broadening_max_width`` 
+            parameter is used to determine the limit. Default ``True``.
+            
         Notes
         -----
         
@@ -1500,8 +1540,12 @@ class DatabankLoader(object):
         # Init variables
         verbose = self.verbose
         warnings_default = self.warnings['default'] if self.warnings else False
-        wavenum_min = self.params.wavenum_min_calc
-        wavenum_max = self.params.wavenum_max_calc
+        if include_neighbouring_lines:
+            wavenum_min = self.params.wavenum_min_calc
+            wavenum_max = self.params.wavenum_max_calc
+        else:
+            wavenum_min = self.input.wavenum_min
+            wavenum_max = self.input.wavenum_max
 
         # Check inputs
         if buffer == 'direct':
@@ -1729,19 +1773,20 @@ class DatabankLoader(object):
         # ... check the database range looks correct
         # ... (i.e, there are some lines on each side of the requested range:
         # ... else, maybe User forgot to add all requested lines in the database '''
-        broadening = self.params.broadening_max_width
-        if minwavdb > wavenum_min + broadening:
-            # no lines on left side
-            self.warn("There are not lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
-                wavenum_min, wavenum_min + broadening) + "to calculate the effect " +
-                "of neighboring lines. Did you add all lines in the database?",
-                "OutOfRangeLinesWarning")
-        if maxwavdb < wavenum_max - broadening:
-            # no lines on right side
-            self.warn("There are not lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
-                maxwavdb - broadening, maxwavdb) + "to calculate the effect " +
-                "of neighboring lines. Did you add all lines in the database?",
-                "OutOfRangeLinesWarning")
+        if include_neighbouring_lines:
+            broadening = self.params.broadening_max_width
+            if minwavdb > wavenum_min + broadening:
+                # no lines on left side
+                self.warn("There are no lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
+                    wavenum_min, wavenum_min + broadening) + "to calculate the effect " +
+                    "of neighboring lines. Did you add all lines in the database?",
+                    "OutOfRangeLinesWarning")
+            if maxwavdb < wavenum_max - broadening:
+                # no lines on right side
+                self.warn("There are no lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
+                    maxwavdb - broadening, maxwavdb) + "to calculate the effect " +
+                    "of neighboring lines. Did you add all lines in the database?",
+                    "OutOfRangeLinesWarning")
 
         # Complete database with molecular parameters
         self._fetch_molecular_parameters(df)

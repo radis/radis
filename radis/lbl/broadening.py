@@ -1504,8 +1504,8 @@ class BroadenFactory(BaseFactory):
             t1 = time()
 
         # ... First get closest matching line (on the left, and on the right)
-        idcenter_left = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel() - 1
         # ... note @dev: wavenumber_calc must be sorted, which it is by construction.
+        idcenter_left = np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel() - 1
         idcenter_right = np.minimum(idcenter_left + 1, len(wavenumber_calc)-1)
 
         # ... Get the fraction of each line distributed to the left and to the right.

@@ -377,10 +377,9 @@ class SpectrumFactory(BandFactory):
                                                       medium)
 
         # calculated range is broader than output waverange to take into account off-range line broadening
-        wavenumber, wavenumber_calc = _generate_wavenumber_range(wavenum_min, wavenum_max,
-                                                                 wstep, broadening_max_width)
-        wbroad_centered = _generate_broadening_range(
-            wstep, broadening_max_width)
+        wavenumber, wavenumber_calc = _generate_wavenumber_range(
+                        wavenum_min, wavenum_max, wstep, broadening_max_width)
+        wbroad_centered = _generate_broadening_range(wstep, broadening_max_width)
         # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
         self._wstep = wstep
         self._broadening_max_width = broadening_max_width
@@ -1286,7 +1285,7 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
     
     assert len(w_out_of_range_left) == len(w_out_of_range_right)
     assert len(wavenumber_calc) == len(wavenumber)+2*len(w_out_of_range_left)
-
+        
     return wavenumber, wavenumber_calc
 
 
