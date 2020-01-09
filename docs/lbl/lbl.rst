@@ -85,9 +85,9 @@ is specific to a given molecule. It typically looks like::
     [HITEMP-CO2]
     info = CDSD-HITEMP database, with energy levels calculated from Dunham expansions
     path = 
-           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_07
-           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_08
-           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_09
+           PATH_TO\HITEMP-2010\cdsd_hitemp_07
+           PATH_TO\HITEMP-2010\cdsd_hitemp_08
+           PATH_TO\HITEMP-2010\cdsd_hitemp_09
     format = hitran
     parfunc =  PATH_TO\CDSD-4000\partition_functions.txt
     parfuncfmt = cdsd
@@ -102,9 +102,9 @@ It is also possible to use your own Energy level database. For instance::
     [CDSD-HITEMP-HAMILTONIAN]
     info = CDSD-HITEMP database
     path = 
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_07
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_08
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_09
+           PATH_TO\CDSD-HITEMP\cdsd_hitemp_07
+           PATH_TO\CDSD-HITEMP\cdsd_hitemp_08
+           PATH_TO\CDSD-HITEMP\cdsd_hitemp_09
     format = cdsd
     parfunc = D:\PATH_TO\CDSD-4000\partition_functions.txt
     parfuncfmt = cdsd
@@ -151,7 +151,7 @@ which will result in ::
 
     [HITRAN-CO2-TEST]
     info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
-    path = [PATH_TO]\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
+    path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
     format = hitran
     parfuncfmt = hapi
     levelsfmt = radis
@@ -159,7 +159,7 @@ which will result in ::
 
     [HITRAN-CO-TEST]
     info = HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), 2000-2300 cm-1
-    path = [PATH_TO]\radis\radis\test\files\hitran_co_3iso_2000_2300cm.par
+    path = PATH_TO\radis\radis\test\files\hitran_co_3iso_2000_2300cm.par
     format = hitran
     parfuncfmt = hapi
     levelsfmt = radis
@@ -167,7 +167,7 @@ which will result in ::
 
     [HITEMP-CO2-TEST]
     info = HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
-    path = D:\GitHub\radis\radis\test\files\cdsd_hitemp_09_fragment.txt
+    path = PATH_TO\radis\radis\test\files\cdsd_hitemp_09_fragment.txt
     format = cdsd-hitemp
     parfuncfmt = hapi
     levelsfmt = radis

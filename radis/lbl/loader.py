@@ -1,12 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Module to host the databank loading / database initialisation parts of SpectrumFactory
-
-Notes
------
-
-Created on Sun Sep 10 15:42:51 2017
-
-@author: erwan
+""" 
 
 Summary
 -------
@@ -22,9 +15,6 @@ defined here
 
 Routine Listings
 ----------------
-
-(on Spyder IDE navigate between sections easily as # XXX makes a reference
-(on the slide bar on the right)
 
 PUBLIC METHODS
 
@@ -68,6 +58,9 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 """
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
+
+# @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
+# (on the slide bar on the right)
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.db.molparam import MolParams
