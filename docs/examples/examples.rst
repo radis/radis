@@ -4,7 +4,8 @@
 Examples
 ========
 
-Examples are available on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
+Many examples scripts are available on the `radis-examples project <https://github.com/radis/radis-examples>`__. 
+
 
 
 Line Survey
