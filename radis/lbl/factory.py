@@ -274,7 +274,7 @@ class SpectrumFactory(BandFactory):
     An example using :class:`~radis.lbl.factory.SpectrumFactory`, 
     :meth:`~radis.lbl.loader.DatabankLoader.load_databank`, the 
     :class:`~radis.spectrum.spectrum.Spectrum` methods, and 
-    `~astropy.units` ::
+    :py:mod:`~astropy.units` ::
 
         from radis import SpectrumFactory
         from astropy import units as u
@@ -312,8 +312,8 @@ class SpectrumFactory(BandFactory):
     :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`,
     :meth:`~radis.lbl.loader.DatabankLoader.init_databank`,
     :meth:`~radis.lbl.loader.DatabankLoader.init_database`,
-    :meth:`~radis.lbl.band.BandFactory.eq_bands`, 
-    :meth:`~radis.lbl.band.BandFactory.non_eq_bands`
+    :meth:`~radis.lbl.bands.BandFactory.eq_bands`, 
+    :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
     
     '''
     # TODO: make it possible to export both 'vib' and 'rovib'
@@ -546,15 +546,14 @@ class SpectrumFactory(BandFactory):
         Returns
         -------
 
-        Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
+        s : Spectrum 
+            Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
         Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
         among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
         Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it
-
-        See [1]_ to get an overview of all Spectrum methods
+        to plot it. See [1]_ to get an overview of all Spectrum methods
 
         Notes
         -----
@@ -821,15 +820,14 @@ class SpectrumFactory(BandFactory):
         Returns
         -------
 
-        Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
+        s : Spectrum 
+            Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
         Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
         among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
         Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it
-
-        See [1]_ to get an overview of all Spectrum methods
+        to plot it. See [1]_ to get an overview of all Spectrum methods
 
         References
         ----------

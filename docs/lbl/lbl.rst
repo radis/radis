@@ -44,7 +44,7 @@ load your own line database with :py:meth:`~radis.lbl.loader.DatabankLoader.load
 and then calculate several spectra in batch using 
 :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum` and 
 :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`, 
-and `~astropy.units` ::
+and :py:mod:`~astropy.units` ::
 
     import astropy.units as u
     from radis import SpectrumFactory
@@ -193,6 +193,7 @@ Calculation Flow Chart
 Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how equilibrium
 and nonequilibrium calculations are conducted. 
 
+.. _label_lbl_custom_constants:
 
 Use Custom Spectroscopic constants
 ----------------------------------

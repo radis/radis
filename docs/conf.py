@@ -209,10 +209,10 @@ html_theme_options = {
     'github_button': True, 
     'github_type': 'star',
     'github_banner': False,
-    'travis_button': True,
-    'codecov_button': True,
+    'travis_button': False,
+    'codecov_button': False,
     'sidebar_includehidden': False,
-    "fixed_sidebar": False,
+    "fixed_sidebar": True,
     }
 
 # Add any paths that contain custom themes here, relative to this directory.

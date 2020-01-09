@@ -58,7 +58,7 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
     :scale: 60 %
 
 Calculate a CO *nonequilibrium* spectrum from the HITRAN database, with
-arbitrary `~astropy.units` (on your first call, this will calculate and 
+arbitrary :py:mod:`~astropy.units` (on your first call, this will calculate and 
 cache the CO(X) rovibrational energies): ::
 
     from astropy import units as u
