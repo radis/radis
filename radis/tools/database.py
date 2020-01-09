@@ -25,8 +25,6 @@ See and get objects from database::
 Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to 
 automatically look-up and update a database when spectra are calculated.
 
-Edit database: 
-    
 An example of script to update all spectra conditions in a database (ex: when 
 a condition was added afterwards to the Spectrum class)::
     
@@ -38,6 +36,8 @@ a condition was added afterwards to the Spectrum class)::
        s.conditions['medium'] = 'vacuum'
        s.store(join(db,f), if_exists_then='replace')
 
+You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
+of the website.  
 
 -------------------------------------------------------------------------------
 
@@ -1614,6 +1614,9 @@ class SpecDatabase(SpecList):
         The function to auto retrieve a Spectrum from database on calculation
         time is a method of DatabankLoader class
 
+        You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
+        of the website.  
+
         Note
         ----
 
@@ -1803,6 +1806,10 @@ class SpecDatabase(SpecList):
             20180710_101.spec    True
             20180710_103.spec    True
             dtype: bool
+                    
+        You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
+        of the website.  
+
         '''
         dg = self.see(columns=columns).astype(str).duplicated()
         #need to convert eveything as a str to avoid comparaison problems (Minou)
@@ -1878,6 +1885,8 @@ class SpecDatabase(SpecList):
 
             db.add(s, discard=['populations'])
 
+        You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
+        of the website.  
 
         See Also
         --------
@@ -1956,7 +1965,7 @@ class SpecDatabase(SpecList):
                      normalize_how='max',
                      conditions='', **kwconditions):
         ''' Returns the Spectrum in the database that has the lowest residual
-        with ``s_exp``
+        with ``s_exp``. 
         
         Parameters
         ----------
@@ -2002,11 +2011,14 @@ class SpecDatabase(SpecList):
         Examples
         --------
         
-        ::
+        Using a customized residual function (below: to get the transmittance)::
             
             from radis import get_residual
             db = SpecDatabase('...')
             db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
+                
+        You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
+        of the website.  
         
         '''
         

@@ -66,6 +66,29 @@ If you want to get Spectra in your database that match certain conditions
 :py:meth:`~radis.tools.database.SpecList.get_unique` and 
 :py:meth:`~radis.tools.database.SpecList.get_closest` methods
 
+        
+Fit an experimental spectrum against precomputed spectra
+--------------------------------------------------------
+
+The :py:meth:`~radis.tools.database.SpecDatabase.fit_spectrum` method 
+of :py:class:`~radis.tools.database.SpecDatabase` can be used to 
+return the spectrum of the database that matches the best an experimental 
+spectrum::
+
+    s_exp = experimental_spectrum(...) 
+    db = SpecDatabase('...')
+    db.fit_spectrum(s_exp)
+
+By default :py:meth:`~radis.tools.database.SpecDatabase.fit_spectrum` uses 
+the :py:func:`~radis.spectrum.compare.get_residual` function. You can use 
+an customized function too (below: to get the transmittance)::
+
+    from radis import get_residual
+    db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
+
+You don't necessarily need to precompute spectra to fit an experimental spectrum. 
+You can find an example of :ref:`multi temperature fitting script <label_examples_multitemperature_fit>` 
+in the Example pages, which shows the evolution of the spectra in real time. You can get inspiration from there! 
 
 Updating a database
 -------------------

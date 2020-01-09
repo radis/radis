@@ -80,14 +80,30 @@ Here we get the energy of the v=6, J=3 level of the 2nd isotope of CO::
     >>> 12218.8130906978
 
 
-
+.. _label_examples_multitemperature_fit:
 
 Multi Temperature Fit
 =====================
 
-A 3 temperature fitting example reproducing the validation case of Klarenaar 2017 [1]_, who calculated a transmittance
+A `3 temperature fitting example <https://github.com/radis/radis-examples/tree/master/multi-temperature-fit>`__ .
+reproducing the validation case of Klarenaar 2017 [1]_, who calculated a transmittance
 spectrum from the initial data of Dang 1973 [2]_, with a 1 rotational temperature + 
 3 vibrational temperature (Treanor distributions) model. 
+
+|CO2| Energies are calculated from Dunham developments in an uncoupled harmonic oscillator - rigid rotor model. 
+The example is based on one of 
+`RADIS validation cases <https://github.com/radis/radis/blob/master/radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py>`_.
+It makes use of the RADIS `Spectrum <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`_
+class and the associated compare and load functions
+
+.. only:: html
+
+   .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
+      :alt: CO2 multi temperature fitting
+      :target: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
+
+The fitting script can be found in the 
+`radis-examples project <https://github.com/radis/radis-examples/tree/master/multi-temperature-fit>`__ .
 
 .. [1] Klarenaar et al 2017, "Time evolution of vibrational temperatures in a CO2 glow 
        discharge measured with infrared absorption spectroscopy" doi/10.1088/1361-6595/aa902e
@@ -95,20 +111,7 @@ spectrum from the initial data of Dang 1973 [2]_, with a 1 rotational temperatur
 .. [2] Dang et al 1982, "Detailed vibrational population distributions in a CO2 laser 
         discharge as measured with a tunable diode laser" doi/10.1007/BF00694640
 
-|CO2| Energies are calculated from Dunham developments in an uncoupled harmonic oscillator - rigid rotor model. 
-The example is based on one of `RADIS validation cases <https://github.com/radis/radis/tree/master/radis/test/validation>`_.
-It makes use of the RADIS `Spectrum <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`_
-class and the associated compare and load functions
 
-.. only:: html
-
-   .. figure:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
-
-The final spectrum calculated can be found in the validation case `radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py`, which
-can be run with (you will previously need to have defined the appropriate CO2 line database)::
-
-    pytest radis/test/validation/test_CO2_3Tvib_vs_klarenaar.py
- 
  .. _label_examples_hitran_spectra:
  
 HITRAN spectra

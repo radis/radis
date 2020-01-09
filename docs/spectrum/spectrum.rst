@@ -652,6 +652,45 @@ In :func:`~radis.spectrum.compare.plot_diff`, you can choose to plot the absolut
     :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
 
+Fit an experimental spectrum
+----------------------------
+
+RADIS does not include fitting algorithms. To fit an experimental spectrum, one 
+should use one of the widely available optimization algorithms from the Python 
+ecosystem, for instance :py:func:`scipy.optimize.minimize`. 
+
+The :py:func:`~radis.spectrum.compare.get_residual` and 
+:py:func:`~radis.spectrum.compare.get_residual_integral` functions can 
+be used to return a scalar to feed to the :py:func:`~scipy.optimize.minimize`
+function. 
+
+A simple fitting procedure could be::
+
+    from scipy.optimize import minimize 
+    from radis import calc_spectrum, experimental_spectrum
+    
+    s_exp = experimental_spectrum(...)
+    
+    def cost_function(T):
+        calc_spectrum(Tgas=T, 
+                      ... # other parameters ) 
+        return get_residual(s_exp, s)
+
+    best = minimize(cost_function, 
+                      800, # initial value 
+                      bounds=[500, 2000], 
+                      )
+    T_best = best.x
+
+Note however that the performances of a fitting procedure can be 
+vastly improved by not reloading the line database everytime. In that 
+case, it becomes interesting to use the :class:`~radis.lbl.factory.SpectrumFactory` 
+class. 
+
+An example of script that uses the :class:`~radis.lbl.factory.SpectrumFactory`,
+multiple fitting parameters, and plots the residual and the calculated spectrum 
+in real time, can be found :ref:`in the Examples page <label_examples_multitemperature_fit>` 
+
 
 .. _label_spectrum_howto_interpolate:
 
