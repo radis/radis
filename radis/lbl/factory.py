@@ -679,8 +679,8 @@ class SpectrumFactory(BandFactory):
             # --------------------------------------------------------------------
 
             t = round(time() - t0, 2)
-            if verbose:
-                print('Spectrum calculated in {0:.2f}s'.format(t))
+            if verbose>=2:
+                printg('Spectrum calculated in {0:.2f}s (before object generation)'.format(t))
             if self.verbose >= 2:
                 t1 = time()
 
@@ -736,8 +736,14 @@ class SpectrumFactory(BandFactory):
                 # generated with eq_spectrum are consistent with names
                 # in one generated with non_eq_spectrum
 
+            # Get generation & total calculation time 
             if self.verbose >= 2:
-                printg('Generated spectrum in {0:.2f}s'.format(time()-t1))
+                printg('Generated Spectrum object in {0:.2f}s'.format(time()-t1))
+
+            #  In the less verbose case, we print the total calculation+generation time:
+            t = round(time() - t0, 2)
+            if verbose:
+                print('Spectrum calculated in {0:.2f}s'.format(t))
 
             return s
 
@@ -982,11 +988,11 @@ class SpectrumFactory(BandFactory):
             # ----------------------------------------------------------------------
 
             t = round(time() - t0, 2)
-            if verbose:
-                print('Spectrum calculated in {0:.2f}s'.format(t))
+            if verbose>=2:
+                printg('Spectrum calculated in {0:.2f}s (before object generation)'.format(t))
             if self.verbose >= 2:
                 t1 = time()
-                
+
             # Get conditions
             conditions = self.get_conditions()
             conditions.update({'calculation_time': t,
@@ -1037,8 +1043,14 @@ class SpectrumFactory(BandFactory):
                 self.SpecDatabase.add(
                     s, add_info=['Tvib', 'Trot'], add_date='%Y%m%d', if_exists_then='increment')
     
+            # Get generation & total calculation time 
             if self.verbose >= 2:
-                printg('Generated spectrum in {0:.2f}s'.format(time()-t1))
+                printg('Generated Spectrum object in {0:.2f}s'.format(time()-t1))
+
+            #  In the less verbose case, we print the total calculation+generation time:
+            t = round(time() - t0, 2)
+            if verbose:
+                print('Spectrum calculated in {0:.2f}s'.format(t))
 
             return s
 
