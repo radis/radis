@@ -109,6 +109,7 @@ intersphinx_mapping = {'joblib': ('https://joblib.readthedocs.io/en/latest/', No
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
                        'cantera': ('https://www.cantera.org/documentation/docs-2.4/sphinx/html/', None),
                        'pytexit': ('https://pytexit.readthedocs.io/en/latest/', None)
+                       'astropy': ('http://docs.astropy.org/en/stable/', None),
                        }
 
 napoleon_google_docstring = False
