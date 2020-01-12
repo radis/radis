@@ -13,6 +13,7 @@ from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from radis.phys.convert import cm2nm
 import pytest
 import numpy as np
+import astropy.units as u
 from radis.misc.progress_bar import ProgressBar
 from radis import get_residual, sPlanck
 import radis
@@ -297,6 +298,140 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     finally:
         # Reset DEBUG_MODE
         radis.DEBUG_MODE = DEBUG_MODE
+
+
+@pytest.mark.parametrize(
+    ("wavelength_min", "wavelength_max", "path_length", "P", "Tref"),
+    [  
+        (cm2nm(2284.6), cm2nm(2284.2), 0.05, 0.017, 296),
+        ((1/2284.6)*u.cm, (1/2284.2)*u.cm, 0.5*u.mm, 0.017*u.bar, 296*u.K),
+        ((10/2284.6)*u.mm, (0.01/2284.2)*u.m, 0.0005*u.m, 17*u.mbar, 22.85*u.deg_C)
+    ]
+)
+def test_optically_thick_limit_1iso_different_params(wavelength_min, wavelength_max, path_length, P, Tref, verbose=True, plot=True, *args, **kwargs):
+    ''' Test that we find Planck in the optically thick limit 
+    
+    In particular, this test will fail if :
+        
+    - linestrength are not properly calculated
+    
+    - at noneq, linestrength and emission integrals are mixed up
+    
+    The test should be run for 1 and several isotopes, because different
+    calculations paths are used internally, and this can lead to different
+    errors.
+    
+    Also, this test is used to run with DEBUG_MODE = True, which will 
+    check that isotopes and molecule ids are what we expect in all the 
+    groupby() loops that make the production code very fast. 
+    
+    Notes
+    -----
+    
+    switched from large band calculation with [HITRAN-2016]_ to a calculation with 
+    the embedded [HITEMP-2010]_ fragment (shorter range, but no need to download files)
+    
+    '''
+    
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+    # Force DEBUG_MODE
+    DEBUG_MODE = radis.DEBUG_MODE
+    radis.DEBUG_MODE = True
+    
+    try:
+        P = 0.017     # bar
+        wstep = 0.001     # cm-1
+            
+        Tgas = 1200
+        
+        # %% Generate some CO2 emission spectra
+        # --------------
+        sf = SpectrumFactory(wavelength_min=wavelength_min, wavelength_max=wavelength_max,
+                             molecule='CO2',
+                             mole_fraction=1, path_length=path_length, cutoff=1e-25,
+                             Tref=Tref,
+                             broadening_max_width=1,
+                             export_populations = False, #'vib',
+                             export_lines = False,
+                             isotope=1,
+                             use_cached=True,
+                             wstep=wstep,
+                             pseudo_continuum_threshold=0,
+                             pressure=P,
+                             verbose=False)
+#        sf.fetch_databank('astroquery')
+        sf.warnings['NegativeEnergiesWarning'] = 'ignore'
+        sf.load_databank('HITEMP-CO2-TEST')
+        pb = ProgressBar(3, active=verbose)
+        s_eq = sf.eq_spectrum(Tgas=Tgas,  mole_fraction=1, 
+                              name='Equilibrium')
+        pb.update(1)
+        s_2T = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, mole_fraction=1, 
+                                  name='Noneq (2T)')
+        pb.update(2)
+        s_4T = sf.non_eq_spectrum(Tvib=(Tgas, Tgas, Tgas), Trot=Tgas, mole_fraction=1, 
+                                  name='Noneq (4T)')
+        pb.update(3)
+        s_plck = sPlanck(wavelength_min=2000, #=wavelength_min, 
+                         wavelength_max=5000, #=wavelength_max - wstep,   # there is a border effect on last point
+                         T=Tgas)
+        pb.done()
+        
+        # %% Post process: 
+        # MAke optically thick, and compare with Planck
+        
+        for s in [s_eq, s_2T, s_4T]:
+        
+            s.rescale_path_length(1e6)
+            
+            if plot:
+                
+                nfig = 'test_opt_thick_limit_1iso {0}'.format(s.name)
+                plt.figure(nfig).clear()
+                s.plot(wunit='nm', nfig=nfig, lw=4)
+                s_plck.plot(wunit='nm', nfig=nfig, Iunit='mW/cm2/sr/nm', lw=2)
+                plt.legend()
+                
+            if verbose:
+                printm("Residual between opt. thick CO2 spectrum ({0}) and Planck: {1:.2g}".format(
+                        s.name, get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True)))
+            
+#            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
+            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 0.9e-4
+            
+        if verbose:
+            printm('Tested optically thick limit is Planck (1 isotope): OK')
+    
+    finally:
+        # Reset DEBUG_MODE
+        radis.DEBUG_MODE = DEBUG_MODE
+
+
+# @pytest.mark.fast
+# @pytest.mark.parametrize(
+#     ("input_wavelengths", "expected_wavelengths", "path_length", "P"),
+#     [
+#         [(4300, 4500), (4300, 4500), 1, 1.01325],
+#         [(4300 * u.nm, 4.5 * u.m), (4300, 4500), 0.01 * u.m, 1013.25 * u.mbar],
+#     ]
+# )
+# def test_waverange_units_conversion(input_wavelengths, expected_wavelengths, path_length, P, verbose=True, warnings=True, *args, **kwargs):
+#     wlmin, wlmax = input_wavelengths
+#     expected_wlmin, expected_wlmax = expected_wavelengths
+#     sf = SpectrumFactory(wavelength_min=wlmin, wavelength_max=wlmax,
+#                          wstep=0.01,
+#                          cutoff=1e-30,
+#                          pressure=P,
+#                          path_length=path_length, 
+#                          mole_fraction=1,
+#                          isotope=[1], 
+#                          verbose=verbose)
+#     s = sf.eq_spectrum(Tgas=300)
+
+#     assert np.isclose(s.get_wavelength()[0], expected_wlmin)
+#     assert np.isclose(s.get_wavelength()[-1], expected_wlmax)
 
 
 def _run_testcases(verbose=True, plot=True):
