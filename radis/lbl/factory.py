@@ -92,11 +92,13 @@ from radis.misc.printer import printg
 from radis.phys.convert import conv2
 from radis.phys.constants import k_b
 from radis.phys.units import convert_rad2nm, convert_emi2nm
+from radis.phys.units_astropy import convert_and_strip_units
 from radis import get_version
 from numpy import exp, arange
 from multiprocessing import cpu_count
 from time import time
 import numpy as np
+import astropy.units as u
 
 # %% Main functions
 
@@ -108,33 +110,42 @@ class SpectrumFactory(BandFactory):
     Parameters
     ----------
 
-    wavenum_min: cm-1
+    wavenum_min: float(cm^-1) or ~astropy.units.quantity.Quantity
         minimum wavenumber to be processed in cm^-1. 
+        use astropy.units to specify arbitrary inverse-length units.
 
-    wavenum_max: cm-1
-        maximum wavenumber to be processed in cm^-1
+    wavenum_max: float(cm^-1) or ~astropy.units.quantity.Quantity
+        maximum wavenumber to be processed in cm^-1.
+        use astropy.units to specify arbitrary inverse-length units.
 
-    wavelength_min: nm
+    wavelength_min: float(nm) or ~astropy.units.quantity.Quantity
         minimum wavelength to be processed in nm. This wavelength
         can be in ``'air'`` or ``'vacuum'`` depending on the value of the parameter
-        ``medium=``
+        ``medium=``.
+        use astropy.units to specify arbitrary length units.
 
-    wavelength_max: nm
-        maximum wavelength to be processed in nm
+    wavelength_max: float(nm) or ~astropy.units.quantity.Quantity
+        maximum wavelength to be processed in nm.
+        use astropy.units to specify arbitrary length units.
 
-    Tref: K
+    Tref: float(K) or ~astropy.units.quantity.Quantity
         reference temperature for calculations, HITRAN database uses 296 Kelvin
-        default: 3400K
+        default: 3400K. 
+        use astropy.units to specify arbitrary temperature units.
+        For example, ``200 * u.deg_C``.
 
-    pressure: bar
-        partial pressure of gas in bar. Default 1.01325 (1 atm)
+    pressure: float(bar) or ~astropy.units.quantity.Quantity
+        partial pressure of gas in bar. Default 1.01325 (1 atm).
+        use astropy.units to specify arbitrary pressure units.
+        For example, ``1013.25 * u.mbar``.
 
     mole_fraction: N/D
         species mole fraction. Default 1. Note that the rest of the gas
         is considered to be air for collisional broadening.
 
-    path_length: cm
+    path_length: float(cm) or ~astropy.units.quantity.Quantity
         path length in cm. Default 1.
+        use astropy.units to specify arbitrary length units.
 
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
@@ -405,11 +416,11 @@ class SpectrumFactory(BandFactory):
         # Initialize input conditions
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
-        self.input.Tref = Tref
-        self.input.pressure_mbar = pressure*1e3
+        self.input.Tref = convert_and_strip_units(Tref, u.K)
+        self.input.pressure_mbar = convert_and_strip_units(pressure, u.bar)*1e3
         self.input.mole_fraction = mole_fraction
 
-        self.input.path_length = path_length
+        self.input.path_length = convert_and_strip_units(path_length, u.cm)
         self.input.molecule = molecule  # if None, will be overwritten after reading database
         self.input.state = 'X'              # for the moment only ground-state is used
         # (but the code is electronic state aware)

@@ -85,8 +85,10 @@ from radis.misc.warning import OutOfBoundError
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.spectrum.utils import print_conditions
 from radis.phys.air import air2vacuum, vacuum2air
+from radis.phys.units_astropy import convert_and_strip_units
 from numpy import exp, pi
 import numpy as np
+from astropy import units as u
 import sys
 from time import time
 from six import string_types
@@ -2951,10 +2953,10 @@ def get_waverange(wavenum_min=None, wavenum_max=None, wavelength_min=None, wavel
     medium: ``'air'``, ``'vacuum'``
         propagation medium
 
-    wavenum_min, wavenum_max: float, or ``None``
+    wavenum_min, wavenum_max: float, or ~astropy.units.quantity.Quantity or ``None``
         wavenumbers
 
-    wavelength_min, wavelength_max: float, or ``None``
+    wavelength_min, wavelength_max: float, or ~astropy.units.quantity.Quantity or ``None``
         wavelengths in given ``medium``
 
     Returns
@@ -2966,6 +2968,8 @@ def get_waverange(wavenum_min=None, wavenum_max=None, wavelength_min=None, wavel
     '''
 
     # Check input
+    wavelength_min, wavelength_max = convert_and_strip_units(wavelength_min, u.nm), convert_and_strip_units(wavelength_max, u.nm)
+    wavenum_min, wavenum_max = convert_and_strip_units(wavenum_min, 1/u.cm), convert_and_strip_units(wavenum_max, 1/u.cm)
     if (wavelength_min is None and wavelength_max is None and
             wavenum_min is None and wavenum_max is None):
         raise ValueError('Give wavenumber or wavelength')
