@@ -60,31 +60,30 @@ def calc_spectrum(wavenum_min=None,
     Parameters
     ----------
 
-    wavenum_min: float [cm-1]
-        minimum wavenumber to be processed in cm^-1
-    wavenum_max: float [cm-1]
-        maximum wavenumber to be processed in cm^-1
+    wavenum_min: float(cm^-1) or `~astropy.units.quantity.Quantity`
+        minimum wavenumber.
+    wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
+        maximum wavenumber.
 
-    wavelength_min: float [nm]
-        minimum wavelength to be processed in nm. Wavelength in ``'air'`` or 
+    wavelength_min: float(nm) or `~astropy.units.quantity.Quantity`
+        minimum wavelength. Wavelength in ``'air'`` or 
+        ``'vacuum'`` depending of the value of the parameter ``'medium='``
+    wavelength_max: float(nm) or `~astropy.units.quantity.Quantity`
+        maximum wavelength. Wavelength in ``'air'`` or 
         ``'vacuum'`` depending of the value of the parameter ``'medium='``
 
-    wavelength_max: float [nm]
-        maximum wavelength to be processed in nm. Wavelength in ``'air'`` or 
-        ``'vacuum'`` depending of the value of the parameter ``'medium='``
-
-    Tgas: float [K]
+    Tgas: float(K) or `~astropy.units.quantity.Quantity`
         Gas temperature. If non equilibrium, is used for Ttranslational. 
         Default ``300`` K
 
-    Tvib: float [K]
+    Tvib: float(K) or `~astropy.units.quantity.Quantity`
         Vibrational temperature. If ``None``, equilibrium calculation is run with Tgas
 
-    Trot: float [K]
+    Trot: float(K) or `~astropy.units.quantity.Quantity`
         Rotational temperature. If ``None``, equilibrium calculation is run with Tgas
 
-    pressure: float [bar]
-        partial pressure of gas in bar. Default ``1.01325`` (1 atm)
+    pressure: float(bar) or `~astropy.units.quantity.Quantity`
+        partial pressure of gas. Default ``1.01325`` (1 atm)
 
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature. 
@@ -113,8 +112,8 @@ def calc_spectrum(wavenum_min=None,
     mole_fraction: float
         database species mole fraction. Default ``1``
 
-    path_length: float [cm]
-        slab size. Default ``1``.
+    path_length: float(cm) or `~astropy.units.quantity.Quantity`
+        slab size. Default ``1`` cm.
 
     databank: str
         can be either: 
@@ -142,7 +141,7 @@ def calc_spectrum(wavenum_min=None,
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
 
     wstep: float (cm-1)
-        Spacing of calculated spectrum. Default ``0.01 cm-1``
+        Spacing of calculated spectrum. Default ``0.01`` cm-1.
 
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create

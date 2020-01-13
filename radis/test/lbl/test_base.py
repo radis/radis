@@ -13,6 +13,7 @@ from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 from radis.phys.convert import cm2nm
 import pytest
 import numpy as np
+import astropy.units as u
 from radis.misc.progress_bar import ProgressBar
 from radis import get_residual, sPlanck
 import radis
@@ -116,10 +117,8 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
     
     try:
         
-#        wavelength_min = 4500
-#        wavelength_max = 4800
-        wavelength_min = cm2nm(2284.6)
-        wavelength_max = cm2nm(2284.2)
+        wavenum_min = 2284.2
+        wavenum_max = 2284.6
     
         P = 0.017     # bar
         wstep = 0.001     # cm-1
@@ -128,7 +127,8 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         
         # %% Generate some CO2 emission spectra
         # --------------
-        sf = SpectrumFactory(wavelength_min=wavelength_min, wavelength_max=wavelength_max,
+        sf = SpectrumFactory(wavenum_min=wavenum_min, 
+                             wavenum_max=wavenum_max,
                              molecule='CO2',
                              mole_fraction=1, path_length=0.05, cutoff=1e-25,
                              broadening_max_width=1,
@@ -224,21 +224,18 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     
     try:
         
-#        wavelength_min = 4500
-#        wavelength_max = 4800
-        wavelength_min = cm2nm(2284.6)
-        wavelength_max = cm2nm(2284.2)
-#    2284.2, 2284.6,
-#                             wstep=0.001,                # cm-1
+        wavenum_min = 2284.2
+        wavenum_max = 2284.6
+
         P = 0.017     # bar
         wstep = 0.001     # cm-1
         
-            
         Tgas = 1200
         
         # %% Generate some CO2 emission spectra
         # --------------
-        sf = SpectrumFactory(wavelength_min=wavelength_min, wavelength_max=wavelength_max,
+        sf = SpectrumFactory(wavenum_min=wavenum_min, 
+                             wavenum_max=wavenum_max,
                              mole_fraction=1, path_length=0.05, cutoff=1e-25,
                              broadening_max_width=1,
                              export_populations = False, #'vib',
@@ -297,7 +294,6 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     finally:
         # Reset DEBUG_MODE
         radis.DEBUG_MODE = DEBUG_MODE
-
 
 def _run_testcases(verbose=True, plot=True):
     

@@ -89,6 +89,7 @@ setup(name='radis',
 #                        'matplotlib',    # let the user install it 
 #                        'pandas',        # let the user install it 
 #                        'sympy',         # let the user install it 
+                        'astropy',  # Unit aware calculations
                         'pint>=0.7.2',  # Unit aware calculations
                         'publib>=0.3.2', # Plotting styles for Matplotlib
                         'plotly>=2.5.1',    # for line survey HTML output  
