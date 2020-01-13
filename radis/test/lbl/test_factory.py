@@ -20,6 +20,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 """
 
 from __future__ import unicode_literals, print_function, absolute_import, division
+import astropy.units as u
 import radis
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
@@ -341,21 +342,111 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
-def _run_testcases(plot=True, verbose=True, *args, **kwargs):
-#
-    # Test power density
-    test_power_integral(verbose=verbose, *args, **kwargs)
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    ("input_wavelengths", "expected_wavelengths_nm"),
+    [
+        [(4300 * u.nm, 4.5 * u.um), (4300, 4500)],
+        [(4500, 5000), (4500, 5000)],
+    ]
+)
+def test_wavelength_units_conversion(input_wavelengths, expected_wavelengths_nm, 
+                                    verbose=True, *args, **kwargs):
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    
+    wlmin, wlmax = input_wavelengths
+    expected_wlmin, expected_wlmax = expected_wavelengths_nm
+    sf = SpectrumFactory(wavelength_min=wlmin, wavelength_max=wlmax,
+                         wstep=0.01,
+                         cutoff=1e-30,
+                         pressure=1,
+                         path_length=1, 
+                         mole_fraction=1,
+                         isotope=[1], 
+                         verbose=verbose)
+    sf.load_databank('HITRAN-CO-TEST')
+    s = sf.eq_spectrum(Tgas=300)
+    assert np.isclose(s.get_wavelength().min(), expected_wlmin)
+    assert np.isclose(s.get_wavelength().max(), expected_wlmax)
 
-#    # Show media line_shift
-    test_media_line_shift(plot=plot, verbose=verbose, *args, **kwargs)
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    ("input_wavenumbers", "expected_wavenumbers_cm1"),
+    [
+        [(2000 * 1/u.cm, 230000 * 1/u.m), (2000, 2300)],
+    ]
+)
+def test_wavenumber_units_conversion(input_wavenumbers, expected_wavenumbers_cm1, 
+                                    verbose=True, *args, **kwargs):
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    
+    wmin, wmax = input_wavenumbers
+    expected_wmin, expected_wmax = expected_wavenumbers_cm1
+    sf = SpectrumFactory(wavenum_min=wmin, wavenum_max=wmax,
+                         wstep=0.01,
+                         cutoff=1e-30,
+                         pressure=1,
+                         path_length=1, 
+                         mole_fraction=1,
+                         isotope=[1], 
+                         verbose=verbose)
+    sf.load_databank('HITRAN-CO-TEST')
+    s = sf.eq_spectrum(Tgas=300)
+    assert np.isclose(s.get_wavenumber().min(), expected_wmin)
+    assert np.isclose(s.get_wavenumber().max(), expected_wmax)
 
-    # Test spectrum generation
-    test_spec_generation(plot=plot, verbose=2*True, *args, **kwargs)
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    ("input_pressure, expected_pressure_bar"),
+    [(1, 1), 
+     (1*u.mbar, 1e-3),
+     (10*u.bar, 10),
+     ]
+)
+def test_pressure_units_conversion(input_pressure, expected_pressure_bar, 
+                                    verbose=True, *args, **kwargs):
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    
+    sf = SpectrumFactory(wavelength_min=4300, wavelength_max=4500,
+                         wstep=0.01,
+                         cutoff=1e-30,
+                         pressure=input_pressure,
+                         path_length=1, 
+                         mole_fraction=1,
+                         isotope=[1], 
+                         verbose=verbose)
+    sf.load_databank('HITRAN-CO-TEST')
+    s = sf.eq_spectrum(Tgas=300)
+    assert np.isclose(s.conditions['pressure_mbar'], expected_pressure_bar*1000)
 
-    return True
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    ("input_pathlength, expected_pathlength_cm"),
+    [(1, 1), 
+     (1*u.m, 100),
+     (1*u.cm, 1),
+     ]
+)
+def test_pathlength_units_conversion(input_pathlength, expected_pathlength_cm, 
+                                    verbose=True, *args, **kwargs):
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    
+    sf = SpectrumFactory(wavelength_min=4300, wavelength_max=4500,
+                         wstep=0.01,
+                         cutoff=1e-30,
+                         pressure=1,
+                         path_length=input_pathlength, 
+                         mole_fraction=1,
+                         isotope=[1], 
+                         verbose=verbose)
+    sf.load_databank('HITRAN-CO-TEST')
+    s = sf.eq_spectrum(Tgas=300)
+    assert np.isclose(s.conditions['path_length'], expected_pathlength_cm)
+
 
 
 # --------------------------
 if __name__ == '__main__':
     
-    printm('Testing factory:', _run_testcases(verbose=True))
+    printm('Testing factory:', pytest.main(['test_factory.py']))
+#    printm('Testing factory:', pytest.main(['test_factory.py', '-k', 'test_wavenumber_units_conversion']))

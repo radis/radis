@@ -2968,8 +2968,10 @@ def get_waverange(wavenum_min=None, wavenum_max=None, wavelength_min=None, wavel
     '''
 
     # Check input
-    wavelength_min, wavelength_max = convert_and_strip_units(wavelength_min, u.nm), convert_and_strip_units(wavelength_max, u.nm)
-    wavenum_min, wavenum_max = convert_and_strip_units(wavenum_min, 1/u.cm), convert_and_strip_units(wavenum_max, 1/u.cm)
+    wavelength_min = convert_and_strip_units(wavelength_min, u.nm)
+    wavelength_max = convert_and_strip_units(wavelength_max, u.nm)
+    wavenum_min = convert_and_strip_units(wavenum_min, 1/u.cm)
+    wavenum_max = convert_and_strip_units(wavenum_max, 1/u.cm)
     if (wavelength_min is None and wavelength_max is None and
             wavenum_min is None and wavenum_max is None):
         raise ValueError('Give wavenumber or wavelength')
