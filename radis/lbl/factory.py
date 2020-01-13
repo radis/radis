@@ -110,31 +110,31 @@ class SpectrumFactory(BandFactory):
     Parameters
     ----------
 
-    wavenum_min: float(cm^-1) or ~astropy.units.quantity.Quantity
+    wavenum_min: float(cm^-1) or `~astropy.units.quantity.Quantity`
         minimum wavenumber to be processed in cm^-1. 
         use astropy.units to specify arbitrary inverse-length units.
 
-    wavenum_max: float(cm^-1) or ~astropy.units.quantity.Quantity
+    wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
         maximum wavenumber to be processed in cm^-1.
         use astropy.units to specify arbitrary inverse-length units.
 
-    wavelength_min: float(nm) or ~astropy.units.quantity.Quantity
+    wavelength_min: float(nm) or `~astropy.units.quantity.Quantity`
         minimum wavelength to be processed in nm. This wavelength
         can be in ``'air'`` or ``'vacuum'`` depending on the value of the parameter
         ``medium=``.
         use astropy.units to specify arbitrary length units.
 
-    wavelength_max: float(nm) or ~astropy.units.quantity.Quantity
+    wavelength_max: float(nm) or `~astropy.units.quantity.Quantity`
         maximum wavelength to be processed in nm.
         use astropy.units to specify arbitrary length units.
 
-    Tref: float(K) or ~astropy.units.quantity.Quantity
+    Tref: float(K) or `~astropy.units.quantity.Quantity`
         reference temperature for calculations, HITRAN database uses 296 Kelvin
         default: 3400K. 
         use astropy.units to specify arbitrary temperature units.
         For example, ``200 * u.deg_C``.
 
-    pressure: float(bar) or ~astropy.units.quantity.Quantity
+    pressure: float(bar) or `~astropy.units.quantity.Quantity`
         partial pressure of gas in bar. Default 1.01325 (1 atm).
         use astropy.units to specify arbitrary pressure units.
         For example, ``1013.25 * u.mbar``.
@@ -143,7 +143,7 @@ class SpectrumFactory(BandFactory):
         species mole fraction. Default 1. Note that the rest of the gas
         is considered to be air for collisional broadening.
 
-    path_length: float(cm) or ~astropy.units.quantity.Quantity
+    path_length: float(cm) or `~astropy.units.quantity.Quantity`
         path length in cm. Default 1.
         use astropy.units to specify arbitrary length units.
 
@@ -272,19 +272,22 @@ class SpectrumFactory(BandFactory):
     --------
     
     An example using :class:`~radis.lbl.factory.SpectrumFactory`, 
-    :meth:`~radis.lbl.loader.DatabankLoader.load_databank`, and the 
-    :class:`~radis.spectrum.spectrum.Spectrum` methods::
+    :meth:`~radis.lbl.loader.DatabankLoader.load_databank`, the 
+    :class:`~radis.spectrum.spectrum.Spectrum` methods, and 
+    `~astropy.units` ::
 
-        sf = SpectrumFactory(wavelength_min=4150, wavelength_max=4400,
-                             parallel=False, bplot=False, cutoff=1e-25,
-                             isotope='1,2', db_use_cached=True,
-                             broadening_max_width=10,
-                             pseudo_continuum_threshold=0,
+        from radis import SpectrumFactory
+        from astropy import units as u
+        sf = SpectrumFactory(wavelength_min=4165 * u.nm, 
+                             wavelength_max=4200 * u.nm,
+                             isotope='1,2', 
+                             broadening_max_width=10,  # cm-1
                              medium='vacuum',
-                             verbose=verbose)
-        sf.load_databank('CDSD-HITEMP')        # predefined in ~/.radis
-        s = sf.eq_spectrum(Tgas=300, path_length=1)
-        s.rescale_path_length(0.01)
+                             verbose=1,    # more for more details
+                             )
+        sf.load_databank('HITRAN-CO2-TEST')        # predefined in ~/.radis
+        s = sf.eq_spectrum(Tgas=300 * u.K, path_length=1 * u.cm)
+        s.rescale_path_length(0.01)    # cm
         s.plot('radiance_noslit', Iunit='µW/cm2/sr/nm')
 
     Refer to the online :ref:`Examples <label_examples>` for more cases. 
@@ -583,6 +586,11 @@ class SpectrumFactory(BandFactory):
                 raise ValueError('Use non_eq_spectrum(Tgas, Tgas) to calculate spectra ' +
                                  'without self_absorption')
 
+            # Convert units
+            Tgas = convert_and_strip_units(Tgas, u.K) 
+            path_length = convert_and_strip_units(path_length, u.cm) 
+            pressure = convert_and_strip_units(pressure, u.bar)
+
             # update defaults
             if path_length is not None:
                 self.input.path_length = path_length
@@ -841,6 +849,13 @@ class SpectrumFactory(BandFactory):
             # %% Preprocessing
             # --------------------------------------------------------------------
 
+            # Convert units
+            Tvib = convert_and_strip_units(Tvib, u.K)
+            Trot = convert_and_strip_units(Trot, u.K) 
+            Ttrans = convert_and_strip_units(Ttrans, u.K) 
+            path_length = convert_and_strip_units(path_length, u.cm) 
+            pressure = convert_and_strip_units(pressure, u.bar)
+
             # check inputs, update defaults
             if path_length is not None:
                 self.input.path_length = path_length
@@ -848,7 +863,9 @@ class SpectrumFactory(BandFactory):
                 self.input.mole_fraction = mole_fraction
             if pressure is not None:
                 self.input.pressure_mbar = pressure*1e3
-            if not (is_float(Tvib) or isinstance(Tvib, tuple)):
+            if isinstance(Tvib, tuple):
+                Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
+            elif not is_float(Tvib):
                 raise TypeError('Tvib should be float, or tuple (got {0})'.format(type(Tvib)) +
                                 'For parallel processing use ParallelFactory with a ' +
                                 'list of float or a list of tuple')
@@ -1348,5 +1365,5 @@ def _generate_broadening_range(wstep, broadening_max_width):
 
 # --------------------------
 if __name__ == '__main__':
-    from radis.test.lbl.test_factory import _run_testcases
-    print('Testing factory:', _run_testcases(verbose=True))
+    import pytest
+    print('Testing factory:', pytest.main(['../test/test_factory.py']))

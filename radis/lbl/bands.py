@@ -46,6 +46,7 @@ PRIVATE METHODS
 from __future__ import absolute_import
 from __future__ import print_function
 from warnings import warn
+import astropy.units as u
 from radis.lbl.broadening import BroadenFactory
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
@@ -54,6 +55,7 @@ from radis.io.hitran import get_molecule, HITRAN_CLASS1
 from radis.misc.basics import is_float
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.basics import all_in
+from radis.phys.units_astropy import convert_and_strip_units
 from radis.phys.constants import k_b
 from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 from radis.lbl.labels import (vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5,
@@ -150,6 +152,11 @@ class BandFactory(BroadenFactory):
         '''
 
         try:
+
+            # Convert units
+            Tgas = convert_and_strip_units(Tgas, u.K)
+            path_length = convert_and_strip_units(path_length, u.cm) 
+            pressure = convert_and_strip_units(pressure, u.bar)
 
             # update defaults
             if path_length is not None:
@@ -436,6 +443,13 @@ class BandFactory(BroadenFactory):
 
         try:
 
+            # Convert units
+            Tvib = convert_and_strip_units(Tvib, u.K)
+            Trot = convert_and_strip_units(Trot, u.K) 
+            Ttrans = convert_and_strip_units(Ttrans, u.K) 
+            path_length = convert_and_strip_units(path_length, u.cm) 
+            pressure = convert_and_strip_units(pressure, u.bar)
+
             # check inputs, update defaults
             if path_length is not None:
                 self.input.path_length = path_length
@@ -443,7 +457,9 @@ class BandFactory(BroadenFactory):
                 self.input.mole_fraction = mole_fraction
             if pressure is not None:
                 self.input.pressure_mbar = pressure*1e3
-            if not (is_float(Tvib) or isinstance(Tvib, tuple)):
+            if isinstance(Tvib, tuple):
+                Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
+            elif not is_float(Tvib):
                 raise TypeError('Tvib should be float, or tuple (got {0})'.format(type(Tvib)) +
                                 'For parallel processing use ParallelFactory with a ' +
                                 'list of float or a list of tuple')

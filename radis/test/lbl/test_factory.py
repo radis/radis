@@ -443,6 +443,32 @@ def test_pathlength_units_conversion(input_pathlength, expected_pathlength_cm,
     s = sf.eq_spectrum(Tgas=300)
     assert np.isclose(s.conditions['path_length'], expected_pathlength_cm)
 
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    ("input_temperature, expected_temperature_K"),
+    [(300, 300), 
+     (300*u.K, 300),
+     (300*u.deg_C, 573.15),
+     ]
+)
+def test_temperature_units_conversion(input_temperature, expected_temperature_K, 
+                                    verbose=True, *args, **kwargs):
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    
+    sf = SpectrumFactory(wavelength_min=4300, wavelength_max=4500,
+                         wstep=0.01,
+                         cutoff=1e-30,
+                         pressure=1,
+                         mole_fraction=1,
+                         isotope=[1], 
+                         Tref=300 * u.K,
+                         verbose=verbose)
+    sf.load_databank('HITRAN-CO-TEST')
+    s = sf.eq_spectrum(Tgas=input_temperature, pressure = 20 * u.mbar, path_length=1 * u.mm)
+    assert np.isclose(s.conditions['Tgas'], expected_temperature_K)
+    assert np.isclose(s.conditions['path_length'], 0.1) # cm
+    assert np.isclose(s.conditions['pressure_mbar'], 20)
+
 
 
 # --------------------------
