@@ -16,9 +16,17 @@ def test_convert():
     # Convert using the spectral equivalencies (astropy.units.equivalencies)
     assert convert_and_strip_units(5 * u.um, 1/u.cm) == 2000
     assert convert_and_strip_units(60 * u.THz, 1/u.cm) == 2001.3845711889
+
+    # Covert using temperature equivalencies
+    assert convert_and_strip_units(0 * u.deg_C, u.K) == 273.15
+    assert convert_and_strip_units(300 * u.K, u.imperial.deg_F) == 80.33
     
     # Undimensionned input : shouldnt change
     assert convert_and_strip_units(4500, u.um) == 4500
+
+    # None type : should return None
+    assert convert_and_strip_units(None) is None
+    assert convert_and_strip_units(None, u.nm) is None
     
 
 if __name__ == '__main__':

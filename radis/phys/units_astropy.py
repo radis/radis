@@ -42,7 +42,7 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
     if isinstance(quantity, u.Quantity):
         if output_unit in (u.deg_C, u.imperial.deg_F, u.K):
             quantity = quantity.to_value(output_unit, equivalencies = u.temperature())
-        elif isinstance(output_unit, u.UnitBase) or isinstance(output_unit, u.Quantity):
+        elif isinstance(output_unit, (u.UnitBase, u.Quantity)):
             quantity = quantity.to_value(output_unit, equivalencies=u.spectral())
         else:
             raise TypeError("'output_unit' parameter is not a valid astropy unit: {0}".format(output_unit))
