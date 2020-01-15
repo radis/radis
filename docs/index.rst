@@ -83,7 +83,8 @@ and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For
     sexp = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
     plot_diff(sexp, s)    # comparing with a spectrum 's' calculated previously 
 
-Typical output of :py:func:`~radis.spectrum.compare.plot_diff`:
+Typical output of :py:func:`~radis.spectrum.compare.plot_diff` (below: a CO2 spectrum
+with two different line databases):
 
 .. image:: spectrum/cdsd4000_vs_hitemp_3409K.*
     :scale: 60 %

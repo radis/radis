@@ -220,7 +220,7 @@ html_theme_options = {
     "travis_button": False,
     "codecov_button": False,
     "sidebar_includehidden": False,
-    "fixed_sidebar": True,
+    "fixed_sidebar": False,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

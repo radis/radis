@@ -375,8 +375,9 @@ If calculating many spectra, you may want to handle all of them together
 in a :class:`~radis.tools.database.SpecDatabase`. You can add them to the existing 
 database with the :py:meth:`~radis.tools.database.SpecDatabase.add` method::
 
-    :class:`~radis.tools.database.SpecDatabase`
-    
+    db = SpecDatabase(r"path/to/database")     # create or loads database
+    db.add(s)
+
 Note that if using the RADIS LBL code to generate your spectra, the 
 :class:`~radis.lbl.factory.SpectrumFactory` class has the 
 :meth:`~radis.lbl.loader.DatabankLoader.init_database` method that 
