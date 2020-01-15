@@ -107,6 +107,9 @@ setup(name='radis',
                         'joblib',       # for parallel loading of SpecDatabase
                         'numba',        # just-in-time compiler
 				],
+      extras_require = {
+          "dev" : ["black", "isort"]
+      },
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
