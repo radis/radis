@@ -23,9 +23,9 @@ See more examples in the
 
 """
 # Todo:
-#    
-#- transport emisscoeff too 
-# - emisscoeff default unit 
+#
+# - transport emisscoeff too
+# - emisscoeff default unit
 
 
 from __future__ import print_function, absolute_import, division, unicode_literals
@@ -46,16 +46,16 @@ from numpy import exp, arange, allclose, abs, diff
 
 
 def intersect(a, b):
-    ''' Returns intersection of two dictionaries on values'''
+    """ Returns intersection of two dictionaries on values"""
     c = {}
     for k in set(a.keys()) & set(b.keys()):  # work in Python 2?
-        c[k] = a[k] if (a[k] == b[k]) else 'N/A'
+        c[k] = a[k] if (a[k] == b[k]) else "N/A"
     return c
 
 
 def SerialSlabs(*slabs, **kwargs):
     # type: (*Spectrum, **dict) -> Spectrum
-    r''' Adds several slabs along the line-of-sight. 
+    r""" Adds several slabs along the line-of-sight. 
     If adding two slabs only, you can also use::
         
         s1>s2
@@ -147,54 +147,63 @@ def SerialSlabs(*slabs, **kwargs):
 
     See more examples in the :ref:`Line-of-Sight module <label_los_index>`
     
-    '''
+    """
     # TODO: rewrite with 'recompute' list like in MergeSlabs ?
-    
-    if 'resample_wavespace' in kwargs:
+
+    if "resample_wavespace" in kwargs:
         warn(DeprecationWarning("'resample_wavespace' replaced with 'resample'"))
-        kwargs['resample'] = kwargs.pop('resample_wavespace')
-    if 'out_of_bounds' in kwargs:
+        kwargs["resample"] = kwargs.pop("resample_wavespace")
+    if "out_of_bounds" in kwargs:
         warn(DeprecationWarning("'out_of_bounds' replaced with 'out'"))
-        kwargs['out'] = kwargs.pop('out_of_bounds')
+        kwargs["out"] = kwargs.pop("out_of_bounds")
 
     # Check inputs, get defaults
-    resample_wavespace = kwargs.pop('resample', 'never')   # default 'never'
-    out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'    
-    verbose = kwargs.pop('verbose', False)                   # type: bool
-    modify_inputs = kwargs.pop('modify_inputs', False)        # type: bool
+    resample_wavespace = kwargs.pop("resample", "never")  # default 'never'
+    out_of_bounds = kwargs.pop("out", "nan")  # default 'nan'
+    verbose = kwargs.pop("verbose", False)  # type: bool
+    modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
-        raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
+        raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
 
-    if resample_wavespace not in ['never', 'intersect', 'full']:
-        raise ValueError("resample should be one of: {0}".format
-                         (', '.join(['never', 'intersect', 'full'])))
+    if resample_wavespace not in ["never", "intersect", "full"]:
+        raise ValueError(
+            "resample should be one of: {0}".format(
+                ", ".join(["never", "intersect", "full"])
+            )
+        )
 
     if len(slabs) == 0:
-        raise ValueError('Empty list of slabs')
+        raise ValueError("Empty list of slabs")
 
     elif len(slabs) == 1:
         if not is_spectrum(slabs[0]):
-            raise TypeError('SerialSlabs takes an unfolded list of Spectrum as ' +
-                            'argument: *list (got {0})'.format(type(slabs[0])))
+            raise TypeError(
+                "SerialSlabs takes an unfolded list of Spectrum as "
+                + "argument: *list (got {0})".format(type(slabs[0]))
+            )
         return slabs[0]
 
     else:
         # recursively calculate serial slabs
         slabs = list(slabs)
 
-#        # Check all items are Spectrum
+        #        # Check all items are Spectrum
         for s in slabs:
             _check_valid(s)
 
-        # Recursively deal with the rest of Spectra --> call it s 
-        sn = slabs.pop(-1)            # type: Spectrum
-        s = SerialSlabs(*slabs, resample=resample_wavespace, out=out_of_bounds,
-                        modify_inputs=modify_inputs)
+        # Recursively deal with the rest of Spectra --> call it s
+        sn = slabs.pop(-1)  # type: Spectrum
+        s = SerialSlabs(
+            *slabs,
+            resample=resample_wavespace,
+            out=out_of_bounds,
+            modify_inputs=modify_inputs
+        )
 
         # Now calculate sn and s in Serial
         quantities = {}
         unitsn = sn.units
-        
+
         # make sure we use the same wavespace type (even if sn is in 'nm' and s in 'cm-1')
         # also make sure we use the same units
         waveunit = s.get_waveunit()
@@ -202,94 +211,112 @@ def SerialSlabs(*slabs, **kwargs):
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
-        s, sn = resample_slabs(waveunit, resample_wavespace, out_of_bounds, modify_inputs,
-                               s, sn)
+        s, sn = resample_slabs(
+            waveunit, resample_wavespace, out_of_bounds, modify_inputs, s, sn
+        )
         try:
-            w = s._q['wavespace']
+            w = s._q["wavespace"]
         except KeyError:
-            raise KeyError('Cannot calculate the RTE if non convoluted quantities '+\
-                           'are not defined. Got: {0}'.format(s.get_vars()))
+            raise KeyError(
+                "Cannot calculate the RTE if non convoluted quantities "
+                + "are not defined. Got: {0}".format(s.get_vars())
+            )
 
         # Get all data
         # -------------
-        
+
         I, In, T, Tn = None, None, None, None
 
-        # To make it easier, the radiative transfer equation is solved with 'radiance_noslit' and 
-        # 'transmittance_noslit' only. Here we first try to get these quantities: 
+        # To make it easier, the radiative transfer equation is solved with 'radiance_noslit' and
+        # 'transmittance_noslit' only. Here we first try to get these quantities:
 
         # ... get sn quantities
         try:
-            sn.update('transmittance_noslit', verbose=verbose)
+            sn.update("transmittance_noslit", verbose=verbose)
         except ValueError:
             pass
         else:
-            Tn = sn.get('transmittance_noslit', wunit=waveunit,
-                           Iunit=unitsn['transmittance_noslit'])[1]
+            Tn = sn.get(
+                "transmittance_noslit",
+                wunit=waveunit,
+                Iunit=unitsn["transmittance_noslit"],
+            )[1]
         try:
-            sn.update('radiance_noslit', verbose=verbose)
+            sn.update("radiance_noslit", verbose=verbose)
         except ValueError:
             pass
         else:
-            In = sn.get('radiance_noslit', wunit=waveunit,
-                            Iunit=unitsn['radiance_noslit'])[1]
+            In = sn.get(
+                "radiance_noslit", wunit=waveunit, Iunit=unitsn["radiance_noslit"]
+            )[1]
         # ... get s quantities
         try:
-            s.update('transmittance_noslit', verbose=verbose)
+            s.update("transmittance_noslit", verbose=verbose)
         except ValueError:
             pass
         else:
-            T = s.get('transmittance_noslit', wunit=waveunit,
-                         Iunit=unitsn['transmittance_noslit'])[1]
+            T = s.get(
+                "transmittance_noslit",
+                wunit=waveunit,
+                Iunit=unitsn["transmittance_noslit"],
+            )[1]
         try:
-            s.update('radiance_noslit', verbose=verbose)
+            s.update("radiance_noslit", verbose=verbose)
         except ValueError:
             pass
         else:
-            I = s.get('radiance_noslit', wunit=waveunit,
-                         Iunit=unitsn['radiance_noslit'])[1]
+            I = s.get(
+                "radiance_noslit", wunit=waveunit, Iunit=unitsn["radiance_noslit"]
+            )[1]
 
         # Solve radiative transfer equation
         # ---------------------------------
 
         if I is not None and In is not None:
             # case where we may use SerialSlabs just to compute the products of all transmittances
-            quantities['radiance_noslit'] = (w, I * Tn + In)
+            quantities["radiance_noslit"] = (w, I * Tn + In)
 
         if T is not None:  # note that we dont need the transmittance in the inner
-                                         # slabs to calculate the total radiance
-            quantities['transmittance_noslit'] = (w, Tn * T)
+            # slabs to calculate the total radiance
+            quantities["transmittance_noslit"] = (w, Tn * T)
 
         # Get conditions (if they're different, fill with 'N/A')
         conditions = intersect(s.conditions, sn.conditions)
-        conditions['waveunit'] = waveunit
+        conditions["waveunit"] = waveunit
         # sum path lengths
-        if 'path_length' in s.conditions and 'path_length' in sn.conditions:
-            conditions['path_length'] = s.conditions['path_length'] + sn.conditions['path_length']
+        if "path_length" in s.conditions and "path_length" in sn.conditions:
+            conditions["path_length"] = (
+                s.conditions["path_length"] + sn.conditions["path_length"]
+            )
 
         cond_units = intersect(s.cond_units, sn.cond_units)
 
         # name
         name = _serial_slab_names(s, sn)
 
-        return Spectrum(quantities=quantities, conditions=conditions,
-                        cond_units=cond_units, units=unitsn,
-                        name=name)
+        return Spectrum(
+            quantities=quantities,
+            conditions=conditions,
+            cond_units=cond_units,
+            units=unitsn,
+            name=name,
+        )
+
 
 def _serial_slab_names(s, sn):
     # type: (Spectrum, Spectrum) -> Spectrum
     name_s = s.get_name()
     name_sn = sn.get_name()
-    if '//' in name_s and not '>>' in name_s:
-        name_s = '({0})'.format(name_s)
-    if '//' in name_sn:
-        name_sn = '({0})'.format(name_sn)
-    return '{0}>>{1}'.format(name_s, name_sn)
+    if "//" in name_s and not ">>" in name_s:
+        name_s = "({0})".format(name_s)
+    if "//" in name_sn:
+        name_sn = "({0})".format(name_sn)
+    return "{0}>>{1}".format(name_s, name_sn)
 
 
 def _check_valid(s):
     # type: (Spectrum) -> bool
-    ''' Check s is a valid Spectrum object. Raises an error if not 
+    """ Check s is a valid Spectrum object. Raises an error if not 
     
     Valid if:
         
@@ -299,17 +326,22 @@ def _check_valid(s):
         
     - quantities used for solving the LOS have nan
     
-    '''
+    """
 
     if not is_spectrum(s):
-        raise TypeError('All inputs must be Spectrum objects (got: {0})'.format(
-            type(s)))
+        raise TypeError(
+            "All inputs must be Spectrum objects (got: {0})".format(type(s))
+        )
     sdict = s._get_items()
     for k in sdict.keys():
-        if (k in ['transmittance_noslit', 'radiance_noslit', 'abscoeff', 'emisscoeff'] 
-                and count_nans(sdict.get(k)) > 0):
-            warn('Nans detected in Spectrum object for multi-slab operation. ' +
-                 'Results may be wrong!')
+        if (
+            k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
+            and count_nans(sdict.get(k)) > 0
+        ):
+            warn(
+                "Nans detected in Spectrum object for multi-slab operation. "
+                + "Results may be wrong!"
+            )
 
     return True
 
@@ -322,10 +354,12 @@ def _has_quantity(quantity, *slabs):
         b *= quantity in slabs
     return b
 
-def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', modify_inputs=False, 
-                   *slabs):
+
+def resample_slabs(
+    waveunit, resample_wavespace, out_of_bounds="nan", modify_inputs=False, *slabs
+):
     # type: (str, str, str, *Spectrum) -> *Spectrum
-    ''' Resample slabs on the same wavespace: if the range are differents, 
+    """ Resample slabs on the same wavespace: if the range are differents, 
     depending on the mode we may fill with optically thin media, or raise an
     error 
 
@@ -373,7 +407,7 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', modify_inp
     slabs: list of Spectrum objects
         resampled copies of inputs Spectra. All now have the same wavespace
 
-    '''
+    """
 
     # Check wavespace is the same
     def same_wavespace(wl):
@@ -402,40 +436,50 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', modify_inp
         wl = [s.get(k, wunit=waveunit)[0] for s in slabsk]
         if not same_wavespace(wl):
             # resample slabs if allowed
-            if resample_wavespace == 'never':
-                raise ValueError('All wavelengths/wavenumbers must be the same for ' +
-                                 'multi slabs configurations. Consider using '+\
-                                 "`resample='intersect'` or " +\
-                                 "`resample='full'`")
-            elif resample_wavespace == 'full':
+            if resample_wavespace == "never":
+                raise ValueError(
+                    "All wavelengths/wavenumbers must be the same for "
+                    + "multi slabs configurations. Consider using "
+                    + "`resample='intersect'` or "
+                    + "`resample='full'`"
+                )
+            elif resample_wavespace == "full":
                 # ... get bounds
-                wmin = min([w.min() for w in wl])   # minimum of all
-                wmax = max([w.max() for w in wl])   # maximum of all
+                wmin = min([w.min() for w in wl])  # minimum of all
+                wmax = max([w.max() for w in wl])  # maximum of all
                 dw = min([abs(diff(w)).min() for w in wl])  # highest density
-                wnew = arange(wmin, wmax+dw, dw)
+                wnew = arange(wmin, wmax + dw, dw)
                 if wnew[-1] > wmax:  # sometimes arange doesnt work as expected
                     wnew = wnew[:-1]
                 # ... copy the array of slabs not to modify the input
                 # ... slabs themselves
                 for s in slabsk:
-                    s.resample(wnew, unit=waveunit, if_conflict_drop='convoluted',
-                               out_of_bounds=out_of_bounds)
+                    s.resample(
+                        wnew,
+                        unit=waveunit,
+                        if_conflict_drop="convoluted",
+                        out_of_bounds=out_of_bounds,
+                    )
                 # note: s.resample() fills with 0 when out of bounds
-            elif resample_wavespace == 'intersect':
+            elif resample_wavespace == "intersect":
                 # ... get bounds
-                wmin = max([w.min() for w in wl])   # maximum of all
-                wmax = min([w.max() for w in wl])   # minimum of all
+                wmin = max([w.min() for w in wl])  # maximum of all
+                wmax = min([w.max() for w in wl])  # minimum of all
                 dw = min([abs(diff(w)).min() for w in wl])  # highest density
-                wnew = arange(wmin, wmax+dw, dw)
+                wnew = arange(wmin, wmax + dw, dw)
                 if wnew[-1] > wmax:  # sometimes arange doesnt work as expected
                     wnew = wnew[:-1]
                 if len(wnew) == 0:
-                    raise ValueError('Intersect range is empty')
+                    raise ValueError("Intersect range is empty")
                 # ... copy the array of slabs not to modify the input
                 # ... slabs themselves
                 for s in slabsk:
-                    s.resample(wnew, unit=waveunit, if_conflict_drop='convoluted',
-                               out_of_bounds=out_of_bounds)
+                    s.resample(
+                        wnew,
+                        unit=waveunit,
+                        if_conflict_drop="convoluted",
+                        out_of_bounds=out_of_bounds,
+                    )
                 # note: s.resample() fills with 0 when out of bounds
         # Now all our slabs have the same wavespace
 
@@ -444,7 +488,7 @@ def resample_slabs(waveunit, resample_wavespace, out_of_bounds='nan', modify_inp
 
 def MergeSlabs(*slabs, **kwargs):
     # type: (*Spectrum, **dict) -> Spectrum
-    r''' Combines several slabs into one. Useful to calculate multi-gas slabs. 
+    r""" Combines several slabs into one. Useful to calculate multi-gas slabs. 
     Linear absorption coefficient is calculated as the sum of all linear absorption
     coefficients, and the RTE is recalculated to get the total radiance.
     You can also simply use::
@@ -563,73 +607,83 @@ def MergeSlabs(*slabs, **kwargs):
     
     See more examples in :ref:`Line-of-Sight module <label_los_index>`
     
-    '''
+    """
 
     # Deprecation warnings
-    if 'resample_wavespace' in kwargs:
+    if "resample_wavespace" in kwargs:
         warn(DeprecationWarning("'resample_wavespace' replaced with 'resample'"))
-        kwargs['resample'] = kwargs.pop('resample_wavespace')
-    if 'out_of_bounds' in kwargs:
+        kwargs["resample"] = kwargs.pop("resample_wavespace")
+    if "out_of_bounds" in kwargs:
         warn(DeprecationWarning("'out_of_bounds' replaced with 'out'"))
-        kwargs['out'] = kwargs.pop('out_of_bounds')
+        kwargs["out"] = kwargs.pop("out_of_bounds")
 
     # Check inputs, get defaults
     # inputs (Python 2 compatible)
-    resample_wavespace = kwargs.pop('resample', 'never')   # default 'never'
-    out_of_bounds = kwargs.pop('out', 'nan')               # default 'nan'
-    optically_thin = kwargs.pop('optically_thin', False)             # default False
-    verbose = kwargs.pop('verbose', False)             # type: bool
-    debug = kwargs.pop('debug', False)                # type: bool
-    modify_inputs = kwargs.pop('modify_inputs', False)   # type: bool
+    resample_wavespace = kwargs.pop("resample", "never")  # default 'never'
+    out_of_bounds = kwargs.pop("out", "nan")  # default 'nan'
+    optically_thin = kwargs.pop("optically_thin", False)  # default False
+    verbose = kwargs.pop("verbose", False)  # type: bool
+    debug = kwargs.pop("debug", False)  # type: bool
+    modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
-        raise ValueError('Unexpected input: {0}'.format(list(kwargs.keys())))
+        raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
 
     # Check inputs
-    if resample_wavespace not in ['never', 'intersect', 'full']:
-        raise ValueError("'resample' should be one of: {0}".format
-                         (', '.join(['never', 'intersect', 'full'])))
+    if resample_wavespace not in ["never", "intersect", "full"]:
+        raise ValueError(
+            "'resample' should be one of: {0}".format(
+                ", ".join(["never", "intersect", "full"])
+            )
+        )
 
     if len(slabs) == 0:
-        raise ValueError('Empty list of slabs')
+        raise ValueError("Empty list of slabs")
 
     elif len(slabs) == 1:
         if not is_spectrum(slabs[0]):
-            raise TypeError('MergeSlabs takes an unfolded list of Spectrum as ' +
-                            'argument: (got {0})'.format(type(slabs[0])))
+            raise TypeError(
+                "MergeSlabs takes an unfolded list of Spectrum as "
+                + "argument: (got {0})".format(type(slabs[0]))
+            )
         return slabs[0]
 
     else:  # calculate serial slabs
 
         slabs = list(slabs)
 
-#        # Check all items are valid Spectrum objects
+        #        # Check all items are valid Spectrum objects
         for s in slabs:
             _check_valid(s)
 
         # Check all path_lengths are defined and they exist
         try:
-            path_lengths = [s.conditions['path_length'] for s in slabs]
+            path_lengths = [s.conditions["path_length"] for s in slabs]
         except KeyError:
-            raise ValueError('path_length must be defined for all slabs in MergeSlabs. '+\
-                             "Set it with `s.conditions['path_length']=`. ")
+            raise ValueError(
+                "path_length must be defined for all slabs in MergeSlabs. "
+                + "Set it with `s.conditions['path_length']=`. "
+            )
         if not all([L == path_lengths[0] for L in path_lengths[1:]]):
-            raise ValueError('path_length must be equal for all MergeSlabs inputs' +
-                             '  (got {0})'.format(path_lengths))
+            raise ValueError(
+                "path_length must be equal for all MergeSlabs inputs"
+                + "  (got {0})".format(path_lengths)
+            )
 
         # make sure we use the same wavespace type (even if sn is in 'nm' and s in 'cm-1')
         waveunit = slabs[0].get_waveunit()
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
-        slabs = resample_slabs(waveunit, resample_wavespace, out_of_bounds, 
-                               modify_inputs, *slabs)
+        slabs = resample_slabs(
+            waveunit, resample_wavespace, out_of_bounds, modify_inputs, *slabs
+        )
         w_noconv = slabs[0]._get_wavespace()
 
         # %%
 
         # Get conditions
         conditions = slabs[0].conditions
-        conditions['waveunit'] = waveunit
+        conditions["waveunit"] = waveunit
         cond_units = slabs[0].cond_units
         units0 = slabs[0].units
         # Define conditions as intersection of everything (N/A if unknown)
@@ -642,67 +696,87 @@ def MergeSlabs(*slabs, **kwargs):
         # Try to keep all the quantities of the initial slabs:
         requested = merge_lists([s.get_vars() for s in slabs])
         recompute = requested[:]  # copy
-        if ('radiance_noslit' in requested and not optically_thin):
-            recompute.append('emisscoeff')
-            recompute.append('abscoeff')
-        if 'abscoeff' in recompute and 'path_length' in conditions:
-            recompute.append('absorbance')
-            recompute.append('transmittance_noslit')
-                
+        if "radiance_noslit" in requested and not optically_thin:
+            recompute.append("emisscoeff")
+            recompute.append("abscoeff")
+        if "abscoeff" in recompute and "path_length" in conditions:
+            recompute.append("absorbance")
+            recompute.append("transmittance_noslit")
+
         # To make it easier, we start from abscoeff and emisscoeff of all slabs
         # Let's recompute them all
         # TODO: if that changes the initial Spectra, maybe we should just work on copies
         for s in slabs:
-            if 'abscoeff' in recompute and not 'abscoeff' in list(s._q.keys()):
-                s.update('abscoeff', verbose=False)
+            if "abscoeff" in recompute and not "abscoeff" in list(s._q.keys()):
+                s.update("abscoeff", verbose=False)
                 # that may crash if Spectrum doesnt have the correct inputs.
                 # let update() handle that
-            if 'emisscoeff' in recompute and not 'emisscoeff' in list(s._q.keys()):
-                s.update('emisscoeff', verbose=False)
+            if "emisscoeff" in recompute and not "emisscoeff" in list(s._q.keys()):
+                s.update("emisscoeff", verbose=False)
                 # same
 
         # %% Calculate total emisscoeff and abscoeff
         added = {}
 
         # ... absorption coefficient (cm-1)
-        if 'abscoeff' in recompute:
+        if "abscoeff" in recompute:
             # TODO: deal with all cases
             if __debug__:
-                printdbg('... merge: calculating abscoeff k=sum(k_i)')
-            abscoeff_eq = np.sum([s.get('abscoeff', wunit=waveunit, Iunit=units0['abscoeff'])[
-                                 1] for s in slabs], axis=0)
+                printdbg("... merge: calculating abscoeff k=sum(k_i)")
+            abscoeff_eq = np.sum(
+                [
+                    s.get("abscoeff", wunit=waveunit, Iunit=units0["abscoeff"])[1]
+                    for s in slabs
+                ],
+                axis=0,
+            )
             assert len(w_noconv) == len(abscoeff_eq)
-            added['abscoeff'] = (w_noconv, abscoeff_eq)
+            added["abscoeff"] = (w_noconv, abscoeff_eq)
 
         # ... emission coefficient
-        if 'emisscoeff' in recompute:
+        if "emisscoeff" in recompute:
             if __debug__:
-                printdbg('... merge: calculating emisscoeff j=sum(j_i)')
-            emisscoeff_eq = np.sum([s.get('emisscoeff', wunit=waveunit, Iunit=units0['emisscoeff'])[
-                                 1] for s in slabs], axis=0)
+                printdbg("... merge: calculating emisscoeff j=sum(j_i)")
+            emisscoeff_eq = np.sum(
+                [
+                    s.get("emisscoeff", wunit=waveunit, Iunit=units0["emisscoeff"])[1]
+                    for s in slabs
+                ],
+                axis=0,
+            )
             assert len(w_noconv) == len(emisscoeff_eq)
-            added['emisscoeff'] = (w_noconv, emisscoeff_eq)
-    
+            added["emisscoeff"] = (w_noconv, emisscoeff_eq)
+
         # name
-        name = '//'.join([s.get_name() for s in slabs])
-        
+        name = "//".join([s.get_name() for s in slabs])
+
         # TODO: check units are consistent in all slabs inputs
-        s = Spectrum(quantities=added, conditions=conditions,
-                        cond_units=cond_units, units=units0,
-                        name=name)
-        
+        s = Spectrum(
+            quantities=added,
+            conditions=conditions,
+            cond_units=cond_units,
+            units=units0,
+            name=name,
+        )
+
         # %% Calculate all quantities from emisscoeff and abscoeff
-        
-        if 'emissivity_noslit' in requested and (
-                'thermal_equilibrium' not in s.conditions or s.is_at_equilibrium() != True):
-            requested.remove('emissivity_noslit')
+
+        if "emissivity_noslit" in requested and (
+            "thermal_equilibrium" not in s.conditions or s.is_at_equilibrium() != True
+        ):
+            requested.remove("emissivity_noslit")
             if __debug__:
-                printdbg('... merge: all slabs are not proven to be at equilibrium. '+\
-                         'Emissivity was not calculated')
-                
+                printdbg(
+                    "... merge: all slabs are not proven to be at equilibrium. "
+                    + "Emissivity was not calculated"
+                )
+
         # Add the rest of the spectral quantities afterwards:
-        s.update([k for k in requested if k not in ['emisscoeff', 'abscoeff']], 
-                  optically_thin=optically_thin, verbose=verbose)
+        s.update(
+            [k for k in requested if k not in ["emisscoeff", "abscoeff"]],
+            optically_thin=optically_thin,
+            verbose=verbose,
+        )
 
         return s
 
@@ -710,6 +784,7 @@ def MergeSlabs(*slabs, **kwargs):
 # %% Tests
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from radis.test.los.test_slabs import _run_testcases
-    print('Testing merge slabs: ', _run_testcases(verbose=True))
+
+    print("Testing merge slabs: ", _run_testcases(verbose=True))

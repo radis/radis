@@ -11,9 +11,9 @@ from radis.misc.arrays import is_sorted, is_sorted_backward
 
 
 def test_is_sorted(*args, **kwargs):
-    
+
     a = np.arange(10)
-    
+
     assert is_sorted(a)
     assert is_sorted_backward(a[::-1])
 
@@ -22,14 +22,14 @@ def test_is_sorted(*args, **kwargs):
 
 
 def _run_testcases(verbose=True, *args, **kwargs):
-    ''' Test array functions
+    """ Test array functions
 
-    '''
+    """
 
     test_is_sorted()
 
     return True
 
 
-if __name__ == '__main__':
-    print('test_arrays functions:', _run_testcases())
+if __name__ == "__main__":
+    print("test_arrays functions:", _run_testcases())

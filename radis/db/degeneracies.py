@@ -8,12 +8,13 @@ State-dependant and state-independant degeneracies for molecules
 
 
 """
-#TODO: Make it a JSON file
+# TODO: Make it a JSON file
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
+
 def gi(M, I):
-    ''' State independant degeneracy 
+    """ State independant degeneracy 
 
     Parameters
     ----------
@@ -30,32 +31,24 @@ def gi(M, I):
     Šimečková 2006: "Einstein A-coefficients and statistical weights for molecular
     absorption transitions in the HITRAN database". DOI 10.1016/j.jqsrt.2005.07.003
 
-    '''
+    """
 
     _gi = {
-        2:  # CO2
-            {1: 1,   # 626
-             2: 2,   # 636
-             3: 1,   # 628
-             4: 6,   # 627
-         },
-        5:   # CO
-            {1: 1,   # 26
-             2: 2,   # 36
-             3: 1,
-             4: 6,
-         },
+        2: {1: 1, 2: 2, 3: 1, 4: 6,},  # CO2  # 626  # 636  # 628  # 627
+        5: {1: 1, 2: 2, 3: 1, 4: 6,},  # CO  # 26  # 36
     }
 
     try:
         return _gi[M][I]
     except KeyError:
-        raise NotImplementedError('undefined state-independant degeneracy for ' +
-                                  'molecule[isotope]: {0}[{1}]'.format(M, I))
+        raise NotImplementedError(
+            "undefined state-independant degeneracy for "
+            + "molecule[isotope]: {0}[{1}]".format(M, I)
+        )
 
 
 def gs(M, I):
-    ''' State dependant degeneracy
+    """ State dependant degeneracy
 
     Parameters
     ----------
@@ -80,26 +73,22 @@ def gs(M, I):
         16O13C18O, 16O13C17O, 17O12C18O isotopologues, the statistical weights gs
         of all the rotational levels are 1"
 
-    '''
+    """
 
     _gs = {
-        2:  # CO2
-            {1: (1,0),   # 626       (normally 1:0, but negative levels dont exist)
-             2: (1,0),   # 636       (normally 1:0, but negative levels dont exist)
-             3: 1,       # 628 
-             4: 1,       # 627
-             },
-        5:   # CO
-            {1: 1,   # 26
-             2: 1,   # 36
-             3: 1,
-             4: 1,
-             },
+        2: {  # CO2
+            1: (1, 0),  # 626       (normally 1:0, but negative levels dont exist)
+            2: (1, 0),  # 636       (normally 1:0, but negative levels dont exist)
+            3: 1,  # 628
+            4: 1,  # 627
+        },
+        5: {1: 1, 2: 1, 3: 1, 4: 1,},  # CO  # 26  # 36
     }
 
     try:
         return _gs[M][I]
     except KeyError:
-        raise NotImplementedError('undefined state-dependant degeneracy for ' +
-                                  'molecule[isotope]: {0}[{1}]'.format(M, I))
-
+        raise NotImplementedError(
+            "undefined state-dependant degeneracy for "
+            + "molecule[isotope]: {0}[{1}]".format(M, I)
+        )
