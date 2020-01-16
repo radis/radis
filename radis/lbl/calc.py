@@ -30,29 +30,31 @@ from os.path import exists
 # %%
 
 
-def calc_spectrum(wavenum_min=None,
-                  wavenum_max=None,
-                  wavelength_min=None,
-                  wavelength_max=None,
-                  Tgas=None,
-                  Tvib=None,
-                  Trot=None,
-                  pressure=1.01325,
-                  overpopulation=None,
-                  molecule='',
-                  isotope='all',
-                  mole_fraction=1,
-                  path_length=1,
-                  databank='fetch',
-                  medium='air',
-                  wstep=0.01,
-                  broadening_max_width=10, 
-                  lineshape_optimization='DLM',
-                  name=None,
-                  use_cached=True,
-                  verbose=True,
-                  **kwargs):
-    ''' Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
+def calc_spectrum(
+    wavenum_min=None,
+    wavenum_max=None,
+    wavelength_min=None,
+    wavelength_max=None,
+    Tgas=None,
+    Tvib=None,
+    Trot=None,
+    pressure=1.01325,
+    overpopulation=None,
+    molecule="",
+    isotope="all",
+    mole_fraction=1,
+    path_length=1,
+    databank="fetch",
+    medium="air",
+    wstep=0.01,
+    broadening_max_width=10,
+    lineshape_optimization="DLM",
+    name=None,
+    use_cached=True,
+    verbose=True,
+    **kwargs
+):
+    """ Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
     under equilibrium, or non-equilibrium, with or without overpopulation. 
     It's a wrapper to :class:`~radis.lbl.factory.SpectrumFactory` class. 
     For advanced used, please refer to the aforementionned class. 
@@ -251,144 +253,170 @@ def calc_spectrum(wavenum_min=None,
     
     :class:`~radis.lbl.factory.SpectrumFactory`, 
     the :ref:`Spectrum page <label_spectrum>`
-    '''
+    """
 
     # Check inputs
 
     # ... wavelengths / wavenumbers
-    if ((wavelength_min is not None or wavelength_max is not None) and
-            (wavenum_min is not None or wavenum_max is not None)):
+    if (wavelength_min is not None or wavelength_max is not None) and (
+        wavenum_min is not None or wavenum_max is not None
+    ):
         raise ValueError("Wavenumber and Wavelength both given... it's time to choose!")
 
-    if (wavenum_min is None and wavenum_max is None):
-        assert(wavelength_max is not None)
-        assert(wavelength_min is not None)
+    if wavenum_min is None and wavenum_max is None:
+        assert wavelength_max is not None
+        assert wavelength_min is not None
         wavenum_min = nm2cm(wavelength_max)
         wavenum_max = nm2cm(wavelength_min)
     else:
-        assert(wavenum_min is not None)
-        assert(wavenum_max is not None)
+        assert wavenum_min is not None
+        assert wavenum_max is not None
 
     # ... temperatures
 
     if Tgas is None and Trot is None:
         raise ValueError(
-            'Choose either Tgas (equilibrium) or Tvib / Trot (non equilibrium)')
+            "Choose either Tgas (equilibrium) or Tvib / Trot (non equilibrium)"
+        )
 
     if Tvib is None and Trot is not None or Tvib is not None and Trot is None:
-        raise ValueError('Choose both Tvib and Trot')
-        
+        raise ValueError("Choose both Tvib and Trot")
+
     # ... others
     if databank is None:
-        raise ValueError('Give a databank name')
+        raise ValueError("Give a databank name")
 
-    if not 'save_memory' in kwargs:
-        # no need to save intermediary results as 
-         # factory is used once only
-        kwargs['save_memory'] = True
-    
-    if 'chunksize' in kwargs:
-        raise DeprecationWarning('use lineshape_optimization= instead of chunksize=')
-    
+    if not "save_memory" in kwargs:
+        # no need to save intermediary results as
+        # factory is used once only
+        kwargs["save_memory"] = True
+
+    if "chunksize" in kwargs:
+        raise DeprecationWarning("use lineshape_optimization= instead of chunksize=")
+
     def _is_at_equilibrium():
         try:
             assert Tvib is None or Tvib == Tgas
             assert Trot is None or Trot == Tgas
             assert overpopulation is None
-            if 'self_absorption' in kwargs:
-                assert kwargs['self_absorption']  # == True
+            if "self_absorption" in kwargs:
+                assert kwargs["self_absorption"]  # == True
             return True
         except AssertionError:
             return False
 
     _equilibrium = _is_at_equilibrium()
-    
+
     # which columns to keep when loading line database
-    if kwargs['save_memory'] >= 2 and _equilibrium:
-        drop_columns = 'all'
+    if kwargs["save_memory"] >= 2 and _equilibrium:
+        drop_columns = "all"
     else:
-        drop_columns = 'auto'
+        drop_columns = "auto"
 
     # Run calculations
-    sf = SpectrumFactory(wavenum_min, wavenum_max, medium=medium,
-                         molecule=molecule, isotope=isotope,
-                         pressure=pressure,
-                         wstep=wstep,
-                         broadening_max_width=broadening_max_width,
-                         db_use_cached=use_cached,
-                         verbose=verbose,
-                         chunksize=lineshape_optimization, #  if lineshape_optimization != 'auto' else None, #@EP: NotImplemented. DLM use all the time by default
-                         **kwargs)
-    if databank == 'fetch':       # mode to get databank without relying on  Line databases
+    sf = SpectrumFactory(
+        wavenum_min,
+        wavenum_max,
+        medium=medium,
+        molecule=molecule,
+        isotope=isotope,
+        pressure=pressure,
+        wstep=wstep,
+        broadening_max_width=broadening_max_width,
+        db_use_cached=use_cached,
+        verbose=verbose,
+        chunksize=lineshape_optimization,  #  if lineshape_optimization != 'auto' else None, #@EP: NotImplemented. DLM use all the time by default
+        **kwargs
+    )
+    if databank == "fetch":  # mode to get databank without relying on  Line databases
         if _equilibrium:
             # Get line database from HITRAN
             # and partition functions from HAPI
-            sf.fetch_databank(source='astroquery', format='hitran',
-                              parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
-                              levelsfmt=None,      # no need to load energies
-                              )
+            sf.fetch_databank(
+                source="astroquery",
+                format="hitran",
+                parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
+                levelsfmt=None,  # no need to load energies
+            )
         else:
             # Also get line database from HITRAN, and calculate partition functions
             # with energy levels from built-in constants (not all molecules
             # are supported!)
-            sf.fetch_databank(source='astroquery', format='hitran',
-                              parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
-                              levelsfmt='radis',     # built-in spectroscopic constants
-                              )
+            sf.fetch_databank(
+                source="astroquery",
+                format="hitran",
+                parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
+                levelsfmt="radis",  # built-in spectroscopic constants
+            )
     elif exists(databank):
         # Guess format
-        if databank.endswith('.par'):
-            if verbose: print('Infered {0} is a HITRAN file.'.format(databank))
-            # If non-equilibrium we'll also need to load the energy levels. 
+        if databank.endswith(".par"):
+            if verbose:
+                print("Infered {0} is a HITRAN file.".format(databank))
+            # If non-equilibrium we'll also need to load the energy levels.
             if _equilibrium:
                 # Get partition functions from HAPI
-                sf.load_databank(path=databank, format='hitran',
-                                 parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
-                                 levelsfmt=None,      # no need to load energies
-                                 drop_columns=drop_columns,
-                                 )
+                sf.load_databank(
+                    path=databank,
+                    format="hitran",
+                    parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
+                    levelsfmt=None,  # no need to load energies
+                    drop_columns=drop_columns,
+                )
             else:
-                # calculate partition functions with energy levels from built-in 
+                # calculate partition functions with energy levels from built-in
                 # constants (not all molecules are supported!)
-                sf.load_databank(path=databank, format='hitran',
-                                 parfuncfmt='hapi',   # use HAPI partition functions for equilibrium
-                                 levelsfmt='radis',    # built-in spectroscopic constants
-                                 drop_columns=drop_columns,
-                                 )
+                sf.load_databank(
+                    path=databank,
+                    format="hitran",
+                    parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
+                    levelsfmt="radis",  # built-in spectroscopic constants
+                    drop_columns=drop_columns,
+                )
         else:
-            raise ValueError("Couldnt infer the format of the line database: {0}. ".format(databank)+
-                             "Create a user-defined database in your ~/.radis file "+\
-                             "and define the format there.")
-        
-    else:   # manual mode: get from user-defined line databases defined in ~/.radis
-        sf.load_databank(databank, 
-                         load_energies=not _equilibrium,   # no need to load/calculate energies at eq.
-                         drop_columns=drop_columns
-                         )
-        
-#    # Get optimisation strategies
-#    if lineshape_optimization == 'auto':        # NotImplemented: finally we use DLM all the time as default.
-#        if len(sf.df0) > 1e5:
-#            lineshape_optimization = 'DLM'
-#        else:
-#            lineshape_optimization = None
-#        sf.params['chunksize'] = lineshape_optimization
+            raise ValueError(
+                "Couldnt infer the format of the line database: {0}. ".format(databank)
+                + "Create a user-defined database in your ~/.radis file "
+                + "and define the format there."
+            )
+
+    else:  # manual mode: get from user-defined line databases defined in ~/.radis
+        sf.load_databank(
+            databank,
+            load_energies=not _equilibrium,  # no need to load/calculate energies at eq.
+            drop_columns=drop_columns,
+        )
+
+    #    # Get optimisation strategies
+    #    if lineshape_optimization == 'auto':        # NotImplemented: finally we use DLM all the time as default.
+    #        if len(sf.df0) > 1e5:
+    #            lineshape_optimization = 'DLM'
+    #        else:
+    #            lineshape_optimization = None
+    #        sf.params['chunksize'] = lineshape_optimization
 
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
-        s = sf.eq_spectrum(Tgas=Tgas, mole_fraction=mole_fraction, path_length=path_length,
-                           name=name)
+        s = sf.eq_spectrum(
+            Tgas=Tgas, mole_fraction=mole_fraction, path_length=path_length, name=name
+        )
     else:
-        s = sf.non_eq_spectrum(Tvib=Tvib, Trot=Trot, Ttrans=Tgas,
-                               overpopulation=overpopulation,
-                               mole_fraction=mole_fraction,
-                               path_length=path_length,
-                               name=name)
+        s = sf.non_eq_spectrum(
+            Tvib=Tvib,
+            Trot=Trot,
+            Ttrans=Tgas,
+            overpopulation=overpopulation,
+            mole_fraction=mole_fraction,
+            path_length=path_length,
+            name=name,
+        )
 
     return s
 
+
 # --------------------------
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     from radis.test.lbl.test_calc import _run_testcases
+
     print(_run_testcases(verbose=True))

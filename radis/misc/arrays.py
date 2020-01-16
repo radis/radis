@@ -23,8 +23,9 @@ from six.moves import range
 
 # Normalize
 
-def norm(a, normby=None, how='max'):
-    ''' Normalize a numpy array with its maximum. Or normalize it with another
+
+def norm(a, normby=None, how="max"):
+    """ Normalize a numpy array with its maximum. Or normalize it with another
     vector. Works if array contains nans.
 
 
@@ -34,22 +35,22 @@ def norm(a, normby=None, how='max'):
     normby: array, or None
         if array, norm with this other array's maximum. If None, normalize with
         its maximum.
-    '''
+    """
     if normby is not None:
         normby = np.abs(normby)
     else:
         normby = np.abs(a)
 
-    if how == 'max':
+    if how == "max":
         return a / np.nanmax(normby)
-    elif how == 'mean':
+    elif how == "mean":
         return a / np.nanmean(normby)
     else:
-        raise ValueError('Unknown normalisation method')
+        raise ValueError("Unknown normalisation method")
 
 
-def norm_on(a, w, wmin=None, wmax=None, how='max'):
-    ''' Normalize `a` on a specific range of `w` 
+def norm_on(a, w, wmin=None, wmax=None, how="max"):
+    """ Normalize `a` on a specific range of `w` 
     
     Parameters
     ----------
@@ -74,9 +75,9 @@ def norm_on(a, w, wmin=None, wmax=None, how='max'):
     
     a_norm: array
         normalized array
-    '''
-    imin = np.argmin((w-wmin)**2) if wmin else None
-    imax = np.argmin((w-wmax)**2) if wmax else None
+    """
+    imin = np.argmin((w - wmin) ** 2) if wmin else None
+    imax = np.argmin((w - wmax) ** 2) if wmax else None
     if imin is not None and imax is not None:
         if imin > imax:
             imin, imax = imax, imin
@@ -86,12 +87,12 @@ def norm_on(a, w, wmin=None, wmax=None, how='max'):
 
 
 def scale_to(a, b, k=1):
-    ''' Scale function a to k*b '''
+    """ Scale function a to k*b """
     return a * k * max(np.abs(b)) / max(np.abs(a))
 
 
 def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
-    ''' Returns wheter a and b are all close (element wise). If not the same size,
+    """ Returns wheter a and b are all close (element wise). If not the same size,
     returns False (instead of crashing like the numpy version). Cf numpy.allclose
     docs for more information. 
 
@@ -109,7 +110,7 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
         whether to consider Nan's as equal. Contrary to the numpy version this
         one is set to True by default 
 
-    '''
+    """
 
     if len(a) != len(b):
         return False
@@ -118,9 +119,10 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
 
 
 def nantrapz(I, w, dx=1.0, axis=-1):
-    ''' Returns np.nan(I, w) discarding nan '''
+    """ Returns np.nan(I, w) discarding nan """
     b = ~np.isnan(I)
     return np.trapz(I[b], w[b], dx=dx, axis=axis)
+
 
 # %%
 # ==============================================================================
@@ -129,7 +131,7 @@ def nantrapz(I, w, dx=1.0, axis=-1):
 
 
 def shift_array(t0, y0, shift, nmax=10, tab=0):
-    '''     
+    """     
     shift the array and interpolate when the shift is smaller than the time step
 
 
@@ -163,7 +165,7 @@ def shift_array(t0, y0, shift, nmax=10, tab=0):
     ----
 
     Only tested with constant timesteps    
-    '''
+    """
 
     if shift == 0:
         return t0, y0
@@ -177,7 +179,7 @@ def shift_array(t0, y0, shift, nmax=10, tab=0):
     n = round(n)
 
     if n > nmax:
-        print('Interpolation step required', n, 'has been reduced to', nmax)
+        print("Interpolation step required", n, "has been reduced to", nmax)
         n = nmax
 
     if n > 1:
@@ -215,7 +217,7 @@ def shift_array(t0, y0, shift, nmax=10, tab=0):
 
 
 def calc_diff(t1, v1, t2, v2):
-    ''' Substract two vectors that may have slightly offset abscisses 
+    """ Substract two vectors that may have slightly offset abscisses 
     interpolating the correct values 
 
 
@@ -235,7 +237,7 @@ def calc_diff(t1, v1, t2, v2):
     tdiff, vdiff: array_like
         substracted vector and its abscisses
 
-    '''
+    """
 
     t1, v1, t2, v2 = list(map(np.array, (t1, v1, t2, v2)))
 
@@ -262,7 +264,7 @@ def calc_diff(t1, v1, t2, v2):
 
 
 def find_nearest(array, searched, returnarg=False):
-    ''' Return the closest elements in array of 'searched' array. 
+    """ Return the closest elements in array of 'searched' array. 
     Also returns a boolean index
     
     Examples
@@ -279,18 +281,18 @@ def find_nearest(array, searched, returnarg=False):
         
         >>> (array([2, 3]), array([False,  True,  True, False], dtype=bool))
 
-    '''
+    """
 
     b = np.zeros_like(array, dtype=bool)
 
-#    def find_nearest(array,value):
-#    '''  assuming array is sorted. '''
-#        idx = np.searchsorted(array, value, side="left")
-#        print('idx',idx)
-#        if math.fabs(value - array[idx-1]) < math.fabs(value - array[idx]):
-#            return idx-1
-#        else:
-#            return idx
+    #    def find_nearest(array,value):
+    #    '''  assuming array is sorted. '''
+    #        idx = np.searchsorted(array, value, side="left")
+    #        print('idx',idx)
+    #        if math.fabs(value - array[idx-1]) < math.fabs(value - array[idx]):
+    #            return idx-1
+    #        else:
+    #            return idx
 
     def find_nearest(array, value):
         return (np.abs(array - value)).argmin()
@@ -310,19 +312,19 @@ def find_nearest(array, searched, returnarg=False):
 
 
 def find_first(arr, treshold):
-    ''' Return the index of the first element of the array arr whose value
-    is more than the treshold '''
+    """ Return the index of the first element of the array arr whose value
+    is more than the treshold """
 
     return np.argmax(arr > treshold)
 
 
 def autoturn(data, key=-1):
-    ''' Turns array data. key value: 
+    """ Turns array data. key value: 
         
     - ``0`` don't transpose
     - ``1`` : transpose
     - ``-1`` : auto : make sure the vectors are along the longest dimension
-    '''
+    """
 
     if key == 0:
         return data
@@ -337,16 +339,16 @@ def autoturn(data, key=-1):
 
 
 def centered_diff(w):
-    ''' Return w[i+1]-w[i-1]/2, same size as w
+    """ Return w[i+1]-w[i-1]/2, same size as w
     
     Similar to :py:func:`numpy.diff`, but does not change the array size. 
-    '''
+    """
     dw = np.diff(w)
-    return (hstack((dw, dw[-1])) + hstack((dw[0], dw)))/2
+    return (hstack((dw, dw[-1])) + hstack((dw[0], dw))) / 2
 
 
 def evenly_distributed(w, tolerance=1e-5):
-    ''' Make sure array `w` is evenly distributed
+    """ Make sure array `w` is evenly distributed
 
     Parameters    
     ----------
@@ -362,15 +364,14 @@ def evenly_distributed(w, tolerance=1e-5):
     
     out: bool
         ``True`` or ``False`` if ``w`` is evenly distributed.
-    '''
+    """
     mean_step = np.diff(w).mean()
-    return (np.abs((np.diff(w)-mean_step)) > tolerance).sum() == 0
+    return (np.abs((np.diff(w) - mean_step)) > tolerance).sum() == 0
 
 
-    
 @numba.jit
 def is_sorted(a):
-    ''' Returns whether ``a`` is sorted in ascending order
+    """ Returns whether ``a`` is sorted in ascending order
     
     From B.M. answer on StackOverflow: https://stackoverflow.com/a/47004533/5622825
     
@@ -378,29 +379,30 @@ def is_sorted(a):
     --------
     
     :func:`~radis.misc.arrays.is_sorted_backward`
-    '''
-    for i in range(a.size-1):
-         if a[i+1] < a[i] :
-               return False
+    """
+    for i in range(a.size - 1):
+        if a[i + 1] < a[i]:
+            return False
     return True
+
 
 @numba.jit
 def is_sorted_backward(a):
-    ''' Returns whether ``a`` is sorted in descending order
+    """ Returns whether ``a`` is sorted in descending order
     
     See Also
     --------
     
     :func:`~radis.misc.arrays.is_sorted`
-    '''
-    for i in range(a.size-1):
-         if a[i+1] > a[i] :
-               return False
+    """
+    for i in range(a.size - 1):
+        if a[i + 1] > a[i]:
+            return False
     return True
 
 
 def bining(I, ymin=None, ymax=None, axis=1):
-    ''' Averages a I multi-dimensional array (typically an image) along the y axis
+    """ Averages a I multi-dimensional array (typically an image) along the y axis
     bining(I) corresponds to I.mean(axis=1)
     Nan are not taken into account
 
@@ -419,31 +421,33 @@ def bining(I, ymin=None, ymax=None, axis=1):
 
     axis: int
         Default 1
-    '''
-    I = np.array(
-        I)   # convert to array in case it's a Pandas dataframe for instance
+    """
+    I = np.array(I)  # convert to array in case it's a Pandas dataframe for instance
     if ymin is None:
         ymin = 0
     if ymax is None:
         ymax = I.shape[axis]
     if ymin < 0:
-        print('Warning in bining. ymin ({0}) < 0'.format(ymin))
+        print("Warning in bining. ymin ({0}) < 0".format(ymin))
     if ymax > I.shape[axis]:
-        print('Warning in bining. ymax ({0}) > yaxis length ({1})'.format(ymax,
-                                                                          I.shape[axis]))
+        print(
+            "Warning in bining. ymax ({0}) > yaxis length ({1})".format(
+                ymax, I.shape[axis]
+            )
+        )
     return np.nanmean(I[:, ymin:ymax], axis=axis)
 
 
 def count_nans(a):
-    ''' Nan are good but only in India '''
+    """ Nan are good but only in India """
 
     return np.isnan(a).sum()
 
 
 def logspace(xmin, xmax, npoints):
-    ''' Returns points from xmin to xmax regularly distributed on a logarithm
+    """ Returns points from xmin to xmax regularly distributed on a logarithm
     space. 
     Numpy's logspace does the same from 10**xmin to 10**xmax
-    '''
+    """
 
     return np.logspace(np.log10(xmin), np.log10(xmax), npoints)

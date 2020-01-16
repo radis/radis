@@ -26,7 +26,7 @@ import pytest
 @pytest.mark.fast
 @pytest.mark.needs_connection  # ignored by pytest with argument -m "not needs_http_connection"
 def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
-    r'''
+    r"""
     Plot absorption coefficient (cm-1) of CO at high temperature (2000 K) with 
     RADIS, and compare with calculations from HAPI using the HITRAN database 
     
@@ -37,69 +37,83 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     database directly using either the HAPI ``fetch`` function, or the RADIS 
     :meth:`~neq.spec.factory.fetch_databank` method.
     
-    '''
+    """
 
-    from radis.io.hapi import (db_begin, fetch, tableList, absorptionCoefficient_Voigt,
-                                    transmittanceSpectrum)
+    from radis.io.hapi import (
+        db_begin,
+        fetch,
+        tableList,
+        absorptionCoefficient_Voigt,
+        transmittanceSpectrum,
+    )
 
     setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
     # Conditions
-    molecule = 'CO2'
+    molecule = "CO2"
     mol_id = get_molecule_identifier(molecule)
     iso = 1
     T = 1500
     p = 0.1
     L = 0.1
-#    M = 0.001           # mole fraction  (dont know where to put that )
+    #    M = 0.001           # mole fraction  (dont know where to put that )
     dnu = 0.0001
-    wmin = nm2cm(4372.69+0.2)  # cm-1
-    wmax = nm2cm(4372.69-0.2)  # cm-1
-#    broadening_max_width = 6  # cm-1
+    wmin = nm2cm(4372.69 + 0.2)  # cm-1
+    wmax = nm2cm(4372.69 - 0.2)  # cm-1
+    #    broadening_max_width = 6  # cm-1
     broadening_max_width = 0.5  # cm-1
 
     # %% HITRAN calculation
     # -----------
 
     # Generate HAPI database locally
-    
-    HAPIdb = join(dirname(__file__), __file__.replace('.py', '_HAPIdata'))
-    
+
+    HAPIdb = join(dirname(__file__), __file__.replace(".py", "_HAPIdata"))
+
     def calc_hapi():
-        ''' Calc spectrum under HAPI '''
-        
+        """ Calc spectrum under HAPI """
+
         clean_after_run = not exists(HAPIdb) and False
-    
+
         try:
             db_begin(HAPIdb)
-            if not molecule in tableList():   # only if data not downloaded already
-                fetch(molecule, mol_id, iso, wmin-broadening_max_width /
-                      2, wmax+broadening_max_width/2)
+            if not molecule in tableList():  # only if data not downloaded already
+                fetch(
+                    molecule,
+                    mol_id,
+                    iso,
+                    wmin - broadening_max_width / 2,
+                    wmax + broadening_max_width / 2,
+                )
                 # HAPI doesnt correct for side effects
-        
+
             # Calculate with HAPI
-            nu, coef = absorptionCoefficient_Voigt(SourceTables='CO2',
-                                                   Environment={'T': T,  # K
-                                                                'p': p/1.01325,  # atm
-                                                                },
-                                                   WavenumberStep=dnu,
-                                                   HITRAN_units=False,
-                                                   GammaL='gamma_self')
-            nu, trans = transmittanceSpectrum(nu, coef,
-                                              Environment={'l': L,  # cm
-                                                           })
-            s_hapi = Spectrum.from_array(nu, trans, 'transmittance_noslit', 'cm-1', 'I/I0',
-                                         conditions={'Tgas': T},
-                                         name='HAPI')
-        
+            nu, coef = absorptionCoefficient_Voigt(
+                SourceTables="CO2",
+                Environment={"T": T, "p": p / 1.01325,},  # K  # atm
+                WavenumberStep=dnu,
+                HITRAN_units=False,
+                GammaL="gamma_self",
+            )
+            nu, trans = transmittanceSpectrum(nu, coef, Environment={"l": L,})  # cm
+            s_hapi = Spectrum.from_array(
+                nu,
+                trans,
+                "transmittance_noslit",
+                "cm-1",
+                "I/I0",
+                conditions={"Tgas": T},
+                name="HAPI",
+            )
+
         except:
             raise
-            
+
         finally:
             if clean_after_run:
                 shutil.rmtree(HAPIdb)
         return s_hapi
-    
+
     s_hapi = calc_hapi()
 
     def calc_radis():
@@ -117,52 +131,70 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
             broadening_max_width=broadening_max_width,
             cutoff=1e-23,
             db_use_cached=True,
-            isotope=iso)  # 0.2)
-        pl.warnings['MissingSelfBroadeningWarning'] = 'ignore'
-        pl.warnings['HighTemperatureWarning'] = 'ignore'
-        pl.fetch_databank(format='hitran', load_energies=False)
-    
+            isotope=iso,
+        )  # 0.2)
+        pl.warnings["MissingSelfBroadeningWarning"] = "ignore"
+        pl.warnings["HighTemperatureWarning"] = "ignore"
+        pl.fetch_databank(format="hitran", load_energies=False)
+
         s = pl.eq_spectrum(Tgas=T)  # , Ttrans=300)
-        s.name = 'RADIS'
-        
+        s.name = "RADIS"
+
         if plot:
             pl.plot_broadening()
-    
+
         return s
-    
+
     s = calc_radis()
 
     # %% Compare
     # also shrinks HAPI range to the valid one
-    s_hapi.resample(s.get_wavenumber(), unit='cm-1', energy_threshold=0.1)
-    
-    save = False      # just used in the article
+    s_hapi.resample(s.get_wavenumber(), unit="cm-1", energy_threshold=0.1)
+
+    save = False  # just used in the article
     if plot or save:
         from radis import plot_diff
-#        title = '{0} bar, {1} K, {2} cm'.format(p, T, L)  if save else None
-        fig, [ax0, ax1] = plot_diff(s, s_hapi, var='transmittance_noslit', method='ratio',
-                  show=plot)
-        
-        ax0.annotate(r'[P64](00$^\mathregular{0}$0)$\rightarrow $(00$^\mathregular{0}$1)', (2286.945, 0.76), (2286.94, 0.8), 
-                     arrowprops=dict(arrowstyle="->", facecolor='black'))
-        ax0.annotate(r'[P53](01$^\mathregular{1}$0)$\rightarrow $(01$^\mathregular{1}$1)', (2286.9, 0.78), (2286.9, 0.82), 
-                     arrowprops=dict(arrowstyle="->", facecolor='black'),
-                     horizontalalignment='right')
+
+        #        title = '{0} bar, {1} K, {2} cm'.format(p, T, L)  if save else None
+        fig, [ax0, ax1] = plot_diff(
+            s, s_hapi, var="transmittance_noslit", method="ratio", show=plot
+        )
+
+        ax0.annotate(
+            r"[P64](00$^\mathregular{0}$0)$\rightarrow $(00$^\mathregular{0}$1)",
+            (2286.945, 0.76),
+            (2286.94, 0.8),
+            arrowprops=dict(arrowstyle="->", facecolor="black"),
+        )
+        ax0.annotate(
+            r"[P53](01$^\mathregular{1}$0)$\rightarrow $(01$^\mathregular{1}$1)",
+            (2286.9, 0.78),
+            (2286.9, 0.82),
+            arrowprops=dict(arrowstyle="->", facecolor="black"),
+            horizontalalignment="right",
+        )
         ax1.set_ylim(0.95, 1.05)
-        
+
         if save:
-            fig.savefig('out/test_RADIS_vs_HAPI_line_broadening.pdf')
+            fig.savefig("out/test_RADIS_vs_HAPI_line_broadening.pdf")
 
     # Compare integrals
-    diff = abs(s.get_integral('transmittance_noslit') / s_hapi.get_integral('transmittance_noslit')-1)
+    diff = abs(
+        s.get_integral("transmittance_noslit")
+        / s_hapi.get_integral("transmittance_noslit")
+        - 1
+    )
     b = diff < rtol
 
     if verbose:
-        printm('Integral difference ({0:.2f}%) < {1:.2f}%: {2}'.format(diff*100,
-                                                                       rtol*100, b))
+        printm(
+            "Integral difference ({0:.2f}%) < {1:.2f}%: {2}".format(
+                diff * 100, rtol * 100, b
+            )
+        )
 
     return b
 
 
-if __name__ == '__main__':
-    printm('test RADIS_vs_HAPI_line_broadening: ', test_line_broadening(plot=True))
+if __name__ == "__main__":
+    printm("test RADIS_vs_HAPI_line_broadening: ", test_line_broadening(plot=True))

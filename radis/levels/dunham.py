@@ -27,8 +27,9 @@ from __future__ import unicode_literals  # α, β, γ, δ, ϵ
 
 # ... vibrational term (Herzberg notation)
 
+
 def Gv(v, we=0, wexe=0, weye=0, weze=0, weae=0, webe=0, gv=1):
-    ''' Vibrational energy term 
+    """ Vibrational energy term 
     Dunham development (order 5 in v) in Herzberg notation
     
     .. math::
@@ -97,20 +98,41 @@ def Gv(v, we=0, wexe=0, weye=0, weze=0, weae=0, webe=0, gv=1):
     Get Herzberg coefficients for a molecule: :py:func:`~radis.db.utils.get_herzberg_coefficients`
 
     Use Dunham coefficients instead: :py:func:`~radis.levels.dunham.EvJ`
-    '''
+    """
 
-    return we*(v+gv/2) - wexe*(v+gv/2)**2 + weye*(v+gv/2)**3 + weze*(v+gv/2)**4 + \
-           weae*(v+gv/2)**5 + webe*(v+gv/2)**6 # + .. 
-           #                :                                :
-           #                :                                :
-           # In Mantz and Maillard 1975                      - weze*(v+gv/2)**4
-           # Mantz 1975     - webe*(v+gv/2)**6
-           
+    return (
+        we * (v + gv / 2)
+        - wexe * (v + gv / 2) ** 2
+        + weye * (v + gv / 2) ** 3
+        + weze * (v + gv / 2) ** 4
+        + weae * (v + gv / 2) ** 5
+        + webe * (v + gv / 2) ** 6
+    )  # + ..
+    #                :                                :
+    #                :                                :
+    # In Mantz and Maillard 1975                      - weze*(v+gv/2)**4
+    # Mantz 1975     - webe*(v+gv/2)**6
+
+
 # ... rotational term (Herzberg notation)
 
-def Fv(v, J, Be=0, De=0, alpha_e=0, beta_e=0, gamma_e=0, delta_e=0, epsilon_e=0,
-       pi_e=0, He=0, eta_e=0, gv=1):
-    '''Rotational energy term
+
+def Fv(
+    v,
+    J,
+    Be=0,
+    De=0,
+    alpha_e=0,
+    beta_e=0,
+    gamma_e=0,
+    delta_e=0,
+    epsilon_e=0,
+    pi_e=0,
+    He=0,
+    eta_e=0,
+    gv=1,
+):
+    """Rotational energy term
     Dunham development (order 4 in J) in Herzberg notation
     
     .. math::
@@ -194,69 +216,73 @@ def Fv(v, J, Be=0, De=0, alpha_e=0, beta_e=0, gamma_e=0, delta_e=0, epsilon_e=0,
 
     Use Dunham coefficients instead: :py:func:`~radis.levels.dunham.EvJ`
         
-    '''
+    """
 
     B_e, D_e, H_e, g_v = Be, De, He, gv
 
     # ... Note: formula added in docstring with pytexit.py2tex()
     # + ...
-    B_v = B_e - alpha_e*(v+g_v/2) + gamma_e*(v+g_v/2)**2 + \
-        delta_e*(v+g_v/2)**3 + epsilon_e*(v+g_v/2)**4
-    D_v = D_e + beta_e*(v+g_v/2) + pi_e*(v+g_v/2)**2  # + ...
-    H_v = H_e - eta_e*(v+g_v/2)
+    B_v = (
+        B_e
+        - alpha_e * (v + g_v / 2)
+        + gamma_e * (v + g_v / 2) ** 2
+        + delta_e * (v + g_v / 2) ** 3
+        + epsilon_e * (v + g_v / 2) ** 4
+    )
+    D_v = D_e + beta_e * (v + g_v / 2) + pi_e * (v + g_v / 2) ** 2  # + ...
+    H_v = H_e - eta_e * (v + g_v / 2)
     #       :                                        :
     #       :                                        :
     # In Mantz and Maillard 1975                     - delta_e*(v+gv/2)**3
     #       - beta_e*(v+gv/2)      in Mantz and Maillard 1975
 
-    
-    return B_v*J*(J+1) - D_v*(J*(J+1))**2 + H_v*(J*(J+1))**3
+    return B_v * J * (J + 1) - D_v * (J * (J + 1)) ** 2 + H_v * (J * (J + 1)) ** 3
 
 
 # ... general term
-    
-#def EvJ(v, J, **Ykl_dict):
-#    ''' Calculates rovibrational energy reading from Dunham coefficients in 
+
+# def EvJ(v, J, **Ykl_dict):
+#    ''' Calculates rovibrational energy reading from Dunham coefficients in
 #    Ykl notation
-#    
+#
 #    Parameters
 #    ----------
-#    
+#
 #    Ykl: dict
 #        an arbitrary dictionary of Ykl coefficients
 #        accepted formats: Y01, Y01_cm-1
-#        
+#
 #    Ykl are parsed and assigned the correct energy
-#    
+#
 #    Notes
 #    -----
-#    
-#    Because reading and parsing the Ykl dict is required, this is expected to 
-#    be slower that a hardcoded implementation. However, it is also much 
-#    more flexible. 
 #
-#    
+#    Because reading and parsing the Ykl dict is required, this is expected to
+#    be slower that a hardcoded implementation. However, it is also much
+#    more flexible.
+#
+#
 #    Examples
 #    --------
-#    
+#
 #    Read directly from a .json file::
-#            
+#
 #        from radis.db.utils import get_dunham_coefficients
 #        from radis.levels.dunham import EvJ
 #        dunham_coeffs = get_dunham_coefficients('CO', 1, 'X1SIG+')
-#        
+#
 #        # Now calculate energy
 #        EvJ(v=0, J=0, **dunham_coeffs)
-#    
+#
 #    '''
-#    
+#
 #    E = 0
-#    
+#
 #    Ykl_format = '^Y(?P<k>[0-9])(?P<l>[0-9])(_cm-1)?$'
-#    # ... Ykl with k, l ints  and followed by nothing or _cm-1 
+#    # ... Ykl with k, l ints  and followed by nothing or _cm-1
 #    # ... accepted formats: Y01, Y01_cm-1
 #    reg = re.compile(Ykl_format)
-#    
+#
 #    for ykl_name, Ykl in Ykl_dict.items():
 #        match = reg.search(ykl_name)
 #        if match is None:
@@ -266,13 +292,13 @@ def Fv(v, J, Be=0, De=0, alpha_e=0, beta_e=0, gamma_e=0, delta_e=0, epsilon_e=0,
 #        k = int(res['k'])
 #        l = int(res['l'])
 #        E += Ykl * (v+0.5)**k * (J*(J+1))**l
-#    
+#
 #    return E
 
 # New version (less versatile, but less Python and faster)
 # only allowed formats: Y01
 def EvJ(v, J, **Ykl_dict):
-    ''' Calculates rovibrational energy reading from Dunham coefficients in 
+    """ Calculates rovibrational energy reading from Dunham coefficients in 
     Ykl notation, for diatomic molecules.
     
     Parameters
@@ -304,19 +330,20 @@ def EvJ(v, J, **Ykl_dict):
     Use Herzberg coefficients instead: :py:func:`~radis.levels.dunham.Gv`, 
     :py:func:`~radis.levels.dunham.Fv`
         
-    '''
-    
+    """
+
     E = 0
-    
+
     for ykl_name, Ykl in Ykl_dict.items():
         k = int(ykl_name[1])
         l = int(ykl_name[2])
-        E += Ykl * (v+0.5)**k * (J*(J+1))**l
-    
+        E += Ykl * (v + 0.5) ** k * (J * (J + 1)) ** l
+
     return E
 
-if __name__ == '__main__':
-    
+
+if __name__ == "__main__":
+
     from radis.test.phys.test_dunham import _run_all_tests
-    print('Testing Dunham.py: ', _run_all_tests())
-    
+
+    print("Testing Dunham.py: ", _run_all_tests())

@@ -14,27 +14,36 @@ from radis.misc.printer import printr
 
 # %% Spectrum warnings / errors
 # -----------------------------
-    
+
+
 class SlitDispersionWarning(UserWarning):
-    ''' Warning trigger if Slit dispersion is too large 
-    '''
+    """ Warning trigger if Slit dispersion is too large 
+    """
+
 
 # %% Spectrum Factory warnings / errors
 # -------------------------------------
 
+
 class OutOfBoundError(ValueError):
     pass
 
+
 class OutOfBoundWarning(UserWarning):
-    ''' Out of bound (for partition functions)'''
+    """ Out of bound (for partition functions)"""
+
     pass
 
+
 # Errors
+
 
 class EmptyDatabaseError(ValueError):
     pass
 
+
 # Warnings
+
 
 class GaussianBroadeningWarning(UserWarning):
     pass
@@ -53,19 +62,24 @@ class MemoryUsageWarning(UserWarning):
 
 
 class EmptyDatabaseWarning(UserWarning):
-    ''' Trigger a warning if Line database is empty in the range considered '''
+    """ Trigger a warning if Line database is empty in the range considered """
+
     pass
+
 
 class OutOfRangeLinesWarning(UserWarning):
-    ''' Trigger a warning if out of range neighbouring lines, that could have 
+    """ Trigger a warning if out of range neighbouring lines, that could have 
     an effect on the spectrume due to their broadening, cannot be found in the 
-    database '''
+    database """
+
     pass
 
+
 class HighTemperatureWarning(UserWarning):
-    ''' Warning triggered when the Line database seems inappropriate for the 
+    """ Warning triggered when the Line database seems inappropriate for the 
     temperatures considered
-    '''
+    """
+
     pass
 
 
@@ -74,43 +88,49 @@ class NegativeEnergiesWarning(UserWarning):
 
 
 class MissingSelfBroadeningWarning(UserWarning):
-    ''' Self broadening is missing in Line Database. Usually, use Air broadening
-    instead '''
+    """ Self broadening is missing in Line Database. Usually, use Air broadening
+    instead """
+
     pass
 
 
 class LinestrengthCutoffWarning(UserWarning):
-    ''' Warning triggered when the cumulated linestrength after intensity cutoff
-    has changed too much'''
+    """ Warning triggered when the cumulated linestrength after intensity cutoff
+    has changed too much"""
+
     pass
 
 
 class InputConditionsWarning(UserWarning):
-    ''' Warning triggered when Spectrum input conditions are suspicious '''
+    """ Warning triggered when Spectrum input conditions are suspicious """
+
     pass
+
 
 class PerformanceWarning(UserWarning):
-    ''' Warning triggered when it seems computation parameters are not optimized'''
+    """ Warning triggered when it seems computation parameters are not optimized"""
+
     pass
 
 
-WarningClasses = {'default': UserWarning,
-                  'SlitDispersionWarning': SlitDispersionWarning,
-                  'GaussianBroadeningWarning': GaussianBroadeningWarning,
-                  'CollisionalBroadeningWarning': CollisionalBroadeningWarning,
-                  'VoigtBroadeningWarning': VoigtBroadeningWarning,
-                  'MemoryUsageWarning': MemoryUsageWarning,
-                  'EmptyDatabaseWarning': EmptyDatabaseWarning,
-                  'OutOfRangeLinesWarning': OutOfRangeLinesWarning,
-                  'HighTemperatureWarning': HighTemperatureWarning,
-                  'NegativeEnergiesWarning': NegativeEnergiesWarning,
-                  'MissingSelfBroadeningWarning': MissingSelfBroadeningWarning,
-                  'LinestrengthCutoffWarning': LinestrengthCutoffWarning,
-                  'InputConditionsWarning': InputConditionsWarning,
-                  'PerformanceWarning':PerformanceWarning,
-                  'OutOfBoundWarning':OutOfBoundWarning,
-                  }
-''' dict: warnings used in RADIS Spectrum calculations.
+WarningClasses = {
+    "default": UserWarning,
+    "SlitDispersionWarning": SlitDispersionWarning,
+    "GaussianBroadeningWarning": GaussianBroadeningWarning,
+    "CollisionalBroadeningWarning": CollisionalBroadeningWarning,
+    "VoigtBroadeningWarning": VoigtBroadeningWarning,
+    "MemoryUsageWarning": MemoryUsageWarning,
+    "EmptyDatabaseWarning": EmptyDatabaseWarning,
+    "OutOfRangeLinesWarning": OutOfRangeLinesWarning,
+    "HighTemperatureWarning": HighTemperatureWarning,
+    "NegativeEnergiesWarning": NegativeEnergiesWarning,
+    "MissingSelfBroadeningWarning": MissingSelfBroadeningWarning,
+    "LinestrengthCutoffWarning": LinestrengthCutoffWarning,
+    "InputConditionsWarning": InputConditionsWarning,
+    "PerformanceWarning": PerformanceWarning,
+    "OutOfBoundWarning": OutOfBoundWarning,
+}
+""" dict: warnings used in RADIS Spectrum calculations.
 
 You can selectively activate them by setting the warnings attribute of 
 :class:`radis.lbl.factory.SpectrumFactory` 
@@ -119,7 +139,7 @@ See Also
 --------
 
 :py:data:`~radis.misc.warning.default_warning_status` 
-'''
+"""
 
 # Setup individual warnings. Value of keys can be:
 # - 'warning' (default: just trigger a warning)
@@ -128,25 +148,25 @@ See Also
 # The key self.warnings['default'] will set the warning behavior for all
 # other warnings
 default_warning_status = {
-    'default': 'warn',          # default
-    'SlitDispersionWarning': 'warn',
-    'GaussianBroadeningWarning': 'once',          # once per Spectrum calculation
-    'CollisionalBroadeningWarning': 'once',       # once per Spectrum calculation
-    'VoigtBroadeningWarning': 'once',             # once per Spectrum calculation
+    "default": "warn",  # default
+    "SlitDispersionWarning": "warn",
+    "GaussianBroadeningWarning": "once",  # once per Spectrum calculation
+    "CollisionalBroadeningWarning": "once",  # once per Spectrum calculation
+    "VoigtBroadeningWarning": "once",  # once per Spectrum calculation
     # see also self.misc.warning_broadening_threshold for the treshold value
-    'LinestrengthCutoffWarning': 'warn',
-    'MemoryUsageWarning': 'warn',
-    'EmptyDatabaseWarning': 'warn',
-    'OutOfRangeLinesWarning': 'warn',
-    'HighTemperatureWarning': 'warn',
-    'NegativeEnergiesWarning': 'warn',    # warning if negative energies in database
+    "LinestrengthCutoffWarning": "warn",
+    "MemoryUsageWarning": "warn",
+    "EmptyDatabaseWarning": "warn",
+    "OutOfRangeLinesWarning": "warn",
+    "HighTemperatureWarning": "warn",
+    "NegativeEnergiesWarning": "warn",  # warning if negative energies in database
     # warning if self-broadening abs coefficnet missing (Air is used instead)
-    'MissingSelfBroadeningWarning': 'warn',
-    'InputConditionsWarning': 'warn',
-    'PerformanceWarning': 'warn',
-    'OutOfBoundWarning': 'warn',
+    "MissingSelfBroadeningWarning": "warn",
+    "InputConditionsWarning": "warn",
+    "PerformanceWarning": "warn",
+    "OutOfBoundWarning": "warn",
 }
-''' dict: default status of warnings used in RADIS Spectrum calculations.
+""" dict: default status of warnings used in RADIS Spectrum calculations.
 
 Value of keys can be:
 
@@ -164,11 +184,11 @@ See Also
 :py:data:`~radis.misc.warning.WarningClasses`, 
 :py:func:`~radis.misc.warning.reset_warnings`
 
-'''
+"""
 
 
 def reset_warnings(status):
-    ''' Reactivate warnings that are set 'once' per session in the Factory
+    """ Reactivate warnings that are set 'once' per session in the Factory
     (unless all warnings have been set to False)
 
     Parameters
@@ -177,19 +197,19 @@ def reset_warnings(status):
     status: dict
         dictionary of Warnings with associated status
 
-    '''
-    
+    """
+
     if status == False:
         return
 
     for k, v in status.items():
-        if v == 'once':
+        if v == "once":
             WarningType = WarningClasses[k]
-            warnings.simplefilter('default', WarningType)
+            warnings.simplefilter("default", WarningType)
 
 
-def warn(message, category='default', status={}):
-    ''' Trigger a warning, an error or just ignore based on the value defined
+def warn(message, category="default", status={}):
+    """ Trigger a warning, an error or just ignore based on the value defined
     in the :py:attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
 
     The warnings can thus be deactivated selectively by setting the SpectrumFactory
@@ -209,8 +229,8 @@ def warn(message, category='default', status={}):
         status for all warning categories. Can be one of ``'warn'``, ``'ignore'``,
         ``'print'``, ``'error'``
 
-    '''
-    
+    """
+
     if status == False:
         return
 
@@ -218,24 +238,23 @@ def warn(message, category='default', status={}):
 
     WarningType = WarningClasses[category]
 
-    if action in 'warn':
+    if action in "warn":
         warnings.warn(WarningType(message))
-    elif action == 'once':
+    elif action == "once":
         warnings.warn(WarningType(message))
         # keep 'once' but ignore WarningType with simplefilters
-        warnings.simplefilter('ignore', WarningType)
-    elif action == 'ignore':
+        warnings.simplefilter("ignore", WarningType)
+    elif action == "ignore":
         pass
-    elif action == 'print':  # just print the message, in red
+    elif action == "print":  # just print the message, in red
         printr(message)
-    elif action == 'error':
+    elif action == "error":
         raise WarningType(message)
     else:
-        raise ValueError('Unexpected action for warning: {0}'.format(action))
+        raise ValueError("Unexpected action for warning: {0}".format(action))
 
 
 # Tests (on module load)
-
 
 
 # ... test warnings are well defined

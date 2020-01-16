@@ -41,19 +41,23 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
     """
     if isinstance(quantity, u.Quantity):
         if output_unit in (u.deg_C, u.imperial.deg_F, u.K):
-            quantity = quantity.to_value(output_unit, equivalencies = u.temperature())
+            quantity = quantity.to_value(output_unit, equivalencies=u.temperature())
         elif isinstance(output_unit, (u.UnitBase, u.Quantity)):
             quantity = quantity.to_value(output_unit, equivalencies=u.spectral())
         else:
-            raise TypeError("'output_unit' parameter is not a valid astropy unit: {0}".format(output_unit))
-        
-        if digit: 
-            quantity=round(quantity, digit)
-    
+            raise TypeError(
+                "'output_unit' parameter is not a valid astropy unit: {0}".format(
+                    output_unit
+                )
+            )
+
+        if digit:
+            quantity = round(quantity, digit)
+
     return quantity
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     import pytest
-    pytest.main(['../test/phys/test_units.py'])
+
+    pytest.main(["../test/phys/test_units.py"])

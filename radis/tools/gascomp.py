@@ -15,14 +15,19 @@ References
 
 from __future__ import absolute_import
 from radis.misc.utils import NotInstalled
+
 try:
     import cantera as ct
 except:
-    ct = NotInstalled('cantera', 'Cantera is needed to calculate equilibrium mole fractions'+\
-                      '. Install with  `pip install cantera`')
-    
+    ct = NotInstalled(
+        "cantera",
+        "Cantera is needed to calculate equilibrium mole fractions"
+        + ". Install with  `pip install cantera`",
+    )
+
+
 def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
-    ''' Returns mole fraction at temperature T, using the 
+    """ Returns mole fraction at temperature T, using the 
     [CANTERA]_ :py:meth:`~cantera.ThermoPhase.equilibrate` function. 
     
     Parameters
@@ -61,15 +66,14 @@ def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
     
     [CANTERA]_
     
-    '''
+    """
 
     # %% Init Cantera
-    g = ct.Solution('gri30.xml')
+    g = ct.Solution("gri30.xml")
     g.TPX = T_K, p_Pa, initial_mixture
-    
+
     # Minimize Gibbs:
-    g.equilibrate('TP')
-    
+    g.equilibrate("TP")
+
     # Returns
     return g.mole_fraction_dict()
-    

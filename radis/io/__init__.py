@@ -13,9 +13,9 @@ from .cdsd import cdsd2df
 
 # %% Get list of supported molecules
 def _get_supported_molecules_equilibrium():
-    ''' Molecules supported in RADIS equilibrium calculations
+    """ Molecules supported in RADIS equilibrium calculations
     Basically, all [HITRAN-2016]_ species
-    '''
+    """
     # Add all HITRAN species
     from radis.io.hitran import HITRAN_MOLECULES
 
@@ -23,19 +23,21 @@ def _get_supported_molecules_equilibrium():
 
 
 def _get_supported_molecules_nonequilibrium():
-    ''' Molecules supported in RADIS non equilibrium calculations without need
+    """ Molecules supported in RADIS non equilibrium calculations without need
     for extra databases. 
     Basically, molecules whose spectroscopic constants are built-in RADIS database
     (see radis.db)
-    '''
+    """
 
     from radis.db.molecules import Molecules
 
     return list(Molecules.keys())
 
 
-MOLECULES_LIST_EQUILIBRIUM = __supported_molecules_equilibrium__ = _get_supported_molecules_equilibrium()
-''' list: molecules that can be calculated in RADIS at equilibrium. 
+MOLECULES_LIST_EQUILIBRIUM = (
+    __supported_molecules_equilibrium__
+) = _get_supported_molecules_equilibrium()
+""" list: molecules that can be calculated in RADIS at equilibrium. 
 All [HITRAN-2016]_ species are available.
 Absorption coefficient calculated with RADIS at 300 K, 1 atm are shown for all 
 these molecules in the :ref:`Examples page <label_examples_hitran_spectra>` (HITRAN spectra). 
@@ -98,10 +100,12 @@ See Also
 :py:data:`~radis.db.molecules.Molecules`,
 :py:func:`~radis.db.molecules.getMolecule`
 
-'''
+"""
 
-MOLECULES_LIST_NONEQUILIBRIUM = __supported_molecules_nonequilibrium__ = _get_supported_molecules_nonequilibrium()
-''' list: molecules that can be calculated in RADIS at nonequilibrium. 
+MOLECULES_LIST_NONEQUILIBRIUM = (
+    __supported_molecules_nonequilibrium__
+) = _get_supported_molecules_nonequilibrium()
+""" list: molecules that can be calculated in RADIS at nonequilibrium. 
 Spectroscopic constants to calculate energy levels are needed. 
 
 RADIS features some built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>` 
@@ -116,4 +120,4 @@ See Also
 
 :py:data:`~radis.db.molecules.Molecules`,
 :py:func:`~radis.db.molecules.getMolecule`
-'''
+"""
