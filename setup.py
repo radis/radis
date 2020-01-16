@@ -111,15 +111,19 @@ setup(
         "configparser",
         "astroquery>=0.3.9",  # to fetch HITRAN databases
         "json-tricks",  # to deal with non jsonable formats
-        "numpydoc",  # for Jedi (autocompletion) to recognize
-        # numpy docstrings
         "tables",  # for pandas to HDF5 export
         "pytest",  # to run test suite
         "h5py",  # to write HDF5 files
         "joblib",  # for parallel loading of SpecDatabase
         "numba",  # just-in-time compiler
     ],
-    extras_require={"dev": ["black", "isort"]},
+    extras_require={
+        "dev": [
+            "numpydoc",  # for Jedi (autocompletion) to recognize
+            "black",  # for code-linting in accordance to PEP8
+            "isort",  # for sorting imports
+        ]
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
