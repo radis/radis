@@ -1620,7 +1620,9 @@ class Spectrum(object):
                 )
                 + "Use force=True if you really want to plot"
             )
-        if not force and (fig.gca().get_ylabel().lower() not in ["", ylabel.lower()]):
+        label1 = clean_error_msg(fig.gca().get_ylabel().lower()) 
+        label2 = clean_error_msg(ylabel.lower())
+        if not force and (label1 not in ["", label2]):
             raise ValueError(
                 "Error while plotting {0}. Cannot plot ".format(var)
                 + "on a same figure with different ylabel: \n{0}\n{1}".format(
