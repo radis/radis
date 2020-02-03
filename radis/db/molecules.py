@@ -11,13 +11,13 @@ See :py:data:`~radis.db.molecules.Molecules`
 
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
-from radis.db.classes import ElectronicState
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+from radis.db.classes import ElectronicState
+from radis.phys.convert import eV2cm
 
 # %% Define some commonly used molecules
 
-from radis.phys.convert import eV2cm
 
 # CO
 # ----------

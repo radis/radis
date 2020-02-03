@@ -10,7 +10,7 @@ State-dependant and state-independant degeneracies for molecules
 """
 # TODO: Make it a JSON file
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 def gi(M, I):

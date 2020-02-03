@@ -41,19 +41,26 @@ Or::
 
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import re
+from os.path import dirname, exists, join
+
 from six import string_types
-from radis.io.hitran import get_molecule, get_molecule_identifier
-from radis.io.hitran import HITRAN_CLASS1, HITRAN_CLASS5
-from radis.levels.dunham import Gv, Fv, EvJ
+
 from radis.db.conventions import get_convention
 from radis.db.utils import (
     get_default_jsonfile,
     get_dunham_coefficients,
     get_herzberg_coefficients,
 )
-from os.path import exists, join, dirname
+from radis.io.hitran import (
+    HITRAN_CLASS1,
+    HITRAN_CLASS5,
+    get_molecule,
+    get_molecule_identifier,
+)
+from radis.levels.dunham import EvJ, Fv, Gv
 
 # %% Molecule class
 
