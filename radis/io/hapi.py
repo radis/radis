@@ -29,34 +29,58 @@ as they present in almost any programming language.
 Trying to retain functional style for this API. 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 # import httplib
 # import urllib2
 import json
 import os
 import os.path
-import re
-from os import listdir
-from numpy import zeros, array, zeros, setdiff1d, ndarray, arange
-from numpy import place, where, insert, real, polyval
-from numpy import complex128, complex64, int64, int32, float64, float32
-from numpy import sqrt, abs, exp, pi, log, sin, cos, tan
-from numpy import convolve
-from numpy import flipud
-from numpy.fft import fft, fftshift
-from numpy import linspace, floor
-from numpy import any, minimum, maximum
-from numpy import modf
-from numpy import sort as npsort
-from bisect import bisect
-
-# from collections import OrderedDict
-from warnings import warn, simplefilter
 import pydoc
+import re
+from bisect import bisect
+from os import listdir
+# from collections import OrderedDict
+from warnings import simplefilter, warn
+
 import six
-from six.moves import range
-from six.moves import zip
+from numpy import (
+    abs,
+    any,
+    arange,
+    array,
+    complex64,
+    complex128,
+    convolve,
+    cos,
+    exp,
+    flipud,
+    float32,
+    float64,
+    floor,
+    insert,
+    int32,
+    int64,
+    linspace,
+    log,
+    maximum,
+    minimum,
+    modf,
+    ndarray,
+    pi,
+    place,
+    polyval,
+    real,
+    setdiff1d,
+    sin,
+    sort as npsort,
+    sqrt,
+    tan,
+    where,
+    zeros,
+)
+from numpy.fft import fft, fftshift
+from six.moves import range, zip
 
 # Enable warning repetitions
 simplefilter("always", UserWarning)

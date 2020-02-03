@@ -19,17 +19,18 @@ CDSD-4000 manual
 
 # TODO: remove wangl2  after loading database (wangl is enough, with 1=e and 2=f)
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 from collections import OrderedDict
-import radis
 from os.path import exists, splitext
+
+import radis
 from radis.io.tools import (
-    parse_binary_file,
     drop_object_format_columns,
+    parse_binary_file,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import check_cache_file, save_to_hdf, get_cache_file
+from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
 
 columns_hitemp = OrderedDict(
     [

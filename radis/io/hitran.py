@@ -21,20 +21,21 @@ Routine Listing
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
-import pandas as pd
 from collections import OrderedDict
 from os.path import exists, splitext
+
+import pandas as pd
+
 import radis
 from radis.io.tools import (
-    parse_binary_file,
     drop_object_format_columns,
+    parse_binary_file,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import save_to_hdf, check_cache_file, get_cache_file
-
+from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
 
 # %% Hitran groups and classes
 # As defined in Rothman et al, "The HITRAN 2004 molecular spectroscopic database"
