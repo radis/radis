@@ -1620,7 +1620,7 @@ class Spectrum(object):
                 )
                 + "Use force=True if you really want to plot"
             )
-        label1 = clean_error_msg(fig.gca().get_ylabel().lower()) 
+        label1 = clean_error_msg(fig.gca().get_ylabel().lower())
         label2 = clean_error_msg(ylabel.lower())
         if not force and (label1 not in ["", label2]):
             raise ValueError(
