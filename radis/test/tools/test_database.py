@@ -10,9 +10,9 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 # from radis.misc.utils import DatabankNotFound
 from radis.test.utils import getTestFile
-from radis.tools.database import load_spec, SpecDatabase, SpecList
+from radis.tools.database import SpecDatabase, SpecList
 import os
-from os.path import exists, dirname, basename
+from os.path import exists, dirname
 import pytest
 
 
@@ -20,8 +20,6 @@ import pytest
 def test_speclist(*args, **kwargs):
 
     from radis.test.utils import getTestFile
-
-    #    from os.path imo
 
     # Get a list of test files
     spec_list = SpecDatabase(getTestFile(".")).get()
@@ -130,4 +128,4 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
 if __name__ == "__main__":
 
-    print("Testing line survey functions:", _run_testcases(plot=True))
+    print("Testing database functions:", _run_testcases(plot=True))

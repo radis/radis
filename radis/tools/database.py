@@ -502,12 +502,6 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
     if fixed:
         _update_to_latest_format(s, file, binary)
 
-    #    if return_binary_status:   # feature discarded. Could be used to accelerate database reading,
-    # but we better raise a warning and catch it.
-    #        out = s, binary
-    #    else:
-    #        out = s
-
     return s
 
 
@@ -1735,7 +1729,8 @@ class SpecDatabase(SpecList):
         nJobs: int
             Number of processors to use to load a database (usefull for big 
             databases). BE CAREFULL, no check is done on processor use prior
-            to the execution ! Default ``-2``: use all but 1 processors
+            to the execution ! Default ``-2``: use all but 1 processors. 
+            Use ``1`` for single processor.
 
         batch_size: int or ``'auto'``
             The number of atomic tasks to dispatch at once to each
