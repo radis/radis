@@ -133,7 +133,7 @@ GLOBAL_HOST_BACKUP = "http://hitranazure.cloudapp.net/"
 
 
 def arange_(lower, upper, step):
-    npnt = floor((upper - lower) / step) + 1
+    npnt = int(floor((upper - lower) / step) + 1)
     upper_new = lower + step * (npnt - 1)
     if abs((upper - upper_new) - step) < 1e-10:
         upper_new += step
