@@ -200,9 +200,9 @@ def replace_PQR_with_m101(df):
     """
 
     # Note: somehow pandas updates dtype automatically. We have to check
-    # Actuelly it's a know issue. https://github.com/pandas-dev/pandas/issues/4094
     # We just have to replace the column:
-    new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
-    df["branch"] = new_col
+    if df.dtypes["branch"] != np.int64:
+        new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
+        df["branch"] = new_col
 
     assert df.dtypes["branch"] == np.int64
