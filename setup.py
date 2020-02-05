@@ -104,7 +104,7 @@ setup(
         "h5py",  # to write HDF5 files
         "joblib",  # for parallel loading of SpecDatabase
         "numba",  # just-in-time compiler
-        ],
+    ],
     extras_require={
         "dev": [
             "numpydoc",  # for Jedi (autocompletion) to recognize
