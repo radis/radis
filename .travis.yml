@@ -62,8 +62,6 @@ jobs:
       password:
         secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
       skip_existing: true
-      on:
-        tags: true
       only:
       - master
 
