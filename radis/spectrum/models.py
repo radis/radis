@@ -29,10 +29,17 @@ import numpy as np
 # %% Array-to-Spectrum functions
 
 
-def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
-                        conditions=None, cond_units=None, populations=None,
-                        name=None): # -> Spectrum:
-    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
+def calculated_spectrum(
+    w,
+    I,
+    wunit="nm",
+    Iunit="mW/cm2/sr/nm",
+    conditions=None,
+    cond_units=None,
+    populations=None,
+    name=None,
+):  # -> Spectrum:
+    """ Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
     object that has unit conversion, plotting and slit convolution capabilities
 
 
@@ -90,19 +97,25 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
-    '''
+    """
 
-    return Spectrum.from_array(np.array(w), np.array(I), 'radiance_noslit',
-                               waveunit=wunit, unit=Iunit,
-                               conditions=conditions, cond_units=cond_units,
-                               populations=populations,
-                               name=name)
+    return Spectrum.from_array(
+        np.array(w),
+        np.array(I),
+        "radiance_noslit",
+        waveunit=wunit,
+        unit=Iunit,
+        conditions=conditions,
+        cond_units=cond_units,
+        populations=populations,
+        name=name,
+    )
 
 
-def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
-                           conditions=None, cond_units=None,
-                           name=None): # -> Spectrum:
-    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
+def transmittance_spectrum(
+    w, T, wunit="nm", Tunit="I/I0", conditions=None, cond_units=None, name=None
+):  # -> Spectrum:
+    """ Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
     object that has unit conversion, plotting and slit convolution capabilities
 
 
@@ -156,17 +169,24 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
-    '''
+    """
 
-    return Spectrum.from_array(np.array(w), np.array(T), 'transmittance_noslit',
-                               waveunit=wunit, unit=Tunit,
-                               conditions=conditions, cond_units=cond_units,
-                               name=name)
+    return Spectrum.from_array(
+        np.array(w),
+        np.array(T),
+        "transmittance_noslit",
+        waveunit=wunit,
+        unit=Tunit,
+        conditions=conditions,
+        cond_units=cond_units,
+        name=name,
+    )
 
 
-def experimental_spectrum(w, I, wunit='nm', Iunit='counts', 
-                          conditions={}, cond_units=None, name=None): # -> Spectrum:
-    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum` 
+def experimental_spectrum(
+    w, I, wunit="nm", Iunit="counts", conditions={}, cond_units=None, name=None
+):  # -> Spectrum:
+    """ Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum` 
     object that has unit conversion and plotting
     capabilities. Convolution is not available as the spectrum is assumed to
     have be measured experimentally (hence it is already convolved with the slit function)
@@ -222,9 +242,15 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
-    '''
+    """
 
-    return Spectrum.from_array(np.array(w), np.array(I), 'radiance',
-                               waveunit=wunit, unit=Iunit,
-                               conditions=conditions, cond_units=cond_units,
-                               name=name)
+    return Spectrum.from_array(
+        np.array(w),
+        np.array(I),
+        "radiance",
+        waveunit=wunit,
+        unit=Iunit,
+        conditions=conditions,
+        cond_units=cond_units,
+        name=name,
+    )

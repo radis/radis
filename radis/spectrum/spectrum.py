@@ -48,13 +48,24 @@ from publib import set_style, fix_style
 from radis.phys.convert import conv2, cm2nm, nm2cm
 from radis.phys.units import Q_, convert_universal
 from radis.phys.air import vacuum2air, air2vacuum
-from radis.spectrum.utils import (CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES, WAVESPACE,
-                                  make_up, cast_waveunit, print_conditions,
-                                  format_xlabel)
+from radis.spectrum.utils import (
+    CONVOLUTED_QUANTITIES,
+    NON_CONVOLUTED_QUANTITIES,
+    WAVESPACE,
+    make_up,
+    cast_waveunit,
+    print_conditions,
+    format_xlabel,
+)
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
-#from radis.lbl.base import print_conditions
-from radis.misc.arrays import (evenly_distributed, count_nans, 
-                               is_sorted, is_sorted_backward)
+
+# from radis.lbl.base import print_conditions
+from radis.misc.arrays import (
+    evenly_distributed,
+    count_nans,
+    is_sorted,
+    is_sorted_backward,
+)
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
 from pint import UndefinedUnitError
@@ -66,12 +77,11 @@ from os.path import basename
 from six.moves import zip
 
 
-
 # %% Spectrum class to hold results )
 
 
 class Spectrum(object):
-    ''' This class holds results calculated with the :py:class:`~radis.lbl.factory.SpectrumFactory`
+    """ This class holds results calculated with the :py:class:`~radis.lbl.factory.SpectrumFactory`
     calculation, with other radiative codes, or experimental data. It can be
     used to plot different quantities a posteriori, or manipulate output units
     (for instance convert a spectral radiance per wavelength units to a
@@ -230,16 +240,35 @@ class Spectrum(object):
     
     .. [Spectrum] See the :ref:`Spectrum object page <label_spectrum>` 
 
-    '''
+    """
 
     # hardcode attribute names, but can save a lot of memory if hundreds of spectra
-    __slots__ = ['_q', '_q_conv', 'units', 'conditions', 'cond_units', 'populations',
-                 'lines', 'name', '_slit', 'file']
+    __slots__ = [
+        "_q",
+        "_q_conv",
+        "units",
+        "conditions",
+        "cond_units",
+        "populations",
+        "lines",
+        "name",
+        "_slit",
+        "file",
+    ]
 
-    def __init__(self, quantities, units=None, conditions=None, cond_units=None,
-                 populations=None, lines=None, waveunit=None, 
-                 name=None, warnings=True):
-        # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I, 
+    def __init__(
+        self,
+        quantities,
+        units=None,
+        conditions=None,
+        cond_units=None,
+        populations=None,
+        lines=None,
+        waveunit=None,
+        name=None,
+        warnings=True,
+    ):
+        # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I,
         # 'transmittance':T, etc.} directly too (instead of {'radiance':(w,I), etc.})
 
         # TODO: add help on creating a Spectrum from a dictionary
@@ -254,50 +283,60 @@ class Spectrum(object):
             cond_units = {}
         if populations is None:
             populations = {}
-        self._init_annotations()       # typing hints for get() and plot()
+        self._init_annotations()  # typing hints for get() and plot()
 
         # Deal with deprecated inputs
         # ... wavespace renamed waveunit
-        if 'wavespace' in conditions:
-            warn(DeprecationWarning(
-                'wavespace key in conditions is now named waveunit'))
-            conditions['waveunit'] = conditions['wavespace']
-            del conditions['wavespace']
+        if "wavespace" in conditions:
+            warn(
+                DeprecationWarning("wavespace key in conditions is now named waveunit")
+            )
+            conditions["waveunit"] = conditions["wavespace"]
+            del conditions["wavespace"]
 
         # Waveunit
         # ... Cast in standard waveunit format
-        if waveunit is None and not 'waveunit' in conditions:
-            raise AssertionError("waveunit ('nm', 'cm-1'?) has to be defined in `conditions`" +
-                                 "or with waveunit=")
+        if waveunit is None and not "waveunit" in conditions:
+            raise AssertionError(
+                "waveunit ('nm', 'cm-1'?) has to be defined in `conditions`"
+                + "or with waveunit="
+            )
         if waveunit is not None:
             waveunit = cast_waveunit(waveunit)
-        if 'waveunit' in conditions:
-            conditions['waveunit'] = cast_waveunit(conditions['waveunit'])
+        if "waveunit" in conditions:
+            conditions["waveunit"] = cast_waveunit(conditions["waveunit"])
         # ... Make sure unit match
-        if 'waveunit' in conditions:
-            if waveunit is not None and conditions['waveunit'] != waveunit:
-                raise ValueError('waveunit defined in conditions ({0}) and directly ({1}) dont match'.format(
-                    conditions['waveunit'], waveunit))
+        if "waveunit" in conditions:
+            if waveunit is not None and conditions["waveunit"] != waveunit:
+                raise ValueError(
+                    "waveunit defined in conditions ({0}) and directly ({1}) dont match".format(
+                        conditions["waveunit"], waveunit
+                    )
+                )
         else:  # ... or define them in dictionary
-            conditions['waveunit'] = waveunit
+            conditions["waveunit"] = waveunit
 
         # Check quantities format
         if len(quantities) == 0:
-            raise AssertionError('Spectrum is created with no quantities. Add ' +
-                                 '`radiance`, `transmittance` etc... with dict ' +
-                                 'format. e.g: {`radiance`: (w,I)}')
+            raise AssertionError(
+                "Spectrum is created with no quantities. Add "
+                + "`radiance`, `transmittance` etc... with dict "
+                + "format. e.g: {`radiance`: (w,I)}"
+            )
 
-        self._q = {}                #: dict: stores non convoluted quantities
-        self._q_conv = {}           #: dict: stores convoluted (slit) quantities
+        self._q = {}  #: dict: stores non convoluted quantities
+        self._q_conv = {}  #: dict: stores convoluted (slit) quantities
 
-        self._slit = {}            #: dict: hold slit function
+        self._slit = {}  #: dict: hold slit function
 
         for k, v in quantities.items():
             try:
                 assert len(v) == 2
             except AssertionError:
-                raise AssertionError('Attributes should have format (wavenumber, '
-                                     + 'quantity) . Error with `{0}`'.format(k))
+                raise AssertionError(
+                    "Attributes should have format (wavenumber, "
+                    + "quantity) . Error with `{0}`".format(k)
+                )
 
             w, I = v
 
@@ -311,7 +350,7 @@ class Spectrum(object):
         self.units = units
         self.cond_units = cond_units
         self.name = name
-        self.file = None        # used to store filename when loaded from a file
+        self.file = None  # used to store filename when loaded from a file
 
     # %% Constructors
 
@@ -409,13 +448,14 @@ class Spectrum(object):
         units = {quantity: unit}
 
         # Update Spectrum conditions
-        conditions = kwargs.pop('conditions', {})
-        for k in ['path_length']:   # usual conditions
+        conditions = kwargs.pop("conditions", {})
+        for k in ["path_length"]:  # usual conditions
             if k in kwargs:
                 conditions[k] = kwargs.pop(k)
 
-        return self(quantities, units, waveunit=waveunit, conditions=conditions,
-                    *args, **kwargs)
+        return self(
+            quantities, units, waveunit=waveunit, conditions=conditions, *args, **kwargs
+        )
 
     @classmethod
     def from_txt(self, file, quantity, waveunit, unit, *args, **kwargs):
@@ -536,10 +576,10 @@ class Spectrum(object):
 
         # Get input for loadtxt
         kwloadtxt = {}
-        for k in ['delimiter', 'skiprows']:
+        for k in ["delimiter", "skiprows"]:
             if k in kwargs:
                 kwloadtxt[k] = kwargs.pop(k)
-        argsort = kwargs.pop('argsort', False)
+        argsort = kwargs.pop("argsort", False)
 
         w, I = np.loadtxt(file, **kwloadtxt).T
         if argsort:
@@ -549,13 +589,14 @@ class Spectrum(object):
         units = {quantity: unit}
 
         # Update Spectrum conditions
-        conditions = kwargs.pop('conditions', {})
-        for k in ['path_length']:   # usual conditions
+        conditions = kwargs.pop("conditions", {})
+        for k in ["path_length"]:  # usual conditions
             if k in kwargs:
                 conditions[k] = kwargs.pop(k)
 
-        s = self(quantities, units, waveunit=waveunit, conditions=conditions,
-                 *args, **kwargs)
+        s = self(
+            quantities, units, waveunit=waveunit, conditions=conditions, *args, **kwargs
+        )
 
         # Store filename
         s.file = file
@@ -566,8 +607,8 @@ class Spectrum(object):
     # ----------------
     # XXX =====================================================================
 
-    def get(self, var, wunit='nm', Iunit='default', copy=True):
-        ''' Retrieve a spectral quantity from a Spectrum object. You can select 
+    def get(self, var, wunit="nm", Iunit="default", copy=True):
+        """ Retrieve a spectral quantity from a Spectrum object. You can select 
         wavespace unit, intensity unit, or propagation medium.
 
 
@@ -624,32 +665,34 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`,
         :ref:`the Spectrum page <label_spectrum>`
 
-        '''
+        """
         # TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
         # by FWHM.
 
         # check input
         if not var in self.get_vars():
-            if var+'_noslit' in self.get_vars():
-                raise KeyError(('`{0}` doesnt exist but `{1}` does'.format(var,
-                                                                           var+'_noslit')) +\
-                                '. Have you used .apply_slit()?')
+            if var + "_noslit" in self.get_vars():
+                raise KeyError(
+                    ("`{0}` doesnt exist but `{1}` does".format(var, var + "_noslit"))
+                    + ". Have you used .apply_slit()?"
+                )
             else:
-                raise KeyError('{0} not in quantity list: {1}'.format(
-                    var, self.get_vars()))
+                raise KeyError(
+                    "{0} not in quantity list: {1}".format(var, self.get_vars())
+                )
 
         # Get quantity
         if var in CONVOLUTED_QUANTITIES:
-            vartype = 'convoluted'
+            vartype = "convoluted"
             I = self._q_conv[var]
         elif var in NON_CONVOLUTED_QUANTITIES:  # non convoluted
-            vartype = 'non_convoluted'
+            vartype = "non_convoluted"
             I = self._q[var]
-        elif var in self._q:   # not declared, but exists. Assumes it's non_convoluted?
-            vartype = 'non_convoluted'
-            I =self._q[var]
+        elif var in self._q:  # not declared, but exists. Assumes it's non_convoluted?
+            vartype = "non_convoluted"
+            I = self._q[var]
         else:
-            raise ValueError('Unexpected quantity: {0}'.format(var))
+            raise ValueError("Unexpected quantity: {0}".format(var))
 
         # Copy
         if copy:
@@ -657,35 +700,45 @@ class Spectrum(object):
 
         # Get wavespace (in correct unit, and correct medium)
         wunit = cast_waveunit(wunit)
-        if wunit == 'cm-1':
+        if wunit == "cm-1":
             w = self.get_wavenumber(vartype, copy=copy)
-        elif wunit == 'nm':
-            w = self.get_wavelength(medium='air', which=vartype, copy=copy)
-        elif wunit == 'nm_vac':
-            w = self.get_wavelength(medium='vacuum', which=vartype, copy=copy)
+        elif wunit == "nm":
+            w = self.get_wavelength(medium="air", which=vartype, copy=copy)
+        elif wunit == "nm_vac":
+            w = self.get_wavelength(medium="vacuum", which=vartype, copy=copy)
         else:
             raise ValueError(wunit)
 
         # Convert y unit if necessary
         Iunit0 = self.units[var]
-        if Iunit != 'default' and Iunit != Iunit0:
-            if var in ['radiance', 'radiance_noslit']:
+        if Iunit != "default" and Iunit != Iunit0:
+            if var in ["radiance", "radiance_noslit"]:
                 # deal with the case where we want to get a radiance in per
                 # wavelength unit (~ W/sr/cm2/nm) in wavenumber units (~ W/sr/cm2/cm_1),
                 # or the other way round
-                I = convert_universal(I, Iunit0, Iunit, self,
-                                      per_nm_is_like='mW/sr/cm2/nm',
-                                      per_cm_is_like='mW/sr/cm2/cm_1')
-            elif var in ['emisscoeff']:
+                I = convert_universal(
+                    I,
+                    Iunit0,
+                    Iunit,
+                    self,
+                    per_nm_is_like="mW/sr/cm2/nm",
+                    per_cm_is_like="mW/sr/cm2/cm_1",
+                )
+            elif var in ["emisscoeff"]:
                 # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ /sr/cm3/cm_1)
-                I = convert_universal(I, Iunit0, Iunit, self,
-                                      per_nm_is_like='mW/sr/cm3/nm',
-                                      per_cm_is_like='mW/sr/cm3/cm_1')
-            elif var in ['absorbance']:  # no unit
-                assert Iunit in ['', '-ln(I/I0)']
+                I = convert_universal(
+                    I,
+                    Iunit0,
+                    Iunit,
+                    self,
+                    per_nm_is_like="mW/sr/cm3/nm",
+                    per_cm_is_like="mW/sr/cm3/cm_1",
+                )
+            elif var in ["absorbance"]:  # no unit
+                assert Iunit in ["", "-ln(I/I0)"]
                 # dont change the variable: I has no dimension
-            elif var in ['transmittance']:  # no unit
-                assert Iunit in ['', 'I/I0']
+            elif var in ["transmittance"]:  # no unit
+                assert Iunit in ["", "I/I0"]
                 # dont change the variable: I has no dimension
             else:
                 I = conv2(I, Iunit0, Iunit)
@@ -694,8 +747,8 @@ class Spectrum(object):
 
         return w, I
 
-    def _get_wavespace(self, which='any', copy=True):
-        ''' Return wavespace (if the same for all quantities)
+    def _get_wavespace(self, which="any", copy=True):
+        """ Return wavespace (if the same for all quantities)
 
 
         Parameters    
@@ -721,43 +774,49 @@ class Spectrum(object):
             (a copy of) spectrum wavespace for convoluted or non convoluted
             quantities
 
-        '''
+        """
 
-        if which == 'any':
-            q_defined = 'wavespace' in self._q
-            q_conv_defined = 'wavespace' in self._q_conv
+        if which == "any":
+            q_defined = "wavespace" in self._q
+            q_conv_defined = "wavespace" in self._q_conv
             if q_defined and q_conv_defined:
-                if not len(self._q['wavespace']) == len(self._q_conv['wavespace']):
-                    raise ValueError('All wavespace not equal for calculated ' +
-                                     "quantities. Can't use get_wavespace(). " +
-                                     'Specify which=`convoluted` or `non_convoluted`')
-                if not np.allclose(self._q['wavespace'], self._q_conv['wavespace']):
-                    raise ValueError('All wavespace not equal for calculated ' +
-                                     "quantities. Can't use get_wavespace(). " +
-                                     'Specify which=`convoluted` or `non_convoluted`')
-                w = self._q['wavespace']
+                if not len(self._q["wavespace"]) == len(self._q_conv["wavespace"]):
+                    raise ValueError(
+                        "All wavespace not equal for calculated "
+                        + "quantities. Can't use get_wavespace(). "
+                        + "Specify which=`convoluted` or `non_convoluted`"
+                    )
+                if not np.allclose(self._q["wavespace"], self._q_conv["wavespace"]):
+                    raise ValueError(
+                        "All wavespace not equal for calculated "
+                        + "quantities. Can't use get_wavespace(). "
+                        + "Specify which=`convoluted` or `non_convoluted`"
+                    )
+                w = self._q["wavespace"]
             elif q_defined:
-                w = self._q['wavespace']
+                w = self._q["wavespace"]
             else:
-                w = self._q_conv['wavespace']
+                w = self._q_conv["wavespace"]
 
-        elif which == 'convoluted':
-            w = self._q_conv['wavespace']
+        elif which == "convoluted":
+            w = self._q_conv["wavespace"]
 
-        elif which == 'non_convoluted':
-            w = self._q['wavespace']
+        elif which == "non_convoluted":
+            w = self._q["wavespace"]
 
         else:
-            raise ValueError("which has to be one of 'convoluted', 'non_convoluted', " +
-                             "'any'. Got {0}".format(which))
+            raise ValueError(
+                "which has to be one of 'convoluted', 'non_convoluted', "
+                + "'any'. Got {0}".format(which)
+            )
 
         if copy:
             w = w.copy()
 
         return w
 
-    def get_wavelength(self, medium='air', which='any', copy=True):
-        ''' Return wavelength in defined medium 
+    def get_wavelength(self, medium="air", which="any", copy=True):
+        """ Return wavelength in defined medium 
 
 
         Parameters    
@@ -790,43 +849,42 @@ class Spectrum(object):
         --------
         
         :ref:`the Spectrum page <label_spectrum>`
-        '''
+        """
 
         # Check input
-        if not medium in ['air', 'vacuum']:
-            raise NotImplementedError(
-                'Unknown propagating medium: {0}'.format(medium))
+        if not medium in ["air", "vacuum"]:
+            raise NotImplementedError("Unknown propagating medium: {0}".format(medium))
 
         # Now convert stored wavespace to the output unit
         w = self._get_wavespace(which=which, copy=copy)
-        if self.get_waveunit() == 'cm-1':
-            w = cm2nm(w)       # vacuum wavelength
-            
+        if self.get_waveunit() == "cm-1":
+            w = cm2nm(w)  # vacuum wavelength
+
             # Correct for propagation medium (air, vacuum)
-            if medium == 'air':
+            if medium == "air":
                 w = vacuum2air(w)
-            else:   # medium == 'vacuum'
+            else:  # medium == 'vacuum'
                 pass  # no change needed
 
-        elif self.get_waveunit() == 'nm': # nm air
-            if medium == 'air':
-                pass   # no change needed
+        elif self.get_waveunit() == "nm":  # nm air
+            if medium == "air":
+                pass  # no change needed
             else:
                 w = air2vacuum(w)
-                
-        elif self.get_waveunit() == 'nm_vac':   # nm vacuum
-            if medium == 'air':
+
+        elif self.get_waveunit() == "nm_vac":  # nm vacuum
+            if medium == "air":
                 w = vacuum2air(w)
             else:
                 pass  # no change needed
 
         else:
             raise ValueError(self.get_waveunit())
-            
+
         return w
 
-    def get_wavenumber(self, which='any', copy=True):
-        ''' Return wavenumber (if the same for all quantities)
+    def get_wavenumber(self, which="any", copy=True):
+        """ Return wavenumber (if the same for all quantities)
 
 
         Parameters    
@@ -851,26 +909,26 @@ class Spectrum(object):
         w: array_like
             (a copy of) spectrum wavenumber for convoluted or non convoluted
             quantities
-        '''
+        """
         w = self._get_wavespace(which=which, copy=copy)
 
-        if self.get_waveunit() == 'cm-1':    #
+        if self.get_waveunit() == "cm-1":  #
             pass
-        
-        elif self.get_waveunit() == 'nm':     # wavelength air
+
+        elif self.get_waveunit() == "nm":  # wavelength air
             w = air2vacuum(w)
             w = nm2cm(w)
-             
-        elif self.get_waveunit() == 'nm_vac': # wavelength vacuum
+
+        elif self.get_waveunit() == "nm_vac":  # wavelength vacuum
             w = nm2cm(w)
-            
+
         else:
             raise ValueError(self.get_waveunit())
 
         return w
 
-    def get_radiance(self, Iunit='mW/cm2/sr/nm', copy=True):
-        ''' Return radiance in whatever unit, and can even convert from ~1/nm
+    def get_radiance(self, Iunit="mW/cm2/sr/nm", copy=True):
+        """ Return radiance in whatever unit, and can even convert from ~1/nm
         to ~1/cm-1 (and the other way round)
 
 
@@ -889,12 +947,12 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`,
         :ref:`the Spectrum page <label_spectrum>`
 
-        '''
+        """
 
-        return self.get('radiance', Iunit=Iunit, copy=copy)[1]
+        return self.get("radiance", Iunit=Iunit, copy=copy)[1]
 
-    def get_radiance_noslit(self, Iunit='mW/cm2/sr/nm', copy=True):
-        ''' Return radiance (non convoluted) in whatever unit, and can even
+    def get_radiance_noslit(self, Iunit="mW/cm2/sr/nm", copy=True):
+        """ Return radiance (non convoluted) in whatever unit, and can even
         convert from ~1/nm to ~1/cm-1 (and the other way round)
 
 
@@ -914,34 +972,37 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
 
 
-        '''
+        """
 
-        return self.get('radiance_noslit', Iunit=Iunit, copy=copy)[1]
+        return self.get("radiance_noslit", Iunit=Iunit, copy=copy)[1]
 
     def get_name(self):
-        ''' Return Spectrum name. If not defined, returns either the 
+        """ Return Spectrum name. If not defined, returns either the 
         :attr:`~radis.spectrum.spectrum.Spectrum.file` name if Spectrum was 
         loaded from a file, or the ``'spectrum{id}'`` with
         the Python ``id`` object
-        '''
+        """
         try:
             self.name
         except AttributeError:
-            warn(DeprecationWarning(
-                'Spectrum has no .name attribute and is probably outdated. Update!'))
+            warn(
+                DeprecationWarning(
+                    "Spectrum has no .name attribute and is probably outdated. Update!"
+                )
+            )
             self.name = None
 
         if self.name is not None:
             name = self.name
         elif self.file is not None:
-            name = '{0}'.format(basename(self.file))
+            name = "{0}".format(basename(self.file))
         else:
-            name = 'spectrum{0}'.format(id(self))
+            name = "spectrum{0}".format(id(self))
 
         return name
 
-    def savetxt(self, filename, var, wunit='nm', Iunit='default'):
-        ''' Export spectral quantity var to filename
+    def savetxt(self, filename, var, wunit="nm", Iunit="default"):
+        """ Export spectral quantity var to filename
 
         (note that this will loose some information. You better save a Spectrum
         object under .spec file with :meth:`~radis.spectrum.spectrum.Spectrum.store` )
@@ -975,33 +1036,37 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.store`, 
         :meth:`~radis.spectrum.spectrum.Spectrum.save`,
         :ref:`the Spectrum page <label_spectrum>`
-        '''
+        """
 
         # Get units to export
         wunit = cast_waveunit(wunit)
-        if wunit == 'cm-1':
-            xlabel = 'Wavenumber (cm-1)'
-        elif wunit == 'nm':
-            xlabel = 'Wavelength [air] (nm)'
-        elif wunit == 'nm_vac':
-            xlabel = 'Wavelength [vacuum] (nm)'
+        if wunit == "cm-1":
+            xlabel = "Wavenumber (cm-1)"
+        elif wunit == "nm":
+            xlabel = "Wavelength [air] (nm)"
+        elif wunit == "nm_vac":
+            xlabel = "Wavelength [vacuum] (nm)"
         else:
             raise ValueError(wunit)
 
-        if Iunit == 'default':
+        if Iunit == "default":
             try:
                 yunit = self.units[var]
             except KeyError:  # unit not defined in dictionary
-                yunit = 'a.u'
+                yunit = "a.u"
         else:
             yunit = Iunit
 
-        header = '{0}\t{1} ({2})'.format(xlabel, var, yunit)
+        header = "{0}\t{1} ({2})".format(xlabel, var, yunit)
 
-        np.savetxt(filename, np.vstack(self.get(var, wunit=wunit, Iunit=Iunit)).T, header=header)
+        np.savetxt(
+            filename,
+            np.vstack(self.get(var, wunit=wunit, Iunit=Iunit)).T,
+            header=header,
+        )
 
-    def update(self, quantity='all', optically_thin='default', verbose=True):
-        ''' Calculate missing quantities: ex: if path_length and emisscoeff
+    def update(self, quantity="all", optically_thin="default", verbose=True):
+        """ Calculate missing quantities: ex: if path_length and emisscoeff
         are given, recalculate radiance_noslit
 
 
@@ -1026,16 +1091,18 @@ class Spectrum(object):
         --------
         
         :ref:`the Spectrum page <label_spectrum>`
-        '''
+        """
 
-        return update(self, quantity=quantity, optically_thin=optically_thin,
-                      verbose=verbose)
+        return update(
+            self, quantity=quantity, optically_thin=optically_thin, verbose=verbose
+        )
 
     # Rescale functions
 
-    def rescale_path_length(self, new_path_length, old_path_length=None,
-                            inplace=True, force=False):
-        ''' Rescale spectrum to new path length. Starts from absorption coefficient
+    def rescale_path_length(
+        self, new_path_length, old_path_length=None, inplace=True, force=False
+    ):
+        """ Rescale spectrum to new path length. Starts from absorption coefficient
         and emission coefficient, and solves the RTE again for the new path length
         Convoluted values (with slit) are dropped in the process.
 
@@ -1080,16 +1147,26 @@ class Spectrum(object):
         --------
         
         :ref:`the Spectrum page <label_spectrum>`
-        '''
+        """
 
-        return rescale_path_length(self, new_path_length=new_path_length,
-                                   old_path_length=old_path_length,
-                                   inplace=inplace,
-                                   force=force)
+        return rescale_path_length(
+            self,
+            new_path_length=new_path_length,
+            old_path_length=old_path_length,
+            inplace=inplace,
+            force=force,
+        )
 
-    def rescale_mole_fraction(self, new_mole_fraction, old_mole_fraction=None,
-                              inplace=True, ignore_warnings=False, force=False, verbose=True):
-        ''' Update spectrum with new molar fraction
+    def rescale_mole_fraction(
+        self,
+        new_mole_fraction,
+        old_mole_fraction=None,
+        inplace=True,
+        ignore_warnings=False,
+        force=False,
+        verbose=True,
+    ):
+        """ Update spectrum with new molar fraction
         Convoluted values (with slit) are dropped in the process.
 
 
@@ -1134,17 +1211,20 @@ class Spectrum(object):
         --------
         
         :ref:`the Spectrum page <label_spectrum>`
-        '''
+        """
 
-        return rescale_mole_fraction(self, new_mole_fraction=new_mole_fraction,
-                                     old_mole_fraction=old_mole_fraction,
-                                     inplace=inplace,
-                                     ignore_warnings=ignore_warnings,
-                                     force=force, verbose=verbose)
-        
-        
-    def crop(self, wmin=None, wmax=None, wunit='default', inplace=True):
-        ''' Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
+        return rescale_mole_fraction(
+            self,
+            new_mole_fraction=new_mole_fraction,
+            old_mole_fraction=old_mole_fraction,
+            inplace=inplace,
+            ignore_warnings=ignore_warnings,
+            force=force,
+            verbose=verbose,
+        )
+
+    def crop(self, wmin=None, wmax=None, wunit="default", inplace=True):
+        """ Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
         
         Parameters
         ----------
@@ -1191,18 +1271,18 @@ class Spectrum(object):
         to combine 2 adjacent spectra in one.
         
         
-        '''
-        
+        """
+
         from radis.spectrum.operations import crop
-        
-        if wunit == 'default':
+
+        if wunit == "default":
             wunit = self.get_waveunit()
-        
+
         return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, inplace=inplace)
-    
+
     def offset(self, offset, unit, inplace=True):
         # type: (Spectrum, float, str) -> Spectrum
-        '''Offset the spectrum by a wavelength or wavenumber  (inplace)
+        """Offset the spectrum by a wavelength or wavenumber  (inplace)
     
         Parameters    
         ----------
@@ -1232,13 +1312,14 @@ class Spectrum(object):
         :func:`radis.spectrum.operations.offset`,
         :ref:`the Spectrum page <label_spectrum>`
         
-        '''
-        
+        """
+
         from radis.spectrum.operations import offset as offset_func
+
         return offset_func(self, offset, unit, inplace=inplace)
 
-    def get_integral(self, var, wunit='nm', Iunit='default', **kwargs):
-        ''' Returns integral of variable 'var' over waverange
+    def get_integral(self, var, wunit="nm", Iunit="default", **kwargs):
+        """ Returns integral of variable 'var' over waverange
         
         Parameters
         ----------
@@ -1273,13 +1354,13 @@ class Spectrum(object):
         
         :meth:`~radis.spectrum.spectrum.Spectrum.get_power`,
         :ref:`the Spectrum page <label_spectrum>`
-        '''
+        """
 
         w, I = self.get(var, wunit=wunit, Iunit=Iunit, **kwargs)
         return abs(np.trapz(I, x=w))
 
-    def get_power(self, unit='mW/cm2/sr'):
-        ''' Returns integrated radiance (no slit) power density
+    def get_power(self, unit="mW/cm2/sr"):
+        """ Returns integrated radiance (no slit) power density
         
         Parameters
         ----------
@@ -1299,17 +1380,16 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.get_integral`,
         :ref:`the Spectrum page <label_spectrum>`
         
-        '''
+        """
 
-        P = self.get_integral(
-            'radiance_noslit', wunit='nm', Iunit='mW/cm2/sr/nm')
+        P = self.get_integral("radiance_noslit", wunit="nm", Iunit="mW/cm2/sr/nm")
         # P is in mW/cm2/sr/nm * nm
-        return conv2(P, 'mW/cm2/sr', unit)
+        return conv2(P, "mW/cm2/sr", unit)
 
     # %% Plotting routines
 
-    def get_vars(self, which='any'):
-        ''' Returns all spectral quantities stored in this object (convoluted or 
+    def get_vars(self, which="any"):
+        """ Returns all spectral quantities stored in this object (convoluted or 
         non convoluted)
 
         Parameters
@@ -1317,22 +1397,22 @@ class Spectrum(object):
 
         which: 'any', 'convoluted', 'non convoluted' 
 
-        '''
-        if which == 'any':
-            varlist = list(self._q.keys())+list(self._q_conv.keys())
-        elif which == 'convoluted':
+        """
+        if which == "any":
+            varlist = list(self._q.keys()) + list(self._q_conv.keys())
+        elif which == "convoluted":
             varlist = list(self._q_conv.keys())
-        elif which == 'non convoluted':
+        elif which == "non convoluted":
             varlist = list(self._q.keys())
         else:
-            raise ValueError('Unexpected value: {0}'.format(which))
+            raise ValueError("Unexpected value: {0}".format(which))
 
         # remove wavespace
-        varlist = [k for k in varlist if k != 'wavespace']
+        varlist = [k for k in varlist if k != "wavespace"]
         return varlist
-    
-    def get_quantities(self, which='any'):
-        ''' Returns all spectral quantities stored in this object (convoluted or 
+
+    def get_quantities(self, which="any"):
+        """ Returns all spectral quantities stored in this object (convoluted or 
         non convoluted). Wrapper to :py:meth:`~radis.spectrum.spectrum.get_vars`
 
         Parameters
@@ -1340,12 +1420,12 @@ class Spectrum(object):
 
         which: 'any', 'convoluted', 'non convoluted' 
 
-        '''
-        
+        """
+
         return self.get_vars(which=which)
 
     def _get_items(self):
-        ''' Return a dictionary of tuples, e.g::
+        """ Return a dictionary of tuples, e.g::
             
             {'radiance':(w,I), 'transmittance_noslit':(w_ns,T)}
 
@@ -1355,18 +1435,33 @@ class Spectrum(object):
         .. warning::
             real quantities are returned, not copies. 
         
-        '''
-        items = {k: (self._q['wavespace'], v)
-                 for k, v in self._q.items() if k != 'wavespace'}
-        items.update({k: (self._q_conv['wavespace'], v)
-                      for k, v in self._q_conv.items() if k != 'wavespace'})
+        """
+        items = {
+            k: (self._q["wavespace"], v) for k, v in self._q.items() if k != "wavespace"
+        }
+        items.update(
+            {
+                k: (self._q_conv["wavespace"], v)
+                for k, v in self._q_conv.items()
+                if k != "wavespace"
+            }
+        )
         return items
 
-    def plot(self, var=None, wunit='default', Iunit='default', show_points=False,
-             nfig=None, yscale='linear', plot_medium='vacuum_only',
-             normalize=False, force=False,
-             **kwargs):
-        ''' Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
+    def plot(
+        self,
+        var=None,
+        wunit="default",
+        Iunit="default",
+        show_points=False,
+        nfig=None,
+        yscale="linear",
+        plot_medium="vacuum_only",
+        normalize=False,
+        force=False,
+        **kwargs
+    ):
+        """ Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
 
         Parameters    
         ----------
@@ -1444,31 +1539,31 @@ class Spectrum(object):
         :py:func:`~radis.spectrum.compare.plot_diff`,         
         :ref:`the Spectrum page <label_spectrum>`
 
-        '''
+        """
 
         # Check inputs, get defaults
         # ------
 
-        if var in ['intensity', 'intensity_noslit']:
-            raise ValueError('`intensity` not defined. Use `radiance` instead')
+        if var in ["intensity", "intensity_noslit"]:
+            raise ValueError("`intensity` not defined. Use `radiance` instead")
 
-        if var is None:    # if nothing is defined, try these first:
+        if var is None:  # if nothing is defined, try these first:
             params = self.get_vars()
-            if 'radiance' in params:
-                var = 'radiance'
-            elif 'radiance_noslit' in params:
-                var = 'radiance_noslit'
-            elif 'transmittance' in params:
-                var = 'transmittance'
-            elif 'transmittance_noslit' in params:
-                var = 'transmittance_noslit'
+            if "radiance" in params:
+                var = "radiance"
+            elif "radiance_noslit" in params:
+                var = "radiance_noslit"
+            elif "transmittance" in params:
+                var = "transmittance"
+            elif "transmittance_noslit" in params:
+                var = "transmittance_noslit"
             else:
                 # or plot the first variable we find
                 var = list(params)[0]
-                if var.replace('_noslit', '') in params:  # favour convolved quantities
-                    var = var.replace('_noslit', '')
+                if var.replace("_noslit", "") in params:  # favour convolved quantities
+                    var = var.replace("_noslit", "")
 
-        if wunit == 'default':
+        if wunit == "default":
             wunit = self.get_waveunit()
         wunit = cast_waveunit(wunit)
 
@@ -1476,87 +1571,93 @@ class Spectrum(object):
         x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
         # Get labels
-        xlabel=format_xlabel(wunit, plot_medium)
+        xlabel = format_xlabel(wunit, plot_medium)
 
-        if Iunit == 'default':
+        if Iunit == "default":
             try:
                 Iunit0 = self.units[var]
             except KeyError:  # unit not defined in dictionary
-                Iunit0 = 'a.u'
+                Iunit0 = "a.u"
             Iunit = Iunit0
-            
+
         # cosmetic changes
         Iunit = make_up(Iunit)
-        ylabel = make_up('{0} ({1})'.format(var, Iunit))
-    
+        ylabel = make_up("{0} ({1})".format(var, Iunit))
 
         # Plot
         # -------
         if normalize:
             if isinstance(normalize, tuple):
                 from radis.misc.arrays import norm_on
+
                 wmin, wmax = normalize
                 y = norm_on(y, x, wmin=wmin, wmax=wmax)
             else:
                 y /= y.max()
-            Iunit = 'norm'
+            Iunit = "norm"
 
-        set_style('origin')
-        if nfig == 'same':
+        set_style("origin")
+        if nfig == "same":
             nfig = plt.gcf().number
         fig = plt.figure(nfig)
-        
+
         # If figure exist, ensures xlabel and ylabel are the same (prevents some
-        # users errors if plotting difference units!)... Note that since 
+        # users errors if plotting difference units!)... Note that since
         # 'radiance' and 'radiance_noslit' are now plotted under the same name,
-        # they cannot be differenced. But at least this allows user to plot 
+        # they cannot be differenced. But at least this allows user to plot
         # both on the same figure if they want to compare
-        
+
         def clean_error_msg(string):
-            string = string.replace(r'$^\mathregular{', '^')
-            string = string.replace(r'}$', '')
+            string = string.replace(r"$^\mathregular{", "^")
+            string = string.replace(r"}$", "")
             return string
-        
-        if not force and (fig.gca().get_xlabel().lower() not in ['', xlabel.lower()]):
-            raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
-                             'on a same figure with different xlabel: {0}, {1}'.format(
-                            clean_error_msg(fig.gca().get_xlabel()), 
-                            clean_error_msg(xlabel))+\
-                            'Use force=True if you really want to plot')
-        if not force and (fig.gca().get_ylabel().lower() not in ['', ylabel.lower()]):
-            raise ValueError('Error while plotting {0}. Cannot plot '.format(var)+\
-                             'on a same figure with different ylabel: \n{0}\n{1}'.format(
-                            clean_error_msg(fig.gca().get_ylabel()), 
-                            clean_error_msg(ylabel))+\
-                            '\nUse force=True if you really want to plot')
-        
+
+        if not force and (fig.gca().get_xlabel().lower() not in ["", xlabel.lower()]):
+            raise ValueError(
+                "Error while plotting {0}. Cannot plot ".format(var)
+                + "on a same figure with different xlabel: {0}, {1}".format(
+                    clean_error_msg(fig.gca().get_xlabel()), clean_error_msg(xlabel)
+                )
+                + "Use force=True if you really want to plot"
+            )
+        label1 = clean_error_msg(fig.gca().get_ylabel().lower())
+        label2 = clean_error_msg(ylabel.lower())
+        if not force and (label1 not in ["", label2]):
+            raise ValueError(
+                "Error while plotting {0}. Cannot plot ".format(var)
+                + "on a same figure with different ylabel: \n{0}\n{1}".format(
+                    clean_error_msg(fig.gca().get_ylabel()), clean_error_msg(ylabel)
+                )
+                + "\nUse force=True if you really want to plot"
+            )
+
         # Add extra plotting parameters
-        if 'lw' not in kwargs and 'linewidth' not in kwargs:
-            kwargs['lw'] = 0.5
+        if "lw" not in kwargs and "linewidth" not in kwargs:
+            kwargs["lw"] = 0.5
         # Add a label. Not shown by default but User can set it if using plt.legend()
         # (useful when plotting multiple plots on same figure)
-        label = kwargs.pop('label', self.get_name())
+        label = kwargs.pop("label", self.get_name())
         # note: '-k' by default with style origin for first plot
-        line, = plt.plot(x, y, label=label, **kwargs)
+        (line,) = plt.plot(x, y, label=label, **kwargs)
         if show_points:
-            plt.plot(x, y, 'o', color='lightgrey', **kwargs)
-        plt.ticklabel_format(useOffset=False, axis='x')
+            plt.plot(x, y, "o", color="lightgrey", **kwargs)
+        plt.ticklabel_format(useOffset=False, axis="x")
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
 
         plt.yscale(yscale)
 
-        if 'label' in kwargs:
+        if "label" in kwargs:
             plt.legend()
 
-        fix_style(str('origin'))
+        fix_style(str("origin"))
 
         plt.show()
 
         return line
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
-        ''' Return populations that are featured in the spectrum, either as 
+        """ Return populations that are featured in the spectrum, either as 
         upper or lower levels 
 
 
@@ -1595,40 +1696,53 @@ class Spectrum(object):
         SpectrumFactory.get_populations())
 
 
-        '''
+        """
 
         # Check inputs, get default values
         populations = self.populations
         if populations is None or populations == {}:
-            raise ValueError('Populations not defined')
+            raise ValueError("Populations not defined")
         if type(populations) != dict:
-            raise TypeError('Method defined for populations as dictionary')
+            raise TypeError("Method defined for populations as dictionary")
         if molecule is None:
             if len(list(populations.keys())) != 1:
-                raise ValueError('Please choose which molecule among: {0}'.format(
-                    list(populations.keys())))
+                raise ValueError(
+                    "Please choose which molecule among: {0}".format(
+                        list(populations.keys())
+                    )
+                )
             molecule = list(populations.keys())[0]
         if isotope is None:
             if len(list(populations[molecule].keys())) != 1:
-                raise ValueError('Please choose which isotope among: {0}'.format(
-                    list(populations[molecule].keys())))
+                raise ValueError(
+                    "Please choose which isotope among: {0}".format(
+                        list(populations[molecule].keys())
+                    )
+                )
             isotope = list(populations[molecule].keys())[0]
         if electronic_state is None:
             if len(list(populations[molecule][isotope].keys())) != 1:
-                raise ValueError('Please choose which electronic state among: {0}'.format(
-                    list(populations[molecule][isotope].keys())))
+                raise ValueError(
+                    "Please choose which electronic state among: {0}".format(
+                        list(populations[molecule][isotope].keys())
+                    )
+                )
             electronic_state = list(populations[molecule][isotope].keys())[0]
 
         if __debug__:
-            printdbg('get vib populations for {0}({1})[iso{2}]'.format(
-                molecule, electronic_state, isotope))
+            printdbg(
+                "get vib populations for {0}({1})[iso{2}]".format(
+                    molecule, electronic_state, isotope
+                )
+            )
 
         # Return
         return populations[molecule][isotope][electronic_state]
 
-    def get_vib_levels(self, molecule=None, isotope=None, electronic_state=None,
-                       first=None):
-        ''' Return vibrational levels in the spectrum (energies, populations)
+    def get_vib_levels(
+        self, molecule=None, isotope=None, electronic_state=None, first=None
+    ):
+        """ Return vibrational levels in the spectrum (energies, populations)
 
 
         Parameters  
@@ -1655,26 +1769,31 @@ class Spectrum(object):
         pandas dataframe of levels, where levels are the index, 
         and 'Evib' and 'nvib' are featured 
 
-        '''
+        """
 
-        pops = self.get_populations(molecule=molecule, isotope=isotope,
-                                    electronic_state=electronic_state)
+        pops = self.get_populations(
+            molecule=molecule, isotope=isotope, electronic_state=electronic_state
+        )
 
         try:
-            vib_pops = pops['vib']
+            vib_pops = pops["vib"]
         except KeyError:
-            raise KeyError('Vibrational levels not defined in this Spectrum object. ' +
-                           "If using RADIS, make sure you chose export_populations='vib'")
+            raise KeyError(
+                "Vibrational levels not defined in this Spectrum object. "
+                + "If using RADIS, make sure you chose export_populations='vib'"
+            )
 
         if first is not None:
-            if not 'nvib' in vib_pops:
-                raise KeyError('Vibrational populations (nvib) not calculated in this ' +
-                               'Spectrum object. Cant get first most populated levels. ' +
-                               'If using RADIS, make sure you used a non_eq_spectrum ' +
-                               'calculation')
-            if first == 'all':
+            if not "nvib" in vib_pops:
+                raise KeyError(
+                    "Vibrational populations (nvib) not calculated in this "
+                    + "Spectrum object. Cant get first most populated levels. "
+                    + "If using RADIS, make sure you used a non_eq_spectrum "
+                    + "calculation"
+                )
+            if first == "all":
                 first = None
-            out = vib_pops.sort_values(by='nvib', ascending=False)[:first]
+            out = vib_pops.sort_values(by="nvib", ascending=False)[:first]
 
         else:
             out = vib_pops
@@ -1682,9 +1801,10 @@ class Spectrum(object):
         # Return
         return out
 
-    def get_rovib_levels(self, molecule=None, isotope=None, electronic_state=None,
-                         first=None):
-        ''' Return rovibrational levels calculated in the spectrum (energies, 
+    def get_rovib_levels(
+        self, molecule=None, isotope=None, electronic_state=None, first=None
+    ):
+        """ Return rovibrational levels calculated in the spectrum (energies, 
         populations)
 
 
@@ -1712,26 +1832,31 @@ class Spectrum(object):
         pandas dataframe of levels, where levels are the index, 
         and 'Evib' and 'nvib' are featured 
 
-        '''
+        """
 
-        pops = self.get_populations(molecule=molecule, isotope=isotope,
-                                    electronic_state=electronic_state)
+        pops = self.get_populations(
+            molecule=molecule, isotope=isotope, electronic_state=electronic_state
+        )
 
         try:
-            rovib_pops = pops['rovib']
+            rovib_pops = pops["rovib"]
         except KeyError:
-            raise KeyError('Vibrational levels not defined in this Spectrum object. ' +
-                           "If using RADIS, make sure you chose export_populations='vib'")
+            raise KeyError(
+                "Vibrational levels not defined in this Spectrum object. "
+                + "If using RADIS, make sure you chose export_populations='vib'"
+            )
 
         if first is not None:
-            if not 'n' in rovib_pops:
-                raise KeyError('Rovibrational populations (n) not calculated in this ' +
-                               'Spectrum object. Cant get first most populated levels. ' +
-                               'If using RADIS, make sure you used a non_eq_spectrum ' +
-                               'calculation')
-            if first == 'all':
+            if not "n" in rovib_pops:
+                raise KeyError(
+                    "Rovibrational populations (n) not calculated in this "
+                    + "Spectrum object. Cant get first most populated levels. "
+                    + "If using RADIS, make sure you used a non_eq_spectrum "
+                    + "calculation"
+                )
+            if first == "all":
                 first = None
-            out = rovib_pops.sort_values(by='n', ascending=False)[:first]
+            out = rovib_pops.sort_values(by="n", ascending=False)[:first]
 
         else:
             out = rovib_pops
@@ -1739,8 +1864,10 @@ class Spectrum(object):
         # Return
         return out
 
-    def plot_populations(self, what=None, nunit='', correct_for_abundance=False, **kwargs):
-        ''' Plots vib populations if given and format is valid
+    def plot_populations(
+        self, what=None, nunit="", correct_for_abundance=False, **kwargs
+    ):
+        """ Plots vib populations if given and format is valid
 
 
         Parameters    
@@ -1759,60 +1886,63 @@ class Spectrum(object):
 
         kwargs: **dict
             are forwarded to the plot
-        '''
+        """
 
         # Check input, get defaults
         pops = self.populations
         if not isinstance(pops, dict):
-            raise ValueError('Populations not defined in given Spectrum')
+            raise ValueError("Populations not defined in given Spectrum")
 
         # Plot function
         def _plot_elec_state(what, df, state_name, Ia, fig):
-            if what == 'vib':
-                E, n, g = df['Evib'], df['nvib'], df['gvib']
-                ylabel = 'n/g$_{vib}$'
-                title = 'Vibrational populations'
-            elif what == 'rovib':
-                E, n, g = df['E'], df['n'], df['gj']
-                ylabel = 'n/(2J+1)'
-                title = 'Rovibrational populations'
+            if what == "vib":
+                E, n, g = df["Evib"], df["nvib"], df["gvib"]
+                ylabel = "n/g$_{vib}$"
+                title = "Vibrational populations"
+            elif what == "rovib":
+                E, n, g = df["E"], df["n"], df["gj"]
+                ylabel = "n/(2J+1)"
+                title = "Rovibrational populations"
 
             if correct_for_abundance:
                 n = n * Ia
 
-            if nunit == 'cm-3':
+            if nunit == "cm-3":
                 from radis.phys.constants import k_b
+
                 try:
-                    P_mbar = self.conditions['pressure_mbar']  # mbar
-                    T = self.conditions['Tgas']
-                    mfrac = self.conditions['mole_fraction']
+                    P_mbar = self.conditions["pressure_mbar"]  # mbar
+                    T = self.conditions["Tgas"]
+                    mfrac = self.conditions["mole_fraction"]
                 except KeyError:
-                    raise KeyError('P_mbar (pressure), T (Tgas) and n (mole_fraction) ' +
-                                   'are needed to calculate total number density in (cm-3)')
-                N = P_mbar*1e2/k_b/T*mfrac*1e-6
+                    raise KeyError(
+                        "P_mbar (pressure), T (Tgas) and n (mole_fraction) "
+                        + "are needed to calculate total number density in (cm-3)"
+                    )
+                N = P_mbar * 1e2 / k_b / T * mfrac * 1e-6
                 n = n * N
-                unitlabel = ' [cm-3]'
-            elif nunit == '':
-                unitlabel = ' [fraction]'
+                unitlabel = " [cm-3]"
+            elif nunit == "":
+                unitlabel = " [fraction]"
             else:
-                raise ValueError('Unknown unit: {0}'.format(nunit))
+                raise ValueError("Unknown unit: {0}".format(nunit))
 
             # Plot
             if fig is None:
                 fig = plt.figure()
-                plt.xlabel('Energy (cm-1)')
-                plt.ylabel(ylabel+unitlabel)
-                plt.yscale('log')
+                plt.xlabel("Energy (cm-1)")
+                plt.ylabel(ylabel + unitlabel)
+                plt.yscale("log")
                 plt.title(title)
             ax = fig.gca()
-            ax.plot(E, n/g, 'o', label=state_name, **kwargs)
+            ax.plot(E, n / g, "o", label=state_name, **kwargs)
 
             return fig
 
         # Initialize figures, styles
         fig_vib = None
         fig_rovib = None
-        set_style('origin')
+        set_style("origin")
 
         # Loop over all molecules, all isotopes, all electronic states
         # Note that the below works for both dict and pandas dataframe
@@ -1820,46 +1950,64 @@ class Spectrum(object):
         for molecule, isotopes in pops.items():
             for isotope, elec_states in isotopes.items():
                 for elec_state, content in elec_states.items():
-                    state_name = '{0}({1})(iso{2})'.format(molecule, elec_state,
-                                                           isotope)
+                    state_name = "{0}({1})(iso{2})".format(
+                        molecule, elec_state, isotope
+                    )
 
                     Ia = None
                     if correct_for_abundance:
-                        if 'Ia' in list(content.keys()):
-                            Ia = content['Ia']
+                        if "Ia" in list(content.keys()):
+                            Ia = content["Ia"]
                         else:
-                            raise KeyError('Ia: isotopic abundance not defined in ' +
-                                           'Spectrum populations')
+                            raise KeyError(
+                                "Ia: isotopic abundance not defined in "
+                                + "Spectrum populations"
+                            )
 
                     for k in content.keys():
 
-                        if k == 'rovib' and (what == k or what is None):
-                            df = self.get_rovib_levels(molecule, isotope, elec_state,
-                                                       first='all')  # sort by n + check is defined)
-                            fig_rovib = _plot_elec_state('rovib', df, state_name,
-                                                         Ia, fig_rovib)
+                        if k == "rovib" and (what == k or what is None):
+                            df = self.get_rovib_levels(
+                                molecule, isotope, elec_state, first="all"
+                            )  # sort by n + check is defined)
+                            fig_rovib = _plot_elec_state(
+                                "rovib", df, state_name, Ia, fig_rovib
+                            )
 
-                        if k == 'vib' and (what == k or what is None):
-                            df = self.get_vib_levels(molecule, isotope, elec_state,
-                                                     first='all')  # sort by n + check is defined)
-                            fig_vib = _plot_elec_state('vib', df, state_name,
-                                                       Ia, fig_vib)
+                        if k == "vib" and (what == k or what is None):
+                            df = self.get_vib_levels(
+                                molecule, isotope, elec_state, first="all"
+                            )  # sort by n + check is defined)
+                            fig_vib = _plot_elec_state(
+                                "vib", df, state_name, Ia, fig_vib
+                            )
 
         # Update
         for fig in [fig_vib, fig_rovib]:
             if fig is not None:
                 ax = fig.gca()
                 ax.legend()
-                fix_style('origin', ax)
+                fix_style("origin", ax)
 
     # %% ------------------ Instrumental Slit Function ---------------------
 
-    def apply_slit(self, slit_function, unit='nm', shape='triangular',
-                   center_wavespace=None, norm_by='area', mode='valid', 
-                   plot_slit=False, store=True, slit_dispersion=None,
-                   auto_recenter_crop=True, verbose=True,
-                   *args, **kwargs):
-        ''' Apply an instrumental slit function to all quantities in Spectrum. Slit function
+    def apply_slit(
+        self,
+        slit_function,
+        unit="nm",
+        shape="triangular",
+        center_wavespace=None,
+        norm_by="area",
+        mode="valid",
+        plot_slit=False,
+        store=True,
+        slit_dispersion=None,
+        auto_recenter_crop=True,
+        verbose=True,
+        *args,
+        **kwargs
+    ):
+        """ Apply an instrumental slit function to all quantities in Spectrum. Slit function
         can be generated with usual shapes (see ``shape=``) or imported from an
         experimental slit function (path to a text file or numpy array of shape n*2). 
         Convoluted spectra are cut on the edge compared to non-convoluted spectra, 
@@ -2037,68 +2185,84 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
 
 
-        '''
+        """
         # TODO: add warning if FWHM >= wstep(spectrum)/5
 
-        from radis.tools.slit import (convolve_with_slit, get_slit_function, cast_waveunit,
-                                      offset_dilate_slit_function, remove_boundary,
-                                      normalize_slit)
+        from radis.tools.slit import (
+            convolve_with_slit,
+            get_slit_function,
+            cast_waveunit,
+            offset_dilate_slit_function,
+            remove_boundary,
+            normalize_slit,
+        )
 
         # Check inputs
         # ---------
-        if 'slit_unit' in kwargs:
-            unit = kwargs.pop('slit_unit')
-            warn(DeprecationWarning('slit_unit was renamed unit'))
+        if "slit_unit" in kwargs:
+            unit = kwargs.pop("slit_unit")
+            warn(DeprecationWarning("slit_unit was renamed unit"))
 
         unit = cast_waveunit(unit)
 
-        varlist = [k for k in self.get_vars() if k.endswith('_noslit')]
+        varlist = [k for k in self.get_vars() if k.endswith("_noslit")]
 
         if len(varlist) == 0:
-            raise AssertionError('No variables to apply slit on. Variable names ' +
-                                 'to be convolved should end with _noslit')
+            raise AssertionError(
+                "No variables to apply slit on. Variable names "
+                + "to be convolved should end with _noslit"
+            )
 
         # Forward relevant inputs to convolution instead of slit function generation
         kwargsconvolve = {}
-        for kw in ['slit_dispersion', 'verbose']:
+        for kw in ["slit_dispersion", "verbose"]:
             if kw in kwargs:
                 kwargsconvolve.update({kw: kwargs.pop(kw)})
 
         # For non evenyly distributed cases we take the minimum wstep among the
         # spectral range (and resample in convolve_with_slit)
         # Note: by construction all variables now have the same wavespace
-        w = self._q['wavespace']  # non convoluted wavespace
+        w = self._q["wavespace"]  # non convoluted wavespace
         wstep = abs(diff(w)).min()
         assert wstep > 0
         waveunit = self.get_waveunit()
 
         if __debug__:
-            printdbg('apply_slit: {0} in {1}, center `{2}`{1}, applied in waveunit {3}'.format(
-                slit_function, unit, center_wavespace, waveunit))
+            printdbg(
+                "apply_slit: {0} in {1}, center `{2}`{1}, applied in waveunit {3}".format(
+                    slit_function, unit, center_wavespace, waveunit
+                )
+            )
 
         if center_wavespace is None:
             # center_wavespace should be ~ unit
-            center_wavespace = w[len(w)//2]  # w ~ waveunit
-            if waveunit == 'cm-1' and unit == 'nm':
-                center_wavespace = cm2nm(
-                    center_wavespace)     # wavenum > wavelen
-            elif waveunit == 'nm' and unit == 'cm-1':
-                center_wavespace = nm2cm(
-                    center_wavespace)     # wavelen > wavenum
+            center_wavespace = w[len(w) // 2]  # w ~ waveunit
+            if waveunit == "cm-1" and unit == "nm":
+                center_wavespace = cm2nm(center_wavespace)  # wavenum > wavelen
+            elif waveunit == "nm" and unit == "cm-1":
+                center_wavespace = nm2cm(center_wavespace)  # wavelen > wavenum
 
         # Get slit once and for all (and convert the slit unit
         # to the Spectrum `waveunit` if wavespaces are different)
         # -------
-        wslit0, Islit0 = get_slit_function(slit_function, unit=unit, norm_by=norm_by,
-                                         shape=shape, center_wavespace=center_wavespace,
-                                         return_unit=waveunit, wstep=wstep, 
-                                         auto_recenter_crop=auto_recenter_crop,
-                                         verbose=verbose,
-                                         plot=plot_slit, *args, **kwargs)
+        wslit0, Islit0 = get_slit_function(
+            slit_function,
+            unit=unit,
+            norm_by=norm_by,
+            shape=shape,
+            center_wavespace=center_wavespace,
+            return_unit=waveunit,
+            wstep=wstep,
+            auto_recenter_crop=auto_recenter_crop,
+            verbose=verbose,
+            plot=plot_slit,
+            *args,
+            **kwargs
+        )
 
         # Check if dispersion is too large
         # ----
-        if waveunit == 'nm':
+        if waveunit == "nm":
             w_nm = w
             wslit0_nm = wslit0
         else:
@@ -2106,40 +2270,45 @@ class Spectrum(object):
             wslit0_nm = cm2nm(wslit0)
         if slit_dispersion is not None:
             # add space (wings) on the side of each slice. This space is cut
-            # after convolution, removing side effects. Too much space and we'll 
+            # after convolution, removing side effects. Too much space and we'll
             # overlap too much and loose performance. Not enough and we'll have
             # artifacts on the jonction. We use the slit width to be conservative.
             wings = len(wslit0)
             # correct if the slit is to be interpolated (because wstep is different):
             wings *= max(1, abs(int(np.diff(wslit0).mean() / wstep)))
-            slice_windows, wings_min, wings_max = _cut_slices(w_nm, slit_dispersion, wings=wings)
+            slice_windows, wings_min, wings_max = _cut_slices(
+                w_nm, slit_dispersion, wings=wings
+            )
         else:
             slice_windows = [np.ones_like(w, dtype=np.bool)]
-        
+
         # Create dictionary to store convolved
         I_conv_slices = {}
         for qns in varlist:
             # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
             # Create if requireds
-            
-            q = qns[:-7]   # new name  (minus '_noslit')
+
+            q = qns[:-7]  # new name  (minus '_noslit')
             w_conv_slices = []
             I_conv_slices[q] = []
-                
+
         # Loop over all waverange slices (needed if slit changes over the spectral range)
         for islice, slice_window in enumerate(slice_windows):
-                    
+
             # Scale slit
             if slit_dispersion is not None:
-                # apply spectrometer linear dispersion function. 
+                # apply spectrometer linear dispersion function.
                 # dont forget it has to be added in nm and not cm-1
-                wslit, Islit = offset_dilate_slit_function(wslit0_nm, Islit0, 
-                                                           w_nm[slice_window], 
-                                                           slit_dispersion,
-                                                           threshold=0.01,
-                                                           verbose=verbose)
+                wslit, Islit = offset_dilate_slit_function(
+                    wslit0_nm,
+                    Islit0,
+                    w_nm[slice_window],
+                    slit_dispersion,
+                    threshold=0.01,
+                    verbose=verbose,
+                )
                 # Convert it back if needed
-                if waveunit == 'cm-1':
+                if waveunit == "cm-1":
                     wslit = nm2cm(wslit)
                 # We need to renormalize now that Islit has changed
                 wslit, Islit = normalize_slit(wslit, Islit, norm_by=norm_by)
@@ -2152,68 +2321,82 @@ class Spectrum(object):
             for i, q in enumerate(I_conv_slices.keys()):
                 # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
                 # Create if requireds
-                
-                qns = q+'_noslit'
+
+                qns = q + "_noslit"
                 w_window = w[slice_window]
                 I_window = self._q[qns][slice_window]
-    
+
                 # Apply convolution
-                w_conv_window, I_conv_window = convolve_with_slit(w_window, I_window, 
-                                                    wslit, Islit, 
-                                                    norm_by=None,  # already norm.
-                                                    mode='same',    # dont loose information yet
-                                                    waveunit=waveunit,
-                                                    verbose=verbose,
-                                                    assert_evenly_spaced=False,   
-                                                    # assumes Spectrum is correct by construction
-                                                    **kwargsconvolve)
+                w_conv_window, I_conv_window = convolve_with_slit(
+                    w_window,
+                    I_window,
+                    wslit,
+                    Islit,
+                    norm_by=None,  # already norm.
+                    mode="same",  # dont loose information yet
+                    waveunit=waveunit,
+                    verbose=verbose,
+                    assert_evenly_spaced=False,
+                    # assumes Spectrum is correct by construction
+                    **kwargsconvolve
+                )
 
                 # Crop wings to remove overlaps (before merging)
                 if slit_dispersion is not None:
-                    w_conv_window, I_conv_window = remove_boundary(w_conv_window, I_conv_window, 
-                                                                   'crop', crop_left=wings_min[islice],
-                                                                   crop_right=wings_max[islice]) 
-                
-                if i == 0: w_conv_slices.append(w_conv_window)
+                    w_conv_window, I_conv_window = remove_boundary(
+                        w_conv_window,
+                        I_conv_window,
+                        "crop",
+                        crop_left=wings_min[islice],
+                        crop_right=wings_max[islice],
+                    )
+
+                if i == 0:
+                    w_conv_slices.append(w_conv_window)
                 I_conv_slices[q].append(I_conv_window)
 
         # Merge and store all variables
         # ---------
         for q in I_conv_slices.keys():
-            qns = q+'_noslit'
+            qns = q + "_noslit"
             I_not_conv = self._q[qns]
-            
+
             # Merge all slices
             w_conv = np.hstack(w_conv_slices)
             I_conv = np.hstack(I_conv_slices[q])
-            
-#            assert all(sorted(w_conv) == w_conv)
-            
+
+            #            assert all(sorted(w_conv) == w_conv)
+
             # Crop to remove boundary effects (after merging)
             # this uses the mode='valid', 'same' attribute
-            # ... if slit was imported, it has been interpolated on the Spectrum 
+            # ... if slit was imported, it has been interpolated on the Spectrum
             # ... grid and its initial length has changed: get the scaling factor
             # ... to remove the correct number of non valid points on the side
-            scale_factor = abs((wslit0_nm[1]-wslit0_nm[0])/(w_nm[1]-w_nm[0]))
-            w_conv, I_conv = remove_boundary(w_conv, I_conv, mode, 
-                                             len_I=len(I_not_conv), 
-                                             len_I_slit_interp=int(len(Islit0)*scale_factor)+1)
-            # Store 
-            self._q_conv['wavespace'] = w_conv
+            scale_factor = abs((wslit0_nm[1] - wslit0_nm[0]) / (w_nm[1] - w_nm[0]))
+            w_conv, I_conv = remove_boundary(
+                w_conv,
+                I_conv,
+                mode,
+                len_I=len(I_not_conv),
+                len_I_slit_interp=int(len(Islit0) * scale_factor) + 1,
+            )
+            # Store
+            self._q_conv["wavespace"] = w_conv
             self._q_conv[q] = I_conv
 
             # Get units
-            if norm_by == 'area':
+            if norm_by == "area":
                 self.units[q] = self.units[qns]
-            elif norm_by == 'max':
-                new_unit = '{0}*{1}'.format(self.units[qns],
-                                            unit.replace('cm-1', 'cm_1'))
+            elif norm_by == "max":
+                new_unit = "{0}*{1}".format(
+                    self.units[qns], unit.replace("cm-1", "cm_1")
+                )
                 # because it's like if we multiplied
                 # by slit FWHM in the wavespace it was
                 # generated
                 # simplify unit:
                 try:
-                    new_unit = '{:~P}'.format(Q_(new_unit).units)
+                    new_unit = "{:~P}".format(Q_(new_unit).units)
                 except UndefinedUnitError:
                     pass
                 self.units[q] = new_unit
@@ -2221,34 +2404,33 @@ class Spectrum(object):
             # unit was multiplied by [unit] not [return_unit]
             # Removed for simplification. You should stay with norm_by='area' anyway
             else:
-                raise ValueError(
-                    'Unknown normalization type: {0}'.format(norm_by))
-                
-        # Sort if needed (sorting can be broken after applying corrected slits 
+                raise ValueError("Unknown normalization type: {0}".format(norm_by))
+
+        # Sort if needed (sorting can be broken after applying corrected slits
         # on different slices)
-        # | @EP: deactivated for the moment. It's dangerous to reorder because 
-        # | it creates features that could be confused with spectral features. 
-#        if not is_sorted(w_conv) or not is_sorted_backward(w_conv):
-#            b = np.argsort(w_conv)
-#            for q in list(self._q_conv.keys()):
-#                self._q_conv[q] = self._q_conv[q][b]
-            
+        # | @EP: deactivated for the moment. It's dangerous to reorder because
+        # | it creates features that could be confused with spectral features.
+        #        if not is_sorted(w_conv) or not is_sorted_backward(w_conv):
+        #            b = np.argsort(w_conv)
+        #            for q in list(self._q_conv.keys()):
+        #                self._q_conv[q] = self._q_conv[q][b]
+
         # Store slit in Spectrum, in the Spectrum unit
         if store:
-            self._slit['wavespace'] = wslit0  # in 'waveunit'
-            self._slit['intensity'] = Islit0
+            self._slit["wavespace"] = wslit0  # in 'waveunit'
+            self._slit["intensity"] = Islit0
 
         # Update conditions
-        self.conditions['slit_function'] = slit_function
-        self.conditions['slit_unit'] = unit  # input slit unit
-        self.conditions['slit_dispersion'] = slit_dispersion
-        # TODO: probably removed after Spectrum is stored. 
-        self.conditions['norm_by'] = norm_by
+        self.conditions["slit_function"] = slit_function
+        self.conditions["slit_unit"] = unit  # input slit unit
+        self.conditions["slit_dispersion"] = slit_dispersion
+        # TODO: probably removed after Spectrum is stored.
+        self.conditions["norm_by"] = norm_by
 
-        return self   # to be able to chain: s.apply_slit().plot() 
+        return self  # to be able to chain: s.apply_slit().plot()
 
-    def get_slit(self, unit='same'):
-        ''' Get slit function that was applied to the Spectrum 
+    def get_slit(self, unit="same"):
+        """ Get slit function that was applied to the Spectrum 
 
         Returns
         -------
@@ -2257,25 +2439,28 @@ class Spectrum(object):
             slit function with wslit in Spectrum ``waveunit``. See 
             :meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`
 
-        '''
-        
-        if not unit in ['same', self.get_waveunit()]:
-            raise NotImplementedError('Unit must be Spectrum waveunit: {0}'.format(
-                    self.get_waveunit()))
+        """
+
+        if not unit in ["same", self.get_waveunit()]:
+            raise NotImplementedError(
+                "Unit must be Spectrum waveunit: {0}".format(self.get_waveunit())
+            )
 
         # Make sure that slit is stored already
         try:
-            wslit = self._slit['wavespace']  # stored in Spectrum waveunit
-            Islit = self._slit['intensity']
+            wslit = self._slit["wavespace"]  # stored in Spectrum waveunit
+            Islit = self._slit["intensity"]
         except KeyError:
-            raise KeyError('Slit function not found in Spectrum ' +
-                           'conditions. Have you used Spectrum.apply_slit ' +
-                           'with store=True?')
+            raise KeyError(
+                "Slit function not found in Spectrum "
+                + "conditions. Have you used Spectrum.apply_slit "
+                + "with store=True?"
+            )
 
         return wslit, Islit
 
     def plot_slit(self, wunit=None):
-        ''' Plot slit function that was applied to the Spectrum
+        """ Plot slit function that was applied to the Spectrum
         
         If dispersion was used (see :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`)
         the different slits are built again and plotted too (dotted).
@@ -2298,90 +2483,110 @@ class Spectrum(object):
         
         :ref:`the Spectrum page <label_spectrum>`
 
-        '''
+        """
 
-        from radis.tools.slit import (plot_slit, offset_dilate_slit_function, 
-                                      normalize_slit)
+        from radis.tools.slit import (
+            plot_slit,
+            offset_dilate_slit_function,
+            normalize_slit,
+        )
 
         # Check inputs
-        assert wunit in ['nm', 'cm-1', 'nm_vac', None]
-        # @dev: note: wunit in 'nm_vac' also implemented for consistency, 
-        # although not mentionned in docs. 
+        assert wunit in ["nm", "cm-1", "nm_vac", None]
+        # @dev: note: wunit in 'nm_vac' also implemented for consistency,
+        # although not mentionned in docs.
         if wunit is None:
-            wunit = self.conditions['slit_unit']
+            wunit = self.conditions["slit_unit"]
 
         # Get slit arrays (in Spectrum.waveunit)
-        wslit0, Islit0 = self.get_slit()    # as imported
+        wslit0, Islit0 = self.get_slit()  # as imported
 
         # Get slit unit
-        norm_by = self.conditions['norm_by']
+        norm_by = self.conditions["norm_by"]
         waveunit = self.get_waveunit()
-        if norm_by == 'area':
-            Iunit = '1/{0}'.format(waveunit)
-        elif norm_by == 'max':  # set maximum to 1
-            Iunit = '1'
+        if norm_by == "area":
+            Iunit = "1/{0}".format(waveunit)
+        elif norm_by == "max":  # set maximum to 1
+            Iunit = "1"
         elif norm_by is None:
             Iunit = None
         else:
             raise ValueError(
-                'Unknown normalization type: `norm_by` = {0}'.format(norm_by))
-            
+                "Unknown normalization type: `norm_by` = {0}".format(norm_by)
+            )
+
         # Plot in correct unit  (plot_slit deals with the conversion if needed)
-        fig, ax = plot_slit(wslit0, Islit0, waveunit=waveunit, plot_unit=wunit,
-                         Iunit=Iunit)
-        
-        
+        fig, ax = plot_slit(
+            wslit0, Islit0, waveunit=waveunit, plot_unit=wunit, Iunit=Iunit
+        )
+
         # Plot other slit functions if dispersion was applied:
-        if 'slit_dispersion' in self.conditions:
-            slit_dispersion = self.conditions['slit_dispersion']
+        if "slit_dispersion" in self.conditions:
+            slit_dispersion = self.conditions["slit_dispersion"]
             if slit_dispersion is not None:
                 waveunit = self.get_waveunit()
                 # Get slit in air wavelength:
-                if waveunit == 'nm':
+                if waveunit == "nm":
                     wslit0_nm = wslit0
-                elif waveunit == 'nm_vac':
+                elif waveunit == "nm_vac":
                     wslit0_nm = vacuum2air(wslit0)
                 else:
                     wslit0_nm = cm2nm(wslit0)
-                w_nm = self.get_wavelength(medium='air', which='non_convoluted')                
-                wings = len(wslit0)    # note: hardcoded. Make sure it's the same as in apply_slit
-                wings *= max(1, abs(int(np.diff(wslit0_nm).mean() / np.diff(w_nm).mean())))
-                slice_windows, wings_min, wings_max = _cut_slices(w_nm, slit_dispersion, wings=wings)
-    
+                w_nm = self.get_wavelength(medium="air", which="non_convoluted")
+                wings = len(
+                    wslit0
+                )  # note: hardcoded. Make sure it's the same as in apply_slit
+                wings *= max(
+                    1, abs(int(np.diff(wslit0_nm).mean() / np.diff(w_nm).mean()))
+                )
+                slice_windows, wings_min, wings_max = _cut_slices(
+                    w_nm, slit_dispersion, wings=wings
+                )
+
                 # Loop over all waverange slices (needed if slit changes over the spectral range)
                 for islice, slice_window in enumerate(slice_windows):
-                    
+
                     w_nm_sliced = w_nm[slice_window]
                     w_min = w_nm_sliced.min()
                     w_max = w_nm_sliced.max()
-                           
-                    # apply spectrometer linear dispersion function. 
+
+                    # apply spectrometer linear dispersion function.
                     # dont forget it has to be added in nm and not cm-1
-                    wslit, Islit = offset_dilate_slit_function(wslit0_nm, Islit0, 
-                                                               w_nm[slice_window], 
-                                                               slit_dispersion,
-                                                               threshold=0.01,
-                                                               # TODO: make sure threshold
-                                                               # is the same as the one 
-                                                               # applied (hardcoded for
-                                                               # the moment)
-                                                               verbose=False)
+                    wslit, Islit = offset_dilate_slit_function(
+                        wslit0_nm,
+                        Islit0,
+                        w_nm[slice_window],
+                        slit_dispersion,
+                        threshold=0.01,
+                        # TODO: make sure threshold
+                        # is the same as the one
+                        # applied (hardcoded for
+                        # the moment)
+                        verbose=False,
+                    )
                     # Convert it back if needed
-                    if waveunit == 'cm-1':
+                    if waveunit == "cm-1":
                         wslit = nm2cm(wslit)
-                    elif waveunit == 'nm_vac':
+                    elif waveunit == "nm_vac":
                         wslit = air2vacuum(wslit)
                     # We need to renormalize now that Islit has changed
                     wslit, Islit = normalize_slit(wslit, Islit, norm_by=norm_by)
-                    plot_slit(wslit, Islit, waveunit=waveunit, plot_unit=wunit,
-                              Iunit=Iunit, ls='--', title='Slit used on range {0:.2f}-{1:.2f} nm'.format(
-                                      w_min, w_max))
-                    
+                    plot_slit(
+                        wslit,
+                        Islit,
+                        waveunit=waveunit,
+                        plot_unit=wunit,
+                        Iunit=Iunit,
+                        ls="--",
+                        title="Slit used on range {0:.2f}-{1:.2f} nm".format(
+                            w_min, w_max
+                        ),
+                    )
+
         return fig, ax
 
-    def line_survey(self, overlay=None, wunit='default', cutoff=None, 
-                    *args, **kwargs):
-        ''' Plot Line Survey (all linestrengths used for calculation)
+    def line_survey(self, overlay=None, wunit="default", cutoff=None, *args, **kwargs):
+        """ Plot Line Survey (all linestrengths used for calculation)
         Output in Plotly (html) 
 
 
@@ -2468,22 +2673,25 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
 
 
-        '''
+        """
 
         from radis.tools.line_survey import LineSurvey
 
         # Check inputs
-        if wunit == 'default':
+        if wunit == "default":
             wunit = self.get_waveunit()
 
         def get_overlay(overlay):
-            ''' Overlay line survey with a spectral quantity (like radiance or 
-            transmittance) '''
+            """ Overlay line survey with a spectral quantity (like radiance or 
+            transmittance) """
 
             if isinstance(overlay, string_types):  # either get it from the Spectrum
                 if overlay not in self.get_vars():
-                    raise AttributeError('{0} not in variables list: {1}'.format(overlay,
-                                                                                 self.get_vars()))
+                    raise AttributeError(
+                        "{0} not in variables list: {1}".format(
+                            overlay, self.get_vars()
+                        )
+                    )
                 w, I = self.get(overlay, wunit=wunit)
                 name = overlay
                 units = self.units[overlay]
@@ -2493,9 +2701,10 @@ class Spectrum(object):
                 try:
                     (w, I) = overlay
                 except:
-                    raise ValueError('Overlay has to be string, or (w,I) tuple of ' +
-                                     'arrays')
-                return (w, I, '', '')
+                    raise ValueError(
+                        "Overlay has to be string, or (w,I) tuple of " + "arrays"
+                    )
+                return (w, I, "", "")
 
         if overlay is not None:
 
@@ -2504,26 +2713,27 @@ class Spectrum(object):
 
             overlay = [get_overlay(ov) for ov in overlay]
 
-            return LineSurvey(self, overlay=overlay, wunit=wunit, cutoff=cutoff, 
-                              *args, **kwargs)
+            return LineSurvey(
+                self, overlay=overlay, wunit=wunit, cutoff=cutoff, *args, **kwargs
+            )
 
         else:
             return LineSurvey(self, wunit=wunit, cutoff=cutoff, *args, **kwargs)
 
     def get_conditions(self):
-        ''' Get all physical / computational parameters.
+        """ Get all physical / computational parameters.
         
         See Also
         --------
         
         :py:method:`~radis.spectrum.Spectrum.print_conditions`,
         :ref:`the Spectrum page <label_spectrum>`
-        '''
+        """
 
         return self.conditions
 
     def print_conditions(self, **kwargs):
-        ''' Prints all physical / computational parameters. You can also simply
+        """ Prints all physical / computational parameters. You can also simply
         print the Spectrum object directly::
             
             print(s)
@@ -2541,13 +2751,21 @@ class Spectrum(object):
         :py:func:`~radis.spectrum.utils.print_conditions`,
         :ref:`the Spectrum page <label_spectrum>`
         
-        '''
+        """
 
         return print_conditions(self.get_conditions(), self.cond_units, **kwargs)
 
-    def store(self, path, discard=['lines', 'populations'], compress=False,
-              add_info=None, add_date=None, if_exists_then='error', verbose=True):
-        ''' Save a Spectrum object in JSON format. Object can be recovered with
+    def store(
+        self,
+        path,
+        discard=["lines", "populations"],
+        compress=False,
+        add_info=None,
+        add_date=None,
+        if_exists_then="error",
+        verbose=True,
+    ):
+        """ Save a Spectrum object in JSON format. Object can be recovered with
         :func:`~radis.tools.database.load_spec`. If many Spectrum are saved in a 
         same folder you can view their properties with the :class:`~radis.tools.database.SpecDatabase`
         structure.
@@ -2627,32 +2845,46 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.save`,
         :meth:`~radis.spectrum.spectrum.Spectrum.savetxt`
 
-        '''
+        """
         # TODO
-        # 
-        # - in case a spectrometer linear dispersion function is used in 
-        # :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, it probably isn't 
+        #
+        # - in case a spectrometer linear dispersion function is used in
+        # :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`, it probably isn't
         # stored with the current code. Find a workaround?
-
 
         from radis.tools.database import save
 
         if isinstance(discard, string_types):
             discard = [discard]
 
-        return save(self, path, discard=discard, compress=compress, add_info=add_info,
-                    add_date=add_date, if_exists_then=if_exists_then, verbose=verbose)
+        return save(
+            self,
+            path,
+            discard=discard,
+            compress=compress,
+            add_info=add_info,
+            add_date=add_date,
+            if_exists_then=if_exists_then,
+            verbose=verbose,
+        )
 
     def save(self, *args, **kwargs):
-        ''' Alias to Spectrum.store. See Spectrum.store for documentation '''
+        """ Alias to Spectrum.store. See Spectrum.store for documentation """
 
         return self.store(*args, **kwargs)
 
-    def resample(self, w_new, unit='same', out_of_bounds='nan',
-                 if_conflict_drop='error', 
-                 energy_threshold=1e-3, print_conservation=False,
-                 inplace=True, **kwargs):
-        ''' Resample spectrum over a new wavelength. 
+    def resample(
+        self,
+        w_new,
+        unit="same",
+        out_of_bounds="nan",
+        if_conflict_drop="error",
+        energy_threshold=1e-3,
+        print_conservation=False,
+        inplace=True,
+        **kwargs
+    ):
+        """ Resample spectrum over a new wavelength. 
         Fills with transparent medium when out of bound (transmittance 1,
         radiance 0)
 
@@ -2730,94 +2962,98 @@ class Spectrum(object):
 
         :func:`~radis.misc.signal.resample`
 
-        '''
+        """
         # TODO (but dangerous): reapply_slit at the end of the process if slit
         # is in conditions?
-        
+
         if inplace:
             s = self
         else:
             s = self.copy()
-            
+
         # Check inputs (check for deprecated)
 
         # ... see if convoluted / non convoluted values co-exist
-        if 'wavespace' in s._q and 'wavespace' in s._q_conv:
+        if "wavespace" in s._q and "wavespace" in s._q_conv:
             try:
-                assert len(s._q['wavespace']) == len(
-                    s._q_conv['wavespace'])
-                assert np.allclose(
-                    s._q['wavespace'], s._q_conv['wavespace'])
+                assert len(s._q["wavespace"]) == len(s._q_conv["wavespace"])
+                assert np.allclose(s._q["wavespace"], s._q_conv["wavespace"])
             except AssertionError:  # wavespaces are not the same.
-                if if_conflict_drop == 'convoluted':
+                if if_conflict_drop == "convoluted":
                     for q in list(s._q_conv.keys()):
                         del s._q_conv[q]
-                elif if_conflict_drop == 'non_convoluted':
+                elif if_conflict_drop == "non_convoluted":
                     for q in list(s._q.keys()):
                         del s._q[q]
-                elif if_conflict_drop == 'error':
-                    raise ValueError('Cant resample as there are convoluted and non ' +
-                                     'convoluted quantities in the Spectrum object (and ' +
-                                     'wavespace are not the same). Use ' +
-                                     "`if_conflict_drop='convoluted' or 'non_convoluted'`")
+                elif if_conflict_drop == "error":
+                    raise ValueError(
+                        "Cant resample as there are convoluted and non "
+                        + "convoluted quantities in the Spectrum object (and "
+                        + "wavespace are not the same). Use "
+                        + "`if_conflict_drop='convoluted' or 'non_convoluted'`"
+                    )
                 else:
-                    raise ValueError('Unknown value for if_conflict_drop: {0}'.format(
-                        if_conflict_drop))
+                    raise ValueError(
+                        "Unknown value for if_conflict_drop: {0}".format(
+                            if_conflict_drop
+                        )
+                    )
 
         # Get wavespace units
-        stored_waveunit = s.get_waveunit()   # spectrum unit
-        if unit == 'same':               # resampled unit
+        stored_waveunit = s.get_waveunit()  # spectrum unit
+        if unit == "same":  # resampled unit
             unit = stored_waveunit
         else:
             unit = cast_waveunit(unit)
 
         # Get output wavespace (it's the w_new array, unless w_new is a Spectrum)
         if isinstance(w_new, Spectrum):
-            if unit == 'nm':
-                w_new = w_new.get_wavelength(medium='air')
-            elif unit == 'nm_vac':
-                w_new = w_new.get_wavelength(medium='vacuum')
-            elif unit == 'cm-1':
+            if unit == "nm":
+                w_new = w_new.get_wavelength(medium="air")
+            elif unit == "nm_vac":
+                w_new = w_new.get_wavelength(medium="vacuum")
+            elif unit == "cm-1":
                 w_new = w_new.get_wavenumber()
             else:
                 raise ValueError(unit)
         else:  # wavespace already given as array:
             w_new = w_new
-            
+
         # Get current waverange in output unit   -> w
-        if unit == 'nm':
-            w = s.get_wavelength(medium='air')
-        elif unit == 'nm_vac':
-            w = s.get_wavelength(medium='vacuum')
-        elif unit == 'cm-1':
+        if unit == "nm":
+            w = s.get_wavelength(medium="air")
+        elif unit == "nm_vac":
+            w = s.get_wavelength(medium="vacuum")
+        elif unit == "cm-1":
             w = s.get_wavenumber()
         else:
-            raise ValueError('Unknown unit: {0}'.format(unit))
+            raise ValueError("Unknown unit: {0}".format(unit))
 
         # Update stored_waveunit to new unit
         if unit != stored_waveunit:
-            s.conditions['waveunit'] = unit
+            s.conditions["waveunit"] = unit
 
         # Get wavespace
-        update_q = 'wavespace' in s._q
-        update_q_conv = 'wavespace' in s._q_conv
+        update_q = "wavespace" in s._q
+        update_q_conv = "wavespace" in s._q_conv
 
         # Now let's resample
         def get_filling(variable):
-            ''' Get out of bounds values for spectral quantity `variable` '''
-            if out_of_bounds == 'transparent':
+            """ Get out of bounds values for spectral quantity `variable` """
+            if out_of_bounds == "transparent":
                 # Fill with optically transparent medium
-                if variable in ['transmittance', 'transmittance_noslit']:
+                if variable in ["transmittance", "transmittance_noslit"]:
                     fill_with = 1
                 else:
                     fill_with = 0
-            elif out_of_bounds == 'nan':
-                fill_with = 'nan'
-            elif out_of_bounds == 'error':
-                fill_with = 'error'
+            elif out_of_bounds == "nan":
+                fill_with = "nan"
+            elif out_of_bounds == "error":
+                fill_with = "error"
             else:
-                raise ValueError('Unexpected value for out_of_bound: {0}'.format(
-                    out_of_bounds))
+                raise ValueError(
+                    "Unexpected value for out_of_bound: {0}".format(out_of_bounds)
+                )
             return fill_with
 
         # There are different cases depending on the unit of w_new
@@ -2827,28 +3063,40 @@ class Spectrum(object):
         # ... done once for all with get_wavelength() above )
         if update_q:
             for (k, I) in s._q.items():
-                if k == 'wavespace':
+                if k == "wavespace":
                     continue
                 fill_with = get_filling(k)
-                Inew = resample(w, I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=False, **kwargs)
+                Inew = resample(
+                    w,
+                    I,
+                    w_new,
+                    ext=fill_with,
+                    energy_threshold=energy_threshold,
+                    print_conservation=False,
+                    **kwargs
+                )
                 s._q[k] = Inew
             # update wavespace
-            s._q['wavespace'] = w_new
+            s._q["wavespace"] = w_new
 
         if update_q_conv:
             for (k, I) in s._q_conv.items():
-                if k == 'wavespace':
+                if k == "wavespace":
                     continue
                 fill_with = get_filling(k)
-                Inew = resample(w, I, w_new, ext=fill_with,
-                                energy_threshold=energy_threshold,
-                                print_conservation=False, **kwargs)
+                Inew = resample(
+                    w,
+                    I,
+                    w_new,
+                    ext=fill_with,
+                    energy_threshold=energy_threshold,
+                    print_conservation=False,
+                    **kwargs
+                )
                 s._q_conv[k] = Inew
             # update wavespace
-            s._q_conv['wavespace'] = w_new
-            
+            s._q_conv["wavespace"] = w_new
+
         return s
 
     # %% ======================================================================
@@ -2858,13 +3106,13 @@ class Spectrum(object):
     # XXX =====================================================================
 
     def get_waveunit(self):
-        ''' Returns whether this spectrum is defined in wavelength (nm) or
-        wavenumber (cm-1) '''
+        """ Returns whether this spectrum is defined in wavelength (nm) or
+        wavenumber (cm-1) """
 
-        return self.conditions['waveunit']
+        return self.conditions["waveunit"]
 
-    def is_at_equilibrium(self, check='warn', verbose=False):
-        ''' Returns whether this spectrum is at (thermal) equilibrium. Reads the 
+    def is_at_equilibrium(self, check="warn", verbose=False):
+        """ Returns whether this spectrum is at (thermal) equilibrium. Reads the 
         ``thermal_equilibrium`` key in Spectrum conditions. 
         It does not imply chemical equilibrium (mole fractions are still arbitrary)
         
@@ -2889,29 +3137,31 @@ class Spectrum(object):
             if ``True``, print why is the spectrum is not at equilibrium, if 
             applicable.
 
-        '''
+        """
 
         conditions = self.conditions
 
         # Get value
         try:
-            equilibrium = conditions['thermal_equilibrium']
+            equilibrium = conditions["thermal_equilibrium"]
         except KeyError:
-            raise KeyError("We need to know if Spectrum is at equilibrium, but " +
-                           "`thermal_equilibrium` is not defined in conditions. Please add the " +
-                           "value manually with s.conditions['thermal_equilibrium']=...")
+            raise KeyError(
+                "We need to know if Spectrum is at equilibrium, but "
+                + "`thermal_equilibrium` is not defined in conditions. Please add the "
+                + "value manually with s.conditions['thermal_equilibrium']=..."
+            )
 
-        if check == 'ignore':
+        if check == "ignore":
             return equilibrium
 
         # Check output match the rest of the spectrum conditions
         try:
-            assert conditions['Tgas'] != r'N/A'
-            assert conditions['Tvib'] == conditions['Tgas']
-            assert conditions['Trot'] == conditions['Tgas']
-            if 'overpopulation' in conditions:
-                assert conditions['overpopulation'] is None
-            assert conditions['self_absorption']  # is True
+            assert conditions["Tgas"] != r"N/A"
+            assert conditions["Tvib"] == conditions["Tgas"]
+            assert conditions["Trot"] == conditions["Tgas"]
+            if "overpopulation" in conditions:
+                assert conditions["overpopulation"] is None
+            assert conditions["self_absorption"]  # is True
 
             guess = True
 
@@ -2919,40 +3169,51 @@ class Spectrum(object):
             guess = False
             if verbose:
                 # Print which equilibrium test failed
-                print('Spectrum not at equilibrium because the following test failed:')
+                print("Spectrum not at equilibrium because the following test failed:")
                 import sys
                 import traceback
+
                 _, _, tb = sys.exc_info()
                 tb_info = traceback.extract_tb(sys.exc_info()[2])
                 print(tb_info[-1][-1])
                 # @dev: see https://stackoverflow.com/a/11587247/5622825
         except KeyError as err:
-            warn('Condition missing to know if spectrum is at equilibrium: {0}'.format(err))
+            warn(
+                "Condition missing to know if spectrum is at equilibrium: {0}".format(
+                    err
+                )
+            )
             guess = not equilibrium
-        
+
         if equilibrium != guess:
-            msg = ('Declared value of equilibrium ({0}) does not match the infered one ({1})'.format(
-                    equilibrium, guess)+'. Update your Spectrum conditions')
-            if check == 'warn':
+            msg = (
+                "Declared value of equilibrium ({0}) does not match the infered one ({1})".format(
+                    equilibrium, guess
+                )
+                + ". Update your Spectrum conditions"
+            )
+            if check == "warn":
                 warn(msg)
-            elif check == 'error':
+            elif check == "error":
                 raise AssertionError(msg)
 
         return equilibrium
 
     def is_optically_thin(self):
-        ''' Returns whether the spectrum is optically thin, based on the value
-        on the self_absorption key in conditions. If not given, raises an error'''
+        """ Returns whether the spectrum is optically thin, based on the value
+        on the self_absorption key in conditions. If not given, raises an error"""
 
         try:
-            return not self.conditions['self_absorption']
+            return not self.conditions["self_absorption"]
         except KeyError:
-            raise KeyError("We need to know if Spectrum is optically thin, but " +
-                           "`self_absorption` is not defined in conditions. Please add the " +
-                           "value manually with s.conditions['self_absorption']=...")
+            raise KeyError(
+                "We need to know if Spectrum is optically thin, but "
+                + "`self_absorption` is not defined in conditions. Please add the "
+                + "value manually with s.conditions['self_absorption']=..."
+            )
 
-    def copy(self, copy_lines=True, quantity='all'):
-        ''' Returns a copy of this Spectrum object (performs a smart deepcopy) 
+    def copy(self, copy_lines=True, quantity="all"):
+        """ Returns a copy of this Spectrum object (performs a smart deepcopy) 
         
         Parameters
         ----------
@@ -2963,16 +3224,18 @@ class Spectrum(object):
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
             
-        '''
+        """
         try:
             return self.__copy__(copy_lines=copy_lines, quantity=quantity)
         except MemoryError:
-            raise MemoryError("during copy of Spectrum. If you don't need them, " +
-                              "droping lines before copying may save a lot of space: " +
-                              "del s.lines ; or, use copy_lines=False")
+            raise MemoryError(
+                "during copy of Spectrum. If you don't need them, "
+                + "droping lines before copying may save a lot of space: "
+                + "del s.lines ; or, use copy_lines=False"
+            )
 
-    def __copy__(self, copy_lines=True, quantity='all'):
-        ''' Generate a new spectrum object
+    def __copy__(self, copy_lines=True, quantity="all"):
+        """ Generate a new spectrum object
 
         Note: using deepcopy would work but then the Spectrum object would be pickled
         and unpickled again. It's a little faster here
@@ -2996,19 +3259,21 @@ class Spectrum(object):
             no check test, optimised: 1.8 ms
             ... asymptote: without evenly spaced check, without copies: 1.84 ms
 
-        '''
+        """
 
         # quantities = {s:(v[0].copy(), v[1].copy()) for (s,v) in self.items()}  #╪ 1.8 ms
-#        quantities = dict(self.items())   # 912 ns, not a copy but no need as
-#                                        # Spectrum() recreates a copy anyway
-        if quantity == 'all':
+        #        quantities = dict(self.items())   # 912 ns, not a copy but no need as
+        #                                        # Spectrum() recreates a copy anyway
+        if quantity == "all":
             quantities = dict(self._get_items())
         else:
-#            assert quantity in CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES
-#            if not quantity in self.get_vars():
-#                raise ValueError("Spectrum {0} has no quantity '{1}'. Got: {2}".format(
-#                        self.get_name(), quantity, self.get_vars()))
-            quantities = {quantity:self.get(quantity, wunit=self.get_waveunit())} # dict(self._get_items())
+            #            assert quantity in CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES
+            #            if not quantity in self.get_vars():
+            #                raise ValueError("Spectrum {0} has no quantity '{1}'. Got: {2}".format(
+            #                        self.get_name(), quantity, self.get_vars()))
+            quantities = {
+                quantity: self.get(quantity, wunit=self.get_waveunit())
+            }  # dict(self._get_items())
 
         try:
             units = deepcopy(self.units)
@@ -3034,11 +3299,11 @@ class Spectrum(object):
         except AttributeError:
             populations = None
 
-        waveunit = self.get_waveunit()    # 163 ns
+        waveunit = self.get_waveunit()  # 163 ns
         name = self.name
 
         # Generate copied Spectrum
-        s = Spectrum(      # 1.51 ms
+        s = Spectrum(  # 1.51 ms
             quantities=quantities,
             conditions=conditions,
             cond_units=cond_units,
@@ -3047,7 +3312,7 @@ class Spectrum(object):
             units=units,
             waveunit=waveunit,
             name=name,
-            warnings=False,   # saves about 3.5 ms on the Performance test object
+            warnings=False,  # saves about 3.5 ms on the Performance test object
         )
 
         # Add extra information
@@ -3058,18 +3323,28 @@ class Spectrum(object):
         # ... slit information
         try:
             wslit, Islit = self.get_slit()
-            s._slit['wavespace'] = wslit  # in 'waveunit'
-            s._slit['intensity'] = Islit
+            s._slit["wavespace"] = wslit  # in 'waveunit'
+            s._slit["intensity"] = Islit
         except KeyError:
             # no slit to apply
             pass
 
         return s
 
-    def compare_with(self, other, spectra_only=False, plot=True, wunit='default',
-                     verbose=True, rtol=1e-5, ignore_nan=False, ignore_outliers=False,
-                     normalize=False, **kwargs):
-        ''' Compare Spectrum with another Spectrum object
+    def compare_with(
+        self,
+        other,
+        spectra_only=False,
+        plot=True,
+        wunit="default",
+        verbose=True,
+        rtol=1e-5,
+        ignore_nan=False,
+        ignore_outliers=False,
+        normalize=False,
+        **kwargs
+    ):
+        """ Compare Spectrum with another Spectrum object
 
         Parameters    
         ----------
@@ -3139,13 +3414,23 @@ class Spectrum(object):
         
         :func:`~radis.spectrum.compare.compare_spectra`
 
-        '''
+        """
 
         from radis.spectrum.compare import compare_spectra
-        
-        return compare_spectra(self, other, spectra_only=spectra_only, plot=plot, wunit=wunit,
-                     verbose=verbose, rtol=rtol, ignore_nan=ignore_nan, ignore_outliers=ignore_outliers,
-                     normalize=normalize, **kwargs)
+
+        return compare_spectra(
+            self,
+            other,
+            spectra_only=spectra_only,
+            plot=plot,
+            wunit=wunit,
+            verbose=verbose,
+            rtol=rtol,
+            ignore_nan=ignore_nan,
+            ignore_outliers=ignore_outliers,
+            normalize=normalize,
+            **kwargs
+        )
 
     # %% ======================================================================
     # Private functions
@@ -3153,79 +3438,93 @@ class Spectrum(object):
     # XXX =====================================================================
 
     def _init_annotations(self):
-        ''' Annotations are used to give typing hints for get() and plot() functions,
-        based on what quantities are available in the Spectrum object '''
+        """ Annotations are used to give typing hints for get() and plot() functions,
+        based on what quantities are available in the Spectrum object """
 
         from radis.tools.slit import SLIT_SHAPES
 
         try:  # Python >3.6 only
-            self.get.__annotations__['var'] = []
-            self.plot.__annotations__['var'] = []
-            self.apply_slit.__annotations__['shape'] = SLIT_SHAPES
+            self.get.__annotations__["var"] = []
+            self.plot.__annotations__["var"] = []
+            self.apply_slit.__annotations__["shape"] = SLIT_SHAPES
 
         except AttributeError:
             pass  # old Python version
 
     def _add_quantity(self, name, w, I, warnings=True):
-        ''' Add quantity. 
+        """ Add quantity. 
 
         Note: creates a copy of the input array
-        '''
+        """
 
-        assert(len(w) == len(I))
+        assert len(w) == len(I)
 
         def check_wavespace(w):
-            ''' If warnings, check that array is evenly spaced. Returns a copy
+            """ If warnings, check that array is evenly spaced. Returns a copy
             of input array.
 
             Note: this check takes a lot of time!  (few ms)
-            Is is not performed if warnings is False'''
+            Is is not performed if warnings is False"""
             if warnings:
                 # Check Wavelength/wavenumber is evently spaced
                 if not evenly_distributed(w, tolerance=1e-5):
-                    warn('Wavespace is not evenly spaced ({0:.3f}%) for {1}.'.format(
-                        np.abs(np.diff(w)).max()/w.mean()*100, name)
-                        + ' This may create problems when convolving with slit function')
-            return np.array(w)             # copy
+                    warn(
+                        "Wavespace is not evenly spaced ({0:.3f}%) for {1}.".format(
+                            np.abs(np.diff(w)).max() / w.mean() * 100, name
+                        )
+                        + " This may create problems when convolving with slit function"
+                    )
+            return np.array(w)  # copy
 
         if name in CONVOLUTED_QUANTITIES:
             # Add wavespace
-            if 'wavespace' in self._q_conv:
-                if not np.allclose(w, self._q_conv['wavespace']):
-                    raise ValueError('wavespace for {0} doesnt correspond to existing wavespace'.format
-                                     (name)+' for convoluted quantities')
+            if "wavespace" in self._q_conv:
+                if not np.allclose(w, self._q_conv["wavespace"]):
+                    raise ValueError(
+                        "wavespace for {0} doesnt correspond to existing wavespace".format(
+                            name
+                        )
+                        + " for convoluted quantities"
+                    )
             else:
-#                self._q_conv['wavespace'] = check_wavespace(w)   # copy
-                self._q_conv['wavespace'] = np.array(w)          # copy
-                # no need to check if wavespace is evenly spaced: we won't 
+                #                self._q_conv['wavespace'] = check_wavespace(w)   # copy
+                self._q_conv["wavespace"] = np.array(w)  # copy
+                # no need to check if wavespace is evenly spaced: we won't
                 # apply the slit function again
 
             # Add quantity itself
-            self._q_conv[name] = np.array(I)              # copy
+            self._q_conv[name] = np.array(I)  # copy
 
         elif name in NON_CONVOLUTED_QUANTITIES:
             # Add wavespace
-            if 'wavespace' in self._q:
-                if not np.allclose(w, self._q['wavespace']):
-                    raise ValueError('wavespace for {0} doesnt correspond to existing wavespace'.format
-                                     (name)+' for non convoluted quantities')
+            if "wavespace" in self._q:
+                if not np.allclose(w, self._q["wavespace"]):
+                    raise ValueError(
+                        "wavespace for {0} doesnt correspond to existing wavespace".format(
+                            name
+                        )
+                        + " for non convoluted quantities"
+                    )
             else:
-                self._q['wavespace'] = check_wavespace(w)   # copy
+                self._q["wavespace"] = check_wavespace(w)  # copy
 
             # Add quantity itself
-            self._q[name] = np.array(I)              # copy
+            self._q[name] = np.array(I)  # copy
 
         else:
-            raise ValueError('Unknown quantity: {0}. Expected one of: {1}'.format(name,
-                             CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES))
+            raise ValueError(
+                "Unknown quantity: {0}. Expected one of: {1}".format(
+                    name, CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
+                )
+            )
 
         # also make the quantity accessible with s.[name] like Pandas dataframes (removed eventually)
-       # setattr(self, name, quantity)   # Warning this makes another copy of it (it's a tuple!)
+        # setattr(self, name, quantity)   # Warning this makes another copy of it (it's a tuple!)
 
         # add to annotations   (Python >3.6)
         try:
-            self.get.__annotations__['var'].append(name)
-            self.plot.__annotations__['var'].append(name)
+            self.get.__annotations__["var"].append(name)
+            self.plot.__annotations__["var"].append(name)
         except AttributeError:  # old Python version
             pass
 
@@ -3238,164 +3537,194 @@ class Spectrum(object):
         return not self.__eq__(other)
 
     def __dir__(self):
-        ''' Names shown with tab completion: remove certain attributes to simplify
+        """ Names shown with tab completion: remove certain attributes to simplify
         the use of this class (@minou).
-        '''
+        """
 
-#        attrs = super(Spectrum, self).__dir__()
-        attrs = dir(type(self))     # Python 2 and 3 compatible
-        exclude = ['clear', 'fromkeys', 'items', 'pop', 'popitem', 'setdefault',
-                   'values']
+        #        attrs = super(Spectrum, self).__dir__()
+        attrs = dir(type(self))  # Python 2 and 3 compatible
+        exclude = [
+            "clear",
+            "fromkeys",
+            "items",
+            "pop",
+            "popitem",
+            "setdefault",
+            "values",
+        ]
 
         return [k for k in attrs if not k in exclude]
 
     def __str__(self):
-        ''' Print all Spectrum attributes'''
-        
+        """ Print all Spectrum attributes"""
+
         # Print name
-        print('Spectrum Name: ', self.get_name())
+        print("Spectrum Name: ", self.get_name())
 
         # Print spectral quantities
-        print('Spectral Quantities')
-        print('-'*40)
+        print("Spectral Quantities")
+        print("-" * 40)
         for k, v in self._get_items().items():
             # print number of points with a comma separator
-            print(' '*2, k, '\t({0:,d} points{1})'.format(len(v[0]),
-                                ', {0} nans'.format(count_nans(v[1])) if count_nans(v[1])>0 
-                                else ''))
+            print(
+                " " * 2,
+                k,
+                "\t({0:,d} points{1})".format(
+                    len(v[0]),
+                    ", {0} nans".format(count_nans(v[1]))
+                    if count_nans(v[1]) > 0
+                    else "",
+                ),
+            )
 
         # Print populations
-        print('Populations Stored')
-        print('-'*40)
+        print("Populations Stored")
+        print("-" * 40)
         try:
             for k, v in self.populations.items():
-                print(' '*2, k, '\t\t', list(v.keys()))
+                print(" " * 2, k, "\t\t", list(v.keys()))
         except:
             pass
 
         # Print conditions
         self.print_conditions()
 
-        return ''  # self.print_conditions()
-
+        return ""  # self.print_conditions()
 
     # %% Define Spectrum Algebra
     # +, -, *, ^  operators
-    
+
     # Notes:
     # s + s = 2*s    # valid only if optically thin
-    
+
     # Other possibility:
     # use   s1>s2    for SerialSlabs
     # and   s1//s2   for MergeSlabs
-    
+
     # Or:
     # use   s1*s2   for Serial Slabs
     # and   s1+s2   for MergeSlabs
-    
+
     # For the moment the first version is implemented
-    
+
     # Plus
-    
+
     def __add__(self, other):
-        ''' Override '+' behavior
+        """ Override '+' behavior
         Add is defined as :
             
         - for numeric values: add a baseline (returns a copy)
         - for 2 Spectra: not defined (not physical)
-        '''
-        
+        """
+
         # TODO: Implement unit addition (with Pint) one days
         # Example:   s += s*_u('mW/cm2/sr/nm')
-    
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import add_constant
+
             return add_constant(self, other, inplace=False)
         elif isinstance(other, np.ndarray):
             from radis.spectrum.operations import add_array
+
             return add_array(self, other, inplace=True)
         elif isinstance(other, Spectrum):
             from radis.spectrum.operations import add_spectra
+
             return add_spectra(self, other)
         else:
-#            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
-            raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-            
+            #            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            raise NotImplementedError(
+                "+ not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
     def __radd__(self, other):
-        ''' Right side addition '''
+        """ Right side addition """
         return self.__add__(other)
-    
+
     def __iadd__(self, other):
-        ''' Override '+=' behavior
+        """ Override '+=' behavior
         Add is defined as :
             
         - for numeric values: add a baseline (inplace)
         - for 2 Spectra: not defined (not physical)
-        '''
+        """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import add_constant
+
             return add_constant(self, other, inplace=True)
         elif isinstance(other, np.ndarray):
             from radis.spectrum.operations import add_array
+
             return add_array(self, other, inplace=True)
         else:
             warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
-            raise NotImplementedError('+ not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-            
+            raise NotImplementedError(
+                "+ not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
     # Minus
 
     def __sub__(self, other):
-        ''' Override '-' behavior
+        """ Override '-' behavior
         Add is defined as :
             
         - for numeric values: substract a baseline (returns a copy)
         - for 2 Spectra: defined only for baseline substraction
           
-        '''
+        """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import add_constant
+
             return add_constant(self, -other, inplace=False)
         elif isinstance(other, np.ndarray):
             from radis.spectrum.operations import add_array
+
             return add_array(self, -other, inplace=False)
         elif isinstance(other, Spectrum):
             from radis.spectrum.operations import substract_spectra
+
             return substract_spectra(self, other)
         else:
-            raise NotImplementedError('- not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-            
+            raise NotImplementedError(
+                "- not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
     def __rsub__(self, other):
-        ''' Right side substraction '''
-        raise NotImplementedError('right substraction (-) not implemented for Spectrum objects')
+        """ Right side substraction """
+        raise NotImplementedError(
+            "right substraction (-) not implemented for Spectrum objects"
+        )
 
     def __isub__(self, other):
-        ''' Override '-=' behavior
+        """ Override '-=' behavior
         Add is defined as :
             
         - for numeric values: substract a baseline (inplace)
         - for 2 Spectra: defined only for baseline substraction
           
-        '''
+        """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import add_constant
+
             return add_constant(self, -other, inplace=True)
         elif isinstance(other, np.ndarray):
             from radis.spectrum.operations import add_array
+
             return add_array(self, -other, inplace=True)
         elif isinstance(other, Spectrum):
             from radis.spectrum.operations import substract_spectra
+
             return substract_spectra(self, other)
         else:
-            raise NotImplementedError('-= not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-            
+            raise NotImplementedError(
+                "-= not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
     # Times
-    
+
     def __mul__(self, other):
-        ''' Override '*' behavior
+        """ Override '*' behavior
         Multiply is defined as :
             
         - for numeric values: multiply (equivalent to optically thin scaling)
@@ -3403,106 +3732,122 @@ class Spectrum(object):
           (returns a copy)
         - for 2 Spectra: not defined
           
-        '''
+        """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
+
             return multiply(self, other, inplace=False)
         elif isinstance(other, Spectrum):
-            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
+            raise NotImplementedError("* not implemented for 2 Spectrum objects. Use >")
         else:
-            raise NotImplementedError('* not implemented for a Spectrum and a {0} object'.format(
-                        type(other)))
-            
+            raise NotImplementedError(
+                "* not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
     def __rmul__(self, other):
-        ''' Right side multiplication '''
+        """ Right side multiplication """
 
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
+
             return multiply(self, other, inplace=False)
         elif isinstance(other, Spectrum):
-            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
+            raise NotImplementedError("* not implemented for 2 Spectrum objects. Use >")
         else:
-            raise NotImplementedError('right side * not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-            
+            raise NotImplementedError(
+                "right side * not implemented for a Spectrum and a {0} object".format(
+                    type(other)
+                )
+            )
+
     def __imul__(self, other):
-        ''' Override '*=' behavior
+        """ Override '*=' behavior
         Multiply is defined as :
             
         - for numeric values: multiply (equivalent to optically thin scaling)
           (only if in front, i.e:  s *= 2)  (modifies inplace)
         - for 2 Spectra: not defined
           
-        '''
+        """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
+
             return multiply(self, other, inplace=True)
         elif isinstance(other, Spectrum):
-            raise NotImplementedError('* not implemented for 2 Spectrum objects. Use >')
+            raise NotImplementedError("* not implemented for 2 Spectrum objects. Use >")
         else:
-            raise NotImplementedError('*= not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-            
+            raise NotImplementedError(
+                "*= not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
     # Divide
-    
+
     def __truediv__(self, other):
-        ''' Override '/' behavior
+        """ Override '/' behavior
         Divide is defined as :
             
         - for numeric values: divide algebrically (equivalent to optically thin scaling)
           
-        '''
+        """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
-            return multiply(self, 1/other, inplace=False)
+
+            return multiply(self, 1 / other, inplace=False)
         else:
-            raise NotImplementedError('/ not implemented for a Spectrum and a {0} object'.format(
-                        type(other)))
-            
+            raise NotImplementedError(
+                "/ not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
     def __rtruediv__(self, other):
-        ''' Right side division '''
+        """ Right side division """
 
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
-            return multiply(self, 1/other, inplace=False)
+
+            return multiply(self, 1 / other, inplace=False)
         else:
-            raise NotImplementedError('right side / not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-            
+            raise NotImplementedError(
+                "right side / not implemented for a Spectrum and a {0} object".format(
+                    type(other)
+                )
+            )
+
     def __itruediv__(self, other):
-        ''' Override '/=' behavior
+        """ Override '/=' behavior
         Divide is defined as :
             
         - for numeric values: divide quantities algebrically 
         (equivalent to optically thin scaling)
           
-        '''
+        """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
-            return multiply(self, 1/other, inplace=True)
+
+            return multiply(self, 1 / other, inplace=True)
         else:
-            raise NotImplementedError('/= not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-            
-            
+            raise NotImplementedError(
+                "/= not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
     # Line of sight operations
-    
+
     def __bool__(self):
-        ''' This prevents behaviors such as::
+        """ This prevents behaviors such as::
             
             s1 > s2 > s3 
             
         which are actually interpreted by Python as "s1 > s2  and s2 > s3"
         and would return a wrong result  (probably s2 > s3  ? ) 
-        '''
-        raise ArithmeticError('A Spectrum cannot be evaluated as a boolean. '+\
-                              'You may have tried using syntax such as `s1>s2>s3` '+\
-                              'which Python interpets as `s1>s2 and s2>s3`. '+\
-                              'Use `(s1>s2)>s3)` or SerialSlabs(s1, s2, s3) instead.')
-    
-    
+        """
+        raise ArithmeticError(
+            "A Spectrum cannot be evaluated as a boolean. "
+            + "You may have tried using syntax such as `s1>s2>s3` "
+            + "which Python interpets as `s1>s2 and s2>s3`. "
+            + "Use `(s1>s2)>s3)` or SerialSlabs(s1, s2, s3) instead."
+        )
+
     def __gt__(self, other):
-        ''' Overloads '>' behavior
+        """ Overloads '>' behavior
         no comparison: here we use > to define a ``Line of sight``.
         
         Examples
@@ -3516,27 +3861,28 @@ class Spectrum(object):
             
             s = SerialSlabs(s_plasma, s_room)
           
-        '''
+        """
         if isinstance(other, Spectrum):
             from radis.los.slabs import SerialSlabs
+
             return SerialSlabs(self, other)
         else:
-            raise NotImplementedError('> not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-                
-            
-#    def __rgt__(self, other):
-#        ''' Right side > '''
-#
-#        if isinstance(other, Spectrum):
-#            from radis.los.slabs import SerialSlabs
-#            return SerialSlabs(other, self)
-#        else:
-#            raise NotImplementedError('right side > not implemented for a Spectrum and a {0} object'.format(
-#                    type(other)))
-            
+            raise NotImplementedError(
+                "> not implemented for a Spectrum and a {0} object".format(type(other))
+            )
+
+    #    def __rgt__(self, other):
+    #        ''' Right side > '''
+    #
+    #        if isinstance(other, Spectrum):
+    #            from radis.los.slabs import SerialSlabs
+    #            return SerialSlabs(other, self)
+    #        else:
+    #            raise NotImplementedError('right side > not implemented for a Spectrum and a {0} object'.format(
+    #                    type(other)))
+
     def __floordiv__(self, other):
-        ''' Overloads '//' behavior
+        """ Overloads '//' behavior
         not a divison here: we use it to say that Slabs are ``in parallel``, i.e.,
         as if their respesctive mole fractions were added in the same physical space 
         
@@ -3554,50 +3900,53 @@ class Spectrum(object):
             
             s = MergeSlabs(s_co2, s_co)
             
-        '''
-        
+        """
+
         if isinstance(other, Spectrum):
             from radis.los.slabs import MergeSlabs
+
             return MergeSlabs(self, other)
         else:
-            raise NotImplementedError('// not implemented for a Spectrum and a {0} object'.format(
-                    type(other)))
-
+            raise NotImplementedError(
+                "// not implemented for a Spectrum and a {0} object".format(type(other))
+            )
 
     # the following is so that json_tricks.dumps and .loads can be used directly,
     # ie.:
     # >>> s == loads(s.dumps())
     # Does not work yet.
     # see https://github.com/mverleg/pyjson_tricks#class-instances
-#    def __json_encode__(self):
-#        ''' Called by json_tricks.dumps '''
-#        from radis.tools.database import _format_to_jsondict
-#        return _format_to_jsondict(self, discard=[], compress=[], verbose=True)
-#
-#    def __json_decode__(self, **attrs):
-#        from radis.tools.database import _json_to_spec
-#        print(attrs)
-#        raise
-#        return _json_to_spec(attrs)
+    #    def __json_encode__(self):
+    #        ''' Called by json_tricks.dumps '''
+    #        from radis.tools.database import _format_to_jsondict
+    #        return _format_to_jsondict(self, discard=[], compress=[], verbose=True)
+    #
+    #    def __json_decode__(self, **attrs):
+    #        from radis.tools.database import _json_to_spec
+    #        print(attrs)
+    #        raise
+    #        return _json_to_spec(attrs)
 
     def __len__(self):
-        ''' Length of a Spectrum object = length of the wavespace if unique, 
-        else raises an error '''
-        
+        """ Length of a Spectrum object = length of the wavespace if unique, 
+        else raises an error """
+
         # raises ValueError if both convolved and non convolved are defined
         try:
-            return len(self._get_wavespace('any', copy=False))   
+            return len(self._get_wavespace("any", copy=False))
         except ValueError:
-            raise ValueError('All quantities do not have the same length in the Spectrum')
-        
+            raise ValueError(
+                "All quantities do not have the same length in the Spectrum"
+            )
+
 
 # %% Private functions
-    
-# to cut 
-    
+
+# to cut
+
 
 def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
-    ''' used to cut a waverange into slices where dispersion does not very too much
+    """ used to cut a waverange into slices where dispersion does not very too much
     
     Parameters
     ----------
@@ -3615,24 +3964,26 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
         artifacts on the jonction. A good number is to use the slit width, to be 
         conservative.
         
-    '''
-    
+    """
+
     # TODO: just test every 10 or 100
     blocs = dispersion(w_nm)
-    diff = np.round(blocs[0]/blocs - 1, int(-np.log10(threshold)))  # difference in slit dispersion, +- 10%
+    diff = np.round(
+        blocs[0] / blocs - 1, int(-np.log10(threshold))
+    )  # difference in slit dispersion, +- 10%
     _, index_blocs = np.unique(diff, return_index=True)
     # check direction, add last element
-    
+
     if index_blocs[0] < index_blocs[-1]:
         increment = 1
         index_blocs = np.hstack((index_blocs, len(w_nm)))
     else:
-        increment = -1 
+        increment = -1
         index_blocs = np.hstack((len(w_nm), index_blocs))
-#        index_blocs[-1] = None
-    
+    #        index_blocs[-1] = None
+
     imins, imaxs = index_blocs[:-1].copy(), index_blocs[1:].copy()
-    
+
     # Add wings
     if increment == 1:
         imins -= wings
@@ -3640,25 +3991,25 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
     else:
         imins += wings
         imaxs -= wings
-        
+
     # add last if needed
-    
+
     slices = []
     wings_min = []
     wings_max = []
     for imin, imax in zip(imins, imaxs):
         # Keep track of what was added on each side
-#        if imin <= - wings:
-#            wings_min.append(None)
-#            imin = None
+        #        if imin <= - wings:
+        #            wings_min.append(None)
+        #            imin = None
         if imin <= 0:
             wings_min.append(wings + imin)
             imin = None
         else:
             wings_min.append(wings)
-#        if imax <= - wings:
-#            wings_max.append(None)
-#            imax = None
+        #        if imax <= - wings:
+        #            wings_max.append(None)
+        #            imax = None
         if imax <= 0:
             wings_max.append(wings + imax)
             imax = None
@@ -3667,10 +4018,10 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
         slice_w = np.zeros_like(w_nm, dtype=np.bool)
         slice_w[imin:imax:increment] = 1
         slices.append(slice_w)
-      
-##    # make sure we didnt miss anyone
-#    assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
-    
+
+    ##    # make sure we didnt miss anyone
+    #    assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
+
     return slices[::increment], wings_min[::increment], wings_max[::increment]
 
 
@@ -3683,7 +4034,7 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
 
 
 def is_spectrum(a):
-    ''' Returns whether a is a Spectrum object
+    """ Returns whether a is a Spectrum object
 
     Parameters
     ----------
@@ -3703,40 +4054,49 @@ def is_spectrum(a):
     class gets imported twice (when databases are involved, mostly), and a purely 
     isinstance() comparison fails
 
-    '''
-    
-#    return isinstance(a, Spectrum)
-    # removed: was used initially in the early RADIS development phase. Spectrum 
+    """
+
+    #    return isinstance(a, Spectrum)
+    # removed: was used initially in the early RADIS development phase. Spectrum
     # object would not be recognized if the library was modified
-    return (isinstance(a, Spectrum) or     
-            repr(a.__class__) == repr(Spectrum))
+    return isinstance(a, Spectrum) or repr(a.__class__) == repr(Spectrum)
 
 
 #%% Deprecated
-    
-    
+
+
 def calculated_spectrum(*args, **kwargs):
     from radis.spectrum.models import calculated_spectrum
-    warn('function calculated_spectrum moved to radis.spectrum.models', DeprecationWarning)
+
+    warn(
+        "function calculated_spectrum moved to radis.spectrum.models",
+        DeprecationWarning,
+    )
     return calculated_spectrum(*args, **kwargs)
+
 
 def transmittance_spectrum(*args, **kwargs):
     from radis.spectrum.models import transmittance_spectrum
-    warn('function transmittance_spectrum moved to radis.spectrum.models', DeprecationWarning)
+
+    warn(
+        "function transmittance_spectrum moved to radis.spectrum.models",
+        DeprecationWarning,
+    )
     return transmittance_spectrum(*args, **kwargs)
+
 
 def experimental_spectrum(*args, **kwargs):
     from radis.spectrum.models import experimental_spectrum
-    warn('function experimental_spectrum moved to radis.spectrum.models', DeprecationWarning)
+
+    warn(
+        "function experimental_spectrum moved to radis.spectrum.models",
+        DeprecationWarning,
+    )
     return experimental_spectrum(*args, **kwargs)
 
 
-
-
-
 # %% Test functions
-if __name__ == '__main__':
+if __name__ == "__main__":
     from radis.test.spectrum.test_spectrum import _run_testcases
-    print('Test spectrum: ', _run_testcases(debug=False))
 
-    
+    print("Test spectrum: ", _run_testcases(debug=False))

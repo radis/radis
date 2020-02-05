@@ -1,11 +1,7 @@
-References
-==========
-
-List of bibliographic references used in this project:
-
-
 Bibliography
 ------------
+
+List of bibliographic references used in this project:
 
 .. [CANTERA] : D. G. Goodwin, H. K. Moffat, R. L. Speth, Cantera: An Object-oriented Software
               Toolkit for Chemical Kinetics, Thermodynamics, and Transport Processes,
@@ -33,50 +29,3 @@ Bibliography
 .. [RADIS-2018] : E. Pannier, C. O. Laux, RADIS: A Nonequilibrium Line-by-Line Radiative Code for CO2 and 
                 HITRAN-like database species", , Journal of Quantitative Spectroscopy and Radiative Transfer
                 (2018) `doi:10.1016/j.jqsrt.2018.09.027 <https://www.sciencedirect.com/science/article/pii/S0022407318305867?via%3Dihub>`__
-
-.. _label_version:
-
-Version
--------
-                
-Use :py:func:`~radis.get_version` to get your RADIS version number.
-
-Latest version available is:
-
-.. image:: https://img.shields.io/pypi/v/radis.svg
-    :target: https://pypi.python.org/pypi/radis
-    :alt: PyPI
-
-                
-Spectroscopic constants
------------------------
-
-When using nonequilibrium calculations, do not forget to reference the spectroscopic constants used. 
-See :ref:`references for the RADIS built-in constants <label_db_spectroscopic_constants>`
-
-                
-Useful Links
-------------
-
-RADIS:
-
-- Documentation: http://radis.readthedocs.io/
-- Source Code: https://github.com/radis/radis
-- Article: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
-
-Report or suggest: 
-
-- Community chat: https://gitter.im/radis-radiation/community |badge_gitter|
-- Google group: https://groups.google.com/forum/#!forum/radis-radiation>
-
- .. [Issues] : `Report issues on GitHub <https://github.com/radis/radis/issues>`_
-
-
-And also:
-
-.. [Travis] : Automatic testing: https://travis-ci.com/radis/radis
-
-.. [Coverage] : Test coverage: https://codecov.io/gh/radis/radis
-
-- PyPi Repository: https://pypi.org/project/radis/
-- Interactive Examples: https://github.com/radis/radis-examples

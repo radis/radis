@@ -57,18 +57,19 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
 .. figure:: examples/co_spectrum_700K.png
     :scale: 60 %
 
-Calculate a CO *nonequilibrium* spectrum from the HITRAN database
-(on your first call, this will calculate and cache the CO(X) rovibrational
-energies): ::
+Calculate a CO *nonequilibrium* spectrum from the HITRAN database, with
+arbitrary :py:mod:`~astropy.units` (on your first call, this will calculate and 
+cache the CO(X) rovibrational energies): ::
 
-    s2 = calc_spectrum(1900, 2300,         # cm-1
+    from astropy import units as u
+    s2 = calc_spectrum(1900 / u.cm, 2300 / u.cm,
                       molecule='CO',
                       isotope='1,2,3',
-                      pressure=1.01325,   # bar
-                      Tvib=700,           # K
-                      Trot=300,           # K
+                      pressure=1.01325 * u.bar,
+                      Tvib=700 * u.K,
+                      Trot=300 * u.K,
                       mole_fraction=0.1, 
-                      path_length=1,      # cm
+                      path_length=1 * u.cm,
                       )
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous
@@ -82,7 +83,8 @@ and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For
     sexp = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
     plot_diff(sexp, s)    # comparing with a spectrum 's' calculated previously 
 
-Typical output of :py:func:`~radis.spectrum.compare.plot_diff`:
+Typical output of :py:func:`~radis.spectrum.compare.plot_diff` (below: a CO2 spectrum
+with two different line databases):
 
 .. image:: spectrum/cdsd4000_vs_hitemp_3409K.*
     :scale: 60 %

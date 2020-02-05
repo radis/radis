@@ -33,6 +33,7 @@ class, which is the core of RADIS line-by-line calculations.
 for the simple cases. 
 
 The :py:class:`~radis.lbl.factory.SpectrumFactory` allows you to :
+
 - calculate multiple spectra (batch processing) with a same line database 
 - edit the line database manually 
 - have access to intermediary calculation variables
@@ -42,22 +43,24 @@ To use the :py:class:`~radis.lbl.factory.SpectrumFactory`, first
 load your own line database with :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`, 
 and then calculate several spectra in batch using 
 :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum` and 
-:py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum` ::
+:py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`, 
+and :py:mod:`~astropy.units` ::
 
+    import astropy.units as u
     from radis import SpectrumFactory
-    sf = SpectrumFactory(wavelength_min=4150, 
-                         wavelength_max=4400,
-                         path_length=1,             # cm
-                         pressure=0.020,            # bar
+    sf = SpectrumFactory(wavelength_min=4165 * u.nm, 
+                         wavelength_max=4200 * u.nm,
+                         path_length=0.1 * u.m,
+                         pressure=20 * u.mbar,
                          molecule='CO2',
                          isotope='1,2', 
                          cutoff=1e-25,              # cm/molecule  
                          broadening_max_width=10,   # cm-1
                          )
-    sf.load_databank('CDSD-HITEMP')        # this database must be defined in ~/.radis
-    s1 = sf.eq_spectrum(Tgas=300)
-    s2 = sf.eq_spectrum(Tgas=2000)
-    s3 = sf.non_eq_spectrum(Tvib=2000, Trot=300)
+    sf.load_databank('HITRAN-CO2-TEST')        # this database must be defined in ~/.radis
+    s1 = sf.eq_spectrum(Tgas=300 * u.K)
+    s2 = sf.eq_spectrum(Tgas=2000 * u.K)
+    s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
 
 .. _label_lbl_config_file:
 
@@ -85,9 +88,9 @@ is specific to a given molecule. It typically looks like::
     [HITEMP-CO2]
     info = CDSD-HITEMP database, with energy levels calculated from Dunham expansions
     path = 
-           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_07
-           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_08
-           D:\PATH_TO\HITEMP-2010\cdsd_hitemp_09
+           PATH_TO\HITEMP-2010\cdsd_hitemp_07
+           PATH_TO\HITEMP-2010\cdsd_hitemp_08
+           PATH_TO\HITEMP-2010\cdsd_hitemp_09
     format = hitran
     parfunc =  PATH_TO\CDSD-4000\partition_functions.txt
     parfuncfmt = cdsd
@@ -102,9 +105,9 @@ It is also possible to use your own Energy level database. For instance::
     [CDSD-HITEMP-HAMILTONIAN]
     info = CDSD-HITEMP database
     path = 
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_07
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_08
-           D:\PATH_TO\CDSD-HITEMP\cdsd_hitemp_09
+           PATH_TO\CDSD-HITEMP\cdsd_hitemp_07
+           PATH_TO\CDSD-HITEMP\cdsd_hitemp_08
+           PATH_TO\CDSD-HITEMP\cdsd_hitemp_09
     format = cdsd
     parfunc = D:\PATH_TO\CDSD-4000\partition_functions.txt
     parfuncfmt = cdsd
@@ -151,7 +154,7 @@ which will result in ::
 
     [HITRAN-CO2-TEST]
     info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
-    path = [PATH_TO]\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
+    path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
     format = hitran
     parfuncfmt = hapi
     levelsfmt = radis
@@ -159,7 +162,7 @@ which will result in ::
 
     [HITRAN-CO-TEST]
     info = HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), 2000-2300 cm-1
-    path = [PATH_TO]\radis\radis\test\files\hitran_co_3iso_2000_2300cm.par
+    path = PATH_TO\radis\radis\test\files\hitran_co_3iso_2000_2300cm.par
     format = hitran
     parfuncfmt = hapi
     levelsfmt = radis
@@ -167,7 +170,7 @@ which will result in ::
 
     [HITEMP-CO2-TEST]
     info = HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
-    path = D:\GitHub\radis\radis\test\files\cdsd_hitemp_09_fragment.txt
+    path = PATH_TO\radis\radis\test\files\cdsd_hitemp_09_fragment.txt
     format = cdsd-hitemp
     parfuncfmt = hapi
     levelsfmt = radis
@@ -190,6 +193,7 @@ Calculation Flow Chart
 Refer to :ref:`Architecture <label_dev_architecture>` for an overview of how equilibrium
 and nonequilibrium calculations are conducted. 
 
+.. _label_lbl_custom_constants:
 
 Use Custom Spectroscopic constants
 ----------------------------------

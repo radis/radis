@@ -3,43 +3,72 @@ python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.6"
-install:
-  - sudo apt-get update
-  # Install Anaconda 
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
+os: linux
 
-  # Update python version in environment 
-  - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
-  # Create conda environment
-  - conda env create -n radis-env -f environment.yml
-  # Activate and install test-only dependencies
-  - source activate radis-env
-  - pip install pytest-cov
-  - python setup.py install
+stages:
+  - name: test
+    if: branch = master OR branch = develop
+    # we dont test on other branches
+  - name: deploy
+    if: branch = master
+  
+jobs:
+  include:
+    - stage: test
+      name: "Test and Coverage"
+      install:
+        - sudo apt-get update
+        # Install Anaconda 
+        # We do this conditionally because it saves us some downloading if the
+        # version is the same.
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - hash -r
+        - conda config --set always_yes yes --set changeps1 no
+        - conda update -q conda
+        # Useful for debugging any issues with conda
+        - conda info -a
 
-script:
-  # Your test script goes here
-  - echo ">>> Run tests"
-  # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - xvfb-run pytest -m "not needs_config_file" --cov=./;
-  
-# safelist
-branches:
-  only:
-  - master
-  - develop
-  
- 
-after_success:
-  # codecoverage
-  - pip install codecov;
-  - codecov;
+        # Update python version in environment 
+        - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+        # Create conda environment
+        - conda env create -n radis-env -f environment.yml
+        # Activate and install test-only dependencies
+        - source activate radis-env
+        - pip install pytest-cov
+        - python setup.py install
+
+      script:
+        # Your test script goes here
+        - echo ">>> Run tests"
+        # use XVFB to have headless display port, and still run the Matplotlib tests.
+        - xvfb-run pytest -m "not needs_config_file" --cov=./;
+      
+      after_success:
+        # codecoverage
+        - pip install codecov;
+        - codecov;
+
+    # still in stage : test 
+    - name: "Code Quality Checks"
+      install:
+        - sudo apt-get update
+        - pip install black isort --quiet
+
+      script:
+        # - isort -c -rc ./  # isort would be added in future
+        - black ./ setup.py --check
+
+    - stage: deploy
+      name: "Deploy to Pypi"
+      install: 
+        - sudo apt-get update
+      script:
+        - echo "Deploying to Pypi"
+      deploy:
+        provider: pypi
+        user: "__token__"  
+        password:
+          secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
+        skip_existing: true

@@ -15,10 +15,9 @@ import pandas as pd
 from radis.db.utils import getFile
 
 
-class MolParams():
-
+class MolParams:
     def __init__(self, file=None):
-        ''' Easy access to molecular parameters taken from HITRAN molparam.txt 
+        """ Easy access to molecular parameters taken from HITRAN molparam.txt 
     
         Parameters
         ----------
@@ -44,24 +43,24 @@ class MolParams():
     
         http://hitran.org/media/molparam.txt
 
-        '''
+        """
 
         if file is None:
-            file = getFile('molparam.txt')
+            file = getFile("molparam.txt")
 
-        df = pd.read_csv(file, comment='#', delim_whitespace=True)
-        df = df.set_index(['id', 'iso'])
+        df = pd.read_csv(file, comment="#", delim_whitespace=True)
+        df = df.set_index(["id", "iso"])
 
         self.df = df
 
         # ------
         try:  # Add hints (Python >3.6 only)
-            self.get.__annotations__['key'] = list(df.keys())
+            self.get.__annotations__["key"] = list(df.keys())
         except AttributeError:
             pass  # old Python version
 
     def get(self, M, I, key):
-        ''' 
+        """ 
         Parameters
         ----------
 
@@ -75,7 +74,7 @@ class MolParams():
         key: ``'abundance'``, ``'mol_mass'``
             parameter 
         
-        '''
+        """
         return self.df.loc[(M, I), key]
 
 
@@ -84,16 +83,16 @@ def _test(verbose=True, *args, **kwargs):
 
     b = True
 
-    b *= (molpar.get(2, 2, 'abundance') == 0.0110574)
+    b *= molpar.get(2, 2, "abundance") == 0.0110574
     if verbose:
-        print('CO2-636 abundance:', molpar.get(2, 2, 'abundance'))
+        print("CO2-636 abundance:", molpar.get(2, 2, "abundance"))
 
     if verbose:
-        print('Testing molparams.py:', b)
+        print("Testing molparams.py:", b)
 
     return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     _test()

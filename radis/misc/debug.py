@@ -20,7 +20,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 
 def printdbg(*args, **kwargs):
-    ''' Function that prints only in debug mode. change this at runtime with 
+    """ Function that prints only in debug mode. change this at runtime with 
      >>> radis.debug = True
 
      Examples
@@ -41,16 +41,16 @@ def printdbg(*args, **kwargs):
      :py:data:`~radis.DEBUG_MODE`
     
 
-     '''
+     """
 
     from radis import DEBUG_MODE
 
     if DEBUG_MODE:
-        print('DEBUG:', *args, **kwargs)
+        print("DEBUG:", *args, **kwargs)
 
 
 def export(var=locals()):
-    ''' Export local variables. Useful for debugging 
+    """ Export local variables. Useful for debugging 
 
     Debugging inside a function may be tedious because you can't access the 
     local variables. One of the option is to use the ipython magic::
@@ -81,11 +81,13 @@ def export(var=locals()):
     - 01/05 : doesn't seem to work at all.. @Erwan  
 
 
-    '''
+    """
 
     globals().update(var)
 
     return
+
+
 #
 # def get_locals(func):
 #    ''' Initially from :

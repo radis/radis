@@ -21,9 +21,16 @@ from radis.misc.debug import printdbg
 from radis.misc.arrays import is_sorted, is_sorted_backward
 
 
-def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3,
-             print_conservation=True):
-    ''' Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
+def resample(
+    xspace,
+    vector,
+    xspace_new,
+    k=1,
+    ext="error",
+    energy_threshold=1e-3,
+    print_conservation=True,
+):
+    """ Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
     data and whose bounds are taken as the same as `xspace`. 
 
     Uses spline interpolation to create the intermediary points. Number of points
@@ -81,11 +88,13 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
         w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
 
 
-    '''
+    """
 
     if len(xspace) != len(vector):
-        raise ValueError('vector and xspace should have the same length. ' +
-                         'Got {0}, {1}'.format(len(vector), len(xspace)))
+        raise ValueError(
+            "vector and xspace should have the same length. "
+            + "Got {0}, {1}".format(len(vector), len(xspace))
+        )
 
     # Check reversed (interpolation requires objects are sorted)
     if is_sorted(xspace):
@@ -93,7 +102,7 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
     elif is_sorted_backward(xspace):
         reverse = True
     else:
-        raise ValueError('Resampling requires wavespace to be sorted. It is not!')
+        raise ValueError("Resampling requires wavespace to be sorted. It is not!")
 
     if reverse:
         xspace = xspace[::-1]
@@ -101,35 +110,39 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
         vector = vector[::-1]
 
     # translate ext in FITPACK syntax for splev
-    if ext == 'extrapolate':
-        ext_fitpack = 0          # splev returns extrapolated value
-    elif ext in [0, '0', 1, '1', nan, 'nan']:
-        ext_fitpack = 1          # splev returns 0  (fixed in post-processing)
-    elif ext == 'error':
-        ext_fitpack = 2          # splev raises ValueError
+    if ext == "extrapolate":
+        ext_fitpack = 0  # splev returns extrapolated value
+    elif ext in [0, "0", 1, "1", nan, "nan"]:
+        ext_fitpack = 1  # splev returns 0  (fixed in post-processing)
+    elif ext == "error":
+        ext_fitpack = 2  # splev raises ValueError
     else:
-        raise ValueError('Unexpected value for `ext`: {0}'.format(ext))
+        raise ValueError("Unexpected value for `ext`: {0}".format(ext))
 
     if isnan(vector).sum() > 0:
-        raise ValueError('Resampled vector has {0} nans. Interpolation will fail'.format
-                         (isnan(vector).sum()))
+        raise ValueError(
+            "Resampled vector has {0} nans. Interpolation will fail".format(
+                isnan(vector).sum()
+            )
+        )
 
     # Resample the slit function on the spectrum grid
     try:
         tck = splrep(xspace, vector, k=k)
     except ValueError:
         # Probably error on input data. Print it before crashing.
-        print('\nValueError - Input data below:')
-        print('-'*5)
+        print("\nValueError - Input data below:")
+        print("-" * 5)
         print(xspace)
         print(vector)
-        print('Check plot 101 too')
+        print("Check plot 101 too")
         import matplotlib.pyplot as plt
+
         plt.figure(101).clear()
         plt.plot(xspace, vector)
-        plt.xlabel('xspace')
-        plt.ylabel('vector')
-        plt.title('ValueError')
+        plt.xlabel("xspace")
+        plt.ylabel("vector")
+        plt.title("ValueError")
         raise
     vector_new = splev(xspace_new, tck, ext=ext_fitpack)
 
@@ -138,16 +151,22 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
     b_new = (xspace_new >= xspace.min()) * (xspace_new <= xspace.max())
 
     # fix filling for out of boundary values
-    if ext in [1, '1']:
+    if ext in [1, "1"]:
         vector_new[~b_new] = 1
         if __debug__:
-            printdbg('Filling with 1 on w<{0}, w>{1} ({2} points)'.format(
-                xspace.min(), xspace.max(), (1-b_new).sum()))
-    elif ext in [nan, 'nan']:
+            printdbg(
+                "Filling with 1 on w<{0}, w>{1} ({2} points)".format(
+                    xspace.min(), xspace.max(), (1 - b_new).sum()
+                )
+            )
+    elif ext in [nan, "nan"]:
         vector_new[~b_new] = nan
         if __debug__:
-            printdbg('Filling with nans on w<{0}, w>{1} ({2} points)'.format(
-                xspace.min(), xspace.max(), (1-b_new).sum()))
+            printdbg(
+                "Filling with nans on w<{0}, w>{1} ({2} points)".format(
+                    xspace.min(), xspace.max(), (1 - b_new).sum()
+                )
+            )
 
     # Check energy conservation:
 
@@ -160,35 +179,46 @@ def resample(xspace, vector, xspace_new, k=1, ext='error', energy_threshold=1e-3
         else:
             energy_ratio = 0
     else:  # general case
-        energy_ratio = energy0/energy_new
+        energy_ratio = energy0 / energy_new
     if energy_threshold:
-        if abs(energy_ratio-1) > energy_threshold:
+        if abs(energy_ratio - 1) > energy_threshold:
             import matplotlib.pyplot as plt
+
             plt.figure(101).clear()
-            plt.plot(xspace, vector, '-ok', label='original')
-            plt.plot(xspace_new, vector_new, '-or', label='resampled')
-            plt.xlabel('xspace')
-            plt.ylabel('vector')
+            plt.plot(xspace, vector, "-ok", label="original")
+            plt.plot(xspace_new, vector_new, "-or", label="resampled")
+            plt.xlabel("xspace")
+            plt.ylabel("vector")
             plt.legend()
-            raise ValueError('Error in resampling: '+\
-                'energy conservation ({0:.5g}%) below tolerance level ({1:.5g}%)'.format(
-                (1-energy_ratio)*100, energy_threshold*100)+'. Check graph 101. ' +
-                'Increasing energy_threshold is possible but not recommended')
+            raise ValueError(
+                "Error in resampling: "
+                + "energy conservation ({0:.5g}%) below tolerance level ({1:.5g}%)".format(
+                    (1 - energy_ratio) * 100, energy_threshold * 100
+                )
+                + ". Check graph 101. "
+                + "Increasing energy_threshold is possible but not recommended"
+            )
     if print_conservation:
-        print('Resampling - Energy conservation: {0:.5g}%'.format(
-            energy_ratio*100))
+        print("Resampling - Energy conservation: {0:.5g}%".format(energy_ratio * 100))
 
     # Reverse again
     if reverse:
-        #xspace_new = xspace_new[::-1]
+        # xspace_new = xspace_new[::-1]
         vector_new = vector_new[::-1]
 
     return vector_new
 
 
-def resample_even(xspace, vector, resfactor=2, k=1, ext='error', energy_threshold=1e-3,
-                  print_conservation=True):
-    ''' Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
+def resample_even(
+    xspace,
+    vector,
+    resfactor=2,
+    k=1,
+    ext="error",
+    energy_threshold=1e-3,
+    print_conservation=True,
+):
+    """ Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
     data and whose bounds are taken as the same as `xspace`. 
 
     Uses spline interpolation to create the intermediary points. Number of points
@@ -248,23 +278,30 @@ def resample_even(xspace, vector, resfactor=2, k=1, ext='error', energy_threshol
         w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
 
 
-    '''
+    """
 
     # Get new evenly space array
-    xspace_new = linspace(xspace[0], xspace[-1], len(vector)*resfactor)
+    xspace_new = linspace(xspace[0], xspace[-1], len(vector) * resfactor)
 
     # Resample
-    vector_new = resample(xspace, vector, xspace_new, k=k, ext=ext,
-                          energy_threshold=energy_threshold,
-                          print_conservation=print_conservation)
+    vector_new = resample(
+        xspace,
+        vector,
+        xspace_new,
+        k=k,
+        ext=ext,
+        energy_threshold=energy_threshold,
+        print_conservation=print_conservation,
+    )
 
     return xspace_new, vector_new
 
 
 # %% Test routines
 
+
 def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
-    ''' Test procedures
+    """ Test procedures
 
 
     Parameters    
@@ -273,7 +310,7 @@ def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
     debug: boolean
         swamps the console namespace with local variables. Default ``False``
 
-    '''
+    """
 
     from radis.test.utils import getTestFile
     from radis.phys.convert import nm2cm, cm2nm
@@ -282,16 +319,21 @@ def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
 
     # Test even resampling
 
-    w_nm, I_nm = loadtxt(getTestFile('spectrum.txt')).T
-    w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm, resfactor=2, energy_threshold=1e-3,
-                               print_conservation=verbose)
+    w_nm, I_nm = loadtxt(getTestFile("spectrum.txt")).T
+    w_cm, I_cm = resample_even(
+        nm2cm(w_nm),
+        I_nm,
+        resfactor=2,
+        energy_threshold=1e-3,
+        print_conservation=verbose,
+    )
 
     if plot:
         plt.figure()
-        plt.xlabel('Wavelength (nm)')
-        plt.ylabel('Intensity')
-        plt.plot(w_nm, I_nm, '-ok', label='original')
-        plt.plot(cm2nm(w_cm), I_cm, '-or', label='resampled')
+        plt.xlabel("Wavelength (nm)")
+        plt.ylabel("Intensity")
+        plt.plot(w_nm, I_nm, "-ok", label="original")
+        plt.plot(cm2nm(w_cm), I_cm, "-or", label="resampled")
         plt.legend()
 
     # Test resampling
@@ -301,20 +343,20 @@ def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
 
     if plot:
         plt.figure()
-        plt.xlabel('Wavelength (nm)')
-        plt.ylabel('Intensity')
-        plt.plot(w_nm, I_nm, '-ok', label='original')
-        plt.plot(w_crop, I_crop, '-or', label='resampled')
+        plt.xlabel("Wavelength (nm)")
+        plt.ylabel("Intensity")
+        plt.plot(w_nm, I_nm, "-ok", label="original")
+        plt.plot(w_crop, I_crop, "-or", label="resampled")
         plt.legend()
 
     if debug:
         globals().update(locals())
 
     if warnings:
-        warn('Testing resampling: no quantitative tests defined yet')
+        warn("Testing resampling: no quantitative tests defined yet")
 
     return True  # no standard tests yet
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _test(debug=False)

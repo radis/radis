@@ -27,87 +27,92 @@ a few seconds only)::
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 import os
-from radis.misc.config import (getDatabankList, getDatabankEntries, addDatabankEntries,
-                               diffDatabankEntries)
+from radis.misc.config import (
+    getDatabankList,
+    getDatabankEntries,
+    addDatabankEntries,
+    diffDatabankEntries,
+)
 from radis.misc.utils import FileNotFoundError
 from radis.misc.printer import printr
 from os.path import join, dirname
 
-TEST_FOLDER_PATH = join(dirname(dirname(__file__)), 'test')
-IGNORE_MISSING_DATABASES = False        # TODO: move in ~/.radis
-'''bool: how to deal with missing Line databases during tests. If ``True``, 
+TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
+IGNORE_MISSING_DATABASES = False  # TODO: move in ~/.radis
+"""bool: how to deal with missing Line databases during tests. If ``True``, 
 print a warning. Else, raise an error. See :func:`~radis.test.utils.IgnoreMissingDatabase`
-'''
+"""
 
 
 def getTestFile(file):
-    ''' Return the full path of a test file. Used by test functions not to
-    worry about the project architecture'''
+    """ Return the full path of a test file. Used by test functions not to
+    worry about the project architecture"""
 
-    return join(TEST_FOLDER_PATH, 'files', file)
+    return join(TEST_FOLDER_PATH, "files", file)
 
 
 def getValidationCase(file):
-    ''' Return the full path of a validation case file. Used by test functions not to
-    worry about the project architecture'''
+    """ Return the full path of a validation case file. Used by test functions not to
+    worry about the project architecture"""
 
-    return join(TEST_FOLDER_PATH, 'validation', file)
+    return join(TEST_FOLDER_PATH, "validation", file)
 
 
 try:  # Python 3.6 only
-    getTestFile.__annotations__['file'] = os.listdir(
-        join(TEST_FOLDER_PATH, 'files'))
-    getValidationCase.__annotations__['file'] = os.listdir(
-        join(TEST_FOLDER_PATH, 'validation'))
+    getTestFile.__annotations__["file"] = os.listdir(join(TEST_FOLDER_PATH, "files"))
+    getValidationCase.__annotations__["file"] = os.listdir(
+        join(TEST_FOLDER_PATH, "validation")
+    )
 except:
     pass
 
 # %% Comparison functions
 
 
-def testEqual(a, b, info=''):
+def testEqual(a, b, info=""):
     if a != b:
-        print('Mismatch', info, ':', a, '!=', b)
+        print("Mismatch", info, ":", a, "!=", b)
     return a == b
+
 
 # %% Test Databases
 
 
 TEST_DATABASES = {
-    'HITRAN-CO2-TEST': {
-        'info': 'HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: ' +
-        '2380-2398 cm-1 (4165-4200 nm)',
-        'path': [getTestFile(r'hitran_co2_626_bandhead_4165_4200nm.par')],
-        'format': 'hitran',
-        'parfuncfmt': 'hapi',
-        'levelsfmt': 'radis',
+    "HITRAN-CO2-TEST": {
+        "info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: "
+        + "2380-2398 cm-1 (4165-4200 nm)",
+        "path": [getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par")],
+        "format": "hitran",
+        "parfuncfmt": "hapi",
+        "levelsfmt": "radis",
     },
-    'HITRAN-CO-TEST': {
-        'info': 'HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), ' +\
-        '2000-2300 cm-1',
-        'path': [getTestFile(r'hitran_co_3iso_2000_2300cm.par')],
-        'format': 'hitran',
-        'parfuncfmt': 'hapi',
-        'levelsfmt': 'radis',
+    "HITRAN-CO-TEST": {
+        "info": "HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), "
+        + "2000-2300 cm-1",
+        "path": [getTestFile(r"hitran_co_3iso_2000_2300cm.par")],
+        "format": "hitran",
+        "parfuncfmt": "hapi",
+        "levelsfmt": "radis",
     },
-    'HITEMP-CO2-TEST': {
-        'info': 'HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), ' +
-        '2283.7-2285.1 cm-1',
-        'path': [getTestFile(r'cdsd_hitemp_09_fragment.txt')],
-        'format': 'cdsd-hitemp',    # CDSD-HITEMP version (same lines as HITEMP-2010). 
-        'parfuncfmt': 'hapi',
-        'levelsfmt': 'radis',
+    "HITEMP-CO2-TEST": {
+        "info": "HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), "
+        + "2283.7-2285.1 cm-1",
+        "path": [getTestFile(r"cdsd_hitemp_09_fragment.txt")],
+        "format": "cdsd-hitemp",  # CDSD-HITEMP version (same lines as HITEMP-2010).
+        "parfuncfmt": "hapi",
+        "levelsfmt": "radis",
     },
 }
-'''dict: test databases added in the :ref:`Configuration file <label_lbl_config_file>`
+"""dict: test databases added in the :ref:`Configuration file <label_lbl_config_file>`
 by :py:func:`~radis.test.utils.setup_test_line_databases`
-'''
+"""
 
 # %% Utils to test spec module
 
 
 def setup_test_line_databases(verbose=True):
-    ''' Build :py:data:`~radis.test.utils.TEST_DATABASES` and add them in ~/.radis. 
+    """ Build :py:data:`~radis.test.utils.TEST_DATABASES` and add them in ~/.radis. 
     Generate the file if it  doesnt exist
 
     In particular:
@@ -126,9 +131,9 @@ def setup_test_line_databases(verbose=True):
     
     :ref:`Configuration file <label_lbl_config_file>`
 
-    '''
-    # TODO: generate large band databases for the main species (let's say CO2, 
-    # H2O and CH4) and main isotopes by fetching the HITRAN 2016 database. 
+    """
+    # TODO: generate large band databases for the main species (let's say CO2,
+    # H2O and CH4) and main isotopes by fetching the HITRAN 2016 database.
 
     # Get list of databases
     try:
@@ -148,16 +153,21 @@ def setup_test_line_databases(verbose=True):
 
         if dbname in dbnames:  # Check entries are correct
             #            for k
-            diff = diffDatabankEntries(getDatabankEntries(dbname), dbentries,
-                                       verbose=False)
+            diff = diffDatabankEntries(
+                getDatabankEntries(dbname), dbentries, verbose=False
+            )
             if diff is not None:
-                raise ValueError('{0}'.format(diff) +
-                                 '\nIn ~/.radis\n----------\n{0}'.format(getDatabankEntries(dbname)) +
-                                 '\n\nExpected\n---------\n{0}\n\n'.format(dbentries) +
-                                 'Test Database {0} doesnt match expected '.format(dbname) +
-                                 'entries for key `{0}`. See comparison above. '.format(diff) +
-                                 'To regenerate test databases just delete the {0} '.format(dbname) +
-                                 'entry in your ~/.radis')
+                raise ValueError(
+                    "{0}".format(diff)
+                    + "\nIn ~/.radis\n----------\n{0}".format(
+                        getDatabankEntries(dbname)
+                    )
+                    + "\n\nExpected\n---------\n{0}\n\n".format(dbentries)
+                    + "Test Database {0} doesnt match expected ".format(dbname)
+                    + "entries for key `{0}`. See comparison above. ".format(diff)
+                    + "To regenerate test databases just delete the {0} ".format(dbname)
+                    + "entry in your ~/.radis"
+                )
 
         else:  # add them (create ~/.radis file if doesnt exist yet)
             addDatabankEntries(dbname, dbentries)
@@ -167,20 +177,26 @@ def setup_test_line_databases(verbose=True):
 
 # %% Deal with missing databases
 def _failsafe_if_no_db(testcase, *args, **kwargs):
-    '''finally not implemented?'''
+    """finally not implemented?"""
     from radis.misc.utils import DatabankNotFound
+
     try:
         testcase(*args, **kwargs)
     except DatabankNotFound:
         import sys
+
         print((sys.exc_info()))
-        print(('Testing {0}: Database not defined. \n'.format(testcase.__name__) +
-               'Ignoring the test'))
+        print(
+            (
+                "Testing {0}: Database not defined. \n".format(testcase.__name__)
+                + "Ignoring the test"
+            )
+        )
         return True
 
 
-def IgnoreMissingDatabase(err, file='', warnings=True):
-    ''' A function to deal with MissingDatabases errors. If :data:`~radis.test.utils.IGNORE_MISSING_DATABASES`
+def IgnoreMissingDatabase(err, file="", warnings=True):
+    """ A function to deal with MissingDatabases errors. If :data:`~radis.test.utils.IGNORE_MISSING_DATABASES`
     is ``True``, just print a warning. Else, raise the error
     
     Parameters
@@ -190,19 +206,22 @@ def IgnoreMissingDatabase(err, file='', warnings=True):
     
     file: str
         where the error occured. Use ``file=__file__`` on function call
-    '''
+    """
     # TODO: make IGNORE_MISSING_DATABASES a ~/.radis parameter
     if IGNORE_MISSING_DATABASES:
         if warnings:
             import sys
+
             print(sys.exc_info())
-            printr('In {0}: Database not defined: {1}'.format(file, err.filename) +
-                  '\n Ignoring the test')
+            printr(
+                "In {0}: Database not defined: {1}".format(file, err.filename)
+                + "\n Ignoring the test"
+            )
         return True
     else:
         raise err
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     #    run_tests()
     setup_test_line_databases()

@@ -14,6 +14,8 @@ Most methods are written in inherited class with the following inheritance schem
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
+.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+   :parts: 1
 
 Routine Listing
 ---------------
@@ -44,6 +46,7 @@ PRIVATE METHODS
 from __future__ import absolute_import
 from __future__ import print_function
 from warnings import warn
+import astropy.units as u
 from radis.lbl.broadening import BroadenFactory
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
@@ -52,11 +55,16 @@ from radis.io.hitran import get_molecule, HITRAN_CLASS1
 from radis.misc.basics import is_float
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.basics import all_in
+from radis.phys.units_astropy import convert_and_strip_units
 from radis.phys.constants import k_b
 from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
-from radis.lbl.labels import (vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5,
-                             vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN,
-                             vib_lvl_name_cdsd_pcJN)
+from radis.lbl.labels import (
+    vib_lvl_name_hitran_class1,
+    vib_lvl_name_hitran_class5,
+    vib_lvl_name_cdsd_pc,
+    vib_lvl_name_cdsd_pcN,
+    vib_lvl_name_cdsd_pcJN,
+)
 from radis.misc.warning import reset_warnings
 import numpy as np
 from numpy import exp
@@ -67,13 +75,13 @@ import pandas as pd
 
 
 class BandFactory(BroadenFactory):
-    '''
+    """
     
     See Also
     --------
 
     :class:`~radis.lbl.factory.SpectrumFactory`
-    '''
+    """
 
     def __init__(self):
 
@@ -89,9 +97,16 @@ class BandFactory(BroadenFactory):
 
     # Vibrationaly specific calculations
 
-    def eq_bands(self, Tgas, mole_fraction=None, path_length=None, 
-                 pressure=None, levels='all', drop_lines=True):
-        ''' Return all vibrational bands as a list of spectra for a spectrum
+    def eq_bands(
+        self,
+        Tgas,
+        mole_fraction=None,
+        path_length=None,
+        pressure=None,
+        levels="all",
+        drop_lines=True,
+    ):
+        """ Return all vibrational bands as a list of spectra for a spectrum
         calculated under equilibrium.
 
         By default, drop_lines is set to True so line_survey cannot be done on
@@ -145,9 +160,14 @@ class BandFactory(BroadenFactory):
         - Then call the main routine that sums over all lines
 
 
-        '''
+        """
 
         try:
+
+            # Convert units
+            Tgas = convert_and_strip_units(Tgas, u.K)
+            path_length = convert_and_strip_units(path_length, u.cm)
+            pressure = convert_and_strip_units(pressure, u.bar)
 
             # update defaults
             if path_length is not None:
@@ -155,13 +175,14 @@ class BandFactory(BroadenFactory):
             if mole_fraction is not None:
                 self.input.mole_fraction = mole_fraction
             if pressure is not None:
-                self.input.pressure_mbar = pressure*1e3
+                self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
                 raise ValueError(
-                    'Tgas should be float. Use ParallelFactory for multiple cases')
+                    "Tgas should be float. Use ParallelFactory for multiple cases"
+                )
             assert type(levels) in [str, list, int]
             if type(levels) == str:
-                assert levels == 'all'
+                assert levels == "all"
             # Temporary:
             if type(levels) == int:
                 raise NotImplementedError
@@ -185,7 +206,7 @@ class BandFactory(BroadenFactory):
 
             # Print conditions
             if verbose:
-                print('Calculating Equilibrium bands')
+                print("Calculating Equilibrium bands")
                 self.print_conditions()
 
             # Start
@@ -193,9 +214,9 @@ class BandFactory(BroadenFactory):
 
             # %% Make sure database is loaded
             if self.df0 is None:
-                raise AttributeError('Load databank first (.load_databank())')
+                raise AttributeError("Load databank first (.load_databank())")
 
-            if not 'band' in self.df0:
+            if not "band" in self.df0:
                 self._add_bands()
 
             # %% Calculate the spectrum
@@ -225,8 +246,7 @@ class BandFactory(BroadenFactory):
             # ... find weak lines and calculate semi-continuum (optional)
             I_continuum = self._calculate_pseudo_continuum()
             if I_continuum:
-                raise NotImplementedError(
-                    'pseudo continuum not implemented for bands')
+                raise NotImplementedError("pseudo continuum not implemented for bands")
 
             # ... apply lineshape and get absorption coefficient
             # ... (this is the performance bottleneck)
@@ -234,22 +254,26 @@ class BandFactory(BroadenFactory):
             #    :         :
             #   cm-1    1/(#.cm-2)
 
-#            # ... add semi-continuum (optional)
-#            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
+            #            # ... add semi-continuum (optional)
+            #            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
 
             # ----------------------------------------------------------------------
             # Remove certain bands
-            if levels != 'all':
+            if levels != "all":
                 # Filter levels that feature the given energy levels. The rest
                 # is stored in 'others'
                 lines = self.df1
                 # We need levels to be explicitely stated for given molecule
-                assert hasattr(lines, 'viblvl_u')
-                assert hasattr(lines, 'viblvl_l')
+                assert hasattr(lines, "viblvl_u")
+                assert hasattr(lines, "viblvl_l")
                 # Get bands to remove
                 merge_bands = []
-                for band in abscoeff_v_bands:    # note: could be vectorized with pandas str split. # TODO
-                    viblvl_l, viblvl_u = band.split('->')
+                for (
+                    band
+                ) in (
+                    abscoeff_v_bands
+                ):  # note: could be vectorized with pandas str split. # TODO
+                    viblvl_l, viblvl_u = band.split("->")
                     if not viblvl_l in levels and not viblvl_u in levels:
                         merge_bands.append(band)
                 # Remove bands from bandlist and add them to `others`
@@ -257,10 +281,9 @@ class BandFactory(BroadenFactory):
                 for band in merge_bands:
                     abscoeff = abscoeff_v_bands.pop(band)
                     abscoeff_others += abscoeff
-                abscoeff_v_bands['others'] = abscoeff_others
+                abscoeff_v_bands["others"] = abscoeff_others
                 if verbose:
-                    print('{0} bands grouped under `others`'.format(
-                        len(merge_bands)))
+                    print("{0} bands grouped under `others`".format(len(merge_bands)))
 
             # ----------------------------------------------------------------------
             # Generate spectra
@@ -268,7 +291,7 @@ class BandFactory(BroadenFactory):
             # Progress bar for spectra generation
             Nbands = len(abscoeff_v_bands)
             if self.verbose:
-                print('Generating bands ({0})'.format(Nbands))
+                print("Generating bands ({0})".format(Nbands))
             pb = ProgressBar(Nbands, active=self.verbose)
             if Nbands < 100:
                 pb.set_active(False)  # hide for low line number
@@ -278,10 +301,10 @@ class BandFactory(BroadenFactory):
             for i, (band, abscoeff_v) in enumerate(abscoeff_v_bands.items()):
 
                 # incorporate density of molecules (see equation (A.16) )
-                density = mole_fraction*((pressure_mbar*100)/(k_b*Tgas))*1e-6
+                density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
                 #  :
                 # (#/cm3)
-                abscoeff = abscoeff_v * density      # cm-1
+                abscoeff = abscoeff_v * density  # cm-1
 
                 # ==============================================================================
                 # Warning
@@ -292,13 +315,17 @@ class BandFactory(BroadenFactory):
 
                 # get absorbance (technically it's the optical depth `tau`,
                 #                absorbance `A` being `A = tau/ln(10)` )
-                absorbance = abscoeff*path_length
+                absorbance = abscoeff * path_length
 
                 # Generate output quantities
                 transmittance_noslit = exp(-absorbance)
                 emissivity_noslit = 1 - transmittance_noslit
-                radiance_noslit = calc_radiance(wavenumber, emissivity_noslit, Tgas,
-                                                unit=self.units['radiance_noslit'])
+                radiance_noslit = calc_radiance(
+                    wavenumber,
+                    emissivity_noslit,
+                    Tgas,
+                    unit=self.units["radiance_noslit"],
+                )
 
                 # ----------------------------- Export:
 
@@ -311,33 +338,35 @@ class BandFactory(BroadenFactory):
                     lines = None
                     if self.save_memory:
                         try:
-                            del self.df1   # saves some memory
+                            del self.df1  # saves some memory
                         except AttributeError:  # already deleted
                             pass
                 conditions = self.get_conditions()
                 # Add band name and hitran band name in conditions
-                conditions.update({'band': band})
+                conditions.update({"band": band})
 
                 if lines:
+
                     def add_attr(attr):
                         if attr in lines:
-                            if band == 'others':
-                                val = 'N/A'
+                            if band == "others":
+                                val = "N/A"
                             else:
                                 # all have to be the same
                                 val = lines[attr].iloc[0]
                             conditions.update({attr: val})
-                    add_attr('band_htrn')
-                    add_attr('viblvl_l')
-                    add_attr('viblvl_u')
+
+                    add_attr("band_htrn")
+                    add_attr("viblvl_l")
+                    add_attr("viblvl_u")
                 s = Spectrum(
                     quantities={
-                        'abscoeff': (wavenumber, abscoeff),
-                        'absorbance': (wavenumber, absorbance),
-                        'emissivity_noslit': (wavenumber, emissivity_noslit),
-                        'transmittance_noslit': (wavenumber, transmittance_noslit),
+                        "abscoeff": (wavenumber, abscoeff),
+                        "absorbance": (wavenumber, absorbance),
+                        "emissivity_noslit": (wavenumber, emissivity_noslit),
+                        "transmittance_noslit": (wavenumber, transmittance_noslit),
                         # (mW/cm2/sr/nm)
-                        'radiance_noslit': (wavenumber, radiance_noslit),
+                        "radiance_noslit": (wavenumber, radiance_noslit),
                     },
                     conditions=conditions,
                     populations=populations,
@@ -351,12 +380,12 @@ class BandFactory(BroadenFactory):
                     # is freshly baken so probably in a good format
                 )
 
-    #            # update database if asked so
-    #            if self.autoupdatedatabase:
-    #                self.SpecDatabase.add(s)
-    #                                                     # Tvib=Trot=Tgas... but this way names in a database
-    #                                                     # generated with eq_spectrum are consistent with names
-    #                                                     # in one generated with non_eq_spectrum
+                #            # update database if asked so
+                #            if self.autoupdatedatabase:
+                #                self.SpecDatabase.add(s)
+                #                                                     # Tvib=Trot=Tgas... but this way names in a database
+                #                                                     # generated with eq_spectrum are consistent with names
+                #                                                     # in one generated with non_eq_spectrum
 
                 s_bands[band] = s
 
@@ -364,7 +393,7 @@ class BandFactory(BroadenFactory):
             pb.done()
 
             if verbose:
-                print(('... process done in {0:.1f}s'.format(time() - t0)))
+                print(("... process done in {0:.1f}s".format(time() - t0)))
 
             return s_bands
 
@@ -373,10 +402,20 @@ class BandFactory(BroadenFactory):
             self._clean_temp_file()
             raise
 
-    def non_eq_bands(self, Tvib, Trot, Ttrans=None, mole_fraction=None, path_length=None,
-                     pressure=None, vib_distribution='boltzmann', rot_distribution='boltzmann',
-                     levels='all', return_lines=None):
-        ''' Calculate vibrational bands in non-equilibrium case. Calculates
+    def non_eq_bands(
+        self,
+        Tvib,
+        Trot,
+        Ttrans=None,
+        mole_fraction=None,
+        path_length=None,
+        pressure=None,
+        vib_distribution="boltzmann",
+        rot_distribution="boltzmann",
+        levels="all",
+        return_lines=None,
+    ):
+        """ Calculate vibrational bands in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
         Einstein coefficient.
 
@@ -430,9 +469,16 @@ class BandFactory(BroadenFactory):
 
         Or directly .plot(something) to plot it
 
-        '''
+        """
 
         try:
+
+            # Convert units
+            Tvib = convert_and_strip_units(Tvib, u.K)
+            Trot = convert_and_strip_units(Trot, u.K)
+            Ttrans = convert_and_strip_units(Ttrans, u.K)
+            path_length = convert_and_strip_units(path_length, u.cm)
+            pressure = convert_and_strip_units(pressure, u.bar)
 
             # check inputs, update defaults
             if path_length is not None:
@@ -440,36 +486,43 @@ class BandFactory(BroadenFactory):
             if mole_fraction is not None:
                 self.input.mole_fraction = mole_fraction
             if pressure is not None:
-                self.input.pressure_mbar = pressure*1e3
-            if not (is_float(Tvib) or isinstance(Tvib, tuple)):
-                raise TypeError('Tvib should be float, or tuple (got {0})'.format(type(Tvib)) +
-                                'For parallel processing use ParallelFactory with a ' +
-                                'list of float or a list of tuple')
+                self.input.pressure_mbar = pressure * 1e3
+            if isinstance(Tvib, tuple):
+                Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
+            elif not is_float(Tvib):
+                raise TypeError(
+                    "Tvib should be float, or tuple (got {0})".format(type(Tvib))
+                    + "For parallel processing use ParallelFactory with a "
+                    + "list of float or a list of tuple"
+                )
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
                 raise ValueError(
-                    'Trot should be float. Use ParallelFactory for multiple cases')
+                    "Trot should be float. Use ParallelFactory for multiple cases"
+                )
             assert type(levels) in [str, list, int]
             if type(levels) == str:
-                assert levels == 'all'
+                assert levels == "all"
             else:
                 if len(levels) != len(set(levels)):
-                    raise ValueError('levels list has duplicates')
-            if not vib_distribution in ['boltzmann']:
-                raise ValueError(
-                    'calculate per band not meaningful if not Boltzmann')
+                    raise ValueError("levels list has duplicates")
+            if not vib_distribution in ["boltzmann"]:
+                raise ValueError("calculate per band not meaningful if not Boltzmann")
             # Temporary:
             if type(levels) == int:
                 raise NotImplementedError
             if return_lines is not None:
-                warn(DeprecationWarning(
-                    'return_lines replaced with export_lines attribute in Factory'))
+                warn(
+                    DeprecationWarning(
+                        "return_lines replaced with export_lines attribute in Factory"
+                    )
+                )
                 self.misc.export_lines = return_lines
 
             # Get translational temperature
             Tgas = Ttrans
             if Tgas is None:
-                Tgas = Trot     # assuming Ttrans = Trot
+                Tgas = Trot  # assuming Ttrans = Trot
             self.input.Tgas = Tgas
             self.input.Tvib = Tvib
             self.input.Trot = Trot
@@ -488,7 +541,7 @@ class BandFactory(BroadenFactory):
 
             # Print conditions
             if verbose:
-                print('Calculating Non-Equilibrium bands')
+                print("Calculating Non-Equilibrium bands")
                 self.print_conditions()
 
             # %% Make sure database is loaded
@@ -496,18 +549,18 @@ class BandFactory(BroadenFactory):
             self._check_noneq_parameters(vib_distribution, singleTvibmode)
 
             if self.df0 is None:
-                raise AttributeError('Load databank first (.load_databank())')
+                raise AttributeError("Load databank first (.load_databank())")
 
             # Make sure database has pre-computed non equilibrium quantities
             # (Evib, Erot, etc.)
-            if not 'Evib' in self.df0:
+            if not "Evib" in self.df0:
                 self._calc_noneq_parameters()
 
-            if not 'Aul' in self.df0:
+            if not "Aul" in self.df0:
                 self._calc_weighted_trans_moment()
                 self._calc_einstein_coefficients()
 
-            if not 'band' in self.df0:
+            if not "band" in self.df0:
                 self._add_bands()
 
             # %% Calculate the spectrum
@@ -543,31 +596,38 @@ class BandFactory(BroadenFactory):
             # ... find weak lines and calculate semi-continuum (optional)
             I_continuum = self._calculate_pseudo_continuum()
             if I_continuum:
-                raise NotImplementedError(
-                    'pseudo continuum not implemented for bands')
+                raise NotImplementedError("pseudo continuum not implemented for bands")
 
             # ... apply lineshape and get absorption coefficient
             # ... (this is the performance bottleneck)
-            wavenumber, abscoeff_v_bands, emisscoeff_v_bands = self._calc_broadening_noneq_bands()
+            (
+                wavenumber,
+                abscoeff_v_bands,
+                emisscoeff_v_bands,
+            ) = self._calc_broadening_noneq_bands()
             #    :         :            :
             #   cm-1    1/(#.cm-2)   mW/sr/cm_1
 
-#            # ... add semi-continuum (optional)
-#            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
+            #            # ... add semi-continuum (optional)
+            #            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
 
             # ----------------------------------------------------------------------
             # Remove bands
-            if levels != 'all':
+            if levels != "all":
                 # Filter levels that feature the given energy levels. The rest
                 # is stored in 'others'
                 lines = self.df1
                 # We need levels to be explicitely stated for given molecule
-                assert hasattr(lines, 'viblvl_u')
-                assert hasattr(lines, 'viblvl_l')
+                assert hasattr(lines, "viblvl_u")
+                assert hasattr(lines, "viblvl_l")
                 # Get bands to remove
                 merge_bands = []
-                for band in abscoeff_v_bands:       # note: could be vectorized with pandas str split. # TODO
-                    viblvl_l, viblvl_u = band.split('->')
+                for (
+                    band
+                ) in (
+                    abscoeff_v_bands
+                ):  # note: could be vectorized with pandas str split. # TODO
+                    viblvl_l, viblvl_u = band.split("->")
                     if not viblvl_l in levels and not viblvl_u in levels:
                         merge_bands.append(band)
                 # Remove bands from bandlist and add them to `others`
@@ -578,11 +638,10 @@ class BandFactory(BroadenFactory):
                     emisscoeff = emisscoeff_v_bands.pop(band)
                     abscoeff_others += abscoeff
                     emisscoeff_others += emisscoeff
-                abscoeff_v_bands['others'] = abscoeff_others
-                emisscoeff_v_bands['others'] = emisscoeff_others
+                abscoeff_v_bands["others"] = abscoeff_others
+                emisscoeff_v_bands["others"] = emisscoeff_others
                 if verbose:
-                    print('{0} bands grouped under `others`'.format(
-                        len(merge_bands)))
+                    print("{0} bands grouped under `others`".format(len(merge_bands)))
 
             # ----------------------------------------------------------------------
             # Generate spectra
@@ -590,7 +649,7 @@ class BandFactory(BroadenFactory):
             # Progress bar for spectra generation
             Nbands = len(abscoeff_v_bands)
             if self.verbose:
-                print('Generating bands ({0})'.format(Nbands))
+                print("Generating bands ({0})".format(Nbands))
             pb = ProgressBar(Nbands, active=self.verbose)
             if Nbands < 100:
                 pb.set_active(False)  # hide for low line number
@@ -602,12 +661,12 @@ class BandFactory(BroadenFactory):
                 emisscoeff_v = emisscoeff_v_bands[band]
 
                 # incorporate density of molecules (see equation (A.16) )
-                density = mole_fraction*((pressure_mbar*100)/(k_b*Tgas))*1e-6
+                density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
                 #  :
                 # (#/cm3)
 
-                abscoeff = abscoeff_v * density                     # cm-1
-                emisscoeff = emisscoeff_v * density                 # m/sr/cm3/cm_1
+                abscoeff = abscoeff_v * density  # cm-1
+                emisscoeff = emisscoeff_v * density  # m/sr/cm3/cm_1
 
                 # ==============================================================================
                 # Warning
@@ -620,7 +679,7 @@ class BandFactory(BroadenFactory):
                 #                absorbance `A` being `A = tau/ln(10)` )
 
                 # Generate output quantities
-                absorbance = abscoeff*path_length           # (adim)
+                absorbance = abscoeff * path_length  # (adim)
                 transmittance_noslit = exp(-absorbance)
 
                 if self.input.self_absorption:
@@ -628,20 +687,22 @@ class BandFactory(BroadenFactory):
                     # emissivity and absorption coefficient
                     b = abscoeff == 0  # optically thin mask
                     radiance_noslit = np.zeros_like(emisscoeff)
-                    radiance_noslit[~b] = emisscoeff[~b] / \
-                        abscoeff[~b]*(1-transmittance_noslit[~b])
-                    radiance_noslit[b] = emisscoeff[b]*path_length
+                    radiance_noslit[~b] = (
+                        emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+                    )
+                    radiance_noslit[b] = emisscoeff[b] * path_length
                 else:
                     # Note that for k -> 0,
-                    radiance_noslit = emisscoeff * \
-                        path_length    # (mW/sr/cm2/cm_1)
+                    radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm_1)
 
                 # Convert `radiance_noslit` from (mW/sr/cm2/cm_1) to (mW/sr/cm2/nm)
-                radiance_noslit = convert_rad2nm(radiance_noslit, wavenumber,
-                                                 'mW/sr/cm2/cm_1', 'mW/sr/cm2/nm')
+                radiance_noslit = convert_rad2nm(
+                    radiance_noslit, wavenumber, "mW/sr/cm2/cm_1", "mW/sr/cm2/nm"
+                )
                 # Convert 'emisscoeff' from (mW/sr/cm3/cm_1) to (mW/sr/cm3/nm)
-                emisscoeff = convert_emi2nm(emisscoeff, wavenumber,
-                                            'mW/sr/cm3/cm_1', 'mW/sr/cm3/nm')
+                emisscoeff = convert_emi2nm(
+                    emisscoeff, wavenumber, "mW/sr/cm3/cm_1", "mW/sr/cm3/nm"
+                )
                 # Note: emissivity not defined under non equilibrium
 
                 # ----------------------------- Export:
@@ -649,8 +710,7 @@ class BandFactory(BroadenFactory):
                 lines = self.df1[self.df1.band == band]
                 # Note: if band == 'others':  # for others: all will be None. # TODO. FIXME
 
-                populations = self.get_populations(
-                    self.misc.export_populations)
+                populations = self.get_populations(self.misc.export_populations)
 
                 if not self.misc.export_lines:
                     lines = None
@@ -663,30 +723,31 @@ class BandFactory(BroadenFactory):
                     except AttributeError:  # already deleted
                         pass
                 conditions = self.get_conditions()
-                conditions.update({'thermal_equilibrium':False})
+                conditions.update({"thermal_equilibrium": False})
                 # Add band name and hitran band name in conditions
 
                 def add_attr(attr):
-                    ''' # TODO: implement properly'''
+                    """ # TODO: implement properly"""
                     if attr in lines:
-                        if band == 'others':
-                            val = 'N/A'
+                        if band == "others":
+                            val = "N/A"
                         else:
                             # all have to be the same
                             val = lines[attr].iloc[0]
                         conditions.update({attr: val})
-                add_attr('band_htrn')
-                add_attr('viblvl_l')
-                add_attr('viblvl_u')
+
+                add_attr("band_htrn")
+                add_attr("viblvl_l")
+                add_attr("viblvl_u")
                 s = Spectrum(
                     quantities={
-                        'abscoeff': (wavenumber, abscoeff),
-                        'absorbance': (wavenumber, absorbance),
+                        "abscoeff": (wavenumber, abscoeff),
+                        "absorbance": (wavenumber, absorbance),
                         # (mW/cm3/sr/nm)
-                        'emisscoeff': (wavenumber, emisscoeff),
-                        'transmittance_noslit': (wavenumber, transmittance_noslit),
+                        "emisscoeff": (wavenumber, emisscoeff),
+                        "transmittance_noslit": (wavenumber, transmittance_noslit),
                         # (mW/cm2/sr/nm)
-                        'radiance_noslit': (wavenumber, radiance_noslit),
+                        "radiance_noslit": (wavenumber, radiance_noslit),
                     },
                     conditions=conditions,
                     populations=populations,
@@ -700,9 +761,9 @@ class BandFactory(BroadenFactory):
                     # is freshly baken so probably in a good format
                 )
 
-    #            # update database if asked so
-    #            if self.autoupdatedatabase:
-    #                self.SpecDatabase.add(s, add_info=['Tvib', 'Trot'], add_date='%Y%m%d')
+                #            # update database if asked so
+                #            if self.autoupdatedatabase:
+                #                self.SpecDatabase.add(s, add_info=['Tvib', 'Trot'], add_date='%Y%m%d')
 
                 s_bands[band] = s
 
@@ -710,7 +771,7 @@ class BandFactory(BroadenFactory):
             pb.done()
 
             if verbose:
-                print(('... process done in {0:.1f}s'.format(time() - t0)))
+                print(("... process done in {0:.1f}s".format(time() - t0)))
 
             return s_bands
 
@@ -719,8 +780,8 @@ class BandFactory(BroadenFactory):
             self._clean_temp_file()
             raise
 
-    def get_bands_weight(self, showfirst=None, sortby='Ei'):
-        ''' Show all bands by emission weight (fraction of total emission integral)
+    def get_bands_weight(self, showfirst=None, sortby="Ei"):
+        """ Show all bands by emission weight (fraction of total emission integral)
 
         Replace sortby with 'S' or 'int' to get different weights
 
@@ -732,20 +793,21 @@ class BandFactory(BroadenFactory):
         --------
         
         :py:meth:`~radis.lbl.bands.BandFactory.get_bands`
-        '''
+        """
 
         # Check bands are labelled
         try:
-            self.df1['band']
+            self.df1["band"]
         except KeyError:
             raise KeyError(
-                'Please calculate bands first with SpectrumFactory.get_bands()')
+                "Please calculate bands first with SpectrumFactory.get_bands()"
+            )
 
         df = self.df1
-        dg = df.groupby('band')
+        dg = df.groupby("band")
 
         tot = df[sortby].sum()
-        weight = (dg[sortby].sum()/tot).sort_values()[::-1]
+        weight = (dg[sortby].sum() / tot).sort_values()[::-1]
 
         if showfirst is not None:
             return weight.head(showfirst)
@@ -753,29 +815,29 @@ class BandFactory(BroadenFactory):
             return weight
 
     def get_band_list(self):
-        ''' Return all vibrational bands '''
+        """ Return all vibrational bands """
 
         # Check bands are labelled
         try:
-            self.df0['band']
+            self.df0["band"]
         except KeyError:
             self._add_bands()
 
         df = self.df0
 
-        return df['band'].unique()
+        return df["band"].unique()
 
     def get_band(self, band):
-        ''' Public function to get a particular vibrational band '''
+        """ Public function to get a particular vibrational band """
 
         # Check bands are labelled
         try:
-            self.df0['band']
+            self.df0["band"]
         except KeyError:
             self._add_bands()
 
         df = self.df0
-        dg = df.groupby('band')
+        dg = df.groupby("band")
 
         return dg.get_group(band)
 
@@ -791,7 +853,7 @@ class BandFactory(BroadenFactory):
     # %% Line database functions: band specific
 
     def _add_bands(self):
-        ''' Add a 'band' attribute for each line to allow parsing the lines by
+        """ Add a 'band' attribute for each line to allow parsing the lines by
         band with
         >>> df0.groupby('band')
 
@@ -804,7 +866,7 @@ class BandFactory(BroadenFactory):
         - with groupby(): 9s   worse!!
         - using simple (and more readable)    astype(str)  statements: 523 ms ± 19.6 ms
 
-        '''
+        """
 
         dbformat = self.params.dbformat
         lvlformat = self.params.levelsfmt
@@ -815,11 +877,10 @@ class BandFactory(BroadenFactory):
 
         return None  #  df already updated
 
-        
     # Broadening functions: band specific
 
     def _broaden_lines_bands(self, df):
-        ''' Divide over chuncks not to process to many lines in memory at the
+        """ Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
         Band specific version: returns a list of all broadened vibrational
@@ -833,32 +894,37 @@ class BandFactory(BroadenFactory):
         a chunck splitting loop in the band groupby loop
 
         See _calc_lineshape for more information
-        '''
+        """
 
         # Reactivate one-time warnings for new run
         reset_warnings(self.warnings)
         # --------------------------
 
-        gb = df.groupby('band')
+        gb = df.groupby("band")
 
         abscoeff_bands = {}
-        pb=ProgressBar(len(gb), active=self.verbose)
-        chunksize = self.misc.chunksize     # used for DLM keyword in 0.9.20 until proper implementation is done
-            
-        
+        pb = ProgressBar(len(gb), active=self.verbose)
+        chunksize = (
+            self.misc.chunksize
+        )  # used for DLM keyword in 0.9.20 until proper implementation is done
+
         for i, (band, dg) in enumerate(gb):
-            if chunksize == 'DLM':
+            if chunksize == "DLM":
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
-                (wavenumber, absorption) = self._apply_lineshape_DLM(dg.S.values, 
-                                                                   line_profile_DLM, 
-                                                                   dg.shiftwav.values, 
-                                                                   wL, wG, 
-                                                                   wL_dat, wG_dat)
+                (wavenumber, absorption) = self._apply_lineshape_DLM(
+                    dg.S.values,
+                    line_profile_DLM,
+                    dg.shiftwav.values,
+                    wL,
+                    wG,
+                    wL_dat,
+                    wG_dat,
+                )
             else:
                 line_profile = self._calc_lineshape(dg)
-                (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
-                                                                 line_profile, 
-                                                                 dg.shiftwav.values)
+                (wavenumber, absorption) = self._apply_lineshape(
+                    dg.S.values, line_profile, dg.shiftwav.values
+                )
             abscoeff_bands[band] = absorption
             pb.update(i)
         pb.done()
@@ -866,7 +932,7 @@ class BandFactory(BroadenFactory):
         return wavenumber, abscoeff_bands
 
     def _broaden_lines_noneq_bands(self, df):
-        ''' Divide over chuncks not to process to many lines in memory at the
+        """ Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
         Band specific version: returns a list of all broadened vibrational
@@ -880,7 +946,7 @@ class BandFactory(BroadenFactory):
         a chunck splitting loop in the band groupby loop
 
         See _calc_lineshape for more information
-        '''
+        """
 
         # Reactivate one-time warnings for new run
         reset_warnings(self.warnings)
@@ -889,33 +955,43 @@ class BandFactory(BroadenFactory):
         abscoeff_bands = {}
         emisscoeff_bands = {}
 
-        gb = df.groupby('band')
-        chunksize = self.misc.chunksize     # used for DLM keyword in 0.9.20 until proper implementation is done
+        gb = df.groupby("band")
+        chunksize = (
+            self.misc.chunksize
+        )  # used for DLM keyword in 0.9.20 until proper implementation is done
 
         pb = ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
-            if chunksize == 'DLM':
+            if chunksize == "DLM":
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
-                (wavenumber, absorption) = self._apply_lineshape_DLM(dg.S.values, 
-                                                                   line_profile_DLM, 
-                                                                   dg.shiftwav.values, 
-                                                                   wL, wG, 
-                                                                   wL_dat, wG_dat)
-                (_, emission) = self._apply_lineshape_DLM(dg.Ei.values, 
-                                                            line_profile_DLM, 
-                                                            dg.shiftwav.values, 
-                                                            wL, wG, 
-                                                            wL_dat, wG_dat)
-                
+                (wavenumber, absorption) = self._apply_lineshape_DLM(
+                    dg.S.values,
+                    line_profile_DLM,
+                    dg.shiftwav.values,
+                    wL,
+                    wG,
+                    wL_dat,
+                    wG_dat,
+                )
+                (_, emission) = self._apply_lineshape_DLM(
+                    dg.Ei.values,
+                    line_profile_DLM,
+                    dg.shiftwav.values,
+                    wL,
+                    wG,
+                    wL_dat,
+                    wG_dat,
+                )
+
             else:
                 line_profile = self._calc_lineshape(dg)
-                (wavenumber, absorption) = self._apply_lineshape(dg.S.values, 
-                                                                 line_profile, 
-                                                                 dg.shiftwav.values)
-                (_, emission) = self._apply_lineshape(dg.Ei.values, 
-                                                      line_profile, 
-                                                      dg.shiftwav.values)
-            abscoeff_bands[band] = absorption       #
+                (wavenumber, absorption) = self._apply_lineshape(
+                    dg.S.values, line_profile, dg.shiftwav.values
+                )
+                (_, emission) = self._apply_lineshape(
+                    dg.Ei.values, line_profile, dg.shiftwav.values
+                )
+            abscoeff_bands[band] = absorption  #
             emisscoeff_bands[band] = emission
             pb.update(i)
         pb.done()
@@ -925,7 +1001,7 @@ class BandFactory(BroadenFactory):
     # %% Generate absorption profile which includes linebroadening factors
 
     def _calc_broadening_bands(self):
-        '''
+        """
         Loop over all lines, calculate lineshape, and returns the sum of
         absorption coefficient k=S*f over all lines.
         Band specific version: returns a list, one per vibrational band
@@ -971,21 +1047,23 @@ class BandFactory(BroadenFactory):
         process time, so better not use parallel anymore.
 
 
-        '''
+        """
 
         parallel = self.misc.parallel
         df = self.df1
 
         if self.verbose:
-            print(('Now processing lines ({0})'.format(len(df))))
+            print(("Now processing lines ({0})".format(len(df))))
 
         # Just some tests
         try:
             assert len(df.shape) == 2
         except AssertionError:
-            warn('Dataframe has only one line. Unexpected behaviour could occur' +
-                 ' because Dataframes will be handled as Series and row/columns' +
-                 ' may be inverted')
+            warn(
+                "Dataframe has only one line. Unexpected behaviour could occur"
+                + " because Dataframes will be handled as Series and row/columns"
+                + " may be inverted"
+            )
 
         if parallel:
             # Parallel version
@@ -998,7 +1076,7 @@ class BandFactory(BroadenFactory):
         return wavenumber, abscoeff_bands
 
     def _calc_broadening_noneq_bands(self):
-        '''
+        """
         Loop over all lines, calculate lineshape, and returns the sum of
         absorption coefficient k=S*f over all lines.
         Band specific version: returns a list, one per vibrational band
@@ -1025,21 +1103,23 @@ class BandFactory(BroadenFactory):
         Both `abscoeff` and `emisscoeff` still have to be multiplied by the total
         number density (cm-3).
 
-        '''
+        """
 
         parallel = self.misc.parallel
         df = self.df1
 
         if self.verbose:
-            print(('Now processing lines ({0})'.format(len(df))))
+            print(("Now processing lines ({0})".format(len(df))))
 
         # Just some tests
         try:
             assert len(df.shape) == 2
         except:
-            warn('Dataframe has only one line. Unexpected behaviour could occur' +
-                 ' because Dataframes will be handled as Series and row/columns' +
-                 ' may be inverted')
+            warn(
+                "Dataframe has only one line. Unexpected behaviour could occur"
+                + " because Dataframes will be handled as Series and row/columns"
+                + " may be inverted"
+            )
 
         if parallel:
             # Parallel version
@@ -1047,21 +1127,24 @@ class BandFactory(BroadenFactory):
 
         else:
             # Regular version
-            (wavenumber, abscoeff_bands,
-             emisscoeff_bands) = self._broaden_lines_noneq_bands(df)
+            (
+                wavenumber,
+                abscoeff_bands,
+                emisscoeff_bands,
+            ) = self._broaden_lines_noneq_bands(df)
 
         return wavenumber, abscoeff_bands, emisscoeff_bands
 
     def _retrieve_bands_from_database(self):
-        '''   '''
+        """   """
 
         # TODO: options:
         # - Implement store / retrieve machinery for Bands
         # - The easiest way: generate a Database that contains a Band only. Assert
         #   all spectra have the same 'band' key and same conditions
 
-        raise NotImplementedError(
-            'Retrieve bands from database not implemented')
+        raise NotImplementedError("Retrieve bands from database not implemented")
+
 
 # %% External functions
 
@@ -1070,11 +1153,12 @@ def docstring_parameter(*sub):
     def dec(obj):
         obj.__doc__ = obj.__doc__.format(*sub)
         return obj
+
     return dec
 
 
 def add_bands(df, dbformat, lvlformat, verbose=True):
-    ''' Assign all transitions to a vibrational band:
+    """ Assign all transitions to a vibrational band:
 
     Add 'band', 'viblvl_l' and 'viblvl_u' attributes for each line to allow 
     parsing the lines by band with::
@@ -1115,38 +1199,44 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
     - with groupby(): 9s   worse!!
     - using simple (and more readable)    astype(str)  statements: 523 ms ± 19.6 ms
 
-    '''
+    """
 
     # Check inputs
     if not dbformat in KNOWN_DBFORMAT:
-        raise ValueError('dbformat ({0}) should be one of: {1}'.format(
-            dbformat, KNOWN_DBFORMAT))
+        raise ValueError(
+            "dbformat ({0}) should be one of: {1}".format(dbformat, KNOWN_DBFORMAT)
+        )
     if not lvlformat in KNOWN_LVLFORMAT:
-        raise ValueError('lvlformat ({0}) should be one of: {1}'.format(
-            lvlformat, KNOWN_LVLFORMAT))
+        raise ValueError(
+            "lvlformat ({0}) should be one of: {1}".format(lvlformat, KNOWN_LVLFORMAT)
+        )
 
     if verbose:
         t0 = time()
-        print('... sorting lines by vibrational bands')
+        print("... sorting lines by vibrational bands")
 
     # Calculate bands:
-    id = list(pd.unique(df['id']))
+    id = list(pd.unique(df["id"]))
     if len(id) > 1:
-        raise ValueError('Cant calculate vibrational bands for multiple ' +
-                         'molecules yet')  # although it's an easy fix. Just
+        raise ValueError(
+            "Cant calculate vibrational bands for multiple " + "molecules yet"
+        )  # although it's an easy fix. Just
         # groupby id
     molecule = get_molecule(id[0])
 
-    if molecule == 'CO2':
+    if molecule == "CO2":
 
         vib_lvl_name_hitran = vib_lvl_name_hitran_class5
 
-        if lvlformat in ['cdsd-pc', 'cdsd-pcN', 'cdsd-hamil']:
+        if lvlformat in ["cdsd-pc", "cdsd-pcN", "cdsd-hamil"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ['cdsd-hitemp', 'cdsd-4000', 'hitran']:
-                raise NotImplementedError('lvlformat {0} not supported with dbformat {1}'.format(
-                    lvlformat, dbformat))
+            if dbformat not in ["cdsd-hitemp", "cdsd-4000", "hitran"]:
+                raise NotImplementedError(
+                    "lvlformat {0} not supported with dbformat {1}".format(
+                        lvlformat, dbformat
+                    )
+                )
 
             # Use vibrational nomenclature of CDSD (p,c,j,n) or HITRAN (v1v2l2v3J)
             # depending on the Level Database.
@@ -1154,102 +1244,109 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
 
             # ... note: vib level in a CDSD (p,c,j,n) database is ambiguous.
             # ... a vibrational energy Evib can have been defined for every (p, c) group:
-            if lvlformat in ['cdsd-pc']:
+            if lvlformat in ["cdsd-pc"]:
                 viblvl_l_cdsd = vib_lvl_name_cdsd_pc(df.polyl, df.wangl)
                 viblvl_u_cdsd = vib_lvl_name_cdsd_pc(df.polyu, df.wangu)
             # ... or for every (p, c, N) group:
-            elif lvlformat in ['cdsd-pcN']:
-                viblvl_l_cdsd = vib_lvl_name_cdsd_pcN(
-                    df.polyl, df.wangl, df.rankl)
-                viblvl_u_cdsd = vib_lvl_name_cdsd_pcN(
-                    df.polyu, df.wangu, df.ranku)
-            # ... or for every level (p, c, J ,N)  (that's the case if coupling terms 
-            # are used taken into account... it also takes a much longer time 
+            elif lvlformat in ["cdsd-pcN"]:
+                viblvl_l_cdsd = vib_lvl_name_cdsd_pcN(df.polyl, df.wangl, df.rankl)
+                viblvl_u_cdsd = vib_lvl_name_cdsd_pcN(df.polyu, df.wangu, df.ranku)
+            # ... or for every level (p, c, J ,N)  (that's the case if coupling terms
+            # are used taken into account... it also takes a much longer time
             # to look up vibrational energies in the LineDatabase, warning!):
-            elif lvlformat in ['cdsd-hamil']:
+            elif lvlformat in ["cdsd-hamil"]:
                 viblvl_l_cdsd = vib_lvl_name_cdsd_pcJN(
-                    df.polyl, df.wangl, df.jl, df.rankl)
+                    df.polyl, df.wangl, df.jl, df.rankl
+                )
                 viblvl_u_cdsd = vib_lvl_name_cdsd_pcJN(
-                    df.polyu, df.wangu, df.ju, df.ranku)
+                    df.polyu, df.wangu, df.ju, df.ranku
+                )
             else:
-                raise ValueError(
-                    'Unexpected level format: {0}'.format(lvlformat))
+                raise ValueError("Unexpected level format: {0}".format(lvlformat))
 
-            band_cdsd = viblvl_l_cdsd + '->' + viblvl_u_cdsd
+            band_cdsd = viblvl_l_cdsd + "->" + viblvl_u_cdsd
 
-            df.loc[:, 'viblvl_l'] = viblvl_l_cdsd
-            df.loc[:, 'viblvl_u'] = viblvl_u_cdsd
-            df.loc[:, 'band'] = band_cdsd
-            
+            df.loc[:, "viblvl_l"] = viblvl_l_cdsd
+            df.loc[:, "viblvl_u"] = viblvl_u_cdsd
+            df.loc[:, "band"] = band_cdsd
+
             # Calculate HITRAN format too (to store them))
-            if all_in(['v1l', 'v2l', 'l2l', 'v3l'], df):
-                viblvl_l_hitran = vib_lvl_name_hitran(
-                    df.v1l, df.v2l, df.l2l, df.v3l)
-                viblvl_u_hitran = vib_lvl_name_hitran(
-                    df.v1u, df.v2u, df.l2u, df.v3u)
-                band_hitran = viblvl_l_hitran + '->' + viblvl_u_hitran
-    
-                df.loc[:, 'viblvl_htrn_l'] = viblvl_l_hitran
-                df.loc[:, 'viblvl_htrn_u'] = viblvl_u_hitran
-                df.loc[:, 'band_htrn'] = band_hitran
+            if all_in(["v1l", "v2l", "l2l", "v3l"], df):
+                viblvl_l_hitran = vib_lvl_name_hitran(df.v1l, df.v2l, df.l2l, df.v3l)
+                viblvl_u_hitran = vib_lvl_name_hitran(df.v1u, df.v2u, df.l2u, df.v3u)
+                band_hitran = viblvl_l_hitran + "->" + viblvl_u_hitran
+
+                df.loc[:, "viblvl_htrn_l"] = viblvl_l_hitran
+                df.loc[:, "viblvl_htrn_u"] = viblvl_u_hitran
+                df.loc[:, "band_htrn"] = band_hitran
 
         # 'radis' uses Dunham development based on v1v2l2v3 HITRAN convention
-        elif lvlformat in ['radis']:
+        elif lvlformat in ["radis"]:
 
-            if dbformat not in ['hitran', 'cdsd-hitemp', 'cdsd-4000']:
-                raise NotImplementedError('lvlformat `{0}` not supported with dbformat `{1}`'.format(
-                    lvlformat, dbformat))
+            if dbformat not in ["hitran", "cdsd-hitemp", "cdsd-4000"]:
+                raise NotImplementedError(
+                    "lvlformat `{0}` not supported with dbformat `{1}`".format(
+                        lvlformat, dbformat
+                    )
+                )
 
             # Calculate bands with HITRAN convention
-            viblvl_l_hitran = vib_lvl_name_hitran(
-                df.v1l, df.v2l, df.l2l, df.v3l)
-            viblvl_u_hitran = vib_lvl_name_hitran(
-                df.v1u, df.v2u, df.l2u, df.v3u)
-            band_hitran = viblvl_l_hitran + '->' + viblvl_u_hitran
+            viblvl_l_hitran = vib_lvl_name_hitran(df.v1l, df.v2l, df.l2l, df.v3l)
+            viblvl_u_hitran = vib_lvl_name_hitran(df.v1u, df.v2u, df.l2u, df.v3u)
+            band_hitran = viblvl_l_hitran + "->" + viblvl_u_hitran
 
-            df.loc[:, 'viblvl_l'] = viblvl_l_hitran
-            df.loc[:, 'viblvl_u'] = viblvl_u_hitran
-            df.loc[:, 'band'] = band_hitran
+            df.loc[:, "viblvl_l"] = viblvl_l_hitran
+            df.loc[:, "viblvl_u"] = viblvl_u_hitran
+            df.loc[:, "band"] = band_hitran
 
         else:
-            raise NotImplementedError('Cant deal with lvlformat={0} for {1}'.format(
-                lvlformat, molecule))
+            raise NotImplementedError(
+                "Cant deal with lvlformat={0} for {1}".format(lvlformat, molecule)
+            )
 
-    elif molecule in HITRAN_CLASS1:   # includes 'CO'
+    elif molecule in HITRAN_CLASS1:  # includes 'CO'
         # Note. TODO. Move that in loader.py (or somewhere consistent with
         # classes defined in cdsd.py / hitran.py)
 
-        if lvlformat in ['radis']:
+        if lvlformat in ["radis"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ['hitran']:
-                raise NotImplementedError('lvlformat {0} not supported with dbformat {1}'.format(
-                    lvlformat, dbformat))
+            if dbformat not in ["hitran"]:
+                raise NotImplementedError(
+                    "lvlformat {0} not supported with dbformat {1}".format(
+                        lvlformat, dbformat
+                    )
+                )
 
             vib_lvl_name = vib_lvl_name_hitran_class1
 
-            df.loc[:, 'viblvl_l'] = vib_lvl_name(df['vl'])
-            df.loc[:, 'viblvl_u'] = vib_lvl_name(df['vu'])
-            df.loc[:, 'band'] = df['viblvl_l'] + '->' + df['viblvl_u']
+            df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
+            df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
+            df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
 
         else:
-            raise NotImplementedError('Lvlformat not defined for {0}: {1}'.format(
-                molecule, lvlformat))
+            raise NotImplementedError(
+                "Lvlformat not defined for {0}: {1}".format(molecule, lvlformat)
+            )
 
     else:
-        raise NotImplementedError('Vibrational bands not yet defined for molecule: ' +
-                                  '{0} with database format: {1}. '.format(molecule, dbformat) +
-                                  'Update add_bands()')
+        raise NotImplementedError(
+            "Vibrational bands not yet defined for molecule: "
+            + "{0} with database format: {1}. ".format(molecule, dbformat)
+            + "Update add_bands()"
+        )
 
     if verbose:
-        print(('... lines sorted in {0:.1f}s'.format(time() - t0)))
+        print(("... lines sorted in {0:.1f}s".format(time() - t0)))
 
     return
+
 
 # %% Test
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     from radis.test.lbl.test_bands import run_testcases
-    print('test_bands.py:', run_testcases(plot=True))
+
+    print("test_bands.py:", run_testcases(plot=True))

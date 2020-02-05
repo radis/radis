@@ -24,88 +24,127 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from collections import OrderedDict
 import radis
 from os.path import exists, splitext
-from radis.io.tools import parse_binary_file, drop_object_format_columns, replace_PQR_with_m101
+from radis.io.tools import (
+    parse_binary_file,
+    drop_object_format_columns,
+    replace_PQR_with_m101,
+)
 from radis.misc.cache_files import check_cache_file, save_to_hdf, get_cache_file
 
-columns_hitemp = OrderedDict([(
-    # name    # format # type  # description                                 # unit
-    'id',     ('a2',   int,   'Molecular number', '')), (
-    'iso',    ('a1',   int,   'isotope number', '')), (
-    'wav',    ('a12',  float, 'vacuum wavenumber', 'cm-1')), (
-    'int',    ('a10',  float, 'intensity at 296K', 'cm-1/(molecule/cm-2)', )), (
-    'A',      ('a10',  float, 'Einstein A coefficient', 's-1')), (
-    'airbrd', ('a5',   float, 'air-broadened half-width at 296K', 'cm-1.atm-1')), (
-    'selbrd', ('a5',   float, 'self-broadened half-width at 296K', 'cm-1.atm-1')), (
-    'El',     ('a10',  float, 'lower-state energy', 'cm-1')), (
-    'Tdpair', ('a4',   float, 'temperature-dependance exponent for Gamma air', '')), (
-    'Pshft',  ('a8',   float,  'air pressure-induced line shift at 296K', 'cm-1.atm-1')), (
-    # skip 1 columns   . WARNING. They didn't say that in the doc. But it doesn't make sense if i don't
-    'Tdpsel', ('a5',   float, 'temperature dependance exponent for gamma self', '')), (
-    'v1u',    ('a3',   int,   'upper state vibrational number v1', '')), (
-    'v2u',    ('a2',   int,   'upper state vibrational number v2', '')), (
-    'l2u',    ('a2',   int,   'upper state vibrational number l2', '')), (
-    'v3u',    ('a2',   int,   'upper state vibrational number v3', '')), (
-    'ru',     ('a1',   int,   'upper state vibrational number r', '')), (
-    # skip 5 columns (v1l format becomes 3+5)
-    'v1l',    ('a8',   int, 'lower state vibrational number v1', '')), (
-    'v2l',    ('a2',   int,   'lower state vibrational number v2', '')), (
-    'l2l',    ('a2',   int,   'lower state vibrational number l2', '')), (
-    'v3l',    ('a2',   int,   'lower state vibrational number v3', '')), (
-    'rl',     ('a1',   int,   'lower state vibrational number r', '')), (
-    'polyu',  ('a3',   int,   'upper state polyad', '')), (
-    'wangu',  ('a2',   int,   'upper state Wang symmetry', '')), (
-    'ranku',  ('a4',   int,   'upper state ranking number', '')), (
-    'polyl',  ('a3',   int,   'lower state polyad', '')), (
-    'wangl',  ('a2',   int,   'lower state Wang symmetry', '')), (
-    'rankl',  ('a4',   int,   'lower state ranking number', '')), (
-    # skip 2 columns (PQR format becomes 1+2)
-    'branch',    ('a3',   str,   'O, P, Q, R, S branch symbol', '')), (
-    'jl',     ('a3',   int,   'lower state rotational quantum number', '')), (
-    'wangl2', ('a1',   str,   'lower state Wang symmetry', '(e or f)')), (
-    'lsrc',   ('a5',   int,   'line source', ''))
-])
+columns_hitemp = OrderedDict(
+    [
+        (
+            # name    # format # type  # description                                 # unit
+            "id",
+            ("a2", int, "Molecular number", ""),
+        ),
+        ("iso", ("a1", int, "isotope number", "")),
+        ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
+        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",)),
+        ("A", ("a10", float, "Einstein A coefficient", "s-1")),
+        ("airbrd", ("a5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
+        ("selbrd", ("a5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
+        ("El", ("a10", float, "lower-state energy", "cm-1")),
+        ("Tdpair", ("a4", float, "temperature-dependance exponent for Gamma air", "")),
+        (
+            "Pshft",
+            ("a8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1"),
+        ),
+        (
+            # skip 1 columns   . WARNING. They didn't say that in the doc. But it doesn't make sense if i don't
+            "Tdpsel",
+            ("a5", float, "temperature dependance exponent for gamma self", ""),
+        ),
+        ("v1u", ("a3", int, "upper state vibrational number v1", "")),
+        ("v2u", ("a2", int, "upper state vibrational number v2", "")),
+        ("l2u", ("a2", int, "upper state vibrational number l2", "")),
+        ("v3u", ("a2", int, "upper state vibrational number v3", "")),
+        ("ru", ("a1", int, "upper state vibrational number r", "")),
+        (
+            # skip 5 columns (v1l format becomes 3+5)
+            "v1l",
+            ("a8", int, "lower state vibrational number v1", ""),
+        ),
+        ("v2l", ("a2", int, "lower state vibrational number v2", "")),
+        ("l2l", ("a2", int, "lower state vibrational number l2", "")),
+        ("v3l", ("a2", int, "lower state vibrational number v3", "")),
+        ("rl", ("a1", int, "lower state vibrational number r", "")),
+        ("polyu", ("a3", int, "upper state polyad", "")),
+        ("wangu", ("a2", int, "upper state Wang symmetry", "")),
+        ("ranku", ("a4", int, "upper state ranking number", "")),
+        ("polyl", ("a3", int, "lower state polyad", "")),
+        ("wangl", ("a2", int, "lower state Wang symmetry", "")),
+        ("rankl", ("a4", int, "lower state ranking number", "")),
+        (
+            # skip 2 columns (PQR format becomes 1+2)
+            "branch",
+            ("a3", str, "O, P, Q, R, S branch symbol", ""),
+        ),
+        ("jl", ("a3", int, "lower state rotational quantum number", "")),
+        ("wangl2", ("a1", str, "lower state Wang symmetry", "(e or f)")),
+        ("lsrc", ("a5", int, "line source", "")),
+    ]
+)
 
-columns_4000 = OrderedDict([(
-    # name    # format # type  # description                                 # unit
-    'id',     ('a2',   int,   'Molecular number', '')), (
-    'iso',    ('a1',   int,   'isotope number', '')), (
-    'wav',    ('a12',  float, 'vacuum wavenumber', 'cm-1')), (
-    'int',    ('a10',  float, 'intensity at 296K', 'cm-1/(molecule/cm-2)', )), (
-    'A',      ('a10',  float, 'Einstein A coefficient', 's-1')), (
-    'airbrd', ('a5',   float, 'air-broadened half-width at 296K', 'cm-1.atm-1')), (
-    'selbrd', ('a5',   float, 'self-broadened half-width at 296K', 'cm-1.atm-1')), (
-    'El',     ('a10',  float, 'lower-state energy', 'cm-1')), (
-    'Tdpair', ('a4',   float, 'temperature-dependance exponent for Gamma air', '')), (
-    'Pshft',  ('a8',   float,  'air pressure-induced line shift at 296K', 'cm-1.atm-1')), (
-    # skip 1 columns  (Tdpsel becomes 4+1 = 5)
-    'Tdpsel', ('a5',   float, 'temperature dependance exponent for gamma self', '')), (
-    'v1u',    ('a3',   int,   'upper state vibrational number v1', '')), (
-    'v2u',    ('a2',   int,   'upper state vibrational number v2', '')), (
-    'l2u',    ('a2',   int,   'upper state vibrational number l2', '')), (
-    'v3u',    ('a2',   int,   'upper state vibrational number v3', '')), (
-    'ru',     ('a2',   int,   'upper state vibrational number r', '')), (
-    # skip 5 columns (v1l format becomes 3+3=6)
-    'v1l',    ('a6',   int, 'lower state vibrational number v1', '')), (
-    'v2l',    ('a2',   int,   'lower state vibrational number v2', '')), (
-    'l2l',    ('a2',   int,   'lower state vibrational number l2', '')), (
-    'v3l',    ('a2',   int,   'lower state vibrational number v3', '')), (
-    'rl',     ('a2',   int,   'lower state vibrational number r', '')), (
-    'polyu',  ('a3',   int,   'upper state polyad', '')), (
-    'wangu',  ('a2',   int,   'upper state Wang symmetry', '')), (
-    'ranku',  ('a4',   int,   'upper state ranking number', '')), (
-    'polyl',  ('a3',   int,   'lower state polyad', '')), (
-    'wangl',  ('a2',   int,   'lower state Wang symmetry', '')), (
-    'rankl',  ('a4',   int,   'lower state ranking number', '')), (
-    # skip 2 columns (PQR format becomes 1+2)
-    'branch', ('a3',   str,   'O, P, Q, R, S branch symbol', '')), (
-    'jl',     ('a3',   int,   'lower state rotational quantum number', '')), (
-    'wangl2', ('a1',   str,   'lower state Wang symmetry', '(e or f)'))
-])
+columns_4000 = OrderedDict(
+    [
+        (
+            # name    # format # type  # description                                 # unit
+            "id",
+            ("a2", int, "Molecular number", ""),
+        ),
+        ("iso", ("a1", int, "isotope number", "")),
+        ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
+        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",)),
+        ("A", ("a10", float, "Einstein A coefficient", "s-1")),
+        ("airbrd", ("a5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
+        ("selbrd", ("a5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
+        ("El", ("a10", float, "lower-state energy", "cm-1")),
+        ("Tdpair", ("a4", float, "temperature-dependance exponent for Gamma air", "")),
+        (
+            "Pshft",
+            ("a8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1"),
+        ),
+        (
+            # skip 1 columns  (Tdpsel becomes 4+1 = 5)
+            "Tdpsel",
+            ("a5", float, "temperature dependance exponent for gamma self", ""),
+        ),
+        ("v1u", ("a3", int, "upper state vibrational number v1", "")),
+        ("v2u", ("a2", int, "upper state vibrational number v2", "")),
+        ("l2u", ("a2", int, "upper state vibrational number l2", "")),
+        ("v3u", ("a2", int, "upper state vibrational number v3", "")),
+        ("ru", ("a2", int, "upper state vibrational number r", "")),
+        (
+            # skip 5 columns (v1l format becomes 3+3=6)
+            "v1l",
+            ("a6", int, "lower state vibrational number v1", ""),
+        ),
+        ("v2l", ("a2", int, "lower state vibrational number v2", "")),
+        ("l2l", ("a2", int, "lower state vibrational number l2", "")),
+        ("v3l", ("a2", int, "lower state vibrational number v3", "")),
+        ("rl", ("a2", int, "lower state vibrational number r", "")),
+        ("polyu", ("a3", int, "upper state polyad", "")),
+        ("wangu", ("a2", int, "upper state Wang symmetry", "")),
+        ("ranku", ("a4", int, "upper state ranking number", "")),
+        ("polyl", ("a3", int, "lower state polyad", "")),
+        ("wangl", ("a2", int, "lower state Wang symmetry", "")),
+        ("rankl", ("a4", int, "lower state ranking number", "")),
+        (
+            # skip 2 columns (PQR format becomes 1+2)
+            "branch",
+            ("a3", str, "O, P, Q, R, S branch symbol", ""),
+        ),
+        ("jl", ("a3", int, "lower state rotational quantum number", "")),
+        ("wangl2", ("a1", str, "lower state Wang symmetry", "(e or f)")),
+    ]
+)
 
 
-def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
-            drop_non_numeric=True):
-    ''' Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
+def cdsd2df(
+    fname, version="hitemp", count=-1, cache=False, verbose=True, drop_non_numeric=True
+):
+    """ Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
 
     Parameters
     ----------
@@ -198,20 +237,24 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
     
     :func:`~radis.io.hitran.hit2df`
 
-    '''
+    """
 
-    if verbose>=2:
-        print('Opening file {0} (format=CDSD {1}, cache={2})'.format(fname, version, cache))
+    if verbose >= 2:
+        print(
+            "Opening file {0} (format=CDSD {1}, cache={2})".format(
+                fname, version, cache
+            )
+        )
 
-    if version == 'hitemp':
+    if version == "hitemp":
         columns = columns_hitemp
-    elif version == '4000':
+    elif version == "4000":
         columns = columns_4000
     else:
-        raise ValueError('Unknown CDSD version: {0}'.format(version))
+        raise ValueError("Unknown CDSD version: {0}".format(version))
 
     # Use cache file if possible
-    fcache = splitext(fname)[0]+'.h5'
+    fcache = splitext(fname)[0] + ".h5"
     check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
     if cache and exists(fcache):
         return get_cache_file(fcache, verbose=verbose)
@@ -228,17 +271,26 @@ def cdsd2df(fname, version='hitemp', count=-1, cache=False, verbose=True,
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
         if verbose:
-            print('Generating cached file: {0}'.format(fcache))
+            print("Generating cached file: {0}".format(fcache))
         try:
-            save_to_hdf(df, fcache, metadata={}, version=radis.__version__,
-                        key='df', overwrite=True, verbose=verbose)
+            save_to_hdf(
+                df,
+                fcache,
+                metadata={},
+                version=radis.__version__,
+                key="df",
+                overwrite=True,
+                verbose=verbose,
+            )
         except:
             if verbose:
-                print('An error occured in cache file generation. Lookup access rights')
+                print("An error occured in cache file generation. Lookup access rights")
             pass
 
     return df
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     from radis.test.test_io import test_hitemp
-    print('Testing cdsd: ', test_hitemp())
+
+    print("Testing cdsd: ", test_hitemp())
