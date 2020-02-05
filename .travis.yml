@@ -62,8 +62,9 @@ jobs:
 
     - stage: deploy
       name: "Deploy to Pypi"
-      install:
-        # no install
+      install: 
+        - sudo apt-get update
+      script:
         - echo "Deploying to Pypi"
       deploy:
         provider: pypi
