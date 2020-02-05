@@ -45,19 +45,6 @@ from os.path import abspath, dirname, join, exists
 import sys
 from setuptips import yield_sphinx_only_markup
 
-# Check mandatory modules that we want users to install themselves
-try:
-    import numpy
-    import scipy
-    import matplotlib
-    import pandas
-except ImportError:
-    raise ImportError(
-        "Please install these librairies first (with Anaconda is "
-        + "strongly recommended) \n >>> conda install numpy scipy "
-        + "matplotlib pandas"
-    )
-
 # Build description from README (PyPi compatible)
 # (note: README.rst has been converted to README.md by register.py, and cleaned afterwards )
 description = "A fast line-by-line code for high-resolution infrared molecular spectra"
@@ -95,17 +82,18 @@ setup(
     ],
     packages=find_packages(),
     install_requires=[
+        "numpy",
+        "scipy",
+        "matplotlib",
+        "pandas",
+        "plotly",
+        "h5py",
+        "numba",
         "mpldatacursor",
-        #                        'numpy',          # let the user install it
-        #                        'scipy',         # let the user install it
-        #                        'matplotlib',    # let the user install it
-        #                        'pandas',        # let the user install it
-        #                        'sympy',         # let the user install it
         "astropy",  # Unit aware calculations
         "pint>=0.7.2",  # Unit aware calculations
         "publib>=0.3.2",  # Plotting styles for Matplotlib
         "plotly>=2.5.1",  # for line survey HTML output
-        # TODO: update to >=2.5.1 as soon as https://github.com/plotly/plotly.py/issues/963 is fixed
         "termcolor",  # terminal colors
         "six",  # python 2-3 compatibility
         "configparser",

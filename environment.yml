@@ -12,5 +12,20 @@ dependencies:
 - plotly
 - h5py
 - numba
-- pytest
-- astroquery>=0.3.9
+- astropy  # Unit aware calculations
+- pint>=0.7.2  # Unit aware calculations
+- plotly>=2.5.1  # for line survey HTML output
+- termcolor  # terminal colors
+- six  # python 2-3 compatibility
+- configparser
+- astroquery>=0.3.9  # to fetch HITRAN databases
+- pytest  # to run test suite
+- h5py  # to write HDF5 files
+- joblib  # for parallel loading of SpecDatabase
+- numba  # just-in-time compiler
+- pip
+- pip:
+  - publib>=0.3.2  # Plotting styles for Matplotlib
+  - json-tricks>=3.13.6  # to deal with non jsonable formats
+  - mpldatacursor
+  - tables  # for pandas to HDF5 export
