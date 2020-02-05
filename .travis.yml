@@ -61,6 +61,10 @@ jobs:
         - black ./ setup.py --check
 
     - stage: deploy
+      name: "Deploy to Pypi"
+      install:
+        # no install
+        - echo "Deploying to Pypi"
       deploy:
         provider: pypi
         user: "__token__"  
