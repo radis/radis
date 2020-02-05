@@ -81,7 +81,30 @@ setup(
         "HITRAN",
     ],
     packages=find_packages(),
-    install_requires=[],
+    install_requires=[
+        "numpy",
+        "scipy",
+        "matplotlib",
+        "pandas",
+        "plotly",
+        "h5py",
+        "numba",
+        "mpldatacursor",
+        "astropy",  # Unit aware calculations
+        "pint>=0.7.2",  # Unit aware calculations
+        "publib>=0.3.2",  # Plotting styles for Matplotlib
+        "plotly>=2.5.1",  # for line survey HTML output
+        "termcolor",  # terminal colors
+        "six",  # python 2-3 compatibility
+        "configparser",
+        "astroquery>=0.3.9",  # to fetch HITRAN databases
+        "json-tricks>=3.13.6",  # to deal with non jsonable formats
+        "tables",  # for pandas to HDF5 export
+        "pytest",  # to run test suite
+        "h5py",  # to write HDF5 files
+        "joblib",  # for parallel loading of SpecDatabase
+        "numba",  # just-in-time compiler
+        ],
     extras_require={
         "dev": [
             "numpydoc",  # for Jedi (autocompletion) to recognize
