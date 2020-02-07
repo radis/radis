@@ -12,6 +12,9 @@ for slit dilation:
 
 - :func:`~radis.tools.slit.convolve_with_slit`
 
+This function is called directly by the Spectrum method
+:py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`
+
 predefined slit functions generators (triangular, gaussian, etc... see :data:`~radis.tools.slit.SLIT_SHAPES`)
 and experimental slit function importer:
 
@@ -493,6 +496,10 @@ def convolve_with_slit(
 ):
     """ Convolves spectrum (w,I) with instrumental slit function (w_slit, I_slit)
     Returns a convolved spectrum on a valid range. 
+
+	This function is called directly from a :py:class:`~radis.spectrum.spectrum.Spectrum`
+	object with the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` method.
+
     
     .. warning::
         
@@ -1454,16 +1461,16 @@ def triangular_slit(
     -------
 
     w, I: numpy arrays
-        Slit function of shape
+        Slit function of shape::
 
-               ^
-              / \
-         _ _ /   \ _ _
-        :   :  :  :   :
-       -a-f -a 0  a  a+f
+                       ^
+                      / \
+                 _ _ /   \ _ _
+                :   :  :  :   :
+               -a-f -a 0  a  a+f
 
 
-        with FWHM = (a+1/2)*wstep, `f` spacing on left & right
+                with FWHM = (a+1/2)*wstep, `f` spacing on left & right
 
 
     Notes
@@ -1576,19 +1583,19 @@ def trapezoidal_slit(
     -------
 
     w, I: numpy arrays
-        Slit function of shape
+        Slit function of shape::
 
-                 _______
-                /       \
-               / :     : \
-         _ _ _/  :     :  \____
-         0    :  :     :  :   0
-         :   -b  :     :  b   :
-       -b-f     -t     t     b+f
+                     _______
+                    /       \
+                   / :     : \
+             _ _ _/  :     :  \____
+             0    :  :     :  :   0
+             :   -b  :     :  b   :
+           -b-f     -t     t     b+f
 
 
-        with `t`and `b` the half-top and half-base in number of elements, `f` spacing
-        on left & right. FWHM = (t+b+1)*wstep
+            with `t`and `b` the half-top and half-base in number of elements, `f` spacing
+            on left & right. FWHM = (t+b+1)*wstep
 
 
     Notes
@@ -1714,18 +1721,18 @@ def gaussian_slit(
     -------
 
     w, I: numpy arrays
-        Slit function of shape
+        Slit function of shape::
 
-                 .-.
-                /   \
-               /     \
-         _ _.-'       `-._ _
-         0    [gaussian]   0
-         :  :     :     :  :
-       -c-f -c    0     c  c+f          (c : calc_range)
+                     .-.
+                    /   \
+                   /     \
+             _ _.-'       `-._ _
+             0    [gaussian]   0
+             :  :     :     :  :
+           -c-f -c    0     c  c+f          (c : calc_range)
 
 
-        with `c` cutoff in number of elements, `f` spacing on left & right
+            with `c` cutoff in number of elements, `f` spacing on left & right
 
 
     Notes
