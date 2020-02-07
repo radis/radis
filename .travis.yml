@@ -66,6 +66,9 @@ jobs:
         - sudo apt-get update
       script:
         - echo "Deploying to Pypi"
+      before_deploy: 
+        - sudo apt-get install pandoc
+        - pandoc README.rst -o README.md
       deploy:
         provider: pypi
         user: "__token__"  
