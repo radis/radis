@@ -53,10 +53,20 @@ In a terminal, run::
 
     git clone https://github.com/radis/radis
     cd radis
-    pip install -e .
+    pip install -e .[dev]
 
 The `-e` (editable) command creates a link from the local folder `./` folder into Python 
 site-packages.
+
+Radis follows `Black <https://black.readthedocs.io/en/stable/>`_ style for code linting to
+maintain consistent coding style across modules. Code style is checked using CI services
+which run automatically on each pull request. **Black** is automatically installed when radis
+is set-up in developer mode.
+
+To format any file/files::
+
+    black /path/to/file/or/directory/
+
 
 To make sure the install worked, run the :ref:`first example <label_first_example>`
 from the Quick Start page. Then, you're all set. 
