@@ -183,6 +183,7 @@ setup(
             "numpydoc",  # for Jedi (autocompletion) to recognize
             "black",  # for code-linting in accordance to PEP8
             "isort",  # for sorting imports
+            "pre-commit",  # to enforce Black before each commit
         ]
     },
     classifiers=[
