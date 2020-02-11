@@ -53,13 +53,51 @@ In a terminal, run::
 
     git clone https://github.com/radis/radis
     cd radis
-    pip install -e .
+    pip install -e .[dev]
 
 The `-e` (editable) command creates a link from the local folder `./` folder into Python 
 site-packages.
 
 To make sure the install worked, run the :ref:`first example <label_first_example>`
 from the Quick Start page. Then, you're all set. 
+
+Code linting
+------------
+
+Radis follows `Black <https://black.readthedocs.io/en/stable/>`__ style for code linting to
+maintain consistent coding style across modules. Code style is checked using CI services
+which run automatically on each pull request. **Black** is automatically installed when radis
+is set-up in developer mode.
+
+To format any file/files::
+
+    black /path/to/file/or/directory/
+
+You can include Black coding style `directly in some text editors <https://github.com/psf/black#editor-integration>`__
+
+Alternatively, Black coding style can be checked automatically before each commit. For that all you need to do is to run the following command once::
+
+    cd radis
+    pre-commit install
+
+On each commit, format will be fixed if it was incorrect. All you need to do is to commit a second time. Exemple::
+
+    $ git commit -am "test"
+    black....................................................................Failed
+    - hook id: black
+    - files were modified by this hook
+
+    reformatted [ALL FAILING FILES]
+    All done!
+    1 file reformatted.
+    
+    $ git commit -am "test"
+    black....................................................................Passed
+    [develop XXX] test
+     1 file changed, 1 insertion(+)
+
+Note that pre-commit will always require you to commit again after a test was failed, because `it's safer <https://github.com/pre-commit/pre-commit/issues/532>`__. If for any reason you want to skip formatting you can commit with the ``--no-verify`` `argument <https://git-scm.com/docs/git-commit>`__.  
+
 
 
 Test 
