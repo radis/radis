@@ -110,11 +110,11 @@ def calc_spectrum(wavenum_min=None,
             
             molecules = {'CO2' : {'isotopes' : 'all',
                                   'mole_fraction' : 0.5,
-                                  'databank' : 'CDSD-4000',
+                                  'databank' : 'fetch',
                                   'overpopulation' : None},
                          'CO' : {'isotopes' : 'all',
                                   'mole_fraction' : 0.5,
-                                  'databank' : 'HITEMP',
+                                  'databank' : 'fetch',
                                   'overpopulation' : None}
                          }
 ​
@@ -296,16 +296,15 @@ def calc_spectrum(wavenum_min=None,
         # Test that all overwritten parameters are left as default:
         try:
             assert mole_fraction == 1
-            assert path_length == 1
             assert overpopulation is None 
             assert isotope is None
         except AssertionError:
-            raise ValueError('mole_fraction, path_length, overpopulation and isotope '+\
+            raise ValueError('mole_fraction, overpopulation and isotope '+\
                              'should be left as default if using a dictionary of '+\
                                  'molecules')
         
         s = []
-        for mol in enumerate(molecule.keys()):
+        for mol in molecule.keys():
             s.append(_calc_spectrum(wavenum_min=wavenum_min,
                                    wavenum_max=wavenum_max,
                                    wavelength_min=wavelength_min,
@@ -317,7 +316,7 @@ def calc_spectrum(wavenum_min=None,
                                    overpopulation=molecule[mol]['overpopulation'],
                                    molecule=mol,
                                    isotope=molecule[mol]['isotopes'],
-                                   mole_fraction=molecule[mol]['mole_fractions'],
+                                   mole_fraction=molecule[mol]['mole_fraction'],
                                    path_length=path_length,
                                    databank=molecule[mol]['databank'],
                                    medium=medium,
@@ -332,7 +331,7 @@ def calc_spectrum(wavenum_min=None,
             return s[0]
         else:
             from radis import MergeSlabs        
-            s_tot = MergeSlabs(s)
+            s_tot = MergeSlabs(*s)
             return s_tot
 
 def _calc_spectrum(

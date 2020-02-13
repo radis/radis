@@ -442,6 +442,51 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     except DatabankNotFound as err:
         assert IgnoreMissingDatabase(err, __file__, warnings)
 
+# @pytest.mark.needs_config_file
+# @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
+@pytest.mark.needs_connection
+def test_calc_spectrum_multiple_molecules(verbose=True, plot=True, warnings=True, *args, **kwargs):
+
+    if verbose:
+        printm("Testing calc_spectrum match reference")
+
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        #                          databank='CDSD-HITEMP-JMIN',
+        databank=None,  # not appropriate for these temperatures, but convenient for automatic testing
+        Tgas=1000,
+        path_length=0.1,
+        mole_fraction=1,
+        molecule={'CO2' : {'isotopes' : '1,2',
+                           'mole_fraction' : 0.5,
+                           'databank' : 'fetch',
+                           'overpopulation' : None},
+                   'CO' : {'isotopes' : '1',
+                           'mole_fraction' : 0.5,
+                           'databank' : 'fetch',
+                           'overpopulation' : None}
+                         },
+        isotope=None,
+        wstep=0.01,
+        cutoff=1e-25,
+        use_cached=True,
+        medium="vacuum",
+        verbose=verbose,
+        warnings={
+            "MissingSelfBroadeningWarning": "ignore",
+            "NegativeEnergiesWarning": "ignore",
+            "HighTemperatureWarning": "ignore",
+        },
+    )
+    s.apply_slit((2, 2.5), "nm", shape="trapezoidal")
+
+    # with pytest.raises(ValueError):
+    #      # run something
+
+    return True
+
+
 
 def _run_testcases(plot=False, verbose=True, warnings=True, *args, **kwargs):
 
@@ -465,6 +510,9 @@ def _run_testcases(plot=False, verbose=True, warnings=True, *args, **kwargs):
     test_eq_vs_noneq_isotope(
         verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
     )
+    
+    # Run test for multiple molecules
+    test_calc_spectrum_multiple_molecules()
 
     return True
 
@@ -472,4 +520,5 @@ def _run_testcases(plot=False, verbose=True, warnings=True, *args, **kwargs):
 # --------------------------
 if __name__ == "__main__":
 
-    printm("Testing calc.py: ", _run_testcases(verbose=True))
+    # printm("Testing calc.py: ", _run_testcases(verbose=True))
+    test_calc_spectrum_multiple_molecules()
