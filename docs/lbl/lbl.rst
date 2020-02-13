@@ -69,10 +69,19 @@ Configuration file
 
 The ``~/.radis`` configuration file is used to store the list and attributes of the Line databases 
 available on your computer. 
-Without a configuration file, you are forced to download the corresponding [HITRAN-2016]_ line database 
-files everytime, either through the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method 
-of :py:class:`~radis.lbl.factory.SpectrumFactory`, or the (default) ``databank='fetch'`` option in 
-:py:func:`~radis.lbl.calc.calc_spectrum`
+
+Without a configuration file, you can still:
+- download the corresponding [HITRAN-2016]_ line database automatically, 
+  either with the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method 
+  of :py:class:`~radis.lbl.factory.SpectrumFactory`, or the (default) ``databank='fetch'`` option in 
+  :py:func:`~radis.lbl.calc.calc_spectrum`
+- give a single file as an input to the ``databank=`` parameter of :py:func:`~radis.lbl.calc.calc_spectrum`
+
+A configuration file will help to:
+
+- handle line databases that contains multiple files
+- use custom tabulated partition functions for equilibrium calculations
+- use custom, precomputed energy levels for nonequilibrium calculations
 
 .. note::
 
@@ -142,14 +151,15 @@ The up-to-date format is given in :py:data:`~radis.misc.config.DBFORMAT`:
   nonequilibrium partitioning of vibrational and rotational energy: ``'cdsd-pc'``, ``'cdsd-pcN'``, ``'cdsd-hamil'``. 
   See full list in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
 
-  
-A default ``~/.radis`` can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which 
+*How to create the configuration file?*
+
+A default ``~/.radis`` configuration file can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which 
 creates two test databases from fragments of [HITRAN-2016]_ line databases:: 
 
     from radis.test.utils import setup_test_line_databases
     setup_test_line_databases()
     
-which will result in ::
+which will create a ``~/.radis`` file with the following content ::
 
 
     [HITRAN-CO2-TEST]
@@ -176,12 +186,7 @@ which will result in ::
     levelsfmt = radis
 
 
-If you configuration file exists already, the test databases will simply be appended. 
-These databases are used in some of the tests cases of RADIS, and the ``~/.radis`` may already contain 
-them if you ever started the test suite with::
-
-    cd radis 
-    pytest 
+If you configuration file exists already, the test databases will simply be appended.
 
 
 Advanced
