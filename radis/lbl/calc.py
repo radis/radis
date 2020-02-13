@@ -352,7 +352,7 @@ def calc_spectrum(
         # Guess format
         if databank.endswith(".par"):
             if verbose:
-                print("Infered {0} is a HITRAN file.".format(databank))
+                print("Infered {0} is a HITRAN-format file.".format(databank))
             # If non-equilibrium we'll also need to load the energy levels.
             if _equilibrium:
                 # Get partition functions from HAPI

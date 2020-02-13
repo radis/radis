@@ -2097,10 +2097,12 @@ class DatabankLoader(object):
         """
 
         if molecule is not None and self.input.molecule != molecule:
-            raise NotImplementedError(
-                "Molecule not expected. Expected {0}, got {1}".format(
+            raise ValueError(
+                "Expected molecule is {0} according to the inputs, but got {1} ".format(
                     self.input.molecule, molecule
                 )
+                + "in line database. Check your `molecule=` parameter, or your "
+                + "line database."
             )
 
         if df is None:
