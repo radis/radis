@@ -28,8 +28,7 @@ from numpy import exp, arange, allclose, abs, diff, zeros_like, ones_like
 from os.path import exists
 
 # %%
-def calc_spectrum(molecules=None,
-                  wavenum_min=None,
+def calc_spectrum(wavenum_min=None,
                   wavenum_max=None,
                   wavelength_min=None,
                   wavelength_max=None,
@@ -59,23 +58,6 @@ def calc_spectrum(molecules=None,
     Parameters
     ----------
 ​
-    molecules : dictionary
-        Dictionary describing the molecules and their parameters. If provided,
-        it will be read while `molecule`, `mole_fraction`, `databank` and
-        `overpopulation` parameters will not be used. Cf. the following parameters
-        for the format and meaning of the molecules parameters.
-        
-        Example::
-            
-            molecules = {'CO2' : {'isotopes' : 'all',
-                                  'mole_fraction' : 0.5,
-                                  'databank' : 'CDSD-4000',
-                                  'overpopulation' : None},
-                         'CO' : {'isotopes' : 'all',
-                                  'mole_fraction' : 0.5,
-                                  'databank' : 'HITEMP',
-                                  'overpopulation' : None}
-                         }
     wavenum_min: float [cm-1]
         minimum wavenumber to be processed in cm^-1
     wavenum_max: float [cm-1]
@@ -113,12 +95,28 @@ def calc_spectrum(molecules=None,
                 '(01`1`1)->(01`1`2)': 1,
                 }
 ​
-    molecule: int, str, or ``None``
+    molecule: int, str, dict or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
         from the database files being loaded. See the list of supported molecules 
         in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`. 
         Default ``None``. 
+        If dictionary : dictionary describing the molecules and their parameters. If provided,
+        it will be read while `molecule`, `mole_fraction`, `databank` and
+        `overpopulation` parameters will not be used. Cf. the following parameters
+        for the format and meaning of the molecules parameters.
+        
+        Example::
+            
+            molecules = {'CO2' : {'isotopes' : 'all',
+                                  'mole_fraction' : 0.5,
+                                  'databank' : 'CDSD-4000',
+                                  'overpopulation' : None},
+                         'CO' : {'isotopes' : 'all',
+                                  'mole_fraction' : 0.5,
+                                  'databank' : 'HITEMP',
+                                  'overpopulation' : None}
+                         }
 ​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
@@ -270,7 +268,7 @@ def calc_spectrum(molecules=None,
     the :ref:`Spectrum page <label_spectrum>`
     '''
     
-    if molecules == None:
+    if not isinstance(molecule,dict):
         s = _calc_spectrum(wavenum_min=wavenum_min,
                            wavenum_max=wavenum_max,
                            wavelength_min=wavelength_min,
@@ -295,8 +293,19 @@ def calc_spectrum(molecules=None,
                            **kwargs)
         return s
     else: # The "molecules" dictionary is read, instead of the possible other inputs ("molecule", "mole_fraction", ...)    
+        # Test that all overwritten parameters are left as default:
+        try:
+            assert mole_fraction == 1
+            assert path_length == 1
+            assert overpopulation is None 
+            assert isotope is None
+        except AssertionError:
+            raise ValueError('mole_fraction, path_length, overpopulation and isotope '+\
+                             'should be left as default if using a dictionary of '+\
+                                 'molecules')
+        
         s = []
-        for mol in enumerate(molecules.keys()):
+        for mol in enumerate(molecule.keys()):
             s.append(_calc_spectrum(wavenum_min=wavenum_min,
                                    wavenum_max=wavenum_max,
                                    wavelength_min=wavelength_min,
@@ -305,12 +314,12 @@ def calc_spectrum(molecules=None,
                                    Tvib=Tvib,
                                    Trot=Trot,
                                    pressure=pressure,
-                                   overpopulation=molecules[mol]['overpopulation'],
+                                   overpopulation=molecule[mol]['overpopulation'],
                                    molecule=mol,
-                                   isotope=molecules[mol]['isotopes'],
-                                   mole_fraction=molecules[mol]['mole_fractions'],
+                                   isotope=molecule[mol]['isotopes'],
+                                   mole_fraction=molecule[mol]['mole_fractions'],
                                    path_length=path_length,
-                                   databank=molecules[mol]['databank'],
+                                   databank=molecule[mol]['databank'],
                                    medium=medium,
                                    wstep=wstep,
                                    broadening_max_width=broadening_max_width, 
@@ -334,7 +343,7 @@ def _calc_spectrum(
     Tgas=None,
     Tvib=None,
     Trot=None,
-    pressure=1.01325,
+    pressure=None,
     overpopulation=None,
     molecule="",
     isotope="all",
