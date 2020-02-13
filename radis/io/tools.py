@@ -13,9 +13,9 @@ from six.moves import range
 from six.moves import zip
 
 
-def parse_binary_file(fname, columns, count):
+def parse_hitran_file(fname, columns, count):
     """ Parse a file under HITRAN ``par`` format. Parsing is done in binary 
-    format so it's as fast as possible.
+    format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
     Parameters
     ----------

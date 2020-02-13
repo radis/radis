@@ -29,7 +29,7 @@ from collections import OrderedDict
 from os.path import exists, splitext
 import radis
 from radis.io.tools import (
-    parse_binary_file,
+    parse_hitran_file,
     drop_object_format_columns,
     replace_PQR_with_m101,
 )
@@ -318,12 +318,18 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
         return get_cache_file(fcache, verbose=verbose)
 
     # Detect the molecule by reading the start of the file
-    with open(fname) as f:
-        mol = get_molecule(int(f.read(2)))
+    try:
+        with open(fname) as f:
+            mol = get_molecule(int(f.read(2)))
+    except UnicodeDecodeError as err:
+        raise UnicodeDecodeError(
+            "You're trying to read a binary file {0} ".format(fname)
+            + "instead of an HITRAN file"
+        ) from err
 
     # %% Start reading the full file
 
-    df = parse_binary_file(fname, columns, count)
+    df = parse_hitran_file(fname, columns, count)
 
     # %% Post processing
 

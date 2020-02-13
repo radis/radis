@@ -25,7 +25,7 @@ from collections import OrderedDict
 import radis
 from os.path import exists, splitext
 from radis.io.tools import (
-    parse_binary_file,
+    parse_hitran_file,
     drop_object_format_columns,
     replace_PQR_with_m101,
 )
@@ -261,7 +261,7 @@ def cdsd2df(
 
     # %% Start reading the full file
 
-    df = parse_binary_file(fname, columns, count)
+    df = parse_hitran_file(fname, columns, count)
 
     # Remove non numerical attributes
     if drop_non_numeric:
