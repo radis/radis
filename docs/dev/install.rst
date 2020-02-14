@@ -49,9 +49,11 @@ with Anaconda).
 **Developer version**: to modify the code and contribute to the 
 project. 
 
+We suggest that you fork the `RADIS repository <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_ and use that url for the clone step below. This will make submitting changes easier in the long term for you:
+
 In a terminal, run::
 
-    git clone https://github.com/radis/radis
+    git clone https://github.com/<GITHUB USERNAME>/radis.git
     cd radis
     pip install -e .[dev]
 
