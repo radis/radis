@@ -84,7 +84,7 @@ and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For
     plot_diff(sexp, s)    # comparing with a spectrum 's' calculated previously 
 
 Typical output of :py:func:`~radis.spectrum.compare.plot_diff` (below: a CO2 spectrum
-with two different line databases):
+at 3400 K calculated with the [HITEMP-2010]_ and [CDSD-4000]_ line databases):
 
 .. image:: spectrum/cdsd4000_vs_hitemp_3409K.*
     :scale: 60 %
@@ -93,7 +93,7 @@ with two different line databases):
 
 Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-processing functions 
 (:ref:`rescale <label_spectrum_rescale>` , :ref:`crop<label_spectrum_offset_crop>`, 
-:ref:`remove baselines <label_spectrum_remove_baseline>, :ref:`store <label_spectrum_store>`, 
+:ref:`remove baselines<label_spectrum_remove_baseline>, :ref:`store<label_spectrum_store>`, 
 :ref:`combine along the line-of-sight <label_spectrum_line_of_sight>`, 
 :ref:`identify each line <label_spectrum_linesurvey>`, 
 :ref:`manipulate multiple spectra at once <label_spectrum_database>`, etc.)
@@ -121,7 +121,7 @@ More examples
 =============
 
 The Quick Start examples above automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
-For *high temperature* cases, you may need to use :ref:`other line databases <label_line_database` such as 
+For *high temperature* cases, you may need to use :ref:`other line databases <_label_line_databases>` such as 
 [HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
 :ref:`Configuration file <label_lbl_config_file>`. 
 

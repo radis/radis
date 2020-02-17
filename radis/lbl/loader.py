@@ -113,7 +113,7 @@ KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
 - ``'cdsd-4000'`` : CDSD-4000 (CO2 only)
 
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
-and the `list of databases <https://radis.readthedocs.io/en/latest/features/databases.html#line-databases>`__
+and the :ref:`list of databases <_label_line_databases>` .
 
 See Also
 --------

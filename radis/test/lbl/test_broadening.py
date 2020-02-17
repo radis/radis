@@ -500,7 +500,7 @@ def test_abscoeff_continuum(
     Notes
     -----
     
-    Uses HITRAN so it can deployed and tested on [Travis]_, but we should switch
+    Uses HITRAN so it can deployed and tested on `Travis CI <https://travis-ci.com/radis/radis>`_, but we should switch
     to HITEMP if some HITEMP files can be downloaded automatically at the 
     execution time. 
 
@@ -607,7 +607,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     Notes
     -----
     
-    Uses HITRAN so it can deployed and tested on [Travis]_, but we should switch
+    Uses HITRAN so it can deployed and tested on `Travis CI <https://travis-ci.com/radis/radis>`_, but we should switch
     to HITEMP if some HITEMP files can be downloaded automatically at the 
     execution time. 
 

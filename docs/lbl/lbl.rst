@@ -6,12 +6,40 @@ Line-by-line (LBL) module
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object. 
-The detailed RADIS calculation flow chart is given in :ref:`Architecture <label_dev_architecture>`. 
 
+---------------------------------------------------------------------
+
+.. toctree::
+   :maxdepth: 3
+   
+   lbl
+   
+For any other question you can use the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__,
+the `GitHub issues <https://github.com/radis/radis/issues>`__ or the 
+`community chat <https://gitter.im/radis-radiation/community>`__. |badge_gitter|
+ 
+ 
 .. include:: databases.rst
 
 Calculating spectra 
 ===================
+
+Flow Chart
+----------
+
+Under the hood, RADIS will calculate populations by scaling tabulated data (equilibrium)
+or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients 
+from :ref:`Line Databases <label_line_database>`, calculate the line broadening using 
+various strategies to improve :ref:`Performances <label_lbl_performance>`, 
+and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in 
+the flow chart below:
+
+.. image:: RADIS_flow_chart.*
+    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+    :scale: 100 %
+
+The detail of the functions that perform each step of the RADIS calculation flow chart 
+is given in :ref:`Architecture <label_dev_architecture>`.
 
 Nonequilibrium Calculations
 ---------------------------
