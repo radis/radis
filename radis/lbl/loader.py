@@ -112,6 +112,9 @@ KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
 - ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
 - ``'cdsd-4000'`` : CDSD-4000 (CO2 only)
 
+To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
+and the `list of databases <https://radis.readthedocs.io/en/latest/features/databases.html#line-databases>`__
+
 See Also
 --------
 
@@ -1284,11 +1287,11 @@ class DatabankLoader(object):
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
             if dbformat == "cdsd":
-                raise ValueError(
+                raise DeprecationWarning(
                     "`cdsd` database format was renamed `cdsd-hitemp` after 0.9.21"
                 )
             if dbformat == "cdsd4000":
-                raise ValueError(
+                raise DeprecationWarning(
                     "`cdsd4000` database format was renamed `cdsd-4000` after 0.9.21"
                 )
             # <<<<<<<<<<<

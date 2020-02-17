@@ -73,11 +73,22 @@ See the :ref:`Architecture <label_dev_architecture>` section for an overview of 
 steps. 
 
 
+Line Databases
+==============
+
+List of supported line databases formats: :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT` :
+
+- [HITRAN-2016]_
+- [HITEMP-2010]_ 
+- [CDSD-4000]_ 
+
+For download and configuration of line databases, see the :ref:`Line Databases section <label_line_databases>` 
+
+
+
 Interfaces
 ==========
 
 RADIS includes parsers and interfaces to read and return data in different formats: 
-
-.. include:: databases.rst
 
 .. include:: thermo.rst

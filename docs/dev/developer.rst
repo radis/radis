@@ -13,7 +13,6 @@ See the :ref:`detailed installation procedure <label_install>` below:
 .. include:: install.rst 
 
 
-
 .. include:: architecture.rst
   
 

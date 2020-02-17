@@ -127,7 +127,7 @@ def calc_spectrum(
             [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
             temperatures you may need [HITEMP-2010]_ 
 
-        - the name of a valid database file, in which case the format is inferred. 
+        - the path to a valid database file, in which case the format is inferred. 
           For instance, ``.par`` is recognized as ``hitran/hitemp`` format. 
 
         - the name of a spectral database registered in your ``~/.radis`` 
@@ -137,6 +137,12 @@ def calc_spectrum(
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
         your ``~/.radis`` file format 
+        
+        Example::
+        
+            databank='fetch'     # automatic download 
+            databank='PATH/TO/05_HITEMP2019.par'    # path to a file 
+            databank='HITEMP-2019-CO'   # user-defined database in Configuration file 
 
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
@@ -375,9 +381,12 @@ def calc_spectrum(
                 )
         else:
             raise ValueError(
-                "Couldnt infer the format of the line database: {0}. ".format(databank)
+                "Couldnt infer the format of the line database file: {0}. ".format(
+                    databank
+                )
                 + "Create a user-defined database in your ~/.radis file "
-                + "and define the format there."
+                + "and define the format there. More information on "
+                + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
             )
 
     else:  # manual mode: get from user-defined line databases defined in ~/.radis

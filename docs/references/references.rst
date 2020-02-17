@@ -19,7 +19,7 @@ Cite
 If using RADIS for your work, cite: 
 
 - the line-by-line code as [RADIS-2018]_ |badge_article|  
-- the :ref:`version number <https://radis.readthedocs.io/en/latest/source/radis.html#radis.get_version>`__ 
+- the RADIS version number. Get your version with py:func:`~radis.get_version` 
   (latest version available is |badge_pypi|) ::
   
     import radis
@@ -32,10 +32,7 @@ If using RADIS for your work, cite:
 
 
 Useful Links
-------------
-
-Links
------
+============
 
 RADIS:
 
@@ -54,10 +51,7 @@ RADIS:
 - Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
 
 
-Other Spectroscopic Tools:
-
 .. include:: similar_tools.rst 
-
 
 
 .. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/

@@ -8,7 +8,6 @@ CO2
 
 Version 0.9 uses uses the CO2 spectrosopic coefficients of [Klarenaar2017]_ ,
 Table 2,3 and the references therein. These constants have been compiled for Treanor distributions. 
-
 `(see constants) <https://raw.githubusercontent.com/radis/radis/master/radis/db/CO2/molecules_data.json>`__
 
 .. include:: https://raw.githubusercontent.com/radis/radis/master/radis/db/CO2/molecules_data.json
@@ -21,7 +20,6 @@ CO
 --
 
 CO uses the Dunham coefficients of [Guelachvili1983]_ 
-
 `(see constants) <https://raw.githubusercontent.com/radis/radis/master/radis/db/CO/molecules_data.json>`__
 
 .. include:: https://raw.githubusercontent.com/radis/radis/master/radis/db/CO/molecules_data.json

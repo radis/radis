@@ -64,7 +64,8 @@ def get_config():
 DBFORMAT = r"""
 --------------------------
 
-[CDSD]                           #  your databank name
+[MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
+                                 #  or SpectrumFactory.load_databank() 
 info = HITEMP 2010 databank      #  whatever you want
 path =                           #  no "", multipath allowed
        D:\Databases\HITEMP-CO2\hitemp_07
@@ -97,23 +98,28 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
 
 --------------------------"""
 """str: Typical expected format of a ~/.radis entry::
+
     --------------------------
     
-    [CDSD]                           #  your databank name
+    [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
+                                     #  or SpectrumFactory.load_databank() 
     info = HITEMP 2010 databank      #  whatever you want
     path =                           #  no "", multipath allowed
            D:\Databases\HITEMP-CO2\hitemp_07
            D:\Databases\HITEMP-CO2\hitemp_08
            D:\Databases\HITEMP-CO2\hitemp_09
     format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                     # databank text file format. More info in
-                                     # SpectrumFactory.load_databank function.
+                                     # databank text file format. List of all 
+                                     # formats in :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+                                     # More info in
+                                     # :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` function.
     parfuncfmt:                      #  'cdsd', 'hapi', etc.
                                      # format to read tabulated partition function 
                                      # file. If `hapi`, then HAPI (HITRAN Python 
                                      # interface) is used to retrieve them (valid if
                                      # your databank is HITRAN data). HAPI is embedded 
-                                     # into RADIS. Check the version.            
+                                     # into RADIS. Check the version. 
+                                     # List of all formats in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
     # Optional
     # ----------
     parfunc:                         #  path to tabulated partition function to use.
@@ -132,16 +138,18 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
     
     --------------------------
 
-Refer to the documentation: :ref:`Configuration file <label_lbl_config_file>`
+For more information refer to the documentation: :ref:`Configuration file <label_lbl_config_file>` :
 
-Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
+- Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
+- `format` :  format: :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+
 
 See Also
 --------
 
 :ref:`Configuration file <label_lbl_config_file>`,
 :py:func:`~radis.misc.config.getConfig`,
-:py:meth:`~radis.lbl.loader.load_databank`
+:py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
 """
 
 CONFIG_PATH = join(expanduser("~"), ".radis")
@@ -183,7 +191,8 @@ def getDatabankEntries(dbname):
 
     Databank format:
 
-        [CDSD]                           # your databank name
+        [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
+                                         #  or SpectrumFactory.load_databank()
         info = HITEMP 2010 databank      # whatever you want
         path =                           # no "", multipath allowed
                D:\Databases\HITEMP-CO2\hitemp_07
@@ -234,7 +243,8 @@ def getDatabankEntries(dbname):
             "{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)
             + "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH)
             + "Available databanks: {0}. ".format(getDatabankList())
-            + "See databank format above"
+            + "See databank format above. More information in "
+            + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
         )
         raise DatabankNotFound(msg)
 
