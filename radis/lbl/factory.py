@@ -82,6 +82,7 @@ for Developers:
 from __future__ import print_function, absolute_import, division, unicode_literals
 from six import string_types
 from warnings import warn
+from radis.io import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.io.hitran import get_molecule
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
@@ -420,6 +421,20 @@ class SpectrumFactory(BandFactory):
         # Get molecule name
         if isinstance(molecule, int):
             molecule == get_molecule(molecule)
+        if molecule is not None:
+            if (
+                molecule
+                not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
+            ):
+                raise ValueError(
+                    "Unsupported molecule: {0}.\n".format(molecule)
+                    + "Supported molecules are:\n - under equilibrium: {0}".format(
+                        MOLECULES_LIST_EQUILIBRIUM
+                    )
+                    + "\n- under nonequilibrium: {0}".format(
+                        MOLECULES_LIST_NONEQUILIBRIUM
+                    )
+                )
 
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, string_types):
