@@ -14,6 +14,7 @@ import os
 import sys
 from os.path import dirname
 import importlib
+import inspect
 
 
 def getProjectRoot():
@@ -87,6 +88,12 @@ else:
     import configparser
 
 
+# %%
+# ==============================================================================
+# Function arguments
+# ==============================================================================
+
+
 def getarglist(function):
     """ Get list of arguments in a function 
     
@@ -102,6 +109,22 @@ def getarglist(function):
         from inspect import signature
 
         return list(signature(function).parameters)
+
+
+def get_default_arg(func, arg):
+    """ Get default value of argument ``arg`` in function ``func``
+    
+    Adapted from https://stackoverflow.com/questions/12627118/get-a-function-arguments-default-value
+    
+    """
+    signature = inspect.signature(func)
+    items = dict(signature.parameters.items())
+    if not arg in items:
+        raise ValueError("Function {0} has no argument `{1}`".format(func, arg))
+    elif items[arg].default is inspect.Parameter.empty:
+        raise ValueError("No default value for argument `{0}` in {1}".format(arg, func))
+    else:
+        return items[arg].default
 
 
 # %% Other stuff
