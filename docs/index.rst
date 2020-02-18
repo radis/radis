@@ -121,7 +121,7 @@ More examples
 =============
 
 The Quick Start examples above automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
-For *high temperature* cases, you may need to use :ref:`other line databases <_label_line_databases>` such as 
+For *high temperature* cases, you may need to use :ref:`other line databases <label_line_databases>` such as 
 [HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
 :ref:`Configuration file <label_lbl_config_file>`. 
 

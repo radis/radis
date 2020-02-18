@@ -526,3 +526,9 @@ Precompute Spectra
 
 See :py:meth:`~radis.lbl.loader.DatabankLoader.init_database`, which is the direct integration 
 of :py:class:`~radis.tools.database.SpecDatabase` in a :py:class:`~radis.lbl.factory.SpectrumFactory` 
+
+
+
+.. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
+                  :target: https://gitter.im/radis-radiation/community
+                  :alt: Gitter

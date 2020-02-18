@@ -6,7 +6,7 @@ Line databases
 List of supported line databases formats: :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
 
 HITRAN
-''''''
+------
 
 RADIS can automatically fetch HITRAN lines using the `Astroquery <https://astroquery.readthedocs.io>`_ 
 module. This is done by specifying ``databank=='fetch'`` in :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -30,7 +30,7 @@ You can also download the HITRAN databases files locally:
 
 
 HITEMP
-''''''
+------
 
 RADIS can read files from the HITEMP 2010 database, however files have to be 
 downloaded manually.
@@ -44,7 +44,7 @@ the :py:mod:`radis.misc.config` module and the :py:func:`~radis.misc.config.getD
 function for more information. 
 
 CDSD-4000
-'''''''''
+---------
 
 RADIS can read files from the CDSD-4000 database, however files have to be 
 downloaded manually.
