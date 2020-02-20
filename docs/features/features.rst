@@ -13,23 +13,28 @@ RADIS is both an infrared :ref:`line-by-line code <label_line_by_line>`
 and a :ref:`post-processing library <label_spectrum>`. 
 It includes: 
 
-- all [HITRAN-2016]_ species for equilibrium calculations (see :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`)
-- CO2 and CO for nonequilibrium calculations (see :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM` )
-- different line databases: support of [HITRAN-2016]_, [HITEMP-2010]_ and [CDSD-4000]_ line databases (see :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`) 
-- fast calculations: up to several orders of magnitude faster than equivalent line-by-line codes (see :ref:`Performance <label_lbl_performance>`)
-- spatially heterogeneous spectra (see :ref:`see line-of-sight <label_los_index>`)
-- post processing tools to load and :ref:`compare with experimental spectra <label_spectrum_howto_compare>` (see :ref:`the Spectrum object <label_spectrum>`)
-- a line survey tool to identify which lines correspond to a spectral feature (see :ref:`Line Survey <label_spectrum_linesurvey>`).
-- automatic testing and continuous integration tools for a reliable open-source development (see the :ref:`Developer Guide <label_developer_guide>`)
-- in-the-browser calculations (no install needed: see the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project)
+- Absorption and emission spectra of all [HITRAN-2016]_ species under equilibrium calculations (:py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`)
+- Absorption and emission spectra of CO2 and CO for nonequilibrium calculations (see :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM` )
+- Different Line Databases: support of [HITRAN-2016]_, [HITEMP-2010]_ and [CDSD-4000]_ line databases (see :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`) 
+- Calculation of :ref:`Rovibrational Energies of molecules <label_examples_rovibrational_energies>`. 
+- Calculation of equilibrium and nonequilibrium :ref:`Partition Functions <label_examples_partition_functions>`. 
+- Spatially heterogeneous spectra (see :ref:`see line-of-sight <label_los_index>`)
+- Post-processing tools to load and :ref:`compare with experimental spectra <label_spectrum_howto_compare>` (see :ref:`the Spectrum object <label_spectrum>`)
+- A :ref:`Line Survey <label_spectrum_linesurvey>` tool to identify which lines correspond to a spectral feature.
 
-RADIS does not include, so far: 
+RADIS does *not* include, so far: 
 
-- line-mixing effects and speed-dependant lineshapes. [HAPI]_ is a Python alternative that does it. 
-- collisional-induced absorption (CIA) or emission. 
-- electronic states other than electronic ground states
+- Line-mixing effects and speed-dependant lineshapes. [HAPI]_ is a Python alternative that does it. 
+- Collisional-induced absorption (CIA) or emission. 
+- Electronic states other than electronic ground states
 - Hamiltonian calculations (a private module for CO2 is available `on request <mailto:erwan.pannier@gmail.com>`__)
 - Raman spectra (contribute in `#43 <https://github.com/radis/radis/issues/43>`__)
+
+RADIS also features: 
+
+- :ref:`High Performances <label_lbl_performance>`: spectra are calculated up to several orders of magnitude faster than equivalent line-by-line codes. 
+- Automatic testing and continuous integration tools for a reliable :ref:`Open-source Development <label_developer_guide>`. 
+- In-the-browser `Online Calculations <https://github.com/radis/radis-examples#interactive-examples>`_ (no install needed). 
 
 Remarks and request for features can be done on `GitHub <https://github.com/radis/radis/issues>`__ ,
 on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ or on the Gitter community chat: 

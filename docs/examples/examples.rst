@@ -4,7 +4,12 @@
 Examples
 ========
 
-Many examples scripts are available on the `radis-examples project <https://github.com/radis/radis-examples>`__. 
+.. toctree::
+   :maxdepth: 3
+   
+   examples
+   
+Many other examples scripts are available on the `radis-examples project <https://github.com/radis/radis-examples>`__. 
 
 
 
@@ -58,6 +63,8 @@ Or start a bare RADIS online session:
 The full list can be found on the `RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project. 
 
 
+.. _label_examples_rovibrational_energies:
+
 Get rovibrational energies
 ==========================
 
@@ -80,6 +87,51 @@ Here we get the energy of the v=6, J=3 level of the 2nd isotope of CO::
     print(CO.Erovib(6, 3))
     >>> 12218.8130906978
 
+.. _label_examples_partition_functions:
+
+Calculate Partition Functions
+=============================
+
+By default and for equilibrium calculations, RADIS calculates Partition Functions
+using the TIPS program through [HAPI]_. These partition functions can be retrieved
+with the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class::
+
+    from radis.levels.partfunc import PartFuncHAPI
+    from radis.io.hitran import get_molecule_identifier
+
+    M = get_molecule_identifier('N2O')
+    iso=1
+
+    Q = PartFuncHAPI(M, iso)
+    print(Q.at(T=1500))
+
+
+RADIS can also be used to compute Partition Functions from rovibrational energies 
+calculated with the built-in 
+:ref:`spectroscopic constants <label_db_spectroscopic_constants>`. 
+
+The calculation uses the :py:meth:`~radis.levels.partfunc.RovibParFuncCalculator.at` 
+method of the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class,
+which reads :py:class:`~radis.db.molecules.Molecules`. 
+A minimal working example is::
+
+    from radis.levels.partfunc import PartFunc_Dunham
+    from radis.db.molecules import Molecules
+    iso=1
+    electronic_state = 'X'
+    S = Molecules['CO2'][iso][electronic_state]
+    Qf = PartFunc_Dunham(S)
+    print(Qf.at(T=3000))     # K 
+
+Nonequilibrium partition functions can also be computed with 
+:py:meth:`~radis.levels.partfunc.RovibParFuncCalculator.at_noneq` ::
+
+    print(Qt.at_noneq(Tvib=2000, Trot=1000))   # K 
+    
+:py:meth:`~radis.levels.partfunc.RovibParFuncCalculator.at_noneq` 
+can also return the vibrational partition function 
+and the table of rotational partition functions for each vibrational
+state. 
 
 .. _label_examples_multitemperature_fit:
 

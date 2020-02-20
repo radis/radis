@@ -175,6 +175,11 @@ class RovibParFuncTabulator(RovibPartitionFunction):
         Q: float
             partition function interpolated  at temperature T
             
+        Examples
+        --------
+        
+        See :ref:`online examples <label_examples_partition_functions>`
+
         See Also
         --------
         
@@ -248,6 +253,10 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         Q: float
             partition function calculated at temperature T
 
+        Examples
+        --------
+        
+        See :ref:`online examples <label_examples_partition_functions>`
 
         See Also
         --------
@@ -339,6 +348,11 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             and table of rotational partition functions for each vibrational
             state (note that all Qrot are not necessarily the same
             for all vibrational levels)
+            
+        Examples
+        --------
+        
+        See :ref:`online examples <label_examples_partition_functions>`
 
         See Also
         --------
@@ -727,6 +741,22 @@ class PartFuncHAPI(RovibParFuncTabulator):
     path: str
         path to ``hapi.py``. If None, RADIS embedded ``hapi.py`` (``radis.io.hapi.py``)
         is used.
+
+    Examples
+    --------
+            
+    ::
+
+        from radis.levels.partfunc import PartFuncHAPI
+        from radis.io.hitran import get_molecule_identifier
+        
+        M = get_molecule_identifier('N2O')
+        iso=1
+        
+        Q = PartFuncHAPI(M, iso)
+        print(Q.at(T=1500))
+
+    See :ref:`online examples <label_examples_partition_functions>` for more.
 
     References
     ----------
