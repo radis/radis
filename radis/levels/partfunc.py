@@ -218,12 +218,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
     electronic_state: :class:`~radis.db.classes.ElectronicState`
         an :class:`~radis.db.classes.ElectronicState` object, which is
-        defined in RADIS molecule database and contains spectroscopic data
+        defined in RADIS molecule database and contains spectroscopic data. 
+        Energies are calculated with the :py:meth:`~radis.db.classes.ElectronicState.Erovib` 
+        method.
 
     See Also
     --------
     
-    :py:class:`~radis.levels.partfunc.PartFunc_Dunham`
+    :py:class:`~radis.levels.partfunc.PartFunc_Dunham`,
+    :py:meth:`~radis.db.classes.ElectronicState.Erovib` 
     """
 
     def __init__(self, electronic_state):
@@ -840,8 +843,11 @@ def _get_cachefile_name(ElecState):
 
 class PartFunc_Dunham(RovibParFuncCalculator):
     """ Calculate partition functions from spectroscopic constants, if
-    molecule data is available in RADIS. Make sure you know what reference data 
-    is being used in RADIS! See molecule list in :data:`~radis.db.classes.Molecules`
+    molecule data is available in RADIS. If using the 
+    :ref:`default spectroscopic constants <label_db_spectroscopic_constants>`, 
+    make sure you know what reference data is being used in RADIS! 
+    Energies are calculated with the :py:meth:`~radis.db.classes.ElectronicState.Erovib` 
+    method of :py:data:`~radis.db.molecules.Molecules`
     
     Parameters
     ----------
@@ -906,8 +912,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     
     See Also
     --------
-    
-    :mod:`~radis.db.molecules`
+
+    :mod:`~radis.db.molecules`, 
+    :py:meth:`~radis.db.classes.ElectronicState.Erovib`, 
+    :py:data:`~radis.db.molecules.Molecules`
+
     """
 
     def __init__(

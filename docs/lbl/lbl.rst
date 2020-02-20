@@ -134,7 +134,7 @@ str: Typical expected format of a ~/.radis entry::
     format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                      # databank text file format. More info in
                                      # SpectrumFactory.load_databank function.
-    parfuncfmt: hapi                 # calculate partition functions
+    parfuncfmt = hapi                # calculate partition functions
 
 In the former example, for equilibrium calculations, RADIS uses HAPI 
 tabulated partition functions. It is also possible to use your own 
@@ -155,7 +155,7 @@ partition functions, for instance::
                                      # interface) is used to retrieve them (valid if
                                      # your databank is HITRAN data). HAPI is embedded 
                                      # into RADIS. Check the version.            
-    parfunc: PATH/TO/cdsd_partition_functions.txt 
+    parfunc = PATH/TO/cdsd_partition_functions.txt 
                                      #  path to tabulated partition function to use.
                                      # If `parfuncfmt` is `hapi` then `parfunc` 
                                      # should be the link to the hapi.py file. If 
@@ -179,9 +179,9 @@ It is also possible to use your own Energy level database. For instance::
                                      # is used (check version)
     levels_iso1 = D:\PATH_TO\energies_of_626_isotope.levels
     levels_iso2 = D:\PATH_TO\energies_of_636_isotope.levels
-    levelsfmt: cdsd                  #  'cdsd', etc. 
+    levelsfmt = cdsd                 #  'cdsd', etc. 
                                      # how to read the previous file. Default None.
-    levelsZPE: 2531.828              #  zero-point-energy (cm-1): offset for all level 
+    levelsZPE = 2531.828             #  zero-point-energy (cm-1): offset for all level 
                                      # energies. Default 0 (if not given)
     
 The full description of a `~/.radis` entry is given in :py:data:`~radis.misc.config.DBFORMAT`:
