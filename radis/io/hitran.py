@@ -322,7 +322,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
         with open(fname) as f:
             mol = get_molecule(int(f.read(2)))
     except UnicodeDecodeError as err:
-        raise UnicodeDecodeError(
+        raise ValueError(
             "You're trying to read a binary file {0} ".format(fname)
             + "instead of an HITRAN file"
         ) from err
