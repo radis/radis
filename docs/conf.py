@@ -221,6 +221,7 @@ html_theme_options = {
     "codecov_button": False,
     "sidebar_includehidden": False,
     "fixed_sidebar": False,
+    "analytics_id": "UA-113616205-1",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
