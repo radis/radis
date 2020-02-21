@@ -157,6 +157,12 @@ For any question, please join the discussion channel on Gitter: |badge_gitter|
 or the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
 
 
+Finally, you can also suggest or vote for new features below:
+
+.. image:: https://feathub.com/radis/radis?format=svg
+   :target: https://feathub.com/radis/radis
+   
+
 
 ---------------------------------------------------------------------
 

@@ -97,3 +97,16 @@ Interfaces
 RADIS includes parsers and interfaces to read and return data in different formats: 
 
 .. include:: thermo.rst
+
+
+New features
+============
+
+RADIS is open-source, so everyone can `contribute <https://github.com/radis/radis/contribute>`__
+to the code development. Read the :ref:`Developer Guide <label_developer_guide>` to get started. 
+
+You can also suggest or vote for new features below:
+
+.. image:: https://feathub.com/radis/radis?format=svg
+   :target: https://feathub.com/radis/radis
+   

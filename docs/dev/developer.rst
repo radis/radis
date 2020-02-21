@@ -44,3 +44,9 @@ or join the community chat:
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
     :alt: Gitter
+
+Finally, you can also suggest or vote for new features below:
+
+.. image:: https://feathub.com/radis/radis?format=svg
+   :target: https://feathub.com/radis/radis
+   

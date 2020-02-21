@@ -56,6 +56,12 @@ or join the community chat:
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/radis-radiation/community)
 
+## Propose new features
+
+You can suggest or vote for new features below:
+
+[![Feature Requests](https://feathub.com/radis/radis?format=svg)](https://feathub.com/radis/radis)
+
 ## License
 By contributing, you agree that your contributions will be licensed under the [GNU Lesser General Public License v3.0](https://github.com/jayanthchandra/radis/blob/develop/LICENSE)
 
