@@ -41,10 +41,39 @@ the flow chart below:
 The detail of the functions that perform each step of the RADIS calculation flow chart 
 is given in :ref:`Architecture <label_dev_architecture>`.
 
+
+Equilibrium Conditions
+----------------------
+
+By default RADIS calculates spectra at thermal equilibrium (one temperature). 
+
+The :py:func:`~radis.lbl.calc.calc_spectrum` function requires a 
+given mole fraction, which may be different from chemical equilibrium. 
+
+You can also compute the chemical equilibrium composition in 
+other codes like [CANTERA]_, and feed the output to 
+RADIS :py:func:`~radis.lbl.calc.calc_spectrum`. The 
+:py:func:`~radis.tools.gascomp.get_eq_mole_fraction` function 
+provides an interace to [CANTERA]_ directly from RADIS ::
+
+    from radis import calc_spectrum, get_eq_mole_fraction
+
+    # calculate gas composition of a 50% CO2, 50% H2O mixture at 1600 K:
+    gas = get_eq_mole_fraction('CO2:0.5, H2O:0.5', 1600, # K 
+                                         1e5  # Pa 
+                               )
+    # calculate the contribution of H2O to the spectrum: 
+    calc_spectrum(..., 
+                  mole_fraction=gas['H2O']
+                  )
+
+ 
+
 Nonequilibrium Calculations
 ---------------------------
 
-Nonequilibrium calculations require to know the vibrational and rotational energies of each 
+Nonequilibrium calculations (multiple temperatures) require to know the 
+vibrational and rotational energies of each 
 level in order to calculate the nonequilibrium populations. 
 
 You can either let RADIS calculate rovibrational energies
