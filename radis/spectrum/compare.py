@@ -704,6 +704,13 @@ def plot_diff(
 
     .. image:: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
+    If you wish to plot in a logscale, it can be done in the following way::
+    
+        fig, [ax0, ax1] = plot_diff(s0, s1, normalize=False, verbose=False)
+        ylim0 = ax0.get_ybound()
+        ax0.set_yscale("log")
+        ax0.set_ybound(ylim0)
+        
     See Also
     --------
 
@@ -1011,7 +1018,7 @@ def plot_diff(
     if save:
         fig.savefig(save)
         if not show:
-            plt.close(fig)  # to avoid memory load if
+            plt.close(fig)  # to avoid memory load
 
     # Return graphs
     return fig, axes
@@ -1091,7 +1098,7 @@ def compare_spectra(
 
     plot: boolean
         if ``True``, use plot_diff to plot all quantities for the 2 spectra
-        and the difference between them. Default ``False``.
+        and the difference between them. Default ``True``.
 
     wunit: 'nm', 'cm-1', 'default'
         in which wavespace to compare (and plot). If default, natural wavespace
