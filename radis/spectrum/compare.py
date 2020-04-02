@@ -385,8 +385,8 @@ def get_residual(
                 norm2 = np.nanmax(s2.get(var)[1])
 
             elif normalize_how == "mean":
-            	norm1 = np.nanmean(s1.get(var, copy=False)[1])
-            	norm2 = np.nanmean(s2.get(var)[1])
+                norm1 = np.nanmean(s1.get(var, copy=False)[1])
+                norm2 = np.nanmean(s2.get(var)[1])
 
             elif normalize_how == "area":
                 norm1 = s1.get_integral(var)
