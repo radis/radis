@@ -67,25 +67,29 @@ def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwa
 
 # %%
 
+
 def test_plotdiff_nan(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     if plot and close_plots:
         import matplotlib.pyplot as plt
-        plt.ion()
-        #plt.close("all")
 
-    s = calc_spectrum(1900, 2300,         # cm-1
-                   molecule='CO',
-                   isotope='1,2,3',
-                   pressure=1.01325,   # bar
-                   Tgas=700,           # K
-                   mole_fraction=0.1,
-                   path_length=1,      # cm
-                   )
-    
-    s=Radiance_noslit(s)  
-    s._q['radiance_noslit'][0] = np.nan
+        plt.ion()
+
+    s = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+    )
+
+    s = Radiance_noslit(s)
+    s._q["radiance_noslit"][0] = np.nan
     if plot:
-        plot_diff(s, s*1.2, normalize=True)
+        plot_diff(s, s * 1.2, normalize=True)
+
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     """ Test procedures
