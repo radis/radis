@@ -383,13 +383,11 @@ def get_residual(
             if normalize_how == "max":
                 norm1 = np.nanmax(s1.get(var, copy=False)[1])
                 norm2 = np.nanmax(s2.get(var)[1])
-                #norm1 = s1.get(var, copy=False)[1].max()
-                #norm2 = s2.get(var)[1].max()
+
             elif normalize_how == "mean":
             	norm1 = np.nanmean(s1.get(var, copy=False)[1])
             	norm2 = np.nanmean(s2.get(var)[1])
-                #norm1 = s1.get(var, copy=False)[1].mean()
-                #norm2 = s2.get(var)[1].mean()
+
             elif normalize_how == "area":
                 norm1 = s1.get_integral(var)
                 norm2 = s2.get_integral(
@@ -785,12 +783,10 @@ def plot_diff(
         s2 = s2.copy()
         w1, I1 = s1.get(var, wunit=wunit, copy=False)
         w2, I2 = s2.get(var, wunit=wunit, copy=False)
-        #ratio = np.max(I1) / np.max(I2)
         ratio = np.nanmax(I1) / np.nanmax(I2)
         I1 /= np.nanmax(I1)
         I2 /= np.nanmax(I2)
-        #I1 /= np.max(I1)
-        #I2 /= np.max(I2)
+
         if verbose:
             print(("Rescale factor: " + str(ratio)))
 
@@ -996,7 +992,7 @@ def plot_diff(
         if show_residual:
             difftext += " (residual={0:.2g})".format(
                 get_residual(
-                    s1, s2, var=var, norm="L2", ignore_nan=True,diff_window=diff_window
+                    s1, s2, var=var, norm="L2", ignore_nan=True, diff_window=diff_window
                 )
             )
         pos = ax1[i].get_position()
