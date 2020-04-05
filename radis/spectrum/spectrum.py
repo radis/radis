@@ -1593,7 +1593,8 @@ class Spectrum(object):
                 wmin, wmax = normalize
                 y = norm_on(y, x, wmin=wmin, wmax=wmax)
             else:
-                y /= y.max()
+                # y /= y.max()
+                y /= np.nanmax(y)
             Iunit = "norm"
 
         set_style("origin")

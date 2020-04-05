@@ -111,6 +111,7 @@ def test_get_residual_nan(verbose=True, plot=True, close_plots=True, *arg, **kwa
     s = Radiance_noslit(s)
     s._q["radiance_noslit"][0] = np.nan
 
+    # These are to be tested
     diff1 = get_residual(
         s,
         s * 1.2,
@@ -119,9 +120,59 @@ def test_get_residual_nan(verbose=True, plot=True, close_plots=True, *arg, **kwa
         normalize=True,
         normalize_how="mean",
     )
-    # diff2 = get_residual(s, s*1.2, var="radiance_noslit", ignore_nan=True, normalize=True, normalize_how="area")
-    print(diff1)
+    diff2 = get_residual(
+        s,
+        s * 1.2,
+        var="radiance_noslit",
+        ignore_nan=True,
+        normalize=True,
+        normalize_how="area",
+    )
     # print(diff2)
+    diff3 = get_residual(
+        s,
+        s * 1.2,
+        var="radiance_noslit",
+        ignore_nan=True,
+        normalize=(2200, 2250),
+        normalize_how="max",
+    )
+    diff4 = get_residual(
+        s,
+        s * 1.2,
+        var="radiance_noslit",
+        ignore_nan=True,
+        normalize=(2200, 2250),
+        normalize_how="mean",
+    )
+    # print(diff2)
+
+
+def test_plot_nan(plot=True, verbose=True, close_plots=True, *args, **kwargs):
+
+    if plot and close_plots:
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+    s = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+    )
+
+    s = Radiance_noslit(s)
+    s._q["radiance_noslit"][0] = np.nan
+
+    # This is to be tested
+    if plot:
+        s.plot(normalize=True)
+        s.plot(normalize=(2200, 2250))
 
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
@@ -130,9 +181,10 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test all Spectrum compare methods
     # ----------------------------------
-    # test_compare_methods(verbose=verbose, plot=plot, *args, **kwargs)
-    # test_plotdiff_nan(verbose=verbose, plot=plot, *args, **kwargs)
+    test_compare_methods(verbose=verbose, plot=plot, *args, **kwargs)
+    test_plotdiff_nan(verbose=verbose, plot=plot, *args, **kwargs)
     test_get_residual_nan(verbose=verbose, plot=plot, *args, **kwargs)
+    test_plot_nan(verbose=verbose, plot=plot, *args, **kwargs)
     return True
 
 

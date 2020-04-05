@@ -25,7 +25,7 @@ Routine Listings
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-from radis.misc.arrays import array_allclose
+from radis.misc.arrays import array_allclose, nantrapz
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
 from radis.spectrum.spectrum import Spectrum, is_spectrum
 from radis.spectrum.utils import format_xlabel, make_up, cast_waveunit
@@ -356,8 +356,11 @@ def get_residual(
             b = (w1 > wmin) & (w1 < wmax)
             if normalize_how == "max":
                 norm1 = I1[b].max()
+                # norm1 = np.nanmax(I1[b])
             elif normalize_how == "mean":
-                norm1 = I1[b].mean()
+                # norm1 = I1[b].mean()
+                # norm1 = np.nanmean()
+                norm1 = I1[b].nanmean()
             elif normalize_how == "area":
                 norm1 = np.abs(np.trapz(I1[b], w1[b]))
             else:
@@ -389,10 +392,15 @@ def get_residual(
                 norm2 = np.nanmean(s2.get(var)[1])
 
             elif normalize_how == "area":
-                norm1 = s1.get_integral(var)
-                norm2 = s2.get_integral(
-                    var, wunit=s1.get_waveunit(), Iunit=s1.units[var]
-                )
+                # norm1 = s1.get_integral(var)
+                # norm2 = s2.get_integral(
+                #    var, wunit=s1.get_waveunit(), Iunit=s1.units[var]
+                # )
+                w1, I1 = s1.get(var, copy=False)
+                norm1 = nantrapz(I1, w1)
+                w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
+                norm2 = nantrapz(I2, w2)
+
             else:
                 raise ValueError(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
