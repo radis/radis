@@ -171,7 +171,7 @@ setup(
         "six",  # python 2-3 compatibility
         "configparser",
         "astroquery>=0.3.9",  # to fetch HITRAN databases
-        "json-tricks>=3.13.6",  # to deal with non jsonable formats
+        "json-tricks>=3.15.0",  # to deal with non jsonable formats
         "tables",  # for pandas to HDF5 export
         "pytest",  # to run test suite
         "h5py",  # to write HDF5 files

@@ -228,6 +228,7 @@ def save(
         with open(fout, "wb") as f:
             json_tricks.dump(
                 sjson, f, compression=True,  # calls gzip compression
+                properties={'ndarray_compact': True}  # use compact numpy format in json-tricks 3.15+
             )
     else:
         with open(fout, "w") as f:
@@ -463,10 +464,10 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
     def _load(binary):
         if not binary:
             with open(file, "r") as f:
-                sload = json_tricks.load(f, preserve_order=False)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
         else:
             with open(file, "rb") as f:
-                sload = json_tricks.load(f, preserve_order=False)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
         return sload
 
     # first try to open with given binary info
