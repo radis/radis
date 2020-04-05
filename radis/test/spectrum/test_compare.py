@@ -128,7 +128,7 @@ def test_get_residual_nan(verbose=True, plot=True, close_plots=True, *arg, **kwa
         normalize=True,
         normalize_how="area",
     )
-    # print(diff2)
+    """
     diff3 = get_residual(
         s,
         s * 1.2,
@@ -137,15 +137,8 @@ def test_get_residual_nan(verbose=True, plot=True, close_plots=True, *arg, **kwa
         normalize=(2200, 2250),
         normalize_how="max",
     )
-    diff4 = get_residual(
-        s,
-        s * 1.2,
-        var="radiance_noslit",
-        ignore_nan=True,
-        normalize=(2200, 2250),
-        normalize_how="mean",
-    )
-    # print(diff2)
+    Write similar testcase for normalize_how="mean"
+    """
 
 
 def test_plot_nan(plot=True, verbose=True, close_plots=True, *args, **kwargs):
