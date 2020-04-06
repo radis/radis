@@ -2122,11 +2122,18 @@ class SpecDatabase(SpecList):
         else:
             raise ValueError("Unvalid Spectrum type: {0}".format(type(spectrum)))
 
+        # PREVIOUS VERSION (with reloading)
         # Then, load the Spectrum again (so we're sure it works!) and add the
         # information to the database
-        self.df = self.df.append(
-            self._load_file(file, binary=compress), ignore_index=True
-        )
+        # self.df = self.df.append(
+        #     self._load_file(file, binary=compress), ignore_index=True
+        # )
+
+        # NEW VERSION (no reloading)
+        out = spectrum.get_conditions().copy()
+        # Add filename, and a link to the Spectrum object itself
+        out.update({"file": basename(file), "Spectrum": spectrum})
+        self.df = self.df.append(out, ignore_index=True)
 
         # Update index .csv
         self.print_index()
