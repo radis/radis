@@ -28,8 +28,7 @@ import sys
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.tools.database import load_spec
-from radis.misc.utils import DatabankNotFound
-from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
+from radis.test.utils import setup_test_line_databases
 from os.path import basename, exists
 
 fig_prefix = basename(__file__) + ": "
@@ -78,9 +77,6 @@ def test_load_spectrum(plot=False, verbose=True, warnings=True, *args, **kwargs)
             plt.legend()
 
         assert s1.compare_with(s2, spectra_only=True, plot=False)
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
 
     finally:  # cleaning
         if exists(temp_file_name):
@@ -139,9 +135,6 @@ def test_load_lines_pops(plot=False, verbose=True, warnings=True, *args, **kwarg
     #        from json_tricks import dumps, loads
     #        s2b = loads(dumps(s1))
     #        assert s1.compare_with(s2b, spectra_only=False, plot=False)
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
 
     finally:  # cleaning
         if exists(temp_file_name):

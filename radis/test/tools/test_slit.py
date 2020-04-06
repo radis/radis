@@ -33,11 +33,8 @@ from radis.phys.units import is_homogeneous
 from radis.phys.convert import dcm2dnm, dnm2dcm
 from radis.misc.printer import printm
 from radis.lbl.factory import SpectrumFactory
-from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
-from radis.misc.utils import DatabankNotFound
+from radis.test.utils import setup_test_line_databases
 
-# from radis.misc.utils import DatabankNotFound
-# from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import sqrt, linspace, abs, trapz
@@ -679,107 +676,102 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    try:
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
-        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    plCO = SpectrumFactory(
+        wavenum_min=2230,
+        wavenum_max=2260,
+        mole_fraction=0.02,
+        path_length=100,  # cm
+        broadening_max_width=20,  # cm^-1
+        wstep=0.02,
+        isotope=[1, 2, 3],
+        verbose=verbose,
+    )
+    plCO.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    plCO.load_databank("HITRAN-CO-TEST")
+    sCO = plCO.eq_spectrum(Tgas=300)
 
-        plCO = SpectrumFactory(
-            wavenum_min=2230,
-            wavenum_max=2260,
-            mole_fraction=0.02,
-            path_length=100,  # cm
-            broadening_max_width=20,  # cm^-1
-            wstep=0.02,
-            isotope=[1, 2, 3],
-            verbose=verbose,
+    w_nm, T_nm = sCO.get("transmittance_noslit", wunit="nm")
+    w_nm, I_nm = sCO.get("radiance_noslit", wunit="nm", Iunit="mW/cm2/sr/nm")
+    sCO_nm = transmittance_spectrum(
+        w_nm, T_nm, wunit="nm"
+    )  # a new spectrum stored in nm
+    # sCO_nm = theoretical_spectrum(w_nm, I_nm, wunit='nm', Iunit='mW/cm2/sr/nm') #  a new spectrum stored in nm
+
+    if plot:
+        fig = plt.figure(fig_prefix + "auto-resampling")
+        sCO.plot(
+            "transmittance_noslit",
+            wunit="cm-1",
+            nfig=fig.number,
+            marker="o",
+            color="k",
+            lw=3,
+            ms=10,
+            label="(stored in cm-1)",
         )
-        plCO.warnings["MissingSelfBroadeningWarning"] = "ignore"
-        plCO.load_databank("HITRAN-CO-TEST")
-        sCO = plCO.eq_spectrum(Tgas=300)
+        plt.title("No slit function")
+        sCO_nm.plot(
+            "transmittance_noslit",
+            wunit="cm-1",
+            nfig=fig.number,
+            marker="o",
+            color="r",
+            label="(stored in nm)",
+        )
+        #            plt.xlim((2246.58, 2247.52))
+        #            plt.ylim((0.87, 1.01))
+        plt.legend()
 
-        w_nm, T_nm = sCO.get("transmittance_noslit", wunit="nm")
-        w_nm, I_nm = sCO.get("radiance_noslit", wunit="nm", Iunit="mW/cm2/sr/nm")
-        sCO_nm = transmittance_spectrum(
-            w_nm, T_nm, wunit="nm"
-        )  # a new spectrum stored in nm
-        # sCO_nm = theoretical_spectrum(w_nm, I_nm, wunit='nm', Iunit='mW/cm2/sr/nm') #  a new spectrum stored in nm
+    slit_function = 0.8
+    slit_unit = "cm-1"
+    sCO.apply_slit(slit_function, unit=slit_unit)
+    sCO_nm.apply_slit(slit_function, unit=slit_unit)
 
-        if plot:
-            fig = plt.figure(fig_prefix + "auto-resampling")
-            sCO.plot(
-                "transmittance_noslit",
-                wunit="cm-1",
-                nfig=fig.number,
-                marker="o",
-                color="k",
-                lw=3,
-                ms=10,
-                label="(stored in cm-1)",
-            )
-            plt.title("No slit function")
-            sCO_nm.plot(
-                "transmittance_noslit",
-                wunit="cm-1",
-                nfig=fig.number,
-                marker="o",
-                color="r",
-                label="(stored in nm)",
-            )
-            #            plt.xlim((2246.58, 2247.52))
-            #            plt.ylim((0.87, 1.01))
-            plt.legend()
-
-        slit_function = 0.8
-        slit_unit = "cm-1"
-        sCO.apply_slit(slit_function, unit=slit_unit)
-        sCO_nm.apply_slit(slit_function, unit=slit_unit)
-
-        if plot:
-            fig = plt.figure(fig_prefix + "auto-resampling (after convolution)")
-            sCO.plot(
-                "transmittance",
-                wunit="cm-1",
-                nfig=fig.number,
-                marker="o",
-                color="k",
-                lw=3,
-                ms=10,
-                label="(stored in cm-1)",
-            )
-            plt.title("Slit function: {0} {1}".format(slit_function, slit_unit))
-            sCO_nm.plot(
-                "transmittance",
-                wunit="cm-1",
-                nfig=fig.number,
-                marker="o",
-                color="r",
-                label="(stored in nm)",
-            )
-
-            #            plt.xlim((2246.58, 2247.52))
-            #            plt.ylim((0.87, 1.01))
-            plt.legend()
-
-        w_conv, T_conv = sCO.get("transmittance", wunit="cm-1")
-        w_nm_conv, T_nm_conv = sCO_nm.get("transmittance", wunit="cm-1")
-
-        error = abs(
-            (trapz(1 - T_conv, w_conv) - trapz(1 - T_nm_conv, w_nm_conv))
-            / trapz(1 - T_nm_conv, w_nm_conv)
+    if plot:
+        fig = plt.figure(fig_prefix + "auto-resampling (after convolution)")
+        sCO.plot(
+            "transmittance",
+            wunit="cm-1",
+            nfig=fig.number,
+            marker="o",
+            color="k",
+            lw=3,
+            ms=10,
+            label="(stored in cm-1)",
+        )
+        plt.title("Slit function: {0} {1}".format(slit_function, slit_unit))
+        sCO_nm.plot(
+            "transmittance",
+            wunit="cm-1",
+            nfig=fig.number,
+            marker="o",
+            color="r",
+            label="(stored in nm)",
         )
 
-        if verbose:
-            printm("\n>>> _test_resampling\n")
-        if verbose:
-            printm(
-                "Error between 2 spectra ({0:.2f}%) < {1:.2f}%: {2}".format(
-                    error * 100, rtol * 100, bool(error < rtol)
-                )
-            )
-        assert bool(error < rtol)
+        #            plt.xlim((2246.58, 2247.52))
+        #            plt.ylim((0.87, 1.01))
+        plt.legend()
 
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    w_conv, T_conv = sCO.get("transmittance", wunit="cm-1")
+    w_nm_conv, T_nm_conv = sCO_nm.get("transmittance", wunit="cm-1")
+
+    error = abs(
+        (trapz(1 - T_conv, w_conv) - trapz(1 - T_nm_conv, w_nm_conv))
+        / trapz(1 - T_nm_conv, w_nm_conv)
+    )
+
+    if verbose:
+        printm("\n>>> _test_resampling\n")
+    if verbose:
+        printm(
+            "Error between 2 spectra ({0:.2f}%) < {1:.2f}%: {2}".format(
+                error * 100, rtol * 100, bool(error < rtol)
+            )
+        )
+    assert bool(error < rtol)
 
 
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):

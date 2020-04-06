@@ -34,8 +34,7 @@ from radis.spectrum import Spectrum, plot_diff, get_residual
 from radis import SpectrumFactory
 from radis.test.utils import getValidationCase
 from radis.misc.printer import printm
-from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
-from radis.misc.utils import DatabankNotFound
+from radis.test.utils import setup_test_line_databases
 from os.path import join
 
 
@@ -56,63 +55,58 @@ def test_klarenaar_validation_case(
 
     setup_test_line_databases()
 
-    try:
-        # %% Data from Dang, adapted by Klarenaar
-        s_exp = Spectrum.from_txt(
-            getValidationCase(
-                join(
-                    "test_CO2_3Tvib_vs_klarenaar_data",
-                    "klarenaar_2017_digitized_data.csv",
-                )
-            ),
-            "transmittance_noslit",
-            waveunit="cm-1",
-            unit="I/I0",
-            delimiter=",",
-            name="Klarenaar 2017",
-        )
+    # %% Data from Dang, adapted by Klarenaar
+    s_exp = Spectrum.from_txt(
+        getValidationCase(
+            join(
+                "test_CO2_3Tvib_vs_klarenaar_data", "klarenaar_2017_digitized_data.csv",
+            )
+        ),
+        "transmittance_noslit",
+        waveunit="cm-1",
+        unit="I/I0",
+        delimiter=",",
+        name="Klarenaar 2017",
+    )
 
-        # %% Calculate Klarenaar test case conditions
+    # %% Calculate Klarenaar test case conditions
 
-        sf = SpectrumFactory(
-            2284.2,
-            2284.6,
-            wstep=0.001,  # cm-1
-            pressure=20 * 1e-3,  # bar
-            db_use_cached=True,
-            cutoff=1e-25,
-            molecule="CO2",
-            isotope="1,2",
-            path_length=10,  # cm-1
-            # warning! 10% in mass fraction -> less in mole fraction
-            mole_fraction=0.1 * 28.97 / 44.07,
-            broadening_max_width=1,  # cm-1
-            medium="vacuum",
-            export_populations="vib",
-        )
-        sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-        #        sf.load_databank('HITEMP-CO2-DUNHAM')
-        sf.load_databank("HITEMP-CO2-TEST")
+    sf = SpectrumFactory(
+        2284.2,
+        2284.6,
+        wstep=0.001,  # cm-1
+        pressure=20 * 1e-3,  # bar
+        db_use_cached=True,
+        cutoff=1e-25,
+        molecule="CO2",
+        isotope="1,2",
+        path_length=10,  # cm-1
+        # warning! 10% in mass fraction -> less in mole fraction
+        mole_fraction=0.1 * 28.97 / 44.07,
+        broadening_max_width=1,  # cm-1
+        medium="vacuum",
+        export_populations="vib",
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    #        sf.load_databank('HITEMP-CO2-DUNHAM')
+    sf.load_databank("HITEMP-CO2-TEST")
 
-        # Calculate with Klarenaar fitted values
-        T12 = 517
-        T3 = 2641
-        Trot = 491
+    # Calculate with Klarenaar fitted values
+    T12 = 517
+    T3 = 2641
+    Trot = 491
 
-        s = sf.non_eq_spectrum(
-            (T12, T12, T3), Trot, Ttrans=Trot, vib_distribution="treanor", name="RADIS"
-        )
+    s = sf.non_eq_spectrum(
+        (T12, T12, T3), Trot, Ttrans=Trot, vib_distribution="treanor", name="RADIS"
+    )
 
-        if plot:
-            plot_diff(s, s_exp, "transmittance_noslit")
-        #        plt.savefig('test_CO2_3Tvib_vs_klarenaar.png')
+    if plot:
+        plot_diff(s, s_exp, "transmittance_noslit")
+    #        plt.savefig('test_CO2_3Tvib_vs_klarenaar.png')
 
-        assert get_residual(s, s_exp, "transmittance_noslit", ignore_nan=True) < 0.003
+    assert get_residual(s, s_exp, "transmittance_noslit", ignore_nan=True) < 0.003
 
-        return True
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    return True
 
 
 if __name__ == "__main__":
