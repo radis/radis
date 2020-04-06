@@ -352,17 +352,16 @@ def get_residual(
 
         if isinstance(normalize, tuple):
             wmin, wmax = normalize
-            w1, I1 = s1.get(var, copy=False)  # (faster not to copy)
+            w1, I1 = s1.get(
+                var, copy=False, wunit=s1.get_waveunit()
+            )  # (faster not to copy)
             b = (w1 > wmin) & (w1 < wmax)
             if normalize_how == "max":
-                norm1 = I1[b].max()
-                # norm1 = np.nanmax(I1[b])
+                norm1 = np.nanmax(I1[b])
             elif normalize_how == "mean":
-                # norm1 = I1[b].mean()
-                # norm1 = np.nanmean()
-                norm1 = I1[b].nanmean()
+                norm1 = np.nanmean(I2[b])
             elif normalize_how == "area":
-                norm1 = np.abs(np.trapz(I1[b], w1[b]))
+                norm1 = np.abs(nantrapz(I1[b], w1[b]))
             else:
                 raise ValueError(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
@@ -371,11 +370,11 @@ def get_residual(
             w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
             b = (w2 > wmin) & (w2 < wmax)
             if normalize_how == "max":
-                norm2 = I2[b].max()
+                norm2 = np.nanmax(I2[b])
             elif normalize_how == "mean":
-                norm2 = I2[b].mean()
+                norm2 = np.nanmean(I2[b])
             elif normalize_how == "area":
-                norm2 = np.abs(np.trapz(I2[b], w2[b]))
+                norm2 = np.abs(nantrapz(I2[b], w2[b]))
             else:
                 raise ValueError(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
