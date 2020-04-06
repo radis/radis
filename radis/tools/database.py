@@ -227,8 +227,12 @@ def save(
     if compress:
         with open(fout, "wb") as f:
             json_tricks.dump(
-                sjson, f, compression=True,  # calls gzip compression
-                properties={'ndarray_compact': True}  # use compact numpy format in json-tricks 3.15+
+                sjson,
+                f,
+                compression=True,  # calls gzip compression
+                properties={
+                    "ndarray_compact": True
+                },  # use compact numpy format in json-tricks 3.15+
             )
     else:
         with open(fout, "w") as f:
