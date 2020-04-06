@@ -331,10 +331,14 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
     config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
 
     # Optional:
+    # ... partition functions:
+    if "parfunc" in dict_entries:
+        config[dbname]["parfunc"] = dict_entries.pop("parfunc")
+
     # ... Split all isotopes in separate keys
     levels_dict = dict_entries.pop("levels", {})
     for iso, levels_iso in levels_dict.items():
-        dict_entries["levels_iso{0}".format(iso)] = levels_iso
+        config[dbname]["levels_iso{0}".format(iso)] = levels_iso
 
     if "levelsfmt" in dict_entries:
         config[dbname]["levelsfmt"] = dict_entries.pop("levelsfmt")

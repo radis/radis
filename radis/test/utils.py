@@ -33,6 +33,7 @@ from radis.misc.config import (
     addDatabankEntries,
     diffDatabankEntries,
 )
+from radis.db.utils import getFile
 from radis.misc.utils import FileNotFoundError
 from radis.misc.printer import printr
 from os.path import join, dirname
@@ -98,6 +99,16 @@ TEST_DATABASES = {
         "format": "cdsd-hitemp",  # CDSD-HITEMP version (same lines as HITEMP-2010).
         "parfuncfmt": "hapi",
         "levelsfmt": "radis",
+    },
+    "HITEMP-CO2-HAMIL-TEST": {
+        "info": "HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), "
+        + "2283.7-2285.1 cm-1, energies calculated from Tashkun effective hamiltonian",
+        "path": [getTestFile(r"cdsd_hitemp_09_fragment.txt")],
+        "format": "cdsd-hitemp",  # CDSD-HITEMP version (same lines as HITEMP-2010).
+        "parfunc": getFile("CO2", "partition_functions.txt"),
+        "parfuncfmt": "cdsd",
+        "levels": {1: getTestFile(r"co2_cdsd_hamiltonian_fragment.levels")},
+        "levelsfmt": "cdsd-hamil",
     },
 }
 """dict: test databases added in the :ref:`Configuration file <label_lbl_config_file>`
