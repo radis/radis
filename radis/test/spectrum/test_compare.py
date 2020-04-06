@@ -22,6 +22,7 @@ import numpy as np
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
 from radis.spectrum.compare import get_distance, plot_diff
+from radis import calc_spectrum, plot_diff, Radiance_noslit, get_residual
 
 # Test routines
 
@@ -67,6 +68,59 @@ def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwa
 # %%
 
 
+def test_plot_compare_with_nan(
+    plot=True, verbose=True, close_plots=True, *args, **kwargs
+):
+
+    if plot and close_plots:
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+    s = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+    )
+
+    s = Radiance_noslit(s)
+    s._q["radiance_noslit"][0] = np.nan
+
+    # Test get_residual methods when there are nans in the spectra
+    diff1 = get_residual(
+        s,
+        s * 1.2,
+        var="radiance_noslit",
+        ignore_nan=True,
+        normalize=True,
+        normalize_how="mean",
+    )
+    diff2 = get_residual(
+        s,
+        s * 1.2,
+        var="radiance_noslit",
+        ignore_nan=True,
+        normalize=True,
+        normalize_how="area",
+    )
+    # TODO Write similar testcase for normalize_how="mean"
+
+    # Test Plot function when there are Nans in the spectrum:
+    if plot:
+        s.plot(normalize=True)
+        s.plot(normalize=(2200, 2250))
+
+    # Test plot_diff function when there are Nans in the spectra:
+    if plot:
+        plot_diff(s, s * 1.2, normalize=True)
+        plot_diff(s, s * 1.2, "radiance_noslit", normalize=(2000, 2100))
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     """ Test procedures
     """
@@ -74,6 +128,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     # Test all Spectrum compare methods
     # ----------------------------------
     test_compare_methods(verbose=verbose, plot=plot, *args, **kwargs)
+    test_plot_compare_with_nan(verbose=verbose, plot=True, *args, **kwargs)
     return True
 
 
