@@ -486,6 +486,9 @@ def save_to_hdf(
         for k, v in metadata.items():
             hf.attrs[k] = v
 
+        if verbose >= 3:
+            print("... saved {0} with metadata: {1}".format(fname, metadata))
+
     except:
         raise
 

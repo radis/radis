@@ -9,7 +9,7 @@ from __future__ import absolute_import, unicode_literals, division, print_functi
 from radis.lbl import SpectrumFactory
 from radis.misc.utils import DatabankNotFound
 from radis.misc.printer import printm
-from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
+from radis.test.utils import setup_test_line_databases
 from radis.phys.convert import cm2nm
 import pytest
 import numpy as np
@@ -22,72 +22,146 @@ import matplotlib.pyplot as plt
 
 @pytest.mark.fast
 def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
-    """ See wavelength difference in air and vacuum """
+    """ Compare populations calculated in the nonequilibrium module 
+    with hardcoded values"""
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    try:
-        if verbose:
-            printm(">>> _test_media_line_shift")
+    if verbose:
+        printm(">>> _test_media_line_shift")
 
-        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
-        sf = SpectrumFactory(
-            wavelength_min=4500,
-            wavelength_max=4600,
-            wstep=0.001,
-            parallel=False,
-            bplot=False,
-            cutoff=1e-30,
-            path_length=0.1,
-            mole_fraction=400e-6,
-            isotope=[1],
-            db_use_cached=True,
-            medium="vacuum",
-            broadening_max_width=10,
-            export_populations="rovib",
-            verbose=verbose,
-        )
-        sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-        sf.load_databank("HITRAN-CO-TEST")
+    sf = SpectrumFactory(
+        wavelength_min=4500,
+        wavelength_max=4600,
+        wstep=0.001,
+        parallel=False,
+        bplot=False,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=400e-6,
+        isotope=[1],
+        db_use_cached=True,
+        medium="vacuum",
+        broadening_max_width=10,
+        export_populations="rovib",
+        verbose=verbose,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.load_databank("HITRAN-CO-TEST")
 
-        # Populations cannot be calculated at equilibrium (no access to energy levels)
-        s = sf.eq_spectrum(300)
-        with pytest.raises(ValueError):  # .. we expect this error here!
-            pops = s.get_populations("CO", isotope=1, electronic_state="X")
-
-        # Calculate populations using the non-equilibrium module:
-        s = sf.non_eq_spectrum(300, 300)
+    # Populations cannot be calculated at equilibrium (no access to energy levels)
+    s = sf.eq_spectrum(300)
+    with pytest.raises(ValueError):  # .. we expect this error here!
         pops = s.get_populations("CO", isotope=1, electronic_state="X")
-        if not "n" in list(pops["rovib"].keys()):
-            raise ValueError("Populations not calculated")
-        if plot:
-            s.plot_populations()
 
-        # Compare with factory
-        # Plot populations:
-        with pytest.raises(ValueError):
-            sf.plot_populations()  # no isotope given: error expected
-        if plot:
-            sf.plot_populations("rovib", isotope=1)
-            plt.close()  # no need to keep it open, we just tested the function
+    # Calculate populations using the non-equilibrium module:
+    s = sf.non_eq_spectrum(300, 300)
+    pops = s.get_populations("CO", isotope=1, electronic_state="X")
+    if not "n" in list(pops["rovib"].keys()):
+        raise ValueError("Populations not calculated")
+    if plot:
+        s.plot_populations()
 
-        # Test calculated quantities are there
-        assert hasattr(sf.df1, "Qref")
-        assert hasattr(sf.df1, "Qvib")
-        assert hasattr(sf.df1, "Qrotu")
-        assert hasattr(sf.df1, "Qrotl")
+    # Compare with factory
+    # Plot populations:
+    with pytest.raises(ValueError):
+        sf.plot_populations()  # no isotope given: error expected
+    if plot:
+        sf.plot_populations("rovib", isotope=1)
+        plt.close()  # no need to keep it open, we just tested the function
 
-        # Test hardcoded populations
-        assert np.isclose(pops["rovib"]["n"].iloc[0], 0.0091853446840826653)
-        assert np.isclose(pops["rovib"]["n"].iloc[1], 0.027052543988733215)
-        assert np.isclose(pops["rovib"]["n"].iloc[2], 0.04345502115897712)
+    # Test calculated quantities are there
+    assert hasattr(sf.df1, "Qref")
+    assert hasattr(sf.df1, "Qvib")
+    assert hasattr(sf.df1, "Qrotu")
+    assert hasattr(sf.df1, "Qrotl")
 
-        return True
+    # Test hardcoded populations
+    assert np.isclose(pops["rovib"]["n"].iloc[0], 0.0091853446840826653)
+    assert np.isclose(pops["rovib"]["n"].iloc[1], 0.027052543988733215)
+    assert np.isclose(pops["rovib"]["n"].iloc[2], 0.04345502115897712)
 
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    return True
+
+
+@pytest.mark.fast
+def test_populations_CO2_hamiltonian(
+    plot=True, verbose=True, warnings=True, *args, **kwargs
+):
+    """ Calculate nonequilibrium modes with the CO2 Hamiltonian 
+    
+    ..warning::
+        
+        as we only use a reduced set of the CO2 effective Hamiltonian (< 3000 cm-1), 
+        many levels of the Line Database will not appear in the Levels Database. 
+        We will need to either filter the Line Database beforehand, or run it 
+        a first time and remove all levels not found.
+        
+        This database is obviously not to be used in a Production code! 
+    
+    """
+
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+    if verbose:
+        printm(">>> _test_media_line_shift")
+
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+
+    sf = SpectrumFactory(
+        wavenum_min=2283.7,
+        wavenum_max=2285.1,
+        wstep=0.001,
+        parallel=False,
+        bplot=False,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=400e-6,
+        isotope=[1],
+        db_use_cached=True,
+        medium="vacuum",
+        broadening_max_width=10,
+        export_populations="rovib",
+        verbose=verbose,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.load_databank("HITEMP-CO2-HAMIL-TEST")
+
+    # First run a calculation at equilibrium
+    s = sf.eq_spectrum(300)
+    s.name = "equilibrium"
+
+    # Now generate vibrational energies for a 2-T model
+    # ... Note that this is arbitrary. Lookup Pannier & Dubuet 2020 for more.
+    levels = sf.parsum_calc["CO2"][1]["X"].df
+    levels["Evib"] = levels.Evib1 + levels.Evib2 + levels.Evib3
+
+    # Calculate populations using the non-equilibrium module:
+    # This will crash the first time (see error in docstrings of the function).
+    try:
+        sf.non_eq_spectrum(300, 300)
+    except AssertionError:
+        sf.df0.dropna(inplace=True)
+
+    # Retry:
+    s_noneq = sf.non_eq_spectrum(300, 300)
+    s_noneq.name = "nonequilibrium"
+
+    # Tests:
+
+    #    s.compare_with(s_noneq, plot=plot)
+    assert s_noneq.get_power() > 0
+    # TODO: implement actual Assertions (right now we're just checking that
+    # functions are properly parsed)
+
+    # TODO. Fix below (and move in dedicated test):
+    #    s.line_survey()
+
+    return True
 
 
 # @pytest.mark.needs_connection
@@ -330,6 +404,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 def _run_testcases(verbose=True, plot=True):
 
     test_populations(plot=plot, verbose=verbose)
+    test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
     test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
     test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
 
