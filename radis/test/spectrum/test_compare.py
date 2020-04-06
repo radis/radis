@@ -128,17 +128,33 @@ def test_get_residual_nan(verbose=True, plot=True, close_plots=True, *arg, **kwa
         normalize=True,
         normalize_how="area",
     )
-    """
-    diff3 = get_residual(
-        s,
-        s * 1.2,
-        var="radiance_noslit",
-        ignore_nan=True,
-        normalize=(2200, 2250),
-        normalize_how="max",
+    # Write similar testcase for normalize_how="mean"
+
+
+def test_get_residual_on_range(
+    plot=True, verbose=True, close_plot=True, *args, **kwargs
+):
+    if plot and close_plot:
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+
+    s = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
     )
-    Write similar testcase for normalize_how="mean"
-    """
+
+    s = Radiance_noslit(s)
+    s._q["radiance_noslit"][0] = np.nan
+
+    if plot:
+        plot_diff(s, s * 1.2, "radiance_noslit", normalize=(2000, 2100))
 
 
 def test_plot_nan(plot=True, verbose=True, close_plots=True, *args, **kwargs):
@@ -178,6 +194,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_plotdiff_nan(verbose=verbose, plot=plot, *args, **kwargs)
     test_get_residual_nan(verbose=verbose, plot=plot, *args, **kwargs)
     test_plot_nan(verbose=verbose, plot=plot, *args, **kwargs)
+    test_get_residual_on_range(verbose=verbose, plot=True, *args, **kwargs)
     return True
 
 
