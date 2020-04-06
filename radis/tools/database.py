@@ -1642,7 +1642,7 @@ class SpecList(object):
         ax.plot(x, y, "ok")
         ax.set_xlabel(cond_x)
         ax.set_ylabel(cond_y)
-        title = basename(self.path)
+        title = self.name
 
         # Overlay color
         if z_value is not None:
@@ -1808,23 +1808,20 @@ class SpecDatabase(SpecList):
         if ext != "":
             raise ValueError("Database should be a directory: {0}".format(path))
 
+        self.name = basename(abspath(name))
+        self.path = path
+
         if not exists(path):
             # create it
             os.mkdir(path)
             if verbose:
                 print(
-                    (
-                        "Database {0} initialised in {1}".format(
-                            basename(path), dirname(path)
-                        )
-                    )
+                    ("Database {0} initialised in {1}".format(self.name, dirname(path)))
                 )
         else:
             if verbose:
-                print(("Loading database {0}".format(basename(path))))
+                print(("Loading database {0}".format(self.name)))
 
-        self.name = basename(name)
-        self.path = path
         #        self.df = None               # created in SpecList.__init__()
         #        self.verbose = verbose       # created in SpecList.__init__()
         self.binary = binary
@@ -1928,7 +1925,7 @@ class SpecDatabase(SpecList):
 
     def print_index(self, file=None):
         if file is None:
-            file = join(self.path, basename(self.path) + ".csv")
+            file = join(self.path, self.name + ".csv")
 
         if len(self) > 0:
             try:
