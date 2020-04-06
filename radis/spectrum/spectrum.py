@@ -3361,7 +3361,7 @@ class Spectrum(object):
 
         plot: boolean
             if ``True``, use plot_diff to plot all quantities for the 2 spectra
-            and the difference between them. Default ``False``.
+            and the difference between them. Default ``True``.
 
         wunit: 'nm', 'cm-1', 'default'
             in which wavespace to compare (and plot). If default, natural wavespace

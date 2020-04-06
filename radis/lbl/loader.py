@@ -885,7 +885,9 @@ class DatabankLoader(object):
 
         frames = []  # lines for all isotopes
         for iso in isotope_list:
-            df = fetch_astroquery(molecule, iso, wavenum_min, wavenum_max)
+            df = fetch_astroquery(
+                molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
+            )
             frames.append(df)
 
         # Merge

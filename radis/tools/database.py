@@ -227,7 +227,12 @@ def save(
     if compress:
         with open(fout, "wb") as f:
             json_tricks.dump(
-                sjson, f, compression=True,  # calls gzip compression
+                sjson,
+                f,
+                compression=True,  # calls gzip compression
+                properties={
+                    "ndarray_compact": True
+                },  # use compact numpy format in json-tricks 3.15+
             )
     else:
         with open(fout, "w") as f:
@@ -463,10 +468,10 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
     def _load(binary):
         if not binary:
             with open(file, "r") as f:
-                sload = json_tricks.load(f, preserve_order=False)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
         else:
             with open(file, "rb") as f:
-                sload = json_tricks.load(f, preserve_order=False)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
         return sload
 
     # first try to open with given binary info
@@ -1637,7 +1642,7 @@ class SpecList(object):
         ax.plot(x, y, "ok")
         ax.set_xlabel(cond_x)
         ax.set_ylabel(cond_y)
-        title = basename(self.path)
+        title = self.name
 
         # Overlay color
         if z_value is not None:
@@ -1803,23 +1808,20 @@ class SpecDatabase(SpecList):
         if ext != "":
             raise ValueError("Database should be a directory: {0}".format(path))
 
+        self.name = basename(abspath(name))
+        self.path = path
+
         if not exists(path):
             # create it
             os.mkdir(path)
             if verbose:
                 print(
-                    (
-                        "Database {0} initialised in {1}".format(
-                            basename(path), dirname(path)
-                        )
-                    )
+                    ("Database {0} initialised in {1}".format(self.name, dirname(path)))
                 )
         else:
             if verbose:
-                print(("Loading database {0}".format(basename(path))))
+                print(("Loading database {0}".format(self.name)))
 
-        self.name = basename(name)
-        self.path = path
         #        self.df = None               # created in SpecList.__init__()
         #        self.verbose = verbose       # created in SpecList.__init__()
         self.binary = binary
@@ -1923,7 +1925,7 @@ class SpecDatabase(SpecList):
 
     def print_index(self, file=None):
         if file is None:
-            file = join(self.path, basename(self.path) + ".csv")
+            file = join(self.path, self.name + ".csv")
 
         if len(self) > 0:
             try:
@@ -2117,11 +2119,18 @@ class SpecDatabase(SpecList):
         else:
             raise ValueError("Unvalid Spectrum type: {0}".format(type(spectrum)))
 
+        # PREVIOUS VERSION (with reloading)
         # Then, load the Spectrum again (so we're sure it works!) and add the
         # information to the database
-        self.df = self.df.append(
-            self._load_file(file, binary=compress), ignore_index=True
-        )
+        # self.df = self.df.append(
+        #     self._load_file(file, binary=compress), ignore_index=True
+        # )
+
+        # NEW VERSION (no reloading)
+        out = spectrum.get_conditions().copy()
+        # Add filename, and a link to the Spectrum object itself
+        out.update({"file": basename(file), "Spectrum": spectrum})
+        self.df = self.df.append(out, ignore_index=True)
 
         # Update index .csv
         self.print_index()

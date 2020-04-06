@@ -653,6 +653,16 @@ In :func:`~radis.spectrum.compare.plot_diff`, you can choose to plot the absolut
     :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
 
+Plot in log scale
+-----------------
+
+If you wish to plot in a logscale, it can be done in the following way:'::
+
+    fig, [ax0, ax1] = plot_diff(s_expe, s_test, normalize=False, verbose=False)
+    ylim0 = ax0.get_ybound()
+    ax0.set_yscale("log")
+    ax0.set_ybound(ylim0)
+
 Fit an experimental spectrum
 ----------------------------
 
