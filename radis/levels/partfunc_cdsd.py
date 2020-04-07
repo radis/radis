@@ -61,6 +61,11 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
 
     Partition function calculated in CDSD by direct summation (Jmax=300)
 
+    See Also
+    --------
+    
+    :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
+
     """
 
     def __init__(self, isotope, database):
@@ -123,9 +128,12 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
 
 class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
     """ Calculate Partition Function from energy levels (and maybe export
-    a tabulated database). Note: normally, ZPE (zero point energy) has
-    already been taken into account in both the transition database and the
-    energy database.
+    a tabulated database). 
+    
+    warning::
+        ZPE (zero point energy) must be the same in the Line Database and the
+        Energy levels database. See the 
+        :ref:`Configuration file <label_lbl_config_file>`.
 
     Parameters
     ----------
@@ -197,7 +205,13 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         0	1	4	1	1	7.804	0.000	7.804	0
         0	1	6	1	1	16.389	0.000	16.389	0
         0	1	8	1	1	28.095	0.000	28.095	0
+        
+    See an example in `test/files/co2_cdsd_hamiltonian_fragment.levels <https://github.com/radis/radis/blob/develop/radis/test/files/cdsd_hitemp_09_fragment.txt>`
 
+    See Also
+    --------
+    
+    :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDtab`
 
     """
 

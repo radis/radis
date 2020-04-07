@@ -24,8 +24,7 @@ import astropy.units as u
 import radis
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
-from radis.misc.utils import DatabankNotFound
-from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
+from radis.test.utils import setup_test_line_databases
 from radis.spectrum import Spectrum
 import numpy as np
 import matplotlib.pyplot as plt
@@ -143,114 +142,109 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    try:
-        from time import time
+    from time import time
 
-        t0 = time()
-        if verbose:
-            printm(">>> _test_spec_generation")
+    t0 = time()
+    if verbose:
+        printm(">>> _test_spec_generation")
 
-        # This is how you get a spectrum (see calc.py for front-end functions
-        # that do just that)
-        sf = SpectrumFactory(
-            wavelength_min=4150,
-            wavelength_max=4400,
-            parallel=False,
-            bplot=False,
-            cutoff=1e-27,
-            isotope="1,2",
-            db_use_cached=True,
-            broadening_max_width=50,
-            #                             chunksize='DLM',
-            #                             pseudo_continuum_threshold=0.01,
-            medium="vacuum",
-            verbose=verbose,
+    # This is how you get a spectrum (see calc.py for front-end functions
+    # that do just that)
+    sf = SpectrumFactory(
+        wavelength_min=4150,
+        wavelength_max=4400,
+        parallel=False,
+        bplot=False,
+        cutoff=1e-27,
+        isotope="1,2",
+        db_use_cached=True,
+        broadening_max_width=50,
+        #                             chunksize='DLM',
+        #                             pseudo_continuum_threshold=0.01,
+        medium="vacuum",
+        verbose=verbose,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.warnings["NegativeEnergiesWarning"] = "ignore"
+    sf.load_databank(
+        "HITEMP-CO2-DUNHAM",
+        load_energies=False,  # no need to load energies at equilibrium
+    )
+    s = sf.eq_spectrum(Tgas=300)
+    if verbose:
+        printm(
+            ">>> _test_spec_generation: Spectrum calculated in {0:.2f}s".format(
+                time() - t0
+            )
         )
-        sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-        sf.warnings["NegativeEnergiesWarning"] = "ignore"
-        sf.load_databank(
-            "HITEMP-CO2-DUNHAM",
-            load_energies=False,  # no need to load energies at equilibrium
+
+    if plot:
+        plt.figure(fig_prefix + "Reference spectrum CDSD-HITEMP (radiance)")
+        # Iunit is arbitrary. Use whatever makes sense
+        s.plot("radiance_noslit", Iunit="µW/cm2/sr/nm", nfig="same")
+    s.rescale_path_length(0.01)
+
+    # Here we get some extra informations:
+    if plot:
+        sf.plot_broadening(i=0)  # show broadening of one line
+        plt.xlim((2267.20, 2268.30))
+
+    # Compare with harcoded results
+    # ... code previously used to export hardcoded results:
+    # ... and header contains all input conditions:
+    #        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm')).T[::10])
+    #        print(s)
+    # ................
+    from radis.test.utils import getTestFile
+
+    wref, Iref = np.loadtxt(getTestFile("CO2abscoeff_300K_4150_4400nm.txt")).T
+    match_reference = np.allclose(s.get("abscoeff", wunit="nm")[1][::10], Iref)
+    if not match_reference:
+        # give some more information before raising error
+        printm(
+            "Error: {0:.2f}%".format(
+                np.mean(abs(s.get("abscoeff", wunit="nm")[1][::10] / Iref - 1)) * 100
+            )
         )
-        s = sf.eq_spectrum(Tgas=300)
-        if verbose:
-            printm(
-                ">>> _test_spec_generation: Spectrum calculated in {0:.2f}s".format(
-                    time() - t0
-                )
+        # Store the faulty spectrum
+        s.store(
+            "test_factory_failed_{0}.spec".format(radis.get_version()),
+            if_exists_then="replace",
+        )
+
+    # Plot comparison
+    if plot:
+        plt.figure(fig_prefix + "Reference spectrum (abscoeff)")
+        # , show_points=True)  # show_points to have an
+        s.plot(
+            "abscoeff",
+            wunit="nm",
+            medium="air",
+            nfig="same",
+            lw=3,
+            label="RADIS, this version",
+        )
+        # idea of the resolution
+        plt.plot(wref, Iref, "or", ms=3, label="version NEQ 0.9.20 (12/05/18)")
+        plt.legend()
+        plt.title("All close: {0}".format(match_reference))
+        plt.tight_layout()
+
+    # Another example, at higher temperature.
+    # Removed because no test is associated with it and it takes time for
+    # nothing
+    #        s2 = sf.non_eq_spectrum(Tvib=1000, Trot=300)
+    #        if plot: s2.plot('abscoeff', wunit='nm')
+
+    if verbose:
+        printm(
+            "Spectrum calculation (no database loading) took {0:.1f}s\n".format(
+                s.conditions["calculation_time"]
             )
+        )
+        printm("_test_spec_generation finished in {0:.1f}s\n".format(time() - t0))
 
-        if plot:
-            plt.figure(fig_prefix + "Reference spectrum CDSD-HITEMP (radiance)")
-            # Iunit is arbitrary. Use whatever makes sense
-            s.plot("radiance_noslit", Iunit="µW/cm2/sr/nm", nfig="same")
-        s.rescale_path_length(0.01)
-
-        # Here we get some extra informations:
-        if plot:
-            sf.plot_broadening(i=0)  # show broadening of one line
-            plt.xlim((2267.20, 2268.30))
-
-        # Compare with harcoded results
-        # ... code previously used to export hardcoded results:
-        # ... and header contains all input conditions:
-        #        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm')).T[::10])
-        #        print(s)
-        # ................
-        from radis.test.utils import getTestFile
-
-        wref, Iref = np.loadtxt(getTestFile("CO2abscoeff_300K_4150_4400nm.txt")).T
-        match_reference = np.allclose(s.get("abscoeff", wunit="nm")[1][::10], Iref)
-        if not match_reference:
-            # give some more information before raising error
-            printm(
-                "Error: {0:.2f}%".format(
-                    np.mean(abs(s.get("abscoeff", wunit="nm")[1][::10] / Iref - 1))
-                    * 100
-                )
-            )
-            # Store the faulty spectrum
-            s.store(
-                "test_factory_failed_{0}.spec".format(radis.get_version()),
-                if_exists_then="replace",
-            )
-
-        # Plot comparison
-        if plot:
-            plt.figure(fig_prefix + "Reference spectrum (abscoeff)")
-            # , show_points=True)  # show_points to have an
-            s.plot(
-                "abscoeff",
-                wunit="nm",
-                medium="air",
-                nfig="same",
-                lw=3,
-                label="RADIS, this version",
-            )
-            # idea of the resolution
-            plt.plot(wref, Iref, "or", ms=3, label="version NEQ 0.9.20 (12/05/18)")
-            plt.legend()
-            plt.title("All close: {0}".format(match_reference))
-            plt.tight_layout()
-
-        # Another example, at higher temperature.
-        # Removed because no test is associated with it and it takes time for
-        # nothing
-        #        s2 = sf.non_eq_spectrum(Tvib=1000, Trot=300)
-        #        if plot: s2.plot('abscoeff', wunit='nm')
-
-        if verbose:
-            printm(
-                "Spectrum calculation (no database loading) took {0:.1f}s\n".format(
-                    s.conditions["calculation_time"]
-                )
-            )
-            printm("_test_spec_generation finished in {0:.1f}s\n".format(time() - t0))
-
-        assert match_reference
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    assert match_reference
 
 
 # Test power integral
@@ -274,64 +268,60 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
 
     """
 
-    try:
-        if verbose:
-            printm(">>> _test_power_integral")
+    if verbose:
+        printm(">>> _test_power_integral")
 
-        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
-        sf = SpectrumFactory(
-            wavelength_min=4300,
-            wavelength_max=4666,
-            wstep=0.001,
-            parallel=False,
-            bplot=False,
-            cutoff=1e-30,
-            path_length=10,
-            mole_fraction=400e-6,
-            isotope=[1],
-            db_use_cached=True,
-            broadening_max_width=10,
-            verbose=verbose,
-        )
-        sf.warnings.update(
-            {
-                "MissingSelfBroadeningWarning": "ignore",
-                "OutOfRangeLinesWarning": "ignore",
-                "HighTemperatureWarning": "ignore",
-            }
-        )
-        sf.load_databank("HITRAN-CO-TEST")
-        unit = "µW/sr/cm2"
-        T = 600
+    sf = SpectrumFactory(
+        wavelength_min=4300,
+        wavelength_max=4666,
+        wstep=0.001,
+        parallel=False,
+        bplot=False,
+        cutoff=1e-30,
+        path_length=10,
+        mole_fraction=400e-6,
+        isotope=[1],
+        db_use_cached=True,
+        broadening_max_width=10,
+        verbose=verbose,
+    )
+    sf.warnings.update(
+        {
+            "MissingSelfBroadeningWarning": "ignore",
+            "OutOfRangeLinesWarning": "ignore",
+            "HighTemperatureWarning": "ignore",
+        }
+    )
+    sf.load_databank("HITRAN-CO-TEST")
+    unit = "µW/sr/cm2"
+    T = 600
 
-        # Calculate:
+    # Calculate:
 
-        # ... direct calculation of power integral with equilibrium code
-        Peq = sf.optically_thin_power(Tgas=T, unit=unit)
+    # ... direct calculation of power integral with equilibrium code
+    Peq = sf.optically_thin_power(Tgas=T, unit=unit)
 
-        # ... direct calculation of power integral with non equilibrium code
-        Pneq = sf.optically_thin_power(Tvib=T, Trot=T, unit=unit)
+    # ... direct calculation of power integral with non equilibrium code
+    Pneq = sf.optically_thin_power(Tvib=T, Trot=T, unit=unit)
 
-        # ... numerical integration of non equilibrium spectrum under optically thin
-        # ... conditions
-        sf.input.self_absorption = False
-        s = sf.non_eq_spectrum(T, T)
+    # ... numerical integration of non equilibrium spectrum under optically thin
+    # ... conditions
+    sf.input.self_absorption = False
+    s = sf.non_eq_spectrum(T, T)
 
-        assert s.conditions["self_absorption"] == False
+    assert s.conditions["self_absorption"] == False
 
-        # Compare
-        err = abs(Peq - s.get_power(unit=unit)) / Peq
-        if verbose:
-            printm("Emission integral:\t{0:.4g}".format(Peq), unit)
-            printm("Emission (noneq code):\t{0:.4g}".format(Pneq), unit)
-            printm("Integrated spectrum:\t{0:.4g}".format(s.get_power(unit=unit)), unit)
-            printm("Error: {0:.2f}%".format(err * 100))
+    # Compare
+    err = abs(Peq - s.get_power(unit=unit)) / Peq
+    if verbose:
+        printm("Emission integral:\t{0:.4g}".format(Peq), unit)
+        printm("Emission (noneq code):\t{0:.4g}".format(Pneq), unit)
+        printm("Integrated spectrum:\t{0:.4g}".format(s.get_power(unit=unit)), unit)
+        printm("Error: {0:.2f}%".format(err * 100))
 
-        assert err < 0.005
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    assert err < 0.005
 
 
 @pytest.mark.fast
@@ -341,59 +331,53 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    try:
-        if verbose:
-            printm(">>> _test_media_line_shift")
+    if verbose:
+        printm(">>> _test_media_line_shift")
 
-        setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
 
-        sf = SpectrumFactory(
-            wavelength_min=4500,
-            wavelength_max=4600,
-            wstep=0.001,
-            parallel=False,
-            bplot=False,
-            cutoff=1e-30,
-            path_length=0.1,
-            mole_fraction=400e-6,
-            isotope=[1],
-            db_use_cached=True,
-            medium="vacuum",
-            broadening_max_width=10,
-            verbose=verbose,
-        )
-        sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-        sf.warnings["GaussianBroadeningWarning"] = "ignore"
-        sf.load_databank("HITRAN-CO-TEST")
+    sf = SpectrumFactory(
+        wavelength_min=4500,
+        wavelength_max=4600,
+        wstep=0.001,
+        parallel=False,
+        bplot=False,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=400e-6,
+        isotope=[1],
+        db_use_cached=True,
+        medium="vacuum",
+        broadening_max_width=10,
+        verbose=verbose,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.warnings["GaussianBroadeningWarning"] = "ignore"
+    sf.load_databank("HITRAN-CO-TEST")
 
-        # Calculate a spectrum
-        s = sf.eq_spectrum(2000)
+    # Calculate a spectrum
+    s = sf.eq_spectrum(2000)
 
-        # Compare
-        if plot:
-            fig = plt.figure(fig_prefix + "Propagating media line shift")
-            s.plot(
-                "radiance_noslit", wunit="nm_vac", nfig=fig.number, lw=2, label="Vacuum"
-            )
-            plt.title("CO spectrum (2000 K)")
-            s.plot(
-                "radiance_noslit",
-                wunit="nm",
-                nfig=fig.number,
-                lw=2,
-                color="r",
-                label="Air",
-            )
-
-        # ... there should be about ~1.25 nm shift at 4.5 µm:
-        assert np.isclose(
-            s.get("radiance_noslit", wunit="nm_vac")[0][0]
-            - s.get("radiance_noslit", wunit="nm")[0][0],
-            1.2540436086346745,
+    # Compare
+    if plot:
+        fig = plt.figure(fig_prefix + "Propagating media line shift")
+        s.plot("radiance_noslit", wunit="nm_vac", nfig=fig.number, lw=2, label="Vacuum")
+        plt.title("CO spectrum (2000 K)")
+        s.plot(
+            "radiance_noslit",
+            wunit="nm",
+            nfig=fig.number,
+            lw=2,
+            color="r",
+            label="Air",
         )
 
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    # ... there should be about ~1.25 nm shift at 4.5 µm:
+    assert np.isclose(
+        s.get("radiance_noslit", wunit="nm_vac")[0][0]
+        - s.get("radiance_noslit", wunit="nm")[0][0],
+        1.2540436086346745,
+    )
 
 
 @pytest.mark.fast

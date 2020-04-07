@@ -33,15 +33,12 @@ from radis.misc.config import (
     addDatabankEntries,
     diffDatabankEntries,
 )
+from radis.db.utils import getFile
 from radis.misc.utils import FileNotFoundError
 from radis.misc.printer import printr
 from os.path import join, dirname
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
-IGNORE_MISSING_DATABASES = False  # TODO: move in ~/.radis
-"""bool: how to deal with missing Line databases during tests. If ``True``, 
-print a warning. Else, raise an error. See :func:`~radis.test.utils.IgnoreMissingDatabase`
-"""
 
 
 def getTestFile(file):
@@ -102,6 +99,16 @@ TEST_DATABASES = {
         "format": "cdsd-hitemp",  # CDSD-HITEMP version (same lines as HITEMP-2010).
         "parfuncfmt": "hapi",
         "levelsfmt": "radis",
+    },
+    "HITEMP-CO2-HAMIL-TEST": {
+        "info": "HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), "
+        + "2283.7-2285.1 cm-1, energies calculated from Tashkun effective hamiltonian",
+        "path": [getTestFile(r"cdsd_hitemp_09_fragment.txt")],
+        "format": "cdsd-hitemp",  # CDSD-HITEMP version (same lines as HITEMP-2010).
+        "parfunc": getFile("CO2", "partition_functions.txt"),
+        "parfuncfmt": "cdsd",
+        "levels": {1: getTestFile(r"co2_cdsd_hamiltonian_fragment.levels")},
+        "levelsfmt": "cdsd-hamil",
     },
 }
 """dict: test databases added in the :ref:`Configuration file <label_lbl_config_file>`
@@ -193,33 +200,6 @@ def _failsafe_if_no_db(testcase, *args, **kwargs):
             )
         )
         return True
-
-
-def IgnoreMissingDatabase(err, file="", warnings=True):
-    """ A function to deal with MissingDatabases errors. If :data:`~radis.test.utils.IGNORE_MISSING_DATABASES`
-    is ``True``, just print a warning. Else, raise the error
-    
-    Parameters
-    ----------
-    
-    err: an Error
-    
-    file: str
-        where the error occured. Use ``file=__file__`` on function call
-    """
-    # TODO: make IGNORE_MISSING_DATABASES a ~/.radis parameter
-    if IGNORE_MISSING_DATABASES:
-        if warnings:
-            import sys
-
-            print(sys.exc_info())
-            printr(
-                "In {0}: Database not defined: {1}".format(file, err.filename)
-                + "\n Ignoring the test"
-            )
-        return True
-    else:
-        raise err
 
 
 if __name__ == "__main__":

@@ -7,9 +7,8 @@ Created on Mon May  7 17:34:52 2018
 
 from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.lbl import SpectrumFactory
-from radis.misc.utils import DatabankNotFound
 from radis.misc.printer import printm
-from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
+from radis.test.utils import setup_test_line_databases
 import matplotlib.pyplot as plt
 from os.path import exists
 from shutil import rmtree
@@ -82,9 +81,6 @@ def test_retrieve_from_database(
         assert s1.compare_with(s2, spectra_only=True)
 
         return True
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
 
     finally:
         rmtree(temp_database_name)
