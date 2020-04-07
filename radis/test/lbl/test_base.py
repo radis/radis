@@ -142,10 +142,10 @@ def test_populations_CO2_hamiltonian(
 
     # Calculate populations using the non-equilibrium module:
     # This will crash the first time (see error in docstrings of the function).
-    try:
+    with pytest.raises(AssertionError):
         sf.non_eq_spectrum(300, 300)
-    except AssertionError:
-        sf.df0.dropna(inplace=True)
+
+    sf.df0.dropna(inplace=True)
 
     # Retry:
     s_noneq = sf.non_eq_spectrum(300, 300)

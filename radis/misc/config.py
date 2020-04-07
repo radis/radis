@@ -448,7 +448,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
         for k in dict_entries1.keys():
             v1 = dict_entries1[k]
             v2 = dict_entries2[k]
-            if k in ["info", "format", "parfuncfmt", "levelsfmt"]:
+            if k in ["info", "format", "parfunc", "parfuncfmt", "levelsfmt"]:
                 assert v1 == v2
             elif k in ["path"]:
                 assert (
