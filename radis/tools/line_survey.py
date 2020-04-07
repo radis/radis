@@ -67,7 +67,7 @@ def LineSurvey(
     medium="air",
     cutoff=None,
     plot="S",
-    lineinfo=["int", "A"],
+    lineinfo=["int", "A", "El"],
     barwidth=0.07,
     yscale="log",
     display=True,
@@ -346,13 +346,42 @@ def LineSurvey(
         for k in details:
             name, _, unit = details[k]
             if is_float(row[k]):
-                label += "\n{0} {1}: {2:.3g} {3}".format(k, name, row[k], unit)
+                label += "<br>{0} {1}: {2:.3g} {3}".format(k, name, row[k], unit)
             else:
-                label += "\n{0} {1}: {2} {3}".format(k, name, row[k], unit)
+                label += "<br>{0} {1}: {2} {3}".format(k, name, row[k], unit)
 
         return label
 
     def get_label_cdsd(row, details):
+        label = "CO2[iso{iso}] [{branch}{jl:.0f}](p{polyl:.0f}c{wangl:.0f}n{rankl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
+            **dict(
+                [
+                    (k, row[k])
+                    for k in [
+                        "polyl",
+                        "wangl",
+                        "rankl",
+                        "polyu",
+                        "wangu",
+                        "ranku",
+                        "jl",
+                        "iso",
+                    ]
+                ]
+                + [("branch", _fix_branch_format[row["branch"]])]
+            )
+        )
+
+        for k in details:
+            name, _, unit = details[k]
+            if is_float(row[k]):
+                label += "<br>{0} {1}: {2:.3g} {3}".format(k, name, row[k], unit)
+            else:
+                label += "<br>{0} {1}: {2} {3}".format(name, k, row[k], unit)
+
+        return label
+
+    def get_label_cdsd_hitran(row, details):
         label = "CO2[iso{iso}] [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
             **dict(
                 [
@@ -377,9 +406,9 @@ def LineSurvey(
         for k in details:
             name, _, unit = details[k]
             if is_float(row[k]):
-                label += "\n{0} {1}: {2:.3g} {3}".format(k, name, row[k], unit)
+                label += "<br>{0} {1}: {2:.3g} {3}".format(k, name, row[k], unit)
             else:
-                label += "\n{0} {1}: {2} {3}".format(name, k, row[k], unit)
+                label += "<br>{0} {1}: {2} {3}".format(name, k, row[k], unit)
 
         return label
 
@@ -406,7 +435,10 @@ def LineSurvey(
     if dbformat == "hitran":
         sp["label"] = sp.apply(lambda r: get_label_hitran(r, details), axis=1)
     elif dbformat in ["cdsd-hitemp", "cdsd-4000"]:
-        sp["label"] = sp.apply(lambda r: get_label_cdsd(r, details), axis=1)
+        try:
+            sp["label"] = sp.apply(lambda r: get_label_cdsd_hitran(r, details), axis=1)
+        except KeyError:
+            sp["label"] = sp.apply(lambda r: get_label_cdsd(r, details), axis=1)
     else:
         sp["label"] = sp.apply(get_label_none, axis=1)
 
