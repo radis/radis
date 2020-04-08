@@ -883,45 +883,45 @@ def rescale_updown_levels(
     spec.conditions["mole_fraction"] = new_nl if new_nl == new_nu else "N/A"
 
 
-def _test(verbose=True, plot=False, *args, **kwargs):
-    """ Generate scalable LevelList at 1500K. Rescale at 2000K and compare with
-    spectrum directly calculated at 2000K 
-    """
-
-    from radis.lbl import SpectrumFactory
-
-    iso = 1
-    sf = SpectrumFactory(
-        wavelength_min=4170,
-        wavelength_max=4200,
-        mole_fraction=1,
-        path_length=0.05,
-        cutoff=1e-25,
-        #                     isotope=[1,2],
-        isotope=iso,
-        db_use_cached=True,
-        wstep=0.01,
-        broadening_max_width=10,
-        medium="air",
-        verbose=verbose,
-    )
-
-    sf.load_databank("CDSD")
-
-    parfunc = sf.parsum_calc["CO2"][iso]["X"]
-
-    # %% Fill levels for all bands
-
-    Tref = 1500
-    s_bands = sf.non_eq_bands(Tvib=Tref, Trot=Tref)
-    lvlist = LevelsList(parfunc, s_bands, sf.params.levelsfmt)
-
-    # %% Test
-    Tvib = 2000
-    s_resc = lvlist.non_eq_spectrum(Tvib=Tvib, Trot=Tref)
-    s0 = sf.non_eq_spectrum(Tvib, Tref)
-
-    return s0.compare_with(s_resc, spectra_only=True, plot=plot)
+# def _test(verbose=True, plot=False, *args, **kwargs):
+#    """ Generate scalable LevelList at 1500K. Rescale at 2000K and compare with
+#    spectrum directly calculated at 2000K
+#    """
+#
+#    from radis.lbl import SpectrumFactory
+#
+#    iso = 1
+#    sf = SpectrumFactory(
+#        wavelength_min=4170,
+#        wavelength_max=4200,
+#        mole_fraction=1,
+#        path_length=0.05,
+#        cutoff=1e-25,
+#        #                     isotope=[1,2],
+#        isotope=iso,
+#        db_use_cached=True,
+#        wstep=0.01,
+#        broadening_max_width=10,
+#        medium="air",
+#        verbose=verbose,
+#    )
+#
+#    sf.load_databank("CDSD")
+#
+#    parfunc = sf.parsum_calc["CO2"][iso]["X"]
+#
+#    # %% Fill levels for all bands
+#
+#    Tref = 1500
+#    s_bands = sf.non_eq_bands(Tvib=Tref, Trot=Tref)
+#    lvlist = LevelsList(parfunc, s_bands, sf.params.levelsfmt)
+#
+#    # %% Test
+#    Tvib = 2000
+#    s_resc = lvlist.non_eq_spectrum(Tvib=Tvib, Trot=Tref)
+#    s0 = sf.non_eq_spectrum(Tvib, Tref)
+#
+#    return s0.compare_with(s_resc, spectra_only=True, plot=plot)
 
 
 if __name__ == "__main__":

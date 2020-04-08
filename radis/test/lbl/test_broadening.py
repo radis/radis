@@ -14,8 +14,7 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 from radis.lbl.factory import SpectrumFactory
 from radis.spectrum.spectrum import Spectrum
 from radis import plot_diff, get_residual_integral, get_residual
-from radis.misc.utils import DatabankNotFound
-from radis.test.utils import IgnoreMissingDatabase, setup_test_line_databases
+from radis.test.utils import setup_test_line_databases
 from radis.misc.printer import printm
 from os.path import join, dirname
 from numpy import isclose
@@ -509,89 +508,85 @@ def test_abscoeff_continuum(
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    try:
-        if verbose:
-            printm(">>> test_abscoeff_continuum")
+    if verbose:
+        printm(">>> test_abscoeff_continuum")
 
-        sf = SpectrumFactory(
-            wavelength_min=4200,
-            wavelength_max=4500,
-            parallel=False,
-            bplot=False,
-            cutoff=1e-23,
-            molecule="CO2",
-            isotope="1,2",
-            db_use_cached=True,
-            broadening_max_width=10,
-            path_length=0.1,
-            mole_fraction=1e-3,
-            medium="vacuum",
-            verbose=verbose,
+    sf = SpectrumFactory(
+        wavelength_min=4200,
+        wavelength_max=4500,
+        parallel=False,
+        bplot=False,
+        cutoff=1e-23,
+        molecule="CO2",
+        isotope="1,2",
+        db_use_cached=True,
+        broadening_max_width=10,
+        path_length=0.1,
+        mole_fraction=1e-3,
+        medium="vacuum",
+        verbose=verbose,
+    )
+    sf.warnings.update(
+        {
+            "MissingSelfBroadeningWarning": "ignore",
+            "NegativeEnergiesWarning": "ignore",
+            "LinestrengthCutoffWarning": "ignore",
+            "HighTemperatureWarning": "ignore",
+        }
+    )
+    sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+    #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
+    sf._export_continuum = True  # activate it
+
+    # Calculate one without pseudo-continuum
+    sf.params.pseudo_continuum_threshold = 0
+    s1 = sf.eq_spectrum(Tgas=2000)
+    s1.name = "All lines resolved ({0}) ({1:.1f}s)".format(
+        s1.conditions["lines_calculated"], s1.conditions["calculation_time"]
+    )
+    assert s1.conditions["pseudo_continuum_threshold"] == 0
+
+    # Calculate one with pseudo-continuum
+    sf.params.pseudo_continuum_threshold = threshold
+    s2 = sf.eq_spectrum(Tgas=2000)
+    s2.name = "Semi-continuum + {0} lines ({1:.1f}s)".format(
+        s2.conditions["lines_calculated"], s2.conditions["calculation_time"]
+    )
+    assert s2.conditions["pseudo_continuum_threshold"] == threshold
+    assert "abscoeff_continuum" in s2.get_vars()
+
+    # Plot
+    if plot:
+        plot_diff(
+            s1,
+            s2,
+            "radiance_noslit",
+            Iunit="µW/cm2/sr/nm",
+            nfig="test_abscoeff_continuum: diff",
         )
-        sf.warnings.update(
-            {
-                "MissingSelfBroadeningWarning": "ignore",
-                "NegativeEnergiesWarning": "ignore",
-                "LinestrengthCutoffWarning": "ignore",
-                "HighTemperatureWarning": "ignore",
-            }
+
+        s2.plot(
+            "abscoeff",
+            label="Full spectrum",
+            nfig="test_abscoeff_continuum: show continuum",
+            force=True,
         )
-        sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
-        #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
-        sf._export_continuum = True  # activate it
-
-        # Calculate one without pseudo-continuum
-        sf.params.pseudo_continuum_threshold = 0
-        s1 = sf.eq_spectrum(Tgas=2000)
-        s1.name = "All lines resolved ({0}) ({1:.1f}s)".format(
-            s1.conditions["lines_calculated"], s1.conditions["calculation_time"]
+        s2.plot(
+            "abscoeff_continuum",
+            nfig="same",
+            label="Pseudo-continuum".format(s2.conditions["lines_in_continuum"]),
+            force=True,
         )
-        assert s1.conditions["pseudo_continuum_threshold"] == 0
+        plt.legend()
 
-        # Calculate one with pseudo-continuum
-        sf.params.pseudo_continuum_threshold = threshold
-        s2 = sf.eq_spectrum(Tgas=2000)
-        s2.name = "Semi-continuum + {0} lines ({1:.1f}s)".format(
-            s2.conditions["lines_calculated"], s2.conditions["calculation_time"]
-        )
-        assert s2.conditions["pseudo_continuum_threshold"] == threshold
-        assert "abscoeff_continuum" in s2.get_vars()
+    # Compare
+    res = get_residual(s1, s2, "abscoeff")
+    if verbose:
+        printm("residual:", res)
 
-        # Plot
-        if plot:
-            plot_diff(
-                s1,
-                s2,
-                "radiance_noslit",
-                Iunit="µW/cm2/sr/nm",
-                nfig="test_abscoeff_continuum: diff",
-            )
+    globals().update(locals())
 
-            s2.plot(
-                "abscoeff",
-                label="Full spectrum",
-                nfig="test_abscoeff_continuum: show continuum",
-                force=True,
-            )
-            s2.plot(
-                "abscoeff_continuum",
-                nfig="same",
-                label="Pseudo-continuum".format(s2.conditions["lines_in_continuum"]),
-                force=True,
-            )
-            plt.legend()
-
-        # Compare
-        res = get_residual(s1, s2, "abscoeff")
-        if verbose:
-            printm("residual:", res)
-
-        globals().update(locals())
-
-        assert res < 1.32e-6
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    assert res < 1.32e-6
 
 
 # @pytest.mark.needs_config_file
@@ -616,87 +611,83 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    try:
-        if verbose:
-            printm(">>> test_noneq_continuum")
+    if verbose:
+        printm(">>> test_noneq_continuum")
 
-        sf = SpectrumFactory(
-            wavelength_min=4200,
-            wavelength_max=4500,
-            parallel=False,
-            bplot=False,
-            cutoff=1e-23,
-            molecule="CO2",
-            isotope="1,2",
-            db_use_cached=True,
-            broadening_max_width=10,
-            path_length=0.1,
-            mole_fraction=1e-3,
-            medium="vacuum",
-            verbose=verbose,
+    sf = SpectrumFactory(
+        wavelength_min=4200,
+        wavelength_max=4500,
+        parallel=False,
+        bplot=False,
+        cutoff=1e-23,
+        molecule="CO2",
+        isotope="1,2",
+        db_use_cached=True,
+        broadening_max_width=10,
+        path_length=0.1,
+        mole_fraction=1e-3,
+        medium="vacuum",
+        verbose=verbose,
+    )
+    sf.warnings.update(
+        {
+            "MissingSelfBroadeningWarning": "ignore",
+            "NegativeEnergiesWarning": "ignore",
+            "LinestrengthCutoffWarning": "ignore",
+            "HighTemperatureWarning": "ignore",
+        }
+    )
+    sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+    #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
+    sf._export_continuum = True  # activate it
+
+    # Calculate one without pseudo-continuum
+    sf.params.pseudo_continuum_threshold = 0
+    s1 = sf.non_eq_spectrum(Tvib=2000, Trot=1000)
+    s1.name = "All lines resolved ({0}) ({1:.1f}s)".format(
+        s1.conditions["lines_calculated"], s1.conditions["calculation_time"]
+    )
+    assert s1.conditions["pseudo_continuum_threshold"] == 0
+
+    # Calculate one with pseudo-continuum
+    sf.params.pseudo_continuum_threshold = 0.05
+    s2 = sf.non_eq_spectrum(Tvib=2000, Trot=1000)
+    s2.name = "Semi-continuum + {0} lines ({1:.1f}s)".format(
+        s2.conditions["lines_calculated"], s2.conditions["calculation_time"]
+    )
+    assert s2.conditions["pseudo_continuum_threshold"] == 0.05
+    assert "abscoeff_continuum" in s2.get_vars()
+    assert "emisscoeff_continuum" in s2.get_vars()
+
+    # Plot
+    if plot:
+        plot_diff(
+            s1,
+            s2,
+            "radiance_noslit",
+            Iunit="µW/cm2/sr/nm",
+            nfig="test_noneq_continuum: diff",
         )
-        sf.warnings.update(
-            {
-                "MissingSelfBroadeningWarning": "ignore",
-                "NegativeEnergiesWarning": "ignore",
-                "LinestrengthCutoffWarning": "ignore",
-                "HighTemperatureWarning": "ignore",
-            }
+
+        plt.figure("test_noneq_continuum: show continuum").clear()
+        s2.plot(
+            "emisscoeff", label=s2.name, nfig="test_noneq_continuum: show continuum"
         )
-        sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
-        #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
-        sf._export_continuum = True  # activate it
-
-        # Calculate one without pseudo-continuum
-        sf.params.pseudo_continuum_threshold = 0
-        s1 = sf.non_eq_spectrum(Tvib=2000, Trot=1000)
-        s1.name = "All lines resolved ({0}) ({1:.1f}s)".format(
-            s1.conditions["lines_calculated"], s1.conditions["calculation_time"]
+        s2.plot(
+            "emisscoeff_continuum",
+            nfig="same",
+            label="Pseudo-continuum (aggreg. {0:g} lines)".format(
+                s2.conditions["lines_in_continuum"]
+            ),
+            force=True,
         )
-        assert s1.conditions["pseudo_continuum_threshold"] == 0
 
-        # Calculate one with pseudo-continuum
-        sf.params.pseudo_continuum_threshold = 0.05
-        s2 = sf.non_eq_spectrum(Tvib=2000, Trot=1000)
-        s2.name = "Semi-continuum + {0} lines ({1:.1f}s)".format(
-            s2.conditions["lines_calculated"], s2.conditions["calculation_time"]
-        )
-        assert s2.conditions["pseudo_continuum_threshold"] == 0.05
-        assert "abscoeff_continuum" in s2.get_vars()
-        assert "emisscoeff_continuum" in s2.get_vars()
+    # Compare
+    res = get_residual(s1, s2, "abscoeff") + get_residual(s1, s2, "emisscoeff")
+    if verbose:
+        printm("residual:", res)
 
-        # Plot
-        if plot:
-            plot_diff(
-                s1,
-                s2,
-                "radiance_noslit",
-                Iunit="µW/cm2/sr/nm",
-                nfig="test_noneq_continuum: diff",
-            )
-
-            plt.figure("test_noneq_continuum: show continuum").clear()
-            s2.plot(
-                "emisscoeff", label=s2.name, nfig="test_noneq_continuum: show continuum"
-            )
-            s2.plot(
-                "emisscoeff_continuum",
-                nfig="same",
-                label="Pseudo-continuum (aggreg. {0:g} lines)".format(
-                    s2.conditions["lines_in_continuum"]
-                ),
-                force=True,
-            )
-
-        # Compare
-        res = get_residual(s1, s2, "abscoeff") + get_residual(s1, s2, "emisscoeff")
-        if verbose:
-            printm("residual:", res)
-
-        assert res < 5.2e-6
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    assert res < 5.2e-6
 
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):

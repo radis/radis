@@ -303,14 +303,14 @@ class BaseFactory(DatabankLoader):
 
         try:
             assert np.isnan(df[column]).sum() == 0
-        except AssertionError:
+        except AssertionError as err:
             index = np.isnan(df[column]).idxmax()
             raise AssertionError(
                 "{0}=NaN in line database at index {1}".format(column, index)
                 + " corresponding to Line:\n {1}".format(
                     index, get_print_full(df.loc[index])
                 )
-            )
+            ) from err
 
     def _add_EvibErot(self, df, calc_Evib_harmonic_anharmonic=False):
         """ Calculate Evib & Erot in Line dataframe
@@ -2980,7 +2980,7 @@ class BaseFactory(DatabankLoader):
 
         try:
             assert sum(~b) > 0
-        except AssertionError:
+        except AssertionError as err:
             self.plot_linestrength_hist()
             raise AssertionError(
                 "All lines discarded! Please increase cutoff. "
@@ -2988,7 +2988,7 @@ class BaseFactory(DatabankLoader):
                     df.S.min(), df.S.max(), df.S.mean()
                 )
                 + "cm-1/(#.cm-2)). See histogram"
-            )
+            ) from err
 
         # update df1:
         self.df1 = pd.DataFrame(df[~b])

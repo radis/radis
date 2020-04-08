@@ -24,8 +24,6 @@ from __future__ import absolute_import, unicode_literals, division, print_functi
 from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc
 from radis.phys.constants import hc_k
-from radis.misc.utils import DatabankNotFound
-from radis.test.utils import IgnoreMissingDatabase
 from radis.misc.printer import printm
 from radis.misc.cache_files import DeprecatedFileError
 from radis.db.molecules import Molecules
@@ -135,36 +133,70 @@ def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
 
     from radis.misc.config import getDatabankEntries
 
-    try:
+    iso = 1
+    database = "CDSD-HITEMP-PC"
 
-        iso = 1
-        database = "CDSD-HITEMP-PC"
+    # Compare tab to hardcoded
+    parfunc = getDatabankEntries(database)["parfunc"]
+    Qf = PartFuncCO2_CDSDtab(iso, parfunc)
+    assert np.isclose(Qf.at(300), 291.0447781984652, rtol=0.001)
+    assert np.isclose(Qf.at(3000), 114689.88454184022, rtol=0.001)
 
-        # Compare tab to hardcoded
-        parfunc = getDatabankEntries(database)["parfunc"]
-        Qf = PartFuncCO2_CDSDtab(iso, parfunc)
-        assert np.isclose(Qf.at(300), 291.0447781984652, rtol=0.001)
-        assert np.isclose(Qf.at(3000), 114689.88454184022, rtol=0.001)
+    if verbose:
+        printm("Tested CDSD tabulated is correct: OK")
 
-        if verbose:
-            printm("Tested CDSD tabulated is correct: OK")
+    # Compare tab to calculated
+    energies = getDatabankEntries(database)["levels"]
+    levelsfmt = getDatabankEntries(database)["levelsfmt"]
+    Qfc = PartFuncCO2_CDSDcalc(
+        energies[iso], levelsfmt=levelsfmt, isotope=iso, use_cached=True
+    )
+    assert np.isclose(Qf.at(300), Qfc.at(300), rtol=0.001)
+    assert np.isclose(Qf.at(3000), Qfc.at(3000), rtol=0.001)
 
-        # Compare tab to calculated
-        energies = getDatabankEntries(database)["levels"]
-        levelsfmt = getDatabankEntries(database)["levelsfmt"]
-        Qfc = PartFuncCO2_CDSDcalc(
-            energies[iso], levelsfmt=levelsfmt, isotope=iso, use_cached=True
-        )
-        assert np.isclose(Qf.at(300), Qfc.at(300), rtol=0.001)
-        assert np.isclose(Qf.at(3000), Qfc.at(3000), rtol=0.001)
+    if verbose:
+        printm("Tested CDSD Q_calc vs Q_tab give same output: OK")
 
-        if verbose:
-            printm("Tested CDSD Q_calc vs Q_tab give same output: OK")
+    return True
 
-        return True
 
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+@pytest.mark.needs_config_file
+@pytest.mark.fast
+def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
+    """ Test 1: compare calculated PartFunc to the tabulated one 
+    
+    Version where we use the reduced set of CO2 levels (< 3000 cm-1)"""
+    from radis.misc.config import getDatabankEntries
+
+    iso = 1
+    database = "HITEMP-CO2-HAMIL-TEST"
+
+    # Compare tab to hardcoded
+    parfunc = getDatabankEntries(database)["parfunc"]
+    Qf = PartFuncCO2_CDSDtab(iso, parfunc)
+    assert np.isclose(Qf.at(300), 291.0447781984652, rtol=0.001)
+    assert np.isclose(Qf.at(3000), 114689.88454184022, rtol=0.001)
+
+    if verbose:
+        printm("Tested CDSD tabulated is correct: OK")
+
+    # Compare tab to calculated
+    energies = getDatabankEntries(database)["levels"]
+    levelsfmt = getDatabankEntries(database)["levelsfmt"]
+    Qfc = PartFuncCO2_CDSDcalc(
+        energies[iso],
+        levelsfmt=levelsfmt,
+        isotope=iso,
+        use_cached=True,
+        verbose=verbose,
+    )
+    assert np.isclose(
+        Qf.at(300), Qfc.at(300), rtol=0.01
+    )  # reduced rtol to accommodate for the reduced set of levels in the test set
+    # assert np.isclose(Qf.at(3000), Qfc.at(3000), rtol=0.001)  # of course doesnt work with the reduced set of levels in the test set
+
+    if verbose:
+        printm("Tested CDSD Q_calc vs Q_tab give same output: OK")
 
 
 @pytest.mark.fast
@@ -288,34 +320,52 @@ def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
 
     iso = 1
 
-    try:
-        energies = getDatabankEntries("CDSD-HITEMP-PC")["levels"]
-        levelsfmt = getDatabankEntries("CDSD-HITEMP-PC")["levelsfmt"]
-        Qf = PartFuncCO2_CDSDcalc(
-            energy_levels=energies[iso],
-            isotope=iso,
-            use_cached=True,
-            levelsfmt=levelsfmt,
+    energies = getDatabankEntries("CDSD-HITEMP-PC")["levels"]
+    levelsfmt = getDatabankEntries("CDSD-HITEMP-PC")["levelsfmt"]
+    Qf = PartFuncCO2_CDSDcalc(
+        energy_levels=energies[iso], isotope=iso, use_cached=True, levelsfmt=levelsfmt,
+    )
+    assert np.isclose(Qf.at(300), 291.0447781984652, rtol=0.001)
+    assert np.isclose(Qf.at(3000), 114689.88454184022, rtol=0.001)
+    assert np.isclose(Qf.at_noneq(300, 300), 291.0447781984652, rtol=0.001)
+    assert np.isclose(Qf.at_noneq(3000, 3000), 114689.88454184022, rtol=0.001)
+    assert np.isclose(
+        Qf.at_noneq(3000, 3000, overpopulation={"(0,1)": 3}, returnQvibQrot=True)[0],
+        120053.34252537244,
+        rtol=0.001,
+    )
+
+    if verbose:
+        printm("Tested Q_CDSD values are correct : OK")
+
+
+@pytest.mark.needs_config_file
+@pytest.mark.fast
+def test_reduced_CDSD_calc_noneq(verbose=True, warnings=True, *args, **kwargs):
+    """ Compare calculated partition function at equilibrium and nonequilibrium
+    using the CDSD-format """
+
+    from radis.misc.config import getDatabankEntries
+
+    iso = 1
+    database = "HITEMP-CO2-HAMIL-TEST"
+
+    # Compare tab to calculated
+    energies = getDatabankEntries(database)["levels"]
+    levelsfmt = getDatabankEntries(database)["levelsfmt"]
+    Qfc = PartFuncCO2_CDSDcalc(
+        energies[iso],
+        levelsfmt=levelsfmt,
+        isotope=iso,
+        use_cached=True,
+        verbose=verbose,
+    )
+    assert np.isclose(Qfc.at(300), Qfc.at_noneq_3Tvib((300, 300, 300), 300), rtol=0.001)
+
+    if verbose:
+        printm(
+            "Tested CDSD Q_calc at equilibrium and nonequilibrium give same output: OK"
         )
-        assert np.isclose(Qf.at(300), 291.0447781984652, rtol=0.001)
-        assert np.isclose(Qf.at(3000), 114689.88454184022, rtol=0.001)
-        assert np.isclose(Qf.at_noneq(300, 300), 291.0447781984652, rtol=0.001)
-        assert np.isclose(Qf.at_noneq(3000, 3000), 114689.88454184022, rtol=0.001)
-        assert np.isclose(
-            Qf.at_noneq(3000, 3000, overpopulation={"(0,1)": 3}, returnQvibQrot=True)[
-                0
-            ],
-            120053.34252537244,
-            rtol=0.001,
-        )
-
-        if verbose:
-            printm("Tested Q_CDSD values are correct : OK")
-
-        return True
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
 
 
 # @pytest.mark.fast   # (very fast only once the cached database has been generated, else decently fast)
@@ -498,39 +548,35 @@ def test_recompute_Q_from_QvibQrot_CDSD_PC(
 
     iso = 1
 
-    try:
-        energies = getDatabankEntries("CDSD-HITEMP-PC")["levels"]
-        levelsfmt = getDatabankEntries("CDSD-HITEMP-PC")["levelsfmt"]
+    energies = getDatabankEntries("CDSD-HITEMP-PC")["levels"]
+    levelsfmt = getDatabankEntries("CDSD-HITEMP-PC")["levelsfmt"]
 
-        Tvib = 1500
-        Trot = 300
+    Tvib = 1500
+    Trot = 300
 
-        Qf = PartFuncCO2_CDSDcalc(
-            energies[iso], isotope=iso, use_cached=True, levelsfmt=levelsfmt
-        )
-        Q = Qf.at_noneq(Tvib, Trot)
-        _, Qvib, dfQrot = Qf.at_noneq(Tvib, Trot, returnQvibQrot=True)
-        if verbose:
-            printm("Q", Q)
-        if verbose:
-            printm("Qvib", Qvib)
+    Qf = PartFuncCO2_CDSDcalc(
+        energies[iso], isotope=iso, use_cached=True, levelsfmt=levelsfmt
+    )
+    Q = Qf.at_noneq(Tvib, Trot)
+    _, Qvib, dfQrot = Qf.at_noneq(Tvib, Trot, returnQvibQrot=True)
+    if verbose:
+        printm("Q", Q)
+    if verbose:
+        printm("Qvib", Qvib)
 
-        # 1) Test Q vs Q recomputed from Qrot, Qvib
+    # 1) Test Q vs Q recomputed from Qrot, Qvib
 
-        # Recompute Qtot
-        df = dfQrot
-        Q2 = ((df.gvib * exp(-df.Evib * hc_k / Tvib)) * df.Qrot).sum()
-        # Todo: non Boltzmann case
+    # Recompute Qtot
+    df = dfQrot
+    Q2 = ((df.gvib * exp(-df.Evib * hc_k / Tvib)) * df.Qrot).sum()
+    # Todo: non Boltzmann case
 
-        assert np.isclose(Q, Q2)
+    assert np.isclose(Q, Q2)
 
-        if verbose:
-            printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
+    if verbose:
+        printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
 
-        return True
-
-    except DatabankNotFound as err:
-        assert IgnoreMissingDatabase(err, __file__, warnings)
+    return True
 
 
 # @pytest.mark.fast            # (fast only once the cached database has been generated)
@@ -627,6 +673,8 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     # Test 4: compare calculated PartFunc to harcoded references
     test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
     test_CDSD_calc_vs_ref(warnings=warnings)
+    test_reduced_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
+    test_reduced_CDSD_calc_noneq(verbose=verbose, warnings=warnings)
 
     # Test 5a, 5b: recompute Q from QvibQrot
     test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(

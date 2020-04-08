@@ -610,10 +610,12 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         assert vib_distribution in ["boltzmann", "treanor"]
         assert rot_distribution in ["boltzmann"]
         if vib_distribution == "boltzmann":
-            if not "Evib" in list(self.df.keys()):
+            if not all_in(["Evib1", "Evib2", "Evib3"], list(self.df.keys())):
                 raise ValueError(
-                    "Evib must be defined to calculate non-equilibrium "
-                    + "partition functions"
+                    "Evib1, Evib2, Evib3 must be defined to calculate non-equilibrium "
+                    + "partition functions with Tvib1, Tvib2, Tvib3. Got {0}".format(
+                        list(self.df.keys())
+                    )
                 )
         elif vib_distribution == "treanor":
             if not all_in(
