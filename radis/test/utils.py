@@ -36,23 +36,62 @@ from radis.misc.config import (
 from radis.db.utils import getFile
 from radis.misc.utils import FileNotFoundError
 from radis.misc.printer import printr
-from os.path import join, dirname
+from os.path import join, dirname, exists
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
 
 
 def getTestFile(file):
-    """ Return the full path of a test file. Used by test functions not to
-    worry about the project architecture"""
+    """ Return the full path of a test file, if it exists. Used by test functions not to
+    worry about the project architecture
+    
+    Examples
+    --------
+    
+    ::
+        from radis.test.utils import getTestFile
+        from radis import load_spec
+        load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.test.utils.getValidationCase`
+    
+    """
 
-    return join(TEST_FOLDER_PATH, "files", file)
+    path = join(TEST_FOLDER_PATH, "files", file)
+
+    if not exists(path):
+        raise FileNotFoundError(
+            "Test file `{0}` does not exist. Choose one of: \n- {1}".format(
+                file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "files")))
+            )
+        )
+
+    return path
 
 
 def getValidationCase(file):
-    """ Return the full path of a validation case file. Used by test functions not to
-    worry about the project architecture"""
+    """ Return the full path of a validation case file, if it exists. Used by test functions not to
+    worry about the project architecture
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.test.utils.getTestFile`
+    """
 
-    return join(TEST_FOLDER_PATH, "validation", file)
+    path = join(TEST_FOLDER_PATH, "validation", file)
+
+    if not exists(path):
+        raise FileNotFoundError(
+            "Validation case `{0}` does not exist. Choose one of: \n- {1}".format(
+                file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "validation")))
+            )
+        )
+
+    return path
 
 
 try:  # Python 3.6 only
@@ -127,16 +166,55 @@ def setup_test_line_databases(verbose=True):
     - HITRAN-CO2-TEST: CO2, HITRAN 2016, 4165-4200 nm 
     - HITRAN-CO-TEST: CO, HITRAN 2016, 2000-2300 cm-1
     - HITEMP-CO2-TEST: CO2, HITEMP-2010, 2283.7-2285.1 cm-1, 3 isotopes
+    - HITEMP-CO2-HAMIL-TEST: same as previous, with (some) energy levels computed
+      from Tashkun effective Hamiltonian.
+      
 
     These test databases are used to run the different test routines. They can
     obviously be used by Users to run simulations, but we suggest Users to download
     their own line databases files and add them to ~/.radis so they have more control
     on it
     
+    Examples
+    --------
+    
+    Initialize the Line databases::
+        
+        from radis import setup_test_line_databases
+        setup_test_line_databases()
+    
+    Plot a CO2 spectrum at high temperature:: 
+    
+        from radis import calc_spectrum
+        calc_spectrum(2284,
+                      2285,
+                      Tgas=2000,
+                      pressure=1,
+                      molecule='CO2',
+                      isotope=1
+                      databank='HITEMP-CO2-TEST').plot()
+    
+    Note that 'HITEMP-CO2-TEST' is defined on 2283.7-2285.1 cm-1 only, as 
+    can be shown by reading the Database information:
+        
+        from radis.misc.config import printDatabankEntries
+        printDatabankEntries('HITEMP-CO2-TEST')
+        
+        >>> HITEMP-CO2-TEST 
+        >>> -------
+        >>> info : HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
+        >>> path : ['/USER/PATH/TO\\radis\\radis\\test\\files\\cdsd_hitemp_09_fragment.txt']
+        >>> format : cdsd-hitemp
+        >>> parfuncfmt : hapi
+        >>> levelsfmt : radis
+    
+    
     See Also
     --------
     
-    :ref:`Configuration file <label_lbl_config_file>`
+    :ref:`Configuration file <label_lbl_config_file>`,
+    :py:func:`~radis.misc.config.getDatabankList`, 
+    :py:func:`~radis.misc.config.printDatabankEntries` 
 
     """
     # TODO: generate large band databases for the main species (let's say CO2,
