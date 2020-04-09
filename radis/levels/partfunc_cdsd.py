@@ -41,7 +41,9 @@ from radis.levels.partfunc import RovibParFuncCalculator, RovibParFuncTabulator
 from radis.misc.warning import OutOfBoundError
 from warnings import warn
 from os.path import exists
-
+from os.path import getmtime
+from radis.test.utils import getTestFile
+import time
 
 # %% Variants of Tabulated partition functions (interpolate)
 
@@ -272,9 +274,17 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         self.use_cached = use_cached
         self.levelsfmt = levelsfmt
         self.viblvl_label = viblvl_label
+        self.last_modification = time.ctime(
+            getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
+        )
+        print("Here is the last mod {0}".format(self.last_modification))
 
         # Get variables to store in metadata  (after default values have been set)
         molecule = "CO2"  # will be stored in cache file metadata
+        last_modification = time.ctime(
+            getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
+        )
+
         _discard = [
             "self",
             "energy_levels",
@@ -286,9 +296,11 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         ]
         # (dev) locals() automatically stores all variables: levelsfmt, viblvl_label, etc.
         metadata = filter_metadata(locals(), discard_variables=_discard)
+        # print("self variables {0}".format(self))
+        # print("local variables {0}".format(locals()))
+        # print("here it is from dictionary {0}".format(metadata))
 
         # %% Get levels
-
         # Function of use_cached value:
         # ... if True, use (and generate if doesnt exist) cache file.
         # ... if 'regen', regenerate cache file. If 'force', raise an error

@@ -31,7 +31,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp
 import os
-from os.path import basename, exists
+from radis import SpectrumFactory
+from radis.test.utils import setup_test_line_databases
+from radis.test.utils import getTestFile
+import time
+from os.path import basename, exists, getmtime
 import pytest
 
 fig_prefix = basename(__file__) + ": "
@@ -654,6 +658,77 @@ def test_Morse_Potential_effect_CO(
 
 
 # from warnings import catch_warnings, filterwarnings
+def run_example():
+    setup_test_line_databases(
+        verbose=True
+    )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
+
+    sf = SpectrumFactory(
+        wavenum_min=2283.7,
+        wavenum_max=2285.1,
+        wstep=0.001,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=400e-6,
+        isotope=[1],
+        db_use_cached=True,  # important to test CAche file here
+        verbose=2,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.load_databank("HITEMP-CO2-HAMIL-TEST")
+
+    # Now generate vibrational energies for a 2-T model
+    # ... Note that this is arbitrary. Lookup Pannier & Dubuet 2020 for more.
+    levels = sf.parsum_calc["CO2"][1]["X"].df
+    levels["Evib"] = levels.Evib1 + levels.Evib2 + levels.Evib3
+
+    # Calculate populations using the non-equilibrium module:
+    # This will crash the first time because the Levels Database is just a fragment and does not include all levels.
+    try:
+        sf.non_eq_spectrum(300, 300)
+    except AssertionError:  # expected
+        sf.df0.dropna(inplace=True)
+
+    getTestFile("HITEMP-CO2-HAMIL-TEST")
+
+    s = sf.non_eq_spectrum(300, 300)
+    s.plot()
+
+
+def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
+
+    # for instance
+    run_example()
+    levels_last_modification = time.ctime(
+        getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
+    )
+    cache_last_modification = time.ctime(
+        getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels.h5"))
+    )
+    # print("levels: {0}, cache {1}".format(levels_last_modification, cache_last_modification))
+
+    with open(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"), "a") as file:
+        file.write(" ")
+
+    levels_last_modification_again = time.ctime(
+        getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
+    )
+    # print("levels again: {0}".format(levels_last_modification_again))
+    try:
+        assert levels_last_modification_again > levels_last_modification
+    except:
+        raise AssertionError
+
+    run_example()
+
+    cache_last_modification_again = time.ctime(
+        getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels.h5"))
+    )
+    # print("cache again : {0}".format(cache_last_modification_again))
+    try:
+        assert cache_last_modification_again > cache_last_modification
+    except:
+        raise AssertionError
 
 
 def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
@@ -684,7 +759,9 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
         verbose=verbose, warnings=warnings
     )
     test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
-    # test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)  # ignore in released version
+    test_recompute_Q_from_QvibQrot_CDSD_PCN(
+        verbose=verbose, warnings=warnings
+    )  # ignore in released version
 
     # Test 6:
     test_Q_1Tvib_vs_Q_3Tvib(verbose=verbose, warnings=warnings)
@@ -692,6 +769,8 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     # Test 7:
     test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
 
+    # Test 8: Regenerates levels file if it's manually changed
+    test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs)
     return True
 
 

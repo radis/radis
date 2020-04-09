@@ -4,7 +4,7 @@
 #
 # using the Hamiltonian of CDSD: 
 #     S.A. Tashkun, V.I. Perevalov, J.L. Teffo, L.S. Rothman, Vl.G. Tyuterev
-#     "GLOBAL FITTING OF 12C16O2 VIBRATIONAL—ROTATIONAL LINE POSITIONS USING THE EFFECTIVE HAMILTONIAN APPROACH"
+#     "GLOBAL FITTING OF 12C16O2 VIBRATIONALâ€”ROTATIONAL LINE POSITIONS USING THE EFFECTIVE HAMILTONIAN APPROACH"
 #     Journal of Quantitative Spectroscopy and Radiative Transfer, 1998
 #     doi/10.1016/S0022-4073(98)00082-X
 # 
@@ -1939,3 +1939,4 @@ p   c   j   N   n   E   Evib1   Evib2   Evib3   Erot    Ecoupling   Evib123 Evib
 5   1   89  1   9   6308.104    1630.604    1753.788    1.505   3128.188    -205.981    -52.684 -9.127  -143.039    -0.530  -0.601
 5   1   89  2   9   6376.105    893.153 2504.842    0.919   3124.833    -147.642    -60.351 2.559   -89.612 -0.300  0.061
 5   2   90  1   7   6378.301    1634.170    1751.053    0.472   3198.300    -205.693    -52.682 -9.383  -142.822    -0.181  -0.625
+ 
