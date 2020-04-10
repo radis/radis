@@ -277,7 +277,8 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         self.last_modification = time.ctime(
             getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
         )
-        print("Here is the last mod {0}".format(self.last_modification))
+        if verbose >= 2:
+            print("Last modification time: {0}".format(self.last_modification))
 
         # Get variables to store in metadata  (after default values have been set)
         molecule = "CO2"  # will be stored in cache file metadata
@@ -296,9 +297,6 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         ]
         # (dev) locals() automatically stores all variables: levelsfmt, viblvl_label, etc.
         metadata = filter_metadata(locals(), discard_variables=_discard)
-        # print("self variables {0}".format(self))
-        # print("local variables {0}".format(locals()))
-        # print("here it is from dictionary {0}".format(metadata))
 
         # %% Get levels
         # Function of use_cached value:
