@@ -7,8 +7,18 @@ Created on Wed Aug 29 10:35:24 2018
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
-from radis.misc.arrays import is_sorted, is_sorted_backward, find_first, bining, shift_array, \
-    find_nearest, calc_diff, autoturn, centered_diff, logspace
+from radis.misc.arrays import (
+    is_sorted,
+    is_sorted_backward,
+    find_first,
+    bining,
+    shift_array,
+    find_nearest,
+    calc_diff,
+    autoturn,
+    centered_diff,
+    logspace,
+)
 
 
 def test_is_sorted(*args, **kwargs):
@@ -41,16 +51,17 @@ def test_find_first(*args, **kwargs):
 def test_bining(*args, **kwargs):
 
     a = np.arange(20).reshape(4, 5)
-    assert(bining(a) == np.array([2, 7, 12, 17])).all()
+    assert (bining(a) == np.array([2, 7, 12, 17])).all()
     assert (bining(a, ymin=1) == np.array([2.5, 7.5, 12.5, 17.5])).all()
     assert (bining(a, ymax=3) == np.array([1, 6, 11, 16])).all()
     assert (bining(a, ymin=1, ymax=3) == np.array([1.5, 6.5, 11.5, 16.5])).all()
 
 
-#TODO:
-#def test_find_nearest(*args, **kwargs):
+# TODO:
+# def test_find_nearest(*args, **kwargs):
 
-#def test_shift_array(*args, **kwargs):
+# def test_shift_array(*args, **kwargs):
+
 
 def test_calc_diff(*args, **kwargs):
     t1 = np.arange(5)
@@ -75,7 +86,7 @@ def test_calc_diff(*args, **kwargs):
 
 def test_autoturn(*args, **kwargs):
     dat = np.arange(20)
-    dat.resize(2,10)
+    dat.resize(2, 10)
     dat_rot = np.transpose(dat)
 
     assert (autoturn(dat, key=0) == dat).all()
@@ -106,7 +117,8 @@ def test_logspace(*args, **kwargs):
 
     for dat in dats:
         for i in range(2, len(dat)):
-            assert (dat[i]/dat[i-1] - dat[i-1]/dat[i-2]) <= 1e-6
+            assert (dat[i] / dat[i - 1] - dat[i - 1] / dat[i - 2]) <= 1e-6
+
 
 def _run_testcases(verbose=True, *args, **kwargs):
     """ Test array functions
