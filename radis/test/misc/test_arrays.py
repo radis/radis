@@ -24,7 +24,7 @@ def test_is_sorted(*args, **kwargs):
 
 def test_find_first(*args, **kwargs):
 
-    a = np.arrange(10)
+    a = np.arange(10)
     assert find_first(a, -1) == 0
     assert find_first(a, 0) == 1
     assert find_first(a, 5) == 6
@@ -43,8 +43,8 @@ def test_bining(*args, **kwargs):
     a = np.arange(20).reshape(4, 5)
     assert(bining(a) == np.array([2, 7, 12, 17])).all()
     assert (bining(a, ymin=1) == np.array([2.5, 7.5, 12.5, 17.5])).all()
-    assert (bining(a, ymax=3) == np.equal([1, 6, 11, 16])).all()
-    assert (bining(a, ymin=1, ymax=3) == np.equal([1.5, 6.5, 11.5, 16.5])).all()
+    assert (bining(a, ymax=3) == np.array([1, 6, 11, 16])).all()
+    assert (bining(a, ymin=1, ymax=3) == np.array([1.5, 6.5, 11.5, 16.5])).all()
 
 
 #TODO:
@@ -63,18 +63,19 @@ def test_calc_diff(*args, **kwargs):
     t_res2, v_res2 = calc_diff(t1, v1, t1[::-1], v2)
     t_res3, v_res3 = calc_diff(t2[::-1], v1, t2, v2)
 
-    assert (t_res1 == np.array([2, 3, 4])).all()
+    assert (t_res1 == np.array([1, 2, 3])).all()
     assert (v_res1 == np.array([0, 0, 0])).all()
 
-    assert (t_res2 == np.array([2, 3, 4])).all()
+    assert (t_res2 == np.array([1, 2, 3])).all()
     assert (v_res2 == np.array([-4, 0, 4])).all()
 
-    assert (t_res3 == np.array([2, 3, 4])).all()
+    assert (t_res3 == np.array([1, 2, 3])).all()
     assert (v_res3 == np.array([4, 0, -4])).all()
 
 
 def test_autoturn(*args, **kwargs):
-    dat = np.arange(20).resize(2, 10)
+    dat = np.arange(20)
+    dat.resize(2,10)
     dat_rot = np.transpose(dat)
 
     assert (autoturn(dat, key=0) == dat).all()
@@ -99,9 +100,9 @@ def test_logspace(*args, **kwargs):
 
     dats = [dat1, dat2, dat3]
 
-    assert dats[0][0] == 1 and dats[0][9] == 100
-    assert dats[1][0] == 17 and dats[1][36] == 250
-    assert dats[2][0] == 5 and dats[2][2] == 19
+    assert (dats[0][0] - 1) <= 1e-6 and (dats[0][9] - 100) <= 1e-6
+    assert (dats[1][0] - 17) <= 1e-6 and (dats[1][36] - 250) <= 1e-6
+    assert (dats[2][0] - 5) <= 1e-6 and (dats[2][2] - 19) <= 1e-6
 
     for dat in dats:
         for i in range(2, len(dat)):
