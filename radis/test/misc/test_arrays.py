@@ -7,7 +7,8 @@ Created on Wed Aug 29 10:35:24 2018
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
-from radis.misc.arrays import is_sorted, is_sorted_backward, find_first, bining, shift_array, find_nearest, calc_diff
+from radis.misc.arrays import is_sorted, is_sorted_backward, find_first, bining, shift_array, \
+    find_nearest, calc_diff, autoturn, centered_diff, logspace
 
 
 def test_is_sorted(*args, **kwargs):
@@ -72,6 +73,39 @@ def test_calc_diff(*args, **kwargs):
     assert (v_res3 == np.array([4, 0, -4])).all()
 
 
+def test_autoturn(*args, **kwargs):
+    dat = np.arange(20).resize(2, 10)
+    dat_rot = np.transpose(dat)
+
+    assert (autoturn(dat, key=0) == dat).all()
+    assert (autoturn(dat, key=1) == dat_rot).all()
+    assert (autoturn(dat) == dat).all()
+
+
+def test_centered_diff(*args, **kwargs):
+    a = np.arange(10)
+    ones = np.ones_like(a)
+    zeros = np.zeros_like(a)
+
+    assert (centered_diff(a) == ones).all()
+    assert not (centered_diff(a) == zeros).all()
+    assert (centered_diff(ones) == zeros).all()
+
+
+def test_logspace(*args, **kwargs):
+    dat1 = logspace(1, 100, 10)
+    dat2 = logspace(17, 250, 37)
+    dat3 = logspace(5, 19, 3)
+
+    dats = [dat1, dat2, dat3]
+
+    assert dats[0][0] == 1 and dats[0][9] == 100
+    assert dats[1][0] == 17 and dats[1][36] == 250
+    assert dats[2][0] == 5 and dats[2][2] == 19
+
+    for dat in dats:
+        for i in range(2, len(dat)):
+            assert (dat[i]/dat[i-1] - dat[i-1]/dat[i-2]) <= 1e-6
 
 def _run_testcases(verbose=True, *args, **kwargs):
     """ Test array functions
@@ -82,6 +116,9 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_find_first()
     test_bining()
     test_calc_diff()
+    test_logspace()
+    test_autoturn()
+    test_centered_diff()
 
     return True
 
