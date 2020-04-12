@@ -96,6 +96,15 @@ else:
 # ==============================================================================
 
 
+class Default:
+    """ Returns argument `unit` with an appended `_by_default` string
+    """
+
+    def __new__(cls, unit):
+        cls.unit = unit + "_by_default"
+        return cls.unit
+
+
 def getarglist(function):
     """ Get list of arguments in a function 
     

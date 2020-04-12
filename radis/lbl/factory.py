@@ -90,6 +90,7 @@ from radis.spectrum.spectrum import Spectrum
 from radis.spectrum.equations import calc_radiance
 from radis.misc.basics import is_float, list_if_float, flatten
 from radis.misc.printer import printg
+from radis.misc.utils import Default
 from radis.phys.convert import conv2
 from radis.phys.constants import k_b
 from radis.phys.units import convert_rad2nm, convert_emi2nm
@@ -333,6 +334,9 @@ class SpectrumFactory(BandFactory):
 
     def __init__(
         self,
+        wmin=None,
+        wmax=None,
+        wunit=Default("cm-1"),
         wavenum_min=None,
         wavenum_max=None,
         wavelength_min=None,
@@ -396,7 +400,14 @@ class SpectrumFactory(BandFactory):
 
         # Get wavenumber, based on whatever was given as input.
         wavenum_min, wavenum_max = get_waverange(
-            wavenum_min, wavenum_max, wavelength_min, wavelength_max, medium
+            wmin,
+            wmax,
+            wunit,
+            wavenum_min,
+            wavenum_max,
+            wavelength_min,
+            wavelength_max,
+            medium,
         )
 
         # calculated range is broader than output waverange to take into account off-range line broadening
