@@ -12,8 +12,6 @@ from radis.misc.arrays import (
     is_sorted_backward,
     find_first,
     bining,
-    shift_array,
-    find_nearest,
     calc_diff,
     autoturn,
     centered_diff,
@@ -55,12 +53,6 @@ def test_bining(*args, **kwargs):
     assert (bining(a, ymin=1) == np.array([2.5, 7.5, 12.5, 17.5])).all()
     assert (bining(a, ymax=3) == np.array([1, 6, 11, 16])).all()
     assert (bining(a, ymin=1, ymax=3) == np.array([1.5, 6.5, 11.5, 16.5])).all()
-
-
-# TODO:
-# def test_find_nearest(*args, **kwargs):
-
-# def test_shift_array(*args, **kwargs):
 
 
 def test_calc_diff(*args, **kwargs):
