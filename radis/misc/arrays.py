@@ -189,15 +189,26 @@ def find_nearest(array, searched, return_bool=False):
     ::
 
         from numpy import array
-        find_nearest(array([1,2,3,4]), array([2.1,2]))
+        find_nearest(array([1,2,3,4]), array([2.1,2]), True)
 
-        >>> (array([2, 2]), array([False, True, False, False], dtype=bool))
+        >>> (array([2, 2]), array([False, True, False, False]))
 
-        find_nearest(np.array([1,2,3,4]), np.array([2.6,2]))
+        find_nearest(np.array([1,2,3,4]), np.array([2.6,2]), True)
 
-        >>> (array([3, 2]), array([False,  True,  True, False], dtype=bool))
+        >>> (array([3, 2]), array([False,  True,  True, False]))
+
+        find_nearest(np.array([1, 3]), np.array([2]))
+
+        >>> array([1])
+
+        find_nearest(np.array([3, 1]), np.array([2]))
+
+        >>> array([3])
+
 
     """
+    if len(array) == 0:
+        raise ValueError("Array to be searched cannot be empty")
 
     b = np.zeros_like(array, dtype=bool)
 

@@ -134,11 +134,19 @@ def test_find_nearest(*args, **kwargs):
     assert len(y3) == 1
     assert y3 == [True]
 
+    x4, y4 = find_nearest(np.array([1, 4, 3]), np.array([]), True)
+    assert (x4 == np.array([])).all()
+    assert len(y4) == 3
+    assert (y4 == [False for _ in range(3)]).all()
+
     assert (find_nearest(a, a[::-1]) == a[::-1]).all()
     assert (
         find_nearest(np.array([1.5, 2.0, 2.5, 3.0]), np.array([-10, 10, 2.25]))
         == np.array([1.5, 3.0, 2.0])
     ).all()
+
+    assert (find_nearest(np.array([1, 3]), np.array([2])) == np.array([1])).all()
+    assert (find_nearest(np.array([3, 1]), np.array([2])) == np.array([3])).all()
 
 
 if __name__ == "__main__":
