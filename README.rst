@@ -232,7 +232,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                   :target: https://travis-ci.com/radis/radis
                   :alt: Tests
 
-.. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
+.. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg
                     :target: https://codecov.io/gh/radis/radis
                     :alt: Coverage
 
