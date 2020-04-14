@@ -263,12 +263,31 @@ def setup_test_line_databases(verbose=True):
 # %% Edit existing Line databases
 
 
+def define_Evib_as_sum_of_Evibi(levels):
+    """ Note that this is arbitrary for a polyatomic molecule. 
+    Lookup Pannier, Dubuet and Laux 2020 for more.
+    
+    We also update Erot to maintain the sum Evib+Erot = E : 
+    
+    ::
+        
+        Evib = Evib1 + Evib2 + Evib3
+        Erot = E - Evib    # to be consistent with equilibrium 
+        
+    """
+
+    levels["Evib"] = levels.Evib1 + levels.Evib2 + levels.Evib3
+    levels["Erot"] = levels.E - levels.Evib
+
+    return levels
+
+
 def define_Evib_as_min_of_polyad(levels, keys):
     """ Here we define the vibrational energy as the minimum energy 
     in a polyad. Here, the polyad is defined for each combination of ``keys``
     Typically, ``keys=['p', 'c', 'N']`` or keys=['p', 'c'].
     
-    Rotational energy is the rest:
+    Rotational energy is the rest::
         
         Evib = min(E(p,c,j,n) for a given set of (p,c))
         Erot = E - Evib
@@ -312,11 +331,13 @@ def discard_lines_with_na_levels(sf):
     
     sf: SpectrumFactory
     """
-    import pytest
 
-    with pytest.raises(AssertionError):
+    # Calculate populations using the non-equilibrium module:
+    # This will crash the first time because the Levels Database is just a fragment and does not include all levels.
+    try:
         sf.non_eq_spectrum(300, 300)
-    sf.df0.dropna(inplace=True)
+    except AssertionError:  # expected
+        sf.df0.dropna(inplace=True)
 
 
 # %% Deal with missing databases

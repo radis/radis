@@ -344,13 +344,24 @@ def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
         printm("Tested Q_CDSD values are correct : OK")
 
 
-@pytest.mark.needs_config_file
 @pytest.mark.fast
 def test_reduced_CDSD_calc_noneq(verbose=True, warnings=True, *args, **kwargs):
     """ Compare calculated partition function at equilibrium and nonequilibrium
-    using the CDSD-format """
+    using the CDSD-format 
+    
+    Examples
+    --------
+    
+        assert Qfc.at(300) != Qfc.at_noneq_3Tvib((300, 300, 300), 300)
+        
+    After redefining Evib so that Evib + Erot = E:
+        
+        assert np.isclose(Qfc.at(300), Qfc.at_noneq(300, 300), rtol=0.001)
+        assert np.isclose(Qfc.at(300), Qfc.at_noneq_3Tvib((300, 300, 300), 300), rtol=0.001)
+    """
 
     from radis.misc.config import getDatabankEntries
+    from radis.test.utils import define_Evib_as_sum_of_Evibi
 
     iso = 1
     database = "HITEMP-CO2-HAMIL-TEST"
@@ -365,12 +376,17 @@ def test_reduced_CDSD_calc_noneq(verbose=True, warnings=True, *args, **kwargs):
         use_cached=True,
         verbose=verbose,
     )
-    assert np.isclose(Qfc.at(300), Qfc.at_noneq_3Tvib((300, 300, 300), 300), rtol=0.001)
 
-    if verbose:
-        printm(
-            "Tested CDSD Q_calc at equilibrium and nonequilibrium give same output: OK"
-        )
+    # Note that partition functions are not equal because some of the energy
+    # goes in coupling terms in the Hamiltonian formulation
+    assert Qfc.at(300) != Qfc.at_noneq_3Tvib((300, 300, 300), 300)
+
+    # Below we redefine Evib so that Evib + Erot = E
+    define_Evib_as_sum_of_Evibi(Qfc.df)
+
+    # New Test:
+    assert np.isclose(Qfc.at(300), Qfc.at_noneq(300, 300), rtol=0.001)
+    assert np.isclose(Qfc.at(300), Qfc.at_noneq_3Tvib((300, 300, 300), 300), rtol=0.001)
 
 
 # @pytest.mark.fast   # (very fast only once the cached database has been generated, else decently fast)
@@ -658,45 +674,55 @@ def test_Morse_Potential_effect_CO(
     assert abs(Q_nomorse - Q_morse) / Q_morse < rtol
 
 
-# from warnings import catch_warnings, filterwarnings
-def run_example():
-    setup_test_line_databases(
-        verbose=True
-    )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
-
-    sf = SpectrumFactory(
-        wavenum_min=2283.7,
-        wavenum_max=2285.1,
-        wstep=0.001,
-        cutoff=1e-30,
-        path_length=0.1,
-        mole_fraction=400e-6,
-        isotope=[1],
-        db_use_cached=True,  # important to test CAche file here
-        verbose=2,
-    )
-    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITEMP-CO2-HAMIL-TEST")
-
-    # Now generate vibrational energies for a 2-T model
-    # ... Note that this is arbitrary. Lookup Pannier & Dubuet 2020 for more.
-    levels = sf.parsum_calc["CO2"][1]["X"].df
-    levels["Evib"] = levels.Evib1 + levels.Evib2 + levels.Evib3
-
-    # Calculate populations using the non-equilibrium module:
-    # This will crash the first time because the Levels Database is just a fragment and does not include all levels.
-    try:
-        sf.non_eq_spectrum(300, 300)
-    except AssertionError:  # expected
-        sf.df0.dropna(inplace=True)
-
-    getTestFile("HITEMP-CO2-HAMIL-TEST")
-
-    s = sf.non_eq_spectrum(300, 300)
-    s.plot()
-
-
 def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
+    """ Test that we regenerate levels file automatically if manually changed
+    
+    see https://github.com/radis/radis/issues/90
+    
+    """
+
+    # from warnings import catch_warnings, filterwarnings
+    def run_example():
+
+        from radis.test.utils import (
+            discard_lines_with_na_levels,
+            define_Evib_as_sum_of_Evibi,
+        )
+
+        setup_test_line_databases(
+            verbose=True
+        )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
+
+        sf = SpectrumFactory(
+            wavenum_min=2283.7,
+            wavenum_max=2285.1,
+            wstep=0.001,
+            cutoff=1e-30,
+            path_length=0.1,
+            mole_fraction=400e-6,
+            isotope=[1],
+            db_use_cached=True,  # important to test CAche file here
+            verbose=2,
+        )
+        sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+        sf.load_databank("HITEMP-CO2-HAMIL-TEST")
+
+        # Now generate vibrational energies for a 2-T model
+        levels = sf.parsum_calc["CO2"][1]["X"].df
+        define_Evib_as_sum_of_Evibi(levels)
+        discard_lines_with_na_levels()
+
+        # Calculate populations using the non-equilibrium module:
+        # This will crash the first time because the Levels Database is just a fragment and does not include all levels.
+        try:
+            sf.non_eq_spectrum(300, 300)
+        except AssertionError:  # expected
+            sf.df0.dropna(inplace=True)
+
+        getTestFile("HITEMP-CO2-HAMIL-TEST")
+
+        s = sf.non_eq_spectrum(300, 300)
+        s.plot()
 
     # run calculation (SpectrumFactory)
     run_example()
