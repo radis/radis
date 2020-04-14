@@ -94,6 +94,7 @@ def test_centered_diff(*args, **kwargs):
     assert (centered_diff(a) == ones).all()
     assert not (centered_diff(a) == zeros).all()
     assert (centered_diff(ones) == zeros).all()
+    assert len(centered_diff(a)) == len(a)
 
 
 def test_logspace(*args, **kwargs):
@@ -112,21 +113,7 @@ def test_logspace(*args, **kwargs):
             assert (dat[i] / dat[i - 1] - dat[i - 1] / dat[i - 2]) <= 1e-6
 
 
-def _run_testcases(verbose=True, *args, **kwargs):
-    """ Test array functions
-
-    """
-
-    test_is_sorted()
-    test_find_first()
-    test_bining()
-    test_calc_diff()
-    test_logspace()
-    test_autoturn()
-    test_centered_diff()
-
-    return True
-
-
 if __name__ == "__main__":
-    print("test_arrays functions:", _run_testcases())
+    import pytest
+
+    pytest.main(["test_arrays.py", "-s"])  # -s for showing console output
