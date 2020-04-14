@@ -260,6 +260,65 @@ def setup_test_line_databases(verbose=True):
     return
 
 
+# %% Edit existing Line databases
+
+
+def define_Evib_as_min_of_polyad(levels, keys):
+    """ Here we define the vibrational energy as the minimum energy 
+    in a polyad. Here, the polyad is defined for each combination of ``keys``
+    Typically, ``keys=['p', 'c', 'N']`` or keys=['p', 'c'].
+    
+    Rotational energy is the rest:
+        
+        Evib = min(E(p,c,j,n) for a given set of (p,c))
+        Erot = E - Evib
+    
+    .. warning:: 
+        See Pannier, Dubuet & Laux 2020 for a quantitative comparison
+        of the different possible methods to define vibrational energy. 
+    
+    
+    Parameters
+    ----------
+    
+    sf: SpectrumFactory object
+    """
+
+    def fill_EvibErot(grp):
+        Evib0 = grp.E.min()
+        grp["Evib"] = Evib0
+        grp["Erot"] = grp.E - Evib0
+        return grp
+
+    levels = levels.groupby(keys).apply(fill_EvibErot)
+    levels.reset_index()
+
+    return levels
+
+
+def discard_lines_with_na_levels(sf):
+    """ In the test Levels databases, not all levels are given (to save 
+    space). Consequently, in the Line databases, some lines have N/A 
+    levels and cannot be calculated at nonequilibrium. This function 
+    cleans the line databases from such lines by first running a dummy
+    calculation and removing the lines where levels were N/A.
+    
+    .. warning::
+        results from such a calculation are physically wrong. Only use 
+        to test the functions!
+    
+    Parameters
+    ----------
+    
+    sf: SpectrumFactory
+    """
+    import pytest
+
+    with pytest.raises(AssertionError):
+        sf.non_eq_spectrum(300, 300)
+    sf.df0.dropna(inplace=True)
+
+
 # %% Deal with missing databases
 def _failsafe_if_no_db(testcase, *args, **kwargs):
     """finally not implemented?"""
