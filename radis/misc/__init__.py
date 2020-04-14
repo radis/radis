@@ -14,7 +14,6 @@ from .arrays import (
     norm,
     norm_on,
     scale_to,
-    shift_array,
     calc_diff,
     find_nearest,
     find_first,
