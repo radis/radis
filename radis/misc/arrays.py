@@ -130,92 +130,6 @@ def nantrapz(I, w, dx=1.0, axis=-1):
 # ==============================================================================
 
 
-def shift_array(t0, y0, shift, nmax=10, tab=0):
-    """     
-    shift the array and interpolate when the shift is smaller than the time step
-
-
-    Parameters    
-    ----------
-
-    t0: array-like
-        x
-
-    y0: array-like
-        y
-
-    shift: float
-        value to shift x and y    
-
-    nmax : int
-        maximum interpolation step
-
-    tab: int
-        unless said otherwise (tab != 0), replace values with 0. Default 0 
-
-
-    Returns
-    -------
-
-    t, y: array-like
-        shifted arrays
-
-
-    Note
-    ----
-
-    Only tested with constant timesteps    
-    """
-
-    if shift == 0:
-        return t0, y0
-
-    t = np.copy(t0)
-    y = np.copy(y0)
-
-    # Get the interpolation step required
-    dt = t[1] - t[0]
-    n = dt / (abs(shift) % dt)
-    n = round(n)
-
-    if n > nmax:
-        print("Interpolation step required", n, "has been reduced to", nmax)
-        n = nmax
-
-    if n > 1:
-        # Interpolate
-        step = (max(t) - min(t)) / (len(t) - 1) / n
-        tint = np.arange(min(t), max(t), step)
-        tck = interpolate.splrep(t, y, s=0)
-        y = interpolate.splev(tint, tck, der=0)
-        t = tint
-
-    # Find shift coordinates (don't forget the negative shift case)
-    if shift > 0:
-        try:
-            n = np.argmax(t >= (t[0] + shift))
-        except ValueError:  # Empty sequence (shift probably too important)
-            n = len(t)
-    else:
-        try:
-            n = np.argmax(t >= (t[-1] + shift))
-        # Empty sequence (negative shift probably too important)
-        except ValueError:
-            n = 0
-
-    # Shift
-    if shift > 0:
-        y[n:] = y[:-n]
-        y[:n] *= 0
-        y[:n] += tab
-    else:
-        y[:n] = y[-n:]
-        y[n:] *= 0
-        y[n:] += tab
-
-    return t, y
-
-
 def calc_diff(t1, v1, t2, v2):
     """ Substract two vectors that may have slightly offset abscisses 
     interpolating the correct values 
@@ -263,50 +177,49 @@ def calc_diff(t1, v1, t2, v2):
     return tdiff, vdiff
 
 
-def find_nearest(array, searched, returnarg=False):
-    """ Return the closest elements in array of 'searched' array. 
-    Also returns a boolean index
-    
+def find_nearest(array, searched, return_bool=False):
+    """ Return the closest elements in array for each element in 'searched' array.
+    In case of multiple elements in `array` having equal difference with
+    `searched` element, one with least index is returned. Also returns a boolean
+    array with indices of elements occuring in output list set to true.
+
     Examples
     --------
-    
+
     ::
-        
+
         from numpy import array
-        find_nearest(array([1,2,3,4], array([2.1,2])
-        
-        >>> (array([2]), array([False, True, False, False], dtype=bool))
-        
+        find_nearest(array([1,2,3,4]), array([2.1,2]))
+
+        >>> (array([2, 2]), array([False, True, False, False], dtype=bool))
+
         find_nearest(np.array([1,2,3,4]), np.array([2.6,2]))
-        
-        >>> (array([2, 3]), array([False,  True,  True, False], dtype=bool))
+
+        >>> (array([3, 2]), array([False,  True,  True, False], dtype=bool))
 
     """
 
     b = np.zeros_like(array, dtype=bool)
 
-    #    def find_nearest(array,value):
-    #    '''  assuming array is sorted. '''
-    #        idx = np.searchsorted(array, value, side="left")
-    #        print('idx',idx)
-    #        if math.fabs(value - array[idx-1]) < math.fabs(value - array[idx]):
-    #            return idx-1
-    #        else:
-    #            return idx
-
     def find_nearest(array, value):
-        return (np.abs(array - value)).argmin()
+        idx = (np.abs(array - value)).argmin()
+        return idx, array[idx]
 
+    nearest_els = []
     try:
         for s in searched:
-            b[find_nearest(array, s)] = True
+            idx, el = find_nearest(array, s)
+            b[idx] = True
+            nearest_els.append(el)
     except:
-        b[find_nearest(array, searched)] = True
+        idx, el = find_nearest(array, searched)
+        b[idx] = True
+        nearest_els.append(el)
 
-    if returnarg:
-        out = array[b], b, np.argmax(b)
+    if return_bool:
+        out = nearest_els, b
     else:
-        out = array[b], b
+        out = nearest_els
 
     return out
 

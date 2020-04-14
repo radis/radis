@@ -16,6 +16,7 @@ from radis.misc.arrays import (
     autoturn,
     centered_diff,
     logspace,
+    find_nearest,
 )
 
 
@@ -111,6 +112,33 @@ def test_logspace(*args, **kwargs):
     for dat in dats:
         for i in range(2, len(dat)):
             assert (dat[i] / dat[i - 1] - dat[i - 1] / dat[i - 2]) <= 1e-6
+
+
+def test_find_nearest(*args, **kwargs):
+    a = np.arange(10)
+    b = np.ones(5)
+
+    x1, y1 = find_nearest(a, a, True)
+    assert (x1 == a).all()
+    assert len(y1) == len(a)
+    assert (y1 == np.array([True for i in a])).all()
+
+    x2, y2 = find_nearest(a, b, True)
+    assert (x2 == b).all()
+    assert len(x2) == len(b)
+    assert len(y2) == len(a)
+    assert (y2 == np.array([i == 1 for i in a])).all()
+
+    x3, y3 = find_nearest(np.array([10]), np.array([-10, 0, 10]), True)
+    assert (x3 == np.array([10, 10, 10])).all()
+    assert len(y3) == 1
+    assert y3 == [True]
+
+    assert (find_nearest(a, a[::-1]) == a[::-1]).all()
+    assert (
+        find_nearest(np.array([1.5, 2.0, 2.5, 3.0]), np.array([-10, 10, 2.25]))
+        == np.array([1.5, 3.0, 2.0])
+    ).all()
 
 
 if __name__ == "__main__":
