@@ -710,7 +710,7 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
         # Now generate vibrational energies for a 2-T model
         levels = sf.parsum_calc["CO2"][1]["X"].df
         define_Evib_as_sum_of_Evibi(levels)
-        discard_lines_with_na_levels()
+        discard_lines_with_na_levels(sf)
 
         # Calculate populations using the non-equilibrium module:
         # This will crash the first time because the Levels Database is just a fragment and does not include all levels.
