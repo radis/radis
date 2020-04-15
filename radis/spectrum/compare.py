@@ -353,13 +353,13 @@ def get_residual(
         if isinstance(normalize, tuple):
             wmin, wmax = normalize
             w1, I1 = s1.get(
-                var, copy=False, wunit=s1.get_waveunit()
+                var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var],
             )  # (faster not to copy)
             b = (w1 > wmin) & (w1 < wmax)
             if normalize_how == "max":
                 norm1 = np.nanmax(I1[b])
             elif normalize_how == "mean":
-                norm1 = np.nanmean(I2[b])
+                norm1 = np.nanmean(I1[b])
             elif normalize_how == "area":
                 norm1 = np.abs(nantrapz(I1[b], w1[b]))
             else:
@@ -367,7 +367,9 @@ def get_residual(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
             # now normalize s2. Ensure we use the same unit system!
-            w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
+            w2, I2 = s2.get(
+                var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var]
+            )
             b = (w2 > wmin) & (w2 < wmax)
             if normalize_how == "max":
                 norm2 = np.nanmax(I2[b])
@@ -405,12 +407,15 @@ def get_residual(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
             # Ensure we use the same unit system!
-            s1 = multiply(s1, 1 / norm1, var=var)
-            s2 = multiply(s2, 1 / norm2, var=var)
+            s1 = multiply(s1, 1 / norm1, var=var, Iunit=s1.units[var])
+            s2 = multiply(s2, 1 / norm2, var=var, Iunit=s1.units[var])
+            # s1 = multiply(s1, 1 / norm1, var=var)
+            # s2 = multiply(s2, 1 / norm2, var=var)
 
     # mask for 0
-    wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)
-
+    wdiff, dI = get_diff(
+        s1, s2, var, resample=True, diff_window=diff_window, Iunit=s1.units[var]
+    )
     if ignore_nan:
         b = np.isnan(dI)
         wdiff, dI = wdiff[~b], dI[~b]
