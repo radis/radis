@@ -114,56 +114,44 @@ def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
     if plot:
         plot_spec(getTestFile("N2C_specair_380nm.spec"))
 
+
 def test_save_compressed2():
+    "Check if saving a spectrum with compress = 2 does not change something."
     from radis import calc_spectrum, SpecDatabase
     import shutil
-    #s1 : cm-1, vacuum
-    #s2 : nm, air
-    s1 = calc_spectrum(
-                1900, 1950,         # cm-1
-                # wavelength_min=4160,   # nm
-                # wavelength_max=4190,   # nm
-                  molecule='CO',
-                  isotope='1,2,3',
-                  pressure=1.01325,   # bar
-                  Tgas=700,           # K
-                  mole_fraction=0.1,
-                  path_length=1,      # cm
-                  verbose=False,
-                  wstep=0.01,
-                  medium='vacuum',
-                  )
-    s2 = calc_spectrum(
-                1900, 1950,         # cm-1
-                # wavelength_min=4160,   # nm
-                # wavelength_max=4190,   # nm
-                  molecule='CO',
-                  isotope='1,2,3',
-                  pressure=1.01325,   # bar
-                  Tgas=700,           # K
-                  mole_fraction=0.1,
-                  path_length=1,      # cm
-                  verbose=False,
-                  wstep=0.01,
-                  medium='vacuum',
-                  )
-    
-    db = SpecDatabase(dirname(getTestFile("."))+'/newDb/')
-    for s in [s1, s2]:
-        db.add(s, compress=2, if_exists_then='replace')
-    
-    # s1_bis = db.get_unique(Tgas=700)
-    # s2_bis = db.get_unique(Tgas=1000)
-    s1_bis = db.get_closest(Tgas=700)
-    s2_bis = db.get_closest(Tgas=1000)
-    s2_bis.update()
-    
-    shutil.rmtree(dirname(getTestFile("."))+'/newDb/')
-    assert s1 == s1_bis
-    assert s2 == s2_bis
-    
+
+    # s1 : cm-1, vacuum
+    # s2 : nm, air
+    s = calc_spectrum(
+        1900,
+        1950,  # cm-1
+        # wavelength_min=4160,   # nm
+        # wavelength_max=4190,   # nm
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        verbose=False,
+        wstep=0.01,
+        medium="vacuum",
+    )
+
+    db = SpecDatabase(dirname(getTestFile(".")) + "/newDb/")
+    db.add(s, compress=1, if_exists_then="error")
+
+    # s_bis = db.get_closest(Tgas=700)
+    s_bis = db.get_unique(Tgas=700)
+
+    shutil.rmtree(dirname(getTestFile(".")) + "/newDb/")
+    assert s.compare_with(s_bis)
+    assert s == s_bis
+
+
 if __name__ == "__main__":
     import pytest
+
     # -s is to plot
-    # pytest.main(['test_database.py', '-s'])
-    test_save_compressed2()
+    pytest.main(["test_database.py", "-s"])
+    # test_save_compressed2()
