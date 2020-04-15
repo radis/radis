@@ -429,7 +429,7 @@ def _get_unique_var(s, var, inplace):
     return var
 
 
-def multiply(s, coef, var=None, inplace=False):
+def multiply(s, coef, Iunit=None, var=None, inplace=False):
     """Multiply s[var] by the float 'coef'
 
     Parameters
@@ -454,6 +454,8 @@ def multiply(s, coef, var=None, inplace=False):
     """
     # Check input
     var = _get_unique_var(s, var, inplace)
+    if Iunit == None:
+        Iunit = s.units[var]
 
     if not inplace:
         s = s.copy(quantity=var)
@@ -461,7 +463,7 @@ def multiply(s, coef, var=None, inplace=False):
     #            s.name = name
 
     # Multiply inplace       ( @dev: we have copied already if needed )
-    w, I = s.get(var, wunit=s.get_waveunit(), copy=False)
+    w, I = s.get(var, wunit=s.get_waveunit(), copy=False, Iunit=Iunit)
     I *= coef  # @dev: updates the Spectrum directly because of copy=False
 
     return s
