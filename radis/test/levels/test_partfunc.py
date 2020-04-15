@@ -719,8 +719,6 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
         except AssertionError:  # expected
             sf.df0.dropna(inplace=True)
 
-        getTestFile("HITEMP-CO2-HAMIL-TEST")
-
         s = sf.non_eq_spectrum(300, 300)
         s.plot()
 
