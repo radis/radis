@@ -7,3 +7,8 @@ exclude_lines =
     if __debug__:
     if self.verbose >= 2:
     def run_testcases
+    @jit
+    except MemoryError
+    raise DeprecationWarning
+    raise FileNotFoundError
+    raise AttributeError
