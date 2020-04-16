@@ -122,11 +122,7 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
     from radis.test.utils import setup_test_line_databases
     from radis import calc_spectrum, SpecDatabase
 
-    try:
-        # we want to make sure this folder is not generated from before
-        shutil.rmtree(dirname(getTestFile(".")) + "/newDb/")
-    except:
-        pass
+    shutil.rmtree(join(dirname(getTestFile(".")),newDb"), ignore_errors=True)
     
     try:
         #get the spectrum
