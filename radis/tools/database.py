@@ -2018,7 +2018,7 @@ class SpecDatabase(SpecList):
         compress: 0, 1, 2
             if ``True`` or 1, save the spectrum in a compressed form 
             
-            if 2, removes all quantities that can be regenerated with ``s.update()``,
+            if 2, removes all quantities that can be regenerated with :py:meth:`~radis.spectrum.spectrum.Spectrum.update`,
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
             If not given, use the value of ``SpecDatabase.binary``
