@@ -150,12 +150,9 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
         db2 = SpecDatabase(join(dirname(getTestFile(".")),"newDb"))
         s_bis = db2.get_unique(Tgas=700)
         
-        # we clean the folders for next times
-        shutil.rmtree(dirname(getTestFile(".")) + "/newDb/")
-    
-    except:
+    finally:
         # we want to make sure this folder is deleted
-        shutil.rmtree(dirname(getTestFile(".")) + "/newDb/")
+        shutil.rmtree(join(dirname(getTestFile(".")),"newDb"))
     
     # we check the loaded spectrum contains less information than the calculated one
     assert not s == s_bis
