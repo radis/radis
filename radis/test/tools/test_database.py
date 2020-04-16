@@ -154,7 +154,8 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
     s_bis.update()
 
     # now we check if it works
-    assert s.compare_with(s_bis, spectra_only=True, plot=False)
+    for var in s.get_vars():
+        assert s.compare_with(s_bis, spectra_only=var, plot=False, verbose=verbose)
 
     # assert s == s_bis
     # print(s)
