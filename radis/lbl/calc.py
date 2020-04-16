@@ -39,7 +39,7 @@ def calc_spectrum(wavenum_min=None,
                   overpopulation=None,
                   molecule=None,
                   isotope=None,
-                  mole_fraction=1,
+                  mole_fraction=None,
                   path_length=1,
                   databank=None,
                   medium='air',
@@ -57,7 +57,7 @@ def calc_spectrum(wavenum_min=None,
 ​
     Parameters
     ----------
-​
+
     wavenum_min: float [cm-1]
         minimum wavenumber to be processed in cm^-1
     wavenum_max: float [cm-1]
@@ -86,51 +86,52 @@ def calc_spectrum(wavenum_min=None,
 ​
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature. 
-        Ex with CO2::
+        
+        Example::
+            
+            overpopulation = {'CO2' : {'(00`0`0)->(00`0`1)': 2.5,
+                                       '(00`0`1)->(00`0`2)': 1,
+                                       '(01`1`0)->(01`1`1)': 1,
+                                       '(01`1`1)->(01`1`2)': 1
+            
+                                        }
+                             }
 ​
-            overpopulation = {
-            '(00`0`0)->(00`0`1)': 2.5,
-                '(00`0`1)->(00`0`2)': 1,
-                '(01`1`0)->(01`1`1)': 1,
-                '(01`1`1)->(01`1`2)': 1,
-                }
-​
-    molecule: int, str, dict or ``None``
-        molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
+    molecule: int, str, list or ``None``
+        molecule id (HITRAN format) or name. For multiple molecules, use a list.
+        The `isotope`, `mole_fraction`, `databank` and `overpopulation` parameters must then 
+        be dictionaries.
+        If ``None``, the molecule can be infered
         from the database files being loaded. See the list of supported molecules 
         in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`. 
         Default ``None``. 
-        If dictionary : dictionary describing the molecules and their parameters. If provided,
-        it will be read while `molecule`, `mole_fraction`, `databank` and
-        `overpopulation` parameters will not be used. Cf. the following parameters
-        for the format and meaning of the molecules parameters.
-        
-        Example::
-            
-            molecules = {'CO2' : {'isotopes' : 'all',
-                                  'mole_fraction' : 0.5,
-                                  'databank' : 'fetch',
-                                  'overpopulation' : None},
-                         'CO' : {'isotopes' : 'all',
-                                  'mole_fraction' : 0.5,
-                                  'databank' : 'fetch',
-                                  'overpopulation' : None}
-                         }
 ​
-    isotope: int, list, str of the form ``'1,2'``, or ``'all'``
+    isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
         See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
-        times!). Default ``'all'``
+        times!). Default ``'all'``.
+        
+        For multiple molecules, use a dictionary with molecule names as keys.
+        
+        Example::
+            
+            mole_fraction={'CO2':0.8 ,  'CO':0.2 }
 ​
-    mole_fraction: float
-        database species mole fraction. Default ``1``
+    mole_fraction: float or dict
+        database species mole fraction. Default ``1``.
+        
+        For multiple molecules, use a dictionary with molecule names as keys.
+        
+        Example::
+            
+            mole_fraction={'CO2': 0.8, 'CO':0.2}
 ​
     path_length: float [cm]
         slab size. Default ``1``.
 ​
-    databank: str
+    databank: str or dict
         can be either: 
 ​
         - ``'fetch'``, to fetch automatically from [HITRAN-2016]_ through astroquery. 
@@ -150,6 +151,12 @@ def calc_spectrum(wavenum_min=None,
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
         your ``~/.radis`` file format 
+        
+        For multiple molecules, use a dictionary with molecule names as keys.
+        
+        Example::
+            
+            databank = {'CO2' : 'fetch', 'CO' : 'fetch'}
 ​
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
@@ -267,8 +274,8 @@ def calc_spectrum(wavenum_min=None,
     :class:`~radis.lbl.factory.SpectrumFactory`, 
     the :ref:`Spectrum page <label_spectrum>`
     '''
-    
-    if not isinstance(molecule,dict):
+
+    if type(molecule) != list:
         s = _calc_spectrum(wavenum_min=wavenum_min,
                            wavenum_max=wavenum_max,
                            wavelength_min=wavelength_min,
@@ -281,7 +288,7 @@ def calc_spectrum(wavenum_min=None,
                            molecule=molecule,
                            isotope=isotope,
                            mole_fraction=mole_fraction,
-                           path_length=path_length,
+                           path_length=1,
                            databank=databank,
                            medium=medium,
                            wstep=wstep,
@@ -292,19 +299,22 @@ def calc_spectrum(wavenum_min=None,
                            verbose=verbose,
                            **kwargs)
         return s
+    
     else: # The "molecules" dictionary is read, instead of the possible other inputs ("molecule", "mole_fraction", ...)    
-        # Test that all overwritten parameters are left as default:
-        try:
-            assert mole_fraction == 1
-            assert overpopulation is None 
-            assert isotope is None
-        except AssertionError:
-            raise ValueError('mole_fraction, overpopulation and isotope '+\
-                             'should be left as default if using a dictionary of '+\
-                                 'molecules')
-        
         s = []
-        for mol in molecule.keys():
+        
+        # Check consistency of inputs
+        for mol in molecule:
+            try:
+                assert mol in isotope.keys()
+                assert mol in overpopulation.keys()
+                assert mol in mole_fraction.keys()
+                assert mol in databank.keys()
+            except AssertionError:
+                raise ValueError('mole_fraction, overpopulation, databank and isotope '+\
+                                 'should be dictionaries of listing all molecules')
+            
+            
             s.append(_calc_spectrum(wavenum_min=wavenum_min,
                                    wavenum_max=wavenum_max,
                                    wavelength_min=wavelength_min,
@@ -313,12 +323,12 @@ def calc_spectrum(wavenum_min=None,
                                    Tvib=Tvib,
                                    Trot=Trot,
                                    pressure=pressure,
-                                   overpopulation=molecule[mol]['overpopulation'],
+                                   overpopulation=overpopulation[mol],
                                    molecule=mol,
-                                   isotope=molecule[mol]['isotopes'],
-                                   mole_fraction=molecule[mol]['mole_fraction'],
+                                   isotope=isotope[mol],
+                                   mole_fraction=mole_fraction[mol],
                                    path_length=path_length,
-                                   databank=molecule[mol]['databank'],
+                                   databank=databank[mol],
                                    medium=medium,
                                    wstep=wstep,
                                    broadening_max_width=broadening_max_width, 
@@ -331,7 +341,7 @@ def calc_spectrum(wavenum_min=None,
             return s[0]
         else:
             from radis import MergeSlabs        
-            s_tot = MergeSlabs(*s)
+            s_tot = MergeSlabs(s)
             return s_tot
 
 def _calc_spectrum(
