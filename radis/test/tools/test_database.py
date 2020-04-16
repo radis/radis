@@ -147,7 +147,7 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
         db.add(s, compress=2, if_exists_then="error")
     
         # simulate an experimentalist who come later and load the spectrum
-        db2 = SpecDatabase(dirname(getTestFile(".")) + "/newDb/")
+        db2 = SpecDatabase(join(dirname(getTestFile(".")),"newDb"))
         s_bis = db2.get_unique(Tgas=700)
         
         # we clean the folders for next times
