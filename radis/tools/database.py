@@ -2015,7 +2015,7 @@ class SpecDatabase(SpecList):
             Other :py:meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given 
             as kwargs arguments:
 
-        compress: boolean or int
+        compress: 0, 1, 2
             if ``True`` or 1, save the spectrum in a compressed form 
             
             if 2, removes all quantities that can be regenerated with ``s.update()``,
