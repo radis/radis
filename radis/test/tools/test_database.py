@@ -115,7 +115,7 @@ def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
         plot_spec(getTestFile("N2C_specair_380nm.spec"))
 
 
-def test_save_compressed2():
+def test_save_compressed2(verbose=True, *args, **kwargs):
     "Check if saving a spectrum with compress = 2 does not change something."
     import shutil
 
