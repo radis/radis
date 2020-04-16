@@ -117,16 +117,15 @@ def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
 
 def test_save_compressed2():
     "Check if saving a spectrum with compress = 2 does not change something."
-    from radis import calc_spectrum, SpecDatabase
     import shutil
 
-    # s1 : cm-1, vacuum
-    # s2 : nm, air
+    from radis.test.utils import setup_test_line_databases
+    from radis import calc_spectrum, SpecDatabase
+
+    setup_test_line_databases()
     s = calc_spectrum(
-        1900,
-        1950,  # cm-1
-        # wavelength_min=4160,   # nm
-        # wavelength_max=4190,   # nm
+        2000,
+        2300,  # cm-1
         molecule="CO",
         isotope="1,2,3",
         pressure=1.01325,  # bar
@@ -136,17 +135,30 @@ def test_save_compressed2():
         verbose=False,
         wstep=0.01,
         medium="vacuum",
+        databank="HITRAN-CO-TEST",
     )
 
+    # load in one databse
     db = SpecDatabase(dirname(getTestFile(".")) + "/newDb/")
-    db.add(s, compress=1, if_exists_then="error")
+    db.add(s, compress=2, if_exists_then="error")
 
-    # s_bis = db.get_closest(Tgas=700)
-    s_bis = db.get_unique(Tgas=700)
+    # simulate an experimentalist who come later and load the spectrum
+    db2 = SpecDatabase(dirname(getTestFile(".")) + "/newDb/")
+    s_bis = db2.get_unique(Tgas=700)
 
+    # we clean the folders for next times
     shutil.rmtree(dirname(getTestFile(".")) + "/newDb/")
-    assert s.compare_with(s_bis)
-    assert s == s_bis
+
+    # we check the loaded spectrum contains less information than the calculated one
+    assert not s == s_bis
+    s_bis.update()
+
+    # now we check if it works
+    assert s.compare_with(s_bis, spectra_only=True, plot=False)
+
+    # assert s == s_bis
+    # print(s)
+    # print(s_bis)
 
 
 if __name__ == "__main__":
