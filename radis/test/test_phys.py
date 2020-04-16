@@ -25,6 +25,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 from __future__ import absolute_import, unicode_literals, print_function
 import numpy as np
 from numpy import isclose
+from astropy import units as u
 from radis.phys.convert import (
     J2eV,
     J2cm,
@@ -56,7 +57,7 @@ from radis.phys.convert import (
     atm2torr,
     atm2bar,
 )
-from radis.phys.units import uarray, Q_, conv2
+from radis.phys.units import conv2, is_homogeneous
 import pytest
 
 
@@ -116,19 +117,13 @@ def test_units(verbose=True, *args, **kwargs):
 
     # Test unit-ware arrays
     # RADIS pint-aware array
-    a = uarray(np.linspace(10, 100, 10), "Td")
-    res = Q_(np.linspace(1e-16, 1e-15, 10), "V * cm^2")  # pint definition
-
-    assert (
-        np.round(np.array(a.to("V * cm^2")) - np.array(res), 5) == np.zeros_like(res)
-    ).all()
     #    b = (print(a.to('V * cm^2'))==print(res))
 
     # Test conversion
     convtable = [
         (500, "nm", 0.5, "µm"),
         (1, "erg/s", 1e-7, "W"),
-        (1, "m2", 10000, "cm2"),
+        (1, "m**2", 10000, "cm**2"),
     ]
     for a, f, r, t in convtable:
         cr = conv2(a, f, t)
@@ -139,10 +134,9 @@ def test_units(verbose=True, *args, **kwargs):
     # Ensures that an error is raised if units with angles are converted
     # (mathematically correct because angles are dimensionless, but prone
     # to user errors)
-    from radis.phys.units import DimensionalityError
-
-    with pytest.raises(DimensionalityError):
-        conv2(1, "mW/cm2/sr/nm", "mW/cm2/nm")
+    assert not is_homogeneous("mW/cm2/sr/nm", "mW/cm2/nm")
+    with pytest.raises(TypeError):
+        conv2(1, "mW/cm**2/sr/nm", "mW/cm**2/nm")
 
     return True
 

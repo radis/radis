@@ -65,7 +65,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     )
 
     s_hapi = Spectrum.from_array(
-        nu, coef, "abscoeff", "cm-1", "cm_1", conditions={"Tgas": T}, name="HAPI"
+        nu, coef, "abscoeff", "cm-1", "cm-1", conditions={"Tgas": T}, name="HAPI"
     )
 
     # %% Calculate with RADIS

@@ -64,7 +64,7 @@ def test_klarenaar_validation_case(
         ),
         "transmittance_noslit",
         waveunit="cm-1",
-        unit="I/I0",
+        unit="1",
         delimiter=",",
         name="Klarenaar 2017",
     )

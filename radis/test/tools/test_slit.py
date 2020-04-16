@@ -256,17 +256,17 @@ def test_convoluted_quantities_units(*args, **kwargs):
     s.update(verbose=False)
 
     assert s.units["radiance_noslit"] == "mW/cm2/sr/nm"
-    assert s.units["transmittance_noslit"] == "I/I0"
+    assert s.units["transmittance_noslit"] == "1"
 
     s.apply_slit(0.5, norm_by="area", verbose=False)
 
     assert s.units["radiance"] == "mW/cm2/sr/nm"
-    assert s.units["transmittance"] == "I/I0"
+    assert s.units["transmittance"] == "1"
 
     s.apply_slit(0.5, norm_by="max", verbose=False)
 
-    assert s.units["radiance"] == "mW/cm2/sr"
-    assert s.units["transmittance"] == "I/I0*nm"  # whatever that means
+    assert is_homogeneous(s.units["radiance"], "mW/cm2/sr")
+    assert s.units["transmittance"] == "nm"  # whatever that means
 
 
 @pytest.mark.fast
@@ -383,6 +383,8 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     s = calculated_spectrum(
         w, I, conditions={"Tvib": 3000, "Trot": 1200}, Iunit="mW/cm2/sr/µm"
     )
+
+    print("still in test file, s.units = ", s.units)
 
     FWHM = 2
 

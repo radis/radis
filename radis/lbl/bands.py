@@ -606,7 +606,7 @@ class BandFactory(BroadenFactory):
                 emisscoeff_v_bands,
             ) = self._calc_broadening_noneq_bands()
             #    :         :            :
-            #   cm-1    1/(#.cm-2)   mW/sr/cm_1
+            #   cm-1    1/(#.cm-2)   mW/sr/cm-1
 
             #            # ... add semi-continuum (optional)
             #            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
@@ -666,7 +666,7 @@ class BandFactory(BroadenFactory):
                 # (#/cm3)
 
                 abscoeff = abscoeff_v * density  # cm-1
-                emisscoeff = emisscoeff_v * density  # m/sr/cm3/cm_1
+                emisscoeff = emisscoeff_v * density  # m/sr/cm3/cm-1
 
                 # ==============================================================================
                 # Warning
@@ -693,15 +693,15 @@ class BandFactory(BroadenFactory):
                     radiance_noslit[b] = emisscoeff[b] * path_length
                 else:
                     # Note that for k -> 0,
-                    radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm_1)
+                    radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
 
-                # Convert `radiance_noslit` from (mW/sr/cm2/cm_1) to (mW/sr/cm2/nm)
+                # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
                 radiance_noslit = convert_rad2nm(
-                    radiance_noslit, wavenumber, "mW/sr/cm2/cm_1", "mW/sr/cm2/nm"
+                    radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
                 )
-                # Convert 'emisscoeff' from (mW/sr/cm3/cm_1) to (mW/sr/cm3/nm)
+                # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
                 emisscoeff = convert_emi2nm(
-                    emisscoeff, wavenumber, "mW/sr/cm3/cm_1", "mW/sr/cm3/nm"
+                    emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
                 )
                 # Note: emissivity not defined under non equilibrium
 

@@ -1020,7 +1020,7 @@ class SpectrumFactory(BandFactory):
             # ... (this is the performance bottleneck)
             wavenumber, abscoeff_v, emisscoeff_v = self._calc_broadening_noneq()
             #    :         :            :
-            #   cm-1    1/(#.cm-2)   mW/sr/cm_1
+            #   cm-1    1/(#.cm-2)   mW/sr/cm-1
 
             # ... add semi-continuum (optional)
             abscoeff_v = self._add_pseudo_continuum(abscoeff_v, k_continuum)
@@ -1038,7 +1038,7 @@ class SpectrumFactory(BandFactory):
             # (#/cm3)
 
             abscoeff = abscoeff_v * density  # cm-1
-            emisscoeff = emisscoeff_v * density  # mW/sr/cm3/cm_1
+            emisscoeff = emisscoeff_v * density  # mW/sr/cm3/cm-1
 
             # ... # TODO: if the code is extended to multi-species, then density has to be added
             # ... before lineshape broadening (as it would not be constant for all species)
@@ -1061,15 +1061,15 @@ class SpectrumFactory(BandFactory):
                 radiance_noslit[b] = emisscoeff[b] * path_length
             else:
                 # Note that for k -> 0,
-                radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm_1)
+                radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
 
-            # Convert `radiance_noslit` from (mW/sr/cm2/cm_1) to (mW/sr/cm2/nm)
+            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
             radiance_noslit = convert_rad2nm(
-                radiance_noslit, wavenumber, "mW/sr/cm2/cm_1", "mW/sr/cm2/nm"
+                radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
             )
-            # Convert 'emisscoeff' from (mW/sr/cm3/cm_1) to (mW/sr/cm3/nm)
+            # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
             emisscoeff = convert_emi2nm(
-                emisscoeff, wavenumber, "mW/sr/cm3/cm_1", "mW/sr/cm3/nm"
+                emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
             )
 
             if self.verbose >= 2:

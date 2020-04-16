@@ -72,7 +72,7 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
     return iplanck
 
 
-def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm_1"):
+def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
     """ Planck function for blackbody radiation, wavenumber version
 
 
@@ -89,13 +89,13 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm_1"):
         default 1
 
     unit: str
-        output unit. Default 'mW/sr/cm2/cm_1'
+        output unit. Default 'mW/sr/cm2/cm-1'
 
 
     Returns
     -------
 
-    planck: np.array   default (mW/sr/cm2/cm_1)
+    planck: np.array   default (mW/sr/cm2/cm-1)
         equilibrium radiance
 
     """
@@ -110,8 +110,8 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm_1"):
     # iplanck in erg/s/sr/cm2/cm-1
     iplanck *= 1e-4  # erg/s/sr/cm2/cm-1 > mW/sr/cm^2/cm-1
 
-    if Q_(unit) != Q_("mW/sr/cm2/cm_1"):
-        iplanck = conv2(iplanck, "mW/sr/cm2/cm_1", unit)
+    if Q_(unit) != Q_("mW/sr/cm2/cm-1"):
+        iplanck = conv2(iplanck, "mW/sr/cm2/cm-1", unit)
 
     return iplanck
 
@@ -204,7 +204,7 @@ def sPlanck(
     if waveunit == "cm-1":
         # generate the vector of wavenumbers (shape M)
         w = arange(wavenum_min, wavenum_max + wstep, wstep)
-        Iunit = "mW/sr/cm2/cm_1"
+        Iunit = "mW/sr/cm2/cm-1"
         I = planck_wn(w, T, eps=eps, unit=Iunit)
     else:
         # generate the vector of lengths (shape M)
@@ -230,8 +230,8 @@ def sPlanck(
         conditions=conditions,
         units={
             "radiance_noslit": Iunit,
-            "transmittance_noslit": "I/I0",
-            "absorbance": "-ln(I/I0)",
+            "transmittance_noslit": "1",
+            "absorbance": "1",
         },
         cond_units={"wstep": waveunit},
         waveunit=waveunit,

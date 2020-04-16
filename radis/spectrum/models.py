@@ -113,7 +113,7 @@ def calculated_spectrum(
 
 
 def transmittance_spectrum(
-    w, T, wunit="nm", Tunit="I/I0", conditions=None, cond_units=None, name=None
+    w, T, wunit="nm", Tunit="1", conditions=None, cond_units=None, name=None
 ):  # -> Spectrum:
     """ Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
     object that has unit conversion, plotting and slit convolution capabilities
@@ -133,7 +133,7 @@ def transmittance_spectrum(
         (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``. 
 
     Iunit: str
-        intensity unit. Default ``'I/I0'``
+        intensity unit. Default ``'1'``
 
 
     Other Parameters

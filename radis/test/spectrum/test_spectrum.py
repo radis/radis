@@ -60,7 +60,7 @@ def test_spectrum_get_methods(
         == s.get("radiance_noslit", Iunit="W/m2/sr/nm")[1]
     )
     assert all(nm2cm(s.get_wavelength(medium="vacuum")) == s.get_wavenumber())
-    assert s.get_power(unit="W/cm2/sr") == 2631.6288408588148
+    assert np.isclose(s.get_power(unit="W/cm2/sr"), 2631.6288408588148)
     assert s.get_waveunit() == "nm"
     assert np.isclose(
         s.get_power(unit="W/cm2/sr"),
@@ -216,10 +216,10 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
     I_nm = planck(w_nm, T=6000, unit="mW/sr/cm2/nm")
 
     s = calculated_spectrum(w_nm, I_nm, wunit="nm_vac", Iunit="mW/sr/cm2/nm",)
-
+    # print("INTENSITY CONVERSION SPECTRUM: s = ", s)
     # mW/sr/cm2/nm -> mW/sr/cm2/cm-1
-    w, I = s.get("radiance_noslit", Iunit="mW/sr/cm2/cm_1")
-    I_cm = planck_wn(w_cm, T=6000, unit="mW/sr/cm2/cm_1")
+    w, I = s.get("radiance_noslit", Iunit="mW/sr/cm2/cm-1")
+    I_cm = planck_wn(w_cm, T=6000, unit="mW/sr/cm2/cm-1")
     assert allclose(I_cm, I, rtol=1e-3)
 
 
@@ -239,8 +239,8 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
 #
 #    # mW/sr/cm3/nm -> mW/sr/cm3/cm-1
 #
-#    w, I = s.get('emissivity_noslit', Iunit='mW/sr/cm3/cm_1')
-#    I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm_1', 'mW/sr/m3/µm')
+#    w, I = s.get('emissivity_noslit', Iunit='mW/sr/cm3/cm-1')
+#    I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm-1', 'mW/sr/m3/µm')
 #
 
 # TODO: finish implementing emissivity_conversino above
@@ -402,17 +402,18 @@ def _run_testcases(
     # Test conversion of intensity cm-1 works
     # -------------
     test_intensity_conversion(debug=debug, verbose=verbose, *args, **kwargs)
-
+    print("LINE 405 done...")
     # Test updating / rescaling functions (no self absorption)
     # ---------
     test_rescaling_function(debug=debug, *args, **kwargs)
+    print("LINE 409 done...")
     test_resampling_function(
         debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs
     )
-
+    print("LINE 413 done....")
     # Test plot firewalls:
     test_noplot_different_quantities(*args, **kwargs)
-
+    print("LINE 416 done....")
     return True
 
 

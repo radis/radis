@@ -776,6 +776,7 @@ def plot_diff(
     if Iunit == "default":
         try:
             Iunit = s1.units[var]
+            # print("-----> IUNIT = ", Iunit)
         except KeyError:  # unit not defined in dictionary
             raise KeyError(
                 "Iunit not defined in spectrum for variable {0}. ".format(var)
@@ -907,6 +908,9 @@ def plot_diff(
             label=label2
         )
 
+    if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
+        Iunit = "I/I0"  # more explicit for the user
+
     Iunit = make_up(Iunit)  # cosmetic changes
 
     ax0.tick_params(labelbottom=False)
@@ -983,8 +987,9 @@ def plot_diff(
 
     if title:
         fig.suptitle(title)
-
+    # print("CALLED PLOT DIFF FUNCTION///...........")
     # Fix format
+    # print("ax0=", ax0)
     fix_style("origin", ax=ax0)
     for ax1i in ax1:
         fix_style("origin", ax=ax1i)

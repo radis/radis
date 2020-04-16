@@ -43,12 +43,12 @@ def test_sPlanck_conversions(verbose=True, *args, **kwargs):
         printm("Testing sPlanck conversions: ")
 
     s_cm = sPlanck(1000, 10000, T=1500, eps=0.3)
-    I_cm2cm = s_cm.get("radiance_noslit", Iunit="mW/cm2/sr/cm_1")[1]
+    I_cm2cm = s_cm.get("radiance_noslit", Iunit="mW/cm2/sr/cm-1")[1]
     I_cm2nm = s_cm.get("radiance_noslit", Iunit="mW/cm2/sr/nm")[1]
 
     s_nm = sPlanck(1000, 10000, T=1500, eps=0.3)
     I_nm2nm = s_nm.get("radiance_noslit", Iunit="mW/cm2/sr/nm")[1]
-    I_nm2cm = s_nm.get("radiance_noslit", Iunit="mW/cm2/sr/cm_1")[1]
+    I_nm2cm = s_nm.get("radiance_noslit", Iunit="mW/cm2/sr/cm-1")[1]
 
     assert np.allclose(I_cm2cm, I_nm2cm)
     assert np.allclose(I_nm2nm, I_cm2nm)

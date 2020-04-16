@@ -103,8 +103,8 @@ class BaseFactory(DatabankLoader):
     # Output units
     units = {
         "absorbance": "-ln(I/I0)",
-        "abscoeff": "cm_1",
-        "abscoeff_continuum": "cm_1",
+        "abscoeff": "cm-1",
+        "abscoeff_continuum": "cm-1",
         # TODO: deal with case where 'cm-1' is given as input for a Spectrum
         # (write a cast_unit of some kind)
         # different in Specair (mw/cm2/sr) because slit
@@ -162,7 +162,7 @@ class BaseFactory(DatabankLoader):
         # dont change this without making sure your line database
         # is correct, and the units conversions (ex: radiance)
         # are changed accordingly
-        # Note that radiance are converted from ~ [mW/cm2/sr/cm_1]
+        # Note that radiance are converted from ~ [mW/cm2/sr/cm-1]
         # to ~ [mW/cm/sr/nm]
         assert self.params.waveunit == self.cond_units["wstep"]
 

@@ -740,7 +740,7 @@ def _recompute_all_at_equilibrium(
     rescaled["radiance_noslit"] = radiance_noslit
     rescaled["emisscoeff"] = emisscoeff
 
-    units["abscoeff"] = "cm_1"
+    units["abscoeff"] = "cm-1"
     units["absorbance"] = "-ln(I/I0)"
     units["transmittance_noslit"] = "I/I0"
     units["emissivity_noslit"] = "eps"

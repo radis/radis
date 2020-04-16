@@ -166,7 +166,7 @@ class Spectrum(object):
         s.print_conditions()
         s.plot('absorbance')
         s.line_survey(overlay='absorbance')
-        s.plot('radiance_noslit', wunits='cm-1', Iunits='W/m2/sr/cm_1')
+        s.plot('radiance_noslit', wunits='cm-1', Iunits='W/m2/sr/cm-1')
         s.apply_slit(5)
         s.plot('radiance')
         w, t = s.get('transmittance_noslit')  # for use in multi-slabs configs
@@ -428,7 +428,7 @@ class Spectrum(object):
             
             from radis import Spectrum
             s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
-                         units={'abscoeff': 'cm_1', 'emisscoeff':'W/cm2/sr/nm'},
+                         units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
                          waveunit='nm')
 
 
@@ -550,7 +550,7 @@ class Spectrum(object):
             
             from radis import Spectrum
             s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
-                         units={'abscoeff': 'cm_1', 'emisscoeff':'W/cm2/sr/nm'},
+                         units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
                          waveunit='nm')
 
         Notes
@@ -629,7 +629,7 @@ class Spectrum(object):
         Iunit: unit for variable ``var``
             if 'default', default unit for quantity `var` is used. See Spectrum.units
             to get the units. for radiance, one can use per wavelength (~ 'W/m2/sr/nm')
-            or per wavenumber (~ 'W/m2/sr/cm_1') units
+            or per wavenumber (~ 'W/m2/sr/cm-1') units
 
         Other Parameters
         ----------------
@@ -714,7 +714,7 @@ class Spectrum(object):
         if Iunit != "default" and Iunit != Iunit0:
             if var in ["radiance", "radiance_noslit"]:
                 # deal with the case where we want to get a radiance in per
-                # wavelength unit (~ W/sr/cm2/nm) in wavenumber units (~ W/sr/cm2/cm_1),
+                # wavelength unit (~ W/sr/cm2/nm) in wavenumber units (~ W/sr/cm2/cm-1),
                 # or the other way round
                 I = convert_universal(
                     I,
@@ -722,17 +722,17 @@ class Spectrum(object):
                     Iunit,
                     self,
                     per_nm_is_like="mW/sr/cm2/nm",
-                    per_cm_is_like="mW/sr/cm2/cm_1",
+                    per_cm_is_like="mW/sr/cm2/cm-1",
                 )
             elif var in ["emisscoeff"]:
-                # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ /sr/cm3/cm_1)
+                # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ /sr/cm3/cm-1)
                 I = convert_universal(
                     I,
                     Iunit0,
                     Iunit,
                     self,
                     per_nm_is_like="mW/sr/cm3/nm",
-                    per_cm_is_like="mW/sr/cm3/cm_1",
+                    per_cm_is_like="mW/sr/cm3/cm-1",
                 )
             elif var in ["absorbance"]:  # no unit
                 assert Iunit in ["", "-ln(I/I0)"]
@@ -1477,7 +1477,7 @@ class Spectrum(object):
         Iunit: unit for variable
             if `default`, default unit for quantity `var` is used.
             for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
-            per wavenumber (~ `W/m2/sr/cm_1`) units
+            per wavenumber (~ `W/m2/sr/cm-1`) units
 
 
         Other Parameters
@@ -1529,7 +1529,7 @@ class Spectrum(object):
         arbitrary units::
             
             s = experimental_spectrum(..., Iunit='mW/cm2/sr/nm')
-            s.plot(Iunit='W/cm2/sr/cm_1')
+            s.plot(Iunit='W/cm2/sr/cm-1')
             
         See more examples in :ref:`the plot Spectral quantities page <label_spectrum_plot>`. 
             
@@ -1544,6 +1544,7 @@ class Spectrum(object):
         # Check inputs, get defaults
         # ------
 
+        # print("PLOT SPECTRUM CALLED...")
         if var in ["intensity", "intensity_noslit"]:
             raise ValueError("`intensity` not defined. Use `radiance` instead")
 
@@ -1563,10 +1564,13 @@ class Spectrum(object):
                 if var.replace("_noslit", "") in params:  # favour convolved quantities
                     var = var.replace("_noslit", "")
 
+        # print("TILL LINE 1567..")
         if wunit == "default":
             wunit = self.get_waveunit()
         wunit = cast_waveunit(wunit)
 
+        # print("WAVEUNIT = ", wunit)
+        # print("TILL 1573...")
         # Get variable
         x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
@@ -1580,10 +1584,16 @@ class Spectrum(object):
                 Iunit0 = "a.u"
             Iunit = Iunit0
 
+        # rint("TILL 1587...")
+
+        if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
+            Iunit = "I/I0"  # more explicit for the user
         # cosmetic changes
         Iunit = make_up(Iunit)
+        # print("IUNIT = ", Iunit)
         ylabel = make_up("{0} ({1})".format(var, Iunit))
 
+        # print("TILL 1593....")
         # Plot
         # -------
         if normalize:
@@ -1597,7 +1607,8 @@ class Spectrum(object):
                 y /= np.nanmax(y)
             Iunit = "norm"
 
-        set_style("origin")
+        # print("TILL 1607...")
+        # set_style("origin")
         if nfig == "same":
             nfig = plt.gcf().number
         fig = plt.figure(nfig)
@@ -1608,11 +1619,13 @@ class Spectrum(object):
         # they cannot be differenced. But at least this allows user to plot
         # both on the same figure if they want to compare
 
+        # print("TILL 1619...")
         def clean_error_msg(string):
             string = string.replace(r"$^\mathregular{", "^")
             string = string.replace(r"}$", "")
             return string
 
+        # print("TILL 1625...")
         if not force and (fig.gca().get_xlabel().lower() not in ["", xlabel.lower()]):
             raise ValueError(
                 "Error while plotting {0}. Cannot plot ".format(var)
@@ -1632,6 +1645,7 @@ class Spectrum(object):
                 + "\nUse force=True if you really want to plot"
             )
 
+        # print("TILL 1645...")
         # Add extra plotting parameters
         if "lw" not in kwargs and "linewidth" not in kwargs:
             kwargs["lw"] = 0.5
@@ -1646,15 +1660,16 @@ class Spectrum(object):
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
 
+        # print("TILL 1660...")
         plt.yscale(yscale)
 
         if "label" in kwargs:
             plt.legend()
-
-        fix_style(str("origin"))
-
+        # print("TILL 1665,...")
+        # fix_style(str("origin"))
+        # print("TILL 1667...")
         plt.show()
-
+        # print('TILL 1669...')
         return line
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
@@ -2390,7 +2405,7 @@ class Spectrum(object):
                 self.units[q] = self.units[qns]
             elif norm_by == "max":
                 new_unit = "{0}*{1}".format(
-                    self.units[qns], unit.replace("cm-1", "cm_1")
+                    self.units[qns], unit.replace("cm-1", "cm-1")
                 )
                 # because it's like if we multiplied
                 # by slit FWHM in the wavespace it was
