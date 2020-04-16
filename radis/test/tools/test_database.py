@@ -118,14 +118,16 @@ def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
 def test_save_compressed2(verbose=True, *args, **kwargs):
     "Check if saving a spectrum with compress = 2 does not change something."
     import shutil
+    from os.path import join
 
     from radis.test.utils import setup_test_line_databases
     from radis import calc_spectrum, SpecDatabase
 
-    shutil.rmtree(join(dirname(getTestFile(".")),newDb"), ignore_errors=True)
-    
+
+    shutil.rmtree(join(dirname(getTestFile(".")), "newDb"), ignore_errors=True)
+
     try:
-        #get the spectrum
+        # get the spectrum
         setup_test_line_databases()
         s = calc_spectrum(
             2000,
@@ -143,20 +145,20 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
         )
 
         # load in one databse
-        db = SpecDatabase(join(dirname(getTestFile(".")),"newDb"))
+        db = SpecDatabase(join(dirname(getTestFile(".")), "newDb"))
         db.add(s, compress=2, if_exists_then="error")
-    
+
         # simulate an experimentalist who come later and load the spectrum
-        db2 = SpecDatabase(join(dirname(getTestFile(".")),"newDb"))
+        db2 = SpecDatabase(join(dirname(getTestFile(".")), "newDb"))
         s_bis = db2.get_unique(Tgas=700)
-        
+
     finally:
         # we want to make sure this folder is deleted
-        shutil.rmtree(join(dirname(getTestFile(".")),"newDb"))
-    
+        shutil.rmtree(join(dirname(getTestFile(".")), "newDb"))
+
     # we check the loaded spectrum contains less information than the calculated one
     assert not s == s_bis
-    assert s_bis.get_vars() == ['abscoeff']     # only this spectral quantity was stored
+    assert s_bis.get_vars() == ["abscoeff"]  # only this spectral quantity was stored
     assert s_bis.lines is None
     assert s_bis.conditions is not None  # we kept the metadata
     # now we check if it works
@@ -164,7 +166,6 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
     for var in s.get_vars():
         assert s.compare_with(s_bis, spectra_only=var, plot=False, verbose=verbose)
 
-    
 
 if __name__ == "__main__":
     import pytest
