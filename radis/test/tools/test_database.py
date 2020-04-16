@@ -143,7 +143,7 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
         )
 
         # load in one databse
-        db = SpecDatabase(dirname(getTestFile(".")) + "/newDb/")
+        db = SpecDatabase(join(dirname(getTestFile(".")),"newDb"))
         db.add(s, compress=2, if_exists_then="error")
     
         # simulate an experimentalist who come later and load the spectrum
