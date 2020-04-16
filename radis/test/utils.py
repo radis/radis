@@ -36,23 +36,62 @@ from radis.misc.config import (
 from radis.db.utils import getFile
 from radis.misc.utils import FileNotFoundError
 from radis.misc.printer import printr
-from os.path import join, dirname
+from os.path import join, dirname, exists
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
 
 
 def getTestFile(file):
-    """ Return the full path of a test file. Used by test functions not to
-    worry about the project architecture"""
+    """ Return the full path of a test file, if it exists. Used by test functions not to
+    worry about the project architecture
+    
+    Examples
+    --------
+    
+    ::
+        from radis.test.utils import getTestFile
+        from radis import load_spec
+        load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.test.utils.getValidationCase`
+    
+    """
 
-    return join(TEST_FOLDER_PATH, "files", file)
+    path = join(TEST_FOLDER_PATH, "files", file)
+
+    if not exists(path):
+        raise FileNotFoundError(
+            "Test file `{0}` does not exist. Choose one of: \n- {1}".format(
+                file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "files")))
+            )
+        )
+
+    return path
 
 
 def getValidationCase(file):
-    """ Return the full path of a validation case file. Used by test functions not to
-    worry about the project architecture"""
+    """ Return the full path of a validation case file, if it exists. Used by test functions not to
+    worry about the project architecture
+    
+    See Also
+    --------
+    
+    :py:func:`~radis.test.utils.getTestFile`
+    """
 
-    return join(TEST_FOLDER_PATH, "validation", file)
+    path = join(TEST_FOLDER_PATH, "validation", file)
+
+    if not exists(path):
+        raise FileNotFoundError(
+            "Validation case `{0}` does not exist. Choose one of: \n- {1}".format(
+                file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "validation")))
+            )
+        )
+
+    return path
 
 
 try:  # Python 3.6 only
@@ -127,16 +166,55 @@ def setup_test_line_databases(verbose=True):
     - HITRAN-CO2-TEST: CO2, HITRAN 2016, 4165-4200 nm 
     - HITRAN-CO-TEST: CO, HITRAN 2016, 2000-2300 cm-1
     - HITEMP-CO2-TEST: CO2, HITEMP-2010, 2283.7-2285.1 cm-1, 3 isotopes
+    - HITEMP-CO2-HAMIL-TEST: same as previous, with (some) energy levels computed
+      from Tashkun effective Hamiltonian.
+      
 
     These test databases are used to run the different test routines. They can
     obviously be used by Users to run simulations, but we suggest Users to download
     their own line databases files and add them to ~/.radis so they have more control
     on it
     
+    Examples
+    --------
+    
+    Initialize the Line databases::
+        
+        from radis import setup_test_line_databases
+        setup_test_line_databases()
+    
+    Plot a CO2 spectrum at high temperature:: 
+    
+        from radis import calc_spectrum
+        calc_spectrum(2284,
+                      2285,
+                      Tgas=2000,
+                      pressure=1,
+                      molecule='CO2',
+                      isotope=1
+                      databank='HITEMP-CO2-TEST').plot()
+    
+    Note that 'HITEMP-CO2-TEST' is defined on 2283.7-2285.1 cm-1 only, as 
+    can be shown by reading the Database information:
+        
+        from radis.misc.config import printDatabankEntries
+        printDatabankEntries('HITEMP-CO2-TEST')
+        
+        >>> HITEMP-CO2-TEST 
+        >>> -------
+        >>> info : HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
+        >>> path : ['/USER/PATH/TO\\radis\\radis\\test\\files\\cdsd_hitemp_09_fragment.txt']
+        >>> format : cdsd-hitemp
+        >>> parfuncfmt : hapi
+        >>> levelsfmt : radis
+    
+    
     See Also
     --------
     
-    :ref:`Configuration file <label_lbl_config_file>`
+    :ref:`Configuration file <label_lbl_config_file>`,
+    :py:func:`~radis.misc.config.getDatabankList`, 
+    :py:func:`~radis.misc.config.printDatabankEntries` 
 
     """
     # TODO: generate large band databases for the main species (let's say CO2,
@@ -180,6 +258,86 @@ def setup_test_line_databases(verbose=True):
             addDatabankEntries(dbname, dbentries)
 
     return
+
+
+# %% Edit existing Line databases
+
+
+def define_Evib_as_sum_of_Evibi(levels):
+    """ Note that this is arbitrary for a polyatomic molecule. 
+    Lookup Pannier, Dubuet and Laux 2020 for more.
+    
+    We also update Erot to maintain the sum Evib+Erot = E : 
+    
+    ::
+        
+        Evib = Evib1 + Evib2 + Evib3
+        Erot = E - Evib    # to be consistent with equilibrium 
+        
+    """
+
+    levels["Evib"] = levels.Evib1 + levels.Evib2 + levels.Evib3
+    levels["Erot"] = levels.E - levels.Evib
+
+    return levels
+
+
+def define_Evib_as_min_of_polyad(levels, keys):
+    """ Here we define the vibrational energy as the minimum energy 
+    in a polyad. Here, the polyad is defined for each combination of ``keys``
+    Typically, ``keys=['p', 'c', 'N']`` or keys=['p', 'c'].
+    
+    Rotational energy is the rest::
+        
+        Evib = min(E(p,c,j,n) for a given set of (p,c))
+        Erot = E - Evib
+    
+    .. warning:: 
+        See Pannier, Dubuet & Laux 2020 for a quantitative comparison
+        of the different possible methods to define vibrational energy. 
+    
+    
+    Parameters
+    ----------
+    
+    sf: SpectrumFactory object
+    """
+
+    def fill_EvibErot(grp):
+        Evib0 = grp.E.min()
+        grp["Evib"] = Evib0
+        grp["Erot"] = grp.E - Evib0
+        return grp
+
+    levels = levels.groupby(keys).apply(fill_EvibErot)
+    levels.reset_index()
+
+    return levels
+
+
+def discard_lines_with_na_levels(sf):
+    """ In the test Levels databases, not all levels are given (to save 
+    space). Consequently, in the Line databases, some lines have N/A 
+    levels and cannot be calculated at nonequilibrium. This function 
+    cleans the line databases from such lines by first running a dummy
+    calculation and removing the lines where levels were N/A.
+    
+    .. warning::
+        results from such a calculation are physically wrong. Only use 
+        to test the functions!
+    
+    Parameters
+    ----------
+    
+    sf: SpectrumFactory
+    """
+
+    # Calculate populations using the non-equilibrium module:
+    # This will crash the first time because the Levels Database is just a fragment and does not include all levels.
+    try:
+        sf.non_eq_spectrum(300, 300)
+    except AssertionError:  # expected
+        sf.df0.dropna(inplace=True)
 
 
 # %% Deal with missing databases

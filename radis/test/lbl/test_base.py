@@ -250,17 +250,14 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         # %% Post process:
         # MAke optically thick, and compare with Planck
 
+        if plot:
+            s_plck.plot(wunit="nm", Iunit="mW/cm2/sr/nm", lw=2)
         for s in [s_eq, s_2T, s_4T]:
 
             s.rescale_path_length(1e6)
 
             if plot:
-
-                nfig = "test_opt_thick_limit_1iso {0}".format(s.name)
-                plt.figure(nfig).clear()
-                s.plot(wunit="nm", nfig=nfig, lw=4)
-                s_plck.plot(wunit="nm", nfig=nfig, Iunit="mW/cm2/sr/nm", lw=2)
-                plt.legend()
+                s.plot(wunit="nm", nfig="same", lw=4)
 
             if verbose:
                 printm(
@@ -272,6 +269,8 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
 
             #            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
             assert get_residual(s, s_plck, "radiance_noslit", ignore_nan=True) < 0.9e-4
+        if plot:
+            plt.legend()
 
         if verbose:
             printm("Tested optically thick limit is Planck (1 isotope): OK")
