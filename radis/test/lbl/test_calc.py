@@ -453,7 +453,6 @@ def test_calc_spectrum_multiple_molecules(verbose=True, plot=True, warnings=True
     s = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,
-        #                          databank='CDSD-HITEMP-JMIN',
         databank=None,  # not appropriate for these temperatures, but convenient for automatic testing
         Tgas=1000,
         path_length=0.1,
