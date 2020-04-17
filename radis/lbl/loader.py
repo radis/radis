@@ -104,6 +104,8 @@ from time import time
 import gc
 from uuid import uuid1
 from six.moves import range
+import fnmatch
+from radis.misc.utils import get_files_from_regex
 
 KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
 """list: Known formats for Line Databases:
@@ -1284,7 +1286,8 @@ class DatabankLoader(object):
 
         # Check input types are correct
         if isinstance(path, string_types):  # make it a list
-            path = [path]
+            path = get_files_from_regex(path)
+
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
