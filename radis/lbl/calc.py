@@ -18,13 +18,10 @@ Routine Listing
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
+from copy import deepcopy
 from radis.lbl.factory import SpectrumFactory
-from radis.spectrum import Spectrum, is_spectrum
-from radis.phys.blackbody import planck, planck_wn
 from radis.phys.convert import nm2cm
-from radis.misc.utils import DatabankNotFound
-import numpy as np
-from numpy import exp, arange, allclose, abs, diff, zeros_like, ones_like
+from radis.misc.basics import all_in
 from os.path import exists
 
 # %%

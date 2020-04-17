@@ -534,6 +534,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 
     assert match_eq_vs_non_eq
 
+
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules(
     verbose=True, plot=True, warnings=True, *args, **kwargs
@@ -672,6 +673,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
         )
 
     return True
+
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
