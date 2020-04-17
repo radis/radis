@@ -125,23 +125,23 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
 
     shutil.rmtree(join(dirname(getTestFile(".")), "newDb"), ignore_errors=True)
 
+    # get the spectrum
+    setup_test_line_databases()
+    s = calc_spectrum(
+        2000,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        verbose=False,
+        wstep=0.01,
+        medium="vacuum",
+        databank="HITRAN-CO-TEST",
+    )
     try:
-        # get the spectrum
-        setup_test_line_databases()
-        s = calc_spectrum(
-            2000,
-            2300,  # cm-1
-            molecule="CO",
-            isotope="1,2,3",
-            pressure=1.01325,  # bar
-            Tgas=700,  # K
-            mole_fraction=0.1,
-            path_length=1,  # cm
-            verbose=False,
-            wstep=0.01,
-            medium="vacuum",
-            databank="HITRAN-CO-TEST",
-        )
 
         # load in one databse
         db = SpecDatabase(join(dirname(getTestFile(".")), "newDb"))
