@@ -28,36 +28,37 @@ from numpy import exp, arange, allclose, abs, diff, zeros_like, ones_like
 from os.path import exists
 
 # %%
-def calc_spectrum(wavenum_min=None,
-                  wavenum_max=None,
-                  wavelength_min=None,
-                  wavelength_max=None,
-                  Tgas=None,
-                  Tvib=None,
-                  Trot=None,
-                  pressure=1.01325,
-                  overpopulation=None,
-                  molecule=None,
-                  isotope=None,
-                  mole_fraction=None,
-                  path_length=1,
-                  databank=None,
-                  medium='air',
-                  wstep=0.01,
-                  broadening_max_width=10, 
-                  lineshape_optimization='DLM',
-                  name=None,
-                  use_cached=True,
-                  verbose=True,
-                  **kwargs):
-    ''' Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
+def calc_spectrum(
+    wavenum_min=None,
+    wavenum_max=None,
+    wavelength_min=None,
+    wavelength_max=None,
+    Tgas=None,
+    Tvib=None,
+    Trot=None,
+    pressure=1.01325,
+    molecule=None,
+    isotope="all",
+    mole_fraction=1,
+    path_length=1,
+    medium="air",
+    databank="fetch",
+    wstep=0.01,
+    broadening_max_width=10,
+    lineshape_optimization="DLM",
+    overpopulation=None,
+    name=None,
+    use_cached=True,
+    verbose=True,
+    **kwargs
+):
+    """ Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
     under equilibrium, or non-equilibrium, with or without overpopulation. 
     It's a wrapper to :class:`~radis.lbl.factory.SpectrumFactory` class. 
     For advanced used, please refer to the aforementionned class. 
 ​
     Parameters
     ----------
-
     wavenum_min: float [cm-1]
         minimum wavenumber to be processed in cm^-1
     wavenum_max: float [cm-1]
@@ -83,19 +84,6 @@ def calc_spectrum(wavenum_min=None,
 ​
     pressure: float [bar]
         partial pressure of gas in bar. Default ``1.01325`` (1 atm)
-​
-    overpopulation: dict
-        dictionary of overpopulation compared to the given vibrational temperature. 
-        
-        Example::
-            
-            overpopulation = {'CO2' : {'(00`0`0)->(00`0`1)': 2.5,
-                                       '(00`0`1)->(00`0`2)': 1,
-                                       '(01`1`0)->(01`1`1)': 1,
-                                       '(01`1`1)->(01`1`2)': 1
-            
-                                        }
-                             }
 ​
     molecule: int, str, list or ``None``
         molecule id (HITRAN format) or name. For multiple molecules, use a list.
@@ -191,333 +179,45 @@ def calc_spectrum(wavenum_min=None,
               
         Default ``'DLM'``.
 ​
-    slit: float, str, or ``None``
-        if float, FWHM of a triangular slit function. If str, path to an 
-        experimental slit function. If None, no slit is applied. Default ``None``.
-​
-    plot: str
-        any parameter such as 'radiance' (if slit is given), 'radiance_noslit', 
-        'absorbance', etc...   Default ``None``
-​
-    name: str
-        name of the case. If None, a unique ID is generated. Default ``None``
-​
-    use_cached: boolean
-        use cached files for line database and energy database. Default ``True``
-​
-    verbose: boolean, or int
-        If ``False``, stays quiet. If ``True``, tells what is going on. 
-        If ``>=2``, gives more detailed messages (for instance, details of 
-        calculation times). Default ``True``. 
-​
-    **kwargs: other inputs forwarded to SpectrumFactory
-        For instance: ``warnings``. 
-        See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more 
-        details on input. 
-        For instance:
-​
-    pseudo_continuum_threshold: float
-        if not 0, first calculate a rough approximation of the spectrum, then
-        moves all lines whose linestrength intensity is less than this threshold
-        of the maximum in a semi-continuum. Values above 0.01 can yield significant
-        errors, mostly in highly populated areas. 80% of the lines can typically
-        be moved in a continuum, resulting in 5 times faster spectra. If 0,
-        no semi-continuum is used. Default 0.
-​
-    Returns
-    -------
-    
-    s: :class:`~radis.spectrum.spectrum.Spectrum`
-        Output spectrum.
-​
-        Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a 
-        spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
-​
-        Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
-        directly.
-​
-        See [1]_ to get an overview of all Spectrum methods
-​
-    References
-    ----------
-​
-    .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
-​
-​
-    Examples
-    --------
-​
-    Calculate a CO spectrum from the HITRAN database::
-​
-        s = calc_spectrum(1900, 2300,         # cm-1
-                          molecule='CO',
-                          isotope='1,2,3',
-                          pressure=1.01325,   # bar
-                          Tgas=1000, 
-                          mole_fraction=0.1, 
-                          )
-        s.apply_slit(0.5, 'nm')
-        s.plot('radiance')
-        
-    This example uses the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` 
-    and :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` methods. See also
-    :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`:: 
-        
-        s.line_survey(overlay='radiance')
-​
-    Refer to the online :ref:`Examples <label_examples>` for more cases, and to 
-    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods. 
-​
-    See Also
-    --------
-    
-    :class:`~radis.lbl.factory.SpectrumFactory`, 
-    the :ref:`Spectrum page <label_spectrum>`
-    '''
-
-    if type(molecule) != list:
-        s = _calc_spectrum(wavenum_min=wavenum_min,
-                           wavenum_max=wavenum_max,
-                           wavelength_min=wavelength_min,
-                           wavelength_max=wavelength_max,
-                           Tgas=Tgas,
-                           Tvib=Tvib,
-                           Trot=Trot,
-                           pressure=pressure,
-                           overpopulation=overpopulation,
-                           molecule=molecule,
-                           isotope=isotope,
-                           mole_fraction=mole_fraction,
-                           path_length=1,
-                           databank=databank,
-                           medium=medium,
-                           wstep=wstep,
-                           broadening_max_width=broadening_max_width, 
-                           lineshape_optimization=lineshape_optimization,
-                           name=name,
-                           use_cached=use_cached,
-                           verbose=verbose,
-                           **kwargs)
-        return s
-    
-    else: # The "molecules" dictionary is read, instead of the possible other inputs ("molecule", "mole_fraction", ...)    
-        s = []
-        
-        # Check consistency of inputs
-        for mol in molecule:
-            try:
-                assert mol in isotope.keys()
-                assert mol in overpopulation.keys()
-                assert mol in mole_fraction.keys()
-                assert mol in databank.keys()
-            except AssertionError:
-                raise ValueError('mole_fraction, overpopulation, databank and isotope '+\
-                                 'should be dictionaries of listing all molecules')
-            
-            
-            s.append(_calc_spectrum(wavenum_min=wavenum_min,
-                                   wavenum_max=wavenum_max,
-                                   wavelength_min=wavelength_min,
-                                   wavelength_max=wavelength_max,
-                                   Tgas=Tgas,
-                                   Tvib=Tvib,
-                                   Trot=Trot,
-                                   pressure=pressure,
-                                   overpopulation=overpopulation[mol],
-                                   molecule=mol,
-                                   isotope=isotope[mol],
-                                   mole_fraction=mole_fraction[mol],
-                                   path_length=path_length,
-                                   databank=databank[mol],
-                                   medium=medium,
-                                   wstep=wstep,
-                                   broadening_max_width=broadening_max_width, 
-                                   lineshape_optimization=lineshape_optimization,
-                                   name=name,
-                                   use_cached=use_cached,
-                                   verbose=verbose,
-                                   **kwargs))
-        if len(s) == 1:
-            return s[0]
-        else:
-            from radis import MergeSlabs        
-            s_tot = MergeSlabs(s)
-            return s_tot
-
-        
-        
-def _calc_spectrum(
-    wavenum_min=None,
-    wavenum_max=None,
-    wavelength_min=None,
-    wavelength_max=None,
-    Tgas=None,
-    Tvib=None,
-    Trot=None,
-    pressure=1.01325,
-    overpopulation=None,
-    molecule="",
-    isotope="all",
-    mole_fraction=1,
-    path_length=1,
-    databank="fetch",
-    medium="air",
-    wstep=0.01,
-    broadening_max_width=10,
-    lineshape_optimization="DLM",
-    name=None,
-    use_cached=True,
-    verbose=True,
-    **kwargs
-):
-    """ Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
-    under equilibrium, or non-equilibrium, with or without overpopulation. 
-    It's a wrapper to :class:`~radis.lbl.factory.SpectrumFactory` class. 
-    For advanced used, please refer to the aforementionned class. 
-
-    Parameters
-    ----------
-
-    wavenum_min: float(cm^-1) or `~astropy.units.quantity.Quantity`
-        minimum wavenumber.
-    wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
-        maximum wavenumber.
-
-    wavelength_min: float(nm) or `~astropy.units.quantity.Quantity`
-        minimum wavelength. Wavelength in ``'air'`` or 
-        ``'vacuum'`` depending of the value of the parameter ``'medium='``
-    wavelength_max: float(nm) or `~astropy.units.quantity.Quantity`
-        maximum wavelength. Wavelength in ``'air'`` or 
-        ``'vacuum'`` depending of the value of the parameter ``'medium='``
-
-    Tgas: float(K) or `~astropy.units.quantity.Quantity`
-        Gas temperature. If non equilibrium, is used for Ttranslational. 
-        Default ``300`` K
-
-    Tvib: float(K) or `~astropy.units.quantity.Quantity`
-        Vibrational temperature. If ``None``, equilibrium calculation is run with Tgas
-
-    Trot: float(K) or `~astropy.units.quantity.Quantity`
-        Rotational temperature. If ``None``, equilibrium calculation is run with Tgas
-
-    pressure: float(bar) or `~astropy.units.quantity.Quantity`
-        partial pressure of gas. Default ``1.01325`` (1 atm)
-
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature. 
-        Ex with CO2::
-
-            overpopulation = {
-            '(00`0`0)->(00`0`1)': 2.5,
-                '(00`0`1)->(00`0`2)': 1,
-                '(01`1`0)->(01`1`1)': 1,
-                '(01`1`1)->(01`1`2)': 1,
-                }
-
-    molecule: int, str, or ``None``
-        molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
-        from the database files being loaded. See the list of supported molecules 
-        in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
-        and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`. 
-        Default ``None``. 
-
-    isotope: int, list, str of the form ``'1,2'``, or ``'all'``
-        isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
-        all isotopes in database are used (this may result in larger computation
-        times!). Default ``'all'``
-
-    mole_fraction: float
-        database species mole fraction. Default ``1``
-
-    path_length: float(cm) or `~astropy.units.quantity.Quantity`
-        slab size. Default ``1`` cm.
-
-    databank: str
-        can be either: 
-
-        - ``'fetch'``, to fetch automatically from [HITRAN-2016]_ through astroquery. 
-        
-        .. warning::
-            
-            [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
-            temperatures you may need [HITEMP-2010]_ 
-
-        - the path to a valid database file, in which case the format is inferred. 
-          For instance, ``.par`` is recognized as ``hitran/hitemp`` format. 
-
-        - the name of a spectral database registered in your ``~/.radis`` 
-          configuration file. This allows to use multiple database files.
-          See :ref:`Configuration file <label_lbl_config_file>`.
-
-        Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
-        information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
-        your ``~/.radis`` file format 
+        Default ``None``.
         
         Example::
-        
-            databank='fetch'     # automatic download 
-            databank='PATH/TO/05_HITEMP2019.par'    # path to a file 
-            databank='HITEMP-2019-CO'   # user-defined database in Configuration file 
-
-    medium: ``'air'``, ``'vacuum'``
-        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
-        Does not change anything when giving inputs in wavenumber. Default ``'air'``
-
-    wstep: float (cm-1)
-        Spacing of calculated spectrum. Default ``0.01`` cm-1.
-
-    broadening_max_width: float (cm-1)
-        Full width over which to compute the broadening. Large values will create
-        a huge performance drop (scales as ~broadening_width^2 without DLM)
-        The calculated spectral range is increased (by broadening_max_width/2
-        on each side) to take into account overlaps from out-of-range lines.
-        Default ``10`` cm-1.
-
-    Other Parameters
-    ----------------
-
-    lineshape_optimization: int, ``None``, ``'DLM'``, or ``'auto'``.
-        Optimizations for the calculation of the lineshapes:
-        
-            - If ``None``, all lineshapes are calculated at the same time (can 
-              create memory errors). 
-            - If ``int``, is given as the ``chunksize`` parameter of 
-              :py:class:`~radis.lbl.factory.SpectrumFactory`` to split the line database 
-              in several parts so that the number of ``lines * spectral grid points`` is 
-              less than ``chunksize`` (reduces memory consumption). Typical values: 
-              ``lineshape_optimization=1e6``.
-            - If ``'DLM'``, only typical lineshapes are calculated. This can 
-              result of speedups of orders of magnitude.  See more about DLM in 
-              :ref:`Performance <label_lbl_performance>`. 
-              
-        Default ``'DLM'``.
-
+            
+            overpopulation = {'CO2' : {'(00`0`0)->(00`0`1)': 2.5,
+                                       '(00`0`1)->(00`0`2)': 1,
+                                       '(01`1`0)->(01`1`1)': 1,
+                                       '(01`1`1)->(01`1`2)': 1
+            
+                                        }
+                             }
+​
     slit: float, str, or ``None``
         if float, FWHM of a triangular slit function. If str, path to an 
         experimental slit function. If None, no slit is applied. Default ``None``.
-
+​
     plot: str
         any parameter such as 'radiance' (if slit is given), 'radiance_noslit', 
         'absorbance', etc...   Default ``None``
-
+​
     name: str
         name of the case. If None, a unique ID is generated. Default ``None``
-
+​
     use_cached: boolean
         use cached files for line database and energy database. Default ``True``
-
+​
     verbose: boolean, or int
         If ``False``, stays quiet. If ``True``, tells what is going on. 
         If ``>=2``, gives more detailed messages (for instance, details of 
         calculation times). Default ``True``. 
-
+​
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``. 
         See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more 
         details on input. 
         For instance:
-
+​
     pseudo_continuum_threshold: float
         if not 0, first calculate a rough approximation of the spectrum, then
         moves all lines whose linestrength intensity is less than this threshold
@@ -525,32 +225,32 @@ def _calc_spectrum(
         errors, mostly in highly populated areas. 80% of the lines can typically
         be moved in a continuum, resulting in 5 times faster spectra. If 0,
         no semi-continuum is used. Default 0.
-
+​
     Returns
     -------
     
     s: :class:`~radis.spectrum.spectrum.Spectrum`
         Output spectrum.
-
+​
         Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a 
         spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
-
+​
         Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
         directly.
-
+​
         See [1]_ to get an overview of all Spectrum methods
-
+​
     References
     ----------
-
+​
     .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
-
-
+​
+​
     Examples
     --------
-
+​
     Calculate a CO spectrum from the HITRAN database::
-
+​
         s = calc_spectrum(1900, 2300,         # cm-1
                           molecule='CO',
                           isotope='1,2,3',
@@ -566,15 +266,194 @@ def _calc_spectrum(
     :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`:: 
         
         s.line_survey(overlay='radiance')
-
+​
     Refer to the online :ref:`Examples <label_examples>` for more cases, and to 
     the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods. 
-
+​
     See Also
     --------
     
     :class:`~radis.lbl.factory.SpectrumFactory`, 
     the :ref:`Spectrum page <label_spectrum>`
+    """
+
+    from radis.los.slabs import MergeSlabs
+
+    if molecule is not None and type(molecule) != list:
+        molecule = [molecule]  # fall back to the other case: multiple molecules
+
+    # Stage 1. Find all molecules, whatever the user input configuration
+
+    # ... Input arguments that CAN be dictionaries of molecules.
+    DICT_INPUT_ARGUMENTS = {
+        "isotope": isotope,
+        "mole_fraction": mole_fraction,
+        "databank": databank,
+    }
+    # Same, but when the values of the arguments themselves are already a dict.
+    # (dealt with separately because we cannot use them to guess what are the input molecules)
+    DICT_INPUT_DICT_ARGUMENTS = {"overpopulation": overpopulation}
+
+    def _check_molecules_are_consistent(
+        molecule_reference_set, reference_name, new_argument, new_argument_name
+    ):
+        """ Will test that molecules set are the same in molecule_reference_set and new_argument, if new_argument is a dict.
+        molecule_reference_set is a set of molecules (yeah!). 
+        reference_name is the name of the argument from which we guessed the list of molecules (used to have a clear error message).
+        new_argument is the new argument to check
+        new_argument_name is its name 
+        
+        Returns the set of molecules as found in new_argument, if applicable, else the molecule_reference_set (this allows us to parse all arguments too)
+        
+        Note that names are just here to provide clear error messages to the user if there is a contradiction.
+        """
+
+        if isinstance(new_argument, dict):
+            if molecule_reference_set is None:  # input molecules are still unknown
+                return set(new_argument.keys()), new_argument_name
+            elif set(new_argument.keys()) != set(molecule_reference_set):
+                raise ValueError(
+                    "Keys of molecules in the {0} dictionary must be the same as given in `{1}=`, i.e: {2}. Instead, we got {3}".format(
+                        new_argument_name,
+                        reference_name,
+                        molecule_reference_set,
+                        set(new_argument.keys()),
+                    )
+                )
+            else:
+                return (
+                    set(new_argument.keys()),
+                    new_argument_name,
+                )  # so now we changed the reference
+        else:
+            return molecule_reference_set, reference_name
+
+    # Parse all inputs:
+    molecule_reference_set = molecule
+    reference_name = "molecule"
+    for argument_name, argument in DICT_INPUT_ARGUMENTS.items():
+        molecule_reference_set, reference_name = _check_molecules_are_consistent(
+            molecule_reference_set, reference_name, argument, argument_name
+        )
+
+    # ... Now we are sure there are no contradctions. Just ensure we have molecules:
+    if molecule_reference_set is None:
+        raise ValueError(
+            "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
+                list(DICT_INPUT_ARGUMENTS.keys())
+            )
+        )
+
+    # Stage 2. Now we have the list of molecules. Let's get the input arguments for each of them.
+
+    # ... Initialize and fill the master-dictionary
+    molecule_dict = {}
+
+    for molecule in molecule_reference_set:
+        molecule_dict[molecule] = {}
+
+        for argument_name, argument_dict in DICT_INPUT_ARGUMENTS.items():
+            if isinstance(argument_dict, dict):
+                # Choose the correspond value
+                molecule_dict[molecule][argument_name] = argument_dict[molecule]
+                # Will raise a KeyError if not defined. That's fine!
+                # TODO: maybe need to catch KeyError and raise a better error message?
+            else:  # argument_name is not a dictionary.
+                # Let's distribute the same value to every molecule:
+                molecule_dict[molecule][argument_name] = argument_dict
+                # If wrong argument, it will be caught in _calc_spectrum() later.
+
+    # ... Special case of dictionary arguments. Find out if they were given as default, or per dictionary of molecules:
+    is_same_for_all_molecules = dict.fromkeys(DICT_INPUT_DICT_ARGUMENTS)
+    for argument_name, argument_dict in DICT_INPUT_DICT_ARGUMENTS.items():
+        if not isinstance(argument_dict, dict):
+            is_same_for_all_molecules[argument_name] = True
+        else:
+            # Argument is a dictionary. Guess if keys are molecules, or levels.
+            # Ex: overpopulation dict could be {'CO2':{'(0,0,0,1)':10}} or directly {{'(0,0,0,1)':10}}
+            argument_keys = set(argument_dict.keys())
+            if all_in(argument_keys, molecule_reference_set):
+                is_same_for_all_molecules[argument_name] = False
+            else:
+                is_same_for_all_molecules[argument_name] = True
+    # ... now fill them in:
+    for argument_name, argument_dict in DICT_INPUT_DICT_ARGUMENTS.items():
+        if is_same_for_all_molecules[argument_name]:
+            for mol in molecule_reference_set:
+                # copy the value for everyone
+                molecule_dict[mol][argument_name] = deepcopy(
+                    argument_dict
+                )  # in case it gets edited.
+        else:  # argument_dict keys are the molecules:
+            for mol in molecule_reference_set:
+                molecule_dict[mol][argument_name] = argument_dict[mol]
+
+    # Stage 3: Now let's calculate all the spectra
+    s_list = []
+    for molecule, dict_arguments in molecule_dict.items():
+        kwargs_molecule = deepcopy(
+            kwargs
+        )  # these are the default supplementary arguments. Deepcopy ensures that they remain the same for all molecules, even if modified in _calc_spectrum
+
+        # We add all of the DICT_INPUT_ARGUMENTS values:
+        kwargs_molecule.update(**dict_arguments)
+
+        s_list.append(
+            _calc_spectrum(
+                wavenum_min=wavenum_min,
+                wavenum_max=wavenum_max,
+                wavelength_min=wavelength_min,
+                wavelength_max=wavelength_max,
+                Tgas=Tgas,
+                Tvib=Tvib,
+                Trot=Trot,
+                pressure=pressure,
+                #                                   overpopulation=overpopulation,  # now in dict_arguments
+                molecule=molecule,
+                #                                   isotope=isotope,                # now in dict_arguments
+                #                                   mole_fraction=mole_fraction,    # now in dict_arguments
+                path_length=path_length,
+                #                                   databank=databank,              # now in dict_arguments
+                medium=medium,
+                wstep=wstep,
+                broadening_max_width=broadening_max_width,
+                lineshape_optimization=lineshape_optimization,
+                name=name,
+                use_cached=use_cached,
+                verbose=verbose,
+                **kwargs_molecule
+            )
+        )
+
+    # Stage 4: merge all molecules and return
+    return MergeSlabs(*s_list)
+
+
+def _calc_spectrum(
+    wavenum_min,
+    wavenum_max,
+    wavelength_min,
+    wavelength_max,
+    Tgas,
+    Tvib,
+    Trot,
+    pressure,
+    overpopulation,
+    molecule,
+    isotope,
+    mole_fraction,
+    path_length,
+    databank,
+    medium,
+    wstep,
+    broadening_max_width,
+    lineshape_optimization,
+    name,
+    use_cached,
+    verbose,
+    **kwargs
+):
+    """ See :py:func:`~radis.lbl.calc.calc_spectrum` 
     """
 
     # Check inputs
