@@ -359,7 +359,7 @@ def get_residual(
             if normalize_how == "max":
                 norm1 = np.nanmax(I1[b])
             elif normalize_how == "mean":
-                norm1 = np.nanmean(I2[b])
+                norm1 = np.nanmean(I1[b])
             elif normalize_how == "area":
                 norm1 = np.abs(nantrapz(I1[b], w1[b]))
             else:
@@ -367,7 +367,9 @@ def get_residual(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
             # now normalize s2. Ensure we use the same unit system!
-            w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
+            w2, I2 = s2.get(
+                var, copy=False, Iunit=s1.units[var], wunit=s1.get_waveunit()
+            )  # (faster not to copy)
             b = (w2 > wmin) & (w2 < wmax)
             if normalize_how == "max":
                 norm2 = np.nanmax(I2[b])
@@ -384,11 +386,11 @@ def get_residual(
         else:
             if normalize_how == "max":
                 norm1 = np.nanmax(s1.get(var, copy=False)[1])
-                norm2 = np.nanmax(s2.get(var)[1])
+                norm2 = np.nanmax(s2.get(var, copy=False)[1])
 
             elif normalize_how == "mean":
                 norm1 = np.nanmean(s1.get(var, copy=False)[1])
-                norm2 = np.nanmean(s2.get(var)[1])
+                norm2 = np.nanmean(s2.get(var, copy=False)[1])
 
             elif normalize_how == "area":
                 # norm1 = s1.get_integral(var)
@@ -397,7 +399,7 @@ def get_residual(
                 # )
                 w1, I1 = s1.get(var, copy=False)
                 norm1 = nantrapz(I1, w1)
-                w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
+                w2, I2 = s2.get(var, copy=False, Iunit=s1.units[var], wunit=s1.get_waveunit())
                 norm2 = nantrapz(I2, w2)
 
             else:
