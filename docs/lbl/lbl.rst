@@ -165,6 +165,17 @@ str: Typical expected format of a ~/.radis entry::
                                      # SpectrumFactory.load_databank function.
     parfuncfmt = hapi                # calculate partition functions
 
+Following is an example where the path variable uses a wildcard ``*`` to find all the files that have ``hitemp_*`` in their names::
+
+	[MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
+	                                 #  or SpectrumFactory.load_databank()
+	path =  D:\Databases\HITEMP-CO2\hitemp_*    # To load all hitemp files directly
+	format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+	                                 # databank text file format. More info in
+	                                 # SpectrumFactory.load_databank function.
+	parfuncfmt = hapi                # calculate partition functions
+
+
 In the former example, for equilibrium calculations, RADIS uses HAPI 
 tabulated partition functions. It is also possible to use your own 
 partition functions, for instance:: 

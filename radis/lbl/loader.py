@@ -104,6 +104,8 @@ from time import time
 import gc
 from uuid import uuid1
 from six.moves import range
+import fnmatch
+from radis.misc.utils import get_files_from_regex
 
 KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
 """list: Known formats for Line Databases:
@@ -634,8 +636,9 @@ class DatabankLoader(object):
         path: str, list of str, None
             list of database files, or name of a predefined database in the 
             :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
-
-        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+            Accepts wildcards ``*`` to select multiple files
+            
+        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lblinit_databank.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'`` 
             and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
 
@@ -1002,6 +1005,7 @@ class DatabankLoader(object):
         path: str, list of str, None
             list of database files, or name of a predefined database in the 
             :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
+            Accepts wildcards ``*`` to select multiple files 
 
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'`` 
@@ -1284,7 +1288,8 @@ class DatabankLoader(object):
 
         # Check input types are correct
         if isinstance(path, string_types):  # make it a list
-            path = [path]
+            path = get_files_from_regex(path)
+
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
@@ -1409,6 +1414,7 @@ class DatabankLoader(object):
 
         path: str
             path to database folder. If it doesnt exist, create it
+            Accepts wildcards ``*`` to select multiple files
 
         autoretrieve: boolean, or ``'force'``
             if ``True``, a database lookup is performed whenever a new spectrum

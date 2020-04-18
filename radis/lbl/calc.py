@@ -128,7 +128,8 @@ def calc_spectrum(
             temperatures you may need [HITEMP-2010]_ 
 
         - the path to a valid database file, in which case the format is inferred. 
-          For instance, ``.par`` is recognized as ``hitran/hitemp`` format. 
+          For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format. 
+          Accepts wildcards ``'*'`` to select multiple files.
 
         - the name of a spectral database registered in your ``~/.radis`` 
           configuration file. This allows to use multiple database files.
@@ -142,8 +143,9 @@ def calc_spectrum(
         
             databank='fetch'     # automatic download 
             databank='PATH/TO/05_HITEMP2019.par'    # path to a file 
+            databank='*CO2*.par' #to get all the files that have CO2 in their names (case insensitive)
             databank='HITEMP-2019-CO'   # user-defined database in Configuration file 
-
+            
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
         Does not change anything when giving inputs in wavenumber. Default ``'air'``

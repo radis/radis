@@ -12,9 +12,11 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 import os
 import sys
-from os.path import dirname
+from os.path import dirname, basename, join
 import importlib
 import inspect
+from fnmatch import translate
+from re import compile, IGNORECASE
 
 
 def getProjectRoot():
@@ -162,6 +164,24 @@ class NotInstalled(object):
             "The {0} package is required to use this "
             "feature. {1}".format(self.__name, self.__info)
         )
+
+
+def get_files_from_regex(path):
+    """
+    Returns a list of absolute paths of all the files whose names match the input regular expression
+    """
+    directory_name = dirname(path)
+    regex = basename(path)
+
+    file_names = []
+
+    pattern = compile(translate(regex), IGNORECASE)
+
+    for file in os.listdir(directory_name):
+        if pattern.fullmatch(file):
+            file_names.append(join(directory_name, file))
+
+    return file_names
 
 
 # %% Test
