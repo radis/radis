@@ -399,7 +399,9 @@ def get_residual(
                 # )
                 w1, I1 = s1.get(var, copy=False)
                 norm1 = nantrapz(I1, w1)
-                w2, I2 = s2.get(var, copy=False, Iunit=s1.units[var], wunit=s1.get_waveunit())
+                w2, I2 = s2.get(
+                    var, copy=False, Iunit=s1.units[var], wunit=s1.get_waveunit()
+                )
                 norm2 = nantrapz(I2, w2)
 
             else:
