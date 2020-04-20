@@ -24,63 +24,6 @@ the `GitHub issues <https://github.com/radis/radis/issues>`__ or the
 Calculating spectra 
 ===================
 
-Flow Chart
-----------
-
-Under the hood, RADIS will calculate populations by scaling tabulated data (equilibrium)
-or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients 
-from :ref:`Line Databases <label_line_database>`, calculate the line broadening using 
-various strategies to improve :ref:`Performances <label_lbl_performance>`, 
-and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in 
-the flow chart below:
-
-.. image:: RADIS_flow_chart.*
-    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :scale: 100 %
-
-The detail of the functions that perform each step of the RADIS calculation flow chart 
-is given in :ref:`Architecture <label_dev_architecture>`.
-
-
-Equilibrium Conditions
-----------------------
-
-By default RADIS calculates spectra at thermal equilibrium (one temperature). 
-
-The :py:func:`~radis.lbl.calc.calc_spectrum` function requires a 
-given mole fraction, which may be different from chemical equilibrium. 
-
-You can also compute the chemical equilibrium composition in 
-other codes like [CANTERA]_, and feed the output to 
-RADIS :py:func:`~radis.lbl.calc.calc_spectrum`. The 
-:py:func:`~radis.tools.gascomp.get_eq_mole_fraction` function 
-provides an interace to [CANTERA]_ directly from RADIS ::
-
-    from radis import calc_spectrum, get_eq_mole_fraction
-
-    # calculate gas composition of a 50% CO2, 50% H2O mixture at 1600 K:
-    gas = get_eq_mole_fraction('CO2:0.5, H2O:0.5', 1600, # K 
-                                         1e5  # Pa 
-                               )
-    # calculate the contribution of H2O to the spectrum: 
-    calc_spectrum(..., 
-                  mole_fraction=gas['H2O']
-                  )
-
- 
-
-Nonequilibrium Calculations
----------------------------
-
-Nonequilibrium calculations (multiple temperatures) require to know the 
-vibrational and rotational energies of each 
-level in order to calculate the nonequilibrium populations. 
-
-You can either let RADIS calculate rovibrational energies
-with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`, 
-or supply an energy level database. In the latter case, you need to edit the 
-:ref:`Configuration file <label_lbl_config_file>` . 
-
 
 Calculate one molecule spectrum
 -------------------------------
@@ -145,7 +88,6 @@ following commands give the same result: ::
         isotope={"CO2": "1,2", "CO": "1,2,3"},
         verbose=verbose,
     )
-    assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
 
     # Give mole fractions only
     s = calc_spectrum(
@@ -183,6 +125,65 @@ Be careful to be consistent and not to give partial or contradictory inputs. ::
             isotope={"CO2": "1,2"},  # unclear for CO
             verbose=verbose,
         )
+
+
+
+Flow Chart
+----------
+
+Under the hood, RADIS will calculate populations by scaling tabulated data (equilibrium)
+or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients 
+from :ref:`Line Databases <label_line_database>`, calculate the line broadening using 
+various strategies to improve :ref:`Performances <label_lbl_performance>`, 
+and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in 
+the flow chart below:
+
+.. image:: RADIS_flow_chart.*
+    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+    :scale: 100 %
+
+The detail of the functions that perform each step of the RADIS calculation flow chart 
+is given in :ref:`Architecture <label_dev_architecture>`.
+
+
+Equilibrium Conditions
+----------------------
+
+By default RADIS calculates spectra at thermal equilibrium (one temperature). 
+
+The :py:func:`~radis.lbl.calc.calc_spectrum` function requires a 
+given mole fraction, which may be different from chemical equilibrium. 
+
+You can also compute the chemical equilibrium composition in 
+other codes like [CANTERA]_, and feed the output to 
+RADIS :py:func:`~radis.lbl.calc.calc_spectrum`. The 
+:py:func:`~radis.tools.gascomp.get_eq_mole_fraction` function 
+provides an interace to [CANTERA]_ directly from RADIS ::
+
+    from radis import calc_spectrum, get_eq_mole_fraction
+
+    # calculate gas composition of a 50% CO2, 50% H2O mixture at 1600 K:
+    gas = get_eq_mole_fraction('CO2:0.5, H2O:0.5', 1600, # K 
+                                         1e5  # Pa 
+                               )
+    # calculate the contribution of H2O to the spectrum: 
+    calc_spectrum(..., 
+                  mole_fraction=gas['H2O']
+                  )
+
+ 
+
+Nonequilibrium Calculations
+---------------------------
+
+Nonequilibrium calculations (multiple temperatures) require to know the 
+vibrational and rotational energies of each 
+level in order to calculate the nonequilibrium populations. 
+
+You can either let RADIS calculate rovibrational energies
+with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`, 
+or supply an energy level database. In the latter case, you need to edit the 
+:ref:`Configuration file <label_lbl_config_file>` . 
 
 
 The Spectrum Factory
