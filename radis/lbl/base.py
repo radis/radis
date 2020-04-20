@@ -3242,7 +3242,7 @@ class BaseFactory(DatabankLoader):
 def get_waverange(
     wmin=None,
     wmax=None,
-    wunit="cm-1_by_default",
+    wunit=None,
     wavenum_min=None,
     wavenum_max=None,
     wavelength_min=None,
@@ -3253,7 +3253,8 @@ def get_waverange(
     represent_wavenum = False
 
     # user did not pass wunit
-    if wunit == "cm-1_by_default":
+    if isinstance(wunit, Default):
+        wunit = wunit.value
         # user did not pass wmin or wmax
         if wmin is None or wmax is None:
             assert wmin is None and wmax is None
@@ -3271,7 +3272,6 @@ def get_waverange(
                     represent_wavenum = True
             # user did not pass wmin/wmax with unit
             else:
-                wunit = wunit[:-11]
                 assert not isinstance(wmin, u.Quantity)
                 assert not isinstance(wmax, u.Quantity)
                 wmin = wmin * u.Unit(wunit)

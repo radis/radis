@@ -113,7 +113,8 @@ class Default:
     """
 
     def __init__(self, value):
-        self.value= value
+        self.value = value
+
 
 def getarglist(function):
     """ Get list of arguments in a function 
