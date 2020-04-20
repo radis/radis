@@ -1587,7 +1587,7 @@ class Spectrum(object):
         # rint("TILL 1587...")
 
         if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
-            Iunit = "1"  # more explicit for the user
+            Iunit = "I/IO"  # more explicit for the user
         # cosmetic changes
         Iunit = make_up(Iunit)
         # print("IUNIT = ", Iunit)
