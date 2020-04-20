@@ -909,7 +909,7 @@ def plot_diff(
         )
 
     if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
-        Iunit = "I/I0"  # more explicit for the user
+        Iunit = "1"  # more explicit for the user
 
     Iunit = make_up(Iunit)  # cosmetic changes
 

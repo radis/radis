@@ -102,7 +102,7 @@ class BaseFactory(DatabankLoader):
 
     # Output units
     units = {
-        "absorbance": "-ln(I/I0)",
+        "absorbance": "1",
         "abscoeff": "cm-1",
         "abscoeff_continuum": "cm-1",
         # TODO: deal with case where 'cm-1' is given as input for a Spectrum
@@ -113,10 +113,10 @@ class BaseFactory(DatabankLoader):
         "radiance_noslit": "mW/cm2/sr/nm",  # it's actually a spectral radiance
         "emisscoeff": "mW/cm3/sr/nm",
         "emisscoeff_continuum": "mW/cm3/sr/nm",
-        "emissivity": "eps",
-        "emissivity_noslit": "eps",
-        "transmittance": "I/I0",
-        "transmittance_noslit": "I/I0",
+        "emissivity": "1",
+        "emissivity_noslit": "1",
+        "transmittance": "1",
+        "transmittance_noslit": "1",
     }
 
     # Calculation Conditions units

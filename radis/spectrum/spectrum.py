@@ -735,10 +735,10 @@ class Spectrum(object):
                     per_cm_is_like="mW/sr/cm3/cm-1",
                 )
             elif var in ["absorbance"]:  # no unit
-                assert Iunit in ["", "-ln(I/I0)"]
+                assert Iunit in ["", "1"]
                 # dont change the variable: I has no dimension
             elif var in ["transmittance"]:  # no unit
-                assert Iunit in ["", "I/I0"]
+                assert Iunit in ["", "1"]
                 # dont change the variable: I has no dimension
             else:
                 I = conv2(I, Iunit0, Iunit)
@@ -1587,7 +1587,7 @@ class Spectrum(object):
         # rint("TILL 1587...")
 
         if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
-            Iunit = "I/I0"  # more explicit for the user
+            Iunit = "1"  # more explicit for the user
         # cosmetic changes
         Iunit = make_up(Iunit)
         # print("IUNIT = ", Iunit)
@@ -2404,15 +2404,20 @@ class Spectrum(object):
             if norm_by == "area":
                 self.units[q] = self.units[qns]
             elif norm_by == "max":
-                new_unit = "{0}*{1}".format(
-                    self.units[qns], unit.replace("cm-1", "cm-1")
-                )
+                if self.units[qns] == "1":
+                    new_unit = "{0}*{1}".format(
+                        self.units[qns], unit.replace("cm-1", "cm-1")
+                    )
+                else:
+                    new_unit = "{0}*{1}".format(
+                        unit.replace("cm-1", "cm-1"), self.units[qns]
+                    )
                 # because it's like if we multiplied
                 # by slit FWHM in the wavespace it was
                 # generated
                 # simplify unit:
                 try:
-                    new_unit = "{:~P}".format(Q_(new_unit).units)
+                    new_unit = str(Q_(new_unit))
                 except UndefinedUnitError:
                     pass
                 self.units[q] = new_unit
