@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Nov  5 12:59:37 2014
-
 @author: Erwan
-
 Small functions used in other procedures
-
 -------------------------------------------------------------------------------
-
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -35,13 +31,10 @@ verbose = True
 
 def make_folders(path, folders):
     """ Make folders if not there
-
     Parameters
     ----------
-
     path: str
         where to create folders
-
     folders: list or str
         folders to create
     """
@@ -63,6 +56,11 @@ def make_folders(path, folders):
 def all_in(keys, L):
     """ Returns whether all items in keys are in list L """
     return all([k in L for k in keys])
+
+
+def in_all(key, list_of_list):
+    """ Returns true if key is in all lists """
+    return all([key in L for L in list_of_list])
 
 
 def any_in(keys, L):
@@ -95,20 +93,13 @@ def remove_duplicates(l):
 
 def partition(pred, iterable):
     """ Use a predicate to partition entries into false entries and true entries
-
-
     Returns
     -------
-
     Returns two lists: positive, and negative
-
-
     Example
     -------
-
      >>> partition(is_odd, range(10)) 
      --> [0 2 4 6 8], [1 3 5 7 9]
-
     """
     t1, t2 = tee(iterable)
     return list(filter(pred, t2)), list(filterfalse(pred, t1))
@@ -136,40 +127,27 @@ def compare_dict(
 ):
     """ Returns ratio of equal keys [0-1]
     If verbose, also print all keys and values on 2 columns
-
-
     Parameters    
     ----------
-
     d1, d2: dict
         two dictionaries to compare
-
-
     Other Parameters
     ----------------
-
     compare_as_paths: list of keys
         compare the values corresponding to given keys as path (irrespective of
         forward / backward slashes, or case )
-
     verbose: boolean, or ``'if_different'``
         ``'if_different'`` means results will be shown only if there is a difference. 
-
     return_string: boolean
         if ``True``, returns message instead of just printing it (useful in error messages)
         Default ``False``
-
     Returns
     -------
-
     out: float [0-1]
         ratio of matching keys
-
     if ``return_string``:
-
     out, string: float [0-1], str
         ratio of matching keys and comparison message
-
     """
 
     old_stdout = sys.stdout
@@ -228,34 +206,23 @@ def compare_lists(l1, l2, verbose="if_different", return_string=False):
     """ Compare 2 lists of elements that may not be of the same length, irrespective
     of order. Returns the ratio of elements [0-1] present in both lists. If verbose, 
     prints the differences 
-
-
     Parameters    
     ----------
-
     l1, l2: list-like 
-
     verbose: boolean, or 'if_different'
         'if_different' means results will be shown only if there is a difference. 
         function is called twice
-
-
     Other Parameters
     ----------------
-
     verbose: boolean, or ``'if_different'``
         ``'if_different'`` means results will be shown only if there is a difference. 
-
     return_string: boolean
         if ``True``, returns message instead of just printing it (useful in error messages)
         Default ``False``
-
     Returns
     -------
-
     out: float [0-1]
         ratio of matching keys 
-
     """
 
     old_stdout = sys.stdout
@@ -325,26 +292,17 @@ def merge_lists(lists):
 def merge_rename_columns(df, columns1, columns2, merged_names):
     """ Merge all columns under easier names. Only keep the useful ones
     Returns a new dataframe
-
-
     Parameters    
     ----------
-
     df: pandas Dataframe
-
     columns1: list
         list of columns names
-
     columns2: list
         list of columns names, whose index match columns 1
-
     merged_names: list
         new names
-
-
     Example
     -------
-
     df = merge_rename_columns(df1, ['lvl_u', 'ju', 'Eu', 'nu', 'gu', 'grotu'],
                                    ['lvl_l', 'jl', 'El', 'nl', 'gl', 'grotl'],
                                    ['lvl',   'j',  'E',  'n',  'g',  'grot']

@@ -24,6 +24,110 @@ the `GitHub issues <https://github.com/radis/radis/issues>`__ or the
 Calculating spectra 
 ===================
 
+
+Calculate one molecule spectrum
+-------------------------------
+
+In the following example, we calculate a CO spectrum at equilibirum, 
+and plot the transmittance: ::
+	
+	s = calc_spectrum(
+        		wavenum_min=1900,
+        		wavenum_max=2300,
+        		Tgas=700,
+        		path_length=0.1,
+        		molecule='CO',
+        		mole_fraction=0.5,
+        		isotope=1,
+    		  	)
+	s.plot('transmittance_noslit')
+
+
+Calculate multiple molecules spectrum
+-------------------------------------
+
+RADIS can also calculate the spectra of multiple molecules. In the
+following example, we add the contribution of CO2 and plot the
+transmittance: ::
+
+	s = calc_spectrum(
+        	wavenum_min=1900,
+        	wavenum_max=2300,
+        	Tgas=700,
+        	path_length=0.1,
+        	mole_fraction={'CO2':0.5, 'CO':0.5},
+        	isotope=1,
+    		)
+	s.plot('transmittance_noslit')
+ 
+
+Note that you can indicate the considered molecules either as a list
+in the `molecule` parameter, or in `isotope` or `mole_fraction`. The
+following commands give the same result: ::
+
+
+    # Give molecule:
+    s = calc_spectrum(
+            wavelength_min=4165,
+            wavelength_max=5000,
+            Tgas=1000,
+            path_length=0.1,
+            molecule=["CO2", "CO"],
+            mole_fraction=1,
+            isotope={"CO2": "1,2", "CO": "1,2,3"},
+            verbose=verbose,
+      )
+
+
+    # Give isotope only
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        isotope={"CO2": "1,2", "CO": "1,2,3"},
+        verbose=verbose,
+    )
+
+    # Give mole fractions only
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        mole_fraction={"CO2": 0.2, "CO": 0.8},
+        isotope="1,2",
+        verbose=verbose,
+    )
+ 
+Be careful to be consistent and not to give partial or contradictory inputs. ::
+
+   # Contradictory input:
+   s = calc_spectrum(
+            wavelength_min=4165,
+            wavelength_max=5000,
+            Tgas=1000,
+            path_length=0.1,
+            molecule=["CO2"],  # contradictory
+            mole_fraction=1,
+            isotope={"CO2": "1,2", "CO": "1,2,3"},
+            verbose=verbose,
+        )
+
+    # Partial input:
+    s = calc_spectrum(
+            wavelength_min=4165,
+            wavelength_max=5000,
+            Tgas=1000,
+            path_length=0.1,
+            molecule=["CO2", "CO"],  # contradictory
+            mole_fraction=1,
+            isotope={"CO2": "1,2"},  # unclear for CO
+            verbose=verbose,
+        )
+
+
+
 Flow Chart
 ----------
 

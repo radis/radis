@@ -535,6 +535,146 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     assert match_eq_vs_non_eq
 
 
+@pytest.mark.needs_connection
+def test_calc_spectrum_multiple_molecules(
+    verbose=True, plot=True, warnings=True, *args, **kwargs
+):
+    """ Test calculations with multiple molecules
+    
+    Note: try to keep the same wavelength ranges for each of the multi-molecule
+    tests, so that databases are only downloaded once, and cached!"""
+
+    s_co = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        mole_fraction=1,
+        isotope={"CO": "1,2,3"},
+        verbose=verbose,
+    )
+
+    s_co2 = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        mole_fraction=1,
+        isotope={"CO2": "1,2"},
+        verbose=verbose,
+    )
+
+    s_both = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        mole_fraction=1,
+        isotope={"CO2": "1,2", "CO": "1,2,3"},
+        verbose=verbose,
+    )
+    if plot:
+        s_both.plot(wunit="nm")
+
+    # Check calculation went fine:
+    assert set(s_both.conditions["molecule"]) == set(["CO2", "CO"])
+
+    # Compare
+    from radis.los.slabs import MergeSlabs
+
+    assert s_both.compare_with(MergeSlabs(s_co, s_co2), plot=False)
+
+    return True
+
+
+@pytest.mark.needs_connection
+def test_calc_spectrum_multiple_molecules_otherinputs(
+    verbose=True, plot=True, warnings=True, *args, **kwargs
+):
+    """ Test calculations with differnet kind of inputs for multiple molecules
+    
+    Note: try to keep the same wavelength ranges for each of the multi-molecule
+    tests, so that databases are only downloaded once, and cached!"""
+
+    # Give molecule:
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        molecule=["CO2", "CO"],
+        mole_fraction=1,
+        isotope={"CO2": "1,2", "CO": "1,2,3"},
+        verbose=verbose,
+    )
+    assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
+
+    # Give isotope only
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        isotope={"CO2": "1,2", "CO": "1,2,3"},
+        verbose=verbose,
+    )
+    assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
+
+    # Give mole fractions only
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        mole_fraction={"CO2": 0.2, "CO": 0.8},
+        isotope="1,2",
+        verbose=verbose,
+    )
+    assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
+
+    return True
+
+
+# @pytest.mark.needs_config_file
+# @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
+@pytest.mark.needs_connection
+def test_calc_spectrum_multiple_molecules_inputerror(
+    verbose=True, plot=True, warnings=True, *args, **kwargs
+):
+    """ Test calculations with multiple molecules
+    
+    Note: try to keep the same wavelength ranges for each of the multi-molecule
+    tests, so that databases are only downloaded once, and cached!"""
+
+    # Contradictory:
+    with pytest.raises(ValueError):
+        s = calc_spectrum(
+            wavelength_min=4165,
+            wavelength_max=5000,
+            Tgas=1000,
+            path_length=0.1,
+            molecule=["CO2"],  # contradictory
+            mole_fraction=1,
+            isotope={"CO2": "1,2", "CO": "1,2,3"},
+            verbose=verbose,
+        )
+
+    # Partial:
+    with pytest.raises(ValueError):
+        s = calc_spectrum(
+            wavelength_min=4165,
+            wavelength_max=5000,
+            Tgas=1000,
+            path_length=0.1,
+            molecule=["CO2", "CO"],  # contradictory
+            mole_fraction=1,
+            isotope={"CO2": "1,2"},  # unclear for CO
+            verbose=verbose,
+        )
+
+    return True
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test sPlanck and conversion functions
@@ -560,6 +700,11 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_eq_vs_noneq_isotope(
         verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
     )
+
+    # Run test for multiple molecules
+    test_calc_spectrum_multiple_molecules()
+    test_calc_spectrum_multiple_molecules_otherinputs()
+    test_calc_spectrum_multiple_molecules_inputerror()
 
     return True
 
