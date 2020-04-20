@@ -1544,7 +1544,6 @@ class Spectrum(object):
         # Check inputs, get defaults
         # ------
 
-        # print("PLOT SPECTRUM CALLED...")
         if var in ["intensity", "intensity_noslit"]:
             raise ValueError("`intensity` not defined. Use `radiance` instead")
 
@@ -1564,13 +1563,10 @@ class Spectrum(object):
                 if var.replace("_noslit", "") in params:  # favour convolved quantities
                     var = var.replace("_noslit", "")
 
-        # print("TILL LINE 1567..")
         if wunit == "default":
             wunit = self.get_waveunit()
         wunit = cast_waveunit(wunit)
 
-        # print("WAVEUNIT = ", wunit)
-        # print("TILL 1573...")
         # Get variable
         x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
@@ -1584,16 +1580,16 @@ class Spectrum(object):
                 Iunit0 = "a.u"
             Iunit = Iunit0
 
-        # rint("TILL 1587...")
-
         if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
-            Iunit = "I/IO"  # more explicit for the user
+            Iunit = "1"  # more explicit for the user
+        elif var == "abscoeff" and wunit == "1":
+            Iunit = "-ln(I/I0)"  # more explicit for the user
+        elif var in ["emissivity_no_slit", "emissivity"] and wunit == "1":
+            Iunit = "eps"  # more explicit for the user
         # cosmetic changes
         Iunit = make_up(Iunit)
-        # print("IUNIT = ", Iunit)
         ylabel = make_up("{0} ({1})".format(var, Iunit))
 
-        # print("TILL 1593....")
         # Plot
         # -------
         if normalize:
@@ -1607,7 +1603,6 @@ class Spectrum(object):
                 y /= np.nanmax(y)
             Iunit = "norm"
 
-        # print("TILL 1607...")
         # set_style("origin")
         if nfig == "same":
             nfig = plt.gcf().number
@@ -1619,13 +1614,11 @@ class Spectrum(object):
         # they cannot be differenced. But at least this allows user to plot
         # both on the same figure if they want to compare
 
-        # print("TILL 1619...")
         def clean_error_msg(string):
             string = string.replace(r"$^\mathregular{", "^")
             string = string.replace(r"}$", "")
             return string
 
-        # print("TILL 1625...")
         if not force and (fig.gca().get_xlabel().lower() not in ["", xlabel.lower()]):
             raise ValueError(
                 "Error while plotting {0}. Cannot plot ".format(var)
@@ -1645,7 +1638,6 @@ class Spectrum(object):
                 + "\nUse force=True if you really want to plot"
             )
 
-        # print("TILL 1645...")
         # Add extra plotting parameters
         if "lw" not in kwargs and "linewidth" not in kwargs:
             kwargs["lw"] = 0.5
@@ -1660,16 +1652,12 @@ class Spectrum(object):
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
 
-        # print("TILL 1660...")
         plt.yscale(yscale)
 
         if "label" in kwargs:
             plt.legend()
-        # print("TILL 1665,...")
-        # fix_style(str("origin"))
-        # print("TILL 1667...")
+        fix_style(str("origin"))
         plt.show()
-        # print('TILL 1669...')
         return line
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):

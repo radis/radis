@@ -776,7 +776,6 @@ def plot_diff(
     if Iunit == "default":
         try:
             Iunit = s1.units[var]
-            # print("-----> IUNIT = ", Iunit)
         except KeyError:  # unit not defined in dictionary
             raise KeyError(
                 "Iunit not defined in spectrum for variable {0}. ".format(var)
@@ -910,9 +909,9 @@ def plot_diff(
 
     if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
         Iunit = "1"  # more explicit for the user
-    elif var == 'abscoeff' and wunits == "1":
-        Iunit = "-ln(I/I0)" # more explicit for the user
-    elif var in ["emissivity_no_slit", "emissivity"] and wunits == "1":
+    elif var == "abscoeff" and wunit == "1":
+        Iunit = "-ln(I/I0)"  # more explicit for the user
+    elif var in ["emissivity_no_slit", "emissivity"] and wunit == "1":
         Iunit = "eps"  # more explicit for the user
 
     Iunit = make_up(Iunit)  # cosmetic changes
