@@ -97,13 +97,23 @@ else:
 
 
 class Default:
-    """ Returns argument `unit` with an appended `_by_default` string
+    """ Contains a value
+    
+    Examples
+    --------
+    
+    ::
+    
+        a = Default("42")
+        isinstance(a, Default)
+        >>> True
+        
+        a.value
+        >>> 42
     """
 
-    def __new__(cls, unit):
-        cls.unit = unit + "_by_default"
-        return cls.unit
-
+    def __init__(self, value):
+        self.value= value
 
 def getarglist(function):
     """ Get list of arguments in a function 
