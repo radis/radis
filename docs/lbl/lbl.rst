@@ -116,11 +116,13 @@ transmittance: ::
         	isotope=1,
     		)
 	s.plot('transmittance_noslit')
-   
- Note that you can indicate the considered molecules either as a list
- in the `molecule` parameter, or in `isotope` or `mole_fraction`. The
- following commands give the same result: ::
  
+
+Note that you can indicate the considered molecules either as a list
+in the `molecule` parameter, or in `isotope` or `mole_fraction`. The
+following commands give the same result: ::
+
+
     # Give molecule:
     s = calc_spectrum(
             wavelength_min=4165,
