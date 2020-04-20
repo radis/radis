@@ -2015,11 +2015,14 @@ class SpecDatabase(SpecList):
             Other :py:meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given 
             as kwargs arguments:
 
-        compress: boolean
-            if ``True``, removes all quantities that can be regenerated with ``s.update()``,
+        compress: 0, 1, 2
+            if ``True`` or 1, save the spectrum in a compressed form 
+            
+            if 2, removes all quantities that can be regenerated with :py:meth:`~radis.spectrum.spectrum.Spectrum.update`,
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
             If not given, use the value of ``SpecDatabase.binary``
+            The performances are usually better if compress = 2. See https://github.com/radis/radis/issues/84.
 
         add_info: list
             append these parameters and their values if they are in conditions

@@ -119,7 +119,7 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
 
 
 def nantrapz(I, w, dx=1.0, axis=-1):
-    """ Returns np.nan(I, w) discarding nan """
+    """ Returns np.trapz(I, w) discarding nan """
     b = ~np.isnan(I)
     return np.trapz(I[b], w[b], dx=dx, axis=axis)
 

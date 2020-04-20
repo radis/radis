@@ -125,10 +125,11 @@ def calc_spectrum(
             
             [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
             temperatures you may need [HITEMP-2010]_ 
-​
-        - the name of a valid database file, in which case the format is inferred. 
-          For instance, ``.par`` is recognized as ``hitran/hitemp`` format. 
-​
+
+        - the name of a a valid database file, in which case the format is inferred. 
+          For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format. 
+          Accepts wildcards ``'*'`` to select multiple files.
+
         - the name of a spectral database registered in your ``~/.radis`` 
           configuration file. This allows to use multiple database files.
           See :ref:`Configuration file <label_lbl_config_file>`.
@@ -137,11 +138,13 @@ def calc_spectrum(
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
         your ``~/.radis`` file format 
         
-        For multiple molecules, use a dictionary with molecule names as keys.
-        
-        Example::
-            
-            databank = {'CO2' : 'fetch', 'CO' : 'fetch'}
+        For multiple molecules, use a dictionary with molecule names as keys::
+​
+            databank='fetch'     # automatic download 
+            databank='PATH/TO/05_HITEMP2019.par'    # path to a file 
+            databank='*CO2*.par' #to get all the files that have CO2 in their names (case insensitive)
+            databank='HITEMP-2019-CO'   # user-defined database in Configuration file
+            databank = {'CO2' : 'PATH/TO/05_HITEMP2019.par', 'CO' : 'fetch'}  # for multiple molecules
 ​
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
