@@ -15,7 +15,7 @@ from radis.misc.basics import partition
 
 # Waverange, wavespaces
 # ... aliases:
-WAVENUM_UNITS = ["cm", "cm-1", "cm-1", "wavenumber"]
+WAVENUM_UNITS = ["cm", "cm-1", "wavenumber"]
 WAVELEN_UNITS = ["nm", "wavelength"]
 WAVELENVAC_UNITS = ["nm_vac", "nm_vacuum"]
 # ... internal names

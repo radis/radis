@@ -216,7 +216,6 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
     I_nm = planck(w_nm, T=6000, unit="mW/sr/cm2/nm")
 
     s = calculated_spectrum(w_nm, I_nm, wunit="nm_vac", Iunit="mW/sr/cm2/nm",)
-    # print("INTENSITY CONVERSION SPECTRUM: s = ", s)
     # mW/sr/cm2/nm -> mW/sr/cm2/cm-1
     w, I = s.get("radiance_noslit", Iunit="mW/sr/cm2/cm-1")
     I_cm = planck_wn(w_cm, T=6000, unit="mW/sr/cm2/cm-1")
@@ -402,18 +401,17 @@ def _run_testcases(
     # Test conversion of intensity cm-1 works
     # -------------
     test_intensity_conversion(debug=debug, verbose=verbose, *args, **kwargs)
-    print("LINE 405 done...")
+
     # Test updating / rescaling functions (no self absorption)
     # ---------
     test_rescaling_function(debug=debug, *args, **kwargs)
-    print("LINE 409 done...")
+
     test_resampling_function(
         debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs
     )
-    print("LINE 413 done....")
+
     # Test plot firewalls:
     test_noplot_different_quantities(*args, **kwargs)
-    print("LINE 416 done....")
     return True
 
 

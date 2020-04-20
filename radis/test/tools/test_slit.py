@@ -384,8 +384,6 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
         w, I, conditions={"Tvib": 3000, "Trot": 1200}, Iunit="mW/cm2/sr/µm"
     )
 
-    print("still in test file, s.units = ", s.units)
-
     FWHM = 2
 
     s.apply_slit(FWHM, norm_by="area")  # spectrum convolved with area=1

@@ -991,7 +991,6 @@ def plot_diff(
     if title:
         fig.suptitle(title)
     # Fix format
-    # print("ax0=", ax0)
     fix_style("origin", ax=ax0)
     for ax1i in ax1:
         fix_style("origin", ax=ax1i)

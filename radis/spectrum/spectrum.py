@@ -1603,7 +1603,7 @@ class Spectrum(object):
                 y /= np.nanmax(y)
             Iunit = "norm"
 
-        # set_style("origin")
+        set_style("origin")
         if nfig == "same":
             nfig = plt.gcf().number
         fig = plt.figure(nfig)
