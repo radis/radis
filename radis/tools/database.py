@@ -464,7 +464,6 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
 
 
     """
-    # print("LOAD SPEC CALLED")
 
     def _load(binary):
         if not binary:
@@ -501,14 +500,11 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
     sload, fixed = _fix_format(file, sload)
 
     # Generate Spectrum
-    # print("CALLING jsontospec function")
     s = _json_to_spec(sload, file)
 
-    # print("BACK FROM jsontospec")
     for unit in s.units:
         if s.units[unit] in ["I/I0", "-ln(I/I0)", "eps"]:
             s.units[unit] = "1"
-    # print("INSIDE THE LOAD FUNCTION, s.units = ", s.units)
     # Auto-update RADIS .spec format
     # ... experimental feature...
     if fixed:
@@ -535,7 +531,6 @@ def _json_to_spec(sload, file=""):
     """
 
     conditions = sload["conditions"]
-    # print("TILL LINE 535")
     # Get quantities
     if "quantities" in sload:
         # old format -saved with tuples (w,I) under 'quantities'): heavier, but
@@ -566,7 +561,6 @@ def _json_to_spec(sload, file=""):
 
     # Generate spectrum:
     waveunit = sload["conditions"]["waveunit"]
-    # print("WAVEUNIT == ", waveunit)
     # Only `quantities` and `conditions` is required. The rest is just extra
     # details
     kwargs = {}
@@ -577,8 +571,6 @@ def _json_to_spec(sload, file=""):
     else:
         slit = {}
 
-    # print("TILL 579...")
-
     # ... load lines if exist
     if "lines" in sload:
         df = sload["lines"]
@@ -586,7 +578,6 @@ def _json_to_spec(sload, file=""):
     else:
         kwargs["lines"] = None
 
-    # print("TILL 588...")
     # ... load populations if exist
     if "populations" in sload:
 
@@ -605,7 +596,6 @@ def _json_to_spec(sload, file=""):
     else:
         kwargs["populations"] = None
 
-    # print("TILL 607...")
     # ... load other properties if exist
     for attr in ["units", "cond_units", "name"]:
         try:
@@ -613,16 +603,13 @@ def _json_to_spec(sload, file=""):
         except KeyError:
             kwargs[attr] = None
 
-    # print("TILL 615...")
     s = Spectrum(
         quantities=quantities, conditions=conditions, waveunit=waveunit, **kwargs
     )
 
-    # print("TILL 620...")
     # ... add file
     s.file = basename(file)
 
-    # print("TILL 624...")
     # ... add slit
     s._slit = slit
 

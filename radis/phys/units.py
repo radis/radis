@@ -158,7 +158,7 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     # But both plots look alright
 
     # Convert to whatever was wanted
-    j_cm = conv2(j_cm, "mW/cm**3/sr/cm-1", Iunit)
+    j_cm = conv2(j_cm, "mW/cm3/sr/cm-1", Iunit)
 
     return j_cm
 
@@ -209,7 +209,7 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
     # But both plots look alright
 
     # Convert to whatever was wanted
-    j_nm = conv2(j_nm, "mW/cm**3/sr/nm", Iunit)
+    j_nm = conv2(j_nm, "mW/cm3/sr/nm", Iunit)
 
     return j_nm
 
@@ -326,7 +326,7 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     # But both plots look alright
 
     # Convert to whatever was wanted
-    l_nm = conv2(l_nm, "mW/cm**2/sr/nm", Iunit)
+    l_nm = conv2(l_nm, "mW/cm2/sr/nm", Iunit)
 
     return l_nm
 
@@ -336,8 +336,8 @@ def convert_universal(
     from_unit,
     to_unit,
     spec=None,
-    per_nm_is_like="mW/sr/cm**2/nm",
-    per_cm_is_like="mW/sr/cm**2/cm-1",
+    per_nm_is_like="mW/sr/cm2/nm",
+    per_cm_is_like="mW/sr/cm2/cm-1",
 ):
     """ Return variable var in whatever unit, and converts to to_unit
     Also deal with cases where var is in ~1/nm (per_nm_is_like) or ~1/cm-1

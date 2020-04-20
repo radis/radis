@@ -910,6 +910,10 @@ def plot_diff(
 
     if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
         Iunit = "1"  # more explicit for the user
+    elif var == 'abscoeff' and wunits == "1":
+        Iunit = "-ln(I/I0)" # more explicit for the user
+    elif var in ["emissivity_no_slit", "emissivity"] and wunits == "1":
+        Iunit = "eps"  # more explicit for the user
 
     Iunit = make_up(Iunit)  # cosmetic changes
 
@@ -987,7 +991,6 @@ def plot_diff(
 
     if title:
         fig.suptitle(title)
-    # print("CALLED PLOT DIFF FUNCTION///...........")
     # Fix format
     # print("ax0=", ax0)
     fix_style("origin", ax=ax0)
