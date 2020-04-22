@@ -3249,80 +3249,8 @@ def get_waverange(
     wavelength_max=None,
     medium="air",
 ):
-    represent_wavelength = False
-    represent_wavenum = False
-
-    # user did not pass wunit
-    if isinstance(wunit, Default):
-        wunit = wunit.value
-        # user did not pass wmin or wmax
-        if wmin is None or wmax is None:
-            assert wmin is None and wmax is None
-        else:
-            assert wmin is not None
-            assert wmax is not None
-            # user passes wmin/wmax with unit
-            if isinstance(wmin, u.Quantity) or isinstance(wmax, u.Quantity):
-                assert wmin.unit.is_equivalent(u.m) or wmin.unit.is_equivalent(1 / u.m)
-                assert wmax.unit.is_equivalent(u.m) or wmax.unit.is_equivalent(1 / u.m)
-                assert wmin.unit.is_equivalent(wmax.unit)
-                if wmin.unit.is_equivalent(u.m):
-                    represent_wavelength = True
-                else:
-                    represent_wavenum = True
-            # user did not pass wmin/wmax with unit
-            else:
-                assert not isinstance(wmin, u.Quantity)
-                assert not isinstance(wmax, u.Quantity)
-                wmin = wmin * u.Unit(wunit)
-                wmax = wmax * u.Unit(wunit)
-                represent_wavenum = True
-
-    # user passed wunit explicitly
-    else:
-        # user did not pass wmin/wmax
-        if wmin is None or wmax is None:
-            raise ValueError("Please enter value of wmin and wmax when passing wunit")
-        # user passes wmin/wmax along with wunit
-        else:
-            assert wmin is not None
-            assert wmax is not None
-            # wmin/wmax values come with unit
-            if isinstance(wmin, u.Quantity) or isinstance(wmax, u.Quantity):
-                assert wmin.unit.is_equivalent(u.m) or wmin.unit.is_equivalent(1 / u.m)
-                assert wmax.unit.is_equivalent(u.m) or wmax.unit.is_equivalent(1 / u.m)
-                assert wmin.unit.is_equivalent(wmax.unit)
-                # wmin and wunit are the same units
-                if wmin.unit == u.Unit(wunit):
-                    if wmin.unit.is_equivalent(u.m):
-                        represent_wavelength = True
-                    else:
-                        represent_wavenum = True
-                # wmin and wunit have different units
-                else:
-                    raise ValueError(
-                        "Conflicting units entered for wmin/wmax and wunit"
-                    )
-            # wmin/wmax do not have units
-            else:
-                wmin = wmin * u.Unit(wunit)
-                wmax = wmax * u.Unit(wunit)
-                if wmin.unit.is_equivalent(u.m):
-                    represent_wavelength = True
-                else:
-                    represent_wavenum = True
-
-    if represent_wavenum:
-        wmin = convert_and_strip_units(wmin, 1 / u.cm)
-        wmax = convert_and_strip_units(wmax, 1 / u.cm)
-    if represent_wavelength:
-        wmin = convert_and_strip_units(wmin, u.nm)
-        wmax = convert_and_strip_units(wmax, u.nm)
-
-    wavelength_min = convert_and_strip_units(wavelength_min, u.nm)
-    wavelength_max = convert_and_strip_units(wavelength_max, u.nm)
-    wavenum_min = convert_and_strip_units(wavenum_min, 1 / u.cm)
-    wavenum_max = convert_and_strip_units(wavenum_max, 1 / u.cm)
+    # check input consistency
+    # check if atleast one input is given
     if (
         wmin is None
         and wmax is None
@@ -3334,32 +3262,93 @@ def get_waverange(
         raise ValueError("Give wavenumber or wavelength")
 
     # check if only one pair of values has been passed
-    w_present = wmin is not None or wmax is not None
-    wavenum_present = wavenum_min is not None or wavenum_max is not None
-    wavelength_present = wavelength_min is not None or wavelength_max is not None
-    if w_present + wavenum_present + wavelength_present >= 2:
-        raise ValueError("Cannot pass more than one set of values as input: choose either wmin/wmax (with astropy.units), wavenum_min/wavenum_max, or wavelength_min/wavelength_max")
-    assert medium in ["air", "vacuum"]
+    w_present = wmin is not None and wmax is not None
+    wavenum_present = wavenum_min is not None and wavenum_max is not None
+    wavelength_present = wavelength_min is not None and wavelength_max is not None
+    if w_present + wavenum_present + wavelength_present != 1:
+        raise ValueError(
+            "Please pass exactly one set of values as input: "
+            "choose either wmin/wmax (with astropy.units), "
+            "wavenum_min/wavenum_max, or wavelength_min/wavelength_max"
+        )
 
-    # user has passed valid wmin/wmax with units
-    if represent_wavelength:
-        assert wmin < wmax
-        wavelength_min = wmin
-        wavelength_max = wmax
-    elif represent_wavenum:
-        assert wmin < wmax
-        wavenum_min = wmin
-        wavenum_max = wmax
+    complete_pairs = 0
 
-    # ... Input is in wavelength:
-    if wavenum_min is None and wavenum_max is None:
-        assert wavelength_max is not None
-        assert wavelength_min is not None
-        # Test range is correct:
+    # check for unit consistency
+
+    if not isinstance(wunit, Default):
+        if not u.Unit(wunit).is_equivalent(u.m) and not u.Unit(wunit).is_equivalent(
+            1 / u.m
+        ):
+            raise ValueError("Wunit dimensions should be either [length] or 1/[length]")
+
+    if wavelength_min is not None or wavelength_max is not None:
+        assert wavelength_min is not None and wavelength_max is not None
         assert wavelength_min < wavelength_max
+        if not isinstance(wunit, Default):
+            raise ValueError("Please use wmin/wmax when passing wunit")
+        if isinstance(wavelength_min, u.Quantity):
+            assert isinstance(wavelength_min, u.Quantity) and isinstance(
+                wavelength_max, u.Quantity
+            )
+            assert wavelength_min.unit.is_equivalent(u.m)
+            assert wavelength_max.unit.is_equivalent(u.m)
 
-        # In wavelength mode, the propagating medium matters. Convert to
-        # calculation medium (vacuum) if needed:
+    if wavenum_min is not None or wavenum_max is not None:
+        assert wavenum_min is not None and wavenum_max is not None
+        assert wavenum_min < wavenum_max
+        if not isinstance(wunit, Default):
+            raise ValueError("Please use wmin/wmax when passing wunit")
+        if isinstance(wavenum_min, u.Quantity) or isinstance(wavenum_max, u.Quantity):
+            assert isinstance(wavenum_min, u.Quantity) and isinstance(
+                wavenum_max, u.Quantity
+            )
+            assert wavenum_min.unit.is_equivalent(1 / u.cm)
+            assert wavenum_max.unit.is_equivalent(1 / u.cm)
+
+    if isinstance(wmin, u.Quantity) or isinstance(wmax, u.Quantity):
+        assert wmin is not None and wmax is not None
+        assert isinstance(wmin, u.Quantity) and isinstance(wmax, u.Quantity)
+        assert wmin.unit.is_equivalent(u.m) or wmin.unit.is_equivalent(1 / u.m)
+        assert wmax.unit.is_equivalent(u.m) or wmax.unit.is_equivalent(1 / u.m)
+        assert wmin.unit.is_equivalent(wmax.unit)
+        if not isinstance(wunit, Default):
+            if not wmin.unit.is_equivalent(u.Unit(wunit)):
+                raise ValueError("Conflicting units passed for wmin/wmax and wunit")
+            # Should I keep this in?
+            # Deals with cases like: calc_spectrum(wmin=10*u.cm, wmax=1.u.m, wunit="cm")
+    #             else:
+    #                 if wmin.unit != wmax.unit and (wmin.unit != u.Unit(wunit.value) or wmax.unit != u.Unit(wunit.value)):
+    #                     raise Warning("Ambiguous units passed, ignoring wunit")
+
+    if wmin is not None and wmax is not None:
+        if isinstance(wmin, u.Quantity) or isinstance(wmax, u.Quantity):
+            if wmin.unit.is_equivalent(u.m):
+                wavelength_min = wmin
+                wavelength_max = wmax
+            else:
+                wavenum_min = wmin
+                wavenum_max = wmax
+        else:
+            if isinstance(wunit, Default):
+                wavenum_min = wmin * u.Unit(wunit.value)
+                wavenum_max = wmax * u.Unit(wunit.value)
+            else:
+                if u.Unit(wunit).is_equivalent(u.m):
+                    wavelength_min = wmin * u.Unit(wunit)
+                    wavelength_max = wmax * u.Unit(wunit)
+                else:
+                    wavenum_min = wmin * u.Unit(wunit)
+                    wavenum_max = wmax * u.Unit(wunit)
+
+    if wavenum_min is not None or wavenum_max is not None:
+        wavenum_min = convert_and_strip_units(wavenum_min, 1 / u.cm)
+        wavenum_max = convert_and_strip_units(wavenum_max, 1 / u.cm)
+
+    if wavelength_min is not None or wavelength_max is not None:
+        assert medium in ["air", "vacuum"]
+        wavelength_min = convert_and_strip_units(wavelength_min, u.nm)
+        wavelength_max = convert_and_strip_units(wavelength_max, u.nm)
         if medium == "air":
             wavelength_min_vac = air2vacuum(wavelength_min)
             wavelength_max_vac = air2vacuum(wavelength_max)
@@ -3369,12 +3358,6 @@ def get_waverange(
 
         wavenum_min = nm2cm(wavelength_max_vac)
         wavenum_max = nm2cm(wavelength_min_vac)
-    # ... or input is in wavenumber:
-    else:
-        assert wavenum_min is not None
-        assert wavenum_max is not None
-        # Test range is correct:
-        assert wavenum_min < wavenum_max
 
     return wavenum_min, wavenum_max
 
