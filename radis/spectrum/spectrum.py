@@ -2393,13 +2393,9 @@ class Spectrum(object):
                 self.units[q] = self.units[qns]
             elif norm_by == "max":
                 if self.units[qns] == "1":
-                    new_unit = "{0}*{1}".format(
-                        self.units[qns], unit.replace("cm-1", "cm-1")
-                    )
+                    new_unit = unit
                 else:
-                    new_unit = "{0}*{1}".format(
-                        unit.replace("cm-1", "cm-1"), self.units[qns]
-                    )
+                    new_unit = "{0} * {1}".format(unit, self.units[qns])
                 # because it's like if we multiplied
                 # by slit FWHM in the wavespace it was
                 # generated
