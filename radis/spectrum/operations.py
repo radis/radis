@@ -78,7 +78,7 @@ from warnings import warn
 
 def Transmittance(s):
     # type: (Spectrum) -> Spectrum
-    """ Returns a new Spectrum with only the ``transmittance`` component of ``s`` 
+    """ Returns a new Spectrum with only the ``transmittance`` component of ``s``
     
     Parameters
     ----------
@@ -94,10 +94,22 @@ def Transmittance(s):
         ``absorbance`` and/or ``abscoeff`` part of ``s``, where ``radiance_noslit`` ,
         ``emisscoeff`` and ``emissivity_noslit`` (if they exist) have been set to 0
     
+    Examples
+    --------
+    
+    This function is useful to use :ref:`Spectrum algebra <label_spectrum_algebra>`
+    operations::
+        
+        s = calc_spectrum(...)   # contains emission & absorption arrays
+        tr = Transmittance(s)    # contains 'radiance_noslit' array only
+        tr -= 0.1    # arithmetic operation is applied to Transmittance only
+        
     See Also
     --------
     
-    :py:func:`~radis.spectrum.operations.Transmittance_noslit`
+    :py:func:`~radis.spectrum.operations.Transmittance_noslit`,
+    :py:func:`~radis.spectrum.operations.Radiance_noslit`,
+    :py:func:`~radis.spectrum.operations.Radiance`
 
     """
 
@@ -120,10 +132,22 @@ def Transmittance_noslit(s):
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only 
         ``transmittance_noslit`` defined
  
+    Examples
+    --------
+    
+    This function is useful to use :ref:`Spectrum algebra <label_spectrum_algebra>`
+    operations::
+        
+        s = calc_spectrum(...)   # contains emission & absorption arrays
+        tr = Transmittance_noslit(s) # contains 'radiance_noslit' array only
+        tr -= 0.1    # arithmetic operation is applied to Transmittance_noslit only
+        
     See Also
     --------
     
     :py:func:`~radis.spectrum.operations.Transmittance`
+    :py:func:`~radis.spectrum.operations.Radiance_noslit`,
+    :py:func:`~radis.spectrum.operations.Radiance`
     """
 
     return s.copy(copy_lines=True, quantity="transmittance_noslit")
@@ -144,11 +168,23 @@ def Radiance(s):
     s_tr: Spectrum
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only ``radiance``
         defined
- 
+         
+    Examples
+    --------
+    
+    This function is useful to use :ref:`Spectrum algebra <label_spectrum_algebra>`
+    operations::
+        
+        s = calc_spectrum(...)   # contains emission & absorption arrays
+        rad = Radiance(s)        # contains radiance array only
+        rad -= 0.1    # arithmetic operation is applied to Radiance only
+        
     See Also
     --------
     
     :py:func:`~radis.spectrum.operations.Radiance_noslit`
+    :py:func:`~radis.spectrum.operations.Transmittance_noslit`,
+    :py:func:`~radis.spectrum.operations.Transmittance`
     """
 
     return s.copy(copy_lines=True, quantity="radiance")
@@ -170,10 +206,22 @@ def Radiance_noslit(s):
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only ``radiance_noslit``
         defined
         
+    Examples
+    --------
+    
+    This function is useful to use :ref:`Spectrum algebra <label_spectrum_algebra>`
+    operations::
+        
+        s = calc_spectrum(...)   # contains emission & absorption arrays
+        rad = Radiance_noslit(s) # contains 'radiance_noslit' array only
+        rad -= 0.1    # arithmetic operation is applied to Radiance_noslit only
+        
     See Also
     --------
     
-    :py:func:`~radis.spectrum.operations.Radiance`
+    :py:func:`~radis.spectrum.operations.Radiance`,
+    :py:func:`~radis.spectrum.operations.Transmittance_noslit`,
+    :py:func:`~radis.spectrum.operations.Transmittance`
 
     """
 

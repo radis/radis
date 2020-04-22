@@ -9,12 +9,21 @@ Models built around the :class:`~radis.spectrum.spectrum.Spectrum` class
 Routine Listing
 ---------------
 
-- :func:`~radis.spectrum.models.Transmittance`
-- :func:`~radis.spectrum.models.Radiance`
-
 - :func:`~radis.spectrum.models.calculated_spectrum`,
 - :func:`~radis.spectrum.models.experimental_spectrum`,
 - :func:`~radis.spectrum.models.transmittance_spectrum`,
+
+See Also
+--------
+
+To extract some spectral quantities from a Spectrum, and create a new Spectrum,
+see the functions in :py:mod:`radis.spectrum.operations`:
+    
+- :func:`~radis.spectrum.operations.Radiance`
+- :func:`~radis.spectrum.operations.Radiance_noslit`
+- :func:`~radis.spectrum.operations.Transmittance`
+- :func:`~radis.spectrum.operations.Transmittance_noslit`
+
 
 -------------------------------------------------------------------------------
 
