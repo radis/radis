@@ -68,7 +68,6 @@ from radis.misc.arrays import (
 )
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
-from pint import UndefinedUnitError
 from warnings import warn
 from numpy import abs, diff
 from copy import deepcopy
