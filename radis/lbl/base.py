@@ -3249,8 +3249,7 @@ def get_waverange(
     wavelength_max=None,
     medium="air",
 ):
-    # check input consistency
-    # check if atleast one input is given
+
     if (
         wmin is None
         and wmax is None
@@ -3260,8 +3259,6 @@ def get_waverange(
         and wavenum_max is None
     ):
         raise ValueError("Give wavenumber or wavelength")
-
-    # check if only one pair of values has been passed
     w_present = wmin is not None and wmax is not None
     wavenum_present = wavenum_min is not None and wavenum_max is not None
     wavelength_present = wavelength_min is not None and wavelength_max is not None
@@ -3271,10 +3268,6 @@ def get_waverange(
             "choose either wmin/wmax (with astropy.units), "
             "wavenum_min/wavenum_max, or wavelength_min/wavelength_max"
         )
-
-    complete_pairs = 0
-
-    # check for unit consistency
 
     if not isinstance(wunit, Default):
         if not u.Unit(wunit).is_equivalent(u.m) and not u.Unit(wunit).is_equivalent(
