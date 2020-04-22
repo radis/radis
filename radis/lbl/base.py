@@ -3338,7 +3338,7 @@ def get_waverange(
     wavenum_present = wavenum_min is not None or wavenum_max is not None
     wavelength_present = wavelength_min is not None or wavelength_max is not None
     if w_present + wavenum_present + wavelength_present >= 2:
-        raise ValueError("Cannot pass more than one set of values as input")
+        raise ValueError("Cannot pass more than one set of values as input: choose either wmin/wmax (with astropy.units), wavenum_min/wavenum_max, or wavelength_min/wavelength_max")
     assert medium in ["air", "vacuum"]
 
     # user has passed valid wmin/wmax with units
