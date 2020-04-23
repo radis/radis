@@ -502,9 +502,6 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
     # Generate Spectrum
     s = _json_to_spec(sload, file)
 
-    for unit in s.units:
-        if s.units[unit] in ["I/I0", "-ln(I/I0)", "eps"]:
-            s.units[unit] = ""
     # Auto-update RADIS .spec format
     # ... experimental feature...
     if fixed:
@@ -833,6 +830,21 @@ def _fix_format(file, sload):
             )
             # Fix it:
             lines.rename(columns={"v1u": "vu", "v1l": "vl"}, inplace=True)
+
+    # Fix syntax of RAdis <= 0.9.26
+    # -----------------------------
+
+    # Fix adimensioned units
+    if "units" in sload:
+        for var, unit in sload["units"].items():
+            if unit in ["I/I0", "-ln(I/I0)", "eps"]:
+                printr(
+                    "File {0}".format(basename(file))
+                    + " has a deprecrated structure "
+                    + "(adimensioned units are now stored as ''). Fixed this time, but regenerate "
+                    + "database ASAP."
+                )
+                sload["units"][var] = ""
 
     return sload, fixed
 
@@ -2351,6 +2363,6 @@ def in_database(smatch, db=".", filt=".spec"):
 # %% Test
 if __name__ == "__main__":
 
-    from radis.test.tools.test_database import _run_testcases
+    import pytest
 
-    print("Testing database.py: ", _run_testcases())
+    pytest.main(["../test/tools/test_database.py", "-s"])

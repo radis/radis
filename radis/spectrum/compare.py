@@ -907,14 +907,16 @@ def plot_diff(
             label=label2
         )
 
-    if var in ["transmittance", "transmittance_noslit"] and wunit == "":
-        Iunit = "1"  # more explicit for the user
-    elif var == "abscoeff" and wunit == "":
-        Iunit = "-ln(I/I0)"  # more explicit for the user
-    elif var in ["emissivity_no_slit", "emissivity"] and wunit == "":
-        Iunit = "eps"  # more explicit for the user
-
-    Iunit = make_up(Iunit)  # cosmetic changes
+    # cosmetic changes
+    if Iunit == "":
+        # give more explicit unit for the user:
+        if var in ["transmittance", "transmittance_noslit"]:
+            Iunit = r"I/I0"
+        elif var == "absorbance":
+            Iunit = r"-ln(I/I0)"
+        elif var in ["emissivity_no_slit", "emissivity"]:
+            Iunit = r"$\mathregular{\epsilon}$"
+    Iunit = make_up(Iunit)
 
     ax0.tick_params(labelbottom=False)
     if label1 is not None or label2 is not None:

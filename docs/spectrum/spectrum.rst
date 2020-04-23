@@ -85,7 +85,7 @@ From numpy arrays, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array` :
     # w, T are two numpy arrays 
     from radis import Spectrum
     s = Spectrum.from_array(w, T, 'transmittance_noslit', 
-                               waveunit='nm', unit='1')
+                               waveunit='nm', unit='') # adimensioned
                                
               
 From a file, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
