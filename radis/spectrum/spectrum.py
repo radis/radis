@@ -46,7 +46,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from publib import set_style, fix_style
 from radis.phys.convert import conv2, cm2nm, nm2cm
-from radis.phys.units import Q_, convert_universal
+from radis.phys.units import Unit, convert_universal
 from radis.phys.air import vacuum2air, air2vacuum
 from radis.spectrum.utils import (
     CONVOLUTED_QUANTITIES,
@@ -1578,16 +1578,15 @@ class Spectrum(object):
                 Iunit0 = "a.u"
             Iunit = Iunit0
 
-        if var in ["transmittance", "transmittance_noslit"] and wunit == "":
-            Iunit = "1"  # more explicit for the user
-        elif var == "abscoeff" and wunit == "":
-            Iunit = "-ln(I/I0)"  # more explicit for the user
-        elif var in ["emissivity_no_slit", "emissivity"] and wunit == "":
-            Iunit = "eps"  # more explicit for the user
-
-        if Iunit == "":
-            Iunit = "1"
         # cosmetic changes
+        if Iunit == "":
+            # give more explicit unit for the user:
+            if var in ["transmittance", "transmittance_noslit"]:
+                Iunit = r"I/I0"
+            elif var == "absorbance":
+                Iunit = r"-ln(I/I0)"
+            elif var in ["emissivity_no_slit", "emissivity"]:
+                Iunit = r"$\mathregular{\epsilon}$"
         Iunit = make_up(Iunit)
         ylabel = make_up("{0} ({1})".format(var, Iunit))
         # Plot
@@ -2392,15 +2391,9 @@ class Spectrum(object):
             if norm_by == "area":
                 self.units[q] = self.units[qns]
             elif norm_by == "max":
-                new_unit = (u.Unit(unit) * u.Unit(self.units[qns])).to_string()
-                # because it's like if we multiplied
-                # by slit FWHM in the wavespace it was
-                # generated
-                # simplify unit:
-                try:
-                    new_unit = str(Q_(new_unit))
-                except UndefinedUnitError:
-                    pass
+                new_unit = (Unit(unit) * Unit(self.units[qns])).to_string()
+                # because it's like if we multiplied by slit FWHM in the wavespace
+                # it was generated
                 self.units[q] = new_unit
             # Note: there was another mode called 'max2' where, unlike 'max',
             # unit was multiplied by [unit] not [return_unit]

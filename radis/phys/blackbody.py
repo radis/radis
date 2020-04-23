@@ -27,7 +27,8 @@ from __future__ import absolute_import
 from numpy import exp, arange, ones_like, zeros_like, inf
 from radis.phys.constants import k_b, c, h
 from radis.phys.constants import k_b_CGS, c_CGS, h_CGS
-from radis.phys.units import conv2, Q_
+from radis.phys.units import conv2
+from radis.phys.units import Unit as Q_
 from radis.phys.air import air2vacuum
 
 

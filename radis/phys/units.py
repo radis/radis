@@ -1,24 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 
-Notes
------
-
-Dimensioned calculation is slower:
-
-Performance test with pint:
-
-- 2 times slower than numpy on np.std(np.exp())
-
-Examples
---------
-
-Import radis.phys.units to get access to::
-
-    from radis.phys.units import Q_
-    a = Q_(np.array([5,4,2]),'cm')
-    a.to_base_units()
-
 -------------------------------------------------------------------------------
 
 
@@ -27,11 +9,41 @@ Import radis.phys.units to get access to::
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-import numpy as np
-from os.path import join, dirname, abspath, exists
-from astropy import units as u
+import astropy.units as u
+import warnings
 
-Q_ = u.Unit
+
+def Unit(st, *args, **kwargs):
+    """ Radis evaluation of an unit, using :py:class:`~astropy.units.Unit`
+    
+    Changes compare to Astropy standards:
+        
+    - "µm" is accepted and converted to "um"
+    - we do not raise a warning if multiple slashes, e.g. "mW/cm2/sr/nm"
+    
+    Examples
+    --------
+    
+    ::
+        
+        from radis.phys.units import Unit as u
+        a = 200 * u("mW/cm2/sr/nm")
+        a += 0.1 * u("W/cm2/sr/nm")
+    
+    """
+
+    try:
+        st = st.replace("µ", "u")
+    except AttributeError:
+        pass
+
+    with warnings.catch_warnings() as w:
+        # Ignore some warnings : Cause all warnings to always be triggered.
+        warnings.filterwarnings(
+            "ignore", ".*multiple slashes.*", category=u.UnitsWarning
+        )
+        unit = u.Unit(st, *args, **kwargs)
+    return unit
 
 
 def conv2(quantity, fromunit, tounit):
@@ -57,7 +69,7 @@ def conv2(quantity, fromunit, tounit):
     1.
     
     The output is still non dimensional. We don't transform `quantity` 
-    into a pint array (or neq.phys.uarray) because this may create a performance
+    into a dimensioned array because this may create a performance
     drop in computationaly-expensive task. Instead, we assume we know for 
     sure the units in which some of our quantities will be created, and just
     want to let the users choose another output unit 
@@ -66,8 +78,8 @@ def conv2(quantity, fromunit, tounit):
     """
 
     try:
-        a = quantity * u.Unit(fromunit)
-        a = a.to(u.Unit(tounit))
+        a = quantity * Unit(fromunit)
+        a = a.to(Unit(tounit))
 
     except u.UnitConversionError:
         raise TypeError(
@@ -78,7 +90,7 @@ def conv2(quantity, fromunit, tounit):
 
 
 def is_homogeneous(unit1, unit2):
-    """ Tells if unit1 and unit2 are homogeneous, using the Pint library
+    """ Tells if unit1 and unit2 are homogeneous, using the Astropy library
 
 
     Parameters    
@@ -90,7 +102,7 @@ def is_homogeneous(unit1, unit2):
     """
 
     try:
-        1 * u.Unit(unit1) + 1 * u.Unit(unit2)
+        1 * Unit(unit1) + 1 * Unit(unit2)
         return True
     except u.UnitConversionError:
         return False

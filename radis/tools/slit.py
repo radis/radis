@@ -101,11 +101,16 @@ def get_slit_function(
     unit: 'nm' or 'cm-1'
         unit of slit_function FWHM, or unit of imported file
 
-    norm_by: ``'area'``, ``'max'``, or None
-        how to normalize. `area` conserves energy. With `max` the slit is normalized
-        so that its maximum is one (that is what is done in Specair: it changes
-        the outptut spectrum unit, e.g. from 'mW/cm2/sr/µm' to 'mW/cm2/sr')
-        None doesnt normalize. Default ``'area'``
+    norm_by: ``'area'``, ``'max'``, or ``None``
+        how to normalize. ``'area'`` conserves energy. With ``'max'`` the slit is normalized
+        at peak so that the maximum is one.
+        
+        .. note:: 
+            
+            ``'max'`` changes the unit of the spectral array, e.g. from 
+            ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr')``
+        
+        ``None`` doesnt normalize. Default ``'area'``
 
     shape: ``'triangular'``, ``'trapezoidal'``, ``'gaussian'``
         which shape to use when generating a slit. Default ``'triangular'``. 
@@ -521,8 +526,14 @@ def convolve_with_slit(
             Both wavespaces have to be the same!
 
     norm_by: ``'area'``, ``'max'``, or ``None``
-        how to normalize. ``'area'`` conserves energy. ``'max'`` is what is done in
-        Specair and changes spectrum units, e.g. from ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr'``
+        how to normalize. ``'area'`` conserves energy. With ``'max'`` the slit is normalized
+        at peak so that the maximum is one.
+        
+        .. note:: 
+            
+            ``'max'`` changes the unit of the spectral array, e.g. from 
+            ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr')``
+        
         ``None`` doesnt normalize. Default ``'area'``
 
     mode: ``'valid'``, ``'same'``
@@ -925,8 +936,14 @@ def normalize_slit(w_slit, I_slit, norm_by="area"):
         wavelength and slit intensity
         
     norm_by: ``'area'``, ``'max'``, or ``None``
-        renormalize after slit dilatation. ``'area'`` conserves energy. ``'max'`` is what is done in
-        Specair and changes spectrum units, e.g. from ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr'``
+        how to normalize. ``'area'`` conserves energy. With ``'max'`` the slit is normalized
+        at peak so that the maximum is one.
+        
+        .. note:: 
+            
+            ``'max'`` changes the unit of the spectral array, e.g. from 
+            ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr')``
+        
         ``None`` doesnt normalize. Default ``'area'``
 
     Returns
