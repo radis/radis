@@ -1579,11 +1579,11 @@ class Spectrum(object):
                 Iunit0 = "a.u"
             Iunit = Iunit0
 
-        if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
+        if var in ["transmittance", "transmittance_noslit"] and wunit == "":
             Iunit = "1"  # more explicit for the user
-        elif var == "abscoeff" and wunit == "1":
+        elif var == "abscoeff" and wunit == "":
             Iunit = "-ln(I/I0)"  # more explicit for the user
-        elif var in ["emissivity_no_slit", "emissivity"] and wunit == "1":
+        elif var in ["emissivity_no_slit", "emissivity"] and wunit == "":
             Iunit = "eps"  # more explicit for the user
         # cosmetic changes
         Iunit = make_up(Iunit)
@@ -2391,10 +2391,7 @@ class Spectrum(object):
             if norm_by == "area":
                 self.units[q] = self.units[qns]
             elif norm_by == "max":
-                if self.units[qns] == "1":
-                    new_unit = unit
-                else:
-                    new_unit = "{0} * {1}".format(unit, self.units[qns])
+                new_unit = (u.Unit(unit) * u.Unit(self.units[qns])).to_string()
                 # because it's like if we multiplied
                 # by slit FWHM in the wavespace it was
                 # generated
@@ -2511,7 +2508,7 @@ class Spectrum(object):
         if norm_by == "area":
             Iunit = "1/{0}".format(waveunit)
         elif norm_by == "max":  # set maximum to 1
-            Iunit = "1"
+            Iunit = ""
         elif norm_by is None:
             Iunit = None
         else:

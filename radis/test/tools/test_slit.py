@@ -256,12 +256,12 @@ def test_convoluted_quantities_units(*args, **kwargs):
     s.update(verbose=False)
 
     assert s.units["radiance_noslit"] == "mW/cm2/sr/nm"
-    assert s.units["transmittance_noslit"] == "1"
+    assert s.units["transmittance_noslit"] == ""
 
     s.apply_slit(0.5, norm_by="area", verbose=False)
 
     assert s.units["radiance"] == "mW/cm2/sr/nm"
-    assert s.units["transmittance"] == "1"
+    assert s.units["transmittance"] == ""
 
     s.apply_slit(0.5, norm_by="max", verbose=False)
 

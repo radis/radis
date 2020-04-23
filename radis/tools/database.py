@@ -504,7 +504,7 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
 
     for unit in s.units:
         if s.units[unit] in ["I/I0", "-ln(I/I0)", "eps"]:
-            s.units[unit] = "1"
+            s.units[unit] = ""
     # Auto-update RADIS .spec format
     # ... experimental feature...
     if fixed:

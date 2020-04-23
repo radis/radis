@@ -388,7 +388,7 @@ def get_slit_function(
             #        I_slit /= np.trapz(I_slit, x=w_slit)
             Iunit = "1/{0}".format(unit)
         elif norm_by == "max":  # set maximum to 1
-            Iunit = "1"
+            Iunit = ""
         elif norm_by is None:
             Iunit = None
         else:
@@ -443,7 +443,7 @@ def get_slit_function(
             elif norm_by == "max":  # set maximum to 1
                 Islit /= abs(np.max(Islit))
                 Islit *= scale_slit
-                Iunit = "1"
+                Iunit = ""
                 if scale_slit != 1:
                     Iunit += "x{0}".format(scale_slit)
             elif norm_by is None:
@@ -1396,7 +1396,7 @@ def import_experimental_slit(
         Iunit = "1/{0}".format(waveunit)
     elif norm_by == "max":  # set maximum to 1
         I_slit /= abs(np.max(I_slit))
-        Iunit = "1"
+        Iunit = ""
     elif norm_by is None:
         Iunit = None
     else:
@@ -1511,7 +1511,7 @@ def triangular_slit(
         Iunit = "1/{0}".format(waveunit)
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
-        Iunit = "1"
+        Iunit = ""
     elif norm_by is None:
         Iunit = None
     else:
@@ -1652,7 +1652,7 @@ def trapezoidal_slit(
         Iunit = "1/{0}".format(waveunit)
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
-        Iunit = "1"
+        Iunit = ""
     elif norm_by is None:
         Iunit = None
     else:
@@ -1772,7 +1772,7 @@ def gaussian_slit(
         Iunit = "1/{0}".format(waveunit)
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
-        Iunit = "1"
+        Iunit = ""
     elif norm_by is None:
         Iunit = None
     else:

@@ -907,11 +907,11 @@ def plot_diff(
             label=label2
         )
 
-    if var in ["transmittance", "transmittance_noslit"] and wunit == "1":
+    if var in ["transmittance", "transmittance_noslit"] and wunit == "":
         Iunit = "1"  # more explicit for the user
-    elif var == "abscoeff" and wunit == "1":
+    elif var == "abscoeff" and wunit == "":
         Iunit = "-ln(I/I0)"  # more explicit for the user
-    elif var in ["emissivity_no_slit", "emissivity"] and wunit == "1":
+    elif var in ["emissivity_no_slit", "emissivity"] and wunit == "":
         Iunit = "eps"  # more explicit for the user
 
     Iunit = make_up(Iunit)  # cosmetic changes
