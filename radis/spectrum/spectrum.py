@@ -74,6 +74,7 @@ from copy import deepcopy
 from six import string_types
 from os.path import basename
 from six.moves import zip
+from astropy import units as u
 
 
 # %% Spectrum class to hold results )
@@ -1565,13 +1566,11 @@ class Spectrum(object):
         if wunit == "default":
             wunit = self.get_waveunit()
         wunit = cast_waveunit(wunit)
-
         # Get variable
         x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
         # Get labels
         xlabel = format_xlabel(wunit, plot_medium)
-
         if Iunit == "default":
             try:
                 Iunit0 = self.units[var]
@@ -1585,10 +1584,12 @@ class Spectrum(object):
             Iunit = "-ln(I/I0)"  # more explicit for the user
         elif var in ["emissivity_no_slit", "emissivity"] and wunit == "":
             Iunit = "eps"  # more explicit for the user
+
+        if Iunit == "":
+            Iunit = "1"
         # cosmetic changes
         Iunit = make_up(Iunit)
         ylabel = make_up("{0} ({1})".format(var, Iunit))
-
         # Plot
         # -------
         if normalize:
