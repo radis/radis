@@ -740,10 +740,10 @@ def _recompute_all_at_equilibrium(
     rescaled["radiance_noslit"] = radiance_noslit
     rescaled["emisscoeff"] = emisscoeff
 
-    units["abscoeff"] = "cm_1"
-    units["absorbance"] = "-ln(I/I0)"
-    units["transmittance_noslit"] = "I/I0"
-    units["emissivity_noslit"] = "eps"
+    units["abscoeff"] = "cm-1"
+    units["absorbance"] = ""
+    units["transmittance_noslit"] = ""
+    units["emissivity_noslit"] = ""
     units["radiance_noslit"] = get_unit_radiance()
     units["emisscoeff"] = get_unit_emisscoeff(units["radiance_noslit"])
 
@@ -955,13 +955,13 @@ def rescale_absorbance(
         )
         absorbance *= new_mole_fraction / old_mole_fraction  # rescale x
         absorbance *= new_path_length / old_path_length  # rescale L
-        unit = "-ln(I/I0)"
+        unit = ""
     elif "abscoeff" in rescaled and true_path_length:
         if __debug__:
             printdbg("... rescale: absorbance A2 = j2*L2")
         abscoeff = rescaled["abscoeff"]  # x already scaled
         absorbance = abscoeff * new_path_length  # calculate L
-        unit = "-ln(I/I0)"
+        unit = ""
     elif "transmittance_noslit" in initial and true_path_length:
         if __debug__:
             printdbg("... rescale: absorbance A2 = -ln(T1)*N2/N1*L2/L1")
@@ -983,7 +983,7 @@ def rescale_absorbance(
         absorbance = -ln(T1)
         absorbance *= new_mole_fraction / old_mole_fraction  # rescale x
         absorbance *= new_path_length / old_path_length  # rescale L
-        unit = "-ln(I/I0)"
+        unit = ""
     else:
         msg = (
             "Cant recalculate absorbance if scaled absoeff "
@@ -1035,7 +1035,7 @@ def rescale_transmittance_noslit(
     unit = None
 
     def get_unit():
-        return "I/I0"
+        return ""
 
     # case where we recomputed it already (somehow... ex: no_change signaled)
     if "transmittance_noslit" in rescaled:
@@ -1136,7 +1136,7 @@ def rescale_transmittance(
     #    unit = None
     apply_slit = False
     #    def get_unit():
-    #        return 'I/I0'
+    #        return '1'
 
     # case where we recomputed it already (somehow... ex: no_change signaled)
     if "transmittance" in rescaled:
@@ -1382,7 +1382,7 @@ def rescale_emissivity_noslit(spec, rescaled, units, extra, true_path_length):
     # Export rescaled value
     if emissivity_noslit is not None:
         rescaled["emissivity_noslit"] = emissivity_noslit
-        units["emissivity_noslit"] = "eps"
+        units["emissivity_noslit"] = ""
 
     return rescaled, units
 

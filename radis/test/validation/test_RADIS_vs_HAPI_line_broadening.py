@@ -101,7 +101,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
                 trans,
                 "transmittance_noslit",
                 "cm-1",
-                "I/I0",
+                "1",
                 conditions={"Tgas": T},
                 name="HAPI",
             )

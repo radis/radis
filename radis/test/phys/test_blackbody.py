@@ -64,7 +64,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
     w_cm = s.get_wavenumber()
 
     Iunit_per_nm = "W/sr/nm/m2"
-    Iunit_per_cm = "W/sr/cm_1/m2"
+    Iunit_per_cm = "W/sr/cm-1/m2"
 
     if plot:
         s.plot("radiance_noslit", Iunit=Iunit_per_nm)
@@ -137,7 +137,7 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     w_cm = s.get_wavenumber()
 
     I_nm = s.get_radiance_noslit(Iunit="mW/sr/m2/nm")
-    I_cm = s.get_radiance_noslit(Iunit="mW/sr/m2/cm_1")
+    I_cm = s.get_radiance_noslit(Iunit="mW/sr/m2/cm-1")
     I_cm *= 2 * pi  # mW/m2/cm-1
 
     # Check Wien's law

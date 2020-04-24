@@ -164,7 +164,6 @@ setup(
         "numba",
         "mpldatacursor",
         "astropy",  # Unit aware calculations
-        "pint>=0.7.2",  # Unit aware calculations
         "publib>=0.3.2",  # Plotting styles for Matplotlib
         "plotly>=2.5.1",  # for line survey HTML output
         "termcolor",  # terminal colors

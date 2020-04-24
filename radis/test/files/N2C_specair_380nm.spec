@@ -7528,7 +7528,7 @@
     "_q_conv": {},
     "units": {
         "radiance_noslit": "mW/cm2/sr/um",
-        "transmittance_noslit": "I/I0"
+        "transmittance_noslit": "1"
     },
     "conditions": {
         "idatabase": 1,

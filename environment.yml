@@ -13,7 +13,6 @@ dependencies:
 - h5py
 - numba
 - astropy  # Unit aware calculations
-- pint>=0.7.2  # Unit aware calculations
 - plotly>=2.5.1  # for line survey HTML output
 - termcolor  # terminal colors
 - six  # python 2-3 compatibility

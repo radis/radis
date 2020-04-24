@@ -46,7 +46,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from publib import set_style, fix_style
 from radis.phys.convert import conv2, cm2nm, nm2cm
-from radis.phys.units import Q_, convert_universal
+from radis.phys.units import Unit, convert_universal
 from radis.phys.air import vacuum2air, air2vacuum
 from radis.spectrum.utils import (
     CONVOLUTED_QUANTITIES,
@@ -68,13 +68,13 @@ from radis.misc.arrays import (
 )
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
-from pint import UndefinedUnitError
 from warnings import warn
 from numpy import abs, diff
 from copy import deepcopy
 from six import string_types
 from os.path import basename
 from six.moves import zip
+from astropy import units as u
 
 
 # %% Spectrum class to hold results )
@@ -166,7 +166,7 @@ class Spectrum(object):
         s.print_conditions()
         s.plot('absorbance')
         s.line_survey(overlay='absorbance')
-        s.plot('radiance_noslit', wunits='cm-1', Iunits='W/m2/sr/cm_1')
+        s.plot('radiance_noslit', wunits='cm-1', Iunits='W/m2/sr/cm-1')
         s.apply_slit(5)
         s.plot('radiance')
         w, t = s.get('transmittance_noslit')  # for use in multi-slabs configs
@@ -428,7 +428,7 @@ class Spectrum(object):
             
             from radis import Spectrum
             s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
-                         units={'abscoeff': 'cm_1', 'emisscoeff':'W/cm2/sr/nm'},
+                         units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
                          waveunit='nm')
 
 
@@ -550,7 +550,7 @@ class Spectrum(object):
             
             from radis import Spectrum
             s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
-                         units={'abscoeff': 'cm_1', 'emisscoeff':'W/cm2/sr/nm'},
+                         units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
                          waveunit='nm')
 
         Notes
@@ -629,7 +629,7 @@ class Spectrum(object):
         Iunit: unit for variable ``var``
             if 'default', default unit for quantity `var` is used. See Spectrum.units
             to get the units. for radiance, one can use per wavelength (~ 'W/m2/sr/nm')
-            or per wavenumber (~ 'W/m2/sr/cm_1') units
+            or per wavenumber (~ 'W/m2/sr/cm-1') units
 
         Other Parameters
         ----------------
@@ -714,7 +714,7 @@ class Spectrum(object):
         if Iunit != "default" and Iunit != Iunit0:
             if var in ["radiance", "radiance_noslit"]:
                 # deal with the case where we want to get a radiance in per
-                # wavelength unit (~ W/sr/cm2/nm) in wavenumber units (~ W/sr/cm2/cm_1),
+                # wavelength unit (~ W/sr/cm2/nm) in wavenumber units (~ W/sr/cm2/cm-1),
                 # or the other way round
                 I = convert_universal(
                     I,
@@ -722,23 +722,23 @@ class Spectrum(object):
                     Iunit,
                     self,
                     per_nm_is_like="mW/sr/cm2/nm",
-                    per_cm_is_like="mW/sr/cm2/cm_1",
+                    per_cm_is_like="mW/sr/cm2/cm-1",
                 )
             elif var in ["emisscoeff"]:
-                # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ /sr/cm3/cm_1)
+                # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ /sr/cm3/cm-1)
                 I = convert_universal(
                     I,
                     Iunit0,
                     Iunit,
                     self,
                     per_nm_is_like="mW/sr/cm3/nm",
-                    per_cm_is_like="mW/sr/cm3/cm_1",
+                    per_cm_is_like="mW/sr/cm3/cm-1",
                 )
             elif var in ["absorbance"]:  # no unit
-                assert Iunit in ["", "-ln(I/I0)"]
+                assert Iunit in ["", "1"]
                 # dont change the variable: I has no dimension
             elif var in ["transmittance"]:  # no unit
-                assert Iunit in ["", "I/I0"]
+                assert Iunit in ["", "1"]
                 # dont change the variable: I has no dimension
             else:
                 I = conv2(I, Iunit0, Iunit)
@@ -1477,7 +1477,7 @@ class Spectrum(object):
         Iunit: unit for variable
             if `default`, default unit for quantity `var` is used.
             for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
-            per wavenumber (~ `W/m2/sr/cm_1`) units
+            per wavenumber (~ `W/m2/sr/cm-1`) units
 
 
         Other Parameters
@@ -1529,7 +1529,7 @@ class Spectrum(object):
         arbitrary units::
             
             s = experimental_spectrum(..., Iunit='mW/cm2/sr/nm')
-            s.plot(Iunit='W/cm2/sr/cm_1')
+            s.plot(Iunit='W/cm2/sr/cm-1')
             
         See more examples in :ref:`the plot Spectral quantities page <label_spectrum_plot>`. 
             
@@ -1566,13 +1566,11 @@ class Spectrum(object):
         if wunit == "default":
             wunit = self.get_waveunit()
         wunit = cast_waveunit(wunit)
-
         # Get variable
         x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
         # Get labels
         xlabel = format_xlabel(wunit, plot_medium)
-
         if Iunit == "default":
             try:
                 Iunit0 = self.units[var]
@@ -1581,9 +1579,16 @@ class Spectrum(object):
             Iunit = Iunit0
 
         # cosmetic changes
+        if Iunit == "":
+            # give more explicit unit for the user:
+            if var in ["transmittance", "transmittance_noslit"]:
+                Iunit = r"I/I0"
+            elif var == "absorbance":
+                Iunit = r"-ln(I/I0)"
+            elif var in ["emissivity_no_slit", "emissivity"]:
+                Iunit = r"$\mathregular{\epsilon}$"
         Iunit = make_up(Iunit)
         ylabel = make_up("{0} ({1})".format(var, Iunit))
-
         # Plot
         # -------
         if normalize:
@@ -1650,11 +1655,8 @@ class Spectrum(object):
 
         if "label" in kwargs:
             plt.legend()
-
         fix_style(str("origin"))
-
         plt.show()
-
         return line
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
@@ -2389,17 +2391,9 @@ class Spectrum(object):
             if norm_by == "area":
                 self.units[q] = self.units[qns]
             elif norm_by == "max":
-                new_unit = "{0}*{1}".format(
-                    self.units[qns], unit.replace("cm-1", "cm_1")
-                )
-                # because it's like if we multiplied
-                # by slit FWHM in the wavespace it was
-                # generated
-                # simplify unit:
-                try:
-                    new_unit = "{:~P}".format(Q_(new_unit).units)
-                except UndefinedUnitError:
-                    pass
+                new_unit = (Unit(unit) * Unit(self.units[qns])).to_string()
+                # because it's like if we multiplied by slit FWHM in the wavespace
+                # it was generated
                 self.units[q] = new_unit
             # Note: there was another mode called 'max2' where, unlike 'max',
             # unit was multiplied by [unit] not [return_unit]
@@ -2508,7 +2502,7 @@ class Spectrum(object):
         if norm_by == "area":
             Iunit = "1/{0}".format(waveunit)
         elif norm_by == "max":  # set maximum to 1
-            Iunit = "1"
+            Iunit = ""
         elif norm_by is None:
             Iunit = None
         else:
