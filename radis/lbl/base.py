@@ -73,7 +73,7 @@ from radis.db.molparam import MolParams
 from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT, df_metadata
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.phys.constants import c_CGS, h_CGS
-from radis.phys.convert import cm2J, cm2nm, nm2cm
+from radis.phys.convert import cm2J, cm2nm, nm2cm, nm_air2cm
 from radis.phys.constants import hc_k
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
@@ -3249,6 +3249,31 @@ def get_waverange(
     wavelength_max=None,
     medium="air",
 ):
+    """ Returns wavenumber based on whatever input was given: either ν_min, ν_max
+        directly, or λ_min, λ_max  in the given propagation ``medium``.
+
+
+        Parameters
+        ----------
+        medium: ``'air'``, ``'vacuum'``
+            propagation medium
+        wmin, wmax: float, or ~astropy.units.quantity.Quantity or ``None``
+            hybrid parameters that can serve as both wavenumbers or wavelength depending on the unit accompanying them.
+            If unitless, wunit is assumed as the accompanying unit.
+        wunit: string
+            The unit accompanying wmin and wmax. Cannot be passed without passing values for wmin and wmax.
+            Default: cm-1
+        wavenum_min, wavenum_max: float, or ~astropy.units.quantity.Quantity or ``None``
+            wavenumbers
+        wavelength_min, wavelength_max: float, or ~astropy.units.quantity.Quantity or ``None``
+            wavelengths in given ``medium``
+        Returns
+        -------
+        wavenum_min, wavenum_max,: float
+            wavenumbers
+    """
+
+    # Checking consistency of all input variables
 
     if (
         wmin is None
@@ -3314,7 +3339,8 @@ def get_waverange(
     #                 if wmin.unit != wmax.unit and (wmin.unit != u.Unit(wunit.value) or wmax.unit != u.Unit(wunit.value)):
     #                     raise Warning("Ambiguous units passed, ignoring wunit")
 
-    if wmin is not None and wmax is not None:
+    # Conversion to base units
+    if wmin is not None:
         if isinstance(wmin, u.Quantity) or isinstance(wmax, u.Quantity):
             if wmin.unit.is_equivalent(u.m):
                 wavelength_min = wmin
@@ -3334,6 +3360,7 @@ def get_waverange(
                     wavenum_min = wmin * u.Unit(wunit)
                     wavenum_max = wmax * u.Unit(wunit)
 
+    # We now have wavenum_min/max, or wavelength_min/max defined. Let's convert these to cm-1 (warning: propagating medium is required if we start from wavelengths!)
     if wavenum_min is not None or wavenum_max is not None:
         wavenum_min = convert_and_strip_units(wavenum_min, 1 / u.cm)
         wavenum_max = convert_and_strip_units(wavenum_max, 1 / u.cm)
@@ -3343,14 +3370,11 @@ def get_waverange(
         wavelength_min = convert_and_strip_units(wavelength_min, u.nm)
         wavelength_max = convert_and_strip_units(wavelength_max, u.nm)
         if medium == "air":
-            wavelength_min_vac = air2vacuum(wavelength_min)
-            wavelength_max_vac = air2vacuum(wavelength_max)
-        else:
-            wavelength_min_vac = wavelength_min
-            wavelength_max_vac = wavelength_max
-
-        wavenum_min = nm2cm(wavelength_max_vac)
-        wavenum_max = nm2cm(wavelength_min_vac)
+            wavenum_min = nm_air2cm(wavelength_max)
+            wavenum_max = nm_air2cm(wavelength_min)
+        else:  # medium == 'vacuum':
+            wavenum_min = nm2cm(wavelength_max)
+            wavenum_max = nm2cm(wavelength_min)
 
     return wavenum_min, wavenum_max
 

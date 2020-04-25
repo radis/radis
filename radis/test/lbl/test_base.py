@@ -404,11 +404,15 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
 def test_get_waverange(*args, **kwargs):
 
+    # 'wunit' is none
+    # ...'wmin/wmax' is none
+    # ...... wavenumber is passed > should return the same wavenumbers
     assert get_waverange(wavenum_min=10, wavenum_max=20, wunit=Default("cm-1")) == (
         10,
         20,
     )
 
+    # ...... wavelength is passed > should convert and return the wavenumbers
     assert np.isclose(
         get_waverange(
             wavelength_min=1, wavelength_max=2, medium="vacuum", wunit=Default("cm-1")
@@ -416,6 +420,7 @@ def test_get_waverange(*args, **kwargs):
         (5000000.0, 10000000.0),
     ).all()
 
+    # ....... passed both wavenumber and wavelength > should throw error
     with pytest.raises(ValueError):
         get_waverange(
             wavenum_min=1000,
@@ -425,12 +430,23 @@ def test_get_waverange(*args, **kwargs):
             medium="vacuum",
             wunit=Default("cm-1"),
         )
+
+    # ...... passed neither wavenumber nor wavlength > should throw error
     with pytest.raises(ValueError):
         get_waverange(wunit=Default("cm-1"))
+
+    # ... 'wmin/wmax' are passed as values without accompanying units
+    # ...... wavenumber is passed > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
         get_waverange(
             wavenum_min=1, wavenum_max=2, wmin=10, wmax=20, wunit=Default("cm-1")
         )
+
+    # ...... wavelength is passed > should throw error due to multiple input wavespace values
+    with pytest.raises(ValueError):
+        get_waverange(wmin=10, wmax=20, wavelength_min=1, wavelength_max=2)
+
+    # ...... passed both wavenumber and wavelength > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
         get_waverange(
             wmin=1,
@@ -441,7 +457,12 @@ def test_get_waverange(*args, **kwargs):
             wavelength_max=200,
             wunit=Default("cm-1"),
         )
+
+    # ...... passed neither wavenumber nor wavelength > should return wavenumber after converting wmin/wmax assuming default units
     assert get_waverange(wmin=10, wmax=20, wunit=Default("cm-1")) == (10.0, 20.0)
+
+    # ... 'wmin/wmax' are passed as values with accompanying units
+    # ...... wavenumber is passed > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
         get_waverange(
             wavenum_min=10,
@@ -450,6 +471,8 @@ def test_get_waverange(*args, **kwargs):
             wmax=200 * (1 / u.cm),
             wunit=Default("cm-1"),
         )
+
+    # ...... wavelength is passed > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
         get_waverange(
             wmin=100 * (1 / u.cm),
@@ -458,6 +481,8 @@ def test_get_waverange(*args, **kwargs):
             wavelength_max=20,
             wunit=Default("cm-1"),
         )
+
+    # ...... passed both wavenumber and wavelength > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
         get_waverange(
             wavenum_min=10,
@@ -468,6 +493,8 @@ def test_get_waverange(*args, **kwargs):
             wavelength_max=20,
             wunit=Default("cm-1"),
         )
+
+    # ...... passed neither wavenumber nor wavelength > should return wavenumber after converting wmin/wmax from accompanying unit
     assert get_waverange(
         wmin=100 * (1 / u.cm), wmax=200 * (1 / u.cm), wunit=Default("cm-1")
     ) == (100.0, 200.0)
@@ -479,10 +506,17 @@ def test_get_waverange(*args, **kwargs):
         (0.5, 1.0),
     ).all()
 
+    # 'wunit' is not none
+    # ... 'wmin/wmax' is none
+    # ...... wavenumber is passed > should throw error as wunit can only be passed with wmin/wmax
     with pytest.raises(ValueError):
         get_waverange(wavenum_min=1, wavenum_max=2, wunit="cm")
+
+    # ...... wavelength is passed > should throw error as wunit can only be passed with wmin/wmax
     with pytest.raises(ValueError):
         get_waverange(wavelength_min=1, wavelength_max=2, wunit="cm")
+
+    # ...... passed both wavenumber and wavelength > should throw error as wunit can only be passed with wmin/wmax
     with pytest.raises(ValueError):
         get_waverange(
             wavenum_min=1,
@@ -491,12 +525,21 @@ def test_get_waverange(*args, **kwargs):
             wavelength_max=20,
             wunit="cm",
         )
+
+    # ...... passed neither wavenumber nor wavlength > should throw error
     with pytest.raises(ValueError):
         get_waverange(wunit="cm")
+
+    # ... 'wmin/wmax' are passed as values without accompanying units
+    # ...... wavenumber is passed > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
         get_waverange(wmin=1, wmax=2, wavenum_min=10, wavenum_max=20, wunit="cm")
+
+    # ...... wavelength is passed > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
         get_waverange(wmin=1, wmax=2, wavelength_min=10, wavelength_max=20, wunit="cm")
+
+    # ...... passed both wavenumber and wavelength > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
         get_waverange(
             wmin=1,
@@ -507,17 +550,23 @@ def test_get_waverange(*args, **kwargs):
             wavelength_max=200,
             wunit="cm",
         )
+
+    # ...... passed neither wavenumber nor wavlength > should return wavenumber after converting wmin/wmax with given wunit
     assert np.isclose(
         get_waverange(wmin=1, wmax=2, wunit="cm"),
         (0.4998637271242577, 0.9997274542485038),
     ).all()
 
     assert get_waverange(wmin=1, wmax=2, wunit="cm-1") == (1.0, 2.0)
+
+    # ... 'wmin/wmax' are passed as values with accompanying units
+    # ...... wavenumber is passed > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
         get_waverange(
             wmin=1 * u.cm, wmax=2 * u.cm, wavenum_min=10, wavenum_max=20, wunit="cm"
         )
 
+    # ...... wavelength is passed > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
         get_waverange(
             wmin=1 * u.cm,
@@ -527,6 +576,19 @@ def test_get_waverange(*args, **kwargs):
             wunit="cm",
         )
 
+    # ...... passed both wavenumber and wavelength > should throw error as only one set of wavespace parameters can be passed
+    with pytest.raises(ValueError):
+        get_waverange(
+            wmin=1 * u.cm,
+            wmax=2 * u.cm,
+            wavenum_min=1,
+            wavenum_max=2,
+            wavelength_min=10,
+            wavelength_max=20,
+            wunit="cm",
+        )
+
+    # ...... passed neither wavenumber nor wavlength > should return wavenumber after converting wmin/wmax with given wunit
     assert np.isclose(
         get_waverange(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm"),
         (0.4998637271242577, 0.9997274542485038),
@@ -546,6 +608,8 @@ def test_get_waverange(*args, **kwargs):
         ),
         (0.4998637271242577, 0.9997274542485038),
     ).all()
+
+    # ... passed wmin/wmax with units different from wunit > should throw error due to conflicting units
     with pytest.raises(ValueError):
         get_waverange(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm-1")
 
