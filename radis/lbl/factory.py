@@ -112,6 +112,20 @@ class SpectrumFactory(BandFactory):
     Parameters
     ----------
 
+    wmin: float or `~astropy.units.quantity.Quantity`
+        a hybrid parameter which can stand for minimum wavenumber or minimum
+        wavelength depending upon the unit accompanying it. If dimensionless,
+        wunit is considered as the accompanying unit.
+
+    wmax: float or `~astropy.units.quantity.Quantity`
+        a hybrid parameter which can stand for maximum wavenumber or maximum
+        wavelength depending upon the unit accompanying it. If dimensionless,
+        wunit is considered as the accompanying unit.
+
+    wunit: string
+        the unit accompanying wmin and wmax. Can only be passed with wmin
+        and wmax. Default is `cm-1`.
+
     wavenum_min: float(cm^-1) or `~astropy.units.quantity.Quantity`
         minimum wavenumber to be processed in cm^-1. 
         use astropy.units to specify arbitrary inverse-length units.
