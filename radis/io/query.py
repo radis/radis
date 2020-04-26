@@ -105,7 +105,6 @@ def fetch_astroquery(
         metadata.update(
             {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
         )
-
         fcache = join(
             Hitran.cache_location,
             CACHE_FILE_NAME.format(

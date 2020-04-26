@@ -29,7 +29,15 @@ from radis.io.tools import (
     drop_object_format_columns,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import check_cache_file, save_to_hdf, get_cache_file
+from radis.misc.cache_files import (
+    check_cache_file,
+    save_to_hdf,
+    get_cache_file,
+    load_h5_cache_file,
+)
+from os.path import getmtime
+import time
+from radis import OLDEST_COMPATIBLE_VERSION
 
 columns_hitemp = OrderedDict(
     [
@@ -253,12 +261,23 @@ def cdsd2df(
     else:
         raise ValueError("Unknown CDSD version: {0}".format(version))
 
+    metadata = {}
+    metadata["last_modification"] = time.ctime(getmtime(fname))
+
+    if verbose >= 2:
+        print("Last Modification time: {0}".format(metadata["last_modification"]))
     # Use cache file if possible
     fcache = splitext(fname)[0] + ".h5"
     check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
     if cache and exists(fcache):
-        return get_cache_file(fcache, verbose=verbose)
-
+        # return get_cache_file(fcache, verbose=verbose)
+        return load_h5_cache_file(
+            fcache,
+            cache,
+            metadata=metadata,
+            current_version=radis.__version__,
+            last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+        )
     # %% Start reading the full file
 
     df = parse_hitran_file(fname, columns, count)
