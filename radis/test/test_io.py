@@ -206,7 +206,9 @@ def run_example():
         broadening_max_width=10,  # cm-1
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/.radis
+    sf.load_databank(
+        name="HITRAN-CO2-TEST", db_use_cached=True
+    )  # this database must be defined in ~/.radis
 
 
 def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
