@@ -207,8 +207,6 @@ def run_example():
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/.radis
-    s = sf.non_eq_spectrum(300, 300)
-    s.plot()
 
 
 def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
@@ -252,6 +250,7 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_hitran_co2(verbose=verbose, *args, **kwargs)
     test_hitran_h2o(verbose=verbose, *args, **kwargs)
     test_hitemp(verbose=verbose, *args, **kwargs)
+
     test_cache_regeneration(verbose=verbose, *args, **kwargs)
     return True
 
