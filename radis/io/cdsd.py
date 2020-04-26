@@ -246,6 +246,8 @@ def cdsd2df(
     :func:`~radis.io.hitran.hit2df`
 
     """
+    metadata = {}
+    metadata["last_modification"] = time.ctime(getmtime(fname))
 
     if verbose >= 2:
         print(
@@ -253,6 +255,7 @@ def cdsd2df(
                 fname, version, cache
             )
         )
+        print("Last Modification time: {0}".format(metadata["last_modification"]))
 
     if version == "hitemp":
         columns = columns_hitemp
@@ -261,14 +264,13 @@ def cdsd2df(
     else:
         raise ValueError("Unknown CDSD version: {0}".format(version))
 
-    metadata = {}
-    metadata["last_modification"] = time.ctime(getmtime(fname))
-
-    if verbose >= 2:
-        print("Last Modification time: {0}".format(metadata["last_modification"]))
     # Use cache file if possible
     fcache = splitext(fname)[0] + ".h5"
     check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
+
+    if verbose >= 2:
+        print(exists(fcache))
+
     if cache and exists(fcache):
         # return get_cache_file(fcache, verbose=verbose)
         return load_h5_cache_file(
@@ -295,7 +297,8 @@ def cdsd2df(
             save_to_hdf(
                 df,
                 fcache,
-                metadata={},
+                # metadata={},
+                metadata=metadata,
                 version=radis.__version__,
                 key="df",
                 overwrite=True,
