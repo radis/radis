@@ -267,7 +267,6 @@ def cdsd2df(
     fcache = splitext(fname)[0] + ".h5"
     check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
 
-
     if cache and exists(fcache):
         return load_h5_cache_file(
             fcache,
