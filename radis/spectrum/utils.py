@@ -153,7 +153,6 @@ def make_up(label):
     """
 
     # Improve units
-    label = label.replace(r"um", r"µm")
     label = label.replace(r"cm-1", r"cm$^\mathregular{-1}$")
     label = label.replace(r"m^-1", r"m$^\mathregular{-1}$")
     label = label.replace(r"m2", r"m$^\mathregular{2}$")
@@ -173,6 +172,33 @@ def make_up(label):
     label = label.replace("_noslit", "")
 
     return label
+
+
+def make_up_unit(Iunit, var):
+    """ Additional cosmetic changes for units on label, before plot 
+
+
+    Parameters    
+    ----------
+
+    Iunit: str
+        input unit
+    
+    var: str
+        spectral variable. Ex: ``transmittance``
+    """
+    Iunit = Iunit.replace(r"um", r"µm")
+
+    if Iunit == "":
+        # give more explicit unit for the user:
+        if var in ["transmittance", "transmittance_noslit"]:
+            Iunit = r"I/I0"
+        elif var == "absorbance":
+            Iunit = r"-ln(I/I0)"
+        elif var in ["emissivity_no_slit", "emissivity"]:
+            Iunit = r"$\mathregular{\epsilon}$"
+
+    return Iunit
 
 
 def format_xlabel(wunit, plot_medium):

@@ -51,8 +51,8 @@ from radis.phys.air import vacuum2air, air2vacuum
 from radis.spectrum.utils import (
     CONVOLUTED_QUANTITIES,
     NON_CONVOLUTED_QUANTITIES,
-    WAVESPACE,
     make_up,
+    make_up_unit,
     cast_waveunit,
     print_conditions,
     format_xlabel,
@@ -63,8 +63,6 @@ from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fra
 from radis.misc.arrays import (
     evenly_distributed,
     count_nans,
-    is_sorted,
-    is_sorted_backward,
 )
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
@@ -74,7 +72,6 @@ from copy import deepcopy
 from six import string_types
 from os.path import basename
 from six.moves import zip
-from astropy import units as u
 
 
 # %% Spectrum class to hold results )
@@ -1579,16 +1576,7 @@ class Spectrum(object):
             Iunit = Iunit0
 
         # cosmetic changes
-        if Iunit == "":
-            # give more explicit unit for the user:
-            if var in ["transmittance", "transmittance_noslit"]:
-                Iunit = r"I/I0"
-            elif var == "absorbance":
-                Iunit = r"-ln(I/I0)"
-            elif var in ["emissivity_no_slit", "emissivity"]:
-                Iunit = r"$\mathregular{\epsilon}$"
-        Iunit = make_up(Iunit)
-        ylabel = make_up("{0} ({1})".format(var, Iunit))
+        ylabel = "{0} ({1})".format(make_up(var), make_up_unit(Iunit, var))
         # Plot
         # -------
         if normalize:

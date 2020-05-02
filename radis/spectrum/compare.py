@@ -28,7 +28,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 from radis.misc.arrays import array_allclose, nantrapz
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
 from radis.spectrum.spectrum import Spectrum, is_spectrum
-from radis.spectrum.utils import format_xlabel, make_up, cast_waveunit
+from radis.spectrum.utils import format_xlabel, make_up, make_up_unit, cast_waveunit
 from radis.misc.basics import compare_lists, compare_dict
 from six import string_types
 
@@ -908,15 +908,7 @@ def plot_diff(
         )
 
     # cosmetic changes
-    if Iunit == "":
-        # give more explicit unit for the user:
-        if var in ["transmittance", "transmittance_noslit"]:
-            Iunit = r"I/I0"
-        elif var == "absorbance":
-            Iunit = r"-ln(I/I0)"
-        elif var in ["emissivity_no_slit", "emissivity"]:
-            Iunit = r"$\mathregular{\epsilon}$"
-    Iunit = make_up(Iunit)
+    Iunit = make_up_unit(Iunit, var)
 
     ax0.tick_params(labelbottom=False)
     if label1 is not None or label2 is not None:
