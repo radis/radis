@@ -96,6 +96,26 @@ else:
 # ==============================================================================
 
 
+class Default:
+    """ Contains a value
+    
+    Examples
+    --------
+    
+    ::
+    
+        a = Default("42")
+        isinstance(a, Default)
+        >>> True
+        
+        a.value
+        >>> 42
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+
 def getarglist(function):
     """ Get list of arguments in a function 
     
