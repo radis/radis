@@ -33,11 +33,7 @@ from radis.io.tools import (
     drop_object_format_columns,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import (
-    save_to_hdf,
-    check_cache_file,
-    load_h5_cache_file,
-)
+from radis.misc.cache_files import load_h5_cache_file, save_to_hdf
 from os.path import getmtime
 
 # from radis.test.utils import getTestFile
@@ -324,16 +320,18 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
 
     # Use cache file if possible
     fcache = splitext(fname)[0] + ".h5"
-    check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
     if cache and exists(fcache):
-        # return get_cache_file(fcache, verbose=verbose)
-        return load_h5_cache_file(
+        df = load_h5_cache_file(
             fcache,
             cache,
             metadata=metadata,
             current_version=radis.__version__,
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+            verbose=verbose,
         )
+        if df is not None:
+            return df
+
     # Detect the molecule by reading the start of the file
     try:
         with open(fname) as f:

@@ -29,11 +29,7 @@ from radis.io.tools import (
     drop_object_format_columns,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import (
-    check_cache_file,
-    save_to_hdf,
-    load_h5_cache_file,
-)
+from radis.misc.cache_files import save_to_hdf, load_h5_cache_file
 from os.path import getmtime
 import time
 from radis import OLDEST_COMPATIBLE_VERSION
@@ -265,10 +261,8 @@ def cdsd2df(
 
     # Use cache file if possible
     fcache = splitext(fname)[0] + ".h5"
-    check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
-
     if cache and exists(fcache):
-        return load_h5_cache_file(
+        df = load_h5_cache_file(
             fcache,
             cache,
             metadata=metadata,
@@ -276,6 +270,9 @@ def cdsd2df(
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             verbose=verbose,
         )
+        if df is not None:
+            return df
+
     # %% Start reading the full file
 
     df = parse_hitran_file(fname, columns, count)
