@@ -29,6 +29,11 @@ from radis.test.utils import getTestFile
 import pytest
 import numpy as np
 from warnings import warn
+from radis import SpectrumFactory
+from os.path import basename, exists, getmtime
+import os
+import time
+from radis.test.utils import setup_test_line_databases
 
 
 @pytest.mark.fast
@@ -183,6 +188,61 @@ def test_hitemp(verbose=True, warnings=True, **kwargs):
     return True
 
 
+def run_example():
+    import astropy.units as u
+    from radis import SpectrumFactory
+
+    setup_test_line_databases(
+        verbose=True
+    )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
+    sf = SpectrumFactory(
+        wavelength_min=4165,
+        wavelength_max=4200,
+        path_length=0.1,
+        pressure=20,
+        molecule="CO2",
+        isotope="1,2",
+        cutoff=1e-25,  # cm/molecule
+        broadening_max_width=10,  # cm-1
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/.radis
+
+
+def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
+
+    run_example()
+    # get time when line database file was last modified
+    file_last_modification = getmtime(
+        getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par")
+    )
+    # get time when cache file was last modified
+    cache_last_modification = getmtime(
+        getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.h5")
+    )
+    # change the time when line database was last modified
+    stinfo = os.stat(getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par"))
+    access_time = stinfo.st_atime
+    os.utime(
+        getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par"),
+        (file_last_modification + 1, access_time + 1),
+    )
+
+    file_last_modification_again = getmtime(
+        getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par")
+    )
+
+    assert file_last_modification_again > file_last_modification
+
+    run_example()
+
+    cache_last_modification_again = getmtime(
+        getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.h5")
+    )
+
+    assert cache_last_modification_again > cache_last_modification
+
+
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_hitran_names_match(verbose=verbose, *args, **kwargs)
@@ -191,6 +251,7 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_hitran_h2o(verbose=verbose, *args, **kwargs)
     test_hitemp(verbose=verbose, *args, **kwargs)
 
+    test_cache_regeneration(verbose=verbose, *args, **kwargs)
     return True
 
 

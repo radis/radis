@@ -33,8 +33,16 @@ from radis.io.tools import (
     drop_object_format_columns,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import save_to_hdf, check_cache_file, get_cache_file
+from radis.misc.cache_files import (
+    save_to_hdf,
+    check_cache_file,
+    load_h5_cache_file,
+)
+from os.path import getmtime
 
+# from radis.test.utils import getTestFile
+import time
+from radis import OLDEST_COMPATIBLE_VERSION
 
 # %% Hitran groups and classes
 # As defined in Rothman et al, "The HITRAN 2004 molecular spectroscopic database"
@@ -305,9 +313,12 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     :func:`~radis.io.cdsd.cdsd2df`
 
     """
-
+    metadata = {}
+    # metadata["last_modification"] = time.ctime(getmtime(getTestFile(fname)))
+    metadata["last_modification"] = time.ctime(getmtime(fname))
     if verbose >= 2:
         print("Opening file {0} (cache={1})".format(fname, cache))
+        print("Last modification time: {0}".format(metadata["last_modification"]))
 
     columns = columns_2004
 
@@ -315,8 +326,14 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     fcache = splitext(fname)[0] + ".h5"
     check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
     if cache and exists(fcache):
-        return get_cache_file(fcache, verbose=verbose)
-
+        # return get_cache_file(fcache, verbose=verbose)
+        return load_h5_cache_file(
+            fcache,
+            cache,
+            metadata=metadata,
+            current_version=radis.__version__,
+            last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+        )
     # Detect the molecule by reading the start of the file
     try:
         with open(fname) as f:
@@ -373,7 +390,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
             save_to_hdf(
                 df,
                 fcache,
-                metadata={},
+                metadata=metadata,
                 version=radis.__version__,
                 key="df",
                 overwrite=True,
