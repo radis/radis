@@ -36,7 +36,6 @@ from radis.io.tools import (
 from radis.misc.cache_files import (
     save_to_hdf,
     check_cache_file,
-    get_cache_file,
     load_h5_cache_file,
 )
 from os.path import getmtime
@@ -326,8 +325,6 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     # Use cache file if possible
     fcache = splitext(fname)[0] + ".h5"
     check_cache_file(fcache=fcache, use_cached=cache, verbose=verbose)
-    if verbose >= 2:
-        print(exists(fcache))
     if cache and exists(fcache):
         # return get_cache_file(fcache, verbose=verbose)
         return load_h5_cache_file(
@@ -393,7 +390,6 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
             save_to_hdf(
                 df,
                 fcache,
-                # metadata={},
                 metadata=metadata,
                 version=radis.__version__,
                 key="df",
