@@ -12,7 +12,5 @@
       - uses: actions/checkout@v2
       - name: Python Syntax Checker
         run: clauss/Find-Python-syntax-errors-action@v0.2.0
-      - name: Python Black Check
-        run: RojerGS/python-black-check@1.0.1
-      - name: Black Check
-        run: jpetrucciani/black-check@19.10b0
+      - name: Black Code Formatter
+        run: lgeiger/black-action@v1.0.1
