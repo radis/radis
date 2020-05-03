@@ -1,4 +1,4 @@
-  name: RadisCI
+  name: RadisBot
 
   # Controls when the action will run. Triggers the workflow on push or pull request
   # events but only for the master branch
@@ -11,7 +11,7 @@
       steps:
       - uses: actions/checkout@v2
       - name: Black Code Formatter
-        run: lgeiger/black-action@v1.0.1
+        run: lgeiger/black-action@v1.0.0
       - name: Python Syntax Checker
         run: clauss/Find-Python-syntax-errors-action@v0.2.0
 
