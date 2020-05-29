@@ -253,6 +253,12 @@ def experimental_spectrum(
 
     """
 
+    if np.shape(w) != np.shape(I):
+        raise ValueError(
+            "Wavelength {0} and intensity {1} do not have the same shape".format(
+                np.shape(w), np.shape(I)
+            )
+        )
     return Spectrum.from_array(
         np.array(w),
         np.array(I),
