@@ -1740,7 +1740,7 @@ class BroadenFactory(BaseFactory):
         return wavenumber, sumoflines
 
     def _apply_lineshape_DLM(
-        self, broadened_param, line_profile_DLM, shifted_wavenum, wL, wG, wL_dat, wG_dat
+        self, broadened_param, line_profile_DLM, shifted_wavenum, wL, wG, wL_dat, wG_dat, awL_kind = 2, awG_kind = 2
     ):
         """ Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
@@ -1774,6 +1774,16 @@ class BroadenFactory(BaseFactory):
             
         wG_dat: array    (size N)
             FWHM of all lines. Used to lookup the DLM
+
+        awL_kind: int              Kind of weight used for the Lorentzian broadening
+            1 = linear      (minimizes calculation time)
+            2 = logarithmic (minimizes error at line center)
+            3 = mixed       (minimizes sum-of-square error)
+
+        awG_kind: int              Kind of weight used for the Gaussian broadening
+            1 = linear      (minimizes calculation time)
+            2 = logarithmic (minimizes error at line center)
+            3 = mixed       (minimizes sum-of-square error)
             
         Returns
         -------
@@ -1838,9 +1848,20 @@ class BroadenFactory(BaseFactory):
         iwG1 = iwG0 + 1
 
         # DLM : Next calculate how the line is distributed over the 2x2x2 bins we have:
-        av = iv - iv0
-        awL = (iwL - iwL0) * (wL[iwL1] / wL_dat)
-        awG = (iwG - iwG0) * (wG[iwG1] / wG_dat)
+        av  = iv  - iv0
+        awL = iwL - iwL0
+        awG = iwG - iwG0
+
+        if awL_kind == 2:
+            awL *= (wL[iwL1] / wL_dat)
+        elif awL_kind == 3:
+            awL *= (0.5 + 0.5*(wL[iwL1] / wL_dat))
+
+        if awG_kind == 2:
+            awG *= (wL[iwG1] / wG_dat)
+        elif awG_kind == 3:
+            awG *= (0.5 + 0.5*(wG[iwG1] / wG_dat))
+
         # ... fractions on DLM grid
         awV00 = (1 - awL) * (1 - awG)
         awV10 = awL * (1 - awG)
@@ -1979,6 +2000,8 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    self.misc.awL_kind,
+                    self.misc.awG_kind
                 )
 
             elif is_float(chunksize):

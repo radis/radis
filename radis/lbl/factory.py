@@ -266,6 +266,20 @@ class SpectrumFactory(BandFactory):
             argument: in this case, the DLM optimization for lineshape calculation 
             is used. Broadening method is automatically set to ``'fft'``. 
             See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
+
+    awL_kind: int
+        Kind of weight used for the Lorentzian broadening in case the ``'DLM'`` method
+        is used.
+        1 = linear      (minimizes calculation time)
+        2 = logarithmic (minimizes error at line center)
+        3 = mixed       (minimizes sum-of-square error)
+
+    awG_kind: int
+        Kind of weight used for the Gaussian broadening in case the ``'DLM'`` method
+        is used.
+        1 = linear      (minimizes calculation time)
+        2 = logarithmic (minimizes error at line center)
+        3 = mixed       (minimizes sum-of-square error)
         
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
@@ -367,6 +381,8 @@ class SpectrumFactory(BandFactory):
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
+        awL_kind=None,
+        awG_kind=None,
         Nprocs=None,
         Ngroups=None,
         cutoff=1e-27,
@@ -507,6 +523,16 @@ class SpectrumFactory(BandFactory):
             if self.verbose >= 3:
                 print("DLM used. Defaulting broadening method to FFT")
             # TODO: make it a proper parameter in self.misc or self.params
+            
+            if awL_kind is None:
+                self.misc.awL_kind = 2
+            else:
+                self.misc.awL_kind = awL_kind
+
+            if awG_kind is None:
+                self.misc.awG_kind = 2
+            else:
+                self.misc.awG_kind = awG_kind
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
