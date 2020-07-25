@@ -9,12 +9,21 @@ Models built around the :class:`~radis.spectrum.spectrum.Spectrum` class
 Routine Listing
 ---------------
 
-- :func:`~radis.spectrum.models.Transmittance`
-- :func:`~radis.spectrum.models.Radiance`
-
 - :func:`~radis.spectrum.models.calculated_spectrum`,
 - :func:`~radis.spectrum.models.experimental_spectrum`,
 - :func:`~radis.spectrum.models.transmittance_spectrum`,
+
+See Also
+--------
+
+To extract some spectral quantities from a Spectrum, and create a new Spectrum,
+see the functions in :py:mod:`radis.spectrum.operations`:
+    
+- :func:`~radis.spectrum.operations.Radiance`
+- :func:`~radis.spectrum.operations.Radiance_noslit`
+- :func:`~radis.spectrum.operations.Transmittance`
+- :func:`~radis.spectrum.operations.Transmittance_noslit`
+
 
 -------------------------------------------------------------------------------
 
@@ -29,10 +38,17 @@ import numpy as np
 # %% Array-to-Spectrum functions
 
 
-def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
-                        conditions=None, cond_units=None, populations=None,
-                        name=None): # -> Spectrum:
-    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
+def calculated_spectrum(
+    w,
+    I,
+    wunit="nm",
+    Iunit="mW/cm2/sr/nm",
+    conditions=None,
+    cond_units=None,
+    populations=None,
+    name=None,
+):  # -> Spectrum:
+    """ Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
     object that has unit conversion, plotting and slit convolution capabilities
 
 
@@ -90,19 +106,25 @@ def calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm',
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
-    '''
+    """
 
-    return Spectrum.from_array(np.array(w), np.array(I), 'radiance_noslit',
-                               waveunit=wunit, unit=Iunit,
-                               conditions=conditions, cond_units=cond_units,
-                               populations=populations,
-                               name=name)
+    return Spectrum.from_array(
+        np.array(w),
+        np.array(I),
+        "radiance_noslit",
+        waveunit=wunit,
+        unit=Iunit,
+        conditions=conditions,
+        cond_units=cond_units,
+        populations=populations,
+        name=name,
+    )
 
 
-def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
-                           conditions=None, cond_units=None,
-                           name=None): # -> Spectrum:
-    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
+def transmittance_spectrum(
+    w, T, wunit="nm", Tunit="", conditions=None, cond_units=None, name=None
+):  # -> Spectrum:
+    """ Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`  
     object that has unit conversion, plotting and slit convolution capabilities
 
 
@@ -120,7 +142,7 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
         (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``. 
 
     Iunit: str
-        intensity unit. Default ``'I/I0'``
+        intensity unit. Default ``""`` (adimensionned)
 
 
     Other Parameters
@@ -156,17 +178,24 @@ def transmittance_spectrum(w, T, wunit='nm', Tunit='I/I0',
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
-    '''
+    """
 
-    return Spectrum.from_array(np.array(w), np.array(T), 'transmittance_noslit',
-                               waveunit=wunit, unit=Tunit,
-                               conditions=conditions, cond_units=cond_units,
-                               name=name)
+    return Spectrum.from_array(
+        np.array(w),
+        np.array(T),
+        "transmittance_noslit",
+        waveunit=wunit,
+        unit=Tunit,
+        conditions=conditions,
+        cond_units=cond_units,
+        name=name,
+    )
 
 
-def experimental_spectrum(w, I, wunit='nm', Iunit='counts', 
-                          conditions={}, cond_units=None, name=None): # -> Spectrum:
-    ''' Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum` 
+def experimental_spectrum(
+    w, I, wunit="nm", Iunit="counts", conditions={}, cond_units=None, name=None
+):  # -> Spectrum:
+    """ Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum` 
     object that has unit conversion and plotting
     capabilities. Convolution is not available as the spectrum is assumed to
     have be measured experimentally (hence it is already convolved with the slit function)
@@ -222,9 +251,21 @@ def experimental_spectrum(w, I, wunit='nm', Iunit='counts',
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
 
-    '''
+    """
 
-    return Spectrum.from_array(np.array(w), np.array(I), 'radiance',
-                               waveunit=wunit, unit=Iunit,
-                               conditions=conditions, cond_units=cond_units,
-                               name=name)
+    if np.shape(w) != np.shape(I):
+        raise ValueError(
+            "Wavelength {0} and intensity {1} do not have the same shape".format(
+                np.shape(w), np.shape(I)
+            )
+        )
+    return Spectrum.from_array(
+        np.array(w),
+        np.array(I),
+        "radiance",
+        waveunit=wunit,
+        unit=Iunit,
+        conditions=conditions,
+        cond_units=cond_units,
+        name=name,
+    )

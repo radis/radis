@@ -4,16 +4,9 @@ Thermodynamic codes
 Cantera
 '''''''
 
-RADIS can compute equilibrium gas compositions using the [CANTERA]_
-:py:meth:`~cantera.ThermoPhase.equilibrate` functions. 
-
+RADIS can compute gas mixture compositions under chemical 
+equilibrium using CANTERA (in particular the [CANTERA]_
+:py:meth:`~cantera.ThermoPhase.equilibrate` function). 
 Refer to :py:func:`~radis.tools.gascomp.get_eq_mole_fraction` for 
 more information. 
 
-
----------------------------------------------------------------------------------
-
-.. [CANTERA]  D. G. Goodwin, H. K. Moffat, R. L. Speth, Cantera: An Object-oriented Software
-              Toolkit for Chemical Kinetics, Thermodynamics, and Transport Processes,
-              http://www.cantera.org, doi:10.5281/zenodo.170284, 2017.
-    

@@ -27,12 +27,13 @@ from __future__ import absolute_import
 from numpy import exp, arange, ones_like, zeros_like, inf
 from radis.phys.constants import k_b, c, h
 from radis.phys.constants import k_b_CGS, c_CGS, h_CGS
-from radis.phys.units import conv2, Q_
+from radis.phys.units import conv2
+from radis.phys.units import Unit as Q_
 from radis.phys.air import air2vacuum
 
 
-def planck(lmbda, T, eps=1, unit='mW/sr/cm2/nm'):
-    ''' Planck function for blackbody radiation
+def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
+    """ Planck function for blackbody radiation
 
 
     Parameters    
@@ -57,22 +58,23 @@ def planck(lmbda, T, eps=1, unit='mW/sr/cm2/nm'):
     planck: np.array   (mW.sr-1.cm-2/nm)
         equilibrium radiance
 
-    '''
+    """
 
     k = k_b
     lbd = lmbda * 1e-9
-    iplanck = eps*(2*h*c**2/lbd**5) * 1 / \
-        (exp(h*c/(lbd*k*T)) - 1)   # S.I  (W.sr-1.m-3)
+    iplanck = (
+        eps * (2 * h * c ** 2 / lbd ** 5) * 1 / (exp(h * c / (lbd * k * T)) - 1)
+    )  # S.I  (W.sr-1.m-3)
     iplanck *= 1e-10  # W.sr-1.m-3 >>> mW.sr-1.cm-2.nm-1
 
-    if Q_(unit) != Q_('mW/sr/cm2/nm'):
-        iplanck = conv2(iplanck, 'mW/sr/cm2/nm', unit)
+    if Q_(unit) != Q_("mW/sr/cm2/nm"):
+        iplanck = conv2(iplanck, "mW/sr/cm2/nm", unit)
 
     return iplanck
 
 
-def planck_wn(wavenum, T, eps=1, unit='mW/sr/cm2/cm_1'):
-    ''' Planck function for blackbody radiation, wavenumber version
+def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
+    """ Planck function for blackbody radiation, wavenumber version
 
 
     Parameters    
@@ -88,39 +90,48 @@ def planck_wn(wavenum, T, eps=1, unit='mW/sr/cm2/cm_1'):
         default 1
 
     unit: str
-        output unit. Default 'mW/sr/cm2/cm_1'
+        output unit. Default 'mW/sr/cm2/cm-1'
 
 
     Returns
     -------
 
-    planck: np.array   default (mW/sr/cm2/cm_1)
+    planck: np.array   default (mW/sr/cm2/cm-1)
         equilibrium radiance
 
-    '''
+    """
 
     k = k_b_CGS
     h = h_CGS
     c = c_CGS
 
-    iplanck = eps*(2*h*c**2*wavenum**3) * 1/(exp(h*c*wavenum/(k*T)) - 1)
+    iplanck = (
+        eps * (2 * h * c ** 2 * wavenum ** 3) * 1 / (exp(h * c * wavenum / (k * T)) - 1)
+    )
     # iplanck in erg/s/sr/cm2/cm-1
-    iplanck *= 1e-4     # erg/s/sr/cm2/cm-1 > mW/sr/cm^2/cm-1
+    iplanck *= 1e-4  # erg/s/sr/cm2/cm-1 > mW/sr/cm^2/cm-1
 
-    if Q_(unit) != Q_('mW/sr/cm2/cm_1'):
-        iplanck = conv2(iplanck, 'mW/sr/cm2/cm_1', unit)
+    if Q_(unit) != Q_("mW/sr/cm2/cm-1"):
+        iplanck = conv2(iplanck, "mW/sr/cm2/cm-1", unit)
 
     return iplanck
+
 
 # %% Predefined Spectra objects
 
 
-def sPlanck(wavenum_min=None, wavenum_max=None,
-            wavelength_min=None, wavelength_max=None,
-            T=None, eps=1,
-            wstep=0.01, medium='air',
-            **kwargs):
-    ''' Return a RADIS Spectrum object with blackbody radiation. 
+def sPlanck(
+    wavenum_min=None,
+    wavenum_max=None,
+    wavelength_min=None,
+    wavelength_max=None,
+    T=None,
+    eps=1,
+    wstep=0.01,
+    medium="air",
+    **kwargs
+):
+    """ Return a RADIS Spectrum object with blackbody radiation. 
 
     It's easier to plug in a MergeSlabs / SerialSlabs config than the Planck
     radiance calculated by iPlanck. And you don't need to worry about units as
@@ -162,66 +173,70 @@ def sPlanck(wavenum_min=None, wavenum_max=None,
                     T=288, eps=1)
         s.plot()
 
-    '''
+    """
 
     from radis.spectrum.spectrum import Spectrum
 
     # Check inputs
-    if ((wavelength_min is not None or wavelength_max is not None) and
-            (wavenum_min is not None or wavenum_max is not None)):
-        raise ValueError('You cannot give both wavelengths and wavenumbers')
+    if (wavelength_min is not None or wavelength_max is not None) and (
+        wavenum_min is not None or wavenum_max is not None
+    ):
+        raise ValueError("You cannot give both wavelengths and wavenumbers")
 
-    if (wavenum_min is not None and wavenum_max is not None):
-        assert(wavenum_min < wavenum_max)
-        waveunit = 'cm-1'
+    if wavenum_min is not None and wavenum_max is not None:
+        assert wavenum_min < wavenum_max
+        waveunit = "cm-1"
     else:
-        assert(wavelength_min < wavelength_max)
-        if medium == 'air':
-            waveunit = 'nm'
-        elif medium == 'vacuum':
-            waveunit = 'nm_vac'
+        assert wavelength_min < wavelength_max
+        if medium == "air":
+            waveunit = "nm"
+        elif medium == "vacuum":
+            waveunit = "nm_vac"
         else:
             raise ValueError(medium)
 
     if T is None:
-        raise ValueError('T must be defined')
+        raise ValueError("T must be defined")
 
     if not (eps >= 0 and eps <= 1):
-        raise ValueError('Emissivity must be in [0-1]')
+        raise ValueError("Emissivity must be in [0-1]")
 
     # Test range is correct:
-    if waveunit == 'cm-1':
+    if waveunit == "cm-1":
         # generate the vector of wavenumbers (shape M)
-        w = arange(wavenum_min, wavenum_max+wstep, wstep)
-        Iunit = 'mW/sr/cm2/cm_1'
+        w = arange(wavenum_min, wavenum_max + wstep, wstep)
+        Iunit = "mW/sr/cm2/cm-1"
         I = planck_wn(w, T, eps=eps, unit=Iunit)
     else:
         # generate the vector of lengths (shape M)
-        w = arange(wavelength_min, wavelength_max+wstep, wstep)
-        Iunit = 'mW/sr/cm2/nm'
-        if waveunit == 'nm_vac':
+        w = arange(wavelength_min, wavelength_max + wstep, wstep)
+        Iunit = "mW/sr/cm2/nm"
+        if waveunit == "nm_vac":
             w_vac = w
-        elif waveunit == 'nm':
+        elif waveunit == "nm":
             w_vac = air2vacuum(w)
         # calculate planck with wavelengths in vacuum
         I = planck(w_vac, T, eps=eps, unit=Iunit)
 
-    conditions = {'wstep': wstep}
+    conditions = {"wstep": wstep}
     # add all extra parameters in conditions (ex: path_length)
     conditions.update(**kwargs)
 
-    return Spectrum(quantities={'radiance_noslit': (w, I),
-                                'transmittance_noslit': (w, zeros_like(w)),
-                                'absorbance': (w, ones_like(w)*inf)},
-                    conditions=conditions,
-                    units={'radiance_noslit': Iunit,
-                           'transmittance_noslit': 'I/I0',
-                           'absorbance': '-ln(I/I0)'},
-                    cond_units={'wstep': waveunit},
-                    waveunit=waveunit,
-                    name='Planck {0}K, eps={1:.2g}'.format(T, eps))
+    return Spectrum(
+        quantities={
+            "radiance_noslit": (w, I),
+            "transmittance_noslit": (w, zeros_like(w)),
+            "absorbance": (w, ones_like(w) * inf),
+        },
+        conditions=conditions,
+        units={"radiance_noslit": Iunit, "transmittance_noslit": "", "absorbance": "",},
+        cond_units={"wstep": waveunit},
+        waveunit=waveunit,
+        name="Planck {0}K, eps={1:.2g}".format(T, eps),
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from radis.test.phys.test_blackbody import _run_testcases
+
     _run_testcases(plot=True)

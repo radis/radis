@@ -32,77 +32,92 @@ Typical results on an XPS 15 laptop here::
 from __future__ import absolute_import
 from __future__ import print_function
 from radis import SpectrumFactory, Spectrum, plot_diff
-from radis.io.hapi import (fetch_by_ids, fetch, absorptionCoefficient_Voigt, db_begin, 
-                                tableList, VARIABLES, ISO_ID)
+from radis.io.hapi import (
+    fetch_by_ids,
+    fetch,
+    absorptionCoefficient_Voigt,
+    db_begin,
+    tableList,
+    VARIABLES,
+    ISO_ID,
+)
 from os.path import join, dirname
 import matplotlib.pyplot as plt
 from time import time
 from radis.io.hitran import get_molecule, get_molecule_identifier
 
-if __name__ == '__main__':
-    
-    benchmark_line_brd_ratio = 50    # “WavenumberWingHW”/HWHMs
-    dnu = 0.01         # step in HAPI Benchmark article
-    molecule = 'CH4'
+if __name__ == "__main__":
+
+    benchmark_line_brd_ratio = 50  # “WavenumberWingHW”/HWHMs
+    dnu = 0.01  # step in HAPI Benchmark article
+    molecule = "CH4"
     wavenum_min = 0.001
     wavenum_max = 11505
     pressure_bar = 1.01315
     T = 296
     isotopes = [1, 2, 3, 4]
-    
-    sf = SpectrumFactory(wavenum_min=wavenum_min,
-                         wavenum_max=wavenum_max,
-                         isotope=isotopes,  #'all',
-                         verbose=2,
-                         wstep=dnu,     # depends on HAPI benchmark. 
-                         cutoff=1e-23,  
-                         broadening_max_width=5.73,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
-                         molecule=molecule,
-                         )
-    sf.fetch_databank('astroquery', load_energies=False)
-    
+
+    sf = SpectrumFactory(
+        wavenum_min=wavenum_min,
+        wavenum_max=wavenum_max,
+        isotope=isotopes,  #'all',
+        verbose=2,
+        wstep=dnu,  # depends on HAPI benchmark.
+        cutoff=1e-23,
+        broadening_max_width=5.73,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
+        molecule=molecule,
+    )
+    sf.fetch_databank("astroquery", load_energies=False)
+
     s = sf.eq_spectrum(Tgas=T, pressure=pressure_bar)
-    s.name = 'RADIS ({0:.1f}s)'.format(s.conditions['calculation_time'])
-    
-    
+    s.name = "RADIS ({0:.1f}s)".format(s.conditions["calculation_time"])
+
     # Print our HWHM for comparison (a posteriori)
-    print(('HWHM max {0:.2f} cm-1'.format(sf.df1.hwhm_voigt.max())))
-    print(('WavenumberWingHW/HWHM', int(sf.params.broadening_max_width/(sf.df1.hwhm_voigt.max()))))
-    assert (int(sf.params.broadening_max_width/(sf.df1.hwhm_voigt.max()))) == benchmark_line_brd_ratio
-    
-    
+    print(("HWHM max {0:.2f} cm-1".format(sf.df1.hwhm_voigt.max())))
+    print(
+        (
+            "WavenumberWingHW/HWHM",
+            int(sf.params.broadening_max_width / (sf.df1.hwhm_voigt.max())),
+        )
+    )
+    assert (
+        int(sf.params.broadening_max_width / (sf.df1.hwhm_voigt.max()))
+    ) == benchmark_line_brd_ratio
+
     # %% Run HAPI
-    print('Now calculating with HAPI')
-    
+    print("Now calculating with HAPI")
+
     # Generate HAPI database locally
-    db_begin(join(dirname(__file__), __file__.replace('.py', '_HAPIdata')))
-    if not molecule in tableList():   # only if data not downloaded already
+    db_begin(join(dirname(__file__), __file__.replace(".py", "_HAPIdata")))
+    if not molecule in tableList():  # only if data not downloaded already
         mol_iso_ids = [k for k in ISO_ID if ISO_ID[k][-1] == molecule]
         mol_iso_ids = [k for k in mol_iso_ids if ISO_ID[k][1] in isotopes]
         fetch_by_ids(molecule, mol_iso_ids, wavenum_min, wavenum_max)
-    
+
     # Calculate with HAPI
     def calc_hapi():
-        nu, coef = absorptionCoefficient_Voigt(SourceTables=molecule,
-                                               Environment={'T': T,  # K
-                                                            'p': pressure_bar/1.01315,  # atm
-                                                            },
-                                                GammaL='gamma_self',
-                                               WavenumberStep=dnu,
-                                               HITRAN_units=False)
+        nu, coef = absorptionCoefficient_Voigt(
+            SourceTables=molecule,
+            Environment={"T": T, "p": pressure_bar / 1.01315,},  # K  # atm
+            GammaL="gamma_self",
+            WavenumberStep=dnu,
+            HITRAN_units=False,
+        )
         return nu, coef
-    
+
     t0 = time()
     nu, coef = calc_hapi()
     t0 = time() - t0
-    print(('Calculated with HAPI in {0:.2f}s'.format(t0)))
-    
-    s_hapi = Spectrum.from_array(nu, coef, 'abscoeff', waveunit='cm-1', unit='cm-1')
-    s_hapi.name = 'HAPI ({0:.1f}s)'.format(t0)
-    
-    plot_diff(s_hapi, s, 'abscoeff')
-    
-    print(('Calculated with RADIS in {0:.2f}s'.format(s.conditions['calculation_time'])))
-    print(('Number of lines in RADIS:', len(sf.df0)))
-    
+    print(("Calculated with HAPI in {0:.2f}s".format(t0)))
+
+    s_hapi = Spectrum.from_array(nu, coef, "abscoeff", waveunit="cm-1", unit="cm-1")
+    s_hapi.name = "HAPI ({0:.1f}s)".format(t0)
+
+    plot_diff(s_hapi, s, "abscoeff")
+
+    print(
+        ("Calculated with RADIS in {0:.2f}s".format(s.conditions["calculation_time"]))
+    )
+    print(("Number of lines in RADIS:", len(sf.df0)))
+
 #    plt.savefig('radis_vs_hapi_test_large_ch4.pdf')

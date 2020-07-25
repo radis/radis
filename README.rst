@@ -29,7 +29,7 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
     
 **That's it!** You can now run your first example below.
 If you encounter any issue, or to upgrade the package later, please refer to the 
-`detailed installation procedure <https://radis.readthedocs.io/en/latest/install.html#label-install>`__ . 
+`detailed installation procedure <https://radis.readthedocs.io/en/latest/dev/install.html#label-install>`__ . 
 
 Quick Start
 -----------
@@ -70,10 +70,10 @@ energies): ::
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous
     
-The Quick Start examples automatically download the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/bibliography.html#hitran-2016>`__, which is valid for temperatures below 700 K. 
+The Quick Start examples automatically download the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/references/references.html#hitran-2016>`__, which is valid for temperatures below 700 K. 
 For *high temperature* cases, you may need to use other line databases such as 
-`HITEMP-2010 <https://radis.readthedocs.io/en/latest/bibliography.html#hitemp-2010>`__ (typically T < 2000 K) or `CDSD-4000 <https://radis.readthedocs.io/en/latest/bibliography.html#cdsd-4000>`__ (T < 5000 K). These databases must be described in a ``~/.radis`` 
-`Configuration file <https://radis.readthedocs.io/en/latest/lbl/index.html#configuration-file>`__. 
+`HITEMP-2010 <https://radis.readthedocs.io/en/latest/references/references.html#hitemp-2010>`__ (typically T < 2000 K) or `CDSD-4000 <https://radis.readthedocs.io/en/latest/references/references.html#cdsd-4000>`__ (T < 5000 K). These databases must be described in a ``~/.radis`` 
+`Configuration file <https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file>`__. 
 
 More complex `examples <https://radis.readthedocs.io/en/latest/examples.html#label-examples>`__ will require to use the `SpectrumFactory <https://radis.readthedocs.io/en/latest/source/radis.lbl.factory.html#radis.lbl.factory.SpectrumFactory>`__
 class, which is the core of RADIS line-by-line calculations. 
@@ -96,8 +96,8 @@ Typical output of `plot_diff <https://radis.readthedocs.io/en/latest/source/radi
     :target: https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#compare-two-spectra
     :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
-Refer to the `Examples <https://radis.readthedocs.io/en/latest/examples.html#label-examples>`__ section for more examples, and to the  
-`Spectrum page <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__ for more post-processing functions. 
+Refer to the `Examples <https://radis.readthedocs.io/en/latest/examples/examples.html>`__ section for more examples, and to the  
+`Spectrum page <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html>`__ for more post-processing functions. 
 
 In the browser (no installation needed!)
 ----------------------------------------
@@ -121,7 +121,7 @@ Cite
 Article is available at |badge_article| 
 
 For reproducibility, do not forget to cite the line database used, and the spectroscopic constants 
-if running nonquilibrium  calculations. See `How to cite? <https://radis.readthedocs.io/en/latest/references.html#cite>`__
+if running nonquilibrium  calculations. See `How to cite? <https://radis.readthedocs.io/en/latest/references/references.html#cite>`__
 
 ---------------------------------------------------------------------
 
@@ -156,6 +156,12 @@ We appreciate your feedback and suggestions!
 For any question, please join the discussion channel on Gitter: |badge_gitter|
 or the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
 
+
+Finally, you can also suggest or vote for new features below:
+
+.. image:: https://feathub.com/radis/radis?format=svg
+   :target: https://feathub.com/radis/radis
+   
 
 
 ---------------------------------------------------------------------
@@ -226,7 +232,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                   :target: https://travis-ci.com/radis/radis
                   :alt: Tests
 
-.. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
+.. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg
                     :target: https://codecov.io/gh/radis/radis
                     :alt: Coverage
 

@@ -1,0 +1,14 @@
+[report]
+exclude_lines =
+    def __repr__
+    raise NotImplementedError
+    if __name__ == "__main__":
+    if radis.DEBUG_MODE:
+    if __debug__:
+    if self.verbose >= 2:
+    def run_testcases
+    @jit
+    except MemoryError
+    raise DeprecationWarning
+    raise FileNotFoundError
+    raise AttributeError

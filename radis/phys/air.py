@@ -18,7 +18,7 @@ Routine Listing
 
 
 def air_index_dispersion(lbd):
-    ''' Return air index dispersion as a function of wavelength with the 
+    """ Return air index dispersion as a function of wavelength with the 
     relation of Ciddor [1]_
 
     Parameters
@@ -35,17 +35,18 @@ def air_index_dispersion(lbd):
 
     Standard air: dry air at 15 °C, 101.325 kPa and with 450 ppm CO2 content
 
-    '''
+    """
 
-    n = 1 + 0.05792105/(238.0185-lbd**-2)+0.00167917/(57.362-lbd**-2)
+    n = 1 + 0.05792105 / (238.0185 - lbd ** -2) + 0.00167917 / (57.362 - lbd ** -2)
 
     return n
 
 
 # Wavelength medium conversion functions
 
+
 def vacuum2air(wavelength):
-    ''' Converts wavelength as seen in vacuum to wavelength as seen in air
+    """ Converts wavelength as seen in vacuum to wavelength as seen in air
 
 
     Parameters    
@@ -67,14 +68,14 @@ def vacuum2air(wavelength):
 
     :func:`~radis.phys.air.air2vacuum`
 
-    '''
+    """
 
-    air_index = air_index_dispersion(wavelength * 1e-3)      # nm > µm
+    air_index = air_index_dispersion(wavelength * 1e-3)  # nm > µm
     return wavelength / air_index
 
 
 def air2vacuum(wavelength):
-    ''' Converts wavelength as seen in air to wavelength as seen in vacuum
+    """ Converts wavelength as seen in air to wavelength as seen in vacuum
 
 
     Parameters    
@@ -108,7 +109,7 @@ def air2vacuum(wavelength):
 
     :func:`~radis.phys.air.vacuum2air`
 
-    '''
+    """
 
-    air_index = air_index_dispersion(wavelength * 1e-3)       # nm > µm
+    air_index = air_index_dispersion(wavelength * 1e-3)  # nm > µm
     return air_index * wavelength

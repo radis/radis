@@ -57,18 +57,19 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
 .. figure:: examples/co_spectrum_700K.png
     :scale: 60 %
 
-Calculate a CO *nonequilibrium* spectrum from the HITRAN database
-(on your first call, this will calculate and cache the CO(X) rovibrational
-energies): ::
+Calculate a CO *nonequilibrium* spectrum from the HITRAN database, with
+arbitrary :py:mod:`~astropy.units` (on your first call, this will calculate and 
+cache the CO(X) rovibrational energies): ::
 
-    s2 = calc_spectrum(1900, 2300,         # cm-1
+    from astropy import units as u
+    s2 = calc_spectrum(1900 / u.cm, 2300 / u.cm,
                       molecule='CO',
                       isotope='1,2,3',
-                      pressure=1.01325,   # bar
-                      Tvib=700,           # K
-                      Trot=300,           # K
+                      pressure=1.01325 * u.bar,
+                      Tvib=700 * u.K,
+                      Trot=300 * u.K,
                       mole_fraction=0.1, 
-                      path_length=1,      # cm
+                      path_length=1 * u.cm,
                       )
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous
@@ -82,7 +83,8 @@ and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For
     sexp = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
     plot_diff(sexp, s)    # comparing with a spectrum 's' calculated previously 
 
-Typical output of :py:func:`~radis.spectrum.compare.plot_diff`:
+Typical output of :py:func:`~radis.spectrum.compare.plot_diff` (below: a CO2 spectrum
+at 3400 K calculated with the [HITEMP-2010]_ and [CDSD-4000]_ line databases):
 
 .. image:: spectrum/cdsd4000_vs_hitemp_3409K.*
     :scale: 60 %
@@ -91,7 +93,7 @@ Typical output of :py:func:`~radis.spectrum.compare.plot_diff`:
 
 Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-processing functions 
 (:ref:`rescale <label_spectrum_rescale>` , :ref:`crop<label_spectrum_offset_crop>`, 
-:ref:`remove baselines <label_spectrum_remove_baseline>, :ref:`store <label_spectrum_store>`, 
+:ref:`remove baselines<label_spectrum_remove_baseline>, :ref:`store<label_spectrum_store>`, 
 :ref:`combine along the line-of-sight <label_spectrum_line_of_sight>`, 
 :ref:`identify each line <label_spectrum_linesurvey>`, 
 :ref:`manipulate multiple spectra at once <label_spectrum_database>`, etc.)
@@ -119,7 +121,7 @@ More examples
 =============
 
 The Quick Start examples above automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K. 
-For *high temperature* cases, you may need to use other line databases such as 
+For *high temperature* cases, you may need to use :ref:`other line databases <label_line_databases>` such as 
 [HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis`` 
 :ref:`Configuration file <label_lbl_config_file>`. 
 

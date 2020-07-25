@@ -1,3 +1,0 @@
-# Maintain Python 2 / Python 3 compatibility
-for f in find ./radis -name '*.py' ; do python-modernize -w $f; done
-

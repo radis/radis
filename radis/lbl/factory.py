@@ -46,6 +46,11 @@ Most methods are written in inherited class with the following inheritance schem
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
+
+.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+   :parts: 1
+
+
 Notes
 -----
 
@@ -77,6 +82,7 @@ for Developers:
 from __future__ import print_function, absolute_import, division, unicode_literals
 from six import string_types
 from warnings import warn
+from radis.io import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.io.hitran import get_molecule
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
@@ -84,52 +90,78 @@ from radis.spectrum.spectrum import Spectrum
 from radis.spectrum.equations import calc_radiance
 from radis.misc.basics import is_float, list_if_float, flatten
 from radis.misc.printer import printg
+from radis.misc.utils import Default
 from radis.phys.convert import conv2
 from radis.phys.constants import k_b
 from radis.phys.units import convert_rad2nm, convert_emi2nm
+from radis.phys.units_astropy import convert_and_strip_units
 from radis import get_version
 from numpy import exp, arange
 from multiprocessing import cpu_count
 from time import time
 import numpy as np
+import astropy.units as u
 
 # %% Main functions
 
 
 class SpectrumFactory(BandFactory):
-    ''' A class to put together all functions related to loading CDSD / HITRAN
+    """ A class to put together all functions related to loading CDSD / HITRAN
     databases, calculating the broadenings, and summing over all the lines
 
     Parameters
     ----------
 
-    wavenum_min: cm-1
+    wmin: float or `~astropy.units.quantity.Quantity`
+        a hybrid parameter which can stand for minimum wavenumber or minimum
+        wavelength depending upon the unit accompanying it. If dimensionless,
+        wunit is considered as the accompanying unit.
+
+    wmax: float or `~astropy.units.quantity.Quantity`
+        a hybrid parameter which can stand for maximum wavenumber or maximum
+        wavelength depending upon the unit accompanying it. If dimensionless,
+        wunit is considered as the accompanying unit.
+
+    wunit: string
+        the unit accompanying wmin and wmax. Can only be passed with wmin
+        and wmax. Default is `cm-1`.
+
+    wavenum_min: float(cm^-1) or `~astropy.units.quantity.Quantity`
         minimum wavenumber to be processed in cm^-1. 
+        use astropy.units to specify arbitrary inverse-length units.
 
-    wavenum_max: cm-1
-        maximum wavenumber to be processed in cm^-1
+    wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
+        maximum wavenumber to be processed in cm^-1.
+        use astropy.units to specify arbitrary inverse-length units.
 
-    wavelength_min: nm
+    wavelength_min: float(nm) or `~astropy.units.quantity.Quantity`
         minimum wavelength to be processed in nm. This wavelength
         can be in ``'air'`` or ``'vacuum'`` depending on the value of the parameter
-        ``medium=``
+        ``medium=``.
+        use astropy.units to specify arbitrary length units.
 
-    wavelength_max: nm
-        maximum wavelength to be processed in nm
+    wavelength_max: float(nm) or `~astropy.units.quantity.Quantity`
+        maximum wavelength to be processed in nm.
+        use astropy.units to specify arbitrary length units.
 
-    Tref: K
+    Tref: float(K) or `~astropy.units.quantity.Quantity`
         reference temperature for calculations, HITRAN database uses 296 Kelvin
-        default: 3400K
+        default: 3400K. 
+        use astropy.units to specify arbitrary temperature units.
+        For example, ``200 * u.deg_C``.
 
-    pressure: bar
-        partial pressure of gas in bar. Default 1.01325 (1 atm)
+    pressure: float(bar) or `~astropy.units.quantity.Quantity`
+        partial pressure of gas in bar. Default 1.01325 (1 atm).
+        use astropy.units to specify arbitrary pressure units.
+        For example, ``1013.25 * u.mbar``.
 
     mole_fraction: N/D
         species mole fraction. Default 1. Note that the rest of the gas
         is considered to be air for collisional broadening.
 
-    path_length: cm
+    path_length: float(cm) or `~astropy.units.quantity.Quantity`
         path length in cm. Default 1.
+        use astropy.units to specify arbitrary length units.
 
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
@@ -256,23 +288,29 @@ class SpectrumFactory(BandFactory):
     --------
     
     An example using :class:`~radis.lbl.factory.SpectrumFactory`, 
-    :meth:`~radis.lbl.loader.DatabankLoader.load_databank`, and the 
-    :class:`~radis.spectrum.spectrum.Spectrum` methods::
+    :meth:`~radis.lbl.loader.DatabankLoader.load_databank`, the 
+    :class:`~radis.spectrum.spectrum.Spectrum` methods, and 
+    :py:mod:`~astropy.units` ::
 
-        sf = SpectrumFactory(wavelength_min=4150, wavelength_max=4400,
-                             parallel=False, bplot=False, cutoff=1e-25,
-                             isotope='1,2', db_use_cached=True,
-                             broadening_max_width=10,
-                             pseudo_continuum_threshold=0,
+        from radis import SpectrumFactory
+        from astropy import units as u
+        sf = SpectrumFactory(wavelength_min=4165 * u.nm, 
+                             wavelength_max=4200 * u.nm,
+                             isotope='1,2', 
+                             broadening_max_width=10,  # cm-1
                              medium='vacuum',
-                             verbose=verbose)
-        sf.load_databank('CDSD-HITEMP')        # predefined in ~/.radis
-        s = sf.eq_spectrum(Tgas=300, path_length=1)
-        s.rescale_path_length(0.01)
+                             verbose=1,    # more for more details
+                             )
+        sf.load_databank('HITRAN-CO2-TEST')        # predefined in ~/.radis
+        s = sf.eq_spectrum(Tgas=300 * u.K, path_length=1 * u.cm)
+        s.rescale_path_length(0.01)    # cm
         s.plot('radiance_noslit', Iunit='µW/cm2/sr/nm')
 
     Refer to the online :ref:`Examples <label_examples>` for more cases. 
 
+    .. inheritance-diagram:: radis.lbl.parallel.SpectrumFactory
+       :parts: 1
+    
     See Also
     --------
 
@@ -290,13 +328,12 @@ class SpectrumFactory(BandFactory):
     :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`,
     :meth:`~radis.lbl.loader.DatabankLoader.init_databank`,
     :meth:`~radis.lbl.loader.DatabankLoader.init_database`,
-    :meth:`~radis.lbl.band.BandFactory.eq_bands`, 
-    :meth:`~radis.lbl.band.BandFactory.non_eq_bands`
+    :meth:`~radis.lbl.bands.BandFactory.eq_bands`, 
+    :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
     
-    
-    '''
-    # TODO: make it possible to export both 'vib' and 'rovib'
+    """
 
+    # TODO: make it possible to export both 'vib' and 'rovib'
 
     # TODO
     # -------
@@ -309,73 +346,94 @@ class SpectrumFactory(BandFactory):
     # TODO
     # store everything in a self.var class instead of self.[] directly
 
-    def __init__(self, wavenum_min=None,
-                 wavenum_max=None,
-                 wavelength_min=None,
-                 wavelength_max=None,
-                 Tref=296,
-                 pressure=1.01325,
-                 mole_fraction=1,
-                 path_length=1,
-                 wstep=0.01,
-                 molecule=None,
-                 isotope='all',
-                 medium='air',
-                 broadening_max_width=10,
-                 pseudo_continuum_threshold=0,
-                 self_absorption=True,
-                 chunksize=None,
-                 Nprocs=None,
-                 Ngroups=None,
-                 cutoff=1e-27,
-                 bplot=False,
-                 parallel=False,
-                 db_use_cached=True,
-                 lvl_use_cached=None,
-                 verbose=True,
-                 warnings=True,
-                 save_memory=False,
-                 export_populations=None,
-                 export_lines=True,
-                 **kwargs):
+    def __init__(
+        self,
+        wmin=None,
+        wmax=None,
+        wunit=Default("cm-1"),
+        wavenum_min=None,
+        wavenum_max=None,
+        wavelength_min=None,
+        wavelength_max=None,
+        Tref=296,
+        pressure=1.01325,
+        mole_fraction=1,
+        path_length=1,
+        wstep=0.01,
+        molecule=None,
+        isotope="all",
+        medium="air",
+        broadening_max_width=10,
+        pseudo_continuum_threshold=0,
+        self_absorption=True,
+        chunksize=None,
+        Nprocs=None,
+        Ngroups=None,
+        cutoff=1e-27,
+        bplot=False,
+        parallel=False,
+        db_use_cached=True,
+        lvl_use_cached=None,
+        verbose=True,
+        warnings=True,
+        save_memory=False,
+        export_populations=None,
+        export_lines=True,
+        **kwargs
+    ):
 
         # Initialize BandFactory object
         super(SpectrumFactory, self).__init__()
 
         # Check inputs (deal with deprecated format)
-        if medium not in ['air', 'vacuum']:
+        if medium not in ["air", "vacuum"]:
             raise ValueError("Wavelength must be one of: 'air', 'vacuum'")
-        kwargs0 = kwargs     # kwargs is used to deal with Deprecated names
-        if 'use_cached' in kwargs:
-            warn(DeprecationWarning('use_cached replaced with db_use_cached'))
-            db_use_cached = kwargs0.pop('use_cached')
+        kwargs0 = kwargs  # kwargs is used to deal with Deprecated names
+        if "use_cached" in kwargs:
+            warn(DeprecationWarning("use_cached replaced with db_use_cached"))
+            db_use_cached = kwargs0.pop("use_cached")
         if kwargs0 != {}:
-            raise TypeError("__init__() got an unexpected keyword argument '{0}'".format
-                            (list(kwargs0)[0]))
+            raise TypeError(
+                "__init__() got an unexpected keyword argument '{0}'".format(
+                    list(kwargs0)[0]
+                )
+            )
 
         if not 0 <= pseudo_continuum_threshold < 1:
-            raise ValueError('pseudo_continuum_threshold should be in [0-1]')
-        if (export_populations not in ['vib', 'rovib', False, None] and 
-            not isinstance(export_populations, list)):
-            raise ValueError("export_populations must be one of 'vib', 'rovib', "+\
-                             "or 'False'. Got '{0}'".format(
-                    export_populations))
+            raise ValueError("pseudo_continuum_threshold should be in [0-1]")
+        if export_populations not in ["vib", "rovib", False, None] and not isinstance(
+            export_populations, list
+        ):
+            raise ValueError(
+                "export_populations must be one of 'vib', 'rovib', "
+                + "or 'False'. Got '{0}'".format(export_populations)
+            )
 
         # calculate waveranges
         # --------------------
 
         # Get wavenumber, based on whatever was given as input.
-        wavenum_min, wavenum_max = get_waverange(wavenum_min, wavenum_max, 
-                                                      wavelength_min, wavelength_max,
-                                                      medium)
+        wavenum_min, wavenum_max = get_waverange(
+            wmin,
+            wmax,
+            wunit,
+            wavenum_min,
+            wavenum_max,
+            wavelength_min,
+            wavelength_max,
+            medium,
+        )
 
         # calculated range is broader than output waverange to take into account off-range line broadening
-        wavenumber, wavenumber_calc = _generate_wavenumber_range(wavenum_min, wavenum_max,
-                                                                 wstep, broadening_max_width)
-        wbroad_centered = _generate_broadening_range(
-            wstep, broadening_max_width)
+        wavenumber, wavenumber_calc = _generate_wavenumber_range(
+            wavenum_min, wavenum_max, wstep, broadening_max_width
+        )
+        wbroad_centered = _generate_broadening_range(wstep, broadening_max_width)
+        # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
+        self._wstep = wstep
+        self._broadening_max_width = broadening_max_width
 
-        # Get boolean array to switch from `wavenumber_calc` to `wavenumber`
+        # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
         woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
         self.wbroad_centered = wbroad_centered
         self.wavenumber = wavenumber
@@ -388,23 +446,41 @@ class SpectrumFactory(BandFactory):
         # Get molecule name
         if isinstance(molecule, int):
             molecule == get_molecule(molecule)
+        if molecule is not None:
+            if (
+                molecule
+                not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
+            ):
+                raise ValueError(
+                    "Unsupported molecule: {0}.\n".format(molecule)
+                    + "Supported molecules are:\n - under equilibrium: {0}".format(
+                        MOLECULES_LIST_EQUILIBRIUM
+                    )
+                    + "\n- under nonequilibrium: {0}".format(
+                        MOLECULES_LIST_NONEQUILIBRIUM
+                    )
+                )
 
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, string_types):
-            isotope = ','.join([str(k) for k in list_if_float(isotope)])
+            isotope = ",".join([str(k) for k in list_if_float(isotope)])
 
         # Initialize input conditions
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
-        self.input.Tref = Tref
-        self.input.pressure_mbar = pressure*1e3
+        self.input.Tref = convert_and_strip_units(Tref, u.K)
+        self.input.pressure_mbar = convert_and_strip_units(pressure, u.bar) * 1e3
         self.input.mole_fraction = mole_fraction
 
-        self.input.path_length = path_length
-        self.input.molecule = molecule  # if None, will be overwritten after reading database
-        self.input.state = 'X'              # for the moment only ground-state is used
+        self.input.path_length = convert_and_strip_units(path_length, u.cm)
+        self.input.molecule = (
+            molecule  # if None, will be overwritten after reading database
+        )
+        self.input.state = "X"  # for the moment only ground-state is used
         # (but the code is electronic state aware)
-        self.input.isotope = isotope    # if 'all', will be overwritten after reading database
+        self.input.isotope = (
+            isotope  # if 'all', will be overwritten after reading database
+        )
         self.input.self_absorption = self_absorption
 
         # Initialize computation variables
@@ -416,20 +492,21 @@ class SpectrumFactory(BandFactory):
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
         self.misc.parallel = parallel
         self.params.cutoff = cutoff
-        self.params.broadening_max_width = broadening_max_width   # line broadening
+        self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
 
-        # in version 0.9.20 the 'chunksize' parameter is temporarily used to accept the ``'DLM'`` 
-        # argument: in this case, the DLM optimization for lineshape calculation 
-        # is used. Broadening method is automatically set to ``'fft'``. 
+        # in version 0.9.20 the 'chunksize' parameter is temporarily used to accept the ``'DLM'``
+        # argument: in this case, the DLM optimization for lineshape calculation
+        # is used. Broadening method is automatically set to ``'fft'``.
         # See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
-        if chunksize == 'DLM':
-            self._broadening_method = 'fft'
-            if self.verbose >= 3: print('DLM used. Defaulting broadening method to FFT')
-            # TODO: make it a proper parameter in self.misc or self.params 
+        if chunksize == "DLM":
+            self._broadening_method = "fft"
+            if self.verbose >= 3:
+                print("DLM used. Defaulting broadening method to FFT")
+            # TODO: make it a proper parameter in self.misc or self.params
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
@@ -443,9 +520,9 @@ class SpectrumFactory(BandFactory):
             self.misc.Nprocs = Nprocs
         else:
             if Nprocs is not None:
-                print('Choose parallel=True to use Nprocs')
+                print("Choose parallel=True to use Nprocs")
             if Ngroups is not None:
-                print('Choose parallel=True to use Ngroups')
+                print("Choose parallel=True to use Ngroups")
 
         # Other parameters:
         self.bplot = bplot
@@ -457,9 +534,9 @@ class SpectrumFactory(BandFactory):
         self.autoretrievedatabase = False  # a boolean to automatically retrieve
         # spectra from database instead of
         # calculating them
-        self.SpecDatabase = None   # the database to store spectra. Not to be confused
+        self.SpecDatabase = None  # the database to store spectra. Not to be confused
         # with the databank where lines are stored
-        self.database = None       # path to previous database
+        self.database = None  # path to previous database
 
         # Warnings
         # --------
@@ -468,19 +545,18 @@ class SpectrumFactory(BandFactory):
         # (linestrength cutoff, broadening cutoff). These cannot be changed
         # from the Factory input, but can still be modified manually afterwards
         # TODO: replace everything with 'auto' modes.
-        
+
         # Set default behavior for warnings:
         if isinstance(warnings, dict):
             self.warnings.update(warnings)
-        elif warnings in [True, 'warn', 'warning']:
-            self.warnings['default'] = 'warn'
-        elif warnings == 'error':
-            self.warnings['default'] = 'error'
-        elif warnings in [False, 'ignore']:
-            self.warnings['default'] = 'ignore'
+        elif warnings in [True, "warn", "warning"]:
+            self.warnings["default"] = "warn"
+        elif warnings == "error":
+            self.warnings["default"] = "error"
+        elif warnings in [False, "ignore"]:
+            self.warnings["default"] = "ignore"
         else:
-            raise ValueError(
-                'Unexpected value for warnings: {0}'.format(warnings))
+            raise ValueError("Unexpected value for warnings: {0}".format(warnings))
         # Set default values for warnings thresholds
         self.misc.warning_linestrength_cutoff = 1e-2
         self.misc.warning_broadening_threshold = 1e-2
@@ -498,9 +574,10 @@ class SpectrumFactory(BandFactory):
     #
     # XXX =====================================================================
 
-    def eq_spectrum(self, Tgas, mole_fraction=None, path_length=None,
-                    pressure=None, name=None):
-        ''' Generate a spectrum at equilibrium
+    def eq_spectrum(
+        self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
+    ):
+        """ Generate a spectrum at equilibrium
 
         Parameters
         ----------
@@ -523,15 +600,14 @@ class SpectrumFactory(BandFactory):
         Returns
         -------
 
-        Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
+        s : Spectrum 
+            Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
         Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
         among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
         Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it
-
-        See [1]_ to get an overview of all Spectrum methods
+        to plot it. See [1]_ to get an overview of all Spectrum methods
 
         Notes
         -----
@@ -551,7 +627,7 @@ class SpectrumFactory(BandFactory):
 
         :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
 
-        '''
+        """
 
         try:
 
@@ -560,8 +636,15 @@ class SpectrumFactory(BandFactory):
 
             # Check inputs
             if not self.input.self_absorption:
-                raise ValueError('Use non_eq_spectrum(Tgas, Tgas) to calculate spectra ' +
-                                 'without self_absorption')
+                raise ValueError(
+                    "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
+                    + "without self_absorption"
+                )
+
+            # Convert units
+            Tgas = convert_and_strip_units(Tgas, u.K)
+            path_length = convert_and_strip_units(path_length, u.cm)
+            pressure = convert_and_strip_units(pressure, u.bar)
 
             # update defaults
             if path_length is not None:
@@ -569,12 +652,13 @@ class SpectrumFactory(BandFactory):
             if mole_fraction is not None:
                 self.input.mole_fraction = mole_fraction
             if pressure is not None:
-                self.input.pressure_mbar = pressure*1e3
+                self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
                 raise ValueError(
-                    'Tgas should be float. Use ParallelFactory for multiple cases')
-            self.input.rot_distribution = 'boltzmann'  # equilibrium
-            self.input.vib_distribution = 'boltzmann'  # equilibrium
+                    "Tgas should be float. Use ParallelFactory for multiple cases"
+                )
+            self.input.rot_distribution = "boltzmann"  # equilibrium
+            self.input.vib_distribution = "boltzmann"  # equilibrium
 
             # Get temperatures
             self.input.Tgas = Tgas
@@ -594,19 +678,19 @@ class SpectrumFactory(BandFactory):
             if self.autoretrievedatabase:
                 s = self._retrieve_from_database()
                 if s is not None:
-                    return s    # exit function
+                    return s  # exit function
 
             # %% Start
             # --------------------------------------------------------------------
 
             t0 = time()
             if verbose:
-                self.print_conditions('Calculating Equilibrium Spectrum')
+                self.print_conditions("Calculating Equilibrium Spectrum")
 
             # Check database, reset populations, create line dataframe to be scaled
             # --------------------------------------------------------------------
             self._check_line_databank()
-            self._reinitialize()   # creates scaled dataframe df1 from df0
+            self._reinitialize()  # creates scaled dataframe df1 from df0
 
             # --------------------------------------------------------------------
 
@@ -642,47 +726,60 @@ class SpectrumFactory(BandFactory):
 
             if self.verbose >= 2:
                 t1 = time()
-                
+
             # incorporate density of molecules (see equation (A.16) )
-            density = mole_fraction*((pressure_mbar*100)/(k_b*Tgas))*1e-6
+            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
             #  :
             # (#/cm3)
 
-            abscoeff = abscoeff_v * density      # cm-1
+            abscoeff = abscoeff_v * density  # cm-1
 
             # ... # TODO: if the code is extended to multi-species, then density has to be added
             # ... before lineshape broadening (as it would not be constant for all species)
 
             # get absorbance (technically it's the optical depth `tau`,
             #                absorbance `A` being `A = tau/ln(10)` )
-            absorbance = abscoeff*path_length
+            absorbance = abscoeff * path_length
 
             # Generate output quantities
             transmittance_noslit = exp(-absorbance)
             emissivity_noslit = 1 - transmittance_noslit
-            radiance_noslit = calc_radiance(wavenumber, emissivity_noslit, Tgas,
-                                            unit=self.units['radiance_noslit'])
+            radiance_noslit = calc_radiance(
+                wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+            )
 
             if self.verbose >= 2:
-                printg('Calculated other spectral quantities in {0:.2f}s'.format(time()-t1))
+                printg(
+                    "Calculated other spectral quantities in {0:.2f}s".format(
+                        time() - t1
+                    )
+                )
 
             # %% Export
             # --------------------------------------------------------------------
 
             t = round(time() - t0, 2)
-            if verbose:
-                print('Spectrum calculated in {0:.2f}s'.format(t))
+            if verbose >= 2:
+                printg(
+                    "Spectrum calculated in {0:.2f}s (before object generation)".format(
+                        t
+                    )
+                )
             if self.verbose >= 2:
                 t1 = time()
 
             # Get conditions
             conditions = self.get_conditions()
-            conditions.update({'calculation_time': t,
-                               'lines_calculated': self._Nlines_calculated,
-                               'lines_cutoff': self._Nlines_cutoff,
-                               'lines_in_continuum': self._Nlines_in_continuum,
-                               'thermal_equilibrium':True,
-                               'radis_version':get_version(add_git_number=False)})
+            conditions.update(
+                {
+                    "calculation_time": t,
+                    "lines_calculated": self._Nlines_calculated,
+                    "lines_cutoff": self._Nlines_cutoff,
+                    "lines_in_continuum": self._Nlines_in_continuum,
+                    "thermal_equilibrium": True,
+                    "radis_version": get_version(add_git_number=False),
+                }
+            )
 
             # Get populations of levels as calculated in RovibrationalPartitionFunctions
             # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -694,16 +791,17 @@ class SpectrumFactory(BandFactory):
 
             # Spectral quantities
             quantities = {
-                'abscoeff': (wavenumber, abscoeff),
-                'absorbance': (wavenumber, absorbance),
-                'emissivity_noslit': (wavenumber, emissivity_noslit),
-                'transmittance_noslit': (wavenumber, transmittance_noslit),
+                "abscoeff": (wavenumber, abscoeff),
+                "absorbance": (wavenumber, absorbance),
+                "emissivity_noslit": (wavenumber, emissivity_noslit),
+                "transmittance_noslit": (wavenumber, transmittance_noslit),
                 # (mW/cm2/sr/nm)
-                'radiance_noslit': (wavenumber, radiance_noslit),
+                "radiance_noslit": (wavenumber, radiance_noslit),
             }
             if I_continuum is not None and self._export_continuum:
                 quantities.update(
-                    {'abscoeff_continuum': (wavenumber, I_continuum*density)})
+                    {"abscoeff_continuum": (wavenumber, I_continuum * density)}
+                )
 
             # Store results in Spectrum class
             s = Spectrum(
@@ -722,13 +820,19 @@ class SpectrumFactory(BandFactory):
 
             # update database if asked so
             if self.autoupdatedatabase:
-                self.SpecDatabase.add(s, if_exists_then='increment') 
+                self.SpecDatabase.add(s, if_exists_then="increment")
                 # Tvib=Trot=Tgas... but this way names in a database
                 # generated with eq_spectrum are consistent with names
                 # in one generated with non_eq_spectrum
 
+            # Get generation & total calculation time
             if self.verbose >= 2:
-                printg('Generated spectrum in {0:.2f}s'.format(time()-t1))
+                printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+
+            #  In the less verbose case, we print the total calculation+generation time:
+            t = round(time() - t0, 2)
+            if verbose:
+                print("Spectrum calculated in {0:.2f}s".format(t))
 
             return s
 
@@ -737,11 +841,20 @@ class SpectrumFactory(BandFactory):
             self._clean_temp_file()
             raise
 
-    def non_eq_spectrum(self, Tvib, Trot, Ttrans=None, mole_fraction=None, 
-                        path_length=None, pressure=None,
-                        vib_distribution='boltzmann', rot_distribution='boltzmann',
-                        overpopulation=None, name=None):
-        ''' Calculate emission spectrum in non-equilibrium case. Calculates
+    def non_eq_spectrum(
+        self,
+        Tvib,
+        Trot,
+        Ttrans=None,
+        mole_fraction=None,
+        path_length=None,
+        pressure=None,
+        vib_distribution="boltzmann",
+        rot_distribution="boltzmann",
+        overpopulation=None,
+        name=None,
+    ):
+        """ Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
         Einstein coefficient.
 
@@ -787,15 +900,14 @@ class SpectrumFactory(BandFactory):
         Returns
         -------
 
-        Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
+        s : Spectrum 
+            Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
         Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
         among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
         Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it
-
-        See [1]_ to get an overview of all Spectrum methods
+        to plot it. See [1]_ to get an overview of all Spectrum methods
 
         References
         ----------
@@ -808,12 +920,19 @@ class SpectrumFactory(BandFactory):
         :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
         :meth:`~radis.lbl.factory.SpectrumFactory.optically_thin_power`
 
-        '''
+        """
 
         try:
 
             # %% Preprocessing
             # --------------------------------------------------------------------
+
+            # Convert units
+            Tvib = convert_and_strip_units(Tvib, u.K)
+            Trot = convert_and_strip_units(Trot, u.K)
+            Ttrans = convert_and_strip_units(Ttrans, u.K)
+            path_length = convert_and_strip_units(path_length, u.cm)
+            pressure = convert_and_strip_units(pressure, u.bar)
 
             # check inputs, update defaults
             if path_length is not None:
@@ -821,19 +940,24 @@ class SpectrumFactory(BandFactory):
             if mole_fraction is not None:
                 self.input.mole_fraction = mole_fraction
             if pressure is not None:
-                self.input.pressure_mbar = pressure*1e3
-            if not (is_float(Tvib) or isinstance(Tvib, tuple)):
-                raise TypeError('Tvib should be float, or tuple (got {0})'.format(type(Tvib)) +
-                                'For parallel processing use ParallelFactory with a ' +
-                                'list of float or a list of tuple')
+                self.input.pressure_mbar = pressure * 1e3
+            if isinstance(Tvib, tuple):
+                Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
+            elif not is_float(Tvib):
+                raise TypeError(
+                    "Tvib should be float, or tuple (got {0})".format(type(Tvib))
+                    + "For parallel processing use ParallelFactory with a "
+                    + "list of float or a list of tuple"
+                )
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
                 raise ValueError(
-                    'Trot should be float. Use ParallelFactory for multiple cases')
+                    "Trot should be float. Use ParallelFactory for multiple cases"
+                )
             if overpopulation is None:
                 overpopulation = {}
-            assert vib_distribution in ['boltzmann', 'treanor']
-            assert rot_distribution in ['boltzmann']
+            assert vib_distribution in ["boltzmann", "treanor"]
+            assert rot_distribution in ["boltzmann"]
             self.input.overpopulation = overpopulation
             self.input.rot_distribution = rot_distribution
             self.input.vib_distribution = vib_distribution
@@ -841,7 +965,7 @@ class SpectrumFactory(BandFactory):
             # Get translational temperature
             Tgas = Ttrans
             if Tgas is None:
-                Tgas = Trot     # assuming Ttrans = Trot
+                Tgas = Trot  # assuming Ttrans = Trot
             self.input.Tgas = Tgas
             self.input.Tvib = Tvib
             self.input.Trot = Trot
@@ -866,7 +990,7 @@ class SpectrumFactory(BandFactory):
 
             t0 = time()
             if verbose:
-                self.print_conditions('Calculating Non-Equilibrium Spectrum')
+                self.print_conditions("Calculating Non-Equilibrium Spectrum")
 
             # Check line database and parameters, reset populations and scaled line dataframe
             # ----------
@@ -874,21 +998,27 @@ class SpectrumFactory(BandFactory):
             # add nonequilibrium energies if needed (this may be a bottleneck
             # for a first calculation):
             self._check_noneq_parameters(vib_distribution, singleTvibmode)
-            self._reinitialize()   # creates scaled dataframe df1 from df0
+            self._reinitialize()  # creates scaled dataframe df1 from df0
 
             # ----------------------------------------------------------------------
             # Calculate Populations, Linestrength and Emission Integral
             if singleTvibmode:
-                self._calc_populations_noneq(Tvib, Trot,
-                                             vib_distribution=vib_distribution,
-                                             rot_distribution=rot_distribution,
-                                             overpopulation=overpopulation)
+                self._calc_populations_noneq(
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
+                )
             else:
-                self._calc_populations_noneq_multiTvib(Tvib, Trot,
-                                                       vib_distribution=vib_distribution,
-                                                       rot_distribution=rot_distribution,
-                                                       overpopulation=overpopulation)
-            
+                self._calc_populations_noneq_multiTvib(
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
+                )
+
             self._calc_linestrength_noneq()
             self._calc_emission_integral()
 
@@ -915,7 +1045,7 @@ class SpectrumFactory(BandFactory):
             # ... (this is the performance bottleneck)
             wavenumber, abscoeff_v, emisscoeff_v = self._calc_broadening_noneq()
             #    :         :            :
-            #   cm-1    1/(#.cm-2)   mW/sr/cm_1
+            #   cm-1    1/(#.cm-2)   mW/sr/cm-1
 
             # ... add semi-continuum (optional)
             abscoeff_v = self._add_pseudo_continuum(abscoeff_v, k_continuum)
@@ -926,14 +1056,14 @@ class SpectrumFactory(BandFactory):
 
             if self.verbose >= 2:
                 t1 = time()
-                
+
             # incorporate density of molecules (see Rothman 1996 equation (A.16) )
-            density = mole_fraction*((pressure_mbar*100)/(k_b*Tgas))*1e-6
+            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
             #  :
             # (#/cm3)
 
-            abscoeff = abscoeff_v * density                     # cm-1
-            emisscoeff = emisscoeff_v * density                 # mW/sr/cm3/cm_1
+            abscoeff = abscoeff_v * density  # cm-1
+            emisscoeff = emisscoeff_v * density  # mW/sr/cm3/cm-1
 
             # ... # TODO: if the code is extended to multi-species, then density has to be added
             # ... before lineshape broadening (as it would not be constant for all species)
@@ -942,30 +1072,37 @@ class SpectrumFactory(BandFactory):
             #                absorbance `A` being `A = tau/ln(10)` )
 
             # Generate output quantities
-            absorbance = abscoeff*path_length           # (adim)
+            absorbance = abscoeff * path_length  # (adim)
             transmittance_noslit = exp(-absorbance)
 
             if self.input.self_absorption:
                 # Analytical output of computing RTE over a single slab of constant
                 # emissivity and absorption coefficient
-                b = (abscoeff == 0)  # optically thin mask
+                b = abscoeff == 0  # optically thin mask
                 radiance_noslit = np.zeros_like(emisscoeff)
-                radiance_noslit[~b] = emisscoeff[~b] / \
-                    abscoeff[~b]*(1-transmittance_noslit[~b])
-                radiance_noslit[b] = emisscoeff[b]*path_length
+                radiance_noslit[~b] = (
+                    emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+                )
+                radiance_noslit[b] = emisscoeff[b] * path_length
             else:
                 # Note that for k -> 0,
-                radiance_noslit = emisscoeff*path_length    # (mW/sr/cm2/cm_1)
+                radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
 
-            # Convert `radiance_noslit` from (mW/sr/cm2/cm_1) to (mW/sr/cm2/nm)
-            radiance_noslit = convert_rad2nm(radiance_noslit, wavenumber,
-                                             'mW/sr/cm2/cm_1', 'mW/sr/cm2/nm')
-            # Convert 'emisscoeff' from (mW/sr/cm3/cm_1) to (mW/sr/cm3/nm)
-            emisscoeff = convert_emi2nm(emisscoeff, wavenumber,
-                                        'mW/sr/cm3/cm_1', 'mW/sr/cm3/nm')
+            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
+            radiance_noslit = convert_rad2nm(
+                radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
+            )
+            # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
+            emisscoeff = convert_emi2nm(
+                emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
+            )
 
             if self.verbose >= 2:
-                printg('Calculated other spectral quantities in {0:.2f}s'.format(time()-t1))
+                printg(
+                    "Calculated other spectral quantities in {0:.2f}s".format(
+                        time() - t1
+                    )
+                )
 
             # Note: emissivity not defined under non equilibrium
 
@@ -973,19 +1110,27 @@ class SpectrumFactory(BandFactory):
             # ----------------------------------------------------------------------
 
             t = round(time() - t0, 2)
-            if verbose:
-                print('Spectrum calculated in {0:.2f}s'.format(t))
+            if verbose >= 2:
+                printg(
+                    "Spectrum calculated in {0:.2f}s (before object generation)".format(
+                        t
+                    )
+                )
             if self.verbose >= 2:
                 t1 = time()
-                
+
             # Get conditions
             conditions = self.get_conditions()
-            conditions.update({'calculation_time': t,
-                               'lines_calculated': self._Nlines_calculated,
-                               'lines_cutoff': self._Nlines_cutoff,
-                               'lines_in_continuum': self._Nlines_in_continuum,
-                               'thermal_equilibrium': False, # dont even try to guess if it's at equilibrium
-                               'radis_version':get_version(add_git_number=False)})
+            conditions.update(
+                {
+                    "calculation_time": t,
+                    "lines_calculated": self._Nlines_calculated,
+                    "lines_cutoff": self._Nlines_cutoff,
+                    "lines_in_continuum": self._Nlines_in_continuum,
+                    "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
+                    "radis_version": get_version(add_git_number=False),
+                }
+            )
 
             # Get populations of levels as calculated in RovibrationalPartitionFunctions
             populations = self.get_populations(self.misc.export_populations)
@@ -995,18 +1140,21 @@ class SpectrumFactory(BandFactory):
 
             # Spectral quantities
             quantities = {
-                'abscoeff': (wavenumber, abscoeff),
-                'absorbance': (wavenumber, absorbance),
+                "abscoeff": (wavenumber, abscoeff),
+                "absorbance": (wavenumber, absorbance),
                 # (mW/cm3/sr/nm)
-                'emisscoeff': (wavenumber, emisscoeff),
-                'transmittance_noslit': (wavenumber, transmittance_noslit),
+                "emisscoeff": (wavenumber, emisscoeff),
+                "transmittance_noslit": (wavenumber, transmittance_noslit),
                 # (mW/cm2/sr/nm)
-                'radiance_noslit': (wavenumber, radiance_noslit),
+                "radiance_noslit": (wavenumber, radiance_noslit),
             }
             if k_continuum is not None and self._export_continuum:
                 quantities.update(
-                    {'abscoeff_continuum': (wavenumber, k_continuum*density),
-                     'emisscoeff_continuum': (wavenumber, j_continuum*density)})
+                    {
+                        "abscoeff_continuum": (wavenumber, k_continuum * density),
+                        "emisscoeff_continuum": (wavenumber, j_continuum * density),
+                    }
+                )
 
             # Store results in Spectrum class
             s = Spectrum(
@@ -1022,14 +1170,24 @@ class SpectrumFactory(BandFactory):
                 # is freshly baken so probably in a good format
                 name=name,
             )
-            
+
             # update database if asked so
             if self.autoupdatedatabase:
                 self.SpecDatabase.add(
-                    s, add_info=['Tvib', 'Trot'], add_date='%Y%m%d', if_exists_then='increment')
-    
+                    s,
+                    add_info=["Tvib", "Trot"],
+                    add_date="%Y%m%d",
+                    if_exists_then="increment",
+                )
+
+            # Get generation & total calculation time
             if self.verbose >= 2:
-                printg('Generated spectrum in {0:.2f}s'.format(time()-t1))
+                printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+
+            #  In the less verbose case, we print the total calculation+generation time:
+            t = round(time() - t0, 2)
+            if verbose:
+                print("Spectrum calculated in {0:.2f}s".format(t))
 
             return s
 
@@ -1038,9 +1196,17 @@ class SpectrumFactory(BandFactory):
             self._clean_temp_file()
             raise
 
-    def optically_thin_power(self, Tgas=None, Tvib=None, Trot=None, Ttrans=None,
-                             mole_fraction=None, path_length=None, unit='mW/cm2/sr'):
-        ''' Calculate total power emitted in equilibrium or non-equilibrium case
+    def optically_thin_power(
+        self,
+        Tgas=None,
+        Tvib=None,
+        Trot=None,
+        Ttrans=None,
+        mole_fraction=None,
+        path_length=None,
+        unit="mW/cm2/sr",
+    ):
+        """ Calculate total power emitted in equilibrium or non-equilibrium case
         in the optically thin approximation: it sums all emission integral over
         the total spectral range.
 
@@ -1097,7 +1263,7 @@ class SpectrumFactory(BandFactory):
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_power`, 
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_integral`
         
-        '''
+        """
 
         try:
 
@@ -1106,13 +1272,15 @@ class SpectrumFactory(BandFactory):
             # ... temperatures
 
             if Tgas is None and Trot is None:
-                raise ValueError('Choose either Tgas (equilibrium) or Tvib / Trot ' +
-                                 '. Ttrans (non equilibrium)')
+                raise ValueError(
+                    "Choose either Tgas (equilibrium) or Tvib / Trot "
+                    + ". Ttrans (non equilibrium)"
+                )
 
-            non_eq_mode = (Tgas is None)
+            non_eq_mode = Tgas is None
 
             if Tvib is None and Trot is not None or Tvib is not None and Trot is None:
-                raise ValueError('Choose both Tvib and Trot')
+                raise ValueError("Choose both Tvib and Trot")
 
             if non_eq_mode and Ttrans is None:
                 Ttrans = Trot
@@ -1139,8 +1307,7 @@ class SpectrumFactory(BandFactory):
             # Make sure database is loaded
             if self.df0 is None:
                 if not self.save_memory:
-                    raise AttributeError(
-                        'Load databank first (.load_databank())')
+                    raise AttributeError("Load databank first (.load_databank())")
                 else:
                     self._reload_databank()
 
@@ -1148,12 +1315,12 @@ class SpectrumFactory(BandFactory):
                 # Make sure database has pre-computed non equilibrium quantities
                 # (Evib, Erot, etc.)
                 try:
-                    self.df0['Evib']
+                    self.df0["Evib"]
                 except KeyError:
                     self._calc_noneq_parameters()
 
                 try:
-                    self.df0['Aul']
+                    self.df0["Aul"]
                 except KeyError:
                     self._calc_weighted_trans_moment()
                     self._calc_einstein_coefficients()
@@ -1164,12 +1331,13 @@ class SpectrumFactory(BandFactory):
             # Print conditions
             if verbose:
                 self.print_conditions(
-                    'Calculating Radiative Power (optically thin approximation)')
+                    "Calculating Radiative Power (optically thin approximation)"
+                )
 
             # Calculate power
             # ---------------------------------------------------
 
-            self._reinitialize()   # creates scaled dataframe df1 from df0
+            self._reinitialize()  # creates scaled dataframe df1 from df0
 
             # ----------------------------------------------------------------------
             # Calculate Populations and Emission Integral
@@ -1179,35 +1347,37 @@ class SpectrumFactory(BandFactory):
                 self._calc_populations_noneq(Tvib, Trot)
             else:
                 self._calc_populations_eq(Tgas)
-                self.df1['Aul'] = self.df1.A  # update einstein coefficients
+                self.df1["Aul"] = self.df1.A  # update einstein coefficients
             self._calc_emission_integral()
 
-    #        # ----------------------------------------------------------------------
-    #        # Cutoff linestrength  (note that cuting linestrength doesnt make this
-    #        # process faster here, but we still give this option to be consistent
-    #        # with spectra)
-    #        self._cutoff_linestrength()
+            #        # ----------------------------------------------------------------------
+            #        # Cutoff linestrength  (note that cuting linestrength doesnt make this
+            #        # process faster here, but we still give this option to be consistent
+            #        # with spectra)
+            #        self._cutoff_linestrength()
 
             # ----------------------------------------------------------------------
 
             # Sum over all emission integrals (in the valid range)
             b = (self.df1.wav > self.input.wavenum_min) & (
-                self.df1.wav < self.input.wavenum_max)
-            P = self.df1['Ei'][b].sum()          # Ei  >> (mW/sr)
+                self.df1.wav < self.input.wavenum_max
+            )
+            P = self.df1["Ei"][b].sum()  # Ei  >> (mW/sr)
 
             # incorporate density of molecules (see equation (A.16) )
-            density = mole_fraction*((pressure_mbar*100)/(k_b*Tgas))*1e-6
-            Pv = P * density                     # (mW/sr/cm3)
+            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+            Pv = P * density  # (mW/sr/cm3)
 
             # Optically thin case (no self absorption):
-            Ptot = Pv*path_length    # (mW/sr/cm2)
+            Ptot = Pv * path_length  # (mW/sr/cm2)
 
-            return conv2(Ptot, 'mW/cm2/sr', unit)
+            return conv2(Ptot, "mW/cm2/sr", unit)
 
         except:
             # An error occured: clean before crashing
             self._clean_temp_file()
             raise
+
 
 # %% ======================================================================
 # EXTRA FUNCTIONS
@@ -1220,7 +1390,7 @@ class SpectrumFactory(BandFactory):
 
 
 def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_width):
-    ''' define waverange vectors, with ``wavenumber`` the ouput spectral range
+    """ define waverange vectors, with ``wavenumber`` the ouput spectral range
     and ``wavenumber_calc`` the spectral range used for calculation, that includes
     neighbour lines within ``broadening_max_width`` distance
 
@@ -1248,38 +1418,41 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
         an evenly spaced array between ``wavenum_min-broadening_max_width/2`` and
         ``wavenum_max+broadening_max_width/2`` with a spacing of ``wstep``
 
-    '''
+    """
 
     assert wavenum_min < wavenum_max
 
     # Output range
-    # generate the vector of wavenumbers (shape M)
-    wavenumber = arange(wavenum_min, wavenum_max+wstep, wstep)
+    # generate the final vector of wavenumbers (shape M)
+    wavenumber = arange(wavenum_min, wavenum_max + wstep, wstep)
 
-    # Calculation range
-    wavenum_min_calc = wavenumber[0] - broadening_max_width/2     # cm-1
-    wavenum_max_calc = wavenumber[-1] + broadening_max_width/2     # cm-1
+    # generate the calculation vector of wavenumbers (shape M + space on the side)
+    # ... Calculation range
+    wavenum_min_calc = wavenumber[0] - broadening_max_width / 2  # cm-1
+    wavenum_max_calc = wavenumber[-1] + broadening_max_width / 2  # cm-1
     w_out_of_range_left = arange(
-        wavenumber[0]-wstep, wavenum_min_calc-wstep, -wstep)[::-1]
+        wavenumber[0] - wstep, wavenum_min_calc - wstep, -wstep
+    )[::-1]
     w_out_of_range_right = arange(
-        wavenumber[-1]+wstep, wavenum_max_calc+wstep, wstep)
-#    w_out_of_range_right = -w_out_of_range_left + wavenumber[-1] + wstep - w_out_of_range_left[1]
-    wavenumber_calc = np.hstack(
-        (w_out_of_range_left, wavenumber, w_out_of_range_right))
-    
-    # deal with rounding errors: 1 side may have 1 more point
+        wavenumber[-1] + wstep, wavenum_max_calc + wstep, wstep
+    )
+
+    # ... deal with rounding errors: 1 side may have 1 more point
     if len(w_out_of_range_left) > len(w_out_of_range_right):
         w_out_of_range_left = w_out_of_range_left[1:]
     elif len(w_out_of_range_left) < len(w_out_of_range_right):
         w_out_of_range_right = w_out_of_range_right[:-1]
 
+    wavenumber_calc = np.hstack((w_out_of_range_left, wavenumber, w_out_of_range_right))
+
     assert len(w_out_of_range_left) == len(w_out_of_range_right)
+    assert len(wavenumber_calc) == len(wavenumber) + 2 * len(w_out_of_range_left)
 
     return wavenumber, wavenumber_calc
 
 
 def _generate_broadening_range(wstep, broadening_max_width):
-    ''' Generate array on which to compute line broadening
+    """ Generate array on which to compute line broadening
 
     Parameters
     ----------
@@ -1298,21 +1471,27 @@ def _generate_broadening_range(wstep, broadening_max_width):
         an evenly spaced array, of odd-parity length, centered on 0, and of width
         ``broadening_max_width``
 
-    '''
+    """
 
     # create a broadening array, on which lineshape will be calculated.
     # Odd number is important
-    wbroad_centered = np.hstack((-arange(wstep, 0.5*broadening_max_width+wstep, wstep)[::-1],
-                                 [0],
-                                 arange(wstep, 0.5*broadening_max_width+wstep, wstep)))
+    wbroad_centered = np.hstack(
+        (
+            -arange(wstep, 0.5 * broadening_max_width + wstep, wstep)[::-1],
+            [0],
+            arange(wstep, 0.5 * broadening_max_width + wstep, wstep),
+        )
+    )
 
     assert len(wbroad_centered) % 2 == 1
 
     return wbroad_centered
 
+
 # %% Test
 
 # --------------------------
-if __name__ == '__main__':
-    from radis.test.lbl.test_factory import _run_testcases
-    print('Testing factory:', _run_testcases(verbose=True))
+if __name__ == "__main__":
+    import pytest
+
+    print("Testing factory:", pytest.main(["../test/test_factory.py"]))

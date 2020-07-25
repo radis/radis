@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Determine Gas composition using [CANTERA]_
+Determine gas mixture composition under chemical equilibrium using CANTERA.
 
 References
 ----------
@@ -15,15 +15,26 @@ References
 
 from __future__ import absolute_import
 from radis.misc.utils import NotInstalled
+
 try:
     import cantera as ct
 except:
-    ct = NotInstalled('cantera', 'Cantera is needed to calculate equilibrium mole fractions'+\
-                      '. Install with  `pip install cantera`')
-    
+    ct = NotInstalled(
+        "cantera",
+        "Cantera is needed to calculate equilibrium mole fractions"
+        + ". Install with  `pip install cantera`",
+    )
+
+
 def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
-    ''' Returns mole fraction at temperature T, using the 
-    [CANTERA]_ :py:meth:`~cantera.ThermoPhase.equilibrate` function. 
+    """ Calculates chemical equilibrium mole fraction at temperature T, 
+    using the CANTERA :py:meth:`~cantera.ThermoPhase.equilibrate` function.
+    
+    The calculation uses the default GRI3.0 mechanism, which was 
+    designed to model natural gas combustion, including NO formation 
+    and reburn chemistry. See `GRI 3.0 <combustion.berkeley.edu/gri-mech/version30/text30.html>`__.
+    
+    When using, cite the [CANTERA]_ package.
     
     Parameters
     ----------
@@ -61,15 +72,14 @@ def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
     
     [CANTERA]_
     
-    '''
+    """
 
     # %% Init Cantera
-    g = ct.Solution('gri30.xml')
+    g = ct.Solution("gri30.xml")
     g.TPX = T_K, p_Pa, initial_mixture
-    
+
     # Minimize Gibbs:
-    g.equilibrate('TP')
-    
+    g.equilibrate("TP")
+
     # Returns
     return g.mole_fraction_dict()
-    

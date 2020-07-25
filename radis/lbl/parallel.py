@@ -24,6 +24,9 @@ Most methods are written in inherited class with the following inheritance schem
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
+.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+   :parts: 1
+
 Examples
 --------
 
@@ -44,7 +47,8 @@ from radis.lbl import SpectrumFactory
 from radis.misc.basics import is_list, is_float
 from radis.misc.utils import FileNotFoundError
 from multiprocessing import Pool, cpu_count
-#from multiprocessing.pool import ThreadPool
+
+# from multiprocessing.pool import ThreadPool
 import sys
 from time import time
 import numpy as np
@@ -58,29 +62,31 @@ from radis.misc.basics import expand_metadata
 
 
 def _distribute_eq_spectrum(args):
-    ''' Clone the Factory and calculate eq_spectrum over several clones '''
+    """ Clone the Factory and calculate eq_spectrum over several clones """
     cast_factory, Tgas, mole_fraction, path_length = args
     # ... (dev) must match p.map(_distribute_eq_spectrum...) order
     factory = deepcopy(cast_factory)
     # Update id
     factory._id = uuid1()
-    return SpectrumFactory.eq_spectrum(factory, Tgas, mole_fraction=mole_fraction, 
-                                       path_length=path_length)
+    return SpectrumFactory.eq_spectrum(
+        factory, Tgas, mole_fraction=mole_fraction, path_length=path_length
+    )
 
 
 def _distribute_noneq_spectrum(args):
-    ''' Clone the Factory and calculate non_eq_spectrum over several clones '''
+    """ Clone the Factory and calculate non_eq_spectrum over several clones """
     cast_factory, Tvib, Trot, mole_fraction, path_length = args
     # ... (dev) must match p.map(_distribute_noneq_spectrum...) order
     factory = deepcopy(cast_factory)
     # Update id
     factory._id = uuid1()
-    return SpectrumFactory.non_eq_spectrum(factory, Tvib, Trot, mole_fraction=mole_fraction, 
-                                           path_length=path_length)
+    return SpectrumFactory.non_eq_spectrum(
+        factory, Tvib, Trot, mole_fraction=mole_fraction, path_length=path_length
+    )
 
 
 class ParallelFactory(SpectrumFactory):
-    ''' A Parallel version of :class:`~radis.lbl.parallel.SpectrumFactory`. 
+    """ A Parallel version of :class:`~radis.lbl.parallel.SpectrumFactory`. 
     Use `Nprocs` as argument to change the number of processors to be used.
 
 
@@ -176,25 +182,29 @@ class ParallelFactory(SpectrumFactory):
     --------
 
     :class:`~radis.lbl.factory.SpectrumFactory`
-    '''
+    """
 
     def __init__(self, *args, **kwargs):
 
-        Nprocs = kwargs.pop('Nprocs', cpu_count())  # default to cpu_count()
-        kwargs['parallel'] = False  # calculate each spectrum on one core only
+        Nprocs = kwargs.pop("Nprocs", cpu_count())  # default to cpu_count()
+        kwargs["parallel"] = False  # calculate each spectrum on one core only
 
         super(ParallelFactory, self).__init__(*args, **kwargs)
 
         self.misc.Nprocs = Nprocs
 
-        if os.name == 'nt' and self.verbose:
-            print(("Warning. On Windows, if executing the parallel versions of " +
-                   "eq_spectrum and non_eq_spectrum in a script, make sure you " +
-                   "embed them in `if __name__ == '__main__'` or daemons processes" +
-                   " won't start"))
+        if os.name == "nt" and self.verbose:
+            print(
+                (
+                    "Warning. On Windows, if executing the parallel versions of "
+                    + "eq_spectrum and non_eq_spectrum in a script, make sure you "
+                    + "embed them in `if __name__ == '__main__'` or daemons processes"
+                    + " won't start"
+                )
+            )
 
     def eq_spectrum(self, Tgas, mole_fraction=None, path_length=None):
-        ''' Generate a spectrum at equilibrium
+        """ Generate a spectrum at equilibrium
 
         Parameters
         ----------
@@ -236,44 +246,48 @@ class ParallelFactory(SpectrumFactory):
         the main routine that sums over all lines
 
 
-        '''
+        """
 
-        args = self._format_input(**{'Tgas': Tgas, 'mole_fraction': mole_fraction,
-                                     'path_length': path_length})
-        Tgas = args.pop('Tgas')
-        mole_fraction = args.pop('mole_fraction')
-        path_length = args.pop('path_length')
-        
-        # Expand metadata before copy, else it will be lost. 
+        args = self._format_input(
+            **{"Tgas": Tgas, "mole_fraction": mole_fraction, "path_length": path_length}
+        )
+        Tgas = args.pop("Tgas")
+        mole_fraction = args.pop("mole_fraction")
+        path_length = args.pop("path_length")
+
+        # Expand metadata before copy, else it will be lost.
         # @dev: See :py:data:`~radis.lbl.loader.df_metadata` for more explanations
         expand_metadata(self.df0, [k for k in df_metadata if hasattr(self.df0, k)])
 
         N = len(Tgas)
-        cast_factory = [self]*N  # note that this is the copy of a same object!
+        cast_factory = [self] * N  # note that this is the copy of a same object!
 
         Nprocs = min(self.misc.Nprocs, N)
         if self.verbose:
-            print(
-                ('Calculate {0} spectra on {1} procs'.format(len(Tgas), Nprocs)))
+            print(("Calculate {0} spectra on {1} procs".format(len(Tgas), Nprocs)))
         t1 = time()
-        
+
         try:
-            with Pool(Nprocs) as p: # Python 3 only
-                spec_list = p.map(_distribute_eq_spectrum, list(
-                    zip(cast_factory, Tgas, mole_fraction, path_length)))
+            with Pool(Nprocs) as p:  # Python 3 only
+                spec_list = p.map(
+                    _distribute_eq_spectrum,
+                    list(zip(cast_factory, Tgas, mole_fraction, path_length)),
+                )
         except AttributeError:
             if sys.version_info[0] == 2:
-                raise NotImplementedError('parallel is only implemented in Python 3. Time to switch!')
+                raise NotImplementedError(
+                    "parallel is only implemented in Python 3. Time to switch!"
+                )
             else:
                 raise
-        
+
         if self.verbose:
-            print(('{0} spectra calculated in {1:.1f}s'.format(N, time()-t1)))
+            print(("{0} spectra calculated in {1:.1f}s".format(N, time() - t1)))
 
         return spec_list
 
     def non_eq_spectrum(self, Tvib, Trot, mole_fraction=None, path_length=None):
-        ''' Calculate emission spectrum in non-equilibrium case. Calculates
+        """ Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
         Einstein coefficient.
 
@@ -318,46 +332,56 @@ class ParallelFactory(SpectrumFactory):
 
         - Trot = Ttrans
 
-        '''
-        args = self._format_input(**{'Tvib': Tvib, 'Trot': Trot, 'mole_fraction': mole_fraction,
-                                     'path_length': path_length})
-        Tvib = args['Tvib']
-        Trot = args['Trot']
-        mole_fraction = args['mole_fraction']
-        path_length = args['path_length']
-        
-        # Expand metadata before copy, else it will be lost. 
+        """
+        args = self._format_input(
+            **{
+                "Tvib": Tvib,
+                "Trot": Trot,
+                "mole_fraction": mole_fraction,
+                "path_length": path_length,
+            }
+        )
+        Tvib = args["Tvib"]
+        Trot = args["Trot"]
+        mole_fraction = args["mole_fraction"]
+        path_length = args["path_length"]
+
+        # Expand metadata before copy, else it will be lost.
         # @dev: See :py:data:`~radis.lbl.loader.df_metadata` for more explanations
         expand_metadata(self.df0, [k for k in df_metadata if hasattr(self.df0, k)])
 
         N = len(Tvib)
-        cast_factory = [self]*N  # note that this is the copy of a same object!
+        cast_factory = [self] * N  # note that this is the copy of a same object!
 
         Nprocs = min(self.misc.Nprocs, N)
         if self.verbose:
-            print(
-                ('Calculate {0} spectra on {1} procs'.format(len(Tvib), Nprocs)))
+            print(("Calculate {0} spectra on {1} procs".format(len(Tvib), Nprocs)))
         t1 = time()
-        
+
         try:
-            with Pool(Nprocs) as p:          # Note: Python 3 syntax only
-                spec_list = p.map(_distribute_noneq_spectrum, list(zip(cast_factory, Tvib, Trot, mole_fraction, path_length)))
+            with Pool(Nprocs) as p:  # Note: Python 3 syntax only
+                spec_list = p.map(
+                    _distribute_noneq_spectrum,
+                    list(zip(cast_factory, Tvib, Trot, mole_fraction, path_length)),
+                )
         except AttributeError:
             if sys.version_info[0] == 2:
-                raise NotImplementedError('parallel is only implemented in Python 3. Time to switch!')
+                raise NotImplementedError(
+                    "parallel is only implemented in Python 3. Time to switch!"
+                )
             else:
                 raise
-        
+
         if self.verbose:
-            print(('{0} spectra calculated in {1:.1f}s'.format(N, time()-t1)))
+            print(("{0} spectra calculated in {1:.1f}s".format(N, time() - t1)))
 
         return spec_list
 
     def _format_input(self, **kwargs):
-        ''' Format the input of parallel calculation request. Returns lists of 
+        """ Format the input of parallel calculation request. Returns lists of 
         same lengths that can be parsed with zip(). User input can be lists, 
-        or floats instead of constant-values list '''
-        N = None   # list length if there are list involved
+        or floats instead of constant-values list """
+        N = None  # list length if there are list involved
         kwout = {}
         for k, v in kwargs.items():
             if is_list(v):
@@ -365,36 +389,41 @@ class ParallelFactory(SpectrumFactory):
                     N = len(v)
                 else:
                     if len(v) != N:
-                        raise ValueError('Invalid input for {0}: '.format(k) +
-                                         'all list should have the same length'
-                                         '(you may use floats too)')
+                        raise ValueError(
+                            "Invalid input for {0}: ".format(k)
+                            + "all list should have the same length"
+                            "(you may use floats too)"
+                        )
                 kwout[k] = v
 
         # Now let's turn floats into list of length N
         if N is None:
-            warn('Using ParallelFactory for single case')
+            warn("Using ParallelFactory for single case")
             N = 1
         for k, v in kwargs.items():
             if type(v) in [int, np.int64]:
-                v = float(v)   # int is not serializable (for some reason)
+                v = float(v)  # int is not serializable (for some reason)
             if is_list(v):
                 continue  # already done
             elif is_float(v) or v is None:
-                kwout[k] = [v]*N
+                kwout[k] = [v] * N
             else:
-                raise ValueError('Invalid input for {0}: '.format(k) +
-                                 'input should be list-like or float-like' +
-                                 '({0} instead)'.format(type(v)))
+                raise ValueError(
+                    "Invalid input for {0}: ".format(k)
+                    + "input should be list-like or float-like"
+                    + "({0} instead)".format(type(v))
+                )
 
         # check output is correct:
         for v in kwout.values():
-            assert(len(v) == N)
+            assert len(v) == N
 
         return kwout
 
 
 # %% Main
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     from radis.test.lbl.test_parallel import _run_testcases
-    print(('Tested parallel.py:', _run_testcases(plot=True)))
+
+    print(("Tested parallel.py:", _run_testcases(plot=True)))
