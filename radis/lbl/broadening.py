@@ -1849,18 +1849,22 @@ class BroadenFactory(BaseFactory):
 
         # DLM : Next calculate how the line is distributed over the 2x2x2 bins we have:
         av  = iv  - iv0
-        awL = iwL - iwL0
-        awG = iwG - iwG0
 
-        if awL_kind == 2:
-            awL *= wL[iwL1] / wL_dat
+        if awL_kind == 1:
+            awL = iwL - iwL0
         elif awL_kind == 3:
-            awL *= 0.5 + 0.5*(wL[iwL1] / wL_dat)
+            awL = (iwL - iwL0)*(0.5 + 0.5*(wL[iwL1] / wL_dat))
+        else:
+            assert awL_kind == 2
+            awL = (iwL - iwL0)*(wL[iwL1] / wL_dat)
 
-        if awG_kind == 2:
-            awG *= wL[iwG1] / wG_dat
+        if awG_kind == 1:
+            awG = iwG - iwG0
         elif awG_kind == 3:
-            awG *= 0.5 + 0.5*(wG[iwG1] / wG_dat)
+            awG = (iwG - iwG0)*(0.5 + 0.5*(wG[iwG1] / wG_dat))
+        else:
+            assert awG_kind == 2
+            awG = (iwG - iwG0)*(wG[iwG1] / wG_dat)
 
         # ... fractions on DLM grid
         awV00 = (1 - awL) * (1 - awG)
