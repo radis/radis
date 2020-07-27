@@ -2086,6 +2086,8 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    self.misc.awL_kind,
+                    self.misc.awG_kind,
                 )
                 (_, emisscoeff) = self._apply_lineshape_DLM(
                     df.Ei.values,
