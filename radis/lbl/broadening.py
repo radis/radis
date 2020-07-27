@@ -2001,7 +2001,7 @@ class BroadenFactory(BaseFactory):
                     wL_dat,
                     wG_dat,
                     self.misc.awL_kind,
-                    self.misc.awG_kind
+                    self.misc.awG_kind,
                 )
 
             elif is_float(chunksize):
@@ -2095,6 +2095,8 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    self.misc.awL_kind,
+                    self.misc.awG_kind,
                 )
                 # Note @dev: typical results is:
                 # >>> abscoeff:
