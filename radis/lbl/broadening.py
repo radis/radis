@@ -1784,15 +1784,17 @@ class BroadenFactory(BaseFactory):
         wG_dat: array    (size N)
             FWHM of all lines. Used to lookup the DLM
 
-        awL_kind: int              Kind of weight used for the Lorentzian broadening
-            1 = linear          (minimizes calculation time)
-            2 = zero peak error (minimizes error at line center)
-            3 = mixed           (minimizes sum-of-square error)
+        awL_kind: string
+            Kind of weight used for the Lorentzian broadening
+            'ZEP':      [DEFAULT] Zero Error at (center) Peak
+            'linear':   Linear weight (= minimal calculation time)
+            'min-RMS':  Minimal RMS error
 
-        awG_kind: int              Kind of weight used for the Gaussian broadening
-            1 = linear          (minimizes calculation time)
-            2 = zero peak error (minimizes error at line center)
-            3 = mixed           (minimizes sum-of-square error)
+        awG_kind: string
+            Kind of weight used for the Gaussian broadening
+            'ZEP':      [DEFAULT] Zero Error at (center) Peak
+            'linear':   Linear weight (= minimal calculation time)
+            'min-RMS':  Minimal RMS error
             
         Returns
         -------
@@ -1859,20 +1861,20 @@ class BroadenFactory(BaseFactory):
         # DLM : Next calculate how the line is distributed over the 2x2x2 bins we have:
         av = iv - iv0
 
-        if awL_kind == 1:
+        if awL_kind == "linear":
             awL = iwL - iwL0
-        elif awL_kind == 3:
+        elif awL_kind == "min-RMS":
             awL = (iwL - iwL0) * (0.5 + 0.5 * (wL[iwL1] / wL_dat))
         else:
-            assert awL_kind == 2
+            assert awL_kind == "ZEP"
             awL = (iwL - iwL0) * (wL[iwL1] / wL_dat)
 
-        if awG_kind == 1:
+        if awG_kind == "linear":
             awG = iwG - iwG0
-        elif awG_kind == 3:
+        elif awG_kind == "min-RMS":
             awG = (iwG - iwG0) * (0.5 + 0.5 * (wG[iwG1] / wG_dat))
         else:
-            assert awG_kind == 2
+            assert awG_kind == "ZEP"
             awG = (iwG - iwG0) * (wG[iwG1] / wG_dat)
 
         # ... fractions on DLM grid

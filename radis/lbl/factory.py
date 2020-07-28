@@ -267,19 +267,19 @@ class SpectrumFactory(BandFactory):
             is used. Broadening method is automatically set to ``'fft'``. 
             See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
 
-    awL_kind: int
+    awL_kind: string
         Kind of weight used for the Lorentzian broadening in case the ``'DLM'`` method
         is used.
-        1 = linear          (minimizes calculation time)
-        2 = zero peak error (minimizes error at line center)
-        3 = mixed           (minimizes sum-of-square error)
+        'ZEP':      [DEFAULT] Zero Error at (center) Peak
+        'linear':   Linear weight (= minimal calculation time)
+        'min-RMS':  Minimal RMS error
 
-    awG_kind: int
+    awG_kind: string
         Kind of weight used for the Gaussian broadening in case the ``'DLM'`` method
         is used.
-        1 = linear          (minimizes calculation time)
-        2 = zero peak error (minimizes error at line center)
-        3 = mixed           (minimizes sum-of-square error)
+        'ZEP':      [DEFAULT] Zero Error at (center) Peak
+        'linear':   Linear weight (= minimal calculation time)
+        'min-RMS':  Minimal RMS error
         
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
@@ -381,8 +381,8 @@ class SpectrumFactory(BandFactory):
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
-        awL_kind=2,
-        awG_kind=2,
+        awL_kind="ZEP",
+        awG_kind="ZEP",
         Nprocs=None,
         Ngroups=None,
         cutoff=1e-27,
