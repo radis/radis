@@ -527,7 +527,7 @@ class SpectrumFactory(BandFactory):
             if self.verbose >= 3:
                 print("DLM used. Defaulting broadening method to FFT")
             # TODO: make it a proper parameter in self.misc or self.params
-            
+
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
         if parallel:

@@ -1740,7 +1740,16 @@ class BroadenFactory(BaseFactory):
         return wavenumber, sumoflines
 
     def _apply_lineshape_DLM(
-        self, broadened_param, line_profile_DLM, shifted_wavenum, wL, wG, wL_dat, wG_dat, awL_kind, awG_kind
+        self,
+        broadened_param,
+        line_profile_DLM,
+        shifted_wavenum,
+        wL,
+        wG,
+        wL_dat,
+        wG_dat,
+        awL_kind,
+        awG_kind,
     ):
         """ Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
@@ -1848,23 +1857,23 @@ class BroadenFactory(BaseFactory):
         iwG1 = iwG0 + 1
 
         # DLM : Next calculate how the line is distributed over the 2x2x2 bins we have:
-        av  = iv  - iv0
+        av = iv - iv0
 
         if awL_kind == 1:
             awL = iwL - iwL0
         elif awL_kind == 3:
-            awL = (iwL - iwL0)*(0.5 + 0.5*(wL[iwL1] / wL_dat))
+            awL = (iwL - iwL0) * (0.5 + 0.5 * (wL[iwL1] / wL_dat))
         else:
             assert awL_kind == 2
-            awL = (iwL - iwL0)*(wL[iwL1] / wL_dat)
+            awL = (iwL - iwL0) * (wL[iwL1] / wL_dat)
 
         if awG_kind == 1:
             awG = iwG - iwG0
         elif awG_kind == 3:
-            awG = (iwG - iwG0)*(0.5 + 0.5*(wG[iwG1] / wG_dat))
+            awG = (iwG - iwG0) * (0.5 + 0.5 * (wG[iwG1] / wG_dat))
         else:
             assert awG_kind == 2
-            awG = (iwG - iwG0)*(wG[iwG1] / wG_dat)
+            awG = (iwG - iwG0) * (wG[iwG1] / wG_dat)
 
         # ... fractions on DLM grid
         awV00 = (1 - awL) * (1 - awG)

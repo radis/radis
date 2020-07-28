@@ -295,7 +295,7 @@ def test_calc_spectrum_overpopulations(
     if plot:
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
-        s.plot_populations(wunit='nm')
+        s.plot_populations()
 
     assert np.allclose(I[::100], I_ref, atol=1e-6)
 
