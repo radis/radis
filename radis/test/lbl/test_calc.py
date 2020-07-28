@@ -176,6 +176,9 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         plt.legend()
     assert np.allclose(I[::100], I_ref, atol=1e-6)
 
+    if verbose:
+        printm("Test calc_spectrum match reference: OK")
+
     return True
 
 
@@ -205,6 +208,9 @@ def test_calc_spectrum_overpopulations(
     downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
     
     """
+
+    if verbose:
+        printm("Testing overpopulations")
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         import matplotlib.pyplot as plt
@@ -239,7 +245,7 @@ def test_calc_spectrum_overpopulations(
     s.apply_slit((2, 2.5), "nm", shape="trapezoidal")
 
     if plot:
-        s.plot()
+        s.plot(wunit="nm")
 
     w, I = s.get("radiance", wunit="nm")
     w_ref = w[::100]
@@ -289,7 +295,7 @@ def test_calc_spectrum_overpopulations(
     if plot:
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
-        s.plot_populations()
+        s.plot_populations(wunit='nm')
 
     assert np.allclose(I[::100], I_ref, atol=1e-6)
 
