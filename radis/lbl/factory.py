@@ -101,6 +101,9 @@ from multiprocessing import cpu_count
 from time import time
 import numpy as np
 import astropy.units as u
+import py_cuffs
+from matplotlib import pyplot as plt
+import math
 
 # %% Main functions
 
@@ -695,13 +698,15 @@ class SpectrumFactory(BandFactory):
             # --------------------------------------------------------------------
 
             # First calculate the linestrength at given temperature
-            self._calc_linestrength_eq(Tgas)
+            self._calc_linestrength_eq(
+                Tgas
+            )  # scales S0 to S (equivalent to S0 in code)
             self._cutoff_linestrength()
 
             # ----------------------------------------------------------------------
 
             # Calculate line shift
-            self._calc_lineshift()
+            self._calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
 
             # ----------------------------------------------------------------------
             # Line broadening
@@ -711,18 +716,23 @@ class SpectrumFactory(BandFactory):
 
             # ... find weak lines and calculate semi-continuum (optional)
             I_continuum = self._calculate_pseudo_continuum()
-
+            print("I_continuum = ", I_continuum)
             # ... apply lineshape and get absorption coefficient
             # ... (this is the performance bottleneck)
             wavenumber, abscoeff_v = self._calc_broadening()
+            print("wavenumber = ", wavenumber)
+            print("abscoeff_v = ", abscoeff_v)
             #    :         :
             #   cm-1    1/(#.cm-2)
 
             # ... add semi-continuum (optional)
             abscoeff_v = self._add_pseudo_continuum(abscoeff_v, I_continuum)
-
+            print("abscoeff_v = ", abscoeff_v)
+            print("pankaj mishra")
             # Calculate output quantities
             # ----------------------------------------------------------------------
+            print("dataframe is as follows: ")
+            print(self.df1.columns)
 
             if self.verbose >= 2:
                 t1 = time()
@@ -732,21 +742,30 @@ class SpectrumFactory(BandFactory):
             #  :
             # (#/cm3)
 
-            abscoeff = abscoeff_v * density  # cm-1
+            print("mole fraction = ", mole_fraction)
+            print("pressure = ", pressure_mbar)
+            print("k_b = ", k_b)
+            print("Tgas = ", Tgas)
+            print("density = ", density)
 
+            abscoeff = abscoeff_v * density  # cm-1
+            print("abscoeff = ", abscoeff)
             # ... # TODO: if the code is extended to multi-species, then density has to be added
             # ... before lineshape broadening (as it would not be constant for all species)
 
             # get absorbance (technically it's the optical depth `tau`,
             #                absorbance `A` being `A = tau/ln(10)` )
             absorbance = abscoeff * path_length
-
+            print("absorbance = ", absorbance)
             # Generate output quantities
             transmittance_noslit = exp(-absorbance)
+            print("transmittance_noslit = ", transmittance_noslit)
             emissivity_noslit = 1 - transmittance_noslit
+            print("emissivity_noslit = ", emissivity_noslit)
             radiance_noslit = calc_radiance(
                 wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
             )
+            print("radiance_noslit = ", radiance_noslit)
 
             if self.verbose >= 2:
                 printg(
@@ -833,6 +852,184 @@ class SpectrumFactory(BandFactory):
             t = round(time() - t0, 2)
             if verbose:
                 print("Spectrum calculated in {0:.2f}s".format(t))
+
+            return s
+
+        except:
+            # An error occured: clean before crashing
+            self._clean_temp_file()
+            raise
+
+    def eq_spectrum_gpu(
+        self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
+    ):
+
+        try:
+
+            # %% Preprocessing
+            # --------------------------------------------------------------------
+
+            # Check inputs
+            if not self.input.self_absorption:
+                raise ValueError(
+                    "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
+                    + "without self_absorption"
+                )
+
+            # Convert units
+            Tgas = convert_and_strip_units(Tgas, u.K)
+            path_length = convert_and_strip_units(path_length, u.cm)
+            pressure = convert_and_strip_units(pressure, u.bar)
+
+            # update defaults
+            if path_length is not None:
+                self.input.path_length = path_length
+            if mole_fraction is not None:
+                self.input.mole_fraction = mole_fraction
+            if pressure is not None:
+                self.input.pressure_mbar = pressure * 1e3
+            if not is_float(Tgas):
+                raise ValueError(
+                    "Tgas should be float. Use ParallelFactory for multiple cases"
+                )
+            self.input.rot_distribution = "boltzmann"  # equilibrium
+            self.input.vib_distribution = "boltzmann"  # equilibrium
+
+            # Get temperatures
+            self.input.Tgas = Tgas
+            self.input.Tvib = Tgas  # just for info
+            self.input.Trot = Tgas  # just for info
+
+            # Init variables
+            # pressure_mbar = self.input.pressure_mbar
+            mole_fraction = self.input.mole_fraction
+            path_length = self.input.path_length
+            # verbose = self.verbose
+
+            # Check variables
+            self._check_inputs(mole_fraction, max(flatten(Tgas)))
+
+            # Retrieve Spectrum from database if it exists
+            if self.autoretrievedatabase:
+                s = self._retrieve_from_database()
+                if s is not None:
+                    return s  # exit function
+
+            # generate the v_arr
+            print("HELLO WORLD, wavenum min = {0}".format(self.input.wavenum_min))
+            v_arr = np.arange(
+                self.input.wavenum_min,
+                self.input.wavenum_max + self._wstep,
+                self._wstep,
+            )
+            print(v_arr)
+            # load the data
+
+            dir_path = "/home/pankaj/radis-lab/data-2000-2400/"
+
+            print("Loading v0...")
+            v0 = np.load(dir_path + "v0.npy")
+            print("Done!")
+            print("Loading da...")
+            da = np.load(dir_path + "da.npy")
+            print("Done!")
+            print("Loading log_2gs...")
+            log_2gs = np.load(dir_path + "log_2gs.npy")
+            print("Done!")
+            print("Loading S0...")
+            S0 = np.load(dir_path + "S0.npy")
+            print("Done!")
+            print("Loading El...")
+            El = np.load(dir_path + "El.npy")
+            print("Done!")
+            print("Loading log_2vMm...")
+            log_2vMm = np.load(dir_path + "log_2vMm.npy")
+            print("Done!")
+            print("Loading na...")
+            na = np.load(dir_path + "na.npy")
+            print("Done!")
+
+            NwG = 4
+            NwL = 8
+
+            print("Initializing parameters...")
+            py_cuffs.init(v_arr, NwG, NwL, v0, da, log_2gs, na, log_2vMm, S0, El)
+            print("Done!")
+            wavenumber = v_arr
+            print("Calculating spectra...")
+            print("pressure  = ", pressure)
+            print("temp = ", Tgas)
+            abscoeff = py_cuffs.iterate(pressure, Tgas) * math.log(10)
+            print("abscoef returned by gpu = ", abscoeff)
+            plt.plot(v_arr, abscoeff)
+            plt.show()
+            print("Done!")
+            # Calculate output quantities
+            # ----------------------------------------------------------------------
+
+            if self.verbose >= 2:
+                t1 = time()
+
+            # ... # TODO: if the code is extended to multi-species, then density has to be added
+            # ... before lineshape broadening (as it would not be constant for all species)
+
+            # get absorbance (technically it's the optical depth `tau`,
+            #                absorbance `A` being `A = tau/ln(10)` )
+            print("path length = ", path_length)
+            absorbance = abscoeff * path_length
+            # Generate output quantities
+            transmittance_noslit = exp(-absorbance)
+            emissivity_noslit = 1 - transmittance_noslit
+            radiance_noslit = calc_radiance(
+                wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+            )
+            if self.verbose >= 2:
+                printg(
+                    "Calculated other spectral quantities in {0:.2f}s".format(
+                        time() - t1
+                    )
+                )
+
+            # %% Export
+            # --------------------------------------------------------------------
+            if self.verbose >= 2:
+                t1 = time()
+            # Get lines (intensities + populations)
+
+            # Spectral quantities
+            quantities = {
+                "abscoeff": (wavenumber, abscoeff),
+                "absorbance": (wavenumber, absorbance),
+                "emissivity_noslit": (wavenumber, emissivity_noslit),
+                "transmittance_noslit": (wavenumber, transmittance_noslit),
+                # (mW/cm2/sr/nm)
+                "radiance_noslit": (wavenumber, radiance_noslit),
+            }
+
+            # Store results in Spectrum class
+            s = Spectrum(
+                quantities=quantities,
+                units=self.units,
+                cond_units=self.cond_units,
+                waveunit=self.params.waveunit,  # cm-1
+                # dont check input (much faster, and Spectrum
+                warnings=False,
+                # is freshly baken so probably in a good format
+                name=name,
+            )
+
+            # update database if asked so
+            if self.autoupdatedatabase:
+                self.SpecDatabase.add(s, if_exists_then="increment")
+                # Tvib=Trot=Tgas... but this way names in a database
+                # generated with eq_spectrum are consistent with names
+                # in one generated with non_eq_spectrum
+
+            # Get generation & total calculation time
+            if self.verbose >= 2:
+                printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+
+            #  In the less verbose case, we print the total calculation+generation time:
 
             return s
 

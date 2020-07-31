@@ -47,6 +47,7 @@ def calc_spectrum(
     name=None,
     use_cached=True,
     verbose=True,
+    mode="cpu",
     **kwargs
 ):
     """ Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
@@ -169,7 +170,7 @@ def calc_spectrum(
             - If ``None``, all lineshapes are calculated at the same time (can 
               create memory errors). 
             - If ``int``, is given as the ``chunksize`` parameter of 
-              :py:class:`~radis.lbl.factory.SpectrumFactory`` to split the line database 
+              :py:class:`~radis.lbl.factory.SpectrumFactory`` to split the line database
               in several parts so that the number of ``lines * spectral grid points`` is 
               less than ``chunksize`` (reduces memory consumption). Typical values: 
               ``lineshape_optimization=1e6``.
@@ -225,6 +226,11 @@ def calc_spectrum(
         errors, mostly in highly populated areas. 80% of the lines can typically
         be moved in a continuum, resulting in 5 times faster spectra. If 0,
         no semi-continuum is used. Default 0.
+
+    mode: string
+        if set to 'cpu', computes the spectra purely on the CPU. if set to 'gpu',
+        offloads the calculations of lineshape and broadening steps to the GPU
+        making use of parallel computations to speed up the process. Default 'cpu'.
 ​
     Returns
     -------
@@ -421,6 +427,7 @@ def calc_spectrum(
                 name=name,
                 use_cached=use_cached,
                 verbose=verbose,
+                mode=mode,
                 **kwargs_molecule
             )
         )
@@ -451,6 +458,7 @@ def _calc_spectrum(
     name,
     use_cached,
     verbose,
+    mode,
     **kwargs
 ):
     """ See :py:func:`~radis.lbl.calc.calc_spectrum` 
@@ -601,9 +609,21 @@ def _calc_spectrum(
 
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
-        s = sf.eq_spectrum(
-            Tgas=Tgas, mole_fraction=mole_fraction, path_length=path_length, name=name
-        )
+        if mode == "cpu":
+            s = sf.eq_spectrum(
+                Tgas=Tgas,
+                mole_fraction=mole_fraction,
+                path_length=path_length,
+                name=name,
+            )
+        else:
+            s = sf.eq_spectrum_gpu(
+                Tgas=Tgas,
+                mole_fraction=mole_fraction,
+                pressure=pressure,
+                path_length=path_length,
+                name=name,
+            )
     else:
         s = sf.non_eq_spectrum(
             Tvib=Tvib,
