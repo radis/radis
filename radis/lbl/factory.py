@@ -102,7 +102,6 @@ from time import time
 import numpy as np
 import astropy.units as u
 import py_cuffs
-from matplotlib import pyplot as plt
 import math
 
 # %% Main functions
@@ -716,23 +715,16 @@ class SpectrumFactory(BandFactory):
 
             # ... find weak lines and calculate semi-continuum (optional)
             I_continuum = self._calculate_pseudo_continuum()
-            print("I_continuum = ", I_continuum)
             # ... apply lineshape and get absorption coefficient
             # ... (this is the performance bottleneck)
             wavenumber, abscoeff_v = self._calc_broadening()
-            print("wavenumber = ", wavenumber)
-            print("abscoeff_v = ", abscoeff_v)
             #    :         :
             #   cm-1    1/(#.cm-2)
 
             # ... add semi-continuum (optional)
             abscoeff_v = self._add_pseudo_continuum(abscoeff_v, I_continuum)
-            print("abscoeff_v = ", abscoeff_v)
-            print("pankaj mishra")
             # Calculate output quantities
             # ----------------------------------------------------------------------
-            print("dataframe is as follows: ")
-            print(self.df1.columns)
 
             if self.verbose >= 2:
                 t1 = time()
@@ -742,30 +734,19 @@ class SpectrumFactory(BandFactory):
             #  :
             # (#/cm3)
 
-            print("mole fraction = ", mole_fraction)
-            print("pressure = ", pressure_mbar)
-            print("k_b = ", k_b)
-            print("Tgas = ", Tgas)
-            print("density = ", density)
-
             abscoeff = abscoeff_v * density  # cm-1
-            print("abscoeff = ", abscoeff)
             # ... # TODO: if the code is extended to multi-species, then density has to be added
             # ... before lineshape broadening (as it would not be constant for all species)
 
             # get absorbance (technically it's the optical depth `tau`,
             #                absorbance `A` being `A = tau/ln(10)` )
             absorbance = abscoeff * path_length
-            print("absorbance = ", absorbance)
             # Generate output quantities
             transmittance_noslit = exp(-absorbance)
-            print("transmittance_noslit = ", transmittance_noslit)
             emissivity_noslit = 1 - transmittance_noslit
-            print("emissivity_noslit = ", emissivity_noslit)
             radiance_noslit = calc_radiance(
                 wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
             )
-            print("radiance_noslit = ", radiance_noslit)
 
             if self.verbose >= 2:
                 printg(
@@ -916,17 +897,14 @@ class SpectrumFactory(BandFactory):
                     return s  # exit function
 
             # generate the v_arr
-            print("HELLO WORLD, wavenum min = {0}".format(self.input.wavenum_min))
             v_arr = np.arange(
                 self.input.wavenum_min,
                 self.input.wavenum_max + self._wstep,
                 self._wstep,
             )
-            print(v_arr)
+
             # load the data
-
             df = self.df0
-
             v0 = df["wav"].to_numpy()
             da = df["Pshft"].to_numpy()
             log_2gs = df["log_2gs"].to_numpy()
@@ -938,18 +916,13 @@ class SpectrumFactory(BandFactory):
             NwG = 4
             NwL = 8
 
-            print("Initializing parameters...")
+            print("Initializing parameters...", end=" ")
             py_cuffs.init(v_arr, NwG, NwL, v0, da, log_2gs, na, log_2vMm, S0, El)
-            print("Done!")
+            print("done!")
             wavenumber = v_arr
-            print("Calculating spectra...")
-            print("pressure  = ", pressure)
-            print("temp = ", Tgas)
+            print("Calculating spectra...", end=" ")
             abscoeff = py_cuffs.iterate(pressure, Tgas) * math.log(10)
-            print("abscoef returned by gpu = ", abscoeff)
-            plt.plot(v_arr, abscoeff)
-            plt.show()
-            print("Done!")
+            print("done!")
             # Calculate output quantities
             # ----------------------------------------------------------------------
 
@@ -961,7 +934,6 @@ class SpectrumFactory(BandFactory):
 
             # get absorbance (technically it's the optical depth `tau`,
             #                absorbance `A` being `A = tau/ln(10)` )
-            print("path length = ", path_length)
             absorbance = abscoeff * path_length
             # Generate output quantities
             transmittance_noslit = exp(-absorbance)
