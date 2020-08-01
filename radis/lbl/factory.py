@@ -101,12 +101,12 @@ from multiprocessing import cpu_count
 from time import time
 import numpy as np
 import astropy.units as u
-import py_cuffs
 import math
+import py_cuffs
+
+# import os
 
 # %% Main functions
-
-
 class SpectrumFactory(BandFactory):
     """ A class to put together all functions related to loading CDSD / HITRAN
     databases, calculating the broadenings, and summing over all the lines
@@ -895,6 +895,25 @@ class SpectrumFactory(BandFactory):
                 s = self._retrieve_from_database()
                 if s is not None:
                     return s  # exit function
+
+            ### EXPERIMENTAL ###
+
+            # try:
+            #     import py_cuffs
+            # except:
+            #     pass
+            # try:
+            #     print("py_cuFFS module not found in directory...")
+            #     print("Compiling module from source...")
+            #     os.system("python setup.py build_ext --inplace")
+            #     print("Finished compilation...trying to import module again")
+            #     import py_cuffs
+            #     print("py_cuFFS imported succesfully!")
+            # except:
+            #     raise (ModuleNotFoundError("Failed to load py_cuFFS module, program will exit."))
+            #     exit()
+
+            ### --- ###
 
             # generate the v_arr
             v_arr = np.arange(
