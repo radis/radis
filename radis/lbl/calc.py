@@ -137,7 +137,8 @@ def calc_spectrum(
 ​
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
-        your ``~/.radis`` file format 
+        your ``~/.radis`` file format
+
         
         For multiple molecules, use a dictionary with molecule names as keys::
 ​
@@ -581,6 +582,22 @@ def _calc_spectrum(
                     parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
                     levelsfmt="radis",  # built-in spectroscopic constants
                     drop_columns=drop_columns,
+                )
+        elif databank.endswith(".npy"):
+            if verbose:
+                print("Infered {0} is a NPY-format file".format(databank))
+
+            if _equilibrium:
+                sf.load_databank(
+                    path=databank,
+                    format="cdsd-hitemp",
+                    parfuncfmt="hapi",
+                    levelsfmt=None,
+                    buffer="npy",
+                )
+            else:
+                print(
+                    "Non equilibirum spectra calculation not yet supported with npy databank"
                 )
         else:
             raise ValueError(

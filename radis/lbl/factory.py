@@ -925,29 +925,15 @@ class SpectrumFactory(BandFactory):
             print(v_arr)
             # load the data
 
-            dir_path = "/home/pankaj/radis-lab/data-2000-2400/"
+            df = self.df0
 
-            print("Loading v0...")
-            v0 = np.load(dir_path + "v0.npy")
-            print("Done!")
-            print("Loading da...")
-            da = np.load(dir_path + "da.npy")
-            print("Done!")
-            print("Loading log_2gs...")
-            log_2gs = np.load(dir_path + "log_2gs.npy")
-            print("Done!")
-            print("Loading S0...")
-            S0 = np.load(dir_path + "S0.npy")
-            print("Done!")
-            print("Loading El...")
-            El = np.load(dir_path + "El.npy")
-            print("Done!")
-            print("Loading log_2vMm...")
-            log_2vMm = np.load(dir_path + "log_2vMm.npy")
-            print("Done!")
-            print("Loading na...")
-            na = np.load(dir_path + "na.npy")
-            print("Done!")
+            v0 = df["wav"].to_numpy()
+            da = df["Pshft"].to_numpy()
+            log_2gs = df["log_2gs"].to_numpy()
+            na = df["Tdpair"].to_numpy()
+            log_2vMm = df["log_2vMm"].to_numpy()
+            S0 = df["int"].to_numpy()
+            El = df["El"].to_numpy()
 
             NwG = 4
             NwL = 8

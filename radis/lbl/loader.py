@@ -1162,6 +1162,10 @@ class DatabankLoader(object):
                 include_neighbouring_lines=include_neighbouring_lines,
             )
 
+            if buffer == "npy":
+                print("bypassing all databank checks and returning...")
+                return
+
             # Check the molecule is what we expected
             if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
                 raise NotImplementedError(
@@ -1730,7 +1734,7 @@ class DatabankLoader(object):
 
         # Check inputs
         assert db_use_cached in [True, False, "regen"]
-        assert buffer in ["RAM", "h5", "direct"]
+        assert buffer in ["RAM", "h5", "direct", "npy"]
 
         if self.verbose >= 2:
             printg("Loading Line databank")
@@ -1750,6 +1754,49 @@ class DatabankLoader(object):
         if buffer == "direct":
             assert len(database) == 1
             assert database[0].endswith("h5")
+        elif buffer == "npy":
+            dir_path = database[0][
+                : database[0].rindex("/") + 1
+            ]  # remove the last *.npy portion
+            try:
+                print("Loading v0...", end=" ")
+                v0 = np.load(dir_path + "v0.npy")
+                print("Done!")
+                print("Loading da...", end=" ")
+                da = np.load(dir_path + "da.npy")
+                print("Done!")
+                print("Loading log_2gs...", end=" ")
+                log_2gs = np.load(dir_path + "log_2gs.npy")
+                print("Done!")
+                print("Loading S0...", end=" ")
+                S0 = np.load(dir_path + "S0.npy")
+                print("Done!")
+                print("Loading El...", end=" ")
+                El = np.load(dir_path + "El.npy")
+                print("Done!")
+                print("Loading log_2vMm...", end=" ")
+                log_2vMm = np.load(dir_path + "log_2vMm.npy")
+                print("Done!")
+                print("Loading na...", end=" ")
+                na = np.load(dir_path + "na.npy")
+                print("Done!")
+                df = pd.DataFrame(
+                    {
+                        "wav": v0,
+                        "Pshft": da,
+                        "log_2gs": log_2gs,
+                        "Tdpair": na,
+                        "log_2vMm": log_2vMm,
+                        "int": S0,
+                        "El": El,
+                    }
+                )  # create dataframe from these 8 arrays
+                df.reset_index()
+                return df
+            except:
+                raise (
+                    FileNotFoundError("Could not find npy dataset in given directory")
+                )
         if drop_columns == "auto":
             drop_columns = (
                 drop_auto_columns_for_dbformat[dbformat]
