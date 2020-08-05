@@ -116,7 +116,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         use_cached=True,
         medium="vacuum",
         verbose=verbose,
-        optimized_weights = False,
+        optimized_weights=False,
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -149,7 +149,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     #                           0.17110649,  0.15403513,  0.13376804,  0.11932659,  0.10882006,
     #                           0.11112725,  0.0458288 ,  0.00247956,  0.00144128])
     # Updated again in RADIS 0.9.20 (02/09/19) with switch to tabulated Q(Tref)
-    #I_ref = np.array([         0.29048064, 0.29743104, 0.32955513, 0.32047172, 0.20688813,
+    # I_ref = np.array([         0.29048064, 0.29743104, 0.32955513, 0.32047172, 0.20688813,
     #                           0.19210952, 0.20148265, 0.17330909, 0.17213373, 0.15887159,
     #                           0.17106096, 0.15400039, 0.13374285, 0.11930822, 0.10880631,
     #                           0.11111394, 0.04582291, 0.00247955, 0.00144128])
@@ -175,9 +175,9 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
             0.04581152,
             0.00247154,
             0.00143631,
-            ]
-        )
-    
+        ]
+    )
+
     if plot:
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
@@ -299,9 +299,9 @@ def test_calc_spectrum_overpopulations(
             0.13511584,
             0.00686547,
             0.00386199,
-            ]
-        )
-    
+        ]
+    )
+
     if plot:
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
