@@ -266,7 +266,12 @@ class SpectrumFactory(BandFactory):
             argument: in this case, the DLM optimization for lineshape calculation 
             is used. Broadening method is automatically set to ``'fft'``. 
             See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
-        
+
+    optimized_weights: bool
+        Whether to use optimized weights or simple weigths.
+            True:  Optimized weights [DEFAULT]
+            False: Simple weights
+                
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
@@ -367,6 +372,7 @@ class SpectrumFactory(BandFactory):
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
+        optimized_weights=True,
         Nprocs=None,
         Ngroups=None,
         cutoff=1e-27,
@@ -523,6 +529,8 @@ class SpectrumFactory(BandFactory):
                 print("Choose parallel=True to use Nprocs")
             if Ngroups is not None:
                 print("Choose parallel=True to use Ngroups")
+
+        self.misc.optimized_weights = optimized_weights
 
         # Other parameters:
         self.bplot = bplot

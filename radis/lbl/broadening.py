@@ -1748,6 +1748,7 @@ class BroadenFactory(BaseFactory):
         wG,
         wL_dat,
         wG_dat,
+        optimized_weights,
     ):
         """ Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
@@ -1781,6 +1782,9 @@ class BroadenFactory(BaseFactory):
             
         wG_dat: array    (size N)
             FWHM of all lines. Used to lookup the DLM
+
+        optimized_weights: bool
+            True/False: Whether or not to use optimized weights
             
         Returns
         -------
@@ -1850,8 +1854,38 @@ class BroadenFactory(BaseFactory):
         tauG = iwG - iwG0
         tauL = iwL - iwL0
 
-        awG = tauG
-        awL = tauL
+        if optimized_weights:
+
+            log_pG = (np.log(wG[-1]) - np.log(wG[0])) / (wG.size - 1)
+            log_pL = (np.log(wL[-1]) - np.log(wL[0])) / (wL.size - 1)
+
+            C1_GG = ((6 * np.pi - 16) / (15 * np.pi - 32)) ** (2 / 3)
+            C1_LG = ((6 * np.pi - 16) / (3 * (2 * np.pi) ** 0.5)) ** (4 / 9)
+            C2_GG = (2 / 15) ** (2 / 3)
+            C2_LG = (4 / 15) ** (4 / 9)
+
+            alpha = (wL_dat / wG_dat) * (np.log(2)) ** 0.5
+
+            R_GG = 1 / (C1_GG + C2_GG * alpha ** (4 / 3)) ** (3 / 2) - 2
+            R_GL = 2 * alpha ** 2
+            R_LL = -1
+            R_LG = -1 / (C1_LG * alpha ** (4 / 9) + C2_LG * alpha ** (16 / 9)) ** (
+                9 / 4
+            )
+
+            awG = tauG + (
+                R_GG * tauG * (1 - tauG) * log_pG ** 2
+                + R_GL * tauL * (1 - tauL) * log_pL ** 2
+            ) / (2 * log_pG)
+
+            awL = tauL + (
+                R_LL * tauL * (1 - tauL) * log_pL ** 2
+                + R_LG * tauG * (1 - tauG) * log_pG ** 2
+            ) / (2 * log_pL)
+
+        else:
+            awG = tauG
+            awL = tauL
 
         # ... fractions on DLM grid
         awV00 = (1 - awL) * (1 - awG)
@@ -1991,6 +2025,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    self.misc.optimized_weights,
                 )
 
             elif is_float(chunksize):
@@ -2075,6 +2110,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    self.misc.optimized_weights,
                 )
                 (_, emisscoeff) = self._apply_lineshape_DLM(
                     df.Ei.values,
@@ -2084,6 +2120,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    self.misc.optimized_weights,
                 )
                 # Note @dev: typical results is:
                 # >>> abscoeff:
