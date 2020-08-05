@@ -268,7 +268,7 @@ class SpectrumFactory(BandFactory):
             See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
 
     optimized_weights: bool
-        Whether to use optimized weights or simple weigths.
+        Whether to use optimized weights or simple weights.
             True:  Optimized weights [DEFAULT]
             False: Simple weights
                 
