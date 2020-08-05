@@ -1740,7 +1740,14 @@ class BroadenFactory(BaseFactory):
         return wavenumber, sumoflines
 
     def _apply_lineshape_DLM(
-        self, broadened_param, line_profile_DLM, shifted_wavenum, wL, wG, wL_dat, wG_dat
+        self,
+        broadened_param,
+        line_profile_DLM,
+        shifted_wavenum,
+        wL,
+        wG,
+        wL_dat,
+        wG_dat,
     ):
         """ Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
@@ -1830,8 +1837,8 @@ class BroadenFactory(BaseFactory):
 
         # DLM: First we calculate the fractional index of the DLM
         #      that corresponds with this line:
-        iwL = np.interp(wL_dat, wL, np.arange(len(wL)))
-        iwG = np.interp(wG_dat, wG, np.arange(len(wG)))
+        iwL = np.interp(np.log(wL_dat), np.log(wL), np.arange(len(wL)))
+        iwG = np.interp(np.log(wG_dat), np.log(wG), np.arange(len(wG)))
         iwL0 = iwL.astype(int)  # size [N],   number of values defined by res_L
         iwG0 = iwG.astype(int)  # size [N],   number of values defined by res_G
         iwL1 = iwL0 + 1
@@ -1839,8 +1846,13 @@ class BroadenFactory(BaseFactory):
 
         # DLM : Next calculate how the line is distributed over the 2x2x2 bins we have:
         av = iv - iv0
-        awL = (iwL - iwL0) * (wL[iwL1] / wL_dat)
-        awG = (iwG - iwG0) * (wG[iwG1] / wG_dat)
+
+        tauG = iwG - iwG0
+        tauL = iwL - iwL0
+
+        awG = tauG
+        awL = tauL
+
         # ... fractions on DLM grid
         awV00 = (1 - awL) * (1 - awG)
         awV10 = awL * (1 - awG)
