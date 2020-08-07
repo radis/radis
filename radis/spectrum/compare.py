@@ -257,184 +257,250 @@ def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)
 
 
-def get_residual(
-    s1,
-    s2,
-    var,
-    norm="L2",
-    ignore_nan=False,
-    diff_window=0,
-    normalize=False,
-    normalize_how="max",
-):
-    # type: (Spectrum, Spectrum, str, bool, int) -> np.array, np.array
-    """ Returns L2 norm of ``s1`` and ``s2``
+# def get_residual(
+#     s1,
+#     s2,
+#     var,
+#     norm="L2",
+#     ignore_nan=False,
+#     diff_window=0,
+#     normalize=False,
+#     normalize_how="max",
+# ):
+#     # type: (Spectrum, Spectrum, str, bool, int) -> np.array, np.array
+#     """ Returns L2 norm of ``s1`` and ``s2``
 
-    For ``I1``, ``I2``, the values of variable ``var`` in ``s1`` and ``s2``, 
-    respectively, residual is calculated as:
+#     For ``I1``, ``I2``, the values of variable ``var`` in ``s1`` and ``s2``, 
+#     respectively, residual is calculated as:
         
-    For ``L2`` norm:
+#     For ``L2`` norm:
 
-        .. math::
+#         .. math::
     
-            res = \\frac{\\sqrt{\\sum_i {(s_1[i]-s_2[i])^2}}}{N}.
+#             res = \\frac{\\sqrt{\\sum_i {(s_1[i]-s_2[i])^2}}}{N}.
 
-    For ``L1`` norm:
+#     For ``L1`` norm:
             
-        .. math::
+#         .. math::
     
-            res = \\frac{\\sqrt{\\sum_i {|s_1[i]-s_2[i]|}}}{N}.
+#             res = \\frac{\\sqrt{\\sum_i {|s_1[i]-s_2[i]|}}}{N}.
+
+
+#     Parameters    
+#     ----------
+
+#     s1, s2: :class:`~radis.spectrum.spectrum.Spectrum` objects
+#         if not on the same range, ``s2`` is resampled on ``s1``.
+
+#     var: str
+#         spectral quantity
+
+#     norm: 'L2', 'L1'
+#         which norm to use 
+
+#     Other Parameters
+#     ----------------
+
+#     ignore_nan: boolean
+#         if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
+#         when calculating residual. Default ``False``. Note: ``get_residual`` will still 
+#         fail if there are nan in initial Spectrum. 
+
+#     normalize: bool, or tuple
+#         if ``True``, normalize the two spectra before calculating the residual. 
+#         If a tuple (ex: ``(4168, 4180)``), normalize on this range only. The unit
+#         is that of the first Spectrum. Ex::
+            
+#             s_exp   # in 'nm'
+#             s_calc  # in 'cm-1'
+#             get_residual(s_exp, s_calc, normalize=(4178, 4180))  # interpreted as 'nm'
+
+#     normalize_how: ``'max'``, ``'area'``, ``'mean'``
+#         how to normalize. ``'max'`` is the default but may not be suited for very
+#         noisy experimental spectra. ``'area'`` will normalize the integral to 1.
+#         ``'mean'`` will normalize by the mean amplitude value
+
+#     Notes
+#     -----
+
+#     0 values for I1 yield nans except if I2 = I1 = 0
+
+#     when s1 and s2 dont have the size wavespace range, they are automatically
+#     resampled through get_diff on 's1' range 
+
+#     Implementation of ``L2`` norm::
+
+#         np.sqrt((dI**2).sum())/len(dI)
+    
+#     Implementation of ``L1`` norm::
+        
+#         np.abs(dI).sum()/len(dI)
+
+#     See Also
+#     --------
+
+#     :func:`~radis.spectrum.compare.get_diff`, 
+#     :func:`~radis.spectrum.compare.get_ratio`, 
+#     :func:`~radis.spectrum.compare.get_distance`, 
+#     :func:`~radis.spectrum.compare.plot_diff`, 
+#     :func:`~radis.spectrum.compare.get_residual_integral`, 
+#     :meth:`~radis.spectrum.spectrum.compare_with` 
+#     """
+
+#     if normalize:
+#         from radis.spectrum.operations import multiply
+
+#         if isinstance(normalize, tuple):
+#             wmin, wmax = normalize
+#             w1, I1 = s1.get(
+#                 var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var],
+#             )  # (faster not to copy)
+#             b = (w1 > wmin) & (w1 < wmax)
+#             if normalize_how == "max":
+#                 norm1 = np.nanmax(I1[b])
+#             elif normalize_how == "mean":
+#                 norm1 = np.nanmean(I1[b])
+#             elif normalize_how == "area":
+#                 norm1 = np.abs(nantrapz(I1[b], w1[b]))
+#             else:
+#                 raise ValueError(
+#                     "Unexpected `normalize_how`: {0}".format(normalize_how)
+#                 )
+#             # now normalize s2. Ensure we use the same unit system!
+#             w2, I2 = s2.get(
+#                 var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var]
+#             )
+#             b = (w2 > wmin) & (w2 < wmax)
+#             if normalize_how == "max":
+#                 norm2 = np.nanmax(I2[b])
+#             elif normalize_how == "mean":
+#                 norm2 = np.nanmean(I2[b])
+#             elif normalize_how == "area":
+#                 norm2 = np.abs(nantrapz(I2[b], w2[b]))
+#             else:
+#                 raise ValueError(
+#                     "Unexpected `normalize_how`: {0}".format(normalize_how)
+#                 )
+#             s1 = multiply(s1, 1 / norm1, var=var)
+#             s2 = multiply(s2, 1 / norm2, var=var)
+#         else:
+#             if normalize_how == "max":
+#                 norm1 = np.nanmax(s1.get(var, copy=False)[1])
+#                 norm2 = np.nanmax(s2.get(var)[1])
+
+#             elif normalize_how == "mean":
+#                 norm1 = np.nanmean(s1.get(var, copy=False)[1])
+#                 norm2 = np.nanmean(s2.get(var)[1])
+
+#             elif normalize_how == "area":
+#                 # norm1 = s1.get_integral(var)
+#                 # norm2 = s2.get_integral(
+#                 #    var, wunit=s1.get_waveunit(), Iunit=s1.units[var]
+#                 # )
+#                 w1, I1 = s1.get(var, copy=False)
+#                 norm1 = nantrapz(I1, w1)
+#                 w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
+#                 norm2 = nantrapz(I2, w2)
+
+#             else:
+#                 raise ValueError(
+#                     "Unexpected `normalize_how`: {0}".format(normalize_how)
+#                 )
+#             # Ensure we use the same unit system!
+#             s1 = multiply(s1, 1 / norm1, var=var, Iunit=s1.units[var])
+#             s2 = multiply(s2, 1 / norm2, var=var, Iunit=s1.units[var])
+#             # s1 = multiply(s1, 1 / norm1, var=var)
+#             # s2 = multiply(s2, 1 / norm2, var=var)
+
+#     # mask for 0
+#     wdiff, dI = get_diff(
+#         s1, s2, var, resample=True, diff_window=diff_window, Iunit=s1.units[var]
+#     )
+#     if ignore_nan:
+#         b = np.isnan(dI)
+#         wdiff, dI = wdiff[~b], dI[~b]
+#     warningText = (
+#         'NaN output in residual. You should use "ignore_nan=True". Read the help.'
+#     )
+#     if norm == "L2":
+#         output = np.sqrt((dI ** 2).sum()) / len(dI)
+#         if np.isnan(output):
+#             warn(warningText, UserWarning)
+#         return output
+#     elif norm == "L1":
+#         output = (np.abs(dI)).sum() / len(dI)
+#         if np.isnan(output):
+#             warn.warning(warningText, UserWarning)
+#         return output
+#     else:
+#         raise ValueError("unexpected value for norm")
+
+def get_residual(s1, s2, var, 
+                 Iunit='default', wunit='default', 
+                 normalize=False,
+                 verbose=False,
+                 diff_window=0,
+                 ignore_nan=False):
+    """ 
 
 
     Parameters    
     ----------
 
-    s1, s2: :class:`~radis.spectrum.spectrum.Spectrum` objects
-        if not on the same range, ``s2`` is resampled on ``s1``.
+    s1, s2: Spectrum objects
+        2 spectra to compare.
 
     var: str
-        spectral quantity
+        spectral quantity (ex: ``'radiance'``, ``'transmittance'``...)
 
-    norm: 'L2', 'L1'
-        which norm to use 
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
 
-    Other Parameters
-    ----------------
-
-    ignore_nan: boolean
-        if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
-        when calculating residual. Default ``False``. Note: ``get_residual`` will still 
-        fail if there are nan in initial Spectrum. 
-
-    normalize: bool, or tuple
-        if ``True``, normalize the two spectra before calculating the residual. 
-        If a tuple (ex: ``(4168, 4180)``), normalize on this range only. The unit
-        is that of the first Spectrum. Ex::
-            
-            s_exp   # in 'nm'
-            s_calc  # in 'cm-1'
-            get_residual(s_exp, s_calc, normalize=(4178, 4180))  # interpreted as 'nm'
-
-    normalize_how: ``'max'``, ``'area'``, ``'mean'``
-        how to normalize. ``'max'`` is the default but may not be suited for very
-        noisy experimental spectra. ``'area'`` will normalize the integral to 1.
-        ``'mean'`` will normalize by the mean amplitude value
-
-    Notes
-    -----
-
-    0 values for I1 yield nans except if I2 = I1 = 0
-
-    when s1 and s2 dont have the size wavespace range, they are automatically
-    resampled through get_diff on 's1' range 
-
-    Implementation of ``L2`` norm::
-
-        np.sqrt((dI**2).sum())/len(dI)
+    Iunit: str
+        if ``'default'`` use s1 unit for variable var
     
-    Implementation of ``L1`` norm::
-        
-        np.abs(dI).sum()/len(dI)
-
-    See Also
-    --------
-
-    :func:`~radis.spectrum.compare.get_diff`, 
-    :func:`~radis.spectrum.compare.get_ratio`, 
-    :func:`~radis.spectrum.compare.get_distance`, 
-    :func:`~radis.spectrum.compare.plot_diff`, 
-    :func:`~radis.spectrum.compare.get_residual_integral`, 
-    :meth:`~radis.spectrum.spectrum.compare_with` 
+    diff_window: int
+        If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
+        units on either side, and returns the minimum. Compensates for experimental
+        errors on the w axis. Default 0. 
     """
-
+    from numpy.linalg import norm
+    if Iunit == 'default':
+        Iunit = s1.units[var]
+    if wunit == 'default':
+        wunit = s1.get_waveunit()
+    
+    # Get data
+    # ----
     if normalize:
-        from radis.spectrum.operations import multiply
+        # copy before modifying directly in spectrum
+        s1 = s1.copy()
+        s2 = s2.copy()
+        w1, I1 = s1.get(var, wunit=wunit, copy=False)
+        w2, I2 = s2.get(var, wunit=wunit, copy=False)
+        ratio = np.nanmax(I1) / np.nanmax(I2)
+        I1 /= np.nanmax(I1)
+        I2 /= np.nanmax(I2)
 
-        if isinstance(normalize, tuple):
-            wmin, wmax = normalize
-            w1, I1 = s1.get(
-                var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var],
-            )  # (faster not to copy)
-            b = (w1 > wmin) & (w1 < wmax)
-            if normalize_how == "max":
-                norm1 = np.nanmax(I1[b])
-            elif normalize_how == "mean":
-                norm1 = np.nanmean(I1[b])
-            elif normalize_how == "area":
-                norm1 = np.abs(nantrapz(I1[b], w1[b]))
-            else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
-            # now normalize s2. Ensure we use the same unit system!
-            w2, I2 = s2.get(
-                var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var]
-            )
-            b = (w2 > wmin) & (w2 < wmax)
-            if normalize_how == "max":
-                norm2 = np.nanmax(I2[b])
-            elif normalize_how == "mean":
-                norm2 = np.nanmean(I2[b])
-            elif normalize_how == "area":
-                norm2 = np.abs(nantrapz(I2[b], w2[b]))
-            else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
-            s1 = multiply(s1, 1 / norm1, var=var)
-            s2 = multiply(s2, 1 / norm2, var=var)
-        else:
-            if normalize_how == "max":
-                norm1 = np.nanmax(s1.get(var, copy=False)[1])
-                norm2 = np.nanmax(s2.get(var)[1])
-
-            elif normalize_how == "mean":
-                norm1 = np.nanmean(s1.get(var, copy=False)[1])
-                norm2 = np.nanmean(s2.get(var)[1])
-
-            elif normalize_how == "area":
-                # norm1 = s1.get_integral(var)
-                # norm2 = s2.get_integral(
-                #    var, wunit=s1.get_waveunit(), Iunit=s1.units[var]
-                # )
-                w1, I1 = s1.get(var, copy=False)
-                norm1 = nantrapz(I1, w1)
-                w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
-                norm2 = nantrapz(I2, w2)
-
-            else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
-            # Ensure we use the same unit system!
-            s1 = multiply(s1, 1 / norm1, var=var, Iunit=s1.units[var])
-            s2 = multiply(s2, 1 / norm2, var=var, Iunit=s1.units[var])
-            # s1 = multiply(s1, 1 / norm1, var=var)
-            # s2 = multiply(s2, 1 / norm2, var=var)
-
-    # mask for 0
-    wdiff, dI = get_diff(
-        s1, s2, var, resample=True, diff_window=diff_window, Iunit=s1.units[var]
-    )
+        if verbose:
+            print(("Rescale factor: " + str(ratio)))
+            
+    _, Idiffs = get_wdiff_Idiff(s1, s2, var, wunit, Iunit, 
+                                      diff_window, 
+                                      normalize=normalize, 
+                                      method = 'diff')
+    Idiffs = np.array(Idiffs)
+    
+    #Nan handeling
+    b = np.isnan(Idiffs)
+    if not ignore_nan and b.any():
+        warningText = (
+            'NaN output in residual. You should use "ignore_nan=True". Read the help.'
+        )
+        warn(warningText, UserWarning)
     if ignore_nan:
-        b = np.isnan(dI)
-        wdiff, dI = wdiff[~b], dI[~b]
-    warningText = (
-        'NaN output in residual. You should use "ignore_nan=True". Read the help.'
-    )
-    if norm == "L2":
-        output = np.sqrt((dI ** 2).sum()) / len(dI)
-        if np.isnan(output):
-            warn(warningText, UserWarning)
-        return output
-    elif norm == "L1":
-        output = (np.abs(dI)).sum() / len(dI)
-        if np.isnan(output):
-            warn.warning(warningText, UserWarning)
-        return output
-    else:
-        raise ValueError("unexpected value for norm")
-
+        Idiffs = Idiffs[~b]
+    return norm(Idiffs, ord=2)
 
 def get_residual_integral(s1, s2, var, ignore_nan=False):
     # type: (Spectrum, Spectrum, str, bool) -> float
@@ -559,6 +625,61 @@ def _get_defaults(
 
     return w1, I1, w2, I2
 
+def get_wdiff_Idiff(s1, s2, var, wunit, Iunit, diff_window, 
+                    normalize=False, 
+                    method = 'diff'):
+    """    
+    diff_window: int
+        If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
+        units on either side, and returns the minimum. Compensates for experimental
+        errors on the w axis. Default 0. (look up code for more details...)
+    """
+    
+    if isinstance(method, list):
+        methods = method
+    else:
+        methods = [method]
+    wdiffs, Idiffs = [], []
+    for method in methods:
+        if not normalize:
+            if method == "distance":
+                wdiff, Idiff = get_distance(
+                    s1, s2, var=var, wunit=wunit, Iunit=Iunit
+                )
+            elif method == "diff":
+                wdiff, Idiff = get_diff(
+                    s1,
+                    s2,
+                    var=var,
+                    wunit=wunit,
+                    Iunit=Iunit,
+                    diff_window=diff_window,
+                )
+            elif method == "ratio":
+                wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
+            else:
+                raise ValueError("Unknown comparison method: {0}".format(method))
+            wdiffs.append(wdiff)
+            Idiffs.append(Idiff)
+        else:
+            if method == "distance":
+                raise ValueError(
+                    "{0} was not implemented yet for normalized spectra".format(
+                        method
+                    )
+                )
+            elif method == "diff":
+                #we already multiplied the values of I1 and I2 by ratio
+                w1, I1 = s1.get(var, wunit=wunit, copy=False)
+                w2, I2 = s2.get(var, wunit=wunit, copy=False)
+                wdiff, Idiff = curve_substract(w1, I1, w2, I2)
+            elif method == "ratio":
+                wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
+            else:
+                raise ValueError("Unknown comparison method: {0}".format(method))
+            wdiffs.append(wdiff)
+            Idiffs.append(Idiff)
+    return wdiffs, Idiffs
 
 def plot_diff(
     s1,
@@ -743,7 +864,7 @@ def plot_diff(
             print("plot_diff : Nothing to do")
         return None, None
 
-    # Normal behaviour (Minou)
+    # Time to do the real job now
     # Get defaults
     # ---
     if var is None:  # if nothing is defined, try these first:
@@ -809,47 +930,12 @@ def plot_diff(
         if verbose:
             print(("Rescale factor: " + str(ratio)))
 
-    def get_wdiff_Idiff():
-        wdiffs, Idiffs = [], []
-        for method in methods:
-            if not normalize:
-                if method == "distance":
-                    wdiff, Idiff = get_distance(
-                        s1, s2, var=var, wunit=wunit, Iunit=Iunit
-                    )
-                elif method == "diff":
-                    wdiff, Idiff = get_diff(
-                        s1,
-                        s2,
-                        var=var,
-                        wunit=wunit,
-                        Iunit=Iunit,
-                        diff_window=diff_window,
-                    )
-                elif method == "ratio":
-                    wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
-                else:
-                    raise ValueError("Unknown comparison method: {0}".format(method))
-                wdiffs.append(wdiff)
-                Idiffs.append(Idiff)
-            else:
-                if method == "distance":
-                    raise ValueError(
-                        "{0} was not implemented yet for normalized spectra".format(
-                            method
-                        )
-                    )
-                elif method == "diff":
-                    wdiff, Idiff = curve_substract(w1, I1, w2, I2)
-                elif method == "ratio":
-                    wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
-                else:
-                    raise ValueError("Unknown comparison method: {0}".format(method))
-                wdiffs.append(wdiff)
-                Idiffs.append(Idiff)
-        return wdiffs, Idiffs
+    
 
-    wdiffs, Idiffs = get_wdiff_Idiff()
+    wdiffs, Idiffs = get_wdiff_Idiff(s1, s2, var, wunit, Iunit, 
+                                     diff_window, 
+                                     normalize=False, 
+                                     method = 'diff')
 
     # Plot
     # ----
