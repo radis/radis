@@ -899,8 +899,7 @@ class SpectrumFactory(BandFactory):
             ### EXPERIMENTAL ###
 
             project_path = getProjectRoot()
-            project_path = project_path[:-5]
-            project_path += "/build/"
+            project_path += "/lbl/py_cuffs/"
             sys.path.insert(1, project_path)
 
             try:
