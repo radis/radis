@@ -65,7 +65,7 @@ def parse_hitran_file(fname, columns, count):
         linereturnformat = "a1"
     else:
         raise ValueError(
-            "Unknown `Line return` format: {0}. Check that your file {0} has the HITRAN format.".format(
+            "Unknown `Line return` format: {0}. Check that your file {1} has the HITRAN format.".format(
                 linereturn, fname
             )
         )

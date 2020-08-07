@@ -195,7 +195,7 @@ HITRAN_MOLECULES = list(trans.values())
 
 # %% Parsing functions
 
-# General case
+# General case : HITRAN 2004
 columns_2004 = OrderedDict(
     [
         (
@@ -250,7 +250,7 @@ columns_2004 = OrderedDict(
         ("gpp", ("a7", float, "lower state degeneracy", "")),
     ]
 )
-""" OrderedDict: parsing order of HITRAN """
+""" OrderedDict: parsing order of HITRAN 2004 format """
 
 
 def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
