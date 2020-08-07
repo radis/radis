@@ -347,70 +347,70 @@ def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
 #     :meth:`~radis.spectrum.spectrum.compare_with` 
 #     """
 
-#     if normalize:
-#         from radis.spectrum.operations import multiply
+    if normalize:
+        from radis.spectrum.operations import multiply
 
-#         if isinstance(normalize, tuple):
-#             wmin, wmax = normalize
-#             w1, I1 = s1.get(
-#                 var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var],
-#             )  # (faster not to copy)
-#             b = (w1 > wmin) & (w1 < wmax)
-#             if normalize_how == "max":
-#                 norm1 = np.nanmax(I1[b])
-#             elif normalize_how == "mean":
-#                 norm1 = np.nanmean(I1[b])
-#             elif normalize_how == "area":
-#                 norm1 = np.abs(nantrapz(I1[b], w1[b]))
-#             else:
-#                 raise ValueError(
-#                     "Unexpected `normalize_how`: {0}".format(normalize_how)
-#                 )
-#             # now normalize s2. Ensure we use the same unit system!
-#             w2, I2 = s2.get(
-#                 var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var]
-#             )
-#             b = (w2 > wmin) & (w2 < wmax)
-#             if normalize_how == "max":
-#                 norm2 = np.nanmax(I2[b])
-#             elif normalize_how == "mean":
-#                 norm2 = np.nanmean(I2[b])
-#             elif normalize_how == "area":
-#                 norm2 = np.abs(nantrapz(I2[b], w2[b]))
-#             else:
-#                 raise ValueError(
-#                     "Unexpected `normalize_how`: {0}".format(normalize_how)
-#                 )
-#             s1 = multiply(s1, 1 / norm1, var=var)
-#             s2 = multiply(s2, 1 / norm2, var=var)
-#         else:
-#             if normalize_how == "max":
-#                 norm1 = np.nanmax(s1.get(var, copy=False)[1])
-#                 norm2 = np.nanmax(s2.get(var)[1])
+        if isinstance(normalize, tuple):
+            wmin, wmax = normalize
+            w1, I1 = s1.get(
+                var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var],
+            )  # (faster not to copy)
+            b = (w1 > wmin) & (w1 < wmax)
+            if normalize_how == "max":
+                norm1 = np.nanmax(I1[b])
+            elif normalize_how == "mean":
+                norm1 = np.nanmean(I1[b])
+            elif normalize_how == "area":
+                norm1 = np.abs(nantrapz(I1[b], w1[b]))
+            else:
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}".format(normalize_how)
+                )
+            # now normalize s2. Ensure we use the same unit system!
+            w2, I2 = s2.get(
+                var, copy=False, wunit=s1.get_waveunit(), Iunit=s1.units[var]
+            )
+            b = (w2 > wmin) & (w2 < wmax)
+            if normalize_how == "max":
+                norm2 = np.nanmax(I2[b])
+            elif normalize_how == "mean":
+                norm2 = np.nanmean(I2[b])
+            elif normalize_how == "area":
+                norm2 = np.abs(nantrapz(I2[b], w2[b]))
+            else:
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}".format(normalize_how)
+                )
+            s1 = multiply(s1, 1 / norm1, var=var)
+            s2 = multiply(s2, 1 / norm2, var=var)
+        else:
+            if normalize_how == "max":
+                norm1 = np.nanmax(s1.get(var, copy=False)[1])
+                norm2 = np.nanmax(s2.get(var)[1])
 
-#             elif normalize_how == "mean":
-#                 norm1 = np.nanmean(s1.get(var, copy=False)[1])
-#                 norm2 = np.nanmean(s2.get(var)[1])
+            elif normalize_how == "mean":
+                norm1 = np.nanmean(s1.get(var, copy=False)[1])
+                norm2 = np.nanmean(s2.get(var)[1])
 
-#             elif normalize_how == "area":
-#                 # norm1 = s1.get_integral(var)
-#                 # norm2 = s2.get_integral(
-#                 #    var, wunit=s1.get_waveunit(), Iunit=s1.units[var]
-#                 # )
-#                 w1, I1 = s1.get(var, copy=False)
-#                 norm1 = nantrapz(I1, w1)
-#                 w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
-#                 norm2 = nantrapz(I2, w2)
+            elif normalize_how == "area":
+                # norm1 = s1.get_integral(var)
+                # norm2 = s2.get_integral(
+                #    var, wunit=s1.get_waveunit(), Iunit=s1.units[var]
+                # )
+                w1, I1 = s1.get(var, copy=False)
+                norm1 = nantrapz(I1, w1)
+                w2, I2 = s2.get(var, Iunit=s1.units[var], wunit=s1.get_waveunit())
+                norm2 = nantrapz(I2, w2)
 
-#             else:
-#                 raise ValueError(
-#                     "Unexpected `normalize_how`: {0}".format(normalize_how)
-#                 )
-#             # Ensure we use the same unit system!
-#             s1 = multiply(s1, 1 / norm1, var=var, Iunit=s1.units[var])
-#             s2 = multiply(s2, 1 / norm2, var=var, Iunit=s1.units[var])
-#             # s1 = multiply(s1, 1 / norm1, var=var)
-#             # s2 = multiply(s2, 1 / norm2, var=var)
+            else:
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}".format(normalize_how)
+                )
+            # Ensure we use the same unit system!
+            s1 = multiply(s1, 1 / norm1, var=var, Iunit=s1.units[var])
+            s2 = multiply(s2, 1 / norm2, var=var, Iunit=s1.units[var])
+            # s1 = multiply(s1, 1 / norm1, var=var)
+            # s2 = multiply(s2, 1 / norm2, var=var)
 
 #     # mask for 0
 #     wdiff, dI = get_diff(
@@ -440,7 +440,8 @@ def get_residual(s1, s2, var,
                  normalize=False,
                  verbose=False,
                  diff_window=0,
-                 ignore_nan=False):
+                 ignore_nan=False,
+                 normalize_how="max"):
     """ 
 
 
@@ -478,7 +479,19 @@ def get_residual(s1, s2, var,
         s2 = s2.copy()
         w1, I1 = s1.get(var, wunit=wunit, copy=False)
         w2, I2 = s2.get(var, wunit=wunit, copy=False)
-        ratio = np.nanmax(I1) / np.nanmax(I2)
+                
+        if normalize_how == "max":
+            ratio = np.nanmax(I1) / np.nanmax(I2)
+        elif normalize_how == "mean":
+            ratio = np.nanmean(I1) / np.nanmean(I2)
+        elif normalize_how == "area":
+            norm1 = np.abs(nantrapz(I1, w1))
+            norm2 = np.abs(nantrapz(I2, w2))
+            ratio = norm1 / norm2
+        else:
+            raise ValueError(
+                "Unexpected `normalize_how`: {0}".format(normalize_how)
+            )
         I1 /= np.nanmax(I1)
         I2 /= np.nanmax(I2)
 
