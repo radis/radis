@@ -16,7 +16,8 @@ slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
    
 For any other question you can use the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__,
 the `GitHub issues <https://github.com/radis/radis/issues>`__ or the 
-`community chat <https://gitter.im/radis-radiation/community>`__. |badge_gitter|
+community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or 
+`Slack <https://radis.github.io/slack-invite/>`__ . |badge_gitter| |badge_slack|
  
  
 .. include:: databases.rst
@@ -676,3 +677,8 @@ of :py:class:`~radis.tools.database.SpecDatabase` in a :py:class:`~radis.lbl.fac
 .. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
                   :target: https://gitter.im/radis-radiation/community
                   :alt: Gitter
+                  
+.. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+                  :target: https://radis.github.io/slack-invite/
+                  :alt: Slack
+                  

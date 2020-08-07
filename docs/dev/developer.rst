@@ -44,7 +44,11 @@ or join the community chat:
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
     :alt: Gitter
-
+  
+.. image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+    :target: https://radis.github.io/slack-invite/
+    :alt: Slack
+                  
 Finally, you can also suggest or vote for new features below:
 
 .. image:: https://feathub.com/radis/radis?format=svg

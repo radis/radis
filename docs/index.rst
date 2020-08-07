@@ -133,9 +133,10 @@ for the simple cases.
 Refer to the :ref:`Examples <label_examples>` section for more examples, and to the 
 :ref:`User Documentation <label_line_by_line>` for more details on the code.
 You can also ask questions on the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
-or on the `community chat <https://gitter.im/radis-radiation/community>`__ 
+or on the community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or 
+`Slack <https://radis.github.io/slack-invite/>`__
 
-|badge_gitter|
+|badge_gitter| |badge_slack|
 
 
 
@@ -194,7 +195,7 @@ Content
 
 `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
 
-|badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_travis| |badge_coverage| |badge_binder| |badge_gitter|
+|badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_travis| |badge_coverage| |badge_binder| |badge_gitter| |badge_slack|
     
 |badge_stars|
 
@@ -250,3 +251,9 @@ Content
 .. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
                   :target: https://gitter.im/radis-radiation/community
                   :alt: Gitter
+                  
+.. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+                  :target: https://radis.github.io/slack-invite/
+                  :alt: Slack
+                  
+                  

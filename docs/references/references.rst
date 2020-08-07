@@ -106,3 +106,7 @@ RADIS:
                   :target: https://gitter.im/radis-radiation/community
                   :alt: Gitter
     
+.. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+                  :target: https://radis.github.io/slack-invite/
+                  :alt: Slack
+                  

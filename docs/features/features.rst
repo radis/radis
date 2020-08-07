@@ -43,6 +43,10 @@ on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ o
     :target: https://gitter.im/radis-radiation/community
     :alt: Gitter
 
+.. image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+    :target: https://radis.github.io/slack-invite/
+    :alt: Slack
+                  
 
 Use Cases
 ---------
