@@ -1,5 +1,5 @@
- | Users: |badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_binder| |badge_gitter| |badge_slack| 
- | Devs : |badge_contributors| |badge_travis| |badge_coverage| |badge_license| 
+ | |badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_binder| |badge_gitter| |badge_slack| 
+ | |badge_contributors| |badge_travis| |badge_coverage| |badge_license| 
     
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
@@ -260,7 +260,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                   :target: https://gitter.im/radis-radiation/community
                   :alt: Gitter
                   
-.. |badge_slack| image:: https://img.shields.io/badge/slack-join%20chat-green.svg?logo=slack
+.. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
                   
