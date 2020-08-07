@@ -596,8 +596,10 @@ def _calc_spectrum(
                     buffer="npy",
                 )
             else:
-                print(
-                    "Non equilibirum spectra calculation not yet supported with npy databank"
+                raise (
+                    AttributeError(
+                        "Non equilibirum spectra calculation not yet supported with npy databank"
+                    )
                 )
         else:
             raise ValueError(

@@ -91,6 +91,7 @@ from radis.spectrum.equations import calc_radiance
 from radis.misc.basics import is_float, list_if_float, flatten
 from radis.misc.printer import printg
 from radis.misc.utils import Default
+from radis.misc import getProjectRoot
 from radis.phys.convert import conv2
 from radis.phys.constants import k_b
 from radis.phys.units import convert_rad2nm, convert_emi2nm
@@ -102,9 +103,8 @@ from time import time
 import numpy as np
 import astropy.units as u
 import math
-import py_cuffs
-
-# import os
+import sys
+from subprocess import call
 
 # %% Main functions
 class SpectrumFactory(BandFactory):
@@ -898,20 +898,34 @@ class SpectrumFactory(BandFactory):
 
             ### EXPERIMENTAL ###
 
-            # try:
-            #     import py_cuffs
-            # except:
-            #     pass
-            # try:
-            #     print("py_cuFFS module not found in directory...")
-            #     print("Compiling module from source...")
-            #     os.system("python setup.py build_ext --inplace")
-            #     print("Finished compilation...trying to import module again")
-            #     import py_cuffs
-            #     print("py_cuFFS imported succesfully!")
-            # except:
-            #     raise (ModuleNotFoundError("Failed to load py_cuFFS module, program will exit."))
-            #     exit()
+            project_path = getProjectRoot()
+            project_path = project_path[:-5]
+            project_path += "/build/"
+            sys.path.insert(1, project_path)
+
+            try:
+                import py_cuffs
+            except:
+                try:
+                    print("py_cuFFS module not found in directory...")
+                    print("Compiling module from source...")
+
+                    call(
+                        "python setup.py build_ext --inplace",
+                        cwd=project_path,
+                        shell=True,
+                    )
+                    print("Finished compilation...trying to import module again")
+                    import py_cuffs
+
+                    print("py_cuFFS imported succesfully!")
+                except:
+                    raise (
+                        ModuleNotFoundError(
+                            "Failed to load py_cuFFS module, program will exit."
+                        )
+                    )
+                    exit()
 
             ### --- ###
 
