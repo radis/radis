@@ -394,6 +394,7 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     # DLM, real space
     if verbose:
         print("\nConvolve version \n")
+    sf._broadening_method = "convolve"
     s_dlm = sf.eq_spectrum(Tgas=T)
     s_dlm.name = "DLM ({0:.2f}s)".format(s_dlm.conditions["calculation_time"])
 
