@@ -875,7 +875,7 @@ def iterate(float p, float T):
     DLM = cp.asnumpy(host_params_h_DLM_d_in)
     #DLM /= 0.8816117 #difference between current code and benchmark.
     host_params_h_stop_DLM.record()
-    #cp.cuda.runtime.eventSynchronize(host_params_h_stop_DLM_ptr)
+    host_params_h_stop_DLM.synchronize()
     host_params_h_elapsedTimeDLM = cp.cuda.get_elapsed_time(host_params_h_start_DLM, host_params_h_stop_DLM)
     print("<<<LAUNCHED>>> ", end = " ")
 
@@ -910,6 +910,7 @@ def iterate(float p, float T):
     spectrum_h = host_params_h_spectrum_d_out.get()[:init_params_h.N_v] / init_params_h.dv
 
     host_params_h_stop.record()
+    host_params_h_stop.synchronize()
     host_params_h_elapsedTime = cp.cuda.get_elapsed_time(host_params_h_start, host_params_h_stop)
 
     print("[rG = {0}%".format((np.exp(iter_params_h.log_dwG) - 1) * 100), end = " ")
