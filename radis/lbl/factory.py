@@ -928,6 +928,8 @@ class SpectrumFactory(BandFactory):
 
             ### --- ###
 
+            t0 = time()
+
             # generate the v_arr
             v_arr = np.arange(
                 self.input.wavenum_min,
@@ -957,7 +959,6 @@ class SpectrumFactory(BandFactory):
             print("done!")
             # Calculate output quantities
             # ----------------------------------------------------------------------
-
             if self.verbose >= 2:
                 t1 = time()
 
@@ -982,9 +983,19 @@ class SpectrumFactory(BandFactory):
 
             # %% Export
             # --------------------------------------------------------------------
+            t = round(time() - t0, 2)
             if self.verbose >= 2:
                 t1 = time()
             # Get lines (intensities + populations)
+
+            conditions = self.get_conditions()
+            conditions.update(
+                {
+                    "calculation_time": t,
+                    "thermal_equilibrium": True,
+                    "radis_version": get_version(add_git_number=False),
+                }
+            )
 
             # Spectral quantities
             quantities = {
