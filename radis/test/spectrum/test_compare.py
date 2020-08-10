@@ -91,25 +91,6 @@ def test_plot_compare_with_nan(
     s = Radiance_noslit(s)
     s._q["radiance_noslit"][0] = np.nan
 
-    # Test get_residual methods when there are nans in the spectra
-    diff1 = get_residual(
-        s,
-        s * 1.2,
-        var="radiance_noslit",
-        ignore_nan=True,
-        normalize=True,
-        normalize_how="mean",
-    )
-    diff2 = get_residual(
-        s,
-        s * 1.2,
-        var="radiance_noslit",
-        ignore_nan=True,
-        normalize=True,
-        normalize_how="area",
-    )
-    # TODO Write similar testcase for normalize_how="mean"
-
     # Test Plot function when there are Nans in the spectrum:
     if plot:
         s.plot(normalize=True)
@@ -121,6 +102,63 @@ def test_plot_compare_with_nan(
         plot_diff(s, s * 1.2, "radiance_noslit", normalize=(2000, 2100))
 
 
+def test_get_residual():
+    from radis import calc_spectrum, experimental_spectrum
+
+    s1 = calc_spectrum(
+        1900,
+        2300,
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,
+        Tgas=1000,
+        mole_fraction=0.1,
+    )
+    s1.apply_slit(1, "nm")
+    w1, I1 = s1.get("radiance", copy=False, wunit=s1.get_waveunit())
+
+    # Fake experimental spectrum (identical)
+    s_expe_1 = experimental_spectrum(w1, I1, Iunit="mW/cm2/sr/nm", wunit="cm-1")
+    residual1 = get_residual(
+        s1,
+        s_expe_1,
+        "radiance",
+        # ignore_nan=False,
+        normalize=True,
+    )
+    assert residual1 == 0
+
+    # Fake experimental spectrum with a new unit (but identical)
+    I2 = I1 * 1e-3
+    s_expe_2 = experimental_spectrum(w1, I2, Iunit="W/cm2/sr/nm", wunit="cm-1")
+
+    for bool_test in [True, False]:
+        residual2 = get_residual(
+            s1,
+            s_expe_2,
+            "radiance",
+            # ignore_nan=False,
+            normalize=bool_test,
+        )
+        assert residual2 < 1e-10
+
+    # Fake experimental spectrum with a nan
+    I3 = I1.copy()
+    I3[0] = np.nan
+    s_expe_3 = experimental_spectrum(w1, I3, Iunit="W/cm2/sr/nm", wunit="cm-1")
+
+    for bool_how in ["max", "area", "mean"]:
+        residual3 = get_residual(
+            s1,
+            s_expe_3,
+            "radiance",
+            ignore_nan=True,
+            normalize=True,
+            normalize_how=bool_how,
+        )
+        assert residual3 == 0
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     """ Test procedures
     """
@@ -129,6 +167,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     # ----------------------------------
     test_compare_methods(verbose=verbose, plot=plot, *args, **kwargs)
     test_plot_compare_with_nan(verbose=verbose, plot=True, *args, **kwargs)
+    test_get_residual()
     return True
 
 

@@ -215,7 +215,7 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
     w_cm = nm2cm(w_nm)
     I_nm = planck(w_nm, T=6000, unit="mW/sr/cm2/nm")
 
-    s = calculated_spectrum(w_nm, I_nm, wunit="nm_vac", Iunit="mW/sr/cm2/nm",)
+    s = calculated_spectrum(w_nm, I_nm, wunit="nm_vac", Iunit="mW/sr/cm2/nm")
 
     # mW/sr/cm2/nm -> mW/sr/cm2/cm-1
     w, I = s.get("radiance_noslit", Iunit="mW/sr/cm2/cm_1")

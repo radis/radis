@@ -256,13 +256,19 @@ def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
     # euclidian distance from w1, I1
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)
 
-def get_residual(s1, s2, var, 
-                 Iunit='default', wunit='default', 
-                 normalize=False,
-                 verbose=False,
-                 diff_window=0,
-                 ignore_nan=False,
-                 normalize_how="max"):
+
+def get_residual(
+    s1,
+    s2,
+    var,
+    Iunit="default",
+    wunit="default",
+    normalize=False,
+    verbose=False,
+    diff_window=0,
+    ignore_nan=False,
+    normalize_how="max",
+):
     """ 
     Returns L2 norm of ``s1 - s2``
 
@@ -314,11 +320,12 @@ def get_residual(s1, s2, var,
         ``'mean'`` will normalize by the mean amplitude value
     """
     from numpy.linalg import norm
-    if Iunit == 'default':
+
+    if Iunit == "default":
         Iunit = s1.units[var]
-    if wunit == 'default':
+    if wunit == "default":
         wunit = s1.get_waveunit()
-    
+
     # Get data
     # ----
     if normalize:
@@ -327,7 +334,7 @@ def get_residual(s1, s2, var,
         s2 = s2.copy()
         w1, I1 = s1.get(var, wunit=wunit, copy=False)
         w2, I2 = s2.get(var, wunit=wunit, copy=False)
-                
+
         if normalize_how == "max":
             ratio = np.nanmax(I1) / np.nanmax(I2)
         elif normalize_how == "mean":
@@ -337,22 +344,19 @@ def get_residual(s1, s2, var,
             norm2 = np.abs(nantrapz(I2, w2))
             ratio = norm1 / norm2
         else:
-            raise ValueError(
-                "Unexpected `normalize_how`: {0}".format(normalize_how)
-            )
+            raise ValueError("Unexpected `normalize_how`: {0}".format(normalize_how))
         I1 /= np.nanmax(I1)
         I2 /= np.nanmax(I2)
 
         if verbose:
             print(("Rescale factor: " + str(ratio)))
-            
-    _, Idiffs = get_wdiff_Idiff(s1, s2, var, wunit, Iunit, 
-                                      diff_window, 
-                                      normalize=normalize, 
-                                      method = 'diff')
+
+    _, Idiffs = get_wdiff_Idiff(
+        s1, s2, var, wunit, Iunit, diff_window, normalize=normalize, method="diff"
+    )
     Idiffs = np.array(Idiffs)
-    
-    #Nan handeling
+
+    # Nan handeling
     b = np.isnan(Idiffs)
     if not ignore_nan and b.any():
         warningText = (
@@ -362,6 +366,7 @@ def get_residual(s1, s2, var,
     if ignore_nan:
         Idiffs = Idiffs[~b]
     return norm(Idiffs, ord=2)
+
 
 def get_residual_integral(s1, s2, var, ignore_nan=False):
     # type: (Spectrum, Spectrum, str, bool) -> float
@@ -486,16 +491,17 @@ def _get_defaults(
 
     return w1, I1, w2, I2
 
-def get_wdiff_Idiff(s1, s2, var, wunit, Iunit, diff_window, 
-                    normalize=False, 
-                    method = 'diff'):
+
+def get_wdiff_Idiff(
+    s1, s2, var, wunit, Iunit, diff_window, normalize=False, method="diff"
+):
     """    
     diff_window: int
         If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
         units on either side, and returns the minimum. Compensates for experimental
         errors on the w axis. Default 0. (look up code for more details...)
     """
-    
+
     if isinstance(method, list):
         methods = method
     else:
@@ -504,17 +510,10 @@ def get_wdiff_Idiff(s1, s2, var, wunit, Iunit, diff_window,
     for method in methods:
         if not normalize:
             if method == "distance":
-                wdiff, Idiff = get_distance(
-                    s1, s2, var=var, wunit=wunit, Iunit=Iunit
-                )
+                wdiff, Idiff = get_distance(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
             elif method == "diff":
                 wdiff, Idiff = get_diff(
-                    s1,
-                    s2,
-                    var=var,
-                    wunit=wunit,
-                    Iunit=Iunit,
-                    diff_window=diff_window,
+                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, diff_window=diff_window
                 )
             elif method == "ratio":
                 wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
@@ -525,12 +524,10 @@ def get_wdiff_Idiff(s1, s2, var, wunit, Iunit, diff_window,
         else:
             if method == "distance":
                 raise ValueError(
-                    "{0} was not implemented yet for normalized spectra".format(
-                        method
-                    )
+                    "{0} was not implemented yet for normalized spectra".format(method)
                 )
             elif method == "diff":
-                #we already multiplied the values of I1 and I2 by ratio
+                # we already multiplied the values of I1 and I2 by ratio
                 w1, I1 = s1.get(var, wunit=wunit, copy=False)
                 w2, I2 = s2.get(var, wunit=wunit, copy=False)
                 wdiff, Idiff = curve_substract(w1, I1, w2, I2)
@@ -541,6 +538,7 @@ def get_wdiff_Idiff(s1, s2, var, wunit, Iunit, diff_window,
             wdiffs.append(wdiff)
             Idiffs.append(Idiff)
     return wdiffs, Idiffs
+
 
 def plot_diff(
     s1,
@@ -791,12 +789,9 @@ def plot_diff(
         if verbose:
             print(("Rescale factor: " + str(ratio)))
 
-    
-
-    wdiffs, Idiffs = get_wdiff_Idiff(s1, s2, var, wunit, Iunit, 
-                                     diff_window, 
-                                     normalize=False, 
-                                     method = 'diff')
+    wdiffs, Idiffs = get_wdiff_Idiff(
+        s1, s2, var, wunit, Iunit, diff_window, normalize=False, method="diff"
+    )
 
     # Plot
     # ----

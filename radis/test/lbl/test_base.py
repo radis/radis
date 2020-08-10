@@ -398,7 +398,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
     finally:
         # Reset DEBUG_MODE
-        radis.DEBUG_MODE = DEBUG_MODE
+        radis.DEBUG_MODE = DEBUG_MODE  
 
 
 def _run_testcases(verbose=True, plot=True):
@@ -408,57 +408,5 @@ def _run_testcases(verbose=True, plot=True):
     test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
     test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
 
-
 if __name__ == "__main__":
-    # _run_testcases()
-    
-    from radis import calc_spectrum, get_residual, experimental_spectrum, plot_diff
-    s1 = calc_spectrum(1900, 2300,
-                      molecule='CO',
-                      isotope='1,2,3',
-                      pressure=1.01325,
-                      Tgas=1000,
-                      mole_fraction=0.1,
-                      )
-    s1.apply_slit(1, 'nm')
-    
-    #s2 is like s1 but at 1001 K - to have an order of magnitude for residual
-    s2 = calc_spectrum(1900, 2300,         
-                      molecule='CO',
-                      isotope='1,2,3',
-                      pressure=1.01325,
-                      Tgas=1001, #HERE IS THE DIFFERENCE
-                      mole_fraction=0.1,
-                      )
-    s2.apply_slit(1, 'nm')
-    residual_ref = get_residual(s1, s2, 'radiance', 
-                                # ignore_nan=False, 
-                                normalize=True)
-    
-    w1, I1 = s1.get('radiance', copy=False, wunit=s1.get_waveunit())
-    
-    #Fake experimental spectrum (identical)
-    s_expe_1 = experimental_spectrum(w1, I1, Iunit="mW/cm2/sr/nm", wunit="cm-1") 
-    
-    #Fake experimental spectrum with a new unit (but identical)
-    I2 = I1*1e-3
-    s_expe_2 = experimental_spectrum(w1, I2, Iunit="W/cm2/sr/nm", wunit="cm-1") 
-    
-    #Fake experimental spectrum with a nan
-    I3 = I1.copy()
-    I3[0] = np.nan
-    s_expe_3 = experimental_spectrum(w1, I3, Iunit="W/cm2/sr/nm", wunit="cm-1") 
-    
-    
-    
-    residual1 = get_residual(s1, s_expe_1, 'radiance', 
-                             # ignore_nan=False, 
-                             normalize=True)
-    residual2 = get_residual(s1, s_expe_2, 'radiance', 
-                             # ignore_nan=False, 
-                             normalize=True)
-    residual3 = get_residual(s1, s_expe_2, 'radiance', 
-                              ignore_nan=True, 
-                             normalize=True)
-    
-    print(residual1, residual2, residual3, residual_ref)
+    _run_testcases()
