@@ -334,21 +334,22 @@ def get_residual(
         s2 = s2.copy()
         w1, I1 = s1.get(var, wunit=wunit, copy=False)
         w2, I2 = s2.get(var, wunit=wunit, copy=False)
-
         if normalize_how == "max":
-            ratio = np.nanmax(I1) / np.nanmax(I2)
+            norm1 = np.nanmax(I1) 
+            norm2 = np.nanmax(I2)
         elif normalize_how == "mean":
-            ratio = np.nanmean(I1) / np.nanmean(I2)
+            norm1 = np.nanmean(I1) 
+            norm2 = np.nanmean(I2)
         elif normalize_how == "area":
             norm1 = np.abs(nantrapz(I1, w1))
             norm2 = np.abs(nantrapz(I2, w2))
-            ratio = norm1 / norm2
         else:
             raise ValueError("Unexpected `normalize_how`: {0}".format(normalize_how))
-        I1 /= np.nanmax(I1)
-        I2 /= np.nanmax(I2)
+        I1 /= norm1
+        I2 /= norm2
 
         if verbose:
+            ratio = norm1 / norm2
             print(("Rescale factor: " + str(ratio)))
 
     _, Idiffs = get_wdiff_Idiff(
@@ -361,6 +362,12 @@ def get_residual(
     if not ignore_nan and b.any():
         warningText = (
             'NaN output in residual. You should use "ignore_nan=True". Read the help.'
+        )
+        warn(warningText, UserWarning)
+        
+    if b.any() and normalize_how == "mean":
+        warningText = (
+            "The 'normalize_how=mean' method seams to be not adapted for spectra with NaN. Consider using 'normalize_how=mean' "
         )
         warn(warningText, UserWarning)
     if ignore_nan:
