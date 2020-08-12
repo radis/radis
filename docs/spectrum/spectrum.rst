@@ -539,6 +539,14 @@ For instance, remove a constant baseline in a given unit::
 
     s -= 0.1 * u.Unit('W/cm2/sr/nm')     
 
+Here, se normalize a spectrum manually, assuming the spectrum units is in "mW/cm2/sr/nm" :: 
+
+    s /= s.max() * u.Unit("mW/cm2/sr/nm")
+
+Or below, we calibrate a Spectrum, assuming the spectrum units is in "count" ::
+
+    s *= 100 * u.Unit("mW/cm2/sr/nm/count")
+
 
 .. _label_spectrum_offset_crop:
 
@@ -558,6 +566,28 @@ so they can be used directly with::
 By default, using methods will modify the object inplace, using the functions will 
 generate a new Spectrum. 
     
+Normalize
+---------
+
+Use :py:meth:`~radis.spectrum.spectrum.normalize` directly, if your spectrum
+only has one spectral quantity ::
+
+    s.normalize()
+    s.normalize(normalize_how="max")
+    s.normalize(normalize_how="area")
+    
+You can also normalize only on limited range. Useful for noisy spectra ::
+
+    s.normalize(wrange=(2250, 2500), wunit="cm-1", normalize_how="mean")    
+
+This returns a new spectrum and does not modify the Spectrum itself. To do so use::
+
+    s.normalize(inplace=True)
+    
+You can chain the commands : 
+
+    s.normalize().plot()
+
 
 .. _label_spectrum_remove_baseline:
 

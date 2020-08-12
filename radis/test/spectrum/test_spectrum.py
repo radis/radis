@@ -356,6 +356,36 @@ def test_noplot_different_quantities(*args, **kwargs):
     plt.close("test_noplot_different_quantities")
 
 
+@pytest.mark.fast
+def test_normalization(*args, **kwargs):
+
+    from radis import load_spec, Radiance
+    from radis.test.utils import getTestFile
+
+    # Generate the equivalent of an experimental spectrum
+    s = load_spec(getTestFile(r"CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update()  # add radiance, etc.
+    s.apply_slit(0.5)  # nm
+    s = Radiance(s)
+
+    # Test normalization
+    assert s.units["radiance"] != ""
+    s.normalize()
+    assert s.max() != 1
+    s.normalize(inplace=True)
+    assert s.max() == 1
+    assert s.normalize().units["radiance"] == ""
+
+    s2 = s.normalize(normalize_how="area")
+    assert np.isclose(s2.get_integral("radiance", wunit=s2.get_waveunit()), 1)
+
+    #
+    s3 = s.normalize(wrange=((2125, 2150)), normalize_how="area")
+    assert np.isclose(
+        s3.crop(2125, 2150).get_integral("radiance", wunit=s3.get_waveunit()), 1
+    )
+
+
 # %%
 
 
@@ -409,6 +439,8 @@ def _run_testcases(
     test_resampling_function(
         debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs
     )
+
+    test_normalization(*args, **kwargs)
 
     # Test plot firewalls:
     test_noplot_different_quantities(*args, **kwargs)

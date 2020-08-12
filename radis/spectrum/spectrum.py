@@ -61,10 +61,7 @@ from radis.spectrum.utils import (
 from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
 
 # from radis.lbl.base import print_conditions
-from radis.misc.arrays import (
-    evenly_distributed,
-    count_nans,
-)
+from radis.misc.arrays import evenly_distributed, count_nans, nantrapz
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample
 from warnings import warn
@@ -3578,13 +3575,15 @@ class Spectrum(object):
 
         return ""  # self.print_conditions()
 
-    # %% Add min, max operations
+    # %% Add min, max, normalize operations
 
-    def _get_unique_var(self):
+    def _get_unique_var(self, operation_name="algebraic"):
         quantities = self.get_vars()
         if len(quantities) > 1:
             raise KeyError(
-                "There is an ambiguity with the Spectrum algebraic operation. "
+                "There is an ambiguity with the Spectrum {0} operation. ".format(
+                    operation_name
+                )
                 + "There should be only one var in Spectrum {0}. Got {1}\n".format(
                     self.get_name(), self.get_vars()
                 )
@@ -3612,7 +3611,7 @@ class Spectrum(object):
             Radiance(s).max() 
         """
 
-        var = self._get_unique_var()
+        var = self._get_unique_var(operation_name="max")
         w, I = self.get(var, wunit=self.get_waveunit(), copy=False)
         return I.max()
 
@@ -3629,9 +3628,105 @@ class Spectrum(object):
             Radiance(s).min() 
         """
 
-        var = self._get_unique_var()
+        var = self._get_unique_var(operation_name="min")
         w, I = self.get(var, wunit=self.get_waveunit(), copy=False)
         return I.min()
+
+    def normalize(
+        self, normalize_how="max", wrange=(), wunit=None, inplace=False, force=False
+    ):
+        """ Normalise the Spectrum, if only one spectral quantity is available.
+        
+        Parameters
+        ----------
+                
+            normalize_how: ``'max'``, ``'area'``, ``'mean'``
+                how to normalize. ``'max'`` is the default but may not be suited for very
+                noisy experimental spectra. ``'area'`` will normalize the integral to 1.
+                ``'mean'`` will normalize by the mean amplitude value
+
+            wrange: tuple
+                if not empty, normalize on this range
+                
+            wunit: ``"nm"``, ``"cm-1"``, ``"nm_vac"``
+                unit of the normalisation range above. If ``None``, use the 
+                spectrum default waveunit. 
+                
+            inplace: bool
+                if ``True``, changes the Spectrum. 
+                
+        Other Parameters
+        ----------------
+        
+            force: bool
+                By default, normalizing some parametres such as transmittance 
+                is forbidden because considered non-physical. Use force=True
+                if you really want to. 
+        
+        Examples
+        --------
+        
+            s.normalize("max", (4200, 4800), inplace=True)
+        
+        """
+
+        from radis.spectrum.operations import multiply
+
+        var = self._get_unique_var(operation_name="normalize")
+
+        if var in ["transmittance", "transmittance_noslit"] and not force:
+            raise ValueError(
+                "Cannot normalize {0}. Use force=True if you really want.".format(var)
+            )
+
+        s = self
+
+        if wunit is None:
+            wunit = s.get_waveunit()
+
+        if wrange is not None and len(wrange) > 0:
+            wmin, wmax = wrange
+            w, I = s.get(var, wunit=wunit, copy=False)  # (faster not to copy)
+            b = (w > wmin) & (w < wmax)
+            if normalize_how == "max":
+                norm = np.nanmax(I[b])
+                norm_unit = s.units[var]
+            elif normalize_how == "mean":
+                norm = np.nanmean(I[b])
+                norm_unit = s.units[var]
+            elif normalize_how == "area":
+                norm = np.abs(nantrapz(I[b], w[b]))
+                norm_unit = u.Unit(s.units[var]) * u.Unit(wunit)
+            else:
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}".format(normalize_how)
+                )
+
+            out = multiply(s, 1 / norm, unit=norm_unit, inplace=inplace)
+
+        else:
+            if normalize_how == "max":
+                norm = np.nanmax(s.get(var, copy=False)[1])
+                norm_unit = s.units[var]
+
+            elif normalize_how == "mean":
+                norm = np.nanmean(s.get(var, copy=False)[1])
+                norm_unit = s.units[var]
+
+            elif normalize_how == "area":
+
+                w, I = s.get(var, wunit=wunit, copy=False)
+                norm = nantrapz(I, w)
+                norm_unit = u.Unit(s.units[var]) * u.Unit(wunit)
+
+            else:
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}".format(normalize_how)
+                )
+            # Ensure we use the same unit system!
+            out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
+
+        return out
 
     # %% Define Spectrum Algebra
     # +, -, *, ^  operators

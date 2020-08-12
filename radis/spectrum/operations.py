@@ -515,7 +515,7 @@ def multiply(s, coef, unit=None, var=None, inplace=False):
     # Convert Spectrum unit
     if unit is not None:
         Iunit = s.units[var]
-        s.units[var] = (Iunit * unit).to_string()
+        s.units[var] = (u.Unit(Iunit) * u.Unit(unit)).to_string()
 
     return s
 

@@ -284,7 +284,7 @@ def test_dimensioned_operations(*args, **kwargs):
     # Example : a manual normalization
     s /= s.max() * u.Unit("mW/cm2/sr/nm")
 
-    assert s.units["radiance"] == "1.0"  # normalized
+    assert s.units["radiance"] == ""  # normalized
     assert s.max() == 1.0
 
     # Test Multiplication
