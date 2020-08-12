@@ -55,7 +55,7 @@ Most of these functions are implemented with the standard operators. Ex::
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
-# from radis.misc.curve import curve_substract, curve_add
+import astropy.units as u
 from radis.spectrum import Spectrum
 from radis.phys.convert import (
     cm2nm,
@@ -525,8 +525,8 @@ def add_constant(s, cst, unit=None, var=None, inplace=False):
     ----------
     s: Spectrum objects
         Spectrum you want to modify
-    cst: Float
-        Constant to add.
+    cst: float
+        Constant to add. 
     unit: str
         unit for ``cst``. If ``None``, uses the default unit in ``s`` for 
         variable ``var``.
@@ -551,6 +551,9 @@ def add_constant(s, cst, unit=None, var=None, inplace=False):
     """
     # Check input
     var = _get_unique_var(s, var, inplace)
+
+    # Note: using dimensioned value for `cst` will make it an array,
+    # processed by add_array
 
     # Convert to Spectrum unit
     if unit is not None:
@@ -583,9 +586,9 @@ def add_array(s, a, unit=None, var=None, inplace=False):
     ----------
     s: Spectrum objects
         Spectrum you want to modify
-    a: numpy array
+    a: numpy array, or `~astropy.units.quantity.Quantity`
         array to add. Must have the same length as variable ``var`` in Spectrum 
-        ``s``
+        ``s``. Can be dimensioned with :py:mod:`~astropy.units`. 
     unit: str
         unit for ``a``. If ``None``, uses the default unit in ``s`` for 
         variable ``var``.
@@ -618,6 +621,15 @@ def add_array(s, a, unit=None, var=None, inplace=False):
     """
     # Check input
     var = _get_unique_var(s, var, inplace)
+
+    # Case where a is dimensioned
+    if isinstance(a, u.quantity.Quantity):
+        if unit is not None:
+            raise ValueError(
+                "Cannot use unit= when giving a dimensioned array ({0})".format(a.unit)
+            )
+        unit = a.unit
+        a = a.value
 
     # Convert to Spectrum unit
     if unit is not None:
@@ -680,6 +692,28 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
 
     # Check input
     var = _get_unique_var(s, var, inplace)
+
+    # Case where left, right are dimensioned
+    if isinstance(left, u.quantity.Quantity) or isinstance(right, u.quantity.Quantity):
+        if unit is not None:
+            raise ValueError(
+                "Cannot use unit= when giving a dimensioned array ({0})".format(
+                    left.unit
+                )
+            )
+        if not isinstance(left, u.quantity.Quantity) or not isinstance(
+            right, u.quantity.Quantity
+        ):
+            raise ValueError(
+                "Both left and right arguments must be dimensioned with the same unit"
+            )
+        if left.unit != right.unit:
+            raise ValueError(
+                "Both left and right arguments must be dimensioned with the same unit"
+            )
+        unit = left.unit
+        left = left.value
+        right = right.value
 
     # Convert to Spectrum unit
     if unit is not None:

@@ -3256,15 +3256,15 @@ def get_waverange(
         ----------
         medium: ``'air'``, ``'vacuum'``
             propagation medium
-        wmin, wmax: float, or ~astropy.units.quantity.Quantity or ``None``
+        wmin, wmax: float, or `~astropy.units.quantity.Quantity` or ``None``
             hybrid parameters that can serve as both wavenumbers or wavelength depending on the unit accompanying them.
             If unitless, wunit is assumed as the accompanying unit.
         wunit: string
             The unit accompanying wmin and wmax. Cannot be passed without passing values for wmin and wmax.
             Default: cm-1
-        wavenum_min, wavenum_max: float, or ~astropy.units.quantity.Quantity or ``None``
+        wavenum_min, wavenum_max: float, or `~astropy.units.quantity.Quantity` or ``None``
             wavenumbers
-        wavelength_min, wavelength_max: float, or ~astropy.units.quantity.Quantity or ``None``
+        wavelength_min, wavelength_max: float, or `~astropy.units.quantity.Quantity` or ``None``
             wavelengths in given ``medium``
         Returns
         -------

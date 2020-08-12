@@ -534,6 +534,11 @@ the spectral radiance of a spectrum with a low resolution::
 
     (10*Radiance(s.apply_slit(10, 'nm'))).plot()
 
+Algebraic operations also work with dimensioned `~astropy.units.quantity.Quantity`. 
+For instance, remove a constant baseline in a given unit::
+
+    s -= 0.1 * u.Unit('W/cm2/sr/nm')     
+
 
 .. _label_spectrum_offset_crop:
 

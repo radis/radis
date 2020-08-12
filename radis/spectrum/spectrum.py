@@ -345,6 +345,8 @@ class Spectrum(object):
         self.populations = populations
         self.lines = lines
         self.units = units
+        """ dict: units for spectral quantities. 
+        """
         self.cond_units = cond_units
         self.name = name
         self.file = None  # used to store filename when loaded from a file
@@ -624,8 +626,9 @@ class Spectrum(object):
             Default ``nm`` (wavelength in air).
 
         Iunit: unit for variable ``var``
-            if 'default', default unit for quantity `var` is used. See Spectrum.units
-            to get the units. for radiance, one can use per wavelength (~ 'W/m2/sr/nm')
+            if ``"default"``, default unit for quantity `var` is used. See the 
+            :py:attr:`~radis.spectrum.spectrum.Spectrum.units` attribute. 
+            For ``var="radiance"``, one can use per wavelength (~ 'W/m2/sr/nm')
             or per wavenumber (~ 'W/m2/sr/cm-1') units
 
         Other Parameters
@@ -3345,9 +3348,9 @@ class Spectrum(object):
             if ``True``, use plot_diff to plot all quantities for the 2 spectra
             and the difference between them. Default ``True``.
 
-        wunit: 'nm', 'cm-1', 'default'
-            in which wavespace to compare (and plot). If default, natural wavespace
-            of first Spectrum is taken
+        wunit: ``"nm"``, ``"cm-1"``, ``"default"``
+            in which wavespace to compare (and plot). If ``"default"``, natural wavespace
+            of first Spectrum is taken.
 
         rtol: float
             relative difference to use for spectral quantities comparison
