@@ -453,21 +453,7 @@ def _get_unique_var(s, var, inplace):
     """
     # If var is undefined, get it if there is no ambiguity
     if var is None:
-        quantities = s.get_vars()
-        if len(quantities) > 1:
-            raise KeyError(
-                "There is an ambiguity with the Spectrum algebraic operation. "
-                + "There should be only one var in Spectrum {0}. Got {1}\n".format(
-                    s.get_name(), s.get_vars()
-                )
-                + "Think about using 'Transmittance(s)', 'Radiance(s)', etc."
-            )
-        elif len(quantities) == 0:
-            raise KeyError(
-                "No spectral quantity defined in Spectrum {0}".format(s.get_name())
-            )
-        else:
-            var = quantities[0]
+        var = s._get_unique_var()
     # If inplace, assert there is only one var
     if inplace and len(s.get_vars()) > 1:
         raise ValueError(
@@ -477,15 +463,18 @@ def _get_unique_var(s, var, inplace):
     return var
 
 
-def multiply(s, coef, var=None, inplace=False):
+def multiply(s, coef, unit=None, var=None, inplace=False):
     """Multiply s[var] by the float 'coef'
 
     Parameters
     ----------
-    s: Spectrum objects
-        The spectra to multiply.
+    s: Spectrum object
+        The spectrum to multiply.
     coef: float
         Coefficient of the multiplication.
+    unit: str. 
+        unit for ``coef``. If ``None``, ``coef`` is considered to be 
+        adimensioned. Else, the spectrum `~radis.spectrum.spectrum.Spectrum.units` is multiplied. 
     var: str, or ``None``
         'radiance', 'transmittance', ... If ``None``, get the unique spectral
         quantity of ``s`` or raises an error if there is any ambiguity
@@ -503,6 +492,17 @@ def multiply(s, coef, var=None, inplace=False):
     # Check input
     var = _get_unique_var(s, var, inplace)
 
+    # Case where a is dimensioned
+    if isinstance(coef, u.quantity.Quantity):
+        if unit is not None:
+            raise ValueError(
+                "Cannot use unit= when giving a dimensioned array ({0})".format(
+                    coef.unit
+                )
+            )
+        unit = coef.unit
+        coef = coef.value
+
     if not inplace:
         s = s.copy(quantity=var)
     #        if name is not None:
@@ -511,6 +511,11 @@ def multiply(s, coef, var=None, inplace=False):
     # Multiply inplace       ( @dev: we have copied already if needed )
     w, I = s.get(var, wunit=s.get_waveunit(), copy=False)
     I *= coef  # @dev: updates the Spectrum directly because of copy=False
+
+    # Convert Spectrum unit
+    if unit is not None:
+        Iunit = s.units[var]
+        s.units[var] = (Iunit * unit).to_string()
 
     return s
 

@@ -280,6 +280,23 @@ def test_dimensioned_operations(*args, **kwargs):
 
     assert np.isclose(s.get("radiance")[1].max(), Imax)
 
+    # Test division
+    # Example : a manual normalization
+    s /= s.max() * u.Unit("mW/cm2/sr/nm")
+
+    assert s.units["radiance"] == "1.0"  # normalized
+    assert s.max() == 1.0
+
+    # Test Multiplication
+    # example : a manual Calibration
+    s.units["radiance"] = "count"
+    s *= 100 * u.Unit("mW/cm2/sr/nm/count")
+
+    assert u.Unit(s.units["radiance"]) == u.Unit(
+        "mW/cm2/sr/nm"
+    )  # check units are valid
+    assert s.units["radiance"] == "mW / (cm2 nm sr)"  # check units have been simplified
+
 
 def _run_testcases(verbose=True, plot=False, *args, **kwargs):
     """ Test procedures
