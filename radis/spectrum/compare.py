@@ -312,12 +312,23 @@ def get_residual(
             
             s_exp   # in 'nm'
             s_calc  # in 'cm-1'
-            get_residual(s_exp, s_calc, normalize=(4178, 4180))  # interpreted as 'nm'
+            get_residual(s_exp, s_calc, normalize=True)  
 
     normalize_how: ``'max'``, ``'area'``, ``'mean'``
         how to normalize. ``'max'`` is the default but may not be suited for very
         noisy experimental spectra. ``'area'`` will normalize the integral to 1.
-        ``'mean'`` will normalize by the mean amplitude value
+        ``'mean'`` will normalize by the mean amplitude value. Ex::
+        
+            get_residual(s_exp, s_calc, normalize=True, normalize_how == "area") 
+        
+    See Also
+    --------
+    :func:`~radis.spectrum.compare.get_diff`, 
+    :func:`~radis.spectrum.compare.get_ratio`, 
+    :func:`~radis.spectrum.compare.get_distance`, 
+    :func:`~radis.spectrum.compare.plot_diff`, 
+    :func:`~radis.spectrum.compare.get_residual_integral`, 
+    :meth:`~radis.spectrum.spectrum.compare_with` 
     """
     from numpy.linalg import norm
 
