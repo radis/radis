@@ -73,7 +73,7 @@ from radis.db.molparam import MolParams
 from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT, df_metadata
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.phys.constants import c_CGS, h_CGS
-from radis.phys.convert import cm2J, cm2nm, nm2cm, nm_air2cm
+from radis.phys.convert import cm2J, nm2cm, nm_air2cm
 from radis.phys.constants import hc_k
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
@@ -85,7 +85,6 @@ from radis.misc.utils import Default
 # TODO: rename in get_molecule_name
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.spectrum.utils import print_conditions
-from radis.phys.air import air2vacuum, vacuum2air
 from radis.phys.units_astropy import convert_and_strip_units
 from numpy import exp, pi
 import numpy as np
@@ -1702,9 +1701,9 @@ class BaseFactory(DatabankLoader):
                 if id not in [2]:  # CO2
                     raise NotImplementedError
                 # normally we should find whether the rovibrational level is symmetric
-                # or asymmetric. Here we just assume it's symmetric, because
-                # CO2 asymmetric levels dont exist (gs=0) and they should not be
-                # in the line database.
+                # or asymmetric. Here we just assume it's symmetric, because for
+                # symmetric isotopes such as CO2(626), CO2 asymmetric levels
+                # dont exist (gs=0) and they should not be in the line database.
                 _gs = _gs[0]
 
             dg = df.loc[idx]
