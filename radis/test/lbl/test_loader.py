@@ -8,7 +8,7 @@ Created on Mon May  7 17:34:52 2018
 from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
-from radis.test.utils import setup_test_line_databases
+from radis.test.utils import setup_test_line_databases, getTestFile
 import matplotlib.pyplot as plt
 from os.path import exists
 from shutil import rmtree
@@ -86,8 +86,35 @@ def test_retrieve_from_database(
         rmtree(temp_database_name)
 
 
+def test_ignore_cached_files():
+    """
+        Previous implementation of RADIS saved the cached h5 files generated while reading the
+        dataset in the same directory from where the data was being read. Using a wildcard input
+        such as `path = "cdsd_hitemp_09_frag*"` in such case led to the cached files present
+        in directory to also being loaded and treated as the dataset files. This resulted in
+        an error due to the differences in the way data is stored in h5 files versus in dataset
+        files such as par, txt, etc.
+
+        Reference: `https://github.com/radis/radis/issues/121`
+    """
+
+    sf = SpectrumFactory(wavenum_min=2000, wavenum_max=3000, pressure=1)
+
+    file_dir = getTestFile("cdsd_hitemp_09_fragment.txt")
+    test_file = file_dir[:-8] + "*"
+    sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+
+    try:
+        sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+    except UnicodeDecodeError as err:
+        raise UnicodeDecodeError(
+            "Couldn't load database the 2nd time. This may be due to cache files trying to be read as normal files"
+        ) from err
+
+
 def _run_testcases(verbose=True, plot=True):
 
+    test_ignore_cached_files()
     test_retrieve_from_database(plot=plot, verbose=verbose)
 
 

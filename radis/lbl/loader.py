@@ -73,6 +73,7 @@ from radis.io.hitran import (
 )
 
 # from radis.io.hitran import hit2dfTAB
+from radis.misc.cache_files import cache_file_name
 from radis.misc.warning import EmptyDatabaseError
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
@@ -104,7 +105,6 @@ from time import time
 import gc
 from uuid import uuid1
 from six.moves import range
-import fnmatch
 from radis.misc.utils import get_files_from_regex
 
 KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
@@ -1289,6 +1289,19 @@ class DatabankLoader(object):
         # Check input types are correct
         if isinstance(path, string_types):  # make it a list
             path = get_files_from_regex(path)
+
+            # Ensure that `path` does not contain the cached dataset files in
+            # case a wildcard input is given by the user. For instance, if the
+            # given input is "cdsd_hitemp_09_frag*", path should not contain both
+            # "cdsd_hitemp_09_fragment.txt" and "cdsd_hitemp_09_fragment.h5".
+
+            # Reference: https://github.com/radis/radis/issues/121
+
+            filtered_path = [fname for fname in path]
+            for fname in path:
+                if cache_file_name(fname) in path and cache_file_name(fname) != fname:
+                    filtered_path.remove(cache_file_name(fname))
+            path = filtered_path
 
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>

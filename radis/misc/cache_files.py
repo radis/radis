@@ -36,7 +36,7 @@ import os
 import h5py
 import radis
 from warnings import warn
-from os.path import exists
+from os.path import exists, splitext
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printr, printm
@@ -551,3 +551,8 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
     metadata = {k: v for (k, v) in metadata.items() if v is not None}
 
     return metadata
+
+
+def cache_file_name(fname):
+    """ Returns the corresponding cache file name for fname """
+    return splitext(fname)[0] + ".h5"
