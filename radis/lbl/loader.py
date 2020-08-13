@@ -71,6 +71,7 @@ from radis.io.hitran import (
     parse_global_quanta,
     parse_local_quanta,
 )
+from radis.io.npy import npy2df
 
 # from radis.io.hitran import hit2dfTAB
 from radis.misc.cache_files import cache_file_name
@@ -103,7 +104,6 @@ from warnings import catch_warnings, filterwarnings
 import numpy as np
 
 from time import time
-import gc
 from uuid import uuid1
 from six.moves import range
 from radis.misc.utils import get_files_from_regex
@@ -1754,49 +1754,7 @@ class DatabankLoader(object):
         if buffer == "direct":
             assert len(database) == 1
             assert database[0].endswith("h5")
-        elif buffer == "npy":
-            dir_path = database[0][
-                : database[0].rindex("/") + 1
-            ]  # remove the last *.npy portion
-            try:
-                print("Loading v0...", end=" ")
-                v0 = np.load(dir_path + "v0.npy")
-                print("Done!")
-                print("Loading da...", end=" ")
-                da = np.load(dir_path + "da.npy")
-                print("Done!")
-                print("Loading log_2gs...", end=" ")
-                log_2gs = np.load(dir_path + "log_2gs.npy")
-                print("Done!")
-                print("Loading S0...", end=" ")
-                S0 = np.load(dir_path + "S0.npy")
-                print("Done!")
-                print("Loading El...", end=" ")
-                El = np.load(dir_path + "El.npy")
-                print("Done!")
-                print("Loading log_2vMm...", end=" ")
-                log_2vMm = np.load(dir_path + "log_2vMm.npy")
-                print("Done!")
-                print("Loading na...", end=" ")
-                na = np.load(dir_path + "na.npy")
-                print("Done!")
-                df = pd.DataFrame(
-                    {
-                        "wav": v0,
-                        "Pshft": da,
-                        "log_2gs": log_2gs,
-                        "Tdpair": na,
-                        "log_2vMm": log_2vMm,
-                        "int": S0,
-                        "El": El,
-                    }
-                )  # create dataframe from these 8 arrays
-                df.reset_index()
-                return df
-            except:
-                raise (
-                    FileNotFoundError("Could not find npy dataset in given directory")
-                )
+
         if drop_columns == "auto":
             drop_columns = (
                 drop_auto_columns_for_dbformat[dbformat]
@@ -1806,15 +1764,33 @@ class DatabankLoader(object):
         # subroutine load_and_concat
         # --------------------------------------
         def load_and_concat(files, buffer):
-            """ Two modes of storage: either directly in ``'RAM'`` mode, or in ``'h5'``
-            mode. ``'RAM'`` is faster but memory hunger, ``'h5'`` handles better
+            """ Two modes of concatenation: either directly in memory in ``'RAM'`` mode, 
+            or aggregate on disk in a large HDF5 file in ``'h5'`` mode. 
+            ``'RAM'`` is faster but memory hunger, ``'h5'`` handles better
             a bigger database
 
             Parameters
             ----------
 
-            files: str
-                path
+            files: list of str, or list of dict
+                either a list of path to database files ::
+                    
+                    [PATH/TO/01_1000-1150_HITEMP2010.par, 
+                     PATH/TO/01_1150-1300_HITEMP2010.par, 
+                     PATH/TO/01_1300-1500_HITEMP2010.par]
+
+                either a list of dictionaries containing the spectral informations ::
+                    
+                    [{'wav':'PATH/TO/v0.npy', 
+                      'int':'PATH/TO/int.npy',
+                      'Pshft':'PATH/TO/int.npy',
+                      'log_2gs':'PATH/TO/log_2gs.npy'
+                      'Tdpair':'PATH/TO/Tdpair.npy',
+                      'El':'PATH/TO/Tdpair.npy'},
+                     # other dictionaries if needed
+                      ]
+                    
+                See definitions for instance in :py:data:`~radis.io.hitran.column_2004`
 
             buffer: ``'direct'``, ``'h5'``, ``'RAM'``
                 see _load_databank info
@@ -1837,10 +1813,8 @@ class DatabankLoader(object):
                 if __debug__:
                     printdbg("Loading {0}/{1}".format(i + 1, len(files)))
 
-                if i % 31 == 30:
-                    gc.collect()  # force garbage collection as we may be generating tons of data
-
-                if db_assumed_sorted:
+                if db_assumed_sorted and len(files) > 1:
+                    # no need to check the first file if there is only one file anyway
                     # Note on performance: reading the first line of .txt file is still
                     # much faster than reading the whole hdf5 file
                     if dbformat == "cdsd-hitemp":
@@ -1893,6 +1867,11 @@ class DatabankLoader(object):
                                     )
                                 )
                             continue
+
+                    elif dbformat == "npy":
+                        pass
+                        # check of 1st line not implemented. TODO if necessary.
+
                     else:
                         raise ValueError(
                             "The database format is unknown: {0}".format(dbformat)
@@ -1923,6 +1902,11 @@ class DatabankLoader(object):
                         verbose=verbose,
                         drop_non_numeric=True,
                     )
+                elif dbformat == "npy":
+
+                    df = npy2df(filename, verbose=verbose)
+                    # path like : {'v0': path to v0.npy, 'da': path to da.npy}
+
                 else:
                     raise ValueError("Unknown dbformat: {0}".format(dbformat))
 
