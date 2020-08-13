@@ -104,7 +104,6 @@ from time import time
 import gc
 from uuid import uuid1
 from six.moves import range
-import fnmatch
 from radis.misc.utils import get_files_from_regex
 
 KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
@@ -1289,6 +1288,9 @@ class DatabankLoader(object):
         # Check input types are correct
         if isinstance(path, string_types):  # make it a list
             path = get_files_from_regex(path)
+            path = [
+                p for p in path if not (p.endswith(".h5") and p[:-3] in path)
+            ]  # ignore cached files in the directory if the original dataset is present
 
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
