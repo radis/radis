@@ -8,7 +8,7 @@ Created on Mon May  7 17:34:52 2018
 from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
-from radis.test.utils import setup_test_line_databases
+from radis.test.utils import setup_test_line_databases, getTestFile
 import matplotlib.pyplot as plt
 from os.path import exists
 from shutil import rmtree
@@ -86,9 +86,27 @@ def test_retrieve_from_database(
         rmtree(temp_database_name)
 
 
+def test_ignore_cached_files():
+
+    sf = SpectrumFactory(wavenum_min=2000, wavenum_max=3000, pressure=1,)
+
+    loaded_files = True
+    file_dir = getTestFile("cdsd_hitemp_09_fragment.txt")
+    test_file = file_dir[:-8] + "*"
+    sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+
+    try:
+        sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+    except UnicodeDecodeError:
+        loaded_files = False
+
+    assert loaded_files
+
+
 def _run_testcases(verbose=True, plot=True):
 
     test_retrieve_from_database(plot=plot, verbose=verbose)
+    test_ignore_cached_files()
 
 
 if __name__ == "__main__":
