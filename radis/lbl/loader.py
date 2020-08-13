@@ -73,6 +73,7 @@ from radis.io.hitran import (
 )
 
 # from radis.io.hitran import hit2dfTAB
+from radis.misc.cache_files import cache_file_name
 from radis.misc.warning import EmptyDatabaseError
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
@@ -1288,9 +1289,11 @@ class DatabankLoader(object):
         # Check input types are correct
         if isinstance(path, string_types):  # make it a list
             path = get_files_from_regex(path)
-            path = [
-                p for p in path if not (p.endswith(".h5") and p[:-3] in path)
-            ]  # ignore the cached h5 files when the main dataset files are present
+            filtered_path = [fname for fname in path]
+            for fname in path:
+                if cache_file_name(fname) in path and cache_file_name(fname) != fname:
+                    filtered_path.remove(cache_file_name(fname))
+            path = filtered_path
 
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>

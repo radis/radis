@@ -23,13 +23,13 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 from collections import OrderedDict
 import radis
-from os.path import exists, splitext
+from os.path import exists
 from radis.io.tools import (
     parse_hitran_file,
     drop_object_format_columns,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import save_to_hdf, load_h5_cache_file
+from radis.misc.cache_files import save_to_hdf, load_h5_cache_file, cache_file_name
 from os.path import getmtime
 import time
 from radis import OLDEST_COMPATIBLE_VERSION
@@ -260,7 +260,7 @@ def cdsd2df(
         raise ValueError("Unknown CDSD version: {0}".format(version))
 
     # Use cache file if possible
-    fcache = splitext(fname)[0] + ".h5"
+    fcache = cache_file_name(fname)
     if cache and exists(fcache):
         df = load_h5_cache_file(
             fcache,

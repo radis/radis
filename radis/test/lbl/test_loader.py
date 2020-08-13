@@ -88,25 +88,24 @@ def test_retrieve_from_database(
 
 def test_ignore_cached_files():
 
-    sf = SpectrumFactory(wavenum_min=2000, wavenum_max=3000, pressure=1,)
+    sf = SpectrumFactory(wavenum_min=2000, wavenum_max=3000, pressure=1)
 
-    loaded_files = True
     file_dir = getTestFile("cdsd_hitemp_09_fragment.txt")
     test_file = file_dir[:-8] + "*"
     sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
 
     try:
         sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
-    except UnicodeDecodeError:
-        loaded_files = False
-
-    assert loaded_files
+    except UnicodeDecodeError as err:
+        raise UnicodeDecodeError(
+            "Couldn't load database the 2nd time. This may be due to cache files trying to be read as normal files"
+        ) from err
 
 
 def _run_testcases(verbose=True, plot=True):
 
-    test_retrieve_from_database(plot=plot, verbose=verbose)
     test_ignore_cached_files()
+    test_retrieve_from_database(plot=plot, verbose=verbose)
 
 
 if __name__ == "__main__":
