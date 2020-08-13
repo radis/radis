@@ -87,6 +87,16 @@ def test_retrieve_from_database(
 
 
 def test_ignore_cached_files():
+    """
+        Previous implementation of RADIS saved the cached h5 files generated while reading the
+        dataset in the same directory from where the data was being read. Using a wildcard input
+        such as `path = "cdsd_hitemp_09_frag*"` in such case led to the cached files present
+        in directory to also being loaded and treated as the dataset files. This resulted in
+        an error due to the differences in the way data is stored in h5 files versus in dataset
+        files such as par, txt, etc.
+
+        Reference: `https://github.com/radis/radis/issues/121`
+    """
 
     sf = SpectrumFactory(wavenum_min=2000, wavenum_max=3000, pressure=1)
 
