@@ -644,7 +644,6 @@ class SpectrumFactory(BandFactory):
                 )
 
             # Convert units
-            self._broadening_method = "fft"
             Tgas = convert_and_strip_units(Tgas, u.K)
             path_length = convert_and_strip_units(path_length, u.cm)
             pressure = convert_and_strip_units(pressure, u.bar)
