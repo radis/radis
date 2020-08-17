@@ -845,6 +845,57 @@ class SpectrumFactory(BandFactory):
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
     ):
 
+        """ Generate a spectrum at equilibrium with calculation of lineshapes and broadening done on the GPU
+
+                Parameters
+                ----------
+
+                Tgas: float
+                    Gas temperature (K)
+
+                mole_fraction: float
+                    database species mole fraction. If None, Factory mole fraction is used.
+
+                path_length: float
+                    slab size (cm). If None, Factory mole fraction is used.
+
+                pressure: float
+                    pressure (bar). If None, the default Factory pressure is used.
+
+                name: str
+                    case name (useful in batch)
+
+                Returns
+                -------
+
+                s : Spectrum
+                    Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
+
+                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+
+                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+                to plot it. See [1]_ to get an overview of all Spectrum methods
+
+                Notes
+                -----
+
+                This method will compile the
+
+
+                References
+                ----------
+
+                .. [1] RADIS PR: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
+
+
+                See Also
+                --------
+
+                :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
+
+                """
+
         try:
 
             # %% Preprocessing

@@ -51,7 +51,7 @@ def calc_spectrum(
     **kwargs
 ):
     """ Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
-    under equilibrium, or non-equilibrium, with or without overpopulation. 
+    under equilibrium (using either CPU or GPU), or non-equilibrium, with or without overpopulation.
     It's a wrapper to :class:`~radis.lbl.factory.SpectrumFactory` class. 
     For advanced used, please refer to the aforementionned class. 
 ​
@@ -251,7 +251,7 @@ def calc_spectrum(
     ----------
 ​
     .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
-​
+​   .. [2] RADIS GPU support: 'GPU Calculations on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>'
 ​
     Examples
     --------
@@ -273,9 +273,30 @@ def calc_spectrum(
     :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`:: 
         
         s.line_survey(overlay='radiance')
+
+    Calculate a CO2 spectrum from the CDSD-4000 database:
+
+        s = calc_spectrum(2200, 2400,   # cm-1
+                          molecule='CO2',
+                          isotope='1',
+                          databank='/path/to/cdsd/databank/in/npy/format/',
+                          pressure=0.1,  # bar
+                          Tgas=1000,
+                          mole_fraction=0.1,
+                          mode='gpu'
+                          )
+
+        s.plot('absorbance')
+
+    This example uses the :py:meth:`~radis.lbl.factor.eq_spectrum_gpu` method to calculate
+    the spectrum on the GPU. The databank points to the CDSD-4000 databank that has been
+    pre-processed and stored in `numpy.npy` format.
 ​
     Refer to the online :ref:`Examples <label_examples>` for more cases, and to 
-    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods. 
+    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
+
+    For more details on how to use the GPU method and process the database, refer to the examples
+    linked above and the documentation on :ref:`GPU support for RADIS <label_gpu>`.
 ​
     See Also
     --------
