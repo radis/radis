@@ -11,10 +11,12 @@ assignees: ''
 <!--- A clear and concise description of the bug (or unexpected behavior) -->
 
 ### 🖥 Steps To Reproduce
-<!--- Steps (or best : code snippet using the Example test files ) to reproduce the behavior -->
+<!--- Steps or code snippet to reproduce the behavior.-->
+<!--- Best : use test files so that everyone can run your example : https://radis.readthedocs.io/en/latest/dev/developer.html#test-files -->
 
 ### 🎯 Expected behavior
 <!--- A clear and concise description of what you expected to happen. -->
 
 ### 💡 Possible solutions
 <!--- Not obligatory, but suggest an idea for implementing addition or change -->
+

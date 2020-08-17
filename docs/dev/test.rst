@@ -100,13 +100,109 @@ See: https://github.com/statsmodels/statsmodels/issues/3697
 
 
 
+.. _label_dev_test_files:
+
+Test files
+----------
+
+To make the errors as reproducible as possible, try to use the test files provided in the 
+Test files are provided in the `radis\test\files <https://github.com/radis/radis/tree/develop/radis/test/files>`__ 
+and `radis\test\validation <https://github.com/radis/radis/tree/develop/radis/test/validation>`__ folders. 
+They contain examples of line databases, spectra, or energy levels. 
+The path to these test files can be retrieved using the :py:func:`~radis.test.utils.getTestFile` and 
+:py:func:`~radis.test.utils.getValidationCase` functions, respectively. 
+
+Load a line database file :: 
+
+    from radis.test.utils import getTestFile
+    from radis.io.hitran import hit2df
+    df = hit2df(getTestFile("hitran_CO_fragment.par"))
+
+    print(df)  # replace with your test code
+    
+    >>> Out:
+        
+           id  iso       wav           int             A  ...  gpp  branch  jl  vu  vl
+    0   5    1  3.705026  2.354000e-44  2.868000e-10  ...  1.0       1   0   4   4
+    1   5    1  3.740024  1.110000e-38  5.999000e-09  ...  1.0       1   0   3   3
+    2   5    1  3.775024  9.233000e-34  1.947000e-08  ...  1.0       1   0   2   2
+    3   5    1  3.810028  5.706000e-29  4.130000e-08  ...  1.0       1   0   1   1
+    4   5    1  3.845033  3.300000e-24  7.207000e-08  ...  1.0       1   0   0   0
+    5   5    1  7.409906  1.815000e-43  2.726000e-09  ...  3.0       1   1   4   4
+    6   5    1  7.479900  8.621000e-38  5.746000e-08  ...  3.0       1   1   3   3
+    7   5    1  7.549901  7.177000e-33  1.867000e-07  ...  3.0       1   1   2   2
+    8   5    1  7.619908  4.436000e-28  3.961000e-07  ...  3.0       1   1   1   1
+
+    [9 rows x 16 columns]
+    
+Load a Spectrum object :: 
+
+    from radis.test.utils import getTestFile
+    from radis import load_spec
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.5.spec"))
+    
+    print(s)    # replace with your test code
+    
+    >>> Out: 
+        
+        Spectrum Name:  CO_Tgas1500K_mole_fraction0.5.spec
+    Spectral Quantities
+    ----------------------------------------
+       abscoeff 	(37,870 points)
+    Populations Stored
+    ----------------------------------------
+       CO 		 [1]
+    Physical Conditions
+    ----------------------------------------
+       Tgas                 1500 K
+       Trot                 1500 K
+       Tvib                 1500 K
+       isotope              1
+       mole_fraction        0.5
+       molecule             CO
+       path_length          0.01 cm
+       pressure_mbar        1013.25 mbar
+       rot_distribution     boltzmann
+       self_absorption      True
+       state                X
+       thermal_equilibrium  True
+       vib_distribution     boltzmann
+       wavelength_max       4801.3089 nm
+       wavelength_min       4401.1999 nm
+       wavenum_max          2272.1077 cm-1
+       wavenum_min          2082.7654 cm-1
+    Computation Parameters
+    ----------------------------------------
+       Tref                 296 K
+       broadening_max_width  10 cm-1
+       cutoff               1e-25 cm-1/(#.cm-2)
+       db_assumed_sorted    True
+       dbformat             hitran
+       dbpath               d:/github/radis/radis/test/files/hitran_co_3iso_2000_2300cm.par
+       levelsfmt            neq
+       parfuncfmt           hapi
+       pseudo_continuum_threshold  0
+       wavenum_max_calc     2277.1104 cm-1
+       wavenum_min_calc     2077.7654 cm-1
+       waveunit             cm-1
+       wstep                0.005 cm-1
+    Information
+    ----------------------------------------
+       calculation_time     0.14 s
+       chunksize            10000000.0
+       db_use_cached        True
+       parallel             False
+    ----------------------------------------
+
 
 Report errors
 -------------
 
 If you encounter any error, open an `Issue on GitHub <https://github.com/radis/radis/issues>`__
 
-
+To simplify the debugging process, provide a code snippet that reproduces 
+the error. If you need a line database, spectrum, or energy level, try to use one 
+of the :ref:`test files <label_dev_test_files>`.  
 
 Debugging
 ---------

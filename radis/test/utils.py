@@ -35,20 +35,34 @@ from radis.misc.config import (
 )
 from radis.db.utils import getFile
 from radis.misc.utils import FileNotFoundError
-from radis.misc.printer import printr
 from os.path import join, dirname, exists
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
 
 
-def getTestFile(file):
+def getTestFile(file, force=False):
     """ Return the full path of a test file, if it exists. Used by test functions not to
-    worry about the project architecture
+    worry about the project architecture. Using :ref:`test files <label_dev_test_files>`
+    is recommended when writing tests. 
+    
+    Parameters
+    ----------
+    
+    file: str
+        filename. See :ref:`the list of available test files <label_dev_test_files>`
+        
+    Returns
+    -------
+    
+    path: str
+        absolute path of ``file`` on the local machine. Raises an error 
+        if test file not present, unless you use ``force=True``
     
     Examples
     --------
     
     ::
+
         from radis.test.utils import getTestFile
         from radis import load_spec
         load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'))
@@ -62,9 +76,9 @@ def getTestFile(file):
 
     path = join(TEST_FOLDER_PATH, "files", file)
 
-    if not exists(path):
+    if not exists(path) and not force:
         raise FileNotFoundError(
-            "Test file `{0}` does not exist. Choose one of: \n- {1}".format(
+            "Test file `{0}` does not exist. Choose one of: \n- {1} or use force=True".format(
                 file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "files")))
             )
         )
@@ -72,10 +86,45 @@ def getTestFile(file):
     return path
 
 
-def getValidationCase(file):
+def getValidationCase(file, force=False):
     """ Return the full path of a validation case file, if it exists. Used by test functions not to
-    worry about the project architecture
+    worry about the project architecture. Using :ref:`validation test files <label_dev_test_files>`
+    is recommended when writing validation cases. 
     
+    Parameters
+    ----------
+    
+    file: str
+        filename. See :ref:`the list of available validation files <label_dev_test_files>`
+        
+    Returns
+    -------
+    
+    path: str
+        absolute path of ``file`` on the local machine. Raises an error 
+        if validation file not present, unless you use ``force=True``
+
+    Examples
+    --------
+    
+    Load the reference case from the [Klarenaar2017]_ paper ::        
+        
+        from radis.test.utils import getValidationCase
+        from radis import Spectrum
+        
+        s_exp = Spectrum.from_txt(
+            getValidationCase(
+                join(
+                    "test_CO2_3Tvib_vs_klarenaar_data", "klarenaar_2017_digitized_data.csv",
+                )
+            ),
+            "transmittance_noslit",
+            waveunit="cm-1",
+            unit="",
+            delimiter=",",
+            name="Klarenaar 2017",
+        )
+
     See Also
     --------
     
@@ -84,9 +133,9 @@ def getValidationCase(file):
 
     path = join(TEST_FOLDER_PATH, "validation", file)
 
-    if not exists(path):
+    if not exists(path) and not force:
         raise FileNotFoundError(
-            "Validation case `{0}` does not exist. Choose one of: \n- {1}".format(
+            "Validation case `{0}` does not exist. Choose one of: \n- {1} or use force=True".format(
                 file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "validation")))
             )
         )

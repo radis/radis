@@ -101,6 +101,7 @@ from six import string_types
 from radis.misc.warning import warn, default_warning_status
 from warnings import catch_warnings, filterwarnings
 import numpy as np
+
 from time import time
 import gc
 from uuid import uuid1
