@@ -12,3 +12,12 @@ assignees: ''
 
 ### 💡 Possible implementations
 <!--- Not obligatory, but suggest an idea for implementing addition or change -->
+
+
+
+
+
+
+---
+
+<sub>*Tip : you can vote for [New Features](https://github.com/radis/radis/issues/79) on https://feathub.com/radis/radis*</sub>
