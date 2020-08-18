@@ -472,7 +472,7 @@ def multiply(s, coef, unit=None, var=None, inplace=False):
         The spectrum to multiply.
     coef: float
         Coefficient of the multiplication.
-    unit: str. 
+    unit: str, or `~astropy.units.core.Unit`
         unit for ``coef``. If ``None``, ``coef`` is considered to be 
         adimensioned. Else, the spectrum `~radis.spectrum.spectrum.Spectrum.units` is multiplied. 
     var: str, or ``None``
