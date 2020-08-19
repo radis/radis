@@ -1848,44 +1848,57 @@ class BroadenFactory(BaseFactory):
         iwL1 = iwL0 + 1
         iwG1 = iwG0 + 1
 
-        # DLM : Next calculate how the line is distributed over the 2x2x2 bins we have:
-        av = iv - iv0
+        # DLM : Next calculate how the line is distributed over the 2x2x2 bins.
 
+        # First calculate relative positions on the grid:
+        tv = iv - iv0
         tauG = iwG - iwG0
         tauL = iwL - iwL0
 
+        # Next assign simple weights:
+        av = tv
+        awG = tauG
+        awL = tauL
+
+        # Finally add corrections to the weights if needed:
         if optimized_weights:
 
+            # TO-DO: log_pG, log_pL, and dv should be specified, not calculated...
             log_pG = (np.log(wG[-1]) - np.log(wG[0])) / (wG.size - 1)
             log_pL = (np.log(wL[-1]) - np.log(wL[0])) / (wL.size - 1)
+            dv = (wavenumber_calc[-1] - wavenumber_calc[0]) / (wavenumber_calc.size - 1)
 
-            C1_GG = ((6 * np.pi - 16) / (15 * np.pi - 32)) ** (2 / 3)
-            C1_LG = ((6 * np.pi - 16) / (3 * (2 * np.pi) ** 0.5)) ** (4 / 9)
-            C2_GG = (2 / 15) ** (2 / 3)
-            C2_LG = (4 / 15) ** (4 / 9)
+            dxG = dv / wG_dat
 
-            alpha = (wL_dat / wG_dat) * (np.log(2)) ** 0.5
+            C1_GG = ((6 * np.pi - 16) / (15 * np.pi - 32)) ** (1 / 1.50)
+            C1_LG = ((6 * np.pi - 16) / 3 * (2 * np.pi / np.log(2)) ** 0.5) ** (
+                1 / 2.25
+            )
+            C2_GG = (2 * np.log(2) / 15) ** (1 / 1.50)
+            C2_LG = ((2 * np.log(2)) ** 2 / 15) ** (1 / 2.25)
 
-            R_GG = 1 / (C1_GG + C2_GG * alpha ** (4 / 3)) ** (3 / 2) - 2
-            R_GL = 2 * alpha ** 2
-            R_LL = -1
-            R_LG = -1 / (C1_LG * alpha ** (4 / 9) + C2_LG * alpha ** (16 / 9)) ** (
-                9 / 4
+            alpha = wL_dat / wG_dat
+
+            R_GG = 2 - 1 / (C1_GG + C2_GG * alpha ** (2 / 1.50)) ** 1.50
+            R_GL = -2 * np.log(2) * alpha ** 2
+            R_Gv = 8 * np.log(2)
+
+            R_LL = 1
+            R_LG = (
+                1 / (C1_LG * alpha ** (1 / 2.25) + C2_LG * alpha ** (4 / 2.25)) ** 2.25
             )
 
-            awG = tauG + (
-                R_GG * tauG * (1 - tauG) * log_pG ** 2
-                + R_GL * tauL * (1 - tauL) * log_pL ** 2
+            # Add correction terms:
+            awG += (
+                R_GG * tauG * (tauG - 1) * log_pG ** 2
+                + R_GL * tauL * (tauL - 1) * log_pL ** 2
+                + R_Gv * tv * (tv - 1) * dxG ** 2
             ) / (2 * log_pG)
 
-            awL = tauL + (
-                R_LL * tauL * (1 - tauL) * log_pL ** 2
-                + R_LG * tauG * (1 - tauG) * log_pG ** 2
+            awL += (
+                R_LL * tauL * (tauL - 1) * log_pL ** 2
+                + R_LG * tauG * (tauG - 1) * log_pG ** 2
             ) / (2 * log_pL)
-
-        else:
-            awG = tauG
-            awL = tauL
 
         # ... fractions on DLM grid
         awV00 = (1 - awL) * (1 - awG)
