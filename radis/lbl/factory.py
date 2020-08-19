@@ -106,6 +106,9 @@ import numpy as np
 import astropy.units as u
 import sys
 from subprocess import call
+from scipy.constants import c, k, N_A, pi
+
+c_cm = c * 100
 
 # %% Main functions
 class SpectrumFactory(BandFactory):
@@ -1017,11 +1020,12 @@ class SpectrumFactory(BandFactory):
             iso = df["iso"].to_numpy()
             v0 = df["wav"].to_numpy()
             da = df["Pshft"].to_numpy()
-            log_2gs = df["log_2gs"].to_numpy()
-            na = df["Tdpair"].to_numpy()
-            log_2vMm = df["log_2vMm"].to_numpy()
-            S0 = df["int"].to_numpy()
             El = df["El"].to_numpy()
+            na = df["Tdpair"].to_numpy()
+
+            log_2gs = self._get_log_2gs()
+            log_2vMm = self._get_log_2vMm(molarmass_arr)
+            S0 = self._get_S0(Ia_arr)
 
             NwG = 4
             NwL = 8
@@ -1473,6 +1477,69 @@ class SpectrumFactory(BandFactory):
             # An error occured: clean before crashing
             self._clean_temp_file()
             raise
+
+    def _get_log_2gs(self):
+        """ Returns log_2gs if it already exists in the dataframe, otherwise computes it using gamma_air """
+        df = self.df0
+
+        # if the column already exists, then return
+        if "log_2gs" in df.columns:
+            return df["log_2gs"]
+
+        try:
+            gamma_air = df["airbrd"].to_numpy()
+            log_2gs = np.log(2 * gamma_air)
+            df["log_2gs"] = log_2gs
+            return log_2gs
+        except KeyError:
+            raise KeyError(
+                "Cannot find air-broadened half-width or log_2gs in the database... please check the database"
+            )
+
+    def _get_log_2vMm(self, molarmass_arr):
+        """ Returns log_2vMm if it already exists in the dataframe, otherwise computes it using the abundance and molar mass for each isotope passed in the input """
+        df = self.df0
+
+        # if the column already exists, then return
+        if "log_2vMm" in df.columns:
+            return df["log_2vMm"]
+
+        try:
+            v0 = df["wav"].to_numpy()  # get wavenumber
+            iso = df["iso"].to_nump()  # get isotope
+            Mm = molarmass_arr * 1e-3 / N_A
+            log_2vMm = np.log(2 * v0) + 0.5 * np.log(
+                2 * k * np.log(2) / (c ** 2 * Mm.take(iso))
+            )
+            df["log_2vMm"] = log_2vMm
+            return log_2vMm
+        except KeyError:
+            raise KeyError(
+                "Cannot find wavenumber, isotope and/or log_2vMm in the database. Please check the database"
+            )
+
+    def _get_S0(self, Ia_arr):
+        """ Returns S0 if it already exists, otherwise computes the value using abundance, gamma_air and Einstein's number """
+        df = self.df0
+
+        # if the column already exists, then return it
+        if "S0" in df.columns:
+            return df["S0"]
+
+        try:
+            v0 = df["wav"].to_numpy()
+            A21 = df["A"].to_numpy()
+            Jl = df["jl"].to_numpy()
+            DJ = df["branch"].to_numpy()
+            Ju = Jl + DJ
+            gu = 2 * Ju + 1  # g_up
+            S0 = Ia_arr * gu * A21 / (8 * pi * c_cm * v0 ** 2)
+            df["S0"] = S0
+            return S0
+        except KeyError:
+            raise KeyError(
+                "Could not find wavenumber, Einstein's coefficient, lower state energy or S0 in the dataframe. PLease check the database"
+            )
 
     def optically_thin_power(
         self,

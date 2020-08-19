@@ -47,6 +47,11 @@ def npy2df(keywords, verbose=True):
     ]  # remove the last *.npy portion
     try:
         if verbose >= 2:
+            print("Loading iso...", end=" ")
+        iso = np.load(dir_path + "iso.npy")
+        if verbose >= 2:
+            print("Done!")
+        if verbose >= 2:
             print("Loading v0...", end=" ")
         v0 = np.load(dir_path + "v0.npy")
         if verbose >= 2:
@@ -83,6 +88,7 @@ def npy2df(keywords, verbose=True):
             print("Done!")
         df = pd.DataFrame(
             {
+                "iso": iso,
                 "wav": v0,
                 "Pshft": da,
                 "log_2gs": log_2gs,
