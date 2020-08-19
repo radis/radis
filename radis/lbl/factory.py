@@ -82,6 +82,8 @@ for Developers:
 from __future__ import print_function, absolute_import, division, unicode_literals
 from six import string_types
 from warnings import warn
+
+from radis.db.molparam import MolParams
 from radis.io import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.io.hitran import get_molecule
 from radis.lbl.bands import BandFactory
@@ -102,7 +104,6 @@ from multiprocessing import cpu_count
 from time import time
 import numpy as np
 import astropy.units as u
-import math
 import sys
 from subprocess import call
 
@@ -947,6 +948,29 @@ class SpectrumFactory(BandFactory):
                 if s is not None:
                     return s  # exit function
 
+            ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
+
+            molpar = MolParams()
+            id_set = self.df0[
+                "id"
+            ].unique()  # get all the molecules in the dataframe, should ideally be 1 element for GPU
+            mol_id = id_set[0]
+            molecule = get_molecule(mol_id)
+            state = self.input.state
+            iso_set = self._get_isotope_list(molecule)
+
+            iso_arr = list(range(max(iso_set) + 1))
+
+            Ia_arr = np.empty_like(iso_arr, dtype=np.float64)
+            molarmass_arr = np.empty_like(iso_arr, dtype=np.float64)
+            Q_arr = np.empty_like(iso_arr, dtype=np.float64)
+            for iso in iso_arr:
+                if iso in iso_set:
+                    params = molpar.df.loc[(mol_id, iso)]
+                    Ia_arr[iso] = params.abundance
+                    molarmass_arr[iso] = params.mol_mass
+                    Q_arr[iso] = self._get_parsum(molecule, iso, state)
+
             ### EXPERIMENTAL ###
 
             project_path = getProjectRoot()
@@ -990,6 +1014,7 @@ class SpectrumFactory(BandFactory):
 
             # load the data
             df = self.df0
+            iso = df["iso"].to_numpy()
             v0 = df["wav"].to_numpy()
             da = df["Pshft"].to_numpy()
             log_2gs = df["log_2gs"].to_numpy()
@@ -1002,11 +1027,15 @@ class SpectrumFactory(BandFactory):
             NwL = 8
 
             print("Initializing parameters...", end=" ")
-            py_cuffs.init(v_arr, NwG, NwL, v0, da, log_2gs, na, log_2vMm, S0, El)
+            py_cuffs.init(
+                v_arr, NwG, NwL, iso, v0, da, log_2gs, na, log_2vMm, S0, El, Q_arr
+            )
             print("done!")
             wavenumber = v_arr
             print("Calculating spectra...", end=" ")
-            abscoeff = py_cuffs.iterate(pressure, Tgas) * math.log(10)
+            abscoeff = py_cuffs.iterate(
+                pressure, Tgas, mole_fraction, Ia_arr, molarmass_arr
+            )
             print("done!")
             # Calculate output quantities
             # ----------------------------------------------------------------------
