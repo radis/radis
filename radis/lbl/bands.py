@@ -904,12 +904,10 @@ class BandFactory(BroadenFactory):
 
         abscoeff_bands = {}
         pb = ProgressBar(len(gb), active=self.verbose)
-        chunksize = (
-            self.misc.chunksize
-        )  # used for DLM keyword in 0.9.20 until proper implementation is done
+        optimization = self.misc.optimization
 
         for i, (band, dg) in enumerate(gb):
-            if chunksize == "DLM":
+            if optimization in  ("simple","min-RMS"):
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
                 (wavenumber, absorption) = self._apply_lineshape_DLM(
                     dg.S.values,
@@ -956,13 +954,11 @@ class BandFactory(BroadenFactory):
         emisscoeff_bands = {}
 
         gb = df.groupby("band")
-        chunksize = (
-            self.misc.chunksize
-        )  # used for DLM keyword in 0.9.20 until proper implementation is done
-
+        optimization = self.misc.optimization
+        
         pb = ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
-            if chunksize == "DLM":
+            if optimization in ("simple","min-RMS"):
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
                 (wavenumber, absorption) = self._apply_lineshape_DLM(
                     dg.S.values,
@@ -972,6 +968,7 @@ class BandFactory(BroadenFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    optimization,
                 )
                 (_, emission) = self._apply_lineshape_DLM(
                     dg.Ei.values,
@@ -981,6 +978,7 @@ class BandFactory(BroadenFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    optimization,
                 )
 
             else:
