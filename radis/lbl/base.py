@@ -2756,16 +2756,6 @@ class BaseFactory(DatabankLoader):
         id_set = df.id.unique()
         iso_set = self._get_isotope_list()  # df1.iso.unique()
 
-        def get_parsum(molecule, iso, state):
-            """ Get function that calculates the partition function. 
-            By default, try to get the tabulated version. If does not exist, 
-            returns the direct summation version
-            """
-            try:
-                return self.get_partition_function_interpolator(molecule, iso, state)
-            except KeyError:
-                return self.get_partition_function_calculator(molecule, iso, state)
-
         # TODO for multi-molecule code: add above line in the loop
         if len(id_set) == 1 and len(iso_set) == 1:
 
@@ -2775,7 +2765,7 @@ class BaseFactory(DatabankLoader):
 
             molecule = get_molecule(id_set[0])
             state = self.input.state
-            parsum = get_parsum(molecule, iso_set[0], state)  # partition function
+            parsum = self._get_parsum(molecule, iso_set[0], state)  # partition function
             df.Qref = parsum.at(
                 Tref, update_populations=False
             )  # stored as attribute, not column
@@ -2792,7 +2782,7 @@ class BaseFactory(DatabankLoader):
             for (id, iso), idx in dgb.indices.items():
                 molecule = get_molecule(id)
                 state = self.input.state
-                parsum = get_parsum(molecule, iso, state)
+                parsum = self._get_parsum(molecule, iso, state)
                 df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
 
                 if radis.DEBUG_MODE:
@@ -3167,6 +3157,16 @@ class BaseFactory(DatabankLoader):
         # ... initialization)
         assert self._wstep == self.params.wstep
         assert self._broadening_max_width == self.params.broadening_max_width
+
+    def _get_parsum(self, molecule, iso, state):
+        """ Get function that calculates the partition function.
+        By default, try to get the tabulated version. If does not exist,
+        returns the direct summation version
+        """
+        try:
+            return self.get_partition_function_interpolator(molecule, iso, state)
+        except KeyError:
+            return self.get_partition_function_calculator(molecule, iso, state)
 
     def plot_populations(self, what="vib", isotope=None, nfig=None):
         """ Plot populations currently calculated in factory.
