@@ -42,7 +42,7 @@ def calc_spectrum(
     databank="fetch",
     wstep=0.01,
     broadening_max_width=10,
-    lineshape_optimization="DLM",
+    optimization="min-RMS",
     overpopulation=None,
     name=None,
     use_cached=True,
@@ -163,21 +163,17 @@ def calc_spectrum(
     Other Parameters
     ----------------
 ​
-    lineshape_optimization: int, ``None``, ``'DLM'``, or ``'auto'``.
-        Optimizations for the calculation of the lineshapes:
+    optimization : ``"simple"``, ``"min-RMS"``, ``None``
+        If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used: 
+        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_) 
+        - ``"simple"`` : weights equal to their relative position in the grid
         
-            - If ``None``, all lineshapes are calculated at the same time (can 
-              create memory errors). 
-            - If ``int``, is given as the ``chunksize`` parameter of 
-              :py:class:`~radis.lbl.factory.SpectrumFactory`` to split the line database 
-              in several parts so that the number of ``lines * spectral grid points`` is 
-              less than ``chunksize`` (reduces memory consumption). Typical values: 
-              ``lineshape_optimization=1e6``.
-            - If ``'DLM'``, only typical lineshapes are calculated. This can 
-              result of speedups of orders of magnitude.  See more about DLM in 
-              :ref:`Performance <label_lbl_performance>`. 
-              
-        Default ``'DLM'``.
+        If using the DLM optimization, broadening method is automatically set to ``'fft'``.  
+        If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated. 
+        
+        Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation. 
+        
+        Default ``"min-RMS"`` 
 ​
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature. 
@@ -417,7 +413,7 @@ def calc_spectrum(
                 medium=medium,
                 wstep=wstep,
                 broadening_max_width=broadening_max_width,
-                lineshape_optimization=lineshape_optimization,
+                optimization=optimization,
                 name=name,
                 use_cached=use_cached,
                 verbose=verbose,
@@ -447,7 +443,7 @@ def _calc_spectrum(
     medium,
     wstep,
     broadening_max_width,
-    lineshape_optimization,
+    optimization,
     name,
     use_cached,
     verbose,
@@ -493,7 +489,7 @@ def _calc_spectrum(
         kwargs["save_memory"] = True
 
     if "chunksize" in kwargs:
-        raise DeprecationWarning("use lineshape_optimization= instead of chunksize=")
+        raise DeprecationWarning("use optimization= instead of chunksize=")
 
     def _is_at_equilibrium():
         try:
@@ -526,7 +522,7 @@ def _calc_spectrum(
         broadening_max_width=broadening_max_width,
         db_use_cached=use_cached,
         verbose=verbose,
-        chunksize=lineshape_optimization,  #  if lineshape_optimization != 'auto' else None, #@EP: NotImplemented. DLM use all the time by default
+        optimization=optimization,
         **kwargs
     )
     if databank == "fetch":  # mode to get databank without relying on  Line databases
