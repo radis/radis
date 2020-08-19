@@ -71,7 +71,6 @@ from radis.io.hitran import (
     parse_global_quanta,
     parse_local_quanta,
 )
-from radis.io.npy import npy2df
 
 # from radis.io.hitran import hit2dfTAB
 from radis.misc.cache_files import cache_file_name
@@ -1754,6 +1753,53 @@ class DatabankLoader(object):
         if buffer == "direct":
             assert len(database) == 1
             assert database[0].endswith("h5")
+        elif buffer == "npy":
+            dir_path = database[0][
+                : database[0].rindex("/") + 1
+            ]  # remove the last *.npy portion
+            try:
+                print("Loading iso...", end=" ")
+                iso = np.load(dir_path + "iso.npy")
+                print("done!")
+                print("Loading v0...", end=" ")
+                v0 = np.load(dir_path + "v0.npy")
+                print("done!")
+                print("Loading da...", end=" ")
+                da = np.load(dir_path + "da.npy")
+                print("done!")
+                print("Loading log_2gs...", end=" ")
+                log_2gs = np.load(dir_path + "log_2gs.npy")
+                print("done!")
+                print("Loading S0...", end=" ")
+                S0 = np.load(dir_path + "S0.npy")
+                print("done!")
+                print("Loading El...", end=" ")
+                El = np.load(dir_path + "El.npy")
+                print("done!")
+                print("Loading log_2vMm...", end=" ")
+                log_2vMm = np.load(dir_path + "log_2vMm.npy")
+                print("done!")
+                print("Loading na...", end=" ")
+                na = np.load(dir_path + "na.npy")
+                print("done!")
+                df = pd.DataFrame(
+                    {
+                        "iso": iso,
+                        "wav": v0,
+                        "Pshft": da,
+                        "log_2gs": log_2gs,
+                        "Tdpair": na,
+                        "log_2vMm": log_2vMm,
+                        "int": S0,
+                        "El": El,
+                    }
+                )  # create dataframe from these 8 arrays
+                df.reset_index()
+                return df
+            except:
+                raise (
+                    FileNotFoundError("Could not find npy dataset in given directory")
+                )
 
         if drop_columns == "auto":
             drop_columns = (
@@ -1868,9 +1914,9 @@ class DatabankLoader(object):
                                 )
                             continue
 
-                    elif dbformat == "npy":
-                        pass
-                        # check of 1st line not implemented. TODO if necessary.
+                    # elif dbformat == "npy":
+                    #     pass
+                    #     # check of 1st line not implemented. TODO if necessary.
 
                     else:
                         raise ValueError(
@@ -1902,10 +1948,10 @@ class DatabankLoader(object):
                         verbose=verbose,
                         drop_non_numeric=True,
                     )
-                elif dbformat == "npy":
-
-                    df = npy2df(filename, verbose=verbose)
-                    # path like : {'v0': path to v0.npy, 'da': path to da.npy}
+                # elif dbformat == "npy":
+                #
+                #     df = npy2df(filename, verbose=verbose)
+                #     # path like : {'v0': path to v0.npy, 'da': path to da.npy}
 
                 else:
                     raise ValueError("Unknown dbformat: {0}".format(dbformat))
