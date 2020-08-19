@@ -917,6 +917,7 @@ class BandFactory(BroadenFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    optimization,
                 )
             else:
                 line_profile = self._calc_lineshape(dg)
