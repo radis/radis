@@ -260,17 +260,18 @@ class SpectrumFactory(BandFactory):
         and slows the system down. Chunksize let you change the default chunck
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
-        
-        .. note::
-            in version 0.9.20 this parameter is temporarily used to accept the ``'DLM'`` 
-            argument: in this case, the DLM optimization for lineshape calculation 
-            is used. Broadening method is automatically set to ``'fft'``. 
-            See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
 
-    optimized_weights: bool
-        Whether to use optimized weights or simple weights.
-            True:  Optimized weights [DEFAULT]
-            False: Simple weights
+    optimization : ``"simple"``, ``"min-RMS"``, ``None``
+        If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used: 
+        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_) 
+        - ``"simple"`` : weights equal to their relative position in the grid
+        
+        If using the DLM optimization, broadening method is automatically set to ``'fft'``.  
+        If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated. 
+        
+        Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation. 
+        
+        Default ``"min-RMS"`` 
                 
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
@@ -372,7 +373,7 @@ class SpectrumFactory(BandFactory):
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
-        optimized_weights=True,
+        optimization="min-RMS",
         Nprocs=None,
         Ngroups=None,
         cutoff=1e-27,
@@ -504,15 +505,16 @@ class SpectrumFactory(BandFactory):
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
 
-        # in version 0.9.20 the 'chunksize' parameter is temporarily used to accept the ``'DLM'``
-        # argument: in this case, the DLM optimization for lineshape calculation
-        # is used. Broadening method is automatically set to ``'fft'``.
+        # if optimization is ``'simple'`` or ``'min-RMS'``,
+        # DLM optimization for lineshape calculation is used.
+        # In this case the broadening method is automatically set to ``'fft'``.
         # See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
-        if chunksize == "DLM":
+
+        if optimization in ("simple", "min-RMS"):
             self._broadening_method = "fft"
             if self.verbose >= 3:
                 print("DLM used. Defaulting broadening method to FFT")
-            # TODO: make it a proper parameter in self.misc or self.params
+        self.misc.optimization = optimization
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
@@ -529,8 +531,6 @@ class SpectrumFactory(BandFactory):
                 print("Choose parallel=True to use Nprocs")
             if Ngroups is not None:
                 print("Choose parallel=True to use Ngroups")
-
-        self.misc.optimized_weights = optimized_weights
 
         # Other parameters:
         self.bplot = bplot

@@ -1748,7 +1748,7 @@ class BroadenFactory(BaseFactory):
         wG,
         wL_dat,
         wG_dat,
-        optimized_weights,
+        optimization,
     ):
         """ Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
@@ -1783,9 +1783,10 @@ class BroadenFactory(BaseFactory):
         wG_dat: array    (size N)
             FWHM of all lines. Used to lookup the DLM
 
-        optimized_weights: bool
-            True/False: Whether or not to use optimized weights
-            
+        optimization :
+            if ``"min-RMS"`` weights optimized by analytical minimization of the RMS-error. 
+            Otherwise, weights equal to their relative position in the grid.
+        
         Returns
         -------
 
@@ -1860,8 +1861,8 @@ class BroadenFactory(BaseFactory):
         awG = tauG
         awL = tauL
 
-        # Finally add corrections to the weights if needed:
-        if optimized_weights:
+        # Finally add corrections to the weights if required:
+        if optimization == "min-RMS":
 
             # TO-DO: log_pG, log_pL, and dv should be specified, not calculated...
             log_pG = (np.log(wG[-1]) - np.log(wG[0])) / (wG.size - 1)
@@ -1997,6 +1998,7 @@ class BroadenFactory(BaseFactory):
         
         self: Factory
             contains the ``self.misc.chunksize`` parameter
+            contains the ``self.misc.optimization`` parameter
             
         df: DataFrame
             line dataframe
@@ -2012,21 +2014,11 @@ class BroadenFactory(BaseFactory):
         wavenumber = self.wavenumber
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
-        # TEMP: @EP use chunksize as the parameter for the broadening optimization strategy:
-        # - None
-        # - if number: split the number of lines
-        # - if 'DLM': use DLM strategy
+        # Get which optimization method to use:
+        optimization = self.misc.optimization
 
         try:
-            if chunksize is None:
-
-                # Deal with all lines directly (usually faster)
-                line_profile = self._calc_lineshape(df)  # usually the bottleneck
-                (wavenumber, abscoeff) = self._apply_lineshape(
-                    df.S.values, line_profile, df.shiftwav.values
-                )
-
-            elif chunksize == "DLM":
+            if optimization in ("simple", "min-RMS"):
                 # Use DLM
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
@@ -2038,30 +2030,43 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
-                    self.misc.optimized_weights,
+                    self.misc.optimization,
                 )
 
-            elif is_float(chunksize):
-                # Cut lines in smaller bits for better memory handling
-                N = int(len(df) * len(wavenumber) / chunksize) + 1
-                # Too big may be faster but overload memory.
-                # See Performance for more information
+            elif optimization is None:
+                if chunksize is None:
 
-                abscoeff = zeros_like(self.wavenumber)
-
-                pb = ProgressBar(N, active=self.verbose)
-                for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
-                    line_profile = self._calc_lineshape(dg)
-                    (wavenumber, absorption) = self._apply_lineshape(
-                        dg.S.values, line_profile, dg.shiftwav.values
+                    # Deal with all lines directly (usually faster)
+                    line_profile = self._calc_lineshape(df)  # usually the bottleneck
+                    (wavenumber, abscoeff) = self._apply_lineshape(
+                        df.S.values, line_profile, df.shiftwav.values
                     )
-                    abscoeff += absorption
-                    pb.update(i)
-                pb.done()
+
+                elif is_float(chunksize):
+                    # Cut lines in smaller bits for better memory handling
+                    N = int(len(df) * len(wavenumber) / chunksize) + 1
+                    # Too big may be faster but overload memory.
+                    # See Performance for more information
+
+                    abscoeff = zeros_like(self.wavenumber)
+
+                    pb = ProgressBar(N, active=self.verbose)
+                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                        line_profile = self._calc_lineshape(dg)
+                        (wavenumber, absorption) = self._apply_lineshape(
+                            dg.S.values, line_profile, dg.shiftwav.values
+                        )
+                        abscoeff += absorption
+                        pb.update(i)
+                    pb.done()
+                else:
+                    raise ValueError(
+                        "Unexpected value for chunksize: {0}".format(chunksize)
+                    )
 
             else:
                 raise ValueError(
-                    "Unexpected value for chunksize: {0}".format(chunksize)
+                    "Unexpected value for optimization: {0}".format(optimization)
                 )
 
         except MemoryError:
@@ -2099,19 +2104,11 @@ class BroadenFactory(BaseFactory):
         wavenumber = self.wavenumber
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
+        # Get which optimization method to use:
+        optimization = self.misc.optimization
 
         try:
-            if chunksize is None:
-                # Deal with all lines directly (usually faster)
-                line_profile = self._calc_lineshape(df)  # usually the bottleneck
-                (wavenumber, abscoeff) = self._apply_lineshape(
-                    df.S.values, line_profile, df.shiftwav.values
-                )
-                (_, emisscoeff) = self._apply_lineshape(
-                    df.Ei.values, line_profile, df.shiftwav.values
-                )
-
-            elif chunksize == "DLM":
+            if optimization in ("simple", "min-RMS"):
                 # Use DLM
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
@@ -2123,7 +2120,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
-                    self.misc.optimized_weights,
+                    self.misc.optimization,
                 )
                 (_, emisscoeff) = self._apply_lineshape_DLM(
                     df.Ei.values,
@@ -2133,7 +2130,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
-                    self.misc.optimized_weights,
+                    self.misc.optimization,
                 )
                 # Note @dev: typical results is:
                 # >>> abscoeff:
@@ -2153,34 +2150,50 @@ class BroadenFactory(BaseFactory):
                 # absorption & emission steps. The bottleneck is the distribution
                 # of the line over the DLM, which has to be done for both abscoeff & emisscoeff.
 
-            elif is_float(chunksize):
-                # Cut lines in smaller bits for better memory handling
-
-                # Get size of numpy array for vectorialization
-                N = int(len(df) * len(wavenumber) / chunksize) + 1
-                # Too big may be faster but overload memory.
-                # See Performance for more information
-
-                abscoeff = zeros_like(self.wavenumber)
-                emisscoeff = zeros_like(self.wavenumber)
-
-                pb = ProgressBar(N, active=self.verbose)
-                for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
-                    line_profile = self._calc_lineshape(dg)
-                    (wavenumber, absorption) = self._apply_lineshape(
-                        dg.S.values, line_profile, dg.shiftwav.values
+            elif optimization is None:
+                if chunksize is None:
+                    # Deal with all lines directly (usually faster)
+                    line_profile = self._calc_lineshape(df)  # usually the bottleneck
+                    (wavenumber, abscoeff) = self._apply_lineshape(
+                        df.S.values, line_profile, df.shiftwav.values
                     )
-                    (_, emission) = self._apply_lineshape(
-                        dg.Ei.values, line_profile, dg.shiftwav.values
+                    (_, emisscoeff) = self._apply_lineshape(
+                        df.Ei.values, line_profile, df.shiftwav.values
                     )
-                    abscoeff += absorption  #
-                    emisscoeff += emission
-                    pb.update(i)
-                pb.done()
+
+                elif is_float(chunksize):
+                    # Cut lines in smaller bits for better memory handling
+
+                    # Get size of numpy array for vectorialization
+                    N = int(len(df) * len(wavenumber) / chunksize) + 1
+                    # Too big may be faster but overload memory.
+                    # See Performance for more information
+
+                    abscoeff = zeros_like(self.wavenumber)
+                    emisscoeff = zeros_like(self.wavenumber)
+
+                    pb = ProgressBar(N, active=self.verbose)
+                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                        line_profile = self._calc_lineshape(dg)
+                        (wavenumber, absorption) = self._apply_lineshape(
+                            dg.S.values, line_profile, dg.shiftwav.values
+                        )
+                        (_, emission) = self._apply_lineshape(
+                            dg.Ei.values, line_profile, dg.shiftwav.values
+                        )
+                        abscoeff += absorption  #
+                        emisscoeff += emission
+                        pb.update(i)
+                    pb.done()
+
+                else:
+                    raise ValueError(
+                        "Unexpected value for chunksize: {0}".format(chunksize)
+                    )
 
             else:
                 raise ValueError(
-                    "Unexpected value for chunksize: {0}".format(chunksize)
+                    "Unexpected value for optimization: {0}".format(optimization)
                 )
 
         except MemoryError:
