@@ -964,15 +964,24 @@ class SpectrumFactory(BandFactory):
 
             iso_arr = list(range(max(iso_set) + 1))
 
-            Ia_arr = np.empty_like(iso_arr, dtype=np.float64)
-            molarmass_arr = np.empty_like(iso_arr, dtype=np.float64)
-            Q_arr = np.empty_like(iso_arr, dtype=np.float64)
+            Ia_arr = np.empty_like(
+                iso_arr, dtype=np.float32
+            )  # abundance of each isotope
+            molarmass_arr = np.empty_like(
+                iso_arr, dtype=np.float32
+            )  # molar mass of each isotope
+            Q_arr = np.empty_like(
+                iso_arr, dtype=np.float32
+            )  # partitioning function of each isotope
             for iso in iso_arr:
                 if iso in iso_set:
                     params = molpar.df.loc[(mol_id, iso)]
                     Ia_arr[iso] = params.abundance
                     molarmass_arr[iso] = params.mol_mass
-                    Q_arr[iso] = self._get_parsum(molecule, iso, state)
+                    Q_arr[iso] = self._get_parsum(molecule, iso, state).at(T=Tgas)
+
+            Ia_arr[np.isnan(Ia_arr)] = 0
+            molarmass_arr[np.isnan(molarmass_arr)] = 0
 
             ### EXPERIMENTAL ###
 
@@ -1017,15 +1026,15 @@ class SpectrumFactory(BandFactory):
 
             # load the data
             df = self.df0
-            iso = df["iso"].to_numpy()
-            v0 = df["wav"].to_numpy()
-            da = df["Pshft"].to_numpy()
-            El = df["El"].to_numpy()
-            na = df["Tdpair"].to_numpy()
+            iso = df["iso"].to_numpy(dtype=np.int32)
+            v0 = df["wav"].to_numpy(dtype=np.float32)
+            da = df["Pshft"].to_numpy(dtype=np.float32)
+            El = df["El"].to_numpy(dtype=np.float32)
+            na = df["Tdpair"].to_numpy(dtype=np.float32)
 
-            log_2gs = self._get_log_2gs()
-            log_2vMm = self._get_log_2vMm(molarmass_arr)
-            S0 = self._get_S0(Ia_arr)
+            log_2gs = np.array(self._get_log_2gs(), dtype=np.float32)
+            log_2vMm = np.array(self._get_log_2vMm(molarmass_arr), dtype=np.float32)
+            S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
 
             NwG = 4
             NwL = 8
@@ -1037,6 +1046,13 @@ class SpectrumFactory(BandFactory):
             print("done!")
             wavenumber = v_arr
             print("Calculating spectra...", end=" ")
+
+            print("pressure = ", pressure)
+            print("Tgas = ", Tgas)
+            print("mole_fraction = ", mole_fraction)
+            print("Ia_arr = ", Ia_arr)
+            print("molarmass_arr = ", molarmass_arr)
+
             abscoeff = py_cuffs.iterate(
                 pressure, Tgas, mole_fraction, Ia_arr, molarmass_arr
             )
@@ -1506,7 +1522,7 @@ class SpectrumFactory(BandFactory):
 
         try:
             v0 = df["wav"].to_numpy()  # get wavenumber
-            iso = df["iso"].to_nump()  # get isotope
+            iso = df["iso"].to_numpy()  # get isotope
             Mm = molarmass_arr * 1e-3 / N_A
             log_2vMm = np.log(2 * v0) + 0.5 * np.log(
                 2 * k * np.log(2) / (c ** 2 * Mm.take(iso))
@@ -1528,12 +1544,13 @@ class SpectrumFactory(BandFactory):
 
         try:
             v0 = df["wav"].to_numpy()
+            iso = df["iso"].to_numpy()
             A21 = df["A"].to_numpy()
             Jl = df["jl"].to_numpy()
             DJ = df["branch"].to_numpy()
             Ju = Jl + DJ
             gu = 2 * Ju + 1  # g_up
-            S0 = Ia_arr * gu * A21 / (8 * pi * c_cm * v0 ** 2)
+            S0 = Ia_arr.take(iso) * gu * A21 / (8 * pi * c_cm * v0 ** 2)
             df["S0"] = S0
             return S0
         except KeyError:
