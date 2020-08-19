@@ -1391,7 +1391,9 @@ class BroadenFactory(BaseFactory):
 
         def _init_w_axis(w_dat, log_p):
             w_min = w_dat.min()
-            w_max = w_dat.max() + 1e-6 #Add small number to prevent w_max falling outside of the grid
+            w_max = (
+                w_dat.max() + 1e-6
+            )  # Add small number to prevent w_max falling outside of the grid
             N = max(1, int(np.log(w_max / w_min) / log_p) + 1) + 1
             return w_min * np.exp(log_p * np.arange(N))
 
