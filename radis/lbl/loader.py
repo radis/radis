@@ -355,6 +355,15 @@ class Input(ConditionDict):
         self.wavenum_min = None  #: str: wavenumber min (cm-1)
 
 
+## TO-DO: these error estimations are horribly outdated...
+def _lorentzian_step(res_L):
+    log_pL = np.log((res_L / 0.20) ** 0.5 + 1)
+    return log_pL
+
+def _gaussian_step(res_G):
+    log_pG = np.log((res_G / 0.46) ** 0.5 + 1)
+    return log_pG
+
 # class Parameters(object):
 class Parameters(ConditionDict):
     """ A class to hold Spectrum calculation computation parameters. Works like 
@@ -398,8 +407,8 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None  #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = "cm-1"  #: waverange unit: should be cm-1.
         self.wstep = None  #: float: spectral resolution (cm-1)
-        self.dlm_res_L = 0.01  #: float (cm-1): Lorentzian step for DLM lineshape database. Default 0.01 cm-1
-        self.dlm_res_G = 0.01  #: float (cm-1): DLM Gaussian step DLM lineshape database. Default 0.01 cm-1
+        self.dlm_log_pL = _lorentzian_step(0.01) #: float : Lorentzian step for DLM lineshape database. Default _lorentzian_step(0.01)
+        self.dlm_log_pG = _gaussian_step(0.01)   #: float : Gaussian step DLM lineshape database. Default _gaussian_step(0.01)
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring 
         lines because of lineshape broadening. Default ``True``."""

@@ -1347,8 +1347,8 @@ class BroadenFactory(BaseFactory):
 
     def _calc_lineshape_DLM(self, df):
         """ Generate the lineshape database using the steps defined by the 
-        parameters :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L` and 
-        :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
+        parameters :py:attr:`~radis.lbl.loader.Parameters.dlm_log_pL` and 
+        :py:attr:`~radis.lbl.loader.Parameters.dlm_log_pG`.
         
         Parameters
         ----------
@@ -1389,28 +1389,20 @@ class BroadenFactory(BaseFactory):
         # Prepare steps for Lineshape database
         # ------------------------------------
 
-        def lorentzian_step(res_L):
-            return (res_L / 0.20) ** 0.5
+        def _init_w_axis(w_dat, log_p):
+            w_min = w_dat.min()
+            w_max = w_dat.max()
+            N = max(1, int(np.log(w_max / w_min) / log_p) + 1) + 1
+            return w_min * np.exp(log_p * np.arange(N))
 
-        def gaussian_step(res_G):
-            return (res_G / 0.46) ** 0.5
-
-        def init_w_axis(w_dat, w_step):
-            f = 1 + w_step
-            N = max(1, int(np.log(w_dat.max() / w_dat.min()) / np.log(f)) + 1) + 1
-            return np.min(w_dat) * f ** np.arange(N)
-
-        res_L = self.params.dlm_res_L  # DLM user params
-        res_G = self.params.dlm_res_G  # DLM user params
+        log_pL = self.params.dlm_log_pL  # DLM user params
+        log_pG = self.params.dlm_log_pG  # DLM user params
 
         wL_dat = df.hwhm_lorentz.values * 2  # FWHM
         wG_dat = df.hwhm_gauss.values * 2  # FWHM
 
-        wL_step = lorentzian_step(res_L)
-        wG_step = gaussian_step(res_G)
-
-        wL = init_w_axis(wL_dat, wL_step)  # FWHM
-        wG = init_w_axis(wG_dat, wG_step)  # FWHM
+        wL = _init_w_axis(wL_dat, log_pL)  # FWHM
+        wG = _init_w_axis(wG_dat, log_pG)  # FWHM
 
         # Calculate the Lineshape
         # -----------------------
@@ -1844,8 +1836,8 @@ class BroadenFactory(BaseFactory):
         #      that corresponds with this line:
         iwL = np.interp(np.log(wL_dat), np.log(wL), np.arange(len(wL)))
         iwG = np.interp(np.log(wG_dat), np.log(wG), np.arange(len(wG)))
-        iwL0 = iwL.astype(int)  # size [N],   number of values defined by res_L
-        iwG0 = iwG.astype(int)  # size [N],   number of values defined by res_G
+        iwL0 = iwL.astype(int)  # size [N],   number of values determined by log_pL
+        iwG0 = iwG.astype(int)  # size [N],   number of values determined by log_pG
         iwL1 = iwL0 + 1
         iwG1 = iwG0 + 1
 
