@@ -1391,7 +1391,7 @@ class BroadenFactory(BaseFactory):
 
         def _init_w_axis(w_dat, log_p):
             w_min = w_dat.min()
-            w_max = w_dat.max()
+            w_max = w_dat.max() + 1e-6 #Add small number to prevent w_max falling outside of the grid
             N = max(1, int(np.log(w_max / w_min) / log_p) + 1) + 1
             return w_min * np.exp(log_p * np.arange(N))
 
@@ -1856,11 +1856,11 @@ class BroadenFactory(BaseFactory):
         # Finally add corrections to the weights if required:
         if optimization == "min-RMS":
 
-            # TO-DO: log_pG, log_pL, and dv should be specified, not calculated...
-            log_pG = (np.log(wG[-1]) - np.log(wG[0])) / (wG.size - 1)
-            log_pL = (np.log(wL[-1]) - np.log(wL[0])) / (wL.size - 1)
-            dv = (wavenumber_calc[-1] - wavenumber_calc[0]) / (wavenumber_calc.size - 1)
+            log_pL = self.params.dlm_log_pL  # DLM user params
+            log_pG = self.params.dlm_log_pG  # DLM user params
 
+            # TO-DO: dv should be loaded from self.params, not calculated...
+            dv = (wavenumber_calc[-1] - wavenumber_calc[0]) / (wavenumber_calc.size - 1)
             dxG = dv / wG_dat
 
             C1_GG = ((6 * np.pi - 16) / (15 * np.pi - 32)) ** (1 / 1.50)
