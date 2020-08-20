@@ -117,10 +117,10 @@ def test_compare_torch_CO2(
         cutoff=1e-25,
         Nprocs=cpu_count() - 1,  # warning with memory if too many procs
         broadening_max_width=20,
-        pseudo_continuum_threshold=0.01,  # use pseudo-continuum, no DLM
-        optimization=None,
-        # pseudo_continuum_threshold=0,        # use DLM, no pseudo-continuum
-        # optimization="min-RMS",
+        # pseudo_continuum_threshold=0.01, # use pseudo-continuum, no DLM. Note : 56s on 20/08.
+        # optimization=None,
+        pseudo_continuum_threshold=0,  # use DLM, no pseudo-continuum. Note : 84s on 20/08
+        optimization="min-RMS",
         verbose=False,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
