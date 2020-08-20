@@ -183,7 +183,7 @@ class SpectrumFactory(BandFactory):
     Other Parameters
     ----------------
 
-    Computation parameters:
+    Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`):  
 
     Tref: K
         Reference temperature for calculations (linestrength temperature
@@ -273,6 +273,24 @@ class SpectrumFactory(BandFactory):
         
         Default ``"min-RMS"`` 
                 
+    broadening_method: ``"voigt"``, ``"convolve"``, ``"fft"``
+        Calculates broadening with a direct voigt approximation ('voigt') or
+        by convoluting independantly calculated Doppler and collisional
+        broadening ('convolve'). First is much faster, 2nd can be used to
+        compare results. This SpectrumFactory parameter can be manually
+        adjusted a posteriori with::
+            
+            sf = SpectrumFactory(...)
+            sf.params.broadening_method = 'voigt'
+            
+        Fast fourier transform ``'fft'`` is only available if using the DLM lineshape  
+        calculation ``optimization``. Because the DLM convolves all lines at the same time,  
+        and thus operates on large arrays, ``'fft'`` becomes more appropriate than
+        convolutions in real space (``'voit'``, ``'convolve'`` )
+        
+        By default, use ``"fft"`` for any ``optimization``, and ``"voigt"`` if 
+        optimization is ``None`` .
+    
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
@@ -319,6 +337,8 @@ class SpectrumFactory(BandFactory):
     
     See Also
     --------
+    
+    Alternative:
 
     :func:`~radis.lbl.calc.calc_spectrum`, 
     :class:`~radis.lbl.parallel.ParallelFactory`
@@ -336,6 +356,12 @@ class SpectrumFactory(BandFactory):
     :meth:`~radis.lbl.loader.DatabankLoader.init_database`,
     :meth:`~radis.lbl.bands.BandFactory.eq_bands`, 
     :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
+    
+    Inputs and parameters can be accessed a posteriori with :
+        
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
+    :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscallenous parameters (don't change output)
     
     """
 
@@ -374,6 +400,7 @@ class SpectrumFactory(BandFactory):
         self_absorption=True,
         chunksize=None,
         optimization="min-RMS",
+        broadening_method=Default("fft"),
         Nprocs=None,
         Ngroups=None,
         cutoff=1e-27,
@@ -505,16 +532,29 @@ class SpectrumFactory(BandFactory):
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
 
-        # if optimization is ``'simple'`` or ``'min-RMS'``,
-        # DLM optimization for lineshape calculation is used.
-        # In this case the broadening method is automatically set to ``'fft'``.
-        # See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
-
-        if optimization in ("simple", "min-RMS"):
-            self._broadening_method = "fft"
-            if self.verbose >= 3:
-                print("DLM used. Defaulting broadening method to FFT")
-        self.misc.optimization = optimization
+        # if optimization is ``'simple'`` or ``'min-RMS'``, or None :
+        # Adjust default values of broadening method :
+        if isinstance(broadening_method, Default):
+            if optimization in ("simple", "min-RMS") and broadening_method != "fft":
+                if self.verbose >= 3:
+                    print(
+                        "DLM used. Defaulting broadening method from {0} to FFT".format(
+                            broadening_method
+                        )
+                    )
+                broadening_method = "fft"
+            elif optimization is None and broadening_method != "voigt":
+                if self.verbose >= 3:
+                    print(
+                        "DLM not used. Defaulting broadening method from {0} to 'voigt'".format(
+                            broadening_method
+                        )
+                    )
+                broadening_method = "voigt"
+            else:  # keep default
+                broadening_method = broadening_method.value
+        self.params.broadening_method = broadening_method
+        self.params.optimization = optimization
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
@@ -663,7 +703,9 @@ class SpectrumFactory(BandFactory):
                 self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
                 raise ValueError(
-                    "Tgas should be float. Use ParallelFactory for multiple cases"
+                    "Tgas should be float. Got {0}. Use ParallelFactory for multiple cases".format(
+                        Tgas
+                    )
                 )
             self.input.rot_distribution = "boltzmann"  # equilibrium
             self.input.vib_distribution = "boltzmann"  # equilibrium

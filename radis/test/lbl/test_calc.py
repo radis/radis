@@ -664,7 +664,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 
     # Contradictory:
     with pytest.raises(ValueError):
-        s = calc_spectrum(
+        calc_spectrum(
             wavelength_min=4165,
             wavelength_max=5000,
             Tgas=1000,
@@ -677,7 +677,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 
     # Partial:
     with pytest.raises(ValueError):
-        s = calc_spectrum(
+        calc_spectrum(
             wavelength_min=4165,
             wavelength_max=5000,
             Tgas=1000,

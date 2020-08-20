@@ -904,10 +904,10 @@ class BandFactory(BroadenFactory):
 
         abscoeff_bands = {}
         pb = ProgressBar(len(gb), active=self.verbose)
-        optimization = self.misc.optimization
+        optimization = self.params.optimization
 
         for i, (band, dg) in enumerate(gb):
-            if optimization in  ("simple","min-RMS"):
+            if optimization in ("simple", "min-RMS"):
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
                 (wavenumber, absorption) = self._apply_lineshape_DLM(
                     dg.S.values,
@@ -955,11 +955,11 @@ class BandFactory(BroadenFactory):
         emisscoeff_bands = {}
 
         gb = df.groupby("band")
-        optimization = self.misc.optimization
-        
+        optimization = self.params.optimization
+
         pb = ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
-            if optimization in ("simple","min-RMS"):
+            if optimization in ("simple", "min-RMS"):
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
                 (wavenumber, absorption) = self._apply_lineshape_DLM(
                     dg.S.values,

@@ -404,12 +404,12 @@ def calc_spectrum(
                 Tvib=Tvib,
                 Trot=Trot,
                 pressure=pressure,
-                #                                   overpopulation=overpopulation,  # now in dict_arguments
+                # overpopulation=overpopulation,  # now in dict_arguments
                 molecule=molecule,
-                #                                   isotope=isotope,                # now in dict_arguments
-                #                                   mole_fraction=mole_fraction,    # now in dict_arguments
+                # isotope=isotope,                # now in dict_arguments
+                # mole_fraction=mole_fraction,    # now in dict_arguments
                 path_length=path_length,
-                #                                   databank=databank,              # now in dict_arguments
+                # databank=databank,              # now in dict_arguments
                 medium=medium,
                 wstep=wstep,
                 broadening_max_width=broadening_max_width,

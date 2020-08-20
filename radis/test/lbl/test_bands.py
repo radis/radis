@@ -53,10 +53,10 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
         cutoff=1e-23,
         molecule="CO2",
         isotope=1,
+        optimization=None,
         db_use_cached=True,
         lvl_use_cached=True,
         verbose=verbose,
-        optimization=None,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"

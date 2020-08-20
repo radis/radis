@@ -104,7 +104,6 @@ from time import time
 import gc
 from uuid import uuid1
 from six.moves import range
-import fnmatch
 from radis.misc.utils import get_files_from_regex
 
 KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
@@ -227,10 +226,13 @@ from copy import deepcopy
 
 
 class ConditionDict(dict):
-    """ A class to hold Spectrum calculation input conditions, or computation 
-    parameters. Works like a dict except you can also access attribute with::
+    """ A class to hold Spectrum calculation input conditions (:py:class:`~radis.lbl.loader.Input`), 
+    computation parameters (:py:class:`~radis.lbl.loader.Parameters`), or 
+    miscalleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`). 
+    
+    Works like a dict except you can also access attribute with::
 
-        v = a.key 
+        v = a.key   # equivalent to v = a[key]
 
     Also can be copied, deepcopied, and parallelized in multiprocessing
     
@@ -246,8 +248,9 @@ class ConditionDict(dict):
     See Also
     --------
     
-    :class:`~radis.lbl.loader.Input`, 
-    :class:`~radis.lbl.loader.Parameter`, 
+    :py:class:`~radis.lbl.loader.Input`, 
+    :py:class:`~radis.lbl.loader.Parameter`, 
+    :py:class:`~radis.lbl.loader.MiscParams`
     """
 
     def get_params(self):
@@ -315,12 +318,20 @@ class ConditionDict(dict):
 
 # class Input(object):
 class Input(ConditionDict):
-    """ A class to hold Spectrum calculation input conditions. 
+    """ Holds Spectrum calculation input conditions, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input` of 
+    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
+    
     Works like a dict except you can also access attribute with::
 
-        v = a.key 
-
-    Also can be copied, deepcopied, and parallelized in multiprocessing
+        v = sf.input.key   # equivalent to v = sf.input[key] 
+    
+    See Also
+    --------
+    
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params`,
+    :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
+    
     """
 
     #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
@@ -368,12 +379,23 @@ def _gaussian_step(res_G):
 
 # class Parameters(object):
 class Parameters(ConditionDict):
-    """ A class to hold Spectrum calculation computation parameters. Works like 
+    """ Holds Spectrum calculation computation parameters, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params` of 
+    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
+    
+    Works like 
     a dict except you can also access attribute with::
 
-        v = a.key 
+        v = sf.params.key    # equivalent to v = sf.params[key]
 
     Also can be copied, deepcopied, and parallelized in multiprocessing
+    
+    See Also
+    --------
+    
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
+    :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
+    
     """
 
     #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
@@ -392,6 +414,8 @@ class Parameters(ConditionDict):
         # Dev: Init here to be found by autocomplete
         self.broadening_max_width = None  #: float: cutoff for lineshape calculation (cm-1). Overwritten by SpectrumFactory
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
+        self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
+        self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``
         self.db_assumed_sorted = None  #: bool: assume that Line Database is sorted (helps not to parse the whole database)
         self.db_use_cached = (
             None  #: bool: use (and generate) cache files for Line Database
@@ -421,8 +445,11 @@ class Parameters(ConditionDict):
 
 
 class MiscParams(ConditionDict):
-    """ A class to hold Spectrum calculation descriptive parameters. Unlike 
-    :class:`~radis.lbl.loader.Parameters`, these parameters cannot influence the 
+    """ A class to hold Spectrum calculation descriptive parameters, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params` of 
+    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
+    
+    Unlike :class:`~radis.lbl.loader.Parameters`, these parameters cannot influence the 
     Spectrum output and will not be used when comparing Spectrum with existing, 
     precomputed spectra in :class:`~radis.tools.database.SpecDatabase`
     
@@ -431,7 +458,12 @@ class MiscParams(ConditionDict):
 
         v = a.key 
 
-    Also can be copied, deepcopied, and parallelized in multiprocessing
+    See Also
+    --------
+    
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params`,
+    
     """
 
     def __init__(self):
@@ -530,9 +562,14 @@ class DatabankLoader(object):
         self.input.state = ""
 
         # an computation parameters:
-        self.params = Parameters()  # params that can change output (ex: threshold)
-        self.misc = MiscParams()  # params that cant (ex: number of CPU, etc.)
-
+        self.params = Parameters()
+        """Computational parameters: :py:class:`~radis.lbl.loader.Parameters`
+        they may change the output of calculations (ex: threshold, cutoff, broadening methods, etc.)
+        """
+        self.misc = MiscParams()
+        """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`) 
+        params that cannot change the output of calculations (ex: number of CPU, etc.)
+        """
         # Setup individual warnings. Value of keys can be:
         # - 'warning' (default: just trigger a warning)
         # - 'error' (raises an error on this warning)

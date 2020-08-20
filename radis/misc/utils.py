@@ -83,12 +83,6 @@ else:
     FileNotFoundError = FileNotFoundError
     PermissionError = PermissionError
 
-# Config Parser
-if sys.version_info[0] == 2:
-    import six.moves.configparser as configparser
-else:
-    import configparser
-
 
 # %%
 # ==============================================================================
@@ -97,13 +91,16 @@ else:
 
 
 class Default:
-    """ Contains a value
+    """ Contains a value. Used to know whether a function argument equal to its 
+    default value was explicitely given by the user or not. This allows to 
+    prevent user errors.
     
     Examples
     --------
     
-    ::
+    Check if a value is Default::
     
+        from radis.misc.utils import Default
         a = Default("42")
         isinstance(a, Default)
         >>> True
