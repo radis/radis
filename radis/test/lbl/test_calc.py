@@ -116,6 +116,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         use_cached=True,
         medium="vacuum",
         verbose=verbose,
+        optimization="simple",
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -148,32 +149,39 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     #                           0.17110649,  0.15403513,  0.13376804,  0.11932659,  0.10882006,
     #                           0.11112725,  0.0458288 ,  0.00247956,  0.00144128])
     # Updated again in RADIS 0.9.20 (02/09/19) with switch to tabulated Q(Tref)
+    # I_ref = np.array([         0.29048064, 0.29743104, 0.32955513, 0.32047172, 0.20688813,
+    #                           0.19210952, 0.20148265, 0.17330909, 0.17213373, 0.15887159,
+    #                           0.17106096, 0.15400039, 0.13374285, 0.11930822, 0.10880631,
+    #                           0.11111394, 0.04582291, 0.00247955, 0.00144128])
+    # Updated again on (05/08/20) with implementation of optimized weights:
     I_ref = np.array(
         [
-            0.29048064,
-            0.29743104,
-            0.32955513,
-            0.32047172,
-            0.20688813,
-            0.19210952,
-            0.20148265,
-            0.17330909,
-            0.17213373,
-            0.15887159,
-            0.17106096,
-            0.15400039,
-            0.13374285,
-            0.11930822,
-            0.10880631,
-            0.11111394,
-            0.04582291,
-            0.00247955,
-            0.00144128,
+            0.29043204,
+            0.29740738,
+            0.32954171,
+            0.32045394,
+            0.20680637,
+            0.19205883,
+            0.20142790,
+            0.17322236,
+            0.17206767,
+            0.15879478,
+            0.17107564,
+            0.15400038,
+            0.13372559,
+            0.11929585,
+            0.10881116,
+            0.11111882,
+            0.04581152,
+            0.00247154,
+            0.00143631,
         ]
     )
+
     if plot:
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
+
     assert np.allclose(I[::100], I_ref, atol=1e-6)
 
     return True
@@ -230,6 +238,7 @@ def test_calc_spectrum_overpopulations(
         use_cached=True,
         medium="vacuum",
         verbose=verbose,
+        optimization="simple",
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -239,7 +248,7 @@ def test_calc_spectrum_overpopulations(
     s.apply_slit((2, 2.5), "nm", shape="trapezoidal")
 
     if plot:
-        s.plot()
+        s.plot(wunit="nm")
 
     w, I = s.get("radiance", wunit="nm")
     w_ref = w[::100]
@@ -263,29 +272,36 @@ def test_calc_spectrum_overpopulations(
     #                           0.51374777,  0.46022548,  0.3979033 ,  0.3534643 ,  0.32129239,
     #                           0.32786479,  0.1351593 ,  0.0068877 ,  0.00387545])
     # Updated again in RADIS 0.9.20 (02/09/19) with switch to tabulated Q(Tref)
+    #       I_ref = np.array([  0.62109562,0.66695661,0.80983176,0.79356445,0.56958189,
+    #                           0.58264143,0.61185167,0.52307454,0.51919288,0.47677519,
+    #                           0.51365307,0.46015383,0.39785172,0.35342697,0.32126465,
+    #                           0.32783797,0.13514737,0.00688769,0.00387544])
+    # Updated again on (05/08/20) with implementation of optimized weights:
+
     I_ref = np.array(
         [
-            0.62109562,
-            0.66695661,
-            0.80983176,
-            0.79356445,
-            0.56958189,
-            0.58264143,
-            0.61185167,
-            0.52307454,
-            0.51919288,
-            0.47677519,
-            0.51365307,
-            0.46015383,
-            0.39785172,
-            0.35342697,
-            0.32126465,
-            0.32783797,
-            0.13514737,
-            0.00688769,
-            0.00387544,
+            0.62097252,
+            0.66685971,
+            0.80982863,
+            0.79353320,
+            0.56939115,
+            0.58255747,
+            0.61175655,
+            0.52287059,
+            0.51905438,
+            0.47659305,
+            0.51375266,
+            0.46019418,
+            0.39782806,
+            0.35340763,
+            0.32128853,
+            0.32785594,
+            0.13511584,
+            0.00686547,
+            0.00386199,
         ]
     )
+
     if plot:
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
@@ -648,7 +664,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 
     # Contradictory:
     with pytest.raises(ValueError):
-        s = calc_spectrum(
+        calc_spectrum(
             wavelength_min=4165,
             wavelength_max=5000,
             Tgas=1000,
@@ -661,7 +677,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 
     # Partial:
     with pytest.raises(ValueError):
-        s = calc_spectrum(
+        calc_spectrum(
             wavelength_min=4165,
             wavelength_max=5000,
             Tgas=1000,

@@ -45,7 +45,6 @@ Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information.
 from __future__ import absolute_import, print_function, unicode_literals, division
 from radis.lbl import SpectrumFactory
 from radis.misc.basics import is_list, is_float
-from radis.misc.utils import FileNotFoundError
 from multiprocessing import Pool, cpu_count
 
 # from multiprocessing.pool import ThreadPool
@@ -267,19 +266,11 @@ class ParallelFactory(SpectrumFactory):
             print(("Calculate {0} spectra on {1} procs".format(len(Tgas), Nprocs)))
         t1 = time()
 
-        try:
-            with Pool(Nprocs) as p:  # Python 3 only
-                spec_list = p.map(
-                    _distribute_eq_spectrum,
-                    list(zip(cast_factory, Tgas, mole_fraction, path_length)),
-                )
-        except AttributeError:
-            if sys.version_info[0] == 2:
-                raise NotImplementedError(
-                    "parallel is only implemented in Python 3. Time to switch!"
-                )
-            else:
-                raise
+        with Pool(Nprocs) as p:
+            spec_list = p.map(
+                _distribute_eq_spectrum,
+                list(zip(cast_factory, Tgas, mole_fraction, path_length)),
+            )
 
         if self.verbose:
             print(("{0} spectra calculated in {1:.1f}s".format(N, time() - t1)))
