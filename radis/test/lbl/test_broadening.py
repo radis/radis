@@ -169,14 +169,14 @@ def test_broadening_methods_different_conditions(
         assert isclose(sf.df0.wav, 2150.856008)
 
         # Calculate spectra (different broadening methods)
-        sf._broadening_method = "voigt"
+        sf.params.broadening_method = "voigt"
         s_voigt = sf.eq_spectrum(Tgas=T, name="direct")
 
         # assert broadening FWHM are correct
         assert isclose(2 * float(sf.df1.hwhm_gauss), fwhm_gauss)
         assert isclose(2 * float(sf.df1.hwhm_lorentz), fwhm_lorentz)
 
-        sf._broadening_method = "convolve"
+        sf.params.broadening_method = "convolve"
         s_convolve = sf.eq_spectrum(Tgas=T, name="convolve")
 
         # assert broadening FWHM are correct
@@ -238,6 +238,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
             pressure=p,
             broadening_max_width=broadening_max_width,
             isotope="1",
+            optimization=None,
             verbose=False,
             warnings={
                 "MissingSelfBroadeningWarning": "ignore",
@@ -248,10 +249,10 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
         )  # 0.2)
         sf.load_databank("HITRAN-CO-TEST")
         #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
-        sf._broadening_method = "voigt"
+        sf.params.broadening_method = "voigt"
         s_voigt = sf.eq_spectrum(Tgas=T, name="direct")
 
-        sf._broadening_method = "convolve"
+        sf.params.broadening_method = "convolve"
         s_convolve = sf.eq_spectrum(Tgas=T, name="convolve")
 
         res = get_residual(s_voigt, s_convolve, "abscoeff")
@@ -321,11 +322,11 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
 
     # DLM:
     sf.misc["chunksize"] = "DLM"
-    sf._broadening_method = "convolve"
+    sf.params.broadening_method = "convolve"
     s_dlm = sf.eq_spectrum(Tgas=T)
     s_dlm.name = "DLM ({0:.2f}s)".format(s_dlm.conditions["calculation_time"])
     # DLM Voigt with Whiting approximation:
-    sf._broadening_method = "voigt"
+    sf.params.broadening_method = "voigt"
     s_dlm_voigt = sf.eq_spectrum(Tgas=T)
     s_dlm_voigt.name = "DLM Whiting ({0:.2f}s)".format(
         s_dlm_voigt.conditions["calculation_time"]
@@ -400,7 +401,7 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     # DLM , with Fourier
     if verbose:
         print("\nFFT version \n")
-    sf._broadening_method = "fft"
+    sf.params.broadening_method = "fft"
     s_dlm_fft = sf.eq_spectrum(Tgas=T)
     s_dlm_fft.name = "DLM FFT ({0:.2f}s)".format(
         s_dlm_fft.conditions["calculation_time"]
@@ -524,6 +525,7 @@ def test_abscoeff_continuum(
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",
+        optimization=None,
         verbose=verbose,
     )
     sf.warnings.update(
@@ -627,6 +629,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",
+        optimization=None,
         verbose=verbose,
     )
     sf.warnings.update(

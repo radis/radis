@@ -64,7 +64,6 @@ from radis.phys.constants import Na
 from radis.phys.constants import k_b_CGS, c_CGS
 from radis.misc.printer import printg
 from radis.misc.basics import is_float
-from radis.misc.arrays import is_sorted
 from numpy import exp, arange, zeros_like, trapz, pi, sqrt, sin
 from numpy import log as ln
 from multiprocessing import Pool, cpu_count
@@ -74,7 +73,6 @@ from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 from six.moves import zip
 from numba import jit, float64
 from radis.misc.debug import printdbg
@@ -751,25 +749,8 @@ class BroadenFactory(BaseFactory):
         self.wavenumber_calc = None
         self.woutrange = None
 
-        self._broadening_method = "voigt"
-        """str: 'voigt', 'convolve', 'fft'
-        
-        Calculates broadening with a direct voigt approximation ('voigt') or
-        by convoluting independantly calculated Doppler and collisional
-        broadening ('convolve'). First is much faster, 2nd can be used to
-        compare results. Not a user available parameter for the moment, but
-        you can edit the SpectrumFactory manually::
-            
-            sf = SpectrumFactory(...)
-            sf._broadening_method = 'voigt'
-            
-        Fast fourier transform ``'fft'`` is only available if using the DLM lineshape  
-        calculation optimisation. Because the DLM convolves all lines at the same time,  
-        and thus operates on large arrays, ``'fft'`` becomes more appropriate than
-        convolutions in real space (``'voit'``, ``'convolve'`` )
-        
-        ``'fft'`` is automatically selected if DLM is used. 
-
+        self.params.broadening_method = ""
+        """ See :py:meth:`~radis.lbl.factory.SpectrumFactory` 
         """
 
         # Predict broadening times (helps trigger warnings for optimization)
@@ -844,12 +825,15 @@ class BroadenFactory(BaseFactory):
         pressure_atm = pressure_mbar / 1013.25
         # coefficients tabulation temperature
         Tref = self.input.Tref
+        broadening_method = (
+            self.params.broadening_method
+        )  # Lineshape broadening algorithm
 
         # Get broadenings
-        if self._broadening_method == "voigt":
+        if broadening_method == "voigt":
             # Adds hwhm_voigt, hwhm_gauss, hwhm_lorentz:
             self._add_voigt_broadening_HWHM(df, pressure_atm, mole_fraction, Tgas, Tref)
-        elif self._broadening_method in ["convolve", "fft"]:
+        elif broadening_method in ["convolve", "fft"]:
             # Adds hwhm_lorentz:
             self._add_collisional_broadening_HWHM(
                 df, pressure_atm, mole_fraction, Tgas, Tref
@@ -858,8 +842,8 @@ class BroadenFactory(BaseFactory):
             self._add_doppler_broadening_HWHM(df, Tgas)
         else:
             raise ValueError(
-                "Unexpected broadening calculation method: {0}".format(
-                    self._broadening_method
+                "Unexpected lineshape broadening algorithm : broadening_method={0}".format(
+                    broadening_method
                 )
             )
 
@@ -1290,10 +1274,13 @@ class BroadenFactory(BaseFactory):
             t1 = time()
 
         # Calculate lineshape (using precomputed HWHM)
-        if self._broadening_method == "voigt":
+        broadening_method = (
+            self.params.broadening_method
+        )  # Lineshape broadening algorithm
+        if broadening_method == "voigt":
             jit = True
             line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
-        elif self._broadening_method == "convolve":
+        elif broadening_method == "convolve":
             # Get pressure and gaussian profiles
             pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
             if __debug__:
@@ -1313,12 +1300,12 @@ class BroadenFactory(BaseFactory):
             # ... broadening_width too small): at least the energy is conserved, even
             # ... if not perfectly distributed (spectrally). A warning is raised by the
             # ... broadening functions.
-        elif self._broadening_method == "fft":
+        elif broadening_method == "fft":
             raise NotImplementedError("FFT")
         else:
             raise ValueError(
-                "Unexpected broadening calculation method: {0}".format(
-                    self._broadening_method
+                "Unexpected lineshape broadening algorithm: broadening_method={0}".format(
+                    broadening_method
                 )
             )
 
@@ -1326,13 +1313,13 @@ class BroadenFactory(BaseFactory):
             t2 = time()
             if self.verbose >= 3:
                 printg("... Initialized vectors in {0:.1f}s".format(t1 - t0))
-                if self._broadening_method == "voigt":
+                if broadening_method == "voigt":
                     printg(
                         "... Calculated Voigt profile (jit={1}) in {0:.1f}s".format(
                             t2 - t1, jit
                         )
                     )
-                elif self._broadening_method == "convolve":
+                elif broadening_method == "convolve":
                     printg(
                         "... Calculated Lorentzian profile in {0:.1f}s".format(t11 - t1)
                     )
@@ -1340,7 +1327,7 @@ class BroadenFactory(BaseFactory):
                         "... Calculated Gaussian profile in {0:.1f}s".format(t12 - t11)
                     )
                     printg("... Convolved both profiles in {0:.1f}s".format(t2 - t12))
-                elif self._broadening_method == "fft":
+                elif broadening_method == "fft":
                     raise NotImplementedError("FFT")
 
         return line_profile
@@ -1361,7 +1348,7 @@ class BroadenFactory(BaseFactory):
         
         line_profile_DLM: dict
             dictionary of Voigt profile template. 
-            If ``self._broadening_method == 'fft'``, templates are calculated
+            If ``self.params.broadening_method == 'fft'``, templates are calculated
             in Fourier space.
     
         wL, wG: array
@@ -1410,8 +1397,8 @@ class BroadenFactory(BaseFactory):
         # -----------------------
 
         line_profile_DLM = {}
-
-        if self._broadening_method == "voigt":
+        broadening_method = self.params.broadening_method
+        if broadening_method == "voigt":
             jit = False  # not enough lines to make the just-in-time FORTRAN compilation useful
             wbroad_centered = self.wbroad_centered
 
@@ -1426,7 +1413,7 @@ class BroadenFactory(BaseFactory):
                     )  # FWHM > HWHM
                     line_profile_DLM[i][j] = lineshape
 
-        elif self._broadening_method == "convolve":
+        elif broadening_method == "convolve":
             wbroad_centered = self.wbroad_centered
 
             IL = [
@@ -1445,7 +1432,7 @@ class BroadenFactory(BaseFactory):
                     lineshape /= np.trapz(lineshape, x=wbroad_centered)
                     line_profile_DLM[i][j] = lineshape
 
-        elif self._broadening_method == "fft":
+        elif broadening_method == "fft":
             # Unlike real space methods ('convolve', 'voigt'), here we calculate
             # the lineshape on the full spectral range.
             w = self.wavenumber_calc
@@ -1467,7 +1454,7 @@ class BroadenFactory(BaseFactory):
 
         else:
             raise NotImplementedError(
-                "Broadening method with DLM: {0}".format(self._broadening_method)
+                "Broadening method with DLM: {0}".format(broadening_method)
             )
 
         if __debug__ and self.verbose >= 3:
@@ -1759,7 +1746,7 @@ class BroadenFactory(BaseFactory):
                 
                 lineshape = line_profile_DLM[gaussian_index][lorentzian_index]
 
-            If ``self._broadening_method == 'fft'``, templates are given
+            If ``self.params.broadening_method == 'fft'``, templates are given
             in Fourier space.
 
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
@@ -1810,9 +1797,10 @@ class BroadenFactory(BaseFactory):
         if __debug__:
             t0 = time()
 
-        #        # Get spectrum range
+        # Get spectrum range
         wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
         wavenumber_calc = self.wavenumber_calc
+        broadening_method = self.params.broadening_method
 
         # Vectorize the chunk of lines
         S = broadened_param
@@ -1828,7 +1816,7 @@ class BroadenFactory(BaseFactory):
         iv = np.interp(
             shifted_wavenum, wavenumber_calc, np.arange(len(wavenumber_calc))
         )
-        if self._broadening_method == "fft":
+        if broadening_method == "fft":
             iv += len(wavenumber_calc) // 2  # FFT is done on 2x wavenumber_calc
 
         iv0 = iv.astype(int)  # size [N]
@@ -1908,12 +1896,12 @@ class BroadenFactory(BaseFactory):
             t2 = time()
 
         # ... Initialize array on which to distribute the lineshapes
-        if self._broadening_method in ["voigt", "convolve"]:
+        if broadening_method in ["voigt", "convolve"]:
             DLM = np.zeros((len(wavenumber_calc), len(wL), len(wG)))
-        elif self._broadening_method == "fft":
+        elif broadening_method == "fft":
             DLM = np.zeros((2 * len(wavenumber_calc), len(wL), len(wG)))
         else:
-            raise NotImplementedError(self._broadening_method)
+            raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
         np.add.at(DLM, (iv0, iwL0, iwG0), Iv0 * awV00)
@@ -1933,7 +1921,7 @@ class BroadenFactory(BaseFactory):
 
         # For each value from the DLM, retrieve the lineshape and convolve all
         # corresponding lines with it before summing.
-        if self._broadening_method in ["voigt", "convolve"]:
+        if broadening_method in ["voigt", "convolve"]:
 
             # ... Initialize array on which to distribute the lineshapes
             sumoflines_calc = zeros_like(wavenumber_calc)
@@ -1943,7 +1931,7 @@ class BroadenFactory(BaseFactory):
                     lineshape = line_profile_DLM[i][j]
                     sumoflines_calc += np.convolve(DLM[:, i, j], lineshape, "same")
 
-        elif self._broadening_method == "fft":
+        elif broadening_method == "fft":
             # ... Initialize array in FT space
             Idlm_FT = 1j * np.zeros(len(line_profile_DLM[0][0]))
             for i in range(len(wL)):
@@ -1959,7 +1947,7 @@ class BroadenFactory(BaseFactory):
             sumoflines_calc /= self.params.wstep
 
         else:
-            raise NotImplementedError(self._broadening_method)
+            raise NotImplementedError(broadening_method)
 
         if __debug__:
             t3 = time()
@@ -1992,7 +1980,7 @@ class BroadenFactory(BaseFactory):
         
         self: Factory
             contains the ``self.misc.chunksize`` parameter
-            contains the ``self.misc.optimization`` parameter
+            contains the ``self.params.optimization`` parameter
             
         df: DataFrame
             line dataframe
@@ -2009,7 +1997,7 @@ class BroadenFactory(BaseFactory):
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
         # Get which optimization method to use:
-        optimization = self.misc.optimization
+        optimization = self.params.optimization
 
         try:
             if optimization in ("simple", "min-RMS"):
@@ -2024,7 +2012,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
-                    self.misc.optimization,
+                    self.params.optimization,
                 )
 
             elif optimization is None:
@@ -2099,7 +2087,7 @@ class BroadenFactory(BaseFactory):
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
         # Get which optimization method to use:
-        optimization = self.misc.optimization
+        optimization = self.params.optimization
 
         try:
             if optimization in ("simple", "min-RMS"):
@@ -2114,7 +2102,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
-                    self.misc.optimization,
+                    optimization,
                 )
                 (_, emisscoeff) = self._apply_lineshape_DLM(
                     df.Ei.values,
@@ -2124,7 +2112,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
-                    self.misc.optimization,
+                    optimization,
                 )
                 # Note @dev: typical results is:
                 # >>> abscoeff:
@@ -2539,6 +2527,11 @@ class BroadenFactory(BaseFactory):
             wavenumber_calc = self.wavenumber_calc
             pseudo_continuum_threshold = self.params.pseudo_continuum_threshold
             wstep = self.params.wstep
+            if self.params.optimization is not None:
+                raise ValueError(
+                    "pseudo-continuum not compatible with DLM. "
+                    + "Choose either optimization=None either pseudo_continuum_threshold=0"
+                )
 
             # Calculate rough spectrum, label weak lines
             # ... only guess based on abscoeff. See Notes for noneq case.

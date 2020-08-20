@@ -116,7 +116,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         use_cached=True,
         medium="vacuum",
         verbose=verbose,
-        optimized_weights=False,
+        optimization="simple",
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -238,7 +238,7 @@ def test_calc_spectrum_overpopulations(
         use_cached=True,
         medium="vacuum",
         verbose=verbose,
-        optimized_weights=False,
+        optimization="simple",
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -664,7 +664,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 
     # Contradictory:
     with pytest.raises(ValueError):
-        s = calc_spectrum(
+        calc_spectrum(
             wavelength_min=4165,
             wavelength_max=5000,
             Tgas=1000,
@@ -677,7 +677,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 
     # Partial:
     with pytest.raises(ValueError):
-        s = calc_spectrum(
+        calc_spectrum(
             wavelength_min=4165,
             wavelength_max=5000,
             Tgas=1000,
