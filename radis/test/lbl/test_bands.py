@@ -56,7 +56,7 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
         db_use_cached=True,
         lvl_use_cached=True,
         verbose=verbose,
-        optimization = None,
+        optimization=None,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
