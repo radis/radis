@@ -1913,11 +1913,6 @@ class DatabankLoader(object):
                                     )
                                 )
                             continue
-
-                    # elif dbformat == "npy":
-                    #     pass
-                    #     # check of 1st line not implemented. TODO if necessary.
-
                     else:
                         raise ValueError(
                             "The database format is unknown: {0}".format(dbformat)
@@ -1948,11 +1943,6 @@ class DatabankLoader(object):
                         verbose=verbose,
                         drop_non_numeric=True,
                     )
-                # elif dbformat == "npy":
-                #
-                #     df = npy2df(filename, verbose=verbose)
-                #     # path like : {'v0': path to v0.npy, 'da': path to da.npy}
-
                 else:
                     raise ValueError("Unknown dbformat: {0}".format(dbformat))
 
