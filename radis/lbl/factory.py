@@ -1491,6 +1491,7 @@ class SpectrumFactory(BandFactory):
     def _get_log_2gs(self):
         """ Returns log_2gs if it already exists in the dataframe, otherwise computes it using gamma_air """
         df = self.df0
+        # TODO: deal with the case of gamma_self [so we don't forget] 
 
         # if the column already exists, then return
         if "log_2gs" in df.columns:
@@ -1501,10 +1502,10 @@ class SpectrumFactory(BandFactory):
             log_2gs = np.log(2 * gamma_air)
             df["log_2gs"] = log_2gs
             return log_2gs
-        except KeyError:
+        except KeyError as err:
             raise KeyError(
                 "Cannot find air-broadened half-width or log_2gs in the database... please check the database"
-            )
+            ) from err
 
     def _get_log_2vMm(self, molarmass_arr):
         """ Returns log_2vMm if it already exists in the dataframe, otherwise computes it using the abundance and molar mass for each isotope passed in the input """
