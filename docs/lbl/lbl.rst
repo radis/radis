@@ -194,9 +194,56 @@ calculation of lineshapes and broadening. If your system supports it, the spectr
 can be calculated on the GPU using the :py:func:`~radis.lbl.calc.calc_spectrum`
 function with parameter `mode` set to `gpu`.
 
-Currently, the GPU-enabled spectrum calculations can only be done using databank
-that has been preprocessed and saved in numpy's `npy` format. Direct .par or .txt
-files *cannot* be used for calculating spectra on the GPU.
+GPU-enabled spectrum calculations can be done using either the standard RADIS
+databank loader or using databank that has been preprocessed and saved in numpy
+array (`npy`) format. In case the standard loader is used for loading the data
+for GPU-powered spectrum calculation, some preprocessing is done on that data
+before the spectrum calculation begins.
+# TODO: perform timing test to see how much time calculating log_2gs separately takes
+
+Currently, GPU-powered spectra calculations are supported only at thermal equilibrium
+and therefore, the method to calculate the spectra has been named :py:func:`~radis.lbl.calc.eq_spectrum_gpu`.
+In order to use this method to calculate the spectra, follow the same steps as in the
+case of a normal equilibrium spectra, and if using :py:func:`~radis.lbl.calc.calc_spectrum`
+function set the parameter `mode` to `gpu`, or use :py:func:`~radis.lbl.calc.eq_spectrum_gpu`
+
+Consider the following example which demonstrates the above information::
+
+    from radis import SpectrumFactory
+    from radis.test.utils import getTestFile
+    T = 1000
+    p = 0.1
+    wstep = 0.001
+    wmin = 2200  # cm-1
+    wmax = 2400  # cm-1
+    sf = SpectrumFactory(
+            wavenum_min=wmin,
+            wavenum_max=wmax,
+            mole_fraction=1,
+            path_length=1,  # doesnt change anything
+            wstep=wstep,
+            pressure=p,
+            isotope="1",
+            chunksize="DLM"
+        )
+    sf.load_databank(getTestFile("cdsd_hitemp_09_fragment.txt"), format="cdsd-hitemp", parfuncfmt="hapi")
+    s_gpu = sf.eq_spectrum_gpu(Tgas=T)
+
+Alternatively, one could compute the spectra with the assistance of GPU using the
+following code as well ::
+
+    s = calc_spectrum(
+        	wavenum_min=1900,
+        	wavenum_max=2300,
+        	Tgas=700,
+        	path_length=0.1,
+        	mole_fraction=0.01,
+        	isotope=1,
+        	mode='gpu'
+    		)
+
+As mentioned previously, the GPU-enabled spectrum calculations can also be done
+using databank that has been preprocessed and saved in numpy's `npy` format.
 
 The `npy` files that are needed for calculating the spectra on GPU can be extracted
 from any databank and stored in the following format. The name of the file is written
@@ -229,13 +276,11 @@ and `Mm` is the molecular mass of gas molecule in kilogram.
 In order to facililate the conversion of data from the CDSD-4000 par format to the format explained
 above, users can use the scripts present in `/radis/misc/prepare-npy-data`.
 
-Note that the data
+`par2npy.py` extracts the relevant information from the dataset files and stores them in `npy` files
+where each file contains all the information for multiple lines.
 
-Once the data is available in the right format, calculating the spectra on GPU is a trivial task.
-Consider the example shown below which calculates the CO2 spectra for isotope '1' in the waverange
-2000-2400 cm-1 at a temperature of 1000K and pressure 0.1 bar ::
-
-# add example
+`reshape_arrays.py` extracts and separates the different fields for each line, and saves the values of
+a specific field for all the lines in a separate file as explained above, e.g. `v0.npy`, 'da.npy`, etc.
 
 The Spectrum Factory
 --------------------
