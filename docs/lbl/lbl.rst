@@ -245,6 +245,25 @@ following code as well ::
 As mentioned previously, the GPU-enabled spectrum calculations can also be done
 using databank that has been preprocessed and saved in numpy's `npy` format.
 
+In order to calculate the data using the `npy` files, first place all the 7 files in the
+same directory. Then, set the `databank` parameter of :py:func:`~radis.lbl.calc.calc_spectrum`
+to point to one of the 7 files in the directory. The program will automatically detect and read the
+other files present in the same folder ::
+
+      s = calc_spectrum(
+        	wavenum_min=1900,
+        	wavenum_max=2300,
+        	Tgas=700,
+        	path_length=0.1,
+        	databank='/path/to/v0.npy',
+        	mole_fraction=0.01,
+        	isotope=1,
+        	mode='gpu'
+    		)
+
+## TODO: Once the npy2df implementation is complete, also mention about loading the npy files
+from different directories by passing a dictionary instead
+
 The `npy` files that are needed for calculating the spectra on GPU can be extracted
 from any databank and stored in the following format. The name of the file is written
 first, followed by the physical quantity it stores and it's name and position in the
