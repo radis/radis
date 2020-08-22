@@ -1047,16 +1047,9 @@ class SpectrumFactory(BandFactory):
             wavenumber = v_arr
             print("Calculating spectra...", end=" ")
 
-            print("pressure = ", pressure)
-            print("Tgas = ", Tgas)
-            print("mole_fraction = ", mole_fraction)
-            print("Ia_arr = ", Ia_arr)
-            print("molarmass_arr = ", molarmass_arr)
-
             abscoeff = py_cuffs.iterate(
                 pressure, Tgas, mole_fraction, Ia_arr, molarmass_arr
             )
-            print("done!")
             # Calculate output quantities
             # ----------------------------------------------------------------------
             if self.verbose >= 2:
@@ -1111,6 +1104,7 @@ class SpectrumFactory(BandFactory):
             s = Spectrum(
                 quantities=quantities,
                 units=self.units,
+                conditions=conditions,
                 cond_units=self.cond_units,
                 waveunit=self.params.waveunit,  # cm-1
                 # dont check input (much faster, and Spectrum
