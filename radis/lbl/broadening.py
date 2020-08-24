@@ -64,7 +64,6 @@ from radis.phys.constants import Na
 from radis.phys.constants import k_b_CGS, c_CGS
 from radis.misc.printer import printg
 from radis.misc.basics import is_float
-from radis.misc.arrays import is_sorted
 from numpy import exp, arange, zeros_like, trapz, pi, sqrt, sin
 from numpy import log as ln
 from multiprocessing import Pool, cpu_count
@@ -74,7 +73,6 @@ from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 from six.moves import zip
 from numba import jit, float64
 from radis.misc.debug import printdbg
@@ -751,25 +749,8 @@ class BroadenFactory(BaseFactory):
         self.wavenumber_calc = None
         self.woutrange = None
 
-        self._broadening_method = "voigt"
-        """str: 'voigt', 'convolve', 'fft'
-        
-        Calculates broadening with a direct voigt approximation ('voigt') or
-        by convoluting independantly calculated Doppler and collisional
-        broadening ('convolve'). First is much faster, 2nd can be used to
-        compare results. Not a user available parameter for the moment, but
-        you can edit the SpectrumFactory manually::
-            
-            sf = SpectrumFactory(...)
-            sf._broadening_method = 'voigt'
-            
-        Fast fourier transform ``'fft'`` is only available if using the DLM lineshape  
-        calculation optimisation. Because the DLM convolves all lines at the same time,  
-        and thus operates on large arrays, ``'fft'`` becomes more appropriate than
-        convolutions in real space (``'voit'``, ``'convolve'`` )
-        
-        ``'fft'`` is automatically selected if DLM is used. 
-
+        self.params.broadening_method = ""
+        """ See :py:meth:`~radis.lbl.factory.SpectrumFactory` 
         """
 
         # Predict broadening times (helps trigger warnings for optimization)
@@ -844,12 +825,15 @@ class BroadenFactory(BaseFactory):
         pressure_atm = pressure_mbar / 1013.25
         # coefficients tabulation temperature
         Tref = self.input.Tref
+        broadening_method = (
+            self.params.broadening_method
+        )  # Lineshape broadening algorithm
 
         # Get broadenings
-        if self._broadening_method == "voigt":
+        if broadening_method == "voigt":
             # Adds hwhm_voigt, hwhm_gauss, hwhm_lorentz:
             self._add_voigt_broadening_HWHM(df, pressure_atm, mole_fraction, Tgas, Tref)
-        elif self._broadening_method in ["convolve", "fft"]:
+        elif broadening_method in ["convolve", "fft"]:
             # Adds hwhm_lorentz:
             self._add_collisional_broadening_HWHM(
                 df, pressure_atm, mole_fraction, Tgas, Tref
@@ -858,8 +842,8 @@ class BroadenFactory(BaseFactory):
             self._add_doppler_broadening_HWHM(df, Tgas)
         else:
             raise ValueError(
-                "Unexpected broadening calculation method: {0}".format(
-                    self._broadening_method
+                "Unexpected lineshape broadening algorithm : broadening_method={0}".format(
+                    broadening_method
                 )
             )
 
@@ -1290,10 +1274,13 @@ class BroadenFactory(BaseFactory):
             t1 = time()
 
         # Calculate lineshape (using precomputed HWHM)
-        if self._broadening_method == "voigt":
+        broadening_method = (
+            self.params.broadening_method
+        )  # Lineshape broadening algorithm
+        if broadening_method == "voigt":
             jit = True
             line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
-        elif self._broadening_method == "convolve":
+        elif broadening_method == "convolve":
             # Get pressure and gaussian profiles
             pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
             if __debug__:
@@ -1313,12 +1300,12 @@ class BroadenFactory(BaseFactory):
             # ... broadening_width too small): at least the energy is conserved, even
             # ... if not perfectly distributed (spectrally). A warning is raised by the
             # ... broadening functions.
-        elif self._broadening_method == "fft":
+        elif broadening_method == "fft":
             raise NotImplementedError("FFT")
         else:
             raise ValueError(
-                "Unexpected broadening calculation method: {0}".format(
-                    self._broadening_method
+                "Unexpected lineshape broadening algorithm: broadening_method={0}".format(
+                    broadening_method
                 )
             )
 
@@ -1326,13 +1313,13 @@ class BroadenFactory(BaseFactory):
             t2 = time()
             if self.verbose >= 3:
                 printg("... Initialized vectors in {0:.1f}s".format(t1 - t0))
-                if self._broadening_method == "voigt":
+                if broadening_method == "voigt":
                     printg(
                         "... Calculated Voigt profile (jit={1}) in {0:.1f}s".format(
                             t2 - t1, jit
                         )
                     )
-                elif self._broadening_method == "convolve":
+                elif broadening_method == "convolve":
                     printg(
                         "... Calculated Lorentzian profile in {0:.1f}s".format(t11 - t1)
                     )
@@ -1340,15 +1327,15 @@ class BroadenFactory(BaseFactory):
                         "... Calculated Gaussian profile in {0:.1f}s".format(t12 - t11)
                     )
                     printg("... Convolved both profiles in {0:.1f}s".format(t2 - t12))
-                elif self._broadening_method == "fft":
+                elif broadening_method == "fft":
                     raise NotImplementedError("FFT")
 
         return line_profile
 
     def _calc_lineshape_DLM(self, df):
         """ Generate the lineshape database using the steps defined by the 
-        parameters :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L` and 
-        :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
+        parameters :py:attr:`~radis.lbl.loader.Parameters.dlm_log_pL` and 
+        :py:attr:`~radis.lbl.loader.Parameters.dlm_log_pG`.
         
         Parameters
         ----------
@@ -1361,7 +1348,7 @@ class BroadenFactory(BaseFactory):
         
         line_profile_DLM: dict
             dictionary of Voigt profile template. 
-            If ``self._broadening_method == 'fft'``, templates are calculated
+            If ``self.params.broadening_method == 'fft'``, templates are calculated
             in Fourier space.
     
         wL, wG: array
@@ -1389,35 +1376,29 @@ class BroadenFactory(BaseFactory):
         # Prepare steps for Lineshape database
         # ------------------------------------
 
-        def lorentzian_step(res_L):
-            return (res_L / 0.20) ** 0.5
+        def _init_w_axis(w_dat, log_p):
+            w_min = w_dat.min()
+            w_max = (
+                w_dat.max() + 1e-6
+            )  # Add small number to prevent w_max falling outside of the grid
+            N = max(1, int(np.log(w_max / w_min) / log_p) + 1) + 1
+            return w_min * np.exp(log_p * np.arange(N))
 
-        def gaussian_step(res_G):
-            return (res_G / 0.46) ** 0.5
-
-        def init_w_axis(w_dat, w_step):
-            f = 1 + w_step
-            N = max(1, int(np.log(w_dat.max() / w_dat.min()) / np.log(f)) + 1) + 1
-            return np.min(w_dat) * f ** np.arange(N)
-
-        res_L = self.params.dlm_res_L  # DLM user params
-        res_G = self.params.dlm_res_G  # DLM user params
+        log_pL = self.params.dlm_log_pL  # DLM user params
+        log_pG = self.params.dlm_log_pG  # DLM user params
 
         wL_dat = df.hwhm_lorentz.values * 2  # FWHM
         wG_dat = df.hwhm_gauss.values * 2  # FWHM
 
-        wL_step = lorentzian_step(res_L)
-        wG_step = gaussian_step(res_G)
-
-        wL = init_w_axis(wL_dat, wL_step)  # FWHM
-        wG = init_w_axis(wG_dat, wG_step)  # FWHM
+        wL = _init_w_axis(wL_dat, log_pL)  # FWHM
+        wG = _init_w_axis(wG_dat, log_pG)  # FWHM
 
         # Calculate the Lineshape
         # -----------------------
 
         line_profile_DLM = {}
-
-        if self._broadening_method == "voigt":
+        broadening_method = self.params.broadening_method
+        if broadening_method == "voigt":
             jit = False  # not enough lines to make the just-in-time FORTRAN compilation useful
             wbroad_centered = self.wbroad_centered
 
@@ -1432,7 +1413,7 @@ class BroadenFactory(BaseFactory):
                     )  # FWHM > HWHM
                     line_profile_DLM[i][j] = lineshape
 
-        elif self._broadening_method == "convolve":
+        elif broadening_method == "convolve":
             wbroad_centered = self.wbroad_centered
 
             IL = [
@@ -1451,7 +1432,7 @@ class BroadenFactory(BaseFactory):
                     lineshape /= np.trapz(lineshape, x=wbroad_centered)
                     line_profile_DLM[i][j] = lineshape
 
-        elif self._broadening_method == "fft":
+        elif broadening_method == "fft":
             # Unlike real space methods ('convolve', 'voigt'), here we calculate
             # the lineshape on the full spectral range.
             w = self.wavenumber_calc
@@ -1473,7 +1454,7 @@ class BroadenFactory(BaseFactory):
 
         else:
             raise NotImplementedError(
-                "Broadening method with DLM: {0}".format(self._broadening_method)
+                "Broadening method with DLM: {0}".format(broadening_method)
             )
 
         if __debug__ and self.verbose >= 3:
@@ -1740,7 +1721,15 @@ class BroadenFactory(BaseFactory):
         return wavenumber, sumoflines
 
     def _apply_lineshape_DLM(
-        self, broadened_param, line_profile_DLM, shifted_wavenum, wL, wG, wL_dat, wG_dat
+        self,
+        broadened_param,
+        line_profile_DLM,
+        shifted_wavenum,
+        wL,
+        wG,
+        wL_dat,
+        wG_dat,
+        optimization,
     ):
         """ Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
@@ -1757,7 +1746,7 @@ class BroadenFactory(BaseFactory):
                 
                 lineshape = line_profile_DLM[gaussian_index][lorentzian_index]
 
-            If ``self._broadening_method == 'fft'``, templates are given
+            If ``self.params.broadening_method == 'fft'``, templates are given
             in Fourier space.
 
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
@@ -1774,7 +1763,11 @@ class BroadenFactory(BaseFactory):
             
         wG_dat: array    (size N)
             FWHM of all lines. Used to lookup the DLM
-            
+
+        optimization :
+            if ``"min-RMS"`` weights optimized by analytical minimization of the RMS-error. 
+            Otherwise, weights equal to their relative position in the grid.
+        
         Returns
         -------
 
@@ -1804,9 +1797,10 @@ class BroadenFactory(BaseFactory):
         if __debug__:
             t0 = time()
 
-        #        # Get spectrum range
+        # Get spectrum range
         wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
         wavenumber_calc = self.wavenumber_calc
+        broadening_method = self.params.broadening_method
 
         # Vectorize the chunk of lines
         S = broadened_param
@@ -1822,7 +1816,7 @@ class BroadenFactory(BaseFactory):
         iv = np.interp(
             shifted_wavenum, wavenumber_calc, np.arange(len(wavenumber_calc))
         )
-        if self._broadening_method == "fft":
+        if broadening_method == "fft":
             iv += len(wavenumber_calc) // 2  # FFT is done on 2x wavenumber_calc
 
         iv0 = iv.astype(int)  # size [N]
@@ -1830,17 +1824,65 @@ class BroadenFactory(BaseFactory):
 
         # DLM: First we calculate the fractional index of the DLM
         #      that corresponds with this line:
-        iwL = np.interp(wL_dat, wL, np.arange(len(wL)))
-        iwG = np.interp(wG_dat, wG, np.arange(len(wG)))
-        iwL0 = iwL.astype(int)  # size [N],   number of values defined by res_L
-        iwG0 = iwG.astype(int)  # size [N],   number of values defined by res_G
+        iwL = np.interp(np.log(wL_dat), np.log(wL), np.arange(len(wL)))
+        iwG = np.interp(np.log(wG_dat), np.log(wG), np.arange(len(wG)))
+        iwL0 = iwL.astype(int)  # size [N],   number of values determined by log_pL
+        iwG0 = iwG.astype(int)  # size [N],   number of values determined by log_pG
         iwL1 = iwL0 + 1
         iwG1 = iwG0 + 1
 
-        # DLM : Next calculate how the line is distributed over the 2x2x2 bins we have:
-        av = iv - iv0
-        awL = (iwL - iwL0) * (wL[iwL1] / wL_dat)
-        awG = (iwG - iwG0) * (wG[iwG1] / wG_dat)
+        # DLM : Next calculate how the line is distributed over the 2x2x2 bins.
+
+        # First calculate relative positions on the grid:
+        tv = iv - iv0
+        tauG = iwG - iwG0
+        tauL = iwL - iwL0
+
+        # Next assign simple weights:
+        av = tv
+        awG = tauG
+        awL = tauL
+
+        # Finally add corrections to the weights if required:
+        if optimization == "min-RMS":
+
+            log_pL = self.params.dlm_log_pL  # DLM user params
+            log_pG = self.params.dlm_log_pG  # DLM user params
+
+            # TO-DO: dv should be loaded from self.params, not calculated...
+            dv = (wavenumber_calc[-1] - wavenumber_calc[0]) / (wavenumber_calc.size - 1)
+            dxG = dv / wG_dat
+
+            C1_GG = ((6 * np.pi - 16) / (15 * np.pi - 32)) ** (1 / 1.50)
+            C1_LG = ((6 * np.pi - 16) / 3 * (2 * np.pi / np.log(2)) ** 0.5) ** (
+                1 / 2.25
+            )
+            C2_GG = (2 * np.log(2) / 15) ** (1 / 1.50)
+            C2_LG = ((2 * np.log(2)) ** 2 / 15) ** (1 / 2.25)
+
+            alpha = wL_dat / wG_dat
+
+            R_GG = 2 - 1 / (C1_GG + C2_GG * alpha ** (2 / 1.50)) ** 1.50
+            R_GL = -2 * np.log(2) * alpha ** 2
+            R_Gv = 8 * np.log(2)
+
+            R_LL = 1
+            R_LG = (
+                1 / (C1_LG * alpha ** (1 / 2.25) + C2_LG * alpha ** (4 / 2.25)) ** 2.25
+            )
+
+            # Add correction terms:
+            awG += (
+                R_GG * tauG * (tauG - 1) * log_pG ** 2
+                + R_GL * tauL * (tauL - 1) * log_pL ** 2
+                + R_Gv * tv * (tv - 1) * dxG ** 2
+            ) / (2 * log_pG)
+
+            awL += (
+                R_LL * tauL * (tauL - 1) * log_pL ** 2
+                + R_LG * tauG * (tauG - 1) * log_pG ** 2
+            ) / (2 * log_pL)
+
         # ... fractions on DLM grid
         awV00 = (1 - awL) * (1 - awG)
         awV10 = awL * (1 - awG)
@@ -1854,12 +1896,12 @@ class BroadenFactory(BaseFactory):
             t2 = time()
 
         # ... Initialize array on which to distribute the lineshapes
-        if self._broadening_method in ["voigt", "convolve"]:
+        if broadening_method in ["voigt", "convolve"]:
             DLM = np.zeros((len(wavenumber_calc), len(wL), len(wG)))
-        elif self._broadening_method == "fft":
+        elif broadening_method == "fft":
             DLM = np.zeros((2 * len(wavenumber_calc), len(wL), len(wG)))
         else:
-            raise NotImplementedError(self._broadening_method)
+            raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
         np.add.at(DLM, (iv0, iwL0, iwG0), Iv0 * awV00)
@@ -1879,7 +1921,7 @@ class BroadenFactory(BaseFactory):
 
         # For each value from the DLM, retrieve the lineshape and convolve all
         # corresponding lines with it before summing.
-        if self._broadening_method in ["voigt", "convolve"]:
+        if broadening_method in ["voigt", "convolve"]:
 
             # ... Initialize array on which to distribute the lineshapes
             sumoflines_calc = zeros_like(wavenumber_calc)
@@ -1889,7 +1931,7 @@ class BroadenFactory(BaseFactory):
                     lineshape = line_profile_DLM[i][j]
                     sumoflines_calc += np.convolve(DLM[:, i, j], lineshape, "same")
 
-        elif self._broadening_method == "fft":
+        elif broadening_method == "fft":
             # ... Initialize array in FT space
             Idlm_FT = 1j * np.zeros(len(line_profile_DLM[0][0]))
             for i in range(len(wL)):
@@ -1905,7 +1947,7 @@ class BroadenFactory(BaseFactory):
             sumoflines_calc /= self.params.wstep
 
         else:
-            raise NotImplementedError(self._broadening_method)
+            raise NotImplementedError(broadening_method)
 
         if __debug__:
             t3 = time()
@@ -1938,6 +1980,7 @@ class BroadenFactory(BaseFactory):
         
         self: Factory
             contains the ``self.misc.chunksize`` parameter
+            contains the ``self.params.optimization`` parameter
             
         df: DataFrame
             line dataframe
@@ -1953,21 +1996,11 @@ class BroadenFactory(BaseFactory):
         wavenumber = self.wavenumber
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
-        # TEMP: @EP use chunksize as the parameter for the broadening optimization strategy:
-        # - None
-        # - if number: split the number of lines
-        # - if 'DLM': use DLM strategy
+        # Get which optimization method to use:
+        optimization = self.params.optimization
 
         try:
-            if chunksize is None:
-
-                # Deal with all lines directly (usually faster)
-                line_profile = self._calc_lineshape(df)  # usually the bottleneck
-                (wavenumber, abscoeff) = self._apply_lineshape(
-                    df.S.values, line_profile, df.shiftwav.values
-                )
-
-            elif chunksize == "DLM":
+            if optimization in ("simple", "min-RMS"):
                 # Use DLM
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
@@ -1979,29 +2012,43 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    self.params.optimization,
                 )
 
-            elif is_float(chunksize):
-                # Cut lines in smaller bits for better memory handling
-                N = int(len(df) * len(wavenumber) / chunksize) + 1
-                # Too big may be faster but overload memory.
-                # See Performance for more information
+            elif optimization is None:
+                if chunksize is None:
 
-                abscoeff = zeros_like(self.wavenumber)
-
-                pb = ProgressBar(N, active=self.verbose)
-                for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
-                    line_profile = self._calc_lineshape(dg)
-                    (wavenumber, absorption) = self._apply_lineshape(
-                        dg.S.values, line_profile, dg.shiftwav.values
+                    # Deal with all lines directly (usually faster)
+                    line_profile = self._calc_lineshape(df)  # usually the bottleneck
+                    (wavenumber, abscoeff) = self._apply_lineshape(
+                        df.S.values, line_profile, df.shiftwav.values
                     )
-                    abscoeff += absorption
-                    pb.update(i)
-                pb.done()
+
+                elif is_float(chunksize):
+                    # Cut lines in smaller bits for better memory handling
+                    N = int(len(df) * len(wavenumber) / chunksize) + 1
+                    # Too big may be faster but overload memory.
+                    # See Performance for more information
+
+                    abscoeff = zeros_like(self.wavenumber)
+
+                    pb = ProgressBar(N, active=self.verbose)
+                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                        line_profile = self._calc_lineshape(dg)
+                        (wavenumber, absorption) = self._apply_lineshape(
+                            dg.S.values, line_profile, dg.shiftwav.values
+                        )
+                        abscoeff += absorption
+                        pb.update(i)
+                    pb.done()
+                else:
+                    raise ValueError(
+                        "Unexpected value for chunksize: {0}".format(chunksize)
+                    )
 
             else:
                 raise ValueError(
-                    "Unexpected value for chunksize: {0}".format(chunksize)
+                    "Unexpected value for optimization: {0}".format(optimization)
                 )
 
         except MemoryError:
@@ -2039,19 +2086,11 @@ class BroadenFactory(BaseFactory):
         wavenumber = self.wavenumber
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
+        # Get which optimization method to use:
+        optimization = self.params.optimization
 
         try:
-            if chunksize is None:
-                # Deal with all lines directly (usually faster)
-                line_profile = self._calc_lineshape(df)  # usually the bottleneck
-                (wavenumber, abscoeff) = self._apply_lineshape(
-                    df.S.values, line_profile, df.shiftwav.values
-                )
-                (_, emisscoeff) = self._apply_lineshape(
-                    df.Ei.values, line_profile, df.shiftwav.values
-                )
-
-            elif chunksize == "DLM":
+            if optimization in ("simple", "min-RMS"):
                 # Use DLM
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
@@ -2063,6 +2102,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    optimization,
                 )
                 (_, emisscoeff) = self._apply_lineshape_DLM(
                     df.Ei.values,
@@ -2072,6 +2112,7 @@ class BroadenFactory(BaseFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    optimization,
                 )
                 # Note @dev: typical results is:
                 # >>> abscoeff:
@@ -2091,34 +2132,50 @@ class BroadenFactory(BaseFactory):
                 # absorption & emission steps. The bottleneck is the distribution
                 # of the line over the DLM, which has to be done for both abscoeff & emisscoeff.
 
-            elif is_float(chunksize):
-                # Cut lines in smaller bits for better memory handling
-
-                # Get size of numpy array for vectorialization
-                N = int(len(df) * len(wavenumber) / chunksize) + 1
-                # Too big may be faster but overload memory.
-                # See Performance for more information
-
-                abscoeff = zeros_like(self.wavenumber)
-                emisscoeff = zeros_like(self.wavenumber)
-
-                pb = ProgressBar(N, active=self.verbose)
-                for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
-                    line_profile = self._calc_lineshape(dg)
-                    (wavenumber, absorption) = self._apply_lineshape(
-                        dg.S.values, line_profile, dg.shiftwav.values
+            elif optimization is None:
+                if chunksize is None:
+                    # Deal with all lines directly (usually faster)
+                    line_profile = self._calc_lineshape(df)  # usually the bottleneck
+                    (wavenumber, abscoeff) = self._apply_lineshape(
+                        df.S.values, line_profile, df.shiftwav.values
                     )
-                    (_, emission) = self._apply_lineshape(
-                        dg.Ei.values, line_profile, dg.shiftwav.values
+                    (_, emisscoeff) = self._apply_lineshape(
+                        df.Ei.values, line_profile, df.shiftwav.values
                     )
-                    abscoeff += absorption  #
-                    emisscoeff += emission
-                    pb.update(i)
-                pb.done()
+
+                elif is_float(chunksize):
+                    # Cut lines in smaller bits for better memory handling
+
+                    # Get size of numpy array for vectorialization
+                    N = int(len(df) * len(wavenumber) / chunksize) + 1
+                    # Too big may be faster but overload memory.
+                    # See Performance for more information
+
+                    abscoeff = zeros_like(self.wavenumber)
+                    emisscoeff = zeros_like(self.wavenumber)
+
+                    pb = ProgressBar(N, active=self.verbose)
+                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                        line_profile = self._calc_lineshape(dg)
+                        (wavenumber, absorption) = self._apply_lineshape(
+                            dg.S.values, line_profile, dg.shiftwav.values
+                        )
+                        (_, emission) = self._apply_lineshape(
+                            dg.Ei.values, line_profile, dg.shiftwav.values
+                        )
+                        abscoeff += absorption  #
+                        emisscoeff += emission
+                        pb.update(i)
+                    pb.done()
+
+                else:
+                    raise ValueError(
+                        "Unexpected value for chunksize: {0}".format(chunksize)
+                    )
 
             else:
                 raise ValueError(
-                    "Unexpected value for chunksize: {0}".format(chunksize)
+                    "Unexpected value for optimization: {0}".format(optimization)
                 )
 
         except MemoryError:
@@ -2470,6 +2527,11 @@ class BroadenFactory(BaseFactory):
             wavenumber_calc = self.wavenumber_calc
             pseudo_continuum_threshold = self.params.pseudo_continuum_threshold
             wstep = self.params.wstep
+            if self.params.optimization is not None:
+                raise ValueError(
+                    "pseudo-continuum not compatible with DLM. "
+                    + "Choose either optimization=None either pseudo_continuum_threshold=0"
+                )
 
             # Calculate rough spectrum, label weak lines
             # ... only guess based on abscoeff. See Notes for noneq case.
