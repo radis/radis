@@ -937,10 +937,9 @@ class SpectrumFactory(BandFactory):
             self.input.Trot = Tgas  # just for info
 
             # Init variables
-            # pressure_mbar = self.input.pressure_mbar
+            pressure_mbar = self.input.pressure_mbar
             mole_fraction = self.input.mole_fraction
             path_length = self.input.path_length
-            # verbose = self.verbose
 
             # Check variables
             self._check_inputs(mole_fraction, max(flatten(Tgas)))
@@ -1048,7 +1047,7 @@ class SpectrumFactory(BandFactory):
             print("Calculating spectra...", end=" ")
 
             abscoeff = py_cuffs.iterate(
-                pressure, Tgas, mole_fraction, Ia_arr, molarmass_arr
+                pressure_mbar * 1e-3, Tgas, mole_fraction, Ia_arr, molarmass_arr
             )
             # Calculate output quantities
             # ----------------------------------------------------------------------
@@ -1491,7 +1490,7 @@ class SpectrumFactory(BandFactory):
     def _get_log_2gs(self):
         """ Returns log_2gs if it already exists in the dataframe, otherwise computes it using gamma_air """
         df = self.df0
-        # TODO: deal with the case of gamma_self [so we don't forget] 
+        # TODO: deal with the case of gamma_self [so we don't forget]
 
         # if the column already exists, then return
         if "log_2gs" in df.columns:
@@ -1524,10 +1523,10 @@ class SpectrumFactory(BandFactory):
             )
             df["log_2vMm"] = log_2vMm
             return log_2vMm
-        except KeyError:
+        except KeyError as err:
             raise KeyError(
                 "Cannot find wavenumber, isotope and/or log_2vMm in the database. Please check the database"
-            )
+            ) from err
 
     def _get_S0(self, Ia_arr):
         """ Returns S0 if it already exists, otherwise computes the value using abundance, gamma_air and Einstein's number """
@@ -1548,10 +1547,10 @@ class SpectrumFactory(BandFactory):
             S0 = Ia_arr.take(iso) * gu * A21 / (8 * pi * c_cm * v0 ** 2)
             df["S0"] = S0
             return S0
-        except KeyError:
+        except KeyError as err:
             raise KeyError(
                 "Could not find wavenumber, Einstein's coefficient, lower state energy or S0 in the dataframe. PLease check the database"
-            )
+            ) from err
 
     def optically_thin_power(
         self,
