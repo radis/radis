@@ -85,7 +85,7 @@ from warnings import warn
 
 from radis.db.molparam import MolParams
 from radis.io import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
-from radis.io.hitran import get_molecule
+from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
 from radis.spectrum.spectrum import Spectrum
@@ -1003,11 +1003,17 @@ class SpectrumFactory(BandFactory):
             ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
 
             molpar = MolParams()
-            id_set = self.df0[
-                "id"
-            ].unique()  # get all the molecules in the dataframe, should ideally be 1 element for GPU
-            mol_id = id_set[0]
-            molecule = get_molecule(mol_id)
+
+            try:
+                id_set = self.df0[
+                    "id"
+                ].unique()  # get all the molecules in the dataframe, should ideally be 1 element for GPU
+                mol_id = id_set[0]
+                molecule = get_molecule(mol_id)
+            except:
+                mol_id = get_molecule_identifier(self.input.molecule)
+                molecule = get_molecule(mol_id)
+
             state = self.input.state
             iso_set = self._get_isotope_list(molecule)
 
@@ -1123,6 +1129,8 @@ class SpectrumFactory(BandFactory):
                     )
                 )
 
+            lines = self.get_lines()
+
             # %% Export
             # --------------------------------------------------------------------
             t = round(time() - t0, 2)
@@ -1154,6 +1162,7 @@ class SpectrumFactory(BandFactory):
                 quantities=quantities,
                 units=self.units,
                 conditions=conditions,
+                lines=lines,
                 cond_units=self.cond_units,
                 waveunit=self.params.waveunit,  # cm-1
                 # dont check input (much faster, and Spectrum

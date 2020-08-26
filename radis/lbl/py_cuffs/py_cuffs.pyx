@@ -663,6 +663,7 @@ cdef int prepare_blocks():
     cdef np.ndarray[dtype=np.float32_t, ndim=1] v0 = host_params_h_v0_dec
     cdef np.ndarray[dtype=np.float32_t, ndim=1] da = host_params_h_da_dec
 
+
     cdef float v_prev
     cdef float dvdi
     cdef int i = 0
@@ -690,13 +691,11 @@ cdef int prepare_blocks():
         
         v_prev = v_cur
         v_cur = v0[i] + iter_params_h.p * da[i]
-        
-        if ((v_cur > v_max) or (i >= i_max)) : 
-            if (v_cur > v_max) : 
-                dvdi = (v_cur - v_prev) / <float>step
-                i -= int(((v_cur - v_max) / dvdi)) + 1
-                v_cur = v0[i] + iter_params_h.p * da[i]
-            
+        if ((v_cur > v_max) or (i >= i_max)) :
+            # if (v_cur > v_max) :
+            #     dvdi = (v_cur - v_prev) / <float>step
+            #     i -= int(((v_cur - v_max) / dvdi)) + 1
+            #     v_cur = v0[i] + iter_params_h.p * da[i]
             iter_params_h.blocks[n] = new_block
             n+=1
             new_block.iv_offset = int(((v_cur - init_params_h.v_min) / init_params_h.dv))
