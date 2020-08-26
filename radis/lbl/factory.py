@@ -1094,6 +1094,8 @@ class SpectrumFactory(BandFactory):
             NwG = 4
             NwL = 8
 
+            _Nlines_calculated = len(v0)
+
             print("Initializing parameters...", end=" ")
             py_cuffs.init(
                 v_arr, NwG, NwL, iso, v0, da, log_2gs, na, log_2vMm, S0, El, Q_arr
@@ -1142,6 +1144,7 @@ class SpectrumFactory(BandFactory):
             conditions.update(
                 {
                     "calculation_time": t,
+                    "lines_calculated": _Nlines_calculated,
                     "thermal_equilibrium": True,
                     "radis_version": get_version(add_git_number=False),
                 }
