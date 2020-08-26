@@ -380,7 +380,7 @@ cdef extern from *:
 @cython.wraparound(False)
 @cython.nonecheck(False)
 
-cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs, np.ndarray[dtype=np.float32_t, ndim=1] na):
+cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs, np.ndarray[dtype=np.float32_t, ndim=1] na, verbose_gpu):
 
     # ----------- setup global variables -----------------
     global host_params_h_top_a
@@ -409,7 +409,8 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
     cdef vector[float] bottom_b 
     cdef vector[float] bottom_x
 
-    print("Initializing Lorentzian parameters ", end = "")
+    if verbose_gpu >= 2:
+        print("Initializing Lorentzian parameters ", end = "")
 
     cdef size_t top_size = 0
     cdef size_t bottom_size = 0
@@ -421,7 +422,10 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
 
     try:
         with open(fname, 'rb') as f:
-            print(" (from cache)... ", end=" ")
+
+            if verbose_gpu >= 2:
+                print(" (from cache)... ", end=" ")
+
             lt = pickle.load(f)
 
             top_size = lt[0]
@@ -444,7 +448,8 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
             host_params_h_bottom_x = lt[7]
 
     except:
-        print(" ... ", end = " ")
+        if verbose_gpu >= 2:
+            print(" ... ", end = " ")
 
         na_len = na.size
         for i in range(na_len):
@@ -562,8 +567,9 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
         
         with open(fname, 'wb') as f:
             pickle.dump(lt, f)
-    
-    print("done!")
+
+    if verbose_gpu >= 2:
+        print("done!")
     return
 
 cdef void calc_lorentzian_params():
@@ -599,7 +605,7 @@ cdef void calc_lorentzian_params():
     return 
 
 
-cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm): 
+cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm, verbose_gpu):
 
     # ----------- setup global variables -----------------
     global host_params_h_log_2vMm_min
@@ -608,16 +614,19 @@ cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm):
 
     cdef float log_2vMm_min
     cdef float log_2vMm_max
-    print("Initializing Gaussian parameters", end="")
+    if verbose_gpu >= 2:
+        print("Initializing Gaussian parameters", end="")
 
     fname = "Gaussian_minmax_" + str(len(log_2vMm)) + ".dat"
     try:
         lt = pickle.load(open(fname, "rb"))
-        print(" (from cache)... ", end=" ")
+        if verbose_gpu >= 2:
+            print(" (from cache)... ", end=" ")
         log_2vMm_min = lt[0]
         log_2vMm_max = lt[1]
     except (OSError, IOError) as e:
-        print("... ", end=" ")
+        if verbose_gpu >= 2:
+            print("... ", end=" ")
         log_2vMm_min = np.amin(log_2vMm)
         log_2vMm_max = np.amax(log_2vMm)
         lt = [log_2vMm_min, log_2vMm_max]
@@ -626,7 +635,8 @@ cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm):
     host_params_h_log_2vMm_min = log_2vMm_min
     host_params_h_log_2vMm_max = log_2vMm_max
 
-    print("done!")
+    if verbose_gpu >= 2:
+        print("done!")
 
     return
 
@@ -714,7 +724,8 @@ def init(v_arr,N_wG,N_wL,
         np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm,
         np.ndarray[dtype=np.float32_t, ndim=1] S0,
         np.ndarray[dtype=np.float32_t, ndim=1] El,
-        np.ndarray[dtype=np.float32_t, ndim=1] Q
+        np.ndarray[dtype=np.float32_t, ndim=1] Q,
+        verbose_gpu
         ):
 
     # ----------- setup global variables -----------------
@@ -770,11 +781,12 @@ def init(v_arr,N_wG,N_wL,
     init_params_h.N_blocks_per_grid = 4 * 256 * 256
     init_params_h.N_points_per_thread = init_params_h.N_points_per_block // init_params_h.N_threads_per_block
 
-    print()
-    print("Spectral points per block  : {0}".format(init_params_h.N_points_per_block))
-    print("Threads per block          : {0}".format(init_params_h.N_threads_per_block))
-    print("Spectral points per thread : {0}".format(init_params_h.N_points_per_thread))
-    print()
+    if verbose_gpu >= 2:
+        print()
+        print("Spectral points per block  : {0}".format(init_params_h.N_points_per_block))
+        print("Threads per block          : {0}".format(init_params_h.N_threads_per_block))
+        print("Spectral points per thread : {0}".format(init_params_h.N_points_per_thread))
+        print()
 
     
     cdef np.ndarray[dtype=np.int32_t, ndim=1] spec_h_iso = iso
@@ -790,17 +802,20 @@ def init(v_arr,N_wG,N_wL,
 
     cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_log_2gs = log_2gs
     cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_na = na
-    init_lorentzian_params(log_2gs, na)
+    init_lorentzian_params(log_2gs, na, verbose_gpu)
     cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_log_2vMm = log_2vMm
-    init_gaussian_params(log_2vMm)
+    init_gaussian_params(log_2vMm, verbose_gpu)
     cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_S0 = S0
     cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_El = El
     cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_Q = Q
     init_params_h.N_lines = int(len(v0))
-    print("Number of lines loaded: {0}".format(init_params_h.N_lines))
-    print()
 
-    print("Allocating device memory and copying data...")
+    if verbose_gpu == 1:
+        print("Number of lines loaded: {0}".format(init_params_h.N_lines))
+        print()
+
+    if verbose_gpu >= 2:
+        print("Allocating device memory and copying data...")
 
     host_params_h_data_start.record()
 
@@ -808,15 +823,18 @@ def init(v_arr,N_wG,N_wL,
     host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
 
     host_params_h_I_add = cp.zeros(init_params_h.N_lines, dtype=cp.float32)
-    
-    print("Copying initialization parameters to device memory...", end = " ")
+
+    if verbose_gpu >= 2:
+        print("Copying initialization parameters to device memory...", end = " ")
     memptr_init_params_d = cuda_module.get_global("init_params_d")
     init_params_ptr = ctypes.cast(ctypes.pointer(init_params_h),ctypes.c_void_p)
     init_params_size = ctypes.sizeof(init_params_h)
     memptr_init_params_d.copy_from_host(init_params_ptr, init_params_size)
-    print("done!")
 
-    print("Copying spectral data to device memory...", end = " ")
+    if verbose_gpu >= 2:
+        print("done!")
+        print("Copying spectral data to device memory...", end = " ")
+
 	# #Copy spectral data to device
     host_params_h_iso_d =       cp.array(spec_h_iso)
     host_params_h_v0_d =        cp.array(spec_h_v0)
@@ -831,16 +849,19 @@ def init(v_arr,N_wG,N_wL,
     host_params_h_data_stop.record()
     host_params_h_data_stop.synchronize()
     host_params_h_elapsedTimeData = cp.cuda.get_elapsed_time(host_params_h_data_start, host_params_h_data_stop)
-    print("done!")
-    print("Initialization complete!")
 
-    print("Time to copy data from host to device = {0} ms".format(host_params_h_elapsedTimeData))
+    if verbose_gpu >= 2:
+        print("done!")
+
+    if verbose_gpu >= 2:
+        print("Time to copy data from host to device = {0} ms".format(host_params_h_elapsedTimeData))
 
 
 
 def iterate(float p, float T, float mole_fraction,
             np.ndarray[dtype=np.float32_t, ndim=1] Ia_arr,
-            np.ndarray[dtype=np.float32_t, ndim=1] molarmass_arr):
+            np.ndarray[dtype=np.float32_t, ndim=1] molarmass_arr,
+            verbose_gpu):
     
     # ----------- setup global variables -----------------
 
@@ -879,12 +900,16 @@ def iterate(float p, float T, float mole_fraction,
     calc_lorentzian_params()
     n_blocks = prepare_blocks()
 
-    print("Copying iteration parameters to device...", end = " ")    
+    if verbose_gpu >= 2:
+        print("Copying iteration parameters to device...", end = " ")
+
     memptr_iter_params_d = cuda_module.get_global("iter_params_d")
     iter_params_ptr = ctypes.cast(ctypes.pointer(iter_params_h),ctypes.c_void_p)
     struct_size = ctypes.sizeof(iter_params_h)
     memptr_iter_params_d.copy_from_host(iter_params_ptr,struct_size)
-    print("done!")
+
+    if verbose_gpu >= 2:
+        print("done!")
 
 	# Zero DLM:
     host_params_h_DLM_d_in.fill(0)
@@ -892,7 +917,8 @@ def iterate(float p, float T, float mole_fraction,
 
     host_params_h_I_add.fill(0)
 
-    print("Getting ready...")
+    if verbose_gpu >= 2:
+        print("Getting ready...")
 
     host_params_h_start_DLM.record()
 
@@ -920,20 +946,26 @@ def iterate(float p, float T, float mole_fraction,
     host_params_h_stop_DLM.record()
     host_params_h_stop_DLM.synchronize()
     host_params_h_elapsedTimeDLM = cp.cuda.get_elapsed_time(host_params_h_start_DLM, host_params_h_stop_DLM)
-    print("<<<LAUNCHED>>> ", end = " ")
+
+    if verbose_gpu >= 2:
+        print("<<<LAUNCHED>>> ", end = " ")
 
     cp.cuda.runtime.deviceSynchronize()
-	
-    #FFT
-    print("Performing Fourier transform...", end= " ")
+
+    if verbose_gpu >= 2:
+        #FFT
+        print("Performing Fourier transform...", end= " ")
     host_params_h_DLM_d_out = cp.fft.rfft(host_params_h_DLM_d_in, axis = 0) 
-    print("done!")
+
+    if verbose_gpu >= 2:
+        print("done!")
     
     cp.cuda.runtime.deviceSynchronize()
     cdef int n_threads = 1024
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
 
-    print("Applying lineshapes...", end = " ")
+    if verbose_gpu >= 2:
+        print("Applying lineshapes...", end = " ")
 
     applyLineshapes (( n_blocks,), (n_threads,), 
     (
@@ -943,25 +975,31 @@ def iterate(float p, float T, float mole_fraction,
     )
 
     cp.cuda.runtime.deviceSynchronize()
-    print("done!")
 
-	# inverse FFT
-    print("Performing inverse Fourier transform...", end = " ")
+    if verbose_gpu >= 2:
+        print("done!")
+
+    	# inverse FFT
+        print("Performing inverse Fourier transform...", end = " ")
+
     host_params_h_spectrum_d_out = cp.fft.irfft(host_params_h_spectrum_d_in)
     cp.cuda.runtime.deviceSynchronize()
-    print("done!")
+
+    if verbose_gpu >= 2:
+        print("done!")
     spectrum_h = host_params_h_spectrum_d_out.get()[:init_params_h.N_v] / init_params_h.dv
 
     host_params_h_stop.record()
     host_params_h_stop.synchronize()
     host_params_h_elapsedTime = cp.cuda.get_elapsed_time(host_params_h_start, host_params_h_stop)
 
-    print("[rG = {0}%".format((np.exp(iter_params_h.log_dwG) - 1) * 100), end = " ")
-    print("rL = {0}%]".format((np.exp(iter_params_h.log_dwL) - 1) * 100), end = " ")
-    print("Runtime: {0}".format(host_params_h_elapsedTimeDLM), end = "")
-    print(" + {0}".format(host_params_h_elapsedTime - host_params_h_elapsedTimeDLM), end = "")
-    print(" = {0} ms".format(host_params_h_elapsedTime))
-    print("Finished calculating spectrum!")
+    if verbose_gpu == 1:
+        print("[rG = {0}%".format((np.exp(iter_params_h.log_dwG) - 1) * 100), end = " ")
+        print("rL = {0}%]".format((np.exp(iter_params_h.log_dwL) - 1) * 100), end = " ")
+        print("Runtime: {0}".format(host_params_h_elapsedTimeDLM), end = "")
+        print(" + {0}".format(host_params_h_elapsedTime - host_params_h_elapsedTimeDLM), end = "")
+        print(" = {0} ms".format(host_params_h_elapsedTime))
+        print("Finished calculating spectrum!")
 
     return spectrum_h
 

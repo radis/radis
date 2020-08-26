@@ -986,6 +986,8 @@ class SpectrumFactory(BandFactory):
             self.input.Tvib = Tgas  # just for info
             self.input.Trot = Tgas  # just for info
 
+            verbose = self.verbose
+
             # Init variables
             pressure_mbar = self.input.pressure_mbar
             mole_fraction = self.input.mole_fraction
@@ -1048,18 +1050,23 @@ class SpectrumFactory(BandFactory):
                 import py_cuffs
             except:
                 try:
-                    print("py_cuFFS module not found in directory...")
-                    print("Compiling module from source...")
+
+                    if verbose >= 2:
+                        print("py_cuFFS module not found in directory...")
+                        print("Compiling module from source...")
 
                     call(
                         "python setup.py build_ext --inplace",
                         cwd=project_path,
                         shell=True,
                     )
-                    print("Finished compilation...trying to import module again")
+
+                    if verbose >= 2:
+                        print("Finished compilation...trying to import module again")
                     import py_cuffs
 
-                    print("py_cuFFS imported succesfully!")
+                    if verbose:
+                        print("py_cuFFS imported succesfully!")
                 except:
                     raise (
                         ModuleNotFoundError(
@@ -1096,20 +1103,51 @@ class SpectrumFactory(BandFactory):
 
             _Nlines_calculated = len(v0)
 
-            print("Initializing parameters...", end=" ")
+            if verbose >= 2:
+                print("Initializing parameters...", end=" ")
+
+            if verbose is False:
+                verbose_gpu = 0
+            elif verbose is True:
+                verbose_gpu = 1
+            else:
+                verbose_gpu = verbose
+
             py_cuffs.init(
-                v_arr, NwG, NwL, iso, v0, da, log_2gs, na, log_2vMm, S0, El, Q_arr
+                v_arr,
+                NwG,
+                NwL,
+                iso,
+                v0,
+                da,
+                log_2gs,
+                na,
+                log_2vMm,
+                S0,
+                El,
+                Q_arr,
+                verbose_gpu,
             )
-            print("done!")
+
+            if verbose >= 2:
+                print("Initialization complete!")
+
             wavenumber = v_arr
-            print("Calculating spectra...", end=" ")
+
+            if verbose >= 2:
+                print("Calculating spectra...", end=" ")
 
             abscoeff = py_cuffs.iterate(
-                pressure_mbar * 1e-3, Tgas, mole_fraction, Ia_arr, molarmass_arr
+                pressure_mbar * 1e-3,
+                Tgas,
+                mole_fraction,
+                Ia_arr,
+                molarmass_arr,
+                verbose_gpu,
             )
             # Calculate output quantities
             # ----------------------------------------------------------------------
-            if self.verbose >= 2:
+            if verbose >= 2:
                 t1 = time()
 
             # ... # TODO: if the code is extended to multi-species, then density has to be added
@@ -1124,7 +1162,7 @@ class SpectrumFactory(BandFactory):
             radiance_noslit = calc_radiance(
                 wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
             )
-            if self.verbose >= 2:
+            if verbose >= 2:
                 printg(
                     "Calculated other spectral quantities in {0:.2f}s".format(
                         time() - t1
@@ -1136,7 +1174,7 @@ class SpectrumFactory(BandFactory):
             # %% Export
             # --------------------------------------------------------------------
             t = round(time() - t0, 2)
-            if self.verbose >= 2:
+            if verbose >= 2:
                 t1 = time()
             # Get lines (intensities + populations)
 
@@ -1182,7 +1220,7 @@ class SpectrumFactory(BandFactory):
                 # in one generated with non_eq_spectrum
 
             # Get generation & total calculation time
-            if self.verbose >= 2:
+            if verbose >= 2:
                 printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
 
             #  In the less verbose case, we print the total calculation+generation time:
