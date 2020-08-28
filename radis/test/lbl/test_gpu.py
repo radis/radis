@@ -14,6 +14,8 @@ from radis.misc.printer import printm
 import pytest
 
 
+@pytest.mark.needs_cuda
+@pytest.mark.skip(reason="Travis does not support CUDA execution")
 def test_eq_spectrum_gpu():
     T = 1000
     p = 0.1
