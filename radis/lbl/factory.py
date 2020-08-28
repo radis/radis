@@ -934,14 +934,7 @@ class SpectrumFactory(BandFactory):
                 Notes
                 -----
 
-                This method will compile the
-
-
-                References
-                ----------
-
-                .. [1] RADIS PR: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
-
+                This method requires CUDA compatible hardware to execute. For more information on how to setup your system to run GPU-accelerated methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
 
                 See Also
                 --------

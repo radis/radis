@@ -736,6 +736,16 @@ with::
 
     pytest radis/test/lbl/test_parallel.py 
 
+GPU accelerated spectrum calculation
+------------------------------------
+
+Apart from the parallelization method mentioned above, RADIS also supports CUDA-native parallel computation, specifically
+for lineshape calculation and broadening. To use these GPU-accelerated methods to compute the spectra, use either :py:func:`~radis.lbl.calc.calc_spectrum`
+function with parameter `mode` set to `gpu`, or :py:func:`~radis.lbl.calc.eq_spectrum_gpu`. In order to use these methods,
+ensure that your system has an Nvidia GPU with compute capability of atleast 3.0 and CUDA Toolkit 8.0 or above. Refer to
+:ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` to see how to setup your system to run GPU accelerated spectrum
+calculation methods, examples and performance tests.
+
 Profiler
 --------
 

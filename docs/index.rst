@@ -15,8 +15,6 @@ equilibrium / nonequilibrium).
 It also includes :ref:`post-processing tools <label_spectrum>` to compare experimental spectra and spectra calculated 
 with RADIS, or with other spectral codes.
 
-RADIS also supports :ref:`GPU spectrum calculation <label_radis_gpu>` to compute spectra on the GPU using CUDA, which offers a significant reduction in the time taken to calculate large spectra.
-
 ===============
 Getting Started
 ===============
