@@ -63,3 +63,48 @@ contain information about the system for which it has been compiled. However, to
 type `import py_cuffs` and not the file name in system. For example, in Linux x64 systems, the compiled binary file will
 be stored as `py_cuffs.cpython-36m-x86_64-linux-gnu.so`.
 
+Once Cython has been installed and is working properly, users can focus on the third step of the GPU spectrum calculation
+process, which is the actual GPU kernel code. In order to run this part of the code, users need to ensure the following:
+
+1. They have a system with an Nvidia CUDA GPU with compute capability >= 3.0.
+2. They have CUDA Toolkit version >=8.0 installed on their system.
+3. Python >= 3.5 installed on their system.
+4. Appropriate version of CuPy depending on their CUDA Toolkit version installed on their system.
+
+Let us see how the users can check whether they satisfy each of the above requirements:
+
+1. In order to check if your system has an Nvidia GPU installed, follow the steps on this link given at the bottom of the
+page: https://developer.nvidia.com/cuda-gpus. If you are using Linux systems, enter the following command in your terminal
+and check if the results contain an Nvidia device: `lspci -nn | grep '\[03'`. This will return results similar to the following:
+pip install cupy-cuda102
+```
+00:02.0 VGA compatible controller [0300]: Intel Corporation Device [8086:3e9b] (rev 02)
+01:00.0 VGA compatible controller [0300]: NVIDIA Corporation Device [10de:1f91] (rev a1)
+```
+
+You can find out more information about your GPU (like its model name) by searching for its PCI ID (in the above case,
+[10de:1f91]) on the internet.
+
+If you do not have an Nvidia device installed, then this documentation is not for you and you can stop reading now.
+
+Once you have ensured that your system has an Nvidia GPU installed, make sure that the device has compute capability
+>= 3.0. This should not be an issue unless you possess a really old system. To check your device's compute capability,
+again follow the same link given above and expand the section to which your GPU belongs. Look for your GPU model name in
+the table and ensure your device has CC >= 3.0.
+
+2. Now that it is confirmed that the system has a GPU which supports RADIS, install the CUDA Toolkit for your GPU if
+isn't already installed. Note that the CUDA Toolkit is different from the Nvidia drivers that you install. CUDA Toolkit is
+entirely different from the Geforce drivers that the operating system often installs by itself, and are meant for CUDA
+development instead. To check if you have CUDA Toolkit installed, or to install the CUDA Toolkit, follow the documentation
+given on the Nvidia site here: https://docs.nvidia.com/cuda/
+
+3. Once the CUDA Toolkit has been installed (it might take some time to finish the installation process), ensure that the
+Python version installed on your system is atleast 3.5. If not, either create a new virtual environment or install the
+updated Python version globally.
+
+4. Once these prerequisites have been installed properly, install CuPy following the documentation given on this page:
+https://docs.cupy.dev/en/stable/install.html#install-cupy. IMPORTANT: Ensure that you install the PRE-RELEASE version
+of CuPy. RADIS GPU methods make use of constant memory which is currently supported only in the prelease version of CuPy.
+If you install the latest release, the GPU code WILL NOT WORK. To ensure you're installing the prerelease version
+using pip, just add the flag `--pre` at the end of your command. For instance, if you have CUDA version 10.2 and want to
+install CuPy, enter the following command `pip install cupy-cuda102 --pre`.
