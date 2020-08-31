@@ -55,7 +55,7 @@ Most of these functions are implemented with the standard operators. Ex::
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
-# from radis.misc.curve import curve_substract, curve_add
+import astropy.units as u
 from radis.spectrum import Spectrum
 from radis.phys.convert import (
     cm2nm,
@@ -453,21 +453,7 @@ def _get_unique_var(s, var, inplace):
     """
     # If var is undefined, get it if there is no ambiguity
     if var is None:
-        quantities = s.get_vars()
-        if len(quantities) > 1:
-            raise KeyError(
-                "There is an ambiguity with the Spectrum algebraic operation. "
-                + "There should be only one var in Spectrum {0}. Got {1}\n".format(
-                    s.get_name(), s.get_vars()
-                )
-                + "Think about using 'Transmittance(s)', 'Radiance(s)', etc."
-            )
-        elif len(quantities) == 0:
-            raise KeyError(
-                "No spectral quantity defined in Spectrum {0}".format(s.get_name())
-            )
-        else:
-            var = quantities[0]
+        var = s._get_unique_var()
     # If inplace, assert there is only one var
     if inplace and len(s.get_vars()) > 1:
         raise ValueError(
@@ -477,15 +463,18 @@ def _get_unique_var(s, var, inplace):
     return var
 
 
-def multiply(s, coef, var=None, inplace=False):
+def multiply(s, coef, unit=None, var=None, inplace=False):
     """Multiply s[var] by the float 'coef'
 
     Parameters
     ----------
-    s: Spectrum objects
-        The spectra to multiply.
+    s: Spectrum object
+        The spectrum to multiply.
     coef: float
         Coefficient of the multiplication.
+    unit: str, or `~astropy.units.core.Unit`
+        unit for ``coef``. If ``None``, ``coef`` is considered to be 
+        adimensioned. Else, the spectrum `~radis.spectrum.spectrum.Spectrum.units` is multiplied. 
     var: str, or ``None``
         'radiance', 'transmittance', ... If ``None``, get the unique spectral
         quantity of ``s`` or raises an error if there is any ambiguity
@@ -503,6 +492,17 @@ def multiply(s, coef, var=None, inplace=False):
     # Check input
     var = _get_unique_var(s, var, inplace)
 
+    # Case where a is dimensioned
+    if isinstance(coef, u.quantity.Quantity):
+        if unit is not None:
+            raise ValueError(
+                "Cannot use unit= when giving a dimensioned array ({0})".format(
+                    coef.unit
+                )
+            )
+        unit = coef.unit
+        coef = coef.value
+
     if not inplace:
         s = s.copy(quantity=var)
     #        if name is not None:
@@ -511,6 +511,11 @@ def multiply(s, coef, var=None, inplace=False):
     # Multiply inplace       ( @dev: we have copied already if needed )
     w, I = s.get(var, wunit=s.get_waveunit(), copy=False)
     I *= coef  # @dev: updates the Spectrum directly because of copy=False
+
+    # Convert Spectrum unit
+    if unit is not None:
+        Iunit = s.units[var]
+        s.units[var] = (u.Unit(Iunit) * u.Unit(unit)).to_string()
 
     return s
 
@@ -525,8 +530,8 @@ def add_constant(s, cst, unit=None, var=None, inplace=False):
     ----------
     s: Spectrum objects
         Spectrum you want to modify
-    cst: Float
-        Constant to add.
+    cst: float
+        Constant to add. 
     unit: str
         unit for ``cst``. If ``None``, uses the default unit in ``s`` for 
         variable ``var``.
@@ -551,6 +556,9 @@ def add_constant(s, cst, unit=None, var=None, inplace=False):
     """
     # Check input
     var = _get_unique_var(s, var, inplace)
+
+    # Note: using dimensioned value for `cst` will make it an array,
+    # processed by add_array
 
     # Convert to Spectrum unit
     if unit is not None:
@@ -583,9 +591,9 @@ def add_array(s, a, unit=None, var=None, inplace=False):
     ----------
     s: Spectrum objects
         Spectrum you want to modify
-    a: numpy array
+    a: numpy array, or `~astropy.units.quantity.Quantity`
         array to add. Must have the same length as variable ``var`` in Spectrum 
-        ``s``
+        ``s``. Can be dimensioned with :py:mod:`~astropy.units`. 
     unit: str
         unit for ``a``. If ``None``, uses the default unit in ``s`` for 
         variable ``var``.
@@ -618,6 +626,15 @@ def add_array(s, a, unit=None, var=None, inplace=False):
     """
     # Check input
     var = _get_unique_var(s, var, inplace)
+
+    # Case where a is dimensioned
+    if isinstance(a, u.quantity.Quantity):
+        if unit is not None:
+            raise ValueError(
+                "Cannot use unit= when giving a dimensioned array ({0})".format(a.unit)
+            )
+        unit = a.unit
+        a = a.value
 
     # Convert to Spectrum unit
     if unit is not None:
@@ -680,6 +697,28 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
 
     # Check input
     var = _get_unique_var(s, var, inplace)
+
+    # Case where left, right are dimensioned
+    if isinstance(left, u.quantity.Quantity) or isinstance(right, u.quantity.Quantity):
+        if unit is not None:
+            raise ValueError(
+                "Cannot use unit= when giving a dimensioned array ({0})".format(
+                    left.unit
+                )
+            )
+        if not isinstance(left, u.quantity.Quantity) or not isinstance(
+            right, u.quantity.Quantity
+        ):
+            raise ValueError(
+                "Both left and right arguments must be dimensioned with the same unit"
+            )
+        if left.unit != right.unit:
+            raise ValueError(
+                "Both left and right arguments must be dimensioned with the same unit"
+            )
+        unit = left.unit
+        left = left.value
+        right = right.value
 
     # Convert to Spectrum unit
     if unit is not None:
