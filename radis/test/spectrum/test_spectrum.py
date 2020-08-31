@@ -98,14 +98,14 @@ def test_spectrum_get_methods(
 
 @pytest.mark.fast
 def test_copy(verbose=True, *args, **kwargs):
-    """ Test that a Spectrum is correctly copied 
+    """Test that a Spectrum is correctly copied
 
     We compare a Spectrum that has:
     - all available spectral quantities
-    - a slit 
+    - a slit
     - many calculation conditions
     - no populations
-    - no lines 
+    - no lines
     """
 
     from radis.test.utils import getTestFile
@@ -134,8 +134,7 @@ def test_copy(verbose=True, *args, **kwargs):
 
 
 def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs):
-    """ Test that populations in a Spectrum are correctly read 
-    """
+    """Test that populations in a Spectrum are correctly read"""
 
     if plot:
         import matplotlib.pyplot as plt
@@ -203,7 +202,7 @@ def test_store_functions(verbose=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_intensity_conversion(verbose=True, *args, **kwargs):
-    """ Test conversion of intensity cm-1 works:
+    """Test conversion of intensity cm-1 works:
 
     - conversion of mW/sr/cm2/nm -> mW/sr/cm2/cm-1
 
@@ -273,10 +272,10 @@ def test_rescaling_function(verbose=True, *args, **kwargs):
 def test_resampling_function(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Test resampling functions 
+    """Test resampling functions
 
-    Get a Spectrum calculated in cm-1, then resample on a smaller range in cm-1, 
-    and in approximately the same range (but in nm). Check that all 3 overlap 
+    Get a Spectrum calculated in cm-1, then resample on a smaller range in cm-1,
+    and in approximately the same range (but in nm). Check that all 3 overlap
     """
     # %%
     from radis.test.utils import getTestFile
@@ -337,7 +336,7 @@ def test_resampling_function(
 
 @pytest.mark.fast
 def test_noplot_different_quantities(*args, **kwargs):
-    """ Prevents User Errors: Ensures an error is raised if plotting different
+    """Prevents User Errors: Ensures an error is raised if plotting different
     quantities on the same graph"""
 
     import matplotlib.pyplot as plt
@@ -368,7 +367,7 @@ def _run_testcases(
     *args,
     **kwargs
 ):
-    """ Test procedures
+    """Test procedures
 
     Parameters
     ----------

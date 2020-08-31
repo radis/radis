@@ -33,10 +33,10 @@ from radis.phys.air import air2vacuum
 
 
 def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
-    """ Planck function for blackbody radiation
+    """Planck function for blackbody radiation
 
 
-    Parameters    
+    Parameters
     ----------
 
     λ: np.array   (nm)
@@ -74,10 +74,10 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
 
 
 def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
-    """ Planck function for blackbody radiation, wavenumber version
+    """Planck function for blackbody radiation, wavenumber version
 
 
-    Parameters    
+    Parameters
     ----------
 
     wavenum: np.array   (cm-1)
@@ -131,7 +131,7 @@ def sPlanck(
     medium="air",
     **kwargs
 ):
-    """ Return a RADIS Spectrum object with blackbody radiation. 
+    """Return a RADIS Spectrum object with blackbody radiation.
 
     It's easier to plug in a MergeSlabs / SerialSlabs config than the Planck
     radiance calculated by iPlanck. And you don't need to worry about units as
@@ -143,7 +143,7 @@ def sPlanck(
     ----------
 
     wavenum_min / wavenum_max: (cm-1)
-        minimum / maximum wavenumber to be processed in cm^-1. 
+        minimum / maximum wavenumber to be processed in cm^-1.
 
     wavelength_min / wavelength_max: (nm)
         minimum / maximum wavelength to be processed in nm

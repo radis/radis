@@ -34,17 +34,13 @@ from __future__ import print_function
 from radis import SpectrumFactory, Spectrum, plot_diff
 from radis.io.hapi import (
     fetch_by_ids,
-    fetch,
     absorptionCoefficient_Voigt,
     db_begin,
     tableList,
-    VARIABLES,
     ISO_ID,
 )
 from os.path import join, dirname
-import matplotlib.pyplot as plt
 from time import time
-from radis.io.hitran import get_molecule, get_molecule_identifier
 
 if __name__ == "__main__":
 

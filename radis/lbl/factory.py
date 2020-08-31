@@ -106,7 +106,7 @@ import astropy.units as u
 
 
 class SpectrumFactory(BandFactory):
-    """ A class to put together all functions related to loading CDSD / HITRAN
+    """A class to put together all functions related to loading CDSD / HITRAN
     databases, calculating the broadenings, and summing over all the lines
 
     Parameters
@@ -127,7 +127,7 @@ class SpectrumFactory(BandFactory):
         and wmax. Default is `cm-1`.
 
     wavenum_min: float(cm^-1) or `~astropy.units.quantity.Quantity`
-        minimum wavenumber to be processed in cm^-1. 
+        minimum wavenumber to be processed in cm^-1.
         use astropy.units to specify arbitrary inverse-length units.
 
     wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
@@ -146,7 +146,7 @@ class SpectrumFactory(BandFactory):
 
     Tref: float(K) or `~astropy.units.quantity.Quantity`
         reference temperature for calculations, HITRAN database uses 296 Kelvin
-        default: 3400K. 
+        default: 3400K.
         use astropy.units to specify arbitrary temperature units.
         For example, ``200 * u.deg_C``.
 
@@ -165,10 +165,10 @@ class SpectrumFactory(BandFactory):
 
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
-        from the database files being loaded. See the list of supported molecules 
+        from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
-        and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`. 
-        Default ``None``. 
+        and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
+        Default ``None``.
 
     isotope: int, list, str of the form '1,2', or 'all'
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
@@ -177,7 +177,7 @@ class SpectrumFactory(BandFactory):
         times!). Default 'all'
 
     medium: ``'air'``, ``'vacuum'``
-        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
+        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
 
     Other Parameters
@@ -260,43 +260,43 @@ class SpectrumFactory(BandFactory):
         and slows the system down. Chunksize let you change the default chunck
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
-        
+
         .. note::
-            in version 0.9.20 this parameter is temporarily used to accept the ``'DLM'`` 
-            argument: in this case, the DLM optimization for lineshape calculation 
-            is used. Broadening method is automatically set to ``'fft'``. 
+            in version 0.9.20 this parameter is temporarily used to accept the ``'DLM'``
+            argument: in this case, the DLM optimization for lineshape calculation
+            is used. Broadening method is automatically set to ``'fft'``.
             See :py:attr:`~radis.lbl.broadening.BroadenFactory._broadening_method`.
-        
+
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
         Example::
-            
+
             warnings = {'MissingSelfBroadeningWarning':'ignore',
                         'NegativeEnergiesWarning':'ignore',
                         'HighTemperatureWarning':'ignore'}
-            
-        See :py:data:`~radis.misc.warning.default_warning_status` for more 
-        information. 
-        
+
+        See :py:data:`~radis.misc.warning.default_warning_status` for more
+        information.
+
     verbose: boolean, or int
-        If ``False``, stays quiet. If ``True``, tells what is going on. 
-        If ``>=2``, gives more detailed messages (for instance, details of 
-        calculation times). Default ``True``. 
+        If ``False``, stays quiet. If ``True``, tells what is going on.
+        If ``>=2``, gives more detailed messages (for instance, details of
+        calculation times). Default ``True``.
 
     Examples
     --------
-    
-    An example using :class:`~radis.lbl.factory.SpectrumFactory`, 
-    :meth:`~radis.lbl.loader.DatabankLoader.load_databank`, the 
-    :class:`~radis.spectrum.spectrum.Spectrum` methods, and 
+
+    An example using :class:`~radis.lbl.factory.SpectrumFactory`,
+    :meth:`~radis.lbl.loader.DatabankLoader.load_databank`, the
+    :class:`~radis.spectrum.spectrum.Spectrum` methods, and
     :py:mod:`~astropy.units` ::
 
         from radis import SpectrumFactory
         from astropy import units as u
-        sf = SpectrumFactory(wavelength_min=4165 * u.nm, 
+        sf = SpectrumFactory(wavelength_min=4165 * u.nm,
                              wavelength_max=4200 * u.nm,
-                             isotope='1,2', 
+                             isotope='1,2',
                              broadening_max_width=10,  # cm-1
                              medium='vacuum',
                              verbose=1,    # more for more details
@@ -306,31 +306,31 @@ class SpectrumFactory(BandFactory):
         s.rescale_path_length(0.01)    # cm
         s.plot('radiance_noslit', Iunit='µW/cm2/sr/nm')
 
-    Refer to the online :ref:`Examples <label_examples>` for more cases. 
+    Refer to the online :ref:`Examples <label_examples>` for more cases.
 
     .. inheritance-diagram:: radis.lbl.parallel.SpectrumFactory
        :parts: 1
-    
+
     See Also
     --------
 
-    :func:`~radis.lbl.calc.calc_spectrum`, 
+    :func:`~radis.lbl.calc.calc_spectrum`,
     :class:`~radis.lbl.parallel.ParallelFactory`
 
-    Main Methods: 
-        
+    Main Methods:
+
     :meth:`~radis.lbl.loader.DatabankLoader.load_databank`,
     :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
     :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
-    
+
     For advanced use:
-        
+
     :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`,
     :meth:`~radis.lbl.loader.DatabankLoader.init_databank`,
     :meth:`~radis.lbl.loader.DatabankLoader.init_database`,
-    :meth:`~radis.lbl.bands.BandFactory.eq_bands`, 
+    :meth:`~radis.lbl.bands.BandFactory.eq_bands`,
     :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
-    
+
     """
 
     # TODO: make it possible to export both 'vib' and 'rovib'
@@ -577,7 +577,7 @@ class SpectrumFactory(BandFactory):
     def eq_spectrum(
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
     ):
-        """ Generate a spectrum at equilibrium
+        """Generate a spectrum at equilibrium
 
         Parameters
         ----------
@@ -600,7 +600,7 @@ class SpectrumFactory(BandFactory):
         Returns
         -------
 
-        s : Spectrum 
+        s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
         Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
@@ -854,7 +854,7 @@ class SpectrumFactory(BandFactory):
         overpopulation=None,
         name=None,
     ):
-        """ Calculate emission spectrum in non-equilibrium case. Calculates
+        """Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
         Einstein coefficient.
 
@@ -900,7 +900,7 @@ class SpectrumFactory(BandFactory):
         Returns
         -------
 
-        s : Spectrum 
+        s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
         Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
@@ -1206,12 +1206,12 @@ class SpectrumFactory(BandFactory):
         path_length=None,
         unit="mW/cm2/sr",
     ):
-        """ Calculate total power emitted in equilibrium or non-equilibrium case
+        """Calculate total power emitted in equilibrium or non-equilibrium case
         in the optically thin approximation: it sums all emission integral over
         the total spectral range.
 
         .. warning::
-        
+
             this is a fast implementation that doesnt take into account
             the contribution of lines outside the given spectral range. It is valid for spectral ranges
             surrounded by no lines, and spectral ranges much broaded than the typical
@@ -1259,10 +1259,10 @@ class SpectrumFactory(BandFactory):
         See Also
         --------
 
-        :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`, 
-        :py:meth:`~radis.spectrum.spectrum.Spectrum.get_power`, 
+        :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.get_power`,
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_integral`
-        
+
         """
 
         try:
@@ -1390,7 +1390,7 @@ class SpectrumFactory(BandFactory):
 
 
 def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_width):
-    """ define waverange vectors, with ``wavenumber`` the ouput spectral range
+    """define waverange vectors, with ``wavenumber`` the ouput spectral range
     and ``wavenumber_calc`` the spectral range used for calculation, that includes
     neighbour lines within ``broadening_max_width`` distance
 
@@ -1452,7 +1452,7 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
 
 
 def _generate_broadening_range(wstep, broadening_max_width):
-    """ Generate array on which to compute line broadening
+    """Generate array on which to compute line broadening
 
     Parameters
     ----------

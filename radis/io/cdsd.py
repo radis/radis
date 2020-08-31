@@ -43,7 +43,7 @@ columns_hitemp = OrderedDict(
         ),
         ("iso", ("a1", int, "isotope number", "")),
         ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
-        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",)),
+        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",),),
         ("A", ("a10", float, "Einstein A coefficient", "s-1")),
         ("airbrd", ("a5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
         ("selbrd", ("a5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
@@ -98,7 +98,7 @@ columns_4000 = OrderedDict(
         ),
         ("iso", ("a1", int, "isotope number", "")),
         ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
-        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",)),
+        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",),),
         ("A", ("a10", float, "Einstein A coefficient", "s-1")),
         ("airbrd", ("a5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
         ("selbrd", ("a5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
@@ -147,13 +147,13 @@ columns_4000 = OrderedDict(
 def cdsd2df(
     fname, version="hitemp", count=-1, cache=False, verbose=True, drop_non_numeric=True
 ):
-    """ Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
+    """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
 
     Parameters
     ----------
 
     fname: str
-        CDSD file name 
+        CDSD file name
 
     version: str ('4000', 'hitemp')
         CDSD version
@@ -162,21 +162,21 @@ def cdsd2df(
         number of items to read (-1 means all file)
 
     cache: boolean, or 'regen'
-        if ``True``, a pandas-readable HDF5 file is generated on first access, 
+        if ``True``, a pandas-readable HDF5 file is generated on first access,
         and later used. This saves on the datatype cast and conversion and
-        improves performances a lot (but changes in the database are not 
+        improves performances a lot (but changes in the database are not
         taken into account). If ``False``, no database is used. If 'regen', temp
-        file are reconstructed. Default ``False``. 
+        file are reconstructed. Default ``False``.
 
     Other Parameters
     ----------------
-    
+
     drop_non_numeric: boolean
-        if ``True``, non numeric columns are dropped. This improves performances, 
-        but make sure all the columns you need are converted to numeric formats 
-        before hand. Default ``True``. Note that if a cache file is loaded it 
+        if ``True``, non numeric columns are dropped. This improves performances,
+        but make sure all the columns you need are converted to numeric formats
+        before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
-        
+
     Returns
     -------
 
@@ -188,16 +188,16 @@ def cdsd2df(
 
     CDSD-4000 Database can be downloaded from [3]_
 
-    Performances: I had huge performance trouble with this function, because the files are 
+    Performances: I had huge performance trouble with this function, because the files are
     huge (500k lines) and the format is to special (no space between numbers...)
     to apply optimized methods such as pandas's. A line by line reading isn't
     so bad, using struct to parse each line. However, we waste typing determining
     what every line is. I ended up using the fromfiles functions from numpy,
     not considering *\\n* (line return) as a special character anymore, and a second call
-    to numpy to cast the correct format. That ended up being twice as fast. 
+    to numpy to cast the correct format. That ended up being twice as fast.
 
         - initial:                      20s / loop
-        - with mmap:                    worse 
+        - with mmap:                    worse
         - w/o readline().rstrip('\\n'):  still 20s
         - numpy fromfiles:              17s
         - no more readline, 2x fromfile 9s
@@ -215,7 +215,7 @@ def cdsd2df(
     Reading::
 
         cdsd2df(): 9.29 s
-        cdsd2df(cache=True [old .txt version]): 2.3s 
+        cdsd2df(cache=True [old .txt version]): 2.3s
         cdsd2df(cache=True [new h5 version, table]): 910ms
         cdsd2df(cache=True [new h5 version, fixed]): 125ms
 
@@ -237,7 +237,7 @@ def cdsd2df(
 
     See Also
     --------
-    
+
     :func:`~radis.io.hitran.hit2df`
 
     """

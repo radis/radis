@@ -55,10 +55,10 @@ def test_crop(verbose=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_cut_recombine(verbose=True, *args, **kwargs):
-    """ 
+    """
     Use :func:`~radis.spectrum.operations.crop` and :func:`~radis.los.slabs.MergeSlabs`
     to cut a Spectrum and recombine it
-    
+
     Assert we still get the same spectrum at the end
     """
 
@@ -252,8 +252,7 @@ def test_TestBaseline(plot=False, *args, **kwargs):
 
 
 def _run_testcases(verbose=True, plot=False, *args, **kwargs):
-    """ Test procedures
-    """
+    """Test procedures"""
 
     test_crop(verbose=verbose, *args, **kwargs)
     test_cut_recombine(verbose=verbose, *args, **kwargs)

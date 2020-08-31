@@ -19,21 +19,20 @@ Run only fast tests (i.e: tests that a 'fast' label)
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.lbl.parallel import ParallelFactory, SpectrumFactory
-from radis.misc.printer import printm, printr
+from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
 from time import time
 from warnings import warn
 from six.moves import range
-import pytest
 
 # %% Main
 
 
 def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
-    """ Core of the parallel test routine 
-    
-    Test than parallel is at least faster than sequential mode. Note that 
-    this is not necessary: parallelization becomes much faster during the 
+    """Core of the parallel test routine
+
+    Test than parallel is at least faster than sequential mode. Note that
+    this is not necessary: parallelization becomes much faster during the
     convolution steps, hence for large number of lines
     """
 
@@ -136,10 +135,10 @@ def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
 def DISCARDED_test_parallel_internal(
     plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
-    """ Core of the parallel test routine 
-    
-    Test than parallel is at least faster than sequential mode. Note that 
-    this is not necessary: parallelization becomes much faster during the 
+    """Core of the parallel test routine
+
+    Test than parallel is at least faster than sequential mode. Note that
+    this is not necessary: parallelization becomes much faster during the
     convolution steps, hence for large number of lines
     """
     # TODO: there is a line missing in the parallel case at 2283nm.

@@ -29,19 +29,17 @@ from radis.test.utils import getTestFile
 import pytest
 import numpy as np
 from warnings import warn
-from radis import SpectrumFactory
-from os.path import basename, exists, getmtime
+from os.path import getmtime
 import os
-import time
 from radis.test.utils import setup_test_line_databases
 
 
 @pytest.mark.fast
 def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
-    """ Compare that HITRAN species defined in :mod:`radis.io.hitran` match
+    """Compare that HITRAN species defined in :mod:`radis.io.hitran` match
     the nomenclature dictionary : :py:data:`radis.io.hitran.trans`.
-    
-    This should be ensured by developers when adding new species. 
+
+    This should be ensured by developers when adding new species.
     """
     from radis.io.hitran import (
         HITRAN_CLASS1,
@@ -189,7 +187,6 @@ def test_hitemp(verbose=True, warnings=True, **kwargs):
 
 
 def run_example():
-    import astropy.units as u
     from radis import SpectrumFactory
 
     setup_test_line_databases(

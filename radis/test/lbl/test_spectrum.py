@@ -15,16 +15,12 @@ Run only fast tests
 """
 
 from __future__ import absolute_import, unicode_literals, division, print_function
-from radis.spectrum.models import calculated_spectrum
-from radis.phys.convert import nm2cm
 import numpy as np
-from numpy import allclose, linspace
 import matplotlib.pyplot as plt
 from radis.test.utils import setup_test_line_databases
 from radis.misc.printer import printm
 from os.path import basename
 import pytest
-from warnings import filterwarnings, catch_warnings
 
 fig_prefix = basename(__file__) + ": "
 
@@ -248,7 +244,7 @@ def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **k
 def _run_testcases(
     plot=False, verbose=True, debug=False, warnings=True, *args, **kwargs
 ):
-    """ Test procedures
+    """Test procedures
 
     Parameters
     ----------

@@ -27,16 +27,16 @@ import pytest
 @pytest.mark.needs_connection  # ignored by pytest with argument -m "not needs_http_connection"
 def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     r"""
-    Plot absorption coefficient (cm-1) of CO at high temperature (2000 K) with 
-    RADIS, and compare with calculations from HAPI using the HITRAN database 
-    
+    Plot absorption coefficient (cm-1) of CO at high temperature (2000 K) with
+    RADIS, and compare with calculations from HAPI using the HITRAN database
+
     Notes
     -----
-    
+
     In this example no data is needed. Everything is downloaded from the HITRAN
-    database directly using either the HAPI ``fetch`` function, or the RADIS 
+    database directly using either the HAPI ``fetch`` function, or the RADIS
     :meth:`~neq.spec.factory.fetch_databank` method.
-    
+
     """
 
     from radis.io.hapi import (
@@ -95,7 +95,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
                 HITRAN_units=False,
                 GammaL="gamma_self",
             )
-            nu, trans = transmittanceSpectrum(nu, coef, Environment={"l": L,})  # cm
+            nu, trans = transmittanceSpectrum(nu, coef, Environment={"l": L,},)  # cm
             s_hapi = Spectrum.from_array(
                 nu,
                 trans,

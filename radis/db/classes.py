@@ -59,7 +59,7 @@ from os.path import exists, join, dirname
 
 
 class Molecule(object):
-    r""" Define a new molecule
+    r"""Define a new molecule
 
     Parameters
     ----------
@@ -69,13 +69,13 @@ class Molecule(object):
 
     Other Parameters
     ----------------
-    
+
     verbose: boolean
         more blabla
-            
+
     See Also
     --------
-    
+
     :py:class:`~radis.db.classes.Isotope`, :py:class:`~radis.db.classes.ElectronicState`,
     :py:func:`~radis.db.molecules.getMolecule`
 
@@ -109,7 +109,7 @@ class Molecule(object):
 
 
 class Isotope(Molecule):
-    r""" Create an isotope of a given :py:class:`~radis.db.classes.Molecule`
+    r"""Create an isotope of a given :py:class:`~radis.db.classes.Molecule`
 
     Parameters
     ----------
@@ -118,9 +118,9 @@ class Isotope(Molecule):
         molecule name or HITRAN identifier
 
     isotope: int
-        isotope identifier, sorted by decreasing abundance (cf HITRAN 
+        isotope identifier, sorted by decreasing abundance (cf HITRAN
         nomenclature)
-        
+
     Other Parameters
     ----------------
 
@@ -132,7 +132,7 @@ class Isotope(Molecule):
 
     See Also
     --------
-    
+
     :py:class:`~radis.db.classes.ElectronicState`, :py:class:`~radis.db.classes.Molecule`,
     :py:func:`~radis.db.molecules.getMolecule`
     """
@@ -179,8 +179,8 @@ def _print_term_symbol(term_symbol):
 
 
 class ElectronicState(Isotope):
-    r""" Define an electronic state of an :py:class:`~radis.db.classes.Isotope` 
-    of a :py:class:`~radis.db.classes.Molecule` 
+    r"""Define an electronic state of an :py:class:`~radis.db.classes.Isotope`
+    of a :py:class:`~radis.db.classes.Molecule`
 
     Parameters
     ----------
@@ -202,35 +202,35 @@ class ElectronicState(Isotope):
         Degeneracy. Default ``None``
 
     spectroscopic_constants: str, or ``'default'``
-        filename of spectroscopic constants under Herzberg or Dunham format. 
-        
+        filename of spectroscopic constants under Herzberg or Dunham format.
+
         Expected in the file:
-            
+
             Yij: cm-1
                 rovibrational coefficients in Dunham convention
-            
+
         or
-        
+
             wexe, Be, etc. : cm-1
                 rovibrational coefficients in Herzberg convention
-            
-        or 
-                  
+
+        or
+
             Te: cm-1
                 electronic energy. Default ``None`` if not given
-                
-        If ``default``, the constants defined in 
+
+        If ``default``, the constants defined in
         :ref:`spectroscopic constants <label_db_spectroscopic_constants>` are used.
 
-        
+
     spectroscopic_constants_type: ``'herzberg'``, ``'dunham'``
         convention for spectroscopic constants. Default ``'herzberg'``
-        
+
     Erovib: function
         Rovibrational energy of the molecule. Accessible with, typically, Mol.Erovib(v,J)
 
     Ehaj: function
-        To return vibrational energy in harmonic and anharmonic component, 
+        To return vibrational energy in harmonic and anharmonic component,
         plus rotational energy. Used to build Treanor distributions
 
     vmax, vmax_morse: int, or ``None``
@@ -243,7 +243,7 @@ class ElectronicState(Isotope):
         If None, number will be infered from dissociation energy
 
     Ediss: cm-1
-        dissociation energy. Required for partition function calculation 
+        dissociation energy. Required for partition function calculation
         if neither vmax nor Jmax are given
 
     kwargs: **dict
@@ -251,7 +251,7 @@ class ElectronicState(Isotope):
 
     See Also
     --------
-    
+
     :py:class:`~radis.db.classes.Isotope`, :py:class:`~radis.db.classes.Molecule`,
     :py:func:`~radis.db.molecules.getMolecule`
 
@@ -309,47 +309,47 @@ class ElectronicState(Isotope):
     def _parse_rovib_constants(
         self, spectroscopic_constants, spectroscopic_constants_type
     ):
-        r""" Parse spectroscopic constants 
-        
-        Stores :py:attr:`~radis.db.classes.ElectronicState.Te` and 
-        :py:attr:`~radis.db.classes.ElectronicState.re` as electronic state 
-        attributes, and the rest under :py:attr:`~radis.db.classes.ElectronicState.rovib_constants` 
-        
+        r"""Parse spectroscopic constants
+
+        Stores :py:attr:`~radis.db.classes.ElectronicState.Te` and
+        :py:attr:`~radis.db.classes.ElectronicState.re` as electronic state
+        attributes, and the rest under :py:attr:`~radis.db.classes.ElectronicState.rovib_constants`
+
         Parameters
         ----------
-            
+
         spectroscopic_constants: str, or ``'default'``
-            filename of spectroscopic constants under Herzberg or Dunham format. 
-            
+            filename of spectroscopic constants under Herzberg or Dunham format.
+
             Expected in the file:
-                
+
                 Yij: cm-1
                     rovibrational coefficients in Dunham convention
-                
+
             or
-            
+
                 wexe, Be, etc. : cm-1
                     rovibrational coefficients in Herzberg convention
-                
-            or 
-                      
+
+            or
+
                 Te: cm-1
                     electronic energy. Default ``None`` if not given
-                    
-            If ``default``, the constants defined in 
+
+            If ``default``, the constants defined in
             :ref:`spectroscopic constants <label_db_spectroscopic_constants>` are used.
-    
-            
+
+
         spectroscopic_constants_type: ``'herzberg'``, ``'dunham'``
             convention for spectroscopic constants. Default ``'herzberg'``
-            
+
         Returns
         -------
-        
-        None: 
+
+        None:
             but constants are stored under :py:attr:`~radis.db.classes.ElectronicState.rovib_constants`,
             and store json file in :py:attr:`~radis.db.classes.ElectronicState.jsonfile`
-        
+
         """
 
         # Get file name
@@ -397,23 +397,23 @@ class ElectronicState(Isotope):
     # Default method to calculate energy
 
     def _assign_E(self, Erovib, Ehaj):
-        r""" Finds appropriate Electrorovibrational energy function for this molecule ,
-        based on which convention is used for spectroscopic coefficients 
+        r"""Finds appropriate Electrorovibrational energy function for this molecule ,
+        based on which convention is used for spectroscopic coefficients
         (Dunham, or Herzberg)
-        
+
         Replaces the :py:meth:`~radis.db.classes.ElectronicState.Erovib` template
         with the appropriate function for this molecule / isotope / electronic state.
-        
+
         Default methods only work for diatomic molecules. For polyatomic molecules,
-        you should give the energy function directly (see how CO2 is defined in 
-        radis.db.molecules.py) 
-        
+        you should give the energy function directly (see how CO2 is defined in
+        radis.db.molecules.py)
+
         Returns
         -------
-        
+
         None:
             but assigns the ``self.Erovib`` function to the molecule
-            
+
         """
         # Check input
         if Erovib is None and Ehaj is not None:
@@ -481,22 +481,22 @@ class ElectronicState(Isotope):
                         )
 
     def Erovib(self, v, J, remove_ZPE=True):
-        r""" Calculate rovibrational energy of molecule 
-        
+        r"""Calculate rovibrational energy of molecule
+
         .. math::
-            
+
             E(v,J) = G(v) + F(v,J)
-            
-        Works with Herzberg convention for the spectroscopic coefficients used 
+
+        Works with Herzberg convention for the spectroscopic coefficients used
         in :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv` ::
-        
+
         Parameters
         ----------
 
         v: int
-            vibrational state 
-            For polyatomic molecules, use ``v1, v2, v3, etc.`` instead of ``v``. 
-        
+            vibrational state
+            For polyatomic molecules, use ``v1, v2, v3, etc.`` instead of ``v``.
+
         J: int
             rotational state
 
@@ -507,23 +507,23 @@ class ElectronicState(Isotope):
         Returns
         -------
 
-        energy of state in cm-1 
-        
+        energy of state in cm-1
+
         Notes
         -----
-        
-        Method is overwritten on molecule creation for polyatomic molecules. 
-        Refer to the correct method below: 
-            
+
+        Method is overwritten on molecule creation for polyatomic molecules.
+        Refer to the correct method below:
+
         - CO2: :py:func:`~radis.levels.energies_co2.EvJ_co2`
-        
-        
+
+
         See Also
         --------
 
         :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv`
 
-        
+
         """
 
         raise NotImplementedError(
@@ -531,22 +531,22 @@ class ElectronicState(Isotope):
         )  # @dev: see radis.db.classes.ElectronicState._assign_E
 
     def _Erovib_default_coefs(self, *args, **kwargs):
-        r""" Calculate rovibrational energy of molecule 
-        
+        r"""Calculate rovibrational energy of molecule
+
         .. math::
-            
+
             E(v,J) = G(v) + F(v,J)
-            
-        Works with Herzberg convention for the spectroscopic coefficients used 
+
+        Works with Herzberg convention for the spectroscopic coefficients used
         in :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv` ::
-        
+
         Parameters
         ----------
 
         v: int
-            vibrational state 
-            For polyatomic molecules, use ``v1, v2, v3, etc.`` instead of ``v``. 
-        
+            vibrational state
+            For polyatomic molecules, use ``v1, v2, v3, etc.`` instead of ``v``.
+
         J: int
             rotational state
 
@@ -557,17 +557,17 @@ class ElectronicState(Isotope):
         Returns
         -------
 
-        energy of state in cm-1 
-        
+        energy of state in cm-1
+
         Notes
         -----
-        
-        Method is overwritten on molecule creation for polyatomic molecules. 
-        Refer to the correct method below: 
-            
+
+        Method is overwritten on molecule creation for polyatomic molecules.
+        Refer to the correct method below:
+
         - CO2: :py:func:`~radis.levels.energies_co2.EvJ_co2`
-        
-        
+
+
         See Also
         --------
 
@@ -580,8 +580,7 @@ class ElectronicState(Isotope):
         return self._Erovib(*args, **kwargs)
 
     def _Ehaj_default_coefs(self, *args, **kwargs):
-        """ Call default _Ehaj() function with default rovib_constants coefficients
-        """
+        """Call default _Ehaj() function with default rovib_constants coefficients"""
 
         assert "coeff_dict" not in kwargs
         kwargs.update({"coeff_dict": self.rovib_constants})
@@ -602,23 +601,23 @@ class ElectronicState(Isotope):
 
     def _E_Herzberg(self, v, J, remove_ZPE=True):
         # TODO: move in levels.energies as was done for CO2
-        r""" Calculate rovibrational energy of molecule 
-        
+        r"""Calculate rovibrational energy of molecule
+
         .. math::
-            
+
             E(v,J) = G(v) + F(v,J)
-            
-        Works with Herzberg convention for the spectroscopic coefficients used 
+
+        Works with Herzberg convention for the spectroscopic coefficients used
         in :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv` ::
-        
+
         Only works for diatomic molecules. Method should be overwritten on molecule
-        creation for other molecules 
+        creation for other molecules
 
         Parameters
         ----------
 
         v: int
-            vibrational state 
+            vibrational state
 
         J: int
             rotational state
@@ -630,13 +629,13 @@ class ElectronicState(Isotope):
         Returns
         -------
 
-        energy of state in cm-1 
-        
+        energy of state in cm-1
+
         See Also
         --------
 
         :func:`~radis.levels.dunham.Gv`, :func:`~radis.levels.dunham.Fv`
-        
+
         """
 
         try:
@@ -701,23 +700,23 @@ class ElectronicState(Isotope):
     # %% Informative methods
 
     def get_Morse_inc(self):
-        r""" Get Morse potential energy increment correction for given molecule
+        r"""Get Morse potential energy increment correction for given molecule
 
         Examples
         --------
-        
+
         ::
 
             inc = ElecState.get_Morse_inc()
             Delta_E(vi, vi+1) = Delta_E0 - (vi+1-vi0)*inc
 
-        for the energy gap between vibrational level vi and vi+1, 
-        where vi0 is the last vibrational level calculated with Dunham 
+        for the energy gap between vibrational level vi and vi+1,
+        where vi0 is the last vibrational level calculated with Dunham
         expansion, and  and Delta_E0 = DeltaE(vi0-1, vi0)
-        
+
         See Also
         --------
-        
+
         :py:func:`~radis.phys.morse.morse_increment`
 
         """
@@ -789,15 +788,15 @@ class ElectronicState(Isotope):
         )
 
     def get_statename_utf(self):
-        r""" Returns Electronic state name in UTF format, used in the standard
+        r"""Returns Electronic state name in UTF format, used in the standard
         RADIS JSON databases. Examples::
-            
-           'X', '1Σ+' 
+
+           'X', '1Σ+'
            >>> X1SIG+
-           
-           'C', '3Πu' 
+
+           'C', '3Πu'
            >>> C3PIu
-           
+
         """
 
         return self.state + _format_term_symbol(self.term_symbol)

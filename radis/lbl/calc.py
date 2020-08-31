@@ -49,232 +49,232 @@ def calc_spectrum(
     verbose=True,
     **kwargs
 ):
-    """ Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
-    under equilibrium, or non-equilibrium, with or without overpopulation. 
-    It's a wrapper to :class:`~radis.lbl.factory.SpectrumFactory` class. 
-    For advanced used, please refer to the aforementionned class. 
-​
-    Parameters
-    ----------
-    wavenum_min: float [cm-1]
-        minimum wavenumber to be processed in cm^-1
-    wavenum_max: float [cm-1]
-        maximum wavenumber to be processed in cm^-1
-​
-    wavelength_min: float [nm]
-        minimum wavelength to be processed in nm. Wavelength in ``'air'`` or 
-        ``'vacuum'`` depending of the value of the parameter ``'medium='``
-​
-    wavelength_max: float [nm]
-        maximum wavelength to be processed in nm. Wavelength in ``'air'`` or 
-        ``'vacuum'`` depending of the value of the parameter ``'medium='``
-​
-    Tgas: float [K]
-        Gas temperature. If non equilibrium, is used for Ttranslational. 
-        Default ``300`` K
-​
-    Tvib: float [K]
-        Vibrational temperature. If ``None``, equilibrium calculation is run with Tgas
-​
-    Trot: float [K]
-        Rotational temperature. If ``None``, equilibrium calculation is run with Tgas
-​
-    pressure: float [bar]
-        partial pressure of gas in bar. Default ``1.01325`` (1 atm)
-​
-    molecule: int, str, list or ``None``
-        molecule id (HITRAN format) or name. For multiple molecules, use a list.
-        The `isotope`, `mole_fraction`, `databank` and `overpopulation` parameters must then 
-        be dictionaries.
-        If ``None``, the molecule can be infered
-        from the database files being loaded. See the list of supported molecules 
-        in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
-        and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`. 
-        Default ``None``. 
-​
-    isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
-        isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
-        all isotopes in database are used (this may result in larger computation
-        times!). Default ``'all'``.
-        
-        For multiple molecules, use a dictionary with molecule names as keys.
-        
-        Example::
-            
-            mole_fraction={'CO2':0.8 ,  'CO':0.2 }
-​
-    mole_fraction: float or dict
-        database species mole fraction. Default ``1``.
-        
-        For multiple molecules, use a dictionary with molecule names as keys.
-        
-        Example::
-            
-            mole_fraction={'CO2': 0.8, 'CO':0.2}
-​
-    path_length: float [cm]
-        slab size. Default ``1``.
-​
-    databank: str or dict
-        can be either: 
-​
-        - ``'fetch'``, to fetch automatically from [HITRAN-2016]_ through astroquery. 
-        
-        .. warning::
-            
-            [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
-            temperatures you may need [HITEMP-2010]_ 
+    """Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
+        under equilibrium, or non-equilibrium, with or without overpopulation.
+        It's a wrapper to :class:`~radis.lbl.factory.SpectrumFactory` class.
+        For advanced used, please refer to the aforementionned class.
+    ​
+        Parameters
+        ----------
+        wavenum_min: float [cm-1]
+            minimum wavenumber to be processed in cm^-1
+        wavenum_max: float [cm-1]
+            maximum wavenumber to be processed in cm^-1
+    ​
+        wavelength_min: float [nm]
+            minimum wavelength to be processed in nm. Wavelength in ``'air'`` or
+            ``'vacuum'`` depending of the value of the parameter ``'medium='``
+    ​
+        wavelength_max: float [nm]
+            maximum wavelength to be processed in nm. Wavelength in ``'air'`` or
+            ``'vacuum'`` depending of the value of the parameter ``'medium='``
+    ​
+        Tgas: float [K]
+            Gas temperature. If non equilibrium, is used for Ttranslational.
+            Default ``300`` K
+    ​
+        Tvib: float [K]
+            Vibrational temperature. If ``None``, equilibrium calculation is run with Tgas
+    ​
+        Trot: float [K]
+            Rotational temperature. If ``None``, equilibrium calculation is run with Tgas
+    ​
+        pressure: float [bar]
+            partial pressure of gas in bar. Default ``1.01325`` (1 atm)
+    ​
+        molecule: int, str, list or ``None``
+            molecule id (HITRAN format) or name. For multiple molecules, use a list.
+            The `isotope`, `mole_fraction`, `databank` and `overpopulation` parameters must then
+            be dictionaries.
+            If ``None``, the molecule can be infered
+            from the database files being loaded. See the list of supported molecules
+            in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
+            and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
+            Default ``None``.
+    ​
+        isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
+            isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
+            See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
+            all isotopes in database are used (this may result in larger computation
+            times!). Default ``'all'``.
 
-        - the name of a a valid database file, in which case the format is inferred. 
-          For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format. 
-          Accepts wildcards ``'*'`` to select multiple files.
+            For multiple molecules, use a dictionary with molecule names as keys.
 
-        - the name of a spectral database registered in your ``~/.radis`` 
-          configuration file. This allows to use multiple database files.
-          See :ref:`Configuration file <label_lbl_config_file>`.
-​
-        Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
-        information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
-        your ``~/.radis`` file format 
-        
-        For multiple molecules, use a dictionary with molecule names as keys::
-​
-            databank='fetch'     # automatic download 
-            databank='PATH/TO/05_HITEMP2019.par'    # path to a file 
-            databank='*CO2*.par' #to get all the files that have CO2 in their names (case insensitive)
-            databank='HITEMP-2019-CO'   # user-defined database in Configuration file
-            databank = {'CO2' : 'PATH/TO/05_HITEMP2019.par', 'CO' : 'fetch'}  # for multiple molecules
-​
-    medium: ``'air'``, ``'vacuum'``
-        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``. 
-        Does not change anything when giving inputs in wavenumber. Default ``'air'``
-​
-    wstep: float (cm-1)
-        Spacing of calculated spectrum. Default ``0.01 cm-1``
-​
-    broadening_max_width: float (cm-1)
-        Full width over which to compute the broadening. Large values will create
-        a huge performance drop (scales as ~broadening_width^2 without DLM)
-        The calculated spectral range is increased (by broadening_max_width/2
-        on each side) to take into account overlaps from out-of-range lines.
-        Default ``10`` cm-1.
-​
-    Other Parameters
-    ----------------
-​
-    lineshape_optimization: int, ``None``, ``'DLM'``, or ``'auto'``.
-        Optimizations for the calculation of the lineshapes:
-        
-            - If ``None``, all lineshapes are calculated at the same time (can 
-              create memory errors). 
-            - If ``int``, is given as the ``chunksize`` parameter of 
-              :py:class:`~radis.lbl.factory.SpectrumFactory`` to split the line database 
-              in several parts so that the number of ``lines * spectral grid points`` is 
-              less than ``chunksize`` (reduces memory consumption). Typical values: 
-              ``lineshape_optimization=1e6``.
-            - If ``'DLM'``, only typical lineshapes are calculated. This can 
-              result of speedups of orders of magnitude.  See more about DLM in 
-              :ref:`Performance <label_lbl_performance>`. 
-              
-        Default ``'DLM'``.
-​
-    overpopulation: dict
-        dictionary of overpopulation compared to the given vibrational temperature. 
-        Default ``None``.
-        
-        Example::
-            
-            overpopulation = {'CO2' : {'(00`0`0)->(00`0`1)': 2.5,
-                                       '(00`0`1)->(00`0`2)': 1,
-                                       '(01`1`0)->(01`1`1)': 1,
-                                       '(01`1`1)->(01`1`2)': 1
-            
-                                        }
-                             }
-​
-    slit: float, str, or ``None``
-        if float, FWHM of a triangular slit function. If str, path to an 
-        experimental slit function. If None, no slit is applied. Default ``None``.
-​
-    plot: str
-        any parameter such as 'radiance' (if slit is given), 'radiance_noslit', 
-        'absorbance', etc...   Default ``None``
-​
-    name: str
-        name of the case. If None, a unique ID is generated. Default ``None``
-​
-    use_cached: boolean
-        use cached files for line database and energy database. Default ``True``
-​
-    verbose: boolean, or int
-        If ``False``, stays quiet. If ``True``, tells what is going on. 
-        If ``>=2``, gives more detailed messages (for instance, details of 
-        calculation times). Default ``True``. 
-​
-    **kwargs: other inputs forwarded to SpectrumFactory
-        For instance: ``warnings``. 
-        See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more 
-        details on input. 
-        For instance:
-​
-    pseudo_continuum_threshold: float
-        if not 0, first calculate a rough approximation of the spectrum, then
-        moves all lines whose linestrength intensity is less than this threshold
-        of the maximum in a semi-continuum. Values above 0.01 can yield significant
-        errors, mostly in highly populated areas. 80% of the lines can typically
-        be moved in a continuum, resulting in 5 times faster spectra. If 0,
-        no semi-continuum is used. Default 0.
-​
-    Returns
-    -------
-    
-    s: :class:`~radis.spectrum.spectrum.Spectrum`
-        Output spectrum.
-​
-        Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a 
-        spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
-​
-        Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
-        directly.
-​
-        See [1]_ to get an overview of all Spectrum methods
-​
-    References
-    ----------
-​
-    .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
-​
-​
-    Examples
-    --------
-​
-    Calculate a CO spectrum from the HITRAN database::
-​
-        s = calc_spectrum(1900, 2300,         # cm-1
-                          molecule='CO',
-                          isotope='1,2,3',
-                          pressure=1.01325,   # bar
-                          Tgas=1000, 
-                          mole_fraction=0.1, 
-                          )
-        s.apply_slit(0.5, 'nm')
-        s.plot('radiance')
-        
-    This example uses the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` 
-    and :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` methods. See also
-    :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`:: 
-        
-        s.line_survey(overlay='radiance')
-​
-    Refer to the online :ref:`Examples <label_examples>` for more cases, and to 
-    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods. 
-​
-    See Also
-    --------
-    
-    :class:`~radis.lbl.factory.SpectrumFactory`, 
-    the :ref:`Spectrum page <label_spectrum>`
+            Example::
+
+                mole_fraction={'CO2':0.8 ,  'CO':0.2 }
+    ​
+        mole_fraction: float or dict
+            database species mole fraction. Default ``1``.
+
+            For multiple molecules, use a dictionary with molecule names as keys.
+
+            Example::
+
+                mole_fraction={'CO2': 0.8, 'CO':0.2}
+    ​
+        path_length: float [cm]
+            slab size. Default ``1``.
+    ​
+        databank: str or dict
+            can be either:
+    ​
+            - ``'fetch'``, to fetch automatically from [HITRAN-2016]_ through astroquery.
+
+            .. warning::
+
+                [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
+                temperatures you may need [HITEMP-2010]_
+
+            - the name of a a valid database file, in which case the format is inferred.
+              For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
+              Accepts wildcards ``'*'`` to select multiple files.
+
+            - the name of a spectral database registered in your ``~/.radis``
+              configuration file. This allows to use multiple database files.
+              See :ref:`Configuration file <label_lbl_config_file>`.
+    ​
+            Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more
+            information on line databases, and :data:`~radis.misc.config.DBFORMAT` for
+            your ``~/.radis`` file format
+
+            For multiple molecules, use a dictionary with molecule names as keys::
+    ​
+                databank='fetch'     # automatic download
+                databank='PATH/TO/05_HITEMP2019.par'    # path to a file
+                databank='*CO2*.par' #to get all the files that have CO2 in their names (case insensitive)
+                databank='HITEMP-2019-CO'   # user-defined database in Configuration file
+                databank = {'CO2' : 'PATH/TO/05_HITEMP2019.par', 'CO' : 'fetch'}  # for multiple molecules
+    ​
+        medium: ``'air'``, ``'vacuum'``
+            propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
+            Does not change anything when giving inputs in wavenumber. Default ``'air'``
+    ​
+        wstep: float (cm-1)
+            Spacing of calculated spectrum. Default ``0.01 cm-1``
+    ​
+        broadening_max_width: float (cm-1)
+            Full width over which to compute the broadening. Large values will create
+            a huge performance drop (scales as ~broadening_width^2 without DLM)
+            The calculated spectral range is increased (by broadening_max_width/2
+            on each side) to take into account overlaps from out-of-range lines.
+            Default ``10`` cm-1.
+    ​
+        Other Parameters
+        ----------------
+    ​
+        lineshape_optimization: int, ``None``, ``'DLM'``, or ``'auto'``.
+            Optimizations for the calculation of the lineshapes:
+
+                - If ``None``, all lineshapes are calculated at the same time (can
+                  create memory errors).
+                - If ``int``, is given as the ``chunksize`` parameter of
+                  :py:class:`~radis.lbl.factory.SpectrumFactory`` to split the line database
+                  in several parts so that the number of ``lines * spectral grid points`` is
+                  less than ``chunksize`` (reduces memory consumption). Typical values:
+                  ``lineshape_optimization=1e6``.
+                - If ``'DLM'``, only typical lineshapes are calculated. This can
+                  result of speedups of orders of magnitude.  See more about DLM in
+                  :ref:`Performance <label_lbl_performance>`.
+
+            Default ``'DLM'``.
+    ​
+        overpopulation: dict
+            dictionary of overpopulation compared to the given vibrational temperature.
+            Default ``None``.
+
+            Example::
+
+                overpopulation = {'CO2' : {'(00`0`0)->(00`0`1)': 2.5,
+                                           '(00`0`1)->(00`0`2)': 1,
+                                           '(01`1`0)->(01`1`1)': 1,
+                                           '(01`1`1)->(01`1`2)': 1
+
+                                            }
+                                 }
+    ​
+        slit: float, str, or ``None``
+            if float, FWHM of a triangular slit function. If str, path to an
+            experimental slit function. If None, no slit is applied. Default ``None``.
+    ​
+        plot: str
+            any parameter such as 'radiance' (if slit is given), 'radiance_noslit',
+            'absorbance', etc...   Default ``None``
+    ​
+        name: str
+            name of the case. If None, a unique ID is generated. Default ``None``
+    ​
+        use_cached: boolean
+            use cached files for line database and energy database. Default ``True``
+    ​
+        verbose: boolean, or int
+            If ``False``, stays quiet. If ``True``, tells what is going on.
+            If ``>=2``, gives more detailed messages (for instance, details of
+            calculation times). Default ``True``.
+    ​
+        **kwargs: other inputs forwarded to SpectrumFactory
+            For instance: ``warnings``.
+            See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
+            details on input.
+            For instance:
+    ​
+        pseudo_continuum_threshold: float
+            if not 0, first calculate a rough approximation of the spectrum, then
+            moves all lines whose linestrength intensity is less than this threshold
+            of the maximum in a semi-continuum. Values above 0.01 can yield significant
+            errors, mostly in highly populated areas. 80% of the lines can typically
+            be moved in a continuum, resulting in 5 times faster spectra. If 0,
+            no semi-continuum is used. Default 0.
+    ​
+        Returns
+        -------
+
+        s: :class:`~radis.spectrum.spectrum.Spectrum`
+            Output spectrum.
+    ​
+            Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a
+            spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
+    ​
+            Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
+            directly.
+    ​
+            See [1]_ to get an overview of all Spectrum methods
+    ​
+        References
+        ----------
+    ​
+        .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
+    ​
+    ​
+        Examples
+        --------
+    ​
+        Calculate a CO spectrum from the HITRAN database::
+    ​
+            s = calc_spectrum(1900, 2300,         # cm-1
+                              molecule='CO',
+                              isotope='1,2,3',
+                              pressure=1.01325,   # bar
+                              Tgas=1000,
+                              mole_fraction=0.1,
+                              )
+            s.apply_slit(0.5, 'nm')
+            s.plot('radiance')
+
+        This example uses the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`
+        and :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` methods. See also
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`::
+
+            s.line_survey(overlay='radiance')
+    ​
+        Refer to the online :ref:`Examples <label_examples>` for more cases, and to
+        the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
+    ​
+        See Also
+        --------
+
+        :class:`~radis.lbl.factory.SpectrumFactory`,
+        the :ref:`Spectrum page <label_spectrum>`
     """
 
     from radis.los.slabs import MergeSlabs
@@ -297,14 +297,14 @@ def calc_spectrum(
     def _check_molecules_are_consistent(
         molecule_reference_set, reference_name, new_argument, new_argument_name
     ):
-        """ Will test that molecules set are the same in molecule_reference_set and new_argument, if new_argument is a dict.
-        molecule_reference_set is a set of molecules (yeah!). 
+        """Will test that molecules set are the same in molecule_reference_set and new_argument, if new_argument is a dict.
+        molecule_reference_set is a set of molecules (yeah!).
         reference_name is the name of the argument from which we guessed the list of molecules (used to have a clear error message).
         new_argument is the new argument to check
-        new_argument_name is its name 
-        
+        new_argument_name is its name
+
         Returns the set of molecules as found in new_argument, if applicable, else the molecule_reference_set (this allows us to parse all arguments too)
-        
+
         Note that names are just here to provide clear error messages to the user if there is a contradiction.
         """
 
@@ -453,8 +453,7 @@ def _calc_spectrum(
     verbose,
     **kwargs
 ):
-    """ See :py:func:`~radis.lbl.calc.calc_spectrum` 
-    """
+    """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
 
     # Check inputs
 

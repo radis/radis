@@ -24,8 +24,8 @@ import pytest
 
 @pytest.mark.fast
 def test_compression(verbose=True, warnings=True, *args, **kwargs):
-    """ Test that redundant quantities are properly infered from already known 
-    spectral quantities """
+    """Test that redundant quantities are properly infered from already known
+    spectral quantities"""
 
     # Get spectrum
     s1 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
@@ -92,7 +92,7 @@ def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
 
 
 def test_get_recompute(verbose=True, *args, **kwargs):
-    """ Make sure :func:`~radis.spectrum.rescale.get_recompute` works as expected
+    """Make sure :func:`~radis.spectrum.rescale.get_recompute` works as expected
 
     Here, we check which quantities are needed to recompute radiance_noslit"""
 
@@ -123,8 +123,8 @@ def test_get_recompute(verbose=True, *args, **kwargs):
 
 
 def test_recompute_equilibrium(verbose=True, warnings=True, plot=True, *args, **kwargs):
-    """ Test that spectral quantities recomputed under equilibrium assumption
-    yields the same output as with non equilibrium routines when Tvib = Trot """
+    """Test that spectral quantities recomputed under equilibrium assumption
+    yields the same output as with non equilibrium routines when Tvib = Trot"""
 
     if plot:
         import matplotlib.pyplot as plt

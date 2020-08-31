@@ -29,6 +29,8 @@ from radis.phys.constants import eV, h, c, k_b, hc_k
 from radis.phys.units import conv2
 from radis.phys.air import air2vacuum, vacuum2air
 
+assert conv2  # removes flake8 warnings
+
 # %% Energy units
 
 
@@ -84,8 +86,7 @@ def K2J(E):
 
 
 def K2cm(E):
-    """K to cm-1
-    """
+    """K to cm-1"""
     _assertK(E)
     return E / hc_k
 
@@ -98,7 +99,7 @@ def cm2J(E):
 
 def cm2K(E):
     """cm-1 to K
-    
+
     That's the classical 1.44 K/cm-1. See :data:`~radis.phys.constants.hc_k`
     """
     _assertcm(E)
@@ -120,8 +121,8 @@ def cm2nm(wl_cm1):
 
 
 def cm2hz(wl_cm1):
-    """ wavenumber to frequency
-    wl_cm1, output in hz """
+    """wavenumber to frequency
+    wl_cm1, output in hz"""
     return wl_cm1 * c * 100
 
 
@@ -132,10 +133,10 @@ def nm2cm(wl_nm):
 
 def cm2nm_air(wl_cm1):
     """cm-1 to (air) nm
-    
+
     References
     ----------
-    
+
     :func:`~radis.phys.air.vacuum2air'
     """
     return vacuum2air(cm2nm(wl_cm1))
@@ -143,10 +144,10 @@ def cm2nm_air(wl_cm1):
 
 def nm_air2cm(wl_nm_air):
     """(air) nm to cm-1
-    
+
     References
     ----------
-    
+
     :func:`~radis.phys.air.air2vacuum'
     """
     return nm2cm(air2vacuum(wl_nm_air))
@@ -158,20 +159,20 @@ def nm2eV(wl_nm):
 
 
 def hz2nm(f_Hz):
-    """ frequency to wavelength
-    f in Hz, output in nm """
+    """frequency to wavelength
+    f in Hz, output in nm"""
     return c * 1e9 / f_Hz
 
 
 def hz2cm(f_Hz):
-    """ frequency to wavenumber
-    f in Hz, output in cm-1 """
+    """frequency to wavenumber
+    f in Hz, output in cm-1"""
     return f_Hz / c / 100
 
 
 def nm2hz(lbd_nm):
-    """ wavelength to frequency 
-    lbd in Hz, output in nm """
+    """wavelength to frequency
+    lbd in Hz, output in nm"""
     return c * 1e9 / lbd_nm
 
 
@@ -179,10 +180,10 @@ def nm2hz(lbd_nm):
 
 
 def dcm2dnm(delta_nu, nu_0):
-    """ Converts (ex: FWHM) from Δcm to Δnm
+    """Converts (ex: FWHM) from Δcm to Δnm
 
 
-    Parameters    
+    Parameters
     ----------
 
     delta_nu: float (cm-1)
@@ -202,10 +203,10 @@ def dcm2dnm(delta_nu, nu_0):
 
 
 def dnm2dcm(delta_lbd, lbd_0):
-    """ Converts (ex: FWHM) from Δnm to Δcm
+    """Converts (ex: FWHM) from Δnm to Δcm
 
 
-    Parameters    
+    Parameters
     ----------
 
     delta_lbd: float (nm)
@@ -225,10 +226,10 @@ def dnm2dcm(delta_lbd, lbd_0):
 
 
 def dcm2dnm_air(delta_nu, nu_0):
-    """ Converts (ex: FWHM) from Δcm to Δnm
+    """Converts (ex: FWHM) from Δcm to Δnm
 
 
-    Parameters    
+    Parameters
     ----------
 
     delta_nu: float (cm-1)
@@ -248,10 +249,10 @@ def dcm2dnm_air(delta_nu, nu_0):
 
 
 def dnm_air2dcm(delta_lbd, lbd_0):
-    """ Converts (ex: FWHM) from Δnm to Δcm
+    """Converts (ex: FWHM) from Δnm to Δcm
 
 
-    Parameters    
+    Parameters
     ----------
 
     delta_lbd: float (nm)
@@ -271,10 +272,10 @@ def dnm_air2dcm(delta_lbd, lbd_0):
 
 
 def dhz2dnm(deltaf_hz, f_0):
-    """ Converts (ex: FWHM) from ΔHz to Δnm
+    """Converts (ex: FWHM) from ΔHz to Δnm
 
 
-    Parameters    
+    Parameters
     ----------
 
     deltaf_hz: Hz
@@ -287,10 +288,10 @@ def dhz2dnm(deltaf_hz, f_0):
 
 
 def dnm2dhz(delta_lbd, lbd_0):
-    """ Converts (ex: FWHM) from Δnm to Δhz
+    """Converts (ex: FWHM) from Δnm to Δhz
 
 
-    Parameters    
+    Parameters
     ----------
 
     delta_lbd: nm

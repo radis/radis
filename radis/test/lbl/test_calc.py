@@ -58,37 +58,37 @@ def test_sPlanck_conversions(verbose=True, *args, **kwargs):
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
 def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
-    """ Basic example, used as a non-regression test
+    """Basic example, used as a non-regression test
 
     Notes
     -----
-    
+
     How long it tooks to calculate this Spectrum?
 
     Performance test on old NeQ package, with the [CDSD-HITEMP-JMIN] databank.
     See the caveats in the E. Pannier "Limits of CO2 NonEquilibrium Models" paper.
     (just used here as a performance monitoring)
-    
+
     - neq 0.9.20: 18.7s
 
     - neq 0.9.20*: 15.4s   (removed 2nd loop on 1st isotope because of groupby().apply())
 
-    - neq 0.9.20**: 11.7s  (after replacing fill_Evib with map() ) 
+    - neq 0.9.20**: 11.7s  (after replacing fill_Evib with map() )
 
-    - neq 0.9.21: 9.4s     (improve Qrot / nrot fetching performance) 
+    - neq 0.9.21: 9.4s     (improve Qrot / nrot fetching performance)
 
-    - neq 0.9.22: 8.4s     
-    
-    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
-    is not valid for these temperatures but can be more conveniently 
+    - neq 0.9.22: 8.4s
+
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which
+    is not valid for these temperatures but can be more conveniently
     downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
-    
-    (we also expect the test to be much faster than above, but that's just 
+
+    (we also expect the test to be much faster than above, but that's just
     because the database is smaller!)
-    
+
     - radis 0.9.20 : 2.49 s    on [HITRAN-2016]
                      4.05 s    on [CDSD-HITEMP-JMIN]
-    
+
     """
 
     if verbose:
@@ -184,26 +184,26 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 def test_calc_spectrum_overpopulations(
     verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
-    """ Non-regression test: 
-        
+    """Non-regression test:
+
     Example using overpopulation of the 001 asymmetric stretch first level of CO2,
     which is written (p,c,N) = (3,1,4) in [CDSD-4000]_ notation
-    
+
     Notes
     -----
-    
+
     In old Neq package (before RADIS):
-    
+
     the test uses a CDSD-PCN notation for vibrational energy assignation, i.e,
     Evib = minimal energy of a (p,c,N) polyad. See the discussion on the implications
-    in the E. Pannier "Limits of CO2 NonEquilibrium models" paper. 
-    Better use the assignation scheme suggested in the paper. 
+    in the E. Pannier "Limits of CO2 NonEquilibrium models" paper.
+    Better use the assignation scheme suggested in the paper.
     But it's okay here as a non-regression test.
-    
-    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
-    is not valid for these temperatures but can be more conveniently 
+
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which
+    is not valid for these temperatures but can be more conveniently
     downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
-    
+
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -372,16 +372,16 @@ def test_calc_spectrum_overpopulations(
 def test_all_calc_methods_CO2pcN(
     verbose=True, plot=False, warnings=True, rtol=1e-3, *args, **kwargs
 ):
-    """ Test same spectrum for 3 different calculation variants (equilibrium, 
-    non-equilibrium, per band and recombine 
-    
+    """Test same spectrum for 3 different calculation variants (equilibrium,
+    non-equilibrium, per band and recombine
+
     Uses CO2 Levels database where the energy partitioning is done as follow:
-        
+
         2 nonequilibrium modes
         Evib is the minimum of a "p,c,N" group
         Erot = E - Evib
-    
-    This corresponds to the levelsfmt = 'cdsd-pcN' in 
+
+    This corresponds to the levelsfmt = 'cdsd-pcN' in
     :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
     """
 
@@ -482,18 +482,18 @@ def test_all_calc_methods_CO2pcN(
 
 @pytest.mark.needs_connection
 def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **kwargs):
-    """ Test same spectrum for 2 different calculation codes (equilibrium, 
-    non-equilibrium) in the presence of isotopes 
-    
+    """Test same spectrum for 2 different calculation codes (equilibrium,
+    non-equilibrium) in the presence of isotopes
+
     Notes
     -----
-    
+
     On the old NeQ package the test used [HITEMP-2010]_
-    
-    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which 
-    is not valid for these temperatures but can be more conveniently 
+
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which
+    is not valid for these temperatures but can be more conveniently
     downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
-    
+
     """
 
     Tgas = 1500
@@ -539,8 +539,8 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 def test_calc_spectrum_multiple_molecules(
     verbose=True, plot=True, warnings=True, *args, **kwargs
 ):
-    """ Test calculations with multiple molecules
-    
+    """Test calculations with multiple molecules
+
     Note: try to keep the same wavelength ranges for each of the multi-molecule
     tests, so that databases are only downloaded once, and cached!"""
 
@@ -591,8 +591,8 @@ def test_calc_spectrum_multiple_molecules(
 def test_calc_spectrum_multiple_molecules_otherinputs(
     verbose=True, plot=True, warnings=True, *args, **kwargs
 ):
-    """ Test calculations with differnet kind of inputs for multiple molecules
-    
+    """Test calculations with differnet kind of inputs for multiple molecules
+
     Note: try to keep the same wavelength ranges for each of the multi-molecule
     tests, so that databases are only downloaded once, and cached!"""
 
@@ -641,14 +641,14 @@ def test_calc_spectrum_multiple_molecules_otherinputs(
 def test_calc_spectrum_multiple_molecules_inputerror(
     verbose=True, plot=True, warnings=True, *args, **kwargs
 ):
-    """ Test calculations with multiple molecules
-    
+    """Test calculations with multiple molecules
+
     Note: try to keep the same wavelength ranges for each of the multi-molecule
     tests, so that databases are only downloaded once, and cached!"""
 
     # Contradictory:
     with pytest.raises(ValueError):
-        s = calc_spectrum(
+        calc_spectrum(
             wavelength_min=4165,
             wavelength_max=5000,
             Tgas=1000,
@@ -661,7 +661,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 
     # Partial:
     with pytest.raises(ValueError):
-        s = calc_spectrum(
+        calc_spectrum(
             wavelength_min=4165,
             wavelength_max=5000,
             Tgas=1000,

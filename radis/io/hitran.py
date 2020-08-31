@@ -205,7 +205,7 @@ columns_2004 = OrderedDict(
         ),
         ("iso", ("a1", int, "isotope number", "")),
         ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
-        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",)),
+        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",),),
         ("A", ("a10", float, "Einstein A coefficient", "s-1")),
         ("airbrd", ("a5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
         ("selbrd", ("a5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
@@ -254,31 +254,31 @@ columns_2004 = OrderedDict(
 
 
 def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
-    """ Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe 
+    """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
-    Parameters    
+    Parameters
     ----------
 
     fname: str
-        HITRAN-HITEMP file name 
+        HITRAN-HITEMP file name
 
     count: int
         number of items to read (-1 means all file)
 
     cache: boolean, or ``'regen'`` or ``'force'``
-        if ``True``, a pandas-readable HDF5 file is generated on first access, 
+        if ``True``, a pandas-readable HDF5 file is generated on first access,
         and later used. This saves on the datatype cast and conversion and
-        improves performances a lot (but changes in the database are not 
+        improves performances a lot (but changes in the database are not
         taken into account). If False, no database is used. If ``'regen'``, temp
-        file are reconstructed. Default ``False``. 
+        file are reconstructed. Default ``False``.
 
     Other Parameters
     ----------------
-    
+
     drop_non_numeric: boolean
-        if ``True``, non numeric columns are dropped. This improves performances, 
-        but make sure all the columns you need are converted to numeric formats 
-        before hand. Default ``True``. Note that if a cache file is loaded it 
+        if ``True``, non numeric columns are dropped. This improves performances,
+        but make sure all the columns you need are converted to numeric formats
+        before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
 
     Returns
@@ -305,7 +305,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
 
     See Also
     --------
-    
+
     :func:`~radis.io.cdsd.cdsd2df`
 
     """
@@ -407,7 +407,7 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
 
 
 def _parse_HITRAN_class1(df):
-    r""" Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
+    r"""Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
 
 
     Parameters
@@ -424,10 +424,10 @@ def _parse_HITRAN_class1(df):
 
     >>>       v
     >>>  13x I2
-    
+
     References
     ----------
-    
+
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
 
@@ -449,7 +449,7 @@ def _parse_HITRAN_class1(df):
 
 
 def _parse_HITRAN_class2(df):
-    r""" Diatomic molecules with different electronic levels: O2
+    r"""Diatomic molecules with different electronic levels: O2
 
 
     Parameters
@@ -469,7 +469,7 @@ def _parse_HITRAN_class2(df):
 
     References
     ----------
-    
+
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
@@ -478,7 +478,7 @@ def _parse_HITRAN_class2(df):
 
 
 def _parse_HITRAN_class3(df):
-    r""" Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
+    r"""Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
 
 
     Parameters
@@ -495,10 +495,10 @@ def _parse_HITRAN_class3(df):
 
     >>>      X i     v1
     >>>  7x A1 A3 2x I2
-    
+
     References
     ----------
-    
+
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
@@ -507,7 +507,7 @@ def _parse_HITRAN_class3(df):
 
 
 def _parse_HITRAN_class4(df):
-    r""" Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
+    r"""Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
 
     Parameters
     ----------
@@ -523,7 +523,7 @@ def _parse_HITRAN_class4(df):
     >>>     v1 v2 l2 v3
     >>>  7x I2 I2 I2 I2
 
-    Note: I2 in regexp: [\d ]{2} 
+    Note: I2 in regexp: [\d ]{2}
 
     References
     ----------
@@ -554,7 +554,7 @@ def _parse_HITRAN_class4(df):
 
 
 def _parse_HITRAN_class5(df):
-    r""" Parse linear triatomic with large Fermi resonance in HITRAN [1]_: CO2
+    r"""Parse linear triatomic with large Fermi resonance in HITRAN [1]_: CO2
 
     Parameters
     ----------
@@ -570,7 +570,7 @@ def _parse_HITRAN_class5(df):
     >>>     v1 v2 l2 v3 r
     >>>  6x I2 I2 I2 I2 I1
 
-    Note: I2 in regexp: [\d ]{2} 
+    Note: I2 in regexp: [\d ]{2}
 
     References
     ----------
@@ -601,7 +601,7 @@ def _parse_HITRAN_class5(df):
 
 
 def _parse_HITRAN_class6(df):
-    r""" Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
+    r"""Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
 
     Parameters
     ----------
@@ -617,7 +617,7 @@ def _parse_HITRAN_class6(df):
     >>>     v1 v2 v3
     >>>  9x I2 I2 I2
 
-    Note: I2 in regexp: [\d ]{2} 
+    Note: I2 in regexp: [\d ]{2}
 
     References
     ----------
@@ -652,7 +652,7 @@ def _parse_HITRAN_class6(df):
 
 
 def _parse_HITRAN_class7(df):
-    r""" Parse linear tetratomic in HITRAN [1]_: C2H2
+    r"""Parse linear tetratomic in HITRAN [1]_: C2H2
 
     Parameters
     ----------
@@ -678,7 +678,7 @@ def _parse_HITRAN_class7(df):
 
 
 def _parse_HITRAN_class8(df):
-    r""" Pyramidal tetratomic in HITRAN [1]_: NH3, PH3
+    r"""Pyramidal tetratomic in HITRAN [1]_: NH3, PH3
 
 
     Parameters
@@ -706,7 +706,7 @@ def _parse_HITRAN_class8(df):
 
 
 def _parse_HITRAN_class9(df):
-    r""" Non-linear tetratomic in HITRAN [1]_: H2CO, H2O2, COF2
+    r"""Non-linear tetratomic in HITRAN [1]_: H2CO, H2O2, COF2
 
 
     Parameters
@@ -734,7 +734,7 @@ def _parse_HITRAN_class9(df):
 
 
 def _parse_HITRAN_class10(df):
-    r""" Pentatomic or greater polyatomic in HITRAN [1]_
+    r"""Pentatomic or greater polyatomic in HITRAN [1]_
 
 
     Parameters
@@ -765,7 +765,7 @@ def _parse_HITRAN_class10(df):
 
 
 def _parse_HITRAN_group1(df):
-    r""" 
+    r"""
 
     Parameters
     ----------
@@ -823,7 +823,7 @@ def _parse_HITRAN_group1(df):
 
 
 def _parse_HITRAN_group2(df):
-    r""" 
+    r"""
 
     Parameters
     ----------
@@ -883,7 +883,7 @@ def _parse_HITRAN_group2(df):
 
 
 def _parse_HITRAN_group3(df):
-    r""" 
+    r"""
 
     Parameters
     ----------
@@ -910,7 +910,7 @@ def _parse_HITRAN_group3(df):
 
 
 def _parse_HITRAN_group4(df):
-    r""" 
+    r"""
 
     Parameters
     ----------
@@ -937,7 +937,7 @@ def _parse_HITRAN_group4(df):
 
 
 def _parse_HITRAN_group5(df):
-    r""" 
+    r"""
 
     Parameters
     ----------
@@ -964,7 +964,7 @@ def _parse_HITRAN_group5(df):
 
 
 def _parse_HITRAN_group6(df):
-    r""" 
+    r"""
 
     Parameters
     ----------
@@ -1029,7 +1029,7 @@ def parse_local_quanta(df, mol):
 
 
 def parse_global_quanta(df, mol):
-    r""" 
+    r"""
 
     Parameters
     ----------
@@ -1074,7 +1074,7 @@ def parse_global_quanta(df, mol):
 
 def get_molecule_identifier(molecule_name):
     r"""
-    For a given input molecular formula, return the corresponding HITRAN molecule 
+    For a given input molecular formula, return the corresponding HITRAN molecule
     identifier number [1]_.
 
 
@@ -1114,11 +1114,11 @@ def get_molecule_identifier(molecule_name):
 
 def get_molecule(molecule_id):
     r"""
-    For a given input molecular identifier, return the corresponding HITRAN 
+    For a given input molecular identifier, return the corresponding HITRAN
     molecule name [1]_.
 
 
-    Parameters    
+    Parameters
     ----------
 
     molecular_id: str

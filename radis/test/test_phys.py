@@ -25,7 +25,6 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 from __future__ import absolute_import, unicode_literals, print_function
 import numpy as np
 from numpy import isclose
-from astropy import units as u
 from radis.phys.convert import (
     J2eV,
     J2cm,

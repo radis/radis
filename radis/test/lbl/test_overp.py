@@ -38,10 +38,10 @@ import pytest
 def test_direct_overpopulation_vs_recombined_bands(
     verbose=True, plot=False, warnings=True, rtol=0.05, *args, **kwargs
 ):
-    """ Compare a non-equilibrium spectrum calculated directly with overpopulations, 
-    or by recombining pre-calculated vibrational bands. 
+    """Compare a non-equilibrium spectrum calculated directly with overpopulations,
+    or by recombining pre-calculated vibrational bands.
 
-    The later allows for almost instantaneous changes of the overpopulation factors, 
+    The later allows for almost instantaneous changes of the overpopulation factors,
     (mostly useful in fitting algorithms), but is only valid for optically thin emission spectra
 
     Expected output:

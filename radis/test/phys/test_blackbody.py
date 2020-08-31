@@ -39,13 +39,13 @@ def test_exceptions(verbose=True, *args, **kwargs):
 
 
 def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
-    """ Test blackbody with Wien's law, Stefan's law and tabulated data 
-    of maximum 
+    """Test blackbody with Wien's law, Stefan's law and tabulated data
+    of maximum
 
     Reference
     ---------
 
-    Tabulated intensity (75.987...) was checked to match SpectraPlot and 
+    Tabulated intensity (75.987...) was checked to match SpectraPlot and
     manually calculated values
 
     """
@@ -104,14 +104,14 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
 
 
 def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
-    """ Validate Planck calculation with wavenumber
+    """Validate Planck calculation with wavenumber
 
     Notes
     -----
 
     Earth blackbody radiation [1]_:
 
-    - 294 K 
+    - 294 K
     - eps = 0.65
     - integrated over 2pi steradian
 
@@ -176,7 +176,7 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
 
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
-    """ Test procedures
+    """Test procedures
 
     Parameters
     ----------

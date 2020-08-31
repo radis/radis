@@ -22,7 +22,7 @@ import numpy as np
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
 from radis.spectrum.compare import get_distance, plot_diff
-from radis import calc_spectrum, plot_diff, Radiance_noslit, get_residual
+from radis import calc_spectrum, Radiance_noslit, get_residual
 
 # Test routines
 
@@ -92,7 +92,7 @@ def test_plot_compare_with_nan(
     s._q["radiance_noslit"][0] = np.nan
 
     # Test get_residual methods when there are nans in the spectra
-    diff1 = get_residual(
+    get_residual(
         s,
         s * 1.2,
         var="radiance_noslit",
@@ -100,7 +100,7 @@ def test_plot_compare_with_nan(
         normalize=True,
         normalize_how="mean",
     )
-    diff2 = get_residual(
+    get_residual(
         s,
         s * 1.2,
         var="radiance_noslit",
@@ -108,6 +108,7 @@ def test_plot_compare_with_nan(
         normalize=True,
         normalize_how="area",
     )
+    # we only check that functions do not fail.
     # TODO Write similar testcase for normalize_how="mean"
 
     # Test Plot function when there are Nans in the spectrum:
@@ -122,8 +123,7 @@ def test_plot_compare_with_nan(
 
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
-    """ Test procedures
-    """
+    """Test procedures"""
 
     # Test all Spectrum compare methods
     # ----------------------------------

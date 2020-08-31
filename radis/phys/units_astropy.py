@@ -14,9 +14,9 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
 
     Other Parameters
     ----------------
-    
+
     round: int
-        round to that number of digit after conversion. Default ``10``. Set to 
+        round to that number of digit after conversion. Default ``10``. Set to
         ``None`` to disable.
 
     Returns
@@ -26,7 +26,7 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
 
     Examples
     --------
-    
+
         >>> convert_and_strip_units(4.5 * u.um, u.nm)
         <<< 4500.0
 
@@ -37,7 +37,7 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
     ------
     TypeError
         Raised when ``quantity`` is a astropy.units quantity and ``output_unit`` is ``None``.
-    
+
     """
     if isinstance(quantity, u.Quantity):
         if output_unit in (u.deg_C, u.imperial.deg_F, u.K):

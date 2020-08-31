@@ -27,7 +27,7 @@ Temperatures and concentrations of all slabs are stored in
 from __future__ import absolute_import, unicode_literals, print_function, division
 import matplotlib.pyplot as plt
 import pandas as pd
-from radis import SpectrumFactory, ParallelFactory
+from radis import ParallelFactory
 from radis.spectrum import experimental_spectrum, get_residual
 from radis.los import SerialSlabs, MergeSlabs
 from radis.phys.convert import nm2cm
@@ -45,19 +45,19 @@ import pytest
 def test_compare_torch_CO2(
     verbose=True, plot=False, save=False, warnings=True, use_cache=True, *args, **kwargs
 ):
-    """ Reproduce the plasma torch experiment of Packan 2003 in in atmospheric air 
+    """Reproduce the plasma torch experiment of Packan 2003 in in atmospheric air
 
     Notes
     -----
-    
+
     Thresholds parameters are reduced for a faster calculation time. For instance:
-    
+
     - broadening_max_width should be 50 rather than 20
     - cutoff should be 1e-27 rather than 1e-25
     - wstep should be 0.01 or even 0.008 rather than 0.1
 
     Performance:
-        
+
     - neq==0.9.20: Finished test_compare_torch_CO2 in 758.640324s
 
     - neq==0.9.21: Finished test_compare_torch_CO2 in 672s
@@ -70,7 +70,7 @@ def test_compare_torch_CO2(
     Reference
     --------
 
-    Packan et al 2003 "Measurement and Modeling of OH, NO, and CO Infrared Radiation 
+    Packan et al 2003 "Measurement and Modeling of OH, NO, and CO Infrared Radiation
     at 3400 K", JTHT
 
     """

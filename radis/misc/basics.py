@@ -12,7 +12,6 @@ import os
 from os.path import join, abspath, normcase, normpath
 import numpy as np
 import sys
-import fileinput
 from six.moves import filter
 from six.moves import range
 from six import binary_type
@@ -30,7 +29,7 @@ verbose = True
 
 
 def make_folders(path, folders):
-    """ Make folders if not there
+    """Make folders if not there
     Parameters
     ----------
     path: str
@@ -81,8 +80,8 @@ def exec_file(afile, globalz=None, localz=None):
 
 
 def remove_duplicates(l):
-    """ Remove duplicates from a list, without changing the order. Note that 
-    if the order doesn't matter you could just do set(l) """
+    """Remove duplicates from a list, without changing the order. Note that
+    if the order doesn't matter you could just do set(l)"""
 
     l1 = []
     for e in l:
@@ -92,13 +91,13 @@ def remove_duplicates(l):
 
 
 def partition(pred, iterable):
-    """ Use a predicate to partition entries into false entries and true entries
+    """Use a predicate to partition entries into false entries and true entries
     Returns
     -------
     Returns two lists: positive, and negative
     Example
     -------
-     >>> partition(is_odd, range(10)) 
+     >>> partition(is_odd, range(10))
      --> [0 2 4 6 8], [1 3 5 7 9]
     """
     t1, t2 = tee(iterable)
@@ -125,9 +124,9 @@ def partition(pred, iterable):
 def compare_dict(
     d1, d2, verbose="if_different", compare_as_paths=[], return_string=False
 ):
-    """ Returns ratio of equal keys [0-1]
+    """Returns ratio of equal keys [0-1]
     If verbose, also print all keys and values on 2 columns
-    Parameters    
+    Parameters
     ----------
     d1, d2: dict
         two dictionaries to compare
@@ -137,7 +136,7 @@ def compare_dict(
         compare the values corresponding to given keys as path (irrespective of
         forward / backward slashes, or case )
     verbose: boolean, or ``'if_different'``
-        ``'if_different'`` means results will be shown only if there is a difference. 
+        ``'if_different'`` means results will be shown only if there is a difference.
     return_string: boolean
         if ``True``, returns message instead of just printing it (useful in error messages)
         Default ``False``
@@ -203,26 +202,26 @@ def compare_dict(
 
 
 def compare_lists(l1, l2, verbose="if_different", return_string=False):
-    """ Compare 2 lists of elements that may not be of the same length, irrespective
-    of order. Returns the ratio of elements [0-1] present in both lists. If verbose, 
-    prints the differences 
-    Parameters    
+    """Compare 2 lists of elements that may not be of the same length, irrespective
+    of order. Returns the ratio of elements [0-1] present in both lists. If verbose,
+    prints the differences
+    Parameters
     ----------
-    l1, l2: list-like 
+    l1, l2: list-like
     verbose: boolean, or 'if_different'
-        'if_different' means results will be shown only if there is a difference. 
+        'if_different' means results will be shown only if there is a difference.
         function is called twice
     Other Parameters
     ----------------
     verbose: boolean, or ``'if_different'``
-        ``'if_different'`` means results will be shown only if there is a difference. 
+        ``'if_different'`` means results will be shown only if there is a difference.
     return_string: boolean
         if ``True``, returns message instead of just printing it (useful in error messages)
         Default ``False``
     Returns
     -------
     out: float [0-1]
-        ratio of matching keys 
+        ratio of matching keys
     """
 
     old_stdout = sys.stdout
@@ -267,7 +266,7 @@ def compare_lists(l1, l2, verbose="if_different", return_string=False):
 
 
 def stdpath(p):
-    """ Convert path p in standard path (irrespective of slash / backslash,
+    """Convert path p in standard path (irrespective of slash / backslash,
     or case)
     """
 
@@ -290,9 +289,9 @@ def merge_lists(lists):
 
 
 def merge_rename_columns(df, columns1, columns2, merged_names):
-    """ Merge all columns under easier names. Only keep the useful ones
+    """Merge all columns under easier names. Only keep the useful ones
     Returns a new dataframe
-    Parameters    
+    Parameters
     ----------
     df: pandas Dataframe
     columns1: list
@@ -335,20 +334,20 @@ def print_series(a):
 
 
 def transfer_metadata(df1, df2, metadata):
-    """ Transfer metadata between a DataFrame df1 and df2 
-    
-    For some reason metadata are sometimes not copied when a DataFrame is 
-    sliced or copied, even if they explicitely figure in the df._metadata 
-    attribute. Here we copy them back 
-    
+    """Transfer metadata between a DataFrame df1 and df2
+
+    For some reason metadata are sometimes not copied when a DataFrame is
+    sliced or copied, even if they explicitely figure in the df._metadata
+    attribute. Here we copy them back
+
     Parameters
     ----------
-    
+
     df1: pandas DataFrame
         copy from df1
-        
-    df2: pandas DataFrame 
-        copy to df2 
+
+    df2: pandas DataFrame
+        copy to df2
     """
 
     for k in metadata:
@@ -362,24 +361,24 @@ def transfer_metadata(df1, df2, metadata):
 
 
 def expand_metadata(df, metadata):
-    """ Turn metadata from a float to a column
-    
-    For some reason metadata are sometimes not copied when a DataFrame is 
-    sliced or copied, even if they explicitely figure in the df._metadata 
-    attribute. Here we add them as column before such operations. 
-    
+    """Turn metadata from a float to a column
+
+    For some reason metadata are sometimes not copied when a DataFrame is
+    sliced or copied, even if they explicitely figure in the df._metadata
+    attribute. Here we add them as column before such operations.
+
     Parameters
     ----------
-    
+
     df: pandas DataFrame
         ...
-        
+
     Returns
     -------
-    
-    None: 
+
+    None:
         df modified in place
-        
+
     """
 
     for k in metadata:
@@ -425,7 +424,7 @@ def is_float(a):
 
 
 def is_number(s):
-    """ Return True if ``s`` is a number. Works for strings, floats, int, 
+    """Return True if ``s`` is a number. Works for strings, floats, int,
     and is compatible with Python 2/3"""
 
     try:

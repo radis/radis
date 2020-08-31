@@ -24,9 +24,7 @@ def test_databanks(*args, **kwargs):
 
 
 def _run_testcases(verbose=True, *args, **kwargs):
-    """ Test array functions
-
-    """
+    """Test array functions"""
 
     test_json_config_file()
     test_databanks()

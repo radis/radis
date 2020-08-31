@@ -14,7 +14,7 @@ from six.moves import zip
 
 
 def parse_hitran_file(fname, columns, count):
-    """ Parse a file under HITRAN ``par`` format. Parsing is done in binary 
+    """Parse a file under HITRAN ``par`` format. Parsing is done in binary
     format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
     Parameters
@@ -126,11 +126,11 @@ def _format_dtype(dtype):
 
 
 def _cast_to_dtype(data, dtype):
-    """ Cast array to certain type, crash with hopefull helping error message.
+    """Cast array to certain type, crash with hopefull helping error message.
     Return casted data
 
 
-    Parameters    
+    Parameters
     ----------
 
     data: array to cast
@@ -161,9 +161,9 @@ def _cast_to_dtype(data, dtype):
 
 
 def drop_object_format_columns(df, verbose=True):
-    """ Remove 'object' columns in a pandas DataFrame. They are not useful to us at this 
+    """Remove 'object' columns in a pandas DataFrame. They are not useful to us at this
     time, and they slow down all operations (as they are converted to 'object'
-    in pandas DataFrame). If you want to keep them, better convert them to 
+    in pandas DataFrame). If you want to keep them, better convert them to
     some numeric values
     """
 
@@ -182,21 +182,21 @@ def drop_object_format_columns(df, verbose=True):
 
 
 def replace_PQR_with_m101(df):
-    """ Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric 
-    database. This improves performances quite a lot, as Pandas doesnt have a 
-    fixed-string dtype hence would use the slow ``object`` dtype. 
-    
+    """Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric
+    database. This improves performances quite a lot, as Pandas doesnt have a
+    fixed-string dtype hence would use the slow ``object`` dtype.
+
     Parameters
     ----------
-    
+
     df: pandas Dataframe
         ``branch`` must be a column name
-    
+
     Returns
     -------
-    
+
     None:
-        ``df`` is is modified in place 
+        ``df`` is is modified in place
     """
 
     # Note: somehow pandas updates dtype automatically. We have to check

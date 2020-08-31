@@ -14,8 +14,8 @@ import sys
 
 
 def printlog(msg, logfile="log.txt", stdout=True):
-    """ Write a message to the logfile, adding date and time. Also print it to screen
-    if stdout is True """
+    """Write a message to the logfile, adding date and time. Also print it to screen
+    if stdout is True"""
     with open(logfile, "a+") as f:
         f.write("{0} {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), msg))
     if stdout:
@@ -24,8 +24,8 @@ def printlog(msg, logfile="log.txt", stdout=True):
 
 
 def warnlog(msg, logfile="log.txt", stdout=True):
-    """ Write a WARNING message to the logfile, adding date and time. Also print it to 
-    screen if stdout is True """
+    """Write a WARNING message to the logfile, adding date and time. Also print it to
+    screen if stdout is True"""
     with open(logfile, "a+") as f:
         f.write(
             "{0} WARNING. {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), msg)
@@ -36,9 +36,9 @@ def warnlog(msg, logfile="log.txt", stdout=True):
 
 
 def printwarn(msg, verbose=True, warnings=True):
-    """ Send msg in the console if verbose is True, and as warning if warnings 
-    is True. Warnings is added at the end of the process but you may miss it 
-    if interrupted. 
+    """Send msg in the console if verbose is True, and as warning if warnings
+    is True. Warnings is added at the end of the process but you may miss it
+    if interrupted.
     """
 
     if verbose:

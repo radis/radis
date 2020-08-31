@@ -25,7 +25,6 @@ import radis
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
-from radis.spectrum import Spectrum
 import numpy as np
 import matplotlib.pyplot as plt
 from os.path import basename
@@ -41,7 +40,7 @@ fig_prefix = basename(__file__) + ": "
 @pytest.mark.needs_config_file
 @pytest.mark.needs_db_CDSD_HITEMP
 def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
-    """ Test spectrum generation
+    """Test spectrum generation
     Can be used as a base to generate spectra in your codes
 
     Non-regression test: compare with past version (see conditions below)
@@ -94,20 +93,20 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
     -----
 
     Performance test. How long it tooks to calculate this Spectrum?
-    Test with cutoff 1e-25, broadening_max_width=10 
+    Test with cutoff 1e-25, broadening_max_width=10
 
     - 0.9.15: >>> 33s
 
-    - 0.9.16*: (replaced groupby().apply() with iteration over indexes) >>> 32s  
+    - 0.9.16*: (replaced groupby().apply() with iteration over indexes) >>> 32s
             [but large impact expected on big files]
 
-    - 0.9.16*: (upgraded cache files to h5) >>> 25s 
+    - 0.9.16*: (upgraded cache files to h5) >>> 25s
 
     - 0.9.16*: (also added h5 cache file for levels) >>> 21s
 
     - 0.9.16*: (with Whiting slit voigt function) >>> 5.8s
 
-    Test with cutoff 1e-27, broadening_max_width=50 :  
+    Test with cutoff 1e-27, broadening_max_width=50 :
     ("Spectrum calculated in ... ", including database loading time)
 
     - 0.9.16*: (same code as last) >>> 12.5s including 7.6s of broadening
@@ -115,28 +114,28 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
     - 0.9.16**: (with pseudo_continuum_threshold=0.01) >>> 7.8s including 2.3s of broadening
 
     - 0.9.18 (normal code, no pseudo continuum). >>> ?
-    
+
     - 0.9.21 (normal code) >>> 13.7s, including 8.7s of broadening
              (with pseudo_continuum_threshold=0.01) >>> 4.3s, including 2.6s of broadening
 
     - 0.9.21*              >>> 14.0s  (added the manual lineshape normalization instead of
                                        Whitings's polynomial)
-    
+
     - 0.9.22 (normal code) >>> 11.3s   (without energy level lookup, for eq. calculations)
              (with pseudo_continuum_threshold=0.01) >>> 5.9s
 
     - 0.9.23 (normal code) >>> 7.2s   (added jit in Voigt broadening)
                            >>> 7.1s   (chunksize = None)  (and much faster for more lines)
              (with pseudo_continuum_threshold=0.01) >>> 4.9s
-             
+
     RADIS:
-        
+
     - 0.9.19 (normal code) >>> 6.3 s
-    
+
     - 0.9.20 (normal code) >>> 6.3 s
              (with pseudo_continuum_threshold=0.01) >>> ???
              (with DLM) >>> 2.3 s
-    
+
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -252,16 +251,16 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
-    """ Test direct calculation of power integral from Einstein coefficients
+    """Test direct calculation of power integral from Einstein coefficients
     matches integration of broadened spectrum in the optically thin case
 
     We compare:
 
     - direct calculation of power integral with equilibrium code
         :meth:`~radis.lbl.SpectrumFactory.optically_thin_power` (T)
-    - direct calculation of power integral with non equilibrium code  
+    - direct calculation of power integral with non equilibrium code
         :meth:`~radis.lbl.SpectrumFactory.optically_thin_power` (T,T)
-    - numerical integration of non equilibrium spectrum under optically thin conditions: 
+    - numerical integration of non equilibrium spectrum under optically thin conditions:
         :meth:`~radis.spectrum.spectrum.Spectrum.get_power`
 
     Test passes if error < 0.5%

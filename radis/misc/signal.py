@@ -30,19 +30,19 @@ def resample(
     energy_threshold=1e-3,
     print_conservation=True,
 ):
-    """ Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
-    data and whose bounds are taken as the same as `xspace`. 
+    """Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
+    data and whose bounds are taken as the same as `xspace`.
 
     Uses spline interpolation to create the intermediary points. Number of points
-    is the same as the initial xspace, times a resolution factor. Verifies energy 
+    is the same as the initial xspace, times a resolution factor. Verifies energy
     conservation on the intersecting range at the end.
 
 
-    Parameters    
+    Parameters
     ----------
 
     xspace: array
-        space on which vector was generated 
+        space on which vector was generated
 
     vector: array
         quantity to resample
@@ -53,14 +53,14 @@ def resample(
     k: int
         order of spline interpolation. 3: cubic, 1: linear. Default 1.
 
-    ext: 'error', 'extrapolate', 0, 1 
-        Controls the value returned for elements of xspace_new not in the interval 
+    ext: 'error', 'extrapolate', 0, 1
+        Controls the value returned for elements of xspace_new not in the interval
         defined by xspace. If 'error', raise a ValueError. If 'extrapolate', well,
-        extrapolate. If '0' or 0, then fill with 0. If 1, fills with 1. 
+        extrapolate. If '0' or 0, then fill with 0. If 1, fills with 1.
         Default 'error'.
 
     energy_threshold: float
-        if energy conservation (integrals on the intersecting range) is above 
+        if energy conservation (integrals on the intersecting range) is above
         this threshold, raise an error. If None, dont check for energy conservation
         Default 1e-3 (0.1%)
 
@@ -74,14 +74,14 @@ def resample(
     vector_new: array
         resampled vector on evenly spaced array. Number of element is conserved.
 
-    Note that depending upon the from_space > to_space operation, sorting may 
-    be reversed. 
+    Note that depending upon the from_space > to_space operation, sorting may
+    be reversed.
 
 
     Examples
     --------
 
-    Resample a :class:`~radis.spectrum.spectrum.Spectrum` radiance 
+    Resample a :class:`~radis.spectrum.spectrum.Spectrum` radiance
     on an evenly spaced wavenumber space::
 
         w_nm, I_nm = s.get('radiance')
@@ -218,37 +218,37 @@ def resample_even(
     energy_threshold=1e-3,
     print_conservation=True,
 ):
-    """ Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
-    data and whose bounds are taken as the same as `xspace`. 
+    """Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
+    data and whose bounds are taken as the same as `xspace`.
 
     Uses spline interpolation to create the intermediary points. Number of points
-    is the same as the initial xspace, times a resolution factor. Verifies energy 
+    is the same as the initial xspace, times a resolution factor. Verifies energy
     conservation at the end.
 
 
-    Parameters    
+    Parameters
     ----------
 
     xspace: array
-        space on which vector was generated 
+        space on which vector was generated
 
     vector: array
         quantity to resample
 
     resfactor: float
-        increase of resolution. If 1, output vector has the same number of 
-        points as the input vector. Default 2. 
+        increase of resolution. If 1, output vector has the same number of
+        points as the input vector. Default 2.
 
     k: int
         order of spline interpolation. 3: cubic, 1: linear. Default 1.
 
     ext: 'error', 'extrapolate', 0
-        Controls the value returned for elements of xspace_new not in the interval 
+        Controls the value returned for elements of xspace_new not in the interval
         defined by xspace. If 'error', raise a ValueError. If 'extrapolate', well,
         extrapolate. If '0' or 0, then fill with 0. Default 'error'.
 
     energy_threshold: float
-        if energy conservation (integrals) is above this threshold, raise an 
+        if energy conservation (integrals) is above this threshold, raise an
         error
 
     print_conservation: boolean
@@ -264,14 +264,14 @@ def resample_even(
     vector_new: array
         resampled vector on evenly spaced array. Number of element is conserved.
 
-    Note that depending upon the from_space > to_space operation, sorting may 
-    be reversed. 
+    Note that depending upon the from_space > to_space operation, sorting may
+    be reversed.
 
 
     Examples
     --------
 
-    Resample a :class:`~radis.spectrum.spectrum.Spectrum` radiance 
+    Resample a :class:`~radis.spectrum.spectrum.Spectrum` radiance
     on an evenly spaced wavenumber space::
 
         w_nm, I_nm = s.get('radiance')
@@ -301,10 +301,10 @@ def resample_even(
 
 
 def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
-    """ Test procedures
+    """Test procedures
 
 
-    Parameters    
+    Parameters
     ----------
 
     debug: boolean

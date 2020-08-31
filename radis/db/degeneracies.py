@@ -14,14 +14,14 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 
 def gi(M, I):
-    """ State independant degeneracy 
+    """State independant degeneracy
 
     Parameters
     ----------
-    
+
     M: int
         molecule id
-        
+
     I: int
         isotope number
 
@@ -48,14 +48,14 @@ def gi(M, I):
 
 
 def gs(M, I):
-    """ State dependant degeneracy
+    """State dependant degeneracy
 
     Parameters
     ----------
-    
+
     M: int
         molecule id
-        
+
     I: int
         isotope number
 

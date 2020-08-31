@@ -1,9 +1,5 @@
 from __future__ import print_function, absolute_import, division, unicode_literals
-import pytest
-import os
-from os.path import dirname, basename, join, expanduser, abspath
-from os import listdir
-import fnmatch
+from os.path import dirname, basename, join
 from radis.misc.utils import get_files_from_regex
 from radis.test.utils import getTestFile
 
@@ -13,11 +9,11 @@ TEST_FOLDER_PATH = dirname(getTestFile("."))
 
 
 def test_files_from_regex_1(*args, **kwargs):
-    """ 
+    """
     Check if test_file_from_regex() is returning a list of correct path values
     This test case uses '*.par' as the regular expression
-    path1 generates a path-like string for '*.par' 
-    path_test contains all the files matching '*.par' regular expression 
+    path1 generates a path-like string for '*.par'
+    path_test contains all the files matching '*.par' regular expression
     path_actual contains the expected list of file names which should be returned by get_files_from_regex
     Lists are looped through to check if every element in path_test and path_actual match, if not an AssertError is thrown
     """
@@ -46,11 +42,11 @@ def test_files_from_regex_1(*args, **kwargs):
 
 
 def test_files_from_regex_2(*args, **kwargs):
-    """ 
+    """
     Check if test_file_from_regex() is returning a list of correct path values
     This test case uses '*co2*.par' as the regular expression
-    path generates a path-like string for '*co2*.par' 
-    path_test contains all the files matching '*co2*.par' regular expression 
+    path generates a path-like string for '*co2*.par'
+    path_test contains all the files matching '*co2*.par' regular expression
     path_actual contains the expected list of file names which should be returned by get_files_from_regex
     Lists are looped through to check if every element in path_test and path_actual match, if not an AssertError is thrown
     """

@@ -22,15 +22,12 @@ See more examples in the
 from __future__ import print_function, absolute_import, division, unicode_literals
 
 from radis.spectrum.spectrum import Spectrum, is_spectrum
-from radis.spectrum.utils import NON_CONVOLUTED_QUANTITIES
-from radis.phys.convert import nm2cm
 from radis.misc.basics import merge_lists, in_all
-from radis.misc.utils import FileNotFoundError
 from radis.misc.arrays import count_nans
 from radis.misc.debug import printdbg
 from warnings import warn
 import numpy as np
-from numpy import exp, arange, allclose, abs, diff
+from numpy import arange, allclose, abs, diff
 
 # %% Slabs / Multi-layers / Radiative Transfer Equation (RTE)
 # ----------------------------------------------------------------------
@@ -46,57 +43,57 @@ def intersect(a, b):
 
 def SerialSlabs(*slabs, **kwargs):
     # type: (*Spectrum, **dict) -> Spectrum
-    r""" Adds several slabs along the line-of-sight. 
+    r"""Adds several slabs along the line-of-sight.
     If adding two slabs only, you can also use::
-        
+
         s1>s2
-    Serial spectrum ``1>2`` is calculated with Eqn (4.2) of the [RADIS-2018]_ article, 
+    Serial spectrum ``1>2`` is calculated with Eqn (4.2) of the [RADIS-2018]_ article,
     generalized to N slabs :
-        
+
     .. math::
         I_{\lambda, 1>2} = I_{\lambda, 1} \tau_{\lambda, 2} + I_{\lambda, 2}
-        
+
         \tau_{\lambda, 1+2} = \tau_{\lambda, 1} \cdot \tau_{\lambda, 2}
-        
+
     where
-    
+
         .. math:: I_{\lambda}, \tau_{\lambda}
-        
-    are the radiance and transmittance of the two slabs ``1`` and ``2``. 
-    Radiance and transmittance are calculated if not given in the 
-    initial slabs (if possible). 
-    
-    Parameters    
+
+    are the radiance and transmittance of the two slabs ``1`` and ``2``.
+    Radiance and transmittance are calculated if not given in the
+    initial slabs (if possible).
+
+    Parameters
     ----------
     slabs: list of Spectra, each representing a slab
         line-of-sight::
-                
-            slabs       [0]     [1]  ............... [n]     
+
+            slabs       [0]     [1]  ............... [n]
                          :       :                    :         \====
             light        *   ->  *        ->          *    ->    )===  observer
                                                                 /====
     resample_wavespace: ``'never'``, ``'intersect'``, ``'full'``
         what to do when spectra have different wavespaces:
-            
+
         - If ``'never'``, raises an error
         - If ``'intersect'``, uses the intersection of all ranges, and resample
-          spectra on the most resolved wavespace. 
-        - If ``'full``', uses the overlap of all ranges, resample spectra on the 
+          spectra on the most resolved wavespace.
+        - If ``'full``', uses the overlap of all ranges, resample spectra on the
           most resolved wavespace, and fill missing data with 0 emission and 0
           absorption
-        
+
         Default ``'never'``
     out: ``'transparent'``, ``'nan'``, ``'error'``
         what to do if resampling is out of bounds:
-            
-        - ``'transparent'``: fills with transparent medium. 
-        - ``'nan'``: fills with nan. 
-        - ``'error'``: raises an error. 
-        
+
+        - ``'transparent'``: fills with transparent medium.
+        - ``'nan'``: fills with nan.
+        - ``'error'``: raises an error.
+
         Default ``'nan'``
     Other Parameters
     ----------------
-    
+
     verbose: bool
         if ``True``, more blabla. Default ``False``
     modify_inputs: False
@@ -104,7 +101,7 @@ def SerialSlabs(*slabs, **kwargs):
         avoids making a copy so is slightly faster. Default ``False``.
     Returns
     -------
-    Spectrum object representing total emission and total transmittance as 
+    Spectrum object representing total emission and total transmittance as
     observed at the output (slab[n+1]). Conditions and units are transported too,
     unless there is a mismatch then conditions are dropped (and units mismatch
     raises an error because it doesnt make sense)
@@ -114,15 +111,15 @@ def SerialSlabs(*slabs, **kwargs):
         s1 = calc_spectrum(...)
         s2 = calc_spectrum(...)
         s3 = SerialSlabs(s1, s2)
-        
+
     The last line is equivalent to::
-        
+
         s3 = s1>s2
     See Also
     --------
     :func:`~radis.los.slabs.MergeSlabs`
     See more examples in the :ref:`Line-of-Sight module <label_los_index>`
-    
+
     """
     # TODO: rewrite with 'recompute' list like in MergeSlabs ?
 
@@ -292,16 +289,16 @@ def _serial_slab_names(s, sn):
 
 def _check_valid(s):
     # type: (Spectrum) -> bool
-    """ Check s is a valid Spectrum object. Raises an error if not 
-    
+    """Check s is a valid Spectrum object. Raises an error if not
+
     Valid if:
-        
+
     - is a Spectrum
-    
+
     Also print a warning if:
-        
+
     - quantities used for solving the LOS have nan
-    
+
     """
 
     if not is_spectrum(s):
@@ -335,31 +332,31 @@ def resample_slabs(
     waveunit, resample_wavespace, out_of_bounds="nan", modify_inputs=False, *slabs
 ):
     # type: (str, str, str, *Spectrum) -> *Spectrum
-    """ Resample slabs on the same wavespace: if the range are differents, 
+    """Resample slabs on the same wavespace: if the range are differents,
     depending on the mode we may fill with optically thin media, or raise an
-    error 
-    Parameters    
+    error
+    Parameters
     ----------
     waveunit: ``'nm'``, ``'cm-1'``
-        which wavespace we're working in 
+        which wavespace we're working in
     resample_wavespace: 'never', 'intersect', 'full'
         what to do when spectra have different wavespaces:
-            
+
         - If 'never', raises an error
         - If 'intersect', uses the intersection of all ranges, and resample
-          spectra on the most resolved wavespace. 
-        - If 'full', uses the overlap of all ranges, resample spectra on the 
+          spectra on the most resolved wavespace.
+        - If 'full', uses the overlap of all ranges, resample spectra on the
           most resolved wavespace, and fill missing data with 0 emission and 0
           absorption
-        
+
         Default 'never'
     out_of_bounds: 'transparent', 'nan', 'error'
         what to do if resampling is out of bounds:
-            
-        - 'transparent': fills with transparent medium. 
-        - 'nan': fills with nan. 
-        - 'error': raises an error. 
-        
+
+        - 'transparent': fills with transparent medium.
+        - 'nan': fills with nan.
+        - 'error': raises an error.
+
         Default ``'nan'``
     *slabs: list of Spectrum objects
     Other Parameters
@@ -452,38 +449,38 @@ def resample_slabs(
 
 def MergeSlabs(*slabs, **kwargs):
     # type: (*Spectrum, **dict) -> Spectrum
-    r""" Combines several slabs into one. Useful to calculate multi-gas slabs. 
+    r"""Combines several slabs into one. Useful to calculate multi-gas slabs.
     Linear absorption coefficient is calculated as the sum of all linear absorption
     coefficients, and the RTE is recalculated to get the total radiance.
     You can also simply use::
-        
-        s1//s2 
-    Merged spectrum ``1+2`` is calculated with Eqn (4.3) of the [RADIS-2018]_ article, 
+
+        s1//s2
+    Merged spectrum ``1+2`` is calculated with Eqn (4.3) of the [RADIS-2018]_ article,
     generalized to N slabs :
-        
+
     .. math::
-        
+
         j_{\lambda, 1+2} = j_{\lambda, 1} + j_{\lambda, 2}
-        
+
         k_{\lambda, 1+2} = k_{\lambda, 1} + k_{\lambda, 2}
-        
-    where 
-    
+
+    where
+
     .. math:: j_{\lambda}, k_{\lambda}
-        
-    are the emission coefficient and absorption coefficient of the two slabs ``1`` and ``2``. 
-    Emission and absorption coefficients are calculated if not given in the 
-    initial slabs (if possible). 
-    
-    Parameters    
+
+    are the emission coefficient and absorption coefficient of the two slabs ``1`` and ``2``.
+    Emission and absorption coefficients are calculated if not given in the
+    initial slabs (if possible).
+
+    Parameters
     ----------
     slabs: list of Spectra, each representing a slab
-        ``path_length`` must be given in Spectrum conditions, and equal for all 
+        ``path_length`` must be given in Spectrum conditions, and equal for all
         spectra.
-        
+
         line-of-sight::
-                
-            slabs       
+
+            slabs
                         [0]        \====
             light       [1]  ->     )===  observer
                         [n]        /====
@@ -492,25 +489,25 @@ def MergeSlabs(*slabs, **kwargs):
     kwargs input:
     resample: ``'never'``, ``'intersect'``, ``'full'``
         what to do when spectra have different wavespaces:
-            
+
         - If ``'never'``, raises an error
         - If ``'intersect'``, uses the intersection of all ranges, and resample
-          spectra on the most resolved wavespace. 
-        - If ``'full'``, uses the overlap of all ranges, resample spectra on the 
+          spectra on the most resolved wavespace.
+        - If ``'full'``, uses the overlap of all ranges, resample spectra on the
           most resolved wavespace, and fill missing data with 0 emission and 0
           absorption
-        
+
         Default ``'never'``
     out: ``'transparent'``, ``'nan'``, ``'error'``
         what to do if resampling is out of bounds:
-            
-        - ``'transparent'``: fills with transparent medium. 
-        - ``'nan'``: fills with nan. 
-        - ``'error'``: raises an error. 
-        
+
+        - ``'transparent'``: fills with transparent medium.
+        - ``'nan'``: fills with nan.
+        - ``'error'``: raises an error.
+
         Default ``'nan'``
     optically_thin: boolean
-        if ``True``, merge slabs in optically thin mode. Default ``False`` 
+        if ``True``, merge slabs in optically thin mode. Default ``False``
     verbose: boolean
         if ``True``, print messages and warnings. Default ``False``
     modify_inputs: False
@@ -518,23 +515,23 @@ def MergeSlabs(*slabs, **kwargs):
         avoids making a copy so is slightly faster. Default ``False``.
     Returns
     -------
-    Spectrum object representing total emission and total transmittance as 
+    Spectrum object representing total emission and total transmittance as
     observed at the output. Conditions and units are transported too,
     unless there is a mismatch then conditions are dropped (and units mismatch
     raises an error because it doesnt make sense)
     Examples
     --------
-    Merge two spectra calculated with different species (physically correct 
+    Merge two spectra calculated with different species (physically correct
     only if broadening coefficients dont change much)::
         from radis import calc_spectrum, MergeSlabs
         s1 = calc_spectrum(...)
         s2 = calc_spectrum(...)
         s3 = MergeSlabs(s1, s2)
     The last line is equivalent to::
-        
+
         s3 = s1//s2
-    Load a spectrum precalculated on several partial spectral ranges, for a same 
-    molecule (i.e, partial spectra are optically thin on the rest of the spectral 
+    Load a spectrum precalculated on several partial spectral ranges, for a same
+    molecule (i.e, partial spectra are optically thin on the rest of the spectral
     range)::
         from radis import load_spec, MergeSlabs
         spectra = []
@@ -546,9 +543,9 @@ def MergeSlabs(*slabs, **kwargs):
     See Also
     --------
     :func:`~radis.los.slabs.SerialSlabs`
-    
+
     See more examples in :ref:`Line-of-Sight module <label_los_index>`
-    
+
     """
 
     # Deprecation warnings

@@ -116,11 +116,11 @@ def test_broadening_methods_different_conditions(
     """
     Test direct Voigt broadening vs convolution of Gaussian x Lorentzian
     for different spectral grid resolution
-    
+
     Notes
-    ----- 
-    
-    Reference broadening calculated manually with the HWHM formula of 
+    -----
+
+    Reference broadening calculated manually with the HWHM formula of
     `HITRAN.org <https://hitran.org/docs/definitions-and-units/>`_
     """
 
@@ -275,8 +275,8 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
 @pytest.mark.fast
 def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     """
-    Test use of lineshape template for broadening calculation. 
-    
+    Test use of lineshape template for broadening calculation.
+
     Ensures that results are the same with and without DLM.
     """
 
@@ -352,7 +352,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
 def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     """
     Test use of DLM with and without Fourier Transform
-    
+
     Ensures that results are the same, and compare calculation times.
     """
 
@@ -425,8 +425,8 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
 def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     """
     Test Noneq version of DLM and makes sure it gives the same results as the eq
-    one when used with Tvib=Trot 
-    
+    one when used with Tvib=Trot
+
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -491,18 +491,18 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
 def test_abscoeff_continuum(
     plot=False, verbose=2, warnings=True, threshold=0.1, *args, **kwargs
 ):
-    """ 
+    """
     Test calculation with pseudo-continuum
 
     Assert results on abscoeff dont change
-    
-    
+
+
     Notes
     -----
-    
+
     Uses HITRAN so it can deployed and tested on `Travis CI <https://travis-ci.com/radis/radis>`_, but we should switch
-    to HITEMP if some HITEMP files can be downloaded automatically at the 
-    execution time. 
+    to HITEMP if some HITEMP files can be downloaded automatically at the
+    execution time.
 
     """
 
@@ -594,18 +594,18 @@ def test_abscoeff_continuum(
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
 def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
-    """ 
+    """
     Test calculation with pseudo-continuum under nonequilibrium
 
     Assert results on emisscoeff dont change
 
-    
+
     Notes
     -----
-    
+
     Uses HITRAN so it can deployed and tested on `Travis CI <https://travis-ci.com/radis/radis>`_, but we should switch
-    to HITEMP if some HITEMP files can be downloaded automatically at the 
-    execution time. 
+    to HITEMP if some HITEMP files can be downloaded automatically at the
+    execution time.
 
     """
 

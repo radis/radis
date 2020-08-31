@@ -14,22 +14,22 @@ import warnings
 
 
 def Unit(st, *args, **kwargs):
-    """ Radis evaluation of an unit, using :py:class:`~astropy.units.Unit`
-    
+    """Radis evaluation of an unit, using :py:class:`~astropy.units.Unit`
+
     Changes compare to Astropy standards:
-        
+
     - "µm" is accepted and converted to "um"
     - we do not raise a warning if multiple slashes, e.g. "mW/cm2/sr/nm"
-    
+
     Examples
     --------
-    
+
     ::
-        
+
         from radis.phys.units import Unit as u
         a = 200 * u("mW/cm2/sr/nm")
         a += 0.1 * u("W/cm2/sr/nm")
-    
+
     """
 
     try:
@@ -37,7 +37,7 @@ def Unit(st, *args, **kwargs):
     except AttributeError:
         pass
 
-    with warnings.catch_warnings() as w:
+    with warnings.catch_warnings():
         # Ignore some warnings : Cause all warnings to always be triggered.
         warnings.filterwarnings(
             "ignore", ".*multiple slashes.*", category=u.UnitsWarning
@@ -47,10 +47,10 @@ def Unit(st, *args, **kwargs):
 
 
 def conv2(quantity, fromunit, tounit):
-    """ Converts `quantity` from unit `fromunit` to unit `tounit`
+    """Converts `quantity` from unit `fromunit` to unit `tounit`
 
 
-    Parameters    
+    Parameters
     ----------
 
     quantity: array
@@ -67,12 +67,12 @@ def conv2(quantity, fromunit, tounit):
     ----
 
     1.
-    
-    The output is still non dimensional. We don't transform `quantity` 
+
+    The output is still non dimensional. We don't transform `quantity`
     into a dimensioned array because this may create a performance
-    drop in computationaly-expensive task. Instead, we assume we know for 
+    drop in computationaly-expensive task. Instead, we assume we know for
     sure the units in which some of our quantities will be created, and just
-    want to let the users choose another output unit 
+    want to let the users choose another output unit
 
 
     """
@@ -90,14 +90,14 @@ def conv2(quantity, fromunit, tounit):
 
 
 def is_homogeneous(unit1, unit2):
-    """ Tells if unit1 and unit2 are homogeneous, using the Astropy library
+    """Tells if unit1 and unit2 are homogeneous, using the Astropy library
 
 
-    Parameters    
+    Parameters
     ----------
 
     unit1, unit2: str
-        units 
+        units
 
     """
 
@@ -113,11 +113,11 @@ def is_homogeneous(unit1, unit2):
 
 def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     """
-    Convert spectral emission density in wavelength base (typically ~mW/cm3/sr/nm) 
+    Convert spectral emission density in wavelength base (typically ~mW/cm3/sr/nm)
     to spectral emission density in wavenumber base (~mW/cm3/sr/cm-1)
 
 
-    Parameters    
+    Parameters
     ----------
 
     j_nm: array
@@ -127,7 +127,7 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
         wavenumber
 
     Iunit0: str
-        unit (~ per wavelength) to convert from 
+        unit (~ per wavelength) to convert from
 
     Iunit: str
         unit (~ per wavenumber) to convert to
@@ -181,7 +181,7 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
     spectral radiance in wavelength base (~mW/cm3/sr/nm)
 
 
-    Parameters    
+    Parameters
     ----------
 
     j_cm: array
@@ -191,7 +191,7 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
         wavenumber
 
     Iunit0: str
-        unit (~ per wavenumber) to convert from 
+        unit (~ per wavenumber) to convert from
 
     Iunit: str
         unit (~ per wavelength) to convert to
@@ -235,7 +235,7 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
     wavenumber base (~1/cm-1)
 
 
-    Parameters    
+    Parameters
     ----------
 
     l_nm: array
@@ -245,7 +245,7 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
         wavenumber
 
     Iunit0: str
-        unit (~ per wavelength) to convert from 
+        unit (~ per wavelength) to convert from
 
     Iunit: str
         unit (~ per wavenumber) to convert to
@@ -299,7 +299,7 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     wavelength base (~1/nm)
 
 
-    Parameters    
+    Parameters
     ----------
 
     l_cm: array
@@ -309,7 +309,7 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
         wavenumber
 
     Iunit0: str
-        unit (~ per wavenumber) to convert from 
+        unit (~ per wavenumber) to convert from
 
     Iunit: str
         unit (~ per wavelength) to convert to
@@ -351,12 +351,12 @@ def convert_universal(
     per_nm_is_like="mW/sr/cm2/nm",
     per_cm_is_like="mW/sr/cm2/cm-1",
 ):
-    """ Return variable var in whatever unit, and converts to to_unit
+    """Return variable var in whatever unit, and converts to to_unit
     Also deal with cases where var is in ~1/nm (per_nm_is_like) or ~1/cm-1
     (per_cm_is_like)
 
 
-    Parameters    
+    Parameters
     ----------
 
     var: str
@@ -369,13 +369,13 @@ def convert_universal(
     ----------------
 
     spec: :class:`~radis.spectrum.spectrum.Spectrum` object
-        needed to get wavenumber in case we need to do a change of variable 
+        needed to get wavenumber in case we need to do a change of variable
         within the integral
 
     Notes
     -----
 
-    wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires 
+    wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires
     a change of variable in the integral)
 
     """

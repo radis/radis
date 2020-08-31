@@ -8,10 +8,8 @@ Created on Mon May  7 17:34:52 2018
 from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.lbl import SpectrumFactory
 from radis.lbl.base import get_waverange
-from radis.misc.utils import DatabankNotFound
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
-from radis.phys.convert import cm2nm
 import pytest
 import numpy as np
 import astropy.units as u
@@ -24,7 +22,7 @@ from radis.misc.utils import Default
 
 @pytest.mark.fast
 def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
-    """ Compare populations calculated in the nonequilibrium module 
+    """Compare populations calculated in the nonequilibrium module
     with hardcoded values"""
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -93,17 +91,17 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
 def test_populations_CO2_hamiltonian(
     plot=True, verbose=True, warnings=True, *args, **kwargs
 ):
-    """ Calculate nonequilibrium modes with the CO2 Hamiltonian 
-    
+    """Calculate nonequilibrium modes with the CO2 Hamiltonian
+
     ..warning::
-        
-        as we only use a reduced set of the CO2 effective Hamiltonian (< 3000 cm-1), 
-        many levels of the Line Database will not appear in the Levels Database. 
-        We will need to either filter the Line Database beforehand, or run it 
+
+        as we only use a reduced set of the CO2 effective Hamiltonian (< 3000 cm-1),
+        many levels of the Line Database will not appear in the Levels Database.
+        We will need to either filter the Line Database beforehand, or run it
         a first time and remove all levels not found.
-        
-        This database is obviously not to be used in a Production code! 
-    
+
+        This database is obviously not to be used in a Production code!
+
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -168,28 +166,28 @@ def test_populations_CO2_hamiltonian(
 
 # @pytest.mark.needs_connection
 def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
-    """ Test that we find Planck in the optically thick limit 
-    
+    """Test that we find Planck in the optically thick limit
+
     In particular, this test will fail if :
-        
+
     - linestrength are not properly calculated
-    
+
     - at noneq, linestrength and emission integrals are mixed up
-    
+
     The test should be run for 1 and several isotopes, because different
     calculations paths are used internally, and this can lead to different
     errors.
-    
-    Also, this test is used to run with DEBUG_MODE = True, which will 
-    check that isotopes and molecule ids are what we expect in all the 
-    groupby() loops that make the production code very fast. 
-    
+
+    Also, this test is used to run with DEBUG_MODE = True, which will
+    check that isotopes and molecule ids are what we expect in all the
+    groupby() loops that make the production code very fast.
+
     Notes
     -----
-    
-    switched from large band calculation with [HITRAN-2016]_ to a calculation with 
+
+    switched from large band calculation with [HITRAN-2016]_ to a calculation with
     the embedded [HITEMP-2010]_ fragment (shorter range, but no need to download files)
-    
+
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -286,28 +284,28 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 # @pytest.mark.needs_connection
 def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
-    """ Test that we find Planck in the optically thick limit 
-    
+    """Test that we find Planck in the optically thick limit
+
     In particular, this test will fail if :
-        
+
     - linestrength are not properly calculated
-    
+
     - at noneq, linestrength and emission integrals are mixed up
-    
+
     The test should be run for 1 and several isotopes, because different
     calculations paths are used internally, and this can lead to different
     errors.
-    
-    Also, this test is used to run with DEBUG_MODE = True, which will 
-    check that isotopes and molecule ids are what we expect in all the 
-    groupby() loops that make the production code very fast. 
-    
+
+    Also, this test is used to run with DEBUG_MODE = True, which will
+    check that isotopes and molecule ids are what we expect in all the
+    groupby() loops that make the production code very fast.
+
     Notes
     -----
-    
-    switched from large band calculation with [HITRAN-2016]_ to a calculation with 
+
+    switched from large band calculation with [HITRAN-2016]_ to a calculation with
     the embedded [HITEMP-2010]_ fragment (shorter range, but no need to download files)
-    
+
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
