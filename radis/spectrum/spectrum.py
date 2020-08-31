@@ -624,8 +624,8 @@ class Spectrum(object):
             Default ``nm`` (wavelength in air).
 
         Iunit: unit for variable ``var``
-            if ``"default"``, default unit for quantity `var` is used. See the 
-            :py:attr:`~radis.spectrum.spectrum.Spectrum.units` attribute. 
+            if ``"default"``, default unit for quantity `var` is used. See the
+            :py:attr:`~radis.spectrum.spectrum.Spectrum.units` attribute.
             For ``var="radiance"``, one can use per wavelength (~ 'W/m2/sr/nm')
             or per wavenumber (~ 'W/m2/sr/cm-1') units
 
@@ -3599,16 +3599,16 @@ class Spectrum(object):
         return var
 
     def max(self):
-        """ Maximum of the Spectrum, if only one spectral quantity is available::
-            
+        """Maximum of the Spectrum, if only one spectral quantity is available::
+
             s.max()
-        
-        Else, use :func:`~radis.spectrum.operations.Radiance`, 
-        :func:`~radis.spectrum.operations.Radiance_noslit`, 
-        :func:`~radis.spectrum.operations.Transmittance` or 
+
+        Else, use :func:`~radis.spectrum.operations.Radiance`,
+        :func:`~radis.spectrum.operations.Radiance_noslit`,
+        :func:`~radis.spectrum.operations.Transmittance` or
         :func:`~radis.spectrum.operations.Transmittance_noslit`  ::
-            
-            Radiance(s).max() 
+
+            Radiance(s).max()
         """
 
         var = self._get_unique_var(operation_name="max")
@@ -3616,16 +3616,16 @@ class Spectrum(object):
         return I.max()
 
     def min(self):
-        """ Minimum of the Spectrum, if only one spectral quantity is available ::
-            
+        """Minimum of the Spectrum, if only one spectral quantity is available ::
+
             s.min()
-        
-        Else, use :func:`~radis.spectrum.operations.Radiance`, 
-        :func:`~radis.spectrum.operations.Radiance_noslit`, 
-        :func:`~radis.spectrum.operations.Transmittance` or 
+
+        Else, use :func:`~radis.spectrum.operations.Radiance`,
+        :func:`~radis.spectrum.operations.Radiance_noslit`,
+        :func:`~radis.spectrum.operations.Transmittance` or
         :func:`~radis.spectrum.operations.Transmittance_noslit`  ::
 
-            Radiance(s).min() 
+            Radiance(s).min()
         """
 
         var = self._get_unique_var(operation_name="min")
@@ -3635,11 +3635,11 @@ class Spectrum(object):
     def normalize(
         self, normalize_how="max", wrange=(), wunit=None, inplace=False, force=False
     ):
-        """ Normalise the Spectrum, if only one spectral quantity is available.
-        
+        """Normalise the Spectrum, if only one spectral quantity is available.
+
         Parameters
         ----------
-                
+
             normalize_how: ``'max'``, ``'area'``, ``'mean'``
                 how to normalize. ``'max'`` is the default but may not be suited for very
                 noisy experimental spectra. ``'area'`` will normalize the integral to 1.
@@ -3647,27 +3647,27 @@ class Spectrum(object):
 
             wrange: tuple
                 if not empty, normalize on this range
-                
+
             wunit: ``"nm"``, ``"cm-1"``, ``"nm_vac"``
-                unit of the normalisation range above. If ``None``, use the 
-                spectrum default waveunit. 
-                
+                unit of the normalisation range above. If ``None``, use the
+                spectrum default waveunit.
+
             inplace: bool
-                if ``True``, changes the Spectrum. 
-                
+                if ``True``, changes the Spectrum.
+
         Other Parameters
         ----------------
-        
+
             force: bool
-                By default, normalizing some parametres such as transmittance 
+                By default, normalizing some parametres such as transmittance
                 is forbidden because considered non-physical. Use force=True
-                if you really want to. 
-        
+                if you really want to.
+
         Examples
         --------
-        
+
             s.normalize("max", (4200, 4800), inplace=True)
-        
+
         """
 
         from radis.spectrum.operations import multiply

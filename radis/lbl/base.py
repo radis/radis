@@ -3159,7 +3159,7 @@ class BaseFactory(DatabankLoader):
         assert self._broadening_max_width == self.params.broadening_max_width
 
     def _get_parsum(self, molecule, iso, state):
-        """ Get function that calculates the partition function.
+        """Get function that calculates the partition function.
         By default, try to get the tabulated version. If does not exist,
         returns the direct summation version
         """
@@ -3248,28 +3248,28 @@ def get_waverange(
     wavelength_max=None,
     medium="air",
 ):
-    """ Returns wavenumber based on whatever input was given: either ν_min, ν_max
-        directly, or λ_min, λ_max  in the given propagation ``medium``.
+    """Returns wavenumber based on whatever input was given: either ν_min, ν_max
+    directly, or λ_min, λ_max  in the given propagation ``medium``.
 
 
-        Parameters
-        ----------
-        medium: ``'air'``, ``'vacuum'``
-            propagation medium
-        wmin, wmax: float, or `~astropy.units.quantity.Quantity` or ``None``
-            hybrid parameters that can serve as both wavenumbers or wavelength depending on the unit accompanying them.
-            If unitless, wunit is assumed as the accompanying unit.
-        wunit: string
-            The unit accompanying wmin and wmax. Cannot be passed without passing values for wmin and wmax.
-            Default: cm-1
-        wavenum_min, wavenum_max: float, or `~astropy.units.quantity.Quantity` or ``None``
-            wavenumbers
-        wavelength_min, wavelength_max: float, or `~astropy.units.quantity.Quantity` or ``None``
-            wavelengths in given ``medium``
-        Returns
-        -------
-        wavenum_min, wavenum_max,: float
-            wavenumbers
+    Parameters
+    ----------
+    medium: ``'air'``, ``'vacuum'``
+        propagation medium
+    wmin, wmax: float, or `~astropy.units.quantity.Quantity` or ``None``
+        hybrid parameters that can serve as both wavenumbers or wavelength depending on the unit accompanying them.
+        If unitless, wunit is assumed as the accompanying unit.
+    wunit: string
+        The unit accompanying wmin and wmax. Cannot be passed without passing values for wmin and wmax.
+        Default: cm-1
+    wavenum_min, wavenum_max: float, or `~astropy.units.quantity.Quantity` or ``None``
+        wavenumbers
+    wavelength_min, wavelength_max: float, or `~astropy.units.quantity.Quantity` or ``None``
+        wavelengths in given ``medium``
+    Returns
+    -------
+    wavenum_min, wavenum_max,: float
+        wavenumbers
     """
 
     # Checking consistency of all input variables

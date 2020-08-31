@@ -227,10 +227,10 @@ from copy import deepcopy
 
 
 class ConditionDict(dict):
-    """ A class to hold Spectrum calculation input conditions (:py:class:`~radis.lbl.loader.Input`), 
-    computation parameters (:py:class:`~radis.lbl.loader.Parameters`), or 
-    miscalleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`). 
-    
+    """A class to hold Spectrum calculation input conditions (:py:class:`~radis.lbl.loader.Input`),
+    computation parameters (:py:class:`~radis.lbl.loader.Parameters`), or
+    miscalleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`).
+
     Works like a dict except you can also access attribute with::
 
         v = a.key   # equivalent to v = a[key]
@@ -248,9 +248,9 @@ class ConditionDict(dict):
 
     See Also
     --------
-    
-    :py:class:`~radis.lbl.loader.Input`, 
-    :py:class:`~radis.lbl.loader.Parameter`, 
+
+    :py:class:`~radis.lbl.loader.Input`,
+    :py:class:`~radis.lbl.loader.Parameter`,
     :py:class:`~radis.lbl.loader.MiscParams`
     """
 
@@ -319,20 +319,20 @@ class ConditionDict(dict):
 
 # class Input(object):
 class Input(ConditionDict):
-    """ Holds Spectrum calculation input conditions, under the attribute
-    :py:attr:`~radis.lbl.loader.DatabankLoader.input` of 
-    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
-    
+    """Holds Spectrum calculation input conditions, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input` of
+    :py:class:`~radis.lbl.factory.SpectrumFactory`.
+
     Works like a dict except you can also access attribute with::
 
-        v = sf.input.key   # equivalent to v = sf.input[key] 
-    
+        v = sf.input.key   # equivalent to v = sf.input[key]
+
     See Also
     --------
-    
+
     :py:attr:`~radis.lbl.loader.DatabankLoader.params`,
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
-    
+
     """
 
     #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
@@ -380,23 +380,23 @@ def _gaussian_step(res_G):
 
 # class Parameters(object):
 class Parameters(ConditionDict):
-    """ Holds Spectrum calculation computation parameters, under the attribute
-    :py:attr:`~radis.lbl.loader.DatabankLoader.params` of 
-    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
-    
-    Works like 
+    """Holds Spectrum calculation computation parameters, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params` of
+    :py:class:`~radis.lbl.factory.SpectrumFactory`.
+
+    Works like
     a dict except you can also access attribute with::
 
         v = sf.params.key    # equivalent to v = sf.params[key]
 
     Also can be copied, deepcopied, and parallelized in multiprocessing
-    
+
     See Also
     --------
-    
+
     :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
-    
+
     """
 
     #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
@@ -446,12 +446,12 @@ class Parameters(ConditionDict):
 
 
 class MiscParams(ConditionDict):
-    """ A class to hold Spectrum calculation descriptive parameters, under the attribute
-    :py:attr:`~radis.lbl.loader.DatabankLoader.params` of 
-    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
-    
-    Unlike :class:`~radis.lbl.loader.Parameters`, these parameters cannot influence the 
-    Spectrum output and will not be used when comparing Spectrum with existing, 
+    """A class to hold Spectrum calculation descriptive parameters, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params` of
+    :py:class:`~radis.lbl.factory.SpectrumFactory`.
+
+    Unlike :class:`~radis.lbl.loader.Parameters`, these parameters cannot influence the
+    Spectrum output and will not be used when comparing Spectrum with existing,
     precomputed spectra in :class:`~radis.tools.database.SpecDatabase`
 
     Works like
@@ -461,10 +461,10 @@ class MiscParams(ConditionDict):
 
     See Also
     --------
-    
+
     :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
     :py:attr:`~radis.lbl.loader.DatabankLoader.params`,
-    
+
     """
 
     def __init__(self):
@@ -1863,8 +1863,8 @@ class DatabankLoader(object):
         # subroutine load_and_concat
         # --------------------------------------
         def load_and_concat(files, buffer):
-            """ Two modes of concatenation: either directly in memory in ``'RAM'`` mode, 
-            or aggregate on disk in a large HDF5 file in ``'h5'`` mode. 
+            """Two modes of concatenation: either directly in memory in ``'RAM'`` mode,
+            or aggregate on disk in a large HDF5 file in ``'h5'`` mode.
             ``'RAM'`` is faster but memory hunger, ``'h5'`` handles better
             a bigger database
 
@@ -1873,14 +1873,14 @@ class DatabankLoader(object):
 
             files: list of str, or list of dict
                 either a list of path to database files ::
-                    
-                    [PATH/TO/01_1000-1150_HITEMP2010.par, 
-                     PATH/TO/01_1150-1300_HITEMP2010.par, 
+
+                    [PATH/TO/01_1000-1150_HITEMP2010.par,
+                     PATH/TO/01_1150-1300_HITEMP2010.par,
                      PATH/TO/01_1300-1500_HITEMP2010.par]
 
                 either a list of dictionaries containing the spectral informations ::
-                    
-                    [{'wav':'PATH/TO/v0.npy', 
+
+                    [{'wav':'PATH/TO/v0.npy',
                       'int':'PATH/TO/int.npy',
                       'Pshft':'PATH/TO/int.npy',
                       'log_2gs':'PATH/TO/log_2gs.npy'
@@ -1888,7 +1888,7 @@ class DatabankLoader(object):
                       'El':'PATH/TO/Tdpair.npy'},
                      # other dictionaries if needed
                       ]
-                    
+
                 See definitions for instance in :py:data:`~radis.io.hitran.column_2004`
 
             buffer: ``'direct'``, ``'h5'``, ``'RAM'``

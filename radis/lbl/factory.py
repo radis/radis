@@ -189,7 +189,7 @@ class SpectrumFactory(BandFactory):
     Other Parameters
     ----------------
 
-    Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`):  
+    Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`):
 
     Tref: K
         Reference temperature for calculations (linestrength temperature
@@ -268,35 +268,35 @@ class SpectrumFactory(BandFactory):
         can create memory problems. Default ``None``
 
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
-        If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used: 
-        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_) 
+        If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used:
+        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_)
         - ``"simple"`` : weights equal to their relative position in the grid
-        
-        If using the DLM optimization, broadening method is automatically set to ``'fft'``.  
-        If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated. 
-        
-        Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation. 
-        
-        Default ``"min-RMS"`` 
-                
+
+        If using the DLM optimization, broadening method is automatically set to ``'fft'``.
+        If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
+
+        Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation.
+
+        Default ``"min-RMS"``
+
     broadening_method: ``"voigt"``, ``"convolve"``, ``"fft"``
         Calculates broadening with a direct voigt approximation ('voigt') or
         by convoluting independantly calculated Doppler and collisional
         broadening ('convolve'). First is much faster, 2nd can be used to
         compare results. This SpectrumFactory parameter can be manually
         adjusted a posteriori with::
-            
+
             sf = SpectrumFactory(...)
             sf.params.broadening_method = 'voigt'
-            
-        Fast fourier transform ``'fft'`` is only available if using the DLM lineshape  
-        calculation ``optimization``. Because the DLM convolves all lines at the same time,  
+
+        Fast fourier transform ``'fft'`` is only available if using the DLM lineshape
+        calculation ``optimization``. Because the DLM convolves all lines at the same time,
         and thus operates on large arrays, ``'fft'`` becomes more appropriate than
         convolutions in real space (``'voit'``, ``'convolve'`` )
-        
-        By default, use ``"fft"`` for any ``optimization``, and ``"voigt"`` if 
+
+        By default, use ``"fft"`` for any ``optimization``, and ``"voigt"`` if
         optimization is ``None`` .
-    
+
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
@@ -343,7 +343,7 @@ class SpectrumFactory(BandFactory):
 
     See Also
     --------
-    
+
     Alternative:
 
     :func:`~radis.lbl.calc.calc_spectrum`,
@@ -362,13 +362,13 @@ class SpectrumFactory(BandFactory):
     :meth:`~radis.lbl.loader.DatabankLoader.init_database`,
     :meth:`~radis.lbl.bands.BandFactory.eq_bands`,
     :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
-    
+
     Inputs and parameters can be accessed a posteriori with :
-        
+
     :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
     :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscallenous parameters (don't change output)
-    
+
     """
 
     # TODO: make it possible to export both 'vib' and 'rovib'
@@ -899,49 +899,49 @@ class SpectrumFactory(BandFactory):
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
     ):
 
-        """ Generate a spectrum at equilibrium with calculation of lineshapes and broadening done on the GPU
+        """Generate a spectrum at equilibrium with calculation of lineshapes and broadening done on the GPU
 
-                Parameters
-                ----------
+        Parameters
+        ----------
 
-                Tgas: float
-                    Gas temperature (K)
+        Tgas: float
+            Gas temperature (K)
 
-                mole_fraction: float
-                    database species mole fraction. If None, Factory mole fraction is used.
+        mole_fraction: float
+            database species mole fraction. If None, Factory mole fraction is used.
 
-                path_length: float
-                    slab size (cm). If None, Factory mole fraction is used.
+        path_length: float
+            slab size (cm). If None, Factory mole fraction is used.
 
-                pressure: float
-                    pressure (bar). If None, the default Factory pressure is used.
+        pressure: float
+            pressure (bar). If None, the default Factory pressure is used.
 
-                name: str
-                    case name (useful in batch)
+        name: str
+            case name (useful in batch)
 
-                Returns
-                -------
+        Returns
+        -------
 
-                s : Spectrum
-                    Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
+        s : Spectrum
+            Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-                to plot it. See [1]_ to get an overview of all Spectrum methods
+        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+        to plot it. See [1]_ to get an overview of all Spectrum methods
 
-                Notes
-                -----
+        Notes
+        -----
 
-                This method requires CUDA compatible hardware to execute. For more information on how to setup your system to run GPU-accelerated methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
+        This method requires CUDA compatible hardware to execute. For more information on how to setup your system to run GPU-accelerated methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
 
-                See Also
-                --------
+        See Also
+        --------
 
-                :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
+        :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
 
-                """
+        """
 
         try:
 

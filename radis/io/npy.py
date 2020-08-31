@@ -10,33 +10,33 @@ import pandas as pd
 
 
 def npy2df(keywords, verbose=True):
-    """ Convert a dictionary of Numpy arrays storing spectroscopic information
-    to a Pandas dataframe 
+    """Convert a dictionary of Numpy arrays storing spectroscopic information
+    to a Pandas dataframe
 
-    Parameters    
+    Parameters
     ----------
-    
+
     keywords: dict
-        
-        npy2df({'wav':'PATH/TO/v0.npy', 
+
+        npy2df({'wav':'PATH/TO/v0.npy',
           'int':'PATH/TO/int.npy',
           'Pshft':'PATH/TO/int.npy',
           'log_2gs':'PATH/TO/log_2gs.npy'
           'Tdpair':'PATH/TO/Tdpair.npy',
           'El':'PATH/TO/Tdpair.npy'}
-    
+
     Examples
     --------
-    
+
     ::
-        
-        npy2df({'wav':'PATH/TO/v0.npy', 
+
+        npy2df({'wav':'PATH/TO/v0.npy',
           'int':'PATH/TO/int.npy',
           'Pshft':'PATH/TO/int.npy',
           'log_2gs':'PATH/TO/log_2gs.npy'
           'Tdpair':'PATH/TO/Tdpair.npy',
           'El':'PATH/TO/Tdpair.npy'}
-        
+
     See definitions for instance in :py:data:`~radis.io.hitran.column_2004`
     """
 

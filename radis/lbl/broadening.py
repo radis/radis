@@ -1333,10 +1333,10 @@ class BroadenFactory(BaseFactory):
         return line_profile
 
     def _calc_lineshape_DLM(self, df):
-        """ Generate the lineshape database using the steps defined by the 
-        parameters :py:attr:`~radis.lbl.loader.Parameters.dlm_log_pL` and 
+        """Generate the lineshape database using the steps defined by the
+        parameters :py:attr:`~radis.lbl.loader.Parameters.dlm_log_pL` and
         :py:attr:`~radis.lbl.loader.Parameters.dlm_log_pG`.
-        
+
         Parameters
         ----------
 
@@ -1347,7 +1347,7 @@ class BroadenFactory(BaseFactory):
         -------
 
         line_profile_DLM: dict
-            dictionary of Voigt profile template. 
+            dictionary of Voigt profile template.
             If ``self.params.broadening_method == 'fft'``, templates are calculated
             in Fourier space.
 
@@ -1765,9 +1765,9 @@ class BroadenFactory(BaseFactory):
             FWHM of all lines. Used to lookup the DLM
 
         optimization :
-            if ``"min-RMS"`` weights optimized by analytical minimization of the RMS-error. 
+            if ``"min-RMS"`` weights optimized by analytical minimization of the RMS-error.
             Otherwise, weights equal to their relative position in the grid.
-        
+
         Returns
         -------
 
@@ -1981,7 +1981,7 @@ class BroadenFactory(BaseFactory):
         self: Factory
             contains the ``self.misc.chunksize`` parameter
             contains the ``self.params.optimization`` parameter
-            
+
         df: DataFrame
             line dataframe
 

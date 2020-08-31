@@ -473,8 +473,8 @@ def multiply(s, coef, unit=None, var=None, inplace=False):
     coef: float
         Coefficient of the multiplication.
     unit: str, or `~astropy.units.core.Unit`
-        unit for ``coef``. If ``None``, ``coef`` is considered to be 
-        adimensioned. Else, the spectrum `~radis.spectrum.spectrum.Spectrum.units` is multiplied. 
+        unit for ``coef``. If ``None``, ``coef`` is considered to be
+        adimensioned. Else, the spectrum `~radis.spectrum.spectrum.Spectrum.units` is multiplied.
     var: str, or ``None``
         'radiance', 'transmittance', ... If ``None``, get the unique spectral
         quantity of ``s`` or raises an error if there is any ambiguity
@@ -531,7 +531,7 @@ def add_constant(s, cst, unit=None, var=None, inplace=False):
     s: Spectrum objects
         Spectrum you want to modify
     cst: float
-        Constant to add. 
+        Constant to add.
     unit: str
         unit for ``cst``. If ``None``, uses the default unit in ``s`` for
         variable ``var``.
@@ -592,8 +592,8 @@ def add_array(s, a, unit=None, var=None, inplace=False):
     s: Spectrum objects
         Spectrum you want to modify
     a: numpy array, or `~astropy.units.quantity.Quantity`
-        array to add. Must have the same length as variable ``var`` in Spectrum 
-        ``s``. Can be dimensioned with :py:mod:`~astropy.units`. 
+        array to add. Must have the same length as variable ``var`` in Spectrum
+        ``s``. Can be dimensioned with :py:mod:`~astropy.units`.
     unit: str
         unit for ``a``. If ``None``, uses the default unit in ``s`` for
         variable ``var``.
