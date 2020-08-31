@@ -87,7 +87,6 @@ from radis.levels.partfunc import (
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc
 from radis.tools.database import SpecDatabase
 from radis.misc.config import getDatabankEntries, printDatabankEntries, getDatabankList
-from radis.misc.utils import FileNotFoundError
 from radis.misc.basics import compare_dict, compare_lists
 from radis.misc.arrays import count_nans
 from radis.misc.debug import printdbg

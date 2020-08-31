@@ -34,7 +34,6 @@ from radis.misc.config import (
     diffDatabankEntries,
 )
 from radis.db.utils import getFile
-from radis.misc.utils import FileNotFoundError
 from os.path import join, dirname, exists
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")

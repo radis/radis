@@ -77,7 +77,6 @@ from radis.spectrum.spectrum import Spectrum, is_spectrum
 from shutil import copy2
 from time import strftime
 from radis.misc.basics import is_float, list_if_float, all_in
-from radis.misc.utils import FileNotFoundError, PermissionError
 from radis.misc.debug import printdbg
 from radis.misc.printer import printr
 from six import string_types
