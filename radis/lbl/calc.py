@@ -47,10 +47,11 @@ def calc_spectrum(
     name=None,
     use_cached=True,
     verbose=True,
+    mode="cpu",
     **kwargs
 ):
     """ Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
-    under equilibrium, or non-equilibrium, with or without overpopulation. 
+    under equilibrium (using either CPU or GPU), or non-equilibrium, with or without overpopulation.
     It's a wrapper to :class:`~radis.lbl.factory.SpectrumFactory` class. 
     For advanced used, please refer to the aforementionned class. 
 ​
@@ -136,7 +137,8 @@ def calc_spectrum(
 ​
         Default ``'fetch'``. See :class:`~radis.lbl.loader.DatabankLoader` for more 
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for 
-        your ``~/.radis`` file format 
+        your ``~/.radis`` file format
+
         
         For multiple molecules, use a dictionary with molecule names as keys::
 ​
@@ -167,13 +169,14 @@ def calc_spectrum(
         If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used: 
         - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_) 
         - ``"simple"`` : weights equal to their relative position in the grid
-        
+
         If using the DLM optimization, broadening method is automatically set to ``'fft'``.  
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated. 
         
         Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation. 
         
         Default ``"min-RMS"`` 
+>>>>>>> develop
 ​
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature. 
@@ -221,6 +224,12 @@ def calc_spectrum(
         errors, mostly in highly populated areas. 80% of the lines can typically
         be moved in a continuum, resulting in 5 times faster spectra. If 0,
         no semi-continuum is used. Default 0.
+
+    mode: string
+        if set to 'cpu', computes the spectra purely on the CPU. if set to 'gpu',
+        offloads the calculations of lineshape and broadening steps to the GPU
+        making use of parallel computations to speed up the process. Default 'cpu'.
+        Note that mode='gpu' requires CUDA compatible hardware to execute. For more information on how to setup your system to run GPU-accelerated methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
 ​
     Returns
     -------
@@ -240,7 +249,7 @@ def calc_spectrum(
     ----------
 ​
     .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
-​
+​   .. [2] RADIS GPU support: 'GPU Calculations on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>'
 ​
     Examples
     --------
@@ -262,9 +271,30 @@ def calc_spectrum(
     :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`:: 
         
         s.line_survey(overlay='radiance')
+
+    Calculate a CO2 spectrum from the CDSD-4000 database:
+
+        s = calc_spectrum(2200, 2400,   # cm-1
+                          molecule='CO2',
+                          isotope='1',
+                          databank='/path/to/cdsd/databank/in/npy/format/',
+                          pressure=0.1,  # bar
+                          Tgas=1000,
+                          mole_fraction=0.1,
+                          mode='gpu'
+                          )
+
+        s.plot('absorbance')
+
+    This example uses the :py:meth:`~radis.lbl.factor.eq_spectrum_gpu` method to calculate
+    the spectrum on the GPU. The databank points to the CDSD-4000 databank that has been
+    pre-processed and stored in `numpy.npy` format.
 ​
     Refer to the online :ref:`Examples <label_examples>` for more cases, and to 
-    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods. 
+    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
+
+    For more details on how to use the GPU method and process the database, refer to the examples
+    linked above and the documentation on :ref:`GPU support for RADIS <label_gpu>`.
 ​
     See Also
     --------
@@ -417,6 +447,7 @@ def calc_spectrum(
                 name=name,
                 use_cached=use_cached,
                 verbose=verbose,
+                mode=mode,
                 **kwargs_molecule
             )
         )
@@ -447,6 +478,7 @@ def _calc_spectrum(
     name,
     use_cached,
     verbose,
+    mode,
     **kwargs
 ):
     """ See :py:func:`~radis.lbl.calc.calc_spectrum` 
@@ -570,6 +602,24 @@ def _calc_spectrum(
                     levelsfmt="radis",  # built-in spectroscopic constants
                     drop_columns=drop_columns,
                 )
+        elif databank.endswith(".npy"):
+            if verbose:
+                print("Infered {0} is a NPY-format file".format(databank))
+
+            if _equilibrium:
+                sf.load_databank(
+                    path=databank,
+                    format="cdsd-hitemp",
+                    parfuncfmt="hapi",
+                    levelsfmt=None,
+                    buffer="npy",
+                )
+            else:
+                raise (
+                    AttributeError(
+                        "Non equilibirum spectra calculation not yet supported with npy databank"
+                    )
+                )
         else:
             raise ValueError(
                 "Couldnt infer the format of the line database file: {0}. ".format(
@@ -597,9 +647,21 @@ def _calc_spectrum(
 
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
-        s = sf.eq_spectrum(
-            Tgas=Tgas, mole_fraction=mole_fraction, path_length=path_length, name=name
-        )
+        if mode == "cpu":
+            s = sf.eq_spectrum(
+                Tgas=Tgas,
+                mole_fraction=mole_fraction,
+                path_length=path_length,
+                name=name,
+            )
+        else:
+            s = sf.eq_spectrum_gpu(
+                Tgas=Tgas,
+                mole_fraction=mole_fraction,
+                pressure=pressure,
+                path_length=path_length,
+                name=name,
+            )
     else:
         s = sf.non_eq_spectrum(
             Tvib=Tvib,
