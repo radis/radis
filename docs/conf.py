@@ -120,6 +120,7 @@ intersphinx_mapping = {
 }
 
 napoleon_google_docstring = False
+napoleon_use_param = False  # fixes https://github.com/sphinx-doc/sphinx/issues/2227
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -173,6 +174,7 @@ exclude_patterns = ["_build"]
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
 # default_role = None
+default_role = "py:obj"  # fixes https://github.com/spacetelescope/specviz/pull/77
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 # add_function_parentheses = True

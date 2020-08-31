@@ -158,8 +158,9 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
         isotope="1,2",
         db_use_cached=True,
         broadening_max_width=50,
-        #                             chunksize='DLM',
-        #                             pseudo_continuum_threshold=0.01,
+        optimization=None,
+        # chunksize='DLM',
+        # pseudo_continuum_threshold=0.01,
         medium="vacuum",
         verbose=verbose,
     )
@@ -216,12 +217,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
         plt.figure(fig_prefix + "Reference spectrum (abscoeff)")
         # , show_points=True)  # show_points to have an
         s.plot(
-            "abscoeff",
-            wunit="nm",
-            medium="air",
-            nfig="same",
-            lw=3,
-            label="RADIS, this version",
+            "abscoeff", wunit="nm", nfig="same", lw=3, label="RADIS, this version",
         )
         # idea of the resolution
         plt.plot(wref, Iref, "or", ms=3, label="version NEQ 0.9.20 (12/05/18)")

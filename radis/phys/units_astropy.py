@@ -7,9 +7,9 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
 
     Parameters
     ----------
-    quantity : int or float or list or None or ~astropy.units.quantity.Quantity
+    quantity : int or float or list or None or `~astropy.units.quantity.Quantity`
         Numerical quantity. Pass it without including units if default units are intended.
-    output_unit : ~astropy.units.core.UnitBase or ~astropy.units.quantity.Quantity
+    output_unit : `~astropy.units.core.UnitBase` or `~astropy.units.quantity.Quantity`
         The default units in which the quantity is to be converted before extracting the value.
 
     Other Parameters

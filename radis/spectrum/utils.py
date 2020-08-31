@@ -197,6 +197,8 @@ def make_up_unit(Iunit, var):
             Iunit = r"-ln(I/I0)"
         elif var in ["emissivity_no_slit", "emissivity"]:
             Iunit = r"$\mathregular{\epsilon}$"
+        elif var in ["radiance", "radiance_noslit"]:
+            Iunit = r"norm"
 
     return Iunit
 

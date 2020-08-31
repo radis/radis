@@ -186,6 +186,120 @@ with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constant
 or supply an energy level database. In the latter case, you need to edit the 
 :ref:`Configuration file <label_lbl_config_file>` . 
 
+Calculating spectrum using GPU
+------------------------------
+
+RADIS supports calculation of spectra at thermal equilibrium using GPU for the
+calculation of lineshapes and broadening. If your system supports it, the spectrum
+can be calculated on the GPU using the :py:func:`~radis.lbl.calc.calc_spectrum`
+function with parameter `mode` set to `gpu`.
+
+GPU-enabled spectrum calculations can be done using either the standard RADIS
+databank loader or using databank that has been preprocessed and saved in numpy
+array (`npy`) format. In case the standard loader is used for loading the data
+for GPU-powered spectrum calculation, some preprocessing is done on that data
+before the spectrum calculation begins.
+# TODO: perform timing test to see how much time calculating log_2gs separately takes
+
+Currently, GPU-powered spectra calculations are supported only at thermal equilibrium
+and therefore, the method to calculate the spectra has been named :py:func:`~radis.lbl.calc.eq_spectrum_gpu`.
+In order to use this method to calculate the spectra, follow the same steps as in the
+case of a normal equilibrium spectra, and if using :py:func:`~radis.lbl.calc.calc_spectrum`
+function set the parameter `mode` to `gpu`, or use :py:func:`~radis.lbl.calc.eq_spectrum_gpu`
+
+Consider the following example which demonstrates the above information::
+
+    from radis import SpectrumFactory
+    from radis.test.utils import getTestFile
+    T = 1000
+    p = 0.1
+    wstep = 0.001
+    wmin = 2200  # cm-1
+    wmax = 2400  # cm-1
+    sf = SpectrumFactory(
+            wavenum_min=wmin,
+            wavenum_max=wmax,
+            mole_fraction=1,
+            path_length=1,  # doesnt change anything
+            wstep=wstep,
+            pressure=p,
+            isotope="1",
+            chunksize="DLM"
+        )
+    sf.load_databank(getTestFile("cdsd_hitemp_09_fragment.txt"), format="cdsd-hitemp", parfuncfmt="hapi")
+    s_gpu = sf.eq_spectrum_gpu(Tgas=T)
+
+Alternatively, one could compute the spectra with the assistance of GPU using the
+following code as well ::
+
+    s = calc_spectrum(
+        	wavenum_min=1900,
+        	wavenum_max=2300,
+        	Tgas=700,
+        	path_length=0.1,
+        	mole_fraction=0.01,
+        	isotope=1,
+        	mode='gpu'
+    		)
+
+As mentioned previously, the GPU-enabled spectrum calculations can also be done
+using databank that has been preprocessed and saved in numpy's `npy` format.
+
+In order to calculate the data using the `npy` files, first place all the 7 files in the
+same directory. Then, set the `databank` parameter of :py:func:`~radis.lbl.calc.calc_spectrum`
+to point to one of the 7 files in the directory. The program will automatically detect and read the
+other files present in the same folder ::
+
+      s = calc_spectrum(
+        	wavenum_min=1900,
+        	wavenum_max=2300,
+        	Tgas=700,
+        	path_length=0.1,
+        	databank='/path/to/v0.npy',
+        	mole_fraction=0.01,
+        	isotope=1,
+        	mode='gpu'
+    		)
+
+## TODO: Once the npy2df implementation is complete, also mention about loading the npy files
+from different directories by passing a dictionary instead
+
+The `npy` files that are needed for calculating the spectra on GPU can be extracted
+from any databank and stored in the following format. The name of the file is written
+first, followed by the physical quantity it stores and it's name and position in the
+CDSD-4000 database.
+
+`v0.npy`: wavenumber in vacuum; `v0`, line[3:15]
+`da.npy`: air-pressure induced shift; `d_air`, line[59:67]
+`El.npy`: low-state energy; `Elow`, line[45:55]
+`na.npy`: temperature dependence exponent for air; `n_air`, line[55:59]
+
+In addition to the above 4 quantities, we also need 3 more quantities which are not
+directly stored in the databank. They are explained below:
+
+`log_2gs.npy`: np.log(2*gs), where `gs` is HITRAN/HITEMP HWHM pressure broadening constant
+for self-broadening; `gamma_self`, line[40:45]
+`log_2vMm.npy`: np.log(2*v0) + 0.5*np.log(2*k*np.log(2)/(c**2*Mm)), where `v0` is the
+wavenumber in vacuum, `k` is Boltzmann's constant, `c` is speed of light in vacuum
+and `Mm` is the molecular mass of gas molecule in kilogram.
+`S0.npy`: f_ab * gu * A21 / (8*pi*c_cm*v0**2) where,
+`f_ab`: np.array([ 0.98420, 0.01106, 0.0039471])[iso.astype(int)-1],
+`gu`: 2*Ju + 1, where
+`Ju` = Jl + DJ, where
+`DJ` = ord(line[117:118])-ord('Q')
+`Jl` = int(line[118:121])
+`A21` is the Einstein's coefficient, line[25:35]
+`c_cm` is speed of light in vacuum in centimeters/second,
+`v0` is wavenumber in vacuum.
+
+In order to facililate the conversion of data from the CDSD-4000 par format to the format explained
+above, users can use the scripts present in `/radis/misc/prepare-npy-data`.
+
+`par2npy.py` extracts the relevant information from the dataset files and stores them in `npy` files
+where each file contains all the information for multiple lines.
+
+`reshape_arrays.py` extracts and separates the different fields for each line, and saves the values of
+a specific field for all the lines in a separate file as explained above, e.g. `v0.npy`, 'da.npy`, etc.
 
 The Spectrum Factory
 --------------------
@@ -621,6 +735,16 @@ Parallelized code can be tested against the linear code in `radis/test/lbl/test_
 with::
 
     pytest radis/test/lbl/test_parallel.py 
+
+GPU accelerated spectrum calculation
+------------------------------------
+
+Apart from the parallelization method mentioned above, RADIS also supports CUDA-native parallel computation, specifically
+for lineshape calculation and broadening. To use these GPU-accelerated methods to compute the spectra, use either :py:func:`~radis.lbl.calc.calc_spectrum`
+function with parameter `mode` set to `gpu`, or :py:func:`~radis.lbl.calc.eq_spectrum_gpu`. In order to use these methods,
+ensure that your system has an Nvidia GPU with compute capability of atleast 3.0 and CUDA Toolkit 8.0 or above. Refer to
+:ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` to see how to setup your system to run GPU accelerated spectrum
+calculation methods, examples and performance tests.
 
 Profiler
 --------

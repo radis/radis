@@ -32,7 +32,8 @@ Routine Listing
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
-from radis.misc.utils import FileNotFoundError, DatabankNotFound, configparser
+from radis.misc.utils import FileNotFoundError, DatabankNotFound
+import configparser
 from os.path import expanduser, join, exists, dirname
 from six import string_types
 from radis.misc.basics import compare_lists, compare_dict, stdpath

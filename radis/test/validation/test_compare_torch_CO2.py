@@ -103,8 +103,8 @@ def test_compare_torch_CO2(
 
     # CO2
     sf = ParallelFactory(
-        wmin,
-        wmax,
+        wavenum_min=wmin,
+        wavenum_max=wmax,
         mole_fraction=None,
         path_length=None,
         molecule="CO2",
@@ -115,9 +115,12 @@ def test_compare_torch_CO2(
         export_lines=False,  # saves some memory
         export_populations=False,  # saves some memory
         cutoff=1e-25,
-        pseudo_continuum_threshold=0.01,
         Nprocs=cpu_count() - 1,  # warning with memory if too many procs
         broadening_max_width=20,
+        # pseudo_continuum_threshold=0.01, # use pseudo-continuum, no DLM. Note : 56s on 20/08.
+        # optimization=None,
+        pseudo_continuum_threshold=0,  # use DLM, no pseudo-continuum. Note : 84s on 20/08
+        optimization="min-RMS",
         verbose=False,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
@@ -132,8 +135,8 @@ def test_compare_torch_CO2(
 
     # CO
     sfco = ParallelFactory(
-        wmin,
-        wmax,
+        wavenum_min=wmin,
+        wavenum_max=wmax,
         mole_fraction=None,
         path_length=None,
         molecule="CO",
@@ -146,6 +149,7 @@ def test_compare_torch_CO2(
         cutoff=1e-25,
         Nprocs=cpu_count() - 1,
         broadening_max_width=20,
+        optimization=None,
         verbose=False,
     )
     sfco.warnings["MissingSelfBroadeningWarning"] = "ignore"

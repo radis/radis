@@ -15,7 +15,6 @@ equilibrium / nonequilibrium).
 It also includes :ref:`post-processing tools <label_spectrum>` to compare experimental spectra and spectra calculated 
 with RADIS, or with other spectral codes.
 
-
 ===============
 Getting Started
 ===============

@@ -103,7 +103,6 @@ from warnings import catch_warnings, filterwarnings
 import numpy as np
 
 from time import time
-import gc
 from uuid import uuid1
 from six.moves import range
 from radis.misc.utils import get_files_from_regex
@@ -228,10 +227,13 @@ from copy import deepcopy
 
 
 class ConditionDict(dict):
-    """A class to hold Spectrum calculation input conditions, or computation
-    parameters. Works like a dict except you can also access attribute with::
+    """ A class to hold Spectrum calculation input conditions (:py:class:`~radis.lbl.loader.Input`), 
+    computation parameters (:py:class:`~radis.lbl.loader.Parameters`), or 
+    miscalleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`). 
+    
+    Works like a dict except you can also access attribute with::
 
-        v = a.key
+        v = a.key   # equivalent to v = a[key]
 
     Also can be copied, deepcopied, and parallelized in multiprocessing
 
@@ -246,9 +248,10 @@ class ConditionDict(dict):
 
     See Also
     --------
-
-    :class:`~radis.lbl.loader.Input`,
-    :class:`~radis.lbl.loader.Parameter`,
+    
+    :py:class:`~radis.lbl.loader.Input`, 
+    :py:class:`~radis.lbl.loader.Parameter`, 
+    :py:class:`~radis.lbl.loader.MiscParams`
     """
 
     def get_params(self):
@@ -316,12 +319,20 @@ class ConditionDict(dict):
 
 # class Input(object):
 class Input(ConditionDict):
-    """A class to hold Spectrum calculation input conditions.
+    """ Holds Spectrum calculation input conditions, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input` of 
+    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
+    
     Works like a dict except you can also access attribute with::
 
-        v = a.key
-
-    Also can be copied, deepcopied, and parallelized in multiprocessing
+        v = sf.input.key   # equivalent to v = sf.input[key] 
+    
+    See Also
+    --------
+    
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params`,
+    :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
+    
     """
 
     #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
@@ -356,14 +367,36 @@ class Input(ConditionDict):
         self.wavenum_min = None  #: str: wavenumber min (cm-1)
 
 
+## TO-DO: these error estimations are horribly outdated...
+def _lorentzian_step(res_L):
+    log_pL = np.log((res_L / 0.20) ** 0.5 + 1)
+    return log_pL
+
+
+def _gaussian_step(res_G):
+    log_pG = np.log((res_G / 0.46) ** 0.5 + 1)
+    return log_pG
+
+
 # class Parameters(object):
 class Parameters(ConditionDict):
-    """A class to hold Spectrum calculation computation parameters. Works like
+    """ Holds Spectrum calculation computation parameters, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params` of 
+    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
+    
+    Works like 
     a dict except you can also access attribute with::
 
-        v = a.key
+        v = sf.params.key    # equivalent to v = sf.params[key]
 
     Also can be copied, deepcopied, and parallelized in multiprocessing
+    
+    See Also
+    --------
+    
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
+    :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
+    
     """
 
     #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
@@ -382,6 +415,8 @@ class Parameters(ConditionDict):
         # Dev: Init here to be found by autocomplete
         self.broadening_max_width = None  #: float: cutoff for lineshape calculation (cm-1). Overwritten by SpectrumFactory
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
+        self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
+        self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``
         self.db_assumed_sorted = None  #: bool: assume that Line Database is sorted (helps not to parse the whole database)
         self.db_use_cached = (
             None  #: bool: use (and generate) cache files for Line Database
@@ -399,17 +434,24 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None  #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = "cm-1"  #: waverange unit: should be cm-1.
         self.wstep = None  #: float: spectral resolution (cm-1)
-        self.dlm_res_L = 0.01  #: float (cm-1): Lorentzian step for DLM lineshape database. Default 0.01 cm-1
-        self.dlm_res_G = 0.01  #: float (cm-1): DLM Gaussian step DLM lineshape database. Default 0.01 cm-1
+        self.dlm_log_pL = _lorentzian_step(
+            0.01
+        )  #: float : Lorentzian step for DLM lineshape database. Default _lorentzian_step(0.01)
+        self.dlm_log_pG = _gaussian_step(
+            0.01
+        )  #: float : Gaussian step DLM lineshape database. Default _gaussian_step(0.01)
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring 
         lines because of lineshape broadening. Default ``True``."""
 
 
 class MiscParams(ConditionDict):
-    """A class to hold Spectrum calculation descriptive parameters. Unlike
-    :class:`~radis.lbl.loader.Parameters`, these parameters cannot influence the
-    Spectrum output and will not be used when comparing Spectrum with existing,
+    """ A class to hold Spectrum calculation descriptive parameters, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params` of 
+    :py:class:`~radis.lbl.factory.SpectrumFactory`. 
+    
+    Unlike :class:`~radis.lbl.loader.Parameters`, these parameters cannot influence the 
+    Spectrum output and will not be used when comparing Spectrum with existing, 
     precomputed spectra in :class:`~radis.tools.database.SpecDatabase`
 
     Works like
@@ -417,7 +459,12 @@ class MiscParams(ConditionDict):
 
         v = a.key
 
-    Also can be copied, deepcopied, and parallelized in multiprocessing
+    See Also
+    --------
+    
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
+    :py:attr:`~radis.lbl.loader.DatabankLoader.params`,
+    
     """
 
     def __init__(self):
@@ -516,9 +563,14 @@ class DatabankLoader(object):
         self.input.state = ""
 
         # an computation parameters:
-        self.params = Parameters()  # params that can change output (ex: threshold)
-        self.misc = MiscParams()  # params that cant (ex: number of CPU, etc.)
-
+        self.params = Parameters()
+        """Computational parameters: :py:class:`~radis.lbl.loader.Parameters`
+        they may change the output of calculations (ex: threshold, cutoff, broadening methods, etc.)
+        """
+        self.misc = MiscParams()
+        """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`) 
+        params that cannot change the output of calculations (ex: number of CPU, etc.)
+        """
         # Setup individual warnings. Value of keys can be:
         # - 'warning' (default: just trigger a warning)
         # - 'error' (raises an error on this warning)
@@ -1162,6 +1214,10 @@ class DatabankLoader(object):
                 include_neighbouring_lines=include_neighbouring_lines,
             )
 
+            if buffer == "npy":
+                print("bypassing all databank checks and returning...")
+                return
+
             # Check the molecule is what we expected
             if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
                 raise NotImplementedError(
@@ -1730,7 +1786,7 @@ class DatabankLoader(object):
 
         # Check inputs
         assert db_use_cached in [True, False, "regen"]
-        assert buffer in ["RAM", "h5", "direct"]
+        assert buffer in ["RAM", "h5", "direct", "npy"]
 
         if self.verbose >= 2:
             printg("Loading Line databank")
@@ -1750,6 +1806,54 @@ class DatabankLoader(object):
         if buffer == "direct":
             assert len(database) == 1
             assert database[0].endswith("h5")
+        elif buffer == "npy":
+            dir_path = database[0][
+                : database[0].rindex("/") + 1
+            ]  # remove the last *.npy portion
+            try:
+                print("Loading iso...", end=" ")
+                iso = np.load(dir_path + "iso.npy")
+                print("done!")
+                print("Loading v0...", end=" ")
+                v0 = np.load(dir_path + "v0.npy")
+                print("done!")
+                print("Loading da...", end=" ")
+                da = np.load(dir_path + "da.npy")
+                print("done!")
+                print("Loading log_2gs...", end=" ")
+                log_2gs = np.load(dir_path + "log_2gs.npy")
+                print("done!")
+                print("Loading S0...", end=" ")
+                S0 = np.load(dir_path + "S0.npy")
+                print("done!")
+                print("Loading El...", end=" ")
+                El = np.load(dir_path + "El.npy")
+                print("done!")
+                print("Loading log_2vMm...", end=" ")
+                log_2vMm = np.load(dir_path + "log_2vMm.npy")
+                print("done!")
+                print("Loading na...", end=" ")
+                na = np.load(dir_path + "na.npy")
+                print("done!")
+                df = pd.DataFrame(
+                    {
+                        "iso": iso,
+                        "wav": v0,
+                        "Pshft": da,
+                        "log_2gs": log_2gs,
+                        "Tdpair": na,
+                        "log_2vMm": log_2vMm,
+                        "int": S0,
+                        "El": El,
+                    }
+                )  # create dataframe from these 8 arrays
+                df.reset_index()
+                return df
+            except:
+                raise (
+                    FileNotFoundError("Could not find npy dataset in given directory")
+                )
+
         if drop_columns == "auto":
             drop_columns = (
                 drop_auto_columns_for_dbformat[dbformat]
@@ -1759,15 +1863,33 @@ class DatabankLoader(object):
         # subroutine load_and_concat
         # --------------------------------------
         def load_and_concat(files, buffer):
-            """Two modes of storage: either directly in ``'RAM'`` mode, or in ``'h5'``
-            mode. ``'RAM'`` is faster but memory hunger, ``'h5'`` handles better
+            """ Two modes of concatenation: either directly in memory in ``'RAM'`` mode, 
+            or aggregate on disk in a large HDF5 file in ``'h5'`` mode. 
+            ``'RAM'`` is faster but memory hunger, ``'h5'`` handles better
             a bigger database
 
             Parameters
             ----------
 
-            files: str
-                path
+            files: list of str, or list of dict
+                either a list of path to database files ::
+                    
+                    [PATH/TO/01_1000-1150_HITEMP2010.par, 
+                     PATH/TO/01_1150-1300_HITEMP2010.par, 
+                     PATH/TO/01_1300-1500_HITEMP2010.par]
+
+                either a list of dictionaries containing the spectral informations ::
+                    
+                    [{'wav':'PATH/TO/v0.npy', 
+                      'int':'PATH/TO/int.npy',
+                      'Pshft':'PATH/TO/int.npy',
+                      'log_2gs':'PATH/TO/log_2gs.npy'
+                      'Tdpair':'PATH/TO/Tdpair.npy',
+                      'El':'PATH/TO/Tdpair.npy'},
+                     # other dictionaries if needed
+                      ]
+                    
+                See definitions for instance in :py:data:`~radis.io.hitran.column_2004`
 
             buffer: ``'direct'``, ``'h5'``, ``'RAM'``
                 see _load_databank info
@@ -1790,10 +1912,8 @@ class DatabankLoader(object):
                 if __debug__:
                     printdbg("Loading {0}/{1}".format(i + 1, len(files)))
 
-                if i % 31 == 30:
-                    gc.collect()  # force garbage collection as we may be generating tons of data
-
-                if db_assumed_sorted:
+                if db_assumed_sorted and len(files) > 1:
+                    # no need to check the first file if there is only one file anyway
                     # Note on performance: reading the first line of .txt file is still
                     # much faster than reading the whole hdf5 file
                     if dbformat == "cdsd-hitemp":
