@@ -179,7 +179,12 @@ def test_rescaling_mole_fraction(
         plt.figure(fig_prefix + "Rescaling mole fractions")
         plt.plot(N, error, "-ok")
         plt.scatter(
-            N[0], error[0], s=200, facecolors="none", edgecolors="r", label="reference",
+            N[0],
+            error[0],
+            s=200,
+            facecolors="none",
+            edgecolors="r",
+            label="reference",
         )
         plt.xlabel("Mole fraction")
         plt.ylabel("scaled energy / ab initio energy")

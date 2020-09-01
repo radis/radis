@@ -104,7 +104,11 @@ CO2_X_627 = ElectronicState(
 #  Molecule  Isotope  ElecState
 #         :      :       :
 Molecules = {
-    "CO": {1: {"X": CO_X_iso1}, 2: {"X": CO_X_iso2}, 3: {"X": CO_X_iso3},},
+    "CO": {
+        1: {"X": CO_X_iso1},
+        2: {"X": CO_X_iso2},
+        3: {"X": CO_X_iso3},
+    },
     "CO2": {
         1: {"X": CO2_X_626},
         2: {"X": CO2_X_636},

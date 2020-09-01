@@ -235,9 +235,7 @@ def save(
     else:
         with open(fout, "w") as f:
             #        json.dump(sjson, f)
-            json_tricks.dump(
-                sjson, f, indent=4,  # takes more space but more readable
-            )
+            json_tricks.dump(sjson, f, indent=4)  # takes more space but more readable
 
     if verbose:
         print(

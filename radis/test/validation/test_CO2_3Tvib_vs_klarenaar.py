@@ -59,7 +59,7 @@ def test_klarenaar_validation_case(
     s_exp = Spectrum.from_txt(
         getValidationCase(
             join(
-                "test_CO2_3Tvib_vs_klarenaar_data", "klarenaar_2017_digitized_data.csv",
+                "test_CO2_3Tvib_vs_klarenaar_data", "klarenaar_2017_digitized_data.csv"
             )
         ),
         "transmittance_noslit",

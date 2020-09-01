@@ -175,7 +175,7 @@ setup(
     extras_require={
         "dev": [
             "numpydoc",  # for Jedi (autocompletion) to recognize
-            "black",  # for code-linting in accordance to PEP8
+            "black>=20.8b1",  # for code-linting in accordance to PEP8
             "isort",  # for sorting imports
             "pre-commit",  # to enforce Black before each commit
         ]

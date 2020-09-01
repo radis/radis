@@ -1240,33 +1240,33 @@ PARAMETER_META = {
         "has_reference": 1,
         "has_error": 1,
     },
-    "gamma_HT_0_self_50": {"default_fmt": "%6.4f",},
-    "n_HT_self_50": {"default_fmt": "%9.6f",},
-    "gamma_HT_2_self_50": {"default_fmt": "%6.4f",},
-    "delta_HT_0_self_50": {"default_fmt": "%9.6f",},
-    "deltap_HT_self_50": {"default_fmt": "%9.6f",},
-    "delta_HT_2_self_50": {"default_fmt": "%9.6f",},
-    "gamma_HT_0_self_150": {"default_fmt": "%6.4f",},
-    "n_HT_self_150": {"default_fmt": "%9.6f",},
-    "gamma_HT_2_self_150": {"default_fmt": "%6.4f",},
-    "delta_HT_0_self_150": {"default_fmt": "%9.6f",},
-    "deltap_HT_self_150": {"default_fmt": "%9.6f",},
-    "delta_HT_2_self_150": {"default_fmt": "%9.6f",},
-    "gamma_HT_0_self_296": {"default_fmt": "%6.4f",},
-    "n_HT_self_296": {"default_fmt": "%9.6f",},
-    "gamma_HT_2_self_296": {"default_fmt": "%6.4f",},
-    "delta_HT_0_self_296": {"default_fmt": "%9.6f",},
-    "deltap_HT_self_296": {"default_fmt": "%9.6f",},
-    "delta_HT_2_self_296": {"default_fmt": "%9.6f",},
-    "gamma_HT_0_self_700": {"default_fmt": "%6.4f",},
-    "n_HT_self_700": {"default_fmt": "%9.6f",},
-    "gamma_HT_2_self_700": {"default_fmt": "%6.4f",},
-    "delta_HT_0_self_700": {"default_fmt": "%9.6f",},
-    "deltap_HT_self_700": {"default_fmt": "%9.6f",},
-    "delta_HT_2_self_700": {"default_fmt": "%9.6f",},
-    "nu_HT_self": {"default_fmt": "%6.4f",},
-    "kappa_HT_self": {"default_fmt": "%9.6f",},
-    "eta_HT_self": {"default_fmt": "%9.6f",},
+    "gamma_HT_0_self_50": {"default_fmt": "%6.4f"},
+    "n_HT_self_50": {"default_fmt": "%9.6f"},
+    "gamma_HT_2_self_50": {"default_fmt": "%6.4f"},
+    "delta_HT_0_self_50": {"default_fmt": "%9.6f"},
+    "deltap_HT_self_50": {"default_fmt": "%9.6f"},
+    "delta_HT_2_self_50": {"default_fmt": "%9.6f"},
+    "gamma_HT_0_self_150": {"default_fmt": "%6.4f"},
+    "n_HT_self_150": {"default_fmt": "%9.6f"},
+    "gamma_HT_2_self_150": {"default_fmt": "%6.4f"},
+    "delta_HT_0_self_150": {"default_fmt": "%9.6f"},
+    "deltap_HT_self_150": {"default_fmt": "%9.6f"},
+    "delta_HT_2_self_150": {"default_fmt": "%9.6f"},
+    "gamma_HT_0_self_296": {"default_fmt": "%6.4f"},
+    "n_HT_self_296": {"default_fmt": "%9.6f"},
+    "gamma_HT_2_self_296": {"default_fmt": "%6.4f"},
+    "delta_HT_0_self_296": {"default_fmt": "%9.6f"},
+    "deltap_HT_self_296": {"default_fmt": "%9.6f"},
+    "delta_HT_2_self_296": {"default_fmt": "%9.6f"},
+    "gamma_HT_0_self_700": {"default_fmt": "%6.4f"},
+    "n_HT_self_700": {"default_fmt": "%9.6f"},
+    "gamma_HT_2_self_700": {"default_fmt": "%6.4f"},
+    "delta_HT_0_self_700": {"default_fmt": "%9.6f"},
+    "deltap_HT_self_700": {"default_fmt": "%9.6f"},
+    "delta_HT_2_self_700": {"default_fmt": "%9.6f"},
+    "nu_HT_self": {"default_fmt": "%6.4f"},
+    "kappa_HT_self": {"default_fmt": "%9.6f"},
+    "eta_HT_self": {"default_fmt": "%9.6f"},
 }
 
 
@@ -2601,7 +2601,13 @@ def addColumn(
         #    if par_name == Before: break
         #    i += 1
         i = header_order.index(Before)
-        header_order = header_order[:i] + [ParameterName,] + header_order[i:]
+        header_order = (
+            header_order[:i]
+            + [
+                ParameterName,
+            ]
+            + header_order[i:]
+        )
     LOCAL_TABLE_CACHE[TableName]["header"]["order"] = header_order
     LOCAL_TABLE_CACHE[TableName]["header"]["format"][ParameterName] = Format
     LOCAL_TABLE_CACHE[TableName]["header"]["default"][ParameterName] = Default
@@ -4408,12 +4414,12 @@ References:
 [1] N.H. Ngo, D. Lisak, H. Tran, J.-M. Hartmann.
     An isolated line-shape model to go beyond the Voigt profile in 
     spectroscopic databases and radiative transfer codes.
-    JQSRT, Volume 129, November 2013, Pages 89–100
+    JQSRT, Volume 129, November 2013, Pages 89â€“100
     http://dx.doi.org/10.1016/j.jqsrt.2013.05.034
 
 [2] A. L. Laraia, R. R. Gamache, J. Lamouroux, I. E. Gordon, L. S. Rothman.
     Total internal partition sums to support planetary remote sensing.
-    Icarus, Volume 215, Issue 1, September 2011, Pages 391–400
+    Icarus, Volume 215, Issue 1, September 2011, Pages 391â€“400
     http://dx.doi.org/10.1016/j.icarus.2011.06.004
 
 _______________________________________________________________________
@@ -4769,12 +4775,12 @@ References:
 [1] N.H. Ngo, D. Lisak, H. Tran, J.-M. Hartmann.
     An isolated line-shape model to go beyond the Voigt profile in 
     spectroscopic databases and radiative transfer codes.
-    JQSRT, Volume 129, November 2013, Pages 89–100
+    JQSRT, Volume 129, November 2013, Pages 89â€“100
     http://dx.doi.org/10.1016/j.jqsrt.2013.05.034
 
 [2] A. L. Laraia, R. R. Gamache, J. Lamouroux, I. E. Gordon, L. S. Rothman.
     Total internal partition sums to support planetary remote sensing.
-    Icarus, Volume 215, Issue 1, September 2011, Pages 391–400
+    Icarus, Volume 215, Issue 1, September 2011, Pages 391â€“400
     http://dx.doi.org/10.1016/j.icarus.2011.06.004
 
             
@@ -14470,7 +14476,7 @@ TIPS_GSI_HASH[(M, I)] = __FloatType__(0.0)
 TIPS_ISO_HASH[(M, I)] = float32([0.0])
 
 
-#  --------------- HСl 15: M = 15, I = 1 --------------------
+#  --------------- HÐ¡l 15: M = 15, I = 1 --------------------
 M = 15
 I = 1
 TIPS_GSI_HASH[(M, I)] = __FloatType__(8.0)
@@ -14599,7 +14605,7 @@ TIPS_ISO_HASH[(M, I)] = float32(
 )
 
 
-#  --------------- HСl 17: M = 15, I = 2 ---------------------
+#  --------------- HÐ¡l 17: M = 15, I = 2 ---------------------
 M = 15
 I = 2
 TIPS_GSI_HASH[(M, I)] = __FloatType__(8.0)
@@ -14728,14 +14734,14 @@ TIPS_ISO_HASH[(M, I)] = float32(
 )
 
 
-#  --------------- HСl 25: M = 15, I = 3 --------------------- not in TIPS-2011
+#  --------------- HÐ¡l 25: M = 15, I = 3 --------------------- not in TIPS-2011
 M = 15
 I = 3
 TIPS_GSI_HASH[(M, I)] = __FloatType__(0.0)
 TIPS_ISO_HASH[(M, I)] = float32([0.0])
 
 
-#  --------------- HСl 27: M = 15, I = 4 --------------------- not in TIPS-2011
+#  --------------- HÐ¡l 27: M = 15, I = 4 --------------------- not in TIPS-2011
 M = 15
 I = 4
 TIPS_GSI_HASH[(M, I)] = __FloatType__(0.0)
@@ -22871,7 +22877,7 @@ def partitionSum(M, I, T, step=None):
         Reference:
             A. L. Laraia, R. R. Gamache, J. Lamouroux, I. E. Gordon, L. S. Rothman.
             Total internal partition sums to support planetary remote sensing.
-            Icarus, Volume 215, Issue 1, September 2011, Pages 391–400
+            Icarus, Volume 215, Issue 1, September 2011, Pages 391â€“400
             http://dx.doi.org/10.1016/j.icarus.2011.06.004
 
         Output depends on a structure of input parameter T so that:
@@ -23207,7 +23213,7 @@ def pcqsdhc(sg0, GamD, Gam0, Gam2, Shift0, Shift2, anuVC, eta, sg):
     #      Reference:
     #      H. Tran, N.H. Ngo, J.-M. Hartmann.
     #      Efficient computation of some speed-dependent isolated line profiles.
-    #      JQSRT, Volume 129, November 2013, Pages 199–203
+    #      JQSRT, Volume 129, November 2013, Pages 199â€“203
     #      http://dx.doi.org/10.1016/j.jqsrt.2013.06.015
     #
     #      Input/Output Parameters of Routine (Arguments or Common)
@@ -23490,16 +23496,16 @@ def PROFILE_HT(sg0, GamD, Gam0, Gam2, Shift0, Shift2, anuVC, eta, sg):
     #      1) N.H. Ngo, D. Lisak, H. Tran, J.-M. Hartmann.
     #         An isolated line-shape model to go beyond the Voigt profile in
     #         spectroscopic databases and radiative transfer codes.
-    #         JQSRT, Volume 129, November 2013, Pages 89–100
+    #         JQSRT, Volume 129, November 2013, Pages 89â€“100
     #         http://dx.doi.org/10.1016/j.jqsrt.2013.05.034
     #
     #      2) H. Tran, N.H. Ngo, J.-M. Hartmann.
     #         Efficient computation of some speed-dependent isolated line profiles.
-    #         JQSRT, Volume 129, November 2013, Pages 199–203
+    #         JQSRT, Volume 129, November 2013, Pages 199â€“203
     #         http://dx.doi.org/10.1016/j.jqsrt.2013.06.015
     #
     #      3) H. Tran, N.H. Ngo, J.-M. Hartmann.
-    #         Erratum to “Efficient computation of some speed-dependent isolated line profiles”.
+    #         Erratum to â€œEfficient computation of some speed-dependent isolated line profilesâ€�.
     #         JQSRT, Volume 134, February 2014, Pages 104
     #         http://dx.doi.org/10.1016/j.jqsrt.2013.10.015
     #
@@ -25771,8 +25777,8 @@ read_xsect = read_hotw
 def SLIT_RECTANGULAR(x, g):
     """
     Instrumental (slit) function.
-    B(x) = 1/γ , if |x| ≤ γ/2 & B(x) = 0, if |x| > γ/2,
-    where γ is a slit width or the instrumental resolution.
+    B(x) = 1/Î³ , if |x| â‰¤ Î³/2 & B(x) = 0, if |x| > Î³/2,
+    where Î³ is a slit width or the instrumental resolution.
     """
     index_inner = abs(x) <= g / 2
     index_outer = ~index_inner
@@ -25788,8 +25794,8 @@ def SLIT_RECTANGULAR(x, g):
 def SLIT_TRIANGULAR(x, g):
     """
     Instrumental (slit) function.
-    B(x) = 1/γ*(1-|x|/γ), if |x| ≤ γ & B(x) = 0, if |x| > γ,
-    where γ is the line width equal to the half base of the triangle.
+    B(x) = 1/Î³*(1-|x|/Î³), if |x| â‰¤ Î³ & B(x) = 0, if |x| > Î³,
+    where Î³ is the line width equal to the half base of the triangle.
     """
     index_inner = abs(x) <= g
     index_outer = ~index_inner
@@ -25805,8 +25811,8 @@ def SLIT_TRIANGULAR(x, g):
 def SLIT_GAUSSIAN(x, g):
     """
     Instrumental (slit) function.
-    B(x) = sqrt(ln(2)/pi)/γ*exp(-ln(2)*(x/γ)**2),
-    where γ/2 is a gaussian half-width at half-maximum.
+    B(x) = sqrt(ln(2)/pi)/Î³*exp(-ln(2)*(x/Î³)**2),
+    where Î³/2 is a gaussian half-width at half-maximum.
     """
     g /= 2
     return sqrt(log(2)) / (sqrt(pi) * g) * exp(-log(2) * (x / g) ** 2)
@@ -25818,8 +25824,8 @@ def SLIT_GAUSSIAN(x, g):
 def SLIT_DISPERSION(x, g):
     """
     Instrumental (slit) function.
-    B(x) = γ/pi/(x**2+γ**2),
-    where γ/2 is a lorentzian half-width at half-maximum.
+    B(x) = Î³/pi/(x**2+Î³**2),
+    where Î³/2 is a lorentzian half-width at half-maximum.
     """
     g /= 2
     return g / pi / (x ** 2 + g ** 2)
@@ -25857,8 +25863,8 @@ def SLIT_DIFFRACTION(x, g):
 def SLIT_MICHELSON(x, g):
     """
     Instrumental (slit) function.
-    B(x) = 2/γ*sin(2pi*x/γ)/(2pi*x/γ) if x!=0 else 1,
-    where 1/γ is the maximum optical path difference.
+    B(x) = 2/Î³*sin(2pi*x/Î³)/(2pi*x/Î³) if x!=0 else 1,
+    where 1/Î³ is the maximum optical path difference.
     """
     y = zeros(len(x))
     index_zero = x == 0
@@ -25885,7 +25891,7 @@ def convolveSpectrum(
     INPUT PARAMETERS:
         Wavenumber/Omega:    wavenumber grid                     (required)
         CrossSection:  high-res cross section calculated on grid (required)
-        Resolution:    instrumental resolution γ                 (optional)
+        Resolution:    instrumental resolution Î³                 (optional)
         AF_wing:       instrumental function wing                (optional)
         SlitFunction:  instrumental function for low-res spectra calculation (optional)
     OUTPUT PARAMETERS:
@@ -25898,7 +25904,7 @@ def convolveSpectrum(
     ---
     DESCRIPTION:
         Produce a simulation of experimental spectrum via the convolution
-        of a “dry” spectrum with an instrumental function.
+        of a â€œdryâ€� spectrum with an instrumental function.
         Instrumental function is provided as a parameter and
         is calculated in a grid with the width=AF_wing and step=Resolution.
     ---

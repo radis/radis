@@ -94,7 +94,10 @@ if __name__ == "__main__":
     def calc_hapi():
         nu, coef = absorptionCoefficient_Voigt(
             SourceTables=molecule,
-            Environment={"T": T, "p": pressure_bar / 1.01315,},  # K  # atm
+            Environment={
+                "T": T,
+                "p": pressure_bar / 1.01315,
+            },  # K  # atm
             GammaL="gamma_self",
             WavenumberStep=dnu,
             HITRAN_units=False,

@@ -34,40 +34,29 @@ from os.path import getmtime
 import time
 from radis import OLDEST_COMPATIBLE_VERSION
 
+# fmt: off
 columns_hitemp = OrderedDict(
     [
-        (
-            # name    # format # type  # description                                 # unit
-            "id",
-            ("a2", int, "Molecular number", ""),
-        ),
+        # name    # format # type  # description                                 # unit
+        ("id", ("a2", int, "Molecular number", "")),
         ("iso", ("a1", int, "isotope number", "")),
         ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
-        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",),),
+        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)")),
         ("A", ("a10", float, "Einstein A coefficient", "s-1")),
         ("airbrd", ("a5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
         ("selbrd", ("a5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
         ("El", ("a10", float, "lower-state energy", "cm-1")),
         ("Tdpair", ("a4", float, "temperature-dependance exponent for Gamma air", "")),
-        (
-            "Pshft",
-            ("a8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1"),
-        ),
-        (
-            # skip 1 columns   . WARNING. They didn't say that in the doc. But it doesn't make sense if i don't
-            "Tdpsel",
-            ("a5", float, "temperature dependance exponent for gamma self", ""),
-        ),
+        ("Pshft",("a8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1")),
+        # skip 1 columns   . WARNING. They didn't say that in the doc. But it doesn't make sense if i don't
+        ("Tdpsel", ("a5", float, "temperature dependance exponent for gamma self", "")),
         ("v1u", ("a3", int, "upper state vibrational number v1", "")),
         ("v2u", ("a2", int, "upper state vibrational number v2", "")),
         ("l2u", ("a2", int, "upper state vibrational number l2", "")),
         ("v3u", ("a2", int, "upper state vibrational number v3", "")),
         ("ru", ("a1", int, "upper state vibrational number r", "")),
-        (
-            # skip 5 columns (v1l format becomes 3+5)
-            "v1l",
-            ("a8", int, "lower state vibrational number v1", ""),
-        ),
+        # skip 5 columns (v1l format becomes 3+5)
+        ("v1l", ("a8", int, "lower state vibrational number v1", "")),
         ("v2l", ("a2", int, "lower state vibrational number v2", "")),
         ("l2l", ("a2", int, "lower state vibrational number l2", "")),
         ("v3l", ("a2", int, "lower state vibrational number v3", "")),
@@ -78,11 +67,8 @@ columns_hitemp = OrderedDict(
         ("polyl", ("a3", int, "lower state polyad", "")),
         ("wangl", ("a2", int, "lower state Wang symmetry", "")),
         ("rankl", ("a4", int, "lower state ranking number", "")),
-        (
-            # skip 2 columns (PQR format becomes 1+2)
-            "branch",
-            ("a3", str, "O, P, Q, R, S branch symbol", ""),
-        ),
+        # skip 2 columns (PQR format becomes 1+2)
+        ("branch", ("a3", str, "O, P, Q, R, S branch symbol", "")),
         ("jl", ("a3", int, "lower state rotational quantum number", "")),
         ("wangl2", ("a1", str, "lower state Wang symmetry", "(e or f)")),
         ("lsrc", ("a5", int, "line source", "")),
@@ -91,38 +77,26 @@ columns_hitemp = OrderedDict(
 
 columns_4000 = OrderedDict(
     [
-        (
-            # name    # format # type  # description                                 # unit
-            "id",
-            ("a2", int, "Molecular number", ""),
-        ),
+        # name    # format # type  # description                                 # unit
+        ("id", ("a2", int, "Molecular number", "")),
         ("iso", ("a1", int, "isotope number", "")),
         ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
-        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",),),
+        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)")),
         ("A", ("a10", float, "Einstein A coefficient", "s-1")),
         ("airbrd", ("a5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
         ("selbrd", ("a5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
         ("El", ("a10", float, "lower-state energy", "cm-1")),
         ("Tdpair", ("a4", float, "temperature-dependance exponent for Gamma air", "")),
-        (
-            "Pshft",
-            ("a8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1"),
-        ),
-        (
-            # skip 1 columns  (Tdpsel becomes 4+1 = 5)
-            "Tdpsel",
-            ("a5", float, "temperature dependance exponent for gamma self", ""),
-        ),
+        ("Pshft",("a8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1")),
+        # skip 1 columns  (Tdpsel becomes 4+1 = 5)
+        ("Tdpsel", ("a5", float, "temperature dependance exponent for gamma self", "")),
         ("v1u", ("a3", int, "upper state vibrational number v1", "")),
         ("v2u", ("a2", int, "upper state vibrational number v2", "")),
         ("l2u", ("a2", int, "upper state vibrational number l2", "")),
         ("v3u", ("a2", int, "upper state vibrational number v3", "")),
         ("ru", ("a2", int, "upper state vibrational number r", "")),
-        (
-            # skip 5 columns (v1l format becomes 3+3=6)
-            "v1l",
-            ("a6", int, "lower state vibrational number v1", ""),
-        ),
+        # skip 5 columns (v1l format becomes 3+3=6)
+        ("v1l", ("a6", int, "lower state vibrational number v1", "")),
         ("v2l", ("a2", int, "lower state vibrational number v2", "")),
         ("l2l", ("a2", int, "lower state vibrational number l2", "")),
         ("v3l", ("a2", int, "lower state vibrational number v3", "")),
@@ -133,15 +107,13 @@ columns_4000 = OrderedDict(
         ("polyl", ("a3", int, "lower state polyad", "")),
         ("wangl", ("a2", int, "lower state Wang symmetry", "")),
         ("rankl", ("a4", int, "lower state ranking number", "")),
-        (
-            # skip 2 columns (PQR format becomes 1+2)
-            "branch",
-            ("a3", str, "O, P, Q, R, S branch symbol", ""),
-        ),
+        # skip 2 columns (PQR format becomes 1+2)
+        ("branch", ("a3", str, "O, P, Q, R, S branch symbol", "")),
         ("jl", ("a3", int, "lower state rotational quantum number", "")),
         ("wangl2", ("a1", str, "lower state Wang symmetry", "(e or f)")),
     ]
 )
+# fmt: on
 
 
 def cdsd2df(

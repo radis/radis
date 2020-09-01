@@ -149,7 +149,7 @@ def test_direct_overpopulation_vs_recombined_bands(
 
     with pytest.raises(AssertionError):
         assert np.allclose(
-            s_recombined.get_radiance_noslit(), sref.get_radiance_noslit(), rtol=rtol,
+            s_recombined.get_radiance_noslit(), sref.get_radiance_noslit(), rtol=rtol
         )
 
     return True
@@ -179,7 +179,10 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
         verbose=verbose,
     )
     sf.warnings.update(
-        {"MissingSelfBroadeningWarning": "ignore", "VoigtBroadeningWarning": "ignore",}
+        {
+            "MissingSelfBroadeningWarning": "ignore",
+            "VoigtBroadeningWarning": "ignore",
+        }
     )
     sf.load_databank("HITRAN-CO2-TEST")
 

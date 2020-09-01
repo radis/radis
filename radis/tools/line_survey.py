@@ -278,13 +278,15 @@ def LineSurvey(
 
         # Get global labels
         if molecule in HITRAN_CLASS1:
-            label = "{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
-                **dict(
-                    [(k, row[k]) for k in ["vu", "vl", "jl", "iso"]]
-                    + [
-                        ("molec", molecule),
-                        ("branch", _fix_branch_format[row["branch"]]),
-                    ]
+            label = (
+                "{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
+                    **dict(
+                        [(k, row[k]) for k in ["vu", "vl", "jl", "iso"]]
+                        + [
+                            ("molec", molecule),
+                            ("branch", _fix_branch_format[row["branch"]]),
+                        ]
+                    )
                 )
             )
         elif molecule in HITRAN_CLASS4:
@@ -474,7 +476,9 @@ def LineSurvey(
             **{"T": T, "P": P, "Xi": Xi}
         ),
         hovermode="closest",
-        xaxis=dict(title=xlabel,),
+        xaxis=dict(
+            title=xlabel,
+        ),
         yaxis=dict(
             title=ylabel,
             # note: LaTeX doesnt seem to work in Offline mode yet.

@@ -223,7 +223,7 @@ def test_calculatedQ_match_HAPI_CO(
 
     #    if plot: db.plot_states()
 
-    hapi = PartFuncHAPI(M=5, I=1,)  # CO  # isotope
+    hapi = PartFuncHAPI(M=5, I=1)  # CO  # isotope
 
     us = []
     hap = []
@@ -326,7 +326,10 @@ def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
     energies = getDatabankEntries("CDSD-HITEMP-PC")["levels"]
     levelsfmt = getDatabankEntries("CDSD-HITEMP-PC")["levelsfmt"]
     Qf = PartFuncCO2_CDSDcalc(
-        energy_levels=energies[iso], isotope=iso, use_cached=True, levelsfmt=levelsfmt,
+        energy_levels=energies[iso],
+        isotope=iso,
+        use_cached=True,
+        levelsfmt=levelsfmt,
     )
     assert np.isclose(Qf.at(300), 291.0447781984652, rtol=0.001)
     assert np.isclose(Qf.at(3000), 114689.88454184022, rtol=0.001)

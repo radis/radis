@@ -196,61 +196,33 @@ HITRAN_MOLECULES = list(trans.values())
 # %% Parsing functions
 
 # General case : HITRAN 2004
+# fmt: off
 columns_2004 = OrderedDict(
     [
-        (
-            # name    # format # type  # description                                 # unit
-            "id",
-            ("a2", int, "Molecular number", ""),
-        ),
+        # name    # format # type  # description                                 # unit
+        ("id", ("a2", int, "Molecular number", "")),
         ("iso", ("a1", int, "isotope number", "")),
         ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
-        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)",),),
+        ("int", ("a10", float, "intensity at 296K", "cm-1/(molecule/cm-2)")),
         ("A", ("a10", float, "Einstein A coefficient", "s-1")),
         ("airbrd", ("a5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
         ("selbrd", ("a5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
         ("El", ("a10", float, "lower-state energy", "cm-1")),
         ("Tdpair", ("a4", float, "temperature-dependance exponent for Gamma air", "")),
-        (
-            "Pshft",
-            ("a8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1"),
-        ),
+        ("Pshft", ("a8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1")),
         ("globu", ("a15", str, "electronic and vibrational global upper quanta", "")),
         ("globl", ("a15", str, "electronic and vibrational global lower quanta", "")),
         ("locu", ("a15", str, "electronic and vibrational local upper quanta", "")),
         ("locl", ("a15", str, "electronic and vibrational local lower quanta", "")),
-        (
-            "ierr",
-            (
-                "a6",
-                str,
-                "ordered list of indices corresponding to uncertainty estimates of transition parameters",
-                "",
-            ),
-        ),
-        (
-            "iref",
-            (
-                "a12",
-                str,
-                "ordered list of reference identifiers for transition parameters",
-                "",
-            ),
-        ),
-        (
-            "lmix",
-            (
-                "a1",
-                str,
-                "flag indicating the presence of additional data and code relating to line-mixing",
-                "",
-            ),
-        ),
+        ("ierr", ("a6", str, "ordered list of indices corresponding to uncertainty estimates of transition parameters", "")),
+        ("iref", ("a12", str, "ordered list of reference identifiers for transition parameters", "")),
+        ("lmix", ("a1", str, "flag indicating the presence of additional data and code relating to line-mixing", "")),
         ("gp", ("a7", float, "upper state degeneracy", "")),
         ("gpp", ("a7", float, "lower state degeneracy", "")),
     ]
 )
 """ OrderedDict: parsing order of HITRAN 2004 format """
+# fmt: on
 
 
 def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):

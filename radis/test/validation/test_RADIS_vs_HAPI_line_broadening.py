@@ -90,12 +90,21 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
             # Calculate with HAPI
             nu, coef = absorptionCoefficient_Voigt(
                 SourceTables="CO2",
-                Environment={"T": T, "p": p / 1.01325,},  # K  # atm
+                Environment={
+                    "T": T,
+                    "p": p / 1.01325,
+                },  # K  # atm
                 WavenumberStep=dnu,
                 HITRAN_units=False,
                 GammaL="gamma_self",
             )
-            nu, trans = transmittanceSpectrum(nu, coef, Environment={"l": L,},)  # cm
+            nu, trans = transmittanceSpectrum(
+                nu,
+                coef,
+                Environment={
+                    "l": L,
+                },
+            )  # cm
             s_hapi = Spectrum.from_array(
                 nu,
                 trans,

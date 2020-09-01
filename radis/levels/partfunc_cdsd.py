@@ -381,7 +381,9 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         viblvl_label = self.viblvl_label
 
         if viblvl_label == "p":
-            df["viblvl"] = vib_lvl_name_cdsd_p(df.p,)
+            df["viblvl"] = vib_lvl_name_cdsd_p(
+                df.p,
+            )
         elif viblvl_label == "pc":
             df["viblvl"] = vib_lvl_name_cdsd_pc(df.p, df.c)
         elif viblvl_label == "pcN":

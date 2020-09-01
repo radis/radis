@@ -217,7 +217,11 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
         plt.figure(fig_prefix + "Reference spectrum (abscoeff)")
         # , show_points=True)  # show_points to have an
         s.plot(
-            "abscoeff", wunit="nm", nfig="same", lw=3, label="RADIS, this version",
+            "abscoeff",
+            wunit="nm",
+            nfig="same",
+            lw=3,
+            label="RADIS, this version",
         )
         # idea of the resolution
         plt.plot(wref, Iref, "or", ms=3, label="version NEQ 0.9.20 (12/05/18)")
@@ -378,7 +382,10 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
 @pytest.mark.fast
 @pytest.mark.parametrize(
     ("input_wavelengths", "expected_wavelengths_nm"),
-    [[(4300 * u.nm, 4.5 * u.um), (4300, 4500)], [(4500, 5000), (4500, 5000)],],
+    [
+        [(4300 * u.nm, 4.5 * u.um), (4300, 4500)],
+        [(4500, 5000), (4500, 5000)],
+    ],
 )
 def test_wavelength_units_conversion(
     input_wavelengths, expected_wavelengths_nm, verbose=True, *args, **kwargs
@@ -407,7 +414,9 @@ def test_wavelength_units_conversion(
 @pytest.mark.fast
 @pytest.mark.parametrize(
     ("input_wavenumbers", "expected_wavenumbers_cm1"),
-    [[(2000 * 1 / u.cm, 230000 * 1 / u.m), (2000, 2300)],],
+    [
+        [(2000 * 1 / u.cm, 230000 * 1 / u.m), (2000, 2300)],
+    ],
 )
 def test_wavenumber_units_conversion(
     input_wavenumbers, expected_wavenumbers_cm1, verbose=True, *args, **kwargs
@@ -436,7 +445,11 @@ def test_wavenumber_units_conversion(
 @pytest.mark.fast
 @pytest.mark.parametrize(
     ("input_pressure, expected_pressure_bar"),
-    [(1, 1), (1 * u.mbar, 1e-3), (10 * u.bar, 10),],
+    [
+        (1, 1),
+        (1 * u.mbar, 1e-3),
+        (10 * u.bar, 10),
+    ],
 )
 def test_pressure_units_conversion(
     input_pressure, expected_pressure_bar, verbose=True, *args, **kwargs
@@ -462,7 +475,11 @@ def test_pressure_units_conversion(
 @pytest.mark.fast
 @pytest.mark.parametrize(
     ("input_pathlength, expected_pathlength_cm"),
-    [(1, 1), (1 * u.m, 100), (1 * u.cm, 1),],
+    [
+        (1, 1),
+        (1 * u.m, 100),
+        (1 * u.cm, 1),
+    ],
 )
 def test_pathlength_units_conversion(
     input_pathlength, expected_pathlength_cm, verbose=True, *args, **kwargs
@@ -488,7 +505,11 @@ def test_pathlength_units_conversion(
 @pytest.mark.fast
 @pytest.mark.parametrize(
     ("input_temperature, expected_temperature_K"),
-    [(300, 300), (300 * u.K, 300), (300 * u.deg_C, 573.15),],
+    [
+        (300, 300),
+        (300 * u.K, 300),
+        (300 * u.deg_C, 573.15),
+    ],
 )
 def test_temperature_units_conversion(
     input_temperature, expected_temperature_K, verbose=True, *args, **kwargs

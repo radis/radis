@@ -59,7 +59,10 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     # Calculate with HAPI
     nu, coef = absorptionCoefficient_Voigt(
         SourceTables="CO",
-        Environment={"T": T, "p": p / 1.01325,},  # K  # atm
+        Environment={
+            "T": T,
+            "p": p / 1.01325,
+        },  # K  # atm
         WavenumberStep=wstep,
         HITRAN_units=False,
     )
