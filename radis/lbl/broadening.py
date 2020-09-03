@@ -1854,7 +1854,7 @@ class BroadenFactory(BaseFactory):
             dxG = dv / wG_dat
 
             C1_GG = ((6 * np.pi - 16) / (15 * np.pi - 32)) ** (1 / 1.50)
-            C1_LG = ((6 * np.pi - 16) / 3 * (np.log(2)/(2 * np.pi)) ** 0.5) ** (
+            C1_LG = ((6 * np.pi - 16) / 3 * (np.log(2) / (2 * np.pi)) ** 0.5) ** (
                 1 / 2.25
             )
             C2_GG = (2 * np.log(2) / 15) ** (1 / 1.50)
