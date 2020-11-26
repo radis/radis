@@ -132,7 +132,7 @@ Developer Guide
 Architecture
 ------------
 
-RADIS internals are described in the `Developer Guide <https://radis.readthedocs.io/en/latest/developer.html>`__
+RADIS internals are described in the `Developer Guide <https://radis.readthedocs.io/en/latest/dev/developer.html>`__
 
 .. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
      :target:   https://radis.readthedocs.io/en/latest/dev/architecture.html#label-dev-architecture
