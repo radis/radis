@@ -3575,6 +3575,29 @@ class Spectrum(object):
 
         return ""  # self.print_conditions()
 
+    def take(self, var):
+        """
+        Parameters
+        ----------
+        var : str
+            spectral quantity
+
+        Returns
+        -------
+        s: Spectrum
+            same Spectrum with only the `var` spectral quantity
+
+        Examples
+        --------
+
+        Use it to chain other commands ::
+
+            s.take('radiance').normalize().plot()
+
+        """
+
+        return self.copy(quantity=var, copy_lines=True)
+
     # %% Add min, max, normalize operations
 
     def _get_unique_var(self, operation_name="algebraic"):
@@ -3587,7 +3610,7 @@ class Spectrum(object):
                 + "There should be only one var in Spectrum {0}. Got {1}\n".format(
                     self.get_name(), self.get_vars()
                 )
-                + "Use 'Transmittance(s)', 'Radiance(s)', etc. to extract the "
+                + "Use `s.take('transmittance')` or `s.take('radiance')`, etc. to extract the "
                 "one spectral quantity you want."
             )
         elif len(quantities) == 0:
