@@ -109,7 +109,8 @@ def Transmittance(s):
 
     :py:func:`~radis.spectrum.operations.Transmittance_noslit`,
     :py:func:`~radis.spectrum.operations.Radiance_noslit`,
-    :py:func:`~radis.spectrum.operations.Radiance`
+    :py:func:`~radis.spectrum.operations.Radiance`,
+    :py:meth:`~radis.spectrum.Spectrum.take`
 
     """
 
@@ -147,7 +148,9 @@ def Transmittance_noslit(s):
 
     :py:func:`~radis.spectrum.operations.Transmittance`
     :py:func:`~radis.spectrum.operations.Radiance_noslit`,
-    :py:func:`~radis.spectrum.operations.Radiance`
+    :py:func:`~radis.spectrum.operations.Radiance`,
+    :py:meth:`~radis.spectrum.Spectrum.take`
+
     """
 
     return s.copy(copy_lines=True, quantity="transmittance_noslit")
@@ -184,7 +187,9 @@ def Radiance(s):
 
     :py:func:`~radis.spectrum.operations.Radiance_noslit`
     :py:func:`~radis.spectrum.operations.Transmittance_noslit`,
-    :py:func:`~radis.spectrum.operations.Transmittance`
+    :py:func:`~radis.spectrum.operations.Transmittance`,
+    :py:meth:`~radis.spectrum.Spectrum.take`
+
     """
 
     return s.copy(copy_lines=True, quantity="radiance")
@@ -221,7 +226,8 @@ def Radiance_noslit(s):
 
     :py:func:`~radis.spectrum.operations.Radiance`,
     :py:func:`~radis.spectrum.operations.Transmittance_noslit`,
-    :py:func:`~radis.spectrum.operations.Transmittance`
+    :py:func:`~radis.spectrum.operations.Transmittance`,
+    :py:meth:`~radis.spectrum.Spectrum.take`
 
     """
 

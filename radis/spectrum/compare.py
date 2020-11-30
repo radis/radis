@@ -25,7 +25,7 @@ Routine Listings
 """
 
 from __future__ import print_function, absolute_import, division, unicode_literals
-from radis.misc.arrays import array_allclose, nantrapz
+from radis.misc.arrays import array_allclose
 from radis.misc.curve import curve_substract, curve_distance, curve_divide
 from radis.spectrum.spectrum import Spectrum, is_spectrum
 from radis.spectrum.utils import format_xlabel, make_up, make_up_unit, cast_waveunit
@@ -348,72 +348,19 @@ def get_residual(
     """
 
     if normalize:
-        from radis.spectrum.operations import multiply
-
         if isinstance(normalize, tuple):
-            wmin, wmax = normalize
-            w1, I1 = s1.get(
-                var, copy=False, wunit=s1.get_waveunit()
-            )  # (faster not to copy)
-            b = (w1 > wmin) & (w1 < wmax)
-            if normalize_how == "max":
-                norm1 = np.nanmax(I1[b])
-            elif normalize_how == "mean":
-                norm1 = np.nanmean(I1[b])
-            elif normalize_how == "area":
-                norm1 = np.abs(nantrapz(I1[b], w1[b]))
-            else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
-            # now normalize s2. Ensure we use the same unit system!
-            w2, I2 = s2.get(
-                var, copy=False, Iunit=s1.units[var], wunit=s1.get_waveunit()
-            )  # (faster not to copy)
-            b = (w2 > wmin) & (w2 < wmax)
-            if normalize_how == "max":
-                norm2 = np.nanmax(I2[b])
-            elif normalize_how == "mean":
-                norm2 = np.nanmean(I2[b])
-            elif normalize_how == "area":
-                norm2 = np.abs(nantrapz(I2[b], w2[b]))
-            else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
-            s1 = multiply(s1, 1 / norm1, var=var)
-            s2 = multiply(s2, 1 / norm2, var=var)
+            wrange = normalize
         else:
-            if normalize_how == "max":
-                norm1 = np.nanmax(s1.get(var, copy=False)[1])
-                norm2 = np.nanmax(s2.get(var, copy=False)[1])
-
-            elif normalize_how == "mean":
-                norm1 = np.nanmean(s1.get(var, copy=False)[1])
-                norm2 = np.nanmean(s2.get(var, copy=False)[1])
-
-            elif normalize_how == "area":
-                # norm1 = s1.get_integral(var)
-                # norm2 = s2.get_integral(
-                #    var, wunit=s1.get_waveunit(), Iunit=s1.units[var]
-                # )
-                w1, I1 = s1.get(var, copy=False)
-                norm1 = nantrapz(I1, w1)
-                w2, I2 = s2.get(
-                    var, copy=False, Iunit=s1.units[var], wunit=s1.get_waveunit()
-                )
-                norm2 = nantrapz(I2, w2)
-
-            else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
-            # Ensure we use the same unit system!
-            s1 = multiply(s1, 1 / norm1, var=var)
-            s2 = multiply(s2, 1 / norm2, var=var)
-
-    # mask for 0
-    wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)
+            wrange = ()
+        wdiff, dI = get_diff(
+            s1.take(var).normalize(wrange=wrange, normalize_how=normalize_how),
+            s2.take(var).normalize(wrange=wrange, normalize_how=normalize_how),
+            var,
+            resample=True,
+            diff_window=diff_window,
+        )
+    else:
+        wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)
 
     if ignore_nan:
         b = np.isnan(dI)
