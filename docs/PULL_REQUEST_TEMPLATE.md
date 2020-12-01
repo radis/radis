@@ -1,6 +1,3 @@
-<!-- This comments are hidden when you submit the pull request,
-so you do not need to remove them! -->
-
 <!-- Please be sure to check out our contributing guidelines,
 https://github.com/radis/blob/develop/CONTRIBUTING.md . -->
 

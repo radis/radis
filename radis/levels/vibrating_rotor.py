@@ -34,30 +34,30 @@ from radis.db.conventions import (
 def EvJ_uncoupled_vibrating_rotor(
     v1, v2, l2, v3, J, coeff_dict, gv1=1, gv2=1, gv3=1, remove_ZPE=True
 ):
-    """ Rovibrational energy of an uncoupled vibrating rotor
-    
+    """Rovibrational energy of an uncoupled vibrating rotor
+
     Parameters
     ----------
 
     v1: int
-        vibrational state 
+        vibrational state
 
     v2: int
-        vibrational state 
+        vibrational state
 
     l2: int
-        vibrational state 
+        vibrational state
 
     v3: int
-        vibrational state 
+        vibrational state
 
     J: int
         rotational state
 
     coeff_dict: dict
-        dictionary of :py:data:`~radis.db.conventions.herzberg_coefficients`, 
+        dictionary of :py:data:`~radis.db.conventions.herzberg_coefficients`,
         which can be numbered for the different vibration modes. Example::
-            
+
             {'we1': 1333.93,
              'we2': 667.47,
              'we3': 2349.16,
@@ -67,12 +67,12 @@ def EvJ_uncoupled_vibrating_rotor(
              'Be': 0.39022,
              'De': 1.333e-07,
              'He': 9e-15}
-            
+
     gv1, gv2, gv3: int
         degeneracies of each vibrational mode. Default ``1, 1, 1``::
-            
+
             1,2,1 for CO2
-    
+
     remove_ZPE: boolean
         if ``True``, removes energy of ground state vibrational level (zero-point-energy)
 
@@ -80,18 +80,18 @@ def EvJ_uncoupled_vibrating_rotor(
     -------
 
     E: float
-        energy of state in cm-1 
+        energy of state in cm-1
 
     References
     ----------
-    
-    Klarenaar et al, "Time evolution of vibrational temperatures in a CO 2 glow 
+
+    Klarenaar et al, "Time evolution of vibrational temperatures in a CO 2 glow
     discharge measured with infrared absorption spectroscopy", doi 10.1088/1361-6595/aa902e,
     and the references there in.
-    
+
     See Also
     --------
-    
+
     :py:func:`~radis.levels.energies_co2.EvJ_co2`
 
     """
@@ -140,7 +140,7 @@ def EvJ_uncoupled_vibrating_rotor(
 
 
 def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=True):
-    """ Return rovibrationalenergies for nu_1, nu_2, nu_3 vibrational modes
+    """Return rovibrationalenergies for nu_1, nu_2, nu_3 vibrational modes
     Each energy is a tuple (E_harmonic, E_nonharmonic) to be
     used for instance in a Treanor distribution
 
@@ -156,16 +156,16 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=Tr
     ----------
 
     v1: int
-        vibrational state 
+        vibrational state
 
     v2: int
-        vibrational state 
+        vibrational state
 
     l2: int
-        vibrational state 
+        vibrational state
 
     v3: int
-        vibrational state 
+        vibrational state
 
     J: int
         rotational state
@@ -177,14 +177,14 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=Tr
     -------
 
     E: float
-        energy of state in cm-1 
+        energy of state in cm-1
 
     References
     ----------
-    
-    .. [1] Eq.(10) in Klarenaar et al, "Time evolution of vibrational temperatures in a CO2 glow 
+
+    .. [1] Eq.(10) in Klarenaar et al, "Time evolution of vibrational temperatures in a CO2 glow
         discharge measured with infrared absorption spectroscopy", doi 10.1088/1361-6595/aa902e,
-        and the references there in. 
+        and the references there in.
 
     """
 
@@ -213,17 +213,17 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=Tr
     # Vibrational energy
     G1_h = we1 * v1
     G1_a = -wexe1 * v1 * (v1 - 1)
-    G1 = G1_h + G1_a
+    # G1 = G1_h + G1_a
 
     G2_h = we2 * v2
     G2_a = -wexe2 * v2 * (v2 - 1)
-    G2 = G2_h + G2_a
+    # G2 = G2_h + G2_a
 
     G3_h = we3 * v3
     G3_a = -wexe3 * v3 * (v3 - 1)
-    G3 = G3_h + G3_a
+    # G3 = G3_h + G3_a
 
-    G = G1 + G2 + G3
+    # G = G1 + G2 + G3
 
     # Rotational energy
     Bv = Be  # no coupling terms
@@ -232,7 +232,8 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=Tr
     F = Bv * J * (J + 1) - Dv * J ** 2 * (J + 1) ** 2 + Hv * J ** 3 * (J + 1) ** 3
 
     if remove_ZPE:
-        ZPE = 0  # by construction here
+        # ZPE = 0  # by construction here
+        pass
     else:
         raise NotImplementedError
 

@@ -13,7 +13,7 @@ from .cdsd import cdsd2df
 
 # %% Get list of supported molecules
 def _get_supported_molecules_equilibrium():
-    """ Molecules supported in RADIS equilibrium calculations
+    """Molecules supported in RADIS equilibrium calculations
     Basically, all [HITRAN-2016]_ species
     """
     # Add all HITRAN species
@@ -23,8 +23,8 @@ def _get_supported_molecules_equilibrium():
 
 
 def _get_supported_molecules_nonequilibrium():
-    """ Molecules supported in RADIS non equilibrium calculations without need
-    for extra databases. 
+    """Molecules supported in RADIS non equilibrium calculations without need
+    for extra databases.
     Basically, molecules whose spectroscopic constants are built-in RADIS database
     (see radis.db)
     """

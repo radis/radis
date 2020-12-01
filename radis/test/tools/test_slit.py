@@ -112,7 +112,7 @@ def test_all_slit_shapes(
 def test_slit_unit_conversions_spectrum_in_cm(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Test that slit is consistently applied for different units
+    """Test that slit is consistently applied for different units
 
     Assert that:
 
@@ -174,7 +174,7 @@ def test_slit_unit_conversions_spectrum_in_cm(
 def test_slit_unit_conversions_spectrum_in_nm(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Test that slit is consistently applied for different units
+    """Test that slit is consistently applied for different units
 
     Assert that:
 
@@ -256,17 +256,17 @@ def test_convoluted_quantities_units(*args, **kwargs):
     s.update(verbose=False)
 
     assert s.units["radiance_noslit"] == "mW/cm2/sr/nm"
-    assert s.units["transmittance_noslit"] == "I/I0"
+    assert s.units["transmittance_noslit"] == ""
 
     s.apply_slit(0.5, norm_by="area", verbose=False)
 
     assert s.units["radiance"] == "mW/cm2/sr/nm"
-    assert s.units["transmittance"] == "I/I0"
+    assert s.units["transmittance"] == ""
 
     s.apply_slit(0.5, norm_by="max", verbose=False)
 
-    assert s.units["radiance"] == "mW/cm2/sr"
-    assert s.units["transmittance"] == "I/I0*nm"  # whatever that means
+    assert is_homogeneous(s.units["radiance"], "mW/cm2/sr")
+    assert s.units["transmittance"] == "nm"  # whatever that means
 
 
 @pytest.mark.fast
@@ -442,9 +442,9 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
 def test_slit_energy_conservation(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Convoluted and non convoluted quantities should have the same area
-    (difference arises from side effects if the initial spectrum is not 0 on 
-    the sides """
+    """Convoluted and non convoluted quantities should have the same area
+    (difference arises from side effects if the initial spectrum is not 0 on
+    the sides"""
 
     from radis.test.utils import getTestFile
 
@@ -499,12 +499,12 @@ def dirac(w0, width=20, wstep=0.009):
 
 
 def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
-    """ dlambda / dx
+    """dlambda / dx
     Default values correspond to Acton 750i
 
     Parameters
     ----------
-    
+
     f: focal length (mm)
          default 750 (SpectraPro 2750i)
 
@@ -528,10 +528,10 @@ def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
 def test_linear_dispersion_effect(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ A test case to show the effect of wavelength dispersion (cf spectrometer
+    """A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function
-    
-    Test succeeds if a :py:data:`~radis.misc.warning.SlitDispersionWarning` 
+
+    Test succeeds if a :py:data:`~radis.misc.warning.SlitDispersionWarning`
     is correctly triggered
     """
 
@@ -600,12 +600,12 @@ def test_linear_dispersion_effect(
 def test_auto_correct_dispersion(
     f=750, phi=-6, gr=2400, verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ A test case to show the effect of wavelength dispersion (cf spectrometer
-    reciprocal function) on the slit function 
-    
+    """A test case to show the effect of wavelength dispersion (cf spectrometer
+    reciprocal function) on the slit function
+
     Parameters
     ----------
-    
+
     f: focal length (mm)
          default 750 (SpectraPro 2750i)
 
@@ -614,11 +614,11 @@ def test_auto_correct_dispersion(
 
     gr: grooves spacing (gr/mm)
         default 2400
-    
+
     """
 
     from radis.test.utils import getTestFile
-    from publib import set_style, fix_style
+    from publib import set_style
     from radis.misc.warning import SlitDispersionWarning
 
     if plot:
@@ -666,7 +666,7 @@ def test_auto_correct_dispersion(
 
 @pytest.mark.fast
 def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **kwargs):
-    """ Test what happens when a spectrum in nm or cm-1, is convolved
+    """Test what happens when a spectrum in nm or cm-1, is convolved
     with a slit function in nm. In particular, slit function is generated
     in the spectrum unit, and spectrum is resampled if not evenly spaced"""
 

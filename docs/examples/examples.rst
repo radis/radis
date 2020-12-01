@@ -17,7 +17,7 @@ Line Survey
 ===========
 
 
-Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` tool::
+Example of output produced by the :class:`~radis.tools.line_survey.LineSurvey` tool::
 
     from radis import SpectrumFactory
     sf = SpectrumFactory(
@@ -36,7 +36,9 @@ Example of input produced by the :class:`~radis.tools.line_survey.LineSurvey` to
 .. raw:: html
 
     <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
-	
+
+The graph is a html file that can be shared easily even to non-Python users. 
+
 .. |CO2| replace:: CO\ :sub:`2`
 .. |H2O| replace:: H\ :sub:`2`\ O
 

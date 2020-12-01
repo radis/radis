@@ -59,13 +59,16 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     # Calculate with HAPI
     nu, coef = absorptionCoefficient_Voigt(
         SourceTables="CO",
-        Environment={"T": T, "p": p / 1.01325,},  # K  # atm
+        Environment={
+            "T": T,
+            "p": p / 1.01325,
+        },  # K  # atm
         WavenumberStep=wstep,
         HITRAN_units=False,
     )
 
     s_hapi = Spectrum.from_array(
-        nu, coef, "abscoeff", "cm-1", "cm_1", conditions={"Tgas": T}, name="HAPI"
+        nu, coef, "abscoeff", "cm-1", "cm-1", conditions={"Tgas": T}, name="HAPI"
     )
 
     # %% Calculate with RADIS
@@ -116,11 +119,11 @@ def test_broadening_methods_different_conditions(
     """
     Test direct Voigt broadening vs convolution of Gaussian x Lorentzian
     for different spectral grid resolution
-    
+
     Notes
-    ----- 
-    
-    Reference broadening calculated manually with the HWHM formula of 
+    -----
+
+    Reference broadening calculated manually with the HWHM formula of
     `HITRAN.org <https://hitran.org/docs/definitions-and-units/>`_
     """
 
@@ -169,14 +172,14 @@ def test_broadening_methods_different_conditions(
         assert isclose(sf.df0.wav, 2150.856008)
 
         # Calculate spectra (different broadening methods)
-        sf._broadening_method = "voigt"
+        sf.params.broadening_method = "voigt"
         s_voigt = sf.eq_spectrum(Tgas=T, name="direct")
 
         # assert broadening FWHM are correct
         assert isclose(2 * float(sf.df1.hwhm_gauss), fwhm_gauss)
         assert isclose(2 * float(sf.df1.hwhm_lorentz), fwhm_lorentz)
 
-        sf._broadening_method = "convolve"
+        sf.params.broadening_method = "convolve"
         s_convolve = sf.eq_spectrum(Tgas=T, name="convolve")
 
         # assert broadening FWHM are correct
@@ -238,6 +241,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
             pressure=p,
             broadening_max_width=broadening_max_width,
             isotope="1",
+            optimization=None,
             verbose=False,
             warnings={
                 "MissingSelfBroadeningWarning": "ignore",
@@ -248,10 +252,10 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
         )  # 0.2)
         sf.load_databank("HITRAN-CO-TEST")
         #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
-        sf._broadening_method = "voigt"
+        sf.params.broadening_method = "voigt"
         s_voigt = sf.eq_spectrum(Tgas=T, name="direct")
 
-        sf._broadening_method = "convolve"
+        sf.params.broadening_method = "convolve"
         s_convolve = sf.eq_spectrum(Tgas=T, name="convolve")
 
         res = get_residual(s_voigt, s_convolve, "abscoeff")
@@ -275,8 +279,8 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
 @pytest.mark.fast
 def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     """
-    Test use of lineshape template for broadening calculation. 
-    
+    Test use of lineshape template for broadening calculation.
+
     Ensures that results are the same with and without DLM.
     """
 
@@ -321,11 +325,11 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
 
     # DLM:
     sf.misc["chunksize"] = "DLM"
-    sf._broadening_method = "convolve"
+    sf.params.broadening_method = "convolve"
     s_dlm = sf.eq_spectrum(Tgas=T)
     s_dlm.name = "DLM ({0:.2f}s)".format(s_dlm.conditions["calculation_time"])
     # DLM Voigt with Whiting approximation:
-    sf._broadening_method = "voigt"
+    sf.params.broadening_method = "voigt"
     s_dlm_voigt = sf.eq_spectrum(Tgas=T)
     s_dlm_voigt.name = "DLM Whiting ({0:.2f}s)".format(
         s_dlm_voigt.conditions["calculation_time"]
@@ -352,7 +356,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
 def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     """
     Test use of DLM with and without Fourier Transform
-    
+
     Ensures that results are the same, and compare calculation times.
     """
 
@@ -394,13 +398,14 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     # DLM, real space
     if verbose:
         print("\nConvolve version \n")
+    sf._broadening_method = "convolve"
     s_dlm = sf.eq_spectrum(Tgas=T)
     s_dlm.name = "DLM ({0:.2f}s)".format(s_dlm.conditions["calculation_time"])
 
     # DLM , with Fourier
     if verbose:
         print("\nFFT version \n")
-    sf._broadening_method = "fft"
+    sf.params.broadening_method = "fft"
     s_dlm_fft = sf.eq_spectrum(Tgas=T)
     s_dlm_fft.name = "DLM FFT ({0:.2f}s)".format(
         s_dlm_fft.conditions["calculation_time"]
@@ -424,8 +429,8 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
 def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     """
     Test Noneq version of DLM and makes sure it gives the same results as the eq
-    one when used with Tvib=Trot 
-    
+    one when used with Tvib=Trot
+
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -490,18 +495,18 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
 def test_abscoeff_continuum(
     plot=False, verbose=2, warnings=True, threshold=0.1, *args, **kwargs
 ):
-    """ 
+    """
     Test calculation with pseudo-continuum
 
     Assert results on abscoeff dont change
-    
-    
+
+
     Notes
     -----
-    
+
     Uses HITRAN so it can deployed and tested on `Travis CI <https://travis-ci.com/radis/radis>`_, but we should switch
-    to HITEMP if some HITEMP files can be downloaded automatically at the 
-    execution time. 
+    to HITEMP if some HITEMP files can be downloaded automatically at the
+    execution time.
 
     """
 
@@ -524,6 +529,7 @@ def test_abscoeff_continuum(
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",
+        optimization=None,
         verbose=verbose,
     )
     sf.warnings.update(
@@ -593,18 +599,18 @@ def test_abscoeff_continuum(
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
 def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
-    """ 
+    """
     Test calculation with pseudo-continuum under nonequilibrium
 
     Assert results on emisscoeff dont change
 
-    
+
     Notes
     -----
-    
+
     Uses HITRAN so it can deployed and tested on `Travis CI <https://travis-ci.com/radis/radis>`_, but we should switch
-    to HITEMP if some HITEMP files can be downloaded automatically at the 
-    execution time. 
+    to HITEMP if some HITEMP files can be downloaded automatically at the
+    execution time.
 
     """
 
@@ -627,6 +633,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",
+        optimization=None,
         verbose=verbose,
     )
     sf.warnings.update(

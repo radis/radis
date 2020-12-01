@@ -55,10 +55,10 @@ def test_crop(verbose=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_cut_recombine(verbose=True, *args, **kwargs):
-    """ 
+    """
     Use :func:`~radis.spectrum.operations.crop` and :func:`~radis.los.slabs.MergeSlabs`
     to cut a Spectrum and recombine it
-    
+
     Assert we still get the same spectrum at the end
     """
 
@@ -251,9 +251,55 @@ def test_TestBaseline(plot=False, *args, **kwargs):
     assert s2.get_radiance_noslit()[0] == s.get_radiance_noslit()[0] - 2e-4
 
 
+@pytest.mark.fast
+def test_dimensioned_operations(*args, **kwargs):
+
+    from radis.test.utils import getTestFile
+    from radis import load_spec, Radiance
+    from radis.spectrum import sub_baseline
+    import astropy.units as u
+    import numpy as np
+
+    # Generate the equivalent of an experimental spectrum
+    s = load_spec(getTestFile(r"CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update()  # add radiance, etc.
+    s.apply_slit(0.5)  # nm
+    s = Radiance(s)
+
+    # Test
+    assert s.units["radiance"] == "mW/cm2/sr/nm"
+    Imax = s.get("radiance")[1].max()
+
+    # add a baseline
+    s += 0.1 * u.Unit("W/cm2/sr/nm")
+
+    assert np.isclose(s.get("radiance")[1].max(), Imax + 100)
+
+    # remove a baseline (we could also have used s=-0.1, but we're testing another function here)
+    s = sub_baseline(s, 0.1 * u.Unit("W/cm2/sr/nm"), 0.1 * u.Unit("W/cm2/sr/nm"))
+
+    assert np.isclose(s.get("radiance")[1].max(), Imax)
+
+    # Test division
+    # Example : a manual normalization
+    s /= s.max() * u.Unit("mW/cm2/sr/nm")
+
+    assert s.units["radiance"] == ""  # normalized
+    assert s.max() == 1.0
+
+    # Test Multiplication
+    # example : a manual Calibration
+    s.units["radiance"] = "count"
+    s *= 100 * u.Unit("mW/cm2/sr/nm/count")
+
+    assert u.Unit(s.units["radiance"]) == u.Unit(
+        "mW/cm2/sr/nm"
+    )  # check units are valid
+    assert s.units["radiance"] == "mW / (cm2 nm sr)"  # check units have been simplified
+
+
 def _run_testcases(verbose=True, plot=False, *args, **kwargs):
-    """ Test procedures
-    """
+    """Test procedures"""
 
     test_crop(verbose=verbose, *args, **kwargs)
     test_cut_recombine(verbose=verbose, *args, **kwargs)
@@ -264,6 +310,7 @@ def _run_testcases(verbose=True, plot=False, *args, **kwargs):
     test_offset(verbose=verbose, plot=plot, *args, **kwargs)
     test_other_algebraic_operations(verbose=verbose, plot=plot, *args, **kwargs)
     test_TestBaseline(verbose=verbose, plot=plot, *args, **kwargs)
+    test_dimensioned_operations(*args, **kwargs)
 
     return True
 

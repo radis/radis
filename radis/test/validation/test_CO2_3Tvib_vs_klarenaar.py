@@ -41,16 +41,16 @@ from os.path import join
 def test_klarenaar_validation_case(
     verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
-    """ Reproduce the Klarenaar 2018 validation case, as given in the 
-    [RADIS-2018]_ article. 
-    
+    """Reproduce the Klarenaar 2018 validation case, as given in the
+    [RADIS-2018]_ article.
+
     References
     ----------
 
-    Klarenaar et al, "Time evolution of vibrational temperatures in a CO 2 glow 
+    Klarenaar et al, "Time evolution of vibrational temperatures in a CO 2 glow
     discharge measured with infrared absorption spectroscopy", doi 10.1088/1361-6595/aa902e,
     and the references there in.
-    
+
     """
 
     setup_test_line_databases()
@@ -59,12 +59,12 @@ def test_klarenaar_validation_case(
     s_exp = Spectrum.from_txt(
         getValidationCase(
             join(
-                "test_CO2_3Tvib_vs_klarenaar_data", "klarenaar_2017_digitized_data.csv",
+                "test_CO2_3Tvib_vs_klarenaar_data", "klarenaar_2017_digitized_data.csv"
             )
         ),
         "transmittance_noslit",
         waveunit="cm-1",
-        unit="I/I0",
+        unit="",
         delimiter=",",
         name="Klarenaar 2017",
     )

@@ -115,17 +115,60 @@ def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
         plot_spec(getTestFile("N2C_specair_380nm.spec"))
 
 
-def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
+def test_save_compressed2(verbose=True, *args, **kwargs):
+    "Check if saving a spectrum with compress = 2 does not change something."
+    import shutil
+    from os.path import join
 
-    test_speclist(*args, **kwargs)
-    test_database_functions(
-        plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs
+    from radis.test.utils import setup_test_line_databases
+    from radis import calc_spectrum, SpecDatabase
+
+    shutil.rmtree(join(dirname(getTestFile(".")), "newDb"), ignore_errors=True)
+
+    # get the spectrum
+    setup_test_line_databases()
+    s = calc_spectrum(
+        2000,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        verbose=False,
+        wstep=0.01,
+        medium="vacuum",
+        databank="HITRAN-CO-TEST",
     )
-    test_plot_spec(plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs)
+    try:
 
-    return True
+        # load in one databse
+        db = SpecDatabase(join(dirname(getTestFile(".")), "newDb"))
+        db.add(s, compress=2, if_exists_then="error")
+
+        # simulate an experimentalist who come later and load the spectrum
+        db2 = SpecDatabase(join(dirname(getTestFile(".")), "newDb"))
+        s_bis = db2.get_unique(Tgas=700)
+
+    finally:
+        # we want to make sure this folder is deleted
+        shutil.rmtree(join(dirname(getTestFile(".")), "newDb"))
+
+    # we check the loaded spectrum contains less information than the calculated one
+    assert not s == s_bis
+    assert s_bis.get_vars() == ["abscoeff"]  # only this spectral quantity was stored
+    assert s_bis.lines is None
+    assert s_bis.conditions is not None  # we kept the metadata
+    # now we check if it works
+    s_bis.update()
+    for var in s.get_vars():
+        assert s.compare_with(s_bis, spectra_only=var, plot=False, verbose=verbose)
 
 
 if __name__ == "__main__":
+    import pytest
 
-    print("Testing database functions:", _run_testcases(plot=True))
+    # -s is to plot
+    pytest.main(["test_database.py", "-s"])
+    # test_save_compressed2()

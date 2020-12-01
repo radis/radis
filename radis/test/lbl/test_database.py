@@ -24,7 +24,6 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 from __future__ import unicode_literals, print_function, absolute_import, division
 import os
 import matplotlib.pyplot as plt
-import sys
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.tools.database import load_spec
@@ -37,9 +36,9 @@ fig_prefix = basename(__file__) + ": "
 
 
 def test_load_spectrum(plot=False, verbose=True, warnings=True, *args, **kwargs):
-    """ Test load / save 
+    """Test load / save
 
-    Fast version: dont save lines / populations, compare spectra only 
+    Fast version: dont save lines / populations, compare spectra only
     """
 
     setup_test_line_databases()
@@ -86,10 +85,10 @@ def test_load_spectrum(plot=False, verbose=True, warnings=True, *args, **kwargs)
 
 
 def test_load_lines_pops(plot=False, verbose=True, warnings=True, *args, **kwargs):
-    """ Test load / save 
+    """Test load / save
 
     Full version: save lines, populations (hundreds of MB for CO2, much less
-    for CO), compare everything 
+    for CO), compare everything
     """
 
     temp_file_name = "_test_database_co_tempfile.spec"

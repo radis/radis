@@ -39,7 +39,7 @@ CACHE_FILE_NAME = "tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5"
 def fetch_astroquery(
     molecule, isotope, wmin, wmax, verbose=True, cache=True, metadata={}
 ):
-    """ Wrapper to Astroquery [1]_ fetch function to download a line database 
+    """Wrapper to Astroquery [1]_ fetch function to download a line database
 
     Notes
     -----
@@ -53,11 +53,11 @@ def fetch_astroquery(
         molecule name or identifier
 
     isotope: int
-        isotope number 
+        isotope number
 
     wmin, wmax: float  (cm-1)
-        wavenumber min and max 
-    
+        wavenumber min and max
+
     Other Parameters
     ----------------
 
@@ -65,26 +65,26 @@ def fetch_astroquery(
         Default ``True``
 
     cache: boolean
-        if ``True``, tries to find a ``.h5`` cache file in the Astroquery 
-        :py:attr:`~astroquery.query.BaseQuery.cache_location`, that would match 
-        the requirements. If not found, downloads it and saves the line dataframe 
+        if ``True``, tries to find a ``.h5`` cache file in the Astroquery
+        :py:attr:`~astroquery.query.BaseQuery.cache_location`, that would match
+        the requirements. If not found, downloads it and saves the line dataframe
         as a ``.h5`` file in the Astroquery.
 
     metadata: dict
         if ``cache=True``, check that the metadata in the cache file correspond
         to these attributes. Arguments ``molecule``, ``isotope``, ``wmin``, ``wmax``
-        are already added by default. 
+        are already added by default.
 
     References
     ----------
 
-    .. [1] `Astroquery <https://astroquery.readthedocs.io>`_ 
-    
+    .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
+
     See Also
     --------
-    
-    :py:func:`astroquery.hitran.reader.download_hitran`, 
-    :py:func:`astroquery.hitran.reader.read_hitran_file`, 
+
+    :py:func:`astroquery.hitran.reader.download_hitran`,
+    :py:func:`astroquery.hitran.reader.read_hitran_file`,
     :py:attr:`~astroquery.query.BaseQuery.cache_location`
 
     """
@@ -105,7 +105,6 @@ def fetch_astroquery(
         metadata.update(
             {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
         )
-
         fcache = join(
             Hitran.cache_location,
             CACHE_FILE_NAME.format(
@@ -257,12 +256,12 @@ def _fix_astroquery_file_format(filename):
     """
     Notes
     -----
-    
+
     On some OS the astroquery lookup function may add extra lines. See:
     https://github.com/astropy/astroquery/issues/1189
-    
-    In the meantime, we discard all empty lines here. 
-    
+
+    In the meantime, we discard all empty lines here.
+
     """
 
     if not isfile(filename):

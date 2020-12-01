@@ -29,50 +29,50 @@ from __future__ import unicode_literals  # α, β, γ, δ, ϵ
 
 
 def Gv(v, we=0, wexe=0, weye=0, weze=0, weae=0, webe=0, gv=1):
-    """ Vibrational energy term 
+    """Vibrational energy term
     Dunham development (order 5 in v) in Herzberg notation
-    
+
     .. math::
-    
-        G_v = w_e\\left(v+\\frac{g_v}{2}\\right) - w_ex_e\\left(v+\\frac{g_v}{2}\\right)^2 + 
-        w_ey_e\\left(v+\\frac{g_v}{2}\\right)^3  + w_ez_e\\left(v+\\frac{g_v}{2}\\right)^4 + 
+
+        G_v = w_e\\left(v+\\frac{g_v}{2}\\right) - w_ex_e\\left(v+\\frac{g_v}{2}\\right)^2 +
+        w_ey_e\\left(v+\\frac{g_v}{2}\\right)^3  + w_ez_e\\left(v+\\frac{g_v}{2}\\right)^4 +
         w_ea_e\\left(v+\\frac{g_v}{2}\\right)^5
-        
+
     Parameters
     ----------
-    
+
     v: int
         vibrational quantum number
     we: float
- 	    vibrational constant – first term (cm-1)
+            vibrational constant – first term (cm-1)
     ωexe: float
- 	    vibrational constant – second term (cm-1)
+            vibrational constant – second term (cm-1)
     ωeye: float
-   	    vibrational constant – third term (cm-1)
+            vibrational constant – third term (cm-1)
     ωeze: float
- 	    vibrational constant – fourth term (cm-1)
+            vibrational constant – fourth term (cm-1)
     weae: float
        vibrational constant – fifth term (cm-1)
     webe:
         vibrational constant – sixth term (cm-1)
     gv: int
-       degeneracy   (usually 1, but 2 for CO2-v2) 
-    
+       degeneracy   (usually 1, but 2 for CO2-v2)
+
     Returns
     -------
-    
+
     Gv: float
         Energy (cm-1)
 
 
     Notes
     -----
-    
+
     Validity:
 
-    For large vibrational levels Dunham's expansion is not valid. In other LBL codes, 
-    such as Specair, Morse Potential is used above a certain vibrational level. 
-    See :func:`~radis.phys.morse.morse_increment` for an implementation in RADIS. 
+    For large vibrational levels Dunham's expansion is not valid. In other LBL codes,
+    such as Specair, Morse Potential is used above a certain vibrational level.
+    See :func:`~radis.phys.morse.morse_increment` for an implementation in RADIS.
 
     .. warning::
 
@@ -80,7 +80,7 @@ def Gv(v, we=0, wexe=0, weye=0, weze=0, weae=0, webe=0, gv=1):
         signs can be different depending on the article. Make sure your Dunham expansion
         has the same signs as the one we use here! In particular, this function
         uses a ``-wexe`` sign as in the usual Herzberg notation. Ex:
-    
+
         - Mantz and Maillard 1975 (CO X)  uses opposite signs for **weze** and **webe**
 
     References
@@ -90,9 +90,9 @@ def Gv(v, we=0, wexe=0, weye=0, weze=0, weae=0, webe=0, gv=1):
 
     See Also
     --------
-    
+
     :py:func:`~radis.levels.dunham.Fv`
-    
+
     List of :py:data:`~radis.db.conventions.herzberg_coefficients`
 
     Get Herzberg coefficients for a molecule: :py:func:`~radis.db.utils.get_herzberg_coefficients`
@@ -134,7 +134,7 @@ def Fv(
 ):
     """Rotational energy term
     Dunham development (order 4 in J) in Herzberg notation
-    
+
     .. math::
         B_{v}=B_{e}-\\alpha_{e}\\left(v+\\frac{g_{v}}{2}\\right)+\\gamma_{e}
         \\left(v+\\frac{g_{v}}{2}\\right)^{2}+\\delta_{e}\\left(v+\\frac{g_{v}}{2}
@@ -156,17 +156,17 @@ def Fv(
     J: int
         rotational quantum number
     Be: float
- 	    rotational constant in equilibrium position (cm-1)
+            rotational constant in equilibrium position (cm-1)
     De: float
- 	    centrifugal distortion constant (cm-1)
+            centrifugal distortion constant (cm-1)
     alpha_e: float
- 	    rotational constant – first term (cm-1)
+            rotational constant – first term (cm-1)
     beta_e: float
- 	    rotational constant – first term, centrifugal force (cm-1)
+            rotational constant – first term, centrifugal force (cm-1)
     gamma_e: float
- 	    rotation-vibration interaction constant (cm-1)
+            rotation-vibration interaction constant (cm-1)
     delta_e: float
- 	    (cm-1)
+            (cm-1)
     epsilon_e: float
        (cm-1)
     pi_e: float
@@ -174,30 +174,30 @@ def Fv(
     He: float
         third order correction factor (cm-1)
     eta_e: float
-        (float)     
+        (float)
     gv: int
-       degeneracy   (usually 1, but 2 for CO2-v2) 
+       degeneracy   (usually 1, but 2 for CO2-v2)
 
     Returns
     -------
-    
+
     Fv: float
         Energy (cm-1)
-    
+
     Notes
     -----
-    
+
     Validity:
 
-    For large vibrational levels Dunham's expansion is not valid. In RADIS a 
+    For large vibrational levels Dunham's expansion is not valid. In RADIS a
     Morse Potential can be used above a certain vibrational level
 
     .. warning::
-    
+
         Although by convention prefactors share the same name throughout most of the litterature,
         signs can be different depending on the article. Make sure your Dunham expansion
         has the same signs as the one we use here! Ex:
-    
+
         - Mantz and Maillard 1975  (CO)  uses opposite signs for **delta_e** and **beta_e**
 
     References
@@ -207,15 +207,15 @@ def Fv(
 
     See Also
     --------
-    
+
     :py:func:`~radis.levels.dunham.Gv`
-    
+
     List of :py:data:`~radis.db.conventions.herzberg_coefficients`
 
     Get Herzberg coefficients for a molecule: :py:func:`~radis.db.utils.get_herzberg_coefficients`
 
     Use Dunham coefficients instead: :py:func:`~radis.levels.dunham.EvJ`
-        
+
     """
 
     B_e, D_e, H_e, g_v = Be, De, He, gv
@@ -298,38 +298,38 @@ def Fv(
 # New version (less versatile, but less Python and faster)
 # only allowed formats: Y01
 def EvJ(v, J, **Ykl_dict):
-    """ Calculates rovibrational energy reading from Dunham coefficients in 
+    """Calculates rovibrational energy reading from Dunham coefficients in
     Ykl notation, for diatomic molecules.
-    
+
     Parameters
     ----------
-    
+
     Ykl: dict
         an arbitrary dictionary of Ykl coefficients
         accepted formats: Y01
-        
+
     Ykl are parsed and assigned the correct energy
-    
+
     Examples
     --------
-    
+
     Read directly from a .json file::
-            
+
         from radis.db.utils import get_dunham_coefficients
         from radis.levels.dunham import EvJ
         dunham_coeffs = get_dunham_coefficients('CO', 1, 'X1SIG+')
-        
+
         # Now calculate energy
         EvJ(v=0, J=0, **dunham_coeffs)
-    
+
     See Also
     --------
-    
+
     Get Dunham coefficients for a molecule: :py:func:`~radis.db.utils.get_dunham_coefficients`
 
-    Use Herzberg coefficients instead: :py:func:`~radis.levels.dunham.Gv`, 
+    Use Herzberg coefficients instead: :py:func:`~radis.levels.dunham.Gv`,
     :py:func:`~radis.levels.dunham.Fv`
-        
+
     """
 
     E = 0

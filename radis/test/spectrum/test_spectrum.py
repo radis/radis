@@ -60,7 +60,7 @@ def test_spectrum_get_methods(
         == s.get("radiance_noslit", Iunit="W/m2/sr/nm")[1]
     )
     assert all(nm2cm(s.get_wavelength(medium="vacuum")) == s.get_wavenumber())
-    assert s.get_power(unit="W/cm2/sr") == 2631.6288408588148
+    assert np.isclose(s.get_power(unit="W/cm2/sr"), 2631.6288408588148)
     assert s.get_waveunit() == "nm"
     assert np.isclose(
         s.get_power(unit="W/cm2/sr"),
@@ -98,14 +98,14 @@ def test_spectrum_get_methods(
 
 @pytest.mark.fast
 def test_copy(verbose=True, *args, **kwargs):
-    """ Test that a Spectrum is correctly copied 
+    """Test that a Spectrum is correctly copied
 
     We compare a Spectrum that has:
     - all available spectral quantities
-    - a slit 
+    - a slit
     - many calculation conditions
     - no populations
-    - no lines 
+    - no lines
     """
 
     from radis.test.utils import getTestFile
@@ -134,8 +134,7 @@ def test_copy(verbose=True, *args, **kwargs):
 
 
 def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs):
-    """ Test that populations in a Spectrum are correctly read 
-    """
+    """Test that populations in a Spectrum are correctly read"""
 
     if plot:
         import matplotlib.pyplot as plt
@@ -203,7 +202,7 @@ def test_store_functions(verbose=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_intensity_conversion(verbose=True, *args, **kwargs):
-    """ Test conversion of intensity cm-1 works:
+    """Test conversion of intensity cm-1 works:
 
     - conversion of mW/sr/cm2/nm -> mW/sr/cm2/cm-1
 
@@ -215,11 +214,15 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
     w_cm = nm2cm(w_nm)
     I_nm = planck(w_nm, T=6000, unit="mW/sr/cm2/nm")
 
-    s = calculated_spectrum(w_nm, I_nm, wunit="nm_vac", Iunit="mW/sr/cm2/nm",)
-
+    s = calculated_spectrum(
+        w_nm,
+        I_nm,
+        wunit="nm_vac",
+        Iunit="mW/sr/cm2/nm",
+    )
     # mW/sr/cm2/nm -> mW/sr/cm2/cm-1
-    w, I = s.get("radiance_noslit", Iunit="mW/sr/cm2/cm_1")
-    I_cm = planck_wn(w_cm, T=6000, unit="mW/sr/cm2/cm_1")
+    w, I = s.get("radiance_noslit", Iunit="mW/sr/cm2/cm-1")
+    I_cm = planck_wn(w_cm, T=6000, unit="mW/sr/cm2/cm-1")
     assert allclose(I_cm, I, rtol=1e-3)
 
 
@@ -239,8 +242,8 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
 #
 #    # mW/sr/cm3/nm -> mW/sr/cm3/cm-1
 #
-#    w, I = s.get('emissivity_noslit', Iunit='mW/sr/cm3/cm_1')
-#    I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm_1', 'mW/sr/m3/µm')
+#    w, I = s.get('emissivity_noslit', Iunit='mW/sr/cm3/cm-1')
+#    I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm-1', 'mW/sr/m3/µm')
 #
 
 # TODO: finish implementing emissivity_conversino above
@@ -274,10 +277,10 @@ def test_rescaling_function(verbose=True, *args, **kwargs):
 def test_resampling_function(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Test resampling functions 
+    """Test resampling functions
 
-    Get a Spectrum calculated in cm-1, then resample on a smaller range in cm-1, 
-    and in approximately the same range (but in nm). Check that all 3 overlap 
+    Get a Spectrum calculated in cm-1, then resample on a smaller range in cm-1,
+    and in approximately the same range (but in nm). Check that all 3 overlap
     """
     # %%
     from radis.test.utils import getTestFile
@@ -338,7 +341,7 @@ def test_resampling_function(
 
 @pytest.mark.fast
 def test_noplot_different_quantities(*args, **kwargs):
-    """ Prevents User Errors: Ensures an error is raised if plotting different
+    """Prevents User Errors: Ensures an error is raised if plotting different
     quantities on the same graph"""
 
     import matplotlib.pyplot as plt
@@ -357,6 +360,36 @@ def test_noplot_different_quantities(*args, **kwargs):
     plt.close("test_noplot_different_quantities")
 
 
+@pytest.mark.fast
+def test_normalization(*args, **kwargs):
+
+    from radis import load_spec, Radiance
+    from radis.test.utils import getTestFile
+
+    # Generate the equivalent of an experimental spectrum
+    s = load_spec(getTestFile(r"CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update()  # add radiance, etc.
+    s.apply_slit(0.5)  # nm
+    s = Radiance(s)
+
+    # Test normalization
+    assert s.units["radiance"] != ""
+    s.normalize()
+    assert s.max() != 1
+    s.normalize(inplace=True)
+    assert s.max() == 1
+    assert s.normalize().units["radiance"] == ""
+
+    s2 = s.normalize(normalize_how="area")
+    assert np.isclose(s2.get_integral("radiance", wunit=s2.get_waveunit()), 1)
+
+    #
+    s3 = s.normalize(wrange=((2125, 2150)), normalize_how="area")
+    assert np.isclose(
+        s3.crop(2125, 2150).get_integral("radiance", wunit=s3.get_waveunit()), 1
+    )
+
+
 # %%
 
 
@@ -369,7 +402,7 @@ def _run_testcases(
     *args,
     **kwargs
 ):
-    """ Test procedures
+    """Test procedures
 
     Parameters
     ----------
@@ -406,13 +439,15 @@ def _run_testcases(
     # Test updating / rescaling functions (no self absorption)
     # ---------
     test_rescaling_function(debug=debug, *args, **kwargs)
+
     test_resampling_function(
         debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs
     )
 
+    test_normalization(*args, **kwargs)
+
     # Test plot firewalls:
     test_noplot_different_quantities(*args, **kwargs)
-
     return True
 
 

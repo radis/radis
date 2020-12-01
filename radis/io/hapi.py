@@ -1240,33 +1240,33 @@ PARAMETER_META = {
         "has_reference": 1,
         "has_error": 1,
     },
-    "gamma_HT_0_self_50": {"default_fmt": "%6.4f",},
-    "n_HT_self_50": {"default_fmt": "%9.6f",},
-    "gamma_HT_2_self_50": {"default_fmt": "%6.4f",},
-    "delta_HT_0_self_50": {"default_fmt": "%9.6f",},
-    "deltap_HT_self_50": {"default_fmt": "%9.6f",},
-    "delta_HT_2_self_50": {"default_fmt": "%9.6f",},
-    "gamma_HT_0_self_150": {"default_fmt": "%6.4f",},
-    "n_HT_self_150": {"default_fmt": "%9.6f",},
-    "gamma_HT_2_self_150": {"default_fmt": "%6.4f",},
-    "delta_HT_0_self_150": {"default_fmt": "%9.6f",},
-    "deltap_HT_self_150": {"default_fmt": "%9.6f",},
-    "delta_HT_2_self_150": {"default_fmt": "%9.6f",},
-    "gamma_HT_0_self_296": {"default_fmt": "%6.4f",},
-    "n_HT_self_296": {"default_fmt": "%9.6f",},
-    "gamma_HT_2_self_296": {"default_fmt": "%6.4f",},
-    "delta_HT_0_self_296": {"default_fmt": "%9.6f",},
-    "deltap_HT_self_296": {"default_fmt": "%9.6f",},
-    "delta_HT_2_self_296": {"default_fmt": "%9.6f",},
-    "gamma_HT_0_self_700": {"default_fmt": "%6.4f",},
-    "n_HT_self_700": {"default_fmt": "%9.6f",},
-    "gamma_HT_2_self_700": {"default_fmt": "%6.4f",},
-    "delta_HT_0_self_700": {"default_fmt": "%9.6f",},
-    "deltap_HT_self_700": {"default_fmt": "%9.6f",},
-    "delta_HT_2_self_700": {"default_fmt": "%9.6f",},
-    "nu_HT_self": {"default_fmt": "%6.4f",},
-    "kappa_HT_self": {"default_fmt": "%9.6f",},
-    "eta_HT_self": {"default_fmt": "%9.6f",},
+    "gamma_HT_0_self_50": {"default_fmt": "%6.4f"},
+    "n_HT_self_50": {"default_fmt": "%9.6f"},
+    "gamma_HT_2_self_50": {"default_fmt": "%6.4f"},
+    "delta_HT_0_self_50": {"default_fmt": "%9.6f"},
+    "deltap_HT_self_50": {"default_fmt": "%9.6f"},
+    "delta_HT_2_self_50": {"default_fmt": "%9.6f"},
+    "gamma_HT_0_self_150": {"default_fmt": "%6.4f"},
+    "n_HT_self_150": {"default_fmt": "%9.6f"},
+    "gamma_HT_2_self_150": {"default_fmt": "%6.4f"},
+    "delta_HT_0_self_150": {"default_fmt": "%9.6f"},
+    "deltap_HT_self_150": {"default_fmt": "%9.6f"},
+    "delta_HT_2_self_150": {"default_fmt": "%9.6f"},
+    "gamma_HT_0_self_296": {"default_fmt": "%6.4f"},
+    "n_HT_self_296": {"default_fmt": "%9.6f"},
+    "gamma_HT_2_self_296": {"default_fmt": "%6.4f"},
+    "delta_HT_0_self_296": {"default_fmt": "%9.6f"},
+    "deltap_HT_self_296": {"default_fmt": "%9.6f"},
+    "delta_HT_2_self_296": {"default_fmt": "%9.6f"},
+    "gamma_HT_0_self_700": {"default_fmt": "%6.4f"},
+    "n_HT_self_700": {"default_fmt": "%9.6f"},
+    "gamma_HT_2_self_700": {"default_fmt": "%6.4f"},
+    "delta_HT_0_self_700": {"default_fmt": "%9.6f"},
+    "deltap_HT_self_700": {"default_fmt": "%9.6f"},
+    "delta_HT_2_self_700": {"default_fmt": "%9.6f"},
+    "nu_HT_self": {"default_fmt": "%6.4f"},
+    "kappa_HT_self": {"default_fmt": "%9.6f"},
+    "eta_HT_self": {"default_fmt": "%9.6f"},
 }
 
 
@@ -2399,13 +2399,13 @@ def getTableList():
 
 def describeTable(TableName):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName: name of the table to describe
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
-        Print information about table, including 
+        Print information about table, including
         parameter names, formats and wavenumber range.
     ---
     EXAMPLE OF USAGE:
@@ -2490,9 +2490,9 @@ def createTable(TableName, RowObjectDefault):
 # simple "drop table" capability
 def dropTable(TableName):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:  name of the table to delete
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
@@ -2517,11 +2517,11 @@ def dropTable(TableName):
 
 def getColumn(TableName, ParameterName):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:      source table name     (required)
         ParameterName:  name of column to get (required)
-    OUTPUT PARAMETERS: 
-        ColumnData:     list of values from specified column 
+    OUTPUT PARAMETERS:
+        ColumnData:     list of values from specified column
     ---
     DESCRIPTION:
         Returns a column with a name ParameterName from
@@ -2539,11 +2539,11 @@ def getColumn(TableName, ParameterName):
 
 def getColumns(TableName, ParameterNames):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:       source table name           (required)
         ParameterNames:  list of column names to get (required)
-    OUTPUT PARAMETERS: 
-        ListColumnData:   tuple of lists of values from specified column 
+    OUTPUT PARAMETERS:
+        ListColumnData:   tuple of lists of values from specified column
     ---
     DESCRIPTION:
         Returns columns with a names in ParameterNames from
@@ -2601,7 +2601,13 @@ def addColumn(
         #    if par_name == Before: break
         #    i += 1
         i = header_order.index(Before)
-        header_order = header_order[:i] + [ParameterName,] + header_order[i:]
+        header_order = (
+            header_order[:i]
+            + [
+                ParameterName,
+            ]
+            + header_order[i:]
+        )
     LOCAL_TABLE_CACHE[TableName]["header"]["order"] = header_order
     LOCAL_TABLE_CACHE[TableName]["header"]["format"][ParameterName] = Format
     LOCAL_TABLE_CACHE[TableName]["header"]["default"][ParameterName] = Default
@@ -2699,18 +2705,18 @@ def select(
     File=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:            name of source table              (required)
         DestinationTableName: name of resulting table           (optional)
         ParameterNames:       list of parameters or expressions (optional)
         Conditions:           list of logincal expressions      (optional)
         Output:   enable (True) or suppress (False) text output (optional)
         File:     enable (True) or suppress (False) file output (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
-        Select or filter the data in some table 
+        Select or filter the data in some table
         either to standard output or to file (if specified)
     ---
     EXAMPLE OF USAGE:
@@ -2849,14 +2855,14 @@ def sort(
     File=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:                name of source table          (required)
         DestinationTableName:     name of resulting table       (optional)
         ParameterNames:       list of parameters or expressions to sort by    (optional)
         Accending:       sort in ascending (True) or descending (False) order (optional)
         Output:   enable (True) or suppress (False) text output (optional)
         File:     enable (True) or suppress (False) file output (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
@@ -2912,14 +2918,14 @@ def group(
     Output=True,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:                name of source table          (required)
         DestinationTableName:     name of resulting table       (optional)
         ParameterNames:       list of parameters or expressions to take       (optional)
         GroupParameterNames:  list of parameters or expressions to group by   (optional)
         Accending:       sort in ascending (True) or descending (False) order (optional)
         Output:   enable (True) or suppress (False) text output (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
@@ -3019,13 +3025,13 @@ def extractColumns(
     TableName, SourceParameterName, ParameterFormats, ParameterNames=None, FixCol=False
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:             name of source table              (required)
         SourceParameterName:   name of source column to process  (required)
         ParameterFormats:      c formats of unpacked parameters  (required)
         ParameterNames:        list of resulting parameter names (optional)
         FixCol:      column-fixed (True) format of source column (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
@@ -4408,12 +4414,12 @@ References:
 [1] N.H. Ngo, D. Lisak, H. Tran, J.-M. Hartmann.
     An isolated line-shape model to go beyond the Voigt profile in 
     spectroscopic databases and radiative transfer codes.
-    JQSRT, Volume 129, November 2013, Pages 89–100
+    JQSRT, Volume 129, November 2013, Pages 89â€“100
     http://dx.doi.org/10.1016/j.jqsrt.2013.05.034
 
 [2] A. L. Laraia, R. R. Gamache, J. Lamouroux, I. E. Gordon, L. S. Rothman.
     Total internal partition sums to support planetary remote sensing.
-    Icarus, Volume 215, Issue 1, September 2011, Pages 391–400
+    Icarus, Volume 215, Issue 1, September 2011, Pages 391â€“400
     http://dx.doi.org/10.1016/j.icarus.2011.06.004
 
 _______________________________________________________________________
@@ -4769,12 +4775,12 @@ References:
 [1] N.H. Ngo, D. Lisak, H. Tran, J.-M. Hartmann.
     An isolated line-shape model to go beyond the Voigt profile in 
     spectroscopic databases and radiative transfer codes.
-    JQSRT, Volume 129, November 2013, Pages 89–100
+    JQSRT, Volume 129, November 2013, Pages 89â€“100
     http://dx.doi.org/10.1016/j.jqsrt.2013.05.034
 
 [2] A. L. Laraia, R. R. Gamache, J. Lamouroux, I. E. Gordon, L. S. Rothman.
     Total internal partition sums to support planetary remote sensing.
-    Icarus, Volume 215, Issue 1, September 2011, Pages 391–400
+    Icarus, Volume 215, Issue 1, September 2011, Pages 391â€“400
     http://dx.doi.org/10.1016/j.icarus.2011.06.004
 
             
@@ -5437,10 +5443,10 @@ def getHelp(arg=None):
 # I - isotopologue number
 def abundance(M, I):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         M: HITRAN molecule number
         I: HITRAN isotopologue number
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Abbundance: natural abundance
     ---
     DESCRIPTION:
@@ -5461,10 +5467,10 @@ def abundance(M, I):
 
 def molecularMass(M, I):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         M: HITRAN molecule number
         I: HITRAN isotopologue number
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         MolMass: molecular mass
     ---
     DESCRIPTION:
@@ -5485,9 +5491,9 @@ def molecularMass(M, I):
 
 def moleculeName(M):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         M: HITRAN molecule number
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         MolName: molecular name
     ---
     DESCRIPTION:
@@ -5508,10 +5514,10 @@ def moleculeName(M):
 
 def isotopologueName(M, I):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         M: HITRAN molecule number
         I: HITRAN isotopologue number
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         IsoMass: isotopologue mass
     ---
     DESCRIPTION:
@@ -5529,9 +5535,9 @@ def isotopologueName(M, I):
 
 def tableList():
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         none
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         TableList: a list of available tables
     ---
     DESCRIPTION:
@@ -5550,13 +5556,13 @@ def tableList():
 
 def describe(TableName):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName: name of the table to describe
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
-        Print information about table, including 
+        Print information about table, including
         parameter names, formats and wavenumber range.
     ---
     EXAMPLE OF USAGE:
@@ -5571,13 +5577,13 @@ def describe(TableName):
 
 def db_begin(db=None):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         db: database name (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
-        Open a database connection. A database is stored 
+        Open a database connection. A database is stored
         in a folder given in db input parameter.
         Default=data
     ---
@@ -5590,9 +5596,9 @@ def db_begin(db=None):
 
 def db_commit():
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         none
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
@@ -5617,12 +5623,12 @@ def fetch_by_ids(
     TableName, iso_id_list, numin, numax, ParameterGroups=[], Parameters=[]
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:   local table name to fetch in (required)
         iso_id_list: list of isotopologue id's    (required)
         numin:       lower wavenumber bound       (required)
         numax:       upper wavenumber bound       (required)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
@@ -5657,21 +5663,21 @@ def fetch_by_ids(
 
 def fetch(TableName, M, I, numin, numax, ParameterGroups=[], Parameters=[]):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         TableName:   local table name to fetch in (required)
         M:           HITRAN molecule number       (required)
         I:           HITRAN isotopologue number   (required)
         numin:       lower wavenumber bound       (required)
         numax:       upper wavenumber bound       (required)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         none
     ---
     DESCRIPTION:
         Download line-by-line data from HITRANonline server
         and save it to local table. The input parameters M and I
         are the HITRAN molecule and isotopologue numbers.
-        This function results in a table containing single 
-        isotopologue specie. To have multiple species in a 
+        This function results in a table containing single
+        isotopologue specie. To have multiple species in a
         single table use fetch_by_ids instead.
     ---
     EXAMPLE OF USAGE:
@@ -14470,7 +14476,7 @@ TIPS_GSI_HASH[(M, I)] = __FloatType__(0.0)
 TIPS_ISO_HASH[(M, I)] = float32([0.0])
 
 
-#  --------------- HСl 15: M = 15, I = 1 --------------------
+#  --------------- HÐ¡l 15: M = 15, I = 1 --------------------
 M = 15
 I = 1
 TIPS_GSI_HASH[(M, I)] = __FloatType__(8.0)
@@ -14599,7 +14605,7 @@ TIPS_ISO_HASH[(M, I)] = float32(
 )
 
 
-#  --------------- HСl 17: M = 15, I = 2 ---------------------
+#  --------------- HÐ¡l 17: M = 15, I = 2 ---------------------
 M = 15
 I = 2
 TIPS_GSI_HASH[(M, I)] = __FloatType__(8.0)
@@ -14728,14 +14734,14 @@ TIPS_ISO_HASH[(M, I)] = float32(
 )
 
 
-#  --------------- HСl 25: M = 15, I = 3 --------------------- not in TIPS-2011
+#  --------------- HÐ¡l 25: M = 15, I = 3 --------------------- not in TIPS-2011
 M = 15
 I = 3
 TIPS_GSI_HASH[(M, I)] = __FloatType__(0.0)
 TIPS_ISO_HASH[(M, I)] = float32([0.0])
 
 
-#  --------------- HСl 27: M = 15, I = 4 --------------------- not in TIPS-2011
+#  --------------- HÐ¡l 27: M = 15, I = 4 --------------------- not in TIPS-2011
 M = 15
 I = 4
 TIPS_GSI_HASH[(M, I)] = __FloatType__(0.0)
@@ -22855,7 +22861,7 @@ def BD_TIPS_2011_PYTHON(M, I, T):
 
 def partitionSum(M, I, T, step=None):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         M: HITRAN molecule number              (required)
         I: HITRAN isotopologue number          (required)
         T: temperature conditions              (required)
@@ -22871,7 +22877,7 @@ def partitionSum(M, I, T, step=None):
         Reference:
             A. L. Laraia, R. R. Gamache, J. Lamouroux, I. E. Gordon, L. S. Rothman.
             Total internal partition sums to support planetary remote sensing.
-            Icarus, Volume 215, Issue 1, September 2011, Pages 391–400
+            Icarus, Volume 215, Issue 1, September 2011, Pages 391â€“400
             http://dx.doi.org/10.1016/j.icarus.2011.06.004
 
         Output depends on a structure of input parameter T so that:
@@ -23207,7 +23213,7 @@ def pcqsdhc(sg0, GamD, Gam0, Gam2, Shift0, Shift2, anuVC, eta, sg):
     #      Reference:
     #      H. Tran, N.H. Ngo, J.-M. Hartmann.
     #      Efficient computation of some speed-dependent isolated line profiles.
-    #      JQSRT, Volume 129, November 2013, Pages 199–203
+    #      JQSRT, Volume 129, November 2013, Pages 199â€“203
     #      http://dx.doi.org/10.1016/j.jqsrt.2013.06.015
     #
     #      Input/Output Parameters of Routine (Arguments or Common)
@@ -23482,24 +23488,24 @@ def PROFILE_HT(sg0, GamD, Gam0, Gam2, Shift0, Shift2, anuVC, eta, sg):
     """
     #-------------------------------------------------
     #      "pCqSDHC": partially-Correlated quadratic-Speed-Dependent Hard-Collision
-    #      Subroutine to Compute the complex normalized spectral shape of an 
+    #      Subroutine to Compute the complex normalized spectral shape of an
     #      isolated line by the pCqSDHC model
     #
     #      References:
     #
     #      1) N.H. Ngo, D. Lisak, H. Tran, J.-M. Hartmann.
-    #         An isolated line-shape model to go beyond the Voigt profile in 
+    #         An isolated line-shape model to go beyond the Voigt profile in
     #         spectroscopic databases and radiative transfer codes.
-    #         JQSRT, Volume 129, November 2013, Pages 89–100
+    #         JQSRT, Volume 129, November 2013, Pages 89â€“100
     #         http://dx.doi.org/10.1016/j.jqsrt.2013.05.034
     #
     #      2) H. Tran, N.H. Ngo, J.-M. Hartmann.
     #         Efficient computation of some speed-dependent isolated line profiles.
-    #         JQSRT, Volume 129, November 2013, Pages 199–203
+    #         JQSRT, Volume 129, November 2013, Pages 199â€“203
     #         http://dx.doi.org/10.1016/j.jqsrt.2013.06.015
     #
     #      3) H. Tran, N.H. Ngo, J.-M. Hartmann.
-    #         Erratum to “Efficient computation of some speed-dependent isolated line profiles”.
+    #         Erratum to â€œEfficient computation of some speed-dependent isolated line profilesâ€�.
     #         JQSRT, Volume 134, February 2014, Pages 104
     #         http://dx.doi.org/10.1016/j.jqsrt.2013.10.015
     #
@@ -23509,12 +23515,12 @@ def PROFILE_HT(sg0, GamD, Gam0, Gam2, Shift0, Shift2, anuVC, eta, sg):
     #      amM1    : Molar mass of the absorber in g/mol(Input).
     #      sg0     : Unperturbed line position in cm-1 (Input).
     #      GamD    : Doppler HWHM in cm-1 (Input)
-    #      Gam0    : Speed-averaged line-width in cm-1 (Input).       
+    #      Gam0    : Speed-averaged line-width in cm-1 (Input).
     #      Gam2    : Speed dependence of the line-width in cm-1 (Input).
     #      anuVC   : Velocity-changing frequency in cm-1 (Input).
     #      eta     : Correlation parameter, No unit (Input).
     #      Shift0  : Speed-averaged line-shift in cm-1 (Input).
-    #      Shift2  : Speed dependence of the line-shift in cm-1 (Input)       
+    #      Shift2  : Speed dependence of the line-shift in cm-1 (Input)
     #      sg      : Current WaveNumber of the Computation in cm-1 (Input).
     #
     #      The function has two outputs:
@@ -23541,11 +23547,11 @@ def PROFILE_SDRAUTIAN(sg0, GamD, Gam0, Gam2, Shift0, Shift2, anuVC, sg):
     # Input parameters:
     #      sg0     : Unperturbed line position in cm-1 (Input).
     #      GamD    : Doppler HWHM in cm-1 (Input)
-    #      Gam0    : Speed-averaged line-width in cm-1 (Input).       
+    #      Gam0    : Speed-averaged line-width in cm-1 (Input).
     #      Gam2    : Speed dependence of the line-width in cm-1 (Input).
     #      anuVC   : Velocity-changing frequency in cm-1 (Input).
     #      Shift0  : Speed-averaged line-shift in cm-1 (Input).
-    #      Shift2  : Speed dependence of the line-shift in cm-1 (Input)       
+    #      Shift2  : Speed dependence of the line-shift in cm-1 (Input)
     #      sg      : Current WaveNumber of the Computation in cm-1 (Input).
     """
     return pcqsdhc(sg0, GamD, Gam0, Gam2, Shift0, Shift2, anuVC, cZero, sg)
@@ -23557,7 +23563,7 @@ def PROFILE_RAUTIAN(sg0, GamD, Gam0, Shift0, anuVC, eta, sg):
     # Input parameters:
     #      sg0     : Unperturbed line position in cm-1 (Input).
     #      GamD    : Doppler HWHM in cm-1 (Input)
-    #      Gam0    : Speed-averaged line-width in cm-1 (Input).       
+    #      Gam0    : Speed-averaged line-width in cm-1 (Input).
     #      anuVC   : Velocity-changing frequency in cm-1 (Input).
     #      Shift0  : Speed-averaged line-shift in cm-1 (Input).
     #      sg      : Current WaveNumber of the Computation in cm-1 (Input).
@@ -23571,10 +23577,10 @@ def PROFILE_SDVOIGT(sg0, GamD, Gam0, Gam2, Shift0, Shift2, sg):
     # Input parameters:
     #      sg0     : Unperturbed line position in cm-1 (Input).
     #      GamD    : Doppler HWHM in cm-1 (Input)
-    #      Gam0    : Speed-averaged line-width in cm-1 (Input).       
+    #      Gam0    : Speed-averaged line-width in cm-1 (Input).
     #      Gam2    : Speed dependence of the line-width in cm-1 (Input).
     #      Shift0  : Speed-averaged line-shift in cm-1 (Input).
-    #      Shift2  : Speed dependence of the line-shift in cm-1 (Input)       
+    #      Shift2  : Speed dependence of the line-shift in cm-1 (Input)
     #      sg      : Current WaveNumber of the Computation in cm-1 (Input).
     """
     return pcqsdhc(sg0, GamD, Gam0, Gam2, Shift0, Shift2, cZero, cZero, sg)
@@ -23586,7 +23592,7 @@ def PROFILE_VOIGT(sg0, GamD, Gam0, sg):
     # Input parameters:
     #   sg0: Unperturbed line position in cm-1 (Input).
     #   GamD: Doppler HWHM in cm-1 (Input)
-    #   Gam0: Speed-averaged line-width in cm-1 (Input).       
+    #   Gam0: Speed-averaged line-width in cm-1 (Input).
     #   sg: Current WaveNumber of the Computation in cm-1 (Input).
     """
     return PROFILE_HTP(sg0, GamD, Gam0, cZero, cZero, cZero, cZero, cZero, sg)
@@ -23597,7 +23603,7 @@ def PROFILE_LORENTZ(sg0, Gam0, sg):
     # Lorentz profile.
     # Input parameters:
     #   sg0: Unperturbed line position in cm-1 (Input).
-    #   Gam0: Speed-averaged line-width in cm-1 (Input).       
+    #   Gam0: Speed-averaged line-width in cm-1 (Input).
     #   sg: Current WaveNumber of the Computation in cm-1 (Input).
     """
     return Gam0 / (pi * (Gam0 ** 2 + (sg - sg0) ** 2))
@@ -23826,7 +23832,7 @@ def absorptionCoefficient_HT(
     EnvDependences=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Components:  list of tuples [(M,I,D)], where
                         M - HITRAN molecule number,
                         I - HITRAN isotopologue number,
@@ -23838,15 +23844,15 @@ def absorptionCoefficient_HT(
                         'T' - temperature in Kelvin
                         Default={'p':1.,'T':296.}
         WavenumberRange:  wavenumber range to consider.
-        WavenumberStep:   wavenumber step to consider. 
-        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1) 
+        WavenumberStep:   wavenumber step to consider.
+        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1)
         WavenumberWingHW:  relative wing for calculating a lineshape (in halfwidths)
         IntensityThreshold:  threshold for intensities
         GammaL:  specifies broadening parameter ('gamma_air' or 'gamma_self')
         HITRAN_units:  use cm2/molecule (True) or cm-1 (False) for absorption coefficient
         File:   write output to file (if specified)
         Format:  c-format of file output (accounts for significant digits in WavenumberStep)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid with respect to parameters WavenumberRange and WavenumberStep
         Xsect: absorption coefficient calculated on the grid
     ---
@@ -23855,7 +23861,7 @@ def absorptionCoefficient_HT(
         Absorption coefficient is calculated at arbitrary temperature and pressure.
         User can vary a wide range of parameters to control a process of calculation.
         The choise of these parameters depends on properties of a particular linelist.
-        Default values are a sort of guess which gives a decent precision (on average) 
+        Default values are a sort of guess which gives a decent precision (on average)
         for a reasonable amount of cpu time. To increase calculation accuracy,
         user should use a trial and error method.
     ---
@@ -24290,7 +24296,7 @@ def absorptionCoefficient_SDVoigt(
     EnvDependences=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Components:  list of tuples [(M,I,D)], where
                         M - HITRAN molecule number,
                         I - HITRAN isotopologue number,
@@ -24302,15 +24308,15 @@ def absorptionCoefficient_SDVoigt(
                         'T' - temperature in Kelvin
                         Default={'p':1.,'T':296.}
         WavenumberRange:  wavenumber range to consider.
-        WavenumberStep:   wavenumber step to consider. 
-        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1) 
+        WavenumberStep:   wavenumber step to consider.
+        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1)
         WavenumberWingHW:  relative wing for calculating a lineshape (in halfwidths)
         IntensityThreshold:  threshold for intensities
         GammaL:  specifies broadening parameter ('gamma_air' or 'gamma_self')
         HITRAN_units:  use cm2/molecule (True) or cm-1 (False) for absorption coefficient
         File:   write output to file (if specified)
         Format:  c-format of file output (accounts for significant digits in WavenumberStep)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid with respect to parameters WavenumberRange and WavenumberStep
         Xsect: absorption coefficient calculated on the grid
     ---
@@ -24319,7 +24325,7 @@ def absorptionCoefficient_SDVoigt(
         Absorption coefficient is calculated at arbitrary temperature and pressure.
         User can vary a wide range of parameters to control a process of calculation.
         The choise of these parameters depends on properties of a particular linelist.
-        Default values are a sort of guess which gives a decent precision (on average) 
+        Default values are a sort of guess which gives a decent precision (on average)
         for a reasonable amount of cpu time. To increase calculation accuracy,
         user should use a trial and error method.
     ---
@@ -24635,7 +24641,7 @@ def absorptionCoefficient_Voigt(
     EnvDependences=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Components:  list of tuples [(M,I,D)], where
                         M - HITRAN molecule number,
                         I - HITRAN isotopologue number,
@@ -24647,15 +24653,15 @@ def absorptionCoefficient_Voigt(
                         'T' - temperature in Kelvin
                         Default={'p':1.,'T':296.}
         WavenumberRange:  wavenumber range to consider.
-        WavenumberStep:   wavenumber step to consider. 
-        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1) 
+        WavenumberStep:   wavenumber step to consider.
+        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1)
         WavenumberWingHW:  relative wing for calculating a lineshape (in halfwidths)
         IntensityThreshold:  threshold for intensities
         GammaL:  specifies broadening parameter ('gamma_air' or 'gamma_self')
         HITRAN_units:  use cm2/molecule (True) or cm-1 (False) for absorption coefficient
         File:   write output to file (if specified)
         Format:  c-format of file output (accounts for significant digits in WavenumberStep)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid with respect to parameters WavenumberRange and WavenumberStep
         Xsect: absorption coefficient calculated on the grid
     ---
@@ -24664,7 +24670,7 @@ def absorptionCoefficient_Voigt(
         Absorption coefficient is calculated at arbitrary temperature and pressure.
         User can vary a wide range of parameters to control a process of calculation.
         The choise of these parameters depends on properties of a particular linelist.
-        Default values are a sort of guess which gives a decent precision (on average) 
+        Default values are a sort of guess which gives a decent precision (on average)
         for a reasonable amount of cpu time. To increase calculation accuracy,
         user should use a trial and error method.
     ---
@@ -24959,7 +24965,7 @@ def absorptionCoefficient_Lorentz(
     EnvDependences=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Components:  list of tuples [(M,I,D)], where
                         M - HITRAN molecule number,
                         I - HITRAN isotopologue number,
@@ -24971,15 +24977,15 @@ def absorptionCoefficient_Lorentz(
                         'T' - temperature in Kelvin
                         Default={'p':1.,'T':296.}
         WavenumberRange:  wavenumber range to consider.
-        WavenumberStep:   wavenumber step to consider. 
-        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1) 
+        WavenumberStep:   wavenumber step to consider.
+        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1)
         WavenumberWingHW:  relative wing for calculating a lineshape (in halfwidths)
         IntensityThreshold:  threshold for intensities
         GammaL:  specifies broadening parameter ('gamma_air' or 'gamma_self')
         HITRAN_units:  use cm2/molecule (True) or cm-1 (False) for absorption coefficient
         File:   write output to file (if specified)
         Format:  c-format of file output (accounts for significant digits in WavenumberStep)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid with respect to parameters WavenumberRange and WavenumberStep
         Xsect: absorption coefficient calculated on the grid
     ---
@@ -24988,7 +24994,7 @@ def absorptionCoefficient_Lorentz(
         Absorption coefficient is calculated at arbitrary temperature and pressure.
         User can vary a wide range of parameters to control a process of calculation.
         The choise of these parameters depends on properties of a particular linelist.
-        Default values are a sort of guess which gives a decent precision (on average) 
+        Default values are a sort of guess which gives a decent precision (on average)
         for a reasonable amount of cpu time. To increase calculation accuracy,
         user should use a trial and error method.
     ---
@@ -25285,7 +25291,7 @@ def absorptionCoefficient_Doppler(
     WavenumberGrid=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Components:  list of tuples [(M,I,D)], where
                         M - HITRAN molecule number,
                         I - HITRAN isotopologue number,
@@ -25297,15 +25303,15 @@ def absorptionCoefficient_Doppler(
                         'T' - temperature in Kelvin
                         Default={'p':1.,'T':296.}
         WavenumberRange:  wavenumber range to consider.
-        WavenumberStep:   wavenumber step to consider. 
-        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1) 
+        WavenumberStep:   wavenumber step to consider.
+        WavenumberWing:   absolute wing for calculating a lineshape (in cm-1)
         WavenumberWingHW:  relative wing for calculating a lineshape (in halfwidths)
         IntensityThreshold:  threshold for intensities
         GammaL:  specifies broadening parameter ('gamma_air' or 'gamma_self')
         HITRAN_units:  use cm2/molecule (True) or cm-1 (False) for absorption coefficient
         File:   write output to file (if specified)
         Format:  c-format of file output (accounts for significant digits in WavenumberStep)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid with respect to parameters OmegaRange and OmegaStep
         Xsect: absorption coefficient calculated on the grid
     ---
@@ -25314,7 +25320,7 @@ def absorptionCoefficient_Doppler(
         Absorption coefficient is calculated at arbitrary temperature and pressure.
         User can vary a wide range of parameters to control a process of calculation.
         The choise of these parameters depends on properties of a particular linelist.
-        Default values are a sort of guess which give a decent precision (on average) 
+        Default values are a sort of guess which give a decent precision (on average)
         for a reasonable amount of cpu time. To increase calculation accuracy,
         user should use a trial and error method.
     ---
@@ -25577,14 +25583,14 @@ def transmittanceSpectrum(
     Wavenumber=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Wavenumber/Omegas:   wavenumber grid                    (required)
         AbsorptionCoefficient:  absorption coefficient on grid  (required)
         Environment:  dictionary containing path length in cm.
                       Default={'l':100.}
-        File:         name of the output file                 (optional) 
+        File:         name of the output file                 (optional)
         Format: c format used in file output, default '%e %e' (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid
         Xsect:  transmittance spectrum calculated on the grid
     ---
@@ -25617,14 +25623,14 @@ def absorptionSpectrum(
     Wavenumber=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Wavenumber/Omegas:   wavenumber grid                    (required)
         AbsorptionCoefficient:  absorption coefficient on grid  (required)
         Environment:  dictionary containing path length in cm.
                       Default={'l':100.}
-        File:         name of the output file                 (optional) 
+        File:         name of the output file                 (optional)
         Format: c format used in file output, default '%e %e' (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid
         Xsect:  transmittance spectrum calculated on the grid
     ---
@@ -25657,15 +25663,15 @@ def radianceSpectrum(
     Wavenumber=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Wavenumber/Omegas:   wavenumber grid                   (required)
         AbsorptionCoefficient:  absorption coefficient on grid (required)
         Environment:  dictionary containing path length in cm.
                       and temperature in Kelvin.
                       Default={'l':100.,'T':296.}
-        File:         name of the output file                 (optional) 
+        File:         name of the output file                 (optional)
         Format: c format used in file output, default '%e %e' (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid
         Xsect:  radiance spectrum calculated on the grid
     ---
@@ -25673,9 +25679,9 @@ def radianceSpectrum(
         Calculate a radiance spectrum (in W/sr/cm^2/cm-1) based
         on previously calculated absorption coefficient.
         Radiance spectrum is calculated at an arbitrary
-        optical path length 'l' (1 m by default) and 
+        optical path length 'l' (1 m by default) and
         temperature 'T' (296 K by default). For obtaining a
-        physically meaningful result 'T' must be the same 
+        physically meaningful result 'T' must be the same
         as a temperature which was used in absorption coefficient.
     ---
     EXAMPLE OF USAGE:
@@ -25736,7 +25742,7 @@ def getStickXY(TableName):
 def read_hotw(filename):
     """
     Read cross-section file fetched from HITRAN-on-the-Web.
-    The format of the file line must be as follows: 
+    The format of the file line must be as follows:
       nu, coef
     Other lines are omitted.
     """
@@ -25771,8 +25777,8 @@ read_xsect = read_hotw
 def SLIT_RECTANGULAR(x, g):
     """
     Instrumental (slit) function.
-    B(x) = 1/γ , if |x| ≤ γ/2 & B(x) = 0, if |x| > γ/2,
-    where γ is a slit width or the instrumental resolution.
+    B(x) = 1/Î³ , if |x| â‰¤ Î³/2 & B(x) = 0, if |x| > Î³/2,
+    where Î³ is a slit width or the instrumental resolution.
     """
     index_inner = abs(x) <= g / 2
     index_outer = ~index_inner
@@ -25788,8 +25794,8 @@ def SLIT_RECTANGULAR(x, g):
 def SLIT_TRIANGULAR(x, g):
     """
     Instrumental (slit) function.
-    B(x) = 1/γ*(1-|x|/γ), if |x| ≤ γ & B(x) = 0, if |x| > γ,
-    where γ is the line width equal to the half base of the triangle.
+    B(x) = 1/Î³*(1-|x|/Î³), if |x| â‰¤ Î³ & B(x) = 0, if |x| > Î³,
+    where Î³ is the line width equal to the half base of the triangle.
     """
     index_inner = abs(x) <= g
     index_outer = ~index_inner
@@ -25805,8 +25811,8 @@ def SLIT_TRIANGULAR(x, g):
 def SLIT_GAUSSIAN(x, g):
     """
     Instrumental (slit) function.
-    B(x) = sqrt(ln(2)/pi)/γ*exp(-ln(2)*(x/γ)**2),
-    where γ/2 is a gaussian half-width at half-maximum.
+    B(x) = sqrt(ln(2)/pi)/Î³*exp(-ln(2)*(x/Î³)**2),
+    where Î³/2 is a gaussian half-width at half-maximum.
     """
     g /= 2
     return sqrt(log(2)) / (sqrt(pi) * g) * exp(-log(2) * (x / g) ** 2)
@@ -25818,8 +25824,8 @@ def SLIT_GAUSSIAN(x, g):
 def SLIT_DISPERSION(x, g):
     """
     Instrumental (slit) function.
-    B(x) = γ/pi/(x**2+γ**2),
-    where γ/2 is a lorentzian half-width at half-maximum.
+    B(x) = Î³/pi/(x**2+Î³**2),
+    where Î³/2 is a lorentzian half-width at half-maximum.
     """
     g /= 2
     return g / pi / (x ** 2 + g ** 2)
@@ -25857,8 +25863,8 @@ def SLIT_DIFFRACTION(x, g):
 def SLIT_MICHELSON(x, g):
     """
     Instrumental (slit) function.
-    B(x) = 2/γ*sin(2pi*x/γ)/(2pi*x/γ) if x!=0 else 1,
-    where 1/γ is the maximum optical path difference.
+    B(x) = 2/Î³*sin(2pi*x/Î³)/(2pi*x/Î³) if x!=0 else 1,
+    where 1/Î³ is the maximum optical path difference.
     """
     y = zeros(len(x))
     index_zero = x == 0
@@ -25882,23 +25888,23 @@ def convolveSpectrum(
     Wavenumber=None,
 ):
     """
-    INPUT PARAMETERS: 
+    INPUT PARAMETERS:
         Wavenumber/Omega:    wavenumber grid                     (required)
         CrossSection:  high-res cross section calculated on grid (required)
-        Resolution:    instrumental resolution γ                 (optional)
+        Resolution:    instrumental resolution Î³                 (optional)
         AF_wing:       instrumental function wing                (optional)
         SlitFunction:  instrumental function for low-res spectra calculation (optional)
-    OUTPUT PARAMETERS: 
+    OUTPUT PARAMETERS:
         Wavenum: wavenumber grid
         CrossSection: low-res cross section calculated on grid
         i1: lower index in Omega input
         i2: higher index in Omega input
         slit: slit function calculated over grid [-AF_wing; AF_wing]
-                with the step equal to instrumental resolution. 
+                with the step equal to instrumental resolution.
     ---
     DESCRIPTION:
-        Produce a simulation of experimental spectrum via the convolution 
-        of a “dry” spectrum with an instrumental function.
+        Produce a simulation of experimental spectrum via the convolution
+        of a â€œdryâ€� spectrum with an instrumental function.
         Instrumental function is provided as a parameter and
         is calculated in a grid with the width=AF_wing and step=Resolution.
     ---

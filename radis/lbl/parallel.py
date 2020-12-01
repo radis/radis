@@ -45,7 +45,6 @@ Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information.
 from __future__ import absolute_import, print_function, unicode_literals, division
 from radis.lbl import SpectrumFactory
 from radis.misc.basics import is_list, is_float
-from radis.misc.utils import FileNotFoundError
 from multiprocessing import Pool, cpu_count
 
 # from multiprocessing.pool import ThreadPool
@@ -86,7 +85,7 @@ def _distribute_noneq_spectrum(args):
 
 
 class ParallelFactory(SpectrumFactory):
-    """ A Parallel version of :class:`~radis.lbl.parallel.SpectrumFactory`. 
+    """A Parallel version of :class:`~radis.lbl.parallel.SpectrumFactory`.
     Use `Nprocs` as argument to change the number of processors to be used.
 
 
@@ -95,16 +94,16 @@ class ParallelFactory(SpectrumFactory):
 
     for Windows users:
 
-    On Windows the subprocesses will import (i.e. execute) the main module at start. 
+    On Windows the subprocesses will import (i.e. execute) the main module at start.
     You need to protect the main code like this to avoid creating subprocesses recursively::
 
         from radis.lbl import ParallelFactory
-        if __name__ == '__main__':    
+        if __name__ == '__main__':
             # your code
 
     More info: https://stackoverflow.com/questions/18204782/runtimeerror-on-windows-trying-python-multiprocessing
 
-    Parallel is only implemented on Python 3. 
+    Parallel is only implemented on Python 3.
 
     Parameters
     ----------
@@ -136,7 +135,7 @@ class ParallelFactory(SpectrumFactory):
     ----------------
 
     Nprocs: int
-        Number of processors to use. Default total number of threads. 
+        Number of processors to use. Default total number of threads.
 
     Tref: K
         Reference temperature for calculations (linestrength temperature
@@ -146,7 +145,7 @@ class ParallelFactory(SpectrumFactory):
         Full width over which to compute the broadening. Large values will create
         a huge performance drop (because convolutions are not vectorized).
         Also, the calculated spectral range is increased (by broadening_max_width/2
-        on each side) to take into account overlaps from out-of-range lines. 
+        on each side) to take into account overlaps from out-of-range lines.
         Default 10 cm-1.
 
     wstep: cm-1
@@ -154,7 +153,7 @@ class ParallelFactory(SpectrumFactory):
 
     cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
         discard linestrengths that are lower that this, to reduce calculation
-        times. 1e-27 is what is generally used to generate databases such as 
+        times. 1e-27 is what is generally used to generate databases such as
         CDSD. If 0, no cutoff. Default 1e-27.
 
     bplot: boolean
@@ -171,11 +170,11 @@ class ParallelFactory(SpectrumFactory):
         the multiplication of lines over all spectral range takes too much memory
         and slows the system down. Chuncksize let you change the default chunck
         size. Default 3e7
-        
+
     Examples
     --------
-    
-    Refer to the online :ref:`Examples <label_examples>`. 
+
+    Refer to the online :ref:`Examples <label_examples>`.
 
 
     See Also
@@ -204,7 +203,7 @@ class ParallelFactory(SpectrumFactory):
             )
 
     def eq_spectrum(self, Tgas, mole_fraction=None, path_length=None):
-        """ Generate a spectrum at equilibrium
+        """Generate a spectrum at equilibrium
 
         Parameters
         ----------
@@ -267,19 +266,11 @@ class ParallelFactory(SpectrumFactory):
             print(("Calculate {0} spectra on {1} procs".format(len(Tgas), Nprocs)))
         t1 = time()
 
-        try:
-            with Pool(Nprocs) as p:  # Python 3 only
-                spec_list = p.map(
-                    _distribute_eq_spectrum,
-                    list(zip(cast_factory, Tgas, mole_fraction, path_length)),
-                )
-        except AttributeError:
-            if sys.version_info[0] == 2:
-                raise NotImplementedError(
-                    "parallel is only implemented in Python 3. Time to switch!"
-                )
-            else:
-                raise
+        with Pool(Nprocs) as p:
+            spec_list = p.map(
+                _distribute_eq_spectrum,
+                list(zip(cast_factory, Tgas, mole_fraction, path_length)),
+            )
 
         if self.verbose:
             print(("{0} spectra calculated in {1:.1f}s".format(N, time() - t1)))
@@ -287,7 +278,7 @@ class ParallelFactory(SpectrumFactory):
         return spec_list
 
     def non_eq_spectrum(self, Tvib, Trot, mole_fraction=None, path_length=None):
-        """ Calculate emission spectrum in non-equilibrium case. Calculates
+        """Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
         Einstein coefficient.
 
@@ -378,9 +369,9 @@ class ParallelFactory(SpectrumFactory):
         return spec_list
 
     def _format_input(self, **kwargs):
-        """ Format the input of parallel calculation request. Returns lists of 
-        same lengths that can be parsed with zip(). User input can be lists, 
-        or floats instead of constant-values list """
+        """Format the input of parallel calculation request. Returns lists of
+        same lengths that can be parsed with zip(). User input can be lists,
+        or floats instead of constant-values list"""
         N = None  # list length if there are list involved
         kwout = {}
         for k, v in kwargs.items():

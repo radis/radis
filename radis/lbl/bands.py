@@ -76,7 +76,7 @@ import pandas as pd
 
 class BandFactory(BroadenFactory):
     """
-    
+
     See Also
     --------
 
@@ -106,7 +106,7 @@ class BandFactory(BroadenFactory):
         levels="all",
         drop_lines=True,
     ):
-        """ Return all vibrational bands as a list of spectra for a spectrum
+        """Return all vibrational bands as a list of spectra for a spectrum
         calculated under equilibrium.
 
         By default, drop_lines is set to True so line_survey cannot be done on
@@ -156,7 +156,7 @@ class BandFactory(BroadenFactory):
 
         Process:
 
-        - Calculate line strenghts correcting the CDSD reference one. 
+        - Calculate line strenghts correcting the CDSD reference one.
         - Then call the main routine that sums over all lines
 
 
@@ -415,7 +415,7 @@ class BandFactory(BroadenFactory):
         levels="all",
         return_lines=None,
     ):
-        """ Calculate vibrational bands in non-equilibrium case. Calculates
+        """Calculate vibrational bands in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
         Einstein coefficient.
 
@@ -606,7 +606,7 @@ class BandFactory(BroadenFactory):
                 emisscoeff_v_bands,
             ) = self._calc_broadening_noneq_bands()
             #    :         :            :
-            #   cm-1    1/(#.cm-2)   mW/sr/cm_1
+            #   cm-1    1/(#.cm-2)   mW/sr/cm-1
 
             #            # ... add semi-continuum (optional)
             #            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
@@ -666,7 +666,7 @@ class BandFactory(BroadenFactory):
                 # (#/cm3)
 
                 abscoeff = abscoeff_v * density  # cm-1
-                emisscoeff = emisscoeff_v * density  # m/sr/cm3/cm_1
+                emisscoeff = emisscoeff_v * density  # m/sr/cm3/cm-1
 
                 # ==============================================================================
                 # Warning
@@ -693,15 +693,15 @@ class BandFactory(BroadenFactory):
                     radiance_noslit[b] = emisscoeff[b] * path_length
                 else:
                     # Note that for k -> 0,
-                    radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm_1)
+                    radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
 
-                # Convert `radiance_noslit` from (mW/sr/cm2/cm_1) to (mW/sr/cm2/nm)
+                # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
                 radiance_noslit = convert_rad2nm(
-                    radiance_noslit, wavenumber, "mW/sr/cm2/cm_1", "mW/sr/cm2/nm"
+                    radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
                 )
-                # Convert 'emisscoeff' from (mW/sr/cm3/cm_1) to (mW/sr/cm3/nm)
+                # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
                 emisscoeff = convert_emi2nm(
-                    emisscoeff, wavenumber, "mW/sr/cm3/cm_1", "mW/sr/cm3/nm"
+                    emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
                 )
                 # Note: emissivity not defined under non equilibrium
 
@@ -781,17 +781,17 @@ class BandFactory(BroadenFactory):
             raise
 
     def get_bands_weight(self, showfirst=None, sortby="Ei"):
-        """ Show all bands by emission weight (fraction of total emission integral)
+        """Show all bands by emission weight (fraction of total emission integral)
 
         Replace sortby with 'S' or 'int' to get different weights
 
         Note: this function works with .df1 (scaled lines) instead of .df0
         (reference lines) as we may want the weight for different temperatures.
         .df1 is updated after *eq_spectrum or non_eq_spectrum is called
-        
+
         See Also
         --------
-        
+
         :py:meth:`~radis.lbl.bands.BandFactory.get_bands`
         """
 
@@ -853,7 +853,7 @@ class BandFactory(BroadenFactory):
     # %% Line database functions: band specific
 
     def _add_bands(self):
-        """ Add a 'band' attribute for each line to allow parsing the lines by
+        """Add a 'band' attribute for each line to allow parsing the lines by
         band with
         >>> df0.groupby('band')
 
@@ -880,7 +880,7 @@ class BandFactory(BroadenFactory):
     # Broadening functions: band specific
 
     def _broaden_lines_bands(self, df):
-        """ Divide over chuncks not to process to many lines in memory at the
+        """Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
         Band specific version: returns a list of all broadened vibrational
@@ -904,12 +904,10 @@ class BandFactory(BroadenFactory):
 
         abscoeff_bands = {}
         pb = ProgressBar(len(gb), active=self.verbose)
-        chunksize = (
-            self.misc.chunksize
-        )  # used for DLM keyword in 0.9.20 until proper implementation is done
+        optimization = self.params.optimization
 
         for i, (band, dg) in enumerate(gb):
-            if chunksize == "DLM":
+            if optimization in ("simple", "min-RMS"):
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
                 (wavenumber, absorption) = self._apply_lineshape_DLM(
                     dg.S.values,
@@ -919,6 +917,7 @@ class BandFactory(BroadenFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    optimization,
                 )
             else:
                 line_profile = self._calc_lineshape(dg)
@@ -932,7 +931,7 @@ class BandFactory(BroadenFactory):
         return wavenumber, abscoeff_bands
 
     def _broaden_lines_noneq_bands(self, df):
-        """ Divide over chuncks not to process to many lines in memory at the
+        """Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
         Band specific version: returns a list of all broadened vibrational
@@ -956,13 +955,11 @@ class BandFactory(BroadenFactory):
         emisscoeff_bands = {}
 
         gb = df.groupby("band")
-        chunksize = (
-            self.misc.chunksize
-        )  # used for DLM keyword in 0.9.20 until proper implementation is done
+        optimization = self.params.optimization
 
         pb = ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
-            if chunksize == "DLM":
+            if optimization in ("simple", "min-RMS"):
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
                 (wavenumber, absorption) = self._apply_lineshape_DLM(
                     dg.S.values,
@@ -972,6 +969,7 @@ class BandFactory(BroadenFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    optimization,
                 )
                 (_, emission) = self._apply_lineshape_DLM(
                     dg.Ei.values,
@@ -981,6 +979,7 @@ class BandFactory(BroadenFactory):
                     wG,
                     wL_dat,
                     wG_dat,
+                    optimization,
                 )
 
             else:
@@ -1158,9 +1157,9 @@ def docstring_parameter(*sub):
 
 
 def add_bands(df, dbformat, lvlformat, verbose=True):
-    """ Assign all transitions to a vibrational band:
+    """Assign all transitions to a vibrational band:
 
-    Add 'band', 'viblvl_l' and 'viblvl_u' attributes for each line to allow 
+    Add 'band', 'viblvl_l' and 'viblvl_u' attributes for each line to allow
     parsing the lines by band with::
 
         df0.groupby('band')
@@ -1175,7 +1174,7 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         format of Line database
 
     lvlformat: 'cdsd`, 'hitemp'
-        format of 
+        format of
 
     Returns
     -------

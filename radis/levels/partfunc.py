@@ -59,7 +59,6 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 import sys
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp
 import radis
@@ -76,11 +75,10 @@ from radis.io.hitran import (
 from radis.misc.basics import all_in
 from radis.misc.debug import printdbg
 from radis.misc.cache_files import load_h5_cache_file
-from radis.misc.cache_files import filter_metadata, save_to_hdf
-from radis.misc.warning import OutOfBoundError
+from radis.misc.cache_files import save_to_hdf
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from warnings import warn
-from os.path import exists, join
+from os.path import exists
 from radis.misc.progress_bar import ProgressBar
 from six import string_types
 from six.moves import range
@@ -88,7 +86,7 @@ from six.moves import zip
 
 
 class RovibPartitionFunction(object):
-    """ General class from which all partition function calculators derive
+    """General class from which all partition function calculators derive
 
     Parameters
     ----------
@@ -131,7 +129,7 @@ class RovibPartitionFunction(object):
         #        except KeyError:
         #            raise KeyError('Isotope {0} not defined for molecule {1}'.format(int(isotope), molecule))
 
-        ElecState = electronic_state  # type: ElectronicState
+        ElecState = electronic_state
 
         try:
             ElecState.Erovib
@@ -160,7 +158,7 @@ class RovibPartitionFunction(object):
 
 class RovibParFuncTabulator(RovibPartitionFunction):
     def at(self, T, **kwargs):
-        """ Get partition function at temperature T under equilibrium conditions,
+        """Get partition function at temperature T under equilibrium conditions,
         from tabulated data
 
         Parameters
@@ -168,21 +166,21 @@ class RovibParFuncTabulator(RovibPartitionFunction):
 
         T: float
             equilibrium temperature
-            
+
         Returns
         -------
 
         Q: float
             partition function interpolated  at temperature T
-            
+
         Examples
         --------
-        
+
         See :ref:`online examples <label_examples_partition_functions>`
 
         See Also
         --------
-        
+
         :py:class:`~radis.levels.partfunc.PartFuncHAPI`
         """
 
@@ -218,15 +216,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
     electronic_state: :class:`~radis.db.classes.ElectronicState`
         an :class:`~radis.db.classes.ElectronicState` object, which is
-        defined in RADIS molecule database and contains spectroscopic data. 
-        Energies are calculated with the :py:meth:`~radis.db.classes.ElectronicState.Erovib` 
+        defined in RADIS molecule database and contains spectroscopic data.
+        Energies are calculated with the :py:meth:`~radis.db.classes.ElectronicState.Erovib`
         method.
 
     See Also
     --------
-    
+
     :py:class:`~radis.levels.partfunc.PartFunc_Dunham`,
-    :py:meth:`~radis.db.classes.ElectronicState.Erovib` 
+    :py:meth:`~radis.db.classes.ElectronicState.Erovib`
     """
 
     def __init__(self, electronic_state):
@@ -234,7 +232,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         super(RovibParFuncCalculator, self).__init__(electronic_state=electronic_state)
 
     def at(self, T, update_populations=False):
-        """ Get partition function at temperature T under
+        """Get partition function at temperature T under
         equilibrium conditions
 
         Parameters
@@ -258,7 +256,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
         Examples
         --------
-        
+
         See :ref:`online examples <label_examples_partition_functions>`
 
         See Also
@@ -310,7 +308,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         returnQvibQrot=False,
         update_populations=False,
     ):
-        """ Calculate Partition Function under non equilibrium
+        """Calculate Partition Function under non equilibrium
         (Tvib, Trot), with boltzmann/treanor distributions and
         overpopulations as specified by the user
 
@@ -351,10 +349,10 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             and table of rotational partition functions for each vibrational
             state (note that all Qrot are not necessarily the same
             for all vibrational levels)
-            
+
         Examples
         --------
-        
+
         See :ref:`online examples <label_examples_partition_functions>`
 
         See Also
@@ -545,7 +543,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         returnQvibQrot=False,
         update_populations=False,
     ):
-        """ Calculate Partition Function under non equilibrium
+        """Calculate Partition Function under non equilibrium
         ((Tvib1, Tvib2, Tvib3), Trot), with boltzmann/treanor
         distributions and overpopulations as specified by the user
 
@@ -687,7 +685,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             return Q
 
     def reset_populations(self):
-        """ Discard computed populations of all energy levels
+        """Discard computed populations of all energy levels
 
         To call on every RovibrationalPartitionFunction object before each new
         spectrum calculation
@@ -700,7 +698,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
     # %% Methods to get populations of all states
 
     def _get_vib_populations(self):
-        """ Return vibrational populations for all levels featured in given
+        """Return vibrational populations for all levels featured in given
         line set.
 
         """
@@ -710,7 +708,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         return df.drop_duplicates("viblvl")
 
     def _get_rovib_populations(self):
-        """ Return rovibrational populations for all levels featured
+        """Return rovibrational populations for all levels featured
         in the energy levels list df
 
         Notes
@@ -732,7 +730,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
 
 class PartFuncHAPI(RovibParFuncTabulator):
-    """ Return partition function using interpolation of tabulated values
+    """Return partition function using interpolation of tabulated values
 
     Parameters
     ----------
@@ -749,15 +747,15 @@ class PartFuncHAPI(RovibParFuncTabulator):
 
     Examples
     --------
-            
+
     ::
 
         from radis.levels.partfunc import PartFuncHAPI
         from radis.io.hitran import get_molecule_identifier
-        
+
         M = get_molecule_identifier('N2O')
         iso=1
-        
+
         Q = PartFuncHAPI(M, iso)
         print(Q.at(T=1500))
 
@@ -801,8 +799,8 @@ class PartFuncHAPI(RovibParFuncTabulator):
         self.I = I
 
     def import_from_file(self, path):
-        """ Import hapi.py from a given file (in case user wants to specify
-        a different HAPI version than the one embedded in RADIS) """
+        """Import hapi.py from a given file (in case user wants to specify
+        a different HAPI version than the one embedded in RADIS)"""
         if sys.version == 2:
             import imp
 
@@ -816,7 +814,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
         return hapi.partitionSum
 
     def _at(self, T):
-        """ Get partition function of species M, isotope I at temperature T
+        """Get partition function of species M, isotope I at temperature T
 
         Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         """
@@ -827,11 +825,11 @@ class PartFuncHAPI(RovibParFuncTabulator):
 
 
 def _get_cachefile_name(ElecState):
-    """ Get name of cache file for calculated rovibrational energies 
-    
+    """Get name of cache file for calculated rovibrational energies
+
     Basically store it alongside the jsonfile of the ElecState with:
-        
-        [jsonfile]_[molecule_name]_[isotope]_[electronic state]_levels.h5 
+
+        [jsonfile]_[molecule_name]_[isotope]_[electronic state]_levels.h5
     """
     molecule = ElecState.name
     isotope = ElecState.iso
@@ -844,13 +842,13 @@ def _get_cachefile_name(ElecState):
 
 
 class PartFunc_Dunham(RovibParFuncCalculator):
-    """ Calculate partition functions from spectroscopic constants, if
-    molecule data is available in RADIS. If using the 
-    :ref:`default spectroscopic constants <label_db_spectroscopic_constants>`, 
-    make sure you know what reference data is being used in RADIS! 
-    Energies are calculated with the :py:meth:`~radis.db.classes.ElectronicState.Erovib` 
+    """Calculate partition functions from spectroscopic constants, if
+    molecule data is available in RADIS. If using the
+    :ref:`default spectroscopic constants <label_db_spectroscopic_constants>`,
+    make sure you know what reference data is being used in RADIS!
+    Energies are calculated with the :py:meth:`~radis.db.classes.ElectronicState.Erovib`
     method of :py:data:`~radis.db.molecules.Molecules`
-    
+
     Parameters
     ----------
 
@@ -881,26 +879,26 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
     Other Parameters
     ----------------
-    
+
     calc_Evib_per_mode: boolean
         if ``True``, calculate energies of each vibration mode (so far only
         implemented for CO2 with Evib1, Evib2, Evib3 but shall be generalized
         to all molecules)
-    
+
     calc_Evib_harmonic_anharmonic: boolean
-        if ``True``, calculate and store separately harmonic and anharmonic parts 
+        if ``True``, calculate and store separately harmonic and anharmonic parts
         of the vibrational energy. This is needed to calculate Treanor distributions
         ( ~ Evib_harmonic / Tvib  - Evib_anharmonic / Trot )
 
     group_energy_modes_in_2T_model: dict
-        (experimental in neq 0.9.21) for polyatomic molecules (> 1 vibration mode), 
-        how to regroup energy modes when working with 2T models. For instance, 
+        (experimental in neq 0.9.21) for polyatomic molecules (> 1 vibration mode),
+        how to regroup energy modes when working with 2T models. For instance,
         for CO2, (Evib, Erot) could as well as defined with::
-            
+
             ['Evib1', 'Evib2', 'Evib3'],['Erot']
             or
             ['Evib3'],['Evib1', 'Evib2', 'Erot']
-            
+
         depending on which levels are supposed to interact the most
 
     Notes
@@ -911,12 +909,12 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     So far, RADIS energy levels are only calculated from Dunham's expansion.
     Above a certain vibrational level a Morse Potential may be used. See how
     the molecule is defined in :mod:`~radis.db.molecules`
-    
+
     See Also
     --------
 
-    :mod:`~radis.db.molecules`, 
-    :py:meth:`~radis.db.classes.ElectronicState.Erovib`, 
+    :mod:`~radis.db.molecules`,
+    :py:meth:`~radis.db.classes.ElectronicState.Erovib`,
     :py:data:`~radis.db.molecules.Molecules`
 
     """
@@ -1105,7 +1103,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     )
 
     def build_energy_levels_class1(self):  # , ZPE=0):
-        """ in the case where only Ediss is given. Deal with vmax, Jmax later
+        """in the case where only Ediss is given. Deal with vmax, Jmax later
 
         Applies to molecules in :data:`~radis.io.hitran.HITRAN_CLASS1`
 
@@ -1243,7 +1241,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         calc_Evib_harmonic_anharmonic=False,
         group_energy_modes_in_2T_model=(["Evib1", "Evib2", "Evib2"], ["Erot"]),
     ):
-        """ in the case where only Ediss is given. Deal with vmax, Jmax later
+        """in the case where only Ediss is given. Deal with vmax, Jmax later
 
         :data:`~radis.io.hitran.HITRAN_CLASS5` = ['CO2']
         # Linear triatomic with large Fermi resonance
@@ -1260,18 +1258,18 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculates Evib_h and Evib_a, harmonic and non harmonic
             components, to be used in Treanor distributions
-    
+
         group_energy_modes_in_2T_model: dict
-            (experimental in neq 0.9.21) for polyatomic molecules (> 1 vibration mode), 
-            how to regroup energy modes when working with 2T models. For instance, 
+            (experimental in neq 0.9.21) for polyatomic molecules (> 1 vibration mode),
+            how to regroup energy modes when working with 2T models. For instance,
             for CO2, (Evib, Erot) could as well as defined with::
-                
+
                 ['Evib1', 'Evib2', 'Evib3'],['Erot']
-            
+
             or::
-                
+
                 ['Evib3'],['Evib1', 'Evib2', 'Erot']
-                
+
             depending on which levels are supposed to interact the most
 
         Returns
@@ -1569,7 +1567,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         # %%
         def is_symmetric(v1, v2, l2, v3):
-            """ Returns whether a CO2 ``v1v2'l2'v3`` vibrational level is symmetric
+            """Returns whether a CO2 ``v1v2'l2'v3`` vibrational level is symmetric
 
             Notes
             -----
@@ -1628,8 +1626,8 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             return sym == 1
 
         def is_even(J):
-            """ Return whether J is an even or odd rotational
-            level """
+            """Return whether J is an even or odd rotational
+            level"""
             #            return not bool(J % 2)   # works for float only
             return 1 - np.mod(J, 2)
 
@@ -1681,7 +1679,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         self.df = df
 
     def gs(self, ElecState):  # , viblvl):
-        """ Get state specific rotational degeneracy
+        """Get state specific rotational degeneracy
 
         Parameters
         ----------
@@ -1701,7 +1699,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         return gs(M, I)
 
     def gi(self, ElecState):
-        """ Get state independant rotational degeneracy. Typically depends on the
+        """Get state independant rotational degeneracy. Typically depends on the
         isotope
 
         See Also

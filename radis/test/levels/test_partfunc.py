@@ -34,10 +34,8 @@ import os
 from radis import SpectrumFactory
 from radis.test.utils import setup_test_line_databases
 from radis.test.utils import getTestFile
-import time
 from os.path import basename, exists, getmtime
 import pytest
-import shutil
 
 fig_prefix = basename(__file__) + ": "
 
@@ -67,7 +65,7 @@ def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs
 
 @pytest.mark.fast
 def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
-    """ Test that cache file process works correctly, using CO as an example.
+    """Test that cache file process works correctly, using CO as an example.
 
     Expected behavior:
 
@@ -168,8 +166,8 @@ def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
 @pytest.mark.needs_config_file
 @pytest.mark.fast
 def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
-    """ Test 1: compare calculated PartFunc to the tabulated one 
-    
+    """Test 1: compare calculated PartFunc to the tabulated one
+
     Version where we use the reduced set of CO2 levels (< 3000 cm-1)"""
     from radis.misc.config import getDatabankEntries
 
@@ -225,7 +223,7 @@ def test_calculatedQ_match_HAPI_CO(
 
     #    if plot: db.plot_states()
 
-    hapi = PartFuncHAPI(M=5, I=1,)  # CO  # isotope
+    hapi = PartFuncHAPI(M=5, I=1)  # CO  # isotope
 
     us = []
     hap = []
@@ -258,7 +256,7 @@ def test_calculatedQ_match_HAPI_CO(
 
 @pytest.mark.fast
 def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
-    """ Tested that Q ab_initio (Dunham) match HAPI for different molecules 
+    """Tested that Q ab_initio (Dunham) match HAPI for different molecules
     and isotopes"""
 
     # molecule, isotope, temperature, absolute tolerance
@@ -318,8 +316,8 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 @pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
-    """ Test partition functions calculated with CDSD energy levels against 
-    hardcoded values """
+    """Test partition functions calculated with CDSD energy levels against
+    hardcoded values"""
 
     from radis.misc.config import getDatabankEntries
 
@@ -328,7 +326,10 @@ def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
     energies = getDatabankEntries("CDSD-HITEMP-PC")["levels"]
     levelsfmt = getDatabankEntries("CDSD-HITEMP-PC")["levelsfmt"]
     Qf = PartFuncCO2_CDSDcalc(
-        energy_levels=energies[iso], isotope=iso, use_cached=True, levelsfmt=levelsfmt,
+        energy_levels=energies[iso],
+        isotope=iso,
+        use_cached=True,
+        levelsfmt=levelsfmt,
     )
     assert np.isclose(Qf.at(300), 291.0447781984652, rtol=0.001)
     assert np.isclose(Qf.at(3000), 114689.88454184022, rtol=0.001)
@@ -344,13 +345,24 @@ def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
         printm("Tested Q_CDSD values are correct : OK")
 
 
-@pytest.mark.needs_config_file
 @pytest.mark.fast
 def test_reduced_CDSD_calc_noneq(verbose=True, warnings=True, *args, **kwargs):
-    """ Compare calculated partition function at equilibrium and nonequilibrium
-    using the CDSD-format """
+    """Compare calculated partition function at equilibrium and nonequilibrium
+    using the CDSD-format
+
+    Examples
+    --------
+
+        assert Qfc.at(300) != Qfc.at_noneq_3Tvib((300, 300, 300), 300)
+
+    After redefining Evib so that Evib + Erot = E:
+
+        assert np.isclose(Qfc.at(300), Qfc.at_noneq(300, 300), rtol=0.001)
+        assert np.isclose(Qfc.at(300), Qfc.at_noneq_3Tvib((300, 300, 300), 300), rtol=0.001)
+    """
 
     from radis.misc.config import getDatabankEntries
+    from radis.test.utils import define_Evib_as_sum_of_Evibi
 
     iso = 1
     database = "HITEMP-CO2-HAMIL-TEST"
@@ -365,28 +377,33 @@ def test_reduced_CDSD_calc_noneq(verbose=True, warnings=True, *args, **kwargs):
         use_cached=True,
         verbose=verbose,
     )
-    assert np.isclose(Qfc.at(300), Qfc.at_noneq_3Tvib((300, 300, 300), 300), rtol=0.001)
 
-    if verbose:
-        printm(
-            "Tested CDSD Q_calc at equilibrium and nonequilibrium give same output: OK"
-        )
+    # Note that partition functions are not equal because some of the energy
+    # goes in coupling terms in the Hamiltonian formulation
+    assert Qfc.at(300) != Qfc.at_noneq_3Tvib((300, 300, 300), 300)
+
+    # Below we redefine Evib so that Evib + Erot = E
+    define_Evib_as_sum_of_Evibi(Qfc.df)
+
+    # New Test:
+    assert np.isclose(Qfc.at(300), Qfc.at_noneq(300, 300), rtol=0.001)
+    assert np.isclose(Qfc.at(300), Qfc.at_noneq_3Tvib((300, 300, 300), 300), rtol=0.001)
 
 
 # @pytest.mark.fast   # (very fast only once the cached database has been generated, else decently fast)
 def test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
     verbose=True, warnings=True, *args, **kwargs
 ):
-    """     Calculate vibrational and rotational partition functions:
-        
+    """Calculate vibrational and rotational partition functions:
+
     - with Dunham expansions. Evib, Erot = (Evib3, Evib1+Evib2+Erot)
     - under nonequilibrium
-    
+
     Calculate total rovibrational partition function, and compare
 
     Test if partition function can be recomputed correctly from vibrational
     populations and rotational partition function (note that we are in a coupled
-    case so partition function is not simply the product of Qvib, Qrot) 
+    case so partition function is not simply the product of Qvib, Qrot)
     """
 
     iso = 1
@@ -427,16 +444,16 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
 def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
     verbose=True, warnings=True, *args, **kwargs
 ):
-    """     Calculate vibrational and rotational partition functions:
-        
+    """Calculate vibrational and rotational partition functions:
+
     - with Dunham expansions. Evib, Erot = (Evib1+Evib2+Evib3, Erot)
     - under nonequilibrium
-    
+
     Calculate total rovibrational partition function, and compare
 
     Test if partition function can be recomputed correctly from vibrational
     populations and rotational partition function (note that we are in a coupled
-    case so partition function is not simply the product of Qvib, Qrot) 
+    case so partition function is not simply the product of Qvib, Qrot)
     """
 
     iso = 1
@@ -536,17 +553,17 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 def test_recompute_Q_from_QvibQrot_CDSD_PC(
     verbose=True, warnings=True, *args, **kwargs
 ):
-    """ 
+    """
     Calculate vibrational and rotational partition functions:
-        
-    - in CDSD with (p,c) convention for vibrational levels 
+
+    - in CDSD with (p,c) convention for vibrational levels
     - under nonequilibrium
-    
+
     Recompute total partition function, and compare
 
     Test if partition function can be recomputed correctly from vibrational
     populations and rotational partition function (note that we are in a coupled
-    case so partition function is not simply the product of Qvib, Qrot) 
+    case so partition function is not simply the product of Qvib, Qrot)
     """
 
     from radis.misc.config import getDatabankEntries
@@ -588,9 +605,9 @@ def test_recompute_Q_from_QvibQrot_CDSD_PC(
 
 
 def test_Q_1Tvib_vs_Q_3Tvib(T=1500, verbose=True, warnings=True, *args, **kwargs):
-    """ Test if partition function calculated in 1-Tvib mode returns the same
+    """Test if partition function calculated in 1-Tvib mode returns the same
     result as partition function calculated in 3-Tvib mode
-     """
+    """
 
     b = True
 
@@ -628,8 +645,8 @@ def test_Q_1Tvib_vs_Q_3Tvib(T=1500, verbose=True, warnings=True, *args, **kwargs
 def test_Morse_Potential_effect_CO(
     T=3000, rtol=1e-4, verbose=True, warnings=True, *args, **kwargs
 ):
-    """ Quantify effect of calculating upper levels near dissociation limit
-    with Morse Potential 
+    """Quantify effect of calculating upper levels near dissociation limit
+    with Morse Potential
 
     Returns True if difference is less than rtol
     """
@@ -658,45 +675,53 @@ def test_Morse_Potential_effect_CO(
     assert abs(Q_nomorse - Q_morse) / Q_morse < rtol
 
 
-# from warnings import catch_warnings, filterwarnings
-def run_example():
-    setup_test_line_databases(
-        verbose=True
-    )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
-
-    sf = SpectrumFactory(
-        wavenum_min=2283.7,
-        wavenum_max=2285.1,
-        wstep=0.001,
-        cutoff=1e-30,
-        path_length=0.1,
-        mole_fraction=400e-6,
-        isotope=[1],
-        db_use_cached=True,  # important to test CAche file here
-        verbose=2,
-    )
-    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITEMP-CO2-HAMIL-TEST")
-
-    # Now generate vibrational energies for a 2-T model
-    # ... Note that this is arbitrary. Lookup Pannier & Dubuet 2020 for more.
-    levels = sf.parsum_calc["CO2"][1]["X"].df
-    levels["Evib"] = levels.Evib1 + levels.Evib2 + levels.Evib3
-
-    # Calculate populations using the non-equilibrium module:
-    # This will crash the first time because the Levels Database is just a fragment and does not include all levels.
-    try:
-        sf.non_eq_spectrum(300, 300)
-    except AssertionError:  # expected
-        sf.df0.dropna(inplace=True)
-
-    getTestFile("HITEMP-CO2-HAMIL-TEST")
-
-    s = sf.non_eq_spectrum(300, 300)
-    s.plot()
-
-
 def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
+    """Test that we regenerate levels file automatically if manually changed
+
+    see https://github.com/radis/radis/issues/90
+
+    """
+
+    # from warnings import catch_warnings, filterwarnings
+    def run_example():
+
+        from radis.test.utils import (
+            discard_lines_with_na_levels,
+            define_Evib_as_sum_of_Evibi,
+        )
+
+        setup_test_line_databases(
+            verbose=True
+        )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
+
+        sf = SpectrumFactory(
+            wavenum_min=2283.7,
+            wavenum_max=2285.1,
+            wstep=0.001,
+            cutoff=1e-30,
+            path_length=0.1,
+            mole_fraction=400e-6,
+            isotope=[1],
+            db_use_cached=True,  # important to test CAche file here
+            verbose=2,
+        )
+        sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+        sf.load_databank("HITEMP-CO2-HAMIL-TEST")
+
+        # Now generate vibrational energies for a 2-T model
+        levels = sf.parsum_calc["CO2"][1]["X"].df
+        define_Evib_as_sum_of_Evibi(levels)
+        discard_lines_with_na_levels(sf)
+
+        # Calculate populations using the non-equilibrium module:
+        # This will crash the first time because the Levels Database is just a fragment and does not include all levels.
+        try:
+            sf.non_eq_spectrum(300, 300)
+        except AssertionError:  # expected
+            sf.df0.dropna(inplace=True)
+
+        s = sf.non_eq_spectrum(300, 300)
+        s.plot()
 
     # run calculation (SpectrumFactory)
     run_example()

@@ -49,7 +49,7 @@ import time
 
 
 class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
-    """ Return partition function of CO2 using a spline interpolation of
+    """Return partition function of CO2 using a spline interpolation of
     tabulated values
 
     Parameters
@@ -65,13 +65,13 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
 
     See Also
     --------
-    
+
     :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
 
     """
 
     def __init__(self, isotope, database):
-        """ Get partition function for one isotope only
+        """Get partition function for one isotope only
 
         (note that this forces to reload the file once per isotope,
         but at least we have a clean layout with one object
@@ -111,7 +111,7 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
         return (self.Tmin * 0.95 <= T) and (self.Tmax * 1.05 >= T)
 
     def _at(self, T):
-        """ Get partition function at temperature T
+        """Get partition function at temperature T
 
         Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         """
@@ -129,12 +129,12 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
 
 
 class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
-    """ Calculate Partition Function from energy levels (and maybe export
-    a tabulated database). 
-    
+    """Calculate Partition Function from energy levels (and maybe export
+    a tabulated database).
+
     warning::
         ZPE (zero point energy) must be the same in the Line Database and the
-        Energy levels database. See the 
+        Energy levels database. See the
         :ref:`Configuration file <label_lbl_config_file>`.
 
     Parameters
@@ -146,21 +146,21 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
     isotope: int
         which isotope we're dealing with. Default ``1``. In the current implementation
         only isotope 1 and 2 are defined.
-        
+
     levelsfmt: ``'cdsd-p'``, ``'cdsd-pc'``, ``'cdsd-pcN'``, ``'cdsd-hamil'``, or ``None``
         the format of the Energy Database, and in particular how ``Evib`` and ``Erot``
         have been calculated. A vibrational level in the CDSD (p,c,J,N) nomenclature
-        can be defined for levels that share a same (p), (p,c) or (p,c,N), where 
-        ``p`` is the polyad number, ``c`` is the Wang symmetry number, and ``N`` 
+        can be defined for levels that share a same (p), (p,c) or (p,c,N), where
+        ``p`` is the polyad number, ``c`` is the Wang symmetry number, and ``N``
         is the ranking index of a (p,c,J) group. Default ``'cdsd-pc'``.
-        
+
         If ``None``, dont label the levels. Wont be able to use the EnergyDatabase to fetch
-        vibrational energies for lines, however it can still be used to 
+        vibrational energies for lines, however it can still be used to
         calculate Partition functions independently from a Spectrum calculation
 
     Other Parameters
     ----------------
-    
+
     use_cached: ``True``, ``False``, or ``'regen'``, ``'force'``
         if ``True``, use (and generate if doesnt exist) a ``.h5`` file.
         If ``'regen'``, regenerate cache file. If ``'force'``, raise an error
@@ -179,8 +179,8 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
     For nonequilibrium, different strategies exist so as how to assign rotational and vibrational
     energies in a CDSD database. See the E. Pannier "Limits on CO2 Nonequilibrium
-    model" article for a discussion on that.    
-    
+    model" article for a discussion on that.
+
     Example of table format::
 
         # calculated rovibrational energy levels of 12C16O2
@@ -201,18 +201,18 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         # jmax = 300
         # Ecut = 44600 cm-1
         # ---------------
-        p	c	j	N	n	E	Evib	Erot	jref
-        0	1	0	1	1	0.000	0.000	0.000	0
-        0	1	2	1	1	2.341	0.000	2.341	0
-        0	1	4	1	1	7.804	0.000	7.804	0
-        0	1	6	1	1	16.389	0.000	16.389	0
-        0	1	8	1	1	28.095	0.000	28.095	0
-        
+        p   c   j   N   n   E   Evib    Erot    jref
+        0   1   0   1   1   0.000   0.000   0.000   0
+        0   1   2   1   1   2.341   0.000   2.341   0
+        0   1   4   1   1   7.804   0.000   7.804   0
+        0   1   6   1   1   16.389  0.000   16.389  0
+        0   1   8   1   1   28.095  0.000   28.095  0
+
     See an example in `test/files/co2_cdsd_hamiltonian_fragment.levels <https://github.com/radis/radis/blob/develop/radis/test/files/cdsd_hitemp_09_fragment.txt>`
 
     See Also
     --------
-    
+
     :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDtab`
 
     """
@@ -342,7 +342,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             )
 
     def _add_degeneracies(self, df):
-        """ Calculate and store degeneracies in database df
+        """Calculate and store degeneracies in database df
 
         Parameters
         ----------
@@ -355,7 +355,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
         .. warning::
 
-            we use the same energies as CO2 626 but with gi = 2 for CO2 isotope 2 (636). 
+            we use the same energies as CO2 626 but with gi = 2 for CO2 isotope 2 (636).
             It is done in the __init__ method
         """
         # Rotational degeneracy
@@ -381,7 +381,9 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         viblvl_label = self.viblvl_label
 
         if viblvl_label == "p":
-            df["viblvl"] = vib_lvl_name_cdsd_p(df.p,)
+            df["viblvl"] = vib_lvl_name_cdsd_p(
+                df.p,
+            )
         elif viblvl_label == "pc":
             df["viblvl"] = vib_lvl_name_cdsd_pc(df.p, df.c)
         elif viblvl_label == "pcN":

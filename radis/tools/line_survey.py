@@ -14,15 +14,15 @@ import numpy as np
 from radis.io.hitran import (
     get_molecule,
     HITRAN_CLASS1,
-    HITRAN_CLASS2,
-    HITRAN_CLASS3,
+    # HITRAN_CLASS2,
+    # HITRAN_CLASS3,
     HITRAN_CLASS4,
     HITRAN_CLASS5,
-    HITRAN_CLASS6,
-    HITRAN_CLASS7,
-    HITRAN_CLASS8,
-    HITRAN_CLASS9,
-    HITRAN_CLASS10,
+    # HITRAN_CLASS6,
+    # HITRAN_CLASS7,
+    # HITRAN_CLASS8,
+    # HITRAN_CLASS9,
+    # HITRAN_CLASS10,
 )
 from radis.io.hitran import columns_2004 as hitrancolumns
 from radis.io.cdsd import columns_hitemp as cdsdcolumns
@@ -75,23 +75,23 @@ def LineSurvey(
     xunit=None,
     yunit=None,  # deprecated
 ):
-    """ Plot Line Survey (all linestrengths above cutoff criteria) in Plotly (html)
+    """Plot Line Survey (all linestrengths above cutoff criteria) in Plotly (html)
 
 
-    Parameters    
+    Parameters
     ----------
 
-    spec: Spectrum 
+    spec: Spectrum
         result from SpectrumFactory calculation (see spectrum.py)
 
     overlay: tuple (w, I, [name], [units]), or list or tuples
         plot (w, I) on a secondary axis. Useful to compare linestrength with
-        calculated / measured data 
+        calculated / measured data
 
     wunit: ``'nm'``, ``'cm-1'``
         wavelength / wavenumber units
 
-    Iunit: ``'hitran'``, ``'splot'`` 
+    Iunit: ``'hitran'``, ``'splot'``
         Linestrength output units:
 
         - ``'hitran'``: (cm-1/(molecule/cm-2))
@@ -104,7 +104,7 @@ def LineSurvey(
         show wavelength either in air or vacuum. Default ``'air'``
 
     plot: str
-        what to plot. Default ``'S'`` (scaled line intensity). But it can be 
+        what to plot. Default ``'S'`` (scaled line intensity). But it can be
         any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'Aul'``)
 
     lineinfo: list, or ``'all'``
@@ -115,10 +115,10 @@ def LineSurvey(
     ----------------
 
     display: boolean
-        if True, open the image in a browser. Default ``True``. 
+        if True, open the image in a browser. Default ``True``.
 
     filename: str
-        filename to save .html 
+        filename to save .html
 
     yscale: ``'log'``, ``'linear'``
         Default ``'log'``
@@ -141,14 +141,14 @@ def LineSurvey(
                              mole_fraction=400e-6,
                              path_length=100,  # cm
                              isotope=[1],
-                             db_use_cached=True) 
+                             db_use_cached=True)
         sf.load_databank('HITRAN-CO2-TEST')
         s = sf.eq_spectrum(Tgas=1500)
         s.apply_slit(0.5)
         s.line_survey(overlay='radiance_noslit', barwidth=0.01)
-        
+
     See the output in :ref:`Examples <label_examples>`
-    
+
     References
     ----------
 
@@ -190,8 +190,8 @@ def LineSurvey(
         )
 
     def hitran2splot(S):
-        """ convert Linestrength in HITRAN units (cm-1/(molecules.cm-2)) to
-        SpectraPlot units (cm-2/atm) """
+        """convert Linestrength in HITRAN units (cm-1/(molecules.cm-2)) to
+        SpectraPlot units (cm-2/atm)"""
 
         return S / (k_b * T) / 10
 
@@ -237,8 +237,8 @@ def LineSurvey(
     # %% Plot - Plotly version
 
     def get_x(w):
-        """ w (input) is supposed to be in vacuum wavenumbers in the 
-        lines database """
+        """w (input) is supposed to be in vacuum wavenumbers in the
+        lines database"""
 
         # Convert wavelength / wavenumber
         if wunit == "cm-1":
@@ -261,30 +261,32 @@ def LineSurvey(
     # (one function per databank format)
 
     def get_label_hitran(row, details):
-        """ 
+        """
         Todo
         -------
 
         replace with simple astype(str) statements and str operations
 
-        ex:        
+        ex:
         > '['+df[locl].astype(str)+']('+df[globl].astype(str)+'->'+
         >     df[globu].astype(str)'+)'
 
-        will be much faster! 
+        will be much faster!
         """
 
         molecule = get_molecule(row.id)
 
         # Get global labels
         if molecule in HITRAN_CLASS1:
-            label = "{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
-                **dict(
-                    [(k, row[k]) for k in ["vu", "vl", "jl", "iso"]]
-                    + [
-                        ("molec", molecule),
-                        ("branch", _fix_branch_format[row["branch"]]),
-                    ]
+            label = (
+                "{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
+                    **dict(
+                        [(k, row[k]) for k in ["vu", "vl", "jl", "iso"]]
+                        + [
+                            ("molec", molecule),
+                            ("branch", _fix_branch_format[row["branch"]]),
+                        ]
+                    )
                 )
             )
         elif molecule in HITRAN_CLASS4:
@@ -474,7 +476,9 @@ def LineSurvey(
             **{"T": T, "P": P, "Xi": Xi}
         ),
         hovermode="closest",
-        xaxis=dict(title=xlabel,),
+        xaxis=dict(
+            title=xlabel,
+        ),
         yaxis=dict(
             title=ylabel,
             # note: LaTeX doesnt seem to work in Offline mode yet.

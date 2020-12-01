@@ -39,13 +39,13 @@ def test_exceptions(verbose=True, *args, **kwargs):
 
 
 def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
-    """ Test blackbody with Wien's law, Stefan's law and tabulated data 
-    of maximum 
+    """Test blackbody with Wien's law, Stefan's law and tabulated data
+    of maximum
 
     Reference
     ---------
 
-    Tabulated intensity (75.987...) was checked to match SpectraPlot and 
+    Tabulated intensity (75.987...) was checked to match SpectraPlot and
     manually calculated values
 
     """
@@ -64,7 +64,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
     w_cm = s.get_wavenumber()
 
     Iunit_per_nm = "W/sr/nm/m2"
-    Iunit_per_cm = "W/sr/cm_1/m2"
+    Iunit_per_cm = "W/sr/cm-1/m2"
 
     if plot:
         s.plot("radiance_noslit", Iunit=Iunit_per_nm)
@@ -104,14 +104,14 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
 
 
 def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
-    """ Validate Planck calculation with wavenumber
+    """Validate Planck calculation with wavenumber
 
     Notes
     -----
 
     Earth blackbody radiation [1]_:
 
-    - 294 K 
+    - 294 K
     - eps = 0.65
     - integrated over 2pi steradian
 
@@ -137,7 +137,7 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     w_cm = s.get_wavenumber()
 
     I_nm = s.get_radiance_noslit(Iunit="mW/sr/m2/nm")
-    I_cm = s.get_radiance_noslit(Iunit="mW/sr/m2/cm_1")
+    I_cm = s.get_radiance_noslit(Iunit="mW/sr/m2/cm-1")
     I_cm *= 2 * pi  # mW/m2/cm-1
 
     # Check Wien's law
@@ -176,7 +176,7 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
 
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
-    """ Test procedures
+    """Test procedures
 
     Parameters
     ----------

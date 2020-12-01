@@ -11,9 +11,8 @@ under non-equilibrium conditions
 from __future__ import absolute_import
 from __future__ import print_function
 import matplotlib.pyplot as plt
-from radis.phys.convert import cm2nm, dnm2dcm
 from radis import SpectrumFactory
-from radis import Spectrum, plot_diff, get_diff, load_spec
+from radis import plot_diff, load_spec
 from radis.test.utils import getValidationCase, setup_test_line_databases
 from radis.misc.printer import printm
 import numpy as np
@@ -23,14 +22,14 @@ import pytest
 
 @pytest.mark.fast
 def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
-    """ Test RADIS output on CO IR bands against SPECAIR
+    """Test RADIS output on CO IR bands against SPECAIR
 
     Test is only performed on integrals of absorption coefficient
 
     RADIS doesnt actually match Specair exactly, but this is due to line intensity
-    differences (Specair has no rovibrational specific intensities) rather than 
+    differences (Specair has no rovibrational specific intensities) rather than
     differences in populations calculations, as evidenced by the partition functions
-    comparison in the RADIS presentation article. 
+    comparison in the RADIS presentation article.
 
     """
 

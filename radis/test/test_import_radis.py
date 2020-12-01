@@ -16,3 +16,5 @@ https://github.com/nschloe/tuna
 """
 
 import radis
+
+assert radis  # silences pyflakes

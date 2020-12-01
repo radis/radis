@@ -15,7 +15,7 @@ from radis.misc.basics import partition
 
 # Waverange, wavespaces
 # ... aliases:
-WAVENUM_UNITS = ["cm", "cm-1", "cm_1", "wavenumber"]
+WAVENUM_UNITS = ["cm", "cm-1", "wavenumber"]
 WAVELEN_UNITS = ["nm", "wavelength"]
 WAVELENVAC_UNITS = ["nm_vac", "nm_vacuum"]
 # ... internal names
@@ -143,17 +143,16 @@ def cast_waveunit(unit, force_match=True):
 
 
 def make_up(label):
-    """ Cosmetic changes on label, before plot 
+    """Cosmetic changes on label, before plot
 
 
-    Parameters    
+    Parameters
     ----------
 
     label: str
     """
 
     # Improve units
-    label = label.replace(r"cm_1", r"cm-1")
     label = label.replace(r"cm-1", r"cm$^\mathregular{-1}$")
     label = label.replace(r"m^-1", r"m$^\mathregular{-1}$")
     label = label.replace(r"m2", r"m$^\mathregular{2}$")
@@ -175,22 +174,51 @@ def make_up(label):
     return label
 
 
+def make_up_unit(Iunit, var):
+    """Additional cosmetic changes for units on label, before plot
+
+
+    Parameters
+    ----------
+
+    Iunit: str
+        input unit
+
+    var: str
+        spectral variable. Ex: ``transmittance``
+    """
+    Iunit = Iunit.replace(r"um", r"µm")
+
+    if Iunit == "":
+        # give more explicit unit for the user:
+        if var in ["transmittance", "transmittance_noslit"]:
+            Iunit = r"I/I0"
+        elif var == "absorbance":
+            Iunit = r"-ln(I/I0)"
+        elif var in ["emissivity_no_slit", "emissivity"]:
+            Iunit = r"$\mathregular{\epsilon}$"
+        elif var in ["radiance", "radiance_noslit"]:
+            Iunit = r"norm"
+
+    return Iunit
+
+
 def format_xlabel(wunit, plot_medium):
-    """ Used by :py:meth:`radis.spectrum.spectrum.Spectrum.plot` and 
+    """Used by :py:meth:`radis.spectrum.spectrum.Spectrum.plot` and
     :py:func:`radis.spectrum.compare.plot_diff`
 
     Parameters
     ----------
-    
-    wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, 
-        wavelength air, wavenumber, or wavelength vacuum. If ``'default'``, 
+
+    wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
+        wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
         Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
 
     plot_medium: bool, ``'vacuum_only'``
         if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
-        in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``, 
-        plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'`` 
-        (prevents from inadvertently plotting spectra with different propagation 
+        in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``,
+        plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
+        (prevents from inadvertently plotting spectra with different propagation
         medium on the same graph).
 
     """
@@ -218,24 +246,24 @@ def print_conditions(
     phys_param_list=PHYSICAL_PARAMS,
     info_param_list=INFORMATIVE_PARAMS,
 ):
-    """ Print all Spectrum calculation parameters 
+    """Print all Spectrum calculation parameters
 
     Parameters
     ----------
 
     phys_param_list: list
         These parameters are shown below "Physical Conditions" rather than "Computation
-        Parameters. See :data:`~radis.spectrum.utils.PHYSICAL_PARAMS` for more 
-        information. 
+        Parameters. See :data:`~radis.spectrum.utils.PHYSICAL_PARAMS` for more
+        information.
 
     info_param_list: list
-        These parameters are shown below "Information" rather than "Computation 
-        Parameters. See :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS` for more 
+        These parameters are shown below "Information" rather than "Computation
+        Parameters. See :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS` for more
         information.
-        
+
     See Also
     --------
-    
+
     :data:`~radis.spectrum.utils.PHYSICAL_PARAMS`, :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS`
 
     """

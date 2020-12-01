@@ -58,7 +58,7 @@ def _capture_print(*args, **kwargs):
 
 
 def print_full(x):
-    """ Print full Pandas series. 
+    """Print full Pandas series.
     From https://stackoverflow.com/questions/19124601/pretty-print-an-entire-pandas-series-dataframe
     """
     pd.set_option("display.max_rows", len(x))

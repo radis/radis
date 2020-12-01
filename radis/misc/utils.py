@@ -12,9 +12,11 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 import os
 import sys
-from os.path import dirname
+from os.path import dirname, basename, join
 import importlib
 import inspect
+from fnmatch import translate
+from re import compile, IGNORECASE
 
 
 def getProjectRoot():
@@ -24,7 +26,7 @@ def getProjectRoot():
 
 
 def import_from_module(module, name):
-    """ Import object 'name' from module 'module' 
+    """Import object 'name' from module 'module'
     raises AttributeError if name doesnt exist
 
     Parameters
@@ -39,9 +41,9 @@ def import_from_module(module, name):
 
 
 class Chdir:
-    """ because we need to change directory to get into the RADIS folder to find
+    """because we need to change directory to get into the RADIS folder to find
     the Git files and version, when imported from another program. This class
-    then ensures we get back in the correct directory 
+    then ensures we get back in the correct directory
 
     Examples
     --------
@@ -69,34 +71,36 @@ class Chdir:
 
 # %%
 # ==============================================================================
-# Python 2/3 compatibility
-# ==============================================================================
-
-
-if sys.version_info[0] == 2:
-    # FileNotFoundError doesn't exist in Python 2....
-    FileNotFoundError = OSError
-    PermissionError = IOError  # PermissionError doesn't exist in Python 2....
-else:
-    FileNotFoundError = FileNotFoundError
-    PermissionError = PermissionError
-
-# Config Parser
-if sys.version_info[0] == 2:
-    import six.moves.configparser as configparser
-else:
-    import configparser
-
-
-# %%
-# ==============================================================================
 # Function arguments
 # ==============================================================================
 
 
+class Default:
+    """Contains a value. Used to know whether a function argument equal to its
+    default value was explicitely given by the user or not. This allows to
+    prevent user errors.
+
+    Examples
+    --------
+
+    Check if a value is Default::
+
+        from radis.misc.utils import Default
+        a = Default("42")
+        isinstance(a, Default)
+        >>> True
+
+        a.value
+        >>> 42
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+
 def getarglist(function):
-    """ Get list of arguments in a function 
-    
+    """Get list of arguments in a function
+
     See https://stackoverflow.com/a/41188411/5622825
     """
 
@@ -112,10 +116,10 @@ def getarglist(function):
 
 
 def get_default_arg(func, arg):
-    """ Get default value of argument ``arg`` in function ``func``
-    
+    """Get default value of argument ``arg`` in function ``func``
+
     Adapted from https://stackoverflow.com/questions/12627118/get-a-function-arguments-default-value
-    
+
     """
     signature = inspect.signature(func)
     items = dict(signature.parameters.items())
@@ -143,7 +147,7 @@ class DatabankNotFound(FileNotFoundError):
 
 
 class NotInstalled(object):
-    """ A class to deal with optional packages 
+    """A class to deal with optional packages
     Will raise an error only if the package is used (but not if imported only)
     """
 
@@ -162,6 +166,24 @@ class NotInstalled(object):
             "The {0} package is required to use this "
             "feature. {1}".format(self.__name, self.__info)
         )
+
+
+def get_files_from_regex(path):
+    """
+    Returns a list of absolute paths of all the files whose names match the input regular expression
+    """
+    directory_name = dirname(path)
+    regex = basename(path)
+
+    file_names = []
+
+    pattern = compile(translate(regex), IGNORECASE)
+
+    for file in os.listdir(directory_name):
+        if pattern.fullmatch(file):
+            file_names.append(join(directory_name, file))
+
+    return file_names
 
 
 # %% Test

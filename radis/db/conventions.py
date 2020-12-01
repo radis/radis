@@ -82,23 +82,23 @@ for k in herzberg2dunham:
 
 
 def get_convention(coefficients):
-    """ Returns if we're using the Herzberg or Dunham convention for 
+    """Returns if we're using the Herzberg or Dunham convention for
     spectrosopic coefficients, and returns the associated coefficients
-    
+
     Parameters
     ----------
-    
+
     coefficients:
         list
-    
+
     Returns
     -------
-    
+
     convention: str
         'dunham' or 'herzberg'
-        
+
     coefficients: dict
-        list of coefficient names 
+        list of coefficient names
     """
 
     from radis.misc.basics import partition

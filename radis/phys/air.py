@@ -18,14 +18,14 @@ Routine Listing
 
 
 def air_index_dispersion(lbd):
-    """ Return air index dispersion as a function of wavelength with the 
+    """Return air index dispersion as a function of wavelength with the
     relation of Ciddor [1]_
 
     Parameters
     ----------
 
     lbd: array-like (µm)
-        wavelength 
+        wavelength
 
 
     References
@@ -46,10 +46,10 @@ def air_index_dispersion(lbd):
 
 
 def vacuum2air(wavelength):
-    """ Converts wavelength as seen in vacuum to wavelength as seen in air
+    """Converts wavelength as seen in vacuum to wavelength as seen in air
 
 
-    Parameters    
+    Parameters
     ----------
 
     wavelength: array-like (nm)
@@ -75,10 +75,10 @@ def vacuum2air(wavelength):
 
 
 def air2vacuum(wavelength):
-    """ Converts wavelength as seen in air to wavelength as seen in vacuum
+    """Converts wavelength as seen in air to wavelength as seen in vacuum
 
 
-    Parameters    
+    Parameters
     ----------
 
     wavelength: array-like (nm)

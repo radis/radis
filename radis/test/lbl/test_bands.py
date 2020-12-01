@@ -32,9 +32,9 @@ import pytest
 
 @pytest.mark.needs_connection
 def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
-    """ In this test we use the :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
+    """In this test we use the :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
     method to calculate separately all vibrational bands of CO2, and compare
-    them with the final Spectrum. 
+    them with the final Spectrum.
 
     """
 
@@ -53,6 +53,7 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
         cutoff=1e-23,
         molecule="CO2",
         isotope=1,
+        optimization=None,
         db_use_cached=True,
         lvl_use_cached=True,
         verbose=verbose,

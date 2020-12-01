@@ -33,14 +33,14 @@ import warnings
 
 
 def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
-    r""" Get a regularized euclidian distance from curve (w1, I1) to curve (w2, I2)
+    r"""Get a regularized euclidian distance from curve (w1, I1) to curve (w2, I2)
 
     .. math::
 
         D(w_1)[i] = \sqrt{ \sum_j (\hat{I_1}[i]  - \hat{I_2}[j] )^2 + (\hat{w_1}[i] - \hat{w_2}[j])^2}
-        
+
     Where values are normalized as:
-        
+
     .. math::
 
         \hat{A} = \\frac{A}{max(A) - min(A)}
@@ -48,19 +48,19 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
     This regularized Euclidian distance minimizes the effect of a small shift in between the two
     curves in case of stiff curves (like a spectrum bandhead can be)
 
-    No interpolation needed neither. 
+    No interpolation needed neither.
 
     Distances for out of bounds values is set to nan
 
-    .. warning :: 
-        
-        This is a distance on both the waverange and the intensity axis. 
-        It may be used to compensate for a small offset in your experimental 
+    .. warning ::
+
+        This is a distance on both the waverange and the intensity axis.
+        It may be used to compensate for a small offset in your experimental
         spectrum (due to wavelength calibration, for instance) but can lead
-        to wrong fits easily. Plus, it is very cost-intensive! 
+        to wrong fits easily. Plus, it is very cost-intensive!
 
 
-    Parameters    
+    Parameters
     ----------
 
     w1, I1: array
@@ -70,7 +70,7 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
         range and values for 2nd curve
 
     discard_out_of_bounds: boolean
-        if True, distance for out of bound values is set to nan. Else, it 
+        if True, distance for out of bound values is set to nan. Else, it
         will be the distance from the last point.
 
 
@@ -100,14 +100,14 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
 
 
 def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """ Add curve (w2, I2) from (w1, I1) 
-    Linearly interpolates if the two ranges dont match. Fills out of bound 
+    """Add curve (w2, I2) from (w1, I1)
+    Linearly interpolates if the two ranges dont match. Fills out of bound
     parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
 
-    Parameters    
+    Parameters
     ----------
 
     w1, I1: array
@@ -137,14 +137,14 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
 
 def curve_substract(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """ Substracts curve (w2, I2) from (w1, I1) 
-    Linearly interpolates if the two ranges dont match. Fills out of bound 
+    """Substracts curve (w2, I2) from (w1, I1)
+    Linearly interpolates if the two ranges dont match. Fills out of bound
     parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
 
-    Parameters    
+    Parameters
     ----------
 
     w1, I1: array
@@ -174,14 +174,14 @@ def curve_substract(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
 
 def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """ Multiply curve (w2, I2) with (w1, I1) 
-    Linearly interpolates if the two ranges dont match. Fills out of bound 
+    """Multiply curve (w2, I2) with (w1, I1)
+    Linearly interpolates if the two ranges dont match. Fills out of bound
     parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
 
-    Parameters    
+    Parameters
     ----------
 
     w1, I1: array
@@ -211,14 +211,14 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
 
 def curve_divide(w1, I1, w2, I2, is_sorted=False, kind="linear", interpolation=1):
-    """ Divides curve (w1, I1) by (w2, I2)
-    Linearly interpolates if the two ranges dont match. Fills out of bound 
+    """Divides curve (w1, I1) by (w2, I2)
+    Linearly interpolates if the two ranges dont match. Fills out of bound
     parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
 
-    Parameters    
+    Parameters
     ----------
 
     w1, I1: array
@@ -240,7 +240,7 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind="linear", interpolation=1
     interpolation: int, optional
         If 1, interpolate on w1, I1. Else, on w2, I2.
         Default 1
-        
+
     Returns
     -------
 
@@ -264,16 +264,16 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind="linear", interpolation=1
 
 
 def _curve_interpolate(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """ Resample ``I2`` on ``w1``
-    
+    """Resample ``I2`` on ``w1``
+
     For the interpolation to work, this requires to first sort ``w1`` and ``w2``,
     interpolate, then revert to the initial ``w1``
-    
+
     Returns
     -------
-    
+
     I2_inter: np.array
-        ``I2`` interpolated on ``w1``. 
+        ``I2`` interpolated on ``w1``.
     """
 
     # First sort both

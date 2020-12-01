@@ -12,11 +12,10 @@ Created on Wed Oct 18 15:38:14 2017
 from __future__ import absolute_import, unicode_literals, print_function, division
 import sys
 from time import time
-from six.moves import range
 
 
 class ProgressBar:
-    """ A console progress-bar
+    """A console progress-bar
 
     Example
     -------
@@ -37,11 +36,11 @@ class ProgressBar:
     # https://stackoverflow.com/questions/7392779/is-it-possible-to-print-a-string-at-a-certain-screen-position-inside-idle
 
     def __init__(self, N, active=True):
-        """ 
-        write to progress bar completion status i/N. 
+        """
+        write to progress bar completion status i/N.
 
 
-        Parameters    
+        Parameters
         ----------
 
         N: int
@@ -53,19 +52,19 @@ class ProgressBar:
         self.active = active
 
     def set_active(self, active=True):
-        """ Option to activate/deactivate the ProgressBar. Used not to make it 
+        """Option to activate/deactivate the ProgressBar. Used not to make it
         appear on small processes (based on a condition) without changing most
         of the code"""
 
         self.active = active
 
     def update(self, i, modulo=1):
-        """ 
-        write to progress bar completion status i/N. If t0 is not None, also 
+        """
+        write to progress bar completion status i/N. If t0 is not None, also
         write the time spent
 
 
-        Parameters    
+        Parameters
         ----------
 
         i: int

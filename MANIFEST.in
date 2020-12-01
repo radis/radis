@@ -5,6 +5,7 @@ include radis/phys/units.txt
 include radis/test/files/*.txt
 include radis/test/files/*.spec
 include radis/test/files/*.par
+include radis/test/files/*.levels
 include radis/db/molparam.txt
 include radis/config.json
 recursive-include radis/db *.json

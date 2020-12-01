@@ -17,7 +17,7 @@ unload the spectrum.py file
 from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
 from numpy import log as ln
-from numpy import inf, exp
+from numpy import exp
 from radis.misc.debug import printdbg
 from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
 from radis.spectrum.equations import calc_radiance
@@ -63,8 +63,8 @@ assert (
 def _build_update_graph(
     spec, optically_thin=None, equilibrium=None, path_length=None, no_change=False
 ):
-    """ Find inheritances properties (dependencies and equivalences) between all spectral 
-    variables based on the spectrum conditions (equilibrium, optically thin, 
+    """Find inheritances properties (dependencies and equivalences) between all spectral
+    variables based on the spectrum conditions (equilibrium, optically thin,
     known path length?)
 
     Parameters
@@ -78,16 +78,16 @@ def _build_update_graph(
 
     optically_thin: boolean
         know whether the Spectrum should be considered optically thin to build
-        the equivalence graph tree. If None, the value stored in the Spectrum is used. 
+        the equivalence graph tree. If None, the value stored in the Spectrum is used.
         Default ``None``
 
     equilibrium: boolean
         know whether the Spectrum should be considered at equilibrium to build
-        the equivalence graph tree. If None, the value stored in the Spectrum is used. 
+        the equivalence graph tree. If None, the value stored in the Spectrum is used.
         Default ``None``
 
     path_length: boolean
-        know whether the path length is given to build the equivalence graph tree. 
+        know whether the path length is given to build the equivalence graph tree.
         If None, ``path_length`` is looked up in the Spectrum condition. Default ``None``
 
     no_change: boolean
@@ -179,8 +179,8 @@ def _build_update_graph(
     }
 
     def derives_from(what, *from_keys):
-        """ Writes that quantity ``what`` can be infered by having all quantities
-        ``from_keys`` 
+        """Writes that quantity ``what`` can be infered by having all quantities
+        ``from_keys``
 
         Examples
         --------
@@ -256,19 +256,19 @@ def _build_update_graph(
 
 
 def get_redundant(spec):
-    """ Returns a dictionary of all spectral quantities in spectrum and whether
+    """Returns a dictionary of all spectral quantities in spectrum and whether
     they are redundant
 
     Examples
     --------
 
     ::
-    
+
         redundant = get_redundant(spec)
 
-    >>> {'abscoeff': False, 'emisscoeff': True, 'absorbance': True, 'radiance_noslit': False, 
+    >>> {'abscoeff': False, 'emisscoeff': True, 'absorbance': True, 'radiance_noslit': False,
          'transmittance_noslit': True}
-    
+
     """
 
     # Get all spectral quantities that derive from existing ones
@@ -301,9 +301,8 @@ def _path_is_complete(list_of_keys, computed_keys):
 
 
 def get_reachable(spec):  # , derivation_graph):
-    # type: (Spectrum) -> dict
-    """ Get the list of all quantities that can be derived from current available
-    quantities, based on given spec conditions 
+    """Get the list of all quantities that can be derived from current available
+    quantities, based on given spec conditions
 
     Parameters
     ----------
@@ -356,8 +355,8 @@ def get_reachable(spec):  # , derivation_graph):
 
 # , derivation_graph):
 def get_recompute(spec, wanted, no_change=False, true_path_length=None):
-    """ Get the list of all quantities that need to be recomputed to get the 
-    ``wanted`` quantities based on given spec conditions 
+    """Get the list of all quantities that need to be recomputed to get the
+    ``wanted`` quantities based on given spec conditions
     (does not recompute yet!)
 
     Parameters
@@ -378,7 +377,7 @@ def get_recompute(spec, wanted, no_change=False, true_path_length=None):
         nor mole fractions, i.e, all quantities can be recomputed from themselves...
 
     true_path_length: boolean
-        know whether the path length is given to build the equivalence graph tree. 
+        know whether the path length is given to build the equivalence graph tree.
         If None, ``path_length`` is looked up in the Spectrum condition. Default ``None``
 
     Returns
@@ -493,14 +492,14 @@ def update(
     assume_equilibrium="default",
     verbose=True,
 ):
-    """ Calculate missing quantities that can be derived from the current quantities
+    """Calculate missing quantities that can be derived from the current quantities
     and conditions
 
     e.g: if path_length and emisscoeff are given, radiance_noslit can be recalculated
-    if in an optically thin configuration, else if abscoeff is also given 
+    if in an optically thin configuration, else if abscoeff is also given
 
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -508,7 +507,7 @@ def update(
     quantity: str, ``'same'``, ``'all'``, or list of str
         name of the spectral quantity to recompute. If ``'same'``, only the quantities
         in the Spectrum are recomputed. If ``'all'``, then all quantities that can
-        be derived are recomputed. Default ``'all'``. See 
+        be derived are recomputed. Default ``'all'``. See
         :py:data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
         and :py:data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`
 
@@ -516,18 +515,18 @@ def update(
         determines whether to calculate radiance with or without self absorption.
         If 'default', the value is determined from the self_absorption key
         in Spectrum.conditions. If not given, False is taken. Default 'default'
-        Also updates the self_absorption value in conditions (creates it if 
+        Also updates the self_absorption value in conditions (creates it if
         doesnt exist)
 
     Other Parameters
     ----------------
-    
+
     assume_equilibrium: boolean
         if ``True``, only absorption coefficient ``abscoeff`` is recomputed
-        and all values are derived from a calculation under equilibrium, 
+        and all values are derived from a calculation under equilibrium,
         using Kirchoff's Law. If ``default``, use the value stored in
-        Spectrum conditions[``thermal_equilibrium``], else use ``False``. 
-        
+        Spectrum conditions[``thermal_equilibrium``], else use ``False``.
+
     """
 
     # Check inputs
@@ -614,7 +613,7 @@ def rescale_abscoeff(
 ):
     """
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -694,13 +693,13 @@ def rescale_abscoeff(
 def _recompute_all_at_equilibrium(
     spec, rescaled, wavenumber, Tgas, new_path_length, true_path_length, units
 ):
-    """ 
+    """
 
-    Parameters    
+    Parameters
     ----------
 
     rescaled: dict
-        abscoeff must be rescaled already 
+        abscoeff must be rescaled already
     """
 
     def get_unit_radiance():
@@ -740,10 +739,10 @@ def _recompute_all_at_equilibrium(
     rescaled["radiance_noslit"] = radiance_noslit
     rescaled["emisscoeff"] = emisscoeff
 
-    units["abscoeff"] = "cm_1"
-    units["absorbance"] = "-ln(I/I0)"
-    units["transmittance_noslit"] = "I/I0"
-    units["emissivity_noslit"] = "eps"
+    units["abscoeff"] = "cm-1"
+    units["absorbance"] = ""
+    units["transmittance_noslit"] = ""
+    units["emissivity_noslit"] = ""
     units["radiance_noslit"] = get_unit_radiance()
     units["emisscoeff"] = get_unit_emisscoeff(units["radiance_noslit"])
 
@@ -768,7 +767,7 @@ def rescale_emisscoeff(
 ):
     """
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -929,7 +928,7 @@ def rescale_absorbance(
 ):
     """
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -955,13 +954,13 @@ def rescale_absorbance(
         )
         absorbance *= new_mole_fraction / old_mole_fraction  # rescale x
         absorbance *= new_path_length / old_path_length  # rescale L
-        unit = "-ln(I/I0)"
+        unit = ""
     elif "abscoeff" in rescaled and true_path_length:
         if __debug__:
             printdbg("... rescale: absorbance A2 = j2*L2")
         abscoeff = rescaled["abscoeff"]  # x already scaled
         absorbance = abscoeff * new_path_length  # calculate L
-        unit = "-ln(I/I0)"
+        unit = ""
     elif "transmittance_noslit" in initial and true_path_length:
         if __debug__:
             printdbg("... rescale: absorbance A2 = -ln(T1)*N2/N1*L2/L1")
@@ -983,7 +982,7 @@ def rescale_absorbance(
         absorbance = -ln(T1)
         absorbance *= new_mole_fraction / old_mole_fraction  # rescale x
         absorbance *= new_path_length / old_path_length  # rescale L
-        unit = "-ln(I/I0)"
+        unit = ""
     else:
         msg = (
             "Cant recalculate absorbance if scaled absoeff "
@@ -1026,7 +1025,7 @@ def rescale_transmittance_noslit(
 ):
     """
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -1035,7 +1034,7 @@ def rescale_transmittance_noslit(
     unit = None
 
     def get_unit():
-        return "I/I0"
+        return ""
 
     # case where we recomputed it already (somehow... ex: no_change signaled)
     if "transmittance_noslit" in rescaled:
@@ -1127,7 +1126,7 @@ def rescale_transmittance(
 ):
     """
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -1136,7 +1135,7 @@ def rescale_transmittance(
     #    unit = None
     apply_slit = False
     #    def get_unit():
-    #        return 'I/I0'
+    #        return '1'
 
     # case where we recomputed it already (somehow... ex: no_change signaled)
     if "transmittance" in rescaled:
@@ -1172,7 +1171,7 @@ def rescale_radiance_noslit(
 ):
     """
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -1314,7 +1313,7 @@ def rescale_radiance(
 ):
     """
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -1350,7 +1349,7 @@ def rescale_radiance(
 def rescale_emissivity_noslit(spec, rescaled, units, extra, true_path_length):
     """
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -1382,7 +1381,7 @@ def rescale_emissivity_noslit(spec, rescaled, units, extra, true_path_length):
     # Export rescaled value
     if emissivity_noslit is not None:
         rescaled["emissivity_noslit"] = emissivity_noslit
-        units["emissivity_noslit"] = "eps"
+        units["emissivity_noslit"] = ""
 
     return rescaled, units
 
@@ -1398,15 +1397,15 @@ def _recalculate(
     verbose=True,
     assume_equilibrium=False,
 ):
-    """ General function to recalculate missing quantities. Used in
+    """General function to recalculate missing quantities. Used in
     :func:`~radis.spectrum.rescale.rescale_path_length`, :func:`~radis.spectrum.rescale.rescale_mole_fraction`
-    and :func:`~radis.spectrum.rescale.update`. 
-    
+    and :func:`~radis.spectrum.rescale.update`.
+
     Determines with spectral quantities should be recomputed, then scales
     them solving the Radiative Transfer Equation in the process.
 
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -1423,15 +1422,15 @@ def _recalculate(
         when you dont know the true path_lenth, rescaling absorbance
         with *= new_length/old_length is fine, but abscoeff*new_length is not
         Default ``True``
-        
+
     Other Parameters
     ----------------
-    
+
     assume_equilibrium: boolean
         if ``True``, only absorption coefficient ``abscoeff`` is recomputed
-        and all values are derived from a calculation under equilibrium, 
+        and all values are derived from a calculation under equilibrium,
         using Kirchoff's Law. Default ``False``
-        
+
     """
 
     optically_thin = spec.is_optically_thin()
@@ -1769,12 +1768,12 @@ def _recalculate(
 def rescale_path_length(
     spec, new_path_length, old_path_length=None, inplace=False, force=False
 ):
-    """ Rescale spectrum to new path length. Starts from absorption coefficient
+    """Rescale spectrum to new path length. Starts from absorption coefficient
     and emission coefficient, and solves the RTE again for the new path length
     Convoluted values (with slit) are dropped in the process.
 
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -1792,17 +1791,17 @@ def rescale_path_length(
     inplace: boolean
         if ``True``, modifies the Spectrum object directly. Else, returns
         a copy. Default ``False``.
-    
+
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
         Default ``False``
 
     Returns
     -------
-    
+
     s_rescaled: Spectrum
         a rescaled Spectrum.
-        if ``inplace=True``, then ``s`` has been rescaled already and 
+        if ``inplace=True``, then ``s`` has been rescaled already and
         ``s_rescaled`` is ``s``
 
     Notes
@@ -1882,11 +1881,11 @@ def rescale_mole_fraction(
     force=False,
     verbose=True,
 ):
-    """ Update spectrum with new molar fraction
+    """Update spectrum with new molar fraction
     Convoluted values (with slit) are dropped in the process.
 
 
-    Parameters    
+    Parameters
     ----------
 
     spec: Spectrum
@@ -1904,17 +1903,17 @@ def rescale_mole_fraction(
     inplace: boolean
         if ``True``, modifies the Spectrum object directly. Else, returns
         a copy. Default ``False``.
-    
+
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
         Default ``False``
 
     Returns
     -------
-    
+
     s_rescaled: Spectrum
         a rescaled Spectrum.
-        if ``inplace=True``, then ``s`` has been rescaled already and 
+        if ``inplace=True``, then ``s`` has been rescaled already and
         ``s_rescaled`` is ``s``
 
     Notes

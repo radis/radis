@@ -27,15 +27,16 @@ from __future__ import absolute_import
 from numpy import exp, arange, ones_like, zeros_like, inf
 from radis.phys.constants import k_b, c, h
 from radis.phys.constants import k_b_CGS, c_CGS, h_CGS
-from radis.phys.units import conv2, Q_
+from radis.phys.units import conv2
+from radis.phys.units import Unit as Q_
 from radis.phys.air import air2vacuum
 
 
 def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
-    """ Planck function for blackbody radiation
+    """Planck function for blackbody radiation
 
 
-    Parameters    
+    Parameters
     ----------
 
     λ: np.array   (nm)
@@ -72,11 +73,11 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
     return iplanck
 
 
-def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm_1"):
-    """ Planck function for blackbody radiation, wavenumber version
+def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
+    """Planck function for blackbody radiation, wavenumber version
 
 
-    Parameters    
+    Parameters
     ----------
 
     wavenum: np.array   (cm-1)
@@ -89,13 +90,13 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm_1"):
         default 1
 
     unit: str
-        output unit. Default 'mW/sr/cm2/cm_1'
+        output unit. Default 'mW/sr/cm2/cm-1'
 
 
     Returns
     -------
 
-    planck: np.array   default (mW/sr/cm2/cm_1)
+    planck: np.array   default (mW/sr/cm2/cm-1)
         equilibrium radiance
 
     """
@@ -110,8 +111,8 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm_1"):
     # iplanck in erg/s/sr/cm2/cm-1
     iplanck *= 1e-4  # erg/s/sr/cm2/cm-1 > mW/sr/cm^2/cm-1
 
-    if Q_(unit) != Q_("mW/sr/cm2/cm_1"):
-        iplanck = conv2(iplanck, "mW/sr/cm2/cm_1", unit)
+    if Q_(unit) != Q_("mW/sr/cm2/cm-1"):
+        iplanck = conv2(iplanck, "mW/sr/cm2/cm-1", unit)
 
     return iplanck
 
@@ -130,7 +131,7 @@ def sPlanck(
     medium="air",
     **kwargs
 ):
-    """ Return a RADIS Spectrum object with blackbody radiation. 
+    """Return a RADIS Spectrum object with blackbody radiation.
 
     It's easier to plug in a MergeSlabs / SerialSlabs config than the Planck
     radiance calculated by iPlanck. And you don't need to worry about units as
@@ -142,7 +143,7 @@ def sPlanck(
     ----------
 
     wavenum_min / wavenum_max: (cm-1)
-        minimum / maximum wavenumber to be processed in cm^-1. 
+        minimum / maximum wavenumber to be processed in cm^-1.
 
     wavelength_min / wavelength_max: (nm)
         minimum / maximum wavelength to be processed in nm
@@ -204,7 +205,7 @@ def sPlanck(
     if waveunit == "cm-1":
         # generate the vector of wavenumbers (shape M)
         w = arange(wavenum_min, wavenum_max + wstep, wstep)
-        Iunit = "mW/sr/cm2/cm_1"
+        Iunit = "mW/sr/cm2/cm-1"
         I = planck_wn(w, T, eps=eps, unit=Iunit)
     else:
         # generate the vector of lengths (shape M)
@@ -228,11 +229,7 @@ def sPlanck(
             "absorbance": (w, ones_like(w) * inf),
         },
         conditions=conditions,
-        units={
-            "radiance_noslit": Iunit,
-            "transmittance_noslit": "I/I0",
-            "absorbance": "-ln(I/I0)",
-        },
+        units={"radiance_noslit": Iunit, "transmittance_noslit": "", "absorbance": ""},
         cond_units={"wstep": waveunit},
         waveunit=waveunit,
         name="Planck {0}K, eps={1:.2g}".format(T, eps),

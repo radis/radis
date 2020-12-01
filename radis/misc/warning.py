@@ -17,8 +17,7 @@ from radis.misc.printer import printr
 
 
 class SlitDispersionWarning(UserWarning):
-    """ Warning trigger if Slit dispersion is too large 
-    """
+    """Warning trigger if Slit dispersion is too large"""
 
 
 # %% Spectrum Factory warnings / errors
@@ -68,15 +67,15 @@ class EmptyDatabaseWarning(UserWarning):
 
 
 class OutOfRangeLinesWarning(UserWarning):
-    """ Trigger a warning if out of range neighbouring lines, that could have 
-    an effect on the spectrume due to their broadening, cannot be found in the 
-    database """
+    """Trigger a warning if out of range neighbouring lines, that could have
+    an effect on the spectrume due to their broadening, cannot be found in the
+    database"""
 
     pass
 
 
 class HighTemperatureWarning(UserWarning):
-    """ Warning triggered when the Line database seems inappropriate for the 
+    """Warning triggered when the Line database seems inappropriate for the
     temperatures considered
     """
 
@@ -88,14 +87,14 @@ class NegativeEnergiesWarning(UserWarning):
 
 
 class MissingSelfBroadeningWarning(UserWarning):
-    """ Self broadening is missing in Line Database. Usually, use Air broadening
-    instead """
+    """Self broadening is missing in Line Database. Usually, use Air broadening
+    instead"""
 
     pass
 
 
 class LinestrengthCutoffWarning(UserWarning):
-    """ Warning triggered when the cumulated linestrength after intensity cutoff
+    """Warning triggered when the cumulated linestrength after intensity cutoff
     has changed too much"""
 
     pass
@@ -188,7 +187,7 @@ See Also
 
 
 def reset_warnings(status):
-    """ Reactivate warnings that are set 'once' per session in the Factory
+    """Reactivate warnings that are set 'once' per session in the Factory
     (unless all warnings have been set to False)
 
     Parameters
@@ -209,7 +208,7 @@ def reset_warnings(status):
 
 
 def warn(message, category="default", status={}):
-    """ Trigger a warning, an error or just ignore based on the value defined
+    """Trigger a warning, an error or just ignore based on the value defined
     in the :py:attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
 
     The warnings can thus be deactivated selectively by setting the SpectrumFactory

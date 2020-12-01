@@ -104,7 +104,11 @@ CO2_X_627 = ElectronicState(
 #  Molecule  Isotope  ElecState
 #         :      :       :
 Molecules = {
-    "CO": {1: {"X": CO_X_iso1}, 2: {"X": CO_X_iso2}, 3: {"X": CO_X_iso3},},
+    "CO": {
+        1: {"X": CO_X_iso1},
+        2: {"X": CO_X_iso2},
+        3: {"X": CO_X_iso3},
+    },
     "CO2": {
         1: {"X": CO2_X_626},
         2: {"X": CO2_X_636},
@@ -138,7 +142,7 @@ See Also
 
 
 def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
-    """ Get an :py:class:`~radis.db.classes.ElectronicState` object in the 
+    """Get an :py:class:`~radis.db.classes.ElectronicState` object in the
     RADIS :py:data:`~radis.db.molecules.Molecules` list, which use the defaults
     :ref:`spectroscopic constants <label_db_spectroscopic_constants>`.
 
@@ -149,25 +153,25 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
         molecule name
 
     isotope: int, or ``None``
-        isotope number. if None, only one isotope must exist in database. Else, 
+        isotope number. if None, only one isotope must exist in database. Else,
         an error is raised
 
     electronic_state: str
-        if None, only one electronic state must exist in database. Else, an error 
+        if None, only one electronic state must exist in database. Else, an error
         is raised
 
     verbose: boolean
         if ``True``, print which electronic state we got
-        
+
     Returns
     -------
-    
+
     state: ElectronicState
-        an :py:class:`~radis.db.classes.ElectronicState` object. 
+        an :py:class:`~radis.db.classes.ElectronicState` object.
 
     See Also
     --------
-    
+
     :py:data:`~radis.db.molecules.Molecules`
 
     """

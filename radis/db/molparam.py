@@ -17,30 +17,30 @@ from radis.db.utils import getFile
 
 class MolParams:
     def __init__(self, file=None):
-        """ Easy access to molecular parameters taken from HITRAN molparam.txt 
-    
+        """Easy access to molecular parameters taken from HITRAN molparam.txt
+
         Parameters
         ----------
 
         file: str
-            if None the one in RADIS is taken 
+            if None the one in RADIS is taken
 
         Examples
         --------
-    
+
         Get abundance of CO2, isotope 1::
-    
+
             molpar = Molparams()
             molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
-    
-        Note 
+
+        Note
         ----
         Isotope number was derived manually assuming the isonames were ordered in the database
         The isotope name (ex: CO2 626) is kept for comparison if ever needed
-    
+
         References
         ----------
-    
+
         http://hitran.org/media/molparam.txt
 
         """
@@ -60,7 +60,7 @@ class MolParams:
             pass  # old Python version
 
     def get(self, M, I, key):
-        """ 
+        """
         Parameters
         ----------
 
@@ -72,8 +72,8 @@ class MolParams:
             molecule isotope #
 
         key: ``'abundance'``, ``'mol_mass'``
-            parameter 
-        
+            parameter
+
         """
         return self.df.loc[(M, I), key]
 

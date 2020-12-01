@@ -123,3 +123,8 @@ or the community chat:
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
     :alt: Gitter
+
+.. image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+    :target: https://radis.github.io/slack-invite/
+    :alt: Slack
+                  

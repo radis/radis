@@ -19,8 +19,7 @@ import pytest
 
 @pytest.mark.fast  # this is a fast test. Run fast tests only with 'pytest -m fast'
 def test_herzberg_coefficients_CO2_json(verbose=True, *args, **kwargs):
-    """ Check that default coefficients are found correctly
-    """
+    """Check that default coefficients are found correctly"""
     # @dev: update this test if we ever are to change the default Herzberg
     # coeffs in CO2/molecules_data.json
 
@@ -75,10 +74,10 @@ def test_getMolecule(verbose=True, *args, **kwargs):
 
 
 def test_ZPE(verbose=True, *args, **kwargs):
-    """ Test that Zero-Point-Energy stored in the default RADIS database
+    """Test that Zero-Point-Energy stored in the default RADIS database
     corresponds to the Energy calculated for vi=0, J=0 for all molecules and isotopes
-    and electronic states in the RADIS :py:data:`~radis.db.molecules.Molecules` 
-    list. 
+    and electronic states in the RADIS :py:data:`~radis.db.molecules.Molecules`
+    list.
     """
     for M, isotopes in Molecules.items():
         if M != "CO2":

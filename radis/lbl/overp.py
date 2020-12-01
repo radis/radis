@@ -45,16 +45,16 @@ _IGNORE_KEYS = ["band", "band_htrn", "viblvl_u", "viblvl_l"]
 
 
 class LevelsList(object):
-    """ A class to generate a Spectrum from a list of precalculated bands at 
-    a given reference temperature 
-    
+    """A class to generate a Spectrum from a list of precalculated bands at
+    a given reference temperature
+
     .. warning::
-        
+
         only valid under optically thin conditions!!
-        
+
     See Also
     --------
-    
+
     """
 
     # hardcode attribute names, but can save a lot of memory
@@ -82,13 +82,13 @@ class LevelsList(object):
     def __init__(
         self, parfunc, bands, levelsfmt, sortby="Ei", copy_lines=False, verbose=True
     ):
-        """ 
+        """
         Parameters
         ----------
 
         bands: dict of bands
-            bands are Spectrum objects calculated at equilibrium or non-equilibrim. 
-            Tgas, or (Tvib, Trot) must be given and the same in all bands conditions. 
+            bands are Spectrum objects calculated at equilibrium or non-equilibrim.
+            Tgas, or (Tvib, Trot) must be given and the same in all bands conditions.
 
         """
 
@@ -217,7 +217,7 @@ class LevelsList(object):
         }
 
     def _init_levels(self, sortby):
-        """ 
+        """
         Notes
         -----
 
@@ -286,7 +286,7 @@ class LevelsList(object):
             index[viblvl_l]["bands_where_low"].append(s)
 
     def plot_vib_populations(self, nfig=None, **kwargs):
-        """ Plot current distribution of vibrational levels
+        """Plot current distribution of vibrational levels
 
         By constructions populations are shown as divided by the state degeneracy,
         i.e,            g =   gv   *   (2J+1)   *    gi    *     gs
@@ -295,7 +295,7 @@ class LevelsList(object):
         ----------
 
         nfig: str, int
-            name of Figure to plot on 
+            name of Figure to plot on
 
         kwargs: **dict
             arguments are forwarded to plot()
@@ -318,16 +318,16 @@ class LevelsList(object):
     def _calc_vib_populations(
         self, Tvib, vib_distribution="boltzmann", overpopulation=None
     ):
-        """ Calculate vibrational populations from Tref to new Tvib and store
+        """Calculate vibrational populations from Tref to new Tvib and store
         results in vib_levels dataframe
-        This does not modify the spectra yet! 
+        This does not modify the spectra yet!
 
         By constructions populations are calculated divided by the state degeneracy,
         i.e,            g =   gv   *   (2J+1)   *    gi    *     gs
-        This means we should only use ratios for rescaling 
+        This means we should only use ratios for rescaling
 
         The information on state degeneracy and isotopic abundance is already
-        included in the linestrength / emission integral, hence in the pre-calculated 
+        included in the linestrength / emission integral, hence in the pre-calculated
         emisscoeff / abscoeff
 
         """
@@ -418,25 +418,25 @@ class LevelsList(object):
         path_length=None,
         save_rescaled_bands=False,
     ):
-        """ See :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
-        
+        """See :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
+
         .. warning::
-            
+
             only valid under optically thin conditions!!
-        
+
         Parameters
         ----------
 
-        ... same as usually. If None, then the reference value (used to 
-        calculate bands) is used 
+        ... same as usually. If None, then the reference value (used to
+        calculate bands) is used
 
         Other Parameters
         ----------------
 
         save_rescaled_bands: boolean
-            save updated bands. Take some time as it requires rescaling all 
+            save updated bands. Take some time as it requires rescaling all
             bands individually (which is only done on the MergedSlabs usually)
-            Default ``False`` 
+            Default ``False``
 
         """
         s = self.non_eq_spectrum(
@@ -464,25 +464,25 @@ class LevelsList(object):
         path_length=None,
         save_rescaled_bands=False,
     ):
-        """ See :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
-        
+        """See :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
+
         .. warning::
-            
+
             only valid under optically thin conditions!!
-        
+
         Parameters
         ----------
 
-        ... same as usually. If None, then the reference value (used to 
-        calculate bands) is used 
+        ... same as usually. If None, then the reference value (used to
+        calculate bands) is used
 
         Other Parameters
         ----------------
 
         save_rescaled_bands: boolean
-            save updated bands. Take some time as it requires rescaling all 
+            save updated bands. Take some time as it requires rescaling all
             bands individually (which is only done on the MergedSlabs usually)
-            Default ``False`` 
+            Default ``False``
 
         Notes
         -----
@@ -490,7 +490,7 @@ class LevelsList(object):
         Implementation:
 
         Generation of a new spectrum is done by recombination of the precalculated
-        bands with 
+        bands with
 
         """
 
@@ -648,14 +648,14 @@ class LevelsList(object):
 def rescale_updown_levels(
     spec, new_nu, old_nu, new_nl, old_nl, ignore_warnings=False, force=False
 ):
-    """ Update spectrum with new molar fraction for upper and lower levels
+    """Update spectrum with new molar fraction for upper and lower levels
 
     Convoluted values (with slit) are dropped in the process.
 
-    Rescales with a ratio new_nu/old_nu. 
+    Rescales with a ratio new_nu/old_nu.
 
     This is only valid for emission quantities, under optically thin conditions,
-    as rescaling doesnt correct for induced emission. 
+    as rescaling doesnt correct for induced emission.
 
     .. warning::
         experimental feature

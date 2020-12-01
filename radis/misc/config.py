@@ -32,7 +32,8 @@ Routine Listing
 
 from __future__ import print_function, absolute_import, division, unicode_literals
 
-from radis.misc.utils import FileNotFoundError, DatabankNotFound, configparser
+from radis.misc.utils import DatabankNotFound
+import configparser
 from os.path import expanduser, join, exists, dirname
 from six import string_types
 from radis.misc.basics import compare_lists, compare_dict, stdpath
@@ -156,7 +157,7 @@ CONFIG_PATH = join(expanduser("~"), ".radis")
 
 
 def getConfig():
-    """ Read config file and returns it
+    """Read config file and returns it
 
     Config file name is harcoded: `~/.radis`
     """
@@ -183,7 +184,7 @@ def getConfig():
 
 
 def getDatabankEntries(dbname):
-    r""" Read ~/.radis config file and returns a dictionary of entries.
+    r"""Read ~/.radis config file and returns a dictionary of entries.
 
 
     Notes
@@ -294,7 +295,7 @@ def getDatabankList():
 
 
 def addDatabankEntries(dbname, dict_entries, verbose=True):
-    """ Add database dbname with entries from dict_entries. If database 
+    """Add database dbname with entries from dict_entries. If database
     already exists in ~/.radis, raises an error
     """
 
@@ -358,78 +359,11 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
     return
 
 
-def _addDatabankEntries_py27(dbname, dict_entries, verbose=True):
-    """ Add database dbname with entries from dict_entries. If database 
-    already exists in ~/.radis, raises an error
-    """
-
-    # Get ~/.radis if exists, else create it
-    try:
-        dbnames = getDatabankList()
-    except FileNotFoundError:
-        # generate ~/.radis:
-        dbnames = []
-        open(CONFIG_PATH, "a").close()
-        if verbose:
-            print("Created ~/.radis in {0}".format(dirname(CONFIG_PATH)))
-
-    # Check database doesnt exist
-    if dbname in dbnames:
-        raise ValueError(
-            "Database already exists: {0}".format(dbname) + ". Cant add it"
-        )
-
-    # Add entries to parser
-    config = configparser.ConfigParser()
-    config.add_section(dbname)  # = {}
-
-    if "info" in dict_entries:  # optional
-        config.set(dbname, "info", dict_entries.pop("info"))
-
-    # ... Parse paths correctly
-    if dict_entries["path"] in string_types:
-        config.set(dbname, "path", dict_entries.pop("path"))
-    else:  # list
-        config.set(dbname, "path", "\n       ".join(dict_entries.pop("path")))
-
-    config.set(dbname, "format", dict_entries.pop("format"))
-    config.set(dbname, "parfuncfmt", dict_entries.pop("parfuncfmt"))
-
-    # Optional:
-    # ... Split all isotopes in separate keys
-    levels_dict = dict_entries.pop("levels", {})
-    for iso, levels_iso in levels_dict.items():
-        dict_entries["levels_iso{0}".format(iso)] = levels_iso
-
-    if "levelsfmt" in dict_entries:
-        config.set(dbname, "levelsfmt", dict_entries.pop("levelsfmt"))
-
-    # Check nothing is left
-    if dict_entries != {}:
-        raise ValueError("Unexpected keys: {0}".format(list(dict_entries.keys())))
-
-    # Write to ~/.radis
-    # ... Note: what if there is a PermissionError here? Try/except pass?
-    with open(CONFIG_PATH, "a") as configfile:
-        configfile.write("\n")
-        config.write(configfile)
-    if verbose:
-        print("Added {0} database in {1}".format(dbname, CONFIG_PATH))
-
-    return
-
-
-import sys
-
-if sys.version_info[0] == 2:
-    addDatabankEntries = _addDatabankEntries_py27
-
-
 def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
-    """ Compare two Databank entries under dict format (i.e: output of 
+    """Compare two Databank entries under dict format (i.e: output of
     getDatabankEntries)
 
-    Returns None if no differences are found, or the first different key 
+    Returns None if no differences are found, or the first different key
     """
 
     k = None
@@ -449,12 +383,12 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
             v1 = dict_entries1[k]
             v2 = dict_entries2[k]
             if k in ["info", "format", "parfunc", "parfuncfmt", "levelsfmt"]:
-                assert v1 == v2
+                assert v1.lower() == v2.lower()
             elif k in ["path"]:
                 assert (
                     compare_lists(
-                        [stdpath(path1) for path1 in v1],
-                        [stdpath(path2) for path2 in v2],
+                        [stdpath(path1).lower() for path1 in v1],
+                        [stdpath(path2).lower() for path2 in v2],
                         verbose=verbose_compare,
                     )
                     == 1
@@ -481,10 +415,10 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
 
 
 def printDatabankEntries(dbname, crop=200):
-    """ Print databank info
+    """Print databank info
 
 
-    Parameters    
+    Parameters
     ----------
 
     dbname: str

@@ -35,7 +35,8 @@ Refer to the guide below for an exhaustive list of all features:
    
 For any other question you can use the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__,
 the `GitHub issues <https://github.com/radis/radis/issues>`__ or the 
-`community chat <https://gitter.im/radis-radiation/community>`__. |badge_gitter|
+community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or 
+`Slack <https://radis.github.io/slack-invite/>`__ . |badge_gitter| |badge_slack|
  
  
 
@@ -85,7 +86,7 @@ From numpy arrays, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array` :
     # w, T are two numpy arrays 
     from radis import Spectrum
     s = Spectrum.from_array(w, T, 'transmittance_noslit', 
-                               waveunit='nm', unit='I/I0')
+                               waveunit='nm', unit='') # adimensioned
                                
               
 From a file, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
@@ -533,6 +534,19 @@ the spectral radiance of a spectrum with a low resolution::
 
     (10*Radiance(s.apply_slit(10, 'nm'))).plot()
 
+Algebraic operations also work with dimensioned `~astropy.units.quantity.Quantity`. 
+For instance, remove a constant baseline in a given unit::
+
+    s -= 0.1 * u.Unit('W/cm2/sr/nm')     
+
+Here, se normalize a spectrum manually, assuming the spectrum units is in "mW/cm2/sr/nm" :: 
+
+    s /= s.max() * u.Unit("mW/cm2/sr/nm")
+
+Or below, we calibrate a Spectrum, assuming the spectrum units is in "count" ::
+
+    s *= 100 * u.Unit("mW/cm2/sr/nm/count")
+
 
 .. _label_spectrum_offset_crop:
 
@@ -552,6 +566,28 @@ so they can be used directly with::
 By default, using methods will modify the object inplace, using the functions will 
 generate a new Spectrum. 
     
+Normalize
+---------
+
+Use :py:meth:`~radis.spectrum.spectrum.normalize` directly, if your spectrum
+only has one spectral quantity ::
+
+    s.normalize()
+    s.normalize(normalize_how="max")
+    s.normalize(normalize_how="area")
+    
+You can also normalize only on limited range. Useful for noisy spectra ::
+
+    s.normalize(wrange=(2250, 2500), wunit="cm-1", normalize_how="mean")    
+
+This returns a new spectrum and does not modify the Spectrum itself. To do so use::
+
+    s.normalize(inplace=True)
+    
+You can chain the commands : 
+
+    s.normalize().plot()
+
 
 .. _label_spectrum_remove_baseline:
 
@@ -754,4 +790,8 @@ See more information about databases below.
                   :target: https://gitter.im/radis-radiation/community
                   :alt: Gitter
 
+.. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+                  :target: https://radis.github.io/slack-invite/
+                  :alt: Slack
+                  
 
