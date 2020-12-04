@@ -153,11 +153,11 @@ def make_up(label):
     """
 
     # Improve units
-    label = label.replace(r"cm-1", r"cm$^\mathregular{-1}$")
-    label = label.replace(r"m^-1", r"m$^\mathregular{-1}$")
-    label = label.replace(r"m2", r"m$^\mathregular{2}$")
-    label = label.replace(r"m3", r"m$^\mathregular{3}$")
-    label = label.replace(r"I/I0", r"I/I$_\mathregular{0}$")  # transmittance unit
+    label = label.replace(r"cm-1", r"cm⁻¹")
+    label = label.replace(r"m^-1", r"m⁻¹")
+    label = label.replace(r"m2", r"m²$")
+    label = label.replace(r"m3", r"m³$")
+    label = label.replace(r"I/I0", r"I/I₀")  # transmittance unit
 
     # Improve text
     if not "_noslit" in label:
@@ -188,6 +188,7 @@ def make_up_unit(Iunit, var):
         spectral variable. Ex: ``transmittance``
     """
     Iunit = Iunit.replace(r"um", r"µm")
+    Iunit = Iunit.replace(r"cm-1", r"cm⁻¹")  # welcome to unicode ! ;)
 
     if Iunit == "":
         # give more explicit unit for the user:
@@ -196,7 +197,7 @@ def make_up_unit(Iunit, var):
         elif var == "absorbance":
             Iunit = r"-ln(I/I0)"
         elif var in ["emissivity_no_slit", "emissivity"]:
-            Iunit = r"$\mathregular{\epsilon}$"
+            Iunit = r"ε"
         elif var in ["radiance", "radiance_noslit"]:
             Iunit = r"norm"
 
