@@ -530,6 +530,7 @@ def plot_diff(
     diff_scale_multiplier=1,
     discard_centile=0,
     plot_medium="vacuum_only",
+    legendargs={"loc": "best"},
 ):
     """Plot two spectra, and the difference between them. ``method=`` allows
     you to plot the absolute difference, ratio, or both.
@@ -631,6 +632,9 @@ def plot_diff(
         plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
         (prevents from inadvertently plotting spectra with different propagation
         medium on the same graph).
+
+    legendargs: dict
+        format arguments forwarded to the legend
 
     Returns
     -------
@@ -859,7 +863,7 @@ def plot_diff(
 
     ax0.tick_params(labelbottom=False)
     if label1 is not None or label2 is not None:
-        ax0.legend(loc="best")
+        ax0.legend(**legendargs)
 
     # Start to 0
     if var in ["radiance_noslit", "radiance", "abscoeff", "absorbance"]:
