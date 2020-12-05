@@ -107,7 +107,6 @@ def test_nantrapz():
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-    test_config(verbose=verbose, *args, **kwargs)
     test_utils(verbose=verbose, *args, **kwargs)
     test_progress_bar()
     test_nantrapz()

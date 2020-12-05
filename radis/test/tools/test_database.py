@@ -64,7 +64,7 @@ def test_database_functions(
     # ... get_unique(). If we were to add new
     # ... test cases with matching conditions
     # ... let's add more criteria to keep it unique
-    match = db.get(**s.conditions)
+    # match = db.get(**s.conditions)
     #    assert len(match) == 1
     # TODO: not working in Python 2.7 yet
 

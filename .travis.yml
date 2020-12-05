@@ -52,13 +52,8 @@ jobs:
 
     # still in stage : test 
     - name: "Code Quality Checks"
-      install:
-        - sudo apt-get update
-        - pip install black isort --quiet
-
       script:
-        # - isort -c -rc ./  # isort would be added in future
-        - black ./ setup.py --check
+        - pre-commit run --all-files
 
     - stage: deploy
       name: "Deploy to Pypi"
