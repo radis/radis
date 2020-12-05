@@ -7,7 +7,6 @@ Test Planck functions
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
 from numpy import pi
 from radis.phys.blackbody import sPlanck, planck, planck_wn

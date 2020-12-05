@@ -20,7 +20,6 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 
 """
 
-from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc
 from radis.phys.constants import hc_k

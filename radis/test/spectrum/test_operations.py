@@ -5,7 +5,6 @@ Created on Sun Aug  5 14:26:44 2018
 @author: erwan
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.tools.database import load_spec
 from radis.spectrum.operations import (
     crop,

@@ -29,7 +29,6 @@ as they present in almost any programming language.
 Trying to retain functional style for this API. 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 # import httplib
 # import urllib2

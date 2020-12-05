@@ -12,7 +12,6 @@ same database (HITRAN 2016)
 
 """
 
-from __future__ import absolute_import
 from radis import SpectrumFactory, Spectrum
 from radis.test.utils import setup_test_line_databases
 from radis.misc.printer import printm

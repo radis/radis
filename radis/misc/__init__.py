@@ -8,7 +8,6 @@ CNRS UPR 288
 
 """
 
-from __future__ import absolute_import
 
 from .arrays import (
     norm,

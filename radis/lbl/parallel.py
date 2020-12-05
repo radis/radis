@@ -42,7 +42,6 @@ Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information.
 
 """
 
-from __future__ import absolute_import, print_function, unicode_literals, division
 from radis.lbl import SpectrumFactory
 from radis.misc.basics import is_list, is_float
 from multiprocessing import Pool, cpu_count

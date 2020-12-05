@@ -14,7 +14,6 @@ Run only fast tests
 
 """
 
-from __future__ import absolute_import, unicode_literals, division, print_function
 import numpy as np
 import matplotlib.pyplot as plt
 from radis.test.utils import setup_test_line_databases

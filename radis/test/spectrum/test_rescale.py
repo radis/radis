@@ -12,7 +12,6 @@ Test Spectrum rescaling methods
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import radis
 from radis.spectrum.rescale import get_redundant, get_recompute
 from radis.tools.database import load_spec

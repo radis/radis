@@ -29,7 +29,6 @@ References
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
 from radis.spectrum import Spectrum, plot_diff, get_residual
 from radis import SpectrumFactory
 from radis.test.utils import getValidationCase

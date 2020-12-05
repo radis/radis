@@ -55,7 +55,6 @@ References
 
 # TODO: store molecule_data.json in the H5 file metadata. If not done already.
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 import sys
 import pandas as pd

@@ -10,7 +10,6 @@ We're looking at CO(0->1) line 'R1' at 2150.86 cm-1
 
 """
 
-from __future__ import unicode_literals, print_function, absolute_import, division
 from radis.lbl.factory import SpectrumFactory
 from radis.spectrum.spectrum import Spectrum
 from radis import plot_diff, get_residual_integral, get_residual

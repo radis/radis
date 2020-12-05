@@ -18,7 +18,6 @@ method. See ``radis.db.molecules.py``
 """
 
 
-from __future__ import absolute_import
 from radis.levels.vibrating_rotor import (
     EvJ_uncoupled_vibrating_rotor,
     EvJah_uncoupled_vibrating_rotor,

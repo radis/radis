@@ -6,7 +6,6 @@ Test query functions
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import pytest
 from radis.io.query import fetch_astroquery
 from radis.io.query import Hitran, CACHE_FILE_NAME

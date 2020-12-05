@@ -6,7 +6,6 @@ Small functions used in other procedures
 -------------------------------------------------------------------------------
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
 from os.path import join, abspath, normcase, normpath

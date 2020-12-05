@@ -1,6 +1,5 @@
 # distutils: language=c++
 
-from __future__ import print_function
 import pickle
 from cpython cimport array
 import numpy as np

@@ -62,7 +62,6 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.db.molparam import MolParams
 from radis.io.cdsd import cdsd2df
 from radis.io.hitran import (

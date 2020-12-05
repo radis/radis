@@ -21,7 +21,6 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import pytest
 from six.moves import range
 

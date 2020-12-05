@@ -18,8 +18,6 @@ References
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import radis
 from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf

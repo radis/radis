@@ -21,7 +21,6 @@ Run only fast tests (i.e: tests that have a 'fast' label)
 
 """
 
-from __future__ import absolute_import, unicode_literals, division, print_function
 from radis import get_residual
 from radis.lbl import SpectrumFactory
 from radis.los import MergeSlabs

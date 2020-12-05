@@ -67,7 +67,6 @@ Most methods are written in inherited class with the following inheritance schem
 # TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.
 
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import radis
 from radis.db.molparam import MolParams
 from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT, df_metadata

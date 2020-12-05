@@ -5,7 +5,6 @@ Created on Thu May 28 14:47:36 2015
 @author: Erwan
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 import os
 import json

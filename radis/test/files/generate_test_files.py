@@ -7,7 +7,6 @@ Scripts used to generate some test files for RADIS
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 from radis.test.utils import setup_test_line_databases
 

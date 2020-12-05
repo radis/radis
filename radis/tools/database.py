@@ -51,7 +51,6 @@ of the website.
 
 # - Implement a h5py version of load / store
 
-from __future__ import absolute_import, print_function, division, unicode_literals
 import json_tricks
 import numpy as np
 from numpy import array

@@ -38,9 +38,6 @@ vib_lvl_name_cdsd_pcN
 # HITRAN ("spectroscopic") convention
 
 
-from __future__ import absolute_import
-
-
 def vib_lvl_name_hitran_class1(v1):
     """Write vibrational level for a HITRAN class 1 molecule: see
     :data:`~radis.io.hitran.HITRAN_CLASS1`

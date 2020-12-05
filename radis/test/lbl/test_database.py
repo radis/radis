@@ -21,7 +21,6 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 
 """
 
-from __future__ import unicode_literals, print_function, absolute_import, division
 import os
 import matplotlib.pyplot as plt
 from radis.lbl import SpectrumFactory

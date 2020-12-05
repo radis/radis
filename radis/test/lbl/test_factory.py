@@ -19,7 +19,6 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
-from __future__ import unicode_literals, print_function, absolute_import, division
 import astropy.units as u
 import radis
 from radis.lbl import SpectrumFactory

@@ -20,8 +20,6 @@ Mantz et al 1975, "Ground state molecular constants of 12C16O"
     
 """
 
-from __future__ import division, absolute_import, print_function
-from __future__ import unicode_literals  # α, β, γ, δ, ϵ
 
 # %% Dunham development
 

@@ -5,8 +5,6 @@ Created on Tue Jul 31 14:24:27 2018
 @author: erwan
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 from radis.levels.dunham import EvJ
 
 

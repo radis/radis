@@ -13,7 +13,6 @@ References
 
 """
 
-from __future__ import absolute_import
 from radis.misc.utils import NotInstalled
 
 try:

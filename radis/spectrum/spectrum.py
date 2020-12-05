@@ -41,7 +41,6 @@ Spectrum objects can be stored, retrieved, rescaled, resamples::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np

@@ -18,7 +18,6 @@
 # https://samnicholls.net/2016/06/15/how-to-sphinx-readthedocs/
 # --------
 
-from __future__ import absolute_import
 import sys
 import os
 

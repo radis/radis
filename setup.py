@@ -33,8 +33,6 @@ to register it on Pypi see register.py::
  
 
 """
-from __future__ import print_function
-from __future__ import absolute_import
 from setuptools import setup, find_packages
 import io
 import re

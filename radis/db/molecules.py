@@ -11,7 +11,6 @@ See :py:data:`~radis.db.molecules.Molecules`
 
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 from radis.db.classes import ElectronicState
 
 

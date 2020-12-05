@@ -19,8 +19,6 @@ See more examples in the
 # - emisscoeff default unit
 
 
-from __future__ import print_function, absolute_import, division, unicode_literals
-
 from radis.spectrum.spectrum import Spectrum, is_spectrum
 from radis.misc.basics import merge_lists, in_all
 from radis.misc.arrays import count_nans
