@@ -16,7 +16,6 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
 from radis.los.slabs import MergeSlabs, SerialSlabs
 import pytest

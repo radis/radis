@@ -17,7 +17,6 @@ Run only fast tests (i.e: tests that a 'fast' label)
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.lbl.parallel import ParallelFactory, SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases

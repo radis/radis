@@ -3,7 +3,6 @@
 Test names and labels
 """
 
-from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.lbl.labels import (
     vib_lvl_name_hitran_class1,
     vib_lvl_name_hitran_class5,

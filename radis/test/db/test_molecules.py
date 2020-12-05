@@ -5,8 +5,6 @@ Created on Tue Jul 31 18:00:54 2018
 @author: erwan
 """
 
-from __future__ import absolute_import, unicode_literals, division
-from __future__ import print_function
 from radis.db.molecules import getMolecule, Molecules
 from radis.db.utils import (
     get_herzberg_coefficients,

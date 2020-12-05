@@ -16,7 +16,6 @@ Routine Listing
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 from copy import deepcopy
 from radis.lbl.factory import SpectrumFactory

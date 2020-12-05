@@ -30,7 +30,6 @@ see the functions in :py:mod:`radis.spectrum.operations`:
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.spectrum.spectrum import Spectrum
 import numpy as np
 

@@ -22,7 +22,6 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.io.hitran import hit2df
 from radis.io.cdsd import cdsd2df
 from radis.test.utils import getTestFile

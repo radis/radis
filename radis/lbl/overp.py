@@ -20,8 +20,6 @@ having to recalculate the broadening of each line
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 from warnings import warn
 from radis.spectrum.spectrum import is_spectrum
 from radis.spectrum.rescale import (

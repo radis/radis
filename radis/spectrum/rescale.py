@@ -14,7 +14,6 @@ unload the spectrum.py file
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
 from numpy import log as ln
 from numpy import exp

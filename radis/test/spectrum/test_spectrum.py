@@ -17,7 +17,6 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.spectrum import Spectrum, calculated_spectrum
 from radis.phys.convert import nm2cm
 

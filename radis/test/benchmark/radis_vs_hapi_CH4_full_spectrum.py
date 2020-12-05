@@ -29,8 +29,6 @@ Typical results on an XPS 15 laptop here::
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 from radis import SpectrumFactory, Spectrum, plot_diff
 from radis.io.hapi import (
     fetch_by_ids,

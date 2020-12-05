@@ -20,8 +20,6 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
 
 """
 
-from __future__ import absolute_import, division, unicode_literals
-from __future__ import print_function
 import numpy as np
 from radis.phys.constants import eV, h, c, k_b, hc_k
 

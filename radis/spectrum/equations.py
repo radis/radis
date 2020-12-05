@@ -12,7 +12,6 @@ in post processing)
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
 from radis.phys.convert import cm2nm
 from radis.phys.blackbody import planck
 

@@ -58,7 +58,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 ----------
 
 """
-from __future__ import print_function, absolute_import, division, unicode_literals
 from radis.lbl.base import BaseFactory
 from radis.phys.constants import Na
 from radis.phys.constants import k_b_CGS, c_CGS

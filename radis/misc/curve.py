@@ -25,7 +25,6 @@ Routine Listing
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.spatial.distance import cdist

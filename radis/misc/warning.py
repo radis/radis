@@ -7,7 +7,6 @@ Define warnings for radiation code, and how to deal with them
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
 
 import warnings
 from radis.misc.printer import printr

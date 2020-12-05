@@ -41,7 +41,6 @@ Or::
 
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 import re
 from six import string_types
 from radis.io.hitran import get_molecule, get_molecule_identifier

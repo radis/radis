@@ -21,7 +21,6 @@ References
 
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
 from radis.levels.dunham import Gv, Fv
 from radis.db.conventions import (

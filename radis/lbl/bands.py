@@ -43,8 +43,6 @@ PRIVATE METHODS
 # TODO: merge common parts of BandList.eq_bands  and SpectrumFactory.eq_spectrum,
 # under a same function call
 
-from __future__ import absolute_import
-from __future__ import print_function
 from warnings import warn
 import astropy.units as u
 from radis.lbl.broadening import BroadenFactory

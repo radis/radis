@@ -5,7 +5,6 @@
 
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 from .hitran import hit2df, get_molecule, get_molecule_identifier
 from .cdsd import cdsd2df

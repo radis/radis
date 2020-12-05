@@ -53,7 +53,6 @@ Most of these functions are implemented with the standard operators. Ex::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 import astropy.units as u
 from radis.spectrum import Spectrum

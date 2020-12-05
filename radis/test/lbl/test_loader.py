@@ -5,7 +5,6 @@ Created on Mon May  7 17:34:52 2018
 @author: erwan
 """
 
-from __future__ import absolute_import, unicode_literals, division, print_function
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases, getTestFile

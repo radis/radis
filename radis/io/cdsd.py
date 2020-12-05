@@ -19,7 +19,6 @@ CDSD-4000 manual
 
 # TODO: remove wangl2  after loading database (wangl is enough, with 1=e and 2=f)
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 from collections import OrderedDict
 import radis

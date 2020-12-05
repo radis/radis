@@ -18,7 +18,6 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 # from radis.lbl import SpectrumFactory
 from radis.spectrum.models import calculated_spectrum, transmittance_spectrum
