@@ -15,9 +15,8 @@ stages:
 jobs:
   include:
     - stage: test
-      name: "Test and Coverage"
+      name: Test and Coverage
       install:
-        - sudo apt-get update
         # Install Anaconda 
         # We do this conditionally because it saves us some downloading if the
         # version is the same.
@@ -50,14 +49,14 @@ jobs:
         - pip install codecov;
         - codecov;
 
-    # still in stage : test 
-    - name: "Code Quality Checks"
+    - stage: lint
+      name: Code Quality Checks
       script:
         - pre-commit run --all-files
 
     - stage: deploy
-      name: "Deploy to Pypi"
-      install: 
+      name: Deploy to PyPI
+      install:
         - sudo apt-get update
       script:
         - echo "Deploying to Pypi"
