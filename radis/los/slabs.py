@@ -562,7 +562,7 @@ def MergeSlabs(*slabs, **kwargs):
     out_of_bounds = kwargs.pop("out", "nan")  # default 'nan'
     optically_thin = kwargs.pop("optically_thin", False)  # default False
     verbose = kwargs.pop("verbose", False)  # type: bool
-    debug = kwargs.pop("debug", False)  # type: bool
+    kwargs.pop("debug", False)  # type: bool
     modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
         raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))

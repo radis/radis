@@ -65,8 +65,7 @@ def test_database_functions(
     # ... test cases with matching conditions
     # ... let's add more criteria to keep it unique
     match = db.get(**s.conditions)
-    #    assert len(match) == 1
-    # TODO: not working in Python 2.7 yet
+    assert len(match) == 1
 
     # Database add method
     s2 = s.copy()
