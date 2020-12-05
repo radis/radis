@@ -20,7 +20,7 @@ jobs:
         # Install Anaconda 
         # We do this conditionally because it saves us some downloading if the
         # version is the same.
-        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         - bash miniconda.sh -b -p $HOME/miniconda
         - export PATH="$HOME/miniconda/bin:$PATH"
         - hash -r
@@ -42,18 +42,17 @@ jobs:
         # Your test script goes here
         - echo ">>> Run tests"
         # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run pytest -m "not needs_config_file and not needs_cuda" --cov=./;
+        - xvfb-run pytest -m "not needs_config_file and not needs_cuda" --cov=./
       
       after_success:
         # codecoverage
-        - pip install codecov;
-        - codecov;
+        - pip install codecov
+        - codecov
 
     - stage: lint
       name: Code Quality Checks
       install:
         - pip install pre-commit
-        - pre-commit install
       script:
         - pre-commit run --all-files
 
@@ -62,7 +61,7 @@ jobs:
       install:
         - sudo apt-get update
       script:
-        - echo "Deploying to Pypi"
+        - echo "Deploying to PyPI"
       before_deploy: 
         - sudo apt-get install pandoc
         - pandoc README.rst -o README.md
