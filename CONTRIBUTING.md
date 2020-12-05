@@ -63,7 +63,7 @@ You can suggest or vote for new features below:
 [![Feature Requests](https://feathub.com/radis/radis?format=svg)](https://feathub.com/radis/radis)
 
 ## License
-By contributing, you agree that your contributions will be licensed under the [GNU Lesser General Public License v3.0](https://github.com/jayanthchandra/radis/blob/develop/LICENSE)
+By contributing, you agree that your contributions will be licensed under the [GNU Lesser General Public License v3.0](https://github.com/radis/radis/blob/develop/LICENSE)
 
 ## References
 This document was adapted from the open-source contribution guidelines of [@briandk](https://gist.github.com/briandk/3d2e8b3ec8daf5a27a62)
