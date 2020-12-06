@@ -19,13 +19,15 @@ See more examples in the
 # - emisscoeff default unit
 
 
-from radis.spectrum.spectrum import Spectrum, is_spectrum
-from radis.misc.basics import merge_lists, in_all
-from radis.misc.arrays import count_nans
-from radis.misc.debug import printdbg
 from warnings import warn
+
 import numpy as np
-from numpy import arange, allclose, abs, diff
+from numpy import abs, allclose, arange, diff
+
+from radis.misc.arrays import count_nans
+from radis.misc.basics import in_all, merge_lists
+from radis.misc.debug import printdbg
+from radis.spectrum.spectrum import Spectrum, is_spectrum
 
 # %% Slabs / Multi-layers / Radiative Transfer Equation (RTE)
 # ----------------------------------------------------------------------

@@ -22,12 +22,12 @@ References
 """
 
 
-from radis.levels.dunham import Gv, Fv
 from radis.db.conventions import (
     herzberg_coefficients_rot,
     herzberg_coefficients_rovib,
     herzberg_coefficients_vib,
 )
+from radis.levels.dunham import Fv, Gv
 
 
 def EvJ_uncoupled_vibrating_rotor(

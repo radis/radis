@@ -127,3 +127,6 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
+
+# VSCode
+.vscode/

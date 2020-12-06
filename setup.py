@@ -33,10 +33,11 @@ to register it on Pypi see register.py::
 
 
 """
-from setuptools import setup, find_packages
 import io
 import re
-from os.path import abspath, dirname, join, exists
+from os.path import abspath, dirname, exists, join
+
+from setuptools import find_packages, setup
 
 # Build description from README (PyPi compatible)
 # -----------------------------------------------

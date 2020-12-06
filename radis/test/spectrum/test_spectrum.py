@@ -17,14 +17,15 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 
 """
 
-from radis.spectrum import Spectrum, calculated_spectrum
-from radis.phys.convert import nm2cm
-
-import numpy as np
-from numpy import allclose, linspace
 import os
 from os.path import basename, exists
+
+import numpy as np
 import pytest
+from numpy import allclose, linspace
+
+from radis.phys.convert import nm2cm
+from radis.spectrum import Spectrum, calculated_spectrum
 
 fig_prefix = basename(__file__) + ": "
 
@@ -145,9 +146,10 @@ def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs)
 
         plt.close("all")
 
+    import pytest
+
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
-    import pytest
 
     # get a spectrum
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
@@ -282,9 +284,9 @@ def test_resampling_function(
     and in approximately the same range (but in nm). Check that all 3 overlap
     """
     # %%
+    from radis.spectrum import get_residual_integral
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
-    from radis.spectrum import get_residual_integral
 
     if plot and close_plots:
         import matplotlib.pyplot as plt
@@ -362,7 +364,7 @@ def test_noplot_different_quantities(*args, **kwargs):
 @pytest.mark.fast
 def test_normalization(*args, **kwargs):
 
-    from radis import load_spec, Radiance
+    from radis import Radiance, load_spec
     from radis.test.utils import getTestFile
 
     # Generate the equivalent of an experimental spectrum

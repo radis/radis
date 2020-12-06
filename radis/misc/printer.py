@@ -3,10 +3,11 @@
 Print functions, with colors
 """
 
-from termcolor import colored
-from six import StringIO
 import sys
+
 import pandas as pd
+from six import StringIO
+from termcolor import colored
 
 # %% Colored Print functions
 

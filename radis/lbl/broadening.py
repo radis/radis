@@ -58,24 +58,25 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 ----------
 
 """
-from radis.lbl.base import BaseFactory
-from radis.phys.constants import Na
-from radis.phys.constants import k_b_CGS, c_CGS
-from radis.misc.printer import printg
-from radis.misc.basics import is_float
-from numpy import exp, arange, zeros_like, trapz, pi, sqrt, sin
-from numpy import log as ln
 from multiprocessing import Pool, cpu_count
 from time import time
 from warnings import warn
+
+import matplotlib.pyplot as plt
+import numpy as np
+from numba import float64, jit
+from numpy import arange, exp
+from numpy import log as ln
+from numpy import pi, sin, sqrt, trapz, zeros_like
+from six.moves import range, zip
+
+from radis.lbl.base import BaseFactory
+from radis.misc.basics import is_float
+from radis.misc.debug import printdbg
+from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
-import numpy as np
-import matplotlib.pyplot as plt
-from six.moves import zip
-from numba import jit, float64
-from radis.misc.debug import printdbg
-from six.moves import range
+from radis.phys.constants import Na, c_CGS, k_b_CGS
 
 # %% Broadening functions
 
@@ -1486,7 +1487,7 @@ class BroadenFactory(BaseFactory):
         """
         # TODO #clean: make it a standalone function.
 
-        from publib import set_style, fix_style
+        from publib import fix_style, set_style
 
         if pressure_atm is None:
             pressure_atm = self.input.pressure_mbar / 1013.25

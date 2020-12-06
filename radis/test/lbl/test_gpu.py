@@ -7,10 +7,11 @@ Created on Sun Aug 22 13:34:42 2020
 ------------------------------------------------------------------------
 
 """
-from radis import SpectrumFactory
-from radis.test.utils import getTestFile
-from radis.misc.printer import printm
 import pytest
+
+from radis import SpectrumFactory
+from radis.misc.printer import printm
+from radis.test.utils import getTestFile
 
 
 @pytest.mark.needs_cuda

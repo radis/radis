@@ -14,16 +14,17 @@ unload the spectrum.py file
 
 """
 
-import numpy as np
-from numpy import log as ln
-from numpy import exp
-from radis.misc.debug import printdbg
-from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
-from radis.spectrum.equations import calc_radiance
-from radis.misc.basics import all_in, any_in
-from radis.misc.basics import compare_lists
 from warnings import warn
+
+import numpy as np
+from numpy import exp
+from numpy import log as ln
 from six import string_types
+
+from radis.misc.basics import all_in, any_in, compare_lists
+from radis.misc.debug import printdbg
+from radis.spectrum.equations import calc_radiance
+from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
 
 # List of all spectral variables sorted by priority during recomputation
 # (ex: first get abscoeff, then try to calculate emisscoeff, etc.)

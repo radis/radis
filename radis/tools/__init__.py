@@ -9,13 +9,13 @@ CNRS UPR 288
 """
 
 
+from .database import SpecDatabase, load_spec, plot_spec, save
+from .gascomp import get_eq_mole_fraction
 from .slit import (
-    plot_slit,
+    convolve_with_slit,
+    crop_slit,
     get_effective_FWHM,
     get_FWHM,
-    convolve_with_slit,
+    plot_slit,
     recenter_slit,
-    crop_slit,
 )
-from .database import SpecDatabase, save, load_spec, plot_spec
-from .gascomp import get_eq_mole_fraction

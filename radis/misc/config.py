@@ -31,13 +31,14 @@ Routine Listing
 """
 
 
-from radis.misc.utils import DatabankNotFound
 import configparser
-from os.path import expanduser, join, exists, dirname
-from six import string_types
-from radis.misc.basics import compare_lists, compare_dict, stdpath
-from radis.misc.utils import getProjectRoot
 import json
+from os.path import dirname, exists, expanduser, join
+
+from six import string_types
+
+from radis.misc.basics import compare_dict, compare_lists, stdpath
+from radis.misc.utils import DatabankNotFound, getProjectRoot
 
 # %% Functions to parse radis/config.json
 

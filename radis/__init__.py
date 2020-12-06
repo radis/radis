@@ -70,9 +70,10 @@ References
 """
 
 import os
-from .misc.utils import getProjectRoot
-from .misc.utils import Chdir as _chdir
+
 from .misc.config import get_config
+from .misc.utils import Chdir as _chdir
+from .misc.utils import getProjectRoot
 
 # %% Config files
 
@@ -191,12 +192,12 @@ def get_version(verbose=False, add_git_number=True):
 __version__ = get_version(add_git_number=False)
 
 
-from .spectrum import *  # Spectrum object
-from .io import *  # input / output
 from .db import *  # database of molecules
+from .io import *  # input / output
 from .lbl import *  # line-by-line module
-from .los import *  # line-of-sight module
 from .levels import *  # rovibrational energies and partition functions
+from .los import *  # line-of-sight module
 from .phys import *  # conversion functions, blackbody objects
-from .tools import *  # slit, database, line survey, etc.
+from .spectrum import *  # Spectrum object
 from .test import *  # test
+from .tools import *  # slit, database, line survey, etc.

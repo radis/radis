@@ -9,6 +9,7 @@ Define warnings for radiation code, and how to deal with them
 
 
 import warnings
+
 from radis.misc.printer import printr
 
 # %% Spectrum warnings / errors

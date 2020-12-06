@@ -21,12 +21,13 @@ Run only fast tests (i.e: tests that have a 'fast' label)
 
 """
 
+import matplotlib.pyplot as plt
+import pytest
+
 from radis import get_residual
 from radis.lbl import SpectrumFactory
 from radis.los import MergeSlabs
 from radis.misc.printer import printm
-import matplotlib.pyplot as plt
-import pytest
 
 
 @pytest.mark.needs_connection

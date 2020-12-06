@@ -79,33 +79,34 @@ for Developers:
 ----------
 
 """
-from six import string_types
+import sys
+from multiprocessing import cpu_count
+from subprocess import call
+from time import time
 from warnings import warn
 
+import astropy.units as u
+import numpy as np
+from numpy import arange, exp
+from scipy.constants import N_A, c, k, pi
+from six import string_types
+
+from radis import get_version
+from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
+from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.io import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
-from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
-from radis.spectrum.spectrum import Spectrum
-from radis.spectrum.equations import calc_radiance
-from radis.misc.basics import is_float, list_if_float, flatten
+from radis.misc import getProjectRoot
+from radis.misc.basics import flatten, is_float, list_if_float
 from radis.misc.printer import printg
 from radis.misc.utils import Default
-from radis.misc import getProjectRoot
-from radis.phys.convert import conv2
 from radis.phys.constants import k_b
-from radis.phys.units import convert_rad2nm, convert_emi2nm
+from radis.phys.convert import conv2
+from radis.phys.units import convert_emi2nm, convert_rad2nm
 from radis.phys.units_astropy import convert_and_strip_units
-from radis import get_version
-from numpy import exp, arange
-from multiprocessing import cpu_count
-from time import time
-import numpy as np
-import astropy.units as u
-import sys
-from subprocess import call
-from scipy.constants import c, k, N_A, pi
+from radis.spectrum.equations import calc_radiance
+from radis.spectrum.spectrum import Spectrum
 
 c_cm = c * 100
 

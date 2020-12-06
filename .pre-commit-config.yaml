@@ -5,6 +5,11 @@ repos:
       - id: black
         language_version: python3.6
 
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.6.4
+    hooks:
+      - id: isort
+
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.7.9
     hooks:

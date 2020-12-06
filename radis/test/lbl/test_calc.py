@@ -21,13 +21,15 @@ Run only fast tests (i.e: tests that have a 'fast' label)
 
 """
 
-from radis.lbl import SpectrumFactory, LevelsList
+from os.path import basename
+
+import numpy as np
+import pytest
+
+from radis.lbl import LevelsList, SpectrumFactory
 from radis.lbl.calc import calc_spectrum
 from radis.misc.printer import printm
 from radis.phys.blackbody import sPlanck
-import numpy as np
-from os.path import basename
-import pytest
 
 fig_prefix = basename(__file__) + ": "
 

@@ -12,8 +12,8 @@ in post processing)
 
 """
 
-from radis.phys.convert import cm2nm
 from radis.phys.blackbody import planck
+from radis.phys.convert import cm2nm
 
 # ------- Get radiance from emissivity
 

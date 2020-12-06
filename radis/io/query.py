@@ -18,18 +18,20 @@ References
 
 """
 
-import radis
-from radis.io.hitran import get_molecule, get_molecule_identifier
-from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
-from radis.misc import is_float
-from radis.misc.printer import printr
-from astropy import units as u
-from astroquery.hitran import Hitran
 import os
-from os.path import join, isfile, exists
+import sys
+from os.path import exists, isfile, join
+
 import numpy as np
 import pandas as pd
-import sys
+from astropy import units as u
+from astroquery.hitran import Hitran
+
+import radis
+from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.misc import is_float
+from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
+from radis.misc.printer import printr
 
 CACHE_FILE_NAME = "tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5"
 

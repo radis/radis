@@ -43,31 +43,32 @@ PRIVATE METHODS
 # TODO: merge common parts of BandList.eq_bands  and SpectrumFactory.eq_spectrum,
 # under a same function call
 
+from time import time
 from warnings import warn
+
 import astropy.units as u
+import numpy as np
+import pandas as pd
+from numpy import exp
+
+from radis.io.hitran import HITRAN_CLASS1, get_molecule
 from radis.lbl.broadening import BroadenFactory
-from radis.spectrum.equations import calc_radiance
-from radis.spectrum.spectrum import Spectrum
-from radis.phys.units import convert_rad2nm, convert_emi2nm
-from radis.io.hitran import get_molecule, HITRAN_CLASS1
-from radis.misc.basics import is_float
-from radis.misc.progress_bar import ProgressBar
-from radis.misc.basics import all_in
-from radis.phys.units_astropy import convert_and_strip_units
-from radis.phys.constants import k_b
-from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 from radis.lbl.labels import (
+    vib_lvl_name_cdsd_pc,
+    vib_lvl_name_cdsd_pcJN,
+    vib_lvl_name_cdsd_pcN,
     vib_lvl_name_hitran_class1,
     vib_lvl_name_hitran_class5,
-    vib_lvl_name_cdsd_pc,
-    vib_lvl_name_cdsd_pcN,
-    vib_lvl_name_cdsd_pcJN,
 )
+from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+from radis.misc.basics import all_in, is_float
+from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
-import numpy as np
-from numpy import exp
-from time import time
-import pandas as pd
+from radis.phys.constants import k_b
+from radis.phys.units import convert_emi2nm, convert_rad2nm
+from radis.phys.units_astropy import convert_and_strip_units
+from radis.spectrum.equations import calc_radiance
+from radis.spectrum.spectrum import Spectrum
 
 # %% BandFactory
 

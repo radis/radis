@@ -35,27 +35,49 @@ Trying to retain functional style for this API.
 import json
 import os
 import os.path
+import pydoc
 import re
-from os import listdir
-from numpy import zeros, array, zeros, setdiff1d, ndarray, arange
-from numpy import place, where, insert, real, polyval
-from numpy import complex128, complex64, int64, int32, float64, float32
-from numpy import sqrt, abs, exp, pi, log, sin, cos, tan
-from numpy import convolve
-from numpy import flipud
-from numpy.fft import fft, fftshift
-from numpy import linspace, floor
-from numpy import any, minimum, maximum
-from numpy import modf
-from numpy import sort as npsort
 from bisect import bisect
+from os import listdir
 
 # from collections import OrderedDict
-from warnings import warn, simplefilter
-import pydoc
+from warnings import simplefilter, warn
+
 import six
-from six.moves import range
-from six.moves import zip
+from numpy import (
+    abs,
+    any,
+    arange,
+    array,
+    complex64,
+    complex128,
+    convolve,
+    cos,
+    exp,
+    flipud,
+    float32,
+    float64,
+    floor,
+    insert,
+    int32,
+    int64,
+    linspace,
+    log,
+    maximum,
+    minimum,
+    modf,
+    ndarray,
+    pi,
+    place,
+    polyval,
+    real,
+    setdiff1d,
+    sin,
+)
+from numpy import sort as npsort
+from numpy import sqrt, tan, where, zeros
+from numpy.fft import fft, fftshift
+from six.moves import range, zip
 
 # Enable warning repetitions
 simplefilter("always", UserWarning)
@@ -64,7 +86,9 @@ simplefilter("always", UserWarning)
 try:
     import urllib.request as urllib2
 except ImportError:
-    import six.moves.urllib.request, six.moves.urllib.error, six.moves.urllib.parse
+    import six.moves.urllib.error
+    import six.moves.urllib.parse
+    import six.moves.urllib.request
 
 HAPI_VERSION = "1.1.0.6"
 # CHANGES:

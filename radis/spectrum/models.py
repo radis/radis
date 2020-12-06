@@ -30,9 +30,9 @@ see the functions in :py:mod:`radis.spectrum.operations`:
 
 """
 
-from radis.spectrum.spectrum import Spectrum
 import numpy as np
 
+from radis.spectrum.spectrum import Spectrum
 
 # %% Array-to-Spectrum functions
 

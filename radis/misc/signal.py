@@ -13,11 +13,13 @@ Signal processing functions
 """
 
 
-from numpy import trapz, abs, linspace, isnan, nan
-from scipy.interpolate import splev, splrep
 from warnings import warn
-from radis.misc.debug import printdbg
+
+from numpy import abs, isnan, linspace, nan, trapz
+from scipy.interpolate import splev, splrep
+
 from radis.misc.arrays import is_sorted, is_sorted_backward
+from radis.misc.debug import printdbg
 
 
 def resample(
@@ -311,10 +313,11 @@ def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
 
     """
 
-    from radis.test.utils import getTestFile
-    from radis.phys.convert import nm2cm, cm2nm
     import matplotlib.pyplot as plt
-    from numpy import loadtxt, linspace
+    from numpy import linspace, loadtxt
+
+    from radis.phys.convert import cm2nm, nm2cm
+    from radis.test.utils import getTestFile
 
     # Test even resampling
 

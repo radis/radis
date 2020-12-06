@@ -23,40 +23,41 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 
 import numpy as np
+import pytest
 from numpy import isclose
+
 from radis.phys.convert import (
-    J2eV,
+    J2K,
+    K2J,
     J2cm,
+    J2eV,
+    K2cm,
+    K2eV,
+    atm2bar,
+    atm2torr,
+    bar2atm,
+    bar2torr,
+    cm2eV,
+    cm2hz,
     cm2J,
+    cm2K,
+    dcm2dnm,
+    dhz2dnm,
+    dnm2dcm,
+    dnm2dhz,
     eV2cm,
+    eV2J,
     eV2K,
     eV2nm,
-    nm2eV,
-    cm2K,
-    K2cm,
-    dnm2dcm,
-    nm2cm,
-    dnm2dhz,
-    dhz2dnm,
-    cm2eV,
-    eV2J,
-    K2J,
-    J2K,
-    dcm2dnm,
-    K2eV,
-    hz2nm,
-    nm2hz,
     hz2cm,
-    cm2hz,
-    torr2bar,
+    hz2nm,
+    nm2cm,
+    nm2eV,
+    nm2hz,
     torr2atm,
-    bar2torr,
-    bar2atm,
-    atm2torr,
-    atm2bar,
+    torr2bar,
 )
 from radis.phys.units import conv2, is_homogeneous
-import pytest
 
 
 @pytest.mark.fast

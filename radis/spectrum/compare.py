@@ -24,22 +24,21 @@ Routine Listings
 
 """
 
-from radis.misc.arrays import array_allclose
-from radis.misc.curve import curve_substract, curve_distance, curve_divide
-from radis.spectrum.spectrum import Spectrum, is_spectrum
-from radis.spectrum.utils import format_xlabel, make_up, make_up_unit, cast_waveunit
-from radis.misc.basics import compare_lists, compare_dict
-from six import string_types
+from warnings import warn
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib import gridspec
 from matplotlib.widgets import MultiCursor
-import numpy as np
-from publib import set_style, fix_style
-from warnings import warn
-from six.moves import range
-from six.moves import zip
+from publib import fix_style, set_style
+from six import string_types
+from six.moves import range, zip
 
+from radis.misc.arrays import array_allclose
+from radis.misc.basics import compare_dict, compare_lists
+from radis.misc.curve import curve_distance, curve_divide, curve_substract
+from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.utils import cast_waveunit, format_xlabel, make_up, make_up_unit
 
 # %% ======================================================================
 # External functions

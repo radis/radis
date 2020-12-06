@@ -6,8 +6,9 @@
 
 """
 
-import astropy.units as u
 import warnings
+
+import astropy.units as u
 
 
 def Unit(st, *args, **kwargs):

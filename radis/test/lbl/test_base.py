@@ -5,18 +5,19 @@ Created on Mon May  7 17:34:52 2018
 @author: erwan
 """
 
+import astropy.units as u
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+
+import radis
+from radis import get_residual, sPlanck
 from radis.lbl import SpectrumFactory
 from radis.lbl.base import get_waverange
 from radis.misc.printer import printm
-from radis.test.utils import setup_test_line_databases
-import pytest
-import numpy as np
-import astropy.units as u
 from radis.misc.progress_bar import ProgressBar
-from radis import get_residual, sPlanck
-import radis
-import matplotlib.pyplot as plt
 from radis.misc.utils import Default
+from radis.test.utils import setup_test_line_databases
 
 
 @pytest.mark.fast

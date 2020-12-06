@@ -12,13 +12,14 @@ Test Spectrum rescaling methods
 
 """
 
-import radis
-from radis.spectrum.rescale import get_redundant, get_recompute
-from radis.tools.database import load_spec
-from radis.test.utils import getTestFile
-from radis.misc.printer import printm
 import numpy as np
 import pytest
+
+import radis
+from radis.misc.printer import printm
+from radis.spectrum.rescale import get_recompute, get_redundant
+from radis.test.utils import getTestFile
+from radis.tools.database import load_spec
 
 
 @pytest.mark.fast
@@ -185,7 +186,7 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
 
         DEBUG_MODE = radis.DEBUG_MODE
         radis.DEBUG_MODE = True
-    from radis.spectrum.rescale import get_reachable, ordered_keys, _build_update_graph
+    from radis.spectrum.rescale import _build_update_graph, get_reachable, ordered_keys
 
     # ordered_keys: all spectral quantities that can be rescaled
     can_be_recomputed = get_reachable(s0)

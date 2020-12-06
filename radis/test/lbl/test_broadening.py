@@ -10,15 +10,17 @@ We're looking at CO(0->1) line 'R1' at 2150.86 cm-1
 
 """
 
-from radis.lbl.factory import SpectrumFactory
-from radis.spectrum.spectrum import Spectrum
-from radis import plot_diff, get_residual_integral, get_residual
-from radis.test.utils import setup_test_line_databases
-from radis.misc.printer import printm
-from os.path import join, dirname
-from numpy import isclose
+from os.path import dirname, join
+
 import matplotlib.pyplot as plt
 import pytest
+from numpy import isclose
+
+from radis import get_residual, get_residual_integral, plot_diff
+from radis.lbl.factory import SpectrumFactory
+from radis.misc.printer import printm
+from radis.spectrum.spectrum import Spectrum
+from radis.test.utils import setup_test_line_databases
 
 
 @pytest.mark.fast
@@ -29,7 +31,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
 
     We're looking at CO(0->1) line 'R1' at 2150.86 cm-1
     """
-    from radis.io.hapi import db_begin, fetch, tableList, absorptionCoefficient_Voigt
+    from radis.io.hapi import absorptionCoefficient_Voigt, db_begin, fetch, tableList
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
