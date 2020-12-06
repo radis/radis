@@ -344,7 +344,7 @@ Example of output::
 
 .. raw:: html
 
-    <iframe id="igraph" src="https://plot.ly/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
+    <iframe id="igraph" src="https://chart-studio.plotly.com/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
 
 The method uses the :class:`~radis.tools.line_survey.LineSurvey` class. 
 
