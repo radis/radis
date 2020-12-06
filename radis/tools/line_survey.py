@@ -13,6 +13,7 @@ from warnings import warn
 
 import numpy as np
 
+from radis.db.classes import get_molecule
 from radis.io.cdsd import columns_4000 as cdsd4000columns
 from radis.io.cdsd import columns_hitemp as cdsdcolumns
 from radis.io.hitran import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,; HITRAN_CLASS7,; HITRAN_CLASS8,; HITRAN_CLASS9,; HITRAN_CLASS10,
@@ -21,9 +22,6 @@ from radis.io.hitran import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,;
     HITRAN_CLASS5,
 )
 from radis.io.hitran import columns_2004 as hitrancolumns
-from radis.io.hitran import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,; HITRAN_CLASS7,; HITRAN_CLASS8,; HITRAN_CLASS9,; HITRAN_CLASS10,
-    get_molecule,
-)
 from radis.misc.basics import is_float
 from radis.misc.utils import NotInstalled
 from radis.phys.air import vacuum2air

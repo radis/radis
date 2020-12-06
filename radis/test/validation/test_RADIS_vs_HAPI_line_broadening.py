@@ -18,7 +18,7 @@ from os.path import dirname, exists, join
 import pytest
 
 from radis import Spectrum, SpectrumFactory
-from radis.io.hitran import get_molecule_identifier
+from radis.db.classes import get_molecule_identifier
 from radis.misc.printer import printm
 from radis.phys.convert import nm2cm
 from radis.test.utils import setup_test_line_databases

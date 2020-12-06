@@ -79,10 +79,10 @@ from six import string_types
 from six.moves import range, zip
 
 import radis
-from radis.db.molparam import MolParams
 
 # TODO: rename in get_molecule_name
-from radis.io.hitran import get_molecule, get_molecule_identifier
+from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.db.molparam import MolParams
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 from radis.misc.basics import all_in, transfer_metadata
@@ -337,7 +337,7 @@ class BaseFactory(DatabankLoader):
                     + " directly. See functions in factory.py "
                 )
 
-        from radis.io.hitran import HITRAN_CLASS1, HITRAN_CLASS5
+        from radis.db.classes import HITRAN_CLASS1, HITRAN_CLASS5
 
         # Different methods to get Evib and Erot:
         # fetch energies from precomputed CDSD levels: one Evib per (p, c) group
@@ -408,7 +408,7 @@ class BaseFactory(DatabankLoader):
                 + " directly. See functions in factory.py "
             )
 
-        from radis.io.hitran import HITRAN_CLASS5
+        from radis.db.classes import HITRAN_CLASS5
 
         if self.params.levelsfmt == "cdsd-pc":  # calculate from precomputed CDSD levels
             return self._add_Evib123Erot_CDSD_pc(df)

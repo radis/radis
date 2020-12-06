@@ -68,7 +68,7 @@ from six.moves import range, zip
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
-from radis.io.hitran import (
+from radis.db.classes import (
     HITRAN_CLASS1,
     HITRAN_CLASS2,
     HITRAN_CLASS3,
@@ -750,7 +750,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
     ::
 
         from radis.levels.partfunc import PartFuncHAPI
-        from radis.io.hitran import get_molecule_identifier
+        from radis.db.classes import get_molecule_identifier
 
         M = get_molecule_identifier('N2O')
         iso=1

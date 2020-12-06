@@ -73,15 +73,11 @@ import pandas as pd
 from six import string_types
 from six.moves import range
 
+from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
 from radis.io.cdsd import cdsd2df
-from radis.io.hitran import (
-    get_molecule,
-    hit2df,
-    parse_global_quanta,
-    parse_local_quanta,
-)
+from radis.io.hitran import hit2df, parse_global_quanta, parse_local_quanta
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.levels.partfunc import (

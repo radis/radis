@@ -92,9 +92,9 @@ from scipy.constants import N_A, c, k, pi
 from six import string_types
 
 from radis import get_version
+from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
+from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.io import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
-from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
 from radis.misc import getProjectRoot

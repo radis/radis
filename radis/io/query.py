@@ -28,7 +28,7 @@ from astropy import units as u
 from astroquery.hitran import Hitran
 
 import radis
-from radis.io.hitran import get_molecule, get_molecule_identifier
+from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.misc import is_float
 from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc.printer import printr

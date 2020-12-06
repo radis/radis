@@ -99,7 +99,7 @@ using the TIPS program through [HAPI]_. These partition functions can be retriev
 with the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class::
 
     from radis.levels.partfunc import PartFuncHAPI
-    from radis.io.hitran import get_molecule_identifier
+    from radis.db.classes import get_molecule_identifier
 
     M = get_molecule_identifier('N2O')
     iso=1

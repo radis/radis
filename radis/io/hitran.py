@@ -33,165 +33,31 @@ import pandas as pd
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
+from radis.db.classes import (  # get_molecule_identifier,
+    HITRAN_CLASS1,
+    HITRAN_CLASS2,
+    HITRAN_CLASS3,
+    HITRAN_CLASS4,
+    HITRAN_CLASS5,
+    HITRAN_CLASS6,
+    HITRAN_CLASS7,
+    HITRAN_CLASS8,
+    HITRAN_CLASS9,
+    HITRAN_CLASS10,
+    HITRAN_GROUP1,
+    HITRAN_GROUP2,
+    HITRAN_GROUP3,
+    HITRAN_GROUP4,
+    HITRAN_GROUP5,
+    HITRAN_GROUP6,
+    get_molecule,
+)
 from radis.io.tools import (
     drop_object_format_columns,
     parse_hitran_file,
     replace_PQR_with_m101,
 )
 from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-
-# %% Hitran groups and classes
-# As defined in Rothman et al, "The HITRAN 2004 molecular spectroscopic database"
-# Tables 3 and 4
-# Groups and classes are needed to compute energy in nonequilibrium mode.
-
-# Groups (define local quanta)
-
-HITRAN_GROUP1 = [
-    "H2O",
-    "O3",
-    "SO2",
-    "NO2",
-    "HNO3",
-    "H2CO",
-    "HOCl",
-    "H2O2",
-    "COF2",
-    "H2S",
-    "HO2",
-    "HCOOH",
-    "ClONO2",
-    "HOBr",
-    "C2H4",
-]
-"""str: asymmetric rotors"""
-
-HITRAN_GROUP2 = [
-    "CO2",
-    "N2O",
-    "CO",
-    "HF",
-    "HCl",
-    "HBr",
-    "HI",
-    "OCS",
-    "N2",
-    "HCN",
-    "C2H2",
-    "NO+",
-]
-"""str: diatomic and linear molecules"""
-
-HITRAN_GROUP3 = ["SF6", "CH4"]
-"""str: Spherical rotors"""
-
-HITRAN_GROUP4 = ["CH3D", "CH3Cl", "C2H6", "NH3", "PH3", "CH3OH"]
-"""str: symmetric rotors"""
-
-HITRAN_GROUP5 = ["O2"]
-"""str: Triplet-Sigma ground electronic states"""
-
-HITRAN_GROUP6 = ["NO", "OH", "ClO"]
-"""str: Doublet-Pi ground electronic states"""
-
-# Classes (define global quanta)
-
-HITRAN_CLASS1 = ["CO", "HF", "HCl", "HBr", "HI", "N2", "NO+"]
-"""str: Diatomic molecules with ? """
-
-HITRAN_CLASS2 = ["O2"]
-"""str: Diatomic molecules with different electronic levels"""
-
-HITRAN_CLASS3 = ["NO", "OH", "ClO"]
-"""str: Diatomic molecules with doublet-Pi electronic state"""
-
-HITRAN_CLASS4 = ["N2O", "OCS", "HCN"]
-"""str: Linear triatomic"""
-
-HITRAN_CLASS5 = ["CO2"]
-"""str: Linear triatomic with large Fermi resonance"""
-
-HITRAN_CLASS6 = ["H2O", "O3", "SO2", "NO2", "HOCl", "H2S", "HO2", "HOBr"]
-"""str: Non-linear triatomic"""
-
-HITRAN_CLASS7 = ["C2H2"]
-"""str: Linear tetratomic"""
-
-HITRAN_CLASS8 = ["NH3", "PH3"]
-"""str: Pyramidal tetratomic"""
-
-HITRAN_CLASS9 = ["H2CO", "H2O2", "COF2"]
-"""str: Non-linear tetratomic"""
-
-HITRAN_CLASS10 = [
-    "CH4",
-    "CH3Cl",
-    "C2H6",
-    "HNO3",
-    "SF6",
-    "HCOOH",
-    "ClONO2",
-    "C2H4",
-    "CH3OH",
-]
-"""str: Pentatomic or greater polyatomic"""
-# 0.9.22: Removed CH3D has no HITRAN identifier
-
-# %% HITRAN ids
-
-trans = {
-    "1": "H2O",
-    "2": "CO2",
-    "3": "O3",
-    "4": "N2O",
-    "5": "CO",
-    "6": "CH4",
-    "7": "O2",
-    "8": "NO",
-    "9": "SO2",
-    "10": "NO2",
-    "11": "NH3",
-    "12": "HNO3",
-    "13": "OH",
-    "14": "HF",
-    "15": "HCl",
-    "16": "HBr",
-    "17": "HI",
-    "18": "ClO",
-    "19": "OCS",
-    "20": "H2CO",
-    "21": "HOCl",
-    "22": "N2",
-    "23": "HCN",
-    "24": "CH3Cl",
-    "25": "H2O2",
-    "26": "C2H2",
-    "27": "C2H6",
-    "28": "PH3",
-    "29": "COF2",
-    "30": "SF6",
-    "31": "H2S",
-    "32": "HCOOH",
-    "33": "HO2",
-    "34": "O",
-    "35": "ClONO2",
-    "36": "NO+",
-    "37": "HOBr",
-    "38": "C2H4",
-    "39": "CH3OH",
-    "40": "CH3Br",
-    "41": "CH3CN",
-    "42": "CF4",
-    "43": "C4H2",
-    "44": "HC3N",
-    "45": "H2",
-    "46": "CS",
-    "47": "SO3",
-    "48": "C2N2",
-    "49": "COCl2",
-}
-HITRAN_MOLECULES = list(trans.values())
-""" str: list of [HITRAN-2016]_ molecules. """
 
 # %% Parsing functions
 
@@ -1042,77 +908,6 @@ def parse_global_quanta(df, mol):
         )
 
     return df
-
-
-def get_molecule_identifier(molecule_name):
-    r"""
-    For a given input molecular formula, return the corresponding HITRAN molecule
-    identifier number [1]_.
-
-
-    Parameters
-    ----------
-    molecular_formula : str
-        The string describing the molecule.
-
-
-    Returns
-    -------
-    M: int
-        The HITRAN molecular identified number.
-
-
-    References
-    ----------
-
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
-
-    Function is from from https://github.com/nzhagen/hitran/blob/master/hitran.py
-
-    """
-
-    # Invert the dictionary.
-    trans2 = {v: k for k, v in trans.items()}
-
-    try:
-        return int(trans2[molecule_name])
-    except KeyError:
-        raise NotImplementedError(
-            "Molecule '{0}' not supported. Choose one of {1}".format(
-                molecule_name, list(trans2.keys())
-            )
-        )
-
-
-def get_molecule(molecule_id):
-    r"""
-    For a given input molecular identifier, return the corresponding HITRAN
-    molecule name [1]_.
-
-
-    Parameters
-    ----------
-
-    molecular_id: str
-        Hitran identifier of the molecule.
-
-
-    References
-    ----------
-
-    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
-
-    """
-
-    # assert str
-    id = "{:d}".format(int(molecule_id))
-
-    try:
-        return trans[id]
-    except KeyError:
-        raise NotImplementedError(
-            "Molecule ID '{0}' unknown. Choose one of {1}".format(molecule_id, trans)
-        )
 
 
 # ======================================================

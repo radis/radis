@@ -814,7 +814,7 @@ def _fix_format(file, sload):
     # Fix lines format HITRAN_CLASS_1 molecules
     if "lines" in sload and sload["lines"] is not None:
         lines = sload["lines"]
-        from radis.io.hitran import HITRAN_CLASS1, get_molecule
+        from radis.db.classes import HITRAN_CLASS1, get_molecule
 
         if "v1u" in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
             printr(

@@ -283,7 +283,7 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
         # Dont use cached: force recalculating
         db = PartFunc_Dunham(S)
 
-        from radis.io.hitran import get_molecule_identifier
+        from radis.db.classes import get_molecule_identifier
 
         hapi = PartFuncHAPI(M=get_molecule_identifier(molecule), I=iso)
 

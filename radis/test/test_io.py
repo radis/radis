@@ -41,7 +41,7 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
 
     This should be ensured by developers when adding new species.
     """
-    from radis.io.hitran import (
+    from radis.db.classes import (
         HITRAN_CLASS1,
         HITRAN_CLASS2,
         HITRAN_CLASS3,
