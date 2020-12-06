@@ -50,8 +50,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import abs, diff
 from publib import fix_style, set_style
-from six import string_types
-from six.moves import zip
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import count_nans, evenly_distributed, nantrapz
@@ -2668,7 +2666,7 @@ class Spectrum(object):
             """Overlay line survey with a spectral quantity (like radiance or
             transmittance)"""
 
-            if isinstance(overlay, string_types):  # either get it from the Spectrum
+            if isinstance(overlay, str):  # either get it from the Spectrum
                 if overlay not in self.get_vars():
                     raise AttributeError(
                         "{0} not in variables list: {1}".format(
@@ -2837,7 +2835,7 @@ class Spectrum(object):
 
         from radis.tools.database import save
 
-        if isinstance(discard, string_types):
+        if isinstance(discard, str):
             discard = [discard]
 
         return save(

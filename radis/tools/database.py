@@ -75,8 +75,6 @@ import pandas as pd
 from joblib import Parallel, delayed
 from numpy import array
 from scipy.interpolate import griddata
-from six import string_types
-from six.moves import range, zip
 
 from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
@@ -108,7 +106,7 @@ def is_jsonable(x):
 #        out = {}
 #        for k, v in x.items():
 #            out[k] = jsonize(v)
-#    elif typ in string_types:
+#    elif isinstance(typ, str):
 #        # If it looks like string, store as raw text (that fixes most trouble with paths)
 #        out = r'{0}'.format(x)
 #    elif typ == pd.DataFrame:
@@ -313,7 +311,7 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
         date = ""
 
     # ... add conditions info
-    if isinstance(add_info, string_types):
+    if isinstance(add_info, str):
         add_info = [add_info]
     if add_info not in [[], {}, None, False]:
         # complete name with info about calculation conditions
@@ -696,7 +694,7 @@ def _fix_format(file, sload):
 
     if "isotope" in sload["conditions"]:
         isotope = sload["conditions"]["isotope"]
-        if not isinstance(isotope, string_types):
+        if not isinstance(isotope, str):
             printr(
                 "File {0}".format(basename(file))
                 + " has a deprecrated structure (key "
@@ -711,7 +709,7 @@ def _fix_format(file, sload):
 
     if "dbpath" in sload["conditions"]:
         dbpath = sload["conditions"]["dbpath"]
-        if not isinstance(dbpath, string_types):
+        if not isinstance(dbpath, str):
             printr(
                 "File {0}".format(basename(file))
                 + " has a deprecrated structure (key "
@@ -736,7 +734,7 @@ def _fix_format(file, sload):
         fixed = False
         if key in sload["conditions"]:
             path = sload["conditions"][key]
-            if not isinstance(path, string_types):
+            if not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
                     + " has a deprecrated structure (key "
@@ -918,7 +916,7 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
 
     """
 
-    if isinstance(file, string_types):
+    if isinstance(file, str):
         s = load_spec(file)
     elif isinstance(file, Spectrum):
         s = file
@@ -1031,7 +1029,7 @@ class SpecList(object):
         if len(self) == 0:
             raise ValueError("Database is empty")
 
-        if isinstance(columns, string_types):
+        if isinstance(columns, str):
             columns = [columns] + [k for k in args]
 
         dg = self.df.set_index("file")  # note that this is a copy already.
@@ -1184,7 +1182,7 @@ class SpecList(object):
             else:  # ... first write input conditions query
                 query = []
                 for (k, v) in kwconditions.items():
-                    if isinstance(v, string_types):
+                    if isinstance(v, str):
                         query.append("{0} == '{1}'".format(k, v))
                     else:
                         #                    query.append('{0} == {1}'.format(k,v))
@@ -2096,7 +2094,7 @@ class SpecDatabase(SpecList):
             # check the file we just stored is readable
 
         # ... input is a file name. Copy it in database and load it
-        elif isinstance(spectrum, string_types):
+        elif isinstance(spectrum, str):
             if not exists(spectrum):
                 raise FileNotFoundError("File doesnt exist: {0}".format(spectrum))
 

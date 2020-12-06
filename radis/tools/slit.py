@@ -49,7 +49,6 @@ from numpy import exp
 from numpy import log as ln
 from numpy import sqrt, trapz
 from scipy.interpolate import splev, splrep
-from six import string_types
 
 from radis.misc.arrays import evenly_distributed
 from radis.misc.basics import is_float
@@ -367,7 +366,7 @@ def get_slit_function(
 
     # Or import it from file or numpy input
     # ------------
-    elif isinstance(slit_function, string_types) or isinstance(
+    elif isinstance(slit_function, str) or isinstance(
         slit_function, np.ndarray
     ):  # import it
         if __debug__:
@@ -1122,7 +1121,7 @@ def plot_slit(
         pass
 
     # Check input
-    if isinstance(w, string_types) and I is None:
+    if isinstance(w, str) and I is None:
         w, I = np.loadtxt(w).T
     assert len(w) == len(I)
     if np.isnan(I).sum() > 0:
@@ -1374,7 +1373,7 @@ def import_experimental_slit(
     """
 
     # import
-    if isinstance(slit, string_types):
+    if isinstance(slit, str):
         w_slit, I_slit = np.loadtxt(slit).T
     # numpy input
     elif isinstance(slit, np.ndarray):

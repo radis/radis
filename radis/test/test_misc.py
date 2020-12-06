@@ -22,7 +22,6 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 """
 
 import pytest
-from six.moves import range
 
 
 @pytest.mark.fast

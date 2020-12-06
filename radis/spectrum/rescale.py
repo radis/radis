@@ -19,7 +19,6 @@ from warnings import warn
 import numpy as np
 from numpy import exp
 from numpy import log as ln
-from six import string_types
 
 from radis.misc.basics import all_in, any_in, compare_lists
 from radis.misc.debug import printdbg
@@ -195,7 +194,7 @@ def _build_update_graph(
 
         """
         for k in from_keys:
-            if isinstance(k, string_types):
+            if isinstance(k, str):
                 k = [k]
             try:
                 derivation[what].append(k)
@@ -1466,7 +1465,7 @@ def _recalculate(
     elif quantity == "same":
         wanted = list(initial)
         greedy = False
-    elif isinstance(quantity, string_types):
+    elif isinstance(quantity, str):
         wanted = [quantity]
         greedy = False
     elif isinstance(quantity, list):

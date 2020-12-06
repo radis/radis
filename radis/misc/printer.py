@@ -4,9 +4,9 @@ Print functions, with colors
 """
 
 import sys
+from io import StringIO
 
 import pandas as pd
-from six import StringIO
 from termcolor import colored
 
 # %% Colored Print functions

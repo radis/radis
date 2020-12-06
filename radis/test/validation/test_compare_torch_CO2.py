@@ -30,7 +30,6 @@ from time import time
 import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
-from six.moves import zip
 
 from radis import ParallelFactory
 from radis.los import MergeSlabs, SerialSlabs

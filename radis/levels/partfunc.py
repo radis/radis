@@ -63,8 +63,6 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 from numpy import exp
-from six import string_types
-from six.moves import range, zip
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
@@ -784,7 +782,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
                 print("HAPI version: %s" % HAPI_VERSION)
 
         # Check inputs
-        if isinstance(M, string_types):
+        if isinstance(M, str):
             M = get_molecule_identifier(M)
         if type(M) is not int:
             raise TypeError("Molecule id must be int: got {0} ({1})".format(M, type(M)))

@@ -53,7 +53,6 @@ from uuid import uuid1
 from warnings import warn
 
 import numpy as np
-from six.moves import zip
 
 from radis.lbl import SpectrumFactory
 from radis.lbl.loader import df_metadata

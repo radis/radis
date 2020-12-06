@@ -44,8 +44,6 @@ Or::
 import re
 from os.path import dirname, exists, join
 
-from six import string_types
-
 from radis.db.conventions import get_convention
 from radis.db.utils import (
     get_default_jsonfile,
@@ -313,7 +311,7 @@ class Molecule(object):
         self.verbose = verbose
 
         # Get name and integer id
-        if isinstance(name, string_types):
+        if isinstance(name, str):
             self.name = name
 
             # Get name without parenthesis (without state) for HITRAN identification
