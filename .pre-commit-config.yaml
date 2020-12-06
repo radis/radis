@@ -13,10 +13,18 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.3.0
     hooks:
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        exclude: |
+          (?x)(
+              ^.+\.spec|
+              ^.+\.dat|
+              ^.+\.levels
+          )
       - id: trailing-whitespace
         exclude: |
-            (?x)(
-                ^.+\.spec|
-                ^.+\.dat|
-                ^.+\.levels
-            )
+          (?x)(
+              ^.+\.spec|
+              ^.+\.dat|
+              ^.+\.levels
+          )
