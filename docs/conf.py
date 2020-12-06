@@ -138,7 +138,11 @@ master_doc = "index"
 # General information about the project.
 project = "RADIS"
 copyright = "2020, Erwan Pannier"
-author = "Erwan Pannier \\Nicolas Minesi \\Dirk van den Bekerom \\Pankaj Mishra \\and all the 🌱 RADIS contributors \\(https://github.com/radis/radis/graphs/contributors)"
+author = (
+    "Erwan Pannier \\and Nicolas Minesi \\and "
+    + "Dirk van den Bekerom \\and Pankaj Mishra \\and "
+    + "all the 🌱 RADIS contributors \\and (https://github.com/radis/radis/graphs/contributors)"
+)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
