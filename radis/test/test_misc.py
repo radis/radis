@@ -36,9 +36,11 @@ def test_utils(*args, **kwargs):
 def test_progress_bar(*args, **kwargs):
     """ Minimal example of a progress bar """
 
-    from radis.misc.progress_bar import ProgressBar
     from time import sleep
+
     from numpy.random import rand
+
+    from radis.misc.progress_bar import ProgressBar
 
     print("Testing progress bar")
 
@@ -57,8 +59,9 @@ def test_progress_bar(*args, **kwargs):
 
 @pytest.mark.fast
 def test_norm():
-    from radis.misc import norm
     import numpy as np
+
+    from radis.misc import norm
 
     a = np.random.rand(100)
     b = np.random.rand(100)
@@ -71,8 +74,9 @@ def test_norm():
 @pytest.mark.fast
 def test_normOn():
 
-    from radis.misc import norm_on
     import numpy as np
+
+    from radis.misc import norm_on
 
     I = np.array([10, 9, 8, 7, 6, 5, 0, 9])
     w = np.arange(8)
@@ -83,8 +87,9 @@ def test_normOn():
 @pytest.mark.fast
 def test_allclose():
 
-    from radis.misc import array_allclose
     import numpy as np
+
+    from radis.misc import array_allclose
 
     a = np.random.rand(20)
     b = a + 0.1
@@ -96,8 +101,9 @@ def test_allclose():
 @pytest.mark.fast
 def test_nantrapz():
 
-    from radis.misc import nantrapz
     import numpy as np
+
+    from radis.misc import nantrapz
 
     I = np.array([10, 9, 8, 7, float("NaN"), 5, 0, 9])
     w = np.arange(8)

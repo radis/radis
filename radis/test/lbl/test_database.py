@@ -22,12 +22,14 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 """
 
 import os
+from os.path import basename, exists
+
 import matplotlib.pyplot as plt
+
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
-from radis.tools.database import load_spec
 from radis.test.utils import setup_test_line_databases
-from os.path import basename, exists
+from radis.tools.database import load_spec
 
 fig_prefix = basename(__file__) + ": "
 

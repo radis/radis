@@ -6,10 +6,11 @@ Logging and warning functions
 """
 
 
+import sys
 from time import gmtime, strftime
 from warnings import warn
+
 from termcolor import colored
-import sys
 
 
 def printlog(msg, logfile="log.txt", stdout=True):

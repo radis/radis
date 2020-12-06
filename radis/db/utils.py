@@ -6,11 +6,12 @@ Created on Thu May 28 14:47:36 2015
 """
 
 
-import os
 import json
+import os
 from collections import OrderedDict
-from radis.misc.basics import is_number
 from os.path import abspath
+
+from radis.misc.basics import is_number
 
 
 def getFile(*relpath):

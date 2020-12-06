@@ -26,14 +26,15 @@ a few seconds only)::
 
 
 import os
+from os.path import dirname, exists, join
+
+from radis.db.utils import getFile
 from radis.misc.config import (
-    getDatabankList,
-    getDatabankEntries,
     addDatabankEntries,
     diffDatabankEntries,
+    getDatabankEntries,
+    getDatabankList,
 )
-from radis.db.utils import getFile
-from os.path import join, dirname, exists
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
 

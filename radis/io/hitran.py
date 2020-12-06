@@ -23,21 +23,22 @@ Routine Listing
 
 
 import sys
-import pandas as pd
-from collections import OrderedDict
-from os.path import exists
-import radis
-from radis.io.tools import (
-    parse_hitran_file,
-    drop_object_format_columns,
-    replace_PQR_with_m101,
-)
-from radis.misc.cache_files import load_h5_cache_file, save_to_hdf, cache_file_name
-from os.path import getmtime
 
 # from radis.test.utils import getTestFile
 import time
+from collections import OrderedDict
+from os.path import exists, getmtime
+
+import pandas as pd
+
+import radis
 from radis import OLDEST_COMPATIBLE_VERSION
+from radis.io.tools import (
+    drop_object_format_columns,
+    parse_hitran_file,
+    replace_PQR_with_m101,
+)
+from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 
 # %% Hitran groups and classes
 # As defined in Rothman et al, "The HITRAN 2004 molecular spectroscopic database"

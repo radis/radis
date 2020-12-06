@@ -12,11 +12,10 @@ See :py:data:`~radis.db.molecules.Molecules`
 """
 
 from radis.db.classes import ElectronicState
-
+from radis.phys.convert import eV2cm
 
 # %% Define some commonly used molecules
 
-from radis.phys.convert import eV2cm
 
 # CO
 # ----------

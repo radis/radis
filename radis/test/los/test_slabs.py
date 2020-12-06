@@ -17,8 +17,9 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 """
 
 import numpy as np
-from radis.los.slabs import MergeSlabs, SerialSlabs
 import pytest
+
+from radis.los.slabs import MergeSlabs, SerialSlabs
 
 
 @pytest.mark.fast
@@ -38,9 +39,10 @@ def test_merge_slabs(
     updated in MergeSlabs
     """
 
-    from radis.tools.database import load_spec
     import matplotlib.pyplot as plt
+
     from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
 
     if plot:
         plt.ion()  # dont get stuck with Matplotlib if executing through pytest
@@ -96,9 +98,10 @@ def test_serial_slabs_transmittance(
 
     """
 
-    from radis.tools.database import load_spec
     import matplotlib.pyplot as plt
+
     from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
 
     if plot:
         plt.ion()  # dont get stuck with Matplotlib if executing through pytest
@@ -141,9 +144,10 @@ def test_serial_slabs_radiance(
     that radiance is about the sum of all.
     """
 
-    from radis.tools.database import load_spec
     import matplotlib.pyplot as plt
+
     from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
 
     if plot:
         plt.ion()  # dont get stuck with Matplotlib if executing through pytest

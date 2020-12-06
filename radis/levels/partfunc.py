@@ -57,31 +57,31 @@ References
 
 
 import sys
-import pandas as pd
+from os.path import exists
+from warnings import warn
+
 import numpy as np
+import pandas as pd
 from numpy import exp
+from six import string_types
+from six.moves import range, zip
+
 import radis
-from radis.phys.constants import hc_k  # ~ 1.44 cm.K
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.io.hitran import (
-    get_molecule_identifier,
     HITRAN_CLASS1,
     HITRAN_CLASS2,
     HITRAN_CLASS3,
     HITRAN_CLASS5,
     HITRAN_CLASS6,
+    get_molecule_identifier,
 )
-from radis.misc.basics import all_in
-from radis.misc.debug import printdbg
-from radis.misc.cache_files import load_h5_cache_file
-from radis.misc.cache_files import save_to_hdf
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
-from warnings import warn
-from os.path import exists
+from radis.misc.basics import all_in
+from radis.misc.cache_files import load_h5_cache_file, save_to_hdf
+from radis.misc.debug import printdbg
 from radis.misc.progress_bar import ProgressBar
-from six import string_types
-from six.moves import range
-from six.moves import zip
+from radis.phys.constants import hc_k  # ~ 1.44 cm.K
 
 
 class RovibPartitionFunction(object):
@@ -778,7 +778,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
             partitionSum = self.import_from_file(path)
         else:
             # Use RADIS embedded
-            from radis.io.hapi import partitionSum, HAPI_VERSION
+            from radis.io.hapi import HAPI_VERSION, partitionSum
 
             if self.verbose >= 2:
                 print("HAPI version: %s" % HAPI_VERSION)

@@ -54,23 +54,24 @@ Most of these functions are implemented with the standard operators. Ex::
 """
 
 
-import astropy.units as u
-from radis.spectrum import Spectrum
-from radis.phys.convert import (
-    cm2nm,
-    nm2cm,
-    cm2nm_air,
-    nm_air2cm,
-    air2vacuum,
-    vacuum2air,
-    dcm2dnm,
-    dnm2dcm,
-    dcm2dnm_air,
-    dnm_air2dcm,
-)
-from numpy import ones_like, hstack
 from warnings import warn
 
+import astropy.units as u
+from numpy import hstack, ones_like
+
+from radis.phys.convert import (
+    air2vacuum,
+    cm2nm,
+    cm2nm_air,
+    dcm2dnm,
+    dcm2dnm_air,
+    dnm2dcm,
+    dnm_air2dcm,
+    nm2cm,
+    nm_air2cm,
+    vacuum2air,
+)
+from radis.spectrum.spectrum import Spectrum
 
 # %% Filter Spectra
 

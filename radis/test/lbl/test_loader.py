@@ -5,12 +5,14 @@ Created on Mon May  7 17:34:52 2018
 @author: erwan
 """
 
-from radis.lbl import SpectrumFactory
-from radis.misc.printer import printm
-from radis.test.utils import setup_test_line_databases, getTestFile
-import matplotlib.pyplot as plt
 from os.path import exists
 from shutil import rmtree
+
+import matplotlib.pyplot as plt
+
+from radis.lbl import SpectrumFactory
+from radis.misc.printer import printm
+from radis.test.utils import getTestFile, setup_test_line_databases
 
 
 def test_retrieve_from_database(

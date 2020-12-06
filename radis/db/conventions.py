@@ -99,8 +99,8 @@ def get_convention(coefficients):
         list of coefficient names
     """
 
-    from radis.misc.basics import partition
     from radis.db.utils import ignore_trailing_number
+    from radis.misc.basics import partition
 
     assert len(coefficients) > 0
 

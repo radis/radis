@@ -32,15 +32,17 @@ See Also
 # Note: don't import unicode_literals because it breaks the df.to_hdf of
 # save_to_hdf because of a stupid unicode/str error in Python 2.7
 import os
-import h5py
-import radis
-from warnings import warn
 from os.path import exists, splitext
-from radis import OLDEST_COMPATIBLE_VERSION
-from radis.misc.basics import compare_dict, is_float
-from radis.misc.printer import printr, printm
+from warnings import warn
+
+import h5py
 import pandas as pd
 from packaging.version import parse
+
+import radis
+from radis import OLDEST_COMPATIBLE_VERSION
+from radis.misc.basics import compare_dict, is_float
+from radis.misc.printer import printm, printr
 
 
 class DeprecatedFileError(DeprecationWarning):

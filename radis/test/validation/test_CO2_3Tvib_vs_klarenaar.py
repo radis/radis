@@ -29,12 +29,12 @@ References
 
 """
 
-from radis.spectrum import Spectrum, plot_diff, get_residual
-from radis import SpectrumFactory
-from radis.test.utils import getValidationCase
-from radis.misc.printer import printm
-from radis.test.utils import setup_test_line_databases
 from os.path import join
+
+from radis import SpectrumFactory
+from radis.misc.printer import printm
+from radis.spectrum import Spectrum, get_residual, plot_diff
+from radis.test.utils import getValidationCase, setup_test_line_databases
 
 
 def test_klarenaar_validation_case(

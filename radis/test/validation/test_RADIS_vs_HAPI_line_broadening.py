@@ -12,14 +12,16 @@ same database (HITRAN 2016)
 
 """
 
-from radis import SpectrumFactory, Spectrum
-from radis.test.utils import setup_test_line_databases
-from radis.misc.printer import printm
-from radis.io.hitran import get_molecule_identifier
-from radis.phys.convert import nm2cm
 import shutil
-from os.path import join, dirname, exists
+from os.path import dirname, exists, join
+
 import pytest
+
+from radis import Spectrum, SpectrumFactory
+from radis.io.hitran import get_molecule_identifier
+from radis.misc.printer import printm
+from radis.phys.convert import nm2cm
+from radis.test.utils import setup_test_line_databases
 
 
 @pytest.mark.fast
@@ -39,10 +41,10 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     """
 
     from radis.io.hapi import (
+        absorptionCoefficient_Voigt,
         db_begin,
         fetch,
         tableList,
-        absorptionCoefficient_Voigt,
         transmittanceSpectrum,
     )
 

@@ -22,15 +22,16 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
-from radis.io.hitran import hit2df
-from radis.io.cdsd import cdsd2df
-from radis.test.utils import getTestFile
-import pytest
-import numpy as np
-from warnings import warn
-from os.path import getmtime
 import os
-from radis.test.utils import setup_test_line_databases
+from os.path import getmtime
+from warnings import warn
+
+import numpy as np
+import pytest
+
+from radis.io.cdsd import cdsd2df
+from radis.io.hitran import hit2df
+from radis.test.utils import getTestFile, setup_test_line_databases
 
 
 @pytest.mark.fast
@@ -51,8 +52,8 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
         HITRAN_CLASS8,
         HITRAN_CLASS9,
         HITRAN_CLASS10,
+        HITRAN_MOLECULES,
     )
-    from radis.io.hitran import HITRAN_MOLECULES
     from radis.misc.basics import compare_lists
 
     all_hitran = (

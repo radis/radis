@@ -62,48 +62,48 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
+import os
+from os.path import abspath, exists
+from time import time
+from uuid import uuid1
+from warnings import catch_warnings, filterwarnings
+
+import numpy as np
+import pandas as pd
+from six import string_types
+from six.moves import range
+
+from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
 from radis.io.cdsd import cdsd2df
 from radis.io.hitran import (
-    hit2df,
     get_molecule,
+    hit2df,
     parse_global_quanta,
     parse_local_quanta,
 )
+from radis.io.query import fetch_astroquery
+from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
+from radis.levels.partfunc import (
+    PartFunc_Dunham,
+    PartFuncHAPI,
+    RovibParFuncCalculator,
+    RovibParFuncTabulator,
+)
+from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
+from radis.misc.arrays import count_nans
+from radis.misc.basics import compare_dict, compare_lists
 
 # from radis.io.hitran import hit2dfTAB
 from radis.misc.cache_files import cache_file_name
-from radis.misc.warning import EmptyDatabaseError
-from radis.io.query import fetch_astroquery
-from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
-from radis.db.molecules import getMolecule
-from radis.levels.partfunc import (
-    PartFuncHAPI,
-    PartFunc_Dunham,
-    RovibParFuncTabulator,
-    RovibParFuncCalculator,
-)
-from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc
-from radis.tools.database import SpecDatabase
-from radis.misc.config import getDatabankEntries, printDatabankEntries, getDatabankList
-from radis.misc.basics import compare_dict, compare_lists
-from radis.misc.arrays import count_nans
+from radis.misc.config import getDatabankEntries, getDatabankList, printDatabankEntries
 from radis.misc.debug import printdbg
-from radis.misc.printer import printg, printr
 from radis.misc.log import printwarn
-from radis.phys.convert import cm2nm
-import os
-from os.path import exists, abspath
-import pandas as pd
-from six import string_types
-from radis.misc.warning import warn, default_warning_status
-from warnings import catch_warnings, filterwarnings
-import numpy as np
-
-from time import time
-from uuid import uuid1
-from six.moves import range
+from radis.misc.printer import printg, printr
 from radis.misc.utils import get_files_from_regex
+from radis.misc.warning import EmptyDatabaseError, default_warning_status, warn
+from radis.phys.convert import cm2nm
+from radis.tools.database import SpecDatabase
 
 KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
 """list: Known formats for Line Databases:

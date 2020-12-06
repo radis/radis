@@ -9,13 +9,13 @@
 """
 
 
-import os
-import sys
-from os.path import dirname, basename, join
 import importlib
 import inspect
+import os
+import sys
 from fnmatch import translate
-from re import compile, IGNORECASE
+from os.path import basename, dirname, join
+from re import IGNORECASE, compile
 
 
 def getProjectRoot():

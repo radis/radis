@@ -11,12 +11,11 @@ Functions to deal with numpy arrays
 """
 
 
+import numba
 import numpy as np
 from numpy import hstack
 from scipy.interpolate import interp1d
-from six.moves import map
-import numba
-from six.moves import range
+from six.moves import map, range
 
 # Normalize
 

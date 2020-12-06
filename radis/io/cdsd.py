@@ -20,18 +20,18 @@ CDSD-4000 manual
 # TODO: remove wangl2  after loading database (wangl is enough, with 1=e and 2=f)
 
 
+import time
 from collections import OrderedDict
+from os.path import exists, getmtime
+
 import radis
-from os.path import exists
+from radis import OLDEST_COMPATIBLE_VERSION
 from radis.io.tools import (
-    parse_hitran_file,
     drop_object_format_columns,
+    parse_hitran_file,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import save_to_hdf, load_h5_cache_file, cache_file_name
-from os.path import getmtime
-import time
-from radis import OLDEST_COMPATIBLE_VERSION
+from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 
 # fmt: off
 columns_hitemp = OrderedDict(

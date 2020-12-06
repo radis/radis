@@ -42,21 +42,22 @@ Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information.
 
 """
 
-from radis.lbl import SpectrumFactory
-from radis.misc.basics import is_list, is_float
-from multiprocessing import Pool, cpu_count
+import os
 
 # from multiprocessing.pool import ThreadPool
 import sys
-from time import time
-import numpy as np
 from copy import deepcopy
-from warnings import warn
-import os
-from six.moves import zip
+from multiprocessing import Pool, cpu_count
+from time import time
 from uuid import uuid1
+from warnings import warn
+
+import numpy as np
+from six.moves import zip
+
+from radis.lbl import SpectrumFactory
 from radis.lbl.loader import df_metadata
-from radis.misc.basics import expand_metadata
+from radis.misc.basics import expand_metadata, is_float, is_list
 
 
 def _distribute_eq_spectrum(args):

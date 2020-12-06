@@ -4,6 +4,7 @@ Test conversion functions
 """
 
 import astropy.units as u
+
 from radis.phys.units_astropy import convert_and_strip_units
 
 

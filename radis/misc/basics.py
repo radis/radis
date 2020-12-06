@@ -8,16 +8,14 @@ Small functions used in other procedures
 
 
 import os
-from os.path import join, abspath, normcase, normpath
-import numpy as np
 import sys
-from six.moves import filter
-from six.moves import range
-from six import binary_type
-from six.moves import filterfalse
 from itertools import tee
+from os.path import abspath, join, normcase, normpath
+
+import numpy as np
 import pandas as pd
-from six import StringIO
+from six import StringIO, binary_type
+from six.moves import filter, filterfalse, range
 
 verbose = True
 

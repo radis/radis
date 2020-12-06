@@ -51,37 +51,37 @@ of the website.
 
 # - Implement a h5py version of load / store
 
-import json_tricks
-import numpy as np
-from numpy import array
-import pandas as pd
-import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
 import os
 import sys
-from warnings import warn
 from os.path import (
-    join,
-    splitext,
-    exists,
-    basename,
-    split,
-    dirname,
     abspath,
-    isdir,
+    basename,
+    dirname,
+    exists,
     getsize,
+    isdir,
+    join,
+    split,
+    splitext,
 )
-from six.moves import range
-from radis.spectrum.spectrum import Spectrum, is_spectrum
 from shutil import copy2
 from time import strftime
-from radis.misc.basics import is_float, list_if_float, all_in
+from warnings import warn
+
+import json_tricks
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from joblib import Parallel, delayed
+from numpy import array
+from scipy.interpolate import griddata
+from six import string_types
+from six.moves import range, zip
+
+from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printr
-from six import string_types
-from six.moves import zip
-from joblib import Parallel, delayed
-
+from radis.spectrum.spectrum import Spectrum, is_spectrum
 
 _scalable_inputs = ["mole_fraction", "path_length"]
 
@@ -814,7 +814,7 @@ def _fix_format(file, sload):
     # Fix lines format HITRAN_CLASS_1 molecules
     if "lines" in sload and sload["lines"] is not None:
         lines = sload["lines"]
-        from radis.io.hitran import get_molecule, HITRAN_CLASS1
+        from radis.io.hitran import HITRAN_CLASS1, get_molecule
 
         if "v1u" in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
             printr(

@@ -29,16 +29,17 @@ Typical results on an XPS 15 laptop here::
 
 """
 
-from radis import SpectrumFactory, Spectrum, plot_diff
+from os.path import dirname, join
+from time import time
+
+from radis import Spectrum, SpectrumFactory, plot_diff
 from radis.io.hapi import (
-    fetch_by_ids,
+    ISO_ID,
     absorptionCoefficient_Voigt,
     db_begin,
+    fetch_by_ids,
     tableList,
-    ISO_ID,
 )
-from os.path import join, dirname
-from time import time
 
 if __name__ == "__main__":
 

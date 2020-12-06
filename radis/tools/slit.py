@@ -41,20 +41,23 @@ recenter_slit, crop_slit):
 """
 
 
+from warnings import warn
+
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import exp, sqrt, trapz
+from numpy import exp
 from numpy import log as ln
-from scipy.interpolate import splrep, splev
-from warnings import warn
-from radis.misc.warning import SlitDispersionWarning
+from numpy import sqrt, trapz
+from scipy.interpolate import splev, splrep
+from six import string_types
+
 from radis.misc.arrays import evenly_distributed
 from radis.misc.basics import is_float
-from radis.misc.signal import resample_even
 from radis.misc.debug import printdbg
-from radis.phys.convert import cm2nm, nm2cm, dnm2dcm, dcm2dnm
+from radis.misc.signal import resample_even
+from radis.misc.warning import SlitDispersionWarning
+from radis.phys.convert import cm2nm, dcm2dnm, dnm2dcm, nm2cm
 from radis.spectrum.spectrum import cast_waveunit
-from six import string_types
 
 SLIT_SHAPES = ["triangular", "trapezoidal", "gaussian"]
 """list : list of predefined slit shapes

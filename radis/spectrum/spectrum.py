@@ -41,35 +41,35 @@ Spectrum objects can be stored, retrieved, rescaled, resamples::
 
 """
 
+from copy import deepcopy
+from os.path import basename
+from warnings import warn
+
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
-from publib import set_style, fix_style
-from radis.phys.convert import conv2, cm2nm, nm2cm
+from numpy import abs, diff
+from publib import fix_style, set_style
+from six import string_types
+from six.moves import zip
+
+# from radis.lbl.base import print_conditions
+from radis.misc.arrays import count_nans, evenly_distributed, nantrapz
+from radis.misc.debug import printdbg
+from radis.misc.signal import resample
+from radis.phys.air import air2vacuum, vacuum2air
+from radis.phys.convert import cm2nm, conv2, nm2cm
 from radis.phys.units import Unit, convert_universal
-from radis.phys.air import vacuum2air, air2vacuum
+from radis.spectrum.rescale import rescale_mole_fraction, rescale_path_length, update
 from radis.spectrum.utils import (
     CONVOLUTED_QUANTITIES,
     NON_CONVOLUTED_QUANTITIES,
+    cast_waveunit,
+    format_xlabel,
     make_up,
     make_up_unit,
-    cast_waveunit,
     print_conditions,
-    format_xlabel,
 )
-from radis.spectrum.rescale import update, rescale_path_length, rescale_mole_fraction
-
-# from radis.lbl.base import print_conditions
-from radis.misc.arrays import evenly_distributed, count_nans, nantrapz
-from radis.misc.debug import printdbg
-from radis.misc.signal import resample
-from warnings import warn
-from numpy import abs, diff
-from copy import deepcopy
-from six import string_types
-from os.path import basename
-from six.moves import zip
-
 
 # %% Spectrum class to hold results )
 
@@ -2180,12 +2180,12 @@ class Spectrum(object):
         # TODO: add warning if FWHM >= wstep(spectrum)/5
 
         from radis.tools.slit import (
+            cast_waveunit,
             convolve_with_slit,
             get_slit_function,
-            cast_waveunit,
+            normalize_slit,
             offset_dilate_slit_function,
             remove_boundary,
-            normalize_slit,
         )
 
         # Check inputs
@@ -2469,9 +2469,9 @@ class Spectrum(object):
         """
 
         from radis.tools.slit import (
-            plot_slit,
-            offset_dilate_slit_function,
             normalize_slit,
+            offset_dilate_slit_function,
+            plot_slit,
         )
 
         # Check inputs

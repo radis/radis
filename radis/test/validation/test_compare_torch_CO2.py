@@ -24,18 +24,20 @@ Temperatures and concentrations of all slabs are stored in
 
 """
 
+from multiprocessing import cpu_count
+from time import time
+
 import matplotlib.pyplot as plt
 import pandas as pd
-from radis import ParallelFactory
-from radis.spectrum import experimental_spectrum, get_residual
-from radis.los import SerialSlabs, MergeSlabs
-from radis.phys.convert import nm2cm
-from radis.test.utils import getValidationCase
-from radis.misc.printer import printm
-from six.moves import zip
-from time import time
-from multiprocessing import cpu_count
 import pytest
+from six.moves import zip
+
+from radis import ParallelFactory
+from radis.los import MergeSlabs, SerialSlabs
+from radis.misc.printer import printm
+from radis.phys.convert import nm2cm
+from radis.spectrum import experimental_spectrum, get_residual
+from radis.test.utils import getValidationCase
 
 
 @pytest.mark.needs_config_file

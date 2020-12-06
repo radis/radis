@@ -18,10 +18,12 @@ Routine Listing
 
 
 from copy import deepcopy
-from radis.lbl.factory import SpectrumFactory
-from radis.phys.convert import nm2cm
-from radis.misc.basics import all_in
 from os.path import exists
+
+from radis.lbl.factory import SpectrumFactory
+from radis.misc.basics import all_in
+from radis.phys.convert import nm2cm
+
 
 # %%
 def calc_spectrum(

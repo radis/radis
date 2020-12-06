@@ -19,15 +19,17 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
+from os.path import basename
+
 import astropy.units as u
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+
 import radis
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
-import numpy as np
-import matplotlib.pyplot as plt
-from os.path import basename
-import pytest
 
 fig_prefix = basename(__file__) + ": "
 

@@ -9,7 +9,8 @@ Test Planck functions
 
 import numpy as np
 from numpy import pi
-from radis.phys.blackbody import sPlanck, planck, planck_wn
+
+from radis.phys.blackbody import planck, planck_wn, sPlanck
 
 
 def test_exceptions(verbose=True, *args, **kwargs):

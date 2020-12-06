@@ -20,21 +20,22 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 
 """
 
-from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
-from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc
-from radis.phys.constants import hc_k
-from radis.misc.printer import printm
-from radis.misc.cache_files import DeprecatedFileError
-from radis.db.molecules import Molecules
+import os
+from os.path import basename, exists, getmtime
+
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import exp
-import os
-from radis import SpectrumFactory
-from radis.test.utils import setup_test_line_databases
-from radis.test.utils import getTestFile
-from os.path import basename, exists, getmtime
 import pytest
+from numpy import exp
+
+from radis import SpectrumFactory
+from radis.db.molecules import Molecules
+from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
+from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
+from radis.misc.cache_files import DeprecatedFileError
+from radis.misc.printer import printm
+from radis.phys.constants import hc_k
+from radis.test.utils import getTestFile, setup_test_line_databases
 
 fig_prefix = basename(__file__) + ": "
 
@@ -685,8 +686,8 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     def run_example():
 
         from radis.test.utils import (
-            discard_lines_with_na_levels,
             define_Evib_as_sum_of_Evibi,
+            discard_lines_with_na_levels,
         )
 
         setup_test_line_databases(

@@ -6,16 +6,15 @@ Test that line survey works
 
 """
 
-from radis.test.utils import (
-    getTestFile,
-    setup_test_line_databases,
-)
-from radis.misc.printer import printm
-from radis import SpectrumFactory
-from radis.tools.database import load_spec
 import os
 from os.path import exists
+
 import pytest
+
+from radis import SpectrumFactory
+from radis.misc.printer import printm
+from radis.test.utils import getTestFile, setup_test_line_databases
+from radis.tools.database import load_spec
 
 
 @pytest.mark.fast
