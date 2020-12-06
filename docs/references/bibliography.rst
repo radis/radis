@@ -13,9 +13,12 @@ List of bibliographic references used in this project:
           and Radiative Transfer 177 (2016) 15–30, ISSN 00224073, `doi:10.1016/j.jqsrt.2016.03.005 <https://www.researchgate.net/publication/297682202_HITRAN_Application_Programming_Interface_HAPI_A_comprehensive_approach_to_working_with_spectroscopic_data>`__.
 
 .. [RADIS-2018] E. Pannier, C. O. Laux, RADIS: A Nonequilibrium Line-by-Line Radiative Code for CO2 and 
-                HITRAN-like database species", , Journal of Quantitative Spectroscopy and Radiative Transfer
+                HITRAN-like database species, Journal of Quantitative Spectroscopy and Radiative Transfer
                 (2018) `doi:10.1016/j.jqsrt.2018.09.027 <https://www.sciencedirect.com/science/article/pii/S0022407318305867?via%3Dihub>`__
                 
+.. [DLM_article] D. van den Bekerom, E. Pannier, A Discrete Integral Transform for Rapid Spectral Synthesis,
+                Journal of Quantitative Spectroscopy and Radiative Transfer (2021), submitted.
+
 Line Databases
 --------------
 
