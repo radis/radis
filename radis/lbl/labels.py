@@ -7,18 +7,18 @@ Summary
 Standardize names for:
 
 - vibrational levels
-- ... 
+- ...
 
 
 
 Routine Listing
 ---------------
 
-vib_lvl_name_hitran_class1, 
-vib_lvl_name_hitran_class5, 
-vib_lvl_name_hitran_class5_short, 
-vib_lvl_name_cdsd_p, 
-vib_lvl_name_cdsd_pc, 
+vib_lvl_name_hitran_class1,
+vib_lvl_name_hitran_class5,
+vib_lvl_name_hitran_class5_short,
+vib_lvl_name_cdsd_p,
+vib_lvl_name_cdsd_pc,
 vib_lvl_name_cdsd_pcN
 
 

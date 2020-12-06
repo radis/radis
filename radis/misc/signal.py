@@ -4,7 +4,7 @@
 Summary
 -------
 
-Signal processing functions 
+Signal processing functions
 
 
 -------------------------------------------------------------------------------

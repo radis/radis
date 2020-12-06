@@ -1,11 +1,11 @@
 """ Install file for RADIS
 
 Typical install procedure, plus:
-    
-- auto-convert README.rst to long_description, removing some sphinx-only syntax 
+
+- auto-convert README.rst to long_description, removing some sphinx-only syntax
 so it can be rendered by PyPi
 - read version number from __version__.txt
-- some dependencies should be installed manually (typically: all packages with 
+- some dependencies should be installed manually (typically: all packages with
 compiled components such as numpy, pandas, etc.)
 
 
@@ -15,9 +15,9 @@ Examples
 Install (normal, use-only)::
 
     python setup.py install
-    
+
 Or (create an alias, so you can still edit)::
-    
+
     python setup.py develop
 
 Notes
@@ -28,9 +28,9 @@ For developers:
 when creating a new version, just update the __version__.txt file
 
 to register it on Pypi see register.py::
-    
-    python register.py 
- 
+
+    python register.py
+
 
 """
 from setuptools import setup, find_packages

@@ -3,7 +3,7 @@
 Summary
 -------
 
-HITRAN database parser 
+HITRAN database parser
 
 
 Routine Listing

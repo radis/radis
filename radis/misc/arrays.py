@@ -3,7 +3,7 @@
 Description
 ------------
 
-Functions to deal with numpy arrays 
+Functions to deal with numpy arrays
 
 
 -------------------------------------------------------------------------------

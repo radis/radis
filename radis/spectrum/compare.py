@@ -3,7 +3,7 @@
 Summary
 -------
 
-Functions to compare and plot comparison of :class:`~radis.spectrum.spectrum.Spectrum` 
+Functions to compare and plot comparison of :class:`~radis.spectrum.spectrum.Spectrum`
 objects
 
 

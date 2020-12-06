@@ -4,7 +4,7 @@
 Notes
 -----
 
-Runs tests for radis/io so that they can be accessed by pytest (and hopefully 
+Runs tests for radis/io so that they can be accessed by pytest (and hopefully
 the CI test suite)
 
 Examples

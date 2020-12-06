@@ -8,19 +8,19 @@ Summary
 -------
 
 Reproducing the validation case of Klarenaar 2017 [1]_, who calculated a transmittance
-spectrum from the initial data of Dang 1982 [2]_, with a 1 rotational temperature + 
-3 vibrational temperature (Treanor distributions) model 
+spectrum from the initial data of Dang 1982 [2]_, with a 1 rotational temperature +
+3 vibrational temperature (Treanor distributions) model
 
-CO2 Energies are calculated from Dunham developments in an uncoupled harmonic 
+CO2 Energies are calculated from Dunham developments in an uncoupled harmonic
 oscillator - rigid rotor model
 
 References
 ----------
 
-.. [1] Klarenaar et al 2017, "Time evolution of vibrational temperatures in a CO2 glow 
+.. [1] Klarenaar et al 2017, "Time evolution of vibrational temperatures in a CO2 glow
        discharge measured with infrared absorption spectroscopy" doi/10.1088/1361-6595/aa902e
 
-.. [2] Dang et al 1982, "Detailed vibrational population distributions in a CO2 laser 
+.. [2] Dang et al 1982, "Detailed vibrational population distributions in a CO2 laser
         discharge as measured with a tunable diode laser" doi/10.1007/BF00694640
 
 

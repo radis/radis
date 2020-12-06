@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Parser for CDSD-HITEMP, CDSD-4000 format 
+""" Parser for CDSD-HITEMP, CDSD-4000 format
 
 Routine Listing
 ---------------

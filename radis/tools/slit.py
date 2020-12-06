@@ -57,7 +57,7 @@ from radis.spectrum.spectrum import cast_waveunit
 from six import string_types
 
 SLIT_SHAPES = ["triangular", "trapezoidal", "gaussian"]
-"""list : list of predefined slit shapes 
+"""list : list of predefined slit shapes
 """
 
 # %% Get slit function
@@ -1443,7 +1443,7 @@ def triangular_slit(
     r""" Generate normalized slit function
 
 
-    Parameters    
+    Parameters
     ----------
 
     FWHM: (nm)
@@ -1498,11 +1498,11 @@ def triangular_slit(
 
     See Also
     --------
-    
-    :py:func:`~radis.tools.slit.import_experimental_slit`, 
-    :py:func:`~radis.tools.slit.trapezoidal_slit`, 
+
+    :py:func:`~radis.tools.slit.import_experimental_slit`,
+    :py:func:`~radis.tools.slit.trapezoidal_slit`,
     :py:func:`~radis.tools.slit.gaussian_slit`
-    
+
     """
 
     # Build first half
@@ -1562,7 +1562,7 @@ def trapezoidal_slit(
     r""" Build a trapezoidal slit. Remember that FWHM = (top + base) / 2
 
 
-    Parameters    
+    Parameters
     ----------
 
     top: (nm)
@@ -1623,11 +1623,11 @@ def trapezoidal_slit(
 
     See Also
     --------
-    
-    :py:func:`~radis.tools.slit.import_experimental_slit`, 
-    :py:func:`~radis.tools.slit.triangular_slit`, 
+
+    :py:func:`~radis.tools.slit.import_experimental_slit`,
+    :py:func:`~radis.tools.slit.triangular_slit`,
     :py:func:`~radis.tools.slit.gaussian_slit`
-    
+
     """
 
     if top > base:
@@ -1700,7 +1700,7 @@ def gaussian_slit(
     r""" Generate normalized slit function
 
 
-    Parameters    
+    Parameters
     ----------
 
     FWHM: (nm)
@@ -1759,11 +1759,11 @@ def gaussian_slit(
 
     See Also
     --------
-    
-    :py:func:`~radis.tools.slit.import_experimental_slit`, 
-    :py:func:`~radis.tools.slit.triangular_slit`, 
+
+    :py:func:`~radis.tools.slit.import_experimental_slit`,
+    :py:func:`~radis.tools.slit.triangular_slit`,
     :py:func:`~radis.tools.slit.trapezoidal_slit`
-    
+
 
     """
 

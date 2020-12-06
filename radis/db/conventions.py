@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tools to convert spectroscopic constants with the 
+Tools to convert spectroscopic constants with the
 conventions of Hubert and Herzberg (ω, Be, α, β, etc.)
 to Dunham parameters (Ykl)
 
@@ -24,19 +24,19 @@ dunham2herzberg = {
     "Y30": (1, "weye"),
     "Y40": (1, "weze"),
 }
-""" dict: {Yij: (sign, coeff) } 
+""" dict: {Yij: (sign, coeff) }
 conversion of Dunham spectroscopic coefficients to Herzberg convention """
 
 ## Invert the dictionary.
 herzberg2dunham = {v: (sign, k) for k, (sign, v) in dunham2herzberg.items()}
 """ dict: {Yij: (sign, coeff)
-conversion of Herberg convention to Dunham spectroscopic coefficients 
+conversion of Herberg convention to Dunham spectroscopic coefficients
 
 See Also
 --------
 
 :py:func:`~radis.db.utils.get_dunham_coefficients`,
-:py:func:`~radis.db.utils.get_herzberg_coefficients` 
+:py:func:`~radis.db.utils.get_herzberg_coefficients`
 """
 
 # Name of all Herzberg coefficients
@@ -54,7 +54,7 @@ herzberg_coefficients_rovib = [
     "eta_e",
     "pi_e",
 ]
-"""list: Herzberg coefficients used in vibrational-rotational coupling terms for 
+"""list: Herzberg coefficients used in vibrational-rotational coupling terms for
 rovibrational energies"""
 
 herzberg_coefficients = (
@@ -66,7 +66,7 @@ herzberg_coefficients = (
 See Also
 --------
 
-:py:func:`~radis.db.utils.get_herzberg_coefficients` 
+:py:func:`~radis.db.utils.get_herzberg_coefficients`
 
 """
 

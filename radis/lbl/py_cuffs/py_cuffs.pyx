@@ -77,7 +77,7 @@ database_path = '/home/pankaj/radis-lab/data-2000-2400/'
 #Default number of lines to load
 #This is outside of the struct to allow it to be both None and int type;
 #Setting N_lines_to_load to None loads all lines in the file.
-N_lines_to_load = None 
+N_lines_to_load = None
 
 
 class initData(ctypes.Structure):
@@ -220,7 +220,7 @@ __global__ void fillDLM(
 			//^4
 
 			if ((iv0 >= 0) && (iv1 < init_params_d.N_v)) {
-				
+
 				//Calc wG
 				float log_wG_dat = log_2vMm[i] + iter_params_d.hlog_T;
 				float iwG = (log_wG_dat - iter_params_d.log_wG_min) / iter_params_d.log_dwG;
@@ -259,14 +259,14 @@ __global__ void fillDLM(
 				atomicAdd(&DLM[iwL0 + iwG0 * NwL + iv0 * NwGxNwL], aV00 * Iv0);
 				atomicAdd(&DLM[iwL0 + iwG0 * NwL + iv1 * NwGxNwL], aV00 * Iv1);
 				atomicAdd(&DLM[iwL0 + iwG1 * NwL + iv0 * NwGxNwL], aV01 * Iv0);
-				atomicAdd(&DLM[iwL0 + iwG1 * NwL + iv1 * NwGxNwL], aV01 * Iv1); 
+				atomicAdd(&DLM[iwL0 + iwG1 * NwL + iv1 * NwGxNwL], aV01 * Iv1);
 				atomicAdd(&DLM[iwL1 + iwG0 * NwL + iv0 * NwGxNwL], aV10 * Iv0);
 				atomicAdd(&DLM[iwL1 + iwG0 * NwL + iv1 * NwGxNwL], aV10 * Iv1);
 				atomicAdd(&DLM[iwL1 + iwG1 * NwL + iv0 * NwGxNwL], aV11 * Iv0);
 				atomicAdd(&DLM[iwL1 + iwG1 * NwL + iv1 * NwGxNwL], aV11 * Iv1);
 			}
 		}
-	} 
+	}
 }
 
 __global__ void applyLineshapes(complex<float>* DLM, complex<float>* spectrum) {
@@ -311,7 +311,7 @@ applyLineshapes = cuda_module.get_function('applyLineshapes')
 
 
 cdef void set_pT(float p, float T, float mole_fraction):
-    
+
     # ----------- setup global variables -----------------
     global iter_params_h
     #------------------------------------------------------
@@ -339,7 +339,7 @@ cdef void set_pT(float p, float T, float mole_fraction):
     # cdef float Trot = T
     # cdef float Tv12 = T
     # cdef float Tv3  = T
-    
+
     # cdef float Qr = gr * Trot/(c2 * B)*np.exp(c2*B/(<float>3.0*Trot)) #McDowell 1978
     # cdef float Qv1 = 1 / np.power(1 - np.exp(-c2 * w1 / Tv12), d1)
     # cdef float Qv2 = 1 / np.power(1 - np.exp(-c2 * w2 / Tv12), d2)
@@ -352,12 +352,12 @@ def read_npy(fname, arr):
     print("Loading {0}...".format(fname))
     arr = np.load(fname)
     print("Done!")
-    
-    
+
+
 def set_path(path):
     global database_path
     database_path = path
-    
+
 def set_N_lines(int N):
     global N_lines_to_load
     N_lines_to_load = N
@@ -366,7 +366,7 @@ def set_N_lines(int N):
 cdef extern from *:
     """
     struct greater {
-        bool operator () (const float x, const float y) const {return x > y;}       
+        bool operator () (const float x, const float y) const {return x > y;}
     };
     """
     ctypedef struct greater:
@@ -392,20 +392,20 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
 
     cdef set[pair[float,float]] unique_set
     cdef float float_pair[2]
-    
-    
+
+
     cdef vector[pair[float,float]] duplicates_removed
     cdef vector[float] na_short
     cdef vector[float] log_2gs_short
     cdef mapcpp[float, float, greater] bottom_envelope_map
     cdef mapcpp[float, float] top_envelope_map
 
-    cdef vector[float] top_a 
-    cdef vector[float] top_b 
+    cdef vector[float] top_a
+    cdef vector[float] top_b
     cdef vector[float] top_x
 
-    cdef vector[float] bottom_a 
-    cdef vector[float] bottom_b 
+    cdef vector[float] bottom_a
+    cdef vector[float] bottom_b
     cdef vector[float] bottom_x
 
     if verbose_gpu >= 2:
@@ -454,18 +454,18 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
         for i in range(na_len):
             # Somewhat of a hack; all of the structs I tried show Python interaction
             # when storing values. float[2] didn't have this problem, so I fill the
-            # float[2] array, and then convert the float* pointer to a const 
+            # float[2] array, and then convert the float* pointer to a const
             # pair[float,float]* pointer, which is then dereferenced by the [0].
-            # well it gets the job done I suppose, there are no yellow lines inside 
+            # well it gets the job done I suppose, there are no yellow lines inside
             # of this loop anymore.
-            
+
             float_pair[0] = na[i]
             float_pair[1] = log_2gs[i]
             unique_set.insert((<const pair[float,float]*>float_pair)[0])
-        
+
         duplicates_removed.assign(unique_set.begin(), unique_set.end())
 
-        
+
         for na_i, log_2gs_i in duplicates_removed:
             na_short.push_back(na_i)
             log_2gs_short.push_back(log_2gs_i)
@@ -485,7 +485,7 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
                     top_envelope_map[na_i] = log_2gs_i
             else:
                 top_envelope_map.insert({na_i, log_2gs_i})
-        
+
         top_a = { dereference(top_envelope_map.begin()).first }
         top_b = { dereference(top_envelope_map.begin()).second }
         top_x = { FLOAT_MIN }
@@ -501,7 +501,7 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
                                 break;
                         else:
                             break
-                
+
                 top_a.resize(i+1)
                 top_b.resize(i+1)
                 top_x.resize(i+1)
@@ -536,17 +536,17 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
                                 break
                         else:
                             break
-                
+
                 bottom_a.resize(i + 1)
                 bottom_b.resize(i + 1)
                 bottom_x.resize(i + 1)
-                
+
                 bottom_a.push_back(first_el)
                 bottom_b.push_back(second_el)
                 bottom_x.push_back(x_ij)
 
             idx+=1
-        
+
         bottom_x.erase(bottom_x.begin())
         bottom_x.push_back(FLOAT_MAX)
 
@@ -563,7 +563,7 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
             host_params_h_bottom_a,
             host_params_h_bottom_b,
             host_params_h_bottom_x]
-        
+
         with open(fname, 'wb') as f:
             pickle.dump(lt, f)
 
@@ -583,7 +583,7 @@ cdef void calc_lorentzian_params():
     global iter_params_h
     global epsilon
     #------------------------------------------------------
-    
+
     cdef float log_wL_min
     cdef float log_wL_max
 
@@ -591,17 +591,17 @@ cdef void calc_lorentzian_params():
         if iter_params_h.log_rT < host_params_h_bottom_x[i]:
             log_wL_min = iter_params_h.log_rT * host_params_h_bottom_a[i] + host_params_h_bottom_b[i]  + iter_params_h.log_p
             break
-    
+
     for i in range(host_params_h_top_x.size()):
         if iter_params_h.log_rT < host_params_h_top_x[i]:
             log_wL_max = iter_params_h.log_rT * host_params_h_top_a[i] + host_params_h_top_b[i]  + iter_params_h.log_p + epsilon
             break
-        
+
     cdef float log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
 
     iter_params_h.log_wL_min = log_wL_min
     iter_params_h.log_dwL = log_dwL
-    return 
+    return
 
 
 cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm, verbose_gpu):
@@ -630,7 +630,7 @@ cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm, 
         log_2vMm_max = np.amax(log_2vMm)
         lt = [log_2vMm_min, log_2vMm_max]
         pickle.dump(lt, open(fname, "wb"))
-    
+
     host_params_h_log_2vMm_min = log_2vMm_min
     host_params_h_log_2vMm_max = log_2vMm_max
 
@@ -684,7 +684,7 @@ cdef int prepare_blocks():
     cdef float v_cur = v0[0] + iter_params_h.p * da[0]
     cdef float v_max = v_cur + init_params_h.N_points_per_block * init_params_h.dv
     cdef int i_max = init_params_h.Max_iterations_per_thread
-    
+
     new_block.line_offset = 0
     new_block.iv_offset = int(((v_cur - init_params_h.v_min) / init_params_h.dv))
     while True:
@@ -697,7 +697,7 @@ cdef int prepare_blocks():
 
             iter_params_h.blocks[n] = new_block
             break
-        
+
         v_prev = v_cur
         v_cur = v0[i] + iter_params_h.p * da[i]
         if ((v_cur > v_max) or (i >= i_max)) :
@@ -711,7 +711,7 @@ cdef int prepare_blocks():
             new_block.line_offset = i * init_params_h.N_threads_per_block
             v_max = v_cur + (init_params_h.N_points_per_block) * init_params_h.dv
             i_max = i + init_params_h.Max_iterations_per_thread
-    
+
     return n
 
 def init(v_arr,N_wG,N_wL,
@@ -748,7 +748,7 @@ def init(v_arr,N_wG,N_wL,
     global host_params_h_data_start
     global host_params_h_data_stop
     global host_params_h_elapsedTimeData
-    
+
 
     global cuda_module
     global database_path
@@ -775,7 +775,7 @@ def init(v_arr,N_wG,N_wL,
     init_params_h.N_wG_x_N_wL = init_params_h.N_wG * init_params_h.N_wL
     init_params_h.N_total = init_params_h.N_wG_x_N_wL * init_params_h.N_v
     init_params_h.N_points_per_block = init_params_h.shared_size_floats // init_params_h.N_wG_x_N_wL
-    
+
     init_params_h.N_threads_per_block = 1024
     init_params_h.N_blocks_per_grid = 4 * 256 * 256
     init_params_h.N_points_per_thread = init_params_h.N_points_per_block // init_params_h.N_threads_per_block
@@ -787,7 +787,7 @@ def init(v_arr,N_wG,N_wL,
         print("Spectral points per thread : {0}".format(init_params_h.N_points_per_thread))
         print()
 
-    
+
     cdef np.ndarray[dtype=np.int32_t, ndim=1] spec_h_iso = iso
     cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_v0 = v0
     cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_da = da
@@ -861,7 +861,7 @@ def iterate(float p, float T, float mole_fraction,
             np.ndarray[dtype=np.float32_t, ndim=1] Ia_arr,
             np.ndarray[dtype=np.float32_t, ndim=1] molarmass_arr,
             verbose_gpu):
-    
+
     # ----------- setup global variables -----------------
 
     global host_params_h_start
@@ -935,9 +935,9 @@ def iterate(float p, float T, float mole_fraction,
         host_params_h_Q_d,
         host_params_h_I_add
         ))
-        
+
     cp.cuda.runtime.deviceSynchronize()
-    
+
     #This makes the DLM array available in the calling module
     DLM = cp.asnumpy(host_params_h_DLM_d_in)
     I_ADD = cp.asnumpy(host_params_h_I_add)
@@ -954,11 +954,11 @@ def iterate(float p, float T, float mole_fraction,
     if verbose_gpu >= 2:
         #FFT
         print("Performing Fourier transform...", end= " ")
-    host_params_h_DLM_d_out = cp.fft.rfft(host_params_h_DLM_d_in, axis = 0) 
+    host_params_h_DLM_d_out = cp.fft.rfft(host_params_h_DLM_d_in, axis = 0)
 
     if verbose_gpu >= 2:
         print("done!")
-    
+
     cp.cuda.runtime.deviceSynchronize()
     cdef int n_threads = 1024
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
@@ -966,9 +966,9 @@ def iterate(float p, float T, float mole_fraction,
     if verbose_gpu >= 2:
         print("Applying lineshapes...", end = " ")
 
-    applyLineshapes (( n_blocks,), (n_threads,), 
+    applyLineshapes (( n_blocks,), (n_threads,),
     (
-        host_params_h_DLM_d_out, 
+        host_params_h_DLM_d_out,
         host_params_h_spectrum_d_in,
     )
     )

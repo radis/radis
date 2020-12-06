@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Module that contains BandFactory, a class that features vibrational band-specific 
-functions, in particular the :meth:`~radis.lbl.bands.BandFactory.eq_bands` and 
-:meth:`~radis.lbl.bands.BandFactory.non_eq_bands` methods that return all 
-vibrational bands in a spectrum. 
+Module that contains BandFactory, a class that features vibrational band-specific
+functions, in particular the :meth:`~radis.lbl.bands.BandFactory.eq_bands` and
+:meth:`~radis.lbl.bands.BandFactory.non_eq_bands` methods that return all
+vibrational bands in a spectrum.
 
 All of these are eventually integrated in SpectrumFactory which inherits from
 BandFactory
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
@@ -22,7 +22,7 @@ Routine Listing
 
 PUBLIC METHODS
 
-- :meth:`~radis.lbl.bands.BandFactory.eq_bands` 
+- :meth:`~radis.lbl.bands.BandFactory.eq_bands`
 - :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
 - :meth:`~radis.lbl.bands.BandFactory.get_bands_weight`
 - :meth:`~radis.lbl.bands.BandFactory.get_band_list`

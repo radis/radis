@@ -8,5 +8,15 @@ repos:
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.7.9
     hooks:
-    - id: flake8
-      exclude: radis/io/hapi.py
+      - id: flake8
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.3.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: |
+            (?x)(
+                ^.+\.spec|
+                ^.+\.dat|
+                ^.+\.levels
+            )

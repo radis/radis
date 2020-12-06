@@ -7,7 +7,7 @@ Created on Fri Apr 14 21:10:31 2017
 Validation case
 ------------
 
-Compare line broadening calculated in RADIS vs calculated in HAPI, using the 
+Compare line broadening calculated in RADIS vs calculated in HAPI, using the
 same database (HITRAN 2016)
 
 """

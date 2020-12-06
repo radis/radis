@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-""" Wrapper to fetch line database from HITRAN with Astroquery [1]_ 
+""" Wrapper to fetch line database from HITRAN with Astroquery [1]_
 
 Notes
 -----
 
 Astroquery [R1]_ is itself based on [HAPI]_
-    
+
 
 References
 ----------
 
-.. [R1] `Astroquery <https://astroquery.readthedocs.io>`_ 
+.. [R1] `Astroquery <https://astroquery.readthedocs.io>`_
 
 
 -------------------------------------------------------------------------------

@@ -5,7 +5,7 @@
 # E/N
 Td = 1e-17 * volt * centimeter**2 = townsend
 
-# Abbreviations 
+# Abbreviations
 cm2 = cm ** 2
 cm3 = cm ** 3
 m2 = m ** 2

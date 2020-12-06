@@ -2,7 +2,7 @@
 """
 Tools to deal with HDF5 cache files
 HDF5 cache files are used to cache Energy Database files, and Line Database
-files, and yield a much faster access time. 
+files, and yield a much faster access time.
 
 Routine Listing
 ---------------
@@ -15,7 +15,7 @@ Routine Listing
 See Also
 --------
 
-:py:func:`~radis.io.hitran.hit2df`, 
+:py:func:`~radis.io.hitran.hit2df`,
 :py:func:`~radis.io.cdsd.cdsd2df`
 
 -------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Functions and constants used in :class:`~radis.spectrum.spectrum.Spectrum` 
+Functions and constants used in :class:`~radis.spectrum.spectrum.Spectrum`
 object
 
 -------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ NON_CONVOLUTED_QUANTITIES = [
 
 See :ref:`the description of spectral quantities <label_spectral_quantities>`"""
 SPECTRAL_QUANTITIES = CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
-"""list: all spectral quantities defined in a :class:`~radis.spectrum.spectrum.Spectrum` 
+"""list: all spectral quantities defined in a :class:`~radis.spectrum.spectrum.Spectrum`
 object.
 
 See :ref:`the description of spectral quantities <label_spectral_quantities>`"""
@@ -78,9 +78,9 @@ PHYSICAL_PARAMS = [
     "overpopulation",
     "thermal_equilibrium",
 ]
-"""list: physical conditions under which the Spectrum was calculated/measured. 
-When printing an object, these parameters are shown below "Physical Conditions" 
-If a parameter is not in this list, it is either in "Computation Parameters" 
+"""list: physical conditions under which the Spectrum was calculated/measured.
+When printing an object, these parameters are shown below "Physical Conditions"
+If a parameter is not in this list, it is either in "Computation Parameters"
 (non-physical parameters that can have an influence on the Spectrum, e.g, cutoffs
 and thresholds) or in "Informative Params" (descriptive parameters that have absolutely no
 impact on the spectrum, e.g, number of lines calculated or calculation time)
@@ -109,9 +109,9 @@ INFORMATIVE_PARAMS = [
     "export_lines",
     "export_populations",
 ]
-""" list: Informative parameters. Parameters that should be saved in the Spectrum 
-objects, but ignored when comparing two spectra. Should be written here only 
-these parameters that cannot affect the physical result. In particular, all 
+""" list: Informative parameters. Parameters that should be saved in the Spectrum
+objects, but ignored when comparing two spectra. Should be written here only
+these parameters that cannot affect the physical result. In particular, all
 parameters relative to performance should be added here.
 
 Notes

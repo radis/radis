@@ -9,9 +9,9 @@ Build a Parallel Spectrum Factory
 Summary
 -------
 
-These loads the database once, then calculates a given number of cases in 
-parallel using a dedicated SpectrumFactory. Each case is calculated on one 
-core only. This is more suited to calculations of large number of small spectra. 
+These loads the database once, then calculates a given number of cases in
+parallel using a dedicated SpectrumFactory. Each case is calculated on one
+core only. This is more suited to calculations of large number of small spectra.
 If you want to calculate only one large spectra consider using a single SpectrumFactory
 in parallel mode
 
@@ -19,9 +19,9 @@ Routine Listing
 ---------------
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
@@ -31,12 +31,12 @@ Examples
 --------
 
 Just replace SpectrumFactory by ParallelFactory in your codes. And have a list
-as an input of `eq_spectrum` or `non_eq_spectrum`. 
+as an input of `eq_spectrum` or `non_eq_spectrum`.
 
 See Also
 --------
 
-Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information. 
+Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information.
 
 -------------------------------------------------------------------------------
 
