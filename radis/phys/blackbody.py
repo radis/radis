@@ -13,7 +13,7 @@ Example
 -------
 
 Generate Earth blackbody::
-    
+
     s = sPlanck(wavelength_min=3000, wavelength_max=50000,
                 T=288, eps=1)
     s.plot()

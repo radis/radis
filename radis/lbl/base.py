@@ -7,7 +7,7 @@ Summary
 A class to aggregate methods to calculate spectroscopic parameter and
 populations (and unload factory.py)
 
-:py:class:`~radis.lbl.base.BaseFactory` is inherited by 
+:py:class:`~radis.lbl.base.BaseFactory` is inherited by
 :py:class:`~radis.lbl.broadening.BroadenFactory` eventually
 
 Routine Listing
@@ -51,9 +51,9 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 - :py:meth:`radis.lbl.base.BaseFactory._cutoff_linestrength`
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory

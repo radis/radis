@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
 
 Summary
 -------
@@ -19,7 +19,7 @@ Routine Listings
 PUBLIC METHODS
 
 - :py:meth:`radis.lbl.loader.DatabankLoader.load_databank`           >>> load line database
-- :py:meth:`radis.lbl.loader.DatabankLoader.init_databank`           >>> load loader 
+- :py:meth:`radis.lbl.loader.DatabankLoader.init_databank`           >>> load loader
 - :py:meth:`radis.lbl.loader.DatabankLoader.fetch_databank`           >>> fetch from HITRAN online
 - :py:meth:`radis.lbl.loader.DatabankLoader.init_database`           >>> to interact / generate a SpectrumDatabase
 - :py:meth:`radis.lbl.loader.DatabankLoader.get_conditions`
@@ -39,9 +39,9 @@ PRIVATE METHODS - DATABASE LOADING
 - :py:meth:`radis.lbl.loader.DatabankLoader._clean_temp_file`
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
@@ -108,7 +108,7 @@ from radis.misc.utils import get_files_from_regex
 KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : for HITRAN and HITEMP-2010 
+- ``'hitran'`` : for HITRAN and HITEMP-2010
 - ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
 - ``'cdsd-4000'`` : CDSD-4000 (CO2 only)
 
@@ -124,14 +124,14 @@ See Also
 KNOWN_LVLFORMAT = ["radis", "cdsd-pc", "cdsd-pcN", "cdsd-hamil", None]
 """list: Known formats for Energy Level Databases (used in non-equilibrium calculations):
 
-- ``'radis'``: energies calculated with Dunham expansions by 
+- ``'radis'``: energies calculated with Dunham expansions by
     :class:`~radis.levels.partfunc.PartFunc_Dunham`
 - ``'cdsd-pc'``: energies read from precomputed CDSD energies for CO2, with
     ``viblvl=(p,c)`` convention. See :class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
 - ``'cdsd-pcN'``: energies read from precomputed CDSD energies for CO2, with
     ``viblvl=(p,c,N)`` convention. See :class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
 - ``'cdsd-hamil'``: energies read from precomputed CDSD energies for CO2, with
-    ``viblvl=(p,c,J,N)`` convention, i.e., a each rovibrational level can have a 
+    ``viblvl=(p,c,J,N)`` convention, i.e., a each rovibrational level can have a
     unique vibrational energy (this is needed when taking account Coupling terms)
     See :class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
 - ``None``: means you can only do Equilibrium calculations.
@@ -158,15 +158,15 @@ drop_auto_columns_for_dbformat = {
     "cdsd-4000": ["wang2"],
     "cdsd-hitemp": ["wang2", "lsrc"],
 }
-""" dict: drop these columns if using ``drop_columns='auto'`` in load_databank 
+""" dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
 
 See Also
 --------
 
-- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
-- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`, 
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`,
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`,
 
 """
 drop_auto_columns_for_levelsfmt = {
@@ -176,16 +176,16 @@ drop_auto_columns_for_levelsfmt = {
     "cdsd-hamil": ["v1u", "v2u", "l2u", "v3u", "ru", "v1l", "v2l", "l2l", "v3l", "rl"],
     None: [],
 }
-""" dict: drop these columns if using ``drop_columns='auto'`` in load_databank 
+""" dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``lvlformat=``, some of these columns won't be used.
 
 See Also
 --------
 
-- 'radis': :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd-pc': :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd-pcN' (CDSD-HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
-- 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`, 
+- 'radis': :data:`~radis.io.hitran.columns_2004`,
+- 'cdsd-pc': :data:`~radis.io.hitran.columns_2004`,
+- 'cdsd-pcN' (CDSD-HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
+- 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`,
 
 """
 drop_all_but_these = [
@@ -200,17 +200,17 @@ drop_all_but_these = [
     "Pshft",
     "El",
 ]
-""" dict: drop all columns but these if using ``drop_columns='all'`` in load_databank 
+""" dict: drop all columns but these if using ``drop_columns='all'`` in load_databank
 
 Note: nonequilibrium calculations wont be possible anymore and it wont be possible
 to identify lines with :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
-    
+
 See Also
 --------
 
-- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
-- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`, 
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`,
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`,
 
 """
 
@@ -439,7 +439,7 @@ class Parameters(ConditionDict):
             0.01
         )  #: float : Gaussian step DLM lineshape database. Default _gaussian_step(0.01)
         self.include_neighbouring_lines = True
-        """bool: if ``True``, includes the contribution of off-range, neighbouring 
+        """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
 
 
@@ -495,33 +495,33 @@ def format_paths(s):
 TEMP_FILE_PREFIX = ".radis_"
 
 df_metadata = ["Ia", "molar_mass", "Qref", "Qvib", "Q"]
-""" list: metadata of line DataFrames :py:attr:`~radis.lbl.loader.DatabankLoader.df0`, 
+""" list: metadata of line DataFrames :py:attr:`~radis.lbl.loader.DatabankLoader.df0`,
 :py:attr:`~radis.lbl.loader.DatabankLoader.df1`.
-@dev: when having only 1 molecule, 1 isotope, these parameters are 
+@dev: when having only 1 molecule, 1 isotope, these parameters are
 constant for all rovibrational lines. Thus, it's faster and much more
-memory efficient to transport them as attributes of the DataFrame 
-rather than columns. The syntax is the same, thus the operations do 
+memory efficient to transport them as attributes of the DataFrame
+rather than columns. The syntax is the same, thus the operations do
 not change, i.e::
-    
-    k_b / df.molar_mass
-    
-will work whether molar_mass is a float or a column. 
 
-.. warning:: 
-    
+    k_b / df.molar_mass
+
+will work whether molar_mass is a float or a column.
+
+.. warning::
+
     However, in the current Pandas implementation of :py:class:`~pandas.DataFrame`,
     attributes are lost whenever the DataFrame is recreated, transposed,
     pickled.
-    
+
 Thus, we use :py:func:`~radis.misc.basics.transfer_metadata` to keep
-the attributes after an operation, and :py:func:`~radis.misc.basics.expand_metadata` 
+the attributes after an operation, and :py:func:`~radis.misc.basics.expand_metadata`
 to make them columns before a Serializing operation (ex: multiprocessing)
-@dev: all of that is a high-end optimization. Users should not deal 
-with internal DataFrames. 
+@dev: all of that is a high-end optimization. Users should not deal
+with internal DataFrames.
 
 References
 ----------
-https://stackoverflow.com/q/13250499/5622825    
+https://stackoverflow.com/q/13250499/5622825
 """
 
 
@@ -566,7 +566,7 @@ class DatabankLoader(object):
         they may change the output of calculations (ex: threshold, cutoff, broadening methods, etc.)
         """
         self.misc = MiscParams()
-        """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`) 
+        """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
         params that cannot change the output of calculations (ex: number of CPU, etc.)
         """
         # Setup individual warnings. Value of keys can be:
@@ -576,7 +576,7 @@ class DatabankLoader(object):
         # The key self.warnings['default'] will set the warning behavior for all
         # other warnings
         self.warnings = default_warning_status
-        """ dict: Default warnings for SpectrumFactory. See 
+        """ dict: Default warnings for SpectrumFactory. See
         :py:data:`~radis.misc.warnings.default_warning_status`"""
 
         # Generate unique id for Factory
@@ -602,19 +602,19 @@ class DatabankLoader(object):
         # Variables that will hold the dataframes.
         self.df0 = None
         """pandas DataFrame : initial line database after loading.
-                
-        If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting 
-        by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of 
-        :py:class:`~radis.lbl.factory.SpectrumFactory`. 
-        
+
+        If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting
+        by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of
+        :py:class:`~radis.lbl.factory.SpectrumFactory`.
+
         .. warning::
-        
-            never overwrite the ``df0`` attribute, else some metadata may be lost in the process. 
+
+            never overwrite the ``df0`` attribute, else some metadata may be lost in the process.
             Only use inplace operations. If reducing the number of lines, add
             a df0.reset_index()
-            
+
         For instance::
-        
+
             sf = SpectrumFactory(
                 wavenum_min= 2150.4,
                 wavenum_max=2151.4,
@@ -623,27 +623,27 @@ class DatabankLoader(object):
             sf.load_databank('HITRAN-CO-TEST')
             sf.df0.drop(sf.df0[sf.df0.vu!=1].index, inplace=True)   # keep lines emitted by v'=1 only
             sf.eq_spectrum(Tgas=3000, name='vu=1').plot()
-        
-        :py:attr:`~radis.lbl.loader.DatabankLoader.df0` contains the lines as they are loaded from the database. 
-        :py:attr:`~radis.lbl.loader.DatabankLoader.df1` is generated during the spectrum calculation, after the 
-        line database reduction steps, population calculation, and scaling of intensity and broadening parameters 
-        with the calculated conditions. 
+
+        :py:attr:`~radis.lbl.loader.DatabankLoader.df0` contains the lines as they are loaded from the database.
+        :py:attr:`~radis.lbl.loader.DatabankLoader.df1` is generated during the spectrum calculation, after the
+        line database reduction steps, population calculation, and scaling of intensity and broadening parameters
+        with the calculated conditions.
 
         See Also
         --------
-        
+
         :py:attr:`~self.radis.lbl.loader.DatabankLoader.df1`
-        
+
         """
         self.df1 = None
         """DataFrame : line database, scaled with populations + linestrength cutoff
         Never edit manually. See all comments about :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
-        
+
         See Also
         --------
-        
+
         :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
-        
+
         """
 
         # Temp variable to store databanks information

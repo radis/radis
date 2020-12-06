@@ -11,13 +11,13 @@ stages:
     # we dont test on other branches
   - name: deploy
     if: branch = master
-  
+
 jobs:
   include:
     - stage: test
       name: Test and Coverage
       install:
-        # Install Anaconda 
+        # Install Anaconda
         # We do this conditionally because it saves us some downloading if the
         # version is the same.
         - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -29,7 +29,7 @@ jobs:
         # Useful for debugging any issues with conda
         - conda info -a
 
-        # Update python version in environment 
+        # Update python version in environment
         - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
         # Create conda environment
         - conda env create -n radis-env -f environment.yml
@@ -43,7 +43,7 @@ jobs:
         - echo ">>> Run tests"
         # use XVFB to have headless display port, and still run the Matplotlib tests.
         - xvfb-run pytest -m "not needs_config_file and not needs_cuda" --cov=./
-      
+
       after_success:
         # codecoverage
         - pip install codecov
@@ -62,12 +62,12 @@ jobs:
         - sudo apt-get update
       script:
         - echo "Deploying to PyPI"
-      before_deploy: 
+      before_deploy:
         - sudo apt-get install pandoc
         - pandoc README.rst -o README.md
       deploy:
         provider: pypi
-        user: "__token__"  
+        user: "__token__"
         password:
           secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
         skip_existing: true

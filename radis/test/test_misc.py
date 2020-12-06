@@ -3,7 +3,7 @@
 Summary
 -------
 
-Runs tests for neq/misc so that they can be accessed by pytest (and hopefully 
+Runs tests for neq/misc so that they can be accessed by pytest (and hopefully
 the CI test suite)
 
 Examples

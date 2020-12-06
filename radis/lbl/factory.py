@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is 
-the core of the RADIS Line-by-Line module. 
+Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is
+the core of the RADIS Line-by-Line module.
 
 Examples
 --------
@@ -12,12 +12,12 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
     # that do just that)
     sf = SpectrumFactory(2125, 2249.9,
                          parallel=False,bplot=False,
-                         molecule='CO', 
+                         molecule='CO',
                          isotope=1,
                          cutoff=1e-30,   # for faster calculations. See
                                          # `plot_linestrength_hist` for more details
                          **kwargs)
-    sf.fetch_databank()        # autodownload from HITRAN 
+    sf.fetch_databank()        # autodownload from HITRAN
     s = sf.eq_spectrum(Tgas=300)
     s.plot('abscoeff')
 
@@ -41,9 +41,9 @@ PUBLIC METHODS
 - :meth:`~radis.lbl.factory.SpectrumFactory.optically_thin_power`    >>> get total power (equilibrium or non eq)
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 
@@ -65,14 +65,14 @@ Performance:
 
 Fast version: iterate over chunks of dataframe
 Note that we can't use the full dataframe because it's too big and takes too much memory
-See :ref:`Performance <label_lbl_performance>` for more details. 
+See :ref:`Performance <label_lbl_performance>` for more details.
 
 
 for Developers:
 
 - To implement new database formats, see the databases parsers in cdsd.py / hitran.py,
   and the partition function interpolators / calculators methods of SpectrumFactory:
-  :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_calculator` and 
+  :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_calculator` and
   :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_interpolator`
 
 

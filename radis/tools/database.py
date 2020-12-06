@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Implements a spectrum database :class:`~radis.tools.database.SpecDatabase` 
+Implements a spectrum database :class:`~radis.tools.database.SpecDatabase`
 class to manage them all
 
 It basically manages a list of Spectrum JSON files, adding a Pandas
@@ -21,14 +21,14 @@ See and get objects from database::
 
     s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
     db.add(s)  # update database (and raise error because duplicate!)
-    
-Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to 
+
+Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to
 automatically look-up and update a database when spectra are calculated.
 
-An example of script to update all spectra conditions in a database (ex: when 
+An example of script to update all spectra conditions in a database (ex: when
 a condition was added afterwards to the Spectrum class)::
-    
-    # Example: add the 'medium' key in conditions 
+
+    # Example: add the 'medium' key in conditions
     db = "database_CO"
     for f in os.listdir(db):
        if not f.endswith('.spec'): continue
@@ -37,7 +37,7 @@ a condition was added afterwards to the Spectrum class)::
        s.store(join(db,f), if_exists_then='replace')
 
 You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
-of the website.  
+of the website.
 
 -------------------------------------------------------------------------------
 

@@ -4,59 +4,59 @@
 Summary
 -------
 
-RADIS 
+RADIS
 
 A code to simulate infrared spectra of molecules::
 
-                *(((((((                                       
-                 ((((((((((((              ,(((((              
-                 ((((((((((((((((/   *((((((((((*              
-                  ((((((((((((((((( ((((((((((((               
-                      (((((((( (((((((((((((                   
-                         *                                      
-                       @@  *@@       ..  /@@                   
-                  @@&  @@  *@@       @@  /@@  @@%              
-              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@          
-              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@          
-              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@  (@      
-         ,@   @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@          
-         @@   @@  @@&  @@  ,.                                  
+                *(((((((
+                 ((((((((((((              ,(((((
+                 ((((((((((((((((/   *((((((((((*
+                  ((((((((((((((((( ((((((((((((
+                      (((((((( (((((((((((((
+                         *
+                       @@  *@@       ..  /@@
+                  @@&  @@  *@@       @@  /@@  @@%
+              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@
+              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@
+              @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@  (@
+         ,@   @@  @@&  @@  *@@  @@&  @@  /@@  @@%  @@
+         @@   @@  @@&  @@  ,.
                                     ,%&&&&&&&&&&&&&&&&&&&
-          &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&      
-           &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&       
-             &&&&&&&&&&&&&&&&@@@@@@&@@@&&&@@@&&&&&&&&          
-               &&&&&&&&&&&&&&&@@@@@@&&&&&&&&&&&&&&&            
-                 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&              
-                   &&&&&&&&&&&&&&&&&&&&&&&&&&&.                
-                       &&&&&&&&&&&&&&&&&&&                     
-                               .**.                            
-                                &&&,                         
-                                 &&         
+          &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+           &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+             &&&&&&&&&&&&&&&&@@@@@@&@@@&&&@@@&&&&&&&&
+               &&&&&&&&&&&&&&&@@@@@@&&&&&&&&&&&&&&&
+                 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+                   &&&&&&&&&&&&&&&&&&&&&&&&&&&.
+                       &&&&&&&&&&&&&&&&&&&
+                               .**.
+                                &&&,
+                                 &&
 
 See Source code [1]_, Documentation [2]_, Package [3]_
 
 Notes
 -----
 
-RADIS is nonequilibrium emission and absorption line-by-line code, for use by 
-infrared spectroscopic that want to compare line databases, or experimentalist 
+RADIS is nonequilibrium emission and absorption line-by-line code, for use by
+infrared spectroscopic that want to compare line databases, or experimentalist
 that want to fit their experimental line-of-sight spectra.
 
-Written as a general purpose radiative solver, the code is built around the HITRAN, 
-HITEMP and CDSD databases for molecules in their electronic ground state. Energy 
-levels are read from tabulated databases or calculated from Dunham developments. 
-Boltzmann, Treanor, and state specific vibrational distributions can be 
-generated. A modular architecture makes it possible to add new species without 
-modifications to the core code. Thus far, CO2, CO are featured for non-equilibrium 
-calculations, and all species present in the HITRAN database are featured for 
-equilibrium calculations. To fit experimental spectra, RADIS includes a line 
-survey tool, an interface with a look-up database to improve fitting convergence 
-times, and a multi-slab module with a radiative transfer equation solver to 
-reproduce line-of-sight experiments. Validation cases against existing spectral 
-codes and experimental results from various plasma sources are presented. 
+Written as a general purpose radiative solver, the code is built around the HITRAN,
+HITEMP and CDSD databases for molecules in their electronic ground state. Energy
+levels are read from tabulated databases or calculated from Dunham developments.
+Boltzmann, Treanor, and state specific vibrational distributions can be
+generated. A modular architecture makes it possible to add new species without
+modifications to the core code. Thus far, CO2, CO are featured for non-equilibrium
+calculations, and all species present in the HITRAN database are featured for
+equilibrium calculations. To fit experimental spectra, RADIS includes a line
+survey tool, an interface with a look-up database to improve fitting convergence
+times, and a multi-slab module with a radiative transfer equation solver to
+reproduce line-of-sight experiments. Validation cases against existing spectral
+codes and experimental results from various plasma sources are presented.
 
-The code will soon be available under under GNU General Public 
-License v3.0 
+The code will soon be available under under GNU General Public
+License v3.0
 
 References
 ----------
@@ -90,8 +90,8 @@ Notes
 
 refactor in progress.
 So far there are config files in ~/.radis (for databanks), global variables
-here, and a radis/config.json file. 
-Everything should be merged in a user JSON file ~/.radis (json) overriding 
+here, and a radis/config.json file.
+Everything should be merged in a user JSON file ~/.radis (json) overriding
 the default one.
 """
 
@@ -100,12 +100,12 @@ the default one.
 
 DEBUG_MODE = False
 """bool: change this at runtime with::
-    
+
     import radis
     radis.DEBUG_MODE = True
 
 Use the :py:func:`~radis.misc.debug.printdbg` function in ``radis.misc``, typically with::
-    
+
     if __debug__: printdbg(...)
 
 so that printdbg are removed by the Python preprocessor when running in
@@ -117,15 +117,15 @@ optimize mode::
 AUTO_UPDATE_SPEC = False
 """bool: experimental feature
 used to autoupdate .spec files to the latest format, by simply saving
-them again once they're loaded and fixed. 
-Warning! Better have a copy of your files before that, or a way to regenerate 
-them. 
+them again once they're loaded and fixed.
+Warning! Better have a copy of your files before that, or a way to regenerate
+them.
 
 Examples
 --------
 
-Add to the top of your script (once is enough!):: 
-    
+Add to the top of your script (once is enough!)::
+
     import radis
     radis.AUTO_UPDATE_SPEC = True
 

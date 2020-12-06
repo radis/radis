@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Variants of default Partition function tabulators and calculators, 
+Variants of default Partition function tabulators and calculators,
 based on CDSD-4000 format, specifically for CO2
 
 Routine Listing

@@ -8,7 +8,7 @@ Run all tests:
 
 >>> pytest       (in command line, in project folder)
 
-Run only fast tests 
+Run only fast tests
 
 >>> pytest -m fast
 

@@ -1,3 +1,3 @@
-rm -rf source/ 
+rm -rf source/
 make clean
 make html

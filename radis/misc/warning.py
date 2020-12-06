@@ -130,13 +130,13 @@ WarningClasses = {
 }
 """ dict: warnings used in RADIS Spectrum calculations.
 
-You can selectively activate them by setting the warnings attribute of 
-:class:`radis.lbl.factory.SpectrumFactory` 
+You can selectively activate them by setting the warnings attribute of
+:class:`radis.lbl.factory.SpectrumFactory`
 
 See Also
 --------
 
-:py:data:`~radis.misc.warning.default_warning_status` 
+:py:data:`~radis.misc.warning.default_warning_status`
 """
 
 # Setup individual warnings. Value of keys can be:
@@ -179,7 +179,7 @@ other warnings. All warnings can be disabled by setting the SpectrumFactory
 See Also
 --------
 
-:py:data:`~radis.misc.warning.WarningClasses`, 
+:py:data:`~radis.misc.warning.WarningClasses`,
 :py:func:`~radis.misc.warning.reset_warnings`
 
 """

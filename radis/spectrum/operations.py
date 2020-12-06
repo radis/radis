@@ -11,7 +11,7 @@ Operators:
 - :py:func:`~radis.spectrum.operations.multiply` : simply use ``s*2``
 - :py:func:`~radis.spectrum.operations.add_constant` : simply use ``s+1``
 - :py:func:`~radis.spectrum.operations.add_array` : simply use ``s+a``
-- :py:func:`~radis.spectrum.operations.add_spectra` : simply use ``s1+s2`` 
+- :py:func:`~radis.spectrum.operations.add_spectra` : simply use ``s1+s2``
 - :py:func:`~radis.spectrum.operations.substract_spectra` : simply use ``s1-s2``
 
 Note that these operators are purely algebraic and should not be used in place
@@ -19,17 +19,17 @@ of the line-of-sight functions, i.e, :py:func:`~radis.los.slabs.SerialSlabs` (``
 and :py:func:`~radis.los.slabs.MergeSlabs` (``//``)
 
 Functions to manipulate one spectrum:
-    
+
 - :py:func:`~radis.spectrum.operations.crop`
 - :py:func:`~radis.spectrum.operations.offset`
 
 Play with baselines:
-    
+
 - :py:func:`~radis.spectrum.operations.get_baseline`
 - :py:func:`~radis.spectrum.operations.sub_baseline`
-    
+
 Functions to discard all but one spectral quantity:
-    
+
 - :py:func:`~radis.spectrum.operations.Transmittance`
 - :py:func:`~radis.spectrum.operations.Transmittance_noslit`
 - :py:func:`~radis.spectrum.operations.Radiance`
@@ -37,7 +37,7 @@ Functions to discard all but one spectral quantity:
 
 Keeps all spectral quantities, but make emission equal to 0 (useful when
 calculating contributions of line of sight slabs):
-    
+
 - :py:func:`~radis.spectrum.operations.PerfectAbsorber`
 
 
@@ -45,7 +45,7 @@ Examples
 --------
 
 Most of these functions are implemented with the standard operators. Ex::
-    
+
     ((s_exp - 0.1)*10).plot()   # works for a Spectrum s_exp
 
 -------------------------------------------------------------------------------

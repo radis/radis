@@ -342,7 +342,7 @@ class Spectrum(object):
         self.populations = populations
         self.lines = lines
         self.units = units
-        """ dict: units for spectral quantities. 
+        """ dict: units for spectral quantities.
         """
         self.cond_units = cond_units
         self.name = name

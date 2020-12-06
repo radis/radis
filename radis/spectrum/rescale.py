@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 
-Functions to update :class:`~radis.spectrum.spectrum.Spectrum` 
+Functions to update :class:`~radis.spectrum.spectrum.Spectrum`
 objects with new spectral quantities that can be derived
 from existing ones, or rescale path_length or mole_fraction, or add overpopulations
 
 Most of these are binded as methods to the Spectrum class, but stored here to
-unload the spectrum.py file 
+unload the spectrum.py file
 
 
 -------------------------------------------------------------------------------

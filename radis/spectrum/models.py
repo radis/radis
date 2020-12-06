@@ -18,7 +18,7 @@ See Also
 
 To extract some spectral quantities from a Spectrum, and create a new Spectrum,
 see the functions in :py:mod:`radis.spectrum.operations`:
-    
+
 - :func:`~radis.spectrum.operations.Radiance`
 - :func:`~radis.spectrum.operations.Radiance_noslit`
 - :func:`~radis.spectrum.operations.Transmittance`

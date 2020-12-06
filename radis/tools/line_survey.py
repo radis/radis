@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Functions to plot line surveys 
+Functions to plot line surveys
 
 
 -------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Spectrum-class module 
+Spectrum-class module
 """
 
 from .spectrum import Spectrum, is_spectrum

@@ -1,4 +1,4 @@
-# Contributing to RADIS 
+# Contributing to RADIS
 
 We love spectroscopy, and we love your input! We want to make contributing to this project as easy as possible, whether it's:
 
@@ -8,13 +8,13 @@ We love spectroscopy, and we love your input! We want to make contributing to th
 - Proposing new features (interface or physics)
 - Becoming a core developer
 
-This document is a quick summary, more information can be found on the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html) 
+This document is a quick summary, more information can be found on the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html)
 
 ## We Develop with Github
 We use github to host code, to track issues and feature requests, as well as accept pull requests.
 
 ## We (try to) use [Github Flow](https://guides.github.com/introduction/flow/index.html)
-So all code changes (should) happen through Pull Requests. 
+So all code changes (should) happen through Pull Requests.
 Pull requests are the best way to propose changes to the codebase:
 
 1. Fork the repo and create your branch from `develop`.
@@ -28,7 +28,7 @@ Pull requests are the best way to propose changes to the codebase:
 We use GitHub issues to track public bugs. Report a bug by [opening a new issue](); it's that easy!
 
 Issues labeled [Good First Issue](https://github.com/radis/radis/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-are also a nice way to get started with contributing to the project. 
+are also a nice way to get started with contributing to the project.
 
 ## Write bug reports with detail, background, and sample code
 
@@ -46,13 +46,13 @@ People *love* thorough bug reports. Not even kidding.
 
 ## Use a Consistent Coding Style
 
-We're using the Black coding style. See the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html#code-linting) 
-for more information. 
+We're using the Black coding style. See the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html#code-linting)
+for more information.
 
 ## Ask questions
 
-See the [Q&A forum](https://groups.google.com/forum/#!forum/radis-radiation>) 
-or join the community chat: 
+See the [Q&A forum](https://groups.google.com/forum/#!forum/radis-radiation>)
+or join the community chat:
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/radis-radiation/community)
 

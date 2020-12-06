@@ -21,6 +21,6 @@
 
 ---
 <sub>*Tip : you can vote for [New Features](https://github.com/radis/radis/issues/79) on https://feathub.com/radis/radis*
-*Also check for the [Long Term Todo List](https://github.com/radis/radis/issues/53)* 
+*Also check for the [Long Term Todo List](https://github.com/radis/radis/issues/53)*
 </sub>
 

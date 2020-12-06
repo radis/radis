@@ -4,7 +4,7 @@ Created on Sat Oct 28 18:47:39 2017
 
 @author: erwan
 
-State-dependant and state-independant degeneracies for molecules 
+State-dependant and state-independant degeneracies for molecules
 
 
 """

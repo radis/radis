@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 
-Constants and correlations for air. 
-Wavelength correction due to medium dispersion. 
+Constants and correlations for air.
+Wavelength correction due to medium dispersion.
 
-Routine Listing 
+Routine Listing
 ---------------
 
 - :func:`~radis.phys.air.air_index_dispersion`

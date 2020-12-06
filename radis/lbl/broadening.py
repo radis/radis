@@ -12,9 +12,9 @@ Routine Listing
 ---------------
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
@@ -51,7 +51,7 @@ Notes
 -----
 
 Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
-    
+
     from pytexit import py2tex
     py2tex('...')
 
@@ -749,7 +749,7 @@ class BroadenFactory(BaseFactory):
         self.woutrange = None
 
         self.params.broadening_method = ""
-        """ See :py:meth:`~radis.lbl.factory.SpectrumFactory` 
+        """ See :py:meth:`~radis.lbl.factory.SpectrumFactory`
         """
 
         # Predict broadening times (helps trigger warnings for optimization)

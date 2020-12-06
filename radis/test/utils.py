@@ -10,13 +10,13 @@ Examples
 --------
 
 Run all tests::
-    
+
     cd radis/test
     pytest
-    
-Run only "fast" tests (tests that have a "fast" label, and should be 
+
+Run only "fast" tests (tests that have a "fast" label, and should be
 a few seconds only)::
-    
+
     cd radis/test
     pytest -m fast
 

@@ -2,15 +2,15 @@
 """
 Summary
 -------
-Classes to deal with multi-slabs configurations: 
-    
+Classes to deal with multi-slabs configurations:
+
 - :func:`~radis.los.slabs.MergeSlabs` for several species at the same spatial position
 - :func:`~radis.los.slabs.SerialSlabs` to add several spectra along the line-of-path
-One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object 
+One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object
 Examples
 --------
-See more examples in the 
-`RADIS line-of-sight module <https://radis.readthedocs.io/en/latest/los/index.html>`__ 
+See more examples in the
+`RADIS line-of-sight module <https://radis.readthedocs.io/en/latest/los/index.html>`__
 -------------------------------------------------------------------------------
 """
 # Todo:

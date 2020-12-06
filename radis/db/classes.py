@@ -7,8 +7,8 @@ Created on Tue Jul 18 16:15:03 2017
 Summary
 -------
 
-Define :py:class:`~radis.db.classes.Molecule`, :py:class:`~radis.db.classes.Isotope` 
-and :py:class:`~radis.db.classes.ElectronicState` classes 
+Define :py:class:`~radis.db.classes.Molecule`, :py:class:`~radis.db.classes.Isotope`
+and :py:class:`~radis.db.classes.ElectronicState` classes
 
 ElectronicState has:
 
@@ -20,20 +20,20 @@ Calculate Vibrational and Rotational energies for some database molecules
 Molecules
 -----------
 
-Shortcut to some molecules ground states are defined at the end of the file 
-in the dictionary `Molecules`, with the following structure: 
+Shortcut to some molecules ground states are defined at the end of the file
+in the dictionary `Molecules`, with the following structure:
 
 {molecule_name: {isotope_number: {electronic_state_name: ElectronicState object}}}
-        
+
 Import with::
-    
+
     from radis.db.molecules import Molecules
     CO2_X = Molecules['CO2'][1]['X']            # 1 for first isotope
 
 Or::
 
     from radis import getMolecule                # directly
-    CO2_2 = getMolecule('CO2', 1, 'X')         # better KeyError messages 
+    CO2_2 = getMolecule('CO2', 1, 'X')         # better KeyError messages
 
 
 -------------------------------------------------------------------------------
