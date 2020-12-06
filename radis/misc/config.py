@@ -35,8 +35,6 @@ import configparser
 import json
 from os.path import dirname, exists, expanduser, join
 
-from six import string_types
-
 from radis.misc.basics import compare_dict, compare_lists, stdpath
 from radis.misc.utils import DatabankNotFound, getProjectRoot
 
@@ -323,7 +321,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
         config[dbname]["info"] = dict_entries.pop("info")
 
     # ... Parse paths correctly
-    if dict_entries["path"] in string_types:
+    if isinstance(dict_entries["path"], str):
         config[dbname]["path"] = dict_entries.pop("path")
     else:  # list
         config[dbname]["path"] = "\n       ".join(dict_entries.pop("path"))

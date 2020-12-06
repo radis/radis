@@ -31,8 +31,6 @@ import numpy as np
 from matplotlib import gridspec
 from matplotlib.widgets import MultiCursor
 from publib import fix_style, set_style
-from six import string_types
-from six.moves import range, zip
 
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
@@ -1118,7 +1116,7 @@ def compare_spectra(
         raise TypeError(
             "2nd object is not a Spectrum: got class {0}".format(other.__class__)
         )
-    if isinstance(spectra_only, string_types):  # case where we compare all quantities
+    if isinstance(spectra_only, str):  # case where we compare all quantities
         if not spectra_only in first.get_vars():
             raise ValueError(
                 "{0} is not a spectral quantity in our Spectrum ({1})".format(
@@ -1132,9 +1130,7 @@ def compare_spectra(
                 )
             )
     if verbose:  # print conditions
-        what = (
-            spectra_only if isinstance(spectra_only, string_types) else "all quantities"
-        )
+        what = spectra_only if isinstance(spectra_only, str) else "all quantities"
         msg = "compare {0} with rtol={1}".format(what, rtol)
         if ignore_nan:
             msg += ", ignore_nan"
@@ -1222,7 +1218,7 @@ def compare_spectra(
         )
 
     b = True
-    if isinstance(spectra_only, string_types):  # compare this quantity
+    if isinstance(spectra_only, str):  # compare this quantity
         vars = [spectra_only]
     else:  # compare all quantities
         b = set(first.get_vars()) == set(other.get_vars())

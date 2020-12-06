@@ -68,7 +68,6 @@ from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
-from six.moves import range, zip
 
 from radis.lbl.base import BaseFactory
 from radis.misc.basics import is_float

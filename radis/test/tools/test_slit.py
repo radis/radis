@@ -26,7 +26,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import abs, linspace, sqrt, trapz
-from six.moves import zip
 
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.printer import printm

@@ -75,8 +75,6 @@ import numpy as np
 import pandas as pd
 from astropy import units as u
 from numpy import exp, pi
-from six import string_types
-from six.moves import range, zip
 
 import radis
 
@@ -2628,7 +2626,7 @@ class BaseFactory(DatabankLoader):
         # Check input
         if levels is None or levels is False:
             return {}
-        if isinstance(levels, string_types):
+        if isinstance(levels, str):
             levels = [levels]
         for l in levels:
             EXPECTED = ["vib", "rovib"]

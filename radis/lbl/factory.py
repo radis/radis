@@ -89,7 +89,6 @@ import astropy.units as u
 import numpy as np
 from numpy import arange, exp
 from scipy.constants import N_A, c, k, pi
-from six import string_types
 
 from radis import get_version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
@@ -502,7 +501,7 @@ class SpectrumFactory(BandFactory):
                 )
 
         # Store isotope identifier in str format (list wont work in database queries)
-        if not isinstance(isotope, string_types):
+        if not isinstance(isotope, str):
             isotope = ",".join([str(k) for k in list_if_float(isotope)])
 
         # Initialize input conditions

@@ -30,20 +30,18 @@ Trying to retain functional style for this API.
 """
 
 
-# import httplib
-# import urllib2
 import json
 import os
 import os.path
 import pydoc
 import re
+import urllib
 from bisect import bisect
 from os import listdir
 
 # from collections import OrderedDict
 from warnings import simplefilter, warn
 
-import six
 from numpy import (
     abs,
     any,
@@ -77,18 +75,9 @@ from numpy import (
 from numpy import sort as npsort
 from numpy import sqrt, tan, where, zeros
 from numpy.fft import fft, fftshift
-from six.moves import range, zip
 
 # Enable warning repetitions
 simplefilter("always", UserWarning)
-
-# Python 3 compatibility
-try:
-    import urllib.request as urllib2
-except ImportError:
-    import six.moves.urllib.error
-    import six.moves.urllib.parse
-    import six.moves.urllib.request
 
 HAPI_VERSION = "1.1.0.6"
 # CHANGES:
@@ -1909,7 +1898,7 @@ def operationSUM(args):
     # any numbers of arguments
     if type(args[0]) in set([int, float]):
         result = 0
-    elif type(args[0]) in set([str, six.text_type]):
+    elif isinstance(args[0], str):
         result = ""
     else:
         raise Exception("SUM error: unknown arg type")
@@ -3075,9 +3064,9 @@ def extractColumns(
     # Example: ParameterNames=('v1','v2','v3')
     #          ParameterFormats=('%1s','%1s','%1s')
     # By default the format of parameters is column-fixed
-    if type(
-        LOCAL_TABLE_CACHE[TableName]["header"]["default"][SourceParameterName]
-    ) not in set([str, six.text_type]):
+    if not isinstance(
+        LOCAL_TABLE_CACHE[TableName]["header"]["default"][SourceParameterName], str
+    ):
         raise Exception("Source parameter must be a string")
     i = -1
     # bug when (a,) != (a)
@@ -3476,10 +3465,10 @@ def queryHITRAN(
     # raise Exception(url)
     # Download data by chunks.
     try:
-        req = six.moves.urllib.request.urlopen(url)
-    except six.moves.urllib.error.HTTPError:
+        req = urllib.request.urlopen(url)
+    except urllib.error.HTTPError:
         raise Exception("Failed to retrieve data for given parameters.")
-    except six.moves.urllib.error.URLError:
+    except urllib.error.URLError:
         raise Exception(
             "Cannot connect to %s. Try again or edit GLOBAL_HOST variable."
             % GLOBAL_HOST

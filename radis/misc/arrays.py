@@ -15,7 +15,6 @@ import numba
 import numpy as np
 from numpy import hstack
 from scipy.interpolate import interp1d
-from six.moves import map, range
 
 # Normalize
 

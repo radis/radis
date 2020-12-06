@@ -70,8 +70,6 @@ from warnings import catch_warnings, filterwarnings
 
 import numpy as np
 import pandas as pd
-from six import string_types
-from six.moves import range
 
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
@@ -262,7 +260,7 @@ class ConditionDict(dict):
                 # Ignore some
                 if type(v) in [np.ndarray, dict, pd.DataFrame] or v is None:
                     continue
-                if isinstance(k, string_types):
+                if isinstance(k, str):
                     # Also discard all starting with '_'
                     if k.startswith("_"):
                         continue
@@ -1338,7 +1336,7 @@ class DatabankLoader(object):
                 )
 
         # Check input types are correct
-        if isinstance(path, string_types):  # make it a list
+        if isinstance(path, str):  # make it a list
             path = get_files_from_regex(path)
 
             # Ensure that `path` does not contain the cached dataset files in
