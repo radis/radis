@@ -7,29 +7,36 @@ CO2
 ---
 
 Version 0.9 uses uses the CO2 spectrosopic coefficients of [Klarenaar2017]_ ,
-Table 2,3 and the references therein. These constants have been compiled for Treanor distributions. 
-`(see constants) <https://raw.githubusercontent.com/radis/radis/master/radis/db/CO2/molecules_data.json>`__
+Table 2,3 and the references therein. /!\ These constants have been compiled for Treanor distributions. 
 
-.. include:: https://raw.githubusercontent.com/radis/radis/master/radis/db/CO2/molecules_data.json
+.. include:: ../../radis/db/CO2/molecules_data.json
     :literal:
     :end-line: 20
+    
+See the full list of constants of the public version 
+`as text <https://raw.githubusercontent.com/radis/radis/master/radis/db/CO2/molecules_data.json>`__
+or `on GitHub <https://github.com/radis/radis/blob/master/radis/db/CO2/molecules_data.json>`__
 
 In version 1.0, RADIS will use the spectroscopic constants of [Suzuki1968]_
 
 CO
 --
 
-CO uses the Dunham coefficients of [Guelachvili1983]_ 
-`(see constants) <https://raw.githubusercontent.com/radis/radis/master/radis/db/CO/molecules_data.json>`__
+CO uses the Dunham coefficients of [Guelachvili1983]_  
 
-.. include:: https://raw.githubusercontent.com/radis/radis/master/radis/db/CO/molecules_data.json
+.. include:: ../../radis/db/CO/molecules_data.json
     :literal:
     :end-line: 20
+
+See the full list of constants of the public version 
+`as text <https://raw.githubusercontent.com/radis/radis/master/radis/db/CO/molecules_data.json>`__
+or `on GitHub <https://github.com/radis/radis/blob/master/radis/db/CO/molecules_data.json>`__
+
 
 
 You can use :ref:`your own set of spectroscopic constants <label_lbl_custom_constants>`, 
 or precompute energy levels and use them directly (see the 
-`Energy level database <https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file>`__.
+`Energy level database <https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file>`__).
 
 
 References

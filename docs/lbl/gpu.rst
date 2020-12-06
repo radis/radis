@@ -1,4 +1,4 @@
-.. _label_radis_gpu_:
+.. _label_radis_gpu:
 
 ==============================
 RADIS-GPU Spectrum Calculation

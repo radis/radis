@@ -292,7 +292,7 @@ def calc_spectrum(
         the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
 
         For more details on how to use the GPU method and process the database, refer to the examples
-        linked above and the documentation on :ref:`GPU support for RADIS <label_gpu>`.
+        linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
         See Also
         --------
