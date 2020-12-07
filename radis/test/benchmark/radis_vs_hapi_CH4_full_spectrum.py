@@ -32,14 +32,9 @@ Typical results on an XPS 15 laptop here::
 from os.path import dirname, join
 from time import time
 
+from hapi import ISO_ID, absorptionCoefficient_Voigt, db_begin, fetch_by_ids, tableList
+
 from radis import Spectrum, SpectrumFactory, plot_diff
-from radis.io.hapi import (
-    ISO_ID,
-    absorptionCoefficient_Voigt,
-    db_begin,
-    fetch_by_ids,
-    tableList,
-)
 
 if __name__ == "__main__":
 

@@ -40,7 +40,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
 
     """
 
-    from radis.io.hapi import (
+    from hapi import (
         absorptionCoefficient_Voigt,
         db_begin,
         fetch,
