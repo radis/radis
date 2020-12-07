@@ -3774,9 +3774,6 @@ class Spectrum(object):
         - for 2 Spectra: not defined (not physical)
         """
 
-        # TODO: Implement unit addition (with Pint) one days
-        # Example:   s += s*_u('mW/cm2/sr/nm')
-
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import add_constant
 

@@ -1330,7 +1330,7 @@ class SpecList(object):
                     )
                 )
 
-        dg = self.df.reindex(columns=list(self.df.columns))
+        dg = self.df.reindex(columns=[k for k in self.df.columns if k != "Spectrum"])
 
         if scale_if_possible:
             # Remove scalable inputs from distance calculation variables (unless
@@ -1342,8 +1342,6 @@ class SpecList(object):
                     del dg[k]
                 except KeyError:
                     pass
-
-        #        raise
 
         mean = dict(dg.mean())
         #        std = dict(dg.std())
@@ -1391,6 +1389,7 @@ class SpecList(object):
             # Get spectrum with minimum distance to target conditions
             ## type: Spectrum
             sout = self.df.loc[dg["_d"].idxmin(), "Spectrum"]
+            # Note @EP 07/12/20 : do we have the same index as dg ?? (created with reindex on L1335)  #  TODO
         finally:
             del dg["_d"]
 
