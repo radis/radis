@@ -5,7 +5,6 @@ channels:
 - astropy
 dependencies:
 - python=3.6
-- hitran-api
 - numpy
 - scipy
 - matplotlib
