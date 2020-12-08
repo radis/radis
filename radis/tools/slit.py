@@ -865,7 +865,7 @@ def offset_dilate_slit_function(
     ----------------
 
     threshold: float
-        if not ``None``, that slit dispersion is about constant (< ``threshold`` change)
+        if not ``None``, check that slit dispersion is about constant (< ``threshold`` change)
         on the calculated range. Default 0.01 (1%)
 
     Returns
@@ -1374,7 +1374,10 @@ def import_experimental_slit(
 
     # import
     if isinstance(slit, str):
-        w_slit, I_slit = np.loadtxt(slit).T
+        try:
+            w_slit, I_slit = np.loadtxt(slit).T
+        except ValueError:
+            w_slit, I_slit = np.loadtxt(slit)
     # numpy input
     elif isinstance(slit, np.ndarray):
         a, b = np.shape(slit)

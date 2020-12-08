@@ -1991,6 +1991,7 @@ class Spectrum(object):
         plot_slit=False,
         store=True,
         slit_dispersion=None,
+        slit_dispersion_warning_threshold=0.01,
         auto_recenter_crop=True,
         verbose=True,
         *args,
@@ -2057,6 +2058,11 @@ class Spectrum(object):
         Other Parameters
         ----------------
 
+        auto_recenter_crop: bool
+            if ``True``, recenter slit and crop zeros on the side when importing
+            an experimental slit. Default ``True``.
+            See :func:`~radis.tools.slit.recenter_slit`, :func:`~radis.tools.slit.crop_slit`
+
         plot_slit: boolean
             if ``True``, plot slit
 
@@ -2103,10 +2109,9 @@ class Spectrum(object):
             See Laux 1999 "Experimental study and modeling of infrared air plasma
             radiation" for more information
 
-        auto_recenter_crop: bool
-            if ``True``, recenter slit and crop zeros on the side when importing
-            an experimental slit. Default ``True``.
-            See :func:`~radis.tools.slit.recenter_slit`, :func:`~radis.tools.slit.crop_slit`
+        slit_dispersion_warning_threshold: float
+            if not ``None``, check that slit dispersion is about constant (< ``threshold`` change)
+            on the calculated range. Default 0.01 (1%). See :func:`~radis.tools.slit.offset_dilate_slit_function`
 
         *args, **kwargs
             are forwarded to slit generation or import function
@@ -2293,7 +2298,7 @@ class Spectrum(object):
                     Islit0,
                     w_nm[slice_window],
                     slit_dispersion,
-                    threshold=0.01,
+                    threshold=slit_dispersion_warning_threshold,
                     verbose=verbose,
                 )
                 # Convert it back if needed
@@ -2539,10 +2544,6 @@ class Spectrum(object):
                         w_nm[slice_window],
                         slit_dispersion,
                         threshold=0.01,
-                        # TODO: make sure threshold
-                        # is the same as the one
-                        # applied (hardcoded for
-                        # the moment)
                         verbose=False,
                     )
                     # Convert it back if needed
