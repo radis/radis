@@ -24,6 +24,7 @@ dependencies:
 - pip
 - pip:
   - publib>=0.3.2  # Plotting styles for Matplotlib
+  - hitran-api
   - json-tricks>=3.13.6  # to deal with non jsonable formats
   - mpldatacursor
   - tables  # for pandas to HDF5 export

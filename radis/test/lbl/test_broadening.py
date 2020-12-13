@@ -31,7 +31,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
 
     We're looking at CO(0->1) line 'R1' at 2150.86 cm-1
     """
-    from radis.io.hapi import absorptionCoefficient_Voigt, db_begin, fetch, tableList
+    from hapi import absorptionCoefficient_Voigt, db_begin, fetch, tableList
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
@@ -487,7 +487,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     if plot:
         plot_diff(s_dlm_eq, s_dlm_noneq)
 
-    assert res <= 4e-5
+    assert res <= 1e-4
 
 
 # @pytest.mark.needs_config_file

@@ -149,6 +149,7 @@ setup(
     ],
     packages=find_packages(),
     install_requires=[
+        "hitran-api",
         "numpy",
         "scipy",
         "matplotlib",

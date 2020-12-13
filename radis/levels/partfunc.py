@@ -739,8 +739,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
         isotope identifier
 
     path: str
-        path to ``hapi.py``. If None, RADIS embedded ``hapi.py`` (``radis.io.hapi.py``)
-        is used.
+        path to ``hapi.py``. If None, the hapi package from PyPI is used.
 
     Examples
     --------
@@ -776,7 +775,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
             partitionSum = self.import_from_file(path)
         else:
             # Use RADIS embedded
-            from radis.io.hapi import HAPI_VERSION, partitionSum
+            from hapi import HAPI_VERSION, partitionSum
 
             if self.verbose >= 2:
                 print("HAPI version: %s" % HAPI_VERSION)
