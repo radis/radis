@@ -260,22 +260,22 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
     and isotopes"""
 
     # molecule, isotope, temperature, absolute tolerance
-    for molecule, iso, T, atol in [
-        ("CO2", 1, 300, 0.9),
-        ("CO2", 1, 1000, 2.0),
-        ("CO2", 1, 3000, 2000),
-        ("CO2", 2, 300, 1.8),
-        ("CO2", 2, 1000, 25),
-        ("CO2", 2, 3000, 4962),
-        ("CO", 1, 300, 0.16),
-        ("CO", 1, 1000, 1.9),
-        ("CO", 1, 3000, 27),
-        ("CO", 2, 300, 0.31),
-        ("CO", 2, 1000, 4.1),
-        ("CO", 2, 3000, 56.9),
-        ("CO", 3, 300, 0.16),
-        ("CO", 3, 1000, 2.1),
-        ("CO", 3, 3000, 28.6),
+    for molecule, iso, T, atol, rtol in [
+        ("CO2", 1, 300, 0.9, 0.02),
+        ("CO2", 1, 1000, 5.0, 0.02),
+        ("CO2", 1, 3000, 2150, 0.02),
+        ("CO2", 2, 300, 1.8, 0.02),
+        ("CO2", 2, 1000, 25, 0.02),
+        ("CO2", 2, 3000, 4962, 0.02),
+        ("CO", 1, 300, 0.16, 0.02),
+        ("CO", 1, 1000, 1.9, 0.02),
+        ("CO", 1, 3000, 27, 0.02),
+        ("CO", 2, 300, 0.31, 0.02),
+        ("CO", 2, 1000, 4.1, 0.02),
+        ("CO", 2, 3000, 56.9, 0.02),
+        ("CO", 3, 300, 0.16, 0.02),
+        ("CO", 3, 1000, 2.1, 0.02),
+        ("CO", 3, 3000, 28.6, 0.02),
     ]:
 
         S = Molecules[molecule][iso]["X"]
@@ -298,6 +298,7 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
             )
 
         try:
+            assert np.isclose(Q_radis, Q_hapi, atol=atol)
             assert np.isclose(Q_radis, Q_hapi, atol=atol)
         except AssertionError:
             raise AssertionError(

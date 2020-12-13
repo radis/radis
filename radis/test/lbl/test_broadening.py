@@ -487,7 +487,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     if plot:
         plot_diff(s_dlm_eq, s_dlm_noneq)
 
-    assert res <= 4e-5
+    assert res <= 1e-4
 
 
 # @pytest.mark.needs_config_file
