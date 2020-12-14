@@ -65,7 +65,9 @@ def test_compare_torch_CO2(
     - neq==0.9.21*: (with ParallelFactory) Finished test_compare_torch_CO2 in 298s
 
     - neq==0.9.22: (Parallel + continuum) Finished in 65s
-      RADIS 1.0.0 == neq 0.9.24
+      RADIS 0.9.9 == neq 0.9.24
+
+    - RADIS 0.9.26: Finished test_compare_torch_CO2 in 57s (DLM, no continuum)
 
     Reference
     --------

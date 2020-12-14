@@ -1335,23 +1335,7 @@ class DatabankLoader(object):
                     + " ~/.radis: {0}".format(",".join(dblist))
                 )
 
-        # Check input types are correct
-        if isinstance(path, str):  # make it a list
-            path = get_files_from_regex(path)
-
-            # Ensure that `path` does not contain the cached dataset files in
-            # case a wildcard input is given by the user. For instance, if the
-            # given input is "cdsd_hitemp_09_frag*", path should not contain both
-            # "cdsd_hitemp_09_fragment.txt" and "cdsd_hitemp_09_fragment.h5".
-
-            # Reference: https://github.com/radis/radis/issues/121
-
-            filtered_path = [fname for fname in path]
-            for fname in path:
-                if cache_file_name(fname) in path and cache_file_name(fname) != fname:
-                    filtered_path.remove(cache_file_name(fname))
-            path = filtered_path
-
+        # Check database format
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
@@ -1382,13 +1366,39 @@ class DatabankLoader(object):
                 )
             )
 
-        # Check all path exists
+        # Line database path
+        if isinstance(path, str):  # make it a list
+            path = [path]
+
+        # ... Parse all paths and read wildcards
+        path_list = path
+        new_paths = []
+        for path in path_list:
+            path = get_files_from_regex(path)
+
+            # Ensure that `path` does not contain the cached dataset files in
+            # case a wildcard input is given by the user. For instance, if the
+            # given input is "cdsd_hitemp_09_frag*", path should not contain both
+            # "cdsd_hitemp_09_fragment.txt" and "cdsd_hitemp_09_fragment.h5".
+
+            # Reference: https://github.com/radis/radis/issues/121
+
+            filtered_path = [fname for fname in path]
+            for fname in path:
+                if cache_file_name(fname) in path and cache_file_name(fname) != fname:
+                    filtered_path.remove(cache_file_name(fname))
+            new_paths += filtered_path
+        path = new_paths
+
+        # ... Check all path exists
         # ... remove empty paths first
         path = [p for p in path if p != ""]
         # ... test paths
         for p in path:
             if not exists(p):
                 raise FileNotFoundError("databank lines file: `{0}`".format(p))
+
+        # Energy levels and partition functions
         if levels is not None:
             for iso, lvl in levels.items():  # one file per isotope
                 if not exists(lvl):
