@@ -1,4 +1,4 @@
- | |badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_binder| |badge_gitter| |badge_slack|
+ | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder| |badge_gitter| |badge_slack|
  | |badge_contributors| |badge_travis| |badge_coverage| |badge_license|
 
 *****************************************
@@ -118,7 +118,7 @@ Or start a bare RADIS online session:
 Cite
 ----
 
-Article is available at |badge_article|
+Articles are available at |badge_article1| |badge_article2| 
 
 For reproducibility, do not forget to cite the line database used, and the spectroscopic constants
 if running nonquilibrium  calculations. See `How to cite? <https://radis.readthedocs.io/en/latest/references/references.html#cite>`__
@@ -177,7 +177,7 @@ Links
 
 - Help: |badge_gitter| |badge_slack|  `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 
-- Article: |badge_article|
+- Articles: |badge_article1| |badge_article2| 
 
 - Source Code: |badge_stars| |badge_contributors| |badge_license|
 
@@ -212,9 +212,13 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                 :target: https://radis.readthedocs.io/en/latest/?badge=latest
                 :alt: Documentation Status
 
-.. |badge_article| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+.. |badge_article1| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
                    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
                    :alt: Article
+
+.. |badge_article2| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2020.107476.svg
+                   :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407320310049
+                   :alt: Spectral Synthesis Algorithm
 
 .. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star
                 :target: https://github.com/radis/radis/stargazers
