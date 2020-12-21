@@ -134,7 +134,7 @@ Flow Chart
 
 Under the hood, RADIS will calculate populations by scaling tabulated data (equilibrium)
 or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients
-from :ref:`Line Databases <label_line_database>`, calculate the line broadening using
+from :ref:`Line Databases <label_line_databases>`, calculate the line broadening using
 various strategies to improve :ref:`Performances <label_lbl_performance>`,
 and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
 the flow chart below:

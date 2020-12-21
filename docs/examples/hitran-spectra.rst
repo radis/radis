@@ -5,7 +5,7 @@
 HITRAN spectra
 ==============
 
-The absorption coefficient of all HITRAN species (see :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`)
+The absorption coefficient of all HITRAN species (see :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`)
 is calculated in `plot_all_hitran_spectra.py <https://github.com/radis/radis-examples/blob/master/hitran_spectra/plot_all_hitran_spectra.py>`__
 at 300 K, 1 atm for the first isotope:
 
@@ -512,7 +512,8 @@ The code to calculate each molecule is shown below:
 23. HCN
 =======
 
-- 23 	``'HCN'`` : 	Hydrogen Cyanide absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 23 	``'HCN'`` : 	Hydrogen Cyanide absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 
 24. CH4Cl
@@ -647,7 +648,8 @@ The code to calculate each molecule is shown below:
 30. SF6
 =======
 
-- 30 	``'SF6'`` : 	Sulfur Hexafluoride absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 30 	``'SF6'`` : 	Sulfur Hexafluoride absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 
 31. H2S
@@ -718,13 +720,15 @@ The code to calculate each molecule is shown below:
 34. O
 =====-
 
-- 34 	``'O'`` : 	Oxygen Atom absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 34 	``'O'`` : 	Oxygen Atom absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 
 35. ClONO2
 ===========
 
-- 35 	``'ClONO2'`` : 	Chlorine Nitrate absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 35 	``'ClONO2'`` : 	Chlorine Nitrate absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 36. NO+
 =======
@@ -751,65 +755,78 @@ The code to calculate each molecule is shown below:
 37. HOBr
 ========
 
-- 37 	``'HOBr'`` : 	Hypobromous Acid absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 37 	``'HOBr'`` : 	Hypobromous Acid absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 38. C2H4
 ========
 
-- 38 	``'C2H4'`` : 	Ethylene absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 38 	``'C2H4'`` : 	Ethylene absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 39. CH3OH
 =========
 
-- 39 	``'CH3OH'`` : 	Methanol absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 39 	``'CH3OH'`` : 	Methanol absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 40. CH3Br
 =========
 
-- 40 	``'CH3Br'`` : 	Methyl Bromide absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 40 	``'CH3Br'`` : 	Methyl Bromide absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 41. CH3CN
 =========
 
-- 41 	``'CH3CN'`` : 	Acetonitrile absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 41 	``'CH3CN'`` : 	Acetonitrile absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 42. CF4
 =======
 
-- 42 	``'CF4'`` : 	CFC-14 absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 42 	``'CF4'`` : 	CFC-14 absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 43. C4H2
 ========
 
-- 43 	``'C4H2'`` : 	Diacetylene absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 43 	``'C4H2'`` : 	Diacetylene absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 44. HC3N
 ========
 
-- 44 	``'HC3N'`` : 	Cyanoacetylene absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 44 	``'HC3N'`` : 	Cyanoacetylene absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 45. H2
 ======
 
-- 45 	``'H2'`` : 	Hydrogen absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 45 	``'H2'`` : 	Hydrogen absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 46. CS
 ======
 
-- 46 	``'CS'`` : 	Carbon Monosulfide absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 46 	``'CS'`` : 	Carbon Monosulfide absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 47. SO3
 =======
 
-- 47 	``'SO3'`` : 	Sulfur trioxide absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 47 	``'SO3'`` : 	Sulfur trioxide absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 48. C2N2
 ========
 
-- 48 	``'C2N2'`` : 	Cyanogen absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 48 	``'C2N2'`` : 	Cyanogen absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 
 49. COCl2
 =========
 
-- 49 	``'COCl2'`` : 	Phosgene absorption coefficient at 300 K : not calculated. `💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>__`.
+- 49 	``'COCl2'`` : 	Phosgene absorption coefficient at 300 K : not calculated.
+`💪 Contribute on GitHub <https://github.com/radis/radis/tree/develop/docs/examples>`__.
 

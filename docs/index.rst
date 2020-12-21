@@ -92,7 +92,7 @@ at 3400 K calculated with the [HITEMP-2010]_ and [CDSD-4000]_ line databases):
 
 Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-processing functions
 (:ref:`rescale <label_spectrum_rescale>` , :ref:`crop<label_spectrum_offset_crop>`,
-:ref:`remove baselines<label_spectrum_remove_baseline>, :ref:`store<label_spectrum_store>`,
+:ref:`remove baselines<label_spectrum_remove_baseline>`, :ref:`store<label_spectrum_store>`,
 :ref:`combine along the line-of-sight <label_spectrum_line_of_sight>`,
 :ref:`identify each line <label_spectrum_linesurvey>`,
 :ref:`manipulate multiple spectra at once <label_spectrum_database>`, etc.)

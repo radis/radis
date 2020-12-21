@@ -2708,7 +2708,7 @@ class Spectrum(object):
         See Also
         --------
 
-        :py:method:`~radis.spectrum.Spectrum.print_conditions`,
+        :py:meth:`~radis.spectrum.Spectrum.print_conditions`,
         :ref:`the Spectrum page <label_spectrum>`
         """
 
