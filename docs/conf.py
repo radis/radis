@@ -137,7 +137,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "RADIS"
-copyright = "2020, Erwan Pannier"
+copyright = "2020, Erwan Pannier and the 🌱 RADIS contributors (https://github.com/radis/radis/graphs/contributors)"
 author = (
     "Erwan Pannier \\and Nicolas Minesi \\and "
     + "Dirk van den Bekerom \\and Pankaj Mishra \\and "

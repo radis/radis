@@ -866,3 +866,26 @@ the calculation is typically 100 times faster in RADIS::
     >>> Calculated with HAPI in 157.41s
     >>> Calculated with RADIS in 1.65s
 
+
+
+Compute Blackbody Radiation Spectrum
+====================================
+
+Compute a Planck Blackbody radiation spectrum in Python using the RADIS
+:func:`~radis.phys.blackbody.sPlanck` function ::
+
+    from radis import sPlanck
+
+    sPlanck(wavelength_min=135, wavelength_max=3000, T=4000).plot()
+    sPlanck(wavelength_min=135, wavelength_max=3000, T=5000).plot(nfig='same')
+    sPlanck(wavelength_min=135, wavelength_max=3000, T=6000).plot(nfig='same')
+    sPlanck(wavelength_min=135, wavelength_max=3000, T=7000).plot(nfig='same')
+
+
+.. image:: https://i.stack.imgur.com/Pu46C.png
+   :width: 600
+   :alt: Planck Blackbody Radiation in Python
+   :target: https://i.stack.imgur.com/Pu46C.png
+
+The same function can  compute the Planck blackbody radiation against wavenumbers rather
+than wavelengths.
