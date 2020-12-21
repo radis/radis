@@ -184,6 +184,7 @@ Content
    spectrum/spectrum
    los/los
    examples/examples
+   examples/hitran-spectra
    dev/developer
    references/references
 
