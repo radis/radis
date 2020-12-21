@@ -36,6 +36,12 @@ Or::
     CO2_2 = getMolecule('CO2', 1, 'X')         # better KeyError messages
 
 
+Routine Listing
+---------------
+
+- :func:`~radis.db.classes.get_molecule`
+- :func:`~radis.db.classes.get_molecule_identifier`
+
 -------------------------------------------------------------------------------
 
 

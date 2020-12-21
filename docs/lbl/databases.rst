@@ -26,7 +26,7 @@ You can also download the HITRAN databases files locally:
     see :func:`~radis.io.hitran.hit2df`
 
     There are also functions to get HITRAN molecule ids, and vice-versa:
-    :func:`~radis.io.hitran.get_molecule`, :func:`~radis.io.hitran.get_molecule_identifier`
+    :func:`~radis.db.classes.get_molecule`, :func:`~radis.db.classes.get_molecule_identifier`
 
 
 HITEMP
@@ -51,8 +51,13 @@ downloaded manually.
 
 - CDSD-4000 files can be downloaded from ftp://ftp.iao.ru/pub/. Expect ~50 Gb for all CO2.
   Cite with [CDSD-4000]_.
+- Tabulated partition functions are availabe in the ``partition_functions.txt`` file on the
+  [CDSD-4000]_ FTP : ftp://ftp.iao.ru/pub/CDSD-4000/  . They can be loaded and interpolated
+  with :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDtab`. This can be done automatically
+  providing ``parfuncfmt: cdsd`` and ``parfunc = PATH/TO/cdsd_partition_functions.txt`` is given
+  in the ``~/.radis`` configuration file (see the :ref:`Configuration file <label_lbl_config_file>`).
 
-The ``~/.radis`` is then used to properly handle the line databases
+The ``~/.radis`` is  used to properly handle the line databases
 on the User environment. See the :ref:`Configuration file <label_lbl_config_file>` section, as well as
 the :py:mod:`radis.misc.config` module and the :py:func:`~radis.misc.config.getDatabankList`
 function for more information.

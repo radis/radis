@@ -395,8 +395,8 @@ Following is an example where the path variable uses a wildcard ``*`` to find al
 	parfuncfmt = hapi                # calculate partition functions
 
 
-In the former example, for equilibrium calculations, RADIS uses HAPI
-tabulated partition functions. It is also possible to use your own
+In the former example, for equilibrium calculations, RADIS uses [HAPI]_ to retrieve
+partition functions tabulated with TIPS-2017. It is also possible to use your own
 partition functions, for instance::
 
     [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
