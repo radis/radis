@@ -50,7 +50,9 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     # -----------
 
     # Generate HAPI database locally
-    db_begin(join(dirname(__file__), __file__.replace(".py", "_HAPIdata")))
+    hapi_data_path = join(dirname(__file__), __file__.replace(".py", "_HAPIdata"))
+
+    db_begin(hapi_data_path)
     if not "CO" in tableList():  # only if data not downloaded already
         fetch(
             "CO", 5, 1, wmin - broadening_max_width / 2, wmax + broadening_max_width / 2
@@ -90,7 +92,9 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
             "GaussianBroadeningWarning": "ignore",
         },
     )  # 0.2)
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank(
+        path=join(hapi_data_path, "CO.data"), format="hitran", parfuncfmt="hapi"
+    )
     #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
     s = sf.eq_spectrum(Tgas=T, name="RADIS")
 
