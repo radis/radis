@@ -47,6 +47,18 @@ is interfaced with pytest through the ``--cov=./`` command::
     cd radis/test
     pytest --cov=./
 
+Performance benchmarks
+----------------------
+
+RADIS performance is tested against past versions on a dedicated project : `radis-benchmark <https://github.com/radis/radis-benchmark>`__.
+
+Results can be found on : 🔗 https://radis.github.io/radis-benchmark/
+
+.. image:: http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat
+            :target: https://github.com/radis/radis-benchmark
+            :alt: Benchmarks
+
+
 .. _label_dev_select_test:
 
 Select tests
