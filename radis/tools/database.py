@@ -838,6 +838,14 @@ def _fix_format(file, sload):
                     + "database ASAP."
                 )
                 sload["units"][var] = ""
+            if "cm_1" in unit:
+                printr(
+                    "File {0}".format(basename(file))
+                    + " has a deprecrated structure "
+                    + "(cm_1 is now written cm-1''). Fixed this time, but regenerate "
+                    + "database ASAP."
+                )
+                sload["units"][var] = sload["units"][var].replace("cm_1", "cm-1")
 
     return sload, fixed
 
