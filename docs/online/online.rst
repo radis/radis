@@ -9,11 +9,11 @@ radis-ui
 
 A simple web-app for RADIS under development.
 
-See more `on GitHub <https://github.com/radis/radis-ui>`__
-
 .. image:: https://user-images.githubusercontent.com/16088743/103406077-b2457100-4b59-11eb-82c0-e4de027a91c4.png
     :target: https://github.com/radis/radis-ui
     :alt: https://github.com/radis/radis-ui
+
+See more `on GitHub <https://github.com/radis/radis-ui>`__
 
 
 .. _label_radis_lab:

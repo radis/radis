@@ -27,9 +27,9 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
     pip install radis
 
 **That's it!** You can now run your first example below.
-If you encounter any problem, or to upgrade the package later, please refer to the
-:ref:`detailed installation procedure <label_install>` or
-`report an issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_.
+If you encounter any problem or if you need to upgrade, please refer to the
+:ref:`detailed installation procedure <label_install>`. If you don't have a Python
+environment, try :ref:`🌱 RADIS Online <label_radis_online> first !
 
 .. _label_first_example:
 
