@@ -110,11 +110,13 @@ For instance, run the Quick Start example on the link below:
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
 
-Or start a bare RADIS online session:
+Or use :ref:`RADIS-lab <label_radis_lab>` to start a full online environment for advanced spectrum processing
+and comparison with experimental data :
 
 .. image:: https://mybinder.org/badge.svg
-    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
-    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+    :target: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
+
 
 More examples
 =============
@@ -185,6 +187,7 @@ Content
    los/los
    examples/examples
    examples/hitran-spectra
+   online/online
    dev/developer
    references/references
 
