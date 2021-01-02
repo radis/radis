@@ -43,6 +43,9 @@ on the User environment. See the :ref:`Configuration file <label_lbl_config_file
 the :py:mod:`radis.misc.config` module and the :py:func:`~radis.misc.config.getDatabankList`
 function for more information.
 
+- Some HITEMP line databases are pre-configured in the :ref:`RADIS-lab <label_radis_lab>` online environment.
+  No install needed !
+
 CDSD-4000
 ---------
 

@@ -1,8 +1,8 @@
 .. _label_radis_online:
 
-============
-RADIS Online
-============
+=============
+🌱 Try Online
+=============
 
 radis-ui
 ========
@@ -23,9 +23,9 @@ RADIS-lab
 
 An online environment for advanced spectrum processing and comparison with experimental data :
 
-- no install
-- pre-downloaded line databases
-- upload and download your files
+- no need to install anything
+- use pre-configured line databases ([HITEMP-2010]_)
+- upload your data files, download your results !
 
 
 .. image:: https://user-images.githubusercontent.com/16088743/103448773-7d8f0200-4c9e-11eb-8bf1-ce3385519b77.png
@@ -38,5 +38,7 @@ Get started :
 .. image:: https://mybinder.org/badge.svg
     :target: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
+
+See more `on GitHub <https://github.com/radis/radis-lab>`__
 
 

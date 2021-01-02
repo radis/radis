@@ -110,7 +110,7 @@ For instance, run the Quick Start example on the link below:
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
 
-Or use :ref:`RADIS-lab <label_radis_lab>` to start a full online environment for advanced spectrum processing
+Or use :ref:`🌱 RADIS-lab <label_radis_lab>` to start a full online environment for advanced spectrum processing
 and comparison with experimental data :
 
 .. image:: https://mybinder.org/badge.svg
