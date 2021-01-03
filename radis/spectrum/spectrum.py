@@ -67,6 +67,7 @@ from radis.spectrum.utils import (
     make_up,
     make_up_unit,
     print_conditions,
+    split_and_plot_by_parts,
 )
 
 # %% Spectrum class to hold results )
@@ -1451,9 +1452,10 @@ class Spectrum(object):
         show_points=False,
         nfig=None,
         yscale="linear",
-        plot_medium="vacuum_only",
+        show_medium="vacuum_only",
         normalize=False,
         force=False,
+        plot_by_parts=False,
         **kwargs
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
@@ -1490,7 +1492,7 @@ class Spectrum(object):
                 s1.plot()
                 s2.plot(nfig='same')
 
-        plot_medium: bool, ``'vacuum_only'``
+        show_medium: bool, ``'vacuum_only'``
             if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
             in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``,
             plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
@@ -1502,6 +1504,13 @@ class Spectrum(object):
 
         normalize: boolean,  or tuple.
             option to normalize quantity to 1 (ex: for radiance). Default ``False``
+
+        plot_by_parts: bool
+            if ``True``, look for discontinuities in the wavespace and plot
+            the different parts without connecting lines. Useful for experimental
+            spectra produced by overlapping step-and-glue. Additional parameters
+            read from ``kwargs`` : ``split_threshold`` and ``cutwings``. See more in
+            :py:func:`~radis.spectrum.utils.split_and_plot_by_parts`.
 
         force: bool
             plotting on an existing figure is forbidden if labels are not the
@@ -1536,6 +1545,11 @@ class Spectrum(object):
 
         """
 
+        # Deprecated
+        if "plot_medium" in kwargs:
+            show_medium = kwargs.pop("plot_medium")
+            warn(DeprecationWarning("`plot_medium` was renamed to `show_medium`"))
+
         # Check inputs, get defaults
         # ------
 
@@ -1565,7 +1579,7 @@ class Spectrum(object):
         x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
         # Get labels
-        xlabel = format_xlabel(wunit, plot_medium)
+        xlabel = format_xlabel(wunit, show_medium)
         if Iunit == "default":
             try:
                 Iunit0 = self.units[var]
@@ -1629,10 +1643,19 @@ class Spectrum(object):
         # Add a label. Not shown by default but User can set it if using plt.legend()
         # (useful when plotting multiple plots on same figure)
         label = kwargs.pop("label", self.get_name())
-        # note: '-k' by default with style origin for first plot
-        (line,) = plt.plot(x, y, label=label, **kwargs)
+
+        # Actual plot :
+        # ... note: '-k' by default with style origin for first plot
+        if not plot_by_parts:
+            (line,) = plt.plot(x, y, label=label, **kwargs)
+        else:
+            (line,) = split_and_plot_by_parts(x, y, ax=fig.gca(), label=label, **kwargs)
+            # note: split_and_plot_by_parts pops 'cutwing' & 'split_threshold' from kwargs
+
         if show_points:
             plt.plot(x, y, "o", color="lightgrey", **kwargs)
+
+        # Labels
         plt.ticklabel_format(useOffset=False, axis="x")
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)

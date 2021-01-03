@@ -362,6 +362,27 @@ def test_noplot_different_quantities(*args, **kwargs):
 
 
 @pytest.mark.fast
+def test_plot_by_parts(plot=True, *args, **kwargs):
+    """Test :py:func:`~radis.spectrum.utils.split_and_plot_by_parts`
+    and plot_by_parts=True in :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
+    """
+
+    import matplotlib.pyplot as plt
+
+    plt.ion()
+
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True).plot(
+        plot_by_parts=True, nfig="plot by parts (non continuous spectrum)"
+    )
+
+    if not plot:
+        plt.close("plot by parts (non continuous spectrum)")
+
+
+@pytest.mark.fast
 def test_normalization(*args, **kwargs):
 
     from radis import Radiance, load_spec
@@ -449,6 +470,10 @@ def _run_testcases(
 
     # Test plot firewalls:
     test_noplot_different_quantities(*args, **kwargs)
+
+    # Test plot by parts
+    test_plot_by_parts(plot=plot, *args, **kwargs)
+
     return True
 
 
