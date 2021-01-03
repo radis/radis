@@ -2590,7 +2590,15 @@ class Spectrum(object):
 
         return fig, ax
 
-    def line_survey(self, overlay=None, wunit="default", cutoff=None, *args, **kwargs):
+    def line_survey(
+        self,
+        overlay=None,
+        wunit="default",
+        writefile=None,
+        cutoff=None,
+        *args,
+        **kwargs
+    ):
         """Plot Line Survey (all linestrengths used for calculation)
         Output in Plotly (html)
 
@@ -2617,6 +2625,10 @@ class Spectrum(object):
         Other Parameters
         ----------------
 
+        writefile: str
+            if not ``None``, a valid filename to save the plot under .html format.
+            If ``None``, use the ``fig`` object returned to show the plot.
+
         kwargs:: dict
             Other inputs are passed to :func:`~radis.tools.line_survey.LineSurvey`.
             Example below (see :py:func:`~radis.tools.line_survey.LineSurvey`
@@ -2638,6 +2650,10 @@ class Spectrum(object):
 
         Returns
         -------
+
+        fig: a Plotly figure.
+            If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
+            to export to an html file.
 
         Plot in Plotly. See Output in [1]_
 
@@ -2719,11 +2735,19 @@ class Spectrum(object):
             overlay = [get_overlay(ov) for ov in overlay]
 
             return LineSurvey(
-                self, overlay=overlay, wunit=wunit, cutoff=cutoff, *args, **kwargs
+                self,
+                overlay=overlay,
+                wunit=wunit,
+                writefile=writefile,
+                cutoff=cutoff,
+                *args,
+                **kwargs
             )
 
         else:
-            return LineSurvey(self, wunit=wunit, cutoff=cutoff, *args, **kwargs)
+            return LineSurvey(
+                self, wunit=wunit, writefile=writefile, cutoff=cutoff, *args, **kwargs
+            )
 
     def get_conditions(self):
         """Get all physical / computational parameters.
