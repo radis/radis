@@ -275,13 +275,6 @@ def setup_test_line_databases(verbose=True):
         dbnames = []
 
     # %% Add test databases
-
-    def add_to_parser(config, name, dic):
-        for k, v in dic.items():
-            config[name][k] = v
-        if verbose:
-            print("Adding '{0}' database in ~/.radis".format(name))
-
     for dbname, dbentries in TEST_DATABASES.items():
 
         if dbname in dbnames:  # Check entries are correct
