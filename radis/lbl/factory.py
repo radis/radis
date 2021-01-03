@@ -830,7 +830,7 @@ class SpectrumFactory(BandFactory):
                     "lines_cutoff": self._Nlines_cutoff,
                     "lines_in_continuum": self._Nlines_in_continuum,
                     "thermal_equilibrium": True,
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 
@@ -1176,7 +1176,7 @@ class SpectrumFactory(BandFactory):
                     "calculation_time": t,
                     "lines_calculated": _Nlines_calculated,
                     "thermal_equilibrium": True,
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 
@@ -1511,7 +1511,7 @@ class SpectrumFactory(BandFactory):
                     "lines_cutoff": self._Nlines_cutoff,
                     "lines_in_continuum": self._Nlines_in_continuum,
                     "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 
