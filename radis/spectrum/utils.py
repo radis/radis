@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Functions and constants used in :class:`~radis.spectrum.spectrum.Spectrum` 
+Functions and constants used in :class:`~radis.spectrum.spectrum.Spectrum`
 object
 
 -------------------------------------------------------------------------------
@@ -8,7 +8,9 @@ object
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+import matplotlib.pyplot as plt
+import numpy as np
+
 from radis.misc.basics import partition
 
 # %% Definitions
@@ -34,7 +36,7 @@ NON_CONVOLUTED_QUANTITIES = [
     "emisscoeff",
     "emisscoeff_continuum",
     "absorbance",
-    "abscoeff",
+    "abscoeff",  # opacity
     "abscoeff_continuum",
     "emissivity_noslit",
 ]
@@ -42,7 +44,7 @@ NON_CONVOLUTED_QUANTITIES = [
 
 See :ref:`the description of spectral quantities <label_spectral_quantities>`"""
 SPECTRAL_QUANTITIES = CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
-"""list: all spectral quantities defined in a :class:`~radis.spectrum.spectrum.Spectrum` 
+"""list: all spectral quantities defined in a :class:`~radis.spectrum.spectrum.Spectrum`
 object.
 
 See :ref:`the description of spectral quantities <label_spectral_quantities>`"""
@@ -79,9 +81,9 @@ PHYSICAL_PARAMS = [
     "overpopulation",
     "thermal_equilibrium",
 ]
-"""list: physical conditions under which the Spectrum was calculated/measured. 
-When printing an object, these parameters are shown below "Physical Conditions" 
-If a parameter is not in this list, it is either in "Computation Parameters" 
+"""list: physical conditions under which the Spectrum was calculated/measured.
+When printing an object, these parameters are shown below "Physical Conditions"
+If a parameter is not in this list, it is either in "Computation Parameters"
 (non-physical parameters that can have an influence on the Spectrum, e.g, cutoffs
 and thresholds) or in "Informative Params" (descriptive parameters that have absolutely no
 impact on the spectrum, e.g, number of lines calculated or calculation time)
@@ -110,9 +112,9 @@ INFORMATIVE_PARAMS = [
     "export_lines",
     "export_populations",
 ]
-""" list: Informative parameters. Parameters that should be saved in the Spectrum 
-objects, but ignored when comparing two spectra. Should be written here only 
-these parameters that cannot affect the physical result. In particular, all 
+""" list: Informative parameters. Parameters that should be saved in the Spectrum
+objects, but ignored when comparing two spectra. Should be written here only
+these parameters that cannot affect the physical result. In particular, all
 parameters relative to performance should be added here.
 
 Notes
@@ -153,11 +155,11 @@ def make_up(label):
     """
 
     # Improve units
-    label = label.replace(r"cm-1", r"cm$^\mathregular{-1}$")
-    label = label.replace(r"m^-1", r"m$^\mathregular{-1}$")
-    label = label.replace(r"m2", r"m$^\mathregular{2}$")
-    label = label.replace(r"m3", r"m$^\mathregular{3}$")
-    label = label.replace(r"I/I0", r"I/I$_\mathregular{0}$")  # transmittance unit
+    label = label.replace(r"cm-1", r"cm⁻¹")
+    label = label.replace(r"m^-1", r"m⁻¹")
+    label = label.replace(r"m2", r"m²")
+    label = label.replace(r"m3", r"m³")
+    label = label.replace(r"I/I0", r"I/I₀")  # transmittance unit
 
     # Improve text
     if not "_noslit" in label:
@@ -188,6 +190,8 @@ def make_up_unit(Iunit, var):
         spectral variable. Ex: ``transmittance``
     """
     Iunit = Iunit.replace(r"um", r"µm")
+    Iunit = Iunit.replace(r"cm-1", r"cm⁻¹")  # welcome to unicode ! ;)
+    Iunit = Iunit.replace(r"m2", r"m²")
 
     if Iunit == "":
         # give more explicit unit for the user:
@@ -196,7 +200,7 @@ def make_up_unit(Iunit, var):
         elif var == "absorbance":
             Iunit = r"-ln(I/I0)"
         elif var in ["emissivity_no_slit", "emissivity"]:
-            Iunit = r"$\mathregular{\epsilon}$"
+            Iunit = r"ε"
         elif var in ["radiance", "radiance_noslit"]:
             Iunit = r"norm"
 
@@ -342,3 +346,83 @@ def print_conditions(
             pass
 
     return None
+
+
+# %% Plot helper
+
+
+def split_and_plot_by_parts(w, I, *args, **kwargs):
+    """Plot two discontinued arrays (typically a spectrum) without showing junctions:
+    first identify junctions then split and plot separately
+
+    Useful for plotting an experimental spectrum defined on different, non overlapping
+    ranges without showing connecting lines between the ranges, or to plot an
+    experimental spectrum defined on overlapping ranges, without showing connecting
+    lines neither.
+
+    Parameters
+    ----------
+
+    w, I: arrays
+        typically output of :py:func:`~numpy.hstack`.
+
+    Other Parameters
+    ----------------
+
+    split_threshold: int
+        number of standard deviation for threshold. Default 10
+
+    ax: matplotlib axe
+        plot on a particular axe
+
+    kwargs: dict
+        forwarded to :func:`~matplotlib.pyplot.plot`
+
+    cutwings: int
+        discard elements on the side. Default 0
+
+    """
+
+    from publib.tools import keep_color
+
+    # Get defaults
+    ax = kwargs.pop("ax", None)
+    if "ax" == None:
+        ax = plt.gca()
+    split_threshold = kwargs.pop("split_threshold", 10)  # type: int
+    cutwings = kwargs.pop("cutwings", 0)  # type: int
+    label = kwargs.pop("label", None)  # type: str
+
+    # identify joints
+    dw = np.diff(w)
+    dwmean = dw.mean()
+    joints = np.argwhere((abs(dw - dwmean) > split_threshold * dw.std())) + 1
+
+    # Split
+    if len(joints) > 0:
+        ws = np.split(w, joints.flatten())
+        Is = np.split(I, joints.flatten())
+
+        # Plot separately
+        out = []
+        for i, (wi, Ii) in enumerate(zip(ws, Is)):
+            if cutwings:
+                wi = wi[cutwings:-cutwings]
+                Ii = Ii[cutwings:-cutwings]
+            if i == 0:  # label once only
+                out.append(
+                    ax.plot(
+                        wi, Ii, *args, **dict(list(kwargs.items()) + [("label", label)])
+                    )
+                )
+            else:
+                keep_color()
+                out.append(ax.plot(wi, Ii, *args, **kwargs))
+
+        return list(zip(*out))
+
+    else:
+        if cutwings:
+            w = w[cutwings:-cutwings]
+            I = I[cutwings:-cutwings]
+        return ax.plot(w, I, *args, **dict(list(kwargs.items()) + [("label", label)]))

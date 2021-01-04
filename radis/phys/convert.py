@@ -10,8 +10,8 @@ Examples
 --------
 
 Get equivalent width in nm of a 10cm-1 width at 380 nm
-    
-    >>> from radis import * 
+
+    >>> from radis import *
     >>> dcm2dnm(10, nm2cm(380))
 
 
@@ -20,14 +20,13 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
 
 """
 
-from __future__ import absolute_import, division, unicode_literals
-from __future__ import print_function
 import numpy as np
-from radis.phys.constants import eV, h, c, k_b, hc_k
+
+from radis.phys.air import air2vacuum, vacuum2air
+from radis.phys.constants import c, eV, h, hc_k, k_b
 
 # Make conv2 accessible from .convert:
 from radis.phys.units import conv2
-from radis.phys.air import air2vacuum, vacuum2air
 
 assert conv2  # removes flake8 warnings
 

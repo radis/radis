@@ -5,7 +5,7 @@ Summary
 
 Public (front-end) functions to calculate Spectrum with HITRAN / CDSD databanks.
 Uses the SpectrumFactory classe from `factory.py`, Spectrum from `spectrum.py`
-and line survey from `line_survey.py` 
+and line survey from `line_survey.py`
 
 Routine Listing
 ---------------
@@ -16,13 +16,14 @@ Routine Listing
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 from copy import deepcopy
-from radis.lbl.factory import SpectrumFactory
-from radis.phys.convert import nm2cm
-from radis.misc.basics import all_in
 from os.path import exists
+
+from radis.lbl.factory import SpectrumFactory
+from radis.misc.basics import all_in
+from radis.phys.convert import nm2cm
+
 
 # %%
 def calc_spectrum(
@@ -89,8 +90,8 @@ def calc_spectrum(
             be dictionaries.
             If ``None``, the molecule can be infered
             from the database files being loaded. See the list of supported molecules
-            in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
-            and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
+            in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
+            and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
             Default ``None``.
     ​
         isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
@@ -293,7 +294,7 @@ def calc_spectrum(
         the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
 
         For more details on how to use the GPU method and process the database, refer to the examples
-        linked above and the documentation on :ref:`GPU support for RADIS <label_gpu>`.
+        linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
         See Also
         --------

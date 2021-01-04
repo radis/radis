@@ -18,9 +18,8 @@
 # https://samnicholls.net/2016/06/15/how-to-sphinx-readthedocs/
 # --------
 
-from __future__ import absolute_import
-import sys
 import os
+import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -138,8 +137,12 @@ master_doc = "index"
 
 # General information about the project.
 project = "RADIS"
-copyright = "2020, Erwan Pannier"
-author = "Erwan Pannier"
+copyright = "2020, Erwan Pannier and the 🌱 RADIS contributors (https://github.com/radis/radis/graphs/contributors)"
+author = (
+    "Erwan Pannier \\and Nicolas Minesi \\and "
+    + "Dirk van den Bekerom \\and Pankaj Mishra \\and "
+    + "all the 🌱 RADIS contributors \\and (https://github.com/radis/radis/graphs/contributors)"
+)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -337,7 +340,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "RADIS.tex", "RADIS Documentation", "Erwan Pannier", "manual"),
+    (master_doc, "RADIS.tex", "RADIS Documentation", author, "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

@@ -2,7 +2,7 @@
 """
 Tools to deal with HDF5 cache files
 HDF5 cache files are used to cache Energy Database files, and Line Database
-files, and yield a much faster access time. 
+files, and yield a much faster access time.
 
 Routine Listing
 ---------------
@@ -15,7 +15,7 @@ Routine Listing
 See Also
 --------
 
-:py:func:`~radis.io.hitran.hit2df`, 
+:py:func:`~radis.io.hitran.hit2df`,
 :py:func:`~radis.io.cdsd.cdsd2df`
 
 -------------------------------------------------------------------------------
@@ -28,20 +28,21 @@ See Also
 # https://gist.github.com/gansanay/4514ec731da1a40d8811a2b3c313f836
 # and pd.read_feather(file, nthreads=3)
 
-from __future__ import absolute_import, print_function, division
 
 # Note: don't import unicode_literals because it breaks the df.to_hdf of
 # save_to_hdf because of a stupid unicode/str error in Python 2.7
 import os
-import h5py
-import radis
-from warnings import warn
 from os.path import exists, splitext
-from radis import OLDEST_COMPATIBLE_VERSION
-from radis.misc.basics import compare_dict, is_float
-from radis.misc.printer import printr, printm
+from warnings import warn
+
+import h5py
 import pandas as pd
 from packaging.version import parse
+
+import radis
+from radis import OLDEST_COMPATIBLE_VERSION
+from radis.misc.basics import compare_dict, is_float
+from radis.misc.printer import printm, printr
 
 
 class DeprecatedFileError(DeprecationWarning):

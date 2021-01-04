@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Spectrum-class module 
+Spectrum-class module
 """
 
-from .spectrum import Spectrum, is_spectrum
-from .models import calculated_spectrum, experimental_spectrum, transmittance_spectrum
 from .compare import (
-    plot_diff,
     get_diff,
     get_distance,
     get_ratio,
     get_residual,
     get_residual_integral,
+    plot_diff,
 )
+from .models import calculated_spectrum, experimental_spectrum, transmittance_spectrum
 from .operations import (
-    Transmittance,
+    PerfectAbsorber,
     Radiance,
     Radiance_noslit,
+    Transmittance,
     Transmittance_noslit,
-    PerfectAbsorber,
     get_baseline,
     sub_baseline,
 )
+from .spectrum import Spectrum, is_spectrum

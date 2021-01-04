@@ -6,14 +6,15 @@ Test that :class:`~radis.tools.database.SpecDatabase` works
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+
+import os
+from os.path import dirname, exists
+
+import pytest
 
 # from radis.misc.utils import DatabankNotFound
 from radis.test.utils import getTestFile
 from radis.tools.database import SpecDatabase, SpecList
-import os
-from os.path import exists, dirname
-import pytest
 
 
 @pytest.mark.fast
@@ -65,8 +66,7 @@ def test_database_functions(
     # ... test cases with matching conditions
     # ... let's add more criteria to keep it unique
     match = db.get(**s.conditions)
-    #    assert len(match) == 1
-    # TODO: not working in Python 2.7 yet
+    assert len(match) == 1
 
     # Database add method
     s2 = s.copy()
@@ -101,8 +101,8 @@ def test_database_functions(
 
 def test_plot_spec(plot=True, close_plots=True, verbose=True, *args, **kwargs):
 
-    from radis.tools.database import plot_spec
     from radis.test.utils import getTestFile
+    from radis.tools.database import plot_spec
 
     if plot:
         import matplotlib.pyplot as plt
@@ -120,8 +120,8 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
     import shutil
     from os.path import join
 
+    from radis import SpecDatabase, calc_spectrum
     from radis.test.utils import setup_test_line_databases
-    from radis import calc_spectrum, SpecDatabase
 
     shutil.rmtree(join(dirname(getTestFile(".")), "newDb"), ignore_errors=True)
 

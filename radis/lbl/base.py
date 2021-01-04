@@ -7,7 +7,7 @@ Summary
 A class to aggregate methods to calculate spectroscopic parameter and
 populations (and unload factory.py)
 
-:py:class:`~radis.lbl.base.BaseFactory` is inherited by 
+:py:class:`~radis.lbl.base.BaseFactory` is inherited by
 :py:class:`~radis.lbl.broadening.BroadenFactory` eventually
 
 Routine Listing
@@ -51,9 +51,9 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 - :py:meth:`radis.lbl.base.BaseFactory._cutoff_linestrength`
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
@@ -67,35 +67,32 @@ Most methods are written in inherited class with the following inheritance schem
 # TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.
 
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+import sys
+from time import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from astropy import units as u
+from numpy import exp, pi
+
 import radis
+
+# TODO: rename in get_molecule_name
+from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.lbl.loader import DatabankLoader, KNOWN_LVLFORMAT, df_metadata
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
-from radis.phys.constants import c_CGS, h_CGS
-from radis.phys.convert import cm2J, nm2cm, nm_air2cm
-from radis.phys.constants import hc_k
+from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg
-from radis.misc.warning import OutOfBoundError
 from radis.misc.utils import Default
-
-# TODO: rename in get_molecule_name
-from radis.io.hitran import get_molecule, get_molecule_identifier
-from radis.spectrum.utils import print_conditions
+from radis.misc.warning import OutOfBoundError
+from radis.phys.constants import c_CGS, h_CGS, hc_k
+from radis.phys.convert import cm2J, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
-from numpy import exp, pi
-import numpy as np
-from astropy import units as u
-import sys
-from time import time
-from six import string_types
-import matplotlib.pyplot as plt
-import pandas as pd
-from six.moves import range
-from six.moves import zip
+from radis.spectrum.utils import print_conditions
 
 
 class BaseFactory(DatabankLoader):
@@ -338,10 +335,9 @@ class BaseFactory(DatabankLoader):
                     + " directly. See functions in factory.py "
                 )
 
-        from radis.io.hitran import HITRAN_CLASS1, HITRAN_CLASS5
+        from radis.db.classes import HITRAN_CLASS1, HITRAN_CLASS5
 
         # Different methods to get Evib and Erot:
-
         # fetch energies from precomputed CDSD levels: one Evib per (p, c) group
         if self.params.levelsfmt == "cdsd-pc":
             return self._add_EvibErot_CDSD_pc(
@@ -410,7 +406,7 @@ class BaseFactory(DatabankLoader):
                 + " directly. See functions in factory.py "
             )
 
-        from radis.io.hitran import HITRAN_CLASS5
+        from radis.db.classes import HITRAN_CLASS5
 
         if self.params.levelsfmt == "cdsd-pc":  # calculate from precomputed CDSD levels
             return self._add_Evib123Erot_CDSD_pc(df)
@@ -1684,7 +1680,7 @@ class BaseFactory(DatabankLoader):
 
         :func:`~radis.db.degeneracies.gs`, :func:`~radis.db.degeneracies.gi`
         """
-        from radis.db.degeneracies import gs, gi
+        from radis.db.degeneracies import gi, gs
 
         #        levelsfmt = self.params.levelsfmt
         dbformat = self.params.dbformat
@@ -2630,7 +2626,7 @@ class BaseFactory(DatabankLoader):
         # Check input
         if levels is None or levels is False:
             return {}
-        if isinstance(levels, string_types):
+        if isinstance(levels, str):
             levels = [levels]
         for l in levels:
             EXPECTED = ["vib", "rovib"]
@@ -3200,7 +3196,7 @@ class BaseFactory(DatabankLoader):
         """
 
         import matplotlib.pyplot as plt
-        from publib import set_style, fix_style
+        from publib import fix_style, set_style
 
         # Check inputs
         assert what in ["vib", "rovib"]

@@ -20,10 +20,16 @@ having to recalculate the broadening of each line
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+from time import time
 from warnings import warn
-from radis.spectrum.spectrum import is_spectrum
+
+import numpy as np
+import pandas as pd
+from numpy import exp
+
+from radis.lbl.labels import vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN
+from radis.misc.basics import is_float
+from radis.phys.constants import hc_k
 from radis.spectrum.rescale import (
     rescale_abscoeff,
     rescale_absorbance,
@@ -31,14 +37,8 @@ from radis.spectrum.rescale import (
     rescale_radiance_noslit,
     rescale_transmittance_noslit,
 )
+from radis.spectrum.spectrum import is_spectrum
 from radis.spectrum.utils import NON_CONVOLUTED_QUANTITIES
-from radis.misc.basics import is_float
-from radis.phys.constants import hc_k
-from radis.lbl.labels import vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN
-import numpy as np
-from numpy import exp
-from time import time
-import pandas as pd
 
 # keys that may not be equals for different bands
 _IGNORE_KEYS = ["band", "band_htrn", "viblvl_u", "viblvl_l"]

@@ -16,12 +16,10 @@ has the same signs as the one we use here!
 Reference
 ------------
 "Optical Diagnostics and Radiative Emission of Air Plasmas", C. Laux, 1993, p93
-Mantz et al 1975, "Ground state molecular constants of 12C16O" 
-    
+Mantz et al 1975, "Ground state molecular constants of 12C16O"
+
 """
 
-from __future__ import division, absolute_import, print_function
-from __future__ import unicode_literals  # α, β, γ, δ, ϵ
 
 # %% Dunham development
 

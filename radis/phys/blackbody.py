@@ -13,7 +13,7 @@ Example
 -------
 
 Generate Earth blackbody::
-    
+
     s = sPlanck(wavelength_min=3000, wavelength_max=50000,
                 T=288, eps=1)
     s.plot()
@@ -23,13 +23,12 @@ Generate Earth blackbody::
 
 """
 
-from __future__ import absolute_import
-from numpy import exp, arange, ones_like, zeros_like, inf
-from radis.phys.constants import k_b, c, h
-from radis.phys.constants import k_b_CGS, c_CGS, h_CGS
-from radis.phys.units import conv2
-from radis.phys.units import Unit as Q_
+from numpy import arange, exp, inf, ones_like, zeros_like
+
 from radis.phys.air import air2vacuum
+from radis.phys.constants import c, c_CGS, h, h_CGS, k_b, k_b_CGS
+from radis.phys.units import Unit as Q_
+from radis.phys.units import conv2
 
 
 def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):

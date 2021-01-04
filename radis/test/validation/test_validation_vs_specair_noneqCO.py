@@ -8,16 +8,15 @@ Plot Absorbance (cm-1) of CO with our code, database HITRAN 2012 against Specair
 under non-equilibrium conditions
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
-import matplotlib.pyplot as plt
-from radis import SpectrumFactory
-from radis import plot_diff, load_spec
-from radis.test.utils import getValidationCase, setup_test_line_databases
-from radis.misc.printer import printm
-import numpy as np
 from os.path import join
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pytest
+
+from radis import SpectrumFactory, load_spec, plot_diff
+from radis.misc.printer import printm
+from radis.test.utils import getValidationCase, setup_test_line_databases
 
 
 @pytest.mark.fast

@@ -21,15 +21,15 @@ Run only fast tests (i.e: tests that have a 'fast' label)
 
 """
 
-from __future__ import absolute_import, unicode_literals, division, print_function
-from radis.lbl.overp import LevelsList
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+
 from radis.lbl import SpectrumFactory
+from radis.lbl.overp import LevelsList
 from radis.misc.printer import printm
 from radis.spectrum import plot_diff
 from radis.test.utils import setup_test_line_databases
-import numpy as np
-import matplotlib.pyplot as plt
-import pytest
 
 
 @pytest.mark.needs_config_file

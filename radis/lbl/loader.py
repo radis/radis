@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
 
 Summary
 -------
@@ -19,7 +19,7 @@ Routine Listings
 PUBLIC METHODS
 
 - :py:meth:`radis.lbl.loader.DatabankLoader.load_databank`           >>> load line database
-- :py:meth:`radis.lbl.loader.DatabankLoader.init_databank`           >>> load loader 
+- :py:meth:`radis.lbl.loader.DatabankLoader.init_databank`           >>> load loader
 - :py:meth:`radis.lbl.loader.DatabankLoader.fetch_databank`           >>> fetch from HITRAN online
 - :py:meth:`radis.lbl.loader.DatabankLoader.init_database`           >>> to interact / generate a SpectrumDatabase
 - :py:meth:`radis.lbl.loader.DatabankLoader.get_conditions`
@@ -39,9 +39,9 @@ PRIVATE METHODS - DATABASE LOADING
 - :py:meth:`radis.lbl.loader.DatabankLoader._clean_temp_file`
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
@@ -62,59 +62,52 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+import os
+from os.path import abspath, exists
+from time import time
+from uuid import uuid1
+from warnings import catch_warnings, filterwarnings
+
+import numpy as np
+import pandas as pd
+
+from radis.db.classes import get_molecule
+from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
 from radis.io.cdsd import cdsd2df
-from radis.io.hitran import (
-    hit2df,
-    get_molecule,
-    parse_global_quanta,
-    parse_local_quanta,
+from radis.io.hitran import hit2df, parse_global_quanta, parse_local_quanta
+from radis.io.query import fetch_astroquery
+from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
+from radis.levels.partfunc import (
+    PartFunc_Dunham,
+    PartFuncHAPI,
+    RovibParFuncCalculator,
+    RovibParFuncTabulator,
 )
+from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
+from radis.misc.arrays import count_nans
+from radis.misc.basics import compare_dict, compare_lists
 
 # from radis.io.hitran import hit2dfTAB
 from radis.misc.cache_files import cache_file_name
-from radis.misc.warning import EmptyDatabaseError
-from radis.io.query import fetch_astroquery
-from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
-from radis.db.molecules import getMolecule
-from radis.levels.partfunc import (
-    PartFuncHAPI,
-    PartFunc_Dunham,
-    RovibParFuncTabulator,
-    RovibParFuncCalculator,
-)
-from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc
-from radis.tools.database import SpecDatabase
-from radis.misc.config import getDatabankEntries, printDatabankEntries, getDatabankList
-from radis.misc.basics import compare_dict, compare_lists
-from radis.misc.arrays import count_nans
+from radis.misc.config import getDatabankEntries, getDatabankList, printDatabankEntries
 from radis.misc.debug import printdbg
-from radis.misc.printer import printg, printr
 from radis.misc.log import printwarn
-from radis.phys.convert import cm2nm
-import os
-from os.path import exists, abspath
-import pandas as pd
-from six import string_types
-from radis.misc.warning import warn, default_warning_status
-from warnings import catch_warnings, filterwarnings
-import numpy as np
-
-from time import time
-from uuid import uuid1
-from six.moves import range
+from radis.misc.printer import printg, printr
 from radis.misc.utils import get_files_from_regex
+from radis.misc.warning import EmptyDatabaseError, default_warning_status, warn
+from radis.phys.convert import cm2nm
+from radis.tools.database import SpecDatabase
 
 KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : for HITRAN and HITEMP-2010 
+- ``'hitran'`` : for HITRAN and HITEMP-2010
 - ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
 - ``'cdsd-4000'`` : CDSD-4000 (CO2 only)
 
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
-and the :ref:`list of databases <_label_line_databases>` .
+and the :ref:`list of databases <label_line_databases>` .
 
 See Also
 --------
@@ -125,14 +118,14 @@ See Also
 KNOWN_LVLFORMAT = ["radis", "cdsd-pc", "cdsd-pcN", "cdsd-hamil", None]
 """list: Known formats for Energy Level Databases (used in non-equilibrium calculations):
 
-- ``'radis'``: energies calculated with Dunham expansions by 
+- ``'radis'``: energies calculated with Dunham expansions by
     :class:`~radis.levels.partfunc.PartFunc_Dunham`
 - ``'cdsd-pc'``: energies read from precomputed CDSD energies for CO2, with
     ``viblvl=(p,c)`` convention. See :class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
 - ``'cdsd-pcN'``: energies read from precomputed CDSD energies for CO2, with
     ``viblvl=(p,c,N)`` convention. See :class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
 - ``'cdsd-hamil'``: energies read from precomputed CDSD energies for CO2, with
-    ``viblvl=(p,c,J,N)`` convention, i.e., a each rovibrational level can have a 
+    ``viblvl=(p,c,J,N)`` convention, i.e., a each rovibrational level can have a
     unique vibrational energy (this is needed when taking account Coupling terms)
     See :class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
 - ``None``: means you can only do Equilibrium calculations.
@@ -159,15 +152,15 @@ drop_auto_columns_for_dbformat = {
     "cdsd-4000": ["wang2"],
     "cdsd-hitemp": ["wang2", "lsrc"],
 }
-""" dict: drop these columns if using ``drop_columns='auto'`` in load_databank 
+""" dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
 
 See Also
 --------
 
-- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
-- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`, 
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`,
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`,
 
 """
 drop_auto_columns_for_levelsfmt = {
@@ -177,16 +170,16 @@ drop_auto_columns_for_levelsfmt = {
     "cdsd-hamil": ["v1u", "v2u", "l2u", "v3u", "ru", "v1l", "v2l", "l2l", "v3l", "rl"],
     None: [],
 }
-""" dict: drop these columns if using ``drop_columns='auto'`` in load_databank 
+""" dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``lvlformat=``, some of these columns won't be used.
 
 See Also
 --------
 
-- 'radis': :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd-pc': :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd-pcN' (CDSD-HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
-- 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`, 
+- 'radis': :data:`~radis.io.hitran.columns_2004`,
+- 'cdsd-pc': :data:`~radis.io.hitran.columns_2004`,
+- 'cdsd-pcN' (CDSD-HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
+- 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`,
 
 """
 drop_all_but_these = [
@@ -201,17 +194,17 @@ drop_all_but_these = [
     "Pshft",
     "El",
 ]
-""" dict: drop all columns but these if using ``drop_columns='all'`` in load_databank 
+""" dict: drop all columns but these if using ``drop_columns='all'`` in load_databank
 
 Note: nonequilibrium calculations wont be possible anymore and it wont be possible
 to identify lines with :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
-    
+
 See Also
 --------
 
-- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`, 
-- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`, 
-- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`, 
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`,
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`,
 
 """
 
@@ -267,7 +260,7 @@ class ConditionDict(dict):
                 # Ignore some
                 if type(v) in [np.ndarray, dict, pd.DataFrame] or v is None:
                     continue
-                if isinstance(k, string_types):
+                if isinstance(k, str):
                     # Also discard all starting with '_'
                     if k.startswith("_"):
                         continue
@@ -440,7 +433,7 @@ class Parameters(ConditionDict):
             0.01
         )  #: float : Gaussian step DLM lineshape database. Default _gaussian_step(0.01)
         self.include_neighbouring_lines = True
-        """bool: if ``True``, includes the contribution of off-range, neighbouring 
+        """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
 
 
@@ -496,33 +489,33 @@ def format_paths(s):
 TEMP_FILE_PREFIX = ".radis_"
 
 df_metadata = ["Ia", "molar_mass", "Qref", "Qvib", "Q"]
-""" list: metadata of line DataFrames :py:attr:`~radis.lbl.loader.DatabankLoader.df0`, 
+""" list: metadata of line DataFrames :py:attr:`~radis.lbl.loader.DatabankLoader.df0`,
 :py:attr:`~radis.lbl.loader.DatabankLoader.df1`.
-@dev: when having only 1 molecule, 1 isotope, these parameters are 
+@dev: when having only 1 molecule, 1 isotope, these parameters are
 constant for all rovibrational lines. Thus, it's faster and much more
-memory efficient to transport them as attributes of the DataFrame 
-rather than columns. The syntax is the same, thus the operations do 
+memory efficient to transport them as attributes of the DataFrame
+rather than columns. The syntax is the same, thus the operations do
 not change, i.e::
-    
-    k_b / df.molar_mass
-    
-will work whether molar_mass is a float or a column. 
 
-.. warning:: 
-    
+    k_b / df.molar_mass
+
+will work whether molar_mass is a float or a column.
+
+.. warning::
+
     However, in the current Pandas implementation of :py:class:`~pandas.DataFrame`,
     attributes are lost whenever the DataFrame is recreated, transposed,
     pickled.
-    
+
 Thus, we use :py:func:`~radis.misc.basics.transfer_metadata` to keep
-the attributes after an operation, and :py:func:`~radis.misc.basics.expand_metadata` 
+the attributes after an operation, and :py:func:`~radis.misc.basics.expand_metadata`
 to make them columns before a Serializing operation (ex: multiprocessing)
-@dev: all of that is a high-end optimization. Users should not deal 
-with internal DataFrames. 
+@dev: all of that is a high-end optimization. Users should not deal
+with internal DataFrames.
 
 References
 ----------
-https://stackoverflow.com/q/13250499/5622825    
+https://stackoverflow.com/q/13250499/5622825
 """
 
 
@@ -567,7 +560,7 @@ class DatabankLoader(object):
         they may change the output of calculations (ex: threshold, cutoff, broadening methods, etc.)
         """
         self.misc = MiscParams()
-        """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`) 
+        """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
         params that cannot change the output of calculations (ex: number of CPU, etc.)
         """
         # Setup individual warnings. Value of keys can be:
@@ -577,7 +570,7 @@ class DatabankLoader(object):
         # The key self.warnings['default'] will set the warning behavior for all
         # other warnings
         self.warnings = default_warning_status
-        """ dict: Default warnings for SpectrumFactory. See 
+        """ dict: Default warnings for SpectrumFactory. See
         :py:data:`~radis.misc.warnings.default_warning_status`"""
 
         # Generate unique id for Factory
@@ -603,19 +596,19 @@ class DatabankLoader(object):
         # Variables that will hold the dataframes.
         self.df0 = None
         """pandas DataFrame : initial line database after loading.
-                
-        If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting 
-        by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of 
-        :py:class:`~radis.lbl.factory.SpectrumFactory`. 
-        
+
+        If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting
+        by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of
+        :py:class:`~radis.lbl.factory.SpectrumFactory`.
+
         .. warning::
-        
-            never overwrite the ``df0`` attribute, else some metadata may be lost in the process. 
+
+            never overwrite the ``df0`` attribute, else some metadata may be lost in the process.
             Only use inplace operations. If reducing the number of lines, add
             a df0.reset_index()
-            
+
         For instance::
-        
+
             sf = SpectrumFactory(
                 wavenum_min= 2150.4,
                 wavenum_max=2151.4,
@@ -624,27 +617,27 @@ class DatabankLoader(object):
             sf.load_databank('HITRAN-CO-TEST')
             sf.df0.drop(sf.df0[sf.df0.vu!=1].index, inplace=True)   # keep lines emitted by v'=1 only
             sf.eq_spectrum(Tgas=3000, name='vu=1').plot()
-        
-        :py:attr:`~radis.lbl.loader.DatabankLoader.df0` contains the lines as they are loaded from the database. 
-        :py:attr:`~radis.lbl.loader.DatabankLoader.df1` is generated during the spectrum calculation, after the 
-        line database reduction steps, population calculation, and scaling of intensity and broadening parameters 
-        with the calculated conditions. 
+
+        :py:attr:`~radis.lbl.loader.DatabankLoader.df0` contains the lines as they are loaded from the database.
+        :py:attr:`~radis.lbl.loader.DatabankLoader.df1` is generated during the spectrum calculation, after the
+        line database reduction steps, population calculation, and scaling of intensity and broadening parameters
+        with the calculated conditions.
 
         See Also
         --------
-        
+
         :py:attr:`~self.radis.lbl.loader.DatabankLoader.df1`
-        
+
         """
         self.df1 = None
         """DataFrame : line database, scaled with populations + linestrength cutoff
         Never edit manually. See all comments about :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
-        
+
         See Also
         --------
-        
+
         :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
-        
+
         """
 
         # Temp variable to store databanks information
@@ -1342,23 +1335,7 @@ class DatabankLoader(object):
                     + " ~/.radis: {0}".format(",".join(dblist))
                 )
 
-        # Check input types are correct
-        if isinstance(path, string_types):  # make it a list
-            path = get_files_from_regex(path)
-
-            # Ensure that `path` does not contain the cached dataset files in
-            # case a wildcard input is given by the user. For instance, if the
-            # given input is "cdsd_hitemp_09_frag*", path should not contain both
-            # "cdsd_hitemp_09_fragment.txt" and "cdsd_hitemp_09_fragment.h5".
-
-            # Reference: https://github.com/radis/radis/issues/121
-
-            filtered_path = [fname for fname in path]
-            for fname in path:
-                if cache_file_name(fname) in path and cache_file_name(fname) != fname:
-                    filtered_path.remove(cache_file_name(fname))
-            path = filtered_path
-
+        # Check database format
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
@@ -1389,13 +1366,39 @@ class DatabankLoader(object):
                 )
             )
 
-        # Check all path exists
+        # Line database path
+        if isinstance(path, str):  # make it a list
+            path = [path]
+
+        # ... Parse all paths and read wildcards
+        path_list = path
+        new_paths = []
+        for path in path_list:
+            path = get_files_from_regex(path)
+
+            # Ensure that `path` does not contain the cached dataset files in
+            # case a wildcard input is given by the user. For instance, if the
+            # given input is "cdsd_hitemp_09_frag*", path should not contain both
+            # "cdsd_hitemp_09_fragment.txt" and "cdsd_hitemp_09_fragment.h5".
+
+            # Reference: https://github.com/radis/radis/issues/121
+
+            filtered_path = [fname for fname in path]
+            for fname in path:
+                if cache_file_name(fname) in path and cache_file_name(fname) != fname:
+                    filtered_path.remove(cache_file_name(fname))
+            new_paths += filtered_path
+        path = new_paths
+
+        # ... Check all path exists
         # ... remove empty paths first
         path = [p for p in path if p != ""]
         # ... test paths
         for p in path:
             if not exists(p):
                 raise FileNotFoundError("databank lines file: `{0}`".format(p))
+
+        # Energy levels and partition functions
         if levels is not None:
             for iso, lvl in levels.items():  # one file per isotope
                 if not exists(lvl):
@@ -1810,30 +1813,14 @@ class DatabankLoader(object):
                 : database[0].rindex("/") + 1
             ]  # remove the last *.npy portion
             try:
-                print("Loading iso...", end=" ")
                 iso = np.load(dir_path + "iso.npy")
-                print("done!")
-                print("Loading v0...", end=" ")
                 v0 = np.load(dir_path + "v0.npy")
-                print("done!")
-                print("Loading da...", end=" ")
                 da = np.load(dir_path + "da.npy")
-                print("done!")
-                print("Loading log_2gs...", end=" ")
                 log_2gs = np.load(dir_path + "log_2gs.npy")
-                print("done!")
-                print("Loading S0...", end=" ")
                 S0 = np.load(dir_path + "S0.npy")
-                print("done!")
-                print("Loading El...", end=" ")
                 El = np.load(dir_path + "El.npy")
-                print("done!")
-                print("Loading log_2vMm...", end=" ")
                 log_2vMm = np.load(dir_path + "log_2vMm.npy")
-                print("done!")
-                print("Loading na...", end=" ")
                 na = np.load(dir_path + "na.npy")
-                print("done!")
                 df = pd.DataFrame(
                     {
                         "iso": iso,

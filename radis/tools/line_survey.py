@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Functions to plot line surveys 
+Functions to plot line surveys
 
 
 -------------------------------------------------------------------------------
@@ -8,35 +8,29 @@ Functions to plot line surveys
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
-import numpy as np
-from radis.io.hitran import (
-    get_molecule,
-    HITRAN_CLASS1,
-    # HITRAN_CLASS2,
-    # HITRAN_CLASS3,
-    HITRAN_CLASS4,
-    HITRAN_CLASS5,
-    # HITRAN_CLASS6,
-    # HITRAN_CLASS7,
-    # HITRAN_CLASS8,
-    # HITRAN_CLASS9,
-    # HITRAN_CLASS10,
-)
-from radis.io.hitran import columns_2004 as hitrancolumns
-from radis.io.cdsd import columns_hitemp as cdsdcolumns
-from radis.io.cdsd import columns_4000 as cdsd4000columns
-from radis.phys.convert import cm2nm
-from radis.phys.air import vacuum2air
-from radis.phys.constants import k_b
-from radis.misc.basics import is_float
-from radis.misc.utils import NotInstalled
 from warnings import warn
 
+import numpy as np
+
+from radis.db.classes import get_molecule
+from radis.io.cdsd import columns_4000 as cdsd4000columns
+from radis.io.cdsd import columns_hitemp as cdsdcolumns
+from radis.io.hitran import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,; HITRAN_CLASS7,; HITRAN_CLASS8,; HITRAN_CLASS9,; HITRAN_CLASS10,
+    HITRAN_CLASS1,
+    HITRAN_CLASS4,
+    HITRAN_CLASS5,
+)
+from radis.io.hitran import columns_2004 as hitrancolumns
+from radis.misc.basics import is_float
+from radis.misc.utils import NotInstalled
+from radis.phys.air import vacuum2air
+from radis.phys.constants import k_b
+from radis.phys.convert import cm2nm
+
 try:
-    import plotly.offline as py
     import plotly.graph_objs as go
+    import plotly.offline as py
 except ImportError:
     py = NotInstalled(
         name="plotly.offline",
@@ -70,8 +64,7 @@ def LineSurvey(
     lineinfo=["int", "A", "El"],
     barwidth=0.07,
     yscale="log",
-    display=True,
-    filename="line-survey.html",
+    writefile=None,
     xunit=None,
     yunit=None,  # deprecated
 ):
@@ -114,11 +107,9 @@ def LineSurvey(
     Other Parameters
     ----------------
 
-    display: boolean
-        if True, open the image in a browser. Default ``True``.
-
-    filename: str
-        filename to save .html
+    writefile: str
+        if not ``None``, a valid filename to save the plot under .html format.
+        If ``None``, use the ``fig`` object returned to show the plot.
 
     yscale: ``'log'``, ``'linear'``
         Default ``'log'``
@@ -126,8 +117,11 @@ def LineSurvey(
     Returns
     -------
 
-    Plot in Plotly. See Output in [1]_
+    fig: a Plotly figure.
+        If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
+        to export to an html file.
 
+    See typical output in [1]_
 
     Examples
     --------
@@ -532,7 +526,11 @@ def LineSurvey(
     # %% Plot
 
     fig = go.Figure(data=l, layout=layout)
-    py.plot(fig, filename=filename, auto_open=display)
+
+    if writefile:
+        py.plot(fig, filename=writefile, auto_open=True)
+
+    return fig
 
 
 # %% Test

@@ -8,4 +8,4 @@ CNRS UPR 288
 
 """
 
-from .dunham import Gv, Fv
+from .dunham import Fv, Gv

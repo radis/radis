@@ -1,7 +1,7 @@
 ==========
 References
 ==========
-   
+
 .. include:: constants.rst
 
 .. include:: bibliography.rst
@@ -11,23 +11,23 @@ Licence
 
 The code is available for use and modifications on `GitHub <https://github.com/radis/radis>`__
 under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/blob/master/LICENSE>`__,
-i.e. modifications must remain public and under LGPLv3. 
+i.e. modifications must remain public and under LGPLv3.
 
 Cite
 ====
 
-If using RADIS for your work, cite: 
+If using RADIS for your work, cite:
 
-- the line-by-line code as [RADIS-2018]_ |badge_article|  
-- the RADIS version number. Get your version with py:func:`~radis.get_version` 
+- the line-by-line code as [RADIS-2018]_ |badge_article|
+- the RADIS version number. Get your version with py:func:`~radis.get_version`
   (latest version available is |badge_pypi|) ::
-  
+
     import radis
     radis.get_version()
 
 - the Line Databases used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
-- if running nonequilibrium calculations, mention the reference of the spectroscopic constants used 
-  to calculate the energies (for instance, the 
+- if running nonequilibrium calculations, mention the reference of the spectroscopic constants used
+  to calculate the energies (for instance, the
   :ref:`RADIS built-in constants <label_db_spectroscopic_constants>`)
 
 
@@ -45,13 +45,13 @@ RADIS:
 - Source Code: |badge_stars| |badge_contributors| |badge_license|
 
 - Test Status: |badge_travis| |badge_coverage|
- 
+
 - PyPi Repository: |badge_pypi|  |badge_pypistats|
 
 - Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
 
 
-.. include:: similar_tools.rst 
+.. include:: similar_tools.rst
 
 
 .. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/
@@ -65,7 +65,7 @@ RADIS:
 .. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star
                 :target: https://github.com/radis/radis/stargazers
                 :alt: GitHub
-   
+
 .. |badge_contributors| image:: https://img.shields.io/github/contributors/radis/radis.svg
                         :target: https://github.com/radis/radis/stargazers
                         :alt: Contributors
@@ -98,15 +98,14 @@ RADIS:
                            :target: https://github.com/erwanp/awesome-spectra
                            :alt: Examples
 
-.. |badge_binder| image:: https://mybinder.org/badge.svg 
+.. |badge_binder| image:: https://mybinder.org/badge.svg
                   :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
                   :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
 
 .. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
                   :target: https://gitter.im/radis-radiation/community
                   :alt: Gitter
-    
+
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-                  

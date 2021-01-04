@@ -5,11 +5,11 @@
             "name":626,
             "electronic_level":{
                 "001":{
-                    "Te_cm-1": 0.0, 
-                    "dzero_cm^-1": 44600, 
-                    "g_e": 1.0, 
-                    "index": 1, 
-                    "name": "X1SIGu+", 
+                    "Te_cm-1": 0.0,
+                    "dzero_cm^-1": 44600,
+                    "g_e": 1.0,
+                    "index": 1,
+                    "name": "X1SIGu+",
                     "#REF": "H. R. Gordon and W. K. McCubbin, J. Mol. Spectry. 19, 137 (1966)",
                     "w_1":1354.07,
                     "w_2": 672.95,

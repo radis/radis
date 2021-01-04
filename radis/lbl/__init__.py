@@ -8,7 +8,7 @@ CNRS UPR 288
 
 """
 
-from .factory import SpectrumFactory
-from .parallel import ParallelFactory
 from .calc import calc_spectrum
+from .factory import SpectrumFactory
 from .overp import LevelsList
+from .parallel import ParallelFactory

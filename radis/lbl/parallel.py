@@ -9,9 +9,9 @@ Build a Parallel Spectrum Factory
 Summary
 -------
 
-These loads the database once, then calculates a given number of cases in 
-parallel using a dedicated SpectrumFactory. Each case is calculated on one 
-core only. This is more suited to calculations of large number of small spectra. 
+These loads the database once, then calculates a given number of cases in
+parallel using a dedicated SpectrumFactory. Each case is calculated on one
+core only. This is more suited to calculations of large number of small spectra.
 If you want to calculate only one large spectra consider using a single SpectrumFactory
 in parallel mode
 
@@ -19,9 +19,9 @@ Routine Listing
 ---------------
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
@@ -31,33 +31,32 @@ Examples
 --------
 
 Just replace SpectrumFactory by ParallelFactory in your codes. And have a list
-as an input of `eq_spectrum` or `non_eq_spectrum`. 
+as an input of `eq_spectrum` or `non_eq_spectrum`.
 
 See Also
 --------
 
-Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information. 
+Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information.
 
 -------------------------------------------------------------------------------
 
 """
 
-from __future__ import absolute_import, print_function, unicode_literals, division
-from radis.lbl import SpectrumFactory
-from radis.misc.basics import is_list, is_float
-from multiprocessing import Pool, cpu_count
+import os
 
 # from multiprocessing.pool import ThreadPool
 import sys
-from time import time
-import numpy as np
 from copy import deepcopy
-from warnings import warn
-import os
-from six.moves import zip
+from multiprocessing import Pool, cpu_count
+from time import time
 from uuid import uuid1
+from warnings import warn
+
+import numpy as np
+
+from radis.lbl import SpectrumFactory
 from radis.lbl.loader import df_metadata
-from radis.misc.basics import expand_metadata
+from radis.misc.basics import expand_metadata, is_float, is_list
 
 
 def _distribute_eq_spectrum(args):

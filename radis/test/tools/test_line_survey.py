@@ -6,17 +6,15 @@ Test that line survey works
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
-from radis.test.utils import (
-    getTestFile,
-    setup_test_line_databases,
-)
-from radis.misc.printer import printm
-from radis import SpectrumFactory
-from radis.tools.database import load_spec
 import os
 from os.path import exists
+
 import pytest
+
+from radis import SpectrumFactory
+from radis.misc.printer import printm
+from radis.test.utils import getTestFile, setup_test_line_databases
+from radis.tools.database import load_spec
 
 
 @pytest.mark.fast
@@ -28,7 +26,7 @@ def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
         os.remove(_temp_file)
 
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
-    s.line_survey(overlay="abscoeff", display=plot, filename=_temp_file)
+    s.line_survey(overlay="abscoeff", writefile=_temp_file)
 
     assert exists(_temp_file)
 

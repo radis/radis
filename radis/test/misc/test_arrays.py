@@ -5,18 +5,18 @@ Created on Wed Aug 29 10:35:24 2018
 @author: erwan
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
+
 from radis.misc.arrays import (
-    is_sorted,
-    is_sorted_backward,
-    find_first,
+    autoturn,
     bining,
     calc_diff,
-    autoturn,
     centered_diff,
-    logspace,
+    find_first,
     find_nearest,
+    is_sorted,
+    is_sorted_backward,
+    logspace,
 )
 
 

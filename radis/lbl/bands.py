@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Module that contains BandFactory, a class that features vibrational band-specific 
-functions, in particular the :meth:`~radis.lbl.bands.BandFactory.eq_bands` and 
-:meth:`~radis.lbl.bands.BandFactory.non_eq_bands` methods that return all 
-vibrational bands in a spectrum. 
+Module that contains BandFactory, a class that features vibrational band-specific
+functions, in particular the :meth:`~radis.lbl.bands.BandFactory.eq_bands` and
+:meth:`~radis.lbl.bands.BandFactory.non_eq_bands` methods that return all
+vibrational bands in a spectrum.
 
 All of these are eventually integrated in SpectrumFactory which inherits from
 BandFactory
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 .. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
@@ -22,7 +22,7 @@ Routine Listing
 
 PUBLIC METHODS
 
-- :meth:`~radis.lbl.bands.BandFactory.eq_bands` 
+- :meth:`~radis.lbl.bands.BandFactory.eq_bands`
 - :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
 - :meth:`~radis.lbl.bands.BandFactory.get_bands_weight`
 - :meth:`~radis.lbl.bands.BandFactory.get_band_list`
@@ -43,33 +43,32 @@ PRIVATE METHODS
 # TODO: merge common parts of BandList.eq_bands  and SpectrumFactory.eq_spectrum,
 # under a same function call
 
-from __future__ import absolute_import
-from __future__ import print_function
+from time import time
 from warnings import warn
+
 import astropy.units as u
+import numpy as np
+import pandas as pd
+from numpy import exp
+
+from radis.io.hitran import HITRAN_CLASS1, get_molecule
 from radis.lbl.broadening import BroadenFactory
-from radis.spectrum.equations import calc_radiance
-from radis.spectrum.spectrum import Spectrum
-from radis.phys.units import convert_rad2nm, convert_emi2nm
-from radis.io.hitran import get_molecule, HITRAN_CLASS1
-from radis.misc.basics import is_float
-from radis.misc.progress_bar import ProgressBar
-from radis.misc.basics import all_in
-from radis.phys.units_astropy import convert_and_strip_units
-from radis.phys.constants import k_b
-from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 from radis.lbl.labels import (
+    vib_lvl_name_cdsd_pc,
+    vib_lvl_name_cdsd_pcJN,
+    vib_lvl_name_cdsd_pcN,
     vib_lvl_name_hitran_class1,
     vib_lvl_name_hitran_class5,
-    vib_lvl_name_cdsd_pc,
-    vib_lvl_name_cdsd_pcN,
-    vib_lvl_name_cdsd_pcJN,
 )
+from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+from radis.misc.basics import all_in, is_float
+from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
-import numpy as np
-from numpy import exp
-from time import time
-import pandas as pd
+from radis.phys.constants import k_b
+from radis.phys.units import convert_emi2nm, convert_rad2nm
+from radis.phys.units_astropy import convert_and_strip_units
+from radis.spectrum.equations import calc_radiance
+from radis.spectrum.spectrum import Spectrum
 
 # %% BandFactory
 

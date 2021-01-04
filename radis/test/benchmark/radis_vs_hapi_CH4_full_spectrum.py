@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Benchmark RADIS performances against a HAPI equilibrium simulation of Methane 
+Benchmark RADIS performances against a HAPI equilibrium simulation of Methane
 
 Notes
 -----
@@ -16,11 +16,11 @@ References
 
 [HAPI]_ article, Table 7, case Methane III with SCPF, 50 HWHMs  :
 
-    >>> Calculation time in article: 317 s 
+    >>> Calculation time in article: 317 s
 
 
 Typical results on an XPS 15 laptop here::
-        
+
     >>> Calculated with HAPI in 157.41s
     >>> Calculated with RADIS in 1.65s
 
@@ -29,18 +29,12 @@ Typical results on an XPS 15 laptop here::
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
-from radis import SpectrumFactory, Spectrum, plot_diff
-from radis.io.hapi import (
-    fetch_by_ids,
-    absorptionCoefficient_Voigt,
-    db_begin,
-    tableList,
-    ISO_ID,
-)
-from os.path import join, dirname
+from os.path import dirname, join
 from time import time
+
+from hapi import ISO_ID, absorptionCoefficient_Voigt, db_begin, fetch_by_ids, tableList
+
+from radis import Spectrum, SpectrumFactory, plot_diff
 
 if __name__ == "__main__":
 

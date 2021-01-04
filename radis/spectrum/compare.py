@@ -3,7 +3,7 @@
 Summary
 -------
 
-Functions to compare and plot comparison of :class:`~radis.spectrum.spectrum.Spectrum` 
+Functions to compare and plot comparison of :class:`~radis.spectrum.spectrum.Spectrum`
 objects
 
 
@@ -24,23 +24,19 @@ Routine Listings
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
-from radis.misc.arrays import array_allclose
-from radis.misc.curve import curve_substract, curve_distance, curve_divide
-from radis.spectrum.spectrum import Spectrum, is_spectrum
-from radis.spectrum.utils import format_xlabel, make_up, make_up_unit, cast_waveunit
-from radis.misc.basics import compare_lists, compare_dict
-from six import string_types
+from warnings import warn
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib import gridspec
 from matplotlib.widgets import MultiCursor
-import numpy as np
-from publib import set_style, fix_style
-from warnings import warn
-from six.moves import range
-from six.moves import zip
+from publib import fix_style, set_style
 
+from radis.misc.arrays import array_allclose
+from radis.misc.basics import compare_dict, compare_lists
+from radis.misc.curve import curve_distance, curve_divide, curve_substract
+from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.utils import cast_waveunit, format_xlabel, make_up, make_up_unit
 
 # %% ======================================================================
 # External functions
@@ -530,6 +526,7 @@ def plot_diff(
     diff_scale_multiplier=1,
     discard_centile=0,
     plot_medium="vacuum_only",
+    legendargs={"loc": "best"},
 ):
     """Plot two spectra, and the difference between them. ``method=`` allows
     you to plot the absolute difference, ratio, or both.
@@ -631,6 +628,9 @@ def plot_diff(
         plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
         (prevents from inadvertently plotting spectra with different propagation
         medium on the same graph).
+
+    legendargs: dict
+        format arguments forwarded to the legend
 
     Returns
     -------
@@ -859,7 +859,7 @@ def plot_diff(
 
     ax0.tick_params(labelbottom=False)
     if label1 is not None or label2 is not None:
-        ax0.legend(loc="best")
+        ax0.legend(**legendargs)
 
     # Start to 0
     if var in ["radiance_noslit", "radiance", "abscoeff", "absorbance"]:
@@ -1116,7 +1116,7 @@ def compare_spectra(
         raise TypeError(
             "2nd object is not a Spectrum: got class {0}".format(other.__class__)
         )
-    if isinstance(spectra_only, string_types):  # case where we compare all quantities
+    if isinstance(spectra_only, str):  # case where we compare all quantities
         if not spectra_only in first.get_vars():
             raise ValueError(
                 "{0} is not a spectral quantity in our Spectrum ({1})".format(
@@ -1130,9 +1130,7 @@ def compare_spectra(
                 )
             )
     if verbose:  # print conditions
-        what = (
-            spectra_only if isinstance(spectra_only, string_types) else "all quantities"
-        )
+        what = spectra_only if isinstance(spectra_only, str) else "all quantities"
         msg = "compare {0} with rtol={1}".format(what, rtol)
         if ignore_nan:
             msg += ", ignore_nan"
@@ -1220,7 +1218,7 @@ def compare_spectra(
         )
 
     b = True
-    if isinstance(spectra_only, string_types):  # compare this quantity
+    if isinstance(spectra_only, str):  # compare this quantity
         vars = [spectra_only]
     else:  # compare all quantities
         b = set(first.get_vars()) == set(other.get_vars())

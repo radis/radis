@@ -25,11 +25,11 @@ Routine Listing
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
+import warnings
+
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.spatial.distance import cdist
-import warnings
 
 
 def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):

@@ -1,11 +1,11 @@
 """ Install file for RADIS
 
 Typical install procedure, plus:
-    
-- auto-convert README.rst to long_description, removing some sphinx-only syntax 
+
+- auto-convert README.rst to long_description, removing some sphinx-only syntax
 so it can be rendered by PyPi
 - read version number from __version__.txt
-- some dependencies should be installed manually (typically: all packages with 
+- some dependencies should be installed manually (typically: all packages with
 compiled components such as numpy, pandas, etc.)
 
 
@@ -15,9 +15,9 @@ Examples
 Install (normal, use-only)::
 
     python setup.py install
-    
+
 Or (create an alias, so you can still edit)::
-    
+
     python setup.py develop
 
 Notes
@@ -28,17 +28,16 @@ For developers:
 when creating a new version, just update the __version__.txt file
 
 to register it on Pypi see register.py::
-    
-    python register.py 
- 
+
+    python register.py
+
 
 """
-from __future__ import print_function
-from __future__ import absolute_import
-from setuptools import setup, find_packages
 import io
 import re
-from os.path import abspath, dirname, join, exists
+from os.path import abspath, dirname, exists, join
+
+from setuptools import find_packages, setup
 
 # Build description from README (PyPi compatible)
 # -----------------------------------------------
@@ -150,6 +149,7 @@ setup(
     ],
     packages=find_packages(),
     install_requires=[
+        "hitran-api",
         "numpy",
         "scipy",
         "matplotlib",
@@ -162,7 +162,6 @@ setup(
         "publib>=0.3.2",  # Plotting styles for Matplotlib
         "plotly>=2.5.1",  # for line survey HTML output
         "termcolor",  # terminal colors
-        "six",  # python 2-3 compatibility
         "configparser",
         "astroquery>=0.3.9",  # to fetch HITRAN databases
         "json-tricks>=3.15.0",  # to deal with non jsonable formats

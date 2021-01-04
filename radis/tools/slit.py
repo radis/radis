@@ -40,25 +40,26 @@ recenter_slit, crop_slit):
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
+
+from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import exp, sqrt, trapz
+from numpy import exp
 from numpy import log as ln
-from scipy.interpolate import splrep, splev
-from warnings import warn
-from radis.misc.warning import SlitDispersionWarning
+from numpy import sqrt, trapz
+from scipy.interpolate import splev, splrep
+
 from radis.misc.arrays import evenly_distributed
 from radis.misc.basics import is_float
-from radis.misc.signal import resample_even
 from radis.misc.debug import printdbg
-from radis.phys.convert import cm2nm, nm2cm, dnm2dcm, dcm2dnm
+from radis.misc.signal import resample_even
+from radis.misc.warning import SlitDispersionWarning
+from radis.phys.convert import cm2nm, dcm2dnm, dnm2dcm, nm2cm
 from radis.spectrum.spectrum import cast_waveunit
-from six import string_types
 
 SLIT_SHAPES = ["triangular", "trapezoidal", "gaussian"]
-"""list : list of predefined slit shapes 
+"""list : list of predefined slit shapes
 """
 
 # %% Get slit function
@@ -365,7 +366,7 @@ def get_slit_function(
 
     # Or import it from file or numpy input
     # ------------
-    elif isinstance(slit_function, string_types) or isinstance(
+    elif isinstance(slit_function, str) or isinstance(
         slit_function, np.ndarray
     ):  # import it
         if __debug__:
@@ -864,7 +865,7 @@ def offset_dilate_slit_function(
     ----------------
 
     threshold: float
-        if not ``None``, that slit dispersion is about constant (< ``threshold`` change)
+        if not ``None``, check that slit dispersion is about constant (< ``threshold`` change)
         on the calculated range. Default 0.01 (1%)
 
     Returns
@@ -1120,7 +1121,7 @@ def plot_slit(
         pass
 
     # Check input
-    if isinstance(w, string_types) and I is None:
+    if isinstance(w, str) and I is None:
         w, I = np.loadtxt(w).T
     assert len(w) == len(I)
     if np.isnan(I).sum() > 0:
@@ -1372,8 +1373,11 @@ def import_experimental_slit(
     """
 
     # import
-    if isinstance(slit, string_types):
-        w_slit, I_slit = np.loadtxt(slit).T
+    if isinstance(slit, str):
+        try:
+            w_slit, I_slit = np.loadtxt(slit).T
+        except ValueError:
+            w_slit, I_slit = np.loadtxt(slit)
     # numpy input
     elif isinstance(slit, np.ndarray):
         a, b = np.shape(slit)
@@ -1444,7 +1448,7 @@ def triangular_slit(
     r""" Generate normalized slit function
 
 
-    Parameters    
+    Parameters
     ----------
 
     FWHM: (nm)
@@ -1499,11 +1503,11 @@ def triangular_slit(
 
     See Also
     --------
-    
-    :py:func:`~radis.tools.slit.import_experimental_slit`, 
-    :py:func:`~radis.tools.slit.trapezoidal_slit`, 
+
+    :py:func:`~radis.tools.slit.import_experimental_slit`,
+    :py:func:`~radis.tools.slit.trapezoidal_slit`,
     :py:func:`~radis.tools.slit.gaussian_slit`
-    
+
     """
 
     # Build first half
@@ -1563,7 +1567,7 @@ def trapezoidal_slit(
     r""" Build a trapezoidal slit. Remember that FWHM = (top + base) / 2
 
 
-    Parameters    
+    Parameters
     ----------
 
     top: (nm)
@@ -1624,11 +1628,11 @@ def trapezoidal_slit(
 
     See Also
     --------
-    
-    :py:func:`~radis.tools.slit.import_experimental_slit`, 
-    :py:func:`~radis.tools.slit.triangular_slit`, 
+
+    :py:func:`~radis.tools.slit.import_experimental_slit`,
+    :py:func:`~radis.tools.slit.triangular_slit`,
     :py:func:`~radis.tools.slit.gaussian_slit`
-    
+
     """
 
     if top > base:
@@ -1701,7 +1705,7 @@ def gaussian_slit(
     r""" Generate normalized slit function
 
 
-    Parameters    
+    Parameters
     ----------
 
     FWHM: (nm)
@@ -1760,11 +1764,11 @@ def gaussian_slit(
 
     See Also
     --------
-    
-    :py:func:`~radis.tools.slit.import_experimental_slit`, 
-    :py:func:`~radis.tools.slit.triangular_slit`, 
+
+    :py:func:`~radis.tools.slit.import_experimental_slit`,
+    :py:func:`~radis.tools.slit.triangular_slit`,
     :py:func:`~radis.tools.slit.trapezoidal_slit`
-    
+
 
     """
 

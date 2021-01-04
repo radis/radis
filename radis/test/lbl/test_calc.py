@@ -14,21 +14,22 @@ Run all tests:
 Run only fast tests (i.e: tests that have a 'fast' label)
 
 >>> pytest -m fast
-          
+
 
 -------------------------------------------------------------------------------
 
-  
+
 """
 
-from __future__ import unicode_literals, print_function, absolute_import, division
-from radis.lbl import SpectrumFactory, LevelsList
+from os.path import basename
+
+import numpy as np
+import pytest
+
+from radis.lbl import LevelsList, SpectrumFactory
 from radis.lbl.calc import calc_spectrum
 from radis.misc.printer import printm
 from radis.phys.blackbody import sPlanck
-import numpy as np
-from os.path import basename
-import pytest
 
 fig_prefix = basename(__file__) + ": "
 
@@ -154,26 +155,33 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     #                           0.17106096, 0.15400039, 0.13374285, 0.11930822, 0.10880631,
     #                           0.11111394, 0.04582291, 0.00247955, 0.00144128])
     # Updated again on (05/08/20) with implementation of optimized weights:
+    # I_ref = np.array([0.29043204, 0.29740738, 0.32954171, 0.32045394, 0.20680637,
+    #                           0.19205883, 0.2014279 , 0.17322236, 0.17206767, 0.15879478,
+    #                           0.17107564, 0.15400038, 0.13372559, 0.11929585, 0.10881116,
+    #                           0.11111882, 0.04581152, 0.00247154, 0.00143631])
+    # Updated with RADIS 0.9.26+ (13/12/20) and switch to latest HAPI version
+    # therefore TIPS 2017 (instead of TIPS 2011) which changed CO2 partition functions
+    # Q(Tref=300) 291.9025 --> 291.0405
     I_ref = np.array(
         [
-            0.29043204,
-            0.29740738,
-            0.32954171,
-            0.32045394,
-            0.20680637,
-            0.19205883,
-            0.20142790,
-            0.17322236,
-            0.17206767,
-            0.15879478,
-            0.17107564,
-            0.15400038,
-            0.13372559,
-            0.11929585,
-            0.10881116,
-            0.11111882,
-            0.04581152,
-            0.00247154,
+            0.29057002,
+            0.29755271,
+            0.32971832,
+            0.32062057,
+            0.20689238,
+            0.19213799,
+            0.20150788,
+            0.17328113,
+            0.17212415,
+            0.15883971,
+            0.17112437,
+            0.15403756,
+            0.13375255,
+            0.1193155,
+            0.10882585,
+            0.11113302,
+            0.04581781,
+            0.00247155,
             0.00143631,
         ]
     )
@@ -278,26 +286,34 @@ def test_calc_spectrum_overpopulations(
     #                           0.32783797,0.13514737,0.00688769,0.00387544])
     # Updated again on (05/08/20) with implementation of optimized weights:
 
+    # Updated with RADIS 0.9.26+ (13/12/20) and switch to latest HAPI version
+    # therefore TIPS 2017 (instead of TIPS 2011) which changed CO2 partition functions
+    # Q(Tref=300) 291.9025 --> 291.0405
+    #        I_ref = np.array([0.62097252, 0.66685971, 0.80982863, 0.7935332 , 0.56939115,
+    #                       0.58255747, 0.61175655, 0.52287059, 0.51905438, 0.47659305,
+    #                       0.51375266, 0.46019418, 0.39782806, 0.35340763, 0.32128853,
+    #                       0.32785594, 0.13511584, 0.00686547, 0.00386199])
+
     I_ref = np.array(
         [
-            0.62097252,
-            0.66685971,
-            0.80982863,
-            0.79353320,
-            0.56939115,
-            0.58255747,
-            0.61175655,
-            0.52287059,
-            0.51905438,
-            0.47659305,
-            0.51375266,
-            0.46019418,
-            0.39782806,
-            0.35340763,
-            0.32128853,
-            0.32785594,
-            0.13511584,
-            0.00686547,
+            0.62123487,
+            0.667141,
+            0.81018478,
+            0.79386946,
+            0.56957012,
+            0.58272738,
+            0.61192736,
+            0.52299488,
+            0.51917337,
+            0.4766868,
+            0.51385405,
+            0.46027087,
+            0.39788325,
+            0.35344755,
+            0.32131818,
+            0.32788457,
+            0.13512857,
+            0.00686548,
             0.00386199,
         ]
     )
@@ -533,7 +549,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")
 
-    rtol = 5e-3  # 2nd isotope calculated with placeholder energies
+    rtol = 7e-3  # 2nd isotope calculated with placeholder energies
     match_eq_vs_non_eq = s_eq.compare_with(
         s_nq, spectra_only="abscoeff", rtol=rtol, plot=plot
     )

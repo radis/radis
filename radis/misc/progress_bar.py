@@ -9,7 +9,6 @@ Created on Wed Oct 18 15:38:14 2017
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
 import sys
 from time import time
 

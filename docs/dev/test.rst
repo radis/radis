@@ -3,72 +3,84 @@
 Test
 ====
 
-    
+
 Test status
 -----------
 
-Test routines are performed automatically by `Travis CI <https://travis-ci.com/radis/radis>`_ 
-whenever a change is made on the `GitHub <https://github.com/radis/radis>`_ repository. 
+Test routines are performed automatically by `Travis CI <https://travis-ci.com/radis/radis>`_
+whenever a change is made on the `GitHub <https://github.com/radis/radis>`_ repository.
 See the current test status below:
 
 .. image:: https://img.shields.io/travis/radis/radis.svg
     :target: https://travis-ci.com/radis/radis
     :alt: https://travis-ci.com/radis/radis
-  
-It is a good practice to perform these tests locally to detect potential 
-errors before pushing. 
-To run the tests locally, assuming you cloned the source code 
+
+It is a good practice to perform these tests locally to detect potential
+errors before pushing.
+To run the tests locally, assuming you cloned the source code
 (see the :ref:`Install section <label_install>` ), run the following command in
 the ``radis`` directory::
 
     cd radis
     pytest
 
-The whole test procedure takes 5 - 10 min. You can use pytest filtering keys 
+The whole test procedure takes 5 - 10 min. You can use pytest filtering keys
 to :ref:`run specific tests only <label_dev_select_test>`
 
 
-Code coverage 
+Code coverage
 -------------
 
-Code coverage makes sure every line in RADIS is properly tested. See 
+Code coverage makes sure every line in RADIS is properly tested. See
 the current code coverage status (click the badge for more details):
-    
+
 .. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/radis/radis
   :alt: https://codecov.io/gh/radis/radis
-  
 
 
-If you want to see the test coverage report locally use ``codecov`` that 
+
+If you want to see the test coverage report locally use ``codecov`` that
 is interfaced with pytest through the ``--cov=./`` command::
 
     pip install codecov pytest-cov
     cd radis/test
     pytest --cov=./
 
+Performance benchmarks
+----------------------
+
+RADIS performance is tested against past versions on a dedicated project : `radis-benchmark <https://github.com/radis/radis-benchmark>`__.
+
+Results can be found on : 🔗 https://radis.github.io/radis-benchmark/
+
+.. image:: http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat
+            :target: https://github.com/radis/radis-benchmark
+            :alt: Benchmarks
+
+
 .. _label_dev_select_test:
 
 Select tests
 ------------
 
-You can select or ignore some tests with the ``-m`` option, for instance 
+You can select or ignore some tests with the ``-m`` option, for instance
 run only the fast tests with::
 
     pytest -m fast --cov=./
-    
+
 The list of tags is:
 
-- fast : each test should run under 1s 
+- fast : each test should run under 1s
 - needs_connection : requires an internet connection
-- needs_python3 : a Python-3 only test 
+- needs_python3 : a Python-3 only test
 - needs_config_file: needs ``~/.radis`` to be defined.
 
 Plus some tags for user-defined [HITEMP-2010]_ databases, as given in the :ref:`Configuration file <label_lbl_config_file>`
 section
 
 - needs_db_HITEMP_CO2_DUNHAM : requires HITEMP-CO2-DUNHAM database in ``~/.radis``
-- needs_db_HITEMP_CO_DUNHAM : requires HITEMP-CO-DUNHAM database in ``~/.radis`` 
+- needs_db_HITEMP_CO_DUNHAM : requires HITEMP-CO-DUNHAM database in ``~/.radis``
 - needs_db_CDSD_HITEMP_PC : requires CDSD-HITEMP-PC database in ``~/.radis``
 
 The default test routine run on `Travis CI <https://travis-ci.com/radis/radis>`__
@@ -77,25 +89,25 @@ is (see the ``radis/.gitlab-ci.yml`` file)::
     pytest -m "not needs_config_file" --cov=./;
 
 Which ignores all test that rely on the [HITEMP-2010]_ databases, as they cannot (yet) be downloaded
-automatically on the test machine. 
+automatically on the test machine.
 
 Write new tests
 ---------------
 
-Any function starting with ``test`` will be picked by pytest. Use assert 
+Any function starting with ``test`` will be picked by pytest. Use assert
 statements within the function to test properties of your objects. Ex::
 
     def test_positive(a):
         assert a>0
-    
-Tips: make sure you don't open any figure by default in your test routines, 
-else it will be stuck when called by pytest. Or, force a non-blocking behaviour 
+
+Tips: make sure you don't open any figure by default in your test routines,
+else it will be stuck when called by pytest. Or, force a non-blocking behaviour
 adding the following lines within your test function::
 
     if plot:
         import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
-        
+
 See: https://github.com/statsmodels/statsmodels/issues/3697
 
 
@@ -105,23 +117,23 @@ See: https://github.com/statsmodels/statsmodels/issues/3697
 Test files
 ----------
 
-To make the errors as reproducible as possible, try to use the test files provided in the 
-Test files are provided in the `radis\test\files <https://github.com/radis/radis/tree/develop/radis/test/files>`__ 
-and `radis\test\validation <https://github.com/radis/radis/tree/develop/radis/test/validation>`__ folders. 
-They contain examples of line databases, spectra, or energy levels. 
-The path to these test files can be retrieved using the :py:func:`~radis.test.utils.getTestFile` and 
-:py:func:`~radis.test.utils.getValidationCase` functions, respectively. 
+To make the errors as reproducible as possible, try to use the test files provided in the
+Test files are provided in the `radis\test\files <https://github.com/radis/radis/tree/develop/radis/test/files>`__
+and `radis\test\validation <https://github.com/radis/radis/tree/develop/radis/test/validation>`__ folders.
+They contain examples of line databases, spectra, or energy levels.
+The path to these test files can be retrieved using the :py:func:`~radis.test.utils.getTestFile` and
+:py:func:`~radis.test.utils.getValidationCase` functions, respectively.
 
-Load a line database file :: 
+Load a line database file ::
 
     from radis.test.utils import getTestFile
     from radis.io.hitran import hit2df
     df = hit2df(getTestFile("hitran_CO_fragment.par"))
 
     print(df)  # replace with your test code
-    
+
     >>> Out:
-        
+
            id  iso       wav           int             A  ...  gpp  branch  jl  vu  vl
     0   5    1  3.705026  2.354000e-44  2.868000e-10  ...  1.0       1   0   4   4
     1   5    1  3.740024  1.110000e-38  5.999000e-09  ...  1.0       1   0   3   3
@@ -134,17 +146,17 @@ Load a line database file ::
     8   5    1  7.619908  4.436000e-28  3.961000e-07  ...  3.0       1   1   1   1
 
     [9 rows x 16 columns]
-    
-Load a Spectrum object :: 
+
+Load a Spectrum object ::
 
     from radis.test.utils import getTestFile
     from radis import load_spec
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.5.spec"))
-    
+
     print(s)    # replace with your test code
-    
-    >>> Out: 
-        
+
+    >>> Out:
+
         Spectrum Name:  CO_Tgas1500K_mole_fraction0.5.spec
     Spectral Quantities
     ----------------------------------------
@@ -200,13 +212,12 @@ Report errors
 
 If you encounter any error, open an `Issue on GitHub <https://github.com/radis/radis/issues>`__
 
-To simplify the debugging process, provide a code snippet that reproduces 
-the error. If you need a line database, spectrum, or energy level, try to use one 
-of the :ref:`test files <label_dev_test_files>`.  
+To simplify the debugging process, provide a code snippet that reproduces
+the error. If you need a line database, spectrum, or energy level, try to use one
+of the :ref:`test files <label_dev_test_files>`.
 
 Debugging
 ---------
 
 See the :py:func:`~radis.misc.debug.printdbg` function in ``radis.misc``, and
-the :py:data:`~radis.DEBUG_MODE` global variable. 
-    
+the :py:data:`~radis.DEBUG_MODE` global variable.

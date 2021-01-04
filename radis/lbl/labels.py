@@ -7,18 +7,18 @@ Summary
 Standardize names for:
 
 - vibrational levels
-- ... 
+- ...
 
 
 
 Routine Listing
 ---------------
 
-vib_lvl_name_hitran_class1, 
-vib_lvl_name_hitran_class5, 
-vib_lvl_name_hitran_class5_short, 
-vib_lvl_name_cdsd_p, 
-vib_lvl_name_cdsd_pc, 
+vib_lvl_name_hitran_class1,
+vib_lvl_name_hitran_class5,
+vib_lvl_name_hitran_class5_short,
+vib_lvl_name_cdsd_p,
+vib_lvl_name_cdsd_pc,
 vib_lvl_name_cdsd_pcN
 
 
@@ -36,9 +36,6 @@ vib_lvl_name_cdsd_pcN
 # ... when working with Pandas columns.as_str() as input
 
 # HITRAN ("spectroscopic") convention
-
-
-from __future__ import absolute_import
 
 
 def vib_lvl_name_hitran_class1(v1):

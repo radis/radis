@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 
-Functions to update :class:`~radis.spectrum.spectrum.Spectrum` 
+Functions to update :class:`~radis.spectrum.spectrum.Spectrum`
 objects with new spectral quantities that can be derived
 from existing ones, or rescale path_length or mole_fraction, or add overpopulations
 
 Most of these are binded as methods to the Spectrum class, but stored here to
-unload the spectrum.py file 
+unload the spectrum.py file
 
 
 -------------------------------------------------------------------------------
@@ -14,17 +14,16 @@ unload the spectrum.py file
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
-import numpy as np
-from numpy import log as ln
-from numpy import exp
-from radis.misc.debug import printdbg
-from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
-from radis.spectrum.equations import calc_radiance
-from radis.misc.basics import all_in, any_in
-from radis.misc.basics import compare_lists
 from warnings import warn
-from six import string_types
+
+import numpy as np
+from numpy import exp
+from numpy import log as ln
+
+from radis.misc.basics import all_in, any_in, compare_lists
+from radis.misc.debug import printdbg
+from radis.spectrum.equations import calc_radiance
+from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
 
 # List of all spectral variables sorted by priority during recomputation
 # (ex: first get abscoeff, then try to calculate emisscoeff, etc.)
@@ -195,7 +194,7 @@ def _build_update_graph(
 
         """
         for k in from_keys:
-            if isinstance(k, string_types):
+            if isinstance(k, str):
                 k = [k]
             try:
                 derivation[what].append(k)
@@ -1466,7 +1465,7 @@ def _recalculate(
     elif quantity == "same":
         wanted = list(initial)
         greedy = False
-    elif isinstance(quantity, string_types):
+    elif isinstance(quantity, str):
         wanted = [quantity]
         greedy = False
     elif isinstance(quantity, list):

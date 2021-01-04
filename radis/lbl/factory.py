@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is 
-the core of the RADIS Line-by-Line module. 
+Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is
+the core of the RADIS Line-by-Line module.
 
 Examples
 --------
@@ -12,14 +12,14 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
     # that do just that)
     sf = SpectrumFactory(2125, 2249.9,
                          parallel=False,bplot=False,
-                         molecule='CO', 
+                         molecule='CO',
                          isotope=1,
                          cutoff=1e-30,   # for faster calculations. See
                                          # `plot_linestrength_hist` for more details
                          **kwargs)
-    sf.fetch_databank()        # autodownload from HITRAN 
+    sf.fetch_databank()        # autodownload from HITRAN
     s = sf.eq_spectrum(Tgas=300)
-    s.plot('abscoeff')
+    s.plot('abscoeff')          # opacity
 
     # Here we get some extra informations:
     s.plot('radiance', wunit='nm',
@@ -41,9 +41,9 @@ PUBLIC METHODS
 - :meth:`~radis.lbl.factory.SpectrumFactory.optically_thin_power`    >>> get total power (equilibrium or non eq)
 
 Most methods are written in inherited class with the following inheritance scheme:
-    
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` > 
-:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` > 
+
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
 
 
@@ -65,48 +65,47 @@ Performance:
 
 Fast version: iterate over chunks of dataframe
 Note that we can't use the full dataframe because it's too big and takes too much memory
-See :ref:`Performance <label_lbl_performance>` for more details. 
+See :ref:`Performance <label_lbl_performance>` for more details.
 
 
 for Developers:
 
 - To implement new database formats, see the databases parsers in cdsd.py / hitran.py,
   and the partition function interpolators / calculators methods of SpectrumFactory:
-  :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_calculator` and 
+  :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_calculator` and
   :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_interpolator`
 
 
 ----------
 
 """
-from __future__ import print_function, absolute_import, division, unicode_literals
-from six import string_types
+import sys
+from multiprocessing import cpu_count
+from subprocess import call
+from time import time
 from warnings import warn
 
+import astropy.units as u
+import numpy as np
+from numpy import arange, exp
+from scipy.constants import N_A, c, k, pi
+
+from radis import get_version
+from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
+from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.io import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
-from radis.io.hitran import get_molecule, get_molecule_identifier
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
-from radis.spectrum.spectrum import Spectrum
-from radis.spectrum.equations import calc_radiance
-from radis.misc.basics import is_float, list_if_float, flatten
+from radis.misc import getProjectRoot
+from radis.misc.basics import flatten, is_float, list_if_float
 from radis.misc.printer import printg
 from radis.misc.utils import Default
-from radis.misc import getProjectRoot
-from radis.phys.convert import conv2
 from radis.phys.constants import k_b
-from radis.phys.units import convert_rad2nm, convert_emi2nm
+from radis.phys.convert import conv2
+from radis.phys.units import convert_emi2nm, convert_rad2nm
 from radis.phys.units_astropy import convert_and_strip_units
-from radis import get_version
-from numpy import exp, arange
-from multiprocessing import cpu_count
-from time import time
-import numpy as np
-import astropy.units as u
-import sys
-from subprocess import call
-from scipy.constants import c, k, N_A, pi
+from radis.spectrum.equations import calc_radiance
+from radis.spectrum.spectrum import Spectrum
 
 c_cm = c * 100
 
@@ -172,8 +171,8 @@ class SpectrumFactory(BandFactory):
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
         from the database files being loaded. See the list of supported molecules
-        in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
-        and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
+        in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
+        and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
         Default ``None``.
 
     isotope: int, list, str of the form '1,2', or 'all'
@@ -502,7 +501,7 @@ class SpectrumFactory(BandFactory):
                 )
 
         # Store isotope identifier in str format (list wont work in database queries)
-        if not isinstance(isotope, string_types):
+        if not isinstance(isotope, str):
             isotope = ",".join([str(k) for k in list_if_float(isotope)])
 
         # Initialize input conditions
@@ -831,7 +830,7 @@ class SpectrumFactory(BandFactory):
                     "lines_cutoff": self._Nlines_cutoff,
                     "lines_in_continuum": self._Nlines_in_continuum,
                     "thermal_equilibrium": True,
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 
@@ -1177,7 +1176,7 @@ class SpectrumFactory(BandFactory):
                     "calculation_time": t,
                     "lines_calculated": _Nlines_calculated,
                     "thermal_equilibrium": True,
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 
@@ -1512,7 +1511,7 @@ class SpectrumFactory(BandFactory):
                     "lines_cutoff": self._Nlines_cutoff,
                     "lines_in_continuum": self._Nlines_in_continuum,
                     "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 

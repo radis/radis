@@ -3,9 +3,9 @@
 Install
 -------
 
-You can either install RADIS from `pip`, the Python package manager. But if 
-you want to access the latest features, or modify the code and contribute, 
-we suggest that you Clone or Fork the source code from `GitHub <https://github.com/radis/radis>`_.  
+You can either install RADIS from `pip`, the Python package manager. But if
+you want to access the latest features, or modify the code and contribute,
+we suggest that you Clone or Fork the source code from `GitHub <https://github.com/radis/radis>`_.
 
 **Use-only version** : cant modify the code
 
@@ -14,14 +14,14 @@ In a terminal, run::
     pip install --user radis
 
 The 'pip' module has to be installed (by default if you've installed Python
-with Anaconda). 
+with Anaconda).
 
 If you later want to update the package::
 
     pip install radis --upgrade
 
-**Developer version**: to modify the code and contribute to the 
-project. 
+**Developer version**: to modify the code and contribute to the
+project.
 
 We suggest that you fork the `RADIS repository <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_ and use that url for the clone step below. This will make submitting changes easier in the long term for you:
 
@@ -31,23 +31,23 @@ In a terminal, run::
     cd radis
     pip install -e .[dev]
 
-- The ``-e`` (editable) argument creates a link from the local folder ``./`` into Python 
+- The ``-e`` (editable) argument creates a link from the local folder ``./`` into Python
   site-packages.
 
-- ``[dev]`` is optional, but installs additional developer packages that may be useful for testing and 
-  linting your code. 
+- ``[dev]`` is optional, but installs additional developer packages that may be useful for testing and
+  linting your code.
 
 To make sure the install worked, run the :ref:`first example <label_first_example>`
-from the Quick Start page. Then, you're all set. 
+from the Quick Start page. Then, you're all set.
 
 
 Test your changes
 -----------------
 
 If you want to modify the source code, you need to ensure that you don't break
-any of the existing tests. 
-Refer to the :ref:`Test Section <label_dev_test>` to learn how to run the 
-tests locally. 
+any of the existing tests.
+Refer to the :ref:`Test Section <label_dev_test>` to learn how to run the
+tests locally.
 
 
 
@@ -92,18 +92,18 @@ On each commit, format will be fixed if it was incorrect. All you need to do is 
     reformatted [ALL FAILING FILES]
     All done!
     1 file reformatted.
-    
+
     $ git commit -am "test"
     black....................................................................Passed
     [develop XXX] test
      1 file changed, 1 insertion(+)
 
-Note that pre-commit will always require you to commit again after a test was failed, because `it's safer <https://github.com/pre-commit/pre-commit/issues/532>`__. If for any reason you want to skip formatting you can commit with the ``--no-verify`` `argument <https://git-scm.com/docs/git-commit>`__.  
+Note that pre-commit will always require you to commit again after a test was failed, because `it's safer <https://github.com/pre-commit/pre-commit/issues/532>`__. If for any reason you want to skip formatting you can commit with the ``--no-verify`` `argument <https://git-scm.com/docs/git-commit>`__.
 
 
 
 
-Update 
+Update
 ------
 
 With Pip you can keep the package up-to-date with::
@@ -115,9 +115,9 @@ If using the latest developer version (cloned from `GitHub <https://github.com/r
 Help
 ----
 
-If you encounter any problem, please `report an Issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_ on GitHub.  
+If you encounter any problem, please `report an Issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_ on GitHub.
 
-You can also ask for advice on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ 
+You can also ask for advice on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 or the community chat:
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
@@ -127,4 +127,3 @@ or the community chat:
 .. image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
     :target: https://radis.github.io/slack-invite/
     :alt: Slack
-                  

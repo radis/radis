@@ -20,22 +20,22 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 
 """
 
-from __future__ import absolute_import, unicode_literals, division, print_function
-from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
-from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDtab, PartFuncCO2_CDSDcalc
-from radis.phys.constants import hc_k
-from radis.misc.printer import printm
-from radis.misc.cache_files import DeprecatedFileError
-from radis.db.molecules import Molecules
+import os
+from os.path import basename, exists, getmtime
+
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import exp
-import os
-from radis import SpectrumFactory
-from radis.test.utils import setup_test_line_databases
-from radis.test.utils import getTestFile
-from os.path import basename, exists, getmtime
 import pytest
+from numpy import exp
+
+from radis import SpectrumFactory
+from radis.db.molecules import Molecules
+from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
+from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
+from radis.misc.cache_files import DeprecatedFileError
+from radis.misc.printer import printm
+from radis.phys.constants import hc_k
+from radis.test.utils import getTestFile, setup_test_line_databases
 
 fig_prefix = basename(__file__) + ": "
 
@@ -260,22 +260,22 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
     and isotopes"""
 
     # molecule, isotope, temperature, absolute tolerance
-    for molecule, iso, T, atol in [
-        ("CO2", 1, 300, 0.9),
-        ("CO2", 1, 1000, 2.0),
-        ("CO2", 1, 3000, 2000),
-        ("CO2", 2, 300, 1.8),
-        ("CO2", 2, 1000, 25),
-        ("CO2", 2, 3000, 4962),
-        ("CO", 1, 300, 0.16),
-        ("CO", 1, 1000, 1.9),
-        ("CO", 1, 3000, 27),
-        ("CO", 2, 300, 0.31),
-        ("CO", 2, 1000, 4.1),
-        ("CO", 2, 3000, 56.9),
-        ("CO", 3, 300, 0.16),
-        ("CO", 3, 1000, 2.1),
-        ("CO", 3, 3000, 28.6),
+    for molecule, iso, T, atol, rtol in [
+        ("CO2", 1, 300, 0.9, 0.02),
+        ("CO2", 1, 1000, 5.0, 0.02),
+        ("CO2", 1, 3000, 2150, 0.02),
+        ("CO2", 2, 300, 1.8, 0.02),
+        ("CO2", 2, 1000, 25, 0.02),
+        ("CO2", 2, 3000, 4962, 0.02),
+        ("CO", 1, 300, 0.16, 0.02),
+        ("CO", 1, 1000, 1.9, 0.02),
+        ("CO", 1, 3000, 27, 0.02),
+        ("CO", 2, 300, 0.31, 0.02),
+        ("CO", 2, 1000, 4.1, 0.02),
+        ("CO", 2, 3000, 56.9, 0.02),
+        ("CO", 3, 300, 0.16, 0.02),
+        ("CO", 3, 1000, 2.1, 0.02),
+        ("CO", 3, 3000, 28.6, 0.02),
     ]:
 
         S = Molecules[molecule][iso]["X"]
@@ -283,7 +283,7 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
         # Dont use cached: force recalculating
         db = PartFunc_Dunham(S)
 
-        from radis.io.hitran import get_molecule_identifier
+        from radis.db.classes import get_molecule_identifier
 
         hapi = PartFuncHAPI(M=get_molecule_identifier(molecule), I=iso)
 
@@ -298,6 +298,7 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
             )
 
         try:
+            assert np.isclose(Q_radis, Q_hapi, atol=atol)
             assert np.isclose(Q_radis, Q_hapi, atol=atol)
         except AssertionError:
             raise AssertionError(
@@ -686,8 +687,8 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     def run_example():
 
         from radis.test.utils import (
-            discard_lines_with_na_levels,
             define_Evib_as_sum_of_Evibi,
+            discard_lines_with_na_levels,
         )
 
         setup_test_line_databases(

@@ -3,7 +3,7 @@
 Summary
 -------
 
-Runs tests for neq/misc so that they can be accessed by pytest (and hopefully 
+Runs tests for neq/misc so that they can be accessed by pytest (and hopefully
 the CI test suite)
 
 Examples
@@ -21,9 +21,7 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import pytest
-from six.moves import range
 
 
 @pytest.mark.fast
@@ -37,9 +35,11 @@ def test_utils(*args, **kwargs):
 def test_progress_bar(*args, **kwargs):
     """ Minimal example of a progress bar """
 
-    from radis.misc.progress_bar import ProgressBar
     from time import sleep
+
     from numpy.random import rand
+
+    from radis.misc.progress_bar import ProgressBar
 
     print("Testing progress bar")
 
@@ -58,8 +58,9 @@ def test_progress_bar(*args, **kwargs):
 
 @pytest.mark.fast
 def test_norm():
-    from radis.misc import norm
     import numpy as np
+
+    from radis.misc import norm
 
     a = np.random.rand(100)
     b = np.random.rand(100)
@@ -72,8 +73,9 @@ def test_norm():
 @pytest.mark.fast
 def test_normOn():
 
-    from radis.misc import norm_on
     import numpy as np
+
+    from radis.misc import norm_on
 
     I = np.array([10, 9, 8, 7, 6, 5, 0, 9])
     w = np.arange(8)
@@ -84,8 +86,9 @@ def test_normOn():
 @pytest.mark.fast
 def test_allclose():
 
-    from radis.misc import array_allclose
     import numpy as np
+
+    from radis.misc import array_allclose
 
     a = np.random.rand(20)
     b = a + 0.1
@@ -97,8 +100,9 @@ def test_allclose():
 @pytest.mark.fast
 def test_nantrapz():
 
-    from radis.misc import nantrapz
     import numpy as np
+
+    from radis.misc import nantrapz
 
     I = np.array([10, 9, 8, 7, float("NaN"), 5, 0, 9])
     w = np.arange(8)
@@ -107,7 +111,6 @@ def test_nantrapz():
 
 def _run_testcases(verbose=True, *args, **kwargs):
 
-    test_config(verbose=verbose, *args, **kwargs)
     test_utils(verbose=verbose, *args, **kwargs)
     test_progress_bar()
     test_nantrapz()

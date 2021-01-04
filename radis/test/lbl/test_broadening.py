@@ -10,16 +10,17 @@ We're looking at CO(0->1) line 'R1' at 2150.86 cm-1
 
 """
 
-from __future__ import unicode_literals, print_function, absolute_import, division
-from radis.lbl.factory import SpectrumFactory
-from radis.spectrum.spectrum import Spectrum
-from radis import plot_diff, get_residual_integral, get_residual
-from radis.test.utils import setup_test_line_databases
-from radis.misc.printer import printm
-from os.path import join, dirname
-from numpy import isclose
+from os.path import dirname, join
+
 import matplotlib.pyplot as plt
 import pytest
+from numpy import isclose
+
+from radis import get_residual, get_residual_integral, plot_diff
+from radis.lbl.factory import SpectrumFactory
+from radis.misc.printer import printm
+from radis.spectrum.spectrum import Spectrum
+from radis.test.utils import setup_test_line_databases
 
 
 @pytest.mark.fast
@@ -30,7 +31,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
 
     We're looking at CO(0->1) line 'R1' at 2150.86 cm-1
     """
-    from radis.io.hapi import db_begin, fetch, tableList, absorptionCoefficient_Voigt
+    from hapi import absorptionCoefficient_Voigt, db_begin, fetch, tableList
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
@@ -49,7 +50,9 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     # -----------
 
     # Generate HAPI database locally
-    db_begin(join(dirname(__file__), __file__.replace(".py", "_HAPIdata")))
+    hapi_data_path = join(dirname(__file__), __file__.replace(".py", "_HAPIdata"))
+
+    db_begin(hapi_data_path)
     if not "CO" in tableList():  # only if data not downloaded already
         fetch(
             "CO", 5, 1, wmin - broadening_max_width / 2, wmax + broadening_max_width / 2
@@ -89,7 +92,9 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
             "GaussianBroadeningWarning": "ignore",
         },
     )  # 0.2)
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank(
+        path=join(hapi_data_path, "CO.data"), format="hitran", parfuncfmt="hapi"
+    )
     #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
     s = sf.eq_spectrum(Tgas=T, name="RADIS")
 
@@ -486,7 +491,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     if plot:
         plot_diff(s_dlm_eq, s_dlm_noneq)
 
-    assert res <= 4e-5
+    assert res <= 1e-4
 
 
 # @pytest.mark.needs_config_file

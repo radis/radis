@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Implements a spectrum database :class:`~radis.tools.database.SpecDatabase` 
+Implements a spectrum database :class:`~radis.tools.database.SpecDatabase`
 class to manage them all
 
 It basically manages a list of Spectrum JSON files, adding a Pandas
@@ -21,14 +21,14 @@ See and get objects from database::
 
     s = db.get('Tvib==3000 & Trot==1500')[0]  # get all spectra that fit conditions
     db.add(s)  # update database (and raise error because duplicate!)
-    
-Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to 
+
+Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to
 automatically look-up and update a database when spectra are calculated.
 
-An example of script to update all spectra conditions in a database (ex: when 
+An example of script to update all spectra conditions in a database (ex: when
 a condition was added afterwards to the Spectrum class)::
-    
-    # Example: add the 'medium' key in conditions 
+
+    # Example: add the 'medium' key in conditions
     db = "database_CO"
     for f in os.listdir(db):
        if not f.endswith('.spec'): continue
@@ -37,7 +37,7 @@ a condition was added afterwards to the Spectrum class)::
        s.store(join(db,f), if_exists_then='replace')
 
 You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
-of the website.  
+of the website.
 
 -------------------------------------------------------------------------------
 
@@ -51,38 +51,35 @@ of the website.
 
 # - Implement a h5py version of load / store
 
-from __future__ import absolute_import, print_function, division, unicode_literals
-import json_tricks
-import numpy as np
-from numpy import array
-import pandas as pd
-import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
 import os
 import sys
-from warnings import warn
 from os.path import (
-    join,
-    splitext,
-    exists,
-    basename,
-    split,
-    dirname,
     abspath,
-    isdir,
+    basename,
+    dirname,
+    exists,
     getsize,
+    isdir,
+    join,
+    split,
+    splitext,
 )
-from six.moves import range
-from radis.spectrum.spectrum import Spectrum, is_spectrum
 from shutil import copy2
 from time import strftime
-from radis.misc.basics import is_float, list_if_float, all_in
+from warnings import warn
+
+import json_tricks
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from joblib import Parallel, delayed
+from numpy import array
+from scipy.interpolate import griddata
+
+from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printr
-from six import string_types
-from six.moves import zip
-from joblib import Parallel, delayed
-
+from radis.spectrum.spectrum import Spectrum, is_spectrum
 
 _scalable_inputs = ["mole_fraction", "path_length"]
 
@@ -109,7 +106,7 @@ def is_jsonable(x):
 #        out = {}
 #        for k, v in x.items():
 #            out[k] = jsonize(v)
-#    elif typ in string_types:
+#    elif isinstance(typ, str):
 #        # If it looks like string, store as raw text (that fixes most trouble with paths)
 #        out = r'{0}'.format(x)
 #    elif typ == pd.DataFrame:
@@ -145,7 +142,7 @@ def save(
     s,
     path,
     discard=[],
-    compress=False,
+    compress=True,
     add_info=None,
     add_date=None,
     if_exists_then="increment",
@@ -173,6 +170,7 @@ def save(
         parameters to discard. To save some memory.
 
     compress: boolean
+        if ``False``, save under text format, readable with any editor.
         if ``True``, saves under binary format. Faster and takes less space.
         If ``2``, removes all quantities that can be regenerated with s.update(),
         e.g, transmittance if abscoeff and path length are given, radiance if
@@ -314,7 +312,7 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
         date = ""
 
     # ... add conditions info
-    if isinstance(add_info, string_types):
+    if isinstance(add_info, str):
         add_info = [add_info]
     if add_info not in [[], {}, None, False]:
         # complete name with info about calculation conditions
@@ -430,7 +428,7 @@ def _compress(s, sjson):
 # %% Load functions
 
 
-def load_spec(file, binary=False):  # , return_binary_status=False):
+def load_spec(file, binary=True):  # , return_binary_status=False):
     """Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object.
     Adds ``file`` in the Spectrum :attr:`~radis.spectrum.spectrum.Spectrum.file`
     attribute.
@@ -442,7 +440,7 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
         .spec file to load
 
     binary: boolean
-        set to True if the file is encoded as binary. Default ``False``. Will autodetect
+        set to ``True`` if the file is encoded as binary. Default ``True``. Will autodetect
         if it fails, but that may take longer.
 
     Returns
@@ -697,7 +695,7 @@ def _fix_format(file, sload):
 
     if "isotope" in sload["conditions"]:
         isotope = sload["conditions"]["isotope"]
-        if not isinstance(isotope, string_types):
+        if not isinstance(isotope, str):
             printr(
                 "File {0}".format(basename(file))
                 + " has a deprecrated structure (key "
@@ -712,7 +710,7 @@ def _fix_format(file, sload):
 
     if "dbpath" in sload["conditions"]:
         dbpath = sload["conditions"]["dbpath"]
-        if not isinstance(dbpath, string_types):
+        if not isinstance(dbpath, str):
             printr(
                 "File {0}".format(basename(file))
                 + " has a deprecrated structure (key "
@@ -737,7 +735,7 @@ def _fix_format(file, sload):
         fixed = False
         if key in sload["conditions"]:
             path = sload["conditions"][key]
-            if not isinstance(path, string_types):
+            if not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
                     + " has a deprecrated structure (key "
@@ -815,7 +813,7 @@ def _fix_format(file, sload):
     # Fix lines format HITRAN_CLASS_1 molecules
     if "lines" in sload and sload["lines"] is not None:
         lines = sload["lines"]
-        from radis.io.hitran import get_molecule, HITRAN_CLASS1
+        from radis.db.classes import HITRAN_CLASS1, get_molecule
 
         if "v1u" in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
             printr(
@@ -841,6 +839,14 @@ def _fix_format(file, sload):
                     + "database ASAP."
                 )
                 sload["units"][var] = ""
+            if "cm_1" in unit:
+                printr(
+                    "File {0}".format(basename(file))
+                    + " has a deprecrated structure "
+                    + "(cm_1 is now written cm-1''). Fixed this time, but regenerate "
+                    + "database ASAP."
+                )
+                sload["units"][var] = sload["units"][var].replace("cm_1", "cm-1")
 
     return sload, fixed
 
@@ -919,7 +925,7 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
 
     """
 
-    if isinstance(file, string_types):
+    if isinstance(file, str):
         s = load_spec(file)
     elif isinstance(file, Spectrum):
         s = file
@@ -1032,7 +1038,7 @@ class SpecList(object):
         if len(self) == 0:
             raise ValueError("Database is empty")
 
-        if isinstance(columns, string_types):
+        if isinstance(columns, str):
             columns = [columns] + [k for k in args]
 
         dg = self.df.set_index("file")  # note that this is a copy already.
@@ -1185,7 +1191,7 @@ class SpecList(object):
             else:  # ... first write input conditions query
                 query = []
                 for (k, v) in kwconditions.items():
-                    if isinstance(v, string_types):
+                    if isinstance(v, str):
                         query.append("{0} == '{1}'".format(k, v))
                     else:
                         #                    query.append('{0} == {1}'.format(k,v))
@@ -1333,7 +1339,7 @@ class SpecList(object):
                     )
                 )
 
-        dg = self.df.reindex(columns=list(self.df.columns))
+        dg = self.df.reindex(columns=[k for k in self.df.columns if k != "Spectrum"])
 
         if scale_if_possible:
             # Remove scalable inputs from distance calculation variables (unless
@@ -1345,8 +1351,6 @@ class SpecList(object):
                     del dg[k]
                 except KeyError:
                     pass
-
-        #        raise
 
         mean = dict(dg.mean())
         #        std = dict(dg.std())
@@ -1394,6 +1398,7 @@ class SpecList(object):
             # Get spectrum with minimum distance to target conditions
             ## type: Spectrum
             sout = self.df.loc[dg["_d"].idxmin(), "Spectrum"]
+            # Note @EP 07/12/20 : do we have the same index as dg ?? (created with reindex on L1335)  #  TODO
         finally:
             del dg["_d"]
 
@@ -2097,7 +2102,7 @@ class SpecDatabase(SpecList):
             # check the file we just stored is readable
 
         # ... input is a file name. Copy it in database and load it
-        elif isinstance(spectrum, string_types):
+        elif isinstance(spectrum, str):
             if not exists(spectrum):
                 raise FileNotFoundError("File doesnt exist: {0}".format(spectrum))
 

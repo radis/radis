@@ -8,19 +8,20 @@ Run all tests:
 
 >>> pytest       (in command line, in project folder)
 
-Run only fast tests 
+Run only fast tests
 
 >>> pytest -m fast
 
 """
 
-from __future__ import absolute_import, unicode_literals, division, print_function
-import numpy as np
-import matplotlib.pyplot as plt
-from radis.test.utils import setup_test_line_databases
-from radis.misc.printer import printm
 from os.path import basename
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pytest
+
+from radis.misc.printer import printm
+from radis.test.utils import setup_test_line_databases
 
 fig_prefix = basename(__file__) + ": "
 

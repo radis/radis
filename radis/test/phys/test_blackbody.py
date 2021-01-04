@@ -7,10 +7,10 @@ Test Planck functions
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
 from numpy import pi
-from radis.phys.blackbody import sPlanck, planck, planck_wn
+
+from radis.phys.blackbody import planck, planck_wn, sPlanck
 
 
 def test_exceptions(verbose=True, *args, **kwargs):

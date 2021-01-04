@@ -21,14 +21,13 @@ References
 
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
-from radis.levels.dunham import Gv, Fv
 from radis.db.conventions import (
     herzberg_coefficients_rot,
     herzberg_coefficients_rovib,
     herzberg_coefficients_vib,
 )
+from radis.levels.dunham import Fv, Gv
 
 
 def EvJ_uncoupled_vibrating_rotor(

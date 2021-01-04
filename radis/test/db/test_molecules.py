@@ -5,16 +5,14 @@ Created on Tue Jul 31 18:00:54 2018
 @author: erwan
 """
 
-from __future__ import absolute_import, unicode_literals, division
-from __future__ import print_function
-import numpy as np
-from radis.db.molecules import getMolecule, Molecules
+import pytest
+
+from radis.db.molecules import Molecules, getMolecule
 from radis.db.utils import (
-    get_herzberg_coefficients,
     _get_rovib_coefficients,
     get_default_jsonfile,
+    get_herzberg_coefficients,
 )
-import pytest
 
 
 @pytest.mark.fast  # this is a fast test. Run fast tests only with 'pytest -m fast'

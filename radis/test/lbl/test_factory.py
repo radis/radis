@@ -14,21 +14,22 @@ Run all tests::
 Run only fast tests (i.e: tests that have a 'fast' label)::
 
     pytest -m fast
-    
+
 ------------------------------------------------------------------------
 
 """
 
-from __future__ import unicode_literals, print_function, absolute_import, division
+from os.path import basename
+
 import astropy.units as u
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+
 import radis
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
-import numpy as np
-import matplotlib.pyplot as plt
-from os.path import basename
-import pytest
 
 fig_prefix = basename(__file__) + ": "
 
@@ -39,7 +40,14 @@ fig_prefix = basename(__file__) + ": "
 
 @pytest.mark.needs_config_file
 @pytest.mark.needs_db_CDSD_HITEMP
-def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
+def test_spec_generation(
+    plot=True,
+    verbose=2,
+    warnings=True,
+    update_reference_spectrum=False,
+    *args,
+    **kwargs
+):
     """Test spectrum generation
     Can be used as a base to generate spectra in your codes
 
@@ -136,6 +144,10 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
              (with pseudo_continuum_threshold=0.01) >>> ???
              (with DLM) >>> 2.3 s
 
+    - 0.9.26 (normal code) >>> 7.6 s
+             (with pseudo_continuum_threshold=0.01) >>> 2.73s
+             (with DLM) >>> 0.25 s
+
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -159,7 +171,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
         db_use_cached=True,
         broadening_max_width=50,
         optimization=None,
-        # chunksize='DLM',
+        # optimization="min-RMS",
         # pseudo_continuum_threshold=0.01,
         medium="vacuum",
         verbose=verbose,
@@ -170,7 +182,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
         "HITEMP-CO2-DUNHAM",
         load_energies=False,  # no need to load energies at equilibrium
     )
-    s = sf.eq_spectrum(Tgas=300)
+    s = sf.eq_spectrum(Tgas=300, name="test_spec_generation")
     if verbose:
         printm(
             ">>> _test_spec_generation: Spectrum calculated in {0:.2f}s".format(
@@ -195,6 +207,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
     #        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm')).T[::10])
     #        print(s)
     # ................
+    from radis import get_version
     from radis.test.utils import getTestFile
 
     wref, Iref = np.loadtxt(getTestFile("CO2abscoeff_300K_4150_4400nm.txt")).T
@@ -212,6 +225,23 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
             if_exists_then="replace",
         )
 
+    # Use "update_reference_spectrum=True" to update reference case :
+    if update_reference_spectrum:
+        wsave, Isave = s.get("abscoeff", wunit="nm")
+        import io
+        from contextlib import redirect_stdout
+
+        with io.StringIO() as buf, redirect_stdout(buf):
+            print(s)
+            s_details = buf.getvalue()
+        np.savetxt(
+            getTestFile("CO2abscoeff_300K_4150_4400nm.txt"),
+            np.vstack((wsave[::10], Isave[::10])).T,
+            header="RADIS {0}\n\n{1}".format(
+                get_version(add_git_number=False), s_details
+            ),
+        )
+
     # Plot comparison
     if plot:
         plt.figure(fig_prefix + "Reference spectrum (abscoeff)")
@@ -224,7 +254,7 @@ def test_spec_generation(plot=True, verbose=2, warnings=True, *args, **kwargs):
             label="RADIS, this version",
         )
         # idea of the resolution
-        plt.plot(wref, Iref, "or", ms=3, label="version NEQ 0.9.20 (12/05/18)")
+        plt.plot(wref, Iref, "or", ms=3, label="version RADIS 0.9.26 (13/12/20)")
         plt.legend()
         plt.title("All close: {0}".format(match_reference))
         plt.tight_layout()

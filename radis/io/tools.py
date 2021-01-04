@@ -5,12 +5,8 @@ Created on Fri Jul  6 13:52:04 2018
 @author: erwan
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import numpy as np
 import pandas as pd
-from six.moves import range
-from six.moves import zip
 
 
 def parse_hitran_file(fname, columns, count):

@@ -5,23 +5,23 @@ Created on Sun Aug  5 14:26:44 2018
 @author: erwan
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
-from radis.tools.database import load_spec
+import numpy as np
+import pytest
+
+from radis.los import MergeSlabs, SerialSlabs
+from radis.spectrum.compare import get_diff, plot_diff
 from radis.spectrum.operations import (
-    crop,
     Radiance,
     Radiance_noslit,
     Transmittance_noslit,
     add_constant,
+    crop,
     multiply,
     offset,
     sub_baseline,
 )
 from radis.test.utils import getTestFile
-from radis.los import SerialSlabs, MergeSlabs
-from radis.spectrum.compare import get_diff, plot_diff
-import numpy as np
-import pytest
+from radis.tools.database import load_spec
 
 
 @pytest.mark.fast
@@ -254,11 +254,12 @@ def test_TestBaseline(plot=False, *args, **kwargs):
 @pytest.mark.fast
 def test_dimensioned_operations(*args, **kwargs):
 
-    from radis.test.utils import getTestFile
-    from radis import load_spec, Radiance
-    from radis.spectrum import sub_baseline
     import astropy.units as u
     import numpy as np
+
+    from radis import Radiance, load_spec
+    from radis.spectrum import sub_baseline
+    from radis.test.utils import getTestFile
 
     # Generate the equivalent of an experimental spectrum
     s = load_spec(getTestFile(r"CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)

@@ -4,39 +4,39 @@ Created on Sun Apr  9 21:37:59 2017
 
 @author: erwan
 
-Reproduce the plasma torch experiment of Packan 2003 in in atmospheric air 
+Reproduce the plasma torch experiment of Packan 2003 in in atmospheric air
 
 Conditions
 --------
 
-There is 6 m of room air between the plasma and the detector. The temperature 
-and humidity in the laboratory were recorded during experiment and calibration. 
-In both cases the measured ambient temperature was 25°C, and the relative humidity 
-was 42% (10% uncertainty), which corresponds to a mole fraction of H2O of 
-1.3+/-0.1 x 1E-2. We used 1.4e-2 because it gave better agreement for absorption 
-on the fundamental bands of NO. The experiments were done in about 1997, and the 
+There is 6 m of room air between the plasma and the detector. The temperature
+and humidity in the laboratory were recorded during experiment and calibration.
+In both cases the measured ambient temperature was 25°C, and the relative humidity
+was 42% (10% uncertainty), which corresponds to a mole fraction of H2O of
+1.3+/-0.1 x 1E-2. We used 1.4e-2 because it gave better agreement for absorption
+on the fundamental bands of NO. The experiments were done in about 1997, and the
 room-air CO2 concentration was assumed to be 330 ppm.
 
-Temperatures and concentrations of all slabs are stored in 
+Temperatures and concentrations of all slabs are stored in
 `test_compare_torch_CO2_conditions_JTHT2003.dat`
 
 
-    
+
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
+from multiprocessing import cpu_count
+from time import time
+
 import matplotlib.pyplot as plt
 import pandas as pd
-from radis import ParallelFactory
-from radis.spectrum import experimental_spectrum, get_residual
-from radis.los import SerialSlabs, MergeSlabs
-from radis.phys.convert import nm2cm
-from radis.test.utils import getValidationCase
-from radis.misc.printer import printm
-from six.moves import zip
-from time import time
-from multiprocessing import cpu_count
 import pytest
+
+from radis import ParallelFactory
+from radis.los import MergeSlabs, SerialSlabs
+from radis.misc.printer import printm
+from radis.phys.convert import nm2cm
+from radis.spectrum import experimental_spectrum, get_residual
+from radis.test.utils import getValidationCase
 
 
 @pytest.mark.needs_config_file
@@ -65,7 +65,9 @@ def test_compare_torch_CO2(
     - neq==0.9.21*: (with ParallelFactory) Finished test_compare_torch_CO2 in 298s
 
     - neq==0.9.22: (Parallel + continuum) Finished in 65s
-      RADIS 1.0.0 == neq 0.9.24
+      RADIS 0.9.9 == neq 0.9.24
+
+    - RADIS 0.9.26: Finished test_compare_torch_CO2 in 57s (DLM, no continuum)
 
     Reference
     --------

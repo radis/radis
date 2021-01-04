@@ -11,13 +11,11 @@ See :py:data:`~radis.db.molecules.Molecules`
 
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 from radis.db.classes import ElectronicState
-
+from radis.phys.convert import eV2cm
 
 # %% Define some commonly used molecules
 
-from radis.phys.convert import eV2cm
 
 # CO
 # ----------
@@ -117,7 +115,7 @@ Molecules = {
     },
 }
 """dict: list of Electronic states whose energy levels can be calculated with RADIS
-built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`. 
+built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`.
 For references refer to the definition of each molecule:
 
 CO:
@@ -127,7 +125,7 @@ CO:
 - :py:data:`~radis.db.molecules.CO_X_iso3`
 
 CO2:
-    
+
 - :py:data:`~radis.db.molecules.CO2_X_626`
 - :py:data:`~radis.db.molecules.CO2_X_636`
 - :py:data:`~radis.db.molecules.CO2_X_628`

@@ -1,5 +1,5 @@
-from __future__ import print_function, absolute_import, division, unicode_literals
-from os.path import dirname, basename, join
+from os.path import basename, dirname, join
+
 from radis.misc.utils import get_files_from_regex
 from radis.test.utils import getTestFile
 

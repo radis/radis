@@ -2,15 +2,15 @@
 """
 Summary
 -------
-Classes to deal with multi-slabs configurations: 
-    
+Classes to deal with multi-slabs configurations:
+
 - :func:`~radis.los.slabs.MergeSlabs` for several species at the same spatial position
 - :func:`~radis.los.slabs.SerialSlabs` to add several spectra along the line-of-path
-One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object 
+One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object
 Examples
 --------
-See more examples in the 
-`RADIS line-of-sight module <https://radis.readthedocs.io/en/latest/los/index.html>`__ 
+See more examples in the
+`RADIS line-of-sight module <https://radis.readthedocs.io/en/latest/los/index.html>`__
 -------------------------------------------------------------------------------
 """
 # Todo:
@@ -19,15 +19,15 @@ See more examples in the
 # - emisscoeff default unit
 
 
-from __future__ import print_function, absolute_import, division, unicode_literals
-
-from radis.spectrum.spectrum import Spectrum, is_spectrum
-from radis.misc.basics import merge_lists, in_all
-from radis.misc.arrays import count_nans
-from radis.misc.debug import printdbg
 from warnings import warn
+
 import numpy as np
-from numpy import arange, allclose, abs, diff
+from numpy import abs, allclose, arange, diff
+
+from radis.misc.arrays import count_nans
+from radis.misc.basics import in_all, merge_lists
+from radis.misc.debug import printdbg
+from radis.spectrum.spectrum import Spectrum, is_spectrum
 
 # %% Slabs / Multi-layers / Radiative Transfer Equation (RTE)
 # ----------------------------------------------------------------------
@@ -562,7 +562,7 @@ def MergeSlabs(*slabs, **kwargs):
     out_of_bounds = kwargs.pop("out", "nan")  # default 'nan'
     optically_thin = kwargs.pop("optically_thin", False)  # default False
     verbose = kwargs.pop("verbose", False)  # type: bool
-    debug = kwargs.pop("debug", False)  # type: bool
+    kwargs.pop("debug", False)  # type: bool
     modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
         raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))

@@ -9,9 +9,9 @@ Created on Fri Apr 28 10:00:25 2017
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 import pandas as pd
+
 from radis.db.utils import getFile
 
 

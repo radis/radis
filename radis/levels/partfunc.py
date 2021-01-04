@@ -55,34 +55,31 @@ References
 
 # TODO: store molecule_data.json in the H5 file metadata. If not done already.
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 import sys
-import pandas as pd
+from os.path import exists
+from warnings import warn
+
 import numpy as np
+import pandas as pd
 from numpy import exp
+
 import radis
-from radis.phys.constants import hc_k  # ~ 1.44 cm.K
 from radis import OLDEST_COMPATIBLE_VERSION
-from radis.io.hitran import (
-    get_molecule_identifier,
+from radis.db.classes import (
     HITRAN_CLASS1,
     HITRAN_CLASS2,
     HITRAN_CLASS3,
     HITRAN_CLASS5,
     HITRAN_CLASS6,
+    get_molecule_identifier,
 )
-from radis.misc.basics import all_in
-from radis.misc.debug import printdbg
-from radis.misc.cache_files import load_h5_cache_file
-from radis.misc.cache_files import save_to_hdf
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
-from warnings import warn
-from os.path import exists
+from radis.misc.basics import all_in
+from radis.misc.cache_files import load_h5_cache_file, save_to_hdf
+from radis.misc.debug import printdbg
 from radis.misc.progress_bar import ProgressBar
-from six import string_types
-from six.moves import range
-from six.moves import zip
+from radis.phys.constants import hc_k  # ~ 1.44 cm.K
 
 
 class RovibPartitionFunction(object):
@@ -742,8 +739,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
         isotope identifier
 
     path: str
-        path to ``hapi.py``. If None, RADIS embedded ``hapi.py`` (``radis.io.hapi.py``)
-        is used.
+        path to ``hapi.py``. If None, the hapi package from PyPI is used.
 
     Examples
     --------
@@ -751,7 +747,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
     ::
 
         from radis.levels.partfunc import PartFuncHAPI
-        from radis.io.hitran import get_molecule_identifier
+        from radis.db.classes import get_molecule_identifier
 
         M = get_molecule_identifier('N2O')
         iso=1
@@ -779,13 +775,13 @@ class PartFuncHAPI(RovibParFuncTabulator):
             partitionSum = self.import_from_file(path)
         else:
             # Use RADIS embedded
-            from radis.io.hapi import partitionSum, HAPI_VERSION
+            from hapi import HAPI_VERSION, partitionSum
 
             if self.verbose >= 2:
                 print("HAPI version: %s" % HAPI_VERSION)
 
         # Check inputs
-        if isinstance(M, string_types):
+        if isinstance(M, str):
             M = get_molecule_identifier(M)
         if type(M) is not int:
             raise TypeError("Molecule id must be int: got {0} ({1})".format(M, type(M)))

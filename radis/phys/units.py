@@ -6,11 +6,9 @@
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-import astropy.units as u
 import warnings
+
+import astropy.units as u
 
 
 def Unit(st, *args, **kwargs):

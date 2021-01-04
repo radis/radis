@@ -6,19 +6,15 @@ Small functions used in other procedures
 -------------------------------------------------------------------------------
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-from os.path import join, abspath, normcase, normpath
-import numpy as np
 import sys
-from six.moves import filter
-from six.moves import range
-from six import binary_type
-from six.moves import filterfalse
-from itertools import tee
+from io import StringIO
+from itertools import filterfalse, tee
+from os.path import abspath, join, normcase, normpath
+
+import numpy as np
 import pandas as pd
-from six import StringIO
 
 verbose = True
 
@@ -435,7 +431,7 @@ def is_number(s):
 
 
 def to_str(a):
-    if isinstance(a, binary_type):
+    if isinstance(a, bytes):
         return a.decode("utf-8")
     else:
         return a

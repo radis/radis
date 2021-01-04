@@ -6,15 +6,14 @@ Created on Mon Nov 13 21:58:47 2017
 
 Formula to calculate most spectral quantities
 
-Are stored here all equations that need to be used by both the factory (to 
+Are stored here all equations that need to be used by both the factory (to
 generate the spectrum) or the spectrum class (to recompute some quantities
 in post processing)
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
-from radis.phys.convert import cm2nm
 from radis.phys.blackbody import planck
+from radis.phys.convert import cm2nm
 
 # ------- Get radiance from emissivity
 

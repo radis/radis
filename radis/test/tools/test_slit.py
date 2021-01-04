@@ -18,30 +18,30 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
-# from radis.lbl import SpectrumFactory
-from radis.spectrum.models import calculated_spectrum, transmittance_spectrum
-from radis.tools.database import load_spec
-from radis.tools.slit import (
-    import_experimental_slit,
-    convolve_with_slit,
-    get_FWHM,
-    get_effective_FWHM,
-)
-from radis.phys.units import is_homogeneous
-from radis.phys.convert import dcm2dnm, dnm2dcm
-from radis.misc.printer import printm
-from radis.lbl.factory import SpectrumFactory
-from radis.test.utils import setup_test_line_databases
+from os.path import basename
+from warnings import catch_warnings, filterwarnings
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import sqrt, linspace, abs, trapz
-from os.path import basename
 import pytest
-from warnings import catch_warnings, filterwarnings
-from six.moves import zip
+from numpy import abs, linspace, sqrt, trapz
+
+from radis.lbl.factory import SpectrumFactory
+from radis.misc.printer import printm
+from radis.phys.convert import dcm2dnm, dnm2dcm
+from radis.phys.units import is_homogeneous
+
+# from radis.lbl import SpectrumFactory
+from radis.spectrum.models import calculated_spectrum, transmittance_spectrum
+from radis.test.utils import setup_test_line_databases
+from radis.tools.database import load_spec
+from radis.tools.slit import (
+    convolve_with_slit,
+    get_effective_FWHM,
+    get_FWHM,
+    import_experimental_slit,
+)
 
 fig_prefix = basename(__file__) + ": "
 
@@ -62,8 +62,8 @@ def test_all_slit_shapes(
             plt.close("all")
 
     # get spectrum
-    from radis.test.utils import getTestFile
     from radis.spectrum.spectrum import Spectrum
+    from radis.test.utils import getTestFile
 
     s = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
@@ -182,8 +182,8 @@ def test_slit_unit_conversions_spectrum_in_nm(
 
     """
 
-    from radis.test.utils import getTestFile
     from radis.spectrum.spectrum import Spectrum
+    from radis.test.utils import getTestFile
 
     if plot:  # dont get stuck with Matplotlib if executing through pytest
         plt.ion()
@@ -485,7 +485,7 @@ def test_slit_energy_conservation(
 
 
 # Function used to test Slit dispersion
-from numpy import pi, tan, cos
+from numpy import cos, pi, tan
 
 
 def dirac(w0, width=20, wstep=0.009):
@@ -535,8 +535,9 @@ def test_linear_dispersion_effect(
     is correctly triggered
     """
 
+    from publib import fix_style, set_style
+
     from radis.test.utils import getTestFile
-    from publib import set_style, fix_style
 
     if plot:
         set_style("origin")
@@ -617,9 +618,10 @@ def test_auto_correct_dispersion(
 
     """
 
-    from radis.test.utils import getTestFile
     from publib import set_style
+
     from radis.misc.warning import SlitDispersionWarning
+    from radis.test.utils import getTestFile
 
     if plot:
         plt.ion()  # dont get stuck with Matplotlib if executing through pytest

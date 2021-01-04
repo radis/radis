@@ -7,9 +7,9 @@ Define warnings for radiation code, and how to deal with them
 
 """
 
-from __future__ import absolute_import, unicode_literals, print_function, division
 
 import warnings
+
 from radis.misc.printer import printr
 
 # %% Spectrum warnings / errors
@@ -131,13 +131,13 @@ WarningClasses = {
 }
 """ dict: warnings used in RADIS Spectrum calculations.
 
-You can selectively activate them by setting the warnings attribute of 
-:class:`radis.lbl.factory.SpectrumFactory` 
+You can selectively activate them by setting the warnings attribute of
+:class:`radis.lbl.factory.SpectrumFactory`
 
 See Also
 --------
 
-:py:data:`~radis.misc.warning.default_warning_status` 
+:py:data:`~radis.misc.warning.default_warning_status`
 """
 
 # Setup individual warnings. Value of keys can be:
@@ -180,7 +180,7 @@ other warnings. All warnings can be disabled by setting the SpectrumFactory
 See Also
 --------
 
-:py:data:`~radis.misc.warning.WarningClasses`, 
+:py:data:`~radis.misc.warning.WarningClasses`,
 :py:func:`~radis.misc.warning.reset_warnings`
 
 """

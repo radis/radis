@@ -5,12 +5,12 @@
 Logging and warning functions
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
+import sys
 from time import gmtime, strftime
 from warnings import warn
+
 from termcolor import colored
-import sys
 
 
 def printlog(msg, logfile="log.txt", stdout=True):

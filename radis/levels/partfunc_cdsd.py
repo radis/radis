@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Variants of default Partition function tabulators and calculators, 
+Variants of default Partition function tabulators and calculators,
 based on CDSD-4000 format, specifically for CO2
 
 Routine Listing
@@ -22,35 +22,34 @@ Which inherit from:
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
-from scipy.interpolate import splrep, splev
+import time
+from os.path import exists, getmtime
+from warnings import warn
+
 import pandas as pd
+from scipy.interpolate import splev, splrep
+
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.db.molecules import ElectronicState
-from radis.misc.cache_files import load_h5_cache_file
-from radis.misc.cache_files import filter_metadata, save_to_hdf
 from radis.lbl.labels import (
     vib_lvl_name_cdsd_p,
     vib_lvl_name_cdsd_pc,
-    vib_lvl_name_cdsd_pcN,
     vib_lvl_name_cdsd_pcJN,
+    vib_lvl_name_cdsd_pcN,
 )
 from radis.levels.partfunc import RovibParFuncCalculator, RovibParFuncTabulator
+from radis.misc.cache_files import filter_metadata, load_h5_cache_file, save_to_hdf
 from radis.misc.warning import OutOfBoundError
-from warnings import warn
-from os.path import exists
-from os.path import getmtime
 from radis.test.utils import getTestFile
-import time
 
 # %% Variants of Tabulated partition functions (interpolate)
 
 
 class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
     """Return partition function of CO2 using a spline interpolation of
-    tabulated values
+    tabulated values used in [CDSD-4000]_
 
     Parameters
     ----------
@@ -62,6 +61,9 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
     -----
 
     Partition function calculated in CDSD by direct summation (Jmax=300)
+
+    The CDSD ``partition_functions.txt`` can be downloaded from the
+    [CDSD-4000]_ FTP : ftp://ftp.iao.ru/pub/CDSD-4000/
 
     See Also
     --------

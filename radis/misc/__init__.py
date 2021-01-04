@@ -8,48 +8,47 @@ CNRS UPR 288
 
 """
 
-from __future__ import absolute_import
 
 from .arrays import (
+    array_allclose,
+    autoturn,
+    bining,
+    calc_diff,
+    centered_diff,
+    count_nans,
+    evenly_distributed,
+    find_first,
+    find_nearest,
+    is_sorted,
+    is_sorted_backward,
+    logspace,
+    nantrapz,
     norm,
     norm_on,
     scale_to,
-    calc_diff,
-    find_nearest,
-    find_first,
-    autoturn,
-    centered_diff,
-    evenly_distributed,
-    bining,
-    count_nans,
-    array_allclose,
-    nantrapz,
-    logspace,
-    is_sorted,
-    is_sorted_backward,
 )
 from .basics import (
-    key_max_val,
-    exec_file,
-    remove_duplicates,
-    partition,
-    is_float,
-    list_if_float,
     compare_dict,
     compare_lists,
     compare_paths,
-    merge_lists,
+    exec_file,
+    is_float,
+    key_max_val,
+    list_if_float,
     make_folders,
-)
-from .curve import (
-    curve_add,
-    curve_substract,
-    curve_divide,
-    curve_multiply,
-    curve_distance,
+    merge_lists,
+    partition,
+    remove_duplicates,
 )
 from .config import getDatabankEntries, getDatabankList
+from .curve import (
+    curve_add,
+    curve_distance,
+    curve_divide,
+    curve_multiply,
+    curve_substract,
+)
 from .debug import export
-from .signal import resample, resample_even
 from .progress_bar import ProgressBar
-from .utils import getProjectRoot, NotInstalled, DatabankNotFound
+from .signal import resample, resample_even
+from .utils import DatabankNotFound, NotInstalled, getProjectRoot

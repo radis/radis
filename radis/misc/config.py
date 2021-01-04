@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
 Summary
 -------
 
@@ -9,7 +9,7 @@ Notes
 -----
 
 Create a ~/.radis file in your HOME that contains all machine-specific information
-(e.g: path to databanks). See :data:`~radis.misc.config.DBFORMAT` for expected 
+(e.g: path to databanks). See :data:`~radis.misc.config.DBFORMAT` for expected
 format
 
 Routine Listing
@@ -30,15 +30,13 @@ Routine Listing
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
-from radis.misc.utils import DatabankNotFound
 import configparser
-from os.path import expanduser, join, exists, dirname
-from six import string_types
-from radis.misc.basics import compare_lists, compare_dict, stdpath
-from radis.misc.utils import getProjectRoot
 import json
+from os.path import dirname, exists, expanduser, join
+
+from radis.misc.basics import compare_dict, compare_lists, stdpath
+from radis.misc.utils import DatabankNotFound, getProjectRoot
 
 # %% Functions to parse radis/config.json
 
@@ -66,7 +64,7 @@ DBFORMAT = r"""
 --------------------------
 
 [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-                                 #  or SpectrumFactory.load_databank() 
+                                 #  or SpectrumFactory.load_databank()
 info = HITEMP 2010 databank      #  whatever you want
 path =                           #  no "", multipath allowed
        D:\Databases\HITEMP-CO2\hitemp_07
@@ -76,67 +74,67 @@ format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cd
                                  # databank text file format. More info in
                                  # SpectrumFactory.load_databank function.
 parfuncfmt:                      #  'cdsd', 'hapi', etc.
-                                 # format to read tabulated partition function 
-                                 # file. If `hapi`, then HAPI (HITRAN Python 
+                                 # format to read tabulated partition function
+                                 # file. If `hapi`, then HAPI (HITRAN Python
                                  # interface) is used to retrieve them (valid if
-                                 # your databank is HITRAN data). HAPI is embedded 
-                                 # into RADIS. Check the version.            
+                                 # your databank is HITRAN data). HAPI is embedded
+                                 # into RADIS. Check the version.
 # Optional
 # ----------
 parfunc:                         #  path to tabulated partition function to use.
-                                 # If `parfuncfmt` is `hapi` then `parfunc` 
-                                 # should be the link to the hapi.py file. If 
-                                 # not given, then the hapi.py embedded in RADIS 
+                                 # If `parfuncfmt` is `hapi` then `parfunc`
+                                 # should be the link to the hapi.py file. If
+                                 # not given, then the hapi.py embedded in RADIS
                                  # is used (check version)
-levels_iso1                      #  path to energy levels (needed for non-eq 
+levels_iso1                      #  path to energy levels (needed for non-eq
                                  # calculations). Default None
 levels_iso2                      # etc
 levels_iso4                      # etc
-levelsfmt:                       #  'cdsd', etc. 
+levelsfmt:                       #  'cdsd', etc.
                                  # how to read the previous file. Default None.
-levelsZPE:                       #  zero-point-energy (cm-1): offset for all level 
+levelsZPE:                       #  zero-point-energy (cm-1): offset for all level
                                  # energies. Default 0 (if not given)
 
 --------------------------"""
 """str: Typical expected format of a ~/.radis entry::
 
     --------------------------
-    
+
     [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-                                     #  or SpectrumFactory.load_databank() 
+                                     #  or SpectrumFactory.load_databank()
     info = HITEMP 2010 databank      #  whatever you want
     path =                           #  no "", multipath allowed
            D:\Databases\HITEMP-CO2\hitemp_07
            D:\Databases\HITEMP-CO2\hitemp_08
            D:\Databases\HITEMP-CO2\hitemp_09
     format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                     # databank text file format. List of all 
+                                     # databank text file format. List of all
                                      # formats in :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
                                      # More info in
                                      # :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` function.
     parfuncfmt:                      #  'cdsd', 'hapi', etc.
-                                     # format to read tabulated partition function 
-                                     # file. If `hapi`, then HAPI (HITRAN Python 
+                                     # format to read tabulated partition function
+                                     # file. If `hapi`, then HAPI (HITRAN Python
                                      # interface) is used to retrieve them (valid if
-                                     # your databank is HITRAN data). HAPI is embedded 
-                                     # into RADIS. Check the version. 
+                                     # your databank is HITRAN data). HAPI is embedded
+                                     # into RADIS. Check the version.
                                      # List of all formats in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
     # Optional
     # ----------
     parfunc:                         #  path to tabulated partition function to use.
-                                     # If `parfuncfmt` is `hapi` then `parfunc` 
-                                     # should be the link to the hapi.py file. If 
-                                     # not given, then the hapi.py embedded in RADIS 
+                                     # If `parfuncfmt` is `hapi` then `parfunc`
+                                     # should be the link to the hapi.py file. If
+                                     # not given, then the hapi.py embedded in RADIS
                                      # is used (check version)
-    levels_iso1                      #  path to energy levels (needed for non-eq 
+    levels_iso1                      #  path to energy levels (needed for non-eq
                                      # calculations). Default None
     levels_iso2                      # etc
     levels_iso4                      # etc
-    levelsfmt:                       #  'cdsd', etc. 
+    levelsfmt:                       #  'cdsd', etc.
                                      # how to read the previous file. Default None.
-    levelsZPE:                       #  zero-point-energy (cm-1): offset for all level 
+    levelsZPE:                       #  zero-point-energy (cm-1): offset for all level
                                      # energies. Default 0 (if not given)
-    
+
     --------------------------
 
 For more information refer to the documentation: :ref:`Configuration file <label_lbl_config_file>` :
@@ -323,7 +321,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
         config[dbname]["info"] = dict_entries.pop("info")
 
     # ... Parse paths correctly
-    if dict_entries["path"] in string_types:
+    if isinstance(dict_entries["path"], str):
         config[dbname]["path"] = dict_entries.pop("path")
     else:  # list
         config[dbname]["path"] = "\n       ".join(dict_entries.pop("path"))

@@ -2,18 +2,10 @@
 """
 Determine gas mixture composition under chemical equilibrium using CANTERA.
 
-References
-----------
-
-.. [CANTERA]  D. G. Goodwin, H. K. Moffat, R. L. Speth, Cantera: An Object-oriented Software
-              Toolkit for Chemical Kinetics, Thermodynamics, and Transport Processes,
-              http://www.cantera.org, doi:10.5281/zenodo.170284, 2017.
-
 -------------------------------------------------------------------------------
 
 """
 
-from __future__ import absolute_import
 from radis.misc.utils import NotInstalled
 
 try:

@@ -10,13 +10,13 @@ Examples
 --------
 
 Run all tests::
-    
+
     cd radis/test
     pytest
-    
-Run only "fast" tests (tests that have a "fast" label, and should be 
+
+Run only "fast" tests (tests that have a "fast" label, and should be
 a few seconds only)::
-    
+
     cd radis/test
     pytest -m fast
 
@@ -24,17 +24,17 @@ a few seconds only)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 
 import os
+from os.path import dirname, exists, join
+
+from radis.db.utils import getFile
 from radis.misc.config import (
-    getDatabankList,
-    getDatabankEntries,
     addDatabankEntries,
     diffDatabankEntries,
+    getDatabankEntries,
+    getDatabankList,
 )
-from radis.db.utils import getFile
-from os.path import join, dirname, exists
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
 
@@ -275,13 +275,6 @@ def setup_test_line_databases(verbose=True):
         dbnames = []
 
     # %% Add test databases
-
-    def add_to_parser(config, name, dic):
-        for k, v in dic.items():
-            config[name][k] = v
-        if verbose:
-            print("Adding '{0}' database in ~/.radis".format(name))
-
     for dbname, dbentries in TEST_DATABASES.items():
 
         if dbname in dbnames:  # Check entries are correct

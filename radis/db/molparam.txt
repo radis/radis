@@ -1,17 +1,17 @@
-# Molecular parmaeters taken from HITRAN molparam.txt 
+# Molecular parmaeters taken from HITRAN molparam.txt
 # Reference
 # -----------
 # http://hitran.org/media/molparam.txt
 #
-# Reshaped to be read as a Pandas dataframe 
+# Reshaped to be read as a Pandas dataframe
 # >>> import pandas as pd
 # >>> molparam = pd.read_csv('molparam.txt', comment='#', delim_whitespace=True)
 #
-# Note 
+# Note
 # ---------
 # Isotope number was derived manually assuming the isonames were ordered in the database
 # The isotope name (ex: CO2 626) is kept for comparison if ever needed
-# 
+#
 # -----------------------------------------------------
 id iso isoname abundance     Q_296K      gj    mol_mass
 #   H2O (1)

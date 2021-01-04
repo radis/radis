@@ -17,12 +17,12 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 
 """
 
-from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
+
+from radis import Radiance_noslit, calc_spectrum, get_residual
+from radis.spectrum.compare import get_distance, plot_diff
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
-from radis.spectrum.compare import get_distance, plot_diff
-from radis import calc_spectrum, Radiance_noslit, get_residual
 
 # Test routines
 
