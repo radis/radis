@@ -180,7 +180,7 @@ is sometimes confusingly called *spectral intensity*.
   defined under thermal equilibrium.
 - ``'emisscoeff'``: the directional spectral emission density (typically in ``'mW/cm3/sr/nm'``).
 - ``'absorbance'``: the directional spectral absorbance (no dimension), also called *optical depth*.
-- ``'abscoeff'``: spectral absorption coefficient (typically in ``'cm-1'``).
+- ``'abscoeff'``: spectral absorption coefficient (typically in ``'cm-1'``), also called *opacity*.
   This is sometimes found as the *extinction coefficient* in the literature.
 
 Additionally, RADIS may calculate extra quantities such as:
@@ -417,13 +417,14 @@ from the spectral absorption coefficient if the path length is stored in the
 conditions.
 
 The :py:meth:`~radis.spectrum.rescale.update` method can be used to do that.
-Example::
+In the example below, we recompute transmittance from the absorption coefficient
+(opacity) ::
 
     # w, A are numpy arrays for wavenumber and absorption coefficient
     s = Spectrum.from_array(w, A, 'abscoeff', wunit='cm-1')
     s.update('transmittance_noslit')
 
-Or, all derivable quantities can be computed using ``.update('all')`` or simply ``.update()``::
+All derivable quantities can be computed using ``.update('all')`` or simply ``.update()``::
 
     s.update()
 
@@ -445,7 +446,7 @@ Rescale Spectrum with new path length
 Path length can be changed after the spectra was calculated with the
 :py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length` method.
 If the spectrum is not optically thin, this requires to solve the radiative
-transfer equation again, so the emisscoeff and abscoeff quantities
+transfer equation again, so the ``emisscoeff`` and ``abscoeff`` (opacity) quantities
 will have to be stored in the Spectrum, or any equivalent combination
 (radiance_noslit and absorbance, for instance).
 

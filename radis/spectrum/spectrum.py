@@ -26,7 +26,13 @@ Typical use::
     s.apply_slit(0.5, shape='triangular')
     s.plot('radiance')
 
-Spectrum objects can be stored, retrieved, rescaled, resamples::
+Spectrum objects can be modified, stored, resampled, rescaled, or retrieved after they have been created
+:py:meth:`~radis.spectrum.spectrum.Spectrum.store`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_mole_fraction`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.resample`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.store`,
+:py:func:`~radis.tools.database.load_spec` ::
 
     from radis import load_spec
     s = load_spec('co_calculation.spec')
@@ -35,6 +41,8 @@ Spectrum objects can be stored, retrieved, rescaled, resamples::
     s.resample(w_new)               # resample on new wavespace
     s.store('co_calculation2.spec')
 
+See the :ref:`Spectrum object <label_spectrum>` for more post-processing functions, or
+how to generate a spectrum from text.
 
 -------------------------------------------------------------------------------
 

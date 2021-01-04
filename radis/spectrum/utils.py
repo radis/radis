@@ -36,7 +36,7 @@ NON_CONVOLUTED_QUANTITIES = [
     "emisscoeff",
     "emisscoeff_continuum",
     "absorbance",
-    "abscoeff",
+    "abscoeff",  # opacity
     "abscoeff_continuum",
     "emissivity_noslit",
 ]
