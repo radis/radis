@@ -1000,8 +1000,10 @@ class Spectrum(object):
     def savetxt(self, filename, var, wunit="nm", Iunit="default"):
         """Export spectral quantity var to filename
 
-        (note that this will loose some information. You better save a Spectrum
-        object under .spec file with :meth:`~radis.spectrum.spectrum.Spectrum.store` )
+        (note that by doing this you will loose additional information, such
+         as the calculation conditions or the units. You better save a Spectrum
+         object under a .spec file with :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
+         and load it afterwards with :py:func:`~radis.tools.database.load_spec`)
 
         Parameters
         ----------
@@ -2787,11 +2789,12 @@ class Spectrum(object):
             explicitely give a filename to save
 
         compress: boolean
-            if ``True``, removes all quantities that can be regenerated with the
-            :meth:`~radis.spectrum.spectrum.Spectrum.update` method
+            if ``False``, save under text format, readable with any editor.
+            if ``True``, saves under binary format. Faster and takes less space.
+            If ``2``, removes all quantities that can be regenerated with s.update(),
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
-            Default ``False``
+            Default ``True``.
 
         add_info: list
             append these parameters and their values if they are in conditions
