@@ -29,15 +29,10 @@ An online environment for advanced spectrum processing and comparison with exper
 
 
 .. image:: https://user-images.githubusercontent.com/16088743/103448773-7d8f0200-4c9e-11eb-8bf1-ce3385519b77.png
-    :target: https://github.com/radis/radis-lab
-    :alt: https://github.com/radis/radis-lab
+    :target: https://radis.github.io/radis-lab/
+    :alt: https://radis.github.io/radis-lab/
 
-
-Get started :
-
-.. image:: https://mybinder.org/badge.svg
-    :target: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
-    :alt: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
+🌱 Try it : https://radis.github.io/radis-lab/
 
 See more `on GitHub <https://github.com/radis/radis-lab>`__
 

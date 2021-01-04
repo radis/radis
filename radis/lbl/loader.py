@@ -1813,30 +1813,14 @@ class DatabankLoader(object):
                 : database[0].rindex("/") + 1
             ]  # remove the last *.npy portion
             try:
-                print("Loading iso...", end=" ")
                 iso = np.load(dir_path + "iso.npy")
-                print("done!")
-                print("Loading v0...", end=" ")
                 v0 = np.load(dir_path + "v0.npy")
-                print("done!")
-                print("Loading da...", end=" ")
                 da = np.load(dir_path + "da.npy")
-                print("done!")
-                print("Loading log_2gs...", end=" ")
                 log_2gs = np.load(dir_path + "log_2gs.npy")
-                print("done!")
-                print("Loading S0...", end=" ")
                 S0 = np.load(dir_path + "S0.npy")
-                print("done!")
-                print("Loading El...", end=" ")
                 El = np.load(dir_path + "El.npy")
-                print("done!")
-                print("Loading log_2vMm...", end=" ")
                 log_2vMm = np.load(dir_path + "log_2vMm.npy")
-                print("done!")
-                print("Loading na...", end=" ")
                 na = np.load(dir_path + "na.npy")
-                print("done!")
                 df = pd.DataFrame(
                     {
                         "iso": iso,

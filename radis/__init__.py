@@ -174,16 +174,15 @@ def get_version(verbose=False, add_git_number=True):
 
         cd = _chdir(os.path.dirname(__file__))
         try:
-            label = subprocess.check_output("git describe")
-            label = label.decode().strip()
-            label = "-" + label
+            label = subprocess.check_output("git describe", stderr=subprocess.DEVNULL)
         except:
             if verbose:
                 print("couldnt get git version: {0}".format(sys.exc_info()[1]))
             # probably not a git session. drop
-            label = ""
+        else:
+            commit = label.decode().strip().split("-")[-1]
+            version = version + "-" + commit
         finally:
-            version = version + label
             cd.__del__()
 
     return version

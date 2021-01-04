@@ -19,7 +19,7 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
                          **kwargs)
     sf.fetch_databank()        # autodownload from HITRAN
     s = sf.eq_spectrum(Tgas=300)
-    s.plot('abscoeff')
+    s.plot('abscoeff')          # opacity
 
     # Here we get some extra informations:
     s.plot('radiance', wunit='nm',
