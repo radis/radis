@@ -1,6 +1,5 @@
-
- | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder| |badge_gitter| |badge_slack|
- | |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
+ | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder| |badge_gitter|
+ | |badge_slack| |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
 
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
