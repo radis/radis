@@ -1,5 +1,6 @@
+
  | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder| |badge_gitter| |badge_slack|
- | |badge_contributors| |badge_travis| |badge_coverage| |badge_license|
+ | |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
 
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
@@ -181,7 +182,7 @@ Links
 
 - Source Code: |badge_stars| |badge_contributors| |badge_license|
 
-- Test Status: |badge_travis| |badge_coverage|
+- Test Status: |badge_travis| |badge_coverage| |badge_asv|
 
 - PyPi Repository: |badge_pypi|  |badge_pypistats|
 
@@ -239,6 +240,10 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg
                     :target: https://codecov.io/gh/radis/radis
                     :alt: Coverage
+
+.. |badge_asv| image:: http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat
+                  :target: https://github.com/radis/radis-benchmark
+                  :alt: Benchmarks
 
 .. |badge_pypi| image:: https://img.shields.io/pypi/v/radis.svg
                 :target: https://pypi.python.org/pypi/radis

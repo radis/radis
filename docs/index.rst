@@ -27,9 +27,9 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
     pip install radis
 
 **That's it!** You can now run your first example below.
-If you encounter any problem, or to upgrade the package later, please refer to the
-:ref:`detailed installation procedure <label_install>` or
-`report an issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_.
+If you encounter any problem or if you need to upgrade, please refer to the
+:ref:`detailed installation procedure <label_install>`. If you don't have a Python
+environment, try :ref:`🌱 RADIS Online <label_radis_online> first !
 
 .. _label_first_example:
 
@@ -92,7 +92,7 @@ at 3400 K calculated with the [HITEMP-2010]_ and [CDSD-4000]_ line databases):
 
 Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-processing functions
 (:ref:`rescale <label_spectrum_rescale>` , :ref:`crop<label_spectrum_offset_crop>`,
-:ref:`remove baselines<label_spectrum_remove_baseline>, :ref:`store<label_spectrum_store>`,
+:ref:`remove baselines<label_spectrum_remove_baseline>`, :ref:`store<label_spectrum_store>`,
 :ref:`combine along the line-of-sight <label_spectrum_line_of_sight>`,
 :ref:`identify each line <label_spectrum_linesurvey>`,
 :ref:`manipulate multiple spectra at once <label_spectrum_database>`, etc.)
@@ -110,11 +110,13 @@ For instance, run the Quick Start example on the link below:
     :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
     :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
 
-Or start a bare RADIS online session:
+Or use :ref:`🌱 RADIS-lab <label_radis_lab>` to start a full online environment for advanced spectrum processing
+and comparison with experimental data :
 
 .. image:: https://mybinder.org/badge.svg
-    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
-    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+    :target: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
+
 
 More examples
 =============
@@ -184,6 +186,8 @@ Content
    spectrum/spectrum
    los/los
    examples/examples
+   examples/hitran-spectra
+   online/online
    dev/developer
    references/references
 

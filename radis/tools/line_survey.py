@@ -64,8 +64,7 @@ def LineSurvey(
     lineinfo=["int", "A", "El"],
     barwidth=0.07,
     yscale="log",
-    display=True,
-    filename="line-survey.html",
+    writefile=None,
     xunit=None,
     yunit=None,  # deprecated
 ):
@@ -108,11 +107,9 @@ def LineSurvey(
     Other Parameters
     ----------------
 
-    display: boolean
-        if True, open the image in a browser. Default ``True``.
-
-    filename: str
-        filename to save .html
+    writefile: str
+        if not ``None``, a valid filename to save the plot under .html format.
+        If ``None``, use the ``fig`` object returned to show the plot.
 
     yscale: ``'log'``, ``'linear'``
         Default ``'log'``
@@ -120,8 +117,11 @@ def LineSurvey(
     Returns
     -------
 
-    Plot in Plotly. See Output in [1]_
+    fig: a Plotly figure.
+        If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
+        to export to an html file.
 
+    See typical output in [1]_
 
     Examples
     --------
@@ -526,7 +526,11 @@ def LineSurvey(
     # %% Plot
 
     fig = go.Figure(data=l, layout=layout)
-    py.plot(fig, filename=filename, auto_open=display)
+
+    if writefile:
+        py.plot(fig, filename=writefile, auto_open=True)
+
+    return fig
 
 
 # %% Test

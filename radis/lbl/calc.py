@@ -90,8 +90,8 @@ def calc_spectrum(
             be dictionaries.
             If ``None``, the molecule can be infered
             from the database files being loaded. See the list of supported molecules
-            in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
-            and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
+            in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
+            and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
             Default ``None``.
     ​
         isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict

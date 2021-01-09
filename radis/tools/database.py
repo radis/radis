@@ -142,7 +142,7 @@ def save(
     s,
     path,
     discard=[],
-    compress=False,
+    compress=True,
     add_info=None,
     add_date=None,
     if_exists_then="increment",
@@ -170,6 +170,7 @@ def save(
         parameters to discard. To save some memory.
 
     compress: boolean
+        if ``False``, save under text format, readable with any editor.
         if ``True``, saves under binary format. Faster and takes less space.
         If ``2``, removes all quantities that can be regenerated with s.update(),
         e.g, transmittance if abscoeff and path length are given, radiance if
@@ -427,7 +428,7 @@ def _compress(s, sjson):
 # %% Load functions
 
 
-def load_spec(file, binary=False):  # , return_binary_status=False):
+def load_spec(file, binary=True):  # , return_binary_status=False):
     """Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object.
     Adds ``file`` in the Spectrum :attr:`~radis.spectrum.spectrum.Spectrum.file`
     attribute.
@@ -439,7 +440,7 @@ def load_spec(file, binary=False):  # , return_binary_status=False):
         .spec file to load
 
     binary: boolean
-        set to True if the file is encoded as binary. Default ``False``. Will autodetect
+        set to ``True`` if the file is encoded as binary. Default ``True``. Will autodetect
         if it fails, but that may take longer.
 
     Returns
@@ -838,6 +839,14 @@ def _fix_format(file, sload):
                     + "database ASAP."
                 )
                 sload["units"][var] = ""
+            if "cm_1" in unit:
+                printr(
+                    "File {0}".format(basename(file))
+                    + " has a deprecrated structure "
+                    + "(cm_1 is now written cm-1''). Fixed this time, but regenerate "
+                    + "database ASAP."
+                )
+                sload["units"][var] = sload["units"][var].replace("cm_1", "cm-1")
 
     return sload, fixed
 

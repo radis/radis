@@ -19,7 +19,7 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
                          **kwargs)
     sf.fetch_databank()        # autodownload from HITRAN
     s = sf.eq_spectrum(Tgas=300)
-    s.plot('abscoeff')
+    s.plot('abscoeff')          # opacity
 
     # Here we get some extra informations:
     s.plot('radiance', wunit='nm',
@@ -171,8 +171,8 @@ class SpectrumFactory(BandFactory):
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
         from the database files being loaded. See the list of supported molecules
-        in :py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`
-        and :py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`.
+        in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
+        and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
         Default ``None``.
 
     isotope: int, list, str of the form '1,2', or 'all'
@@ -830,7 +830,7 @@ class SpectrumFactory(BandFactory):
                     "lines_cutoff": self._Nlines_cutoff,
                     "lines_in_continuum": self._Nlines_in_continuum,
                     "thermal_equilibrium": True,
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 
@@ -1176,7 +1176,7 @@ class SpectrumFactory(BandFactory):
                     "calculation_time": t,
                     "lines_calculated": _Nlines_calculated,
                     "thermal_equilibrium": True,
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 
@@ -1511,7 +1511,7 @@ class SpectrumFactory(BandFactory):
                     "lines_cutoff": self._Nlines_cutoff,
                     "lines_in_continuum": self._Nlines_in_continuum,
                     "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
-                    "radis_version": get_version(add_git_number=False),
+                    "radis_version": get_version(),
                 }
             )
 

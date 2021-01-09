@@ -49,7 +49,7 @@ from radis.test.utils import getTestFile
 
 class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
     """Return partition function of CO2 using a spline interpolation of
-    tabulated values
+    tabulated values used in [CDSD-4000]_
 
     Parameters
     ----------
@@ -61,6 +61,9 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
     -----
 
     Partition function calculated in CDSD by direct summation (Jmax=300)
+
+    The CDSD ``partition_functions.txt`` can be downloaded from the
+    [CDSD-4000]_ FTP : ftp://ftp.iao.ru/pub/CDSD-4000/
 
     See Also
     --------

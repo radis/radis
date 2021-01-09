@@ -26,7 +26,13 @@ Typical use::
     s.apply_slit(0.5, shape='triangular')
     s.plot('radiance')
 
-Spectrum objects can be stored, retrieved, rescaled, resamples::
+Spectrum objects can be modified, stored, resampled, rescaled, or retrieved after they have been created
+:py:meth:`~radis.spectrum.spectrum.Spectrum.store`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_mole_fraction`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.resample`,
+:py:meth:`~radis.spectrum.spectrum.Spectrum.store`,
+:py:func:`~radis.tools.database.load_spec` ::
 
     from radis import load_spec
     s = load_spec('co_calculation.spec')
@@ -35,6 +41,8 @@ Spectrum objects can be stored, retrieved, rescaled, resamples::
     s.resample(w_new)               # resample on new wavespace
     s.store('co_calculation2.spec')
 
+See the :ref:`Spectrum object <label_spectrum>` for more post-processing functions, or
+how to generate a spectrum from text.
 
 -------------------------------------------------------------------------------
 
@@ -67,6 +75,7 @@ from radis.spectrum.utils import (
     make_up,
     make_up_unit,
     print_conditions,
+    split_and_plot_by_parts,
 )
 
 # %% Spectrum class to hold results )
@@ -999,8 +1008,10 @@ class Spectrum(object):
     def savetxt(self, filename, var, wunit="nm", Iunit="default"):
         """Export spectral quantity var to filename
 
-        (note that this will loose some information. You better save a Spectrum
-        object under .spec file with :meth:`~radis.spectrum.spectrum.Spectrum.store` )
+        (note that by doing this you will loose additional information, such
+         as the calculation conditions or the units. You better save a Spectrum
+         object under a .spec file with :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
+         and load it afterwards with :py:func:`~radis.tools.database.load_spec`)
 
         Parameters
         ----------
@@ -1451,9 +1462,10 @@ class Spectrum(object):
         show_points=False,
         nfig=None,
         yscale="linear",
-        plot_medium="vacuum_only",
+        show_medium="vacuum_only",
         normalize=False,
         force=False,
+        plot_by_parts=False,
         **kwargs
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
@@ -1490,7 +1502,7 @@ class Spectrum(object):
                 s1.plot()
                 s2.plot(nfig='same')
 
-        plot_medium: bool, ``'vacuum_only'``
+        show_medium: bool, ``'vacuum_only'``
             if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
             in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``,
             plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
@@ -1502,6 +1514,13 @@ class Spectrum(object):
 
         normalize: boolean,  or tuple.
             option to normalize quantity to 1 (ex: for radiance). Default ``False``
+
+        plot_by_parts: bool
+            if ``True``, look for discontinuities in the wavespace and plot
+            the different parts without connecting lines. Useful for experimental
+            spectra produced by overlapping step-and-glue. Additional parameters
+            read from ``kwargs`` : ``split_threshold`` and ``cutwings``. See more in
+            :py:func:`~radis.spectrum.utils.split_and_plot_by_parts`.
 
         force: bool
             plotting on an existing figure is forbidden if labels are not the
@@ -1536,6 +1555,11 @@ class Spectrum(object):
 
         """
 
+        # Deprecated
+        if "plot_medium" in kwargs:
+            show_medium = kwargs.pop("plot_medium")
+            warn(DeprecationWarning("`plot_medium` was renamed to `show_medium`"))
+
         # Check inputs, get defaults
         # ------
 
@@ -1565,7 +1589,7 @@ class Spectrum(object):
         x, y = self.get(var, wunit=wunit, Iunit=Iunit)
 
         # Get labels
-        xlabel = format_xlabel(wunit, plot_medium)
+        xlabel = format_xlabel(wunit, show_medium)
         if Iunit == "default":
             try:
                 Iunit0 = self.units[var]
@@ -1629,10 +1653,19 @@ class Spectrum(object):
         # Add a label. Not shown by default but User can set it if using plt.legend()
         # (useful when plotting multiple plots on same figure)
         label = kwargs.pop("label", self.get_name())
-        # note: '-k' by default with style origin for first plot
-        (line,) = plt.plot(x, y, label=label, **kwargs)
+
+        # Actual plot :
+        # ... note: '-k' by default with style origin for first plot
+        if not plot_by_parts:
+            (line,) = plt.plot(x, y, label=label, **kwargs)
+        else:
+            (line,) = split_and_plot_by_parts(x, y, ax=fig.gca(), label=label, **kwargs)
+            # note: split_and_plot_by_parts pops 'cutwing' & 'split_threshold' from kwargs
+
         if show_points:
             plt.plot(x, y, "o", color="lightgrey", **kwargs)
+
+        # Labels
         plt.ticklabel_format(useOffset=False, axis="x")
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
@@ -2567,7 +2600,15 @@ class Spectrum(object):
 
         return fig, ax
 
-    def line_survey(self, overlay=None, wunit="default", cutoff=None, *args, **kwargs):
+    def line_survey(
+        self,
+        overlay=None,
+        wunit="default",
+        writefile=None,
+        cutoff=None,
+        *args,
+        **kwargs
+    ):
         """Plot Line Survey (all linestrengths used for calculation)
         Output in Plotly (html)
 
@@ -2594,6 +2635,10 @@ class Spectrum(object):
         Other Parameters
         ----------------
 
+        writefile: str
+            if not ``None``, a valid filename to save the plot under .html format.
+            If ``None``, use the ``fig`` object returned to show the plot.
+
         kwargs:: dict
             Other inputs are passed to :func:`~radis.tools.line_survey.LineSurvey`.
             Example below (see :py:func:`~radis.tools.line_survey.LineSurvey`
@@ -2615,6 +2660,10 @@ class Spectrum(object):
 
         Returns
         -------
+
+        fig: a Plotly figure.
+            If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
+            to export to an html file.
 
         Plot in Plotly. See Output in [1]_
 
@@ -2696,11 +2745,19 @@ class Spectrum(object):
             overlay = [get_overlay(ov) for ov in overlay]
 
             return LineSurvey(
-                self, overlay=overlay, wunit=wunit, cutoff=cutoff, *args, **kwargs
+                self,
+                overlay=overlay,
+                wunit=wunit,
+                writefile=writefile,
+                cutoff=cutoff,
+                *args,
+                **kwargs
             )
 
         else:
-            return LineSurvey(self, wunit=wunit, cutoff=cutoff, *args, **kwargs)
+            return LineSurvey(
+                self, wunit=wunit, writefile=writefile, cutoff=cutoff, *args, **kwargs
+            )
 
     def get_conditions(self):
         """Get all physical / computational parameters.
@@ -2708,7 +2765,7 @@ class Spectrum(object):
         See Also
         --------
 
-        :py:method:`~radis.spectrum.Spectrum.print_conditions`,
+        :py:meth:`~radis.spectrum.Spectrum.print_conditions`,
         :ref:`the Spectrum page <label_spectrum>`
         """
 
@@ -2764,11 +2821,12 @@ class Spectrum(object):
             explicitely give a filename to save
 
         compress: boolean
-            if ``True``, removes all quantities that can be regenerated with the
-            :meth:`~radis.spectrum.spectrum.Spectrum.update` method
+            if ``False``, save under text format, readable with any editor.
+            if ``True``, saves under binary format. Faster and takes less space.
+            If ``2``, removes all quantities that can be regenerated with s.update(),
             e.g, transmittance if abscoeff and path length are given, radiance if
             emisscoeff and abscoeff are given in non-optically thin case, etc.
-            Default ``False``
+            Default ``True``.
 
         add_info: list
             append these parameters and their values if they are in conditions

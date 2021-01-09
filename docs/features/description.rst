@@ -6,9 +6,9 @@ Written as a general purpose radiative solver, the code is built around the [HIT
 levels are read from tabulated databases or calculated from Dunham developments.
 Boltzmann, Treanor, and state specific vibrational distributions can be generated.
 Thus far, |CO2|, CO are featured for non-equilibrium calculations
-(:py:data:`~radis.io.MOLECULES_LIST_NONEQUILIBRIUM`),
+(:py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`),
 and all species present in the HITRAN database are featured for equilibrium
-calculations (:py:data:`~radis.io.MOLECULES_LIST_EQUILIBRIUM`).
+calculations (:py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`).
 
 To fit experimental spectra, RADIS includes a
 :py:class:`~radis.tools.line_survey.LineSurvey` tool, an
