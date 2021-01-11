@@ -118,7 +118,7 @@ Or start a bare RADIS online session:
 Cite
 ----
 
-Articles are available at |badge_article1| |badge_article2| 
+Articles are available at |badge_article1| |badge_article2|
 
 For reproducibility, do not forget to cite the line database used, and the spectroscopic constants
 if running nonquilibrium  calculations. See `How to cite? <https://radis.readthedocs.io/en/latest/references/references.html#cite>`__
@@ -177,7 +177,7 @@ Links
 
 - Help: |badge_gitter| |badge_slack|  `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 
-- Articles: |badge_article1| |badge_article2| 
+- Articles: |badge_article1| |badge_article2|
 
 - Source Code: |badge_stars| |badge_contributors| |badge_license|
 
@@ -271,6 +271,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
+
 
 
 
