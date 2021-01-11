@@ -18,7 +18,8 @@ Cite
 
 If using RADIS for your work, cite:
 
-- the line-by-line code as [RADIS-2018]_ |badge_article|
+- the line-by-line code as [RADIS-2018]_ |badge_article1|
+- the new spectral synthesis algorithm [Spectral Synthesis Algorithm]_ |badge_article2|
 - the RADIS version number. Get your version with py:func:`~radis.get_version`
   (latest version available is |badge_pypi|) ::
 
@@ -40,7 +41,7 @@ RADIS:
 
 - Help: |badge_gitter| `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 
-- Article: |badge_article|
+- RADIS Articles: |badge_article1| |badge_article2|
 
 - Source Code: |badge_stars| |badge_contributors| |badge_license|
 
@@ -58,9 +59,13 @@ RADIS:
                 :target: https://radis.readthedocs.io/en/latest/?badge=latest
                 :alt: Documentation Status
 
-.. |badge_article| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+.. |badge_article1| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
                    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
-                   :alt: Article
+                   :alt: Main Article
+
+.. |badge_article2| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2020.107476.svg
+                   :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407320310049
+                   :alt: Spectral Synthesis Algorithm
 
 .. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star
                 :target: https://github.com/radis/radis/stargazers
