@@ -49,6 +49,7 @@ def calc_spectrum(
     use_cached=True,
     verbose=True,
     mode="cpu",
+    cutoff=1e-27,
     **kwargs
 ):
     """Multipurpose function to calculate :class:`~radis.spectrum.spectrum.Spectrum`
@@ -156,6 +157,9 @@ def calc_spectrum(
         wstep: float (cm-1)
             Spacing of calculated spectrum. Default ``0.01 cm-1``
     ​
+        Other Parameters
+        ----------------
+
         broadening_max_width: float (cm-1)
             Full width over which to compute the broadening. Large values will create
             a huge performance drop (scales as ~broadening_width^2 without DLM)
@@ -163,9 +167,11 @@ def calc_spectrum(
             on each side) to take into account overlaps from out-of-range lines.
             Default ``10`` cm-1.
     ​
-        Other Parameters
-        ----------------
-    ​
+        cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
+            discard linestrengths that are lower that this, to reduce calculation
+            times. ``1e-27`` is what is generally used to generate databases such as
+            CDSD. If ``0``, no cutoff. Default ``1e-27``.
+
         optimization : ``"simple"``, ``"min-RMS"``, ``None``
             If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used:
             - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_)
@@ -443,6 +449,7 @@ def calc_spectrum(
                 medium=medium,
                 wstep=wstep,
                 broadening_max_width=broadening_max_width,
+                cutoff=cutoff,
                 optimization=optimization,
                 name=name,
                 use_cached=use_cached,
@@ -474,6 +481,7 @@ def _calc_spectrum(
     medium,
     wstep,
     broadening_max_width,
+    cutoff,
     optimization,
     name,
     use_cached,
@@ -551,6 +559,7 @@ def _calc_spectrum(
         pressure=pressure,
         wstep=wstep,
         broadening_max_width=broadening_max_width,
+        cutoff=cutoff,
         db_use_cached=use_cached,
         verbose=verbose,
         optimization=optimization,

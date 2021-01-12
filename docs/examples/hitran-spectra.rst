@@ -71,7 +71,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='H2O',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -91,7 +91,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='CO2',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -112,7 +112,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='O3',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -134,7 +134,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='N2O',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -148,7 +148,7 @@ The code to calculate each molecule is shown below:
 
 
 5. CO
-=====-
+=====
 
 - 5 	``'CO'`` : 	Carbon Monoxide absorption coefficient (opacity) at 300 K ::
 
@@ -157,7 +157,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='CO',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -179,7 +179,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='CH4',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -207,7 +207,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='NO',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -229,7 +229,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='SO2',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -252,7 +252,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='NO2',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -274,7 +274,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='NH3',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -295,7 +295,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='HNO3',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -317,7 +317,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='OH',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -339,7 +339,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='HF',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -361,7 +361,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='HCl',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -383,7 +383,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='HBr',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -404,7 +404,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='HI',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -426,7 +426,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='ClO',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -448,7 +448,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='OCS',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -469,7 +469,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='H2CO',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -491,7 +491,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='HOCl',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -526,7 +526,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='CH3Cl',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -547,7 +547,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='H2O2',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -568,7 +568,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='C2H2',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -590,7 +590,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='C2H6',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -612,7 +612,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='PH3',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -633,7 +633,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='COF2',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -662,7 +662,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='H2S',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -683,7 +683,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='HCOOH',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -705,7 +705,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='HO2',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
@@ -740,7 +740,7 @@ The code to calculate each molecule is shown below:
                       Tgas=300,
                       pressure=1,
                       molecule='NO+',
-                      lineshape_optimization=None,
+                      optimization=None,
                       cutoff=1e-23,
                       isotope='1')
     s.plot('abscoeff', wunit='nm')
