@@ -1334,8 +1334,28 @@ class DatabankLoader(object):
                     + ", or use one of the predefined databases in your"
                     + " ~/.radis: {0}".format(",".join(dblist))
                 )
+                
+        # Check input types are correct
+        if isinstance(path, string_types):
+            path = [path]
+        
+        path_list = []
+        for path_i in path:
+            path_list += get_files_from_regex(path_i)
+        path = path_list
+        # Ensure that `path` does not contain the cached dataset files in
+        # case a wildcard input is given by the user. For instance, if the
+        # given input is "cdsd_hitemp_09_frag*", path should not contain both
+        # "cdsd_hitemp_09_fragment.txt" and "cdsd_hitemp_09_fragment.h5".
 
-        # Check database format
+        # Reference: https://github.com/radis/radis/issues/121
+
+        filtered_path = [fname for fname in path]
+        for fname in path:
+            if cache_file_name(fname) in path and cache_file_name(fname) != fname:
+                filtered_path.remove(cache_file_name(fname))
+        path = filtered_path
+
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
@@ -1898,65 +1918,6 @@ class DatabankLoader(object):
                 if __debug__:
                     printdbg("Loading {0}/{1}".format(i + 1, len(files)))
 
-                if db_assumed_sorted and len(files) > 1:
-                    # no need to check the first file if there is only one file anyway
-                    # Note on performance: reading the first line of .txt file is still
-                    # much faster than reading the whole hdf5 file
-                    if dbformat == "cdsd-hitemp":
-                        df = cdsd2df(
-                            filename,
-                            version="hitemp",
-                            count=1,
-                            cache=False,
-                            verbose=False,
-                            drop_non_numeric=False,
-                        )
-                        if df.wav.loc[0] > wavenum_max:
-                            if verbose:
-                                print(
-                                    "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
-                                        filename, wavenum_max
-                                    )
-                                )
-                            continue
-                    elif dbformat == "cdsd-4000":
-                        df = cdsd2df(
-                            filename,
-                            version="4000",
-                            count=1,
-                            cache=False,
-                            verbose=False,
-                            drop_non_numeric=False,
-                        )
-                        if df.wav.loc[0] > wavenum_max:
-                            if verbose:
-                                print(
-                                    "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
-                                        filename, wavenum_max
-                                    )
-                                )
-                            continue
-                    elif dbformat == "hitran":
-                        df = hit2df(
-                            filename,
-                            count=1,
-                            cache=False,
-                            verbose=False,
-                            drop_non_numeric=False,
-                        )
-                        if df.wav.loc[0] > wavenum_max:
-                            if verbose:
-                                print(
-                                    "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
-                                        filename, wavenum_max
-                                    )
-                                )
-                            continue
-                    else:
-                        raise ValueError(
-                            "The database format is unknown: {0}".format(dbformat)
-                        )
-
                 # Now read all the lines
                 # ... this is where the cache files are read/generated.
                 if dbformat == "cdsd-hitemp":
@@ -1966,7 +1927,12 @@ class DatabankLoader(object):
                         cache=db_use_cached,
                         verbose=verbose,
                         drop_non_numeric=True,
+                        wavenum_min=wavenum_min,
+                        wavenum_max=wavenum_max,
                     )
+                    if isinstance(df, str) :
+                        if df == "IrrelevantFile":
+                            continue
                 elif dbformat == "cdsd-4000":
                     df = cdsd2df(
                         filename,
@@ -1974,28 +1940,24 @@ class DatabankLoader(object):
                         cache=db_use_cached,
                         verbose=verbose,
                         drop_non_numeric=True,
+                        wavenum_min=wavenum_min,
+                        wavenum_max=wavenum_max,
                     )
+                    if isinstance(df, str) :
+                        if df == "IrrelevantFile":
+                            continue
                 elif dbformat == "hitran":
                     df = hit2df(
                         filename,
                         cache=db_use_cached,
                         verbose=verbose,
                         drop_non_numeric=True,
+                        wavenum_min=wavenum_min,
+                        wavenum_max=wavenum_max,
                     )
                 else:
                     raise ValueError("Unknown dbformat: {0}".format(dbformat))
-
-                # Drop the end
-                if db_assumed_sorted:
-                    if df.wav.iloc[-1] < wavenum_min:
-                        if verbose:
-                            print(
-                                "Database file {0} < {1:.6f}cm-1: irrelevant and rejected".format(
-                                    filename, wavenum_min
-                                )
-                            )
-                        continue
-
+                
                 # Drop columns (helps fix some Memory errors)
                 dropped = []
                 for col in df.columns:

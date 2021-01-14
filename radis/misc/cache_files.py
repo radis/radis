@@ -43,11 +43,15 @@ import radis
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printm, printr
+from numpy import Inf
+
 
 
 class DeprecatedFileError(DeprecationWarning):
     pass
 
+class IrrelevantFileError(Warning):
+    pass
 
 """str: forces to regenerate cache files that were created in a previous version"""
 
@@ -64,6 +68,8 @@ def load_h5_cache_file(
     current_version,
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
     verbose=True,
+    wavenum_min=0.0,
+    wavenum_max=Inf,
 ):
     """Function to load a h5 cache file
 
@@ -149,7 +155,27 @@ def load_h5_cache_file(
                 )
             os.remove(cachefile)
             return None
-    # 4. File is not not deprecated: read the content.
+    # 4. File is not not deprecated: read the the extremum wavenumbers.
+    try:
+        check_relevancy(
+            cachefile,
+            wavenum_min,
+            wavenum_max,
+        )
+    # ... if irrelevant, raise an error only if 'force'
+    except IrrelevantFileError as err:
+        if use_cached == "force":
+            raise err
+        else:
+            if True:
+                printr(
+                    "Database file {0} irrelevant and not loaded".format(
+                        cachefile
+                    )
+                )
+            return "IrrelevantFile"
+        
+    # 5. File is relevant: read the content.
     else:
         df = None
         if verbose >= 2:
@@ -332,6 +358,8 @@ def check_not_deprecated(
     # Raise an error if version is not found
     try:
         file_version = attrs.pop("version")
+        attrs.pop("wavenum_min")
+        attrs.pop("wavenum_max")  
     except KeyError:
         raise DeprecatedFileError(
             "File {0} has been generated in a deprecated ".format(file)
@@ -376,8 +404,8 @@ def check_not_deprecated(
             + "Do you own a DeLorean? Delete the file manually if you understand what happened"
         )
 
-    # Compare metadata
-    metadata = _h5_compatible(metadata)
+    # Compare metadata except wavenum_min ann wavenum_max
+    metadata = _h5_compatible(metadata)  
     out, compare_string = compare_dict(
         metadata, attrs, verbose=False, return_string=True
     )
@@ -402,6 +430,46 @@ def _h5_compatible(a_dict):
         else:
             out[k] = str(v)  # convert to str
     return out
+
+def check_relevancy(
+    file,
+    wavenum_min,
+    wavenum_max,
+):
+    """Make sure cache file is relevant: checks that  wavenumber min and
+    wavenumber max in ``metadata`` are relevant for the specified spectral
+    range.
+
+    Parameters
+    ----------
+
+    file: str
+        a `` .h5`` cache file for Energy Levels
+
+    wavenum_min: float
+        the minimum wavenumber relevant for the calcul.
+
+    wavenum_max: float
+        the maximum wavenumber relevant for the calcul.
+
+    """
+
+    # Get attributes wavenum_min and wavenum_max
+    # check_not_deprecated already test their existence so we are safe
+    hf = h5py.File(file, "r")
+    attrs = dict(hf.attrs)
+    file_wavenum_min = attrs.pop("wavenum_min")
+    file_wavenum_max = attrs.pop("wavenum_max")
+
+    if file_wavenum_max < wavenum_min:
+        raise IrrelevantFileError(
+            "Database file {0} < {1:.6f}cm-1: irrelevant and not loaded".format(file, wavenum_min)
+            )
+    if wavenum_max < file_wavenum_min:
+        raise IrrelevantFileError(
+            "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(file, wavenum_max)
+            )
+
 
 
 def _warn_if_object_columns(df, fname):
