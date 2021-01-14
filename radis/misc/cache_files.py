@@ -46,12 +46,13 @@ from radis.misc.printer import printm, printr
 from numpy import Inf
 
 
-
 class DeprecatedFileError(DeprecationWarning):
     pass
 
+
 class IrrelevantFileError(Warning):
     pass
+
 
 """str: forces to regenerate cache files that were created in a previous version"""
 
@@ -168,13 +169,9 @@ def load_h5_cache_file(
             raise err
         else:
             if True:
-                printr(
-                    "Database file {0} irrelevant and not loaded".format(
-                        cachefile
-                    )
-                )
+                printr("Database file {0} irrelevant and not loaded".format(cachefile))
             return "IrrelevantFile"
-        
+
     # 5. File is relevant: read the content.
     else:
         df = None
@@ -359,7 +356,7 @@ def check_not_deprecated(
     try:
         file_version = attrs.pop("version")
         attrs.pop("wavenum_min")
-        attrs.pop("wavenum_max")  
+        attrs.pop("wavenum_max")
     except KeyError:
         raise DeprecatedFileError(
             "File {0} has been generated in a deprecated ".format(file)
@@ -405,7 +402,7 @@ def check_not_deprecated(
         )
 
     # Compare metadata except wavenum_min ann wavenum_max
-    metadata = _h5_compatible(metadata)  
+    metadata = _h5_compatible(metadata)
     out, compare_string = compare_dict(
         metadata, attrs, verbose=False, return_string=True
     )
@@ -430,6 +427,7 @@ def _h5_compatible(a_dict):
         else:
             out[k] = str(v)  # convert to str
     return out
+
 
 def check_relevancy(
     file,
@@ -463,13 +461,16 @@ def check_relevancy(
 
     if file_wavenum_max < wavenum_min:
         raise IrrelevantFileError(
-            "Database file {0} < {1:.6f}cm-1: irrelevant and not loaded".format(file, wavenum_min)
+            "Database file {0} < {1:.6f}cm-1: irrelevant and not loaded".format(
+                file, wavenum_min
             )
+        )
     if wavenum_max < file_wavenum_min:
         raise IrrelevantFileError(
-            "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(file, wavenum_max)
+            "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
+                file, wavenum_max
             )
-
+        )
 
 
 def _warn_if_object_columns(df, fname):

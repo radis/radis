@@ -117,7 +117,14 @@ columns_4000 = OrderedDict(
 
 
 def cdsd2df(
-    fname, version="hitemp", count=-1, cache=False, verbose=True, drop_non_numeric=True, wavenum_min=0.0, wavenum_max=Inf,
+    fname,
+    version="hitemp",
+    count=-1,
+    cache=False,
+    verbose=True,
+    drop_non_numeric=True,
+    wavenum_min=0.0,
+    wavenum_max=Inf,
 ):
     """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
 
@@ -255,8 +262,8 @@ def cdsd2df(
     if drop_non_numeric:
         replace_PQR_with_m101(df)
         df = drop_object_format_columns(df, verbose=verbose)
-    metadata['wavenum_min'] = df.wav.iloc[0]
-    metadata['wavenum_max'] = df.wav.iloc[-1]
+    metadata["wavenum_min"] = df.wav.iloc[0]
+    metadata["wavenum_max"] = df.wav.iloc[-1]
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
         if verbose:

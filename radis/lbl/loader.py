@@ -1334,11 +1334,11 @@ class DatabankLoader(object):
                     + ", or use one of the predefined databases in your"
                     + " ~/.radis: {0}".format(",".join(dblist))
                 )
-                
+
         # Check input types are correct
         if isinstance(path, string_types):
             path = [path]
-        
+
         path_list = []
         for path_i in path:
             path_list += get_files_from_regex(path_i)
@@ -1930,7 +1930,7 @@ class DatabankLoader(object):
                         wavenum_min=wavenum_min,
                         wavenum_max=wavenum_max,
                     )
-                    if isinstance(df, str) :
+                    if isinstance(df, str):
                         if df == "IrrelevantFile":
                             continue
                 elif dbformat == "cdsd-4000":
@@ -1943,7 +1943,7 @@ class DatabankLoader(object):
                         wavenum_min=wavenum_min,
                         wavenum_max=wavenum_max,
                     )
-                    if isinstance(df, str) :
+                    if isinstance(df, str):
                         if df == "IrrelevantFile":
                             continue
                 elif dbformat == "hitran":
@@ -1957,7 +1957,7 @@ class DatabankLoader(object):
                     )
                 else:
                     raise ValueError("Unknown dbformat: {0}".format(dbformat))
-                
+
                 # Drop columns (helps fix some Memory errors)
                 dropped = []
                 for col in df.columns:
