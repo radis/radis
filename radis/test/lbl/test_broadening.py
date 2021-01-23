@@ -524,7 +524,6 @@ def test_abscoeff_continuum(
     sf = SpectrumFactory(
         wavelength_min=4200,
         wavelength_max=4500,
-        bplot=False,
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
@@ -627,7 +626,6 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     sf = SpectrumFactory(
         wavelength_min=4200,
         wavelength_max=4500,
-        bplot=False,
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",

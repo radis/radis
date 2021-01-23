@@ -182,8 +182,6 @@ class SpectrumFactory(BandFactory):
         errors, mostly in highly populated areas. 80% of the lines can typically
         be moved in a continuum, resulting in 5 times faster spectra. If ``0``,
         no semi-continuum is used. Default ``0``.
-    bplot: boolean
-        plot intermediary results (like slit function generation). Default ``False``.
     save_memory: boolean
         if ``True``, removes databases calculated by intermediate functions (for
         instance, delete the full database once the linestrength cutoff criteria
@@ -348,7 +346,6 @@ class SpectrumFactory(BandFactory):
         optimization="min-RMS",
         broadening_method=Default("fft"),
         cutoff=1e-27,
-        bplot=False,
         db_use_cached=True,
         lvl_use_cached=None,
         verbose=True,
@@ -501,7 +498,6 @@ class SpectrumFactory(BandFactory):
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
         # Other parameters:
-        self.bplot = bplot
         self.verbose = verbose
         self.save_memory = save_memory
         self.autoupdatedatabase = False  # a boolean to automatically store calculated
