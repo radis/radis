@@ -7,4 +7,3 @@ Erwan Pannier EM2C, CentraleSupélec, 2015 CNRS UPR 288
 from .calc import calc_spectrum
 from .factory import SpectrumFactory
 from .overp import LevelsList
-from .parallel import ParallelFactory

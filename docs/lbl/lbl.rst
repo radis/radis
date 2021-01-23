@@ -704,25 +704,6 @@ with the calculated conditions.
 Parallelization
 ---------------
 
-Two parallelization are built-in RADIS. You can either run several :py:class:`~radis.lbl.factory.SpectrumFactory`
-in parallel. For that, just replace the :py:class:`~radis.lbl.factory.SpectrumFactory` with
-:py:class:`~radis.lbl.parallel.ParallelFactory` in your code, and use lists instead of single values
-for your input parameters. Example::
-
-    from radis import SpectrumFactory
-    sf = SpectrumFactory(...)
-    sf.init_database(...)              # to store all spectra automatically
-    for T in Tlist:
-        s = sf.eq_spectrum(T)
-
-Becomes::
-
-    from radis import ParallelFactory
-    sf = ParallelFactory(...)
-    sf.init_database(...)              # to store all spectra automatically
-    sf.eq_spectrum(Tlist)
-
-
 Note : internal CPU-parallelization was discarded in RADIS 0.9.28, as not efficient
 enough with the new lineshape algorithms implemented with radis==0.9.20.
 

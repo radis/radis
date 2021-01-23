@@ -12,9 +12,9 @@ Most methods are written in inherited class with the following inheritance schem
 
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+:py:class:`~radis.lbl.factory.SpectrumFactory`
 
-.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+.. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
    :parts: 1
 
 Routine Listing
@@ -174,9 +174,7 @@ class BandFactory(BroadenFactory):
             if pressure is not None:
                 self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
-                raise ValueError(
-                    "Tgas should be float. Use ParallelFactory for multiple cases"
-                )
+                raise ValueError("Tgas should be a float or Astropy unit")
             assert type(levels) in [str, list, int]
             if type(levels) == str:
                 assert levels == "all"
@@ -488,14 +486,10 @@ class BandFactory(BroadenFactory):
             elif not is_float(Tvib):
                 raise TypeError(
                     "Tvib should be float, or tuple (got {0})".format(type(Tvib))
-                    + "For parallel processing use ParallelFactory with a "
-                    + "list of float or a list of tuple"
                 )
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
-                raise ValueError(
-                    "Trot should be float. Use ParallelFactory for multiple cases"
-                )
+                raise ValueError("Trot should be float.")
             assert type(levels) in [str, list, int]
             if type(levels) == str:
                 assert levels == "all"

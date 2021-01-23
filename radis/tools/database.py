@@ -43,7 +43,7 @@ of the website.
 
 # TODO:
 
-# - Alert if case already in database when generating from a SpectrumFactory / ParallelFactory
+# - Alert if case already in database when generating from a SpectrumFactory
 # connected to a SpecDatabase
 
 # - Implement a h5py version of load / store

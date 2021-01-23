@@ -42,9 +42,9 @@ Most methods are written in inherited class with the following inheritance schem
 
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+:py:class:`~radis.lbl.factory.SpectrumFactory`
 
-.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+.. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
    :parts: 1
 
 Notes
@@ -472,7 +472,6 @@ class MiscParams(ConditionDict):
         self.export_populations = (
             None  #: bool: export populations in output Spectrum (takes memory!)
         )
-        self.Nprocs = None  #: int:  used with ParallelFactory
         self.warning_broadening_threshold = (
             None  #: float: [0-1] raise a warning if the lineshape area is different
         )

@@ -42,10 +42,10 @@ Most methods are written in inherited class with the following inheritance schem
 
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+:py:class:`~radis.lbl.factory.SpectrumFactory`
 
 
-.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+.. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
    :parts: 1
 
 
@@ -288,8 +288,7 @@ class SpectrumFactory(BandFactory):
 
     Alternative:
 
-    :func:`~radis.lbl.calc.calc_spectrum`,
-    :class:`~radis.lbl.parallel.ParallelFactory`
+    :func:`~radis.lbl.calc.calc_spectrum`
 
     Main Methods:
 
@@ -622,9 +621,7 @@ class SpectrumFactory(BandFactory):
                 self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
                 raise ValueError(
-                    "Tgas should be float. Got {0}. Use ParallelFactory for multiple cases".format(
-                        Tgas
-                    )
+                    "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
                 )
             self.input.rot_distribution = "boltzmann"  # equilibrium
             self.input.vib_distribution = "boltzmann"  # equilibrium
@@ -879,9 +876,7 @@ class SpectrumFactory(BandFactory):
             if pressure is not None:
                 self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
-                raise ValueError(
-                    "Tgas should be float. Use ParallelFactory for multiple cases"
-                )
+                raise ValueError("Tgas should be float.")
             self.input.rot_distribution = "boltzmann"  # equilibrium
             self.input.vib_distribution = "boltzmann"  # equilibrium
 
@@ -1234,14 +1229,10 @@ class SpectrumFactory(BandFactory):
             elif not is_float(Tvib):
                 raise TypeError(
                     "Tvib should be float, or tuple (got {0})".format(type(Tvib))
-                    + "For parallel processing use ParallelFactory with a "
-                    + "list of float or a list of tuple"
                 )
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
-                raise ValueError(
-                    "Trot should be float. Use ParallelFactory for multiple cases"
-                )
+                raise ValueError("Trot should be float")
             if overpopulation is None:
                 overpopulation = {}
             assert vib_distribution in ["boltzmann", "treanor"]

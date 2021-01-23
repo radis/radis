@@ -24,14 +24,13 @@ Temperatures and concentrations of all slabs are stored in
 
 """
 
-from multiprocessing import cpu_count
 from time import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
-from radis import ParallelFactory
+from radis.lbl import SpectrumFactory
 from radis.los import MergeSlabs, SerialSlabs
 from radis.misc.printer import printm
 from radis.phys.convert import nm2cm
@@ -69,6 +68,8 @@ def test_compare_torch_CO2(
 
     - RADIS 0.9.26: Finished test_compare_torch_CO2 in 57s (DLM, no continuum)
 
+    - RADIS 0.9.28: ParallelFactory is removed. Finished test_compare_torch_CO2 in 45s
+
     Reference
     --------
 
@@ -104,7 +105,7 @@ def test_compare_torch_CO2(
     # %% Calculate slabs
 
     # CO2
-    sf = ParallelFactory(
+    sf = SpectrumFactory(
         wavenum_min=wmin,
         wavenum_max=wmax,
         mole_fraction=None,
@@ -116,7 +117,6 @@ def test_compare_torch_CO2(
         export_lines=False,  # saves some memory
         export_populations=False,  # saves some memory
         cutoff=1e-25,
-        Nprocs=cpu_count() - 1,  # warning with memory if too many procs
         broadening_max_width=20,
         # pseudo_continuum_threshold=0.01, # use pseudo-continuum, no DLM. Note : 56s on 20/08.
         # optimization=None,
@@ -135,7 +135,7 @@ def test_compare_torch_CO2(
     #    sf.init_databank('CDSD-4000')
 
     # CO
-    sfco = ParallelFactory(
+    sfco = SpectrumFactory(
         wavenum_min=wmin,
         wavenum_max=wmax,
         mole_fraction=None,
@@ -147,7 +147,6 @@ def test_compare_torch_CO2(
         export_lines=False,  # saves some memory
         export_populations=False,  # saves some memory
         cutoff=1e-25,
-        Nprocs=cpu_count() - 1,
         broadening_max_width=20,
         optimization=None,
         verbose=False,
@@ -162,27 +161,24 @@ def test_compare_torch_CO2(
 
     # Calculate all slabs
     # .. CO2 at equilibrium
-    slabsco2 = sf.eq_spectrum(
-        list(conds.T_K), mole_fraction=list(conds.CO2), path_length=slab_width
-    )
-    # .. CO at equilibrium, but with non_eq to calculate PartitionFunctions instead of using
-    # ... tabulated ones (which are limited to 3000 K in HAPI)
-    slabsco = sfco.non_eq_spectrum(
-        list(conds.T_K),
-        list(conds.T_K),
-        mole_fraction=list(conds.CO),
-        path_length=slab_width,
-    )
+    slabsco2 = []
+    for Tgas, xCO2 in zip(conds.T_K, conds.CO2):
+        slabsco2.append(
+            sf.eq_spectrum(Tgas=Tgas, mole_fraction=xCO2, path_length=slab_width)
+        )
+    # .. CO at equilibrium
+    slabsco = []
+    for Tgas, xCO in zip(conds.T_K, conds.CO):
+        slabsco.append(
+            sfco.eq_spectrum(Tgas=Tgas, mole_fraction=xCO, path_length=slab_width)
+        )
 
     # Room absorption
-    with pytest.warns(
-        UserWarning
-    ):  # we expect a "using ParallelFactory for single case" warning
-        s0 = sf.eq_spectrum(Tgas=300, mole_fraction=330e-6, path_length=600)[0]
+    s0 = sf.eq_spectrum(Tgas=300, mole_fraction=330e-6, path_length=600)
     # Warning: This slab includes the CO2 emission from the 300 K air
     # within the spectrometer. But experimentally it is substracted
     # by there the chopper (this is corrected below)
-    # ... see RADIS Article for more details
+    # ... see RADIS 2019 paper for more details
 
     # Add radiance for everyone if not calculated (ex: loaded from database)
     for s in slabsco2 + slabsco + [s0]:
@@ -193,7 +189,7 @@ def test_compare_torch_CO2(
 
     # %% Line-of-sight
 
-    # Solve ETR along line of sight
+    # Solve RTE along the line of sight
     # --------
     # two semi profile, + room absortion
     line_of_sight = slabstot[1:][::-1] + slabstot + [s0]
