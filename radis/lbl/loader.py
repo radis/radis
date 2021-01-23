@@ -664,7 +664,6 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         name: a section name specified in your ``~/.radis``
             ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
             not ``None``, all other arguments are discarded.
@@ -677,37 +676,30 @@ class DatabankLoader(object):
 
         Other Parameters
         ----------------
-
         path: str, list of str, None
             list of database files, or name of a predefined database in the
             :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
             Accepts wildcards ``*`` to select multiple files
-
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lblinit_databank.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
             and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
-
         parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version.
-
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
             hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
-
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
             {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
-
         levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
             If None, non equilibrium calculations are not possible. Default ``None``.
-
         db_use_cached: boolean, or ``None``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -716,27 +708,24 @@ class DatabankLoader(object):
             existing cached files are removed and regenerated.
             It is also used to load energy levels from ``.h5`` cache file if exist.
             If ``None``, the value given on Factory creation is used. Default ``None``
-
         db_assumed_sorted: boolean
             load_databank first reads the first line and check it's relevant.
             This improves database loading times if not all files are required,
             but it assumes database files are sorted in wavenumber!
             Default ``True``
-
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
-
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``broadening_max_width``
             parameter is used to determine the limit. Default ``True``.
 
-        Other arguments are related to how to open the files
+        *Other arguments are related to how to open the files*
 
         buffer: ``'RAM'``, ``'h5'``, ``'direct'``
             Different modes for loading up database: either directly in 'RAM' mode,
-            or in 'h5' mode.
+            or in 'h5' mode :
 
             - 'RAM': is faster but memory hunger
             - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
@@ -747,7 +736,6 @@ class DatabankLoader(object):
               when reloading database)
 
             Default ``'RAM'``
-
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
             Not recommended to use, unless you explicitely want to drop information
@@ -833,39 +821,31 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         source: ``'astroquery'``
             where to download database from
-
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
             and ``'cdsd-4000'`` for the different CDSD versions. Default 'hitran'
-
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version.
-
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
             hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
-
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
             {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
-
         levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
             If None, non equilibrium calculations are not possible. Default ``None``.
-
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
-
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``broadening_max_width``
@@ -873,7 +853,6 @@ class DatabankLoader(object):
 
         Other Parameters
         ----------------
-
         drop_non_numeric: boolean
             if ``True``, non numeric columns are dropped. This improves performances,
             but make sure all the columns you need are converted to numeric formats
@@ -882,7 +861,6 @@ class DatabankLoader(object):
 
         See Also
         --------
-
         - Load from local files: :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
         - Load when needed: :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
 
@@ -1033,7 +1011,6 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         name: a section name specified in your ``~/.radis``
             ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
             not ``None``, all other arguments are discarded.
@@ -1046,37 +1023,30 @@ class DatabankLoader(object):
 
         Other Parameters
         ----------------
-
         path: str, list of str, None
             list of database files, or name of a predefined database in the
             :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
             Accepts wildcards ``*`` to select multiple files
-
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
             and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
-
         parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version.
-
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
             hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
-
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
             {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
-
         levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
             If None, non equilibrium calculations are not possible. Default ``None``.
-
         db_use_cached: boolean, or ``None``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -1085,27 +1055,24 @@ class DatabankLoader(object):
             existing cached files are removed and regenerated.
             It is also used to load energy levels from ``.h5`` cache file if exist.
             If ``None``, the value given on Factory creation is used. Default ``None``
-
         db_assumed_sorted: boolean
             load_databank first reads the first line and check it's relevant.
             This improves database loading times if not all files are required,
             but it assumes database files are sorted in wavenumber!
             Default ``True``
-
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
-
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``broadening_max_width``
             parameter is used to determine the limit. Default ``True``.
 
-        Other arguments are related to how to open the files:
+        *Other arguments are related to how to open the files:*
 
         buffer: ``'RAM'``, ``'h5'``, ``'direct'``
             Different modes for loading up database: either directly in 'RAM' mode,
-            or in 'h5' mode.
+            or in 'h5' mode:
 
             - 'RAM': is faster but memory hunger
             - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
@@ -1116,7 +1083,6 @@ class DatabankLoader(object):
               when reloading database)
 
             Default ``'RAM'``
-
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
             Not recommended to use, unless you explicitely want to drop information
@@ -1132,7 +1098,6 @@ class DatabankLoader(object):
 
         Notes
         -----
-
         Performances of buffer mode:
 
         on the 2Gb CDSD-HITEMP database (1-20), already cached in .h5
@@ -1142,7 +1107,6 @@ class DatabankLoader(object):
 
         See Also
         --------
-
         - Only load when needed: :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
         - Download from HITRAN: :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
@@ -1213,8 +1177,8 @@ class DatabankLoader(object):
             if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
                 raise NotImplementedError(
                     "Only 1 molecule at a time is currently supported "
-                    + "in RADIS. Calculate them independently then "
-                    + "use MergeSlabs"
+                    + "in SpectrumFactory. Use radis.calc_spectrum, which "
+                    + "calculates them independently then use MergeSlabs"
                 )
             if self.input.molecule not in ["", None]:
                 assert self.input.molecule == get_molecule(
@@ -1485,7 +1449,6 @@ class DatabankLoader(object):
         path: str
             path to database folder. If it doesnt exist, create it
             Accepts wildcards ``*`` to select multiple files
-
         autoretrieve: boolean, or ``'force'``
             if ``True``, a database lookup is performed whenever a new spectrum
             is calculated. If the spectrum already exists then it is retrieved
@@ -1493,20 +1456,16 @@ class DatabankLoader(object):
             the same if all the stored conditions fit. If set to ``'force'``, an error
             is raised if the spectrum is not found in the database (use it for
             debugging). Default ``True``
-
         autoupdate: boolean
             if ``True``, all spectra calculated by this Factory are automatically
             exported in database. Default ``True`` (but only if init_database is
             explicitely called by user)
-
         add_info: list, or ``None``/``False``
             append these parameters and their values if they are in conditions.
             Default ``['Tvib', 'Trot']``
-
         add_date: str, or ``None``/``False``
             adds date in strftime format to the beginning of the filename.
             Default '%Y%m%d'
-
         compress: boolean
             if ``True``, Spectrum are read and written in binary format. This is faster,
             and takes less memory space. Default ``True``
@@ -1723,16 +1682,13 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         database: list of str
             list of database files
-
         db_use_cached: boolean
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
             improves performances a lot. But! ... be sure to delete these files
             to regenerate them if you happen to change the database. Default ``False``
-
         buffer: ``'RAM'``, ``'h5'``, ``'direct'``
             Different modes for loading up a database: either directly in ``'RAM'`` mode,
             or in ``'h5'`` mode.
@@ -1748,7 +1704,6 @@ class DatabankLoader(object):
               when reloading database)
 
             Default ``'RAM'``
-
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
             Not recommended to use, unless you explicitely want to drop information
@@ -1764,7 +1719,6 @@ class DatabankLoader(object):
 
         Other Parameters
         ----------------
-
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``broadening_max_width``
@@ -2216,10 +2170,8 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         molecule: str
             molecule
-
         df: pandas DataFrame, or ``None``
             line database to parse. Default ``None``
         """
@@ -2374,13 +2326,10 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         levels: str
             energy levels filename
-
         levelsfmt: str
             energy levels format
-
         isotope: int
             isotope identifier
         """
@@ -2427,19 +2376,16 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         df: pandas Dataframe
             line database with keys ``molar_mass``, ``abundance``
 
         Returns
         -------
-
         None:
             updates dataframe ``df`` directly
 
         See Also
         --------
-
         :class:`~radis.db.molparam.MolParams`
         """
 
@@ -2539,11 +2485,8 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         molecule: str
-
         isotope: int
-
         elec_state: str
         """
 
@@ -2596,23 +2539,19 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         message: str
             what to print
-
         category: str
             one of the keys of self.warnings. See :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
 
         Notes
         -----
-
         All warnings in the SpectrumFactory should call to this method rather
         than the default warnings.warn() method, because it allows easier runtime
         modification of how to deal with warnings
 
         See Also
         --------
-
         :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
         """
 
