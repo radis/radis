@@ -58,7 +58,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 ----------
 
 """
-from multiprocessing import Pool, cpu_count
 from time import time
 from warnings import warn
 
@@ -673,7 +672,7 @@ def _whiting(w_centered, wl, wv):
     float64[:, :](float64[:, :], float64[:, :], float64[:, :]),
     nopython=True,
     cache=True,
-)  # , parallel=True)
+)
 def _whiting_jit(w_centered, wl, wv):
     """
     Parameters
@@ -2159,7 +2158,6 @@ class BroadenFactory(BaseFactory):
         abscoeff:  1/(#.cm-2)
             sum of all absorption coefficient k=1/(#.cm-2) for all lines in database
             `df` on the full calculation wavenumber range
-
         wavenumber: cm-1
             valid calculation wavenumber range
 
@@ -2171,27 +2169,8 @@ class BroadenFactory(BaseFactory):
         - ``abscoeff`` and ``emisscoeff`` still have to be multiplied by the total
           number density (cm-3) to get (cm-1/#) unit.
 
-        Performances:
-
-        This function is the bottleneck of the whole process. However, a fully
-        vectorized version is impossible because it takes too much memory. Instead
-        I used chunks of variable data length, and ended up parallelizing it.
-
-        - loop version:                 1'53''
-        - vectorized, 10 chunks:        1'30''
-        - vectorized, 100 chunks:       1'11''
-        - vectorized, 1000 chunks:      1'20''
-        - vectorized, 10.000 chunks:    2'02''
-
-        - parallel process 8 cpus:      33''
-
-        - fully vectorized w/o roll etc... < 5'
-
-        And then the parallel dispatching overhead becomes comparable with the
-        process time, so better not use parallel anymore.
         """
 
-        parallel = self.misc.parallel
         df = self.df1
 
         if self.verbose >= 2:
@@ -2215,34 +2194,7 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        if parallel:
-            # Parallel version
-            Ngroups = self.misc.Ngroups
-            Nprocs = self.misc.Nprocs  # number of processes
-            if self.verbose:
-                print(
-                    "Parallel version on {0} groups, {1} procs".format(Ngroups, Nprocs)
-                )
-            t1 = time()
-            with Pool(Nprocs) as p:  # run on all procs
-                # divide all lines in Ngroups
-                ret_list = p.map(
-                    self._broaden_lines,
-                    [group for name, group in df.groupby(arange(len(df)) % Ngroups)],
-                )
-                # each process returns an array on the whole range, but only
-                # including some of the lines
-            if self.verbose:
-                print("process: {0:.1f}s".format(time() - t1))
-
-            w_arr, a_arr = list(zip(*ret_list))
-            wavenumber = w_arr[0]  # they're all the same anyway
-
-            abscoeff = np.array(a_arr).sum(axis=0)  # sum over all lines
-
-        else:
-            # Regular version
-            (wavenumber, abscoeff) = self._broaden_lines(df)
+        (wavenumber, abscoeff) = self._broaden_lines(df)
 
         if self.verbose >= 2:
             printg("Calculated line broadening in {0:.2f}s".format(time() - t0))
@@ -2261,11 +2213,9 @@ class BroadenFactory(BaseFactory):
 
         wavenumber: cm-1
             full calculation wavenumber range
-
         abscoeff:  1/(#.cm-2)
             sum of all absorption coefficient k=1/(#.cm-2) for all lines in database
             `df` on the full calculation wavenumber range
-
         emisscoeff:  W/sr.cm
             sum of all broadened emission coefficients
 
@@ -2278,7 +2228,6 @@ class BroadenFactory(BaseFactory):
           number density (cm-3).
         """
 
-        parallel = self.misc.parallel
         df = self.df1
 
         if self.verbose >= 2:
@@ -2302,31 +2251,7 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        if parallel:
-            # Parallel version
-            Ngroups = cpu_count()
-            if self.verbose:
-                print(
-                    "Parallel version on {0} groups, {1} procs".format(
-                        Ngroups, cpu_count()
-                    )
-                )
-            with Pool(cpu_count()) as p:  # run on all procs
-                # divide all lines in Ngroups
-                ret_list = p.map(
-                    self._broaden_lines_noneq,
-                    [group for name, group in df.groupby(arange(len(df)) % Ngroups)],
-                )
-                # each process returns an array on the whole range, but only
-                # including some of the lines
-            w_arr, a_arr, e_arr = list(zip(*ret_list))
-            wavenumber = w_arr[0]
-            abscoeff = np.array(a_arr).sum(axis=0)  # sum over all lines
-            emisscoeff = np.array(e_arr).sum(axis=0)  # sum over all lines
-
-        else:
-            # Regular version
-            (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
+        (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
 
         if self.verbose >= 2:
             printg("Calculated line broadening in {0:.2f}s".format(time() - t0))
@@ -2432,12 +2357,9 @@ class BroadenFactory(BaseFactory):
 
         k_continuum: numpy array    (1/(#.cm-2))
             abscoeff semi-continuum  on wavenumber space
-
-        if noneq:
-
         j_continuum: numpy array
-            emisscoeff semi-continuum  on wavenumber space
-
+            only returned if ``noneq=True`` : emisscoeff semi-continuum on
+            wavenumber space
 
         Also:
             self.df1 is updated, lines are removed

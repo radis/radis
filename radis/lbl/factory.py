@@ -10,7 +10,6 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
     # This is how you get a spectrum (see spectrum.py for front-end functions
     # that do just that)
     sf = SpectrumFactory(2125, 2249.9,
-                         parallel=False,bplot=False,
                          molecule='CO',
                          isotope=1,
                          cutoff=1e-30,   # for faster calculations. See
@@ -78,7 +77,6 @@ for Developers:
 ----------
 """
 import sys
-from multiprocessing import cpu_count
 from subprocess import call
 from time import time
 from warnings import warn
@@ -196,11 +194,6 @@ class SpectrumFactory(BandFactory):
         populations ('vib') or rovibrational populations ('rovib'). Default ``None``
     export_lines: boolean
         if ``True``, saves lines in Spectrum. Default ``True``.
-    parallel: boolean
-        use parallel compution. May only offer a performance improvement if
-        one spectrum already takes > 10s to be calculated. Default ``False`` because
-        since the latest vectorized version parallelisation is mostly
-        counterproductive.
     db_use_cached: boolean, or 'regen'
         use cache for line databases.
         If ``True``, a pandas-readable csv file is generated on first access,
@@ -208,13 +201,11 @@ class SpectrumFactory(BandFactory):
         improves performances a lot. But! ... be sure to delete these files
         to regenerate them if you happen to change the database. If 'regen',
         existing cached files are removed and regenerated. Default ``False``
-        From 0.9.16 it is also used to load energy levels from .h5 cache file
-        if exist
+        From 0.9.16 it is also used to load energy levels from the .h5 cache file
+        if it exists
     lvl_use_cached: boolean, or ``'regen'``, or ``'force'``, or ``None``
         use cache for energy level database
         If None, the same value as ``db_use_cached`` is used.
-    Nprocs, Ngroups: int
-        parameters used in parallel processing mode. Default ``None``
     chunksize: int, or ``None``
         Splits the lines database in several chuncks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
@@ -357,11 +348,8 @@ class SpectrumFactory(BandFactory):
         chunksize=None,
         optimization="min-RMS",
         broadening_method=Default("fft"),
-        Nprocs=None,
-        Ngroups=None,
         cutoff=1e-27,
         bplot=False,
-        parallel=False,
         db_use_cached=True,
         lvl_use_cached=None,
         verbose=True,
@@ -480,7 +468,6 @@ class SpectrumFactory(BandFactory):
             lvl_use_cached = db_use_cached
         self.params.lvl_use_cached = lvl_use_cached
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
-        self.misc.parallel = parallel
         self.params.cutoff = cutoff
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
@@ -514,20 +501,6 @@ class SpectrumFactory(BandFactory):
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
-        if parallel:
-            # Set up parameters for //
-            if Ngroups is None:
-                Ngroups = cpu_count()  # number of processors
-            if Nprocs is None:
-                Nprocs = cpu_count()
-            self.misc.Ngroups = Ngroups
-            self.misc.Nprocs = Nprocs
-        else:
-            if Nprocs is not None:
-                print("Choose parallel=True to use Nprocs")
-            if Ngroups is not None:
-                print("Choose parallel=True to use Ngroups")
-
         # Other parameters:
         self.bplot = bplot
         self.verbose = verbose

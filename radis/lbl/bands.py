@@ -1002,13 +1002,12 @@ class BandFactory(BroadenFactory):
         For non-equilibrium, lineshape is calculated once and applied then
         to calculate absorption and emission coefficient.
 
-        Output
-        --------
+        Returns
+        -------
 
         abscoeff:  1/(#.cm-2)
             sum of all absorption coefficient k=1/(#.cm-2) for all lines in database
             `df` on the full calculation wavenumber range
-
         wavenumber: cm-1
             valid calculation wavenumber range
 
@@ -1018,29 +1017,8 @@ class BandFactory(BroadenFactory):
         `abscoeff` and `emisscoeff` still has to be multiplied by the total
         number density (cm-3) to get (cm-1/#) unit.
 
-
-        Performances
-        ---------
-
-        This function is the bottleneck of the whole process. However, a fully
-        vectorized version is impossible because it takes too much memory. Instead
-        I used chunks of variable data length, and ended up parallelizing it.
-
-        - loop version:                 1'53''
-        - vectorized, 10 chunks:        1'30''
-        - vectorized, 100 chunks:       1'11''
-        - vectorized, 1000 chunks:      1'20''
-        - vectorized, 10.000 chunks:    2'02''
-
-        - parallel process 8 cpus:      33''
-
-        - fully vectorized w/o roll etc... < 5'
-
-        And then the parallel dispatching overhead becomes comparable with the
-        process time, so better not use parallel anymore.
         """
 
-        parallel = self.misc.parallel
         df = self.df1
 
         if self.verbose:
@@ -1056,13 +1034,7 @@ class BandFactory(BroadenFactory):
                 + " may be inverted"
             )
 
-        if parallel:
-            # Parallel version
-            raise NotImplementedError
-
-        else:
-            # Regular version
-            (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
+        (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
 
         return wavenumber, abscoeff_bands
 
@@ -1074,16 +1046,14 @@ class BandFactory(BroadenFactory):
         For non-equilibrium, lineshape is calculated once and applied then
         to calculate absorption and emission coefficient.
 
-        Output
-        --------
+        Returns
+        -------
 
         wavenumber: cm-1
             full calculation wavenumber range
-
         abscoeff:  1/(#.cm-2)
             sum of all absorption coefficient k=1/(#.cm-2) for all lines in database
             `df` on the full calculation wavenumber range
-
         emisscoeff:  W/sr.cm
             sum of all broadened emission coefficients
 
@@ -1094,7 +1064,6 @@ class BandFactory(BroadenFactory):
         number density (cm-3).
         """
 
-        parallel = self.misc.parallel
         df = self.df1
 
         if self.verbose:
@@ -1110,17 +1079,11 @@ class BandFactory(BroadenFactory):
                 + " may be inverted"
             )
 
-        if parallel:
-            # Parallel version
-            raise NotImplementedError
-
-        else:
-            # Regular version
-            (
-                wavenumber,
-                abscoeff_bands,
-                emisscoeff_bands,
-            ) = self._broaden_lines_noneq_bands(df)
+        (
+            wavenumber,
+            abscoeff_bands,
+            emisscoeff_bands,
+        ) = self._broaden_lines_noneq_bands(df)
 
         return wavenumber, abscoeff_bands, emisscoeff_bands
 
@@ -1159,10 +1122,8 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
 
     df: pandas Dataframe
         Line (transitions) database
-
     dbformat: one of :data:`~radis.lbl.loader.KNOWN_DBFORMAT` : ``'cdsd```, ``'hitemp'``
         format of Line database
-
     lvlformat: 'cdsd`, 'hitemp'
         format of
 
@@ -1170,7 +1131,7 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
     -------
 
     None
-        input df is changed
+        input Dataframe is updated inplace
 
     Examples
     --------

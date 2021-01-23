@@ -164,7 +164,6 @@ def test_spec_generation(
     sf = SpectrumFactory(
         wavelength_min=4150,
         wavelength_max=4400,
-        parallel=False,
         bplot=False,
         cutoff=1e-27,
         isotope="1,2",
@@ -306,7 +305,6 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
         wavelength_min=4300,
         wavelength_max=4666,
         wstep=0.001,
-        parallel=False,
         bplot=False,
         cutoff=1e-30,
         path_length=10,
@@ -369,7 +367,6 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         wavelength_min=4500,
         wavelength_max=4600,
         wstep=0.001,
-        parallel=False,
         bplot=False,
         cutoff=1e-30,
         path_length=0.1,

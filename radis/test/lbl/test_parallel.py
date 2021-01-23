@@ -30,9 +30,12 @@ from radis.test.utils import setup_test_line_databases
 def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
     """Core of the parallel test routine
 
-    Test than parallel is at least faster than sequential mode. Note that
-    this is not necessary: parallelization becomes much faster during the
-    convolution steps, hence for large number of lines
+    Test than :class:`~radis.lbl.parallel.ParallelFactory` works.
+
+    Note that it is not always faster than the sequential mode : with the new
+    LDM algorithm (>0.9.20), the line broadening step is only weakly dependant
+    on the number of lines and therefore the parallelizatino overhead may
+    not be necessary.
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -131,117 +134,10 @@ def test_parallel(plot=False, verbose=True, warnings=True, *args, **kwargs):
     return True  # no plot implemented
 
 
-def DISCARDED_test_parallel_internal(
-    plot=False, verbose=True, warnings=True, *args, **kwargs
-):
-    """Core of the parallel test routine
-
-    Test than parallel is at least faster than sequential mode. Note that
-    this is not necessary: parallelization becomes much faster during the
-    convolution steps, hence for large number of lines
-    """
-    # TODO: there is a line missing in the parallel case at 2283nm.
-    # I expect the merging of different wave ranges to fail.
-    # Test is not run for the moment
-
-    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
-        import matplotlib.pyplot as plt
-
-        plt.ion()
-
-    setup_test_line_databases()
-
-    # Performance test
-    Tvib = 1000  # , 1200, 1400]
-    Trot = 900
-    path_length = 0.1
-    mole_fraction = 0.5
-
-    cutoff = 0
-    broadening_max_width = 1
-    wstep = 0.0001
-
-    # .. parallel
-    sfp = SpectrumFactory(
-        wavelength_min=4377.134,
-        wavelength_max=4377.9,
-        pressure=0.020,  # bar
-        cutoff=cutoff,
-        db_use_cached=True,
-        lvl_use_cached=True,
-        parallel=True,
-        isotope="1",
-        broadening_max_width=broadening_max_width,
-        wstep=wstep,
-        verbose=verbose,
-    )
-    sfp.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sfp.warnings["NegativeEnergiesWarning"] = "ignore"
-    sfp.warnings["EmptyDatabaseWarning"] = "ignore"
-    sfp.load_databank("HITEMP-CO2-TEST")
-
-    s_parallel = sfp.non_eq_spectrum(
-        Tvib, Trot, path_length=path_length, mole_fraction=mole_fraction
-    )
-    s_parallel.name = "Parallel ({0:.1f}s)".format(
-        s_parallel.conditions["calculation_time"]
-    )
-
-    # ... non parallel
-    sf = SpectrumFactory(
-        wavelength_min=4377.134,
-        wavelength_max=4377.9,
-        pressure=0.020,  # bar
-        cutoff=cutoff,
-        db_use_cached=True,
-        lvl_use_cached=True,
-        isotope="1,2",
-        broadening_max_width=broadening_max_width,
-        wstep=wstep,
-        verbose=verbose,
-    )
-    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.warnings["NegativeEnergiesWarning"] = "ignore"
-    sf.warnings["EmptyDatabaseWarning"] = "ignore"
-    sf.load_databank("HITEMP-CO2-TEST")
-    s_sequential = sf.non_eq_spectrum(
-        Tvib, Trot, path_length=path_length, mole_fraction=mole_fraction
-    )
-    s_sequential.name = "Sequential ({0:.1f}s)".format(
-        s_sequential.conditions["calculation_time"]
-    )
-
-    t0 = s_parallel.conditions["calculation_time"]
-    t1 = s_sequential.conditions["calculation_time"]
-
-    if verbose:
-        printm("\nSpectrumFactory with internal parallel test")
-        printm("-------------------")
-        printm(("Parallel version: {0:.1f}s".format(t0)))
-        printm(("Normal version: {0:.1f}s".format(t1)))
-        printm("-------------------")
-
-    # Assert that spectra are the same
-    assert s_parallel.compare_with(s_sequential, spectra_only=True, plot=False)
-    if verbose:
-        printm("Ensured that spectra are the same: OK")
-
-    if t0 > t1:
-        warn(
-            "Parallel version ({0:.1f}s) is slower than the Serial version ({1:.1f}s) !".format(
-                t0, t1
-            )
-        )
-
-    return True  # no plot implemented
-
-
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
     test_parallel(plot=plot, verbose=verbose, *args, **kwargs)
 
-
-#    test_parallel_internal(plot=plot, verbose=verbose, *args, **kwargs)
 
 if __name__ == "__main__":
 

@@ -104,63 +104,50 @@ class ParallelFactory(SpectrumFactory):
     Parameters
     ----------
 
+    Nprocs: int
+        Number of processors to use. Default total number of threads.
     wavenum_min: (cm-1)
         minimum wavenumber to be processed in cm^-1
-
     wavenum_max: (cm-1)
         maximum wavenumber to be processed in cm^-1
-
     Tref: (K)
         reference temperature for calculations, HITRAN database uses 296 Kelvin
         default: 3400K
-
     pressure: (bar)
         partial pressure of gas in bar. Default 1.01325 (1 atm)
-
     mole_fraction: N/D
         species mole fraction. Default 1. Note that the rest of the gas
         is considered to be air for collisional broadening.
-
     path_length: (cm)
         path length in cm. Default 1.
-
     isotope: int, str, or list of int
         isotope id (sorted by relative density). Default [1,2] (eg: CO2-626, CO2-636 for CO2)
 
     Other Parameters
     ----------------
 
-    Nprocs: int
-        Number of processors to use. Default total number of threads.
-
     Tref: K
         Reference temperature for calculations (linestrength temperature
         correction). HITRAN database uses 296 Kelvin. Default 296 K
-
     broadening_max_width: cm-1
         Full width over which to compute the broadening. Large values will create
         a huge performance drop (because convolutions are not vectorized).
         Also, the calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default 10 cm-1.
-
     wstep: cm-1
         Spacing of calculated absorbance spectrum. Default 0.01 cm-1
-
     cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
         discard linestrengths that are lower that this, to reduce calculation
         times. 1e-27 is what is generally used to generate databases such as
         CDSD. If 0, no cutoff. Default 1e-27.
-
     bplot: boolean
         plot intermediary results (like slit function generation). Default ``False``.
-
     save_memory: boolean
         if ``True``, removes databases calculated by intermediate functions (for
         instance, delete the full database once the linestrength cutoff criteria
         was applied). This saves some memory but requires to reload the database
         & recalculate the linestrength for each new parameter. Default ``False``.
-
     chunksize: float
         Splits the lines database in several chuncks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
@@ -182,7 +169,6 @@ class ParallelFactory(SpectrumFactory):
     def __init__(self, *args, **kwargs):
 
         Nprocs = kwargs.pop("Nprocs", cpu_count())  # default to cpu_count()
-        kwargs["parallel"] = False  # calculate each spectrum on one core only
 
         super(ParallelFactory, self).__init__(*args, **kwargs)
 
@@ -206,10 +192,8 @@ class ParallelFactory(SpectrumFactory):
 
         Tgas: list or float
             Gas temperature (K)
-
         mole_fraction: list or float
             database species mole fraction. If None, Factory mole fraction is used.
-
         path_length: list or float
             slab size (cm). If None, Factory mole fraction is used.
 
@@ -218,13 +202,13 @@ class ParallelFactory(SpectrumFactory):
 
         Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+            Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+            among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it
+            Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+            to plot it
 
-        See [1]_ to get an overview of all Spectrum methods
+            See [1]_ to get an overview of all Spectrum methods
 
         References
         ----------
@@ -281,13 +265,10 @@ class ParallelFactory(SpectrumFactory):
 
         Tvib: list or float
             vibrational temperature [K]
-
         Trot: list or float
             rotational temperature [K]
-
         mole_fraction: list or float
             database species mole fraction. If None, Factory mole fraction is used.
-
         path_length: list or float. If None, Factory mole fraction is used.
             slab size (cm)
 
@@ -296,13 +277,13 @@ class ParallelFactory(SpectrumFactory):
 
         Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+            Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+            among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it
+            Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+            to plot it
 
-        See [1]_ to get an overview of all Spectrum methods
+            See [1]_ to get an overview of all Spectrum methods
 
         References
         ----------

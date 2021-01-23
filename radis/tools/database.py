@@ -1710,10 +1710,8 @@ class SpecDatabase(SpecList):
 
         path: str
             a folder to initialize the database
-
         filt: str
             only consider files ending with filt
-
         binary: boolean
             if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
             try as binary file anyway. Default ``False``
@@ -1721,14 +1719,13 @@ class SpecDatabase(SpecList):
         Other Parameters
         ----------------
 
-        input for :class:`~joblib.parallel.Parallel` loading of database:
+        *input for :class:`~joblib.parallel.Parallel` loading of database*
 
         nJobs: int
             Number of processors to use to load a database (usefull for big
             databases). BE CAREFULL, no check is done on processor use prior
             to the execution ! Default ``-2``: use all but 1 processors.
             Use ``1`` for single processor.
-
         batch_size: int or ``'auto'``
             The number of atomic tasks to dispatch at once to each
             worker. When individual evaluations are very fast, dispatching

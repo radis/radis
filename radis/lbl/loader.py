@@ -398,7 +398,7 @@ class Parameters(ConditionDict):
     #                 'broadening_max_width', 'chunksize', 'cutoff',
     #                 'db_assumed_sorted', 'db_use_cached', 'dbformat', 'dbpath',
     #                 'export_lines', 'export_populations', 'levelsfmt', 'lvl_use_cached',
-    #                 'Ngroups', 'Nprocs', 'parallel', 'parfuncfmt', 'parfuncpath',
+    #                 'parfuncfmt', 'parfuncpath',
     #                 'pseudo_continuum_threshold', 'warning_broadening_threshold',
     #                 'warning_linestrength_cutoff', 'wavenum_max_calc', 'wavenum_min_calc',
     #                 'waveunit', 'wstep']
@@ -472,9 +472,7 @@ class MiscParams(ConditionDict):
         self.export_populations = (
             None  #: bool: export populations in output Spectrum (takes memory!)
         )
-        self.Ngroups = None  #: int:
-        self.Nprocs = None  #: int:
-        self.parallel = None  #: bool: use parallel processing for line broadening step
+        self.Nprocs = None  #: int:  used with ParallelFactory
         self.warning_broadening_threshold = (
             None  #: float: [0-1] raise a warning if the lineshape area is different
         )

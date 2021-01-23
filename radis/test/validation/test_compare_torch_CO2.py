@@ -111,7 +111,6 @@ def test_compare_torch_CO2(
         path_length=None,
         molecule="CO2",
         isotope="1,2",
-        parallel=False,
         wstep=wstep,
         db_use_cached=use_cache,
         export_lines=False,  # saves some memory
@@ -143,7 +142,6 @@ def test_compare_torch_CO2(
         path_length=None,
         molecule="CO",
         isotope="1,2",
-        parallel=False,
         wstep=wstep,
         db_use_cached=use_cache,
         export_lines=False,  # saves some memory

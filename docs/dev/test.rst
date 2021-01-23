@@ -203,7 +203,6 @@ Load a Spectrum object ::
        calculation_time     0.14 s
        chunksize            10000000.0
        db_use_cached        True
-       parallel             False
     ----------------------------------------
 
 

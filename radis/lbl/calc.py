@@ -209,10 +209,12 @@ def calc_spectrum(
             be moved in a continuum, resulting in 5 times faster spectra. If 0,
             no semi-continuum is used. Default ``0``.
         mode: ``'cpu'``, ``'gpu'``
-            if set to 'cpu', computes the spectra purely on the CPU. if set to 'gpu',
+            if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
             offloads the calculations of lineshape and broadening steps to the GPU
-            making use of parallel computations to speed up the process. Default 'cpu'.
-            Note that mode='gpu' requires CUDA compatible hardware to execute. For more information on how to setup your system to run GPU-accelerated methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
+            making use of parallel computations to speed up the process. Default ``'cpu'``.
+            Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
+            For more information on how to setup your system to run GPU-accelerated
+            methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
     ​
         Returns
         -------

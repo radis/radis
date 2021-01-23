@@ -3965,7 +3965,7 @@ class Spectrum(object):
 
     def __floordiv__(self, other):
         """Overloads '//' behavior not a divison here: we use it to say that
-        Slabs are ``in parallel``, i.e., as if their respesctive mole fractions
+        Slabs are ``in parallel``, i.e., as if their respective mole fractions
         were added in the same physical space.
 
         Won't work if they are not defined on the same waverange, but it's okay: let
