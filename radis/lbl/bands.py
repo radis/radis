@@ -12,9 +12,9 @@ Most methods are written in inherited class with the following inheritance schem
 
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+:py:class:`~radis.lbl.factory.SpectrumFactory`
 
-.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+.. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
    :parts: 1
 
 Routine Listing
@@ -157,8 +157,6 @@ class BandFactory(BroadenFactory):
 
         - Calculate line strenghts correcting the CDSD reference one.
         - Then call the main routine that sums over all lines
-
-
         """
 
         try:
@@ -176,9 +174,7 @@ class BandFactory(BroadenFactory):
             if pressure is not None:
                 self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
-                raise ValueError(
-                    "Tgas should be float. Use ParallelFactory for multiple cases"
-                )
+                raise ValueError("Tgas should be a float or Astropy unit")
             assert type(levels) in [str, list, int]
             if type(levels) == str:
                 assert levels == "all"
@@ -467,7 +463,6 @@ class BandFactory(BroadenFactory):
         'absorbance', etc...]
 
         Or directly .plot(something) to plot it
-
         """
 
         try:
@@ -491,14 +486,10 @@ class BandFactory(BroadenFactory):
             elif not is_float(Tvib):
                 raise TypeError(
                     "Tvib should be float, or tuple (got {0})".format(type(Tvib))
-                    + "For parallel processing use ParallelFactory with a "
-                    + "list of float or a list of tuple"
                 )
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
-                raise ValueError(
-                    "Trot should be float. Use ParallelFactory for multiple cases"
-                )
+                raise ValueError("Trot should be float.")
             assert type(levels) in [str, list, int]
             if type(levels) == str:
                 assert levels == "all"
@@ -726,7 +717,7 @@ class BandFactory(BroadenFactory):
                 # Add band name and hitran band name in conditions
 
                 def add_attr(attr):
-                    """ # TODO: implement properly"""
+                    """# TODO: implement properly"""
                     if attr in lines:
                         if band == "others":
                             val = "N/A"
@@ -780,7 +771,8 @@ class BandFactory(BroadenFactory):
             raise
 
     def get_bands_weight(self, showfirst=None, sortby="Ei"):
-        """Show all bands by emission weight (fraction of total emission integral)
+        """Show all bands by emission weight (fraction of total emission
+        integral)
 
         Replace sortby with 'S' or 'int' to get different weights
 
@@ -814,7 +806,7 @@ class BandFactory(BroadenFactory):
             return weight
 
     def get_band_list(self):
-        """ Return all vibrational bands """
+        """Return all vibrational bands."""
 
         # Check bands are labelled
         try:
@@ -827,7 +819,7 @@ class BandFactory(BroadenFactory):
         return df["band"].unique()
 
     def get_band(self, band):
-        """ Public function to get a particular vibrational band """
+        """Public function to get a particular vibrational band."""
 
         # Check bands are labelled
         try:
@@ -853,7 +845,8 @@ class BandFactory(BroadenFactory):
 
     def _add_bands(self):
         """Add a 'band' attribute for each line to allow parsing the lines by
-        band with
+        band with.
+
         >>> df0.groupby('band')
 
 
@@ -864,7 +857,6 @@ class BandFactory(BroadenFactory):
         - Initial: with .apply()   8.08 s ± 95.2 ms
         - with groupby(): 9s   worse!!
         - using simple (and more readable)    astype(str)  statements: 523 ms ± 19.6 ms
-
         """
 
         dbformat = self.params.dbformat
@@ -881,9 +873,8 @@ class BandFactory(BroadenFactory):
     def _broaden_lines_bands(self, df):
         """Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
-        lines are processed on the same core)
-        Band specific version: returns a list of all broadened vibrational
-        bands :
+        lines are processed on the same core) Band specific version: returns a
+        list of all broadened vibrational bands :
 
         Implementation
         -----------
@@ -932,9 +923,8 @@ class BandFactory(BroadenFactory):
     def _broaden_lines_noneq_bands(self, df):
         """Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
-        lines are processed on the same core)
-        Band specific version: returns a list of all broadened vibrational
-        bands
+        lines are processed on the same core) Band specific version: returns a
+        list of all broadened vibrational bands.
 
         Implementation
         -----------
@@ -999,21 +989,19 @@ class BandFactory(BroadenFactory):
     # %% Generate absorption profile which includes linebroadening factors
 
     def _calc_broadening_bands(self):
-        """
-        Loop over all lines, calculate lineshape, and returns the sum of
-        absorption coefficient k=S*f over all lines.
-        Band specific version: returns a list, one per vibrational band
+        """Loop over all lines, calculate lineshape, and returns the sum of
+        absorption coefficient k=S*f over all lines. Band specific version:
+        returns a list, one per vibrational band.
 
         For non-equilibrium, lineshape is calculated once and applied then
         to calculate absorption and emission coefficient.
 
-        Output
-        --------
+        Returns
+        -------
 
         abscoeff:  1/(#.cm-2)
             sum of all absorption coefficient k=1/(#.cm-2) for all lines in database
             `df` on the full calculation wavenumber range
-
         wavenumber: cm-1
             valid calculation wavenumber range
 
@@ -1023,31 +1011,8 @@ class BandFactory(BroadenFactory):
         `abscoeff` and `emisscoeff` still has to be multiplied by the total
         number density (cm-3) to get (cm-1/#) unit.
 
-
-        Performances
-        ---------
-
-        This function is the bottleneck of the whole process. However, a fully
-        vectorized version is impossible because it takes too much memory. Instead
-        I used chunks of variable data length, and ended up parallelizing it.
-
-        - loop version:                 1'53''
-        - vectorized, 10 chunks:        1'30''
-        - vectorized, 100 chunks:       1'11''
-        - vectorized, 1000 chunks:      1'20''
-        - vectorized, 10.000 chunks:    2'02''
-
-        - parallel process 8 cpus:      33''
-
-        - fully vectorized w/o roll etc... < 5'
-
-        And then the parallel dispatching overhead becomes comparable with the
-        process time, so better not use parallel anymore.
-
-
         """
 
-        parallel = self.misc.parallel
         df = self.df1
 
         if self.verbose:
@@ -1063,35 +1028,26 @@ class BandFactory(BroadenFactory):
                 + " may be inverted"
             )
 
-        if parallel:
-            # Parallel version
-            raise NotImplementedError
-
-        else:
-            # Regular version
-            (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
+        (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
 
         return wavenumber, abscoeff_bands
 
     def _calc_broadening_noneq_bands(self):
-        """
-        Loop over all lines, calculate lineshape, and returns the sum of
-        absorption coefficient k=S*f over all lines.
-        Band specific version: returns a list, one per vibrational band
+        """Loop over all lines, calculate lineshape, and returns the sum of
+        absorption coefficient k=S*f over all lines. Band specific version:
+        returns a list, one per vibrational band.
 
         For non-equilibrium, lineshape is calculated once and applied then
         to calculate absorption and emission coefficient.
 
-        Output
-        --------
+        Returns
+        -------
 
         wavenumber: cm-1
             full calculation wavenumber range
-
         abscoeff:  1/(#.cm-2)
             sum of all absorption coefficient k=1/(#.cm-2) for all lines in database
             `df` on the full calculation wavenumber range
-
         emisscoeff:  W/sr.cm
             sum of all broadened emission coefficients
 
@@ -1100,10 +1056,8 @@ class BandFactory(BroadenFactory):
 
         Both `abscoeff` and `emisscoeff` still have to be multiplied by the total
         number density (cm-3).
-
         """
 
-        parallel = self.misc.parallel
         df = self.df1
 
         if self.verbose:
@@ -1119,22 +1073,16 @@ class BandFactory(BroadenFactory):
                 + " may be inverted"
             )
 
-        if parallel:
-            # Parallel version
-            raise NotImplementedError
-
-        else:
-            # Regular version
-            (
-                wavenumber,
-                abscoeff_bands,
-                emisscoeff_bands,
-            ) = self._broaden_lines_noneq_bands(df)
+        (
+            wavenumber,
+            abscoeff_bands,
+            emisscoeff_bands,
+        ) = self._broaden_lines_noneq_bands(df)
 
         return wavenumber, abscoeff_bands, emisscoeff_bands
 
     def _retrieve_bands_from_database(self):
-        """   """
+        """"""
 
         # TODO: options:
         # - Implement store / retrieve machinery for Bands
@@ -1168,10 +1116,8 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
 
     df: pandas Dataframe
         Line (transitions) database
-
     dbformat: one of :data:`~radis.lbl.loader.KNOWN_DBFORMAT` : ``'cdsd```, ``'hitemp'``
         format of Line database
-
     lvlformat: 'cdsd`, 'hitemp'
         format of
 
@@ -1179,7 +1125,7 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
     -------
 
     None
-        input df is changed
+        input Dataframe is updated inplace
 
     Examples
     --------
@@ -1196,7 +1142,6 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
     - Initial: with .apply()   8.08 s ± 95.2 ms
     - with groupby(): 9s   worse!!
     - using simple (and more readable)    astype(str)  statements: 523 ms ± 19.6 ms
-
     """
 
     # Check inputs

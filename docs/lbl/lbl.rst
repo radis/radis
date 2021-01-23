@@ -704,37 +704,13 @@ with the calculated conditions.
 Parallelization
 ---------------
 
-Two parallelization are built-in RADIS. You can either run several :py:class:`~radis.lbl.factory.SpectrumFactory`
-in parallel. For that, just replace the :py:class:`~radis.lbl.factory.SpectrumFactory` with
-:py:class:`~radis.lbl.parallel.ParallelFactory` in your code, and use lists instead of single values
-for your input parameters. Example::
+Note : internal CPU-parallelization was discarded in RADIS 0.9.28, as not efficient
+enough with the new lineshape algorithms implemented with radis==0.9.20.
 
-    from radis import SpectrumFactory
-    sf = SpectrumFactory(...)
-    sf.init_database(...)              # to store all spectra automatically
-    for T in Tlist:
-        s = sf.eq_spectrum(T)
+A much faster GPU-parallelization is available for equilibrium calculation::
 
-Becomes::
+    SpectrumFactory.eq_spectrum(mode='gpu')
 
-    from radis import ParallelFactory
-    sf = ParallelFactory(...)
-    sf.init_database(...)              # to store all spectra automatically
-    sf.eq_spectrum(Tlist)
-
-
-Another parallelization is possible within one :py:class:`~radis.lbl.factory.SpectrumFactory` instance.
-In that case, the line database is split in different chuncks of lines that are processed independantly.
-See the ``parallel=`` parameter in :py:class:`~radis.lbl.factory.SpectrumFactory`.
-
-.. warning::
-    Because LBL computations are usually more memory-heavy than CPU-heavy, you may not get
-    a lot of improvement by using parallelization. Ensure that your test works.
-
-Parallelized code can be tested against the linear code in `radis/test/lbl/test_parallel.py`, which can be run
-with::
-
-    pytest radis/test/lbl/test_parallel.py
 
 GPU accelerated spectrum calculation
 ------------------------------------

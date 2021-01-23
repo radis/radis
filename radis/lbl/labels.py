@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Unique file where to define names
+"""Unique file where to define names.
 
 Summary
 -------
@@ -23,9 +23,6 @@ vib_lvl_name_cdsd_pcN
 
 
 ----------
-
-
-
 """
 
 # %% Vibrational levels names
@@ -117,8 +114,10 @@ from pandas import Series
 
 
 def _format_str(*var):
-    """Convert variables ``var`` to str. Uses ``.astype(str)``
-    if they are Pandas series"""
+    """Convert variables ``var`` to str.
+
+    Uses ``.astype(str)`` if they are Pandas series
+    """
 
     out = []
     for v in var:

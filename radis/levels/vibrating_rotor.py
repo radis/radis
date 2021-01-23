@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 18 17:59:45 2017
+"""Created on Tue Jul 18 17:59:45 2017.
 
 @author: erwan
 
@@ -17,8 +16,6 @@ References
 
 
 -----------------------------------------------------------------------------
-
-
 """
 
 
@@ -33,7 +30,7 @@ from radis.levels.dunham import Fv, Gv
 def EvJ_uncoupled_vibrating_rotor(
     v1, v2, l2, v3, J, coeff_dict, gv1=1, gv2=1, gv3=1, remove_ZPE=True
 ):
-    """Rovibrational energy of an uncoupled vibrating rotor
+    """Rovibrational energy of an uncoupled vibrating rotor.
 
     Parameters
     ----------
@@ -92,7 +89,6 @@ def EvJ_uncoupled_vibrating_rotor(
     --------
 
     :py:func:`~radis.levels.energies_co2.EvJ_co2`
-
     """
 
     coeff_dict = coeff_dict.copy()
@@ -139,9 +135,9 @@ def EvJ_uncoupled_vibrating_rotor(
 
 
 def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=True):
-    """Return rovibrationalenergies for nu_1, nu_2, nu_3 vibrational modes
-    Each energy is a tuple (E_harmonic, E_nonharmonic) to be
-    used for instance in a Treanor distribution
+    """Return rovibrationalenergies for nu_1, nu_2, nu_3 vibrational modes Each
+    energy is a tuple (E_harmonic, E_nonharmonic) to be used for instance in a
+    Treanor distribution.
 
     Defined for CO2 only. See:  Klarenaar et al. [1]_
 
@@ -184,7 +180,6 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=Tr
     .. [1] Eq.(10) in Klarenaar et al, "Time evolution of vibrational temperatures in a CO2 glow
         discharge measured with infrared absorption spectroscopy", doi 10.1088/1361-6595/aa902e,
         and the references there in.
-
     """
 
     coeff_dict = coeff_dict.copy()

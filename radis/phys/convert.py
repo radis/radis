@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-
-Conversion formulas between different units (works with numpy arrays)
+"""Conversion formulas between different units (works with numpy arrays)
 
 Checks the order of magnitudes to help detect conversion errors (comparing with
 standard order of magnitudes in plasma physics)
@@ -16,8 +14,6 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
 
 
 -------------------------------------------------------------------------------
-
-
 """
 
 import numpy as np
@@ -34,79 +30,80 @@ assert conv2  # removes flake8 warnings
 
 
 def J2eV(E):
-    "J to eV"
+    """J to eV."""
     return E / eV
 
 
 def J2K(E):
-    "J to Kelvin"
+    """J to Kelvin."""
     return E / k_b
 
 
 def J2cm(E):
-    "J to cm-1"
+    """J to cm-1."""
     return E / (h * c) / 100
 
 
 def eV2J(E):
-    "eV to J"
+    """eV to J."""
     _asserteV(E)
     return E * eV
 
 
 def eV2nm(E):
-    "nm to eV"
+    """nm to eV."""
     _asserteV(E)
     return 1 / E * 1e9 * (h * c) / eV
 
 
 def eV2K(E):
-    "eV to K"
+    """eV to K."""
     _asserteV(E)
     return E * eV / k_b
 
 
 def eV2cm(E):
-    "eV to cm"
+    """eV to cm."""
     _asserteV(E)
     return E * eV / (h * c) / 100
 
 
 def K2eV(E):
-    "eV to K"
+    """eV to K."""
     _assertK(E)
     return E * k_b / eV
 
 
 def K2J(E):
-    "Kelvin to J"
+    """Kelvin to J."""
     _assertK(E)
     return E * k_b
 
 
 def K2cm(E):
-    """K to cm-1"""
+    """K to cm-1."""
     _assertK(E)
     return E / hc_k
 
 
 def cm2J(E):
-    "cm-1 to J"
+    """cm-1 to J."""
     _assertcm(E)
     return (E * 100) * (h * c)
 
 
 def cm2K(E):
-    """cm-1 to K
+    """cm-1 to K.
 
-    That's the classical 1.44 K/cm-1. See :data:`~radis.phys.constants.hc_k`
+    That's the classical 1.44 K/cm-1. See
+    :data:`~radis.phys.constants.hc_k`
     """
     _assertcm(E)
     return E * hc_k
 
 
 def cm2eV(E):
-    "cm-1 to eV"
+    """cm-1 to eV."""
     _assertcm(E)
     return (E * 100) * (h * c) / eV
 
@@ -115,23 +112,22 @@ def cm2eV(E):
 
 
 def cm2nm(wl_cm1):
-    "cm-1 to (vacuum) nm"
+    """cm-1 to (vacuum) nm."""
     return 1 / wl_cm1 * 1e9 / 100
 
 
 def cm2hz(wl_cm1):
-    """wavenumber to frequency
-    wl_cm1, output in hz"""
+    """wavenumber to frequency wl_cm1, output in hz."""
     return wl_cm1 * c * 100
 
 
 def nm2cm(wl_nm):
-    "(vacuum) nm to cm-1"
+    """(vacuum) nm to cm-1."""
     return 1 / wl_nm * 1e9 / 100
 
 
 def cm2nm_air(wl_cm1):
-    """cm-1 to (air) nm
+    """cm-1 to (air) nm.
 
     References
     ----------
@@ -142,7 +138,7 @@ def cm2nm_air(wl_cm1):
 
 
 def nm_air2cm(wl_nm_air):
-    """(air) nm to cm-1
+    """(air) nm to cm-1.
 
     References
     ----------
@@ -153,25 +149,22 @@ def nm_air2cm(wl_nm_air):
 
 
 def nm2eV(wl_nm):
-    "nm to eV"
+    """nm to eV."""
     return 1 / wl_nm * 1e9 * (h * c) / eV
 
 
 def hz2nm(f_Hz):
-    """frequency to wavelength
-    f in Hz, output in nm"""
+    """frequency to wavelength f in Hz, output in nm."""
     return c * 1e9 / f_Hz
 
 
 def hz2cm(f_Hz):
-    """frequency to wavenumber
-    f in Hz, output in cm-1"""
+    """frequency to wavenumber f in Hz, output in cm-1."""
     return f_Hz / c / 100
 
 
 def nm2hz(lbd_nm):
-    """wavelength to frequency
-    lbd in Hz, output in nm"""
+    """wavelength to frequency lbd in Hz, output in nm."""
     return c * 1e9 / lbd_nm
 
 
@@ -179,8 +172,7 @@ def nm2hz(lbd_nm):
 
 
 def dcm2dnm(delta_nu, nu_0):
-    """Converts (ex: FWHM) from Δcm to Δnm
-
+    """Converts (ex: FWHM) from Δcm to Δnm.
 
     Parameters
     ----------
@@ -196,14 +188,12 @@ def dcm2dnm(delta_nu, nu_0):
 
     delta_nm: float (nm)
         broadening in wavelength (vacuum)
-
     """
     return cm2nm(nu_0 - delta_nu / 2) - cm2nm(nu_0 + delta_nu / 2)
 
 
 def dnm2dcm(delta_lbd, lbd_0):
-    """Converts (ex: FWHM) from Δnm to Δcm
-
+    """Converts (ex: FWHM) from Δnm to Δcm.
 
     Parameters
     ----------
@@ -219,14 +209,12 @@ def dnm2dcm(delta_lbd, lbd_0):
 
     delta_cm: float (cm-1)
         broadening in wavenumber
-
     """
     return nm2cm(lbd_0 - delta_lbd / 2) - nm2cm(lbd_0 + delta_lbd / 2)
 
 
 def dcm2dnm_air(delta_nu, nu_0):
-    """Converts (ex: FWHM) from Δcm to Δnm
-
+    """Converts (ex: FWHM) from Δcm to Δnm.
 
     Parameters
     ----------
@@ -242,14 +230,12 @@ def dcm2dnm_air(delta_nu, nu_0):
 
     delta_nm: float (nm)
         broadening in wavelength (air)
-
     """
     return cm2nm_air(nu_0 - delta_nu / 2) - cm2nm_air(nu_0 + delta_nu / 2)
 
 
 def dnm_air2dcm(delta_lbd, lbd_0):
-    """Converts (ex: FWHM) from Δnm to Δcm
-
+    """Converts (ex: FWHM) from Δnm to Δcm.
 
     Parameters
     ----------
@@ -265,14 +251,12 @@ def dnm_air2dcm(delta_lbd, lbd_0):
 
     delta_cm: float (cm-1)
         broadening in wavenumber
-
     """
     return nm_air2cm(lbd_0 - delta_lbd / 2) - nm_air2cm(lbd_0 + delta_lbd / 2)
 
 
 def dhz2dnm(deltaf_hz, f_0):
-    """Converts (ex: FWHM) from ΔHz to Δnm
-
+    """Converts (ex: FWHM) from ΔHz to Δnm.
 
     Parameters
     ----------
@@ -287,8 +271,7 @@ def dhz2dnm(deltaf_hz, f_0):
 
 
 def dnm2dhz(delta_lbd, lbd_0):
-    """Converts (ex: FWHM) from Δnm to Δhz
-
+    """Converts (ex: FWHM) from Δnm to Δhz.
 
     Parameters
     ----------
@@ -306,7 +289,7 @@ def dnm2dhz(delta_lbd, lbd_0):
 
 
 def torr2bar(p_torr):
-    " Torr to bar"
+    """Torr to bar."""
     return p_torr * 1.01325 / 760
 
 

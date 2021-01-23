@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Tools to test RADIS library
+"""Tools to test RADIS library.
 
 Summary
 -------
@@ -21,7 +21,6 @@ a few seconds only)::
     pytest -m fast
 
 -------------------------------------------------------------------------------
-
 """
 
 
@@ -40,9 +39,9 @@ TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
 
 
 def getTestFile(file, force=False):
-    """Return the full path of a test file, if it exists. Used by test functions not to
-    worry about the project architecture. Using :ref:`test files <label_dev_test_files>`
-    is recommended when writing tests.
+    """Return the full path of a test file, if it exists. Used by test
+    functions not to worry about the project architecture. Using :ref:`test
+    files <label_dev_test_files>` is recommended when writing tests.
 
     Parameters
     ----------
@@ -70,7 +69,6 @@ def getTestFile(file, force=False):
     --------
 
     :py:func:`~radis.test.utils.getValidationCase`
-
     """
 
     path = join(TEST_FOLDER_PATH, "files", file)
@@ -86,9 +84,10 @@ def getTestFile(file, force=False):
 
 
 def getValidationCase(file, force=False):
-    """Return the full path of a validation case file, if it exists. Used by test functions not to
-    worry about the project architecture. Using :ref:`validation test files <label_dev_test_files>`
-    is recommended when writing validation cases.
+    """Return the full path of a validation case file, if it exists. Used by
+    test functions not to worry about the project architecture. Using
+    :ref:`validation test files <label_dev_test_files>` is recommended when
+    writing validation cases.
 
     Parameters
     ----------
@@ -206,8 +205,8 @@ by :py:func:`~radis.test.utils.setup_test_line_databases`
 
 
 def setup_test_line_databases(verbose=True):
-    """Build :py:data:`~radis.test.utils.TEST_DATABASES` and add them in ~/.radis.
-    Generate the file if it  doesnt exist
+    """Build :py:data:`~radis.test.utils.TEST_DATABASES` and add them in
+    ~/.radis. Generate the file if it  doesnt exist.
 
     In particular:
 
@@ -263,7 +262,6 @@ def setup_test_line_databases(verbose=True):
     :ref:`Configuration file <label_lbl_config_file>`,
     :py:func:`~radis.misc.config.getDatabankList`,
     :py:func:`~radis.misc.config.printDatabankEntries`
-
     """
     # TODO: generate large band databases for the main species (let's say CO2,
     # H2O and CH4) and main isotopes by fetching the HITRAN 2016 database.
@@ -305,8 +303,8 @@ def setup_test_line_databases(verbose=True):
 
 
 def define_Evib_as_sum_of_Evibi(levels):
-    """Note that this is arbitrary for a polyatomic molecule.
-    Lookup Pannier, Dubuet and Laux 2020 for more.
+    """Note that this is arbitrary for a polyatomic molecule. Lookup Pannier,
+    Dubuet and Laux 2020 for more.
 
     We also update Erot to maintain the sum Evib+Erot = E :
 
@@ -314,7 +312,6 @@ def define_Evib_as_sum_of_Evibi(levels):
 
         Evib = Evib1 + Evib2 + Evib3
         Erot = E - Evib    # to be consistent with equilibrium
-
     """
 
     levels["Evib"] = levels.Evib1 + levels.Evib2 + levels.Evib3
@@ -324,9 +321,9 @@ def define_Evib_as_sum_of_Evibi(levels):
 
 
 def define_Evib_as_min_of_polyad(levels, keys):
-    """Here we define the vibrational energy as the minimum energy
-    in a polyad. Here, the polyad is defined for each combination of ``keys``
-    Typically, ``keys=['p', 'c', 'N']`` or keys=['p', 'c'].
+    """Here we define the vibrational energy as the minimum energy in a polyad.
+    Here, the polyad is defined for each combination of ``keys`` Typically,
+    ``keys=['p', 'c', 'N']`` or keys=['p', 'c'].
 
     Rotational energy is the rest::
 
@@ -357,11 +354,11 @@ def define_Evib_as_min_of_polyad(levels, keys):
 
 
 def discard_lines_with_na_levels(sf):
-    """In the test Levels databases, not all levels are given (to save
-    space). Consequently, in the Line databases, some lines have N/A
-    levels and cannot be calculated at nonequilibrium. This function
-    cleans the line databases from such lines by first running a dummy
-    calculation and removing the lines where levels were N/A.
+    """In the test Levels databases, not all levels are given (to save space).
+    Consequently, in the Line databases, some lines have N/A levels and cannot
+    be calculated at nonequilibrium. This function cleans the line databases
+    from such lines by first running a dummy calculation and removing the lines
+    where levels were N/A.
 
     .. warning::
         results from such a calculation are physically wrong. Only use

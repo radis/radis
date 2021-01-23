@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jul  6 13:52:04 2018
+"""Created on Fri Jul  6 13:52:04 2018.
 
 @author: erwan
 """
@@ -35,7 +34,6 @@ def parse_hitran_file(fname, columns, count):
     -----
 
     Part common to hit2df and cdsd2df
-
     """
 
     # To be faster, we read file totally in bytes mode with fromfiles. But that
@@ -105,7 +103,10 @@ def parse_hitran_file(fname, columns, count):
 
 
 def _format_dtype(dtype):
-    """ Format dtype from specific columns. Crash with hopefully helping error message """
+    """Format dtype from specific columns.
+
+    Crash with hopefully helping error message
+    """
 
     try:
         dt = np.dtype([(str(k), c) for k, c in dtype])
@@ -123,8 +124,7 @@ def _format_dtype(dtype):
 
 def _cast_to_dtype(data, dtype):
     """Cast array to certain type, crash with hopefull helping error message.
-    Return casted data
-
+    Return casted data.
 
     Parameters
     ----------
@@ -132,7 +132,6 @@ def _cast_to_dtype(data, dtype):
     data: array to cast
 
     dtype: (ordered) list of (param, type)
-
     """
 
     dt = _format_dtype(dtype)
@@ -157,10 +156,11 @@ def _cast_to_dtype(data, dtype):
 
 
 def drop_object_format_columns(df, verbose=True):
-    """Remove 'object' columns in a pandas DataFrame. They are not useful to us at this
-    time, and they slow down all operations (as they are converted to 'object'
-    in pandas DataFrame). If you want to keep them, better convert them to
-    some numeric values
+    """Remove 'object' columns in a pandas DataFrame.
+
+    They are not useful to us at this time, and they slow down all
+    operations (as they are converted to 'object' in pandas DataFrame).
+    If you want to keep them, better convert them to some numeric values
     """
 
     objects = [k for k, v in df.dtypes.items() if v == object]

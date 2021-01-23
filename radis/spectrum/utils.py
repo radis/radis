@@ -103,9 +103,7 @@ INFORMATIVE_PARAMS = [
     "lines_calculated",
     "lines_cutoff",
     "lines_in_continuum",
-    "parallel",
     "Nprocs",
-    "Ngroups",
     "warning_broadening_threshold",
     "warning_linestrength_cutoff",
     "load_energies",
@@ -127,7 +125,7 @@ by the generating class (ex: SpectrumFactory)"""
 
 
 def cast_waveunit(unit, force_match=True):
-    """ Standardize unit formats """
+    """Standardize unit formats."""
     if unit in WAVELEN_UNITS:
         return "nm"
     if unit in WAVELENVAC_UNITS:
@@ -145,8 +143,7 @@ def cast_waveunit(unit, force_match=True):
 
 
 def make_up(label):
-    """Cosmetic changes on label, before plot
-
+    """Cosmetic changes on label, before plot.
 
     Parameters
     ----------
@@ -177,8 +174,7 @@ def make_up(label):
 
 
 def make_up_unit(Iunit, var):
-    """Additional cosmetic changes for units on label, before plot
-
+    """Additional cosmetic changes for units on label, before plot.
 
     Parameters
     ----------
@@ -250,7 +246,7 @@ def print_conditions(
     phys_param_list=PHYSICAL_PARAMS,
     info_param_list=INFORMATIVE_PARAMS,
 ):
-    """Print all Spectrum calculation parameters
+    """Print all Spectrum calculation parameters.
 
     Parameters
     ----------
@@ -269,15 +265,14 @@ def print_conditions(
     --------
 
     :data:`~radis.spectrum.utils.PHYSICAL_PARAMS`, :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS`
-
     """
 
     def align(a, space=20):
-        """ fix alignement """
+        """fix alignement."""
         return a + " " * max(1, (space - len(str(a))))
 
     def print_param(k):
-        """ Special formatting for nicely printing conditions """
+        """Special formatting for nicely printing conditions."""
         v_k = conditions[k]
         # Add extra arguments based on arbitrary conditions
         args = []
@@ -352,8 +347,8 @@ def print_conditions(
 
 
 def split_and_plot_by_parts(w, I, *args, **kwargs):
-    """Plot two discontinued arrays (typically a spectrum) without showing junctions:
-    first identify junctions then split and plot separately
+    """Plot two discontinued arrays (typically a spectrum) without showing
+    junctions: first identify junctions then split and plot separately.
 
     Useful for plotting an experimental spectrum defined on different, non overlapping
     ranges without showing connecting lines between the ranges, or to plot an
@@ -380,7 +375,6 @@ def split_and_plot_by_parts(w, I, *args, **kwargs):
 
     cutwings: int
         discard elements on the side. Default 0
-
     """
 
     from publib.tools import keep_color

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Test parsers
+"""Test parsers.
 
 Notes
 -----
@@ -12,14 +12,13 @@ Examples
 
 Run all tests::
 
-	pytest       (in command line, in project folder)
+        pytest       (in command line, in project folder)
 
 Run only fast tests (i.e: tests that have a 'fast' label)::
 
-	pytest -m fast
+        pytest -m fast
 
 -------------------------------------------------------------------------------
-
 """
 
 import os
@@ -95,7 +94,7 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_hitran_co(verbose=True, warnings=True, **kwargs):
-    """ Analyse some default files to make sure everything still works"""
+    """Analyse some default files to make sure everything still works."""
 
     # 1. Load
     df = hit2df(getTestFile("hitran_CO_fragment.par"), cache="regen")
@@ -167,7 +166,7 @@ def test_hitran_h2o(verbose=True, warnings=True, **kwargs):
 
 
 def test_hitemp(verbose=True, warnings=True, **kwargs):
-    """ Analyse some default files to make sure everything still works"""
+    """Analyse some default files to make sure everything still works."""
 
     # 1. Load
     df = cdsd2df(

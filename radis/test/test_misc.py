@@ -33,7 +33,7 @@ def test_utils(*args, **kwargs):
 
 @pytest.mark.fast
 def test_progress_bar(*args, **kwargs):
-    """ Minimal example of a progress bar """
+    """Minimal example of a progress bar."""
 
     from time import sleep
 

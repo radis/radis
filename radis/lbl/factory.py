@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is
+"""Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is
 the core of the RADIS Line-by-Line module.
 
 Examples
@@ -11,7 +10,6 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
     # This is how you get a spectrum (see spectrum.py for front-end functions
     # that do just that)
     sf = SpectrumFactory(2125, 2249.9,
-                         parallel=False,bplot=False,
                          molecule='CO',
                          isotope=1,
                          cutoff=1e-30,   # for faster calculations. See
@@ -44,10 +42,10 @@ Most methods are written in inherited class with the following inheritance schem
 
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+:py:class:`~radis.lbl.factory.SpectrumFactory`
 
 
-.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+.. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
    :parts: 1
 
 
@@ -77,10 +75,8 @@ for Developers:
 
 
 ----------
-
 """
 import sys
-from multiprocessing import cpu_count
 from subprocess import call
 from time import time
 from warnings import warn
@@ -112,75 +108,47 @@ c_cm = c * 100
 # %% Main functions
 class SpectrumFactory(BandFactory):
     """A class to put together all functions related to loading CDSD / HITRAN
-    databases, calculating the broadenings, and summing over all the lines
+    databases, calculating the broadenings, and summing over all the lines.
 
     Parameters
     ----------
 
-    wmin: float or `~astropy.units.quantity.Quantity`
-        a hybrid parameter which can stand for minimum wavenumber or minimum
-        wavelength depending upon the unit accompanying it. If dimensionless,
-        wunit is considered as the accompanying unit.
-
-    wmax: float or `~astropy.units.quantity.Quantity`
-        a hybrid parameter which can stand for maximum wavenumber or maximum
-        wavelength depending upon the unit accompanying it. If dimensionless,
-        wunit is considered as the accompanying unit.
-
+    wmin, wmax : float or `~astropy.units.quantity.Quantity`
+        a hybrid parameter which can stand for minimum (maximum) wavenumber or minimum
+        (maximum) wavelength depending upon the unit accompanying it. If dimensionless,
+        ``wunit`` is considered as the accompanying unit.
     wunit: string
         the unit accompanying wmin and wmax. Can only be passed with wmin
         and wmax. Default is `cm-1`.
-
-    wavenum_min: float(cm^-1) or `~astropy.units.quantity.Quantity`
-        minimum wavenumber to be processed in cm^-1.
+    wavenum_min, wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
+        minimum (maximum) wavenumber to be processed in :math:`cm^{-1}`.
         use astropy.units to specify arbitrary inverse-length units.
-
-    wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
-        maximum wavenumber to be processed in cm^-1.
-        use astropy.units to specify arbitrary inverse-length units.
-
-    wavelength_min: float(nm) or `~astropy.units.quantity.Quantity`
-        minimum wavelength to be processed in nm. This wavelength
+    wavelength_min, wavelength_max : float(nm) or `~astropy.units.quantity.Quantity`
+        minimum (maximum) wavelength to be processed in :math:`nm`. This wavelength
         can be in ``'air'`` or ``'vacuum'`` depending on the value of the parameter
         ``medium=``.
         use astropy.units to specify arbitrary length units.
-
-    wavelength_max: float(nm) or `~astropy.units.quantity.Quantity`
-        maximum wavelength to be processed in nm.
-        use astropy.units to specify arbitrary length units.
-
-    Tref: float(K) or `~astropy.units.quantity.Quantity`
-        reference temperature for calculations, HITRAN database uses 296 Kelvin
-        default: 3400K.
-        use astropy.units to specify arbitrary temperature units.
-        For example, ``200 * u.deg_C``.
-
     pressure: float(bar) or `~astropy.units.quantity.Quantity`
         partial pressure of gas in bar. Default 1.01325 (1 atm).
         use astropy.units to specify arbitrary pressure units.
         For example, ``1013.25 * u.mbar``.
-
     mole_fraction: N/D
         species mole fraction. Default 1. Note that the rest of the gas
         is considered to be air for collisional broadening.
-
     path_length: float(cm) or `~astropy.units.quantity.Quantity`
         path length in cm. Default 1.
         use astropy.units to specify arbitrary length units.
-
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
         from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
         Default ``None``.
-
     isotope: int, list, str of the form '1,2', or 'all'
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
         See HITRAN documentation for isotope list for all species. If 'all',
         all isotopes in database are used (this may result in larger computation
         times!). Default 'all'
-
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
@@ -188,30 +156,25 @@ class SpectrumFactory(BandFactory):
     Other Parameters
     ----------------
 
-    Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`):
+    *Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`)*
 
     Tref: K
         Reference temperature for calculations (linestrength temperature
         correction). HITRAN database uses 296 Kelvin. Default 296 K
-
     self_absorption: boolean
-        self absorption
-
+        Compute self absorption. If ``False``, spectra are optically thin. Default ``True``.
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
         a huge performance drop (scales as ~broadening_width^2 without DLM)
         The calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default ``10`` cm-1.
-
     wstep: float (cm-1)
         Spacing of calculated spectrum. Default ``0.01`` cm-1
-
     cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate databases such as
         CDSD. If ``0``, no cutoff. Default ``1e-27``.
-
     pseudo_continuum_threshold: float
         if not ``0``, first calculate a rough approximation of the spectrum, then
         moves all lines whose linestrength intensity is less than this threshold
@@ -219,29 +182,16 @@ class SpectrumFactory(BandFactory):
         errors, mostly in highly populated areas. 80% of the lines can typically
         be moved in a continuum, resulting in 5 times faster spectra. If ``0``,
         no semi-continuum is used. Default ``0``.
-
-    bplot: boolean
-        plot intermediary results (like slit function generation). Default ``False``.
-
     save_memory: boolean
         if ``True``, removes databases calculated by intermediate functions (for
         instance, delete the full database once the linestrength cutoff criteria
         was applied). This saves some memory but requires to reload the database
         & recalculate the linestrength for each new parameter. Default ``False``.
-
     export_populations: ``'vib'``, ``'rovib'``, ``None``
         if not None, store populations in Spectrum. Either store vibrational
         populations ('vib') or rovibrational populations ('rovib'). Default ``None``
-
     export_lines: boolean
         if ``True``, saves lines in Spectrum. Default ``True``.
-
-    parallel: boolean
-        use parallel compution. May only offer a performance improvement if
-        one spectrum already takes > 10s to be calculated. Default ``False`` because
-        since the latest vectorized version parallelisation is mostly
-        counterproductive.
-
     db_use_cached: boolean, or 'regen'
         use cache for line databases.
         If ``True``, a pandas-readable csv file is generated on first access,
@@ -249,23 +199,17 @@ class SpectrumFactory(BandFactory):
         improves performances a lot. But! ... be sure to delete these files
         to regenerate them if you happen to change the database. If 'regen',
         existing cached files are removed and regenerated. Default ``False``
-        From 0.9.16 it is also used to load energy levels from .h5 cache file
-        if exist
-
+        From 0.9.16 it is also used to load energy levels from the .h5 cache file
+        if it exists
     lvl_use_cached: boolean, or ``'regen'``, or ``'force'``, or ``None``
         use cache for energy level database
         If None, the same value as ``db_use_cached`` is used.
-
-    Nprocs, Ngroups: int
-        parameters used in parallel processing mode. Default ``None``
-
     chunksize: int, or ``None``
         Splits the lines database in several chuncks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
         and slows the system down. Chunksize let you change the default chunck
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
-
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used:
         - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_)
@@ -277,7 +221,6 @@ class SpectrumFactory(BandFactory):
         Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation.
 
         Default ``"min-RMS"``
-
     broadening_method: ``"voigt"``, ``"convolve"``, ``"fft"``
         Calculates broadening with a direct voigt approximation ('voigt') or
         by convoluting independantly calculated Doppler and collisional
@@ -295,7 +238,6 @@ class SpectrumFactory(BandFactory):
 
         By default, use ``"fft"`` for any ``optimization``, and ``"voigt"`` if
         optimization is ``None`` .
-
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
@@ -307,7 +249,6 @@ class SpectrumFactory(BandFactory):
 
         See :py:data:`~radis.misc.warning.default_warning_status` for more
         information.
-
     verbose: boolean, or int
         If ``False``, stays quiet. If ``True``, tells what is going on.
         If ``>=2``, gives more detailed messages (for instance, details of
@@ -345,8 +286,7 @@ class SpectrumFactory(BandFactory):
 
     Alternative:
 
-    :func:`~radis.lbl.calc.calc_spectrum`,
-    :class:`~radis.lbl.parallel.ParallelFactory`
+    :func:`~radis.lbl.calc.calc_spectrum`
 
     Main Methods:
 
@@ -367,7 +307,6 @@ class SpectrumFactory(BandFactory):
     :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
     :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscallenous parameters (don't change output)
-
     """
 
     # TODO: make it possible to export both 'vib' and 'rovib'
@@ -406,11 +345,7 @@ class SpectrumFactory(BandFactory):
         chunksize=None,
         optimization="min-RMS",
         broadening_method=Default("fft"),
-        Nprocs=None,
-        Ngroups=None,
         cutoff=1e-27,
-        bplot=False,
-        parallel=False,
         db_use_cached=True,
         lvl_use_cached=None,
         verbose=True,
@@ -529,7 +464,6 @@ class SpectrumFactory(BandFactory):
             lvl_use_cached = db_use_cached
         self.params.lvl_use_cached = lvl_use_cached
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
-        self.misc.parallel = parallel
         self.params.cutoff = cutoff
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
@@ -563,22 +497,7 @@ class SpectrumFactory(BandFactory):
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
-        if parallel:
-            # Set up parameters for //
-            if Ngroups is None:
-                Ngroups = cpu_count()  # number of processors
-            if Nprocs is None:
-                Nprocs = cpu_count()
-            self.misc.Ngroups = Ngroups
-            self.misc.Nprocs = Nprocs
-        else:
-            if Nprocs is not None:
-                print("Choose parallel=True to use Nprocs")
-            if Ngroups is not None:
-                print("Choose parallel=True to use Ngroups")
-
         # Other parameters:
-        self.bplot = bplot
         self.verbose = verbose
         self.save_memory = save_memory
         self.autoupdatedatabase = False  # a boolean to automatically store calculated
@@ -630,25 +549,23 @@ class SpectrumFactory(BandFactory):
     def eq_spectrum(
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
     ):
-        """Generate a spectrum at equilibrium
+        """Generate a spectrum at equilibrium.
 
         Parameters
         ----------
 
-        Tgas: float
+        Tgas: float or `~astropy.units.quantity.Quantity`
             Gas temperature (K)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
-        path_length: float
-            slab size (cm). If None, Factory mole fraction is used.
-
-        pressure: float
-            pressure (bar). If None, the default Factory pressure is used.
-
+        path_length: float or `~astropy.units.quantity.Quantity`
+            slab size (cm). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
+        pressure: float or `~astropy.units.quantity.Quantity`
+            pressure (bar). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.pressure` is used.
         name: str
-            case name (useful in batch)
+            output Spectrum name (useful in batch)
 
         Returns
         -------
@@ -656,18 +573,11 @@ class SpectrumFactory(BandFactory):
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it. See [1]_ to get an overview of all Spectrum methods
-
-        Notes
-        -----
-
-        Calculate line strenghts correcting the CDSD reference one. Then call
-        the main routine that sums over all lines
-
+                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+                to plot it. See [1]_ to get an overview of all Spectrum methods
 
         References
         ----------
@@ -679,7 +589,6 @@ class SpectrumFactory(BandFactory):
         --------
 
         :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
-
         """
 
         try:
@@ -708,9 +617,7 @@ class SpectrumFactory(BandFactory):
                 self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
                 raise ValueError(
-                    "Tgas should be float. Got {0}. Use ParallelFactory for multiple cases".format(
-                        Tgas
-                    )
+                    "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
                 )
             self.input.rot_distribution = "boltzmann"  # equilibrium
             self.input.vib_distribution = "boltzmann"  # equilibrium
@@ -898,25 +805,24 @@ class SpectrumFactory(BandFactory):
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
     ):
 
-        """Generate a spectrum at equilibrium with calculation of lineshapes and broadening done on the GPU
+        """Generate a spectrum at equilibrium with calculation of lineshapes
+        and broadening done on the GPU.
 
         Parameters
         ----------
 
-        Tgas: float
+        Tgas: float or `~astropy.units.quantity.Quantity`
             Gas temperature (K)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
-        path_length: float
-            slab size (cm). If None, Factory mole fraction is used.
-
-        pressure: float
-            pressure (bar). If None, the default Factory pressure is used.
-
+        path_length: float or `~astropy.units.quantity.Quantity`
+            slab size (cm). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
+        pressure: float or `~astropy.units.quantity.Quantity`
+            pressure (bar). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.pressure` is used.
         name: str
-            case name (useful in batch)
+            output Spectrum name (useful in batch)
 
         Returns
         -------
@@ -924,11 +830,11 @@ class SpectrumFactory(BandFactory):
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it. See [1]_ to get an overview of all Spectrum methods
+                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+                to plot it. See [1]_ to get an overview of all Spectrum methods
 
         Notes
         -----
@@ -939,7 +845,6 @@ class SpectrumFactory(BandFactory):
         --------
 
         :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
-
         """
 
         try:
@@ -967,9 +872,7 @@ class SpectrumFactory(BandFactory):
             if pressure is not None:
                 self.input.pressure_mbar = pressure * 1e3
             if not is_float(Tgas):
-                raise ValueError(
-                    "Tgas should be float. Use ParallelFactory for multiple cases"
-                )
+                raise ValueError("Tgas should be float.")
             self.input.rot_distribution = "boltzmann"  # equilibrium
             self.input.vib_distribution = "boltzmann"  # equilibrium
 
@@ -1248,37 +1151,31 @@ class SpectrumFactory(BandFactory):
             vibrational temperature [K]
             can be a tuple of float for the special case of more-than-diatomic
             molecules (e.g: CO2)
-
         Trot: float
             rotational temperature [K]
-
         Ttrans: float
             translational temperature [K]. If None, translational temperature is
             taken as rotational temperature (valid at 1 atm for times above ~ 2ns
             which is the RT characteristic time)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
-        path_length: float
-            slab size (cm). If None, Factory mole fraction is used.
-
-        pressure: float
-            pressure (bar). If None, the default Factory pressure is used.
-
+        path_length: float or `~astropy.units.quantity.Quantity`
+            slab size (cm). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
+        pressure: float or `~astropy.units.quantity.Quantity`
+            pressure (bar). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.pressure` is used.
         vib_distribution: ``'boltzmann'``, ``'treanor'``
             vibrational distribution
-
         rot_distribution: ``'boltzmann'``
             rotational distribution
-
         overpopulation: dict, or ``None``
             add overpopulation factors for given levels:
 
             >>> {level:overpopulation_factor}
 
         name: str
-            case name (useful in batch)
+            output Spectrum name (useful in batch)
 
         Returns
         -------
@@ -1286,11 +1183,11 @@ class SpectrumFactory(BandFactory):
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it. See [1]_ to get an overview of all Spectrum methods
+                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+                to plot it. See [1]_ to get an overview of all Spectrum methods
 
         References
         ----------
@@ -1302,7 +1199,6 @@ class SpectrumFactory(BandFactory):
 
         :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
         :meth:`~radis.lbl.factory.SpectrumFactory.optically_thin_power`
-
         """
 
         try:
@@ -1329,14 +1225,10 @@ class SpectrumFactory(BandFactory):
             elif not is_float(Tvib):
                 raise TypeError(
                     "Tvib should be float, or tuple (got {0})".format(type(Tvib))
-                    + "For parallel processing use ParallelFactory with a "
-                    + "list of float or a list of tuple"
                 )
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
-                raise ValueError(
-                    "Trot should be float. Use ParallelFactory for multiple cases"
-                )
+                raise ValueError("Trot should be float")
             if overpopulation is None:
                 overpopulation = {}
             assert vib_distribution in ["boltzmann", "treanor"]
@@ -1580,7 +1472,8 @@ class SpectrumFactory(BandFactory):
             raise
 
     def _get_log_2gs(self):
-        """ Returns log_2gs if it already exists in the dataframe, otherwise computes it using gamma_air """
+        """Returns log_2gs if it already exists in the dataframe, otherwise
+        computes it using gamma_air."""
         df = self.df0
         # TODO: deal with the case of gamma_self [so we don't forget]
 
@@ -1599,7 +1492,9 @@ class SpectrumFactory(BandFactory):
             ) from err
 
     def _get_log_2vMm(self, molarmass_arr):
-        """ Returns log_2vMm if it already exists in the dataframe, otherwise computes it using the abundance and molar mass for each isotope passed in the input """
+        """Returns log_2vMm if it already exists in the dataframe, otherwise
+        computes it using the abundance and molar mass for each isotope passed
+        in the input."""
         df = self.df0
 
         # if the column already exists, then return
@@ -1621,7 +1516,8 @@ class SpectrumFactory(BandFactory):
             ) from err
 
     def _get_S0(self, Ia_arr):
-        """ Returns S0 if it already exists, otherwise computes the value using abundance, gamma_air and Einstein's number """
+        """Returns S0 if it already exists, otherwise computes the value using
+        abundance, gamma_air and Einstein's number."""
         df = self.df0
 
         # if the column already exists, then return it
@@ -1676,24 +1572,18 @@ class SpectrumFactory(BandFactory):
             equilibrium temperature [K]
             If doing a non equilibrium case it should be None. Use Ttrans for
             translational temperature
-
         Tvib: float
             vibrational temperature [K]
-
         Trot: float
             rotational temperature [K]
-
         Ttrans: float
             translational temperature [K]. If None, translational temperature is
             taken as rotational temperature (valid at 1 atm for times above ~ 2ns
             which is the RT characteristic time)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
         path_length: float
             slab size (cm). If None, Factory mole fraction is used.
-
         unit: str
             output unit. Default ``'mW/cm2/sr'``
 
@@ -1710,7 +1600,6 @@ class SpectrumFactory(BandFactory):
         :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_power`,
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_integral`
-
         """
 
         try:
@@ -1839,8 +1728,8 @@ class SpectrumFactory(BandFactory):
 
 def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_width):
     """define waverange vectors, with ``wavenumber`` the ouput spectral range
-    and ``wavenumber_calc`` the spectral range used for calculation, that includes
-    neighbour lines within ``broadening_max_width`` distance
+    and ``wavenumber_calc`` the spectral range used for calculation, that
+    includes neighbour lines within ``broadening_max_width`` distance.
 
     Parameters
     ----------
@@ -1865,7 +1754,6 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
     wavenumber_calc: numpy array
         an evenly spaced array between ``wavenum_min-broadening_max_width/2`` and
         ``wavenum_max+broadening_max_width/2`` with a spacing of ``wstep``
-
     """
 
     assert wavenum_min < wavenum_max
@@ -1900,7 +1788,7 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
 
 
 def _generate_broadening_range(wstep, broadening_max_width):
-    """Generate array on which to compute line broadening
+    """Generate array on which to compute line broadening.
 
     Parameters
     ----------
@@ -1918,7 +1806,6 @@ def _generate_broadening_range(wstep, broadening_max_width):
     wbroad_centered: numpy array
         an evenly spaced array, of odd-parity length, centered on 0, and of width
         ``broadening_max_width``
-
     """
 
     # create a broadening array, on which lineshape will be calculated.
