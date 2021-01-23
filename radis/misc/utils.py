@@ -19,21 +19,20 @@ from re import IGNORECASE, compile
 
 
 def getProjectRoot():
-    """ Return the full path of the project root"""
+    """Return the full path of the project root."""
 
     return dirname(dirname(__file__))
 
 
 def import_from_module(module, name):
-    """Import object 'name' from module 'module'
-    raises AttributeError if name doesnt exist
+    """Import object 'name' from module 'module' raises AttributeError if name
+    doesnt exist.
 
     Parameters
     ----------
 
     module, name: str
         module path, object name
-
     """
     impmodule = importlib.import_module(module)
     return getattr(impmodule, name)
@@ -42,7 +41,7 @@ def import_from_module(module, name):
 class Chdir:
     """because we need to change directory to get into the RADIS folder to find
     the Git files and version, when imported from another program. This class
-    then ensures we get back in the correct directory
+    then ensures we get back in the correct directory.
 
     Examples
     --------
@@ -57,7 +56,6 @@ class Chdir:
         finally:
             (...)
             cd.__del__()
-
     """
 
     def __init__(self, newPath):
@@ -98,7 +96,7 @@ class Default:
 
 
 def getarglist(function):
-    """Get list of arguments in a function
+    """Get list of arguments in a function.
 
     See https://stackoverflow.com/a/41188411/5622825
     """
@@ -118,7 +116,6 @@ def get_default_arg(func, arg):
     """Get default value of argument ``arg`` in function ``func``
 
     Adapted from https://stackoverflow.com/questions/12627118/get-a-function-arguments-default-value
-
     """
     signature = inspect.signature(func)
     items = dict(signature.parameters.items())
@@ -134,7 +131,7 @@ def get_default_arg(func, arg):
 
 
 class DatabankNotFound(FileNotFoundError):
-    """ Used when a line database is not found in radis.rc """
+    """Used when a line database is not found in radis.rc."""
 
     pass
 
@@ -146,9 +143,8 @@ class DatabankNotFound(FileNotFoundError):
 
 
 class NotInstalled(object):
-    """A class to deal with optional packages
-    Will raise an error only if the package is used (but not if imported only)
-    """
+    """A class to deal with optional packages Will raise an error only if the
+    package is used (but not if imported only)"""
 
     def __init__(self, name, info=""):
         self.__name = name
@@ -168,9 +164,8 @@ class NotInstalled(object):
 
 
 def get_files_from_regex(path):
-    """
-    Returns a list of absolute paths of all the files whose names match the input regular expression
-    """
+    """Returns a list of absolute paths of all the files whose names match the
+    input regular expression."""
     directory_name = dirname(path)
     regex = basename(path)
 

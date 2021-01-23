@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon May 22 18:23:18 2017
+"""Created on Mon May 22 18:23:18 2017.
 
 @author: erwan
 
@@ -39,7 +38,6 @@ See Also
 Refer to :class:`~radis.lbl.factory.SpectrumFactory` for more information.
 
 -------------------------------------------------------------------------------
-
 """
 
 import os
@@ -60,7 +58,7 @@ from radis.misc.basics import expand_metadata, is_float, is_list
 
 
 def _distribute_eq_spectrum(args):
-    """ Clone the Factory and calculate eq_spectrum over several clones """
+    """Clone the Factory and calculate eq_spectrum over several clones."""
     cast_factory, Tgas, mole_fraction, path_length = args
     # ... (dev) must match p.map(_distribute_eq_spectrum...) order
     factory = deepcopy(cast_factory)
@@ -72,7 +70,7 @@ def _distribute_eq_spectrum(args):
 
 
 def _distribute_noneq_spectrum(args):
-    """ Clone the Factory and calculate non_eq_spectrum over several clones """
+    """Clone the Factory and calculate non_eq_spectrum over several clones."""
     cast_factory, Tvib, Trot, mole_fraction, path_length = args
     # ... (dev) must match p.map(_distribute_noneq_spectrum...) order
     factory = deepcopy(cast_factory)
@@ -84,9 +82,8 @@ def _distribute_noneq_spectrum(args):
 
 
 class ParallelFactory(SpectrumFactory):
-    """A Parallel version of :class:`~radis.lbl.parallel.SpectrumFactory`.
-    Use `Nprocs` as argument to change the number of processors to be used.
-
+    """A Parallel version of :class:`~radis.lbl.parallel.SpectrumFactory`. Use
+    `Nprocs` as argument to change the number of processors to be used.
 
     Notes
     -----
@@ -202,7 +199,7 @@ class ParallelFactory(SpectrumFactory):
             )
 
     def eq_spectrum(self, Tgas, mole_fraction=None, path_length=None):
-        """Generate a spectrum at equilibrium
+        """Generate a spectrum at equilibrium.
 
         Parameters
         ----------
@@ -242,8 +239,6 @@ class ParallelFactory(SpectrumFactory):
 
         Calculate line strenghts correcting the CDSD reference one. Then call
         the main routine that sums over all lines
-
-
         """
 
         args = self._format_input(
@@ -321,7 +316,6 @@ class ParallelFactory(SpectrumFactory):
         Hypothesis:
 
         - Trot = Ttrans
-
         """
         args = self._format_input(
             **{
@@ -368,9 +362,12 @@ class ParallelFactory(SpectrumFactory):
         return spec_list
 
     def _format_input(self, **kwargs):
-        """Format the input of parallel calculation request. Returns lists of
-        same lengths that can be parsed with zip(). User input can be lists,
-        or floats instead of constant-values list"""
+        """Format the input of parallel calculation request.
+
+        Returns lists of same lengths that can be parsed with zip().
+        User input can be lists, or floats instead of constant-values
+        list
+        """
         N = None  # list length if there are list involved
         kwout = {}
         for k, v in kwargs.items():

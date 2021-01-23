@@ -157,8 +157,6 @@ class BandFactory(BroadenFactory):
 
         - Calculate line strenghts correcting the CDSD reference one.
         - Then call the main routine that sums over all lines
-
-
         """
 
         try:
@@ -467,7 +465,6 @@ class BandFactory(BroadenFactory):
         'absorbance', etc...]
 
         Or directly .plot(something) to plot it
-
         """
 
         try:
@@ -726,7 +723,7 @@ class BandFactory(BroadenFactory):
                 # Add band name and hitran band name in conditions
 
                 def add_attr(attr):
-                    """ # TODO: implement properly"""
+                    """# TODO: implement properly"""
                     if attr in lines:
                         if band == "others":
                             val = "N/A"
@@ -780,7 +777,8 @@ class BandFactory(BroadenFactory):
             raise
 
     def get_bands_weight(self, showfirst=None, sortby="Ei"):
-        """Show all bands by emission weight (fraction of total emission integral)
+        """Show all bands by emission weight (fraction of total emission
+        integral)
 
         Replace sortby with 'S' or 'int' to get different weights
 
@@ -814,7 +812,7 @@ class BandFactory(BroadenFactory):
             return weight
 
     def get_band_list(self):
-        """ Return all vibrational bands """
+        """Return all vibrational bands."""
 
         # Check bands are labelled
         try:
@@ -827,7 +825,7 @@ class BandFactory(BroadenFactory):
         return df["band"].unique()
 
     def get_band(self, band):
-        """ Public function to get a particular vibrational band """
+        """Public function to get a particular vibrational band."""
 
         # Check bands are labelled
         try:
@@ -853,7 +851,8 @@ class BandFactory(BroadenFactory):
 
     def _add_bands(self):
         """Add a 'band' attribute for each line to allow parsing the lines by
-        band with
+        band with.
+
         >>> df0.groupby('band')
 
 
@@ -864,7 +863,6 @@ class BandFactory(BroadenFactory):
         - Initial: with .apply()   8.08 s ± 95.2 ms
         - with groupby(): 9s   worse!!
         - using simple (and more readable)    astype(str)  statements: 523 ms ± 19.6 ms
-
         """
 
         dbformat = self.params.dbformat
@@ -881,9 +879,8 @@ class BandFactory(BroadenFactory):
     def _broaden_lines_bands(self, df):
         """Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
-        lines are processed on the same core)
-        Band specific version: returns a list of all broadened vibrational
-        bands :
+        lines are processed on the same core) Band specific version: returns a
+        list of all broadened vibrational bands :
 
         Implementation
         -----------
@@ -932,9 +929,8 @@ class BandFactory(BroadenFactory):
     def _broaden_lines_noneq_bands(self, df):
         """Divide over chuncks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
-        lines are processed on the same core)
-        Band specific version: returns a list of all broadened vibrational
-        bands
+        lines are processed on the same core) Band specific version: returns a
+        list of all broadened vibrational bands.
 
         Implementation
         -----------
@@ -999,10 +995,9 @@ class BandFactory(BroadenFactory):
     # %% Generate absorption profile which includes linebroadening factors
 
     def _calc_broadening_bands(self):
-        """
-        Loop over all lines, calculate lineshape, and returns the sum of
-        absorption coefficient k=S*f over all lines.
-        Band specific version: returns a list, one per vibrational band
+        """Loop over all lines, calculate lineshape, and returns the sum of
+        absorption coefficient k=S*f over all lines. Band specific version:
+        returns a list, one per vibrational band.
 
         For non-equilibrium, lineshape is calculated once and applied then
         to calculate absorption and emission coefficient.
@@ -1043,8 +1038,6 @@ class BandFactory(BroadenFactory):
 
         And then the parallel dispatching overhead becomes comparable with the
         process time, so better not use parallel anymore.
-
-
         """
 
         parallel = self.misc.parallel
@@ -1074,10 +1067,9 @@ class BandFactory(BroadenFactory):
         return wavenumber, abscoeff_bands
 
     def _calc_broadening_noneq_bands(self):
-        """
-        Loop over all lines, calculate lineshape, and returns the sum of
-        absorption coefficient k=S*f over all lines.
-        Band specific version: returns a list, one per vibrational band
+        """Loop over all lines, calculate lineshape, and returns the sum of
+        absorption coefficient k=S*f over all lines. Band specific version:
+        returns a list, one per vibrational band.
 
         For non-equilibrium, lineshape is calculated once and applied then
         to calculate absorption and emission coefficient.
@@ -1100,7 +1092,6 @@ class BandFactory(BroadenFactory):
 
         Both `abscoeff` and `emisscoeff` still have to be multiplied by the total
         number density (cm-3).
-
         """
 
         parallel = self.misc.parallel
@@ -1134,7 +1125,7 @@ class BandFactory(BroadenFactory):
         return wavenumber, abscoeff_bands, emisscoeff_bands
 
     def _retrieve_bands_from_database(self):
-        """   """
+        """"""
 
         # TODO: options:
         # - Implement store / retrieve machinery for Bands
@@ -1196,7 +1187,6 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
     - Initial: with .apply()   8.08 s ± 95.2 ms
     - with groupby(): 9s   worse!!
     - using simple (and more readable)    astype(str)  statements: 523 ms ± 19.6 ms
-
     """
 
     # Check inputs

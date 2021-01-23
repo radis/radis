@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue May 26 11:52:15 2015
+"""Created on Tue May 26 11:52:15 2015.
 
-Erwan Pannier
-EM2C, CentraleSupélec, 2015
-CNRS UPR 288
-
+Erwan Pannier EM2C, CentraleSupélec, 2015 CNRS UPR 288
 """
 
 from .molecules import Molecules, getMolecule
@@ -13,9 +9,8 @@ from .molecules import Molecules, getMolecule
 
 # %% Get list of supported molecules
 def _get_supported_molecules_equilibrium():
-    """Molecules supported in RADIS equilibrium calculations
-    Basically, all [HITRAN-2016]_ species
-    """
+    """Molecules supported in RADIS equilibrium calculations Basically, all
+    [HITRAN-2016]_ species."""
     # Add all HITRAN species
     from .classes import HITRAN_MOLECULES
 
@@ -25,8 +20,9 @@ def _get_supported_molecules_equilibrium():
 def _get_supported_molecules_nonequilibrium():
     """Molecules supported in RADIS non equilibrium calculations without need
     for extra databases.
-    Basically, molecules whose spectroscopic constants are built-in RADIS database
-    (see radis.db)
+
+    Basically, molecules whose spectroscopic constants are built-in
+    RADIS database (see radis.db)
     """
 
     return list(Molecules.keys())

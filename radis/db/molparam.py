@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 28 10:00:25 2017
+"""Created on Fri Apr 28 10:00:25 2017.
 
 @author: erwan
 
 -------------------------------------------------------------------------------
-
-
 """
 
 
@@ -17,7 +14,7 @@ from radis.db.utils import getFile
 
 class MolParams:
     def __init__(self, file=None):
-        """Easy access to molecular parameters taken from HITRAN molparam.txt
+        """Easy access to molecular parameters taken from HITRAN molparam.txt.
 
         Parameters
         ----------
@@ -42,7 +39,6 @@ class MolParams:
         ----------
 
         http://hitran.org/media/molparam.txt
-
         """
 
         if file is None:

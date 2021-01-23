@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 18 17:47:48 2017
+"""Created on Tue Jul 18 17:47:48 2017.
 
 @author: erwan
 
@@ -17,7 +16,6 @@ Reference
 ------------
 "Optical Diagnostics and Radiative Emission of Air Plasmas", C. Laux, 1993, p93
 Mantz et al 1975, "Ground state molecular constants of 12C16O"
-
 """
 
 
@@ -27,8 +25,8 @@ Mantz et al 1975, "Ground state molecular constants of 12C16O"
 
 
 def Gv(v, we=0, wexe=0, weye=0, weze=0, weae=0, webe=0, gv=1):
-    """Vibrational energy term
-    Dunham development (order 5 in v) in Herzberg notation
+    """Vibrational energy term Dunham development (order 5 in v) in Herzberg
+    notation.
 
     .. math::
 
@@ -130,8 +128,8 @@ def Fv(
     eta_e=0,
     gv=1,
 ):
-    """Rotational energy term
-    Dunham development (order 4 in J) in Herzberg notation
+    """Rotational energy term Dunham development (order 4 in J) in Herzberg
+    notation.
 
     .. math::
         B_{v}=B_{e}-\\alpha_{e}\\left(v+\\frac{g_{v}}{2}\\right)+\\gamma_{e}
@@ -213,7 +211,6 @@ def Fv(
     Get Herzberg coefficients for a molecule: :py:func:`~radis.db.utils.get_herzberg_coefficients`
 
     Use Dunham coefficients instead: :py:func:`~radis.levels.dunham.EvJ`
-
     """
 
     B_e, D_e, H_e, g_v = Be, De, He, gv
@@ -296,8 +293,8 @@ def Fv(
 # New version (less versatile, but less Python and faster)
 # only allowed formats: Y01
 def EvJ(v, J, **Ykl_dict):
-    """Calculates rovibrational energy reading from Dunham coefficients in
-    Ykl notation, for diatomic molecules.
+    """Calculates rovibrational energy reading from Dunham coefficients in Ykl
+    notation, for diatomic molecules.
 
     Parameters
     ----------
@@ -327,7 +324,6 @@ def EvJ(v, J, **Ykl_dict):
 
     Use Herzberg coefficients instead: :py:func:`~radis.levels.dunham.Gv`,
     :py:func:`~radis.levels.dunham.Fv`
-
     """
 
     E = 0

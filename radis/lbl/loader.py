@@ -219,9 +219,10 @@ from copy import deepcopy
 
 
 class ConditionDict(dict):
-    """A class to hold Spectrum calculation input conditions (:py:class:`~radis.lbl.loader.Input`),
-    computation parameters (:py:class:`~radis.lbl.loader.Parameters`), or
-    miscalleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`).
+    """A class to hold Spectrum calculation input conditions
+    (:py:class:`~radis.lbl.loader.Input`), computation parameters
+    (:py:class:`~radis.lbl.loader.Parameters`), or miscalleneous parameters
+    (:py:class:`~radis.lbl.loader.MiscParams`).
 
     Works like a dict except you can also access attribute with::
 
@@ -247,11 +248,12 @@ class ConditionDict(dict):
     """
 
     def get_params(self):
-        """Returns the variables (and their values) contained in the dictionary,
-        minus some based on their type. Numpy array, dictionaries and pandas DataFrame
-        are removed
+        """Returns the variables (and their values) contained in the
+        dictionary, minus some based on their type. Numpy array, dictionaries
+        and pandas DataFrame are removed.
 
-        Tuples are converted to string"""
+        Tuples are converted to string
+        """
 
         # Filter parameters based on type
         def filter_type(params):
@@ -480,7 +482,7 @@ class MiscParams(ConditionDict):
 
 
 def format_paths(s):
-    """ escape all special characters """
+    """escape all special characters."""
     if s is not None:
         s = s.replace("\\", "/")
     return s
@@ -657,7 +659,8 @@ class DatabankLoader(object):
 
     def init_databank(self, *args, **kwargs):
         """Method to init databank parameters but only load them when needed.
-        Databank is reloaded by :meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
+        Databank is reloaded by
+        :meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
 
         Same inputs Parameters as :meth:`~radis.lbl.loader.DatabankLoader.load_databank`:
 
@@ -774,7 +777,6 @@ class DatabankLoader(object):
         - Download from HITRAN: :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
         - Load from local files: :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
         - Reload databank: :meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
-
         """
 
         # Check inputs
@@ -894,7 +896,6 @@ class DatabankLoader(object):
         .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
 
         .. [2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
-
         """
         # @dev TODO: also add cache file to fetch_databank, similar to load_databank
         # | Should store the waverange, molecule and isotopes in the cache file
@@ -1018,8 +1019,10 @@ class DatabankLoader(object):
         drop_columns="auto",
         buffer="RAM",
     ):
-        """Loads databank from shortname in the :ref:`Configuration file <label_lbl_config_file>`
-        (`~/.radis`), or by manually setting all attributes.
+        """Loads databank from shortname in the :ref:`Configuration file.
+
+        <label_lbl_config_file>` (`~/.radis`), or by manually setting all
+        attributes.
 
         Databank includes:
 
@@ -1154,7 +1157,6 @@ class DatabankLoader(object):
         ----------
 
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
-
         """
         # TODO remove tempfile option to clean the code.
         try:
@@ -1283,9 +1285,9 @@ class DatabankLoader(object):
         drop_columns="auto",
         buffer="RAM",
     ):
-        """Check that database parameters are valid, in particular that
-        paths exist. Loads all parameters if a Database from .radis config file
-        was given
+        """Check that database parameters are valid, in particular that paths
+        exist. Loads all parameters if a Database from .radis config file was
+        given.
 
         Returns
         -------
@@ -1293,7 +1295,6 @@ class DatabankLoader(object):
         tuple
             (name, path, dbformat, parfunc, parfuncfmt, levels, levelsfmt,
              db_use_cached, db_assumed_sorted, drop_columns, buffer)
-
         """
 
         dbformat = format
@@ -1441,8 +1442,8 @@ class DatabankLoader(object):
         load_energies=True,
         include_neighbouring_lines=True,
     ):
-        """store all params so they can be parsed by "get_conditions()"
-        and saved in output spectra information
+        """store all params so they can be parsed by "get_conditions()" and
+        saved in output spectra information.
 
         Notes
         -----
@@ -1479,7 +1480,7 @@ class DatabankLoader(object):
     ):
         """Init a :class:`~radis.tools.database.SpecDatabase` folder in
         ``path`` to later store our spectra. Spectra can also be automatically
-        retrieved from the database instead of being calculated
+        retrieved from the database instead of being calculated.
 
         Parameters
         ----------
@@ -1518,7 +1519,6 @@ class DatabankLoader(object):
 
         db: SpecDatabase
             the database where spectra will be stored or retrieved
-
         """
 
         db = SpecDatabase(path, add_info=add_info, add_date=add_date, binary=compress)
@@ -1563,7 +1563,6 @@ class DatabankLoader(object):
             path to tabulated partition function to use.
             If ``parfuncfmt`` is ``hapi`` then ``parfunc`` should be the link to the
             hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
-
         """
 
         # Let's get the tabulated partition function (to calculate eq spectra)
@@ -1594,7 +1593,6 @@ class DatabankLoader(object):
             in ``radis.db`` database. If available for given molecule. Look up
             references there. If ``None``, non equilibrium calculations are not
             possible.
-
         """
 
         molecule = self.input.molecule
@@ -1620,10 +1618,11 @@ class DatabankLoader(object):
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
 
     def _check_line_databank(self):
-        """Make sure database is loaded, loads if it isnt and we have all
-        the information needed. Databank has been initialized by
-        :meth:`~radis.lbl.loader.DatabankLoader._init_databank`
+        """Make sure database is loaded, loads if it isnt and we have all the
+        information needed.
 
+        Databank has been initialized by
+        :meth:`~radis.lbl.loader.DatabankLoader._init_databank`
         """
 
         # Make sure database is loaded
@@ -1722,8 +1721,8 @@ class DatabankLoader(object):
         drop_columns="auto",
         include_neighbouring_lines=True,
     ):
-        """Loads all available database files and keep the relevant one. Returns
-        a Pandas dataframe
+        """Loads all available database files and keep the relevant one.
+        Returns a Pandas dataframe.
 
         Parameters
         ----------
@@ -1783,7 +1782,6 @@ class DatabankLoader(object):
 
         - ``'RAM'``: 7.1 s
         - ``'h5'``: 21 s
-
         """
 
         # Check inputs
@@ -1849,10 +1847,10 @@ class DatabankLoader(object):
         # subroutine load_and_concat
         # --------------------------------------
         def load_and_concat(files, buffer):
-            """Two modes of concatenation: either directly in memory in ``'RAM'`` mode,
-            or aggregate on disk in a large HDF5 file in ``'h5'`` mode.
-            ``'RAM'`` is faster but memory hunger, ``'h5'`` handles better
-            a bigger database
+            """Two modes of concatenation: either directly in memory in
+            ``'RAM'`` mode, or aggregate on disk in a large HDF5 file in
+            ``'h5'`` mode. ``'RAM'`` is faster but memory hunger, ``'h5'``
+            handles better a bigger database.
 
             Parameters
             ----------
@@ -1879,7 +1877,6 @@ class DatabankLoader(object):
 
             buffer: ``'direct'``, ``'h5'``, ``'RAM'``
                 see _load_databank info
-
             """
 
             if buffer == "direct":
@@ -2181,11 +2178,14 @@ class DatabankLoader(object):
         return df
 
     def _reload_databank(self):
-        """In save_memory mode we're trying to save RAM so reference dataframe (df0)
-        will be deleted after scaled database (df1) is created. This makes it
-        impossible to calculate another spectrum afterwards, without reloading
-        the database: in that case, we have kept the temporary file for some time
-        and try to regenerate df0 here"""
+        """In save_memory mode we're trying to save RAM so reference dataframe
+        (df0) will be deleted after scaled database (df1) is created.
+
+        This makes it impossible to calculate another spectrum
+        afterwards, without reloading the database: in that case, we
+        have kept the temporary file for some time and try to regenerate
+        df0 here
+        """
 
         path = self._get_temp_file()
         if not exists(path):
@@ -2213,9 +2213,9 @@ class DatabankLoader(object):
             )
 
     def _get_isotope_list(self, molecule=None, df=None):
-        """Returns list of isotopes for given molecule
-        Parse the Input conditions (fast). If a line database is given, parse the
-        line database instead (slow)
+        """Returns list of isotopes for given molecule Parse the Input
+        conditions (fast). If a line database is given, parse the line database
+        instead (slow)
 
         Parameters
         ----------
@@ -2245,7 +2245,7 @@ class DatabankLoader(object):
 
     def _retrieve_from_database(self, ignore_misc=True):
         """Retrieve a spectrum from a SpecDatabase database, if it matches
-        current factory conditions
+        current factory conditions.
 
         Parameters
         ----------
@@ -2256,7 +2256,6 @@ class DatabankLoader(object):
             comparing the database to current factory conditions. It should
             obviously only be attributes that have no impact on the Spectrum
             produced by the factory. Default ``True``
-
         """
 
         conditions = {
@@ -2287,8 +2286,11 @@ class DatabankLoader(object):
 
                 def get_best_match():
                     """Returns the Spectrum that matches the input conditions
-                    better. Used to give a better error message in case no
-                    Spectrum was found"""
+                    better.
+
+                    Used to give a better error message in case no
+                    Spectrum was found
+                    """
                     best = None
                     score = 0
                     for s in self.SpecDatabase.get():
@@ -2331,7 +2333,6 @@ class DatabankLoader(object):
             parsum.at(T)
 
         Partition functions are interpolated from tabulated values
-
         """
 
         if __debug__:
@@ -2363,8 +2364,8 @@ class DatabankLoader(object):
         return parsum
 
     def _build_partition_function_calculator(self, levels, levelsfmt, isotope):
-        """Return an universal partition function  object ``parsum`` so that the
-        following methods are defined::
+        """Return an universal partition function  object ``parsum`` so that
+        the following methods are defined::
 
             parsum.at(T)
             parsum.at_noneq(Tvib, Trot)
@@ -2385,7 +2386,6 @@ class DatabankLoader(object):
 
         isotope: int
             isotope identifier
-
         """
         if __debug__:
             printdbg(
@@ -2426,7 +2426,7 @@ class DatabankLoader(object):
 
     def _fetch_molecular_parameters(self, df):
         """Fetch molecular parameters (``molar_mass``, ``abundance``)  from
-        Molecular Parameter database
+        Molecular Parameter database.
 
         Parameters
         ----------
@@ -2518,7 +2518,7 @@ class DatabankLoader(object):
         return
 
     def get_partition_function_interpolator(self, molecule, isotope, elec_state):
-        """Retrieve Partition Function Interpolator
+        """Retrieve Partition Function Interpolator.
 
         Parameters
         ----------
@@ -2538,7 +2538,7 @@ class DatabankLoader(object):
         return parsum
 
     def get_partition_function_calculator(self, molecule, isotope, elec_state):
-        """Retrieve Partition Function Calculator
+        """Retrieve Partition Function Calculator.
 
         Parameters
         ----------
@@ -2558,13 +2558,13 @@ class DatabankLoader(object):
         return parsum
 
     def _get_temp_file(self):
-        """ Get temp file name (add warnings if temp_file exists already) """
+        """Get temp file name (add warnings if temp_file exists already)"""
 
         # Get temp file name
         return TEMP_FILE_PREFIX + str(self._id) + ".h5"
 
     def _clean_temp_file(self):
-        """ Clean the room before leaving  """
+        """Clean the room before leaving."""
 
         if exists(self._get_temp_file()):
             os.remove(self._get_temp_file())
@@ -2572,7 +2572,7 @@ class DatabankLoader(object):
                 print("Cleaned temp file: {0}".format(self._get_temp_file()))
 
     def get_conditions(self, ignore_misc=False):
-        """Get all parameters defined in the SpectrumFactory
+        """Get all parameters defined in the SpectrumFactory.
 
         ignore_misc: boolean
             if ``True``, then all attributes considered as Factory 'descriptive'
@@ -2580,7 +2580,6 @@ class DatabankLoader(object):
             comparing the database to current factory conditions. It should
             obviously only be attributes that have no impact on the Spectrum
             produced by the factory. Default ``False``
-
         """
 
         vardict = self.input.get_params()
@@ -2591,8 +2590,9 @@ class DatabankLoader(object):
         return vardict
 
     def warn(self, message, category="default"):
-        """Trigger a warning, an error or just ignore based on the value defined
-        in the :attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
+        """Trigger a warning, an error or just ignore based on the value
+        defined in the :attr:`~radis.lbl.loader.DatabankLoader.warnings`
+        dictionary.
 
         The warnings can thus be deactivated selectively by setting the SpectrumFactory
          :attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute
@@ -2617,7 +2617,6 @@ class DatabankLoader(object):
         --------
 
         :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
-
         """
 
         return warn(message, category=category, status=self.warnings)

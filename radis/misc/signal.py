@@ -31,8 +31,8 @@ def resample(
     energy_threshold=1e-3,
     print_conservation=True,
 ):
-    """Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
-    data and whose bounds are taken as the same as `xspace`.
+    """Resample (xspace, vector) on a new space (xspace_new) of evenly
+    distributed data and whose bounds are taken as the same as `xspace`.
 
     Uses spline interpolation to create the intermediary points. Number of points
     is the same as the initial xspace, times a resolution factor. Verifies energy
@@ -87,8 +87,6 @@ def resample(
 
         w_nm, I_nm = s.get('radiance')
         w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
-
-
     """
 
     if len(xspace) != len(vector):
@@ -219,8 +217,8 @@ def resample_even(
     energy_threshold=1e-3,
     print_conservation=True,
 ):
-    """Resample (xspace, vector) on a new space (xspace_new) of evenly distributed
-    data and whose bounds are taken as the same as `xspace`.
+    """Resample (xspace, vector) on a new space (xspace_new) of evenly
+    distributed data and whose bounds are taken as the same as `xspace`.
 
     Uses spline interpolation to create the intermediary points. Number of points
     is the same as the initial xspace, times a resolution factor. Verifies energy
@@ -277,8 +275,6 @@ def resample_even(
 
         w_nm, I_nm = s.get('radiance')
         w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
-
-
     """
 
     # Get new evenly space array
@@ -302,15 +298,13 @@ def resample_even(
 
 
 def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
-    """Test procedures
-
+    """Test procedures.
 
     Parameters
     ----------
 
     debug: boolean
         swamps the console namespace with local variables. Default ``False``
-
     """
 
     import matplotlib.pyplot as plt

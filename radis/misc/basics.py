@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Nov  5 12:59:37 2014
+"""Created on Wed Nov  5 12:59:37 2014.
+
 @author: Erwan
 Small functions used in other procedures
 -------------------------------------------------------------------------------
@@ -49,22 +49,22 @@ def make_folders(path, folders):
 
 
 def all_in(keys, L):
-    """ Returns whether all items in keys are in list L """
+    """Returns whether all items in keys are in list L."""
     return all([k in L for k in keys])
 
 
 def in_all(key, list_of_list):
-    """ Returns true if key is in all lists """
+    """Returns true if key is in all lists."""
     return all([key in L for L in list_of_list])
 
 
 def any_in(keys, L):
-    """ Returns whether any of the items in keys are in list L """
+    """Returns whether any of the items in keys are in list L."""
     return any([k in L for k in keys])
 
 
 def key_max_val(d):
-    """Return the dictionary key with max value"""
+    """Return the dictionary key with max value."""
     v = list(d.values())
     k = list(d.keys())
     return k[v.index(max(v))]
@@ -76,8 +76,10 @@ def exec_file(afile, globalz=None, localz=None):
 
 
 def remove_duplicates(l):
-    """Remove duplicates from a list, without changing the order. Note that
-    if the order doesn't matter you could just do set(l)"""
+    """Remove duplicates from a list, without changing the order.
+
+    Note that if the order doesn't matter you could just do set(l)
+    """
 
     l1 = []
     for e in l:
@@ -262,20 +264,19 @@ def compare_lists(l1, l2, verbose="if_different", return_string=False):
 
 
 def stdpath(p):
-    """Convert path p in standard path (irrespective of slash / backslash,
-    or case)
-    """
+    """Convert path p in standard path (irrespective of slash / backslash, or
+    case)"""
 
     return normpath(normcase(abspath(p)))
 
 
 def compare_paths(p1, p2):
-    """ Compare 2 paths p1 and p2 """
+    """Compare 2 paths p1 and p2."""
     return stdpath(p1) == stdpath(p2)
 
 
 def merge_lists(lists):
-    """ Merge a list of lists and return a list with unique elements """
+    """Merge a list of lists and return a list with unique elements."""
     return list(set(sum([l for l in lists], [])))
 
 
@@ -323,14 +324,14 @@ def merge_rename_columns(df, columns1, columns2, merged_names):
 
 
 def print_series(a):
-    """ Print a pandas series `a` , explicitely showing all rows"""
+    """Print a pandas series `a` , explicitely showing all rows."""
 
     for i, k in enumerate(a.keys()):
         print(k, "\t", a.values[0][i])
 
 
 def transfer_metadata(df1, df2, metadata):
-    """Transfer metadata between a DataFrame df1 and df2
+    """Transfer metadata between a DataFrame df1 and df2.
 
     For some reason metadata are sometimes not copied when a DataFrame is
     sliced or copied, even if they explicitely figure in the df._metadata
@@ -357,7 +358,7 @@ def transfer_metadata(df1, df2, metadata):
 
 
 def expand_metadata(df, metadata):
-    """Turn metadata from a float to a column
+    """Turn metadata from a float to a column.
 
     For some reason metadata are sometimes not copied when a DataFrame is
     sliced or copied, even if they explicitely figure in the df._metadata
@@ -374,7 +375,6 @@ def expand_metadata(df, metadata):
 
     None:
         df modified in place
-
     """
 
     for k in metadata:
@@ -399,7 +399,7 @@ def list_if_float(a):
 
 
 def flatten(*args):
-    """ Flatten list of lists of floats """
+    """Flatten list of lists of floats."""
     out = []
     for a in args:
         if is_list(a):
@@ -410,18 +410,22 @@ def flatten(*args):
 
 
 def is_list(a):
-    """ Returns True if a has list-like type: list, np.array, tuple, set, etc.)"""
+    """Returns True if a has list-like type: list, np.array, tuple, set,
+    etc.)"""
     return type(a) in [list, np.ndarray, tuple, set]
 
 
 def is_float(a):
-    """ Returns True if a has float-like type: float, np.float64, np.int64, etc.)"""
+    """Returns True if a has float-like type: float, np.float64, np.int64,
+    etc.)"""
     return type(a) in [float, np.float64, np.int32, np.float32, int, np.int64]
 
 
 def is_number(s):
-    """Return True if ``s`` is a number. Works for strings, floats, int,
-    and is compatible with Python 2/3"""
+    """Return True if ``s`` is a number.
+
+    Works for strings, floats, int, and is compatible with Python 2/3
+    """
 
     try:
         float(s)

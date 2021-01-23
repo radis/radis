@@ -68,8 +68,8 @@ def LineSurvey(
     xunit=None,
     yunit=None,  # deprecated
 ):
-    """Plot Line Survey (all linestrengths above cutoff criteria) in Plotly (html)
-
+    """Plot Line Survey (all linestrengths above cutoff criteria) in Plotly
+    (html)
 
     Parameters
     ----------
@@ -149,8 +149,6 @@ def LineSurvey(
     .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
 
     .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
-
-
     """
 
     # Check inputs
@@ -231,8 +229,8 @@ def LineSurvey(
     # %% Plot - Plotly version
 
     def get_x(w):
-        """w (input) is supposed to be in vacuum wavenumbers in the
-        lines database"""
+        """w (input) is supposed to be in vacuum wavenumbers in the lines
+        database."""
 
         # Convert wavelength / wavenumber
         if wunit == "cm-1":

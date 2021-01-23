@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Spectrum-class module
-"""
+"""Spectrum-class module."""
 
 from .compare import (
     get_diff,
