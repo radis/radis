@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Tools to deal with HDF5 cache files
-HDF5 cache files are used to cache Energy Database files, and Line Database
-files, and yield a much faster access time.
+"""Tools to deal with HDF5 cache files HDF5 cache files are used to cache
+Energy Database files, and Line Database files, and yield a much faster access
+time.
 
 Routine Listing
 ---------------
@@ -19,8 +18,6 @@ See Also
 :py:func:`~radis.io.cdsd.cdsd2df`
 
 -------------------------------------------------------------------------------
-
-
 """
 # TODO: start using .feather format. Faster than HDF5 for pandas Dataframe,
 # and can be multithreaded.
@@ -65,7 +62,7 @@ def load_h5_cache_file(
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
     verbose=True,
 ):
-    """Function to load a h5 cache file
+    """Function to load a h5 cache file.
 
     Parameters
     ----------
@@ -109,7 +106,6 @@ def load_h5_cache_file(
     --------
 
     :data:`~radis.OLDEST_COMPATIBLE_VERSION`
-
     """
 
     # 1. know if we have to load the file
@@ -175,7 +171,7 @@ def load_h5_cache_file(
 
 
 def get_cache_file(fcache, verbose=True):
-    """Load HDF5 cache file
+    """Load HDF5 cache file.
 
     Parameters
     ----------
@@ -296,8 +292,8 @@ def check_not_deprecated(
     current_version=None,
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
 ):
-    """Make sure cache file is not deprecated: checks that ``metadata`` is the same,
-    and that the version under which the file was generated is valid.
+    """Make sure cache file is not deprecated: checks that ``metadata`` is the
+    same, and that the version under which the file was generated is valid.
 
     Parameters
     ----------
@@ -317,7 +313,6 @@ def check_not_deprecated(
     last_backward_compatible_version: str
         If the file was generated in a non-compatible version, an error is raised.
         Default :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
-
     """
 
     # Get attributes (metadata+version)
@@ -392,7 +387,7 @@ def check_not_deprecated(
 
 
 def _h5_compatible(a_dict):
-    """ Make dictionary ``a_dict`` h5 compatible """
+    """Make dictionary ``a_dict`` h5 compatible."""
     out = {}
     for k, v in a_dict.items():
         if v is None:
@@ -405,7 +400,7 @@ def _h5_compatible(a_dict):
 
 
 def _warn_if_object_columns(df, fname):
-    """  'object' columns slow everything down (not fixed format strings!) """
+    """'object' columns slow everything down (not fixed format strings!)"""
     objects = [k for k, v in df.dtypes.items() if v == object]
     if len(objects) > 0:
         warn(
@@ -419,7 +414,7 @@ def _warn_if_object_columns(df, fname):
 def save_to_hdf(
     df, fname, metadata, version=None, key="df", overwrite=True, verbose=True
 ):
-    """Save energy levels to HDF5 file. Add metadata and version
+    """Save energy levels to HDF5 file. Add metadata and version.
 
     Parameters
     ----------
@@ -458,7 +453,6 @@ def save_to_hdf(
     -----
 
     ``None`` values are not stored
-
     """
 
     # Check file
@@ -504,9 +498,9 @@ def save_to_hdf(
 
 
 def filter_metadata(arguments, discard_variables=["self", "verbose"]):
-    """Filter arguments (created with  ``locals()`` at the beginning
-    of the script) to extract metadata. Metadata is stored as attributes
-    in the cached file:
+    """Filter arguments (created with  ``locals()`` at the beginning of the
+    script) to extract metadata. Metadata is stored as attributes in the cached
+    file:
 
     - remove variables in ``discard_variables``
     - remove variables that start with ``'_'``
@@ -544,7 +538,6 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
             save_to_hdf(df, fname, metadata=metadata)
 
             ...
-
     """
 
     metadata = {k: v for (k, v) in arguments.items() if not k.startswith("_")}
@@ -555,5 +548,5 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
 
 
 def cache_file_name(fname):
-    """ Returns the corresponding cache file name for fname """
+    """Returns the corresponding cache file name for fname."""
     return splitext(fname)[0] + ".h5"

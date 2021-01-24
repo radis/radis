@@ -54,9 +54,9 @@ Most methods are written in inherited class with the following inheritance schem
 
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+:py:class:`~radis.lbl.factory.SpectrumFactory`
 
-.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+.. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
    :parts: 1
 
 
@@ -180,15 +180,14 @@ class BaseFactory(DatabankLoader):
     # =========================================================================
 
     def print_conditions(self, preprend=None):
-        """Prints all physical / computational parameters.
-        These are also stored in each result Spectrum
+        """Prints all physical / computational parameters. These are also
+        stored in each result Spectrum.
 
         Parameters
         ----------
 
         preprend: str
             just to text to display before printing conditions
-
         """
 
         if preprend:
@@ -233,7 +232,6 @@ class BaseFactory(DatabankLoader):
         --------
 
         :meth:`~radis.lbl.base.BaseFactory.get_populations`
-
         """
 
         energies = self.get_partition_function_calculator(molecule, isotope, state).df
@@ -244,12 +242,13 @@ class BaseFactory(DatabankLoader):
         return energies
 
     def get_abundance(self, molecule, isotope):
-        """ Returns abundance of molecule > isotope """
+        """Returns abundance of molecule > isotope."""
 
         return self.parsum_calc[molecule][isotope].Ia
 
     def plot_linestrength_hist(self):
-        """ Plot linestrength distribution (to help determine a cutoff criteria) """
+        """Plot linestrength distribution (to help determine a cutoff
+        criteria)"""
         return self.plot_hist("df1", "S")
 
     def plot_hist(self, dataframe="df0", what="int"):
@@ -295,7 +294,7 @@ class BaseFactory(DatabankLoader):
     @staticmethod
     def assert_no_nan(df, column):
         """Assert there are no nan in the column, and crash with a nice
-        explanation if it is found"""
+        explanation if it is found."""
         from radis.misc.printer import get_print_full
 
         try:
@@ -310,7 +309,7 @@ class BaseFactory(DatabankLoader):
             ) from err
 
     def _add_EvibErot(self, df, calc_Evib_harmonic_anharmonic=False):
-        """Calculate Evib & Erot in Line dataframe
+        """Calculate Evib & Erot in Line dataframe.
 
         Parameters
         ----------
@@ -324,7 +323,6 @@ class BaseFactory(DatabankLoader):
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
-
         """
         if self.verbose:
             print("Fetching Evib & Erot.")
@@ -391,13 +389,12 @@ class BaseFactory(DatabankLoader):
             )
 
     def _add_Evib123Erot(self, df, calc_Evib_harmonic_anharmonic=False):
-        """Calculate Evib & Erot in dataframe
+        """Calculate Evib & Erot in dataframe.
 
         Parameters
         ----------
 
         df: DataFrame
-
         """
         if self.verbose:
             print(
@@ -435,6 +432,7 @@ class BaseFactory(DatabankLoader):
 
     def _add_EvibErot_CDSD_pc(self, df, calc_Evib_harmonic_anharmonic=False):
         """Calculate Evib & Erot in Lines database:
+
         - Evib is fetched from Energy Levels database
         - Erot is calculated with Erot = E - Evib
 
@@ -453,7 +451,6 @@ class BaseFactory(DatabankLoader):
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
-
         """
 
         # Check inputs
@@ -484,8 +481,8 @@ class BaseFactory(DatabankLoader):
             )
 
         def get_Evib_CDSD_pc_1iso(df, iso):
-            """Calculate Evib for a given isotope (energies are specific
-            to a given isotope)"""
+            """Calculate Evib for a given isotope (energies are specific to a
+            given isotope)"""
 
             # list of energy levels for given isotope
             energies = self.get_energy_levels(molecule, iso, state)
@@ -582,6 +579,7 @@ class BaseFactory(DatabankLoader):
 
     def _add_EvibErot_CDSD_pcN(self, df, calc_Evib_harmonic_anharmonic=False):
         """Calculate Evib & Erot in Lines database:
+
         - Evib is fetched from Energy Levels database
         - Erot is calculated with Erot = E - Evib
 
@@ -600,8 +598,6 @@ class BaseFactory(DatabankLoader):
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
-
-
         """
         if __debug__:
             printdbg(
@@ -638,8 +634,8 @@ class BaseFactory(DatabankLoader):
                 )
 
         def get_Evib_CDSD_pcN_1iso(df, iso):
-            """Calculate Evib for a given isotope (energies are specific
-            to a given isotope)"""
+            """Calculate Evib for a given isotope (energies are specific to a
+            given isotope)"""
 
             # list of energy levels for given isotope
             energies = self.get_energy_levels(molecule, iso, state)
@@ -695,6 +691,7 @@ class BaseFactory(DatabankLoader):
 
     def _add_EvibErot_CDSD_pcJN(self, df, calc_Evib_harmonic_anharmonic=False):
         """Calculate Evib & Erot in Lines database:
+
         - Evib is fetched from Energy Levels database
         - Erot is calculated with Erot = E - Evib
 
@@ -710,8 +707,6 @@ class BaseFactory(DatabankLoader):
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
-
-
         """
         if __debug__:
             printdbg(
@@ -748,8 +743,8 @@ class BaseFactory(DatabankLoader):
                 )
 
         def get_Evib_CDSD_pcJN_1iso(df, iso):
-            """Calculate Evib for a given isotope (energies are specific
-            to a given isotope)
+            """Calculate Evib for a given isotope (energies are specific to a
+            given isotope)
 
             Notes
             -----
@@ -759,7 +754,6 @@ class BaseFactory(DatabankLoader):
             Unlike get_EvibErot_CDSD_pcN_1iso and get_EvibErot_CDSD_pc_1iso,
             no need to use groupby() here, as (per construction) there is only
             one level for a combination of p, c, J, N
-
             """
 
             # list of energy levels for given isotope
@@ -814,7 +808,7 @@ class BaseFactory(DatabankLoader):
         return  # None: Dataframe updated
 
     def _add_Evib123Erot_CDSD_pc(self, df, calc_Evib_harmonic_anharmonic=False):
-        """Lookup Evib1, Evib2, Evib3 & Erot for all lines in dataframe
+        """Lookup Evib1, Evib2, Evib3 & Erot for all lines in dataframe.
 
         Note: p, c, j, n is a partition and we just a groupby(these) so all
         poluy, wangu etc. are the same
@@ -831,7 +825,6 @@ class BaseFactory(DatabankLoader):
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
-
         """
         if __debug__:
             printdbg(
@@ -865,8 +858,8 @@ class BaseFactory(DatabankLoader):
             )
 
         def get_Evib123_CDSD_pc_1iso(df, iso):
-            """Calculate Evib for a given isotope (energies are specific
-            to a given isotope)"""
+            """Calculate Evib for a given isotope (energies are specific to a
+            given isotope)"""
             # TODO: implement with map() instead (much faster!! see get_Evib_CDSD_* )
 
             energies = self.get_energy_levels(molecule, iso, state)
@@ -965,7 +958,8 @@ class BaseFactory(DatabankLoader):
         return  # None: Dataframe updated
 
     def _add_EvibErot_RADIS_cls1(self, df, calc_Evib_harmonic_anharmonic=False):
-        """Fetch Evib & Erot in dataframe for HITRAN class 1 (diatomic) molecules
+        """Fetch Evib & Erot in dataframe for HITRAN class 1 (diatomic)
+        molecules.
 
         Parameters
         ----------
@@ -979,8 +973,6 @@ class BaseFactory(DatabankLoader):
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
-
-
         """
         if __debug__:
             printdbg(
@@ -1156,8 +1148,8 @@ class BaseFactory(DatabankLoader):
                 )
 
         def get_Evib123_RADIS_cls5_1iso(df, iso):
-            """Fetch Evib & Erot for a given isotope (energies are specific
-            to a given isotope)
+            """Fetch Evib & Erot for a given isotope (energies are specific to
+            a given isotope)
 
             Notes
             -----
@@ -1240,15 +1232,13 @@ class BaseFactory(DatabankLoader):
 
     def _add_Evib123Erot_RADIS_cls5_harmonicanharmonic(self, df):
         """Fetch Evib & Erot in dataframe for HITRAN class 5 (linear triatomic
-        with Fermi degeneracy... i.e CO2 ) molecules
+        with Fermi degeneracy... i.e CO2 ) molecules.
 
         Parameters
         ----------
 
         df: DataFrame
             list of transitions
-
-
         """
         if __debug__:
             printdbg("called _add_Evib123Erot_RADIS_cls5_harmonicanharmonic()")
@@ -1277,8 +1267,8 @@ class BaseFactory(DatabankLoader):
                 )
 
         def get_Evib123_RADIS_cls5_1iso_ah(df, iso):
-            """Fetch Evib & Erot for a given isotope (energies are specific
-            to a given isotope). Returns harmonic, anharmonic components
+            """Fetch Evib & Erot for a given isotope (energies are specific to
+            a given isotope). Returns harmonic, anharmonic components.
 
             Notes
             -----
@@ -1325,7 +1315,6 @@ class BaseFactory(DatabankLoader):
                     r.ju.iloc[0]  not necessary (same Evib) but explicitely mentionning it
                              yields a x20 on performances (60s -> 3s)
                     In 0.9.19 the energy database was reduced to vibrational energies only
-
                 """
                 viblvl = vib_lvl_name_hitran_class5(
                     r.v1u.iloc[0], r.v2u.iloc[0], r.l2u.iloc[0], r.v3u.iloc[0]
@@ -1340,7 +1329,7 @@ class BaseFactory(DatabankLoader):
                 return r
 
             def fillEvib123l(r):
-                """ cf above """
+                """cf above."""
                 viblvl = vib_lvl_name_hitran_class5(
                     r.v1l.iloc[0], r.v2l.iloc[0], r.l2l.iloc[0], r.v3l.iloc[0]
                 )
@@ -1459,7 +1448,6 @@ class BaseFactory(DatabankLoader):
 
         P, Q, R are replaced by -1, 0, 1 in the DataFrame to ensure that all
         terms are numeric (improves performances)
-
         """
         if df.dtypes["branch"] != np.int64:
             raise DeprecationWarning(
@@ -1484,7 +1472,7 @@ class BaseFactory(DatabankLoader):
         return None
 
     def _add_Eu(self, df):
-        """Calculate upper state energy
+        """Calculate upper state energy.
 
         Returns
         -------
@@ -1554,7 +1542,7 @@ class BaseFactory(DatabankLoader):
     def _calc_noneq_parameters(
         self, singleTvibmode=True, calc_Evib_harmonic_anharmonic=False
     ):
-        """Update database with Evib, Erot, and degeneracies
+        """Update database with Evib, Erot, and degeneracies.
 
         Parameters
         ----------
@@ -1569,7 +1557,8 @@ class BaseFactory(DatabankLoader):
         Notes
         -----
 
-        Update in 0.9.16: assign bands by default too"""
+        Update in 0.9.16: assign bands by default too
+        """
 
         # TODO @dev: refactor
         # 3 Tvib mode is CO2-specific. Shouldnt appear in this function yet?
@@ -1673,7 +1662,7 @@ class BaseFactory(DatabankLoader):
         return None  # dataframe already updated
 
     def _calc_degeneracies(self, df):
-        """Calculate vibrational and rotational degeneracies
+        """Calculate vibrational and rotational degeneracies.
 
         See Also
         --------
@@ -1742,8 +1731,6 @@ class BaseFactory(DatabankLoader):
         None:
             ``self.df0`` is updated directly with new column ``Rs2``  .
             R is in ``Debye^2``   (1e-36 ergs.cm3)
-
-
         """
 
         df = self.df0
@@ -1821,7 +1808,7 @@ class BaseFactory(DatabankLoader):
 
     def _calc_einstein_coefficients(self):
         """Calculate A_ul, B_lu, B_ul Einstein coefficients from weighted
-        transition moments
+        transition moments.
 
         Returns
         -------
@@ -1875,7 +1862,7 @@ class BaseFactory(DatabankLoader):
     # XXX =====================================================================
 
     def _calc_lineshift(self):
-        """Calculate lineshift due to pressure
+        """Calculate lineshift due to pressure.
 
         Returns
         -------
@@ -1902,7 +1889,7 @@ class BaseFactory(DatabankLoader):
 
     def _calc_linestrength_eq(self, Tgas):
         """Calculate linestrength at temperature Tgas correcting the database
-        linestrength tabulated at temperature Tref
+        linestrength tabulated at temperature Tref.
 
         Parameters
         ----------
@@ -1926,7 +1913,6 @@ class BaseFactory(DatabankLoader):
         Starts with df1 which is still a copy of df0 loaded by
         :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
         Updates linestrength in df1. Cutoff criteria is applied afterwards.
-
         """
 
         Tref = self.input.Tref
@@ -1943,7 +1929,7 @@ class BaseFactory(DatabankLoader):
 
         def _calc_Q(molecule, iso, state):
             """Get partition function from tabulated values, try with
-            calculated one if Out of Bounds
+            calculated one if Out of Bounds.
 
             Returns
             -------
@@ -2049,8 +2035,8 @@ class BaseFactory(DatabankLoader):
 
     # %%
     def _calc_populations_eq(self, Tgas):
-        """Calculate upper state population for all active transitions in equilibrium case
-        (only used in total power calculation)
+        """Calculate upper state population for all active transitions in
+        equilibrium case (only used in total power calculation)
 
         Parameters
         ----------
@@ -2078,7 +2064,6 @@ class BaseFactory(DatabankLoader):
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq`,
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq_multiTvib`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at`
-
         """
 
         df1 = self.df1
@@ -2144,8 +2129,9 @@ class BaseFactory(DatabankLoader):
         rot_distribution="boltzmann",
         overpopulation=None,
     ):
-        """Calculate upper and lower state population for all active transitions,
-        as well as all levels (through :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`)
+        """Calculate upper and lower state population for all active
+        transitions, as well as all levels (through
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`)
 
         Parameters
         ----------
@@ -2191,7 +2177,6 @@ class BaseFactory(DatabankLoader):
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_eq`,
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq_multiTvib`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`
-
         """
 
         # Check inputs
@@ -2396,8 +2381,9 @@ class BaseFactory(DatabankLoader):
         rot_distribution="boltzmann",
         overpopulation=None,
     ):
-        """Calculate upper and lower state population for all active transitions,
-        as well as all levels (through :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`)
+        """Calculate upper and lower state population for all active
+        transitions, as well as all levels (through
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`)
 
         Parameters
         ----------
@@ -2442,7 +2428,6 @@ class BaseFactory(DatabankLoader):
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_eq`,
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
-
         """
 
         # Check inputs
@@ -2586,7 +2571,7 @@ class BaseFactory(DatabankLoader):
         return
 
     def get_lines(self):
-        """ Return lines if self.misc.export_lines is True, else get None """
+        """Return lines if self.misc.export_lines is True, else get None."""
 
         if self.misc.export_lines:
             return self.df1
@@ -2595,9 +2580,9 @@ class BaseFactory(DatabankLoader):
 
     # %% Get populations
     def get_populations(self, levels="vib"):
-        """For all molecules / isotopes / electronic states, lookup energy levels
-        as calculated in partition function calculators, and (if calculated)
-        populations, and returns as a dictionary
+        """For all molecules / isotopes / electronic states, lookup energy
+        levels as calculated in partition function calculators, and (if
+        calculated) populations, and returns as a dictionary.
 
         Parameters
         ----------
@@ -2620,7 +2605,6 @@ class BaseFactory(DatabankLoader):
         --------
 
         :meth:`~radis.lbl.base.BaseFactory.get_energy_levels`
-
         """
 
         # Check input
@@ -2821,7 +2805,7 @@ class BaseFactory(DatabankLoader):
 
     # %%
     def _calc_emission_integral(self):
-        """Calculate Emission Integral
+        """Calculate Emission Integral.
 
         Emission Integral is a non usual quantity introduced here to have an
         equivalent of Linestrength in emission calculation
@@ -2844,8 +2828,6 @@ class BaseFactory(DatabankLoader):
                 ϵ(λ)   =      Ei  *   Phi(λ)  * ntot   * path_length
                  :             :         :       :          :
             mW/cm2/sr/nm    (mW/sr)   (1/nm)   (cm-3)      (cm)
-
-
         """
 
         df = self.df1
@@ -2887,9 +2869,9 @@ class BaseFactory(DatabankLoader):
 
     # %%
     def _cutoff_linestrength(self, cutoff=None):
-        """
-        Discard linestrengths that are lower that this, to reduce calculation
-        times. Set the number of lines cut in ``self._Nlines_cutoff``
+        """Discard linestrengths that are lower that this, to reduce
+        calculation times. Set the number of lines cut in
+        ``self._Nlines_cutoff``
 
         Parameters
         ----------
@@ -2905,7 +2887,6 @@ class BaseFactory(DatabankLoader):
 
         turn linestrength cutoff criteria in 'auto' mode that adjusts linestrength
         calculations based an error percentage criteria
-
         """
 
         # Update defaults
@@ -3041,7 +3022,6 @@ class BaseFactory(DatabankLoader):
 
         None:
             but creates ``self.df1`` from ``self.df0``
-
         """
         if __debug__:
             printdbg("called ._clean_factory()")
@@ -3128,7 +3108,6 @@ class BaseFactory(DatabankLoader):
 
         Tmax: float
             Tgas at equilibrium, or max(Tgas, Tvib, Trot) at nonequilibrium
-
         """
 
         # Check mole fractions
@@ -3156,6 +3135,7 @@ class BaseFactory(DatabankLoader):
 
     def _get_parsum(self, molecule, iso, state):
         """Get function that calculates the partition function.
+
         By default, try to get the tabulated version. If does not exist,
         returns the direct summation version
         """
@@ -3190,9 +3170,6 @@ class BaseFactory(DatabankLoader):
 
         nfig: int, or str
             on which Figure to plot. Default ``None``
-
-
-
         """
 
         import matplotlib.pyplot as plt
@@ -3244,9 +3221,8 @@ def get_waverange(
     wavelength_max=None,
     medium="air",
 ):
-    """Returns wavenumber based on whatever input was given: either ν_min, ν_max
-    directly, or λ_min, λ_max  in the given propagation ``medium``.
-
+    """Returns wavenumber based on whatever input was given: either ν_min,
+    ν_max directly, or λ_min, λ_max  in the given propagation ``medium``.
 
     Parameters
     ----------

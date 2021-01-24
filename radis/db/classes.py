@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 18 16:15:03 2017
+"""Created on Tue Jul 18 16:15:03 2017.
 
 @author: erwan
 
@@ -43,8 +42,6 @@ Routine Listing
 - :func:`~radis.db.classes.get_molecule_identifier`
 
 -------------------------------------------------------------------------------
-
-
 """
 
 import re
@@ -394,14 +391,14 @@ _term_symbols = {"Σ": "SIG", "Π": "PI", "Δ": "DEL"}
 
 
 def _format_term_symbol(term_symbol):
-    """ standardized name of greek symbols"""
+    """standardized name of greek symbols."""
     for k, v in _term_symbols.items():
         term_symbol = term_symbol.replace(k, v)
     return term_symbol
 
 
 def _print_term_symbol(term_symbol):
-    """ nice print of greek letters"""
+    """nice print of greek letters."""
     for k, v in _term_symbols.items():
         term_symbol = term_symbol.replace(v, k)
     return term_symbol
@@ -809,7 +806,8 @@ class ElectronicState(Isotope):
         return self._Erovib(*args, **kwargs)
 
     def _Ehaj_default_coefs(self, *args, **kwargs):
-        """Call default _Ehaj() function with default rovib_constants coefficients"""
+        """Call default _Ehaj() function with default rovib_constants
+        coefficients."""
 
         assert "coeff_dict" not in kwargs
         kwargs.update({"coeff_dict": self.rovib_constants})

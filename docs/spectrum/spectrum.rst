@@ -172,7 +172,7 @@ as measured in experimental spectra:
 
 Other variables represent quantities that have not been convolved (theoretical spectra):
 
-- ``'radiance_noslit'``: the spectral radiance (typically in ``'mW/cm2/sr/nm'``). This
+- ``'radiance_noslit'``: the spectral radiance (typically in :math:`mW/cm^2/sr/nm`). This
 is sometimes confusingly called *spectral intensity*.
 - ``'transmittance_noslit'``: the directional spectral transmittance (``0`` to ``1``)
 - ``'emissivity_noslit'``: spectral emissivity (``0`` to ``1``) *i.e.* the radiance emitted by a surface
@@ -181,7 +181,8 @@ is sometimes confusingly called *spectral intensity*.
 - ``'emisscoeff'``: the directional spectral emission density (typically in ``'mW/cm3/sr/nm'``).
 - ``'absorbance'``: the directional spectral absorbance (no dimension), also called *optical depth*.
 - ``'abscoeff'``: spectral absorption coefficient (typically in ``'cm-1'``), also called *opacity*.
-  This is sometimes found as the *extinction coefficient* in the literature.
+  This is sometimes found as the *extinction coefficient* in the literature (strictly speaking, *extinction*
+  is *absorption* + *diffusion*, the latter being negligible in the infrared).
 
 Additionally, RADIS may calculate extra quantities such as:
 

@@ -42,7 +42,7 @@ from radis.misc.utils import DatabankNotFound, getProjectRoot
 
 
 def get_config():
-    """ Read the config.json file """
+    """Read the config.json file."""
     jsonfile = join(getProjectRoot(), "config.json")
     with open(jsonfile) as f:
         try:
@@ -155,7 +155,7 @@ CONFIG_PATH = join(expanduser("~"), ".radis")
 
 
 def getConfig():
-    """Read config file and returns it
+    """Read config file and returns it.
 
     Config file name is harcoded: `~/.radis`
     """
@@ -271,7 +271,7 @@ def getDatabankEntries(dbname):
 
 
 def getDatabankList():
-    """ Get all databanks available in ~/.radis"""
+    """Get all databanks available in ~/.radis."""
 
     config = getConfig()
 
@@ -293,8 +293,9 @@ def getDatabankList():
 
 
 def addDatabankEntries(dbname, dict_entries, verbose=True):
-    """Add database dbname with entries from dict_entries. If database
-    already exists in ~/.radis, raises an error
+    """Add database dbname with entries from dict_entries.
+
+    If database already exists in ~/.radis, raises an error
     """
 
     # Get ~/.radis if exists, else create it
@@ -413,8 +414,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
 
 
 def printDatabankEntries(dbname, crop=200):
-    """Print databank info
-
+    """Print databank info.
 
     Parameters
     ----------
@@ -424,7 +424,6 @@ def printDatabankEntries(dbname, crop=200):
 
     crop: int
         if > 0, cutoff entries larger than that
-
     """
     entries = getDatabankEntries(dbname)
     print(dbname, "\n-------")
@@ -441,7 +440,7 @@ def printDatabankEntries(dbname, crop=200):
 
 
 def printDatabankList():
-    """ Print all databanks available in ~/.radis """
+    """Print all databanks available in ~/.radis."""
     try:
         print("Databanks in {0}: ".format(CONFIG_PATH), ",".join(getDatabankList()))
         for dbname in getDatabankList():

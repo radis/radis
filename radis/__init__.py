@@ -148,9 +148,10 @@ See Also
 
 
 def get_version(verbose=False, add_git_number=True):
-    """Reads `__version.txt__ <https://github.com/radis/radis/blob/master/radis/__version__.txt>`__
-    and retrieve version number.
-    If ``add_git_number``, also appends Git commit number if we're on a gitted session
+    """Reads `__version.txt__
+    <https://github.com/radis/radis/blob/master/radis/__version__.txt>`__ and
+    retrieve version number. If ``add_git_number``, also appends Git commit
+    number if we're on a gitted session.
 
     Examples
     --------
@@ -160,7 +161,6 @@ def get_version(verbose=False, add_git_number=True):
         import radis
         print(radis.get_version())
         >>> '0.9.17'
-
     """
 
     # First get version

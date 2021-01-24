@@ -32,8 +32,7 @@ from radis.phys.units import conv2
 
 
 def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
-    """Planck function for blackbody radiation
-
+    """Planck function for blackbody radiation.
 
     Parameters
     ----------
@@ -56,7 +55,6 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
 
     planck: np.array   (mW.sr-1.cm-2/nm)
         equilibrium radiance
-
     """
 
     k = k_b
@@ -73,8 +71,7 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
 
 
 def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
-    """Planck function for blackbody radiation, wavenumber version
-
+    """Planck function for blackbody radiation, wavenumber version.
 
     Parameters
     ----------
@@ -97,7 +94,6 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
 
     planck: np.array   default (mW/sr/cm2/cm-1)
         equilibrium radiance
-
     """
 
     k = k_b_CGS
@@ -171,7 +167,6 @@ def sPlanck(
         s = sPlanck(wavelength_min=3000, wavelength_max=50000,
                     T=288, eps=1)
         s.plot()
-
     """
 
     from radis.spectrum.spectrum import Spectrum

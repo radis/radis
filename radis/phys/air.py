@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-
-Constants and correlations for air.
-Wavelength correction due to medium dispersion.
+"""Constants and correlations for air. Wavelength correction due to medium
+dispersion.
 
 Routine Listing
 ---------------
@@ -12,8 +10,6 @@ Routine Listing
 - :func:`~radis.phys.air.air2vacuum`
 
 -------------------------------------------------------------------------------
-
-
 """
 
 
@@ -34,7 +30,6 @@ def air_index_dispersion(lbd):
     .. [1] `P. E. Ciddor. "Refractive index of air: new equations for the visible and near infrared", Appl. Optics 35, 1566-1573 (1996) <https://refractiveindex.info/?shelf=other&book=air&page=Ciddor>`__
 
     Standard air: dry air at 15 °C, 101.325 kPa and with 450 ppm CO2 content
-
     """
 
     n = 1 + 0.05792105 / (238.0185 - lbd ** -2) + 0.00167917 / (57.362 - lbd ** -2)
@@ -46,8 +41,7 @@ def air_index_dispersion(lbd):
 
 
 def vacuum2air(wavelength):
-    """Converts wavelength as seen in vacuum to wavelength as seen in air
-
+    """Converts wavelength as seen in vacuum to wavelength as seen in air.
 
     Parameters
     ----------
@@ -67,7 +61,6 @@ def vacuum2air(wavelength):
     --------
 
     :func:`~radis.phys.air.air2vacuum`
-
     """
 
     air_index = air_index_dispersion(wavelength * 1e-3)  # nm > µm
@@ -75,8 +68,7 @@ def vacuum2air(wavelength):
 
 
 def air2vacuum(wavelength):
-    """Converts wavelength as seen in air to wavelength as seen in vacuum
-
+    """Converts wavelength as seen in air to wavelength as seen in vacuum.
 
     Parameters
     ----------
@@ -108,7 +100,6 @@ def air2vacuum(wavelength):
     --------
 
     :func:`~radis.phys.air.vacuum2air`
-
     """
 
     air_index = air_index_dispersion(wavelength * 1e-3)  # nm > µm
