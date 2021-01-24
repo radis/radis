@@ -1357,9 +1357,9 @@ class BroadenFactory(BaseFactory):
         def _init_w_axis(w_dat, log_p):
             w_min = w_dat.min()
             w_max = (
-                w_dat.max() + 1e-6
+                w_dat.max() + 1e-4
             )  # Add small number to prevent w_max falling outside of the grid
-            N = max(1, int(np.log(w_max / w_min) / log_p) + 1) + 1
+            N = np.ceil((np.log(w_max) - np.log(w_min)) / log_p) + 1
             return w_min * np.exp(log_p * np.arange(N))
 
         log_pL = self.params.dlm_log_pL  # DLM user params
@@ -1382,33 +1382,33 @@ class BroadenFactory(BaseFactory):
 
             # Non vectorized loop. Probably slightly slower, but this is not the bottleneck anyway.
             # see commit 6474cb7e on 15/08/2019 for a vectorized version
-            for i in range(len(wL)):
-                line_profile_DLM[i] = {}
-                for j in range(len(wG)):
-                    wV_ij = olivero_1977(wG[j], wL[i])  # FWHM
+            for l in range(len(wG)):
+                line_profile_DLM[l] = {}
+                for m in range(len(wL)):
+                    wV_ij = olivero_1977(wG[l], wL[m])  # FWHM
                     lineshape = voigt_lineshape(
-                        wbroad_centered, wL[i] / 2, wV_ij / 2, jit=jit
+                        wbroad_centered, wL[m] / 2, wV_ij / 2, jit=jit
                     )  # FWHM > HWHM
-                    line_profile_DLM[i][j] = lineshape
+                    line_profile_DLM[l][m] = lineshape
 
         elif broadening_method == "convolve":
             wbroad_centered = self.wbroad_centered
 
-            IL = [
-                lorentzian_lineshape(wbroad_centered, wL[i] / 2) for i in range(len(wL))
-            ]  # FWHM>HWHM
             IG = [
-                gaussian_lineshape(wbroad_centered, wG[i] / 2) for i in range(len(wG))
+                gaussian_lineshape(wbroad_centered, wG[l] / 2) for l in range(len(wG))
+            ]  # FWHM>HWHM
+            IL = [
+                lorentzian_lineshape(wbroad_centered, wL[m] / 2) for m in range(len(wL))
             ]  # FWHM>HWHM
             # Non vectorized. See Voigt for vectorized.
 
             # Get all combinations of Voigt lineshapes
-            for i in range(len(wL)):
-                line_profile_DLM[i] = {}
-                for j in range(len(wG)):
-                    lineshape = np.convolve(IL[i], IG[j], mode="same")
+            for l in range(len(wG)):
+                line_profile_DLM[l] = {}
+                for m in range(len(wL)):
+                    lineshape = np.convolve(IL[m], IG[l], mode="same")
                     lineshape /= np.trapz(lineshape, x=wbroad_centered)
-                    line_profile_DLM[i][j] = lineshape
+                    line_profile_DLM[l][m] = lineshape
 
         elif broadening_method == "fft":
             # Unlike real space methods ('convolve', 'voigt'), here we calculate
@@ -1416,32 +1416,32 @@ class BroadenFactory(BaseFactory):
             w = self.wavenumber_calc
             wstep = self.params.wstep
             w_lineshape_ft = np.fft.rfftfreq(
-                len(w) + self.params.zero_padding, wstep
-            )  ##TO-DO: should be len(w) + N_zero_padding!!
+                2 * len(w), wstep  # TO-DO:  + self.params.zero_padding
+            )
 
             w_fold = (w_lineshape_ft, w_lineshape_ft[::-1])
 
             # Get all combinations of Voigt lineshapes (in Fourier space)
-            for i in range(len(wL)):
-                line_profile_DLM[i] = {}
-                for j in range(len(wG)):
+            for l in range(len(wG)):
+                line_profile_DLM[l] = {}
+                for m in range(len(wL)):
 
-                    line_profile_DLM[i][j] = voigt_FT(
-                        w_lineshape_ft, wG[j] / 2, wL[i] / 2
+                    line_profile_DLM[l][m] = voigt_FT(
+                        w_lineshape_ft, wG[l] / 2, wL[m] / 2
                     )
 
                     ## Add folding until threshold is reached:
                     n = 1
                     while (
-                        voigt_FT(n / (2 * wstep), wG[j] / 2, wL[i] / 2)
+                        voigt_FT(n / (2 * wstep), wG[l] / 2, wL[m] / 2)
                         >= self.params.folding_thresh
                     ):
-                        line_profile_DLM[i][j] += voigt_FT(
-                            n / (2 * wstep) + w_fold[n & 1], wG[j] / 2, wL[i] / 2
+                        line_profile_DLM[l][m] += voigt_FT(
+                            n / (2 * wstep) + w_fold[n & 1], wG[l] / 2, wL[m] / 2
                         )
                         n += 1
 
-                    line_profile_DLM[i][j] /= line_profile_DLM[i][j][0]
+                    line_profile_DLM[l][m] /= line_profile_DLM[l][m][0]
 
         else:
             raise NotImplementedError(
@@ -1707,6 +1707,11 @@ class BroadenFactory(BaseFactory):
 
         return wavenumber, sumoflines
 
+    def _get_indices(self, arr_i, axis):
+        pos = np.interp(arr_i, axis, np.arange(axis.size))
+        index = pos.astype(int)
+        return index, index + 1, pos - index
+
     def _apply_lineshape_DLM(
         self,
         broadened_param,
@@ -1799,43 +1804,19 @@ class BroadenFactory(BaseFactory):
 
         # ... First get closest matching spectral point  (on the left, and on the right)
         #         ... @dev: np.interp about 30% - 50% faster than np.searchsorted
-        iv = np.interp(
-            shifted_wavenum, wavenumber_calc, np.arange(len(wavenumber_calc))
-        )
-
-        iv0 = iv.astype(int)  # size [N]
-        iv1 = iv0 + 1
-
-        # DLM: First we calculate the fractional index of the DLM
-        #      that corresponds with this line:
-        iwL = np.interp(np.log(wL_dat), np.log(wL), np.arange(len(wL)))
-        iwG = np.interp(np.log(wG_dat), np.log(wG), np.arange(len(wG)))
-        iwL0 = iwL.astype(int)  # size [N],   number of values determined by log_pL
-        iwG0 = iwG.astype(int)  # size [N],   number of values determined by log_pG
-        iwL1 = iwL0 + 1
-        iwG1 = iwG0 + 1
 
         # DLM : Next calculate how the line is distributed over the 2x2x2 bins.
-
-        # First calculate relative positions on the grid:
-        tv = iv - iv0
-        tauG = iwG - iwG0
-        tauL = iwL - iwL0
+        ki0, ki1, tvi = self._get_indices(shifted_wavenum, wavenumber_calc)
+        li0, li1, tGi = self._get_indices(np.log(wG_dat), np.log(wG))
+        mi0, mi1, tLi = self._get_indices(np.log(wL_dat), np.log(wL))
 
         # Next assign simple weights:
-        av = tv
-        awG = tauG
-        awL = tauL
-
-        # Finally add corrections to the weights if required:
         if optimization == "min-RMS":
 
-            log_pL = self.params.dlm_log_pL  # DLM user params
-            log_pG = self.params.dlm_log_pG  # DLM user params
-
-            # TO-DO: dv should be loaded from self.params, not calculated...
-            dv = (wavenumber_calc[-1] - wavenumber_calc[0]) / (wavenumber_calc.size - 1)
-            dxG = dv / wG_dat
+            dv = self.params.wstep
+            dxvGi = dv / wG_dat
+            dxG = self.params.dlm_log_pG  # DLM user params
+            dxL = self.params.dlm_log_pL  # DLM user params
 
             C1_GG = ((6 * np.pi - 16) / (15 * np.pi - 32)) ** (1 / 1.50)
             C1_LG = ((6 * np.pi - 16) / 3 * (np.log(2) / (2 * np.pi)) ** 0.5) ** (
@@ -1844,60 +1825,73 @@ class BroadenFactory(BaseFactory):
             C2_GG = (2 * np.log(2) / 15) ** (1 / 1.50)
             C2_LG = ((2 * np.log(2)) ** 2 / 15) ** (1 / 2.25)
 
-            alpha = wL_dat / wG_dat
+            alpha_i = wL_dat / wG_dat
 
-            R_GG = 2 - 1 / (C1_GG + C2_GG * alpha ** (2 / 1.50)) ** 1.50
-            R_GL = -2 * np.log(2) * alpha ** 2
             R_Gv = 8 * np.log(2)
+            R_GG = 2 - 1 / (C1_GG + C2_GG * alpha_i ** (2 / 1.50)) ** 1.50
+            R_GL = -2 * np.log(2) * alpha_i ** 2
 
             R_LL = 1
             R_LG = (
-                1 / (C1_LG * alpha ** (1 / 2.25) + C2_LG * alpha ** (4 / 2.25)) ** 2.25
+                1
+                / (C1_LG * alpha_i ** (1 / 2.25) + C2_LG * alpha_i ** (4 / 2.25))
+                ** 2.25
             )
 
             # Add correction terms:
-            awG += (
-                R_GG * tauG * (tauG - 1) * log_pG ** 2
-                + R_GL * tauL * (tauL - 1) * log_pL ** 2
-                + R_Gv * tv * (tv - 1) * dxG ** 2
-            ) / (2 * log_pG)
+            avi = tvi
 
-            awL += (
-                R_LL * tauL * (tauL - 1) * log_pL ** 2
-                + R_LG * tauG * (tauG - 1) * log_pG ** 2
-            ) / (2 * log_pL)
+            aGi = tGi + (
+                R_Gv * tvi * (tvi - 1) * dxvGi ** 2
+                + R_GG * tGi * (tGi - 1) * dxG ** 2
+                + R_GL * tLi * (tLi - 1) * dxL ** 2
+            ) / (2 * dxG)
+
+            aLi = tLi + (
+                R_LG * tGi * (tGi - 1) * dxG ** 2 + R_LL * tLi * (tLi - 1) * dxL ** 2
+            ) / (2 * dxL)
+
+        else:
+            # Simple weigths:
+            avi = tvi
+            aGi = tGi
+            aLi = tLi
 
         # ... fractions on DLM grid
-        awV00 = (1 - awL) * (1 - awG)
-        awV10 = awL * (1 - awG)
-        awV01 = (1 - awL) * awG
-        awV11 = awL * awG
+        awV00 = (1 - aGi) * (1 - aLi)
+        awV01 = (1 - aGi) * aLi
+        awV10 = aGi * (1 - aLi)
+        awV11 = aGi * aLi
 
-        Iv0 = S * (1 - av)
-        Iv1 = S * av
+        Iv0 = S * (1 - avi)
+        Iv1 = S * avi
 
         if __debug__:
             t2 = time()
 
         # ... Initialize array on which to distribute the lineshapes
         if broadening_method in ["voigt", "convolve"]:
-            DLM = np.zeros((len(wavenumber_calc), len(wL), len(wG)))
+            DLM = np.zeros((len(wavenumber_calc), len(wG), len(wL)))
         elif broadening_method == "fft":
             DLM = np.zeros(
-                (len(wavenumber_calc) + self.params.zero_padding, len(wL), len(wG))
+                (
+                    2 * len(wavenumber_calc),
+                    len(wG),
+                    len(wL),
+                )  # TO-DO: + self.params.zero_padding
             )
         else:
             raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
-        np.add.at(DLM, (iv0, iwL0, iwG0), Iv0 * awV00)
-        np.add.at(DLM, (iv1, iwL0, iwG0), Iv1 * awV00)
-        np.add.at(DLM, (iv0, iwL1, iwG0), Iv0 * awV10)
-        np.add.at(DLM, (iv1, iwL1, iwG0), Iv1 * awV10)
-        np.add.at(DLM, (iv0, iwL0, iwG1), Iv0 * awV01)
-        np.add.at(DLM, (iv1, iwL0, iwG1), Iv1 * awV01)
-        np.add.at(DLM, (iv0, iwL1, iwG1), Iv0 * awV11)
-        np.add.at(DLM, (iv1, iwL1, iwG1), Iv1 * awV11)
+        np.add.at(DLM, (ki0, li0, mi0), Iv0 * awV00)
+        np.add.at(DLM, (ki0, li0, mi1), Iv0 * awV01)
+        np.add.at(DLM, (ki0, li1, mi0), Iv0 * awV10)
+        np.add.at(DLM, (ki0, li1, mi1), Iv0 * awV11)
+        np.add.at(DLM, (ki1, li0, mi0), Iv1 * awV00)
+        np.add.at(DLM, (ki1, li0, mi1), Iv1 * awV01)
+        np.add.at(DLM, (ki1, li1, mi0), Iv1 * awV10)
+        np.add.at(DLM, (ki1, li1, mi1), Iv1 * awV11)
 
         # All lines within each bins are convolved with the same lineshape.
         # Let's do it:
@@ -1912,18 +1906,18 @@ class BroadenFactory(BaseFactory):
             # ... Initialize array on which to distribute the lineshapes
             sumoflines_calc = zeros_like(wavenumber_calc)
 
-            for i in range(len(wL)):
-                for j in range(len(wG)):
-                    lineshape = line_profile_DLM[i][j]
-                    sumoflines_calc += np.convolve(DLM[:, i, j], lineshape, "same")
+            for l in range(len(wG)):
+                for m in range(len(wL)):
+                    lineshape = line_profile_DLM[l][m]
+                    sumoflines_calc += np.convolve(DLM[:, l, m], lineshape, "same")
 
         elif broadening_method == "fft":
             # ... Initialize array in FT space
             Idlm_FT = 1j * np.zeros(len(line_profile_DLM[0][0]))
-            for i in range(len(wL)):
-                for j in range(len(wG)):
-                    lineshape_FT = line_profile_DLM[i][j]
-                    Idlm_FT += np.fft.rfft(DLM[:, i, j]) * lineshape_FT
+            for l in range(len(wG)):
+                for m in range(len(wL)):
+                    lineshape_FT = line_profile_DLM[l][m]
+                    Idlm_FT += np.fft.rfft(DLM[:, l, m]) * lineshape_FT
             # Back in real space:
             sumoflines_calc = np.fft.irfft(Idlm_FT)[: len(wavenumber_calc)]
             sumoflines_calc /= self.params.wstep
