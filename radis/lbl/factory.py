@@ -358,7 +358,7 @@ class SpectrumFactory(BandFactory):
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
-        optimization="min-RMS",
+        optimization="simple",
         folding_thresh=1e-6,
         zero_padding=-1,
         broadening_method=Default("fft"),
