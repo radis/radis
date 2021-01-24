@@ -1415,9 +1415,7 @@ class BroadenFactory(BaseFactory):
             # the lineshape on the full spectral range.
             w = self.wavenumber_calc
             wstep = self.params.wstep
-            w_lineshape_ft = np.fft.rfftfreq(
-                2 * len(w), wstep  # TO-DO:  + self.params.zero_padding
-            )
+            w_lineshape_ft = np.fft.rfftfreq(len(w) + self.params.zero_padding, wstep)
 
             w_fold = (w_lineshape_ft, w_lineshape_ft[::-1])
 
@@ -1875,10 +1873,10 @@ class BroadenFactory(BaseFactory):
         elif broadening_method == "fft":
             DLM = np.zeros(
                 (
-                    2 * len(wavenumber_calc),
+                    len(wavenumber_calc) + self.params.zero_padding,
                     len(wG),
                     len(wL),
-                )  # TO-DO: + self.params.zero_padding
+                )
             )
         else:
             raise NotImplementedError(broadening_method)
