@@ -242,13 +242,7 @@ def gaussian_FT(w_centered, hwhm):
     :py:func:`~radis.lbl.broadneing.gaussian_lineshape`
     """
 
-    # FT of w*np.sqrt(np.log(2)/np.pi)*np.exp(-np.log(2)*((v-v0)/w)**2)*dv
-    n = len(w_centered)
-    I = np.zeros(n)
-    I[: n // 2 + n % 2] = np.exp(
-        -((np.pi * w_centered[: n // 2 + n % 2] * hwhm) ** 2) / (np.log(2))
-    )
-    I[-(n // 2) :] = I[n // 2 : 0 : -1]
+    I = np.exp(-((2 * np.pi * w_centered * hwhm) ** 2) / (4 * np.log(2)))
     return I
 
 
@@ -402,11 +396,7 @@ def lorentzian_FT(w_centered, gamma_lb):
     :py:func:`~radis.lbl.broadneing.lorentzian_lineshape`
     """
 
-    # FT of (1/np.pi) * w / ((v-v0)**2 + w**2)*dv
-    n = len(w_centered)
-    I = np.zeros(n)
-    I[: n // 2 + n % 2] = np.exp(-np.pi * w_centered[: n // 2 + n % 2] * 2 * gamma_lb)
-    I[-(n // 2) :] = I[n // 2 : 0 : -1]
+    I = np.exp(-2 * np.pi * w_centered * gamma_lb)
     return I
 
 
@@ -623,6 +613,34 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     assert not np.isnan(lineshape).any()
 
     return lineshape
+
+
+def voigt_FT(w_lineshape_ft, hwhmG, hwhmL):
+    """Fourier Transform of a Lorentzian lineshape
+
+    Parameters
+    ----------
+
+    w_centered: 2D array       [one per line: shape W x N]
+        waverange (nm / cm-1) (centered on 0)
+
+    hwhmG:  array   [shape N = number of lines]
+        Half-width at half-maximum (HWHM) of Gaussian
+
+
+    hwhmL: array   (cm-1)        [length N]
+        Half-width at half-maximum (HWHM) of Lorentzian
+
+    See Also
+    --------
+
+    :py:func:`~radis.lbl.broadneing.gaussian_FT`
+    :py:func:`~radis.lbl.broadneing.lorentzian_FT`
+    """
+
+    IG_FT = gaussian_FT(w_lineshape_ft, hwhmG)
+    IL_FT = lorentzian_FT(w_lineshape_ft, hwhmL)
+    return IG_FT * IL_FT
 
 
 # Pseudo-voigts approximations:
@@ -1436,20 +1454,33 @@ class BroadenFactory(BaseFactory):
             # the lineshape on the full spectral range.
             w = self.wavenumber_calc
             wstep = self.params.wstep
-            w_lineshape_ft = np.arange(2 * len(w)) / ((2 * len(w)) * wstep)
+            w_lineshape_ft = np.fft.rfftfreq(
+                len(w) + self.params.zero_padding, wstep
+            )  ##TO-DO: should be len(w) + N_zero_padding!!
 
-            IL_FT = [
-                lorentzian_FT(w_lineshape_ft, wL[i] / 2) for i in range(len(wL))
-            ]  # FWHM>HWHM
-            IG_FT = [
-                gaussian_FT(w_lineshape_ft, wG[i] / 2) for i in range(len(wG))
-            ]  # FWHM>HWHM
+            w_fold = (w_lineshape_ft, w_lineshape_ft[::-1])
 
             # Get all combinations of Voigt lineshapes (in Fourier space)
             for i in range(len(wL)):
                 line_profile_DLM[i] = {}
                 for j in range(len(wG)):
-                    line_profile_DLM[i][j] = IL_FT[i] * IG_FT[j]
+
+                    line_profile_DLM[i][j] = voigt_FT(
+                        w_lineshape_ft, wG[j] / 2, wL[i] / 2
+                    )
+
+                    ## Add folding until threshold is reached:
+                    n = 1
+                    while (
+                        voigt_FT(n / (2 * wstep), wG[j] / 2, wL[i] / 2)
+                        >= self.params.folding_thresh
+                    ):
+                        line_profile_DLM[i][j] += voigt_FT(
+                            n / (2 * wstep) + w_fold[n & 1], wG[j] / 2, wL[i] / 2
+                        )
+                        n += 1
+
+                    line_profile_DLM[i][j] /= line_profile_DLM[i][j][0]
 
         else:
             raise NotImplementedError(
@@ -1815,8 +1846,6 @@ class BroadenFactory(BaseFactory):
         iv = np.interp(
             shifted_wavenum, wavenumber_calc, np.arange(len(wavenumber_calc))
         )
-        if broadening_method == "fft":
-            iv += len(wavenumber_calc) // 2  # FFT is done on 2x wavenumber_calc
 
         iv0 = iv.astype(int)  # size [N]
         iv1 = iv0 + 1
@@ -1898,7 +1927,9 @@ class BroadenFactory(BaseFactory):
         if broadening_method in ["voigt", "convolve"]:
             DLM = np.zeros((len(wavenumber_calc), len(wL), len(wG)))
         elif broadening_method == "fft":
-            DLM = np.zeros((2 * len(wavenumber_calc), len(wL), len(wG)))
+            DLM = np.zeros(
+                (len(wavenumber_calc) + self.params.zero_padding, len(wL), len(wG))
+            )
         else:
             raise NotImplementedError(broadening_method)
 
@@ -1936,13 +1967,9 @@ class BroadenFactory(BaseFactory):
             for i in range(len(wL)):
                 for j in range(len(wG)):
                     lineshape_FT = line_profile_DLM[i][j]
-                    Idlm_FT += np.fft.fft(np.fft.fftshift(DLM[:, i, j])) * lineshape_FT
+                    Idlm_FT += np.fft.rfft(DLM[:, i, j]) * lineshape_FT
             # Back in real space:
-            sumoflines_calc = np.fft.ifftshift(np.fft.ifft(Idlm_FT).real)
-            sumoflines_calc = sumoflines_calc[
-                len(wavenumber_calc) // 2 : len(wavenumber_calc) // 2
-                + len(wavenumber_calc)
-            ]
+            sumoflines_calc = np.fft.irfft(Idlm_FT)[: len(wavenumber_calc)]
             sumoflines_calc /= self.params.wstep
 
         else:
@@ -1997,6 +2024,11 @@ class BroadenFactory(BaseFactory):
         chunksize = self.misc.chunksize
         # Get which optimization method to use:
         optimization = self.params.optimization
+
+        if self.params.zero_padding < 0 or self.params.zero_padding > len(
+            self.wavenumber_calc
+        ):
+            self.params.zero_padding = len(self.wavenumber_calc)
 
         try:
             if optimization in ("simple", "min-RMS"):
@@ -2091,6 +2123,11 @@ class BroadenFactory(BaseFactory):
         try:
             if optimization in ("simple", "min-RMS"):
                 # Use DLM
+
+                if self.params.zero_padding < 0 or self.params.zero_padding > len(
+                    self.wavenumber_calc
+                ):
+                    self.params.zero_padding = len(self.wavenumber_calc)
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(
