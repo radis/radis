@@ -221,6 +221,21 @@ class SpectrumFactory(BandFactory):
         Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation.
 
         Default ``"min-RMS"``
+    folding_thresh: float
+        Folding is a correction procedure thet is applied when the lineshape is calculated with
+        the ``fft`` broadening method and the linewidth is comparable to ``wstep``, that prevents
+        sinc(v) modulation of the lineshape. Folding continues until the lineshape intensity
+        is below ``folding_threshold``. Setting to 1 or higher effectively disables folding correction.
+
+        Range: 0.0 < folding_thresh <= 1.0
+        Default: 1e-6
+    zero_padding: int
+        Zero padding is used in conjunction with the ``fft`` broadening method to prevent circular
+        convolution at the cost of performance. When set to -1, padding is set equal to the spectrum length,
+        which guarantees a linear convolution.
+
+        Range: 0 <= zero_padding <= len(w), or zero_padding = -1
+        Default: -1
     broadening_method: ``"voigt"``, ``"convolve"``, ``"fft"``
         Calculates broadening with a direct voigt approximation ('voigt') or
         by convoluting independantly calculated Doppler and collisional
@@ -343,7 +358,9 @@ class SpectrumFactory(BandFactory):
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
-        optimization="min-RMS",
+        optimization="simple",
+        folding_thresh=1e-6,
+        zero_padding=-1,
         broadening_method=Default("fft"),
         cutoff=1e-27,
         db_use_cached=True,
@@ -494,6 +511,8 @@ class SpectrumFactory(BandFactory):
                 broadening_method = broadening_method.value
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
+        self.params.folding_thresh = folding_thresh
+        self.params.zero_padding = zero_padding
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
