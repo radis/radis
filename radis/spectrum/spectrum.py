@@ -610,7 +610,7 @@ class Spectrum(object):
     # ----------------
     # XXX =====================================================================
 
-    def get(self, var, wunit="nm", Iunit="default", copy=True):
+    def get(self, var, wunit="default", Iunit="default", copy=True):
         """Retrieve a spectral quantity from a Spectrum object. You can select
         wavespace unit, intensity unit, or propagation medium.
 
@@ -627,7 +627,8 @@ class Spectrum(object):
         wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
             wavespace unit: wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
-            Default ``nm`` (wavelength in air).
+            if ``"defaul"``, default unit for waveunit is used. See
+            :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`.
 
         Iunit: unit for variable ``var``
             if ``"default"``, default unit for quantity `var` is used. See the
@@ -703,7 +704,10 @@ class Spectrum(object):
             I = I.copy()
 
         # Get wavespace (in correct unit, and correct medium)
-        wunit = cast_waveunit(wunit)
+        if wunit == "default":
+            wunit = self.get_waveunit()
+        else:
+            wunit = cast_waveunit(wunit)
         if wunit == "cm-1":
             w = self.get_wavenumber(vartype, copy=copy)
         elif wunit == "nm":
@@ -1477,7 +1481,7 @@ class Spectrum(object):
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
 
-        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
+        wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
             Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
 
