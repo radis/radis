@@ -3523,15 +3523,16 @@ class Spectrum(object):
         if name in CONVOLUTED_QUANTITIES:
             # Add wavespace
             if "wavespace" in self._q_conv:
-                if not np.allclose(w, self._q_conv["wavespace"]):
-                    raise ValueError(
-                        "wavespace for {0} doesnt correspond to existing wavespace".format(
-                            name
+                if warnings:
+                    # Check new wavespace match the existing one
+                    if not np.allclose(w, self._q_conv["wavespace"]):
+                        raise ValueError(
+                            "wavespace for {0} doesnt correspond to existing wavespace".format(
+                                name
+                            )
+                            + " for convoluted quantities"
                         )
-                        + " for convoluted quantities"
-                    )
             else:
-                #                self._q_conv['wavespace'] = check_wavespace(w)   # copy
                 self._q_conv["wavespace"] = np.array(w)  # copy
                 # no need to check if wavespace is evenly spaced: we won't
                 # apply the slit function again
@@ -3542,13 +3543,15 @@ class Spectrum(object):
         elif name in NON_CONVOLUTED_QUANTITIES:
             # Add wavespace
             if "wavespace" in self._q:
-                if not np.allclose(w, self._q["wavespace"]):
-                    raise ValueError(
-                        "wavespace for {0} doesnt correspond to existing wavespace".format(
-                            name
+                if warnings:
+                    # Check new wavespace match the existing one
+                    if not np.allclose(w, self._q["wavespace"]):
+                        raise ValueError(
+                            "wavespace for {0} doesnt correspond to existing wavespace".format(
+                                name
+                            )
+                            + " for non convoluted quantities"
                         )
-                        + " for non convoluted quantities"
-                    )
             else:
                 self._q["wavespace"] = check_wavespace(w)  # copy
 
