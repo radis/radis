@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Tools to convert spectroscopic constants with the
-conventions of Hubert and Herzberg (ω, Be, α, β, etc.)
-to Dunham parameters (Ykl)
+"""Tools to convert spectroscopic constants with the conventions of Hubert and
+Herzberg (ω, Be, α, β, etc.) to Dunham parameters (Ykl)
 
 References
 ----------
 
 https://en.wikipedia.org/wiki/Dunham_expansion
-
 """
 
 dunham2herzberg = {
@@ -81,7 +78,7 @@ for k in herzberg2dunham:
 
 def get_convention(coefficients):
     """Returns if we're using the Herzberg or Dunham convention for
-    spectrosopic coefficients, and returns the associated coefficients
+    spectrosopic coefficients, and returns the associated coefficients.
 
     Parameters
     ----------

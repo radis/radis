@@ -48,8 +48,8 @@ def calculated_spectrum(
     name=None,
 ):  # -> Spectrum:
     """Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`
-    object that has unit conversion, plotting and slit convolution capabilities
-
+    object that has unit conversion, plotting and slit convolution
+    capabilities.
 
     Parameters
     ----------
@@ -104,7 +104,6 @@ def calculated_spectrum(
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
-
     """
 
     return Spectrum.from_array(
@@ -124,8 +123,8 @@ def transmittance_spectrum(
     w, T, wunit="nm", Tunit="", conditions=None, cond_units=None, name=None
 ):  # -> Spectrum:
     """Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`
-    object that has unit conversion, plotting and slit convolution capabilities
-
+    object that has unit conversion, plotting and slit convolution
+    capabilities.
 
     Parameters
     ----------
@@ -176,7 +175,6 @@ def transmittance_spectrum(
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
-
     """
 
     return Spectrum.from_array(
@@ -195,10 +193,9 @@ def experimental_spectrum(
     w, I, wunit="nm", Iunit="counts", conditions={}, cond_units=None, name=None
 ):  # -> Spectrum:
     """Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`
-    object that has unit conversion and plotting
-    capabilities. Convolution is not available as the spectrum is assumed to
-    have be measured experimentally (hence it is already convolved with the slit function)
-
+    object that has unit conversion and plotting capabilities. Convolution is
+    not available as the spectrum is assumed to have be measured experimentally
+    (hence it is already convolved with the slit function)
 
     Parameters
     ----------
@@ -249,7 +246,6 @@ def experimental_spectrum(
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_txt`,
     :func:`~radis.tools.database.load_spec`
-
     """
 
     if np.shape(w) != np.shape(I):

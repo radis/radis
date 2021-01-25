@@ -17,7 +17,7 @@ from radis.misc.printer import printr
 
 
 class SlitDispersionWarning(UserWarning):
-    """Warning trigger if Slit dispersion is too large"""
+    """Warning trigger if Slit dispersion is too large."""
 
 
 # %% Spectrum Factory warnings / errors
@@ -29,7 +29,7 @@ class OutOfBoundError(ValueError):
 
 
 class OutOfBoundWarning(UserWarning):
-    """ Out of bound (for partition functions)"""
+    """Out of bound (for partition functions)"""
 
     pass
 
@@ -61,23 +61,22 @@ class MemoryUsageWarning(UserWarning):
 
 
 class EmptyDatabaseWarning(UserWarning):
-    """ Trigger a warning if Line database is empty in the range considered """
+    """Trigger a warning if Line database is empty in the range considered."""
 
     pass
 
 
 class OutOfRangeLinesWarning(UserWarning):
-    """Trigger a warning if out of range neighbouring lines, that could have
-    an effect on the spectrume due to their broadening, cannot be found in the
-    database"""
+    """Trigger a warning if out of range neighbouring lines, that could have an
+    effect on the spectrume due to their broadening, cannot be found in the
+    database."""
 
     pass
 
 
 class HighTemperatureWarning(UserWarning):
     """Warning triggered when the Line database seems inappropriate for the
-    temperatures considered
-    """
+    temperatures considered."""
 
     pass
 
@@ -87,27 +86,30 @@ class NegativeEnergiesWarning(UserWarning):
 
 
 class MissingSelfBroadeningWarning(UserWarning):
-    """Self broadening is missing in Line Database. Usually, use Air broadening
-    instead"""
+    """Self broadening is missing in Line Database.
+
+    Usually, use Air broadening instead
+    """
 
     pass
 
 
 class LinestrengthCutoffWarning(UserWarning):
     """Warning triggered when the cumulated linestrength after intensity cutoff
-    has changed too much"""
+    has changed too much."""
 
     pass
 
 
 class InputConditionsWarning(UserWarning):
-    """ Warning triggered when Spectrum input conditions are suspicious """
+    """Warning triggered when Spectrum input conditions are suspicious."""
 
     pass
 
 
 class PerformanceWarning(UserWarning):
-    """ Warning triggered when it seems computation parameters are not optimized"""
+    """Warning triggered when it seems computation parameters are not
+    optimized."""
 
     pass
 
@@ -195,7 +197,6 @@ def reset_warnings(status):
 
     status: dict
         dictionary of Warnings with associated status
-
     """
 
     if status == False:
@@ -208,8 +209,8 @@ def reset_warnings(status):
 
 
 def warn(message, category="default", status={}):
-    """Trigger a warning, an error or just ignore based on the value defined
-    in the :py:attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary
+    """Trigger a warning, an error or just ignore based on the value defined in
+    the :py:attr:`~radis.lbl.loader.DatabankLoader.warnings` dictionary.
 
     The warnings can thus be deactivated selectively by setting the SpectrumFactory
     :attr:`~radis.lbl.loader.DatabankLoader.warnings` attribute. All warnings
@@ -227,7 +228,6 @@ def warn(message, category="default", status={}):
     status: dict
         status for all warning categories. Can be one of ``'warn'``, ``'ignore'``,
         ``'print'``, ``'error'``
-
     """
 
     if status == False:

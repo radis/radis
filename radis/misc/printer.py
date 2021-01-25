@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Print functions, with colors
-"""
+"""Print functions, with colors."""
 
 import sys
 from io import StringIO
@@ -13,7 +11,7 @@ from termcolor import colored
 
 
 def printm(*args, **kwargs):
-    """ Print in magenta"""
+    """Print in magenta."""
 
     string = _capture_print(*args, **kwargs)
 
@@ -21,7 +19,7 @@ def printm(*args, **kwargs):
 
 
 def printg(*args, **kwargs):
-    """ Print in green"""
+    """Print in green."""
 
     string = _capture_print(*args, **kwargs)
 
@@ -29,7 +27,7 @@ def printg(*args, **kwargs):
 
 
 def printr(*args, **kwargs):
-    """ Print in red"""
+    """Print in red."""
 
     string = _capture_print(*args, **kwargs)
 
@@ -37,7 +35,8 @@ def printr(*args, **kwargs):
 
 
 def _capture_print(*args, **kwargs):
-    """ Emulate print option but get output in a ```str``` variable instead of stdout """
+    """Emulate print option but get output in a ```str``` variable instead of
+    stdout."""
 
     # Change the output to capture the string instead of sending it to the console
     old_stdout = sys.stdout
@@ -59,6 +58,7 @@ def _capture_print(*args, **kwargs):
 
 def print_full(x):
     """Print full Pandas series.
+
     From https://stackoverflow.com/questions/19124601/pretty-print-an-entire-pandas-series-dataframe
     """
     pd.set_option("display.max_rows", len(x))
@@ -67,7 +67,7 @@ def print_full(x):
 
 
 def get_print_full(x):
-    """ Same as print_full, but returns string"""
+    """Same as print_full, but returns string."""
 
     # Change the output to capture the string instead of sending it to the console
     old_stdout = sys.stdout

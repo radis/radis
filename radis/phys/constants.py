@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-
-Physical constants
+"""Physical constants.
 
 Note : more units available in :
 - scipy.constants
@@ -9,8 +7,6 @@ Note : more units available in :
 
 
 -------------------------------------------------------------------------------
-
-
 """
 
 # %% SI units

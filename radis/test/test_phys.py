@@ -62,7 +62,7 @@ from radis.phys.units import conv2, is_homogeneous
 
 @pytest.mark.fast
 def test_convert(verbose=True, *args, **kwargs):
-    """ Test conversions  """
+    """Test conversions."""
 
     E = np.linspace(1, 5, 5)  # eV
     assert (J2eV(K2J(J2K(eV2J(E)))) == E).all()

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Variants of default Partition function tabulators and calculators,
-based on CDSD-4000 format, specifically for CO2
+"""Variants of default Partition function tabulators and calculators, based on
+CDSD-4000 format, specifically for CO2.
 
 Routine Listing
 ---------------
@@ -18,8 +17,6 @@ Which inherit from:
 
 
 -------------------------------------------------------------------------------
-
-
 """
 
 
@@ -69,16 +66,13 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
     --------
 
     :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDcalc`
-
     """
 
     def __init__(self, isotope, database):
-        """Get partition function for one isotope only
+        """Get partition function for one isotope only.
 
-        (note that this forces to reload the file once per isotope,
-        but at least we have a clean layout with one object
-        per isotope)
-
+        (note that this forces to reload the file once per isotope, but
+        at least we have a clean layout with one object per isotope)
         """
 
         Itable = {1: "12C16O2", 2: "13C16O2", 3: "16O12C18O", 4: "16O12C17O"}
@@ -109,11 +103,11 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
         self.Tmax = parsum["T(K)"].max()
 
     def _inrange(self, T):
-        """ Allow for 5% extrapolation (ex: 296K / 300K) ) """
+        """Allow for 5% extrapolation (ex: 296K / 300K) )"""
         return (self.Tmin * 0.95 <= T) and (self.Tmax * 1.05 >= T)
 
     def _at(self, T):
-        """Get partition function at temperature T
+        """Get partition function at temperature T.
 
         Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         """
@@ -131,8 +125,8 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
 
 
 class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
-    """Calculate Partition Function from energy levels (and maybe export
-    a tabulated database).
+    """Calculate Partition Function from energy levels (and maybe export a
+    tabulated database).
 
     warning::
         ZPE (zero point energy) must be the same in the Line Database and the
@@ -216,7 +210,6 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
     --------
 
     :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDtab`
-
     """
 
     def __init__(
@@ -344,7 +337,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             )
 
     def _add_degeneracies(self, df):
-        """Calculate and store degeneracies in database df
+        """Calculate and store degeneracies in database df.
 
         Parameters
         ----------

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Implements a spectrum database :class:`~radis.tools.database.SpecDatabase`
-class to manage them all
+"""Implements a spectrum database :class:`~radis.tools.database.SpecDatabase`
+class to manage them all.
 
 It basically manages a list of Spectrum JSON files, adding a Pandas
 dataframe structure on top to serve as an efficient index to visualize
@@ -40,13 +39,11 @@ You can see more examples on the :ref:`Spectrum Database section <label_spectrum
 of the website.
 
 -------------------------------------------------------------------------------
-
-
 """
 
 # TODO:
 
-# - Alert if case already in database when generating from a SpectrumFactory / ParallelFactory
+# - Alert if case already in database when generating from a SpectrumFactory
 # connected to a SpecDatabase
 
 # - Implement a h5py version of load / store
@@ -150,10 +147,10 @@ def save(
     warnings=True,
 ):
     """Save a :class:`~radis.spectrum.spectrum.Spectrum` object in JSON format.
-    Object can be recovered with :func:`~radis.tools.database.load_spec`.
-    If many :class:`~radis.spectrum.spectrum.Spectrum` are saved in a
-    same folder you can view their properties with the :class:`~radis.tools.database.SpecDatabase`
-    structure.
+    Object can be recovered with :func:`~radis.tools.database.load_spec`. If
+    many :class:`~radis.spectrum.spectrum.Spectrum` are saved in a same folder
+    you can view their properties with the
+    :class:`~radis.tools.database.SpecDatabase` structure.
 
     Parameters
     ----------
@@ -209,8 +206,6 @@ def save(
     :class:`~radis.tools.database.SpecDatabase`,
     :func:`~radis.tools.database.load_spec`,
     :meth:`~radis.spectrum.spectrum.Spectrum.store`
-
-
     """
 
     # 1) Format to JSON writable dictionary
@@ -246,7 +241,7 @@ def save(
 
 
 def _format_to_jsondict(s, discard, compress, verbose=True):
-    """Format to JSON writable dictionary
+    """Format to JSON writable dictionary.
 
     Notes
     -----
@@ -256,7 +251,6 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
 
     We also store the initial type of all conditions so they are correctly
     reproduced on loading .
-
     """
     # TODO: convert functions to text with marshal:
     # see: https://stackoverflow.com/a/51938459/5622825
@@ -296,7 +290,8 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
 
 
 def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
-    """ Get final output name   (add info, extension, increment number if needed) """
+    """Get final output name   (add info, extension, increment number if
+    needed)"""
 
     conditions = sjson["conditions"]
 
@@ -385,10 +380,12 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
 
 
 def _compress(s, sjson):
-    """removes all quantities that can be regenerated with s.update(),
-    e.g, transmittance if abscoeff and path length are given, radiance if
-    emisscoeff and abscoeff are given in non-optically thin case, etc.
-    Default ``False``"""
+    """removes all quantities that can be regenerated with s.update(), e.g,
+    transmittance if abscoeff and path length are given, radiance if emisscoeff
+    and abscoeff are given in non-optically thin case, etc.
+
+    Default ``False``
+    """
 
     # TODO: at the moment, a Spectrum with 'radiance_noslit' and 'transmittance_noslit'
     # is saved with 'radiance_noslit' only, if stored with compress, but it is then impossible
@@ -429,9 +426,9 @@ def _compress(s, sjson):
 
 
 def load_spec(file, binary=True):  # , return_binary_status=False):
-    """Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum` object.
-    Adds ``file`` in the Spectrum :attr:`~radis.spectrum.spectrum.Spectrum.file`
-    attribute.
+    """Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum`
+    object. Adds ``file`` in the Spectrum
+    :attr:`~radis.spectrum.spectrum.Spectrum.file` attribute.
 
     Parameters
     ----------
@@ -455,8 +452,6 @@ def load_spec(file, binary=True):  # , return_binary_status=False):
 
     :class:`~radis.tools.database.SpecDatabase`,
     :meth:`~radis.spectrum.spectrum.Spectrum.store`
-
-
     """
 
     def _load(binary):
@@ -608,9 +603,10 @@ def _json_to_spec(sload, file=""):
 
 
 def _fix_format(file, sload):
-    """Test format / correct deprecated format:
-    The goal is to still be able to load old format precomputed spectra, and
-    fix their attribute names. Save them again to fix the warnigns definitly.
+    """Test format / correct deprecated format: The goal is to still be able to
+    load old format precomputed spectra, and fix their attribute names.
+
+    Save them again to fix the warnigns definitly.
     """
 
     fixed = False
@@ -852,11 +848,9 @@ def _fix_format(file, sload):
 
 
 def _update_to_latest_format(s, file, binary):
-    """experimental feature
-    Used to autoupdate .spec files to the latest format, by simply saving
-    them again once they're loaded and fixed.
-    Warning! Better have a copy of your files before that, or a way to regenerate
-    them.
+    """experimental feature Used to autoupdate .spec files to the latest
+    format, by simply saving them again once they're loaded and fixed. Warning!
+    Better have a copy of your files before that, or a way to regenerate them.
 
     Parameters
     ----------
@@ -895,9 +889,8 @@ def _update_to_latest_format(s, file, binary):
 
 
 def plot_spec(file, what="radiance", title=True, **kwargs):
-    """Plot a .spec file. Uses the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
-    method internally
-
+    """Plot a .spec file. Uses the
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method internally.
 
     Parameters
     ----------
@@ -922,7 +915,6 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
     --------
 
     :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
-
     """
 
     if isinstance(file, str):
@@ -961,10 +953,9 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
 
 class SpecList(object):
     def __init__(self, *spectra, **kwargs):
-        """A list of Spectrum, with various methods to manage them
+        """A list of Spectrum, with various methods to manage them.
 
-        .. warning::
-            still new in 0.9.17
+        .. warning::     still new in 0.9.17
         """
 
         # get defaults
@@ -974,14 +965,13 @@ class SpecList(object):
         self.verbose = verbose
 
     def _create_df(self, *spectra):
-        """Returns Dataframe of spectra with conditions
+        """Returns Dataframe of spectra with conditions.
 
         Parameters
         ----------
 
         spectra: list of Spectrum
             all spectra
-
         """
 
         # TODO: deal with case where SpecList(list) was called (see below for first attempt)
@@ -1001,7 +991,7 @@ class SpecList(object):
         return pd.DataFrame(db)
 
     def conditions(self):
-        """ Show conditions in database """
+        """Show conditions in database."""
 
         cond = list(self.df.columns)
 
@@ -1014,7 +1004,7 @@ class SpecList(object):
 
     def see(self, columns=None, *args):
         """Shows Spectrum database with all conditions (``columns=None``) or
-        specific conditions
+        specific conditions.
 
         Parameters
         ----------
@@ -1031,8 +1021,6 @@ class SpecList(object):
 
         Makes the 'file' column the index, and also discard the 'Spectrum' column
         (that holds all the data) for readibility
-
-
         """
 
         if len(self) == 0:
@@ -1084,8 +1072,6 @@ class SpecList(object):
                 return s
 
             db.map(add_condition)
-
-
         """
 
         # TODO: If ``function``
@@ -1096,7 +1082,7 @@ class SpecList(object):
             function(s)
 
     def get(self, conditions="", **kwconditions):
-        """Returns a list of spectra that match given conditions
+        """Returns a list of spectra that match given conditions.
 
         Parameters
         ----------
@@ -1147,7 +1133,6 @@ class SpecList(object):
         :meth:`~radis.tools.database.SpecList.get_unique`,
         :meth:`~radis.tools.database.SpecList.get_closest`,
         :meth:`~radis.tools.database.SpecList.items`
-
         """
 
         ## type: bool, default False
@@ -1238,8 +1223,8 @@ class SpecList(object):
         return out
 
     def get_unique(self, conditions="", scale_if_possible=False, **kwconditions):
-        """Returns a spectrum that match given conditions. Raises an error
-        if the spectrum is not unique
+        """Returns a spectrum that match given conditions. Raises an error if
+        the spectrum is not unique.
 
         Parameters
         ----------
@@ -1253,7 +1238,6 @@ class SpecList(object):
 
         :py:meth:`~radis.tools.database.SpecList.get`,
         :py:meth:`~radis.tools.database.SpecList.get_closest`
-
         """
 
         out = self.get(conditions, scale_if_possible=scale_if_possible, **kwconditions)
@@ -1274,7 +1258,8 @@ class SpecList(object):
             return out[0]
 
     def get_closest(self, scale_if_possible=True, **kwconditions):
-        """Returns the Spectra in the database that is the closest to the input conditions
+        """Returns the Spectra in the database that is the closest to the input
+        conditions.
 
         Note that for non-numeric values only equals should be given.
         To calculate the distance all numeric values are scaled by their
@@ -1306,7 +1291,6 @@ class SpecList(object):
 
         :meth:`~radis.tools.database.SpecList.get`,
         :meth:`~radis.tools.database.SpecList.get_unique`
-
         """
         #        split_columns: list of str.
         #            slits a comma separated column in multiple columns, and number them.
@@ -1440,7 +1424,8 @@ class SpecList(object):
         return sout
 
     def get_items(self, condition):
-        """Returns all Spectra in database under a dictionary; indexed by ``condition``
+        """Returns all Spectra in database under a dictionary; indexed by
+        ``condition``
 
         Requires that ``condition`` is unique
 
@@ -1461,7 +1446,6 @@ class SpecList(object):
 
         :meth:`~radis.tools.database.SpecList.to_dict`,
         :meth:`~radis.tools.database.SpecList.get`
-
         """
 
         if not self.df[condition].is_unique:
@@ -1474,7 +1458,7 @@ class SpecList(object):
         return dict(zip(self.df[condition], self.df.Spectrum))
 
     def __iter__(self):
-        """Iterate over all Spectra in database
+        """Iterate over all Spectra in database.
 
         .. warning::
 
@@ -1508,13 +1492,12 @@ class SpecList(object):
         :meth:`~radis.tools.database.SpecList.values`,
         :meth:`~radis.tools.database.SpecList.items`,
         :meth:`~radis.tools.database.SpecList.to_dict`
-
         """
 
         return self.get(inplace=True).__iter__()
 
     def keys(self):
-        """Iterate over all {path} in database
+        """Iterate over all {path} in database.
 
         See Also
         --------
@@ -1522,13 +1505,12 @@ class SpecList(object):
         :meth:`~radis.tools.database.SpecList.values`,
         :meth:`~radis.tools.database.SpecList.items`,
         :meth:`~radis.tools.database.SpecList.to_dict`
-
         """
 
         return list(self.to_dict().keys())
 
     def values(self):
-        """Iterate over all {Spectrum} in database
+        """Iterate over all {Spectrum} in database.
 
         See Also
         --------
@@ -1536,14 +1518,13 @@ class SpecList(object):
         :meth:`~radis.tools.database.SpecList.keys`,
         :meth:`~radis.tools.database.SpecList.items`,
         :meth:`~radis.tools.database.SpecList.to_dict`
-
         """
 
         return list(self.to_dict().values())
 
     def items(self):
-        """Iterate over all :py:class:`~radis.spectrum.spectrum.Spectrum`
-        in database
+        """Iterate over all :py:class:`~radis.spectrum.spectrum.Spectrum` in
+        database.
 
         Examples
         --------
@@ -1567,13 +1548,12 @@ class SpecList(object):
         :meth:`~radis.tools.database.SpecList.keys`,
         :meth:`~radis.tools.database.SpecList.values`,
         :meth:`~radis.tools.database.SpecList.to_dict`
-
         """
 
         return list(self.to_dict().items())
 
     def plot(self, nfig=None, legend=True, **kwargs):
-        """Plot all spectra in database
+        """Plot all spectra in database.
 
         Parameters
         ----------
@@ -1609,7 +1589,6 @@ class SpecList(object):
         --------
 
         Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-
         """
 
         fig = plt.figure(num=nfig)
@@ -1643,7 +1622,6 @@ class SpecList(object):
 
         >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
                                               # procedure...
-
         """
         # %%
 
@@ -1717,7 +1695,7 @@ class SpecDatabase(SpecList):
         nJobs=-2,
         batch_size="auto",
     ):
-        """A Spectrum Database class to manage them all
+        """A Spectrum Database class to manage them all.
 
         It basically manages a list of Spectrum JSON files, adding a Pandas
         dataframe structure on top to serve as an efficient index to visualize
@@ -1732,10 +1710,8 @@ class SpecDatabase(SpecList):
 
         path: str
             a folder to initialize the database
-
         filt: str
             only consider files ending with filt
-
         binary: boolean
             if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
             try as binary file anyway. Default ``False``
@@ -1743,14 +1719,13 @@ class SpecDatabase(SpecList):
         Other Parameters
         ----------------
 
-        input for :class:`~joblib.parallel.Parallel` loading of database:
+        *input for :class:`~joblib.parallel.Parallel` loading of database*
 
         nJobs: int
             Number of processors to use to load a database (usefull for big
             databases). BE CAREFULL, no check is done on processor use prior
             to the execution ! Default ``-2``: use all but 1 processors.
             Use ``1`` for single processor.
-
         batch_size: int or ``'auto'``
             The number of atomic tasks to dispatch at once to each
             worker. When individual evaluations are very fast, dispatching
@@ -1811,7 +1786,6 @@ class SpecDatabase(SpecList):
         Compare another Spectrum to all spectra in the database:
 
         :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`,
-
         """
         # TODO @devs: generate a SpecDatabase from a dict.
         # use the key of the dict insted of the file.
@@ -1857,8 +1831,8 @@ class SpecDatabase(SpecList):
         self.update(force_reload=True, filt=filt)
 
     def update(self, force_reload=False, filt=".spec"):
-        """Reloads database, updates internal index structure and export it
-        in ``<database>.csv``.
+        """Reloads database, updates internal index structure and export it in
+        ``<database>.csv``.
 
         Parameters
         ----------
@@ -1875,7 +1849,6 @@ class SpecDatabase(SpecList):
         Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
         attributes of :class:`~radis.tools.database.SpecDatabase`. See :class:`joblib.parallel.Parallel`
         for information on the arguments
-
         """
 
         path = self.path
@@ -1902,9 +1875,9 @@ class SpecDatabase(SpecList):
 
     def compress_to(self, new_folder, compress=True):
         """Saves the Database in a new folder with all Spectrum objects under
-        compressed (binary) format. Read/write is much faster.
-        After the operation, a new database should be initialized in the new_folder
-        to access the new Spectrum.
+        compressed (binary) format. Read/write is much faster. After the
+        operation, a new database should be initialized in the new_folder to
+        access the new Spectrum.
 
         Parameters
         ----------
@@ -1921,7 +1894,6 @@ class SpecDatabase(SpecList):
         --------
 
         :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
-
         """
 
         # dont allow to compress to the same folder (doesnt make sense, and will
@@ -1960,7 +1932,8 @@ class SpecDatabase(SpecList):
 
     def find_duplicates(self, columns=None):
         """Find spectra with same conditions. The first duplicated spectrum
-        will be ``'False'``, the following will be ``'True'`` (see .duplicated()).
+        will be ``'False'``, the following will be ``'True'`` (see
+        .duplicated()).
 
         Parameters
         ----------
@@ -1980,7 +1953,6 @@ class SpecDatabase(SpecList):
 
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
         of the website.
-
         """
         dg = self.see(columns=columns).astype(str).duplicated()
         # need to convert eveything as a str to avoid comparaison problems (Minou)
@@ -1999,8 +1971,9 @@ class SpecDatabase(SpecList):
         return onlyDuplicatedFiles
 
     def add(self, spectrum, store_name=None, **kwargs):
-        """Add Spectrum to database, whether it's a :py:class:`~radis.spectrum.spectrum.Spectrum`
-        object or a file that stores one. Check it's not in database already.
+        """Add Spectrum to database, whether it's a
+        :py:class:`~radis.spectrum.spectrum.Spectrum` object or a file that
+        stores one. Check it's not in database already.
 
         Parameters
         ----------
@@ -2073,7 +2046,6 @@ class SpecDatabase(SpecList):
         :meth:`~radis.tools.database.SpecList.get_unique`,
         :meth:`~radis.tools.database.SpecList.get_closest`,
         :meth:`~spectrum.spectrum.Spectrum.update`
-
         """
 
         # Check inputs
@@ -2218,7 +2190,6 @@ class SpecDatabase(SpecList):
 
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
         of the website.
-
         """
 
         if residual is None:
@@ -2249,7 +2220,7 @@ class SpecDatabase(SpecList):
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
 
     def _load_files(self, files):
-        """Parse files and generate a database
+        """Parse files and generate a database.
 
         Notes
         -----
@@ -2257,7 +2228,6 @@ class SpecDatabase(SpecList):
         Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
         attributes of :class:`~radis.tools.database.SpecDatabase`.
         See :class:`joblib.parallel.Parallel` for information on the arguments
-
         """
         db = []
 
@@ -2307,7 +2277,7 @@ class SpecDatabase(SpecList):
         return out
 
     def update_conditions(self):
-        """ Reloads conditions of all Spectrum in database """
+        """Reloads conditions of all Spectrum in database."""
 
         # Fetch new conditions, including file and Spectrum object itself
         new_conditions_list = []
@@ -2343,14 +2313,13 @@ class SpecDatabase(SpecList):
         :meth:`~radis.tools.database.SpecList.keys`,
         :meth:`~radis.tools.database.SpecList.values`,
         :meth:`~radis.tools.database.SpecList.items`
-
         """
 
         return dict(list(zip(self.df.file, self.df.Spectrum)))
 
 
 def in_database(smatch, db=".", filt=".spec"):
-    """ old function """
+    """old function."""
     match_cond = smatch.get_conditions()
     for f in [f for f in os.listdir(db) if f.endswith(filt)]:
         fname = join(db, f)

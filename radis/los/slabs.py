@@ -33,7 +33,7 @@ from radis.spectrum.spectrum import Spectrum, is_spectrum
 
 
 def intersect(a, b):
-    """ Returns intersection of two dictionaries on values"""
+    """Returns intersection of two dictionaries on values."""
     c = {}
     for k in set(a.keys()) & set(b.keys()):  # work in Python 2?
         c[k] = a[k] if (a[k] == b[k]) else "N/A"
@@ -300,7 +300,7 @@ def _serial_slab_names(s, sn):
 
 def _check_valid(s):
     # type: (Spectrum) -> bool
-    """Check s is a valid Spectrum object. Raises an error if not
+    """Check s is a valid Spectrum object. Raises an error if not.
 
     Valid if:
 
@@ -309,7 +309,6 @@ def _check_valid(s):
     Also print a warning if:
 
     - quantities used for solving the LOS have nan
-
     """
 
     if not is_spectrum(s):

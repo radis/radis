@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Aug 13 14:51:22 2020
+"""Created on Thu Aug 13 14:51:22 2020.
 
 @author: erwan
 """
@@ -11,7 +10,7 @@ import pandas as pd
 
 def npy2df(keywords, verbose=True):
     """Convert a dictionary of Numpy arrays storing spectroscopic information
-    to a Pandas dataframe
+    to a Pandas dataframe.
 
     Parameters
     ----------

@@ -49,6 +49,7 @@ def get_diff(
 ):
     # type: (Spectrum, Spectrum, str, str, str, str, bool, int) -> np.array, np.array
     """Get the difference between 2 spectra.
+
     Basically returns w1, I1 - I2 where (w1, I1) and (w2, I2) are the values of
     s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
 
@@ -131,9 +132,9 @@ def get_diff(
 
 def get_ratio(s1, s2, var, wunit="default", Iunit="default", resample=True):
     # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
-    """Get the ratio between two spectra
-    Basically returns w1, I1 / I2 where (w1, I1) and (w2, I2) are the values of
-    s1 and s2 for variable var. (w2, I2) is linearly interpolated if needed.
+    """Get the ratio between two spectra Basically returns w1, I1 / I2 where
+    (w1, I1) and (w2, I2) are the values of s1 and s2 for variable var. (w2,
+    I2) is linearly interpolated if needed.
 
         .. math::
 
@@ -169,8 +170,6 @@ def get_ratio(s1, s2, var, wunit="default", Iunit="default", resample=True):
     :func:`~radis.spectrum.compare.get_residual_integral`,
     :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with`
-
-
     """
 
     w1, I1, w2, I2 = _get_defaults(
@@ -183,7 +182,8 @@ def get_ratio(s1, s2, var, wunit="default", Iunit="default", resample=True):
 
 def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
     # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
-    """Get a regularized Euclidian distance between two spectra ``s1`` and ``s2``
+    """Get a regularized Euclidian distance between two spectra ``s1`` and
+    ``s2``
 
     This regularized Euclidian distance minimizes the effect of a small shift in
     wavelength between the two spectra
@@ -241,7 +241,6 @@ def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
     :func:`~radis.spectrum.compare.get_residual_integral`,
     :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with`
-
     """
     # TODO: normalize with Imax, wmax
 
@@ -381,7 +380,7 @@ def get_residual(
 def get_residual_integral(s1, s2, var, ignore_nan=False):
     # type: (Spectrum, Spectrum, str, bool) -> float
     """Returns integral of the difference between two spectra s1 and s2,
-    relatively to the integral of spectrum s1
+    relatively to the integral of spectrum s1.
 
     Compared to :func:`~radis.spectrum.compare.get_residual`, this tends to
     cancel the effect of the gaussian noise of an experimental spectrum.
@@ -476,7 +475,8 @@ def _get_defaults(
     # type: (Spectrum, Spectrum, str, str, str, bool) -> (np.array, np.array, np.array, np.array)
     """Returns w1, I1, w2, I2  in the same waveunit, unit and medium.
 
-    See get_distance, get_diff for more information"""
+    See get_distance, get_diff for more information
+    """
 
     # Check inputs, get defaults
     # ----
@@ -679,7 +679,6 @@ def plot_diff(
     :func:`~radis.spectrum.compare.get_distance`,
     :func:`~radis.spectrum.compare.get_residual`,
     :meth:`~radis.spectrum.spectrum.compare_with`
-
     """
 
     if (not show) and (
@@ -1040,7 +1039,7 @@ def compare_spectra(
     normalize=False,
     **kwargs
 ):
-    """Compare Spectrum with another Spectrum object
+    """Compare Spectrum with another Spectrum object.
 
     Parameters
     ----------
@@ -1106,7 +1105,6 @@ def compare_spectra(
     :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` internally::
 
         s1 == s2       # will return True or False
-
     """
 
     # Check inputs
@@ -1191,7 +1189,7 @@ def compare_spectra(
         return out
 
     def _compare_variables(I, Ie):
-        """ Compare spectral quantities I and Ie """
+        """Compare spectral quantities I and Ie."""
 
         if ignore_nan:
             b = ~(np.isnan(I) + np.isnan(Ie))

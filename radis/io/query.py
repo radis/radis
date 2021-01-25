@@ -126,12 +126,7 @@ def fetch_astroquery(
                     )
                 os.remove(fcache)
 
-    #    tbl = Hitran.query_lines_async(molecule_number=mol_id,
-    #                                     isotopologue_number=isotope,
-    #                                     min_frequency=wmin / u.cm,
-    #                                     max_frequency=wmax / u.cm)
-
-    #    # Download using the astroquery library
+    # Download using the astroquery library
     try:
         response = Hitran.query_lines_async(
             molecule_number=mol_id,
@@ -206,9 +201,6 @@ def fetch_astroquery(
     }
 
     if not empty_range:
-        #        _fix_astroquery_file_format(filename)
-        # Note: as of 0.9.16 we're not fixing astroquery_file_format anymore.
-        # maybe we should.
         tbl = Hitran._parse_result(response)
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)

@@ -62,29 +62,22 @@ def calc_spectrum(
         wavenum_min: float [cm-1]
             minimum wavenumber to be processed in cm^-1
         wavenum_max: float [cm-1]
-            maximum wavenumber to be processed in cm^-1
-    ​
+            maximum wavenumber to be processed in cm^-1​
         wavelength_min: float [nm]
             minimum wavelength to be processed in nm. Wavelength in ``'air'`` or
-            ``'vacuum'`` depending of the value of the parameter ``'medium='``
-    ​
+            ``'vacuum'`` depending of the value of the parameter ``'medium='``​
         wavelength_max: float [nm]
             maximum wavelength to be processed in nm. Wavelength in ``'air'`` or
-            ``'vacuum'`` depending of the value of the parameter ``'medium='``
-    ​
+            ``'vacuum'`` depending of the value of the parameter ``'medium='``​
         Tgas: float [K]
             Gas temperature. If non equilibrium, is used for Ttranslational.
-            Default ``300`` K
-    ​
+            Default ``300`` K​
         Tvib: float [K]
-            Vibrational temperature. If ``None``, equilibrium calculation is run with Tgas
-    ​
+            Vibrational temperature. If ``None``, equilibrium calculation is run with Tgas​
         Trot: float [K]
-            Rotational temperature. If ``None``, equilibrium calculation is run with Tgas
-    ​
+            Rotational temperature. If ``None``, equilibrium calculation is run with Tgas​
         pressure: float [bar]
-            partial pressure of gas in bar. Default ``1.01325`` (1 atm)
-    ​
+            partial pressure of gas in bar. Default ``1.01325`` (1 atm)​
         molecule: int, str, list or ``None``
             molecule id (HITRAN format) or name. For multiple molecules, use a list.
             The `isotope`, `mole_fraction`, `databank` and `overpopulation` parameters must then
@@ -93,8 +86,7 @@ def calc_spectrum(
             from the database files being loaded. See the list of supported molecules
             in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
             and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
-            Default ``None``.
-    ​
+            Default ``None``.​
         isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
             isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
             See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
@@ -105,8 +97,7 @@ def calc_spectrum(
 
             Example::
 
-                mole_fraction={'CO2':0.8 ,  'CO':0.2 }
-    ​
+                mole_fraction={'CO2':0.8 ,  'CO':0.2 }​
         mole_fraction: float or dict
             database species mole fraction. Default ``1``.
 
@@ -114,11 +105,9 @@ def calc_spectrum(
 
             Example::
 
-                mole_fraction={'CO2': 0.8, 'CO':0.2}
-    ​
+                mole_fraction={'CO2': 0.8, 'CO':0.2}​
         path_length: float [cm]
-            slab size. Default ``1``.
-    ​
+            slab size. Default ``1``.​
         databank: str or dict
             can be either:
     ​
@@ -152,8 +141,7 @@ def calc_spectrum(
     ​
         medium: ``'air'``, ``'vacuum'``
             propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
-            Does not change anything when giving inputs in wavenumber. Default ``'air'``
-    ​
+            Does not change anything when giving inputs in wavenumber. Default ``'air'``​
         wstep: float (cm-1)
             Spacing of calculated spectrum. Default ``0.01 cm-1``
     ​
@@ -165,13 +153,11 @@ def calc_spectrum(
             a huge performance drop (scales as ~broadening_width^2 without DLM)
             The calculated spectral range is increased (by broadening_max_width/2
             on each side) to take into account overlaps from out-of-range lines.
-            Default ``10`` cm-1.
-    ​
+            Default ``10`` cm-1.​
         cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
             discard linestrengths that are lower that this, to reduce calculation
             times. ``1e-27`` is what is generally used to generate databases such as
             CDSD. If ``0``, no cutoff. Default ``1e-27``.
-
         optimization : ``"simple"``, ``"min-RMS"``, ``None``
             If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used:
             - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_)
@@ -182,8 +168,7 @@ def calc_spectrum(
 
             Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation.
 
-            Default ``"min-RMS"``
-    ​
+            Default ``"min-RMS"``​
         overpopulation: dict
             dictionary of overpopulation compared to the given vibrational temperature.
             Default ``None``.
@@ -196,46 +181,40 @@ def calc_spectrum(
                                            '(01`1`1)->(01`1`2)': 1
 
                                             }
-                                 }
-    ​
+                                 }​
         slit: float, str, or ``None``
             if float, FWHM of a triangular slit function. If str, path to an
-            experimental slit function. If None, no slit is applied. Default ``None``.
-    ​
+            experimental slit function. If None, no slit is applied. Default ``None``.​
         plot: str
             any parameter such as 'radiance' (if slit is given), 'radiance_noslit',
-            'absorbance', etc...   Default ``None``
-    ​
+            'absorbance', etc...   Default ``None``​
         name: str
-            name of the case. If None, a unique ID is generated. Default ``None``
-    ​
+            name of the output Spectrum. If ``None``, a unique ID is generated. Default ``None``​
         use_cached: boolean
-            use cached files for line database and energy database. Default ``True``
-    ​
+            use cached files for line database and energy database. Default ``True``​
         verbose: boolean, or int
             If ``False``, stays quiet. If ``True``, tells what is going on.
             If ``>=2``, gives more detailed messages (for instance, details of
-            calculation times). Default ``True``.
-    ​
+            calculation times). Default ``True``.​
         **kwargs: other inputs forwarded to SpectrumFactory
             For instance: ``warnings``.
             See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
             details on input.
-            For instance:
-    ​
+            For instance:​
         pseudo_continuum_threshold: float
             if not 0, first calculate a rough approximation of the spectrum, then
             moves all lines whose linestrength intensity is less than this threshold
             of the maximum in a semi-continuum. Values above 0.01 can yield significant
             errors, mostly in highly populated areas. 80% of the lines can typically
             be moved in a continuum, resulting in 5 times faster spectra. If 0,
-            no semi-continuum is used. Default 0.
-
+            no semi-continuum is used. Default ``0``.
         mode: ``'cpu'``, ``'gpu'``
-            if set to 'cpu', computes the spectra purely on the CPU. if set to 'gpu',
+            if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
             offloads the calculations of lineshape and broadening steps to the GPU
-            making use of parallel computations to speed up the process. Default 'cpu'.
-            Note that mode='gpu' requires CUDA compatible hardware to execute. For more information on how to setup your system to run GPU-accelerated methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
+            making use of parallel computations to speed up the process. Default ``'cpu'``.
+            Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
+            For more information on how to setup your system to run GPU-accelerated
+            methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
     ​
         Returns
         -------
@@ -329,11 +308,12 @@ def calc_spectrum(
     def _check_molecules_are_consistent(
         molecule_reference_set, reference_name, new_argument, new_argument_name
     ):
-        """Will test that molecules set are the same in molecule_reference_set and new_argument, if new_argument is a dict.
-        molecule_reference_set is a set of molecules (yeah!).
-        reference_name is the name of the argument from which we guessed the list of molecules (used to have a clear error message).
-        new_argument is the new argument to check
-        new_argument_name is its name
+        """Will test that molecules set are the same in molecule_reference_set
+        and new_argument, if new_argument is a dict. molecule_reference_set is
+        a set of molecules (yeah!). reference_name is the name of the argument
+        from which we guessed the list of molecules (used to have a clear error
+        message). new_argument is the new argument to check new_argument_name
+        is its name.
 
         Returns the set of molecules as found in new_argument, if applicable, else the molecule_reference_set (this allows us to parse all arguments too)
 

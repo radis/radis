@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 31 16:28:43 2018
+"""Created on Tue Jul 31 16:28:43 2018.
 
 @author: erwan
 """
 
 
 def morse_increment(Dzero, we, wexe=0, weye=0, weze=0, weae=0, webe=0, wece=0):
-    """Get Morse potential energy increment correction for given molecule
+    """Get Morse potential energy increment correction for given molecule.
 
     Parameters
     ----------
@@ -34,7 +33,6 @@ def morse_increment(Dzero, we, wexe=0, weye=0, weze=0, weae=0, webe=0, wece=0):
     -----------
 
     Specair
-
     """
 
     d_equil = (

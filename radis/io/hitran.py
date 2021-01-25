@@ -90,7 +90,7 @@ columns_2004 = OrderedDict(
 
 
 def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
-    """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
+    """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe.
 
     Parameters
     ----------
@@ -143,7 +143,6 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
     --------
 
     :func:`~radis.io.cdsd.cdsd2df`
-
     """
     metadata = {}
     # metadata["last_modification"] = time.ctime(getmtime(getTestFile(fname)))
