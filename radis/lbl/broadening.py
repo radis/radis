@@ -612,7 +612,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
 
 
 def voigt_FT(w_lineshape_ft, hwhmG, hwhmL):
-    """Fourier Transform of a Lorentzian lineshape
+    """Fourier Transform of a Voigt lineshape
 
     Parameters
     ----------
