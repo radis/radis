@@ -24,7 +24,6 @@ from warnings import warn
 import numpy as np
 from numpy import abs, allclose, arange, diff
 
-from radis.misc.arrays import count_nans
 from radis.misc.basics import in_all, merge_lists
 from radis.misc.debug import printdbg
 from radis.spectrum.spectrum import Spectrum, is_spectrum
@@ -91,20 +90,26 @@ def SerialSlabs(*slabs, **kwargs):
         - ``'error'``: raises an error.
 
         Default ``'nan'``
+
     Other Parameters
     ----------------
-
     verbose: bool
         if ``True``, more blabla. Default ``False``
     modify_inputs: False
         if ``True``, slabs are modified directly when they are resampled. This
         avoids making a copy so is slightly faster. Default ``False``.
+
+        ..note::
+            for large number of slabs (in radiative transfer calculations) you
+            surely want to use this option !
+
     Returns
     -------
     Spectrum object representing total emission and total transmittance as
     observed at the output (slab[n+1]). Conditions and units are transported too,
     unless there is a mismatch then conditions are dropped (and units mismatch
     raises an error because it doesnt make sense)
+
     Examples
     --------
     Add s1 and s2 along the line of sight: s1 --> s2 ::
@@ -160,12 +165,9 @@ def SerialSlabs(*slabs, **kwargs):
         # recursively calculate serial slabs
         slabs = list(slabs)
 
-        #        # Check all items are Spectrum
-        for s in slabs:
-            _check_valid(s)
-
         # Recursively deal with the rest of Spectra --> call it s
         sn = slabs.pop(-1)  # type: Spectrum
+        _check_valid(sn)  # check it is a spectrum
         s = SerialSlabs(
             *slabs,
             resample=resample_wavespace,
@@ -309,7 +311,7 @@ def _check_valid(s):
     for k in sdict.keys():
         if (
             k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
-            and count_nans(sdict.get(k)) > 0
+            and np.isnan(sdict.get(k)[1]).any()
         ):
             warn(
                 "Nans detected in Spectrum object for multi-slab operation. "
@@ -381,7 +383,7 @@ def resample_slabs(
 
     # Work on copies
     if not modify_inputs:
-        slabs = [s.copy() for s in slabs]
+        slabs = [s.copy(copy_lines=False) for s in slabs]
 
     # Get all keys
     keys = merge_lists([s.get_vars() for s in slabs])
@@ -484,6 +486,7 @@ def MergeSlabs(*slabs, **kwargs):
                         [0]        \====
             light       [1]  ->     )===  observer
                         [n]        /====
+
     Other Parameters
     ----------------
     kwargs input:
@@ -513,12 +516,14 @@ def MergeSlabs(*slabs, **kwargs):
     modify_inputs: False
         if ``True``, slabs are modified directly when they are resampled. This
         avoids making a copy so is slightly faster. Default ``False``.
+
     Returns
     -------
     Spectrum object representing total emission and total transmittance as
     observed at the output. Conditions and units are transported too,
     unless there is a mismatch then conditions are dropped (and units mismatch
     raises an error because it doesnt make sense)
+
     Examples
     --------
     Merge two spectra calculated with different species (physically correct
@@ -540,6 +545,7 @@ def MergeSlabs(*slabs, **kwargs):
         s = MergeSlabs(*spectra, resample='full', out='transparent')
         s.update()   # Generate missing spectral quantities
         s.plot()
+
     See Also
     --------
     :func:`~radis.los.slabs.SerialSlabs`
