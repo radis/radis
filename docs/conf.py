@@ -154,11 +154,10 @@ master_doc = "index"
 
 # General information about the project.
 project = "RADIS"
-copyright = "2020, Erwan Pannier and the 🌱 RADIS contributors (https://github.com/radis/radis/graphs/contributors)"
+copyright = "2021, Erwan Pannier and the 🌱 RADIS contributors (https://github.com/radis/radis/graphs/contributors)"
 author = (
-    "Erwan Pannier \\and Nicolas Minesi \\and "
-    + "Dirk van den Bekerom \\and Pankaj Mishra \\and "
-    + "all the 🌱 RADIS contributors \\and (https://github.com/radis/radis/graphs/contributors)"
+    "Erwan Pannier, Dirk van den Bekerom, Nicolas Minesi, "
+    + "et al. (https://github.com/radis/radis/graphs/contributors)"
 )
 
 # The version info for the project you're documenting, acts as replacement for
