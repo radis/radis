@@ -75,6 +75,7 @@ from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
 from radis.io.cdsd import cdsd2df
+from radis.io.hdf5 import hdf2df
 from radis.io.hitran import hit2df, parse_global_quanta, parse_local_quanta
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
@@ -104,12 +105,14 @@ from radis.misc.warning import (
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 
-KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
+KNOWN_DBFORMAT = ["hitran", "hitemp", "cdsd-hitemp", "cdsd-4000", "hdf5"]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : for HITRAN and HITEMP-2010
+- ``'hitran'`` : HITRAN original .par format
+- ``'hitemp'`` : HITEMP-2010 original format (same format as 'hitran')
 - ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
-- ``'cdsd-4000'`` : CDSD-4000 (CO2 only)
+- ``'cdsd-4000'`` : CDSD-4000 original format (CO2 only)
+- ``'hdf5'`` : HDF5 file with RADIS column names.
 
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
 and the :ref:`list of databases <label_line_databases>` .
@@ -154,8 +157,10 @@ See Also
 
 drop_auto_columns_for_dbformat = {
     "hitran": ["ierr", "iref", "lmix", "gp", "gpp"],
+    "hitemp": ["ierr", "iref", "lmix", "gp", "gpp"],
     "cdsd-4000": ["wang2"],
     "cdsd-hitemp": ["wang2", "lsrc"],
+    "hdf5": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -1284,6 +1289,8 @@ class DatabankLoader(object):
                 )
 
         # Check database format
+        if dbformat == "hitemp":
+            raise NotImplementedError("Use 'hitran' instead (same file format)")
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
@@ -1829,7 +1836,7 @@ class DatabankLoader(object):
                 if __debug__:
                     printdbg("Loading {0}/{1}".format(i + 1, len(files)))
 
-                # Now read all the lines
+                # Read all the lines
                 # ... this is where the cache files are read/generated.
                 try:
                     if dbformat == "cdsd-hitemp":
@@ -1852,7 +1859,7 @@ class DatabankLoader(object):
                             load_only_wavenum_above=wavenum_min,
                             load_only_wavenum_below=wavenum_max,
                         )
-                    elif dbformat == "hitran":
+                    elif dbformat in ["hitran", "hitemp"]:
                         df = hit2df(
                             filename,
                             cache=db_use_cached,
@@ -1861,6 +1868,13 @@ class DatabankLoader(object):
                             load_only_wavenum_above=wavenum_min,
                             load_only_wavenum_below=wavenum_max,
                         )
+	                elif dbformat == "hdf5":
+	                    df = hdf2df(
+	                        filename,
+	                        cache=db_use_cached,
+	                        verbose=verbose,
+	                        drop_non_numeric=True,
+	                    )
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
                 except IrrelevantFileWarning:

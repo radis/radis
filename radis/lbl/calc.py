@@ -546,66 +546,53 @@ def _calc_spectrum(
         **kwargs
     )
     if databank == "fetch":  # mode to get databank without relying on  Line databases
-        if _equilibrium:
-            # Get line database from HITRAN
-            # and partition functions from HAPI
-            sf.fetch_databank(
-                source="astroquery",
-                format="hitran",
-                parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
-                levelsfmt=None,  # no need to load energies
-            )
-        else:
-            # Also get line database from HITRAN, and calculate partition functions
-            # with energy levels from built-in constants (not all molecules
-            # are supported!)
-            sf.fetch_databank(
-                source="astroquery",
-                format="hitran",
-                parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
-                levelsfmt="radis",  # built-in spectroscopic constants
-            )
+        conditions = {
+            "source": "astroquery",
+            "format": "hitran",
+            "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
+            "levelsfmt": None,  # no need to load energies by default
+        }
+        if not _equilibrium:
+            # calculate partition functions with energy levels from built-in
+            # constants (not all molecules are supported!)
+            conditions["levelsfmt"] = "radis"
+
+        sf.fetch_databank(**conditions)
     elif exists(databank):
+        conditions = {
+            "path": databank,
+            "drop_columns": drop_columns,
+            "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
+            "levelsfmt": None,  # no need to load energies by default
+        }
         # Guess format
         if databank.endswith(".par"):
             if verbose:
                 print("Infered {0} is a HITRAN-format file.".format(databank))
+            conditions["format"] = "hitran"
             # If non-equilibrium we'll also need to load the energy levels.
-            if _equilibrium:
-                # Get partition functions from HAPI
-                sf.load_databank(
-                    path=databank,
-                    format="hitran",
-                    parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
-                    levelsfmt=None,  # no need to load energies
-                    drop_columns=drop_columns,
-                )
-            else:
+            if not _equilibrium:
                 # calculate partition functions with energy levels from built-in
                 # constants (not all molecules are supported!)
-                sf.load_databank(
-                    path=databank,
-                    format="hitran",
-                    parfuncfmt="hapi",  # use HAPI partition functions for equilibrium
-                    levelsfmt="radis",  # built-in spectroscopic constants
-                    drop_columns=drop_columns,
-                )
+                conditions["levelsfmt"] = "radis"
+        elif databank.endswith(".h5"):
+            conditions["format"] = "hdf5"
+            if not _equilibrium:
+                conditions["levelsfmt"] = "radis"
         elif databank.endswith(".npy"):
             if verbose:
                 print("Infered {0} is a NPY-format file".format(databank))
+            conditions[
+                "format"
+            ] = "cdsd-hitemp"  # TODO replace by more general dictionary input, or deprecate
+            conditions[
+                "buffer"
+            ] = "npy"  # TODO replace by more general dictionary, or deprecate
 
-            if _equilibrium:
-                sf.load_databank(
-                    path=databank,
-                    format="cdsd-hitemp",
-                    parfuncfmt="hapi",
-                    levelsfmt=None,
-                    buffer="npy",
-                )
-            else:
+            if not _equilibrium:
                 raise (
-                    AttributeError(
-                        "Non equilibirum spectra calculation not yet supported with npy databank"
+                    NotImplementedError(
+                        "Non equilibrium spectra calculation not yet supported with npy databank"
                     )
                 )
         else:
@@ -617,6 +604,8 @@ def _calc_spectrum(
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
             )
+
+        sf.load_databank(**conditions)
 
     else:  # manual mode: get from user-defined line databases defined in ~/.radis
         sf.load_databank(
