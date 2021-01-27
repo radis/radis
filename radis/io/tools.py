@@ -39,17 +39,37 @@ def parse_hitran_file(fname, columns, count):
     # To be faster, we read file totally in bytes mode with fromfiles. But that
     # requires to properly decode the line return character:
 
+    # We cannot simply infer it from the OS :
     # problem arise when file was written in an OS and read in another OS (for instance,
     # line return characters are not converted when read from .egg files). Here
     # we read the first line and infer the line return character for it
+    data = _read_hitran_file(
+        fname, columns, count=1, linereturnformat="a2"
+    )  # 'a2' allocates space to get \n or \n\r
+    linereturnformat = _get_linereturnformat(data, columns, fname)
 
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()] + [("_linereturn", "a2")]
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=1)  # just read the first line
+    # Now re-read with correct line return character
+    data = _read_hitran_file(fname, columns, count, linereturnformat)
 
-    # get format of line return
+    # Return a Pandas dataframe
+    return _ndarray2df(data, columns, linereturnformat)
+
+
+def _get_linereturnformat(data, columns, fname=""):
+    """
+    Get line return character & format (size).
+
+    Notes
+    -----
+
+    We cannot simply infer it from the OS :
+    problem arise when file was written in an OS and read in another OS (for instance,
+    line return characters are not converted when read from .egg files). Here
+    we read the first line and infer the line return character for it
+    """
+    # fname just for the error message
+
+    # get format (size) of line return
     from radis.misc.basics import to_str
 
     linereturn = to_str(data[0][-1])
@@ -64,15 +84,24 @@ def parse_hitran_file(fname, columns, count):
             )
         )
 
-    # Now re-read with correct line return character
+    return linereturnformat
 
-    # ... Create a dtype with the binary data format and the desired column names
-    dtype = [(k, c[0]) for (k, c) in columns.items()] + [
-        ("_linereturn", linereturnformat)
-    ]
-    # ... _linereturn is to capture the line return symbol. We delete it afterwards
-    dt = _format_dtype(dtype)
-    data = np.fromfile(fname, dtype=dt, count=count)
+
+def _ndarray2df(data, columns, linereturnformat):
+    """
+
+
+    Parameters
+    ----------
+    data : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    df : TYPE
+        DESCRIPTION.
+
+    """
 
     # ... Cast to new type
     # This requires to recast all the data already read, but is still the fastest
@@ -100,6 +129,36 @@ def parse_hitran_file(fname, columns, count):
         df["branch"] = df.branch.str.strip()
 
     return df
+
+
+def _read_hitran_file(fname, columns, count, linereturnformat):
+    """
+    Returns
+    -------
+
+    data: np.ndarray
+    """
+
+    dt = _create_dtype(columns, linereturnformat)
+
+    return np.fromfile(fname, dtype=dt, count=count)
+
+
+def _create_dtype(columns, linereturnformat):
+    """Create dtype from specific columns.
+
+    Returns
+    -------
+
+    dt: dtypes
+    """
+
+    # ... Create a dtype with the binary data format and the desired column names
+    dtype = [(k, c[0]) for (k, c) in columns.items()] + [
+        ("_linereturn", linereturnformat)
+    ]
+    # ... _linereturn is to capture the line return symbol. We delete it afterwards
+    return _format_dtype(dtype)
 
 
 def _format_dtype(dtype):
@@ -139,6 +198,7 @@ def _cast_to_dtype(data, dtype):
     try:
         data = np.array(data, dtype=dt)
     except ValueError:
+        raise
         try:
             # Cant read database. Try to be more explicit for user
             print("Cant cast data to specific dtype. Trying column by column:")
