@@ -34,7 +34,22 @@ SOURCE_FILES = {
 
 
 def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
-    """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly"""
+    """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly
+
+    Parameters
+    ----------
+    molecule: `"CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
+        HITEMP molecule
+    local_databases: str
+        where to download the files
+    verbose: bool
+
+    Returns
+    -------
+    path: str
+        path of .h5 file where lines have been stored.
+
+    """
     # TODO: add metadata (link, time-downloaded, min/max, etc.)
     # TODO: do not re-download if HDF5 exists  (currently DataSource is initialized)
     # TODO: clean DataSource downloads after HDF5 is generated
@@ -73,11 +88,10 @@ def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
         b = np.empty(161, dtype=dt)
         gfile.readinto(b)
         linereturnformat = _get_linereturnformat(b, columns)
-        # linereturnformat = "a1"
 
     with ds.open(urlname) as gfile:  # locally downloaded file
 
-        CHUNK = 10  # TODO: adjust if needed (RAM dependant?)
+        CHUNK = 1000  # TODO: adjust if needed (RAM dependant?)
 
         dt = _create_dtype(columns, linereturnformat)
         b = np.empty(
@@ -95,7 +109,13 @@ def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
         if verbose:
             print("Building", output)
 
+        Nlines = 0
         for nbytes in iter(lambda: gfile.readinto(b), 0):
+
+            if not b[-1]:
+                # End of file within the chunk (but does not start with end of file)
+                # so nbytes != 0
+                b = get_last(b)
 
             df = _ndarray2df(b, columns, linereturnformat)
 
@@ -105,29 +125,36 @@ def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
 
             wmin = np.min((wmin, df.wav.min()))
             wmax = np.max((wmax, df.wav.max()))
+            Nlines += len(df)
             if verbose:
                 sys.stdout.write(
-                    "\r({0:.0f}s) Building database {1:.1f}-{2:.1f} cm-1".format(
-                        time() - t0, wmin, wmax
+                    "\r({0:.0f}s) Built {1} database from {2:.1f} to {3:.1f} cm-1 ({4} lines)".format(
+                        time() - t0, molecule, wmin, wmax, Nlines
                     )
                 )
 
+            # Reinitialize for next read
+            b = np.empty(
+                dt.itemsize * CHUNK, dtype=dt
+            )  # receives the HITRAN 160-format data.
 
-# df0 = pd.read_hdf(output)
+    return output
+
+
+#%%
+def get_last(b):
+    """ Get non-empty lines of a chunk b, parsing the bytes """
+
+    element_length = np.vectorize(lambda x: len(x.__str__()))(b)
+    non_zero = element_length > element_length[-1]
+    threshold = non_zero.argmin() - 1
+    assert (non_zero[: threshold + 1] == 1).all()
+    assert (non_zero[threshold + 1 :] == 0).all()
+    return b[non_zero]
+
+
+#%%
 
 if __name__ == "__main__":
 
     fetch_hitemp("OH")
-
-"""todo
-
-MISSING last chunk ! Safe : use CHUNK=1 ... but slow (write to hdf one-line-at-a time)
-! We should use CHUNK=100 or 1000 if possible
-
-i think faulty readinto(b)
-- check same number lines as in .par
-- 2 loops? chunks then iter(lambda) ?
-
-alternative : parse last bit find min?  OH:  b[:57019]
-
-"""
