@@ -169,7 +169,7 @@ def load_h5_cache_file(
             raise err
         else:
             if True:
-                printr("Database file {0} irrelevant and not loaded".format(cachefile))
+                printg("Database file {0} irrelevant and not loaded".format(cachefile))
             return "IrrelevantFile"
 
     # 5. File is relevant: read the content.
