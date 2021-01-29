@@ -1335,27 +1335,7 @@ class DatabankLoader(object):
                     + " ~/.radis: {0}".format(",".join(dblist))
                 )
 
-        # Check input types are correct
-        if isinstance(path, string_types):
-            path = [path]
-
-        path_list = []
-        for path_i in path:
-            path_list += get_files_from_regex(path_i)
-        path = path_list
-        # Ensure that `path` does not contain the cached dataset files in
-        # case a wildcard input is given by the user. For instance, if the
-        # given input is "cdsd_hitemp_09_frag*", path should not contain both
-        # "cdsd_hitemp_09_fragment.txt" and "cdsd_hitemp_09_fragment.h5".
-
-        # Reference: https://github.com/radis/radis/issues/121
-
-        filtered_path = [fname for fname in path]
-        for fname in path:
-            if cache_file_name(fname) in path and cache_file_name(fname) != fname:
-                filtered_path.remove(cache_file_name(fname))
-        path = filtered_path
-
+        # Check database format
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
