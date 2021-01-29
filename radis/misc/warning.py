@@ -112,6 +112,18 @@ class PerformanceWarning(UserWarning):
     pass
 
 
+class DeprecatedFileWarning(DeprecationWarning):
+    """ Warning triggered when the cached file was generated in a previous version of radis """
+    
+    pass
+
+
+class IrrelevantFileWarning(Warning):
+    """ Warning triggered when the cached file is irrelevant for the current calcul """
+    
+    pass
+
+
 WarningClasses = {
     "default": UserWarning,
     "SlitDispersionWarning": SlitDispersionWarning,
@@ -127,6 +139,8 @@ WarningClasses = {
     "LinestrengthCutoffWarning": LinestrengthCutoffWarning,
     "InputConditionsWarning": InputConditionsWarning,
     "PerformanceWarning": PerformanceWarning,
+    "DeprecatedFileWarning": DeprecatedFileWarning,
+    "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
 }
 """ dict: warnings used in RADIS Spectrum calculations.
@@ -163,6 +177,8 @@ default_warning_status = {
     "MissingSelfBroadeningWarning": "warn",
     "InputConditionsWarning": "warn",
     "PerformanceWarning": "warn",
+    "DeprecatedFileWarning": "warn",
+    "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
 }
 """ dict: default status of warnings used in RADIS Spectrum calculations.

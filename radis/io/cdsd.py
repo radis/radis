@@ -32,6 +32,7 @@ from radis.io.tools import (
     replace_PQR_with_m101,
 )
 from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
+from radis.misc.warning import IrrelevantFileWarning
 from numpy import Inf
 
 # fmt: off
@@ -123,8 +124,8 @@ def cdsd2df(
     cache=False,
     verbose=True,
     drop_non_numeric=True,
-    wavenum_min=0.0,
-    wavenum_max=Inf,
+    load_only_wavenum_above=0.0,
+    load_only_wavenum_below=Inf,
 ):
     """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
 
@@ -155,6 +156,14 @@ def cdsd2df(
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
+    
+    load_only_wavenum_above: float
+        only load the cached file if it contains data for wavenumbers above the specified value. 
+        see :py:func`~radis.misc.cache_files`. Default ``0.0``.
+    
+    load_only_wavenum_below: float
+        only load the cached file if it contains data for wavenumbers below the specified value.
+        see :py:func`~radis.misc.cache_files`. Default ``Inf``.
 
     Returns
     -------
@@ -241,16 +250,19 @@ def cdsd2df(
     # Use cache file if possible
     fcache = cache_file_name(fname)
     if cache and exists(fcache):
-        df = load_h5_cache_file(
-            fcache,
-            cache,
-            metadata=metadata,
-            current_version=radis.__version__,
-            last_compatible_version=OLDEST_COMPATIBLE_VERSION,
-            verbose=verbose,
-            wavenum_min=wavenum_min,
-            wavenum_max=wavenum_max,
-        )
+        try:
+            df = load_h5_cache_file(
+                fcache,
+                cache,
+                metadata=metadata,
+                current_version=radis.__version__,
+                last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+                verbose=verbose,
+                load_only_wavenum_above=load_only_wavenum_above,
+                load_only_wavenum_below=load_only_wavenum_below,
+            )
+        except IrrelevantFileWarning as err:
+            raise err
         if df is not None:
             return df
 
@@ -264,6 +276,7 @@ def cdsd2df(
         df = drop_object_format_columns(df, verbose=verbose)
     metadata["wavenum_min"] = df.wav.iloc[0]
     metadata["wavenum_max"] = df.wav.iloc[-1]
+    
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
         if verbose:

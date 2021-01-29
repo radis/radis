@@ -42,16 +42,9 @@ from packaging.version import parse
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.misc.basics import compare_dict, is_float
-from radis.misc.printer import printm, printr
+from radis.misc.printer import printm, printr, printg
+from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning
 from numpy import Inf
-
-
-class DeprecatedFileError(DeprecationWarning):
-    pass
-
-
-class IrrelevantFileError(Warning):
-    pass
 
 
 """str: forces to regenerate cache files that were created in a previous version"""
@@ -69,8 +62,8 @@ def load_h5_cache_file(
     current_version,
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
     verbose=True,
-    wavenum_min=0.0,
-    wavenum_max=Inf,
+    load_only_wavenum_above=0.0,
+    load_only_wavenum_below=Inf,
 ):
     """Function to load a h5 cache file
 
@@ -144,7 +137,7 @@ def load_h5_cache_file(
             last_compatible_version=last_compatible_version,
         )
     # ... if deprecated, raise an error only if 'force'
-    except DeprecatedFileError as err:
+    except DeprecatedFileWarning as err:
         if use_cached == "force":
             raise err
         else:
@@ -156,21 +149,20 @@ def load_h5_cache_file(
                 )
             os.remove(cachefile)
             return None
+        
     # 4. File is not not deprecated: read the the extremum wavenumbers.
     try:
         check_relevancy(
             cachefile,
-            wavenum_min,
-            wavenum_max,
+            load_only_wavenum_above,
+            load_only_wavenum_below,
         )
     # ... if irrelevant, raise an error only if 'force'
-    except IrrelevantFileError as err:
-        if use_cached == "force":
-            raise err
-        else:
-            if True:
-                printg("Database file {0} irrelevant and not loaded".format(cachefile))
-            return "IrrelevantFile"
+    except IrrelevantFileWarning as err:
+        if verbose  >= 2:
+            printg(
+                "Database file {0} irrelevant and not loaded".format(cachefile))
+        raise err
 
     # 5. File is relevant: read the content.
     else:
@@ -298,7 +290,7 @@ def check_cache_file(fcache, use_cached=True, metadata={}, verbose=True):
                 current_version=radis.__version__,
                 last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             )
-        except DeprecatedFileError as err:
+        except DeprecatedFileWarning as err:
             if use_cached == "force":
                 raise
             else:  # delete file to regenerate it in the end of the script
@@ -358,7 +350,7 @@ def check_not_deprecated(
         attrs.pop("wavenum_min")
         attrs.pop("wavenum_max")
     except KeyError:
-        raise DeprecatedFileError(
+        raise DeprecatedFileWarning(
             "File {0} has been generated in a deprecated ".format(file)
             + "version. Delete it to regenerate it on next run"
         )
@@ -371,7 +363,7 @@ def check_not_deprecated(
     # ... Update here versions afterwhich Deprecated cache file is not safe
     # ... (example: a key name was changed)
     if parse(file_version) < parse(last_compatible_version):
-        raise DeprecatedFileError(
+        raise DeprecatedFileWarning(
             "File {0} has been generated in a deprecated ".format(file)
             + "version ({0}). Oldest compatible version is {1}. ".format(
                 file_version, last_compatible_version
@@ -407,7 +399,7 @@ def check_not_deprecated(
         metadata, attrs, verbose=False, return_string=True
     )
     if out != 1:
-        raise DeprecatedFileError(
+        raise DeprecatedFileWarning(
             "Metadata in file {0} dont match ".format(file)
             + "expected values. See comparison below:"
             + "\n\tExpected\tFile\n{0}".format(compare_string)
@@ -431,8 +423,8 @@ def _h5_compatible(a_dict):
 
 def check_relevancy(
     file,
-    wavenum_min,
-    wavenum_max,
+    load_only_wavenum_above,
+    load_only_wavenum_below,
 ):
     """Make sure cache file is relevant: checks that  wavenumber min and
     wavenumber max in ``metadata`` are relevant for the specified spectral
@@ -444,11 +436,11 @@ def check_relevancy(
     file: str
         a `` .h5``  line database cache file 
 
-    wavenum_min: float
-        the minimum wavenumber relevant for the calcul.
-
-    wavenum_max: float
-        the maximum wavenumber relevant for the calcul.
+    load_only_wavenum_above: float
+        only load the cached file if it contains data for wavenumbers above the specified value. 
+    
+    load_only_wavenum_below: float
+        only load the cached file if it contains data for wavenumbers below the specified value.
 
     """
 
@@ -459,16 +451,16 @@ def check_relevancy(
     file_wavenum_min = attrs.pop("wavenum_min")
     file_wavenum_max = attrs.pop("wavenum_max")
 
-    if file_wavenum_max < wavenum_min:
-        raise IrrelevantFileError(
+    if file_wavenum_max < load_only_wavenum_above:
+        raise IrrelevantFileWarning(
             "Database file {0} < {1:.6f}cm-1: irrelevant and not loaded".format(
-                file, wavenum_min
+                file, file_wavenum_max
             )
         )
-    if wavenum_max < file_wavenum_min:
-        raise IrrelevantFileError(
+    if load_only_wavenum_below < file_wavenum_min:
+        raise IrrelevantFileWarning(
             "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
-                file, wavenum_max
+                file, load_only_wavenum_below
             )
         )
 

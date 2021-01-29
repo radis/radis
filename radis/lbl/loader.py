@@ -95,7 +95,8 @@ from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg, printr
 from radis.misc.utils import get_files_from_regex
-from radis.misc.warning import EmptyDatabaseError, default_warning_status, warn
+from radis.misc.warning import EmptyDatabaseError, IrrelevantFileWarning, default_warning_status, warn
+
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 
@@ -1901,40 +1902,54 @@ class DatabankLoader(object):
                 # Now read all the lines
                 # ... this is where the cache files are read/generated.
                 if dbformat == "cdsd-hitemp":
-                    df = cdsd2df(
-                        filename,
-                        version="hitemp",
-                        cache=db_use_cached,
-                        verbose=verbose,
-                        drop_non_numeric=True,
-                        wavenum_min=wavenum_min,
-                        wavenum_max=wavenum_max,
-                    )
-                    if isinstance(df, str):
-                        if df == "IrrelevantFile":
+                    try:
+                        df = cdsd2df(
+                            filename,
+                            version="hitemp",
+                            cache=db_use_cached,
+                            verbose=verbose,
+                            drop_non_numeric=True,
+                            load_only_wavenum_above=wavenum_min,
+                            load_only_wavenum_below=wavenum_max,
+                        )
+                    except IrrelevantFileWarning:
+                        if db_use_cached=='force':
+                            raise
+                        else:
                             continue
+
                 elif dbformat == "cdsd-4000":
-                    df = cdsd2df(
-                        filename,
-                        version="4000",
-                        cache=db_use_cached,
-                        verbose=verbose,
-                        drop_non_numeric=True,
-                        wavenum_min=wavenum_min,
-                        wavenum_max=wavenum_max,
-                    )
-                    if isinstance(df, str):
-                        if df == "IrrelevantFile":
+                    try:
+                        df = cdsd2df(
+                            filename,
+                            version="4000",
+                            cache=db_use_cached,
+                            verbose=verbose,
+                            drop_non_numeric=True,
+                            load_only_wavenum_above=wavenum_min,
+                            load_only_wavenum_below=wavenum_max,
+                        )
+                    except IrrelevantFileWarning:
+                        if db_use_cached=='force':
+                            raise
+                        else:
                             continue
+                        
                 elif dbformat == "hitran":
-                    df = hit2df(
-                        filename,
-                        cache=db_use_cached,
-                        verbose=verbose,
-                        drop_non_numeric=True,
-                        wavenum_min=wavenum_min,
-                        wavenum_max=wavenum_max,
-                    )
+                    try:
+                        df = hit2df(
+                            filename,
+                            cache=db_use_cached,
+                            verbose=verbose,
+                            drop_non_numeric=True,
+                            load_only_wavenum_above=wavenum_min,
+                            load_only_wavenum_below=wavenum_max,
+                        )
+                    except IrrelevantFileWarning:
+                        if db_use_cached=='force':
+                            raise
+                        else:
+                            continue    
                 else:
                     raise ValueError("Unknown dbformat: {0}".format(dbformat))
 
