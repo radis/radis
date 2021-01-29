@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Functions specific to the calculation of CO2 energy levels
+"""Functions specific to the calculation of CO2 energy levels.
 
 Notes
 -----
@@ -14,7 +13,6 @@ method. See ``radis.db.molecules.py``
 
 
 ----------------------------------------------------------------------------------------------
-
 """
 
 
@@ -62,8 +60,9 @@ def EvJ_co2(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=True):
 
 
 def EvJah_co2(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=True):
-    """Harmonic and anharmonic parts of rovibrational energies of CO2 calculated
-    with :py:func:`~radis.levels.vibrating_rotor.EvJah_uncoupled_vibrating_rotor`
+    """Harmonic and anharmonic parts of rovibrational energies of CO2
+    calculated with
+    :py:func:`~radis.levels.vibrating_rotor.EvJah_uncoupled_vibrating_rotor`
 
     See Also
     --------

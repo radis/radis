@@ -24,7 +24,6 @@ from warnings import warn
 import numpy as np
 from numpy import abs, allclose, arange, diff
 
-from radis.misc.arrays import count_nans
 from radis.misc.basics import in_all, merge_lists
 from radis.misc.debug import printdbg
 from radis.spectrum.spectrum import Spectrum, is_spectrum
@@ -34,7 +33,7 @@ from radis.spectrum.spectrum import Spectrum, is_spectrum
 
 
 def intersect(a, b):
-    """ Returns intersection of two dictionaries on values"""
+    """Returns intersection of two dictionaries on values."""
     c = {}
     for k in set(a.keys()) & set(b.keys()):  # work in Python 2?
         c[k] = a[k] if (a[k] == b[k]) else "N/A"
@@ -91,20 +90,27 @@ def SerialSlabs(*slabs, **kwargs):
         - ``'error'``: raises an error.
 
         Default ``'nan'``
+
     Other Parameters
     ----------------
-
     verbose: bool
         if ``True``, more blabla. Default ``False``
     modify_inputs: False
-        if ``True``, slabs are modified directly when they are resampled. This
-        avoids making a copy so is slightly faster. Default ``False``.
+        if ``True``, slabs wavelengths/wavenumbers are modified directly when
+        they are resampled. This avoids making a copy so it is slightly faster.
+        Default ``False``.
+
+        ..note::
+            for large number of slabs (in radiative transfer calculations) you
+            surely want to use this option !
+
     Returns
     -------
     Spectrum object representing total emission and total transmittance as
     observed at the output (slab[n+1]). Conditions and units are transported too,
     unless there is a mismatch then conditions are dropped (and units mismatch
     raises an error because it doesnt make sense)
+
     Examples
     --------
     Add s1 and s2 along the line of sight: s1 --> s2 ::
@@ -137,7 +143,6 @@ def SerialSlabs(*slabs, **kwargs):
     modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
         raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
-
     if resample_wavespace not in ["never", "intersect", "full"]:
         raise ValueError(
             "resample should be one of: {0}".format(
@@ -160,12 +165,9 @@ def SerialSlabs(*slabs, **kwargs):
         # recursively calculate serial slabs
         slabs = list(slabs)
 
-        #        # Check all items are Spectrum
-        for s in slabs:
-            _check_valid(s)
-
         # Recursively deal with the rest of Spectra --> call it s
         sn = slabs.pop(-1)  # type: Spectrum
+        _check_valid(sn)  # check it is a spectrum
         s = SerialSlabs(
             *slabs,
             resample=resample_wavespace,
@@ -213,6 +215,7 @@ def SerialSlabs(*slabs, **kwargs):
                 "transmittance_noslit",
                 wunit=waveunit,
                 Iunit=unitsn["transmittance_noslit"],
+                copy=False,
             )[1]
         try:
             sn.update("radiance_noslit", verbose=verbose)
@@ -220,7 +223,10 @@ def SerialSlabs(*slabs, **kwargs):
             pass
         else:
             In = sn.get(
-                "radiance_noslit", wunit=waveunit, Iunit=unitsn["radiance_noslit"]
+                "radiance_noslit",
+                wunit=waveunit,
+                Iunit=unitsn["radiance_noslit"],
+                copy=False,
             )[1]
         # ... get s quantities
         try:
@@ -232,6 +238,7 @@ def SerialSlabs(*slabs, **kwargs):
                 "transmittance_noslit",
                 wunit=waveunit,
                 Iunit=unitsn["transmittance_noslit"],
+                copy=False,
             )[1]
         try:
             s.update("radiance_noslit", verbose=verbose)
@@ -239,7 +246,10 @@ def SerialSlabs(*slabs, **kwargs):
             pass
         else:
             I = s.get(
-                "radiance_noslit", wunit=waveunit, Iunit=unitsn["radiance_noslit"]
+                "radiance_noslit",
+                wunit=waveunit,
+                Iunit=unitsn["radiance_noslit"],
+                copy=False,
             )[1]
 
         # Solve radiative transfer equation
@@ -273,6 +283,7 @@ def SerialSlabs(*slabs, **kwargs):
             cond_units=cond_units,
             units=unitsn,
             name=name,
+            warnings=False,  # we already know waveranges are properly spaced, etc.
         )
 
 
@@ -289,7 +300,7 @@ def _serial_slab_names(s, sn):
 
 def _check_valid(s):
     # type: (Spectrum) -> bool
-    """Check s is a valid Spectrum object. Raises an error if not
+    """Check s is a valid Spectrum object. Raises an error if not.
 
     Valid if:
 
@@ -298,7 +309,6 @@ def _check_valid(s):
     Also print a warning if:
 
     - quantities used for solving the LOS have nan
-
     """
 
     if not is_spectrum(s):
@@ -309,7 +319,7 @@ def _check_valid(s):
     for k in sdict.keys():
         if (
             k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
-            and count_nans(sdict.get(k)) > 0
+            and np.isnan(sdict.get(k)[1]).any()
         ):
             warn(
                 "Nans detected in Spectrum object for multi-slab operation. "
@@ -370,18 +380,23 @@ def resample_slabs(
         resampled copies of inputs Spectra. All now have the same wavespace
     """
 
-    # Check wavespace is the same
     def same_wavespace(wl):
-        if not all([len(w) == len(wl[0]) for w in wl[1:]]):
+        try:
+            assert all([(w == wl[0]).all() for w in wl[1:]])
+        except AssertionError:
+            # ok if wavespace is the same within some tolerance
+            #   @dev: testing with == first is 10x faster and works in most cases.
+            if all([allclose(w, wl[0]) for w in wl[1:]]):
+                return True
             return False
-        elif not all([allclose(w, wl[0]) for w in wl[1:]]):
+        except:  # ex:  different lengths
             return False
         else:
             return True
 
     # Work on copies
     if not modify_inputs:
-        slabs = [s.copy() for s in slabs]
+        slabs = [s.copy(copy_lines=False) for s in slabs]
 
     # Get all keys
     keys = merge_lists([s.get_vars() for s in slabs])
@@ -394,7 +409,7 @@ def resample_slabs(
         # defined on the same range)
         slabsk = [s for s in slabs if k in s.get_vars()]  # note that these are
         # references to the actual Spectrum copy
-        wl = [s.get(k, wunit=waveunit)[0] for s in slabsk]
+        wl = [s.get(k, wunit=waveunit, copy=False)[0] for s in slabsk]
         if not same_wavespace(wl):
             # resample slabs if allowed
             if resample_wavespace == "never":
@@ -412,14 +427,13 @@ def resample_slabs(
                 wnew = arange(wmin, wmax + dw, dw)
                 if wnew[-1] > wmax:  # sometimes arange doesnt work as expected
                     wnew = wnew[:-1]
-                # ... copy the array of slabs not to modify the input
-                # ... slabs themselves
                 for s in slabsk:
                     s.resample(
                         wnew,
                         unit=waveunit,
                         if_conflict_drop="convoluted",
                         out_of_bounds=out_of_bounds,
+                        inplace=True,  # we already copied 'if not modify_inputs'
                     )
                 # note: s.resample() fills with 0 when out of bounds
             elif resample_wavespace == "intersect":
@@ -432,14 +446,13 @@ def resample_slabs(
                     wnew = wnew[:-1]
                 if len(wnew) == 0:
                     raise ValueError("Intersect range is empty")
-                # ... copy the array of slabs not to modify the input
-                # ... slabs themselves
                 for s in slabsk:
                     s.resample(
                         wnew,
                         unit=waveunit,
                         if_conflict_drop="convoluted",
                         out_of_bounds=out_of_bounds,
+                        inplace=True,  # we already copied 'if not modify_inputs'
                     )
                 # note: s.resample() fills with 0 when out of bounds
         # Now all our slabs have the same wavespace
@@ -484,6 +497,7 @@ def MergeSlabs(*slabs, **kwargs):
                         [0]        \====
             light       [1]  ->     )===  observer
                         [n]        /====
+
     Other Parameters
     ----------------
     kwargs input:
@@ -513,12 +527,14 @@ def MergeSlabs(*slabs, **kwargs):
     modify_inputs: False
         if ``True``, slabs are modified directly when they are resampled. This
         avoids making a copy so is slightly faster. Default ``False``.
+
     Returns
     -------
     Spectrum object representing total emission and total transmittance as
     observed at the output. Conditions and units are transported too,
     unless there is a mismatch then conditions are dropped (and units mismatch
     raises an error because it doesnt make sense)
+
     Examples
     --------
     Merge two spectra calculated with different species (physically correct
@@ -540,6 +556,7 @@ def MergeSlabs(*slabs, **kwargs):
         s = MergeSlabs(*spectra, resample='full', out='transparent')
         s.update()   # Generate missing spectral quantities
         s.plot()
+
     See Also
     --------
     :func:`~radis.los.slabs.SerialSlabs`

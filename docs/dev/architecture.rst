@@ -22,7 +22,7 @@ Methods are written in Factory objects inherited with the following scheme:
 
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+:py:class:`~radis.lbl.factory.SpectrumFactory`
 
 
 -------------------------------------------------------------------------
@@ -33,8 +33,7 @@ are the input parameters of the different RADIS front-ends:
 - :py:func:`~radis.lbl.calc.calc_spectrum` for the simple cases.
 - :py:class:`~radis.lbl.factory.SpectrumFactory` with :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
   and :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum` for the other cases.
-- :py:class:`~radis.lbl.parallel.ParallelFactory` with :py:meth:`~radis.lbl.parallel.ParallelFactory.eq_spectrum`
-  and :py:meth:`~radis.lbl.parallel.ParallelFactory.non_eq_spectrum` for parallel processing.
+  GPU calculation can be done with :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
 
 
 -------------------------------------------------------------------------

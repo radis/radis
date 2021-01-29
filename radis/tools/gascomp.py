@@ -19,8 +19,8 @@ except:
 
 
 def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
-    """Calculates chemical equilibrium mole fraction at temperature T,
-    using the CANTERA :py:meth:`~cantera.ThermoPhase.equilibrate` function.
+    """Calculates chemical equilibrium mole fraction at temperature T, using
+    the CANTERA :py:meth:`~cantera.ThermoPhase.equilibrate` function.
 
     The calculation uses the default GRI3.0 mechanism, which was
     designed to model natural gas combustion, including NO formation
@@ -63,7 +63,6 @@ def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
     ----------
 
     [CANTERA]_
-
     """
 
     # %% Init Cantera

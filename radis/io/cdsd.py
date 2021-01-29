@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Parser for CDSD-HITEMP, CDSD-4000 format
+"""Parser for CDSD-HITEMP, CDSD-4000 format.
 
 Routine Listing
 ---------------
@@ -13,8 +13,6 @@ References
 CDSD-4000 manual
 
 -------------------------------------------------------------------------------
-
-
 """
 
 # TODO: remove wangl2  after loading database (wangl is enough, with 1=e and 2=f)
@@ -127,7 +125,7 @@ def cdsd2df(
     load_only_wavenum_above=0.0,
     load_only_wavenum_below=Inf,
 ):
-    """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
+    """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe.
 
     Parameters
     ----------
@@ -227,7 +225,6 @@ def cdsd2df(
     --------
 
     :func:`~radis.io.hitran.hit2df`
-
     """
     metadata = {}
     metadata["last_modification"] = time.ctime(getmtime(fname))

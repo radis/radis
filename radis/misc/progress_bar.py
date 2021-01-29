@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 18 15:38:14 2017
+"""Created on Wed Oct 18 15:38:14 2017.
 
 @author: erwan
 
 -------------------------------------------------------------------------------
-
-
 """
 
 import sys
@@ -14,7 +11,7 @@ from time import time
 
 
 class ProgressBar:
-    """A console progress-bar
+    """A console progress-bar.
 
     Example
     -------
@@ -28,40 +25,36 @@ class ProgressBar:
         pb.done()
 
     See test in progress_bar.py
-
     """
 
     # Todo: One day extend for multiprocss with several progress values?
     # https://stackoverflow.com/questions/7392779/is-it-possible-to-print-a-string-at-a-certain-screen-position-inside-idle
 
     def __init__(self, N, active=True):
-        """
-        write to progress bar completion status i/N.
-
+        """write to progress bar completion status i/N.
 
         Parameters
         ----------
 
         N: int
             total number of iterations
-
         """
         self.t0 = time()
         self.N = N
         self.active = active
 
     def set_active(self, active=True):
-        """Option to activate/deactivate the ProgressBar. Used not to make it
-        appear on small processes (based on a condition) without changing most
-        of the code"""
+        """Option to activate/deactivate the ProgressBar.
+
+        Used not to make it appear on small processes (based on a
+        condition) without changing most of the code
+        """
 
         self.active = active
 
     def update(self, i, modulo=1):
-        """
-        write to progress bar completion status i/N. If t0 is not None, also
-        write the time spent
-
+        """write to progress bar completion status i/N. If t0 is not None, also
+        write the time spent.
 
         Parameters
         ----------

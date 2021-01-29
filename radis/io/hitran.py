@@ -153,7 +153,6 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True, lo
     --------
 
     :func:`~radis.io.cdsd.cdsd2df`
-
     """
     metadata = {}
     # metadata["last_modification"] = time.ctime(getmtime(getTestFile(fname)))

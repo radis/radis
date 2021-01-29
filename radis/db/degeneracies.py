@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Oct 28 18:47:39 2017
+"""Created on Sat Oct 28 18:47:39 2017.
 
 @author: erwan
 
 State-dependant and state-independant degeneracies for molecules
-
-
 """
 # TODO: Make it a JSON file
 
 
 def gi(M, I):
-    """State independant degeneracy
+    """State independant degeneracy.
 
     Parameters
     ----------
@@ -28,7 +25,6 @@ def gi(M, I):
 
     Šimečková 2006: "Einstein A-coefficients and statistical weights for molecular
     absorption transitions in the HITRAN database". DOI 10.1016/j.jqsrt.2005.07.003
-
     """
 
     _gi = {
@@ -46,7 +42,7 @@ def gi(M, I):
 
 
 def gs(M, I):
-    """State dependant degeneracy
+    """State dependant degeneracy.
 
     Parameters
     ----------
@@ -70,7 +66,6 @@ def gs(M, I):
         (see Fig. 99 of Ref. [24], Fig. 17-6 of Ref. [26]). For the 16O12C18O, 16O12C17O,
         16O13C18O, 16O13C17O, 17O12C18O isotopologues, the statistical weights gs
         of all the rotational levels are 1"
-
     """
 
     _gs = {

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu May 28 14:47:36 2015
+"""Created on Thu May 28 14:47:36 2015.
 
 @author: Erwan
 """
@@ -33,7 +32,7 @@ def getFile(*relpath):
 
 
 def check_molecule_data_structure(fname, verbose=True):
-    """Check that ``fname`` has a valid JSON structure for molecular data
+    """Check that ``fname`` has a valid JSON structure for molecular data.
 
     Parameters
     ----------
@@ -48,7 +47,6 @@ def check_molecule_data_structure(fname, verbose=True):
     Order in the json doesnt matter, however, the order of the
     electronic_level_names matters: the index of all levels should
     match the `index` key of these states.
-
     """
 
     with open(fname) as f:
@@ -112,8 +110,8 @@ def check_molecule_data_structure(fname, verbose=True):
 def _get_rovib_coefficients(
     molecule, isotope, electronic_state, jsonfile, remove_trailing_cm1=True
 ):
-    """Returns all rovib coefficients for ``molecule``, ``isotope``, ``electronic_state``
-    by parsing a JSON file of molecule data.
+    """Returns all rovib coefficients for ``molecule``, ``isotope``,
+    ``electronic_state`` by parsing a JSON file of molecule data.
 
     Parameters
     ----------
@@ -182,8 +180,8 @@ def _get_rovib_coefficients(
     if remove_trailing_cm1:
 
         def remove_cm1(coef):
-            """Remove the trailing '_cm-1' in the spectroscopic coefficient name,
-            if defined"""
+            """Remove the trailing '_cm-1' in the spectroscopic coefficient
+            name, if defined."""
             if coef.endswith("_cm-1"):
                 coef = coef[:-5]
             return coef
@@ -328,8 +326,8 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile="def
 
 
 def ignore_trailing_number(coef):
-    """Used so that ``wexe1`` matches ``wexe`` as a well defined
-    Herzberg coefficient"""
+    """Used so that ``wexe1`` matches ``wexe`` as a well defined Herzberg
+    coefficient."""
 
     if is_number(coef[-1]):
         coef = coef[:-1]

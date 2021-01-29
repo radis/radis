@@ -23,7 +23,6 @@ def norm(a, normby=None, how="max"):
     """Normalize a numpy array with its maximum. Or normalize it with another
     vector. Works if array contains nans.
 
-
     Parameters
     ----------
 
@@ -52,7 +51,6 @@ def norm_on(a, w, wmin=None, wmax=None, how="max"):
 
     a: array
         array
-
     w: array
         x-axis array
 
@@ -61,7 +59,6 @@ def norm_on(a, w, wmin=None, wmax=None, how="max"):
 
     wmin, wmax: float
         crop range
-
     how: 'mean', 'max'
         how to normalize
 
@@ -82,29 +79,24 @@ def norm_on(a, w, wmin=None, wmax=None, how="max"):
 
 
 def scale_to(a, b, k=1):
-    """ Scale function a to k*b """
+    """Scale function a to k*b."""
     return a * k * max(np.abs(b)) / max(np.abs(a))
 
 
 def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
-    """Returns wheter a and b are all close (element wise). If not the same size,
-    returns False (instead of crashing like the numpy version). Cf numpy.allclose
-    docs for more information.
-
+    """Returns wheter a and b are all close (element wise). If not the same
+    size, returns False (instead of crashing like the numpy version). Cf
+    numpy.allclose docs for more information.
 
     Parameters
     ----------
 
     a, b: arrays
-
     rtol: float
-
     atol: float
-
     equal_nan: bool
         whether to consider Nan's as equal. Contrary to the numpy version this
         one is set to True by default
-
     """
 
     if len(a) != len(b):
@@ -114,7 +106,7 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
 
 
 def nantrapz(I, w, dx=1.0, axis=-1):
-    """ Returns np.trapz(I, w) discarding nan """
+    """Returns np.trapz(I, w) discarding nan."""
     b = ~np.isnan(I)
     return np.trapz(I[b], w[b], dx=dx, axis=axis)
 
@@ -127,15 +119,13 @@ def nantrapz(I, w, dx=1.0, axis=-1):
 
 def calc_diff(t1, v1, t2, v2):
     """Substract two vectors that may have slightly offset abscisses
-    interpolating the correct values
-
+    interpolating the correct values.
 
     Parameters
     ----------
 
     t1, v1: array_like
         first vector and its abscisses
-
     t2, v2: array_like
         second vector and its abscisses
 
@@ -145,7 +135,6 @@ def calc_diff(t1, v1, t2, v2):
 
     tdiff, vdiff: array_like
         substracted vector and its abscisses
-
     """
 
     t1, v1, t2, v2 = list(map(np.array, (t1, v1, t2, v2)))
@@ -173,10 +162,10 @@ def calc_diff(t1, v1, t2, v2):
 
 
 def find_nearest(array, searched, return_bool=False):
-    """Return the closest elements in array for each element in 'searched' array.
-    In case of multiple elements in `array` having equal difference with
-    `searched` element, one with least index is returned. Also returns a boolean
-    array with indices of elements occuring in output list set to true.
+    """Return the closest elements in array for each element in 'searched'
+    array. In case of multiple elements in `array` having equal difference with
+    `searched` element, one with least index is returned. Also returns a
+    boolean array with indices of elements occuring in output list set to true.
 
     Examples
     --------
@@ -199,8 +188,6 @@ def find_nearest(array, searched, return_bool=False):
         find_nearest(np.array([3, 1]), np.array([2]))
 
         >>> array([3])
-
-
     """
     if len(array) == 0:
         raise ValueError("Array to be searched cannot be empty")
@@ -231,8 +218,8 @@ def find_nearest(array, searched, return_bool=False):
 
 
 def find_first(arr, treshold):
-    """Return the index of the first element of the array arr whose value
-    is more than the treshold"""
+    """Return the index of the first element of the array arr whose value is
+    more than the treshold."""
 
     return np.argmax(arr > treshold)
 
@@ -258,23 +245,23 @@ def autoturn(data, key=-1):
 
 
 def centered_diff(w):
-    """Return w[i+1]-w[i-1]/2, same size as w
+    """Return w[i+1]-w[i-1]/2, same size as w.
 
-    Similar to :py:func:`numpy.diff`, but does not change the array size.
+    Similar to :py:func:`numpy.diff`, but does not change the array
+    size.
     """
     dw = np.diff(w)
     return (hstack((dw, dw[-1])) + hstack((dw[0], dw))) / 2
 
 
 def evenly_distributed(w, tolerance=1e-5):
-    """Make sure array `w` is evenly distributed
+    """Make sure array `w` is evenly distributed.
 
     Parameters
     ----------
 
     w : numpy array
         array to test
-
     tolerance: float
         absolute tolerance
 
@@ -290,7 +277,7 @@ def evenly_distributed(w, tolerance=1e-5):
 
 @numba.jit
 def is_sorted(a):
-    """Returns whether ``a`` is sorted in ascending order
+    """Returns whether ``a`` is sorted in ascending order.
 
     From B.M. answer on StackOverflow: https://stackoverflow.com/a/47004533/5622825
 
@@ -307,7 +294,7 @@ def is_sorted(a):
 
 @numba.jit
 def is_sorted_backward(a):
-    """Returns whether ``a`` is sorted in descending order
+    """Returns whether ``a`` is sorted in descending order.
 
     See Also
     --------
@@ -321,23 +308,19 @@ def is_sorted_backward(a):
 
 
 def bining(I, ymin=None, ymax=None, axis=1):
-    """Averages a I multi-dimensional array (typically an image) along the y axis
-    bining(I) corresponds to I.mean(axis=1)
-    Nan are not taken into account
-
+    """Averages a I multi-dimensional array (typically an image) along the y
+    axis bining(I) corresponds to I.mean(axis=1) Nan are not taken into
+    account.
 
     Parameters
     ----------
 
     I: numpy array
         intensity
-
     ymin: int [0-I.shape[1]]
         If None, 0 is used. Default ``None``.
-
     ymax: int [0-I.shape[1]]
         If None, I.shape[1] is used. Default ``None``.
-
     axis: int
         Default 1
     """
@@ -358,7 +341,7 @@ def bining(I, ymin=None, ymax=None, axis=1):
 
 
 def count_nans(a):
-    """ Nan are good but only in India """
+    """Nan are good but only in India."""
 
     return np.isnan(a).sum()
 
@@ -366,6 +349,7 @@ def count_nans(a):
 def logspace(xmin, xmax, npoints):
     """Returns points from xmin to xmax regularly distributed on a logarithm
     space.
+
     Numpy's logspace does the same from 10**xmin to 10**xmax
     """
 
