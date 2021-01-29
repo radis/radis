@@ -1914,6 +1914,8 @@ class DatabankLoader(object):
                         )
                     except IrrelevantFileWarning:
                         if db_use_cached=='force':
+                            if verbose  >= 2:
+                                printr("Database file {0} is irrelevant for the calcul".format(filename))
                             raise
                         else:
                             continue
@@ -1931,6 +1933,8 @@ class DatabankLoader(object):
                         )
                     except IrrelevantFileWarning:
                         if db_use_cached=='force':
+                            if verbose  >= 2:
+                                printr("Database file {0} is irrelevant for the calcul".format(filename))
                             raise
                         else:
                             continue
@@ -1947,6 +1951,8 @@ class DatabankLoader(object):
                         )
                     except IrrelevantFileWarning:
                         if db_use_cached=='force':
+                            if verbose  >= 2:
+                                printr("Database file {0} is irrelevant for the calcul".format(filename))                            
                             raise
                         else:
                             continue    
