@@ -95,8 +95,12 @@ from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg, printr
 from radis.misc.utils import get_files_from_regex
-from radis.misc.warning import EmptyDatabaseError, IrrelevantFileWarning, default_warning_status, warn
-
+from radis.misc.warning import (
+    EmptyDatabaseError,
+    IrrelevantFileWarning,
+    default_warning_status,
+    warn,
+)
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 
@@ -1685,11 +1689,12 @@ class DatabankLoader(object):
         ----------
         database: list of str
             list of database files
-        db_use_cached: boolean
+        db_use_cached: boolean, or ``'regen'``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
             improves performances a lot. But! ... be sure to delete these files
             to regenerate them if you happen to change the database. Default ``False``
+            If ``'regen'`` regenerate existing cache files.
         buffer: ``'RAM'``, ``'h5'``, ``'direct'``
             Different modes for loading up a database: either directly in ``'RAM'`` mode,
             or in ``'h5'`` mode.
@@ -1737,7 +1742,7 @@ class DatabankLoader(object):
         """
 
         # Check inputs
-        assert db_use_cached in [True, False, "regen"]
+        assert db_use_cached in [True, False, "regen", "force"]
         assert buffer in ["RAM", "h5", "direct", "npy"]
 
         if self.verbose >= 2:
@@ -1861,9 +1866,13 @@ class DatabankLoader(object):
                             load_only_wavenum_below=wavenum_max,
                         )
                     except IrrelevantFileWarning:
-                        if db_use_cached=='force':
-                            if verbose  >= 2:
-                                printr("Database file {0} is irrelevant for the calcul".format(filename))
+                        if db_use_cached == "force":
+                            if verbose >= 2:
+                                printr(
+                                    "Database file {0} is irrelevant for the calcul".format(
+                                        filename
+                                    )
+                                )
                             raise
                         else:
                             continue
@@ -1880,13 +1889,17 @@ class DatabankLoader(object):
                             load_only_wavenum_below=wavenum_max,
                         )
                     except IrrelevantFileWarning:
-                        if db_use_cached=='force':
-                            if verbose  >= 2:
-                                printr("Database file {0} is irrelevant for the calcul".format(filename))
+                        if db_use_cached == "force":
+                            if verbose >= 2:
+                                printr(
+                                    "Database file {0} is irrelevant for the calcul".format(
+                                        filename
+                                    )
+                                )
                             raise
                         else:
                             continue
-                        
+
                 elif dbformat == "hitran":
                     try:
                         df = hit2df(
@@ -1898,12 +1911,16 @@ class DatabankLoader(object):
                             load_only_wavenum_below=wavenum_max,
                         )
                     except IrrelevantFileWarning:
-                        if db_use_cached=='force':
-                            if verbose  >= 2:
-                                printr("Database file {0} is irrelevant for the calcul".format(filename))                            
+                        if db_use_cached == "force":
+                            if verbose >= 2:
+                                printr(
+                                    "Database file {0} is irrelevant for the calcul".format(
+                                        filename
+                                    )
+                                )
                             raise
                         else:
-                            continue    
+                            continue
                 else:
                     raise ValueError("Unknown dbformat: {0}".format(dbformat))
 
@@ -2009,7 +2026,7 @@ class DatabankLoader(object):
             ) + " ({0:.2f}-{1:.2f}nm) Check your range !".format(
                 cm2nm(wavenum_min), cm2nm(wavenum_max)
             )
-            raise ValueError(msg)
+            raise EmptyDatabaseError(msg)
 
         maxwavdb = df.wav.max()
         minwavdb = df.wav.min()

@@ -34,15 +34,14 @@ from warnings import warn
 
 import h5py
 import pandas as pd
+from numpy import Inf
 from packaging.version import parse
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.misc.basics import compare_dict, is_float
-from radis.misc.printer import printm, printr, printg
+from radis.misc.printer import printg, printm, printr
 from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning
-from numpy import Inf
-
 
 """str: forces to regenerate cache files that were created in a previous version"""
 
@@ -145,7 +144,7 @@ def load_h5_cache_file(
                 )
             os.remove(cachefile)
             return None
-        
+
     # 4. File is not not deprecated: read the the extremum wavenumbers.
     try:
         check_relevancy(
@@ -155,9 +154,8 @@ def load_h5_cache_file(
         )
     # ... if irrelevant, raise an error only if 'force'
     except IrrelevantFileWarning as err:
-        if verbose  >= 2:
-            printg(
-                "Database file {0} irrelevant and not loaded".format(cachefile))
+        if verbose >= 2:
+            printg("Database file {0} irrelevant and not loaded".format(cachefile))
         raise err
 
     # 5. File is relevant: read the content.
@@ -429,11 +427,11 @@ def check_relevancy(
     ----------
 
     file: str
-        a `` .h5``  line database cache file 
+        a `` .h5``  line database cache file
 
     load_only_wavenum_above: float
-        only load the cached file if it contains data for wavenumbers above the specified value. 
-    
+        only load the cached file if it contains data for wavenumbers above the specified value.
+
     load_only_wavenum_below: float
         only load the cached file if it contains data for wavenumbers below the specified value.
 
@@ -441,23 +439,23 @@ def check_relevancy(
 
     # Get attributes wavenum_min and wavenum_max
     # check_not_deprecated already test their existence so we are safe
-    hf = h5py.File(file, "r")
-    attrs = dict(hf.attrs)
-    file_wavenum_min = attrs.pop("wavenum_min")
-    file_wavenum_max = attrs.pop("wavenum_max")
+    with h5py.File(file, "r") as hf:
+        attrs = dict(hf.attrs)
+        file_wavenum_min = attrs.pop("wavenum_min")
+        file_wavenum_max = attrs.pop("wavenum_max")
 
-    if file_wavenum_max < load_only_wavenum_above:
-        raise IrrelevantFileWarning(
-            "Database file {0} < {1:.6f}cm-1: irrelevant and not loaded".format(
-                file, file_wavenum_max
+        if file_wavenum_max < load_only_wavenum_above:
+            raise IrrelevantFileWarning(
+                "Database file {0} < {1:.6f}cm-1: irrelevant and not loaded".format(
+                    file, file_wavenum_max
+                )
             )
-        )
-    if load_only_wavenum_below < file_wavenum_min:
-        raise IrrelevantFileWarning(
-            "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
-                file, load_only_wavenum_below
+        if load_only_wavenum_below < file_wavenum_min:
+            raise IrrelevantFileWarning(
+                "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
+                    file, load_only_wavenum_below
+                )
             )
-        )
 
 
 def _warn_if_object_columns(df, fname):
