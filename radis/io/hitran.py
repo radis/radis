@@ -227,7 +227,6 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True, lo
         if "branch" in df:
             replace_PQR_with_m101(df)
         df = drop_object_format_columns(df, verbose=verbose)
-    raise
     metadata["wavenum_min"] = df.wav.iloc[0]
     metadata["wavenum_max"] = df.wav.iloc[-1]
 
