@@ -167,19 +167,16 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True, lo
     # Use cache file if possible
     fcache = cache_file_name(fname)
     if cache and exists(fcache):
-        try:
-            df = load_h5_cache_file(
-                fcache,
-                cache,
-                metadata=metadata,
-                current_version=radis.__version__,
-                last_compatible_version=OLDEST_COMPATIBLE_VERSION,
-                verbose=verbose,
-                load_only_wavenum_above=load_only_wavenum_above,
-                load_only_wavenum_below=load_only_wavenum_below,
-            )
-        except IrrelevantFileWarning as err:
-            raise err
+        df = load_h5_cache_file(
+            fcache,
+            cache,
+            metadata=metadata,
+            current_version=radis.__version__,
+            last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+            verbose=verbose,
+            load_only_wavenum_above=load_only_wavenum_above,
+            load_only_wavenum_below=load_only_wavenum_below,
+        )
         if df is not None:
             return df
 
