@@ -442,7 +442,7 @@ def check_relevancy(
     ----------
 
     file: str
-        a `` .h5`` cache file for Energy Levels
+        a `` .h5``  line database cache file 
 
     wavenum_min: float
         the minimum wavenumber relevant for the calcul.
