@@ -56,7 +56,6 @@ from radis.io.tools import (
     replace_PQR_with_m101,
 )
 from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from radis.misc.warning import IrrelevantFileWarning
 from numpy import Inf
 
 # %% Parsing functions
