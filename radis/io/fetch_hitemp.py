@@ -110,34 +110,38 @@ def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
             print("Building", output)
 
         Nlines = 0
-        for nbytes in iter(lambda: gfile.readinto(b), 0):
 
-            if not b[-1]:
-                # End of file within the chunk (but does not start with end of file)
-                # so nbytes != 0
-                b = get_last(b)
+        with pd.HDFStore(output, mode="a", complib="blosc", complevel=9) as f:
+            for nbytes in iter(lambda: gfile.readinto(b), 0):
 
-            df = _ndarray2df(b, columns, linereturnformat)
+                if not b[-1]:
+                    # End of file within the chunk (but does not start with end of file)
+                    # so nbytes != 0
+                    b = get_last(b)
 
-            df.to_hdf(
-                output, "df", format="table", append=True, complib="blosc", complevel=9
-            )
+                df = _ndarray2df(b, columns, linereturnformat)
 
-            wmin = np.min((wmin, df.wav.min()))
-            wmax = np.max((wmax, df.wav.max()))
-            Nlines += len(df)
-            if verbose:
-                sys.stdout.write(
-                    "\r({0:.0f}s) Built {1} database from {2:.1f} to {3:.1f} cm-1 ({4} lines)".format(
-                        time() - t0, molecule, wmin, wmax, Nlines
+                # df.to_hdf(
+                #     output, "df", format="table", append=True, complib="blosc", complevel=9
+                # )
+                f.put(key="df", value=df, format="table")
+
+                wmin = np.min((wmin, df.wav.min()))
+                wmax = np.max((wmax, df.wav.max()))
+                Nlines += len(df)
+                if verbose:
+                    sys.stdout.write(
+                        "\r({0:.0f}s) Built {1} database from {2:.1f} to {3:.1f} cm-1 ({4} lines)".format(
+                            time() - t0, molecule, wmin, wmax, Nlines
+                        )
                     )
-                )
 
-            # Reinitialize for next read
-            b = np.empty(
-                dt.itemsize * CHUNK, dtype=dt
-            )  # receives the HITRAN 160-format data.
+                # Reinitialize for next read
+                b = np.empty(
+                    dt.itemsize * CHUNK, dtype=dt
+                )  # receives the HITRAN 160-format data.
 
+                f.get_storer("df").attrs.metadata = {"wmin": wmin, "wmax": wmax}
     return output
 
 
@@ -157,4 +161,14 @@ def get_last(b):
 
 if __name__ == "__main__":
 
-    fetch_hitemp("OH")
+    output = fetch_hitemp("OH")
+
+    import pandas as pd
+
+    df = pd.read_hdf(output)
+    with pd.HDFStore(output) as store:
+        data = store["df"]
+        metadata = store.get_storer("df").attrs
+    df._attrs = metadata
+
+    df.to_parquet("df_parquet.par")
