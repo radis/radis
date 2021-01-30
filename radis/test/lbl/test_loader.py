@@ -147,8 +147,8 @@ def test_ignore_irrelevant_files(*args, **kwargs):
 
 def _run_testcases(verbose=True, plot=True):
 
-    # test_ignore_cached_files()
-    # test_retrieve_from_database(plot=plot, verbose=verbose)
+    test_ignore_cached_files()
+    test_retrieve_from_database(plot=plot, verbose=verbose)
     test_ignore_irrelevant_files(verbose=verbose)
 
 
