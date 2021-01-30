@@ -88,6 +88,7 @@ def test_retrieve_from_database(
         rmtree(temp_database_name)
 
 
+@pytest.mark.fast
 def test_ignore_cached_files():
     """
     Previous implementation of RADIS saved the cached h5 files generated while reading the
@@ -114,6 +115,7 @@ def test_ignore_cached_files():
         ) from err
 
 
+@pytest.mark.fast
 def test_ignore_irrelevant_files(*args, **kwargs):
     """
     Implemented in https://github.com/radis/radis/pull/185

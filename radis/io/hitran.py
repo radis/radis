@@ -28,6 +28,7 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import pandas as pd
+from numpy import Inf
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
@@ -56,7 +57,6 @@ from radis.io.tools import (
     replace_PQR_with_m101,
 )
 from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from numpy import Inf
 
 # %% Parsing functions
 
@@ -90,7 +90,15 @@ columns_2004 = OrderedDict(
 # fmt: on
 
 
-def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True, load_only_wavenum_above=0.0, load_only_wavenum_below=Inf):
+def hit2df(
+    fname,
+    count=-1,
+    cache=False,
+    verbose=True,
+    drop_non_numeric=True,
+    load_only_wavenum_above=0.0,
+    load_only_wavenum_below=Inf,
+):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
     Parameters
@@ -117,11 +125,11 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True, lo
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
-        
+
     load_only_wavenum_above: float
-        only load the cached file if it contains data for wavenumbers above the specified value. 
+        only load the cached file if it contains data for wavenumbers above the specified value.
         see :py:func`~radis.misc.cache_files`. Default ``0.0``.
-    
+
     load_only_wavenum_below: float
         only load the cached file if it contains data for wavenumbers below the specified value.
         see :py:func`~radis.misc.cache_files`. Default ``Inf``.

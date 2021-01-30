@@ -22,6 +22,8 @@ import time
 from collections import OrderedDict
 from os.path import exists, getmtime
 
+from numpy import Inf
+
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.io.tools import (
@@ -30,7 +32,6 @@ from radis.io.tools import (
     replace_PQR_with_m101,
 )
 from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from numpy import Inf
 
 # fmt: off
 columns_hitemp = OrderedDict(
@@ -153,11 +154,11 @@ def cdsd2df(
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
-    
+
     load_only_wavenum_above: float
-        only load the cached file if it contains data for wavenumbers above the specified value. 
+        only load the cached file if it contains data for wavenumbers above the specified value.
         see :py:func`~radis.misc.cache_files`. Default ``0.0``.
-    
+
     load_only_wavenum_below: float
         only load the cached file if it contains data for wavenumbers below the specified value.
         see :py:func`~radis.misc.cache_files`. Default ``Inf``.
@@ -269,7 +270,7 @@ def cdsd2df(
         df = drop_object_format_columns(df, verbose=verbose)
     metadata["wavenum_min"] = df.wav.iloc[0]
     metadata["wavenum_max"] = df.wav.iloc[-1]
-    
+
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
         if verbose:

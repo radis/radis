@@ -122,8 +122,10 @@ def load_h5_cache_file(
         else:
             return None  # File doesn't exist. It's okay.
 
-    check_wavenumbers = not(load_only_wavenum_above==None) and not(load_only_wavenum_below==None)
-    
+    check_wavenumbers = not (load_only_wavenum_above == None) and not (
+        load_only_wavenum_below == None
+    )
+
     # 3. read file attributes to know if it's deprecated
     try:
         check_not_deprecated(
@@ -131,7 +133,7 @@ def load_h5_cache_file(
             metadata,
             current_version=current_version,
             last_compatible_version=last_compatible_version,
-            check_wavenumbers = check_wavenumbers,
+            check_wavenumbers=check_wavenumbers,
         )
     # ... if deprecated, raise an error only if 'force'
     except DeprecatedFileWarning as err:

@@ -116,13 +116,13 @@ class PerformanceWarning(UserWarning):
 
 class DeprecatedFileWarning(DeprecationWarning):
     """ Warning triggered when the cached file was generated in a previous version of radis """
-    
+
     pass
 
 
 class IrrelevantFileWarning(Warning):
     """ Warning triggered when the cached file is irrelevant for the current calcul """
-    
+
     pass
 
 
