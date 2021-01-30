@@ -34,7 +34,6 @@ from warnings import warn
 
 import h5py
 import pandas as pd
-from numpy import Inf
 from packaging.version import parse
 
 import radis
@@ -58,8 +57,8 @@ def load_h5_cache_file(
     current_version,
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
     verbose=True,
-    load_only_wavenum_above=0.0,
-    load_only_wavenum_below=Inf,
+    load_only_wavenum_above=None,
+    load_only_wavenum_below=None,
 ):
     """Function to load a h5 cache file.
 
@@ -123,6 +122,8 @@ def load_h5_cache_file(
         else:
             return None  # File doesn't exist. It's okay.
 
+    check_wavenumbers = not(load_only_wavenum_above==None) and not(load_only_wavenum_below==None)
+    
     # 3. read file attributes to know if it's deprecated
     try:
         check_not_deprecated(
@@ -130,6 +131,7 @@ def load_h5_cache_file(
             metadata,
             current_version=current_version,
             last_compatible_version=last_compatible_version,
+            check_wavenumbers = check_wavenumbers,
         )
     # ... if deprecated, raise an error only if 'force'
     except DeprecatedFileWarning as err:
@@ -146,39 +148,39 @@ def load_h5_cache_file(
             return None
 
     # 4. File is not not deprecated: read the the extremum wavenumbers.
-    try:
-        check_relevancy(
-            cachefile,
-            load_only_wavenum_above,
-            load_only_wavenum_below,
-        )
-    # ... if irrelevant, raise an error only if 'force'
-    except IrrelevantFileWarning as err:
-        if verbose >= 2:
-            printg("Database file {0} irrelevant and not loaded".format(cachefile))
-        raise err
+    if check_wavenumbers:
+        try:
+            check_relevancy(
+                cachefile,
+                load_only_wavenum_above,
+                load_only_wavenum_below,
+            )
+        # ... if irrelevant, raise an error only if 'force'
+        except IrrelevantFileWarning as err:
+            if verbose >= 2:
+                printg("Database file {0} irrelevant and not loaded".format(cachefile))
+            raise err
 
     # 5. File is relevant: read the content.
-    else:
-        df = None
-        if verbose >= 2:
-            printm("Reading cache file ({0})".format(cachefile))
-        try:
-            df = pd.read_hdf(cachefile, "df")
-        except KeyError as err:  # An error happened during file reading.
-            # Fail safe by deleting cache file (unless we explicitely wanted it
-            # with 'force')
-            if use_cached == "force":
-                raise
-            else:
-                if verbose:
-                    printr(
-                        "An error happened during cache file reading "
-                        + "{0}:\n{1}\n".format(cachefile, str(err))
-                        + "Deleting cache file to regenerate it"
-                    )
-                os.remove(cachefile)
-                df = None
+    df = None
+    if verbose >= 2:
+        printm("Reading cache file ({0})".format(cachefile))
+    try:
+        df = pd.read_hdf(cachefile, "df")
+    except KeyError as err:  # An error happened during file reading.
+        # Fail safe by deleting cache file (unless we explicitely wanted it
+        # with 'force')
+        if use_cached == "force":
+            raise
+        else:
+            if verbose:
+                printr(
+                    "An error happened during cache file reading "
+                    + "{0}:\n{1}\n".format(cachefile, str(err))
+                    + "Deleting cache file to regenerate it"
+                )
+            os.remove(cachefile)
+            df = None
 
     return df
 
@@ -304,6 +306,7 @@ def check_not_deprecated(
     metadata,
     current_version=None,
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+    check_wavenumbers=False,
 ):
     """Make sure cache file is not deprecated: checks that ``metadata`` is the
     same, and that the version under which the file was generated is valid.
@@ -340,8 +343,9 @@ def check_not_deprecated(
     # Raise an error if version is not found
     try:
         file_version = attrs.pop("version")
-        attrs.pop("wavenum_min")
-        attrs.pop("wavenum_max")
+        if check_wavenumbers:
+            attrs.pop("wavenum_min")
+            attrs.pop("wavenum_max")
     except KeyError:
         raise DeprecatedFileWarning(
             "File {0} has been generated in a deprecated ".format(file)
@@ -386,7 +390,7 @@ def check_not_deprecated(
             + "Do you own a DeLorean? Delete the file manually if you understand what happened"
         )
 
-    # Compare metadata except wavenum_min ann wavenum_max
+    # Compare metadata except wavenum_min and wavenum_max
     metadata = _h5_compatible(metadata)
     out, compare_string = compare_dict(
         metadata, attrs, verbose=False, return_string=True
