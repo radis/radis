@@ -32,8 +32,8 @@ from radis import SpectrumFactory
 from radis.db.molecules import Molecules
 from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
-from radis.misc.cache_files import DeprecatedFileError
 from radis.misc.printer import printm
+from radis.misc.warning import DeprecatedFileWarning
 from radis.phys.constants import hc_k
 from radis.test.utils import getTestFile, setup_test_line_databases
 
@@ -110,7 +110,7 @@ def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
     # Recompute with different parameters
 
     # ... if using 'force', ensures that an error is raised
-    with pytest.raises(DeprecatedFileError):  # DeprecatedFileError is expected
+    with pytest.raises(DeprecatedFileWarning):  # DeprecatedFileError is expected
         db = PartFunc_Dunham(
             S, vmax=11, vmax_morse=48, Jmax=300, use_cached="force", verbose=verbose
         )

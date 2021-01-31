@@ -9,6 +9,7 @@ from os.path import exists
 from shutil import rmtree
 
 import matplotlib.pyplot as plt
+import pytest
 
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
@@ -87,6 +88,7 @@ def test_retrieve_from_database(
         rmtree(temp_database_name)
 
 
+@pytest.mark.fast
 def test_ignore_cached_files():
     """
     Previous implementation of RADIS saved the cached h5 files generated while reading the
@@ -113,10 +115,43 @@ def test_ignore_cached_files():
         ) from err
 
 
+@pytest.mark.fast
+def test_ignore_irrelevant_files(*args, **kwargs):
+    """
+    Implemented in https://github.com/radis/radis/pull/185
+
+    - Test that calculating with cache files outside the spectral range they
+    are properly ignored
+    """
+
+    from radis.misc.warning import EmptyDatabaseError, IrrelevantFileWarning
+
+    # Regenerate .h5 cache file
+    sf = SpectrumFactory(wavenum_min=2280, wavenum_max=2290, use_cached="regen")
+    test_file = getTestFile("cdsd_hitemp_09_fragment.txt")
+    sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+    assert exists(test_file.replace(".txt", ".h5"))
+    # Also note that there was no EmptyDatabaseError : file was properly loaded!
+
+    # Load same .h5 cache file in another spectral range
+    # ... Expect an error in use_cached = 'force' (file properly detected as
+    # irrelevant)
+    sf2 = SpectrumFactory(wavenum_min=100000, wavenum_max=100002, use_cached="force")
+    with pytest.raises(IrrelevantFileWarning):
+        sf2.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+
+    # Again without 'force'
+    # ... Expect no IrrelevantFile error, however range should be empty.
+    with pytest.raises(EmptyDatabaseError):
+        sf3 = SpectrumFactory(wavenum_min=100000, wavenum_max=100002)
+        sf3.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+
+
 def _run_testcases(verbose=True, plot=True):
 
     test_ignore_cached_files()
     test_retrieve_from_database(plot=plot, verbose=verbose)
+    test_ignore_irrelevant_files(verbose=verbose)
 
 
 if __name__ == "__main__":

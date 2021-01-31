@@ -95,7 +95,12 @@ from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg, printr
 from radis.misc.utils import get_files_from_regex
-from radis.misc.warning import EmptyDatabaseError, default_warning_status, warn
+from radis.misc.warning import (
+    EmptyDatabaseError,
+    IrrelevantFileWarning,
+    default_warning_status,
+    warn,
+)
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 
@@ -396,7 +401,7 @@ class Parameters(ConditionDict):
     #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
     #    __slots__ = [
     #                 'broadening_max_width', 'chunksize', 'cutoff',
-    #                 'db_assumed_sorted', 'db_use_cached', 'dbformat', 'dbpath',
+    #                 'db_use_cached', 'dbformat', 'dbpath',
     #                 'export_lines', 'export_populations', 'levelsfmt', 'lvl_use_cached',
     #                 'parfuncfmt', 'parfuncpath',
     #                 'pseudo_continuum_threshold', 'warning_broadening_threshold',
@@ -411,7 +416,6 @@ class Parameters(ConditionDict):
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
         self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
         self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``
-        self.db_assumed_sorted = None  #: bool: assume that Line Database is sorted (helps not to parse the whole database)
         self.db_use_cached = (
             None  #: bool: use (and generate) cache files for Line Database
         )
@@ -708,11 +712,6 @@ class DatabankLoader(object):
             existing cached files are removed and regenerated.
             It is also used to load energy levels from ``.h5`` cache file if exist.
             If ``None``, the value given on Factory creation is used. Default ``None``
-        db_assumed_sorted: boolean
-            load_databank first reads the first line and check it's relevant.
-            This improves database loading times if not all files are required,
-            but it assumes database files are sorted in wavenumber!
-            Default ``True``
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
@@ -774,7 +773,6 @@ class DatabankLoader(object):
             levels,
             levelsfmt,
             db_use_cached,
-            db_assumed_sorted,
             drop_columns,
             buffer,
             load_energies,
@@ -797,7 +795,6 @@ class DatabankLoader(object):
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
-            db_assumed_sorted=db_assumed_sorted,
             load_energies=load_energies,
             include_neighbouring_lines=include_neighbouring_lines,
         )
@@ -988,7 +985,6 @@ class DatabankLoader(object):
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
-        db_assumed_sorted=True,
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
@@ -1055,11 +1051,6 @@ class DatabankLoader(object):
             existing cached files are removed and regenerated.
             It is also used to load energy levels from ``.h5`` cache file if exist.
             If ``None``, the value given on Factory creation is used. Default ``None``
-        db_assumed_sorted: boolean
-            load_databank first reads the first line and check it's relevant.
-            This improves database loading times if not all files are required,
-            but it assumes database files are sorted in wavenumber!
-            Default ``True``
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
@@ -1134,7 +1125,6 @@ class DatabankLoader(object):
                 levels,
                 levelsfmt,
                 db_use_cached,
-                db_assumed_sorted,
                 drop_columns,
                 buffer,
                 load_energies,
@@ -1148,7 +1138,6 @@ class DatabankLoader(object):
                 levels=levels,
                 levelsfmt=levelsfmt,
                 db_use_cached=db_use_cached,
-                db_assumed_sorted=db_assumed_sorted,
                 load_energies=load_energies,
                 include_neighbouring_lines=include_neighbouring_lines,
                 drop_columns=drop_columns,
@@ -1163,7 +1152,6 @@ class DatabankLoader(object):
                 dbformat,
                 levelsfmt=levelsfmt,
                 db_use_cached=db_use_cached,
-                db_assumed_sorted=db_assumed_sorted,
                 buffer=buffer,
                 drop_columns=drop_columns,
                 include_neighbouring_lines=include_neighbouring_lines,
@@ -1211,7 +1199,6 @@ class DatabankLoader(object):
                 levels=levels,
                 levelsfmt=levelsfmt,
                 db_use_cached=db_use_cached,
-                db_assumed_sorted=db_assumed_sorted,
                 include_neighbouring_lines=include_neighbouring_lines,
             )
             return
@@ -1240,7 +1227,6 @@ class DatabankLoader(object):
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
-        db_assumed_sorted=True,
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
@@ -1255,7 +1241,7 @@ class DatabankLoader(object):
 
         tuple
             (name, path, dbformat, parfunc, parfuncfmt, levels, levelsfmt,
-             db_use_cached, db_assumed_sorted, drop_columns, buffer)
+             db_use_cached, load_energies, include_neighbouring_lines, drop_columns, buffer)
         """
 
         dbformat = format
@@ -1382,7 +1368,6 @@ class DatabankLoader(object):
             levels,
             levelsfmt,
             db_use_cached,
-            db_assumed_sorted,
             drop_columns,
             buffer,
             load_energies,
@@ -1399,7 +1384,6 @@ class DatabankLoader(object):
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
-        db_assumed_sorted=True,
         load_energies=True,
         include_neighbouring_lines=True,
     ):
@@ -1426,7 +1410,6 @@ class DatabankLoader(object):
         self.params.levelsfmt = levelsfmt
         self.params.parfuncpath = format_paths(parfunc)
         self.params.parfuncfmt = parfuncfmt
-        self.params.db_assumed_sorted = db_assumed_sorted
         self.params.include_neighbouring_lines = include_neighbouring_lines
         self.misc.load_energies = load_energies
 
@@ -1672,7 +1655,6 @@ class DatabankLoader(object):
         dbformat,
         levelsfmt,
         db_use_cached,
-        db_assumed_sorted=False,
         buffer="RAM",
         drop_columns="auto",
         include_neighbouring_lines=True,
@@ -1684,11 +1666,12 @@ class DatabankLoader(object):
         ----------
         database: list of str
             list of database files
-        db_use_cached: boolean
+        db_use_cached: boolean, or ``'regen'``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
             improves performances a lot. But! ... be sure to delete these files
             to regenerate them if you happen to change the database. Default ``False``
+            If ``'regen'`` regenerate existing cache files.
         buffer: ``'RAM'``, ``'h5'``, ``'direct'``
             Different modes for loading up a database: either directly in ``'RAM'`` mode,
             or in ``'h5'`` mode.
@@ -1736,7 +1719,7 @@ class DatabankLoader(object):
         """
 
         # Check inputs
-        assert db_use_cached in [True, False, "regen"]
+        assert db_use_cached in [True, False, "regen", "force"]
         assert buffer in ["RAM", "h5", "direct", "npy"]
 
         if self.verbose >= 2:
@@ -1846,102 +1829,50 @@ class DatabankLoader(object):
                 if __debug__:
                     printdbg("Loading {0}/{1}".format(i + 1, len(files)))
 
-                if db_assumed_sorted and len(files) > 1:
-                    # no need to check the first file if there is only one file anyway
-                    # Note on performance: reading the first line of .txt file is still
-                    # much faster than reading the whole hdf5 file
+                # Now read all the lines
+                # ... this is where the cache files are read/generated.
+                try:
                     if dbformat == "cdsd-hitemp":
                         df = cdsd2df(
                             filename,
                             version="hitemp",
-                            count=1,
-                            cache=False,
-                            verbose=False,
-                            drop_non_numeric=False,
+                            cache=db_use_cached,
+                            verbose=verbose,
+                            drop_non_numeric=True,
+                            load_only_wavenum_above=wavenum_min,
+                            load_only_wavenum_below=wavenum_max,
                         )
-                        if df.wav.loc[0] > wavenum_max:
-                            if verbose:
-                                print(
-                                    "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
-                                        filename, wavenum_max
-                                    )
-                                )
-                            continue
                     elif dbformat == "cdsd-4000":
                         df = cdsd2df(
                             filename,
                             version="4000",
-                            count=1,
-                            cache=False,
-                            verbose=False,
-                            drop_non_numeric=False,
+                            cache=db_use_cached,
+                            verbose=verbose,
+                            drop_non_numeric=True,
+                            load_only_wavenum_above=wavenum_min,
+                            load_only_wavenum_below=wavenum_max,
                         )
-                        if df.wav.loc[0] > wavenum_max:
-                            if verbose:
-                                print(
-                                    "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
-                                        filename, wavenum_max
-                                    )
-                                )
-                            continue
                     elif dbformat == "hitran":
                         df = hit2df(
                             filename,
-                            count=1,
-                            cache=False,
-                            verbose=False,
-                            drop_non_numeric=False,
+                            cache=db_use_cached,
+                            verbose=verbose,
+                            drop_non_numeric=True,
+                            load_only_wavenum_above=wavenum_min,
+                            load_only_wavenum_below=wavenum_max,
                         )
-                        if df.wav.loc[0] > wavenum_max:
-                            if verbose:
-                                print(
-                                    "Database file {0} > {1:.6f}cm-1: irrelevant and not loaded".format(
-                                        filename, wavenum_max
-                                    )
-                                )
-                            continue
                     else:
-                        raise ValueError(
-                            "The database format is unknown: {0}".format(dbformat)
-                        )
-
-                # Now read all the lines
-                # ... this is where the cache files are read/generated.
-                if dbformat == "cdsd-hitemp":
-                    df = cdsd2df(
-                        filename,
-                        version="hitemp",
-                        cache=db_use_cached,
-                        verbose=verbose,
-                        drop_non_numeric=True,
-                    )
-                elif dbformat == "cdsd-4000":
-                    df = cdsd2df(
-                        filename,
-                        version="4000",
-                        cache=db_use_cached,
-                        verbose=verbose,
-                        drop_non_numeric=True,
-                    )
-                elif dbformat == "hitran":
-                    df = hit2df(
-                        filename,
-                        cache=db_use_cached,
-                        verbose=verbose,
-                        drop_non_numeric=True,
-                    )
-                else:
-                    raise ValueError("Unknown dbformat: {0}".format(dbformat))
-
-                # Drop the end
-                if db_assumed_sorted:
-                    if df.wav.iloc[-1] < wavenum_min:
-                        if verbose:
-                            print(
-                                "Database file {0} < {1:.6f}cm-1: irrelevant and rejected".format(
-                                    filename, wavenum_min
+                        raise ValueError("Unknown dbformat: {0}".format(dbformat))
+                except IrrelevantFileWarning:
+                    if db_use_cached == "force":
+                        if verbose >= 2:
+                            printr(
+                                "Database file {0} is irrelevant for the calcul".format(
+                                    filename
                                 )
                             )
+                        raise
+                    else:
                         continue
 
                 # Drop columns (helps fix some Memory errors)
@@ -2046,7 +1977,7 @@ class DatabankLoader(object):
             ) + " ({0:.2f}-{1:.2f}nm) Check your range !".format(
                 cm2nm(wavenum_min), cm2nm(wavenum_max)
             )
-            raise ValueError(msg)
+            raise EmptyDatabaseError(msg)
 
         maxwavdb = df.wav.max()
         minwavdb = df.wav.min()
@@ -2143,7 +2074,6 @@ class DatabankLoader(object):
             raise FileNotFoundError("temp file not present. Cant reload database")
         dbformat = self.params.dbformat
         db_use_cached = self.params.db_use_cached
-        db_assumed_sorted = self.db_assumed_sorted
         levelsfmt = self.params.levelsfmt
 
         t0 = time()
@@ -2152,7 +2082,6 @@ class DatabankLoader(object):
             dbformat,
             levelsfmt,
             db_use_cached=db_use_cached,
-            db_assumed_sorted=db_assumed_sorted,
             buffer="direct",
         )
 

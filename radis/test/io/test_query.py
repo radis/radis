@@ -11,7 +11,7 @@ from os.path import exists, join
 import pytest
 
 from radis.io.query import CACHE_FILE_NAME, Hitran, fetch_astroquery
-from radis.misc.cache_files import DeprecatedFileError
+from radis.misc.warning import DeprecatedFileWarning
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -65,7 +65,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
     )
 
     # Try to load with different metadata: expect a DeprecatedFileError
-    with pytest.raises(DeprecatedFileError):
+    with pytest.raises(DeprecatedFileWarning):
         df2 = fetch_astroquery(
             "CO2",
             1,

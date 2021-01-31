@@ -28,6 +28,7 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import pandas as pd
+from numpy import Inf
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
@@ -89,8 +90,16 @@ columns_2004 = OrderedDict(
 # fmt: on
 
 
-def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
-    """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe.
+def hit2df(
+    fname,
+    count=-1,
+    cache=False,
+    verbose=True,
+    drop_non_numeric=True,
+    load_only_wavenum_above=0.0,
+    load_only_wavenum_below=Inf,
+):
+    """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
     Parameters
     ----------
@@ -116,6 +125,14 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
+
+    load_only_wavenum_above: float
+        only load the cached file if it contains data for wavenumbers above the specified value.
+        see :py:func`~radis.misc.cache_files`. Default ``0.0``.
+
+    load_only_wavenum_below: float
+        only load the cached file if it contains data for wavenumbers below the specified value.
+        see :py:func`~radis.misc.cache_files`. Default ``Inf``.
 
     Returns
     -------
@@ -163,6 +180,8 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
             current_version=radis.__version__,
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             verbose=verbose,
+            load_only_wavenum_above=load_only_wavenum_above,
+            load_only_wavenum_below=load_only_wavenum_below,
         )
         if df is not None:
             return df
@@ -214,6 +233,8 @@ def hit2df(fname, count=-1, cache=False, verbose=True, drop_non_numeric=True):
         if "branch" in df:
             replace_PQR_with_m101(df)
         df = drop_object_format_columns(df, verbose=verbose)
+    metadata["wavenum_min"] = df.wav.iloc[0]
+    metadata["wavenum_max"] = df.wav.iloc[-1]
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
