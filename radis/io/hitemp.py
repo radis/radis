@@ -137,10 +137,8 @@ def fetch_hitemp(
     :py:func:`~radis.io.hdf5.hdf2df`
 
     """
-    # TODO: unzip only parts of the database
+    # TODO ? : unzip only parts of the database
     # see https://github.com/radis/radis/pull/194
-
-    # TODO: clean DataSource downloads after HDF5 is generated
 
     if databank_name == "HITEMP-{molecule}":
         databank_name = databank_name.format(**{"molecule": molecule})

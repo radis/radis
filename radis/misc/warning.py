@@ -24,6 +24,16 @@ class SlitDispersionWarning(UserWarning):
 # -------------------------------------
 
 
+class AccuracyError(ValueError):
+    """ Output spectrum is not valid """
+
+    pass
+
+
+class AccuracyWarning(UserWarning):
+    pass
+
+
 class OutOfBoundError(ValueError):
     pass
 
