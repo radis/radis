@@ -75,7 +75,6 @@ def test_klarenaar_validation_case(
         2284.6,
         wstep=0.001,  # cm-1
         pressure=20 * 1e-3,  # bar
-        db_use_cached=True,
         cutoff=1e-25,
         molecule="CO2",
         isotope="1,2",

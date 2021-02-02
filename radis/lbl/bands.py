@@ -113,29 +113,23 @@ class BandFactory(BroadenFactory):
 
         Parameters
         ----------
-
         Tgas: float
             Gas temperature (K)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
         path_length: float
             slab size (cm). If None, Factory mole fraction is used.
-
         pressure: float
             pressure (bar). If None, the default Factory pressure is used.
 
         Other Parameters
         ----------------
-
         levels: ``'all'``, int, list of str
             calculate only bands that feature certain levels. If ``'all'``, all
             bands are returned. If N (int), return bands for the first N levels
             (sorted by energy). If list of str, return for all levels in the list.
             The remaining levels are also calculated and returned merged together
             in the ``'others'`` key. Default ``'all'``
-
         drop_lines: boolean
             if False remove the line database from each bands. Helps save a lot
             of space, but line survey cannot be performed anymore. Default ``True``.
@@ -409,39 +403,31 @@ class BandFactory(BroadenFactory):
 
         Parameters
         ----------
-
         Tvib: float
             vibrational temperature [K]
             can be a tuple of float for the special case of more-than-diatomic
             molecules (e.g: CO2)
-
         Trot: float
             rotational temperature [K]
-
         Ttrans: float
             translational temperature [K]. If None, translational temperature is
             taken as rotational temperature (valid at 1 atm for times above ~ 2ns
             which is the RT characteristic time)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
         path_length: float
             slab size (cm). If None, Factory mole fraction is used.
-
         pressure: float
             pressure (bar). If None, the default Factory pressure is used.
 
         Other Parameters
         ----------------
-
         levels: ``'all'``, int, list of str
             calculate only bands that feature certain levels. If ``'all'``, all
             bands are returned. If N (int), return bands for the first N levels
             (sorted by energy). If list of str, return for all levels in the list.
             The remaining levels are also calculated and returned merged together
             in the ``'others'`` key. Default ``'all'``
-
         return_lines: boolean
             if ``True`` returns each band with its line database. Can produce big
             spectra! Default ``True``

@@ -752,6 +752,7 @@ class DatabankLoader(object):
             levels,
             levelsfmt,
             db_use_cached,
+            lvl_use_cached,
             drop_columns,
             load_energies,
             include_neighbouring_lines,
@@ -773,6 +774,7 @@ class DatabankLoader(object):
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
+            lvl_use_cached=lvl_use_cached,
             load_energies=load_energies,
             include_neighbouring_lines=include_neighbouring_lines,
         )
@@ -791,6 +793,7 @@ class DatabankLoader(object):
         include_neighbouring_lines=True,
         drop_non_numeric=True,
         db_use_cached=True,
+        lvl_use_cached=True,
     ):
         """Fetch the latest databank files from HITRAN or HITEMP with the
         https://hitran.org/ API.
@@ -890,6 +893,20 @@ class DatabankLoader(object):
             wavenum_min = self.input.wavenum_min
             wavenum_max = self.input.wavenum_max
 
+        # Let's store all params so they can be parsed by "get_conditions()"
+        # and saved in output spectra information
+        self.params.dbpath = "fetched from " + source
+        self.params.dbformat = dbformat
+        if levels is not None:
+            self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
+        else:
+            self.levelspath = None
+        self.params.levelsfmt = levelsfmt
+        self.params.parfuncpath = format_paths(parfunc)
+        self.params.parfuncfmt = parfuncfmt
+        self.params.db_use_cached = db_use_cached
+        self.params.lvl_use_cached = lvl_use_cached
+
         # %% Init Line database
         # ---------------------
 
@@ -983,20 +1000,6 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        # %% Store
-
-        # Let's store all params so they can be parsed by "get_conditions()"
-        # and saved in output spectra information
-        self.params.dbpath = "fetched from " + source
-        self.params.dbformat = dbformat
-        if levels is not None:
-            self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
-        else:
-            self.levelspath = None
-        self.params.levelsfmt = levelsfmt
-        self.params.parfuncpath = format_paths(parfunc)
-        self.params.parfuncfmt = parfuncfmt
-
         return
 
     def load_databank(
@@ -1009,6 +1012,7 @@ class DatabankLoader(object):
         levels=None,
         levelsfmt=None,
         db_use_cached=True,
+        lvl_use_cached=True,
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
@@ -1140,6 +1144,22 @@ class DatabankLoader(object):
             include_neighbouring_lines=include_neighbouring_lines,
             drop_columns=drop_columns,
         )
+        # Let's store all params so they can be parsed by "get_conditions()"
+        # and saved in output spectra information
+        self._store_database_params(
+            name=name,
+            path=path,
+            format=dbformat,
+            parfunc=parfunc,
+            parfuncfmt=parfuncfmt,
+            levels=levels,
+            levelsfmt=levelsfmt,
+            db_use_cached=db_use_cached,
+            lvl_use_cached=lvl_use_cached,
+            include_neighbouring_lines=include_neighbouring_lines,
+        )
+        # Now that we're all set, let's load everything
+
         # Now that we're all set, let's load everything
 
         # %% Line database
@@ -1178,21 +1198,11 @@ class DatabankLoader(object):
         if load_energies:
             self._init_rovibrational_energies(levels, levelsfmt)
 
-        # %% Store
+            # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
+            # are calculated ab initio from radis internal species database constants
+            if load_energies:
+                self._init_rovibrational_energies(levels, levelsfmt)
 
-        # Let's store all params so they can be parsed by "get_conditions()"
-        # and saved in output spectra information
-        self._store_database_params(
-            name=name,
-            path=path,
-            format=dbformat,
-            parfunc=parfunc,
-            parfuncfmt=parfuncfmt,
-            levels=levels,
-            levelsfmt=levelsfmt,
-            db_use_cached=db_use_cached,
-            include_neighbouring_lines=include_neighbouring_lines,
-        )
         return
 
     def _check_database_params(
@@ -1205,6 +1215,7 @@ class DatabankLoader(object):
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
+        lvl_use_cached=None,
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
@@ -1333,6 +1344,7 @@ class DatabankLoader(object):
             levels,
             levelsfmt,
             db_use_cached,
+            lvl_use_cached,
             drop_columns,
             load_energies,
             include_neighbouring_lines,
@@ -1348,6 +1360,7 @@ class DatabankLoader(object):
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
+        lvl_use_cached=None,
         load_energies=True,
         include_neighbouring_lines=True,
     ):
@@ -1375,6 +1388,8 @@ class DatabankLoader(object):
         self.params.parfuncpath = format_paths(parfunc)
         self.params.parfuncfmt = parfuncfmt
         self.params.include_neighbouring_lines = include_neighbouring_lines
+        self.params.db_use_cached = db_use_cached
+        self.params.lvl_use_cached = lvl_use_cached
         self.misc.load_energies = load_energies
 
     def init_database(

@@ -192,18 +192,6 @@ class SpectrumFactory(BandFactory):
         populations ('vib') or rovibrational populations ('rovib'). Default ``None``
     export_lines: boolean
         if ``True``, saves lines in Spectrum. Default ``True``.
-    db_use_cached: boolean, or 'regen'
-        use cache for line databases.
-        If ``True``, a pandas-readable csv file is generated on first access,
-        and later used. This saves on the datatype cast and conversion and
-        improves performances a lot. But! ... be sure to delete these files
-        to regenerate them if you happen to change the database. If 'regen',
-        existing cached files are removed and regenerated. Default ``False``
-        From 0.9.16 it is also used to load energy levels from the .h5 cache file
-        if it exists
-    lvl_use_cached: boolean, or ``'regen'``, or ``'force'``, or ``None``
-        use cache for energy level database
-        If None, the same value as ``db_use_cached`` is used.
     chunksize: int, or ``None``
         Splits the lines database in several chuncks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
@@ -363,8 +351,6 @@ class SpectrumFactory(BandFactory):
         zero_padding=-1,
         broadening_method=Default("fft"),
         cutoff=1e-27,
-        db_use_cached=True,
-        lvl_use_cached=None,
         verbose=True,
         warnings=True,
         save_memory=False,
@@ -380,9 +366,20 @@ class SpectrumFactory(BandFactory):
         if medium not in ["air", "vacuum"]:
             raise ValueError("Wavelength must be one of: 'air', 'vacuum'")
         kwargs0 = kwargs  # kwargs is used to deal with Deprecated names
-        if "use_cached" in kwargs:
-            warn(DeprecationWarning("use_cached replaced with db_use_cached"))
-            db_use_cached = kwargs0.pop("use_cached")
+        if "db_use_cached" in kwargs:
+            warn(
+                DeprecationWarning(
+                    "db_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()"
+                )
+            )
+            kwargs0.pop("db_use_cached")
+        if "lvl_use_cached" in kwargs:
+            warn(
+                DeprecationWarning(
+                    "lvl_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()"
+                )
+            )
+            kwargs0.pop("lvl_use_cached")
         if kwargs0 != {}:
             raise TypeError(
                 "__init__() got an unexpected keyword argument '{0}'".format(
@@ -476,10 +473,6 @@ class SpectrumFactory(BandFactory):
 
         # Initialize computation variables
         self.params.wstep = wstep
-        self.params.db_use_cached = db_use_cached
-        if lvl_use_cached is None:
-            lvl_use_cached = db_use_cached
-        self.params.lvl_use_cached = lvl_use_cached
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
         self.params.cutoff = cutoff
         self.params.broadening_max_width = broadening_max_width  # line broadening
@@ -1139,7 +1132,6 @@ class SpectrumFactory(BandFactory):
 
         Parameters
         ----------
-
         Tvib: float
             vibrational temperature [K]
             can be a tuple of float for the special case of more-than-diatomic
@@ -1158,6 +1150,9 @@ class SpectrumFactory(BandFactory):
         pressure: float or `~astropy.units.quantity.Quantity`
             pressure (bar). If ``None``, the default Factory
             :py:attr:`~radis.lbl.factory.SpectrumFactor.input.pressure` is used.
+
+        Other Parameters
+        ----------------
         vib_distribution: ``'boltzmann'``, ``'treanor'``
             vibrational distribution
         rot_distribution: ``'boltzmann'``
