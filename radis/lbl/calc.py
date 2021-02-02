@@ -593,22 +593,6 @@ def _calc_spectrum(
             conditions["format"] = "hdf5"
             if not _equilibrium:
                 conditions["levelsfmt"] = "radis"
-        elif databank.endswith(".npy"):
-            if verbose:
-                print("Infered {0} is a NPY-format file".format(databank))
-            conditions[
-                "format"
-            ] = "cdsd-hitemp"  # TODO replace by more general dictionary input, or deprecate
-            conditions[
-                "buffer"
-            ] = "npy"  # TODO replace by more general dictionary, or deprecate
-
-            if not _equilibrium:
-                raise (
-                    NotImplementedError(
-                        "Non equilibrium spectra calculation not yet supported with npy databank"
-                    )
-                )
         else:
             raise ValueError(
                 "Couldnt infer the format of the line database file: {0}. ".format(

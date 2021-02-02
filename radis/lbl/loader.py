@@ -35,8 +35,6 @@ PRIVATE METHODS - DATABASE LOADING
 - :py:meth:`radis.lbl.loader.DatabankLoader._build_partition_function_interpolator`
 - :py:meth:`radis.lbl.loader.DatabankLoader._build_partition_function_calculator`
 - :py:meth:`radis.lbl.loader.DatabankLoader._fetch_molecular_parameters`
-- :py:meth:`radis.lbl.loader.DatabankLoader._get_temp_file`
-- :py:meth:`radis.lbl.loader.DatabankLoader._clean_temp_file`
 
 Most methods are written in inherited class with the following inheritance scheme:
 
@@ -62,12 +60,10 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
-import os
 import warnings
-from os.path import abspath, exists
+from os.path import exists
 from time import time
 from uuid import uuid1
-from warnings import catch_warnings, filterwarnings
 
 import numpy as np
 import pandas as pd
@@ -496,8 +492,6 @@ def format_paths(s):
     return s
 
 
-TEMP_FILE_PREFIX = ".radis_"
-
 df_metadata = ["Ia", "molar_mass", "Qref", "Qvib", "Q"]
 """ list: metadata of line DataFrames :py:attr:`~radis.lbl.loader.DatabankLoader.df0`,
 :py:attr:`~radis.lbl.loader.DatabankLoader.df1`.
@@ -585,15 +579,6 @@ class DatabankLoader(object):
 
         # Generate unique id for Factory
         self._id = uuid1()
-
-        # Just look up if temp files already exist
-        tempfiles = [f for f in os.listdir(".") if f.startswith(TEMP_FILE_PREFIX)]
-        if len(tempfiles) > 0:
-            self.warn(
-                "tempfile already exists: {0} in {1}. ".format(tempfiles, abspath("."))
-                + "Consider cleaning if you are not running processes in parallel",
-                "default",
-            )
 
         # Init Annotations (Python >3.6) [hints for users]
         try:
@@ -729,19 +714,6 @@ class DatabankLoader(object):
 
         *Other arguments are related to how to open the files*
 
-        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
-            Different modes for loading up database: either directly in 'RAM' mode,
-            or in 'h5' mode :
-
-            - 'RAM': is faster but memory hunger
-            - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
-              risks of MemoryErrors
-            - 'direct': file is read directly from a single h5 file under key 'df'
-              Fastest of all, doesnt check the database validity or format. Use only
-              if you have a single, already formatted database file (used by Factory
-              when reloading database)
-
-            Default ``'RAM'``
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
             Not recommended to use, unless you explicitely want to drop information
@@ -781,7 +753,6 @@ class DatabankLoader(object):
             levelsfmt,
             db_use_cached,
             drop_columns,
-            buffer,
             load_energies,
             include_neighbouring_lines,
         ) = self._check_database_params(*args, **kwargs)
@@ -1041,7 +1012,6 @@ class DatabankLoader(object):
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
-        buffer="RAM",
     ):
         """Loads databank from shortname in the :ref:`Configuration file.
 
@@ -1114,19 +1084,6 @@ class DatabankLoader(object):
 
         *Other arguments are related to how to open the files:*
 
-        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
-            Different modes for loading up database: either directly in 'RAM' mode,
-            or in 'h5' mode:
-
-            - 'RAM': is faster but memory hunger
-            - 'h5': handles better a bigger database (> 1M lines): slower (up to 3x), but less
-              risks of MemoryErrors
-            - 'direct': file is read directly from a single h5 file under key 'df'
-              Fastest of all, doesnt check the database validity or format. Use only
-              if you have a single, already formatted database file (used by Factory
-              when reloading database)
-
-            Default ``'RAM'``
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
             Not recommended to use, unless you explicitely want to drop information
@@ -1139,15 +1096,6 @@ class DatabankLoader(object):
             available in :py:meth:`~radis.spectrum.spectrum.Spectrum` method.
             Warning: nonequilibrium calculations are not possible in this mode.
             Default ``'auto'``.
-
-        Notes
-        -----
-        Performances of buffer mode:
-
-        on the 2Gb CDSD-HITEMP database (1-20), already cached in .h5
-
-        - ``'RAM'``: 7.1 s
-        - ``'h5'``: 21 s
 
         See Also
         --------
@@ -1163,112 +1111,89 @@ class DatabankLoader(object):
 
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
-        # TODO remove tempfile option to clean the code.
-        try:
 
-            # %% Check inputs
-            # ---------
+        # %% Check inputs
+        # ---------
 
-            (
-                name,
-                path,
-                dbformat,
-                parfunc,
-                parfuncfmt,
-                levels,
-                levelsfmt,
-                db_use_cached,
-                drop_columns,
-                buffer,
-                load_energies,
-                include_neighbouring_lines,
-            ) = self._check_database_params(
-                name=name,
-                path=path,
-                format=format,
-                parfunc=parfunc,
-                parfuncfmt=parfuncfmt,
-                levels=levels,
-                levelsfmt=levelsfmt,
-                db_use_cached=db_use_cached,
-                load_energies=load_energies,
-                include_neighbouring_lines=include_neighbouring_lines,
-                drop_columns=drop_columns,
-                buffer=buffer,
+        (
+            name,
+            path,
+            dbformat,
+            parfunc,
+            parfuncfmt,
+            levels,
+            levelsfmt,
+            db_use_cached,
+            drop_columns,
+            load_energies,
+            include_neighbouring_lines,
+        ) = self._check_database_params(
+            name=name,
+            path=path,
+            format=format,
+            parfunc=parfunc,
+            parfuncfmt=parfuncfmt,
+            levels=levels,
+            levelsfmt=levelsfmt,
+            db_use_cached=db_use_cached,
+            load_energies=load_energies,
+            include_neighbouring_lines=include_neighbouring_lines,
+            drop_columns=drop_columns,
+        )
+        # Now that we're all set, let's load everything
+
+        # %% Line database
+        # ------------
+        self.df0 = self._load_databank(
+            path,
+            dbformat,
+            levelsfmt=levelsfmt,
+            db_use_cached=db_use_cached,
+            drop_columns=drop_columns,
+            include_neighbouring_lines=include_neighbouring_lines,
+        )
+
+        # Check the molecule is what we expected
+        if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
+            raise NotImplementedError(
+                "Only 1 molecule at a time is currently supported "
+                + "in SpectrumFactory. Use radis.calc_spectrum, which "
+                + "calculates them independently then use MergeSlabs"
             )
-            # Now that we're all set, let's load everything
+        if self.input.molecule not in ["", None]:
+            assert self.input.molecule == get_molecule(
+                self.df0.id[0]
+            )  # assert molecule is what we expected
+        else:
+            self.input.molecule = get_molecule(self.df0.id[0])  # get molecule
 
-            # %% Line database
-            # ------------
-            self.df0 = self._load_databank(
-                path,
-                dbformat,
-                levelsfmt=levelsfmt,
-                db_use_cached=db_use_cached,
-                buffer=buffer,
-                drop_columns=drop_columns,
-                include_neighbouring_lines=include_neighbouring_lines,
-            )
+        # %% Partition functions (with energies)
+        # ------------
 
-            if buffer == "npy":
-                print("bypassing all databank checks and returning...")
-                return
+        self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
 
-            # Check the molecule is what we expected
-            if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
-                raise NotImplementedError(
-                    "Only 1 molecule at a time is currently supported "
-                    + "in SpectrumFactory. Use radis.calc_spectrum, which "
-                    + "calculates them independently then use MergeSlabs"
-                )
-            if self.input.molecule not in ["", None]:
-                assert self.input.molecule == get_molecule(
-                    self.df0.id[0]
-                )  # assert molecule is what we expected
-            else:
-                self.input.molecule = get_molecule(self.df0.id[0])  # get molecule
+        # If energy levels are given, initialize the partition function calculator
+        # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
+        # are calculated ab initio from radis internal species database constants
+        if load_energies:
+            self._init_rovibrational_energies(levels, levelsfmt)
 
-            # %% Partition functions (with energies)
-            # ------------
+        # %% Store
 
-            self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
-
-            # If energy levels are given, initialize the partition function calculator
-            # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
-            # are calculated ab initio from radis internal species database constants
-            if load_energies:
-                self._init_rovibrational_energies(levels, levelsfmt)
-
-            # %% Store
-
-            # Let's store all params so they can be parsed by "get_conditions()"
-            # and saved in output spectra information
-            self._store_database_params(
-                name=name,
-                path=path,
-                format=dbformat,
-                parfunc=parfunc,
-                parfuncfmt=parfuncfmt,
-                levels=levels,
-                levelsfmt=levelsfmt,
-                db_use_cached=db_use_cached,
-                include_neighbouring_lines=include_neighbouring_lines,
-            )
-            return
-
-        except MemoryError as err:
-            # An error occured: clean before crashing
-            self._clean_temp_file()
-            printr(
-                " Error while loading the database. Retry with "
-                + "`save_memory=True` option, or `save_memory=2` "
-                + "(warning: for equilibrium calculations only)"
-            )
-            raise err
-        except:
-            # An error occured: clean before crashing
-            self._clean_temp_file()
-            raise
+        # Let's store all params so they can be parsed by "get_conditions()"
+        # and saved in output spectra information
+        self._store_database_params(
+            name=name,
+            path=path,
+            format=dbformat,
+            parfunc=parfunc,
+            parfuncfmt=parfuncfmt,
+            levels=levels,
+            levelsfmt=levelsfmt,
+            db_use_cached=db_use_cached,
+            include_neighbouring_lines=include_neighbouring_lines,
+        )
+        return
 
     def _check_database_params(
         self,
@@ -1283,7 +1208,6 @@ class DatabankLoader(object):
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
-        buffer="RAM",
     ):
         """Check that database parameters are valid, in particular that paths
         exist. Loads all parameters if a Database from .radis config file was
@@ -1291,10 +1215,9 @@ class DatabankLoader(object):
 
         Returns
         -------
-
         tuple
             (name, path, dbformat, parfunc, parfuncfmt, levels, levelsfmt,
-             db_use_cached, load_energies, include_neighbouring_lines, drop_columns, buffer)
+             db_use_cached, load_energies, include_neighbouring_lines, drop_columns)
         """
 
         dbformat = format
@@ -1338,17 +1261,6 @@ class DatabankLoader(object):
 
         # Check database format
         if dbformat not in KNOWN_DBFORMAT:
-            # >>>>>>>>>>>
-            # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
-            if dbformat == "cdsd":
-                raise DeprecationWarning(
-                    "`cdsd` database format was renamed `cdsd-hitemp` after 0.9.21"
-                )
-            if dbformat == "cdsd4000":
-                raise DeprecationWarning(
-                    "`cdsd4000` database format was renamed `cdsd-4000` after 0.9.21"
-                )
-            # <<<<<<<<<<<
             raise ValueError(
                 "Database format ({0}) not in known list: {1}".format(
                     dbformat, KNOWN_DBFORMAT
@@ -1422,7 +1334,6 @@ class DatabankLoader(object):
             levelsfmt,
             db_use_cached,
             drop_columns,
-            buffer,
             load_energies,
             include_neighbouring_lines,
         )
@@ -1481,7 +1392,6 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         path: str
             path to database folder. If it doesnt exist, create it
             Accepts wildcards ``*`` to select multiple files
@@ -1534,8 +1444,6 @@ class DatabankLoader(object):
     # _get_partition_function_interpolator
     # _get_partition_function_calculator
     # _fetch_molecular_parameters
-    # _get_temp_file
-    # _clean_temp_file
     #
     # =========================================================================
 
@@ -1544,13 +1452,11 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         parfuncfmt: 'cdsd', 'hapi' (see :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`)
             format to read tabulated partition function file. If `hapi`, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version.
-
         parfunc: filename or None
             path to tabulated partition function to use.
             If ``parfuncfmt`` is ``hapi`` then ``parfunc`` should be the link to the
@@ -1574,11 +1480,9 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
             {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
-
         levelsfmt: 'cdsd-pc', 'radis' (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or None
             how to read the previous file. Known formats: :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
             If ```radis```, energies are calculated using the diatomic constants
@@ -1708,7 +1612,6 @@ class DatabankLoader(object):
         dbformat,
         levelsfmt,
         db_use_cached,
-        buffer="RAM",
         drop_columns="auto",
         include_neighbouring_lines=True,
     ):
@@ -1725,21 +1628,6 @@ class DatabankLoader(object):
             improves performances a lot. But! ... be sure to delete these files
             to regenerate them if you happen to change the database. Default ``False``
             If ``'regen'`` regenerate existing cache files.
-        buffer: ``'RAM'``, ``'h5'``, ``'direct'``
-            Different modes for loading up a database: either directly in ``'RAM'`` mode,
-            or in ``'h5'`` mode.
-
-            - ``'RAM'``: is faster but memory hunger
-            - ``'h5'``: handles better a bigger database (> 1M lines): slower (up to 3x), but less
-            risks of MemoryErrors
-            - ``'auto'``: choose depending on your number of files in database. If>30 files,
-            swith to 'h5'. Former default function, I know switched back to RAM.
-            - ``'direct'``: file is read directly from a single h5 file under key ``'df'``
-              Fastest of all, doesnt check the database validity or format. Use only
-              if you have a single, already formatted database file (used by Factory
-              when reloading database)
-
-            Default ``'RAM'``
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
             Not recommended to use, unless you explicitely want to drop information
@@ -1760,20 +1648,10 @@ class DatabankLoader(object):
             because of lineshape broadening. The ``broadening_max_width``
             parameter is used to determine the limit. Default ``True``.
 
-        Notes
-        -----
-
-        Performances of buffer mode:
-
-        on the 2Gb CDSD-HITEMP database (1-20), already cached in .h5
-
-        - ``'RAM'``: 7.1 s
-        - ``'h5'``: 21 s
         """
 
         # Check inputs
         assert db_use_cached in [True, False, "regen", "force"]
-        assert buffer in ["RAM", "h5", "direct", "npy"]
 
         if self.verbose >= 2:
             printg("Loading Line databank")
@@ -1789,42 +1667,6 @@ class DatabankLoader(object):
             wavenum_min = self.input.wavenum_min
             wavenum_max = self.input.wavenum_max
 
-        # Check inputs
-        if buffer == "direct":
-            assert len(database) == 1
-            assert database[0].endswith("h5")
-        elif buffer == "npy":
-            dir_path = database[0][
-                : database[0].rindex("/") + 1
-            ]  # remove the last *.npy portion
-            try:
-                iso = np.load(dir_path + "iso.npy")
-                v0 = np.load(dir_path + "v0.npy")
-                da = np.load(dir_path + "da.npy")
-                log_2gs = np.load(dir_path + "log_2gs.npy")
-                S0 = np.load(dir_path + "S0.npy")
-                El = np.load(dir_path + "El.npy")
-                log_2vMm = np.load(dir_path + "log_2vMm.npy")
-                na = np.load(dir_path + "na.npy")
-                df = pd.DataFrame(
-                    {
-                        "iso": iso,
-                        "wav": v0,
-                        "Pshft": da,
-                        "log_2gs": log_2gs,
-                        "Tdpair": na,
-                        "log_2vMm": log_2vMm,
-                        "int": S0,
-                        "El": El,
-                    }
-                )  # create dataframe from these 8 arrays
-                df.reset_index()
-                return df
-            except:
-                raise (
-                    FileNotFoundError("Could not find npy dataset in given directory")
-                )
-
         if drop_columns == "auto":
             drop_columns = (
                 drop_auto_columns_for_dbformat[dbformat]
@@ -1833,51 +1675,24 @@ class DatabankLoader(object):
 
         # subroutine load_and_concat
         # --------------------------------------
-        def load_and_concat(files, buffer):
-            """Two modes of concatenation: either directly in memory in
-            ``'RAM'`` mode, or aggregate on disk in a large HDF5 file in
-            ``'h5'`` mode. ``'RAM'`` is faster but memory hunger, ``'h5'``
-            handles better a bigger database.
+        def load_and_concat(files):
+            """Contatenate many files in RAM
 
             Parameters
             ----------
 
-            files: list of str, or list of dict
-                either a list of path to database files ::
+            files: list of str
+                elist of path to database files ::
 
                     [PATH/TO/01_1000-1150_HITEMP2010.par,
                      PATH/TO/01_1150-1300_HITEMP2010.par,
                      PATH/TO/01_1300-1500_HITEMP2010.par]
 
-                either a list of dictionaries containing the spectral informations ::
-
-                    [{'wav':'PATH/TO/v0.npy',
-                      'int':'PATH/TO/int.npy',
-                      'Pshft':'PATH/TO/int.npy',
-                      'log_2gs':'PATH/TO/log_2gs.npy'
-                      'Tdpair':'PATH/TO/Tdpair.npy',
-                      'El':'PATH/TO/Tdpair.npy'},
-                     # other dictionaries if needed
-                      ]
-
-                See definitions for instance in :py:data:`~radis.io.hitran.column_2004`
-
-            buffer: ``'direct'``, ``'h5'``, ``'RAM'``
-                see _load_databank info
             """
 
-            if buffer == "direct":
-                df = pd.read_hdf(database[0], key="df")
-                df = df.reset_index()
-                return df
-            elif buffer == "h5":
-                tempfile = self._get_temp_file()
-            else:
-                frames = []
+            frames = []
 
             for i, filename in enumerate(files):
-                # first dont load the whole database in unecessary.
-                # Check 1st line if we assume it is sorted
 
                 if __debug__:
                     printdbg("Loading {0}/{1}".format(i + 1, len(files)))
@@ -1968,61 +1783,22 @@ class DatabankLoader(object):
                     isotope = [float(k) for k in self.input.isotope.split(",")]
                     df = df[df.iso.isin(isotope)]
 
-                if buffer == "h5":
-                    with catch_warnings():  # temporary
-                        filterwarnings("ignore", category=DeprecationWarning)
-                        # there is a warning "inspect.getargspec() is deprecated,
-                        # use inspect.signature() instead" from the pytable library
-                        df.to_hdf(tempfile, "df", format="table", append=True)
-                        # note that format='table' is slow (5x slower than fixed)
-                        # but 'fixed' doesnt allow to append
-                else:
-                    frames.append(df)
+                frames.append(df)
 
             # Finally: Concatenate all
-            if buffer == "h5":
-                #                store=pd.HDFStore(tempfile)
-                #                df = store.select('df')
-                #                store.close()
-                try:
-                    df = pd.read_hdf(tempfile, "df")
-                except KeyError:  # happens if database is empty. A database empty error
-                    # will be raised a few lines below
-                    df = pd.DataFrame()
-                os.remove(tempfile)
-                if "Unnamed: 0" in df:
-                    # there is no ignore_index option in HDF...
-                    # so an index column can be created, so we delete it and regenerate one
-                    del df["Unnamed: 0"]
-                df = df.reset_index()
+            if frames == []:
+                df = (
+                    pd.DataFrame()
+                )  # a database empty error will be raised a few lines below
             else:
-                if frames == []:
-                    df = (
-                        pd.DataFrame()
-                    )  # a database empty error will be raised a few lines below
-                else:
-                    df = pd.concat(frames, ignore_index=True)  # reindex
+                df = pd.concat(frames, ignore_index=True)  # reindex
 
             return df
 
         # end subroutine load_and_concat
         # --------------------------------------
 
-        try:
-            df = load_and_concat(database, buffer=buffer)
-        except MemoryError:
-            # Not enough RAM
-            if buffer == "h5":
-                # If wasnt 'h5', try again with h5 buffer on disk
-                if verbose:
-                    print(
-                        "Memory error while loading database. Trying through h5 buffer"
-                    )
-                df = load_and_concat(database, buffer="h5")
-            else:
-                raise
-        finally:  # Clean temp file in any case
-            self._clean_temp_file()
+        df = load_and_concat(database)
 
         # Final checks
 
@@ -2124,39 +1900,6 @@ class DatabankLoader(object):
             )
 
         return df
-
-    def _reload_databank(self):
-        """In save_memory mode we're trying to save RAM so reference dataframe
-        (df0) will be deleted after scaled database (df1) is created.
-
-        This makes it impossible to calculate another spectrum
-        afterwards, without reloading the database: in that case, we
-        have kept the temporary file for some time and try to regenerate
-        df0 here
-        """
-
-        path = self._get_temp_file()
-        if not exists(path):
-            raise FileNotFoundError("temp file not present. Cant reload database")
-        dbformat = self.params.dbformat
-        db_use_cached = self.params.db_use_cached
-        levelsfmt = self.params.levelsfmt
-
-        t0 = time()
-        self.df0 = self._load_databank(
-            [path],
-            dbformat,
-            levelsfmt,
-            db_use_cached=db_use_cached,
-            buffer="direct",
-        )
-
-        if __debug__:
-            printdbg(
-                "Databank reloaded from temporary h5 file in {0:.2f}s".format(
-                    time() - t0
-                )
-            )
 
     def _get_isotope_list(self, molecule=None, df=None):
         """Returns list of isotopes for given molecule Parse the Input
@@ -2492,20 +2235,6 @@ class DatabankLoader(object):
 
         return parsum
 
-    def _get_temp_file(self):
-        """Get temp file name (add warnings if temp_file exists already)"""
-
-        # Get temp file name
-        return TEMP_FILE_PREFIX + str(self._id) + ".h5"
-
-    def _clean_temp_file(self):
-        """Clean the room before leaving."""
-
-        if exists(self._get_temp_file()):
-            os.remove(self._get_temp_file())
-            if self.verbose:
-                print("Cleaned temp file: {0}".format(self._get_temp_file()))
-
     def get_conditions(self, ignore_misc=False):
         """Get all parameters defined in the SpectrumFactory.
 
@@ -2559,12 +2288,6 @@ class DatabankLoader(object):
             return
         else:
             return warn(message, category=category, status=self.warnings)
-
-    def __del__(self):
-        """
-        Note: No need to call the parent method. Python does it himself"""
-
-        self._clean_temp_file()
 
 
 if __name__ == "__main__":

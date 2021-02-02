@@ -159,243 +159,236 @@ class BandFactory(BroadenFactory):
         - Then call the main routine that sums over all lines
         """
 
-        try:
+        # Convert units
+        Tgas = convert_and_strip_units(Tgas, u.K)
+        path_length = convert_and_strip_units(path_length, u.cm)
+        pressure = convert_and_strip_units(pressure, u.bar)
 
-            # Convert units
-            Tgas = convert_and_strip_units(Tgas, u.K)
-            path_length = convert_and_strip_units(path_length, u.cm)
-            pressure = convert_and_strip_units(pressure, u.bar)
+        # update defaults
+        if path_length is not None:
+            self.input.path_length = path_length
+        if mole_fraction is not None:
+            self.input.mole_fraction = mole_fraction
+        if pressure is not None:
+            self.input.pressure_mbar = pressure * 1e3
+        if not is_float(Tgas):
+            raise ValueError("Tgas should be a float or Astropy unit")
+        assert type(levels) in [str, list, int]
+        if type(levels) == str:
+            assert levels == "all"
+        # Temporary:
+        if type(levels) == int:
+            raise NotImplementedError
 
-            # update defaults
-            if path_length is not None:
-                self.input.path_length = path_length
-            if mole_fraction is not None:
-                self.input.mole_fraction = mole_fraction
-            if pressure is not None:
-                self.input.pressure_mbar = pressure * 1e3
-            if not is_float(Tgas):
-                raise ValueError("Tgas should be a float or Astropy unit")
-            assert type(levels) in [str, list, int]
-            if type(levels) == str:
-                assert levels == "all"
-            # Temporary:
-            if type(levels) == int:
-                raise NotImplementedError
+        # Get temperatures
+        self.input.Tgas = Tgas
+        self.input.Tvib = Tgas  # just for info
+        self.input.Trot = Tgas  # just for info
 
-            # Get temperatures
-            self.input.Tgas = Tgas
-            self.input.Tvib = Tgas  # just for info
-            self.input.Trot = Tgas  # just for info
+        # Init variables
+        pressure_mbar = self.input.pressure_mbar
+        mole_fraction = self.input.mole_fraction
+        path_length = self.input.path_length
+        verbose = self.verbose
 
-            # Init variables
-            pressure_mbar = self.input.pressure_mbar
-            mole_fraction = self.input.mole_fraction
-            path_length = self.input.path_length
-            verbose = self.verbose
+        # %% Retrieve from database if exists
+        if self.autoretrievedatabase:
+            s = self._retrieve_bands_from_database()
+            if s is not None:
+                return s
 
-            # %% Retrieve from database if exists
-            if self.autoretrievedatabase:
-                s = self._retrieve_bands_from_database()
-                if s is not None:
-                    return s
+        # Print conditions
+        if verbose:
+            print("Calculating Equilibrium bands")
+            self.print_conditions()
 
-            # Print conditions
+        # Start
+        t0 = time()
+
+        # %% Make sure database is loaded
+        if self.df0 is None:
+            raise AttributeError("Load databank first (.load_databank())")
+
+        if not "band" in self.df0:
+            self._add_bands()
+
+        # %% Calculate the spectrum
+        # ---------------------------------------------------
+        t0 = time()
+
+        self._reinitialize()
+
+        # --------------------------------------------------------------------
+
+        # First calculate the linestrength at given temperature
+        self._calc_linestrength_eq(Tgas)
+        self._cutoff_linestrength()
+
+        # ----------------------------------------------------------------------
+
+        # Calculate line shift
+        self._calc_lineshift()
+
+        # ----------------------------------------------------------------------
+
+        # Line broadening
+
+        # ... calculate broadening  HWHM
+        self._calc_broadening_HWHM()
+
+        # ... find weak lines and calculate semi-continuum (optional)
+        I_continuum = self._calculate_pseudo_continuum()
+        if I_continuum:
+            raise NotImplementedError("pseudo continuum not implemented for bands")
+
+        # ... apply lineshape and get absorption coefficient
+        # ... (this is the performance bottleneck)
+        wavenumber, abscoeff_v_bands = self._calc_broadening_bands()
+        #    :         :
+        #   cm-1    1/(#.cm-2)
+
+        #            # ... add semi-continuum (optional)
+        #            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
+
+        # ----------------------------------------------------------------------
+        # Remove certain bands
+        if levels != "all":
+            # Filter levels that feature the given energy levels. The rest
+            # is stored in 'others'
+            lines = self.df1
+            # We need levels to be explicitely stated for given molecule
+            assert hasattr(lines, "viblvl_u")
+            assert hasattr(lines, "viblvl_l")
+            # Get bands to remove
+            merge_bands = []
+            for (
+                band
+            ) in (
+                abscoeff_v_bands
+            ):  # note: could be vectorized with pandas str split. # TODO
+                viblvl_l, viblvl_u = band.split("->")
+                if not viblvl_l in levels and not viblvl_u in levels:
+                    merge_bands.append(band)
+            # Remove bands from bandlist and add them to `others`
+            abscoeff_others = np.zeros_like(wavenumber)
+            for band in merge_bands:
+                abscoeff = abscoeff_v_bands.pop(band)
+                abscoeff_others += abscoeff
+            abscoeff_v_bands["others"] = abscoeff_others
             if verbose:
-                print("Calculating Equilibrium bands")
-                self.print_conditions()
+                print("{0} bands grouped under `others`".format(len(merge_bands)))
 
-            # Start
-            t0 = time()
+        # ----------------------------------------------------------------------
+        # Generate spectra
 
-            # %% Make sure database is loaded
-            if self.df0 is None:
-                raise AttributeError("Load databank first (.load_databank())")
+        # Progress bar for spectra generation
+        Nbands = len(abscoeff_v_bands)
+        if self.verbose:
+            print("Generating bands ({0})".format(Nbands))
+        pb = ProgressBar(Nbands, active=self.verbose)
+        if Nbands < 100:
+            pb.set_active(False)  # hide for low line number
 
-            if not "band" in self.df0:
-                self._add_bands()
+        # Generate spectra
+        s_bands = {}
+        for i, (band, abscoeff_v) in enumerate(abscoeff_v_bands.items()):
 
-            # %% Calculate the spectrum
-            # ---------------------------------------------------
-            t0 = time()
+            # incorporate density of molecules (see equation (A.16) )
+            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+            #  :
+            # (#/cm3)
+            abscoeff = abscoeff_v * density  # cm-1
 
-            self._reinitialize()
+            # ==============================================================================
+            # Warning
+            # ---------
+            # if the code is extended to multi-species, then density has to be added
+            # before lineshape broadening (as it would not be constant for all species)
+            # ==============================================================================
 
-            # --------------------------------------------------------------------
+            # get absorbance (technically it's the optical depth `tau`,
+            #                absorbance `A` being `A = tau/ln(10)` )
+            absorbance = abscoeff * path_length
 
-            # First calculate the linestrength at given temperature
-            self._calc_linestrength_eq(Tgas)
-            self._cutoff_linestrength()
+            # Generate output quantities
+            transmittance_noslit = exp(-absorbance)
+            emissivity_noslit = 1 - transmittance_noslit
+            radiance_noslit = calc_radiance(
+                wavenumber,
+                emissivity_noslit,
+                Tgas,
+                unit=self.units["radiance_noslit"],
+            )
 
-            # ----------------------------------------------------------------------
+            # ----------------------------- Export:
 
-            # Calculate line shift
-            self._calc_lineshift()
+            lines = self.df1[self.df1.band == band]
+            # if band == 'others': all lines will be None. # TODO
+            populations = None  # self._get_vib_populations(lines)
 
-            # ----------------------------------------------------------------------
+            # Store results in Spectrum class
+            if drop_lines:
+                lines = None
+                if self.save_memory:
+                    try:
+                        del self.df1  # saves some memory
+                    except AttributeError:  # already deleted
+                        pass
+            conditions = self.get_conditions()
+            # Add band name and hitran band name in conditions
+            conditions.update({"band": band})
 
-            # Line broadening
+            if lines:
 
-            # ... calculate broadening  HWHM
-            self._calc_broadening_HWHM()
+                def add_attr(attr):
+                    if attr in lines:
+                        if band == "others":
+                            val = "N/A"
+                        else:
+                            # all have to be the same
+                            val = lines[attr].iloc[0]
+                        conditions.update({attr: val})
 
-            # ... find weak lines and calculate semi-continuum (optional)
-            I_continuum = self._calculate_pseudo_continuum()
-            if I_continuum:
-                raise NotImplementedError("pseudo continuum not implemented for bands")
+                add_attr("band_htrn")
+                add_attr("viblvl_l")
+                add_attr("viblvl_u")
+            s = Spectrum(
+                quantities={
+                    "abscoeff": (wavenumber, abscoeff),
+                    "absorbance": (wavenumber, absorbance),
+                    "emissivity_noslit": (wavenumber, emissivity_noslit),
+                    "transmittance_noslit": (wavenumber, transmittance_noslit),
+                    # (mW/cm2/sr/nm)
+                    "radiance_noslit": (wavenumber, radiance_noslit),
+                },
+                conditions=conditions,
+                populations=populations,
+                lines=lines,
+                units=self.units,
+                cond_units=self.cond_units,
+                waveunit=self.params.waveunit,  # cm-1
+                name=band,
+                # dont check input (much faster, and Spectrum
+                warnings=False,
+                # is freshly baken so probably in a good format
+            )
 
-            # ... apply lineshape and get absorption coefficient
-            # ... (this is the performance bottleneck)
-            wavenumber, abscoeff_v_bands = self._calc_broadening_bands()
-            #    :         :
-            #   cm-1    1/(#.cm-2)
+            #            # update database if asked so
+            #            if self.autoupdatedatabase:
+            #                self.SpecDatabase.add(s)
+            #                                                     # Tvib=Trot=Tgas... but this way names in a database
+            #                                                     # generated with eq_spectrum are consistent with names
+            #                                                     # in one generated with non_eq_spectrum
 
-            #            # ... add semi-continuum (optional)
-            #            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
+            s_bands[band] = s
 
-            # ----------------------------------------------------------------------
-            # Remove certain bands
-            if levels != "all":
-                # Filter levels that feature the given energy levels. The rest
-                # is stored in 'others'
-                lines = self.df1
-                # We need levels to be explicitely stated for given molecule
-                assert hasattr(lines, "viblvl_u")
-                assert hasattr(lines, "viblvl_l")
-                # Get bands to remove
-                merge_bands = []
-                for (
-                    band
-                ) in (
-                    abscoeff_v_bands
-                ):  # note: could be vectorized with pandas str split. # TODO
-                    viblvl_l, viblvl_u = band.split("->")
-                    if not viblvl_l in levels and not viblvl_u in levels:
-                        merge_bands.append(band)
-                # Remove bands from bandlist and add them to `others`
-                abscoeff_others = np.zeros_like(wavenumber)
-                for band in merge_bands:
-                    abscoeff = abscoeff_v_bands.pop(band)
-                    abscoeff_others += abscoeff
-                abscoeff_v_bands["others"] = abscoeff_others
-                if verbose:
-                    print("{0} bands grouped under `others`".format(len(merge_bands)))
+            pb.update(i)  # progress bar
+        pb.done()
 
-            # ----------------------------------------------------------------------
-            # Generate spectra
+        if verbose:
+            print(("... process done in {0:.1f}s".format(time() - t0)))
 
-            # Progress bar for spectra generation
-            Nbands = len(abscoeff_v_bands)
-            if self.verbose:
-                print("Generating bands ({0})".format(Nbands))
-            pb = ProgressBar(Nbands, active=self.verbose)
-            if Nbands < 100:
-                pb.set_active(False)  # hide for low line number
-
-            # Generate spectra
-            s_bands = {}
-            for i, (band, abscoeff_v) in enumerate(abscoeff_v_bands.items()):
-
-                # incorporate density of molecules (see equation (A.16) )
-                density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
-                #  :
-                # (#/cm3)
-                abscoeff = abscoeff_v * density  # cm-1
-
-                # ==============================================================================
-                # Warning
-                # ---------
-                # if the code is extended to multi-species, then density has to be added
-                # before lineshape broadening (as it would not be constant for all species)
-                # ==============================================================================
-
-                # get absorbance (technically it's the optical depth `tau`,
-                #                absorbance `A` being `A = tau/ln(10)` )
-                absorbance = abscoeff * path_length
-
-                # Generate output quantities
-                transmittance_noslit = exp(-absorbance)
-                emissivity_noslit = 1 - transmittance_noslit
-                radiance_noslit = calc_radiance(
-                    wavenumber,
-                    emissivity_noslit,
-                    Tgas,
-                    unit=self.units["radiance_noslit"],
-                )
-
-                # ----------------------------- Export:
-
-                lines = self.df1[self.df1.band == band]
-                # if band == 'others': all lines will be None. # TODO
-                populations = None  # self._get_vib_populations(lines)
-
-                # Store results in Spectrum class
-                if drop_lines:
-                    lines = None
-                    if self.save_memory:
-                        try:
-                            del self.df1  # saves some memory
-                        except AttributeError:  # already deleted
-                            pass
-                conditions = self.get_conditions()
-                # Add band name and hitran band name in conditions
-                conditions.update({"band": band})
-
-                if lines:
-
-                    def add_attr(attr):
-                        if attr in lines:
-                            if band == "others":
-                                val = "N/A"
-                            else:
-                                # all have to be the same
-                                val = lines[attr].iloc[0]
-                            conditions.update({attr: val})
-
-                    add_attr("band_htrn")
-                    add_attr("viblvl_l")
-                    add_attr("viblvl_u")
-                s = Spectrum(
-                    quantities={
-                        "abscoeff": (wavenumber, abscoeff),
-                        "absorbance": (wavenumber, absorbance),
-                        "emissivity_noslit": (wavenumber, emissivity_noslit),
-                        "transmittance_noslit": (wavenumber, transmittance_noslit),
-                        # (mW/cm2/sr/nm)
-                        "radiance_noslit": (wavenumber, radiance_noslit),
-                    },
-                    conditions=conditions,
-                    populations=populations,
-                    lines=lines,
-                    units=self.units,
-                    cond_units=self.cond_units,
-                    waveunit=self.params.waveunit,  # cm-1
-                    name=band,
-                    # dont check input (much faster, and Spectrum
-                    warnings=False,
-                    # is freshly baken so probably in a good format
-                )
-
-                #            # update database if asked so
-                #            if self.autoupdatedatabase:
-                #                self.SpecDatabase.add(s)
-                #                                                     # Tvib=Trot=Tgas... but this way names in a database
-                #                                                     # generated with eq_spectrum are consistent with names
-                #                                                     # in one generated with non_eq_spectrum
-
-                s_bands[band] = s
-
-                pb.update(i)  # progress bar
-            pb.done()
-
-            if verbose:
-                print(("... process done in {0:.1f}s".format(time() - t0)))
-
-            return s_bands
-
-        except:
-            # An error occured: clean before crashing
-            self._clean_temp_file()
-            raise
+        return s_bands
 
     def non_eq_bands(
         self,
@@ -465,310 +458,303 @@ class BandFactory(BroadenFactory):
         Or directly .plot(something) to plot it
         """
 
-        try:
+        # Convert units
+        Tvib = convert_and_strip_units(Tvib, u.K)
+        Trot = convert_and_strip_units(Trot, u.K)
+        Ttrans = convert_and_strip_units(Ttrans, u.K)
+        path_length = convert_and_strip_units(path_length, u.cm)
+        pressure = convert_and_strip_units(pressure, u.bar)
 
-            # Convert units
-            Tvib = convert_and_strip_units(Tvib, u.K)
-            Trot = convert_and_strip_units(Trot, u.K)
-            Ttrans = convert_and_strip_units(Ttrans, u.K)
-            path_length = convert_and_strip_units(path_length, u.cm)
-            pressure = convert_and_strip_units(pressure, u.bar)
-
-            # check inputs, update defaults
-            if path_length is not None:
-                self.input.path_length = path_length
-            if mole_fraction is not None:
-                self.input.mole_fraction = mole_fraction
-            if pressure is not None:
-                self.input.pressure_mbar = pressure * 1e3
-            if isinstance(Tvib, tuple):
-                Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
-            elif not is_float(Tvib):
-                raise TypeError(
-                    "Tvib should be float, or tuple (got {0})".format(type(Tvib))
+        # check inputs, update defaults
+        if path_length is not None:
+            self.input.path_length = path_length
+        if mole_fraction is not None:
+            self.input.mole_fraction = mole_fraction
+        if pressure is not None:
+            self.input.pressure_mbar = pressure * 1e3
+        if isinstance(Tvib, tuple):
+            Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
+        elif not is_float(Tvib):
+            raise TypeError(
+                "Tvib should be float, or tuple (got {0})".format(type(Tvib))
+            )
+        singleTvibmode = is_float(Tvib)
+        if not is_float(Trot):
+            raise ValueError("Trot should be float.")
+        assert type(levels) in [str, list, int]
+        if type(levels) == str:
+            assert levels == "all"
+        else:
+            if len(levels) != len(set(levels)):
+                raise ValueError("levels list has duplicates")
+        if not vib_distribution in ["boltzmann"]:
+            raise ValueError("calculate per band not meaningful if not Boltzmann")
+        # Temporary:
+        if type(levels) == int:
+            raise NotImplementedError
+        if return_lines is not None:
+            warn(
+                DeprecationWarning(
+                    "return_lines replaced with export_lines attribute in Factory"
                 )
-            singleTvibmode = is_float(Tvib)
-            if not is_float(Trot):
-                raise ValueError("Trot should be float.")
-            assert type(levels) in [str, list, int]
-            if type(levels) == str:
-                assert levels == "all"
+            )
+            self.misc.export_lines = return_lines
+
+        # Get translational temperature
+        Tgas = Ttrans
+        if Tgas is None:
+            Tgas = Trot  # assuming Ttrans = Trot
+        self.input.Tgas = Tgas
+        self.input.Tvib = Tvib
+        self.input.Trot = Trot
+
+        # Init variables
+        path_length = self.input.path_length
+        mole_fraction = self.input.mole_fraction
+        pressure_mbar = self.input.pressure_mbar
+        verbose = self.verbose
+
+        # %% Retrieve from database if exists
+        if self.autoretrievedatabase:
+            s = self._retrieve_bands_from_database()
+            if s is not None:
+                return s
+
+        # Print conditions
+        if verbose:
+            print("Calculating Non-Equilibrium bands")
+            self.print_conditions()
+
+        # %% Make sure database is loaded
+        self._check_line_databank()
+        self._check_noneq_parameters(vib_distribution, singleTvibmode)
+
+        if self.df0 is None:
+            raise AttributeError("Load databank first (.load_databank())")
+
+        # Make sure database has pre-computed non equilibrium quantities
+        # (Evib, Erot, etc.)
+        if not "Evib" in self.df0:
+            self._calc_noneq_parameters()
+
+        if not "Aul" in self.df0:
+            self._calc_weighted_trans_moment()
+            self._calc_einstein_coefficients()
+
+        if not "band" in self.df0:
+            self._add_bands()
+
+        # %% Calculate the spectrum
+        # ---------------------------------------------------
+        t0 = time()
+
+        self._reinitialize()
+
+        # ----------------------------------------------------------------------
+        # Calculate Populations, Linestrength and Emission Integral
+        # (Note: Emission Integral is non canonical quantity, equivalent to
+        #  Linestrength for absorption)
+        self._calc_populations_noneq(Tvib, Trot)
+        self._calc_linestrength_noneq()
+        self._calc_emission_integral()
+
+        # ----------------------------------------------------------------------
+        # Cutoff linestrength
+        self._cutoff_linestrength()
+
+        # ----------------------------------------------------------------------
+
+        # Calculate lineshift
+        self._calc_lineshift()
+
+        # ----------------------------------------------------------------------
+
+        # Line broadening
+
+        # ... calculate broadening  HWHM
+        self._calc_broadening_HWHM()
+
+        # ... find weak lines and calculate semi-continuum (optional)
+        I_continuum = self._calculate_pseudo_continuum()
+        if I_continuum:
+            raise NotImplementedError("pseudo continuum not implemented for bands")
+
+        # ... apply lineshape and get absorption coefficient
+        # ... (this is the performance bottleneck)
+        (
+            wavenumber,
+            abscoeff_v_bands,
+            emisscoeff_v_bands,
+        ) = self._calc_broadening_noneq_bands()
+        #    :         :            :
+        #   cm-1    1/(#.cm-2)   mW/sr/cm-1
+
+        #            # ... add semi-continuum (optional)
+        #            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
+
+        # ----------------------------------------------------------------------
+        # Remove bands
+        if levels != "all":
+            # Filter levels that feature the given energy levels. The rest
+            # is stored in 'others'
+            lines = self.df1
+            # We need levels to be explicitely stated for given molecule
+            assert hasattr(lines, "viblvl_u")
+            assert hasattr(lines, "viblvl_l")
+            # Get bands to remove
+            merge_bands = []
+            for (
+                band
+            ) in (
+                abscoeff_v_bands
+            ):  # note: could be vectorized with pandas str split. # TODO
+                viblvl_l, viblvl_u = band.split("->")
+                if not viblvl_l in levels and not viblvl_u in levels:
+                    merge_bands.append(band)
+            # Remove bands from bandlist and add them to `others`
+            abscoeff_others = np.zeros_like(wavenumber)
+            emisscoeff_others = np.zeros_like(wavenumber)
+            for band in merge_bands:
+                abscoeff = abscoeff_v_bands.pop(band)
+                emisscoeff = emisscoeff_v_bands.pop(band)
+                abscoeff_others += abscoeff
+                emisscoeff_others += emisscoeff
+            abscoeff_v_bands["others"] = abscoeff_others
+            emisscoeff_v_bands["others"] = emisscoeff_others
+            if verbose:
+                print("{0} bands grouped under `others`".format(len(merge_bands)))
+
+        # ----------------------------------------------------------------------
+        # Generate spectra
+
+        # Progress bar for spectra generation
+        Nbands = len(abscoeff_v_bands)
+        if self.verbose:
+            print("Generating bands ({0})".format(Nbands))
+        pb = ProgressBar(Nbands, active=self.verbose)
+        if Nbands < 100:
+            pb.set_active(False)  # hide for low line number
+
+        # Create spectra
+        s_bands = {}
+        for i, band in enumerate(abscoeff_v_bands):
+            abscoeff_v = abscoeff_v_bands[band]
+            emisscoeff_v = emisscoeff_v_bands[band]
+
+            # incorporate density of molecules (see equation (A.16) )
+            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+            #  :
+            # (#/cm3)
+
+            abscoeff = abscoeff_v * density  # cm-1
+            emisscoeff = emisscoeff_v * density  # m/sr/cm3/cm-1
+
+            # ==============================================================================
+            # Warning
+            # ---------
+            # if the code is extended to multi-species, then density has to be added
+            # before lineshape broadening (as it would not be constant for all species)
+            # ==============================================================================
+
+            # get absorbance (technically it's the optical depth `tau`,
+            #                absorbance `A` being `A = tau/ln(10)` )
+
+            # Generate output quantities
+            absorbance = abscoeff * path_length  # (adim)
+            transmittance_noslit = exp(-absorbance)
+
+            if self.input.self_absorption:
+                # Analytical output of computing RTE over a single slab of constant
+                # emissivity and absorption coefficient
+                b = abscoeff == 0  # optically thin mask
+                radiance_noslit = np.zeros_like(emisscoeff)
+                radiance_noslit[~b] = (
+                    emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+                )
+                radiance_noslit[b] = emisscoeff[b] * path_length
             else:
-                if len(levels) != len(set(levels)):
-                    raise ValueError("levels list has duplicates")
-            if not vib_distribution in ["boltzmann"]:
-                raise ValueError("calculate per band not meaningful if not Boltzmann")
-            # Temporary:
-            if type(levels) == int:
-                raise NotImplementedError
-            if return_lines is not None:
-                warn(
-                    DeprecationWarning(
-                        "return_lines replaced with export_lines attribute in Factory"
-                    )
-                )
-                self.misc.export_lines = return_lines
+                # Note that for k -> 0,
+                radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
 
-            # Get translational temperature
-            Tgas = Ttrans
-            if Tgas is None:
-                Tgas = Trot  # assuming Ttrans = Trot
-            self.input.Tgas = Tgas
-            self.input.Tvib = Tvib
-            self.input.Trot = Trot
+            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
+            radiance_noslit = convert_rad2nm(
+                radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
+            )
+            # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
+            emisscoeff = convert_emi2nm(
+                emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
+            )
+            # Note: emissivity not defined under non equilibrium
 
-            # Init variables
-            path_length = self.input.path_length
-            mole_fraction = self.input.mole_fraction
-            pressure_mbar = self.input.pressure_mbar
-            verbose = self.verbose
+            # ----------------------------- Export:
 
-            # %% Retrieve from database if exists
-            if self.autoretrievedatabase:
-                s = self._retrieve_bands_from_database()
-                if s is not None:
-                    return s
+            lines = self.df1[self.df1.band == band]
+            # Note: if band == 'others':  # for others: all will be None. # TODO. FIXME
 
-            # Print conditions
-            if verbose:
-                print("Calculating Non-Equilibrium bands")
-                self.print_conditions()
+            populations = self.get_populations(self.misc.export_populations)
 
-            # %% Make sure database is loaded
-            self._check_line_databank()
-            self._check_noneq_parameters(vib_distribution, singleTvibmode)
+            if not self.misc.export_lines:
+                lines = None
 
-            if self.df0 is None:
-                raise AttributeError("Load databank first (.load_databank())")
+            # Store results in Spectrum class
+            if self.save_memory:
+                try:
+                    # saves some memory (note: only once 'lines' is discarded)
+                    del self.df1
+                except AttributeError:  # already deleted
+                    pass
+            conditions = self.get_conditions()
+            conditions.update({"thermal_equilibrium": False})
+            # Add band name and hitran band name in conditions
 
-            # Make sure database has pre-computed non equilibrium quantities
-            # (Evib, Erot, etc.)
-            if not "Evib" in self.df0:
-                self._calc_noneq_parameters()
+            def add_attr(attr):
+                """# TODO: implement properly"""
+                if attr in lines:
+                    if band == "others":
+                        val = "N/A"
+                    else:
+                        # all have to be the same
+                        val = lines[attr].iloc[0]
+                    conditions.update({attr: val})
 
-            if not "Aul" in self.df0:
-                self._calc_weighted_trans_moment()
-                self._calc_einstein_coefficients()
+            add_attr("band_htrn")
+            add_attr("viblvl_l")
+            add_attr("viblvl_u")
+            s = Spectrum(
+                quantities={
+                    "abscoeff": (wavenumber, abscoeff),
+                    "absorbance": (wavenumber, absorbance),
+                    # (mW/cm3/sr/nm)
+                    "emisscoeff": (wavenumber, emisscoeff),
+                    "transmittance_noslit": (wavenumber, transmittance_noslit),
+                    # (mW/cm2/sr/nm)
+                    "radiance_noslit": (wavenumber, radiance_noslit),
+                },
+                conditions=conditions,
+                populations=populations,
+                lines=lines,
+                units=self.units,
+                cond_units=self.cond_units,
+                waveunit=self.params.waveunit,  # cm-1
+                name=band,
+                # dont check input (much faster, and Spectrum
+                warnings=False,
+                # is freshly baken so probably in a good format
+            )
 
-            if not "band" in self.df0:
-                self._add_bands()
+            #            # update database if asked so
+            #            if self.autoupdatedatabase:
+            #                self.SpecDatabase.add(s, add_info=['Tvib', 'Trot'], add_date='%Y%m%d')
 
-            # %% Calculate the spectrum
-            # ---------------------------------------------------
-            t0 = time()
+            s_bands[band] = s
 
-            self._reinitialize()
+            pb.update(i)  # progress bar
+        pb.done()
 
-            # ----------------------------------------------------------------------
-            # Calculate Populations, Linestrength and Emission Integral
-            # (Note: Emission Integral is non canonical quantity, equivalent to
-            #  Linestrength for absorption)
-            self._calc_populations_noneq(Tvib, Trot)
-            self._calc_linestrength_noneq()
-            self._calc_emission_integral()
+        if verbose:
+            print(("... process done in {0:.1f}s".format(time() - t0)))
 
-            # ----------------------------------------------------------------------
-            # Cutoff linestrength
-            self._cutoff_linestrength()
-
-            # ----------------------------------------------------------------------
-
-            # Calculate lineshift
-            self._calc_lineshift()
-
-            # ----------------------------------------------------------------------
-
-            # Line broadening
-
-            # ... calculate broadening  HWHM
-            self._calc_broadening_HWHM()
-
-            # ... find weak lines and calculate semi-continuum (optional)
-            I_continuum = self._calculate_pseudo_continuum()
-            if I_continuum:
-                raise NotImplementedError("pseudo continuum not implemented for bands")
-
-            # ... apply lineshape and get absorption coefficient
-            # ... (this is the performance bottleneck)
-            (
-                wavenumber,
-                abscoeff_v_bands,
-                emisscoeff_v_bands,
-            ) = self._calc_broadening_noneq_bands()
-            #    :         :            :
-            #   cm-1    1/(#.cm-2)   mW/sr/cm-1
-
-            #            # ... add semi-continuum (optional)
-            #            abscoeff_v_bands = self._add_pseudo_continuum(abscoeff_v_bands, I_continuum)
-
-            # ----------------------------------------------------------------------
-            # Remove bands
-            if levels != "all":
-                # Filter levels that feature the given energy levels. The rest
-                # is stored in 'others'
-                lines = self.df1
-                # We need levels to be explicitely stated for given molecule
-                assert hasattr(lines, "viblvl_u")
-                assert hasattr(lines, "viblvl_l")
-                # Get bands to remove
-                merge_bands = []
-                for (
-                    band
-                ) in (
-                    abscoeff_v_bands
-                ):  # note: could be vectorized with pandas str split. # TODO
-                    viblvl_l, viblvl_u = band.split("->")
-                    if not viblvl_l in levels and not viblvl_u in levels:
-                        merge_bands.append(band)
-                # Remove bands from bandlist and add them to `others`
-                abscoeff_others = np.zeros_like(wavenumber)
-                emisscoeff_others = np.zeros_like(wavenumber)
-                for band in merge_bands:
-                    abscoeff = abscoeff_v_bands.pop(band)
-                    emisscoeff = emisscoeff_v_bands.pop(band)
-                    abscoeff_others += abscoeff
-                    emisscoeff_others += emisscoeff
-                abscoeff_v_bands["others"] = abscoeff_others
-                emisscoeff_v_bands["others"] = emisscoeff_others
-                if verbose:
-                    print("{0} bands grouped under `others`".format(len(merge_bands)))
-
-            # ----------------------------------------------------------------------
-            # Generate spectra
-
-            # Progress bar for spectra generation
-            Nbands = len(abscoeff_v_bands)
-            if self.verbose:
-                print("Generating bands ({0})".format(Nbands))
-            pb = ProgressBar(Nbands, active=self.verbose)
-            if Nbands < 100:
-                pb.set_active(False)  # hide for low line number
-
-            # Create spectra
-            s_bands = {}
-            for i, band in enumerate(abscoeff_v_bands):
-                abscoeff_v = abscoeff_v_bands[band]
-                emisscoeff_v = emisscoeff_v_bands[band]
-
-                # incorporate density of molecules (see equation (A.16) )
-                density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
-                #  :
-                # (#/cm3)
-
-                abscoeff = abscoeff_v * density  # cm-1
-                emisscoeff = emisscoeff_v * density  # m/sr/cm3/cm-1
-
-                # ==============================================================================
-                # Warning
-                # ---------
-                # if the code is extended to multi-species, then density has to be added
-                # before lineshape broadening (as it would not be constant for all species)
-                # ==============================================================================
-
-                # get absorbance (technically it's the optical depth `tau`,
-                #                absorbance `A` being `A = tau/ln(10)` )
-
-                # Generate output quantities
-                absorbance = abscoeff * path_length  # (adim)
-                transmittance_noslit = exp(-absorbance)
-
-                if self.input.self_absorption:
-                    # Analytical output of computing RTE over a single slab of constant
-                    # emissivity and absorption coefficient
-                    b = abscoeff == 0  # optically thin mask
-                    radiance_noslit = np.zeros_like(emisscoeff)
-                    radiance_noslit[~b] = (
-                        emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
-                    )
-                    radiance_noslit[b] = emisscoeff[b] * path_length
-                else:
-                    # Note that for k -> 0,
-                    radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
-
-                # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
-                radiance_noslit = convert_rad2nm(
-                    radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
-                )
-                # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
-                emisscoeff = convert_emi2nm(
-                    emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
-                )
-                # Note: emissivity not defined under non equilibrium
-
-                # ----------------------------- Export:
-
-                lines = self.df1[self.df1.band == band]
-                # Note: if band == 'others':  # for others: all will be None. # TODO. FIXME
-
-                populations = self.get_populations(self.misc.export_populations)
-
-                if not self.misc.export_lines:
-                    lines = None
-
-                # Store results in Spectrum class
-                if self.save_memory:
-                    try:
-                        # saves some memory (note: only once 'lines' is discarded)
-                        del self.df1
-                    except AttributeError:  # already deleted
-                        pass
-                conditions = self.get_conditions()
-                conditions.update({"thermal_equilibrium": False})
-                # Add band name and hitran band name in conditions
-
-                def add_attr(attr):
-                    """# TODO: implement properly"""
-                    if attr in lines:
-                        if band == "others":
-                            val = "N/A"
-                        else:
-                            # all have to be the same
-                            val = lines[attr].iloc[0]
-                        conditions.update({attr: val})
-
-                add_attr("band_htrn")
-                add_attr("viblvl_l")
-                add_attr("viblvl_u")
-                s = Spectrum(
-                    quantities={
-                        "abscoeff": (wavenumber, abscoeff),
-                        "absorbance": (wavenumber, absorbance),
-                        # (mW/cm3/sr/nm)
-                        "emisscoeff": (wavenumber, emisscoeff),
-                        "transmittance_noslit": (wavenumber, transmittance_noslit),
-                        # (mW/cm2/sr/nm)
-                        "radiance_noslit": (wavenumber, radiance_noslit),
-                    },
-                    conditions=conditions,
-                    populations=populations,
-                    lines=lines,
-                    units=self.units,
-                    cond_units=self.cond_units,
-                    waveunit=self.params.waveunit,  # cm-1
-                    name=band,
-                    # dont check input (much faster, and Spectrum
-                    warnings=False,
-                    # is freshly baken so probably in a good format
-                )
-
-                #            # update database if asked so
-                #            if self.autoupdatedatabase:
-                #                self.SpecDatabase.add(s, add_info=['Tvib', 'Trot'], add_date='%Y%m%d')
-
-                s_bands[band] = s
-
-                pb.update(i)  # progress bar
-            pb.done()
-
-            if verbose:
-                print(("... process done in {0:.1f}s".format(time() - t0)))
-
-            return s_bands
-
-        except:
-            # An error occured: clean before crashing
-            self._clean_temp_file()
-            raise
+        return s_bands
 
     def get_bands_weight(self, showfirst=None, sortby="Ei"):
         """Show all bands by emission weight (fraction of total emission
