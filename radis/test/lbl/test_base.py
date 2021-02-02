@@ -340,7 +340,6 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
             pressure=P,
             verbose=False,
         )
-        #        sf.fetch_databank('astroquery')
         sf.load_databank("HITEMP-CO2-TEST")
         sf.warnings["NegativeEnergiesWarning"] = "ignore"
         #        sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'

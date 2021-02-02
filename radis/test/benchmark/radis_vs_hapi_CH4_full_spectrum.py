@@ -57,7 +57,7 @@ if __name__ == "__main__":
         broadening_max_width=5.73,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
         molecule=molecule,
     )
-    sf.fetch_databank("astroquery", load_energies=False)
+    sf.fetch_databank("hitran", load_energies=False)
 
     s = sf.eq_spectrum(Tgas=T, pressure=pressure_bar)
     s.name = "RADIS ({0:.1f}s)".format(s.conditions["calculation_time"])

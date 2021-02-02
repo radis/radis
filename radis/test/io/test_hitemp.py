@@ -31,8 +31,8 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
     from radis import calc_spectrum
 
     calc_spectrum(
-        wavenum_min=2245 / u.cm,
-        wavenum_max=2255 / u.cm,
+        wavenum_min=2500 / u.cm,
+        wavenum_max=4500 / u.cm,
         molecule="OH",
         Tgas=600,
         databank="hitemp",  # test by fetching directly

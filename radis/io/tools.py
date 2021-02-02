@@ -79,8 +79,8 @@ def _get_linereturnformat(data, columns, fname=""):
         linereturnformat = "a1"
     else:
         raise ValueError(
-            "Unknown `Line return` format: {0}. Check that your file {1} has the HITRAN format.".format(
-                linereturn, fname
+            "Unknown Line return format: {0}. Check that your file {1} has the HITRAN format. First line : {2}".format(
+                linereturn, fname, data[0]
             )
         )
 

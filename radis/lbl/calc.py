@@ -556,9 +556,7 @@ def _calc_spectrum(
     ]:  # mode to get databank without relying on  Line databases
         # Line database :
         if databank in ["fetch", "hitran"]:
-            conditions = {
-                "source": "astroquery",
-            }
+            conditions = {"source": "hitran"}
         elif databank in ["hitemp"]:
             conditions = {"source": "hitemp"}
         # Partition functions :

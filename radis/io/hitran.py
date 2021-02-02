@@ -176,7 +176,7 @@ def hit2df(
         df = load_h5_cache_file(
             fcache,
             cache,
-            metadata=metadata,
+            expected_metadata=metadata,
             current_version=radis.__version__,
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             verbose=verbose,

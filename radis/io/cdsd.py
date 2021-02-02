@@ -129,16 +129,12 @@ def cdsd2df(
 
     Parameters
     ----------
-
     fname: str
         CDSD file name
-
     version: str ('4000', 'hitemp')
         CDSD version
-
     count: int
         number of items to read (-1 means all file)
-
     cache: boolean, or 'regen'
         if ``True``, a pandas-readable HDF5 file is generated on first access,
         and later used. This saves on the datatype cast and conversion and
@@ -148,24 +144,20 @@ def cdsd2df(
 
     Other Parameters
     ----------------
-
     drop_non_numeric: boolean
         if ``True``, non numeric columns are dropped. This improves performances,
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
-
     load_only_wavenum_above: float
         only load the cached file if it contains data for wavenumbers above the specified value.
         see :py:func`~radis.misc.cache_files`. Default ``0.0``.
-
     load_only_wavenum_below: float
         only load the cached file if it contains data for wavenumbers below the specified value.
         see :py:func`~radis.misc.cache_files`. Default ``Inf``.
 
     Returns
     -------
-
     df: pandas Dataframe
         dataframe containing all lines and parameters
 
@@ -250,7 +242,7 @@ def cdsd2df(
         df = load_h5_cache_file(
             fcache,
             cache,
-            metadata=metadata,
+            expected_metadata=metadata,
             current_version=radis.__version__,
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             verbose=verbose,

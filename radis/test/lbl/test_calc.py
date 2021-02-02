@@ -544,7 +544,9 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+    sf.fetch_databank(
+        "hitran"
+    )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     #        sf.load_databank('HITEMP-CO2-DUNHAM')
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")

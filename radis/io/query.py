@@ -37,7 +37,7 @@ CACHE_FILE_NAME = "tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5"
 
 
 def fetch_astroquery(
-    molecule, isotope, wmin, wmax, verbose=True, cache=True, metadata={}
+    molecule, isotope, wmin, wmax, verbose=True, cache=True, expected_metadata={}
 ):
     """
     Wrapper to Astroquery [1]_ fetch function to download a line database
@@ -61,7 +61,7 @@ def fetch_astroquery(
         the requirements. If not found, downloads it and saves the line dataframe
         as a ``.h5`` file in the Astroquery.
         If ``'regen'``, delete existing cache file to regerenate it.
-    metadata: dict
+    expected_metadata: dict
         if ``cache=True``, check that the metadata in the cache file correspond
         to these attributes. Arguments ``molecule``, ``isotope``, ``wmin``, ``wmax``
         are already added by default.
@@ -102,6 +102,10 @@ def fetch_astroquery(
                 **{"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
             ),
         )
+        # ... Update metadata with physical properties from the database.
+        expected_metadata.update(
+            {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
+        )
         if cache == "regen":
             if exists(fcache):
                 if verbose:
@@ -109,12 +113,11 @@ def fetch_astroquery(
                 os.remove(fcache)
         else:
             # Load cache file if relevant
-            # ... Update metadata with physical properties from the database.
-            metadata.update(
-                {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
-            )
             check_cache_file(
-                fcache=fcache, use_cached=cache, metadata=metadata, verbose=verbose
+                fcache=fcache,
+                use_cached=cache,
+                expected_metadata=expected_metadata,
+                verbose=verbose,
             )
             if exists(fcache):
                 try:
@@ -231,13 +234,13 @@ def fetch_astroquery(
             save_to_hdf(
                 df,
                 fcache,
-                metadata=metadata,
+                metadata=expected_metadata,
                 version=radis.__version__,
                 key="df",
                 overwrite=True,
                 verbose=verbose,
             )
-        except:
+        except PermissionError:
             if verbose:
                 print(sys.exc_info())
                 print("An error occured in cache file generation. Lookup access rights")

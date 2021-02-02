@@ -63,6 +63,7 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # (on the slide bar on the right)
 
 import os
+import warnings
 from os.path import abspath, exists
 from time import time
 from uuid import uuid1
@@ -892,7 +893,7 @@ class DatabankLoader(object):
 
         # Check inputs
         if source == "astroquery":
-            warn(
+            warnings.warn(
                 DeprecationWarning(
                     "source='astroquery' replaced with source='hitran' in 0.9.28"
                 )

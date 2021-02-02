@@ -51,7 +51,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
         2400,
         verbose=verbose,
         cache="regen",  # Delete existing cache file if needed
-        metadata={"_test": True},
+        expected_metadata={"_test": True},
     )
 
     # assert cache file was created
@@ -73,7 +73,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
             2400,
             verbose=verbose,
             cache="force",  # force load of cache file
-            metadata={},
+            expected_metadata={},
         )
     # Try to load with correct metadata. Expect to work and return the dataframe
     df2 = fetch_astroquery(
@@ -83,7 +83,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
         2400,
         verbose=verbose,
         cache="force",  # force load of cache file
-        metadata={"_test": True},
+        expected_metadata={"_test": True},
     )
     assert (df == df2).all().all()
 

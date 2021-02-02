@@ -543,7 +543,9 @@ def test_abscoeff_continuum(
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+    sf.fetch_databank(
+        "hitran"
+    )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
     sf._export_continuum = True  # activate it
 
@@ -645,7 +647,9 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+    sf.fetch_databank(
+        "hitran"
+    )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
     sf._export_continuum = True  # activate it
 
