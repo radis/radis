@@ -39,45 +39,39 @@ CACHE_FILE_NAME = "tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5"
 def fetch_astroquery(
     molecule, isotope, wmin, wmax, verbose=True, cache=True, metadata={}
 ):
-    """Wrapper to Astroquery [1]_ fetch function to download a line database
-
-    Notes
-    -----
-
-    Astroquery [1]_ is itself based on [HAPI]_
+    """
+    Wrapper to Astroquery [1]_ fetch function to download a line database
 
     Parameters
     ----------
-
     molecule: str, or int
         molecule name or identifier
-
     isotope: int
         isotope number
-
     wmin, wmax: float  (cm-1)
         wavenumber min and max
 
     Other Parameters
     ----------------
-
     verbose: boolean
         Default ``True``
-
-    cache: boolean
+    cache: boolean or ``'regen'``
         if ``True``, tries to find a ``.h5`` cache file in the Astroquery
         :py:attr:`~astroquery.query.BaseQuery.cache_location`, that would match
         the requirements. If not found, downloads it and saves the line dataframe
         as a ``.h5`` file in the Astroquery.
-
+        If ``'regen'``, delete existing cache file to regerenate it.
     metadata: dict
         if ``cache=True``, check that the metadata in the cache file correspond
         to these attributes. Arguments ``molecule``, ``isotope``, ``wmin``, ``wmax``
         are already added by default.
 
+    Notes
+    -----
+    The HITRAN module in Astroquery [1]_ is itself based on [HAPI]_
+
     References
     ----------
-
     .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
 
     See Also
@@ -99,17 +93,25 @@ def fetch_astroquery(
 
     empty_range = False
 
-    # If cache, tries to find from Astroquery:
     if cache:
-        # Update metadata with physical properties from the database.
-        metadata.update(
-            {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
-        )
+        # Cache file location in Astroquery cache
+        # TODO: move full HITRAN databases in ~/radisdb cache like io/hitemp/fetch_hitemp ?
         fcache = join(
             Hitran.cache_location,
             CACHE_FILE_NAME.format(
                 **{"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
             ),
+        )
+    if cache == "regen":
+        if exists(fcache):
+            if verbose:
+                print(f"Cache file {fcache} deleted to be regenerated")
+            os.remove(fcache)
+    else:
+        # Load cache file if relevant
+        # ... Update metadata with physical properties from the database.
+        metadata.update(
+            {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
         )
         check_cache_file(
             fcache=fcache, use_cached=cache, metadata=metadata, verbose=verbose

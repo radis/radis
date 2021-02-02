@@ -12,17 +12,23 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 import os
 import sys
+from datetime import date
 from os.path import exists, expanduser, join
 from time import time
 
 import numpy as np
+import pandas as pd
 from numpy import DataSource
 
+from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
+from radis.io.hdf5 import hdf2df
 from radis.io.hitran import columns_2004
 from radis.io.tools import _create_dtype, _get_linereturnformat, _ndarray2df
+from radis.misc.config import addDatabankEntries, getDatabankList
+from radis.misc.warning import DatabaseAlreadyExists
 
 BASE_URL = "https://hitran.org/hitemp/data/bzip2format/"
-SOURCE_FILES = {
+HITEMP_SOURCE_FILES = {
     "CO2": "",  # NotImplemented
     "N2O": "04_HITEMP2019.par.bz2",
     "CO": "05_HITEMP2019.par.bz2",
@@ -31,29 +37,55 @@ SOURCE_FILES = {
     "NO2": "10_HITEMP2019.par.bz2",
     "OH": "13_HITEMP2020.par.bz2",
 }
+"""
+dict: list of available HITEMP source files
+
+Last update : 02 Feb 2021
+Compare with files available on https://hitran.org/hitemp/
+"""
 
 
-def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
-    """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly
+def fetch_hitemp(
+    molecule,
+    local_databases="~/.radisdb/",
+    databank_name="HITEMP-{molecule}",
+    cache=True,
+    verbose=True,
+):
+    """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
+    Returns a Pandas DataFrame containing all lines.
 
     Parameters
     ----------
     molecule: `"CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
-        HITEMP molecule
+        HITEMP molecule. See :py:attr:`~radis.io.hitemp.HITEMP_SOURCE_FILES`
     local_databases: str
         where to download the files
+    databank_name: str
+        name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
+        Default ``"HITEMP-{molecule}"``
+
+    Other Parameters
+    ----------------
+
+    cache: bool, or ``'regen'``
+        if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
     verbose: bool
 
     Returns
     -------
-    path: str
-        path of .h5 file where lines have been stored.
+
+    df: pd.DataFrame
+        Line list.
+        A HDF5 file is also created in ``local_databases`` and referenced
+        in the :ref:`RADIS config file <label_lbl_config_file>` with name
+        ``databank_name``
 
     """
-    # TODO: add metadata (link, time-downloaded, min/max, etc.)
-    # TODO: do not re-download if HDF5 exists  (currently DataSource is initialized)
     # TODO: clean DataSource downloads after HDF5 is generated
 
+    if databank_name == "HITEMP-{molecule}":
+        databank_name = databank_name.format(**{"molecule": molecule})
     local_databases = local_databases.replace("~", expanduser("~"))
 
     if molecule in ["H2O", "CO2"]:
@@ -61,7 +93,7 @@ def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
             "Multiple files. Download manually on https://hitran.org/hitemp/ "
         )
 
-    inputf = SOURCE_FILES[molecule]
+    inputf = HITEMP_SOURCE_FILES[molecule]
     urlname = BASE_URL + inputf
 
     try:
@@ -73,10 +105,28 @@ def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
             print("Created folder :", local_databases)
 
     output = join(local_databases, inputf.replace(".par.bz2", ".h5"))
+
+    if not cache or cache == "regen":
+        # Delete existing HDF5 file
+        if exists(output):
+            if verbose:
+                print("Removing existing file ", output)
+                # TODO: also clean the getDatabankList? Todo once it is in JSON format. https://github.com/radis/radis/issues/167
+            os.remove(output)
+
+    if exists(output):
+        # TODO check metadata here?
+        assert databank_name in getDatabankList()
+        if verbose:
+            print(f"Using existing database {databank_name}")
+        return hdf2df(output)
+
+    # Doesnt exist : download
     ds = DataSource(local_databases)
 
     if verbose:
         print(f"Downloading {inputf} for {molecule} in {output}")
+    download_date = date.today().strftime("%d %b %Y")
 
     columns = columns_2004
 
@@ -97,11 +147,6 @@ def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
         b = np.empty(
             dt.itemsize * CHUNK, dtype=dt
         )  # receives the HITRAN 160-format data.
-
-        if exists(output):
-            if verbose:
-                print("Removing existing file ", output)
-            os.remove(output)
 
         t0 = time()
         wmin = np.inf
@@ -141,8 +186,39 @@ def fetch_hitemp(molecule, local_databases="~/.radisdb/", verbose=True):
                     dt.itemsize * CHUNK, dtype=dt
                 )  # receives the HITRAN 160-format data.
 
-                f.get_storer("df").attrs.metadata = {"wmin": wmin, "wmax": wmax}
-    return output
+            f.get_storer("df").attrs.metadata = {
+                "wmin": wmin,
+                "wmax": wmax,
+                "download_date": download_date,
+                "download_url": urlname,
+            }
+    if verbose:
+        sys.stdout.write("\n")
+
+    # Add to registered Databanks in RADIS config file
+    dict_entries = {
+        "info": f"HITEMP {molecule} lines ({wmin:.1f}-{wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions",
+        "path": output,
+        "format": "hitemp",
+        "parfuncfmt": "hapi",
+        "download_date": download_date,
+        "download_url": urlname,
+    }
+    if molecule in MOLECULES_LIST_NONEQUILIBRIUM:
+        dict_entries[
+            "info"
+        ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
+        dict_entries["levelsfmt"] = "radis"
+
+    try:
+        addDatabankEntries(databank_name, dict_entries)
+    except DatabaseAlreadyExists as err:
+        raise DatabaseAlreadyExists(
+            f"{databank_name} already exists in your ~/.radis config file. "
+            + "Choose a different name for the downloaded database with `fetch_hitemp(databank_name=...)`"
+        ) from err
+
+    return hdf2df(output)
 
 
 #%%
@@ -162,13 +238,3 @@ def get_last(b):
 if __name__ == "__main__":
 
     output = fetch_hitemp("OH")
-
-    import pandas as pd
-
-    df = pd.read_hdf(output)
-    with pd.HDFStore(output) as store:
-        data = store["df"]
-        metadata = store.get_storer("df").attrs
-    df._attrs = metadata
-
-    df.to_parquet("df_parquet.par")
