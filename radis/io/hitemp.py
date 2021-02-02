@@ -56,6 +56,9 @@ def fetch_hitemp(
     molecule,
     local_databases="~/.radisdb/",
     databank_name="HITEMP-{molecule}",
+    isotope=None,
+    load_only_wavenum_above=None,
+    load_only_wavenum_below=None,
     cache=True,
     verbose=True,
 ):
@@ -71,6 +74,11 @@ def fetch_hitemp(
     databank_name: str
         name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
         Default ``"HITEMP-{molecule}"``
+    isotope: str
+        load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
+        everything. Default ``None``.
+    load_only_wavenum_above, load_only_wavenum_below: float (cm-1)
+        load only specific wavelength.
 
     Other Parameters
     ----------------
@@ -83,12 +91,27 @@ def fetch_hitemp(
     -------
 
     df: pd.DataFrame
-        Line list.
+        Line list
         A HDF5 file is also created in ``local_databases`` and referenced
         in the :ref:`RADIS config file <label_lbl_config_file>` with name
         ``databank_name``
 
+    Notes
+    -----
+
+    if using ``load_only_wavenum_above/below`` or ``isotope``, the whole
+    database is anyway downloaded and uncompressed in ``local_databases``
+    fast .HDF5 files (which will take a long time on first call). Only
+    the expected wavenumber range & isotopes are returned with :py:func:`~radis.io.hdf5.hdf2df`
+
+    See Also
+    --------
+    :py:func:`~radis.io.hdf5.hdf2df`
+
     """
+    # TODO: unzip only parts of the database
+    # see https://github.com/radis/radis/pull/194
+
     # TODO: clean DataSource downloads after HDF5 is generated
 
     if databank_name == "HITEMP-{molecule}":
@@ -131,7 +154,13 @@ def fetch_hitemp(
             )
         if verbose:
             print(f"Using existing database {databank_name}")
-        return hdf2df(output)
+        return hdf2df(
+            output,
+            isotope=isotope,
+            load_only_wavenum_below=load_only_wavenum_below,
+            load_only_wavenum_above=load_only_wavenum_above,
+            verbose=verbose,
+        )
 
     # Doesnt exist : download
     ds = DataSource(local_databases)
@@ -230,7 +259,13 @@ def fetch_hitemp(
             + "Choose a different name for the downloaded database with `fetch_hitemp(databank_name=...)`"
         ) from err
 
-    return hdf2df(output)
+    return hdf2df(
+        output,
+        isotope=isotope,
+        load_only_wavenum_below=load_only_wavenum_below,
+        load_only_wavenum_above=load_only_wavenum_above,
+        verbose=verbose,
+    )
 
 
 #%%

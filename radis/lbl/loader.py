@@ -76,6 +76,7 @@ from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
 from radis.io.cdsd import cdsd2df
 from radis.io.hdf5 import hdf2df
+from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import hit2df, parse_global_quanta, parse_local_quanta
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
@@ -809,8 +810,7 @@ class DatabankLoader(object):
 
     def fetch_databank(
         self,
-        source="astroquery",
-        format="hitran",
+        source="hitran",
         parfunc=None,
         parfuncfmt="hapi",
         levels=None,
@@ -818,16 +818,20 @@ class DatabankLoader(object):
         load_energies=True,
         include_neighbouring_lines=True,
         drop_non_numeric=True,
+        db_use_cached=True,
     ):
-        """Fetch databank with Astroquery [1]_
+        """Fetch the latest databank files from HITRAN or HITEMP with the
+        https://hitran.org/ API.
 
         Parameters
         ----------
-        source: ``'astroquery'``
-            where to download database from
-        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-            database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
-            and ``'cdsd-4000'`` for the different CDSD versions. Default 'hitran'
+        source: ``'hitran'``, ``'hitemp'``
+            [Download database lines from the latest HITRAN (see [HITRAN-2016]_)
+            or HITEMP version (see [HITEMP-2010]_  )]
+
+        Other Parameters
+        ----------------
+
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
@@ -844,7 +848,7 @@ class DatabankLoader(object):
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
-            If None, non equilibrium calculations are not possible. Default ``None``.
+            If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
@@ -852,20 +856,27 @@ class DatabankLoader(object):
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``broadening_max_width``
             parameter is used to determine the limit. Default ``True``.
-
-        Other Parameters
-        ----------------
         drop_non_numeric: boolean
             if ``True``, non numeric columns are dropped. This improves performances,
             but make sure all the columns you need are converted to numeric formats
             before hand. Default ``True``. Note that if a cache file is loaded it
             will be left untouched.
+        db_use_cached: bool, or ``'regen'``
+            use cached
+
+        Notes
+        -----
+
+        HITRAN is fetched with Astroquery [1]_  and HITEMP with
+        :py:func:`~radis.io.hitemp.fetch_hitemp`
+
+        HITEMP files are generated in a ~/.radisdb database.
+
 
         See Also
         --------
         - Load from local files: :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
         - Load when needed: :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
-
 
         References
         ----------
@@ -880,24 +891,25 @@ class DatabankLoader(object):
         # | see implementation in load_databank.
 
         # Check inputs
-        if source not in ["astroquery"]:
-            raise NotImplementedError("source: {0}".format(source))
         if source == "astroquery":
-            assert format == "hitran"
+            warn(
+                DeprecationWarning(
+                    "source='astroquery' replaced with source='hitran' in 0.9.28"
+                )
+            )
+            source = "hitran"
+        if not source in ["hitran", "hitemp"]:
+            raise NotImplementedError("source: {0}".format(source))
+        if source == "hitran":
+            dbformat = "hitran"
+        elif source == "hitemp":
+            dbformat = "hdf5"  # downloaded in RADIS local databases ~/.radisdb
 
         # Get inputs
-        dbformat = format
-
         molecule = self.input.molecule
+        isotope = self.input.isotope
         if not molecule:
             raise ValueError("Please define `molecule=` so the database can be fetched")
-
-        isotope = self.input.isotope
-        if isotope == "all":
-            raise ValueError(
-                "Please define isotope explicitely (cannot use 'all' with fetch_databank)"
-            )
-        isotope_list = self._get_isotope_list()
 
         if include_neighbouring_lines:
             wavenum_min = self.params.wavenum_min_calc
@@ -909,26 +921,61 @@ class DatabankLoader(object):
         # %% Init Line database
         # ---------------------
 
-        frames = []  # lines for all isotopes
-        for iso in isotope_list:
-            df = fetch_astroquery(
-                molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
-            )
-            frames.append(df)
+        if source == "hitran":
+            # Query one isotope at a time
+            if isotope == "all":
+                raise ValueError(
+                    "Please define isotope explicitely (cannot use 'all' with fetch_databank)"
+                )
+            isotope_list = self._get_isotope_list()
 
-        # Merge
-        if frames == []:
-            raise EmptyDatabaseError("Dataframe is empty")
-        else:
-            df = pd.concat(frames, ignore_index=True)  # reindex
-            if len(df) == 0:
-                raise EmptyDatabaseError(
-                    "Dataframe is empty on range "
-                    + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+            frames = []  # lines for all isotopes
+            for iso in isotope_list:
+                df = fetch_astroquery(
+                    molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
+                )
+                frames.append(df)
+
+            # Merge
+            if frames == []:
+                raise EmptyDatabaseError("Dataframe is empty")
+            else:
+                df = pd.concat(frames, ignore_index=True)  # reindex
+                if len(df) == 0:
+                    raise EmptyDatabaseError(
+                        "Dataframe is empty on range "
+                        + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                    )
+
+        elif source == "hitemp":
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                isotope_list = None
+            else:
+                isotope_list = ",".join(self._get_isotope_list())
+
+            df = fetch_hitemp(
+                molecule,
+                isotope=isotope_list,
+                load_only_wavenum_above=wavenum_min,
+                load_only_wavenum_below=wavenum_max,
+                cache=db_use_cached,
+                verbose=self.verbose,
+            )
+
+            # ... explicitely write all isotopes based on isotopes found in the database
+            if isotope == "all":
+                self.input.isotope = ",".join(
+                    [str(k) for k in self._get_isotope_list(df=df)]
                 )
 
-        df = parse_local_quanta(df, molecule)
-        df = parse_global_quanta(df, molecule)
+        # Post-processing of the line database :
+        if (
+            levelsfmt != None
+        ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
+            df = parse_local_quanta(df, molecule)
+            df = parse_global_quanta(df, molecule)
 
         # Remove non numerical attributes
         if drop_non_numeric:
@@ -989,7 +1036,7 @@ class DatabankLoader(object):
         parfuncfmt=None,
         levels=None,
         levelsfmt=None,
-        db_use_cached=None,
+        db_use_cached=True,
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
@@ -1055,7 +1102,7 @@ class DatabankLoader(object):
             to regenerate them if you happen to change the database. If ``'regen'``,
             existing cached files are removed and regenerated.
             It is also used to load energy levels from ``.h5`` cache file if exist.
-            If ``None``, the value given on Factory creation is used. Default ``None``
+            If ``None``, the value given on Factory creation is used. Default ``True``
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
@@ -2476,7 +2523,7 @@ class DatabankLoader(object):
 
         return vardict
 
-    def warn(self, message, category="default"):
+    def warn(self, message, category="default", level=0):
         """Trigger a warning, an error or just ignore based on the value
         defined in the :attr:`~radis.lbl.loader.DatabankLoader.warnings`
         dictionary.
@@ -2490,6 +2537,12 @@ class DatabankLoader(object):
             what to print
         category: str
             one of the keys of self.warnings. See :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
+        level: int
+            warning level. Only print warnings when verbose level is higher
+            than the warning levels. i.e., warnings of level 1 appear only
+            if ``verbose==True``, warnings of level 2 appear only
+            for ``verbose>=2``, etc..  Warnings of level 0 appear only the time.
+            Default ``0``
 
         Notes
         -----
@@ -2501,8 +2554,10 @@ class DatabankLoader(object):
         --------
         :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
         """
-
-        return warn(message, category=category, status=self.warnings)
+        if level > self.verbose:
+            return
+        else:
+            return warn(message, category=category, status=self.warnings)
 
     def __del__(self):
         """

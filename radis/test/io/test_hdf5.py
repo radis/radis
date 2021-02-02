@@ -13,7 +13,7 @@ from radis.misc.config import getDatabankEntries
 
 
 @pytest.mark.needs_connection
-def test_some_hdf5_functions(*args, **kwargs):
+def test_local_hdf5_lines_loading(*args, **kwargs):
     """
     We use the OH HITEMP line database to test :py:func:`~radis.io.hitemp.fetch_hitemp`
     and :py:func:`~radis.io.hdf5.hdf2df`
@@ -53,4 +53,4 @@ def test_some_hdf5_functions(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    test_some_hdf5_functions()
+    test_local_hdf5_lines_loading()

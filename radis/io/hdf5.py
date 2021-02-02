@@ -11,10 +11,10 @@ import pandas as pd
 def hdf2df(
     fname,
     columns=None,
-    verbose=True,
     isotope=None,
     load_only_wavenum_above=None,
     load_only_wavenum_below=None,
+    verbose=True,
     store_kwargs={},
 ):
     """
@@ -30,6 +30,8 @@ def hdf2df(
     isotope: str
         load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
         everything. Default ``None``.
+    load_only_wavenum_above, load_only_wavenum_below: float (cm-1)
+        load only specific wavelength.
 
     Other Parameters
     ----------------

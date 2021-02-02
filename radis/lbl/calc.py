@@ -40,7 +40,7 @@ def calc_spectrum(
     mole_fraction=1,
     path_length=1,
     medium="air",
-    databank="fetch",
+    databank="hitran",
     wstep=0.01,
     broadening_max_width=10,
     optimization="min-RMS",
@@ -111,12 +111,16 @@ def calc_spectrum(
         databank: str or dict
             can be either:
     ​
-            - ``'fetch'``, to fetch automatically from [HITRAN-2016]_ through astroquery.
+            - ``'hitran'``, to fetch automatically the latest [HITRAN-2016]_ version
+            through :py:func:`~radis.io.query.fetch_astroquery`.
 
             .. warning::
 
                 [HITRAN-2016]_ is valid for low temperatures (typically < 700 K). For higher
                 temperatures you may need [HITEMP-2010]_
+
+            - ``'hitemp'``, to fetch automatically the latest [HITEMP-2010]_ version
+            through :py:func:`~radis.io.hitemp.fetch_hitemp`.
 
             - the name of a a valid database file, in which case the format is inferred.
               For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
@@ -545,18 +549,30 @@ def _calc_spectrum(
         optimization=optimization,
         **kwargs
     )
-    if databank == "fetch":  # mode to get databank without relying on  Line databases
-        conditions = {
-            "source": "astroquery",
-            "format": "hitran",
-            "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
-            "levelsfmt": None,  # no need to load energies by default
-        }
+    if databank in [
+        "fetch",
+        "hitran",
+        "hitemp",
+    ]:  # mode to get databank without relying on  Line databases
+        # Line database :
+        if databank in ["fetch", "hitran"]:
+            conditions = {
+                "source": "astroquery",
+            }
+        elif databank in ["hitemp"]:
+            conditions = {"source": "hitemp"}
+        # Partition functions :
+        conditions.update(
+            **{
+                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
+                "levelsfmt": None,  # no need to load energies by default
+            }
+        )
+        # Rovibrational energies :
         if not _equilibrium:
             # calculate partition functions with energy levels from built-in
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
-
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {
