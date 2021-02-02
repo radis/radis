@@ -37,6 +37,7 @@ from os.path import dirname, exists, expanduser, join
 
 from radis.misc.basics import compare_dict, compare_lists, stdpath
 from radis.misc.utils import DatabankNotFound, getProjectRoot
+from radis.misc.warning import DatabaseAlreadyExists
 
 # %% Functions to parse radis/config.json
 
@@ -296,6 +297,20 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
     """Add database dbname with entries from dict_entries.
 
     If database already exists in ~/.radis, raises an error
+
+    Examples
+    --------
+
+    ::
+
+        addDatabankEntries("HITEMP2010-CO2",
+            {
+                "info": "HITEMP2020 CO2 lines with TIPS-2017 for partition functions (equilibrium) and RADIS for rovibrational energies (nonequilibrium) ",
+                "path": ["PATH/TO/HITEMP/CO2/*.par"],
+                "format": "hitran",
+                "parfuncfmt": "hapi",
+                "levelsfmt": "radis",
+            })
     """
 
     # Get ~/.radis if exists, else create it
@@ -310,7 +325,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True):
 
     # Check database doesnt exist
     if dbname in dbnames:
-        raise ValueError(
+        raise DatabaseAlreadyExists(
             "Database already exists: {0}".format(dbname) + ". Cant add it"
         )
 
