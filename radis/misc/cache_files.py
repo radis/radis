@@ -80,6 +80,9 @@ def load_h5_cache_file(
         values are compared to cache file attributes. If they dont match,
         the file is considered deprecated. See ``use_cached`` to know
         how to handle deprecated files
+
+        .. note::
+            if the file has extra attributes they are not compared
     current_version: str
         version is compared to cache file version (part of attributes).
         If current version is superior, a simple warning is triggered.
@@ -116,10 +119,6 @@ def load_h5_cache_file(
         else:
             return None  # File doesn't exist. It's okay.
 
-    check_wavenumbers = not (load_only_wavenum_above == None) and not (
-        load_only_wavenum_below == None
-    )
-
     # 3. read file attributes to know if it's deprecated
     try:
         check_not_deprecated(
@@ -127,7 +126,6 @@ def load_h5_cache_file(
             expected_metadata,
             current_version=current_version,
             last_compatible_version=last_compatible_version,
-            check_wavenumbers=check_wavenumbers,
         )
     # ... if deprecated, raise an error only if 'force'
     except DeprecatedFileWarning as err:
@@ -143,8 +141,8 @@ def load_h5_cache_file(
             os.remove(cachefile)
             return None
 
-    # 4. File is not not deprecated: read the the extremum wavenumbers.
-    if check_wavenumbers:
+    # 4. File is not not deprecated: read the the extremum wavenumbers.    raise
+    if load_only_wavenum_above is not None or load_only_wavenum_below is not None:
         try:
             check_relevancy(
                 cachefile,
@@ -296,7 +294,6 @@ def check_not_deprecated(
     metadata,
     current_version=None,
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
-    check_wavenumbers=False,
 ):
     """Make sure cache file is not deprecated: checks that ``metadata`` is the
     same, and that the version under which the file was generated is valid.
@@ -308,6 +305,9 @@ def check_not_deprecated(
     metadata: dict
         expected list of variables in the file metadata. If the values dont match,
         an error is raised.
+
+        .. note::
+            extra attributes present in the file but not in the metadata dict are not compared.
     current_version: str, or ``None``
         current version number. If the file was generated in a previous version
         a warning is raised. If ``None``, current version is read from
@@ -373,8 +373,9 @@ def check_not_deprecated(
             + "Do you own a DeLorean? Delete the file manually if you understand what happened"
         )
 
-    # Compare metadata except wavenum_min and wavenum_max
+    # Compare metadata (only for attributes in metadata)
     metadata = _h5_compatible(metadata)
+    attrs = {k: v for k, v in attrs.items() if k in metadata}
     out, compare_string = compare_dict(
         metadata,
         attrs,
