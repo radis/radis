@@ -1289,8 +1289,6 @@ class DatabankLoader(object):
                 )
 
         # Check database format
-        if dbformat == "hitemp":
-            raise NotImplementedError("Use 'hitran' instead (same file format)")
         if dbformat not in KNOWN_DBFORMAT:
             # >>>>>>>>>>>
             # Deprecation errors (added in 0.9.21. Remove after 1.0.0)
@@ -1871,9 +1869,12 @@ class DatabankLoader(object):
                     elif dbformat == "hdf5":
                         df = hdf2df(
                             filename,
-                            cache=db_use_cached,
+                            # cache=db_use_cached,
                             verbose=verbose,
-                            drop_non_numeric=True,
+                            # drop_non_numeric=True,
+                            isotope=self.input.isotope
+                            if self.input.isotope != "all"
+                            else None,
                             load_only_wavenum_above=wavenum_min,
                             load_only_wavenum_below=wavenum_max,
                         )
@@ -1903,6 +1904,7 @@ class DatabankLoader(object):
                     print("Dropped columns: {0}".format(dropped))
 
                 # Crop to the wavenumber of interest
+                # TODO : is it still needed since we use load_only_wavenum_above ?
                 df = df[(df.wav >= wavenum_min) & (df.wav <= wavenum_max)]
 
                 if __debug__:

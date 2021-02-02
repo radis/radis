@@ -13,7 +13,7 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 import os
 import sys
 from datetime import date
-from os.path import exists, expanduser, join
+from os.path import abspath, exists, expanduser, join
 from time import time
 
 import numpy as np
@@ -43,6 +43,13 @@ dict: list of available HITEMP source files
 Last update : 02 Feb 2021
 Compare with files available on https://hitran.org/hitemp/
 """
+
+DATA_COLUMNS = ["iso", "wav"]
+"""
+list : only these column names will be searchable directly on disk to
+only load certain lines. See :py:func:`~radis.io.hdf5.hdf2df`
+"""
+# TODO: WIP. Maybe move somewhere else to be also used by HITRAN queries
 
 
 def fetch_hitemp(
@@ -104,7 +111,7 @@ def fetch_hitemp(
         if verbose:
             print("Created folder :", local_databases)
 
-    output = join(local_databases, inputf.replace(".par.bz2", ".h5"))
+    output = join(local_databases, molecule + "-" + inputf.replace(".par.bz2", ".h5"))
 
     if not cache or cache == "regen":
         # Delete existing HDF5 file
@@ -116,7 +123,12 @@ def fetch_hitemp(
 
     if exists(output):
         # TODO check metadata here?
-        assert databank_name in getDatabankList()
+        try:
+            assert databank_name in getDatabankList()
+        except AssertionError:
+            raise AssertionError(
+                f"{databank_name} not in {getDatabankList()} although {output} exists. Maybe try regenerating cache files with `SpectrumFactory.fetch_databank(..., use_cached='regen'`"
+            )
         if verbose:
             print(f"Using existing database {databank_name}")
         return hdf2df(output)
@@ -169,7 +181,7 @@ def fetch_hitemp(
                 # df.to_hdf(
                 #     output, "df", format="table", append=True, complib="blosc", complevel=9
                 # )
-                f.put(key="df", value=df, format="table")
+                f.put(key="df", value=df, format="table", data_columns=DATA_COLUMNS)
 
                 wmin = np.min((wmin, df.wav.min()))
                 wmax = np.max((wmax, df.wav.max()))
@@ -198,8 +210,8 @@ def fetch_hitemp(
     # Add to registered Databanks in RADIS config file
     dict_entries = {
         "info": f"HITEMP {molecule} lines ({wmin:.1f}-{wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions",
-        "path": output,
-        "format": "hitemp",
+        "path": abspath(output),
+        "format": "hdf5",
         "parfuncfmt": "hapi",
         "download_date": download_date,
         "download_url": urlname,
