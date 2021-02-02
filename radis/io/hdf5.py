@@ -41,6 +41,9 @@ def hdf2df(fname, verbose=True, **kwargs):
 
     """
 
+    if "load_only_wavenum_above" in kwargs or "load_only_wavenum_below" in kwargs:
+        raise NotImplementedError()
+
     # df = pd.read_hdf(fname)
 
     with pd.HDFStore(fname, mode="r+", **kwargs) as store:

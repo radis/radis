@@ -1868,13 +1868,15 @@ class DatabankLoader(object):
                             load_only_wavenum_above=wavenum_min,
                             load_only_wavenum_below=wavenum_max,
                         )
-	                elif dbformat == "hdf5":
-	                    df = hdf2df(
-	                        filename,
-	                        cache=db_use_cached,
-	                        verbose=verbose,
-	                        drop_non_numeric=True,
-	                    )
+                    elif dbformat == "hdf5":
+                        df = hdf2df(
+                            filename,
+                            cache=db_use_cached,
+                            verbose=verbose,
+                            drop_non_numeric=True,
+                            load_only_wavenum_above=wavenum_min,
+                            load_only_wavenum_below=wavenum_max,
+                        )
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
                 except IrrelevantFileWarning:
