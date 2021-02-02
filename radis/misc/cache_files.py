@@ -318,16 +318,13 @@ def check_not_deprecated(
 
     file: str
         a `` .h5`` cache file for Energy Levels
-
     metadata: dict
-        list of variables used to create the file. If the values dont match,
+        expected list of variables in the file metadata. If the values dont match,
         an error is raised.
-
     current_version: str, or ``None``
         current version number. If the file was generated in a previous version
         a warning is raised. If ``None``, current version is read from
         :data:`radis.__version__`.
-
     last_backward_compatible_version: str
         If the file was generated in a non-compatible version, an error is raised.
         Default :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
@@ -395,7 +392,12 @@ def check_not_deprecated(
     # Compare metadata except wavenum_min and wavenum_max
     metadata = _h5_compatible(metadata)
     out, compare_string = compare_dict(
-        metadata, attrs, verbose=False, return_string=True
+        metadata,
+        attrs,
+        verbose=False,
+        return_string=True,
+        df1_str="Expected",
+        df2_str="Got",
     )
     if out != 1:
         raise DeprecatedFileWarning(

@@ -18,6 +18,12 @@ def hdf2df(fname, verbose=True, **kwargs):
     fname : str
         HDF5 file name
 
+    Other Parameters
+    ----------------
+
+    **kwargs: dict
+        arguments forwarded to :py:meth:`~pandas.io.pytables.HDFStore`
+
     Returns
     -------
 
@@ -37,7 +43,7 @@ def hdf2df(fname, verbose=True, **kwargs):
 
     # df = pd.read_hdf(fname)
 
-    with pd.HDFStore(fname, mode="r+") as store:
+    with pd.HDFStore(fname, mode="r+", **kwargs) as store:
         df = store["df"]
         df.attrs.update(store.get_storer("df").attrs.metadata)
 

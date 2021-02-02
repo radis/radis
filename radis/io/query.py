@@ -102,31 +102,31 @@ def fetch_astroquery(
                 **{"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
             ),
         )
-    if cache == "regen":
-        if exists(fcache):
-            if verbose:
-                print(f"Cache file {fcache} deleted to be regenerated")
-            os.remove(fcache)
-    else:
-        # Load cache file if relevant
-        # ... Update metadata with physical properties from the database.
-        metadata.update(
-            {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
-        )
-        check_cache_file(
-            fcache=fcache, use_cached=cache, metadata=metadata, verbose=verbose
-        )
-        if exists(fcache):
-            try:
-                return get_cache_file(fcache, verbose=verbose)
-            except Exception as err:
+        if cache == "regen":
+            if exists(fcache):
                 if verbose:
-                    printr(
-                        "Problem reading cache file {0}:\n{1}\nDeleting it!".format(
-                            fcache, str(err)
-                        )
-                    )
+                    print(f"Cache file {fcache} deleted to be regenerated")
                 os.remove(fcache)
+        else:
+            # Load cache file if relevant
+            # ... Update metadata with physical properties from the database.
+            metadata.update(
+                {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
+            )
+            check_cache_file(
+                fcache=fcache, use_cached=cache, metadata=metadata, verbose=verbose
+            )
+            if exists(fcache):
+                try:
+                    return get_cache_file(fcache, verbose=verbose)
+                except Exception as err:
+                    if verbose:
+                        printr(
+                            "Problem reading cache file {0}:\n{1}\nDeleting it!".format(
+                                fcache, str(err)
+                            )
+                        )
+                    os.remove(fcache)
 
     # Download using the astroquery library
     try:
