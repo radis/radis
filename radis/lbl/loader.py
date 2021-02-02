@@ -1160,8 +1160,6 @@ class DatabankLoader(object):
         )
         # Now that we're all set, let's load everything
 
-        # Now that we're all set, let's load everything
-
         # %% Line database
         # ------------
         self.df0 = self._load_databank(
@@ -1197,11 +1195,6 @@ class DatabankLoader(object):
         # are calculated ab initio from radis internal species database constants
         if load_energies:
             self._init_rovibrational_energies(levels, levelsfmt)
-
-            # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
-            # are calculated ab initio from radis internal species database constants
-            if load_energies:
-                self._init_rovibrational_energies(levels, levelsfmt)
 
         return
 
