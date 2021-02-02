@@ -73,7 +73,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
             2400,
             verbose=verbose,
             cache="force",  # force load of cache file
-            expected_metadata={},
+            expected_metadata={"_test": False},
         )
     # Try to load with correct metadata. Expect to work and return the dataframe
     df2 = fetch_astroquery(

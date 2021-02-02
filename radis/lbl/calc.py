@@ -544,7 +544,6 @@ def _calc_spectrum(
         wstep=wstep,
         broadening_max_width=broadening_max_width,
         cutoff=cutoff,
-        db_use_cached=use_cached,
         verbose=verbose,
         optimization=optimization,
         **kwargs
@@ -564,6 +563,7 @@ def _calc_spectrum(
             **{
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
                 "levelsfmt": None,  # no need to load energies by default
+                "db_use_cached": use_cached,
             }
         )
         # Rovibrational energies :
@@ -571,6 +571,7 @@ def _calc_spectrum(
             # calculate partition functions with energy levels from built-in
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
+            conditions["lvl_use_cached"] = use_cached
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {
@@ -578,6 +579,7 @@ def _calc_spectrum(
             "drop_columns": drop_columns,
             "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             "levelsfmt": None,  # no need to load energies by default
+            "db_use_cached": use_cached,
         }
         # Guess format
         if databank.endswith(".par"):
@@ -589,10 +591,12 @@ def _calc_spectrum(
                 # calculate partition functions with energy levels from built-in
                 # constants (not all molecules are supported!)
                 conditions["levelsfmt"] = "radis"
+                conditions["lvl_use_cached"] = use_cached
         elif databank.endswith(".h5"):
             conditions["format"] = "hdf5"
             if not _equilibrium:
                 conditions["levelsfmt"] = "radis"
+                conditions["lvl_use_cached"] = use_cached
         elif databank.endswith(".npy"):
             if verbose:
                 print("Infered {0} is a NPY-format file".format(databank))

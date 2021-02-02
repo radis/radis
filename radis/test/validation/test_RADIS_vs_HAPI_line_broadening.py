@@ -140,12 +140,15 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
             pressure=p,
             broadening_max_width=broadening_max_width,
             cutoff=1e-23,
-            db_use_cached=True,
             isotope=iso,
-        )  # 0.2)
+        )
         pl.warnings["MissingSelfBroadeningWarning"] = "ignore"
         pl.warnings["HighTemperatureWarning"] = "ignore"
-        pl.fetch_databank(source="hitran", load_energies=False)
+        pl.fetch_databank(
+            source="hitran",
+            load_energies=False,
+            db_use_cached=True,
+        )
 
         s = pl.eq_spectrum(Tgas=T)  # , Ttrans=300)
         s.name = "RADIS"

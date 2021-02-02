@@ -22,8 +22,6 @@ import time
 from collections import OrderedDict
 from os.path import exists, getmtime
 
-from numpy import Inf
-
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.io.tools import (
@@ -122,8 +120,8 @@ def cdsd2df(
     cache=False,
     verbose=True,
     drop_non_numeric=True,
-    load_only_wavenum_above=0.0,
-    load_only_wavenum_below=Inf,
+    load_only_wavenum_above=None,
+    load_only_wavenum_below=None,
 ):
     """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe.
 
