@@ -9,7 +9,7 @@ HITRAN
 ------
 
 RADIS can automatically fetch HITRAN lines using the `Astroquery <https://astroquery.readthedocs.io>`_
-module. This is done by specifying ``databank=='fetch'`` in :py:func:`~radis.lbl.calc.calc_spectrum`
+module. This is done by specifying ``databank=='hitran'`` in :py:func:`~radis.lbl.calc.calc_spectrum`
 or by using the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method in
 :class:`~radis.lbl.factory.SpectrumFactory`.
 Refer to :py:func:`~radis.io.query.fetch_astroquery` for more information.
