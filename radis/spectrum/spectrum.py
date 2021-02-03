@@ -1555,7 +1555,7 @@ class Spectrum(object):
         # users errors if plotting difference units!)... Note that since
         # 'radiance' and 'radiance_noslit' are now plotted under the same name,
         # they cannot be differenced. But at least this allows user to plot
-        # both on the same figure if they want to compare
+        # both on the same figure if they want to compare [and have the same unit]
 
         def clean_error_msg(string):
             string = string.replace(r"$^\mathregular{", "^")

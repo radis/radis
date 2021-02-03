@@ -235,14 +235,14 @@ def test_compare_torch_CO2(
     s0spectro.apply_slit(slit_function, unit="nm", norm_by=norm_by, shape="trapezoidal")
     _, I0spectro = s0spectro.get("radiance", Iunit=unit)
 
-    wtot, Itot = stot.get("radiance", Iunit=unit)
+    wtot, Itot = stot.get("radiance", wunit="nm", Iunit=unit)
     stot_corr = experimental_spectrum(
         wtot,
         Itot - I0spectro,  # hack to remove
+        wunit="nm",  # in air by default
         # emission from within
         # spectrometer
         Iunit=unit,
-        conditions={"medium": "air"},
     )
 
     # %% Compare with experiment data
@@ -258,9 +258,7 @@ def test_compare_torch_CO2(
     )
     exp.w /= 10  # Angstrom to nm
     exp = exp[(exp.w > wlmin) & (exp.w < wlmax)]
-    sexp = experimental_spectrum(
-        exp.w, exp.I, Iunit="mW/cm2/sr", conditions={"medium": "air"}
-    )
+    sexp = experimental_spectrum(exp.w, exp.I, wunit="nm", Iunit="mW/cm2/sr")
 
     if plot:
 

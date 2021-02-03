@@ -93,7 +93,7 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
 
 
 @pytest.mark.fast
-def test_hitran_co(verbose=True, warnings=True, **kwargs):
+def test_local_hitran_co(verbose=True, warnings=True, **kwargs):
     """Analyse some default files to make sure everything still works."""
 
     # 1. Load
@@ -111,7 +111,7 @@ def test_hitran_co(verbose=True, warnings=True, **kwargs):
     return True
 
 
-def test_hitran_co2(verbose=True, warnings=True, **kwargs):
+def test_local_hitran_co2(verbose=True, warnings=True, **kwargs):
 
     # 1. Load
     df = hit2df(getTestFile("hitran_CO2_fragment.par"), cache="regen")
@@ -130,7 +130,7 @@ def test_hitran_co2(verbose=True, warnings=True, **kwargs):
     return True
 
 
-def test_hitran_h2o(verbose=True, warnings=True, **kwargs):
+def test_local_hitran_h2o(verbose=True, warnings=True, **kwargs):
 
     # 1. Load
     df = hit2df(getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), cache="regen")
@@ -165,7 +165,7 @@ def test_hitran_h2o(verbose=True, warnings=True, **kwargs):
     return True
 
 
-def test_hitemp(verbose=True, warnings=True, **kwargs):
+def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
     """Analyse some default files to make sure everything still works."""
 
     # 1. Load
@@ -183,6 +183,30 @@ def test_hitemp(verbose=True, warnings=True, **kwargs):
     assert df["branch"].iloc[1] == 1  # R
 
     return True
+
+
+def test_irrelevant_file_loading(*args, **kwargs):
+    """ check that irrelevant files (irrelevant wavenumber) are not loaded """
+
+    # For cdsd files :
+
+    # Ensures file is not empty
+    df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"))
+    assert len(df) > 0
+
+    df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"), load_wavenum_min=100000)
+    assert len(df) == 0
+
+    # For cdsd files :
+
+    # Ensures file is not empty
+    df = hit2df(getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"))
+    assert len(df) > 0
+
+    df = hit2df(
+        getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), load_wavenum_min=100000
+    )
+    assert len(df) == 0
 
 
 def _run_example(verbose=False):
@@ -260,14 +284,15 @@ def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_hitran_names_match(verbose=verbose, *args, **kwargs)
-    test_hitran_co(verbose=verbose, *args, **kwargs)
-    test_hitran_co2(verbose=verbose, *args, **kwargs)
-    test_hitran_h2o(verbose=verbose, *args, **kwargs)
-    test_hitemp(verbose=verbose, *args, **kwargs)
-
+    test_local_hitran_co(verbose=verbose, *args, **kwargs)
+    test_local_hitran_co2(verbose=verbose, *args, **kwargs)
+    test_local_hitran_h2o(verbose=verbose, *args, **kwargs)
+    test_local_hitemp_file(verbose=verbose, *args, **kwargs)
+    test_irrelevant_file_loading()
     test_cache_regeneration(verbose=verbose, *args, **kwargs)
     return True
 
 
 if __name__ == "__main__":
-    print("Testing io.py: ", _run_testcases(verbose=True))
+    # print("Testing io.py: ", _run_testcases(verbose=True))
+    test_irrelevant_file_loading()
