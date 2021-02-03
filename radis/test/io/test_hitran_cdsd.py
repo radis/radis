@@ -30,6 +30,7 @@ import pytest
 
 from radis.io.cdsd import cdsd2df
 from radis.io.hitran import hit2df
+from radis.misc.warning import IrrelevantFileWarning
 from radis.test.utils import getTestFile, setup_test_line_databases
 
 
@@ -188,25 +189,33 @@ def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
 def test_irrelevant_file_loading(*args, **kwargs):
     """ check that irrelevant files (irrelevant wavenumber) are not loaded """
 
-    # For cdsd files :
+    # For cdsd-hitemp files :
 
     # Ensures file is not empty
-    df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"))
+    df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"), cache="regen")
     assert len(df) > 0
 
-    df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"), load_wavenum_min=100000)
-    assert len(df) == 0
+    # Now test nothing is loaded if asking for outside the wavenumber range
+    with pytest.raises(IrrelevantFileWarning):
+        df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"), load_wavenum_min=100000)
+    with pytest.raises(IrrelevantFileWarning):
+        df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"), load_wavenum_max=0.5)
 
-    # For cdsd files :
+    # For HITRAN files :
 
     # Ensures file is not empty
-    df = hit2df(getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"))
+    df = hit2df(getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), cache="regen")
     assert len(df) > 0
 
-    df = hit2df(
-        getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), load_wavenum_min=100000
-    )
-    assert len(df) == 0
+    # Now test nothing is loaded if asking for outside the wavenumber range
+    with pytest.raises(IrrelevantFileWarning):
+        df = hit2df(
+            getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), load_wavenum_min=100000
+        )
+    with pytest.raises(IrrelevantFileWarning):
+        df = hit2df(
+            getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), load_wavenum_max=0.5
+        )
 
 
 def _run_example(verbose=False):

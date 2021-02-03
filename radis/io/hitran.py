@@ -92,7 +92,7 @@ columns_2004 = OrderedDict(
 def hit2df(
     fname,
     count=-1,
-    cache=False,
+    cache=True,
     verbose=True,
     drop_non_numeric=True,
     load_wavenum_min=None,
@@ -102,23 +102,19 @@ def hit2df(
 
     Parameters
     ----------
-
     fname: str
         HITRAN-HITEMP file name
-
     count: int
         number of items to read (-1 means all file)
-
     cache: boolean, or ``'regen'`` or ``'force'``
         if ``True``, a pandas-readable HDF5 file is generated on first access,
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not
         taken into account). If False, no database is used. If ``'regen'``, temp
-        file are reconstructed. Default ``False``.
+        file are reconstructed. Default ``True``.
 
     Other Parameters
     ----------------
-
     drop_non_numeric: boolean
         if ``True``, non numeric columns are dropped. This improves performances,
         but make sure all the columns you need are converted to numeric formats
@@ -131,15 +127,12 @@ def hit2df(
 
     Returns
     -------
-
     df: pandas Dataframe
         dataframe containing all lines and parameters
 
 
-
     References
     ----------
-
 
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
@@ -171,10 +164,10 @@ def hit2df(
     fcache = cache_file_name(fname)
     if cache and exists(fcache):
         relevant_if_metadata_above = (
-            {"wavenum_max": load_wavenum_min} if load_wavenum_max else {}
+            {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
         )  # not relevant if wavenum_max of file is < wavenum min required
         relevant_if_metadata_below = (
-            {"wavenum_min": load_wavenum_max} if load_wavenum_min else {}
+            {"wavenum_min": load_wavenum_max} if load_wavenum_max else {}
         )  # not relevant if wavenum_min of file is > wavenum max required
         df = load_h5_cache_file(
             fcache,
@@ -284,14 +277,12 @@ def _parse_HITRAN_class1(df):
 
     Parameters
     ----------
-
     df: pandas Dataframe
         lines read from a HITRAN-like database
 
 
     Notes
     -----
-
     HITRAN syntax [1]_ :
 
     >>>       v

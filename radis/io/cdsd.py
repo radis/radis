@@ -117,7 +117,7 @@ def cdsd2df(
     fname,
     version="hitemp",
     count=-1,
-    cache=False,
+    cache=True,
     verbose=True,
     drop_non_numeric=True,
     load_wavenum_min=None,
@@ -138,7 +138,7 @@ def cdsd2df(
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not
         taken into account). If ``False``, no database is used. If 'regen', temp
-        file are reconstructed. Default ``False``.
+        file are reconstructed. Default ``True``.
 
     Other Parameters
     ----------------
@@ -238,10 +238,10 @@ def cdsd2df(
     fcache = cache_file_name(fname)
     if cache and exists(fcache):
         relevant_if_metadata_above = (
-            {"wavenum_max": load_wavenum_min} if load_wavenum_max else {}
+            {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
         )  # not relevant if wavenum_max of file is < wavenum min required
         relevant_if_metadata_below = (
-            {"wavenum_min": load_wavenum_max} if load_wavenum_min else {}
+            {"wavenum_min": load_wavenum_max} if load_wavenum_max else {}
         )  # not relevant if wavenum_min of file is > wavenum max required
         df = load_h5_cache_file(
             fcache,

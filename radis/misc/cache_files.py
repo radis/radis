@@ -481,7 +481,7 @@ def check_relevancy(
             # Note : check_not_deprecated already tested the existence of each key so we are safe
             if attrs[k] > v:
                 raise IrrelevantFileWarning(
-                    "Database file {0} irrelevant ({1}={2} [file metadata]  > {3} [expected]), not loaded".format(
+                    "Database file {0} irrelevant ({1}={2} [file metadata] > {3} [expected]), not loaded".format(
                         file, k, attrs[k], v
                     )
                 )
