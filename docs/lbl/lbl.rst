@@ -29,8 +29,8 @@ Calculating spectra
 Calculate one molecule spectrum
 -------------------------------
 
-In the following example, we calculate a CO spectrum at equilibirum,
-and plot the transmittance: ::
+In the following example, we calculate a CO spectrum at equilibrium
+from the latest HITRAN database, and plot the transmittance: ::
 
 	s = calc_spectrum(
         		wavenum_min=1900,
@@ -40,6 +40,7 @@ and plot the transmittance: ::
         		molecule='CO',
         		mole_fraction=0.5,
         		isotope=1,
+            databank='hitran'   # or 'hitemp'
     		  	)
 	s.plot('transmittance_noslit')
 

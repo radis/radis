@@ -32,8 +32,7 @@ You can also download the HITRAN databases files locally:
 HITEMP
 ------
 
-RADIS can read files from the HITEMP 2010 database, however files have to be
-downloaded manually.
+RADIS can read files from the HITEMP database.
 
 - HITEMP-2010 files can be downloaded from https://hitran.org/hitemp/. Expect
   ~3 Gb for CO2 or ~10 Gb for H2O. Cite with [HITEMP-2010]_
@@ -43,8 +42,26 @@ on the User environment. See the :ref:`Configuration file <label_lbl_config_file
 the :py:mod:`radis.misc.config` module and the :py:func:`~radis.misc.config.getDatabankList`
 function for more information.
 
+📣 starting from radis==0.9.28 you can also download HITEMP directly. Example ::
+
+    from radis import calc_spectrum
+    calc_spectrum(
+        wavenum_min=2500 / u.cm,
+        wavenum_max=4500 / u.cm,
+        molecule="OH",
+        Tgas=600,
+        databank="hitemp",  # test by fetching directly
+        verbose=False,
+    )
+
 - Some HITEMP line databases are pre-configured in the :ref:`RADIS-lab <label_radis_lab>` online environment.
   No install needed !
+
+- If you just want to parse the HITEMP files, use :py:func:`~radis.io.hitemp.fetch_hitemp` ::
+
+    from radis.io.hitemp import fetch_hitemp
+    fetch_hitemp("NO")
+
 
 CDSD-4000
 ---------

@@ -30,6 +30,7 @@ from radis.misc.warning import DatabaseAlreadyExists
 BASE_URL = "https://hitran.org/hitemp/data/bzip2format/"
 HITEMP_SOURCE_FILES = {
     "CO2": "",  # NotImplemented
+    "H2O": "",  # NotImplemented
     "N2O": "04_HITEMP2019.par.bz2",
     "CO": "05_HITEMP2019.par.bz2",
     "CH4": "06_HITEMP2020.par.bz2",
@@ -120,10 +121,17 @@ def fetch_hitemp(
 
     if molecule in ["H2O", "CO2"]:
         raise NotImplementedError(
-            "Multiple files. Download manually on https://hitran.org/hitemp/ "
+            "Automatic HITEMP download not implemented for {0} : multiple files. Download manually on https://hitran.org/hitemp/ ".format(
+                molecule
+            )
         )
 
-    inputf = HITEMP_SOURCE_FILES[molecule]
+    try:
+        inputf = HITEMP_SOURCE_FILES[molecule]
+    except KeyError as err:
+        raise KeyError(
+            f"Please choose one of HITEMP molecules : {list(HITEMP_SOURCE_FILES.keys())}. Got '{molecule}'"
+        ) from err
     urlname = BASE_URL + inputf
 
     try:
