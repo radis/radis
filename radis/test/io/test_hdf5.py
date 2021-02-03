@@ -47,9 +47,15 @@ def test_local_hdf5_lines_loading(*args, **kwargs):
     assert df.iso.unique() == 2
 
     # Test partial loading of wavenumbers
-    df = hdf2df(path, load_only_wavenum_above=2300, load_only_wavenum_below=2500)
-    assert df.wav.min() > 2300
-    assert df.wav.max() < 2500
+    df = hdf2df(path, load_wavenum_min=2300, load_wavenum_max=2500)
+    assert df.wav.min() >= 2300
+    assert df.wav.max() <= 2500
+
+    # Test with only one
+    assert hdf2df(path, load_wavenum_min=2300).wav.min() >= 2300
+
+    # Test with the other
+    assert hdf2df(path, load_wavenum_max=2500).wav.max() <= 2500
 
 
 if __name__ == "__main__":

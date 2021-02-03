@@ -486,7 +486,7 @@ class SpectrumFactory(BandFactory):
         if isinstance(broadening_method, Default):
             if optimization in ("simple", "min-RMS") and broadening_method != "fft":
                 if self.verbose >= 3:
-                    print(
+                    printg(
                         "DLM used. Defaulting broadening method from {0} to FFT".format(
                             broadening_method
                         )
@@ -494,7 +494,7 @@ class SpectrumFactory(BandFactory):
                 broadening_method = "fft"
             elif optimization is None and broadening_method != "voigt":
                 if self.verbose >= 3:
-                    print(
+                    printg(
                         "DLM not used. Defaulting broadening method from {0} to 'voigt'".format(
                             broadening_method
                         )

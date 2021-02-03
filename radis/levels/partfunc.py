@@ -993,7 +993,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         self.df = load_h5_cache_file(
             cachefile,
             use_cached,
-            expected_metadata=metadata,
+            valid_if_metadata_is=metadata,
+            relevant_if_metadata_above={},
+            relevant_if_metadata_below={},
             current_version=radis.__version__,
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             verbose=verbose,

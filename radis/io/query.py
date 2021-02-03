@@ -112,7 +112,7 @@ def fetch_astroquery(
                     print(f"Cache file {fcache} deleted to be regenerated")
                 os.remove(fcache)
         else:
-            # Load cache file if relevant
+            # Load cache file if valid
             check_cache_file(
                 fcache=fcache,
                 use_cached=cache,
@@ -228,13 +228,23 @@ def fetch_astroquery(
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
+        new_metadata = {
+            "molecule": molecule,
+            "isotope": isotope,
+            "wmin": wmin,
+            "wmax": wmax,
+        }
         if verbose:
-            print("Generating cached file: {0}".format(fcache))
+            print(
+                "Generating cache file {0} with metadata :\n{1}".format(
+                    fcache, new_metadata
+                )
+            )
         try:
             save_to_hdf(
                 df,
                 fcache,
-                metadata=expected_metadata,
+                metadata=new_metadata,
                 version=radis.__version__,
                 key="df",
                 overwrite=True,

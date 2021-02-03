@@ -12,8 +12,8 @@ def hdf2df(
     fname,
     columns=None,
     isotope=None,
-    load_only_wavenum_above=None,
-    load_only_wavenum_below=None,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
     verbose=True,
     store_kwargs={},
 ):
@@ -30,7 +30,7 @@ def hdf2df(
     isotope: str
         load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
         everything. Default ``None``.
-    load_only_wavenum_above, load_only_wavenum_below: float (cm-1)
+    load_wavenum_min, load_wavenum_max: float (cm-1)
         load only specific wavelength.
 
     Other Parameters
@@ -58,8 +58,7 @@ def hdf2df(
         df = hdf2df(path, isotope='2')
         df = hdf2df(path, isotope='1,2)
 
-        df = hdf2df(path, load_only_wavenum_above=2300,
-                    load_only_wavenum_below=2500)
+        df = hdf2df(path, load_wavenum_min=2300, load_wavenum_max=2500)
 
     Notes
     -----
@@ -73,10 +72,10 @@ def hdf2df(
     """
 
     where = []
-    if load_only_wavenum_above is not None:
-        where.append(f"wav > {load_only_wavenum_above}")
-    if load_only_wavenum_below is not None:
-        where.append(f"wav < {load_only_wavenum_below}")
+    if load_wavenum_min is not None:
+        where.append(f"wav > {load_wavenum_min}")
+    if load_wavenum_max is not None:
+        where.append(f"wav < {load_wavenum_max}")
     if isotope:
         where.append(f'iso in {isotope.split(",")}')
 

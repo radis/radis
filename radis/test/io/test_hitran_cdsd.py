@@ -185,12 +185,12 @@ def test_hitemp(verbose=True, warnings=True, **kwargs):
     return True
 
 
-def run_example():
+def _run_example(verbose=False):
     from radis import SpectrumFactory
 
     setup_test_line_databases(
-        verbose=True
-    )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
+        verbose=verbose
+    )  # add HITEMP-CO2-TEST in ~/.radis if not there
     sf = SpectrumFactory(
         wavelength_min=4165,
         wavelength_max=4200,
@@ -200,14 +200,21 @@ def run_example():
         isotope="1,2",
         cutoff=1e-25,  # cm/molecule
         broadening_max_width=10,  # cm-1
+        verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/.radis
 
 
 def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
+    """Checks that if a line database is manually updated (last edited time changes),
+    its cache file will be regenerated automatically
+    """
 
-    run_example()
+    # Initialisation
+    # --------------
+    # Run case : we generate a first cache file
+    _run_example(verbose=verbose)
     # get time when line database file was last modified
     file_last_modification = getmtime(
         getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par")
@@ -216,7 +223,17 @@ def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
     cache_last_modification = getmtime(
         getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.h5")
     )
-    # change the time when line database was last modified
+
+    # To be sure, re run-example and make sure the cache file was not regenerated.
+    _run_example(verbose=verbose)
+    assert cache_last_modification == getmtime(
+        getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.h5")
+    )
+
+    # Test
+    # ----
+    # Now we fake the manual editing of the database.
+    # change the time when line database was last modified :
     stinfo = os.stat(getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par"))
     access_time = stinfo.st_atime
     os.utime(
@@ -230,7 +247,8 @@ def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
 
     assert file_last_modification_again > file_last_modification
 
-    run_example()
+    # Run case : this should re-generated the cache file
+    _run_example(verbose=verbose)
 
     cache_last_modification_again = getmtime(
         getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.h5")

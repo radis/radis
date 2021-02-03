@@ -95,8 +95,8 @@ def hit2df(
     cache=False,
     verbose=True,
     drop_non_numeric=True,
-    load_only_wavenum_above=None,
-    load_only_wavenum_below=None,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
@@ -124,14 +124,10 @@ def hit2df(
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
-
-    load_only_wavenum_above: float
-        only load the cached file if it contains data for wavenumbers above the specified value.
-        see :py:func`~radis.misc.cache_files`. Default ``0.0``.
-
-    load_only_wavenum_below: float
-        only load the cached file if it contains data for wavenumbers below the specified value.
-        see :py:func`~radis.misc.cache_files`. Default ``Inf``.
+    load_wavenum_min, load_wavenum_max: float
+        if not ``'None'``, only load the cached file if it contains data for
+        wavenumbers above/below the specified value. See :py:func`~radis.misc.cache_files`.
+        Default ``'None'``.
 
     Returns
     -------
@@ -161,26 +157,34 @@ def hit2df(
     :func:`~radis.io.cdsd.cdsd2df`
     """
     metadata = {}
-    # metadata["last_modification"] = time.ctime(getmtime(getTestFile(fname)))
+    # Last modification time of the original file :
     metadata["last_modification"] = time.ctime(getmtime(fname))
     if verbose >= 2:
         print("Opening file {0} (cache={1})".format(fname, cache))
         print("Last modification time: {0}".format(metadata["last_modification"]))
+    if load_wavenum_min and load_wavenum_max:
+        assert load_wavenum_min < load_wavenum_max
 
     columns = columns_2004
 
     # Use cache file if possible
     fcache = cache_file_name(fname)
     if cache and exists(fcache):
+        relevant_if_metadata_above = (
+            {"wavenum_max": load_wavenum_min} if load_wavenum_max else {}
+        )  # not relevant if wavenum_max of file is < wavenum min required
+        relevant_if_metadata_below = (
+            {"wavenum_min": load_wavenum_max} if load_wavenum_min else {}
+        )  # not relevant if wavenum_min of file is > wavenum max required
         df = load_h5_cache_file(
             fcache,
             cache,
-            expected_metadata=metadata,
+            valid_if_metadata_is=metadata,
+            relevant_if_metadata_above=relevant_if_metadata_above,
+            relevant_if_metadata_below=relevant_if_metadata_below,
             current_version=radis.__version__,
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             verbose=verbose,
-            load_only_wavenum_above=load_only_wavenum_above,
-            load_only_wavenum_below=load_only_wavenum_below,
         )
         if df is not None:
             return df
@@ -232,28 +236,41 @@ def hit2df(
         if "branch" in df:
             replace_PQR_with_m101(df)
         df = drop_object_format_columns(df, verbose=verbose)
-    metadata["wavenum_min"] = df.wav.iloc[0]
-    metadata["wavenum_max"] = df.wav.iloc[-1]
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
+        new_metadata = {
+            # Last modification time of the original file :
+            "last_modification": time.ctime(getmtime(fname)),
+            "wavenum_min": df.wav.min(),
+            "wavenum_max": df.wav.max(),
+        }
         if verbose:
-            print("Generating cached file: {0}".format(fcache))
+            print(
+                "Generating cache file {0} with metadata :\n{1}".format(
+                    fcache, new_metadata
+                )
+            )
         try:
             save_to_hdf(
                 df,
                 fcache,
-                metadata=metadata,
+                metadata=new_metadata,
                 version=radis.__version__,
                 key="df",
                 overwrite=True,
                 verbose=verbose,
             )
-        except:
+        except PermissionError:
             if verbose:
                 print(sys.exc_info())
                 print("An error occured in cache file generation. Lookup access rights")
             pass
+
+    # TODO : get only wavenum above/below 'load_wavenum_min', 'load_wavenum_max'
+    # by parsing df.wav.   Completely irrelevant files are discarded in 'load_h5_cache_file'
+    # but files that have partly relevant lines are fully loaded.
+    # Note : cache file is generated with the full line list.
 
     return df
 

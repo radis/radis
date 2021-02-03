@@ -976,8 +976,8 @@ class DatabankLoader(object):
             df = fetch_hitemp(
                 molecule,
                 isotope=isotope_list,
-                load_only_wavenum_above=wavenum_min,
-                load_only_wavenum_below=wavenum_max,
+                load_wavenum_min=wavenum_min,
+                load_wavenum_max=wavenum_max,
                 cache=db_use_cached,
                 verbose=self.verbose,
             )
@@ -1895,25 +1895,15 @@ class DatabankLoader(object):
                 # Read all the lines
                 # ... this is where the cache files are read/generated.
                 try:
-                    if dbformat == "cdsd-hitemp":
+                    if dbformat in ["cdsd-hitemp", "cdsd-4000"]:
                         df = cdsd2df(
                             filename,
-                            version="hitemp",
+                            version="hitemp" if dbformat == "cdsd-hitemp" else "4000",
                             cache=db_use_cached,
                             verbose=verbose,
                             drop_non_numeric=True,
-                            load_only_wavenum_above=wavenum_min,
-                            load_only_wavenum_below=wavenum_max,
-                        )
-                    elif dbformat == "cdsd-4000":
-                        df = cdsd2df(
-                            filename,
-                            version="4000",
-                            cache=db_use_cached,
-                            verbose=verbose,
-                            drop_non_numeric=True,
-                            load_only_wavenum_above=wavenum_min,
-                            load_only_wavenum_below=wavenum_max,
+                            load_wavenum_min=wavenum_min,
+                            load_wavenum_max=wavenum_max,
                         )
                     elif dbformat in ["hitran", "hitemp"]:
                         df = hit2df(
@@ -1921,8 +1911,8 @@ class DatabankLoader(object):
                             cache=db_use_cached,
                             verbose=verbose,
                             drop_non_numeric=True,
-                            load_only_wavenum_above=wavenum_min,
-                            load_only_wavenum_below=wavenum_max,
+                            load_wavenum_min=wavenum_min,
+                            load_wavenum_max=wavenum_max,
                         )
                     elif dbformat == "hdf5":
                         df = hdf2df(
@@ -1933,21 +1923,18 @@ class DatabankLoader(object):
                             isotope=self.input.isotope
                             if self.input.isotope != "all"
                             else None,
-                            load_only_wavenum_above=wavenum_min,
-                            load_only_wavenum_below=wavenum_max,
+                            load_wavenum_min=wavenum_min,
+                            load_wavenum_max=wavenum_max,
                         )
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
-                except IrrelevantFileWarning:
+                except IrrelevantFileWarning as err:
                     if db_use_cached == "force":
-                        if verbose >= 2:
-                            printr(
-                                "Database file {0} is irrelevant for the calcul".format(
-                                    filename
-                                )
-                            )
                         raise
                     else:
+                        # Irrelevant file, just print and continue.
+                        if verbose >= 2:
+                            printg(str(err))
                         continue
 
                 # Drop columns (helps fix some Memory errors)

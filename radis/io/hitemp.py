@@ -57,8 +57,8 @@ def fetch_hitemp(
     local_databases="~/.radisdb/",
     databank_name="HITEMP-{molecule}",
     isotope=None,
-    load_only_wavenum_above=None,
-    load_only_wavenum_below=None,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
     cache=True,
     verbose=True,
 ):
@@ -77,8 +77,8 @@ def fetch_hitemp(
     isotope: str
         load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
         everything. Default ``None``.
-    load_only_wavenum_above, load_only_wavenum_below: float (cm-1)
-        load only specific wavelength.
+    load_wavenum_min, load_wavenum_max: float (cm-1)
+        load only specific wavenumbers.
 
     Other Parameters
     ----------------
@@ -157,8 +157,8 @@ def fetch_hitemp(
         return hdf2df(
             output,
             isotope=isotope,
-            load_only_wavenum_below=load_only_wavenum_below,
-            load_only_wavenum_above=load_only_wavenum_above,
+            load_wavenum_min=load_wavenum_min,
+            load_wavenum_max=load_wavenum_max,
             verbose=verbose,
         )
 
@@ -262,8 +262,8 @@ def fetch_hitemp(
     return hdf2df(
         output,
         isotope=isotope,
-        load_only_wavenum_below=load_only_wavenum_below,
-        load_only_wavenum_above=load_only_wavenum_above,
+        load_wavenum_min=load_wavenum_min,
+        load_wavenum_max=load_wavenum_max,
         verbose=verbose,
     )
 
