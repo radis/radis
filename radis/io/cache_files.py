@@ -571,7 +571,7 @@ def save_to_hdf(
 
     # ... add RADIS version
     if version is None:
-        version = radis.get_version()
+        version = radis.__version__
     metadata.update({"version": version})
 
     with pd.HDFStore(fname, mode="a") as store:

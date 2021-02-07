@@ -166,7 +166,9 @@ def fetch_hitemp(
         if verbose:
             print("Created folder :", local_databases)
 
-    output = join(local_databases, molecule + "-" + inputf.replace(".par.bz2", ".h5"))
+    output = abspath(
+        join(local_databases, molecule + "-" + inputf.replace(".par.bz2", ".h5"))
+    )
 
     if not cache or cache == "regen":
         # Delete existing HDF5 file
@@ -177,7 +179,7 @@ def fetch_hitemp(
             os.remove(output)
 
     if exists(output):
-        # TODO check metadata here?
+        # check metadata :
         check_not_deprecated(
             output,
             metadata_is={},
@@ -192,12 +194,63 @@ def fetch_hitemp(
             if load_wavenum_max
             else {},
         )
-        try:
-            assert databank_name in getDatabankList()
-        except AssertionError:
-            raise AssertionError(
-                f"{databank_name} not declared in your RADIS ~/.config file although {output} exists. If you know this file, add it to ~/.radisdb manually. Else regenerate the database with: \n\t>>> radis.SpectrumFactory().fetch_databank(..., use_cached='regen') \nor\n\t>>> radis.io.hitemp.fetch_hitemp({molecule}, cache='regen')\n\n⚠️ It will re-download & uncompress the whole database from HITEMP.\n\nList of declared databanks: {getDatabankList()} "
+        # check database is registered in ~/.radis
+        if not databank_name in getDatabankList():
+            # if not, check number of rows is correct :
+            error_msg = ""
+            with pd.HDFStore(output, "r+") as store:
+                nrows = store.get_storer("df").nrows
+                if nrows != INFO_HITEMP_LINE_COUNT[molecule]:
+                    error_msg += (
+                        f"\nNumber of lines in local database ({nrows:,}) "
+                        + "differ from the expected number of lines for "
+                        + f"HITEMP {molecule}: {INFO_HITEMP_LINE_COUNT[molecule]}"
+                    )
+                file_metadata = store.get_storer("df").attrs.metadata
+                for k in [
+                    "wavenumber_min",
+                    "wavenumber_max",
+                    "download_url",
+                    "download_date",
+                ]:
+                    if k not in file_metadata:
+                        error_msg += (
+                            "\nMissing key in file metadata to register the database "
+                            + f"automatically : {k}"
+                        )
+
+            if error_msg:
+                raise ValueError(
+                    f"{databank_name} not declared in your RADIS ~/.config file although "
+                    + f"{output} exists. {error_msg}\n"
+                    + "If you know this file, add it to ~/.radisdb manually. "
+                    + "Else regenerate the database with:\n\t"
+                    + ">>> radis.SpectrumFactory().fetch_databank(..., use_cached='regen')"
+                    + "\nor\n\t"
+                    + ">>> radis.io.hitemp.fetch_hitemp({molecule}, cache='regen')"
+                    + "\n\n⚠️ It will re-download & uncompress the whole database "
+                    + "from HITEMP.\n\nList of declared databanks: {getDatabankList()}.\n"
+                    + f"{output} metadata: {file_metadata}"
+                )
+
+            # Else database looks ok : register it
+            if verbose:
+                print(
+                    f"{databank_name} not declared in your RADIS ~/.config file although "
+                    + f"{output} exists. Registering the database automatically."
+                )
+
+            register_database(
+                databank_name,
+                [output],
+                molecule=molecule,
+                wmin=file_metadata["wavenumber_min"],
+                wmax=file_metadata["wavenumber_max"],
+                download_date=file_metadata["download_date"],
+                urlname=file_metadata["download_url"],
+                verbose=verbose,
             )
+
         if verbose:
             print(f"Using existing database {databank_name}")
         return hdf2df(
@@ -267,7 +320,7 @@ def fetch_hitemp(
                 Nlines += len(df)
                 pb.update(
                     Nlines,
-                    message=f"Got {Nlines} / {Ntotal_lines_expected} total lines. {wmin:.3f}-{wmax:.3f} cm-1 wavenumber range is complete.",
+                    message=f"Got {Nlines:,} / {Ntotal_lines_expected:,} total lines. {wmin:.3f}-{wmax:.3f} cm-1 wavenumber range is complete.",
                 )
 
                 # Reinitialize for next read
@@ -280,18 +333,75 @@ def fetch_hitemp(
                 "wavenumber_max": wmax,
                 "download_date": download_date,
                 "download_url": urlname,
-                "version": radis.get_version(add_git_number=False),
+                "version": radis.__version__,
             }
             pb.done()
 
-    # Add to registered Databanks in RADIS config file
+    # Done: add final checks
+    # ... check on the created file that all lines are there :
+    with pd.HDFStore(output, "r+") as store:
+        nrows = store.get_storer("df").nrows
+        assert nrows == Nlines
+        if nrows != INFO_HITEMP_LINE_COUNT[molecule]:
+            raise AssertionError(
+                f"Number of lines in local database ({nrows:,}) "
+                + "differ from the expected number of lines for "
+                + f"HITEMP {molecule}: {INFO_HITEMP_LINE_COUNT[molecule]}"
+                + ". Check that there was no recent update on HITEMP. "
+                + "Else it may be a download error ?"
+            )
+
+    # Add database to  ~/.radis
+    register_database(
+        databank_name, [output], molecule, wmin, wmax, download_date, urlname, verbose
+    )
+
+    return hdf2df(
+        output,
+        isotope=isotope,
+        load_wavenum_min=load_wavenum_min,
+        load_wavenum_max=load_wavenum_max,
+        verbose=verbose,
+    )
+
+
+def register_database(
+    databank_name, path_list, molecule, wmin, wmax, download_date, urlname, verbose
+):
+    """Add to registered databases in RADIS config file.
+
+    If database exists, assert it has the same entries.
+
+    Parameters
+    ----------
+    databank_name: str
+        name of the database in :ref:`~/.radis config file <label_lbl_config_file>`
+
+    Other Parameters
+    ----------------
+    verbose: bool
+
+    Returns
+    -------
+    None:
+        adds to :ref:`~/.radis <label_lbl_config_file>` with all the input
+        parameters. Also adds ::
+
+            format : "hdf5"
+            parfuncfmt : "hapi"   # TIPS-2017 for equilibrium partition functions
+
+        And if the molecule is in :py:attr:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`::
+
+            levelsfmt : "radis"   # use RADIS spectroscopic constants for rovibrational energies (nonequilibrium)
+
+    """
     dict_entries = {
         "info": f"HITEMP {molecule} lines ({wmin:.1f}-{wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions",
-        "path": [abspath(output)],
+        "path": path_list,
         "format": "hdf5",
         "parfuncfmt": "hapi",
-        "wavenumber_min": wmin,
-        "wavenumber_max": wmax,
+        "wavenumber_min": f"{wmin}",
+        "wavenumber_max": f"{wmax}",
         "download_date": download_date,
         "download_url": urlname,
     }
@@ -326,14 +436,6 @@ def fetch_hitemp(
                 print(
                     f"{databank_name} already registered in ~/.radis config file, with the same parameters."
                 )
-
-    return hdf2df(
-        output,
-        isotope=isotope,
-        load_wavenum_min=load_wavenum_min,
-        load_wavenum_max=load_wavenum_max,
-        verbose=verbose,
-    )
 
 
 #%%
