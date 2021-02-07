@@ -91,7 +91,6 @@ columns_2004 = OrderedDict(
 
 def hit2df(
     fname,
-    count=-1,
     cache=True,
     verbose=True,
     drop_non_numeric=True,
@@ -104,8 +103,6 @@ def hit2df(
     ----------
     fname: str
         HITRAN-HITEMP file name
-    count: int
-        number of items to read (-1 means all file)
     cache: boolean, or ``'regen'`` or ``'force'``
         if ``True``, a pandas-readable HDF5 file is generated on first access,
         and later used. This saves on the datatype cast and conversion and
@@ -194,7 +191,7 @@ def hit2df(
 
     # %% Start reading the full file
 
-    df = parse_hitran_file(fname, columns, count)
+    df = parse_hitran_file(fname, columns)
 
     # %% Post processing
 

@@ -77,8 +77,11 @@ def load_h5_cache_file(
         (in that case, raise an error)
     valid_if_metadata_is: dict
         values are compared to cache file attributes. If they dont match,
-        the fonction returns a :py:class:`~radis.misc.warning.DeprecatedFileWarning`.
-        See ``use_cached`` to know how to handle deprecated files
+        the file is considered deprecated. See ``use_cached`` to know
+        how to handle deprecated files
+
+        .. note::
+            if the file has extra attributes they are not compared
     current_version: str
         version is compared to cache file version (part of attributes).
         If current version is superior, a simple warning is triggered.
@@ -151,15 +154,21 @@ def load_h5_cache_file(
             os.remove(cachefile)
             return None
 
-    # 4. File is not not deprecated: check if it is relevant (ex : wavenumber min/max)
-    # ... raises a IrelevantFileWarning
-    if relevant_if_metadata_above or relevant_if_metadata_below:
-        check_relevancy(
-            cachefile,
-            relevant_if_metadata_above,
-            relevant_if_metadata_below,
-            verbose=verbose,
-        )
+    # 4. File is not not deprecated: read the the extremum wavenumbers.    raise
+    if relevant_if_metadata_above is not None or relevant_if_metadata_below is not None:
+        try:
+            check_relevancy(
+                cachefile,
+                relevant_if_metadata_above,
+                relevant_if_metadata_below,
+            )
+        # ... if irrelevant, raise an error only if 'force'
+        except IrrelevantFileWarning as err:
+            if verbose >= 2:
+                from radis.misc.printer import printg
+
+                printg("Database file {0} irrelevant and not loaded".format(cachefile))
+            raise err
 
     # 5. File is relevant: read the content.
     df = None
@@ -307,7 +316,6 @@ def check_not_deprecated(
     metadata_keys_contain=[],
     current_version=None,
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
-    check_wavenumbers=False,
 ):
     """Make sure cache file is not deprecated: checks that ``metadata`` is the
     same, and that the version under which the file was generated is valid.

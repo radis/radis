@@ -90,7 +90,7 @@ from radis.misc.basics import compare_dict, compare_lists
 from radis.misc.config import getDatabankEntries, getDatabankList, printDatabankEntries
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
-from radis.misc.printer import printg, printr
+from radis.misc.printer import printg
 from radis.misc.utils import get_files_from_regex
 from radis.misc.warning import (
     EmptyDatabaseError,
@@ -1114,7 +1114,6 @@ class DatabankLoader(object):
 
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
-
         # %% Check inputs
         # ---------
 
@@ -1156,7 +1155,6 @@ class DatabankLoader(object):
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
-            levelsfmt=levelsfmt,
             lvl_use_cached=lvl_use_cached,
             include_neighbouring_lines=include_neighbouring_lines,
         )
