@@ -63,6 +63,7 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # (on the slide bar on the right)
 
 import os
+import warnings
 from os.path import abspath, exists
 from time import time
 from uuid import uuid1
@@ -74,7 +75,10 @@ import pandas as pd
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
+from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
+from radis.io.hdf5 import hdf2df
+from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import hit2df, parse_global_quanta, parse_local_quanta
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
@@ -87,9 +91,6 @@ from radis.levels.partfunc import (
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.arrays import count_nans
 from radis.misc.basics import compare_dict, compare_lists
-
-# from radis.io.hitran import hit2dfTAB
-from radis.misc.cache_files import cache_file_name
 from radis.misc.config import getDatabankEntries, getDatabankList, printDatabankEntries
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
@@ -104,12 +105,14 @@ from radis.misc.warning import (
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 
-KNOWN_DBFORMAT = ["hitran", "cdsd-hitemp", "cdsd-4000"]
+KNOWN_DBFORMAT = ["hitran", "hitemp", "cdsd-hitemp", "cdsd-4000", "hdf5"]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : for HITRAN and HITEMP-2010
+- ``'hitran'`` : HITRAN original .par format
+- ``'hitemp'`` : HITEMP-2010 original format (same format as 'hitran')
 - ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
-- ``'cdsd-4000'`` : CDSD-4000 (CO2 only)
+- ``'cdsd-4000'`` : CDSD-4000 original format (CO2 only)
+- ``'hdf5'`` : HDF5 file with RADIS column names.
 
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
 and the :ref:`list of databases <label_line_databases>` .
@@ -154,8 +157,10 @@ See Also
 
 drop_auto_columns_for_dbformat = {
     "hitran": ["ierr", "iref", "lmix", "gp", "gpp"],
+    "hitemp": ["ierr", "iref", "lmix", "gp", "gpp"],
     "cdsd-4000": ["wang2"],
     "cdsd-hitemp": ["wang2", "lsrc"],
+    "hdf5": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -773,6 +778,7 @@ class DatabankLoader(object):
             levels,
             levelsfmt,
             db_use_cached,
+            lvl_use_cached,
             drop_columns,
             buffer,
             load_energies,
@@ -795,6 +801,7 @@ class DatabankLoader(object):
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
+            lvl_use_cached=lvl_use_cached,
             load_energies=load_energies,
             include_neighbouring_lines=include_neighbouring_lines,
         )
@@ -804,8 +811,7 @@ class DatabankLoader(object):
 
     def fetch_databank(
         self,
-        source="astroquery",
-        format="hitran",
+        source="hitran",
         parfunc=None,
         parfuncfmt="hapi",
         levels=None,
@@ -813,16 +819,21 @@ class DatabankLoader(object):
         load_energies=True,
         include_neighbouring_lines=True,
         drop_non_numeric=True,
+        db_use_cached=True,
+        lvl_use_cached=True,
     ):
-        """Fetch databank with Astroquery [1]_
+        """Fetch the latest databank files from HITRAN or HITEMP with the
+        https://hitran.org/ API.
 
         Parameters
         ----------
-        source: ``'astroquery'``
-            where to download database from
-        format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-            database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
-            and ``'cdsd-4000'`` for the different CDSD versions. Default 'hitran'
+        source: ``'hitran'``, ``'hitemp'``
+            [Download database lines from the latest HITRAN (see [HITRAN-2016]_)
+            or HITEMP version (see [HITEMP-2010]_  )]
+
+        Other Parameters
+        ----------------
+
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
@@ -839,7 +850,7 @@ class DatabankLoader(object):
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
-            If None, non equilibrium calculations are not possible. Default ``None``.
+            If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
@@ -847,20 +858,27 @@ class DatabankLoader(object):
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``broadening_max_width``
             parameter is used to determine the limit. Default ``True``.
-
-        Other Parameters
-        ----------------
         drop_non_numeric: boolean
             if ``True``, non numeric columns are dropped. This improves performances,
             but make sure all the columns you need are converted to numeric formats
             before hand. Default ``True``. Note that if a cache file is loaded it
             will be left untouched.
+        db_use_cached: bool, or ``'regen'``
+            use cached
+
+        Notes
+        -----
+
+        HITRAN is fetched with Astroquery [1]_  and HITEMP with
+        :py:func:`~radis.io.hitemp.fetch_hitemp`
+
+        HITEMP files are generated in a ~/.radisdb database.
+
 
         See Also
         --------
         - Load from local files: :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
         - Load when needed: :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
-
 
         References
         ----------
@@ -875,24 +893,25 @@ class DatabankLoader(object):
         # | see implementation in load_databank.
 
         # Check inputs
-        if source not in ["astroquery"]:
-            raise NotImplementedError("source: {0}".format(source))
         if source == "astroquery":
-            assert format == "hitran"
+            warnings.warn(
+                DeprecationWarning(
+                    "source='astroquery' replaced with source='hitran' in 0.9.28"
+                )
+            )
+            source = "hitran"
+        if not source in ["hitran", "hitemp"]:
+            raise NotImplementedError("source: {0}".format(source))
+        if source == "hitran":
+            dbformat = "hitran"
+        elif source == "hitemp":
+            dbformat = "hdf5"  # downloaded in RADIS local databases ~/.radisdb
 
         # Get inputs
-        dbformat = format
-
         molecule = self.input.molecule
+        isotope = self.input.isotope
         if not molecule:
             raise ValueError("Please define `molecule=` so the database can be fetched")
-
-        isotope = self.input.isotope
-        if isotope == "all":
-            raise ValueError(
-                "Please define isotope explicitely (cannot use 'all' with fetch_databank)"
-            )
-        isotope_list = self._get_isotope_list()
 
         if include_neighbouring_lines:
             wavenum_min = self.params.wavenum_min_calc
@@ -901,29 +920,79 @@ class DatabankLoader(object):
             wavenum_min = self.input.wavenum_min
             wavenum_max = self.input.wavenum_max
 
+        # Let's store all params so they can be parsed by "get_conditions()"
+        # and saved in output spectra information
+        self.params.dbpath = "fetched from " + source
+        self.params.dbformat = dbformat
+        if levels is not None:
+            self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
+        else:
+            self.levelspath = None
+        self.params.levelsfmt = levelsfmt
+        self.params.parfuncpath = format_paths(parfunc)
+        self.params.parfuncfmt = parfuncfmt
+        self.params.db_use_cached = db_use_cached
+        self.params.lvl_use_cached = lvl_use_cached
+
         # %% Init Line database
         # ---------------------
 
-        frames = []  # lines for all isotopes
-        for iso in isotope_list:
-            df = fetch_astroquery(
-                molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
-            )
-            frames.append(df)
+        if source == "hitran":
+            # Query one isotope at a time
+            if isotope == "all":
+                raise ValueError(
+                    "Please define isotope explicitely (cannot use 'all' with fetch_databank)"
+                )
+            isotope_list = self._get_isotope_list()
 
-        # Merge
-        if frames == []:
-            raise EmptyDatabaseError("Dataframe is empty")
-        else:
-            df = pd.concat(frames, ignore_index=True)  # reindex
-            if len(df) == 0:
-                raise EmptyDatabaseError(
-                    "Dataframe is empty on range "
-                    + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+            frames = []  # lines for all isotopes
+            for iso in isotope_list:
+                df = fetch_astroquery(
+                    molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
+                )
+                frames.append(df)
+
+            # Merge
+            if frames == []:
+                raise EmptyDatabaseError("Dataframe is empty")
+            else:
+                df = pd.concat(frames, ignore_index=True)  # reindex
+
+        elif source == "hitemp":
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                isotope_list = None
+            else:
+                isotope_list = ",".join(self._get_isotope_list())
+
+            df = fetch_hitemp(
+                molecule,
+                isotope=isotope_list,
+                load_wavenum_min=wavenum_min,
+                load_wavenum_max=wavenum_max,
+                cache=db_use_cached,
+                verbose=self.verbose,
+            )
+
+            # ... explicitely write all isotopes based on isotopes found in the database
+            if isotope == "all":
+                self.input.isotope = ",".join(
+                    [str(k) for k in self._get_isotope_list(df=df)]
                 )
 
-        df = parse_local_quanta(df, molecule)
-        df = parse_global_quanta(df, molecule)
+        if len(df) == 0:
+            raise EmptyDatabaseError(
+                "Dataframe is empty on range "
+                + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+            )
+
+        # Post-processing of the line database :
+        if (
+            levelsfmt != None
+        ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
+            df = parse_local_quanta(df, molecule)
+            df = parse_global_quanta(df, molecule)
 
         # Remove non numerical attributes
         if drop_non_numeric:
@@ -959,20 +1028,6 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        # %% Store
-
-        # Let's store all params so they can be parsed by "get_conditions()"
-        # and saved in output spectra information
-        self.params.dbpath = "fetched from " + source
-        self.params.dbformat = dbformat
-        if levels is not None:
-            self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
-        else:
-            self.levelspath = None
-        self.params.levelsfmt = levelsfmt
-        self.params.parfuncpath = format_paths(parfunc)
-        self.params.parfuncfmt = parfuncfmt
-
         return
 
     def load_databank(
@@ -984,7 +1039,8 @@ class DatabankLoader(object):
         parfuncfmt=None,
         levels=None,
         levelsfmt=None,
-        db_use_cached=None,
+        db_use_cached=True,
+        lvl_use_cached=True,
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
@@ -1050,7 +1106,7 @@ class DatabankLoader(object):
             to regenerate them if you happen to change the database. If ``'regen'``,
             existing cached files are removed and regenerated.
             It is also used to load energy levels from ``.h5`` cache file if exist.
-            If ``None``, the value given on Factory creation is used. Default ``None``
+            If ``None``, the value given on Factory creation is used. Default ``True``
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
@@ -1125,6 +1181,7 @@ class DatabankLoader(object):
                 levels,
                 levelsfmt,
                 db_use_cached,
+                lvl_use_cached,
                 drop_columns,
                 buffer,
                 load_energies,
@@ -1138,10 +1195,25 @@ class DatabankLoader(object):
                 levels=levels,
                 levelsfmt=levelsfmt,
                 db_use_cached=db_use_cached,
+                lvl_use_cached=lvl_use_cached,
                 load_energies=load_energies,
                 include_neighbouring_lines=include_neighbouring_lines,
                 drop_columns=drop_columns,
                 buffer=buffer,
+            )
+            # Let's store all params so they can be parsed by "get_conditions()"
+            # and saved in output spectra information
+            self._store_database_params(
+                name=name,
+                path=path,
+                format=dbformat,
+                parfunc=parfunc,
+                parfuncfmt=parfuncfmt,
+                levels=levels,
+                levelsfmt=levelsfmt,
+                db_use_cached=db_use_cached,
+                lvl_use_cached=lvl_use_cached,
+                include_neighbouring_lines=include_neighbouring_lines,
             )
             # Now that we're all set, let's load everything
 
@@ -1186,21 +1258,6 @@ class DatabankLoader(object):
             if load_energies:
                 self._init_rovibrational_energies(levels, levelsfmt)
 
-            # %% Store
-
-            # Let's store all params so they can be parsed by "get_conditions()"
-            # and saved in output spectra information
-            self._store_database_params(
-                name=name,
-                path=path,
-                format=dbformat,
-                parfunc=parfunc,
-                parfuncfmt=parfuncfmt,
-                levels=levels,
-                levelsfmt=levelsfmt,
-                db_use_cached=db_use_cached,
-                include_neighbouring_lines=include_neighbouring_lines,
-            )
             return
 
         except MemoryError as err:
@@ -1227,6 +1284,7 @@ class DatabankLoader(object):
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
+        lvl_use_cached=None,
         load_energies=True,
         include_neighbouring_lines=True,
         drop_columns="auto",
@@ -1368,6 +1426,7 @@ class DatabankLoader(object):
             levels,
             levelsfmt,
             db_use_cached,
+            lvl_use_cached,
             drop_columns,
             buffer,
             load_energies,
@@ -1384,6 +1443,7 @@ class DatabankLoader(object):
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
+        lvl_use_cached=None,
         load_energies=True,
         include_neighbouring_lines=True,
     ):
@@ -1411,6 +1471,8 @@ class DatabankLoader(object):
         self.params.parfuncpath = format_paths(parfunc)
         self.params.parfuncfmt = parfuncfmt
         self.params.include_neighbouring_lines = include_neighbouring_lines
+        self.params.db_use_cached = db_use_cached
+        self.params.lvl_use_cached = lvl_use_cached
         self.misc.load_energies = load_energies
 
     def init_database(
@@ -1829,50 +1891,49 @@ class DatabankLoader(object):
                 if __debug__:
                     printdbg("Loading {0}/{1}".format(i + 1, len(files)))
 
-                # Now read all the lines
+                # Read all the lines
                 # ... this is where the cache files are read/generated.
                 try:
-                    if dbformat == "cdsd-hitemp":
+                    if dbformat in ["cdsd-hitemp", "cdsd-4000"]:
                         df = cdsd2df(
                             filename,
-                            version="hitemp",
+                            version="hitemp" if dbformat == "cdsd-hitemp" else "4000",
                             cache=db_use_cached,
                             verbose=verbose,
                             drop_non_numeric=True,
-                            load_only_wavenum_above=wavenum_min,
-                            load_only_wavenum_below=wavenum_max,
+                            load_wavenum_min=wavenum_min,
+                            load_wavenum_max=wavenum_max,
                         )
-                    elif dbformat == "cdsd-4000":
-                        df = cdsd2df(
-                            filename,
-                            version="4000",
-                            cache=db_use_cached,
-                            verbose=verbose,
-                            drop_non_numeric=True,
-                            load_only_wavenum_above=wavenum_min,
-                            load_only_wavenum_below=wavenum_max,
-                        )
-                    elif dbformat == "hitran":
+                    elif dbformat in ["hitran", "hitemp"]:
                         df = hit2df(
                             filename,
                             cache=db_use_cached,
                             verbose=verbose,
                             drop_non_numeric=True,
-                            load_only_wavenum_above=wavenum_min,
-                            load_only_wavenum_below=wavenum_max,
+                            load_wavenum_min=wavenum_min,
+                            load_wavenum_max=wavenum_max,
+                        )
+                    elif dbformat == "hdf5":
+                        df = hdf2df(
+                            filename,
+                            # cache=db_use_cached,
+                            verbose=verbose,
+                            # drop_non_numeric=True,
+                            isotope=self.input.isotope
+                            if self.input.isotope != "all"
+                            else None,
+                            load_wavenum_min=wavenum_min,
+                            load_wavenum_max=wavenum_max,
                         )
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
-                except IrrelevantFileWarning:
+                except IrrelevantFileWarning as err:
                     if db_use_cached == "force":
-                        if verbose >= 2:
-                            printr(
-                                "Database file {0} is irrelevant for the calcul".format(
-                                    filename
-                                )
-                            )
                         raise
                     else:
+                        # Irrelevant file, just print and continue.
+                        if verbose >= 2:
+                            printg(str(err))
                         continue
 
                 # Drop columns (helps fix some Memory errors)
@@ -1887,6 +1948,7 @@ class DatabankLoader(object):
                     print("Dropped columns: {0}".format(dropped))
 
                 # Crop to the wavenumber of interest
+                # TODO : is it still needed since we use load_only_wavenum_above ?
                 df = df[(df.wav >= wavenum_min) & (df.wav <= wavenum_max)]
 
                 if __debug__:
@@ -2458,7 +2520,7 @@ class DatabankLoader(object):
 
         return vardict
 
-    def warn(self, message, category="default"):
+    def warn(self, message, category="default", level=0):
         """Trigger a warning, an error or just ignore based on the value
         defined in the :attr:`~radis.lbl.loader.DatabankLoader.warnings`
         dictionary.
@@ -2472,6 +2534,12 @@ class DatabankLoader(object):
             what to print
         category: str
             one of the keys of self.warnings. See :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
+        level: int
+            warning level. Only print warnings when verbose level is higher
+            than the warning levels. i.e., warnings of level 1 appear only
+            if ``verbose==True``, warnings of level 2 appear only
+            for ``verbose>=2``, etc..  Warnings of level 0 appear only the time.
+            Default ``0``
 
         Notes
         -----
@@ -2483,8 +2551,10 @@ class DatabankLoader(object):
         --------
         :py:attr:`~radis.lbl.loader.DatabankLoader.warnings`
         """
-
-        return warn(message, category=category, status=self.warnings)
+        if level > self.verbose:
+            return
+        else:
+            return warn(message, category=category, status=self.warnings)
 
     def __del__(self):
         """

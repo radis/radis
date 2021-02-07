@@ -147,7 +147,16 @@ WarningClasses = {
 }
 """ dict: warnings used in RADIS Spectrum calculations.
 
-You can selectively activate them by setting the warnings attribute of
+
+Setup individual warnings. Value of keys can be:
+- 'warning' (default: just trigger a warning)
+- 'error' (raises an error on this warning)
+- 'ignore'  (do nothing)
+
+The key self.warnings['default'] will set the warning behavior for all
+other warnings
+
+You can selectively activate them at runtime by setting the warnings attribute of
 :class:`radis.lbl.factory.SpectrumFactory`
 
 See Also
@@ -155,13 +164,6 @@ See Also
 
 :py:data:`~radis.misc.warning.default_warning_status`
 """
-
-# Setup individual warnings. Value of keys can be:
-# - 'warning' (default: just trigger a warning)
-# - 'error' (raises an error on this warning)
-# - 'ignore'  (do nothing)
-# The key self.warnings['default'] will set the warning behavior for all
-# other warnings
 default_warning_status = {
     "default": "warn",  # default
     "SlitDispersionWarning": "warn",
@@ -269,7 +271,14 @@ def warn(message, category="default", status={}):
         raise ValueError("Unexpected action for warning: {0}".format(action))
 
 
-# Tests (on module load)
+# %% Config file warnings & errors
+
+
+class DatabaseAlreadyExists(KeyError):
+    pass
+
+
+#%% Tests (on module load)
 
 
 # ... test warnings are well defined

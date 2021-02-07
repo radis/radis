@@ -884,6 +884,7 @@ class BroadenFactory(BaseFactory):
             self.warn(
                 "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
                 "MissingSelfBroadeningWarning",
+                level=2,  # only appear if verbose>=2
             )
             Tdpsel = None  # if None, voigt_broadening_HWHM uses df.Tdpair
         else:
@@ -943,6 +944,7 @@ class BroadenFactory(BaseFactory):
             self.warn(
                 "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
                 "MissingSelfBroadeningWarning",
+                level=2,  # only appear if verbose>=2
             )
             Tdpsel = None
         else:

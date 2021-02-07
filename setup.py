@@ -149,9 +149,8 @@ setup(
         "numpy",
         "scipy",
         "matplotlib",
-        "pandas",
+        "pandas>=1.0.5",
         "plotly",
-        "h5py",
         "numba",
         "mpldatacursor",
         "astropy",  # Unit aware calculations
@@ -163,7 +162,6 @@ setup(
         "json-tricks>=3.15.0",  # to deal with non jsonable formats
         "tables",  # for pandas to HDF5 export
         "pytest",  # to run test suite
-        "h5py",  # to write HDF5 files
         "joblib",  # for parallel loading of SpecDatabase
         "numba",  # just-in-time compiler
     ],

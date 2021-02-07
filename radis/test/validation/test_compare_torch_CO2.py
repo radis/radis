@@ -113,7 +113,6 @@ def test_compare_torch_CO2(
         molecule="CO2",
         isotope="1,2",
         wstep=wstep,
-        db_use_cached=use_cache,
         export_lines=False,  # saves some memory
         export_populations=False,  # saves some memory
         cutoff=1e-25,
@@ -131,7 +130,11 @@ def test_compare_torch_CO2(
     #        if use_cache:
     #            sf.init_database('test_compare_torch_CO2_SpectrumDatabase_HITEMP_1e25',
     #                             add_info=['Tgas'])
-    sf.init_databank("HITEMP-CO2-DUNHAM", load_energies=False)  # saves some memory
+    sf.init_databank(
+        "HITEMP-CO2-DUNHAM",
+        load_energies=False,
+        db_use_cached=use_cache,
+    )  # saves some memory
     #    sf.init_databank('CDSD-4000')
 
     # CO
@@ -143,7 +146,6 @@ def test_compare_torch_CO2(
         molecule="CO",
         isotope="1,2",
         wstep=wstep,
-        db_use_cached=use_cache,
         export_lines=False,  # saves some memory
         export_populations=False,  # saves some memory
         cutoff=1e-25,
@@ -157,7 +159,7 @@ def test_compare_torch_CO2(
     #        if use_cache:
     #            sfco.init_database(
     #                'test_compare_torch_CO_SpectrumDatabase_HITEMP_1e25', add_info=['Tgas'])
-    sfco.init_databank("HITEMP-CO-DUNHAM")
+    sfco.init_databank("HITEMP-CO-DUNHAM", db_use_cached=use_cache)
 
     # Calculate all slabs
     # .. CO2 at equilibrium
@@ -233,14 +235,14 @@ def test_compare_torch_CO2(
     s0spectro.apply_slit(slit_function, unit="nm", norm_by=norm_by, shape="trapezoidal")
     _, I0spectro = s0spectro.get("radiance", Iunit=unit)
 
-    wtot, Itot = stot.get("radiance", Iunit=unit)
+    wtot, Itot = stot.get("radiance", wunit="nm", Iunit=unit)
     stot_corr = experimental_spectrum(
         wtot,
         Itot - I0spectro,  # hack to remove
+        wunit="nm",  # in air by default
         # emission from within
         # spectrometer
         Iunit=unit,
-        conditions={"medium": "air"},
     )
 
     # %% Compare with experiment data
@@ -256,9 +258,7 @@ def test_compare_torch_CO2(
     )
     exp.w /= 10  # Angstrom to nm
     exp = exp[(exp.w > wlmin) & (exp.w < wlmax)]
-    sexp = experimental_spectrum(
-        exp.w, exp.I, Iunit="mW/cm2/sr", conditions={"medium": "air"}
-    )
+    sexp = experimental_spectrum(exp.w, exp.I, wunit="nm", Iunit="mW/cm2/sr")
 
     if plot:
 

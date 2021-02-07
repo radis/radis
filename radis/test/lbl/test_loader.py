@@ -17,7 +17,7 @@ from radis.test.utils import getTestFile, setup_test_line_databases
 
 
 def test_retrieve_from_database(
-    plot=True, verbose=True, warnings=True, *args, **kwargs
+    plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
     """Test autoretrieve from a database:
 
@@ -80,7 +80,7 @@ def test_retrieve_from_database(
 
         # Note that s1 == s2 won't work because populations are not stored
         # by default in the database
-        assert s1.compare_with(s2, spectra_only=True)
+        assert s1.compare_with(s2, spectra_only=True, plot=plot)
 
         return True
 
@@ -127,18 +127,25 @@ def test_ignore_irrelevant_files(*args, **kwargs):
     from radis.misc.warning import EmptyDatabaseError, IrrelevantFileWarning
 
     # Regenerate .h5 cache file
-    sf = SpectrumFactory(wavenum_min=2280, wavenum_max=2290, use_cached="regen")
+    sf = SpectrumFactory(wavenum_min=2280, wavenum_max=2290)
     test_file = getTestFile("cdsd_hitemp_09_fragment.txt")
-    sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+    sf.load_databank(
+        path=test_file, format="cdsd-hitemp", parfuncfmt="hapi", db_use_cached="regen"
+    )
     assert exists(test_file.replace(".txt", ".h5"))
     # Also note that there was no EmptyDatabaseError : file was properly loaded!
 
     # Load same .h5 cache file in another spectral range
     # ... Expect an error in use_cached = 'force' (file properly detected as
     # irrelevant)
-    sf2 = SpectrumFactory(wavenum_min=100000, wavenum_max=100002, use_cached="force")
+    sf2 = SpectrumFactory(wavenum_min=100000, wavenum_max=100002)
     with pytest.raises(IrrelevantFileWarning):
-        sf2.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+        sf2.load_databank(
+            path=test_file,
+            format="cdsd-hitemp",
+            parfuncfmt="hapi",
+            db_use_cached="force",
+        )
 
     # Again without 'force'
     # ... Expect no IrrelevantFile error, however range should be empty.
@@ -147,7 +154,7 @@ def test_ignore_irrelevant_files(*args, **kwargs):
         sf3.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
 
 
-def _run_testcases(verbose=True, plot=True):
+def _run_testcases(verbose=True, plot=False):
 
     test_ignore_cached_files()
     test_retrieve_from_database(plot=plot, verbose=verbose)

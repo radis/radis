@@ -49,6 +49,7 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
                       Tgas=700,           # K
                       mole_fraction=0.1,
                       path_length=1,      # cm
+                      databank='hitran',  # or use 'hitemp'
                       )
     s.apply_slit(0.5, 'nm')       # simulate an experimental slit
     s.plot('radiance')
@@ -69,6 +70,7 @@ cache the CO(X) rovibrational energies): ::
                       Trot=300 * u.K,
                       mole_fraction=0.1,
                       path_length=1 * u.cm,
+                      databank='hitran',  # or use 'hitemp'
                       )
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous
@@ -125,6 +127,11 @@ The Quick Start examples above automatically downloaded the line databases from 
 For *high temperature* cases, you may need to use :ref:`other line databases <label_line_databases>` such as
 [HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/.radis``
 :ref:`Configuration file <label_lbl_config_file>`.
+
+.. note::
+
+  📣 starting from radis==0.9.28 you can also download HITEMP directly. Just use ``databank='hitemp'`` in the
+  initial example. This will automatically download, unzip and setup the database files in a ~/.radisdb folder.
 
 More complex :ref:`examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
 class, which is the core of RADIS line-by-line calculations.

@@ -703,11 +703,13 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
             path_length=0.1,
             mole_fraction=400e-6,
             isotope=[1],
-            db_use_cached=True,  # important to test CAche file here
             verbose=2,
         )
         sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-        sf.load_databank("HITEMP-CO2-HAMIL-TEST")
+        sf.load_databank(
+            "HITEMP-CO2-HAMIL-TEST",
+            db_use_cached=True,  # important to test CAche file here
+        )
 
         # Now generate vibrational energies for a 2-T model
         levels = sf.parsum_calc["CO2"][1]["X"].df

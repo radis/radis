@@ -55,7 +55,6 @@ def test_line_survey_CO2(verbose=True, plot=True, warnings=True, *args, **kwargs
         cutoff=1e-30,
         isotope=[1],
         save_memory=True,
-        db_use_cached=True,
     )  # 0.2)
     pl.warnings["MissingSelfBroadeningWarning"] = "ignore"
     pl.load_databank("HITRAN-CO2-TEST")

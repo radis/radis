@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 import radis
-from radis.lbl import SpectrumFactory
+from radis.lbl.factory import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
 
@@ -166,7 +166,6 @@ def test_spec_generation(
         wavelength_max=4400,
         cutoff=1e-27,
         isotope="1,2",
-        db_use_cached=True,
         broadening_max_width=50,
         optimization=None,
         # optimization="min-RMS",
@@ -308,7 +307,6 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
         path_length=10,
         mole_fraction=400e-6,
         isotope=[1],
-        db_use_cached=True,
         broadening_max_width=10,
         verbose=verbose,
     )
@@ -319,7 +317,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", db_use_cached=True)
     unit = "µW/sr/cm2"
     T = 600
 
@@ -369,7 +367,6 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         path_length=0.1,
         mole_fraction=400e-6,
         isotope=[1],
-        db_use_cached=True,
         medium="vacuum",
         broadening_max_width=10,
         verbose=verbose,

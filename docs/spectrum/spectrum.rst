@@ -349,6 +349,20 @@ Example of output::
 
 The method uses the :class:`~radis.tools.line_survey.LineSurvey` class.
 
+
+Know if a spectrum has nan
+--------------------------
+
+:py:func:`~radis.spectrum.utils.has_nan` looks over all spectral
+quantities. ``print(s)`` will also show the number of nans per quantity ::
+
+    from radis.spectrum.utils import has_nan
+    has_nan(s)
+
+
+How to export ?
+===============
+
 .. _label_spectrum_store:
 
 Save a Spectrum object

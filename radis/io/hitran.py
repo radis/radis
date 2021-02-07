@@ -28,7 +28,6 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import pandas as pd
-from numpy import Inf
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
@@ -51,12 +50,12 @@ from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_GROUP6,
     get_molecule,
 )
+from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 from radis.io.tools import (
     drop_object_format_columns,
     parse_hitran_file,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 
 # %% Parsing functions
 
@@ -93,58 +92,47 @@ columns_2004 = OrderedDict(
 def hit2df(
     fname,
     count=-1,
-    cache=False,
+    cache=True,
     verbose=True,
     drop_non_numeric=True,
-    load_only_wavenum_above=0.0,
-    load_only_wavenum_below=Inf,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
     Parameters
     ----------
-
     fname: str
         HITRAN-HITEMP file name
-
     count: int
         number of items to read (-1 means all file)
-
     cache: boolean, or ``'regen'`` or ``'force'``
         if ``True``, a pandas-readable HDF5 file is generated on first access,
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not
         taken into account). If False, no database is used. If ``'regen'``, temp
-        file are reconstructed. Default ``False``.
+        file are reconstructed. Default ``True``.
 
     Other Parameters
     ----------------
-
     drop_non_numeric: boolean
         if ``True``, non numeric columns are dropped. This improves performances,
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
-
-    load_only_wavenum_above: float
-        only load the cached file if it contains data for wavenumbers above the specified value.
-        see :py:func`~radis.misc.cache_files`. Default ``0.0``.
-
-    load_only_wavenum_below: float
-        only load the cached file if it contains data for wavenumbers below the specified value.
-        see :py:func`~radis.misc.cache_files`. Default ``Inf``.
+    load_wavenum_min, load_wavenum_max: float
+        if not ``'None'``, only load the cached file if it contains data for
+        wavenumbers above/below the specified value. See :py:func`~radis.io.cache_files.load_h5_cache_file`.
+        Default ``'None'``.
 
     Returns
     -------
-
     df: pandas Dataframe
         dataframe containing all lines and parameters
 
 
-
     References
     ----------
-
 
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
@@ -162,26 +150,34 @@ def hit2df(
     :func:`~radis.io.cdsd.cdsd2df`
     """
     metadata = {}
-    # metadata["last_modification"] = time.ctime(getmtime(getTestFile(fname)))
+    # Last modification time of the original file :
     metadata["last_modification"] = time.ctime(getmtime(fname))
     if verbose >= 2:
         print("Opening file {0} (cache={1})".format(fname, cache))
         print("Last modification time: {0}".format(metadata["last_modification"]))
+    if load_wavenum_min and load_wavenum_max:
+        assert load_wavenum_min < load_wavenum_max
 
     columns = columns_2004
 
     # Use cache file if possible
     fcache = cache_file_name(fname)
     if cache and exists(fcache):
+        relevant_if_metadata_above = (
+            {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
+        )  # not relevant if wavenum_max of file is < wavenum min required
+        relevant_if_metadata_below = (
+            {"wavenum_min": load_wavenum_max} if load_wavenum_max else {}
+        )  # not relevant if wavenum_min of file is > wavenum max required
         df = load_h5_cache_file(
             fcache,
             cache,
-            metadata=metadata,
+            valid_if_metadata_is=metadata,
+            relevant_if_metadata_above=relevant_if_metadata_above,
+            relevant_if_metadata_below=relevant_if_metadata_below,
             current_version=radis.__version__,
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             verbose=verbose,
-            load_only_wavenum_above=load_only_wavenum_above,
-            load_only_wavenum_below=load_only_wavenum_below,
         )
         if df is not None:
             return df
@@ -233,28 +229,41 @@ def hit2df(
         if "branch" in df:
             replace_PQR_with_m101(df)
         df = drop_object_format_columns(df, verbose=verbose)
-    metadata["wavenum_min"] = df.wav.iloc[0]
-    metadata["wavenum_max"] = df.wav.iloc[-1]
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
+        new_metadata = {
+            # Last modification time of the original file :
+            "last_modification": time.ctime(getmtime(fname)),
+            "wavenum_min": df.wav.min(),
+            "wavenum_max": df.wav.max(),
+        }
         if verbose:
-            print("Generating cached file: {0}".format(fcache))
+            print(
+                "Generating cache file {0} with metadata :\n{1}".format(
+                    fcache, new_metadata
+                )
+            )
         try:
             save_to_hdf(
                 df,
                 fcache,
-                metadata=metadata,
+                metadata=new_metadata,
                 version=radis.__version__,
                 key="df",
                 overwrite=True,
                 verbose=verbose,
             )
-        except:
+        except PermissionError:
             if verbose:
                 print(sys.exc_info())
                 print("An error occured in cache file generation. Lookup access rights")
             pass
+
+    # TODO : get only wavenum above/below 'load_wavenum_min', 'load_wavenum_max'
+    # by parsing df.wav.   Completely irrelevant files are discarded in 'load_h5_cache_file'
+    # but files that have partly relevant lines are fully loaded.
+    # Note : cache file is generated with the full line list.
 
     return df
 
@@ -268,14 +277,12 @@ def _parse_HITRAN_class1(df):
 
     Parameters
     ----------
-
     df: pandas Dataframe
         lines read from a HITRAN-like database
 
 
     Notes
     -----
-
     HITRAN syntax [1]_ :
 
     >>>       v
