@@ -40,7 +40,6 @@ def test_populations(verbose=True, *args, **kwargs):
         2000,
         2300,
         export_populations=export,
-        db_use_cached=True,
         cutoff=1e-25,
         isotope="1",
     )
@@ -103,7 +102,6 @@ def test_rescaling_path_length(
         cutoff=1e-25,
         wstep=0.005,
         isotope=[1],
-        db_use_cached=True,
         self_absorption=True,
         verbose=verbose,
     )
@@ -161,7 +159,6 @@ def test_rescaling_mole_fraction(
         cutoff=1e-25,
         wstep=0.005,
         isotope=[1],
-        db_use_cached=True,
         self_absorption=True,
         verbose=verbose,
     )

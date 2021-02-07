@@ -9,6 +9,7 @@ from os.path import exists
 from shutil import rmtree
 
 import matplotlib.pyplot as plt
+import pytest
 
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
@@ -16,7 +17,7 @@ from radis.test.utils import getTestFile, setup_test_line_databases
 
 
 def test_retrieve_from_database(
-    plot=True, verbose=True, warnings=True, *args, **kwargs
+    plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
     """Test autoretrieve from a database:
 
@@ -79,7 +80,7 @@ def test_retrieve_from_database(
 
         # Note that s1 == s2 won't work because populations are not stored
         # by default in the database
-        assert s1.compare_with(s2, spectra_only=True)
+        assert s1.compare_with(s2, spectra_only=True, plot=plot)
 
         return True
 
@@ -87,6 +88,7 @@ def test_retrieve_from_database(
         rmtree(temp_database_name)
 
 
+@pytest.mark.fast
 def test_ignore_cached_files():
     """
     Previous implementation of RADIS saved the cached h5 files generated while reading the
@@ -113,10 +115,50 @@ def test_ignore_cached_files():
         ) from err
 
 
-def _run_testcases(verbose=True, plot=True):
+@pytest.mark.fast
+def test_ignore_irrelevant_files(*args, **kwargs):
+    """
+    Implemented in https://github.com/radis/radis/pull/185
+
+    - Test that calculating with cache files outside the spectral range they
+    are properly ignored
+    """
+
+    from radis.misc.warning import EmptyDatabaseError, IrrelevantFileWarning
+
+    # Regenerate .h5 cache file
+    sf = SpectrumFactory(wavenum_min=2280, wavenum_max=2290)
+    test_file = getTestFile("cdsd_hitemp_09_fragment.txt")
+    sf.load_databank(
+        path=test_file, format="cdsd-hitemp", parfuncfmt="hapi", db_use_cached="regen"
+    )
+    assert exists(test_file.replace(".txt", ".h5"))
+    # Also note that there was no EmptyDatabaseError : file was properly loaded!
+
+    # Load same .h5 cache file in another spectral range
+    # ... Expect an error in use_cached = 'force' (file properly detected as
+    # irrelevant)
+    sf2 = SpectrumFactory(wavenum_min=100000, wavenum_max=100002)
+    with pytest.raises(IrrelevantFileWarning):
+        sf2.load_databank(
+            path=test_file,
+            format="cdsd-hitemp",
+            parfuncfmt="hapi",
+            db_use_cached="force",
+        )
+
+    # Again without 'force'
+    # ... Expect no IrrelevantFile error, however range should be empty.
+    with pytest.raises(EmptyDatabaseError):
+        sf3 = SpectrumFactory(wavenum_min=100000, wavenum_max=100002)
+        sf3.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+
+
+def _run_testcases(verbose=True, plot=False):
 
     test_ignore_cached_files()
     test_retrieve_from_database(plot=plot, verbose=verbose)
+    test_ignore_irrelevant_files(verbose=verbose)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ from os.path import exists, join
 import pytest
 
 from radis.io.query import CACHE_FILE_NAME, Hitran, fetch_astroquery
-from radis.misc.cache_files import DeprecatedFileError
+from radis.misc.warning import DeprecatedFileWarning
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -42,7 +42,12 @@ def test_fetch_astroquery_empty(verbose=True, *args, **kwargs):
 # ignored by pytest with argument -m "not needs_connection"
 @pytest.mark.needs_connection
 def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
-    """ Test astroquery cache file generation"""
+    """Test astroquery cache file generation
+
+    - Cache file is generated
+    - Cache file is loaded.
+    - Different metadata raises an error
+    """
 
     df = fetch_astroquery(
         "CO2",
@@ -51,7 +56,6 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
         2400,
         verbose=verbose,
         cache="regen",  # Delete existing cache file if needed
-        metadata={"_test": True},
     )
 
     # assert cache file was created
@@ -65,7 +69,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
     )
 
     # Try to load with different metadata: expect a DeprecatedFileError
-    with pytest.raises(DeprecatedFileError):
+    with pytest.raises(DeprecatedFileWarning):
         df2 = fetch_astroquery(
             "CO2",
             1,
@@ -73,7 +77,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
             2400,
             verbose=verbose,
             cache="force",  # force load of cache file
-            metadata={},
+            expected_metadata={"not_in_metadata": True},
         )
     # Try to load with correct metadata. Expect to work and return the dataframe
     df2 = fetch_astroquery(
@@ -83,7 +87,6 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
         2400,
         verbose=verbose,
         cache="force",  # force load of cache file
-        metadata={"_test": True},
     )
     assert (df == df2).all().all()
 

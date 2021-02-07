@@ -343,6 +343,32 @@ def print_conditions(
     return None
 
 
+def has_nan(s):
+    """
+
+    Parameters
+    ----------
+    s : Spectrum
+        radis Spectrum.
+
+    Returns
+    -------
+    b : bool
+        returns whether Spectrum has ``nan``
+
+    Note
+    ----
+
+    ``print(s)`` will also show which spectral quantities have ````nan.
+
+    """
+
+    for k, v in s._get_items().items():
+        if np.isnan(v[1]).any():
+            return True
+    return False
+
+
 # %% Plot helper
 
 

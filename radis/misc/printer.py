@@ -11,7 +11,10 @@ from termcolor import colored
 
 
 def printm(*args, **kwargs):
-    """Print in magenta."""
+    """Print in magenta.
+
+    Typically use in RADIS for tests
+    Could be used for Accuracy/Performance warnings."""
 
     string = _capture_print(*args, **kwargs)
 
@@ -19,7 +22,9 @@ def printm(*args, **kwargs):
 
 
 def printg(*args, **kwargs):
-    """Print in green."""
+    """Print in green.
+
+    Typically use in RADIS for verbose>=2 messages"""
 
     string = _capture_print(*args, **kwargs)
 
@@ -27,7 +32,10 @@ def printg(*args, **kwargs):
 
 
 def printr(*args, **kwargs):
-    """Print in red."""
+    """Print in red.
+
+    Typically use in RADIS to print errors that are corrected on-the-fly
+    by the code"""
 
     string = _capture_print(*args, **kwargs)
 

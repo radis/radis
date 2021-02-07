@@ -29,7 +29,6 @@ def test_eq_spectrum_gpu():
         wstep=wstep,
         pressure=p,
         isotope="1",
-        chunksize="DLM",
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",

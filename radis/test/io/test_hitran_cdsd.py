@@ -30,6 +30,7 @@ import pytest
 
 from radis.io.cdsd import cdsd2df
 from radis.io.hitran import hit2df
+from radis.misc.warning import IrrelevantFileWarning
 from radis.test.utils import getTestFile, setup_test_line_databases
 
 
@@ -93,7 +94,7 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
 
 
 @pytest.mark.fast
-def test_hitran_co(verbose=True, warnings=True, **kwargs):
+def test_local_hitran_co(verbose=True, warnings=True, **kwargs):
     """Analyse some default files to make sure everything still works."""
 
     # 1. Load
@@ -111,7 +112,7 @@ def test_hitran_co(verbose=True, warnings=True, **kwargs):
     return True
 
 
-def test_hitran_co2(verbose=True, warnings=True, **kwargs):
+def test_local_hitran_co2(verbose=True, warnings=True, **kwargs):
 
     # 1. Load
     df = hit2df(getTestFile("hitran_CO2_fragment.par"), cache="regen")
@@ -130,7 +131,7 @@ def test_hitran_co2(verbose=True, warnings=True, **kwargs):
     return True
 
 
-def test_hitran_h2o(verbose=True, warnings=True, **kwargs):
+def test_local_hitran_h2o(verbose=True, warnings=True, **kwargs):
 
     # 1. Load
     df = hit2df(getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), cache="regen")
@@ -165,7 +166,7 @@ def test_hitran_h2o(verbose=True, warnings=True, **kwargs):
     return True
 
 
-def test_hitemp(verbose=True, warnings=True, **kwargs):
+def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
     """Analyse some default files to make sure everything still works."""
 
     # 1. Load
@@ -185,29 +186,68 @@ def test_hitemp(verbose=True, warnings=True, **kwargs):
     return True
 
 
-def run_example():
+def test_irrelevant_file_loading(*args, **kwargs):
+    """ check that irrelevant files (irrelevant wavenumber) are not loaded """
+
+    # For cdsd-hitemp files :
+
+    # Ensures file is not empty
+    df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"), cache="regen")
+    assert len(df) > 0
+
+    # Now test nothing is loaded if asking for outside the wavenumber range
+    with pytest.raises(IrrelevantFileWarning):
+        df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"), load_wavenum_min=100000)
+    with pytest.raises(IrrelevantFileWarning):
+        df = cdsd2df(getTestFile("cdsd_hitemp_09_header.txt"), load_wavenum_max=0.5)
+
+    # For HITRAN files :
+
+    # Ensures file is not empty
+    df = hit2df(getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), cache="regen")
+    assert len(df) > 0
+
+    # Now test nothing is loaded if asking for outside the wavenumber range
+    with pytest.raises(IrrelevantFileWarning):
+        df = hit2df(
+            getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), load_wavenum_min=100000
+        )
+    with pytest.raises(IrrelevantFileWarning):
+        df = hit2df(
+            getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), load_wavenum_max=0.5
+        )
+
+
+def _run_example(verbose=False):
     from radis import SpectrumFactory
 
     setup_test_line_databases(
-        verbose=True
-    )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
+        verbose=verbose
+    )  # add HITEMP-CO2-TEST in ~/.radis if not there
     sf = SpectrumFactory(
         wavelength_min=4165,
         wavelength_max=4200,
         path_length=0.1,
         pressure=20,
         molecule="CO2",
-        isotope="1,2",
+        isotope="1",
         cutoff=1e-25,  # cm/molecule
         broadening_max_width=10,  # cm-1
+        verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/.radis
 
 
 def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
+    """Checks that if a line database is manually updated (last edited time changes),
+    its cache file will be regenerated automatically
+    """
 
-    run_example()
+    # Initialisation
+    # --------------
+    # Run case : we generate a first cache file
+    _run_example(verbose=verbose)
     # get time when line database file was last modified
     file_last_modification = getmtime(
         getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par")
@@ -216,7 +256,17 @@ def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
     cache_last_modification = getmtime(
         getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.h5")
     )
-    # change the time when line database was last modified
+
+    # To be sure, re run-example and make sure the cache file was not regenerated.
+    _run_example(verbose=verbose)
+    assert cache_last_modification == getmtime(
+        getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.h5")
+    )
+
+    # Test
+    # ----
+    # Now we fake the manual editing of the database.
+    # change the time when line database was last modified :
     stinfo = os.stat(getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par"))
     access_time = stinfo.st_atime
     os.utime(
@@ -230,7 +280,8 @@ def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
 
     assert file_last_modification_again > file_last_modification
 
-    run_example()
+    # Run case : this should re-generated the cache file
+    _run_example(verbose=verbose)
 
     cache_last_modification_again = getmtime(
         getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.h5")
@@ -242,14 +293,15 @@ def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_hitran_names_match(verbose=verbose, *args, **kwargs)
-    test_hitran_co(verbose=verbose, *args, **kwargs)
-    test_hitran_co2(verbose=verbose, *args, **kwargs)
-    test_hitran_h2o(verbose=verbose, *args, **kwargs)
-    test_hitemp(verbose=verbose, *args, **kwargs)
-
+    test_local_hitran_co(verbose=verbose, *args, **kwargs)
+    test_local_hitran_co2(verbose=verbose, *args, **kwargs)
+    test_local_hitran_h2o(verbose=verbose, *args, **kwargs)
+    test_local_hitemp_file(verbose=verbose, *args, **kwargs)
+    test_irrelevant_file_loading()
     test_cache_regeneration(verbose=verbose, *args, **kwargs)
     return True
 
 
 if __name__ == "__main__":
-    print("Testing io.py: ", _run_testcases(verbose=True))
+    # print("Testing io.py: ", _run_testcases(verbose=True))
+    test_cache_regeneration(verbose=3)

@@ -120,7 +120,13 @@ def partition(pred, iterable):
 
 
 def compare_dict(
-    d1, d2, verbose="if_different", compare_as_paths=[], return_string=False
+    d1,
+    d2,
+    verbose="if_different",
+    compare_as_paths=[],
+    return_string=False,
+    df1_str="Left",
+    df2_str="Right",
 ):
     """Returns ratio of equal keys [0-1]
     If verbose, also print all keys and values on 2 columns
@@ -152,7 +158,7 @@ def compare_dict(
 
     try:
 
-        print("{0:15}{1}\t{2}".format("Key", "Left", "Right"))
+        print("{0:15}{1}\t{2}".format("Key", df1_str, df2_str))
         print("-" * 40)
         all_keys = set(list(d1.keys()) + list(d2.keys()))
         s = 0  # counter of all matching keys

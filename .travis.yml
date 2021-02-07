@@ -45,7 +45,8 @@ jobs:
         # Your test script goes here
         - echo ">>> Run tests"
         # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run pytest -m "not needs_config_file and not needs_cuda" --cov=./
+        - xvfb-run pytest --cov=./
+        # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
       after_success:
         # codecoverage

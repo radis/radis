@@ -29,8 +29,8 @@ Calculating spectra
 Calculate one molecule spectrum
 -------------------------------
 
-In the following example, we calculate a CO spectrum at equilibirum,
-and plot the transmittance: ::
+In the following example, we calculate a CO spectrum at equilibrium
+from the latest HITRAN database, and plot the transmittance: ::
 
 	s = calc_spectrum(
         		wavenum_min=1900,
@@ -40,6 +40,7 @@ and plot the transmittance: ::
         		molecule='CO',
         		mole_fraction=0.5,
         		isotope=1,
+            databank='hitran'   # or 'hitemp'
     		  	)
 	s.plot('transmittance_noslit')
 
@@ -351,7 +352,7 @@ available on your computer.
 Without a configuration file, you can still:
 
 - download the corresponding [HITRAN-2016]_ line database automatically,
-  either with the (default) ``databank='fetch'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`,
+  either with the (default) ``databank='hitran'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`,
   or the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method of
   :py:class:`~radis.lbl.factory.SpectrumFactory`,
 - give a single file as an input to the ``databank=`` parameter of :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -625,7 +626,7 @@ to calculate the lineshapes efficiently.
   database becomes the performance bottleneck.
   parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`,
   :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
-  (this is the default strategy implemented in RADIS)
+  (this is the default strategy implemented in RADIS). Learn more in [Spectral Synthesis Algorithm]_
 
 More details on the parameters below:
 
@@ -662,10 +663,6 @@ or [CDSD-4000]_ databases.
 Line database files are automatically cached by RADIS under a ``.h5`` format after they are loaded the first time.
 If you want to deactivate this behaviour, use ``use_cached=False`` in :py:func:`~radis.lbl.calc.calc_spectrum`,
 or ``db_use_cached=False, lvl_use_cached=False`` in :py:class:`~radis.lbl.factory.SpectrumFactory`.
-
-If you are downloading the line database from [HITRAN-2016]_ with :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
-or the ``databank='fetch'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`, then it is at the moment
-impossible to cache the database.
 
 You can also use :py:meth:`~radis.lbl.loader.DatabankLoader.init_databank` instead of the default
 :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`. The former will save the line database parameter,
