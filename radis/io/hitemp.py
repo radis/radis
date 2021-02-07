@@ -84,6 +84,7 @@ def fetch_hitemp(
     cache=True,
     verbose=True,
     chunksize=100000,
+    clean_cache_files=True,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -94,7 +95,7 @@ def fetch_hitemp(
     molecule: `"CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
         HITEMP molecule. See :py:attr:`~radis.io.hitemp.HITEMP_SOURCE_FILES`
     local_databases: str
-        where to download the files
+        where to create the RADIS HDF5 files. Default ``"~/.radisdb/"``
     databank_name: str
         name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
         Default ``"HITEMP-{molecule}"``
@@ -112,6 +113,8 @@ def fetch_hitemp(
     chunksize: int
         number of lines to process at a same time. Higher is usually faster
         but can create Memory problems and keep the user uninformed of the progress.
+    clean_cache_files: bool
+        if ``True`` clean downloaded cache files after HDF5 are created.
 
     Returns
     -------
@@ -262,7 +265,7 @@ def fetch_hitemp(
         )
 
     # Doesnt exist : download
-    ds = DataSource(local_databases)
+    ds = DataSource(join(local_databases, "downloads"))
 
     if verbose:
         print(f"Downloading {inputf} for {molecule}.")
@@ -285,7 +288,6 @@ def fetch_hitemp(
 
         dt = _create_dtype(columns, linereturnformat)
         b = np.zeros(chunksize, dtype=dt)  # receives the HITRAN 160-character data.
-
         wmin = np.inf
         wmax = 0
         if verbose:
@@ -355,6 +357,14 @@ def fetch_hitemp(
     register_database(
         databank_name, [output], molecule, wmin, wmax, download_date, urlname, verbose
     )
+
+    # Fully unzipped : clean
+    if clean_cache_files:
+        os.remove(ds._findfile(urlname))
+        if verbose >= 3:
+            from radis.misc.printer import printg
+
+            printg("... removed downloaded cache file")
 
     return hdf2df(
         output,
