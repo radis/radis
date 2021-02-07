@@ -46,8 +46,6 @@ of the website.
 # - Alert if case already in database when generating from a SpectrumFactory
 # connected to a SpecDatabase
 
-# - Implement a h5py version of load / store
-
 import os
 import sys
 from os.path import (

@@ -353,4 +353,4 @@ if __name__ == "__main__":
 
     import pytest
 
-    print("Testing factory:", pytest.main(["../test/io/test_hitemp.py", "--pdb"]))
+    print("Testing factory:", pytest.main(["../test/io/test_hitemp.py"]))

@@ -560,5 +560,5 @@ def test_temperature_units_conversion(
 # --------------------------
 if __name__ == "__main__":
 
-    printm("Testing factory:", pytest.main(["test_factory.py", "--pdb"]))
+    printm("Testing factory:", pytest.main(["test_factory.py"]))
 #    printm('Testing factory:', pytest.main(['test_factory.py', '-k', 'test_wavenumber_units_conversion']))

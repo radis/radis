@@ -33,6 +33,9 @@ def test_fetch_hitemp_OH(*args, **kwargs):
 
     assert len(df) == 57019
 
+    # Load again and make sure it works (ex: metadata properly loaded etc.):
+    fetch_hitemp("OH")
+
 
 @pytest.mark.needs_connection
 @pytest.mark.download_large_databases
@@ -122,9 +125,8 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    # test_fetch_hitemp_OH()
-    # # test_fetch_hitemp()
-    # test_partial_loading()
-    # test_calc_hitemp_spectrum()
-    # test_fetch_hitemp_all_molecules("OH")
+    test_fetch_hitemp_OH()
+    test_partial_loading()
+    test_calc_hitemp_spectrum()
+    test_fetch_hitemp_all_molecules("OH")
     test_fetch_hitemp_all_molecules("CO")

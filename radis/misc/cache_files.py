@@ -32,7 +32,6 @@ import os
 from os.path import exists, splitext
 from warnings import warn
 
-import h5py
 import pandas as pd
 from packaging.version import parse
 
@@ -324,6 +323,9 @@ def check_not_deprecated(
     metadata_keys_contain: list
         expected list of variables in the file metadata. If the keys are not there,
         a :py:func:`~radis.misc.warning.DeprecatedFileWarning` error is raised.
+
+    Other Parameters
+    ----------------
     current_version: str, or ``None``
         current version number. If the file was generated in a previous version
         a warning is raised. If ``None``, current version is read from
@@ -331,20 +333,25 @@ def check_not_deprecated(
     last_backward_compatible_version: str
         If the file was generated in a non-compatible version, an error is raised.
         Default :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
+        (useful parameter to force regeneration of certain cache files after a
+         breaking change in a new version)
     """
 
-    # Get attributes (metadata+version)
-    hf = h5py.File(file, "r")
+    # # Get attributes (metadata+version)
     try:
-        attrs = dict(hf.attrs)
-    except OSError:
-        attrs = {}
-    finally:
-        hf.close()
+        with pd.HDFStore(file, mode="r+") as store:
+            file_metadata = store.get_storer("df").attrs.metadata
+    except AttributeError as err:
+        if "Attribute 'metadata' does not exist in node: '/df'" in str(err):
+            raise DeprecatedFileWarning(
+                "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file {0}".format(
+                    file
+                )
+            ) from err
 
     # Raise an error if version is not found
     try:
-        file_version = attrs.pop("version")
+        file_version = file_metadata.pop("version")
     except KeyError:
         raise DeprecatedFileWarning(
             "File {0} has is deprecated : ".format(file)
@@ -391,7 +398,7 @@ def check_not_deprecated(
 
     # Make sure metadata keys are there:
     for k in metadata_keys_contain:
-        if k not in attrs:
+        if k not in file_metadata:
             raise DeprecatedFileWarning(
                 "Metadata in file {0} doesn't contain the expected key `{1}`. ".format(
                     file, k
@@ -401,10 +408,10 @@ def check_not_deprecated(
     # Compare metadata values
     # ignore additional keys in the file attributes.
     metadata_is = _h5_compatible(metadata_is)
-    attrs = {k: v for k, v in attrs.items() if k in metadata_is}
+    file_metadata = {k: v for k, v in file_metadata.items() if k in metadata_is}
     out, compare_string = compare_dict(
         metadata_is,
-        attrs,
+        file_metadata,
         verbose=False,
         return_string=True,
         df1_str="Expected",
@@ -438,20 +445,29 @@ def check_relevancy(
     relevant_if_metadata_above,
     relevant_if_metadata_below,
     verbose=True,
+    key="df",
 ):
-    """Make sure cache file is relevant: checks that  wavenumber min and
+    """Make sure cache file is relevant.
+
+    Use case: checks that  wavenumber min and
     wavenumber max in ``metadata`` are relevant for the specified spectral
     range.
 
     Parameters
     ----------
-
     file: str
         a `` .h5``  line database cache file
-
     load_only_wavenum_above, relevant_if_metadata_below: dict
         only load the cached file if the metadata values are above/below
         the specific values for each key.
+    relevant_if_metadata_above, relevant_if_metadata_below: dict
+        file is relevant if the file metadata value for each key of the dictionary
+        is above/below the value in the dictionary
+
+    Other Parameters
+    ----------------
+    key: str
+        dataset key in storer.
 
     Examples
     --------
@@ -465,26 +481,26 @@ def check_relevancy(
         the specified value.
 
     """
+    # Add metadata
+    with pd.HDFStore(file, mode="r+") as store:
+        file_metadata = store.get_storer(key).attrs.metadata
 
-    with h5py.File(file, "r") as hf:
-        attrs = dict(hf.attrs)
-
-        for k, v in relevant_if_metadata_above.items():
-            # Note : check_not_deprecated already tested the existence of each key so we are safe
-            if attrs[k] < v:
-                raise IrrelevantFileWarning(
-                    "Database file {0} irrelevant: {1}={2} [file metadata] < {3} [expected], not loaded".format(
-                        file, k, attrs[k], v
-                    )
+    for k, v in relevant_if_metadata_above.items():
+        # Note : check_not_deprecated already tested the existence of each key so we are safe
+        if file_metadata[k] < v:
+            raise IrrelevantFileWarning(
+                "Database file {0} irrelevant: {1}={2} [file metadata] < {3} [expected], not loaded".format(
+                    file, k, file_metadata[k], v
                 )
-        for k, v in relevant_if_metadata_below.items():
-            # Note : check_not_deprecated already tested the existence of each key so we are safe
-            if attrs[k] > v:
-                raise IrrelevantFileWarning(
-                    "Database file {0} irrelevant ({1}={2} [file metadata] > {3} [expected]), not loaded".format(
-                        file, k, attrs[k], v
-                    )
+            )
+    for k, v in relevant_if_metadata_below.items():
+        # Note : check_not_deprecated already tested the existence of each key so we are safe
+        if file_metadata[k] > v:
+            raise IrrelevantFileWarning(
+                "Database file {0} irrelevant ({1}={2} [file metadata] > {3} [expected]), not loaded".format(
+                    file, k, file_metadata[k], v
                 )
+            )
 
 
 def _warn_if_object_columns(df, fname):
@@ -513,7 +529,7 @@ def save_to_hdf(
     metadata: dict
          dictionary of values that were used to generate the DataFrame. Metadata
          will be asked again on file load to ensure it hasnt changed. ``None``
-         values will not be stored.
+         values are not stored.
     version: str, or ``None``
         file version. If ``None``, the current :data:`radis.__version__` is used.
         On file loading, a warning will be raised if the current version is
@@ -534,7 +550,6 @@ def save_to_hdf(
     -----
     ``None`` values are not stored
     """
-
     # Check file
     assert fname.endswith(".h5")
     assert "version" not in metadata
@@ -548,35 +563,29 @@ def save_to_hdf(
     # Overwrite file
     if exists(fname) and not overwrite:
         raise ValueError("File exist: {0}".format(fname))
-    hf = h5py.File(fname, "w")
 
-    try:
+    # start by exporting dataframe
+    df.to_hdf(fname, key, format="fixed", mode="a", complevel=9, complib="blosc")
 
-        # Start by adding version
-        if version is None:
-            version = radis.__version__
-        hf.attrs["version"] = version
+    # Add metadata
 
-        # Add metadata
-        for k, v in metadata.items():
-            hf.attrs[k] = v
+    # ... add RADIS version
+    if version is None:
+        version = radis.get_version()
+    metadata.update({"version": version})
 
-        if verbose >= 3:
-            print("... saved {0} with metadata: {1}".format(fname, metadata))
+    with pd.HDFStore(fname, mode="a") as store:
+        store.get_storer(key).attrs.metadata = metadata
 
-    except:
-        raise
-
-    finally:
-        hf.close()
-
-    # now export dataframe
-    df.to_hdf(fname, key, format="fixed", mode="a", complevel=5, complib="blosc")
+    if verbose >= 3:
+        print("... saved {0} with metadata: {1}".format(fname, metadata))
 
 
 def filter_metadata(arguments, discard_variables=["self", "verbose"]):
     """Filter arguments (created with  ``locals()`` at the beginning of the
-    script) to extract metadata. Metadata is stored as attributes in the cached
+    script) to extract metadata.
+
+    Metadata is stored as attributes in the cached
     file:
 
     - remove variables in ``discard_variables``
@@ -612,7 +621,7 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
 
             ...
     """
-
+    # TODO: adding metadata this way is not explicit & hard to maintain, should be removed.
     metadata = {k: v for (k, v) in arguments.items() if not k.startswith("_")}
     metadata = {k: v for (k, v) in metadata.items() if k not in discard_variables}
     metadata = {k: v for (k, v) in metadata.items() if v is not None}
@@ -621,7 +630,7 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
 
 
 def cache_file_name(fname):
-    """Returns the corresponding cache file name for fname."""
+    """Return the corresponding cache file name for fname."""
     return splitext(fname)[0] + ".h5"
 
 
@@ -629,7 +638,5 @@ if __name__ == "__main__":
     import pytest
 
     # Run relevant tests (here:  the ones with 'cache' in their name)
-    printm("Testing cache files:", pytest.main(["../test/io/", "-k", "cache", "--pdb"]))
-    printm(
-        "Testing cache files:", pytest.main(["../test/lbl/", "-k", "cache", "--pdb"])
-    )
+    printm("Testing cache files:", pytest.main(["../test/io/", "-k", "cache"]))
+    printm("Testing cache files:", pytest.main(["../test/lbl/", "-k", "cache"]))

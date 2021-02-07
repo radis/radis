@@ -10,7 +10,6 @@ dependencies:
 - matplotlib
 - pandas>=1.0.5
 - plotly
-- h5py
 - numba
 - astropy  # Unit aware calculations
 - plotly>=2.5.1  # for line survey HTML output
@@ -18,7 +17,6 @@ dependencies:
 - configparser
 - astroquery>=0.3.9  # to fetch HITRAN databases
 - pytest  # to run test suite
-- h5py  # to write HDF5 files
 - joblib  # for parallel loading of SpecDatabase
 - numba  # just-in-time compiler
 - pip
