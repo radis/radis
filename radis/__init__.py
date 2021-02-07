@@ -141,7 +141,7 @@ OLDEST_COMPATIBLE_VERSION = "0.9.1"
 See Also
 --------
 
-:py:func:`~radis.misc.cache_files.load_h5_cache_file`
+:py:func:`~radis.io.cache_files.load_h5_cache_file`
 """
 
 # %% Version

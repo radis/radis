@@ -229,7 +229,7 @@ def check_cache_file(fcache, use_cached=True, expected_metadata={}, verbose=True
     - if ``'force'``, raise an error if file doesnt exist.
 
     Then look if it is deprecated (we just look at the attributes, the file
-    is never fully read). Deprecation is done by :py:func:`~radis.misc.cache_files.check_not_deprecated`
+    is never fully read). Deprecation is done by :py:func:`~radis.io.cache_files.check_not_deprecated`
     comparing the ``metadata=`` content.
 
     - if deprecated, deletes it to regenerate later unless 'force' was used
@@ -257,7 +257,7 @@ def check_cache_file(fcache, use_cached=True, expected_metadata={}, verbose=True
     See Also
     --------
 
-    :py:func:`~radis.misc.cache_files.check_not_deprecated`
+    :py:func:`~radis.io.cache_files.check_not_deprecated`
     """
 
     # Test existence of file:

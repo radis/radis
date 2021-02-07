@@ -20,10 +20,10 @@ from numpy import DataSource
 
 import radis
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
+from radis.io.cache_files import check_not_deprecated, check_relevancy
 from radis.io.hdf5 import hdf2df
 from radis.io.hitran import columns_2004
 from radis.io.tools import _create_dtype, _get_linereturnformat, _ndarray2df
-from radis.misc.cache_files import check_not_deprecated, check_relevancy
 from radis.misc.config import addDatabankEntries, getDatabankList
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import DatabaseAlreadyExists

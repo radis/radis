@@ -30,6 +30,7 @@ from scipy.interpolate import splev, splrep
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.db.molecules import ElectronicState
+from radis.io.cache_files import filter_metadata, load_h5_cache_file, save_to_hdf
 from radis.lbl.labels import (
     vib_lvl_name_cdsd_p,
     vib_lvl_name_cdsd_pc,
@@ -37,7 +38,6 @@ from radis.lbl.labels import (
     vib_lvl_name_cdsd_pcN,
 )
 from radis.levels.partfunc import RovibParFuncCalculator, RovibParFuncTabulator
-from radis.misc.cache_files import filter_metadata, load_h5_cache_file, save_to_hdf
 from radis.misc.warning import OutOfBoundError
 from radis.test.utils import getTestFile
 

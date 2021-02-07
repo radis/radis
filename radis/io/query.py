@@ -29,8 +29,8 @@ from astroquery.hitran import Hitran
 
 import radis
 from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.io.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc import is_float
-from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc.printer import printr
 
 CACHE_FILE_NAME = "tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5"
@@ -39,8 +39,9 @@ CACHE_FILE_NAME = "tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5"
 def fetch_astroquery(
     molecule, isotope, wmin, wmax, verbose=True, cache=True, expected_metadata={}
 ):
-    """
-    Wrapper to Astroquery [1]_ fetch function to download a line database
+    """Download a HITRAN line database to a Pandas DataFrame.
+
+    Wrapper to Astroquery [1]_ fetch function
 
     Parameters
     ----------
@@ -76,13 +77,11 @@ def fetch_astroquery(
 
     See Also
     --------
-
     :py:func:`astroquery.hitran.reader.download_hitran`,
     :py:func:`astroquery.hitran.reader.read_hitran_file`,
     :py:attr:`~astroquery.query.BaseQuery.cache_location`
 
     """
-
     # Check input
     if not is_float(molecule):
         mol_id = get_molecule_identifier(molecule)

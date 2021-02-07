@@ -75,6 +75,7 @@ import pandas as pd
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
+from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.hdf5 import hdf2df
 from radis.io.hitemp import fetch_hitemp
@@ -90,9 +91,6 @@ from radis.levels.partfunc import (
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.arrays import count_nans
 from radis.misc.basics import compare_dict, compare_lists
-
-# from radis.io.hitran import hit2dfTAB
-from radis.misc.cache_files import cache_file_name
 from radis.misc.config import getDatabankEntries, getDatabankList, printDatabankEntries
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn

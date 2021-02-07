@@ -24,12 +24,12 @@ from os.path import exists, getmtime
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
+from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 from radis.io.tools import (
     drop_object_format_columns,
     parse_hitran_file,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 
 # fmt: off
 columns_hitemp = OrderedDict(
@@ -149,7 +149,7 @@ def cdsd2df(
         will be left untouched.
     load_wavenum_min, load_wavenum_max: float
         if not ``'None'``, only load the cached file if it contains data for
-        wavenumbers above/below the specified value. See :py:func`~radis.misc.cache_files`.
+        wavenumbers above/below the specified value. See :py:func`~radis.io.cache_files.load_h5_cache_file`.
         Default ``'None'``.
 
     Returns

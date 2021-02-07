@@ -72,9 +72,9 @@ from radis.db.classes import (
     HITRAN_CLASS6,
     get_molecule_identifier,
 )
+from radis.io.cache_files import load_h5_cache_file, save_to_hdf
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.misc.basics import all_in
-from radis.misc.cache_files import load_h5_cache_file, save_to_hdf
 from radis.misc.debug import printdbg
 from radis.misc.progress_bar import ProgressBar
 from radis.phys.constants import hc_k  # ~ 1.44 cm.K
@@ -85,14 +85,12 @@ class RovibPartitionFunction(object):
 
     Parameters
     ----------
-
     electronic_state: :class:`~radis.db.classes.ElectronicState`
         an :class:`~radis.db.classes.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data
 
     Notes
     -----
-
     Implementation:
 
     one partition function generator (RovibPartitionFunction) is generated
@@ -105,7 +103,6 @@ class RovibPartitionFunction(object):
 
     See Also
     --------
-
     :class:`~radis.levels.partfunc.RovibParFuncTabulator`,
     :class:`~radis.levels.partfunc.RovibParFuncCalculator`
     """
