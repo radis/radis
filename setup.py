@@ -149,7 +149,7 @@ setup(
         "numpy",
         "scipy",
         "matplotlib",
-        "pandas",
+        "pandas>=1.0.5",
         "plotly",
         "h5py",
         "numba",
