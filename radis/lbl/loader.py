@@ -959,11 +959,6 @@ class DatabankLoader(object):
                 raise EmptyDatabaseError("Dataframe is empty")
             else:
                 df = pd.concat(frames, ignore_index=True)  # reindex
-                if len(df) == 0:
-                    raise EmptyDatabaseError(
-                        "Dataframe is empty on range "
-                        + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
-                    )
 
         elif source == "hitemp":
             # Download, setup local databases, and fetch (use existing if possible)
@@ -987,6 +982,12 @@ class DatabankLoader(object):
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
+
+        if len(df) == 0:
+            raise EmptyDatabaseError(
+                "Dataframe is empty on range "
+                + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+            )
 
         # Post-processing of the line database :
         if (

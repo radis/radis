@@ -347,8 +347,8 @@ def check_not_deprecated(
         file_version = attrs.pop("version")
     except KeyError:
         raise DeprecatedFileWarning(
-            "File {0} has been generated in a deprecated ".format(file)
-            + "version. Delete it to regenerate it on next run"
+            "File {0} has is deprecated : ".format(file)
+            + "RADIS version missing in metadata. Delete it to regenerate it on next run"
         )
 
     # Get current version

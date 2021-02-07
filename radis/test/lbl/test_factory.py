@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 import radis
-from radis.lbl import SpectrumFactory
+from radis.lbl.factory import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
 

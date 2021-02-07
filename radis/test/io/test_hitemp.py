@@ -8,16 +8,69 @@ Created on Tue Feb  2 13:51:40 2021
 
 import pytest
 
-from radis.io.hitemp import fetch_hitemp
+from radis.io.hitemp import HITEMP_SOURCE_FILES, INFO_HITEMP_LINE_COUNT, fetch_hitemp
 from radis.misc.config import getDatabankList
 
 
 @pytest.mark.needs_connection
-def test_fetch_hitemp(*args, **kwargs):
+def test_fetch_hitemp_OH(*args, **kwargs):
+    """Test proper download of HITEMP OH database.
 
-    fetch_hitemp("OH")
+    Good to test fetch_hitemp.
+    ``13_HITEMP2020.par.bz2`` is only 900 kb so it can be run on online
+    tests without burning the planet 🌳
+
+    ⚠️ if using the default `chunksize=100000`, it uncompresses in one pass
+    (only 57k lines for OH) and we cannot test that appending to the same HDF5
+    works. So here we use a smaller chunksize of 20,000.
+    .
+
+    """
+
+    df = fetch_hitemp("OH", cache="regen", chunksize=20000)
 
     assert "HITEMP-OH" in getDatabankList()
+
+    assert len(df) == 57019
+
+
+@pytest.mark.needs_connection
+@pytest.mark.download_large_databases
+@pytest.mark.parametrize(
+    "molecule", [mol for mol, url in HITEMP_SOURCE_FILES.items() if url]
+)
+def test_fetch_hitemp_all_molecules(molecule, *args, **kwargs):
+    """Test fetch HITEMP for all molecules whose download URL is available.
+
+    ..warning::
+        this downloads gigabytes of data. It is unselected by default by Pytest
+        (see radis/setup.cfg)
+
+    The bz2 compression factor gives about 17 MB / million lines :
+
+    - OH (57 k lines) is only 900 kb
+    - CO (0.7 M lines) is only ~14 Mb
+    - CH4 (114 M lines) is 435 MB
+
+    If it fails, check the databases downloaded in ~/.radisdb
+
+
+
+    Notes
+    -----
+
+    Performance tests of chunksize tested on CO :
+        - chunksize=1000000  > 22s  , 1 iteration ~ 22s
+        - chunksize=100000 > 18s,  , 1 iteration ~ 4s
+        - chunksize=50000 > 19s   ,1 iteration ~ 2s
+        - chunksize=1000 --> 90s  ,  1 iteration << 1s
+    """
+
+    df = fetch_hitemp(molecule)
+
+    assert f"HITEMP-{molecule}" in getDatabankList()
+
+    assert len(df) == INFO_HITEMP_LINE_COUNT[molecule]
 
 
 @pytest.mark.needs_connection
@@ -69,6 +122,9 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    test_fetch_hitemp()
-    test_partial_loading()
-    test_calc_hitemp_spectrum()
+    # test_fetch_hitemp_OH()
+    # # test_fetch_hitemp()
+    # test_partial_loading()
+    # test_calc_hitemp_spectrum()
+    # test_fetch_hitemp_all_molecules("OH")
+    test_fetch_hitemp_all_molecules("CO")

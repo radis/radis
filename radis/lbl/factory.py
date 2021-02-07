@@ -1841,6 +1841,7 @@ def _generate_broadening_range(wstep, broadening_max_width):
 
 # --------------------------
 if __name__ == "__main__":
+
     import pytest
 
-    print("Testing factory:", pytest.main(["../test/test_factory.py"]))
+    print("Testing factory:", pytest.main(["../test/lbl/test_factory.py", "--pdb"]))

@@ -45,7 +45,7 @@ def parse_hitran_file(fname, columns, count):
     # we read the first line and infer the line return character for it
     data = _read_hitran_file(
         fname, columns, count=1, linereturnformat="a2"
-    )  # 'a2' allocates space to get \n or \n\r
+    )  # 'a2' allocates space to get \n or \n\r linereturn formats
     linereturnformat = _get_linereturnformat(data, columns, fname)
 
     # Now re-read with correct line return character
@@ -149,10 +149,8 @@ def _create_dtype(columns, linereturnformat):
 
     Returns
     -------
-
     dt: dtypes
     """
-
     # ... Create a dtype with the binary data format and the desired column names
     dtype = [(k, c[0]) for (k, c) in columns.items()] + [
         ("_linereturn", linereturnformat)
@@ -166,51 +164,56 @@ def _format_dtype(dtype):
 
     Crash with hopefully helping error message
     """
-
     try:
         dt = np.dtype([(str(k), c) for k, c in dtype])
         # Note: dtype names cannot be `unicode` in Python2. Hence the str()
-    except TypeError:
-        # Cant read database. Try to be more explicit for user
-        print("Data type")
-        print(("-" * 30))
-        for (k, c) in dtype:
-            print((str(k), "\t", c))
-        print(("-" * 30))
-        raise
+    except TypeError as err:
+        # Cant read database. Try to be more explicit for user before crashing
+        try:
+            print("Data type")
+            print("-" * 30)
+            for (k, c) in dtype:
+                print(str(k), "\t\t", c)
+            print("-" * 30)
+        finally:
+            raise TypeError("Couldnt read datatype. See details above.") from err
     return dt
 
 
 def _cast_to_dtype(data, dtype):
     """Cast array to certain type, crash with hopefull helping error message.
+
     Return casted data.
 
     Parameters
     ----------
-
     data: array to cast
-
     dtype: (ordered) list of (param, type)
     """
-
     dt = _format_dtype(dtype)
 
     try:
         data = np.array(data, dtype=dt)
-    except ValueError:
-        raise
+    except ValueError as err:
         try:
-            # Cant read database. Try to be more explicit for user
-            print("Cant cast data to specific dtype. Trying column by column:")
-            print(("-" * 30))
-            for i in range(len(data[0])):
-                print((dtype[i], "\t", np.array(data[0][i], dtype=dt[i])))
-            print(("-" * 30))
-        except ValueError:
-            print((">>> Next param:", dtype[i], ". Value:", data[0][i], "\n"))
+            # Cant read database. Try to be more explicit for user before crashing
+            # ... identify faulty row
+            print("Cant cast data to specific dtype. Trying row by row:")
+            for r in range(len(data)):
+                try:
+                    np.array(data[r], dtype=dt)
+                except ValueError:
+                    break
+            print(f"Error may be on row {r}:")
+            print("-" * 30)
+            for i in range(len(data[r])):
+                print(i, dtype[i], "\t\t", np.array(data[r][i], dtype=dt[i]))
+            print("-" * 30)
+            print(">>> Next param:", dtype[i], ". Value:", data[r][i], "\n")
+        finally:
             raise ValueError(
                 "Cant cast data to specific dtype. Tried column by column. See results above"
-            )
+            ) from err
 
     return data
 

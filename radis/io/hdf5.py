@@ -17,8 +17,8 @@ def hdf2df(
     verbose=True,
     store_kwargs={},
 ):
-    """
-    Load a HDF5 line databank into a Pandas DataFrame.
+    """Load a HDF5 line databank into a Pandas DataFrame.
+
     Adds HDF5 metadata in ``df.attrs``
 
     Parameters
@@ -70,7 +70,6 @@ def hdf2df(
     Always check for existence !
 
     """
-
     where = []
     if load_wavenum_min is not None:
         where.append(f"wav > {load_wavenum_min}")
@@ -92,3 +91,12 @@ def hdf2df(
         df.attrs.update(store.get_storer("df").attrs.metadata)
 
     return df
+
+
+#%%
+
+if __name__ == "__main__":
+
+    import pytest
+
+    print("Testing factory:", pytest.main(["../test/io/test_hdf5.py", "--pdb"]))

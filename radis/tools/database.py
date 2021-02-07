@@ -154,18 +154,14 @@ def save(
 
     Parameters
     ----------
-
     s: Spectrum
         to save
-
     path: str
         filename to save. No extension needed. If filename already
         exists then a digit is added. If filename is a directory then a new
         file is created within this directory.
-
     discard: list of str
         parameters to discard. To save some memory.
-
     compress: boolean
         if ``False``, save under text format, readable with any editor.
         if ``True``, saves under binary format. Faster and takes less space.
@@ -173,20 +169,17 @@ def save(
         e.g, transmittance if abscoeff and path length are given, radiance if
         emisscoeff and abscoeff are given in non-optically thin case, etc.
         Default ``False``
-
     add_info: list, or None/False
         append these parameters and their values if they are in conditions.
         e.g::
 
             add_info = ['Tvib', 'Trot']
 
-    add_date: str, or None/False
+    add_date: str, or ``None``/``False``
         adds date in strftime format to the beginning of the filename.
         e.g::
 
             add_date = '%Y%m%d'
-
-        Default ''
 
     if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
         what to do if file already exists. If ``'increment'`` an incremental digit
@@ -195,14 +188,13 @@ def save(
 
     Returns
     -------
-
-    Returns filename used (may be different from given path as new info or
-    incremental identifiers are added)
+    fout: str
+        filename used (may be different from given path as new info or
+        incremental identifiers are added)
 
 
     See Also
     --------
-
     :class:`~radis.tools.database.SpecDatabase`,
     :func:`~radis.tools.database.load_spec`,
     :meth:`~radis.spectrum.spectrum.Spectrum.store`
@@ -1836,16 +1828,13 @@ class SpecDatabase(SpecList):
 
         Parameters
         ----------
-
         force_reload: boolean
-            if True, reloads files already in database
-
+            if ``True``, reloads files already in database. Default ``False``
         filt: str
             only consider files ending with ``filt``. Default ``.spec``
 
         Notes
         -----
-
         Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
         attributes of :class:`~radis.tools.database.SpecDatabase`. See :class:`joblib.parallel.Parallel`
         for information on the arguments
@@ -1881,11 +1870,9 @@ class SpecDatabase(SpecList):
 
         Parameters
         ----------
-
         new_folder: str
             folder where to store the compressed SpecDatabase. If doesn't exist,
             it is created.
-
         compress: boolean, or 2
             if ``True``, saves under binary format. Faster and takes less space.
             If ``2``, additionaly remove all redundant quantities.
@@ -1937,7 +1924,6 @@ class SpecDatabase(SpecList):
 
         Parameters
         ----------
-
         columns: list, or ``None``
             columns to find duplicates on. If ``None``, use all conditions.
 
@@ -1977,7 +1963,6 @@ class SpecDatabase(SpecList):
 
         Parameters
         ----------
-
         spectrum: path to a .spec file (``str``), or :py:class:`~radis.spectrum.spectrum.Spectrum` object
             if a :py:class:`~radis.spectrum.spectrum.Spectrum` object:
             stores it in the database (using the :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
@@ -1987,12 +1972,10 @@ class SpecDatabase(SpecList):
 
         Other Parameters
         ----------------
-
         store_name: ``str``, or ``None``
             name of the file where the spectrum will be stored. If ``None``,
             name is generated automatically from the Spectrum conditions (see
             ``add_info=`` and ``if_exists_then=``)
-
         **kwargs: **dict
             extra parameters used in the case where spectrum is a file and a .spec object
             has to be created (useless if `spectrum` is a file already). kwargs
@@ -2031,9 +2014,10 @@ class SpecDatabase(SpecList):
 
         Examples
         --------
+        ::
 
-        Simply write::
-
+            from radis.lbl import SpecDatabase
+            db = SpecDatabase(r"path/to/database")     # create or loads database
             db.add(s, discard=['populations'])
 
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
