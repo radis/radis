@@ -5,6 +5,9 @@ Created on Tue Jan 26 21:27:15 2021
 @author: erwan
 """
 
+import sys
+from time import time
+
 import pandas as pd
 
 
@@ -79,6 +82,7 @@ def hdf2df(
         where.append(f'iso in {isotope.split(",")}')
 
     # Load :
+    t0 = time()
     try:
         df = pd.read_hdf(fname, columns=columns, where=where, **store_kwargs)
     except TypeError as err:
@@ -86,9 +90,15 @@ def hdf2df(
             raise TypeError(
                 f"radis.io.hdf5.hdf2df can only be used to load specific HDF5 files generated in a 'Table' which allows to select only certain columns or rows. Here the file {fname} is in 'Fixed' format. Regenerate it ? If it's a cache file of a .par file, load the .par file directly ?"
             )
-
-    with pd.HDFStore(fname, mode="r+") as store:
+    with pd.HDFStore(fname, mode="r") as store:
         df.attrs.update(store.get_storer("df").attrs.metadata)
+
+    if verbose >= 3:
+        from radis.misc.printer import printg
+
+        printg(
+            f"Generated dataframe from {fname} in {time()-t0:.2f}s ({len(df)} rows, {len(df.columns)} columns, {sys.getsizeof(df)*1e-6:.2f} MB)"
+        )
 
     return df
 

@@ -13,7 +13,7 @@ from radis.misc.config import getDatabankList
 
 
 @pytest.mark.needs_connection
-def test_fetch_hitemp_OH(*args, **kwargs):
+def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP OH database.
 
     Good to test fetch_hitemp.
@@ -27,7 +27,7 @@ def test_fetch_hitemp_OH(*args, **kwargs):
 
     """
 
-    df = fetch_hitemp("OH", cache="regen", chunksize=20000)
+    df = fetch_hitemp("OH", cache="regen", chunksize=20000, verbose=3 * verbose)
 
     assert "HITEMP-OH" in getDatabankList()
 
@@ -42,7 +42,7 @@ def test_fetch_hitemp_OH(*args, **kwargs):
 @pytest.mark.parametrize(
     "molecule", [mol for mol, url in HITEMP_SOURCE_FILES.items() if url]
 )
-def test_fetch_hitemp_all_molecules(molecule, *args, **kwargs):
+def test_fetch_hitemp_all_molecules(molecule, verbose=False, *args, **kwargs):
     """Test fetch HITEMP for all molecules whose download URL is available.
 
     ..warning::
@@ -69,7 +69,7 @@ def test_fetch_hitemp_all_molecules(molecule, *args, **kwargs):
         - chunksize=1000 --> 90s  ,  1 iteration << 1s
     """
 
-    df = fetch_hitemp(molecule)
+    df = fetch_hitemp(molecule, verbose=verbose)
 
     assert f"HITEMP-{molecule}" in getDatabankList()
 
@@ -130,3 +130,4 @@ if __name__ == "__main__":
     test_calc_hitemp_spectrum()
     test_fetch_hitemp_all_molecules("OH")
     test_fetch_hitemp_all_molecules("CO")
+    test_fetch_hitemp_all_molecules("N2O", verbose=3)

@@ -338,16 +338,24 @@ def check_not_deprecated(
     """
 
     # # Get attributes (metadata+version)
-    try:
-        with pd.HDFStore(file, mode="r+") as store:
+    with pd.HDFStore(file, mode="r") as store:
+        # Errors due to old files generated with h5py. Remove after 1.0
+        try:
             file_metadata = store.get_storer("df").attrs.metadata
-    except AttributeError as err:
-        if "Attribute 'metadata' does not exist in node: '/df'" in str(err):
-            raise DeprecatedFileWarning(
-                "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file {0}".format(
-                    file
-                )
-            ) from err
+        except AttributeError as err:
+            if "Attribute 'metadata' does not exist in node: '/df'" in str(err):
+                raise DeprecatedFileWarning(
+                    "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file {0}".format(
+                        file
+                    )
+                ) from err
+        except TypeError as err:
+            if "cannot properly create the storer" in str(err):
+                raise DeprecatedFileWarning(
+                    "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file {0}".format(
+                        file
+                    )
+                ) from err
 
     # Raise an error if version is not found
     try:
@@ -482,7 +490,7 @@ def check_relevancy(
 
     """
     # Add metadata
-    with pd.HDFStore(file, mode="r+") as store:
+    with pd.HDFStore(file, mode="r") as store:
         file_metadata = store.get_storer(key).attrs.metadata
 
     for k, v in relevant_if_metadata_above.items():

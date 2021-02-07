@@ -230,7 +230,7 @@ def _run_example(verbose=False):
         path_length=0.1,
         pressure=20,
         molecule="CO2",
-        isotope="1,2",
+        isotope="1",
         cutoff=1e-25,  # cm/molecule
         broadening_max_width=10,  # cm-1
         verbose=verbose,
@@ -304,4 +304,4 @@ def _run_testcases(verbose=True, *args, **kwargs):
 
 if __name__ == "__main__":
     # print("Testing io.py: ", _run_testcases(verbose=True))
-    test_irrelevant_file_loading()
+    test_cache_regeneration(verbose=3)

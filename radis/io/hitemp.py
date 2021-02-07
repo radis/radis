@@ -198,7 +198,7 @@ def fetch_hitemp(
         if not databank_name in getDatabankList():
             # if not, check number of rows is correct :
             error_msg = ""
-            with pd.HDFStore(output, "r+") as store:
+            with pd.HDFStore(output, "r") as store:
                 nrows = store.get_storer("df").nrows
                 if nrows != INFO_HITEMP_LINE_COUNT[molecule]:
                     error_msg += (
@@ -320,7 +320,7 @@ def fetch_hitemp(
                 Nlines += len(df)
                 pb.update(
                     Nlines,
-                    message=f"Got {Nlines:,} / {Ntotal_lines_expected:,} total lines. {wmin:.3f}-{wmax:.3f} cm-1 wavenumber range is complete.",
+                    message=f"Parsed {Nlines:,} / {Ntotal_lines_expected:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
                 )
 
                 # Reinitialize for next read
@@ -339,7 +339,7 @@ def fetch_hitemp(
 
     # Done: add final checks
     # ... check on the created file that all lines are there :
-    with pd.HDFStore(output, "r+") as store:
+    with pd.HDFStore(output, "r") as store:
         nrows = store.get_storer("df").nrows
         assert nrows == Nlines
         if nrows != INFO_HITEMP_LINE_COUNT[molecule]:
