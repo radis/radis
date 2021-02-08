@@ -116,7 +116,6 @@ columns_4000 = OrderedDict(
 def cdsd2df(
     fname,
     version="hitemp",
-    count=-1,
     cache=True,
     verbose=True,
     drop_non_numeric=True,
@@ -131,8 +130,6 @@ def cdsd2df(
         CDSD file name
     version: str ('4000', 'hitemp')
         CDSD version
-    count: int
-        number of items to read (-1 means all file)
     cache: boolean, or 'regen'
         if ``True``, a pandas-readable HDF5 file is generated on first access,
         and later used. This saves on the datatype cast and conversion and
@@ -258,7 +255,7 @@ def cdsd2df(
 
     # %% Start reading the full file
 
-    df = parse_hitran_file(fname, columns, count)
+    df = parse_hitran_file(fname, columns)
 
     # Remove non numerical attributes
     if drop_non_numeric:

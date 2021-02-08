@@ -8,32 +8,30 @@ import numpy as np
 import pandas as pd
 
 
-def parse_hitran_file(fname, columns, count):
+def parse_hitran_file(fname, columns, count=-1):
     """Parse a file under HITRAN ``par`` format. Parsing is done in binary
     format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
     Parameters
     ----------
-
     fname: str
         filename
-
     columns: dict
         list of columns and their format
 
+    Other Parameters
+    ----------------
     count: int
-        number of lines to read
+        number of lines to read. If ``-1`` reads all file.
 
     Returns
     -------
-
     df: pandas DataFrame
         dataframe with lines
 
-    Notes
-    -----
-
-    Part common to hit2df and cdsd2df
+    See Also
+    --------
+    Used in :py:func:`~radis.io.hitran.hit2df` and :py:func:`~radis.io.cdsd.cdsd2df`
     """
 
     # To be faster, we read file totally in bytes mode with fromfiles. But that
@@ -88,20 +86,7 @@ def _get_linereturnformat(data, columns, fname=""):
 
 
 def _ndarray2df(data, columns, linereturnformat):
-    """
-
-
-    Parameters
-    ----------
-    data : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    df : TYPE
-        DESCRIPTION.
-
-    """
+    """"""
 
     # ... Cast to new type
     # This requires to recast all the data already read, but is still the fastest

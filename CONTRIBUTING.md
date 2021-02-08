@@ -18,11 +18,12 @@ So all code changes (should) happen through Pull Requests.
 Pull requests are the best way to propose changes to the codebase:
 
 1. Fork the repo and create your branch from `develop`.
-2. If you've added code that should be tested, add tests.
-3. If you've added new features, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
-6. Open that pull request!
+2. Clone your fork, make your changes locally (for a quick change you may edit it directly online with the GitHub editor).
+3. Push your changes and open a Pull request (PR). If things aren't final, it's okay: just mark is as a draft `[WIP]`.
+4. PR are a good support for discussion on your changes. Maintainers of the code can comment, help you, and even edit your code directly.
+5. If you've added code that should be tested, add tests.
+6. Once the physical tests pass, lint your code.
+7. The pull request is merged, welcome to the [RADIS contributors](https://github.com/radis/radis/graphs/contributors)
 
 ## Report bugs using Github's [issues](https://github.com/radis/radis/issues)
 We use GitHub issues to track public bugs. Report a bug by [opening a new issue](); it's that easy!
@@ -47,13 +48,18 @@ People *love* thorough bug reports. Not even kidding.
 ## Use a Consistent Coding Style
 
 We're using the Black coding style. See the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html#code-linting)
-for more information.
+for more information. Can you also install pre-commit that will take care of all the formatting :
+
+```
+cd radis
+pre-commit install
+```
 
 ## Ask questions
 
-See the [Q&A forum](https://groups.google.com/forum/#!forum/radis-radiation>)
-or join the community chat:
+Join the community chat:
 
+[![Slack](https://img.shields.io/badge/slack-join-green.svg?logo=slack)](https://radis.github.io/slack-invite/)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/radis-radiation/community)
 
 ## Propose new features
