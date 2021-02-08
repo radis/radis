@@ -29,66 +29,59 @@ from astroquery.hitran import Hitran
 
 import radis
 from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.io.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc import is_float
-from radis.misc.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc.printer import printr
 
 CACHE_FILE_NAME = "tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5"
 
 
 def fetch_astroquery(
-    molecule, isotope, wmin, wmax, verbose=True, cache=True, metadata={}
+    molecule, isotope, wmin, wmax, verbose=True, cache=True, expected_metadata={}
 ):
-    """Wrapper to Astroquery [1]_ fetch function to download a line database
+    """Download a HITRAN line database to a Pandas DataFrame.
 
-    Notes
-    -----
-
-    Astroquery [1]_ is itself based on [HAPI]_
+    Wrapper to Astroquery [1]_ fetch function
 
     Parameters
     ----------
-
     molecule: str, or int
         molecule name or identifier
-
     isotope: int
         isotope number
-
     wmin, wmax: float  (cm-1)
         wavenumber min and max
 
     Other Parameters
     ----------------
-
     verbose: boolean
         Default ``True``
-
-    cache: boolean
+    cache: boolean or ``'regen'``
         if ``True``, tries to find a ``.h5`` cache file in the Astroquery
         :py:attr:`~astroquery.query.BaseQuery.cache_location`, that would match
         the requirements. If not found, downloads it and saves the line dataframe
         as a ``.h5`` file in the Astroquery.
-
-    metadata: dict
+        If ``'regen'``, delete existing cache file to regerenate it.
+    expected_metadata: dict
         if ``cache=True``, check that the metadata in the cache file correspond
         to these attributes. Arguments ``molecule``, ``isotope``, ``wmin``, ``wmax``
         are already added by default.
 
+    Notes
+    -----
+    The HITRAN module in Astroquery [1]_ is itself based on [HAPI]_
+
     References
     ----------
-
     .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
 
     See Also
     --------
-
     :py:func:`astroquery.hitran.reader.download_hitran`,
     :py:func:`astroquery.hitran.reader.read_hitran_file`,
     :py:attr:`~astroquery.query.BaseQuery.cache_location`
 
     """
-
     # Check input
     if not is_float(molecule):
         mol_id = get_molecule_identifier(molecule)
@@ -99,39 +92,45 @@ def fetch_astroquery(
 
     empty_range = False
 
-    # If cache, tries to find from Astroquery:
     if cache:
-        # Update metadata with physical properties from the database.
-        metadata.update(
-            {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
-        )
+        # Cache file location in Astroquery cache
+        # TODO: move full HITRAN databases in ~/radisdb cache like io/hitemp/fetch_hitemp ?
         fcache = join(
             Hitran.cache_location,
             CACHE_FILE_NAME.format(
                 **{"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
             ),
         )
-        check_cache_file(
-            fcache=fcache, use_cached=cache, metadata=metadata, verbose=verbose
+        # ... Update metadata with physical properties from the database.
+        expected_metadata.update(
+            {"molecule": molecule, "isotope": isotope, "wmin": wmin, "wmax": wmax}
         )
-        if exists(fcache):
-            try:
-                return get_cache_file(fcache, verbose=verbose)
-            except Exception as err:
+        if cache == "regen":
+            if exists(fcache):
                 if verbose:
-                    printr(
-                        "Problem reading cache file {0}:\n{1}\nDeleting it!".format(
-                            fcache, str(err)
-                        )
-                    )
+                    print(f"Cache file {fcache} deleted to be regenerated")
                 os.remove(fcache)
+        else:
+            # Load cache file if valid
+            check_cache_file(
+                fcache=fcache,
+                use_cached=cache,
+                expected_metadata=expected_metadata,
+                verbose=verbose,
+            )
+            if exists(fcache):
+                try:
+                    return get_cache_file(fcache, verbose=verbose)
+                except Exception as err:
+                    if verbose:
+                        printr(
+                            "Problem reading cache file {0}:\n{1}\nDeleting it!".format(
+                                fcache, str(err)
+                            )
+                        )
+                    os.remove(fcache)
 
-    #    tbl = Hitran.query_lines_async(molecule_number=mol_id,
-    #                                     isotopologue_number=isotope,
-    #                                     min_frequency=wmin / u.cm,
-    #                                     max_frequency=wmax / u.cm)
-
-    #    # Download using the astroquery library
+    # Download using the astroquery library
     try:
         response = Hitran.query_lines_async(
             molecule_number=mol_id,
@@ -206,9 +205,6 @@ def fetch_astroquery(
     }
 
     if not empty_range:
-        #        _fix_astroquery_file_format(filename)
-        # Note: as of 0.9.16 we're not fixing astroquery_file_format anymore.
-        # maybe we should.
         tbl = Hitran._parse_result(response)
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)
@@ -231,19 +227,29 @@ def fetch_astroquery(
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
+        new_metadata = {
+            "molecule": molecule,
+            "isotope": isotope,
+            "wmin": wmin,
+            "wmax": wmax,
+        }
         if verbose:
-            print("Generating cached file: {0}".format(fcache))
+            print(
+                "Generating cache file {0} with metadata :\n{1}".format(
+                    fcache, new_metadata
+                )
+            )
         try:
             save_to_hdf(
                 df,
                 fcache,
-                metadata=metadata,
+                metadata=new_metadata,
                 version=radis.__version__,
                 key="df",
                 overwrite=True,
                 verbose=verbose,
             )
-        except:
+        except PermissionError:
             if verbose:
                 print(sys.exc_info())
                 print("An error occured in cache file generation. Lookup access rights")

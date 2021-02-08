@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Sep 14 13:44:35 2017
+"""Created on Thu Sep 14 13:44:35 2017.
 
 @author: erwan
 
@@ -17,7 +16,6 @@ having to recalculate the broadening of each line
     rescaling of absorption doesnt scale induced emission properly
 
 ----------
-
 """
 
 from time import time
@@ -45,8 +43,8 @@ _IGNORE_KEYS = ["band", "band_htrn", "viblvl_u", "viblvl_l"]
 
 
 class LevelsList(object):
-    """A class to generate a Spectrum from a list of precalculated bands at
-    a given reference temperature
+    """A class to generate a Spectrum from a list of precalculated bands at a
+    given reference temperature.
 
     .. warning::
 
@@ -54,7 +52,6 @@ class LevelsList(object):
 
     See Also
     --------
-
     """
 
     # hardcode attribute names, but can save a lot of memory
@@ -85,7 +82,6 @@ class LevelsList(object):
         """
         Parameters
         ----------
-
         bands: dict of bands
             bands are Spectrum objects calculated at equilibrium or non-equilibrim.
             Tgas, or (Tvib, Trot) must be given and the same in all bands conditions.
@@ -98,6 +94,10 @@ class LevelsList(object):
                 raise ValueError(
                     "`bands` must be a list of Spectrum objects. "
                     + "Got {0}".format(type(s))
+                )
+            if s.lines is None:
+                raise ValueError(
+                    "To be used in LevelsList spectra must have been calculated with 'export_lines=True'"
                 )
 
         # Assert all conditions are the same
@@ -245,7 +245,7 @@ class LevelsList(object):
 
         # Add levels
         def add_viblvl(row):
-            """  """
+            """"""
             #    row['vib_lvl'] = '({p},{c},{N})'.format(**dict([(k,int(row[k])) for k in ['p', 'c', 'N']]))
             #            row['viblvl'] = '({p},{c})'.format(**dict([(k,int(row[k])) for k in ['p', 'c']]))
             row["viblvl"] = vib_lvl_name_cdsd(row.p, row.c, row.N)
@@ -286,7 +286,7 @@ class LevelsList(object):
             index[viblvl_l]["bands_where_low"].append(s)
 
     def plot_vib_populations(self, nfig=None, **kwargs):
-        """Plot current distribution of vibrational levels
+        """Plot current distribution of vibrational levels.
 
         By constructions populations are shown as divided by the state degeneracy,
         i.e,            g =   gv   *   (2J+1)   *    gi    *     gs
@@ -299,7 +299,6 @@ class LevelsList(object):
 
         kwargs: **dict
             arguments are forwarded to plot()
-
         """
 
         import matplotlib.pyplot as plt
@@ -319,8 +318,7 @@ class LevelsList(object):
         self, Tvib, vib_distribution="boltzmann", overpopulation=None
     ):
         """Calculate vibrational populations from Tref to new Tvib and store
-        results in vib_levels dataframe
-        This does not modify the spectra yet!
+        results in vib_levels dataframe This does not modify the spectra yet!
 
         By constructions populations are calculated divided by the state degeneracy,
         i.e,            g =   gv   *   (2J+1)   *    gi    *     gs
@@ -329,7 +327,6 @@ class LevelsList(object):
         The information on state degeneracy and isotopic abundance is already
         included in the linestrength / emission integral, hence in the pre-calculated
         emisscoeff / abscoeff
-
         """
 
         vib_levels = self.vib_levels
@@ -437,7 +434,6 @@ class LevelsList(object):
             save updated bands. Take some time as it requires rescaling all
             bands individually (which is only done on the MergedSlabs usually)
             Default ``False``
-
         """
         s = self.non_eq_spectrum(
             Tgas,
@@ -491,7 +487,6 @@ class LevelsList(object):
 
         Generation of a new spectrum is done by recombination of the precalculated
         bands with
-
         """
 
         from radis.los import MergeSlabs
@@ -648,7 +643,7 @@ class LevelsList(object):
 def rescale_updown_levels(
     spec, new_nu, old_nu, new_nl, old_nl, ignore_warnings=False, force=False
 ):
-    """Update spectrum with new molar fraction for upper and lower levels
+    """Update spectrum with new molar fraction for upper and lower levels.
 
     Convoluted values (with slit) are dropped in the process.
 
@@ -695,7 +690,6 @@ def rescale_updown_levels(
     IMPORTANT: if editing make sure you use the proper nu and nl. In particular
     when infering emission quantities from absorption quantities this may
     ends up in error in overpopulation rescaling.
-
     """
     # TODO: Add warning when too large rescaling
 

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jan  8 16:29:18 2018
+"""Created on Mon Jan  8 16:29:18 2018.
 
 @author: erwan
 
@@ -20,9 +19,6 @@ Routine Listing
 
 
 -------------------------------------------------------------------------------
-
-
-
 """
 
 import warnings
@@ -100,9 +96,8 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
 
 
 def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """Add curve (w2, I2) from (w1, I1)
-    Linearly interpolates if the two ranges dont match. Fills out of bound
-    parameters with nan.
+    """Add curve (w2, I2) from (w1, I1) Linearly interpolates if the two ranges
+    dont match. Fills out of bound parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
@@ -128,7 +123,6 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
     w1, Iadd: array
         sum ``I1 + I2`` interpolated on the first range ``w1``
-
     """
 
     I2_interp = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
@@ -137,9 +131,8 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
 
 def curve_substract(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """Substracts curve (w2, I2) from (w1, I1)
-    Linearly interpolates if the two ranges dont match. Fills out of bound
-    parameters with nan.
+    """Substracts curve (w2, I2) from (w1, I1) Linearly interpolates if the two
+    ranges dont match. Fills out of bound parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
@@ -165,7 +158,6 @@ def curve_substract(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
     w1, Idiff: array
         difference ``I1 - I2`` interpolated on the first range ``w1``
-
     """
 
     I2_interp = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
@@ -174,9 +166,8 @@ def curve_substract(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
 
 def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """Multiply curve (w2, I2) with (w1, I1)
-    Linearly interpolates if the two ranges dont match. Fills out of bound
-    parameters with nan.
+    """Multiply curve (w2, I2) with (w1, I1) Linearly interpolates if the two
+    ranges dont match. Fills out of bound parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
@@ -202,7 +193,6 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
     w1, Iproduct: array
         product ``I1 * I2`` interpolated on the first range ``w1``
-
     """
 
     I2_interp = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)
@@ -211,9 +201,8 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
 
 def curve_divide(w1, I1, w2, I2, is_sorted=False, kind="linear", interpolation=1):
-    """Divides curve (w1, I1) by (w2, I2)
-    Linearly interpolates if the two ranges dont match. Fills out of bound
-    parameters with nan.
+    """Divides curve (w1, I1) by (w2, I2) Linearly interpolates if the two
+    ranges dont match. Fills out of bound parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
@@ -246,7 +235,6 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind="linear", interpolation=1
 
     w1, Idiv: array
         Division ``I1 / I2`` interpolated on the first or second range according to reverseInterpolation
-
     """
     if interpolation == 1:
         I2_interp = _curve_interpolate(w1, I1, w2, I2, is_sorted=is_sorted, kind=kind)

@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-
-Functions to update :class:`~radis.spectrum.spectrum.Spectrum`
-objects with new spectral quantities that can be derived
-from existing ones, or rescale path_length or mole_fraction, or add overpopulations
+"""Functions to update :class:`~radis.spectrum.spectrum.Spectrum` objects with
+new spectral quantities that can be derived from existing ones, or rescale
+path_length or mole_fraction, or add overpopulations.
 
 Most of these are binded as methods to the Spectrum class, but stored here to
 unload the spectrum.py file
 
 
 -------------------------------------------------------------------------------
-
-
 """
 
 from warnings import warn
@@ -62,9 +58,9 @@ assert (
 def _build_update_graph(
     spec, optically_thin=None, equilibrium=None, path_length=None, no_change=False
 ):
-    """Find inheritances properties (dependencies and equivalences) between all spectral
-    variables based on the spectrum conditions (equilibrium, optically thin,
-    known path length?)
+    """Find inheritances properties (dependencies and equivalences) between all
+    spectral variables based on the spectrum conditions (equilibrium, optically
+    thin, known path length?)
 
     Parameters
     ----------
@@ -139,8 +135,6 @@ def _build_update_graph(
                       ['radiance_noslit'],
                       ['transmittance_noslit']],
          etc. }
-
-
     """
 
     # Get defaults
@@ -178,8 +172,8 @@ def _build_update_graph(
     }
 
     def derives_from(what, *from_keys):
-        """Writes that quantity ``what`` can be infered by having all quantities
-        ``from_keys``
+        """Writes that quantity ``what`` can be infered by having all
+        quantities ``from_keys``
 
         Examples
         --------
@@ -191,7 +185,6 @@ def _build_update_graph(
         Else abscoeff would also be needed::
 
             derives_from('emisscoeff', ['radiance_noslit', 'abscoeff'])
-
         """
         for k in from_keys:
             if isinstance(k, str):
@@ -256,7 +249,7 @@ def _build_update_graph(
 
 def get_redundant(spec):
     """Returns a dictionary of all spectral quantities in spectrum and whether
-    they are redundant
+    they are redundant.
 
     Examples
     --------
@@ -267,7 +260,6 @@ def get_redundant(spec):
 
     >>> {'abscoeff': False, 'emisscoeff': True, 'absorbance': True, 'radiance_noslit': False,
          'transmittance_noslit': True}
-
     """
 
     # Get all spectral quantities that derive from existing ones
@@ -300,8 +292,8 @@ def _path_is_complete(list_of_keys, computed_keys):
 
 
 def get_reachable(spec):  # , derivation_graph):
-    """Get the list of all quantities that can be derived from current available
-    quantities, based on given spec conditions
+    """Get the list of all quantities that can be derived from current
+    available quantities, based on given spec conditions.
 
     Parameters
     ----------
@@ -324,7 +316,6 @@ def get_reachable(spec):  # , derivation_graph):
             for all possible ways to compute them
                 if valid, add quantity to reachable list, and restart
                 else, continue
-
     """
 
     # Get inheritance links based on Spectrum conditions (equilibrium, optically thin, etc.)
@@ -355,8 +346,8 @@ def get_reachable(spec):  # , derivation_graph):
 # , derivation_graph):
 def get_recompute(spec, wanted, no_change=False, true_path_length=None):
     """Get the list of all quantities that need to be recomputed to get the
-    ``wanted`` quantities based on given spec conditions
-    (does not recompute yet!)
+    ``wanted`` quantities based on given spec conditions (does not recompute
+    yet!)
 
     Parameters
     ----------
@@ -394,7 +385,6 @@ def get_recompute(spec, wanted, no_change=False, true_path_length=None):
             for all possible ways to compute them
                 if valid, add quantity to reachable list, and restart
                 else, continue
-
     """
 
     # Get inheritance links based on Spectrum conditions (equilibrium, optically thin, etc.)
@@ -491,8 +481,8 @@ def update(
     assume_equilibrium="default",
     verbose=True,
 ):
-    """Calculate missing quantities that can be derived from the current quantities
-    and conditions
+    """Calculate missing quantities that can be derived from the current
+    quantities and conditions.
 
     e.g: if path_length and emisscoeff are given, radiance_noslit can be recalculated
     if in an optically thin configuration, else if abscoeff is also given
@@ -525,7 +515,6 @@ def update(
         and all values are derived from a calculation under equilibrium,
         using Kirchoff's Law. If ``default``, use the value stored in
         Spectrum conditions[``thermal_equilibrium``], else use ``False``.
-
     """
 
     # Check inputs
@@ -1179,7 +1168,7 @@ def rescale_radiance_noslit(
     unit = None
 
     def get_radiance_unit(unit_emisscoeff):
-        """ get radiance_noslit unit from emisscoeff unit"""
+        """get radiance_noslit unit from emisscoeff unit."""
         if "/cm3" in unit_emisscoeff:
             return unit_emisscoeff.replace("/cm3", "/cm2")
         else:
@@ -1771,7 +1760,6 @@ def rescale_path_length(
     and emission coefficient, and solves the RTE again for the new path length
     Convoluted values (with slit) are dropped in the process.
 
-
     Parameters
     ----------
 
@@ -1810,7 +1798,6 @@ def rescale_path_length(
 
         To deal with all the input cases, we first make a list of what has to
         be recomputed, and what has to be recalculated
-
     """
 
     if not inplace:
@@ -1880,9 +1867,8 @@ def rescale_mole_fraction(
     force=False,
     verbose=True,
 ):
-    """Update spectrum with new molar fraction
-    Convoluted values (with slit) are dropped in the process.
-
+    """Update spectrum with new molar fraction Convoluted values (with slit)
+    are dropped in the process.
 
     Parameters
     ----------
@@ -1923,7 +1909,6 @@ def rescale_mole_fraction(
         similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
         Note that this is valid only for small changes in mole fractions. Then,
         the change in line broadening becomes significant
-
     """
 
     if not inplace:

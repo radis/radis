@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is
+"""Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is
 the core of the RADIS Line-by-Line module.
 
 Examples
@@ -11,7 +10,6 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
     # This is how you get a spectrum (see spectrum.py for front-end functions
     # that do just that)
     sf = SpectrumFactory(2125, 2249.9,
-                         parallel=False,bplot=False,
                          molecule='CO',
                          isotope=1,
                          cutoff=1e-30,   # for faster calculations. See
@@ -44,10 +42,10 @@ Most methods are written in inherited class with the following inheritance schem
 
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
-:py:class:`~radis.lbl.factory.SpectrumFactory` > :py:class:`~radis.lbl.parallel.ParallelFactory`
+:py:class:`~radis.lbl.factory.SpectrumFactory`
 
 
-.. inheritance-diagram:: radis.lbl.parallel.ParallelFactory
+.. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
    :parts: 1
 
 
@@ -77,10 +75,8 @@ for Developers:
 
 
 ----------
-
 """
 import sys
-from multiprocessing import cpu_count
 from subprocess import call
 from time import time
 from warnings import warn
@@ -112,75 +108,47 @@ c_cm = c * 100
 # %% Main functions
 class SpectrumFactory(BandFactory):
     """A class to put together all functions related to loading CDSD / HITRAN
-    databases, calculating the broadenings, and summing over all the lines
+    databases, calculating the broadenings, and summing over all the lines.
 
     Parameters
     ----------
 
-    wmin: float or `~astropy.units.quantity.Quantity`
-        a hybrid parameter which can stand for minimum wavenumber or minimum
-        wavelength depending upon the unit accompanying it. If dimensionless,
-        wunit is considered as the accompanying unit.
-
-    wmax: float or `~astropy.units.quantity.Quantity`
-        a hybrid parameter which can stand for maximum wavenumber or maximum
-        wavelength depending upon the unit accompanying it. If dimensionless,
-        wunit is considered as the accompanying unit.
-
+    wmin, wmax : float or `~astropy.units.quantity.Quantity`
+        a hybrid parameter which can stand for minimum (maximum) wavenumber or minimum
+        (maximum) wavelength depending upon the unit accompanying it. If dimensionless,
+        ``wunit`` is considered as the accompanying unit.
     wunit: string
         the unit accompanying wmin and wmax. Can only be passed with wmin
         and wmax. Default is `cm-1`.
-
-    wavenum_min: float(cm^-1) or `~astropy.units.quantity.Quantity`
-        minimum wavenumber to be processed in cm^-1.
+    wavenum_min, wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
+        minimum (maximum) wavenumber to be processed in :math:`cm^{-1}`.
         use astropy.units to specify arbitrary inverse-length units.
-
-    wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
-        maximum wavenumber to be processed in cm^-1.
-        use astropy.units to specify arbitrary inverse-length units.
-
-    wavelength_min: float(nm) or `~astropy.units.quantity.Quantity`
-        minimum wavelength to be processed in nm. This wavelength
+    wavelength_min, wavelength_max : float(nm) or `~astropy.units.quantity.Quantity`
+        minimum (maximum) wavelength to be processed in :math:`nm`. This wavelength
         can be in ``'air'`` or ``'vacuum'`` depending on the value of the parameter
         ``medium=``.
         use astropy.units to specify arbitrary length units.
-
-    wavelength_max: float(nm) or `~astropy.units.quantity.Quantity`
-        maximum wavelength to be processed in nm.
-        use astropy.units to specify arbitrary length units.
-
-    Tref: float(K) or `~astropy.units.quantity.Quantity`
-        reference temperature for calculations, HITRAN database uses 296 Kelvin
-        default: 3400K.
-        use astropy.units to specify arbitrary temperature units.
-        For example, ``200 * u.deg_C``.
-
     pressure: float(bar) or `~astropy.units.quantity.Quantity`
         partial pressure of gas in bar. Default 1.01325 (1 atm).
         use astropy.units to specify arbitrary pressure units.
         For example, ``1013.25 * u.mbar``.
-
     mole_fraction: N/D
         species mole fraction. Default 1. Note that the rest of the gas
         is considered to be air for collisional broadening.
-
     path_length: float(cm) or `~astropy.units.quantity.Quantity`
         path length in cm. Default 1.
         use astropy.units to specify arbitrary length units.
-
     molecule: int, str, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
         from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
         Default ``None``.
-
     isotope: int, list, str of the form '1,2', or 'all'
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
         See HITRAN documentation for isotope list for all species. If 'all',
         all isotopes in database are used (this may result in larger computation
         times!). Default 'all'
-
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
@@ -188,30 +156,25 @@ class SpectrumFactory(BandFactory):
     Other Parameters
     ----------------
 
-    Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`):
+    *Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`)*
 
     Tref: K
         Reference temperature for calculations (linestrength temperature
         correction). HITRAN database uses 296 Kelvin. Default 296 K
-
     self_absorption: boolean
-        self absorption
-
+        Compute self absorption. If ``False``, spectra are optically thin. Default ``True``.
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
         a huge performance drop (scales as ~broadening_width^2 without DLM)
         The calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default ``10`` cm-1.
-
     wstep: float (cm-1)
         Spacing of calculated spectrum. Default ``0.01`` cm-1
-
     cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate databases such as
         CDSD. If ``0``, no cutoff. Default ``1e-27``.
-
     pseudo_continuum_threshold: float
         if not ``0``, first calculate a rough approximation of the spectrum, then
         moves all lines whose linestrength intensity is less than this threshold
@@ -219,65 +182,50 @@ class SpectrumFactory(BandFactory):
         errors, mostly in highly populated areas. 80% of the lines can typically
         be moved in a continuum, resulting in 5 times faster spectra. If ``0``,
         no semi-continuum is used. Default ``0``.
-
-    bplot: boolean
-        plot intermediary results (like slit function generation). Default ``False``.
-
     save_memory: boolean
         if ``True``, removes databases calculated by intermediate functions (for
         instance, delete the full database once the linestrength cutoff criteria
         was applied). This saves some memory but requires to reload the database
         & recalculate the linestrength for each new parameter. Default ``False``.
-
     export_populations: ``'vib'``, ``'rovib'``, ``None``
         if not None, store populations in Spectrum. Either store vibrational
         populations ('vib') or rovibrational populations ('rovib'). Default ``None``
-
     export_lines: boolean
-        if ``True``, saves lines in Spectrum. Default ``True``.
-
-    parallel: boolean
-        use parallel compution. May only offer a performance improvement if
-        one spectrum already takes > 10s to be calculated. Default ``False`` because
-        since the latest vectorized version parallelisation is mostly
-        counterproductive.
-
-    db_use_cached: boolean, or 'regen'
-        use cache for line databases.
-        If ``True``, a pandas-readable csv file is generated on first access,
-        and later used. This saves on the datatype cast and conversion and
-        improves performances a lot. But! ... be sure to delete these files
-        to regenerate them if you happen to change the database. If 'regen',
-        existing cached files are removed and regenerated. Default ``False``
-        From 0.9.16 it is also used to load energy levels from .h5 cache file
-        if exist
-
-    lvl_use_cached: boolean, or ``'regen'``, or ``'force'``, or ``None``
-        use cache for energy level database
-        If None, the same value as ``db_use_cached`` is used.
-
-    Nprocs, Ngroups: int
-        parameters used in parallel processing mode. Default ``None``
-
+        if ``True``, saves details of all calculated lines in Spectrum. This is
+        necessary to later use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
+        but can take some space. Default ``False``.
     chunksize: int, or ``None``
         Splits the lines database in several chuncks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
         and slows the system down. Chunksize let you change the default chunck
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
-
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used:
-        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [DLM_article]_)
+        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral Synthesis Algorithm]_)
         - ``"simple"`` : weights equal to their relative position in the grid
 
         If using the DLM optimization, broadening method is automatically set to ``'fft'``.
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
 
-        Refer to [DLM_article]_ for more explanation on the DLM method for lineshape interpolation.
+        Refer to [Spectral Synthesis Algorithm]_ for more explanation on the DLM method for lineshape interpolation.
 
         Default ``"min-RMS"``
+    folding_thresh: float
+        Folding is a correction procedure thet is applied when the lineshape is calculated with
+        the ``fft`` broadening method and the linewidth is comparable to ``wstep``, that prevents
+        sinc(v) modulation of the lineshape. Folding continues until the lineshape intensity
+        is below ``folding_threshold``. Setting to 1 or higher effectively disables folding correction.
 
+        Range: 0.0 < folding_thresh <= 1.0
+        Default: 1e-6
+    zero_padding: int
+        Zero padding is used in conjunction with the ``fft`` broadening method to prevent circular
+        convolution at the cost of performance. When set to -1, padding is set equal to the spectrum length,
+        which guarantees a linear convolution.
+
+        Range: 0 <= zero_padding <= len(w), or zero_padding = -1
+        Default: -1
     broadening_method: ``"voigt"``, ``"convolve"``, ``"fft"``
         Calculates broadening with a direct voigt approximation ('voigt') or
         by convoluting independantly calculated Doppler and collisional
@@ -295,7 +243,6 @@ class SpectrumFactory(BandFactory):
 
         By default, use ``"fft"`` for any ``optimization``, and ``"voigt"`` if
         optimization is ``None`` .
-
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
@@ -307,7 +254,6 @@ class SpectrumFactory(BandFactory):
 
         See :py:data:`~radis.misc.warning.default_warning_status` for more
         information.
-
     verbose: boolean, or int
         If ``False``, stays quiet. If ``True``, tells what is going on.
         If ``>=2``, gives more detailed messages (for instance, details of
@@ -345,8 +291,7 @@ class SpectrumFactory(BandFactory):
 
     Alternative:
 
-    :func:`~radis.lbl.calc.calc_spectrum`,
-    :class:`~radis.lbl.parallel.ParallelFactory`
+    :func:`~radis.lbl.calc.calc_spectrum`
 
     Main Methods:
 
@@ -367,7 +312,6 @@ class SpectrumFactory(BandFactory):
     :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
     :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscallenous parameters (don't change output)
-
     """
 
     # TODO: make it possible to export both 'vib' and 'rovib'
@@ -404,20 +348,16 @@ class SpectrumFactory(BandFactory):
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
-        optimization="min-RMS",
+        optimization="simple",
+        folding_thresh=1e-6,
+        zero_padding=-1,
         broadening_method=Default("fft"),
-        Nprocs=None,
-        Ngroups=None,
         cutoff=1e-27,
-        bplot=False,
-        parallel=False,
-        db_use_cached=True,
-        lvl_use_cached=None,
         verbose=True,
         warnings=True,
         save_memory=False,
         export_populations=None,
-        export_lines=True,
+        export_lines=False,
         **kwargs
     ):
 
@@ -428,9 +368,20 @@ class SpectrumFactory(BandFactory):
         if medium not in ["air", "vacuum"]:
             raise ValueError("Wavelength must be one of: 'air', 'vacuum'")
         kwargs0 = kwargs  # kwargs is used to deal with Deprecated names
-        if "use_cached" in kwargs:
-            warn(DeprecationWarning("use_cached replaced with db_use_cached"))
-            db_use_cached = kwargs0.pop("use_cached")
+        if "db_use_cached" in kwargs:
+            warn(
+                DeprecationWarning(
+                    "db_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()"
+                )
+            )
+            kwargs0.pop("db_use_cached")
+        if "lvl_use_cached" in kwargs:
+            warn(
+                DeprecationWarning(
+                    "lvl_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()"
+                )
+            )
+            kwargs0.pop("lvl_use_cached")
         if kwargs0 != {}:
             raise TypeError(
                 "__init__() got an unexpected keyword argument '{0}'".format(
@@ -524,12 +475,7 @@ class SpectrumFactory(BandFactory):
 
         # Initialize computation variables
         self.params.wstep = wstep
-        self.params.db_use_cached = db_use_cached
-        if lvl_use_cached is None:
-            lvl_use_cached = db_use_cached
-        self.params.lvl_use_cached = lvl_use_cached
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
-        self.misc.parallel = parallel
         self.params.cutoff = cutoff
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
@@ -542,16 +488,16 @@ class SpectrumFactory(BandFactory):
         if isinstance(broadening_method, Default):
             if optimization in ("simple", "min-RMS") and broadening_method != "fft":
                 if self.verbose >= 3:
-                    print(
-                        "DLM used. Defaulting broadening method from {0} to FFT".format(
+                    printg(
+                        "LDM algorithm used. Defaulting broadening method from {0} to FFT".format(
                             broadening_method
                         )
                     )
                 broadening_method = "fft"
             elif optimization is None and broadening_method != "voigt":
                 if self.verbose >= 3:
-                    print(
-                        "DLM not used. Defaulting broadening method from {0} to 'voigt'".format(
+                    printg(
+                        "LDM algorithm not used. Defaulting broadening method from {0} to 'voigt'".format(
                             broadening_method
                         )
                     )
@@ -560,25 +506,12 @@ class SpectrumFactory(BandFactory):
                 broadening_method = broadening_method.value
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
+        self.params.folding_thresh = folding_thresh
+        self.params.zero_padding = zero_padding
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
-        if parallel:
-            # Set up parameters for //
-            if Ngroups is None:
-                Ngroups = cpu_count()  # number of processors
-            if Nprocs is None:
-                Nprocs = cpu_count()
-            self.misc.Ngroups = Ngroups
-            self.misc.Nprocs = Nprocs
-        else:
-            if Nprocs is not None:
-                print("Choose parallel=True to use Nprocs")
-            if Ngroups is not None:
-                print("Choose parallel=True to use Ngroups")
-
         # Other parameters:
-        self.bplot = bplot
         self.verbose = verbose
         self.save_memory = save_memory
         self.autoupdatedatabase = False  # a boolean to automatically store calculated
@@ -630,25 +563,23 @@ class SpectrumFactory(BandFactory):
     def eq_spectrum(
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
     ):
-        """Generate a spectrum at equilibrium
+        """Generate a spectrum at equilibrium.
 
         Parameters
         ----------
 
-        Tgas: float
+        Tgas: float or `~astropy.units.quantity.Quantity`
             Gas temperature (K)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
-        path_length: float
-            slab size (cm). If None, Factory mole fraction is used.
-
-        pressure: float
-            pressure (bar). If None, the default Factory pressure is used.
-
+        path_length: float or `~astropy.units.quantity.Quantity`
+            slab size (cm). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
+        pressure: float or `~astropy.units.quantity.Quantity`
+            pressure (bar). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.pressure` is used.
         name: str
-            case name (useful in batch)
+            output Spectrum name (useful in batch)
 
         Returns
         -------
@@ -656,18 +587,11 @@ class SpectrumFactory(BandFactory):
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it. See [1]_ to get an overview of all Spectrum methods
-
-        Notes
-        -----
-
-        Calculate line strenghts correcting the CDSD reference one. Then call
-        the main routine that sums over all lines
-
+                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+                to plot it. See [1]_ to get an overview of all Spectrum methods
 
         References
         ----------
@@ -679,256 +603,237 @@ class SpectrumFactory(BandFactory):
         --------
 
         :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
-
         """
 
-        try:
+        # %% Preprocessing
+        # --------------------------------------------------------------------
 
-            # %% Preprocessing
-            # --------------------------------------------------------------------
-
-            # Check inputs
-            if not self.input.self_absorption:
-                raise ValueError(
-                    "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
-                    + "without self_absorption"
-                )
-
-            # Convert units
-            Tgas = convert_and_strip_units(Tgas, u.K)
-            path_length = convert_and_strip_units(path_length, u.cm)
-            pressure = convert_and_strip_units(pressure, u.bar)
-
-            # update defaults
-            if path_length is not None:
-                self.input.path_length = path_length
-            if mole_fraction is not None:
-                self.input.mole_fraction = mole_fraction
-            if pressure is not None:
-                self.input.pressure_mbar = pressure * 1e3
-            if not is_float(Tgas):
-                raise ValueError(
-                    "Tgas should be float. Got {0}. Use ParallelFactory for multiple cases".format(
-                        Tgas
-                    )
-                )
-            self.input.rot_distribution = "boltzmann"  # equilibrium
-            self.input.vib_distribution = "boltzmann"  # equilibrium
-
-            # Get temperatures
-            self.input.Tgas = Tgas
-            self.input.Tvib = Tgas  # just for info
-            self.input.Trot = Tgas  # just for info
-
-            # Init variables
-            pressure_mbar = self.input.pressure_mbar
-            mole_fraction = self.input.mole_fraction
-            path_length = self.input.path_length
-            verbose = self.verbose
-
-            # Check variables
-            self._check_inputs(mole_fraction, max(flatten(Tgas)))
-
-            # Retrieve Spectrum from database if it exists
-            if self.autoretrievedatabase:
-                s = self._retrieve_from_database()
-                if s is not None:
-                    return s  # exit function
-
-            # %% Start
-            # --------------------------------------------------------------------
-
-            t0 = time()
-            if verbose:
-                self.print_conditions("Calculating Equilibrium Spectrum")
-
-            # Check database, reset populations, create line dataframe to be scaled
-            # --------------------------------------------------------------------
-            self._check_line_databank()
-            self._reinitialize()  # creates scaled dataframe df1 from df0
-
-            # --------------------------------------------------------------------
-
-            # First calculate the linestrength at given temperature
-            self._calc_linestrength_eq(
-                Tgas
-            )  # scales S0 to S (equivalent to S0 in code)
-            self._cutoff_linestrength()
-
-            # ----------------------------------------------------------------------
-
-            # Calculate line shift
-            self._calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
-
-            # ----------------------------------------------------------------------
-            # Line broadening
-
-            # ... calculate broadening  HWHM
-            self._calc_broadening_HWHM()
-
-            # ... find weak lines and calculate semi-continuum (optional)
-            I_continuum = self._calculate_pseudo_continuum()
-            # ... apply lineshape and get absorption coefficient
-            # ... (this is the performance bottleneck)
-            wavenumber, abscoeff_v = self._calc_broadening()
-            #    :         :
-            #   cm-1    1/(#.cm-2)
-
-            # ... add semi-continuum (optional)
-            abscoeff_v = self._add_pseudo_continuum(abscoeff_v, I_continuum)
-            # Calculate output quantities
-            # ----------------------------------------------------------------------
-
-            if self.verbose >= 2:
-                t1 = time()
-
-            # incorporate density of molecules (see equation (A.16) )
-            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
-            #  :
-            # (#/cm3)
-
-            abscoeff = abscoeff_v * density  # cm-1
-            # ... # TODO: if the code is extended to multi-species, then density has to be added
-            # ... before lineshape broadening (as it would not be constant for all species)
-
-            # get absorbance (technically it's the optical depth `tau`,
-            #                absorbance `A` being `A = tau/ln(10)` )
-            absorbance = abscoeff * path_length
-            # Generate output quantities
-            transmittance_noslit = exp(-absorbance)
-            emissivity_noslit = 1 - transmittance_noslit
-            radiance_noslit = calc_radiance(
-                wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+        # Check inputs
+        if not self.input.self_absorption:
+            raise ValueError(
+                "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
+                + "without self_absorption"
             )
 
-            if self.verbose >= 2:
-                printg(
-                    "Calculated other spectral quantities in {0:.2f}s".format(
-                        time() - t1
-                    )
-                )
+        # Convert units
+        Tgas = convert_and_strip_units(Tgas, u.K)
+        path_length = convert_and_strip_units(path_length, u.cm)
+        pressure = convert_and_strip_units(pressure, u.bar)
 
-            # %% Export
-            # --------------------------------------------------------------------
+        # update defaults
+        if path_length is not None:
+            self.input.path_length = path_length
+        if mole_fraction is not None:
+            self.input.mole_fraction = mole_fraction
+        if pressure is not None:
+            self.input.pressure_mbar = pressure * 1e3
+        if not is_float(Tgas):
+            raise ValueError(
+                "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
+            )
+        self.input.rot_distribution = "boltzmann"  # equilibrium
+        self.input.vib_distribution = "boltzmann"  # equilibrium
 
-            t = round(time() - t0, 2)
-            if verbose >= 2:
-                printg(
-                    "Spectrum calculated in {0:.2f}s (before object generation)".format(
-                        t
-                    )
-                )
-            if self.verbose >= 2:
-                t1 = time()
+        # Get temperatures
+        self.input.Tgas = Tgas
+        self.input.Tvib = Tgas  # just for info
+        self.input.Trot = Tgas  # just for info
 
-            # Get conditions
-            conditions = self.get_conditions()
-            conditions.update(
-                {
-                    "calculation_time": t,
-                    "lines_calculated": self._Nlines_calculated,
-                    "lines_cutoff": self._Nlines_cutoff,
-                    "lines_in_continuum": self._Nlines_in_continuum,
-                    "thermal_equilibrium": True,
-                    "radis_version": get_version(),
-                }
+        # Init variables
+        pressure_mbar = self.input.pressure_mbar
+        mole_fraction = self.input.mole_fraction
+        path_length = self.input.path_length
+        verbose = self.verbose
+
+        # Check variables
+        self._check_inputs(mole_fraction, max(flatten(Tgas)))
+
+        # Retrieve Spectrum from database if it exists
+        if self.autoretrievedatabase:
+            s = self._retrieve_from_database()
+            if s is not None:
+                return s  # exit function
+
+        # %% Start
+        # --------------------------------------------------------------------
+
+        t0 = time()
+        if verbose:
+            self.print_conditions("Calculating Equilibrium Spectrum")
+
+        # Check database, reset populations, create line dataframe to be scaled
+        # --------------------------------------------------------------------
+        self._check_line_databank()
+        self._reinitialize()  # creates scaled dataframe df1 from df0
+
+        # --------------------------------------------------------------------
+
+        # First calculate the linestrength at given temperature
+        self._calc_linestrength_eq(Tgas)  # scales S0 to S (equivalent to S0 in code)
+        self._cutoff_linestrength()
+
+        # ----------------------------------------------------------------------
+
+        # Calculate line shift
+        self._calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
+
+        # ----------------------------------------------------------------------
+        # Line broadening
+
+        # ... calculate broadening  HWHM
+        self._calc_broadening_HWHM()
+
+        # ... find weak lines and calculate semi-continuum (optional)
+        I_continuum = self._calculate_pseudo_continuum()
+        # ... apply lineshape and get absorption coefficient
+        # ... (this is the performance bottleneck)
+        wavenumber, abscoeff_v = self._calc_broadening()
+        #    :         :
+        #   cm-1    1/(#.cm-2)
+
+        # ... add semi-continuum (optional)
+        abscoeff_v = self._add_pseudo_continuum(abscoeff_v, I_continuum)
+        # Calculate output quantities
+        # ----------------------------------------------------------------------
+
+        if self.verbose >= 2:
+            t1 = time()
+
+        # incorporate density of molecules (see equation (A.16) )
+        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        #  :
+        # (#/cm3)
+
+        abscoeff = abscoeff_v * density  # cm-1
+        # ... # TODO: if the code is extended to multi-species, then density has to be added
+        # ... before lineshape broadening (as it would not be constant for all species)
+
+        # get absorbance (technically it's the optical depth `tau`,
+        #                absorbance `A` being `A = tau/ln(10)` )
+        absorbance = abscoeff * path_length
+        # Generate output quantities
+        transmittance_noslit = exp(-absorbance)
+        emissivity_noslit = 1 - transmittance_noslit
+        radiance_noslit = calc_radiance(
+            wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+        )
+
+        if self.verbose >= 2:
+            printg(
+                "Calculated other spectral quantities in {0:.2f}s".format(time() - t1)
             )
 
-            # Get populations of levels as calculated in RovibrationalPartitionFunctions
-            # ... Populations cannot be calculated at equilibrium (needs energies).
-            # ... Use SpectrumFactory.non_eq_spectrum
-            populations = None
+        # %% Export
+        # --------------------------------------------------------------------
 
-            # Get lines (intensities + populations)
-            lines = self.get_lines()
+        t = round(time() - t0, 2)
+        if verbose >= 2:
+            printg(
+                "Spectrum calculated in {0:.2f}s (before object generation)".format(t)
+            )
+        if self.verbose >= 2:
+            t1 = time()
 
-            # Spectral quantities
-            quantities = {
-                "abscoeff": (wavenumber, abscoeff),
-                "absorbance": (wavenumber, absorbance),
-                "emissivity_noslit": (wavenumber, emissivity_noslit),
-                "transmittance_noslit": (wavenumber, transmittance_noslit),
-                # (mW/cm2/sr/nm)
-                "radiance_noslit": (wavenumber, radiance_noslit),
+        # Get conditions
+        conditions = self.get_conditions()
+        conditions.update(
+            {
+                "calculation_time": t,
+                "lines_calculated": self._Nlines_calculated,
+                "lines_cutoff": self._Nlines_cutoff,
+                "lines_in_continuum": self._Nlines_in_continuum,
+                "thermal_equilibrium": True,
+                "radis_version": get_version(),
             }
-            if I_continuum is not None and self._export_continuum:
-                quantities.update(
-                    {"abscoeff_continuum": (wavenumber, I_continuum * density)}
-                )
+        )
 
-            # Store results in Spectrum class
-            s = Spectrum(
-                quantities=quantities,
-                conditions=conditions,
-                populations=populations,
-                lines=lines,
-                units=self.units,
-                cond_units=self.cond_units,
-                waveunit=self.params.waveunit,  # cm-1
-                # dont check input (much faster, and Spectrum
-                warnings=False,
-                # is freshly baken so probably in a good format
-                name=name,
+        # Get populations of levels as calculated in RovibrationalPartitionFunctions
+        # ... Populations cannot be calculated at equilibrium (needs energies).
+        # ... Use SpectrumFactory.non_eq_spectrum
+        populations = None
+
+        # Get lines (intensities + populations)
+        lines = self.get_lines()
+
+        # Spectral quantities
+        quantities = {
+            "abscoeff": (wavenumber, abscoeff),
+            "absorbance": (wavenumber, absorbance),
+            "emissivity_noslit": (wavenumber, emissivity_noslit),
+            "transmittance_noslit": (wavenumber, transmittance_noslit),
+            # (mW/cm2/sr/nm)
+            "radiance_noslit": (wavenumber, radiance_noslit),
+        }
+        if I_continuum is not None and self._export_continuum:
+            quantities.update(
+                {"abscoeff_continuum": (wavenumber, I_continuum * density)}
             )
 
-            # update database if asked so
-            if self.autoupdatedatabase:
-                self.SpecDatabase.add(s, if_exists_then="increment")
-                # Tvib=Trot=Tgas... but this way names in a database
-                # generated with eq_spectrum are consistent with names
-                # in one generated with non_eq_spectrum
+        # Store results in Spectrum class
+        s = Spectrum(
+            quantities=quantities,
+            conditions=conditions,
+            populations=populations,
+            lines=lines,
+            units=self.units,
+            cond_units=self.cond_units,
+            waveunit=self.params.waveunit,  # cm-1
+            # dont check input (much faster, and Spectrum
+            warnings=False,
+            # is freshly baken so probably in a good format
+            name=name,
+        )
 
-            # Get generation & total calculation time
-            if self.verbose >= 2:
-                printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+        # update database if asked so
+        if self.autoupdatedatabase:
+            self.SpecDatabase.add(s, if_exists_then="increment")
+            # Tvib=Trot=Tgas... but this way names in a database
+            # generated with eq_spectrum are consistent with names
+            # in one generated with non_eq_spectrum
 
-            #  In the less verbose case, we print the total calculation+generation time:
-            t = round(time() - t0, 2)
-            if verbose:
-                print("Spectrum calculated in {0:.2f}s".format(t))
+        # Get generation & total calculation time
+        if self.verbose >= 2:
+            printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
 
-            return s
+        #  In the less verbose case, we print the total calculation+generation time:
+        t = round(time() - t0, 2)
+        if verbose:
+            print("Spectrum calculated in {0:.2f}s".format(t))
 
-        except:
-            # An error occured: clean before crashing
-            self._clean_temp_file()
-            raise
+        return s
 
     def eq_spectrum_gpu(
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
     ):
 
-        """Generate a spectrum at equilibrium with calculation of lineshapes and broadening done on the GPU
+        """Generate a spectrum at equilibrium with calculation of lineshapes
+        and broadening done on the GPU.
 
         Parameters
         ----------
-
-        Tgas: float
+        Tgas: float or `~astropy.units.quantity.Quantity`
             Gas temperature (K)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
-        path_length: float
-            slab size (cm). If None, Factory mole fraction is used.
-
-        pressure: float
-            pressure (bar). If None, the default Factory pressure is used.
-
+        path_length: float or `~astropy.units.quantity.Quantity`
+            slab size (cm). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
+        pressure: float or `~astropy.units.quantity.Quantity`
+            pressure (bar). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.pressure` is used.
         name: str
-            case name (useful in batch)
+            output Spectrum name (useful in batch)
 
         Returns
         -------
-
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it. See [1]_ to get an overview of all Spectrum methods
+                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+                to plot it. See [1]_ to get an overview of all Spectrum methods
 
         Notes
         -----
@@ -939,290 +844,276 @@ class SpectrumFactory(BandFactory):
         --------
 
         :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
-
         """
 
+        # %% Preprocessing
+        # --------------------------------------------------------------------
+
+        # Check inputs
+        if not self.input.self_absorption:
+            raise ValueError(
+                "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
+                + "without self_absorption"
+            )
+
+        # Convert units
+        Tgas = convert_and_strip_units(Tgas, u.K)
+        path_length = convert_and_strip_units(path_length, u.cm)
+        pressure = convert_and_strip_units(pressure, u.bar)
+
+        # update defaults
+        if path_length is not None:
+            self.input.path_length = path_length
+        if mole_fraction is not None:
+            self.input.mole_fraction = mole_fraction
+        if pressure is not None:
+            self.input.pressure_mbar = pressure * 1e3
+        if not is_float(Tgas):
+            raise ValueError("Tgas should be float.")
+        self.input.rot_distribution = "boltzmann"  # equilibrium
+        self.input.vib_distribution = "boltzmann"  # equilibrium
+
+        # Get temperatures
+        self.input.Tgas = Tgas
+        self.input.Tvib = Tgas  # just for info
+        self.input.Trot = Tgas  # just for info
+
+        verbose = self.verbose
+
+        # Init variables
+        pressure_mbar = self.input.pressure_mbar
+        mole_fraction = self.input.mole_fraction
+        path_length = self.input.path_length
+
+        # Check variables
+        self._check_inputs(mole_fraction, max(flatten(Tgas)))
+
+        # Retrieve Spectrum from database if it exists
+        if self.autoretrievedatabase:
+            s = self._retrieve_from_database()
+            if s is not None:
+                return s  # exit function
+
+        ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
+
+        molpar = MolParams()
+
         try:
-
-            # %% Preprocessing
-            # --------------------------------------------------------------------
-
-            # Check inputs
-            if not self.input.self_absorption:
-                raise ValueError(
-                    "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
-                    + "without self_absorption"
-                )
-
-            # Convert units
-            Tgas = convert_and_strip_units(Tgas, u.K)
-            path_length = convert_and_strip_units(path_length, u.cm)
-            pressure = convert_and_strip_units(pressure, u.bar)
-
-            # update defaults
-            if path_length is not None:
-                self.input.path_length = path_length
-            if mole_fraction is not None:
-                self.input.mole_fraction = mole_fraction
-            if pressure is not None:
-                self.input.pressure_mbar = pressure * 1e3
-            if not is_float(Tgas):
-                raise ValueError(
-                    "Tgas should be float. Use ParallelFactory for multiple cases"
-                )
-            self.input.rot_distribution = "boltzmann"  # equilibrium
-            self.input.vib_distribution = "boltzmann"  # equilibrium
-
-            # Get temperatures
-            self.input.Tgas = Tgas
-            self.input.Tvib = Tgas  # just for info
-            self.input.Trot = Tgas  # just for info
-
-            verbose = self.verbose
-
-            # Init variables
-            pressure_mbar = self.input.pressure_mbar
-            mole_fraction = self.input.mole_fraction
-            path_length = self.input.path_length
-
-            # Check variables
-            self._check_inputs(mole_fraction, max(flatten(Tgas)))
-
-            # Retrieve Spectrum from database if it exists
-            if self.autoretrievedatabase:
-                s = self._retrieve_from_database()
-                if s is not None:
-                    return s  # exit function
-
-            ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
-
-            molpar = MolParams()
-
-            try:
-                id_set = self.df0[
-                    "id"
-                ].unique()  # get all the molecules in the dataframe, should ideally be 1 element for GPU
-                mol_id = id_set[0]
-                molecule = get_molecule(mol_id)
-            except:
-                mol_id = get_molecule_identifier(self.input.molecule)
-                molecule = get_molecule(mol_id)
-
-            state = self.input.state
-            iso_set = self._get_isotope_list(molecule)
-
-            iso_arr = list(range(max(iso_set) + 1))
-
-            Ia_arr = np.empty_like(
-                iso_arr, dtype=np.float32
-            )  # abundance of each isotope
-            molarmass_arr = np.empty_like(
-                iso_arr, dtype=np.float32
-            )  # molar mass of each isotope
-            Q_arr = np.empty_like(
-                iso_arr, dtype=np.float32
-            )  # partitioning function of each isotope
-            for iso in iso_arr:
-                if iso in iso_set:
-                    params = molpar.df.loc[(mol_id, iso)]
-                    Ia_arr[iso] = params.abundance
-                    molarmass_arr[iso] = params.mol_mass
-                    Q_arr[iso] = self._get_parsum(molecule, iso, state).at(T=Tgas)
-
-            Ia_arr[np.isnan(Ia_arr)] = 0
-            molarmass_arr[np.isnan(molarmass_arr)] = 0
-
-            ### EXPERIMENTAL ###
-
-            project_path = getProjectRoot()
-            project_path += "/lbl/py_cuffs/"
-            sys.path.insert(1, project_path)
-
-            try:
-                import py_cuffs
-            except:
-                try:
-
-                    if verbose >= 2:
-                        print("py_cuFFS module not found in directory...")
-                        print("Compiling module from source...")
-
-                    call(
-                        "python setup.py build_ext --inplace",
-                        cwd=project_path,
-                        shell=True,
-                    )
-
-                    if verbose >= 2:
-                        print("Finished compilation...trying to import module again")
-                    import py_cuffs
-
-                    if verbose:
-                        print("py_cuFFS imported succesfully!")
-                except:
-                    raise (
-                        ModuleNotFoundError(
-                            "Failed to load py_cuFFS module, program will exit."
-                        )
-                    )
-                    exit()
-
-            ### --- ###
-
-            t0 = time()
-
-            # generate the v_arr
-            v_arr = np.arange(
-                self.input.wavenum_min,
-                self.input.wavenum_max + self._wstep,
-                self._wstep,
-            )
-
-            # load the data
-            df = self.df0
-            iso = df["iso"].to_numpy(dtype=np.int32)
-            v0 = df["wav"].to_numpy(dtype=np.float32)
-            da = df["Pshft"].to_numpy(dtype=np.float32)
-            El = df["El"].to_numpy(dtype=np.float32)
-            na = df["Tdpair"].to_numpy(dtype=np.float32)
-
-            log_2gs = np.array(self._get_log_2gs(), dtype=np.float32)
-            log_2vMm = np.array(self._get_log_2vMm(molarmass_arr), dtype=np.float32)
-            S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
-
-            NwG = 4
-            NwL = 8
-
-            _Nlines_calculated = len(v0)
-
-            if verbose >= 2:
-                print("Initializing parameters...", end=" ")
-
-            if verbose is False:
-                verbose_gpu = 0
-            elif verbose is True:
-                verbose_gpu = 1
-            else:
-                verbose_gpu = verbose
-
-            py_cuffs.init(
-                v_arr,
-                NwG,
-                NwL,
-                iso,
-                v0,
-                da,
-                log_2gs,
-                na,
-                log_2vMm,
-                S0,
-                El,
-                Q_arr,
-                verbose_gpu,
-            )
-
-            if verbose >= 2:
-                print("Initialization complete!")
-
-            wavenumber = v_arr
-
-            if verbose >= 2:
-                print("Calculating spectra...", end=" ")
-
-            abscoeff = py_cuffs.iterate(
-                pressure_mbar * 1e-3,
-                Tgas,
-                mole_fraction,
-                Ia_arr,
-                molarmass_arr,
-                verbose_gpu,
-            )
-            # Calculate output quantities
-            # ----------------------------------------------------------------------
-            if verbose >= 2:
-                t1 = time()
-
-            # ... # TODO: if the code is extended to multi-species, then density has to be added
-            # ... before lineshape broadening (as it would not be constant for all species)
-
-            # get absorbance (technically it's the optical depth `tau`,
-            #                absorbance `A` being `A = tau/ln(10)` )
-            absorbance = abscoeff * path_length
-            # Generate output quantities
-            transmittance_noslit = exp(-absorbance)
-            emissivity_noslit = 1 - transmittance_noslit
-            radiance_noslit = calc_radiance(
-                wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
-            )
-            if verbose >= 2:
-                printg(
-                    "Calculated other spectral quantities in {0:.2f}s".format(
-                        time() - t1
-                    )
-                )
-
-            lines = self.get_lines()
-
-            # %% Export
-            # --------------------------------------------------------------------
-            t = round(time() - t0, 2)
-            if verbose >= 2:
-                t1 = time()
-            # Get lines (intensities + populations)
-
-            conditions = self.get_conditions()
-            conditions.update(
-                {
-                    "calculation_time": t,
-                    "lines_calculated": _Nlines_calculated,
-                    "thermal_equilibrium": True,
-                    "radis_version": get_version(),
-                }
-            )
-
-            # Spectral quantities
-            quantities = {
-                "abscoeff": (wavenumber, abscoeff),
-                "absorbance": (wavenumber, absorbance),
-                "emissivity_noslit": (wavenumber, emissivity_noslit),
-                "transmittance_noslit": (wavenumber, transmittance_noslit),
-                # (mW/cm2/sr/nm)
-                "radiance_noslit": (wavenumber, radiance_noslit),
-            }
-
-            # Store results in Spectrum class
-            s = Spectrum(
-                quantities=quantities,
-                units=self.units,
-                conditions=conditions,
-                lines=lines,
-                cond_units=self.cond_units,
-                waveunit=self.params.waveunit,  # cm-1
-                # dont check input (much faster, and Spectrum
-                warnings=False,
-                # is freshly baken so probably in a good format
-                name=name,
-            )
-
-            # update database if asked so
-            if self.autoupdatedatabase:
-                self.SpecDatabase.add(s, if_exists_then="increment")
-                # Tvib=Trot=Tgas... but this way names in a database
-                # generated with eq_spectrum are consistent with names
-                # in one generated with non_eq_spectrum
-
-            # Get generation & total calculation time
-            if verbose >= 2:
-                printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
-
-            #  In the less verbose case, we print the total calculation+generation time:
-
-            return s
-
+            id_set = self.df0[
+                "id"
+            ].unique()  # get all the molecules in the dataframe, should ideally be 1 element for GPU
+            mol_id = id_set[0]
+            molecule = get_molecule(mol_id)
         except:
-            # An error occured: clean before crashing
-            self._clean_temp_file()
-            raise
+            mol_id = get_molecule_identifier(self.input.molecule)
+            molecule = get_molecule(mol_id)
+
+        state = self.input.state
+        iso_set = self._get_isotope_list(molecule)
+
+        iso_arr = list(range(max(iso_set) + 1))
+
+        Ia_arr = np.empty_like(iso_arr, dtype=np.float32)  # abundance of each isotope
+        molarmass_arr = np.empty_like(
+            iso_arr, dtype=np.float32
+        )  # molar mass of each isotope
+        Q_arr = np.empty_like(
+            iso_arr, dtype=np.float32
+        )  # partitioning function of each isotope
+        for iso in iso_arr:
+            if iso in iso_set:
+                params = molpar.df.loc[(mol_id, iso)]
+                Ia_arr[iso] = params.abundance
+                molarmass_arr[iso] = params.mol_mass
+                Q_arr[iso] = self._get_parsum(molecule, iso, state).at(T=Tgas)
+
+        Ia_arr[np.isnan(Ia_arr)] = 0
+        molarmass_arr[np.isnan(molarmass_arr)] = 0
+
+        ### EXPERIMENTAL ###
+
+        project_path = getProjectRoot()
+        project_path += "/lbl/py_cuffs/"
+        sys.path.insert(1, project_path)
+
+        try:
+            import py_cuffs
+        except:
+            try:
+
+                if verbose >= 2:
+                    print("py_cuFFS module not found in directory...")
+                    print("Compiling module from source...")
+
+                call(
+                    "python setup.py build_ext --inplace",
+                    cwd=project_path,
+                    shell=True,
+                )
+
+                if verbose >= 2:
+                    print("Finished compilation...trying to import module again")
+                import py_cuffs
+
+                if verbose:
+                    print("py_cuFFS imported succesfully!")
+            except:
+                raise (
+                    ModuleNotFoundError(
+                        "Failed to load py_cuFFS module, program will exit."
+                    )
+                )
+                exit()
+
+        ### --- ###
+
+        t0 = time()
+
+        # generate the v_arr
+        v_arr = np.arange(
+            self.input.wavenum_min,
+            self.input.wavenum_max + self._wstep,
+            self._wstep,
+        )
+
+        # load the data
+        df = self.df0
+        iso = df["iso"].to_numpy(dtype=np.int32)
+        v0 = df["wav"].to_numpy(dtype=np.float32)
+        da = df["Pshft"].to_numpy(dtype=np.float32)
+        El = df["El"].to_numpy(dtype=np.float32)
+        na = df["Tdpair"].to_numpy(dtype=np.float32)
+
+        log_2gs = np.array(self._get_log_2gs(), dtype=np.float32)
+        log_2vMm = np.array(self._get_log_2vMm(molarmass_arr), dtype=np.float32)
+        S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
+
+        NwG = 4
+        NwL = 8
+
+        _Nlines_calculated = len(v0)
+
+        if verbose >= 2:
+            print("Initializing parameters...", end=" ")
+
+        if verbose is False:
+            verbose_gpu = 0
+        elif verbose is True:
+            verbose_gpu = 1
+        else:
+            verbose_gpu = verbose
+
+        py_cuffs.init(
+            v_arr,
+            NwG,
+            NwL,
+            iso,
+            v0,
+            da,
+            log_2gs,
+            na,
+            log_2vMm,
+            S0,
+            El,
+            Q_arr,
+            verbose_gpu,
+        )
+
+        if verbose >= 2:
+            print("Initialization complete!")
+
+        wavenumber = v_arr
+
+        if verbose >= 2:
+            print("Calculating spectra...", end=" ")
+
+        abscoeff = py_cuffs.iterate(
+            pressure_mbar * 1e-3,
+            Tgas,
+            mole_fraction,
+            Ia_arr,
+            molarmass_arr,
+            verbose_gpu,
+        )
+        # Calculate output quantities
+        # ----------------------------------------------------------------------
+        if verbose >= 2:
+            t1 = time()
+
+        # ... # TODO: if the code is extended to multi-species, then density has to be added
+        # ... before lineshape broadening (as it would not be constant for all species)
+
+        # get absorbance (technically it's the optical depth `tau`,
+        #                absorbance `A` being `A = tau/ln(10)` )
+        absorbance = abscoeff * path_length
+        # Generate output quantities
+        transmittance_noslit = exp(-absorbance)
+        emissivity_noslit = 1 - transmittance_noslit
+        radiance_noslit = calc_radiance(
+            wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+        )
+        if verbose >= 2:
+            printg(
+                "Calculated other spectral quantities in {0:.2f}s".format(time() - t1)
+            )
+
+        lines = self.get_lines()
+
+        # %% Export
+        # --------------------------------------------------------------------
+        t = round(time() - t0, 2)
+        if verbose >= 2:
+            t1 = time()
+        # Get lines (intensities + populations)
+
+        conditions = self.get_conditions()
+        conditions.update(
+            {
+                "calculation_time": t,
+                "lines_calculated": _Nlines_calculated,
+                "thermal_equilibrium": True,
+                "radis_version": get_version(),
+            }
+        )
+
+        # Spectral quantities
+        quantities = {
+            "abscoeff": (wavenumber, abscoeff),
+            "absorbance": (wavenumber, absorbance),
+            "emissivity_noslit": (wavenumber, emissivity_noslit),
+            "transmittance_noslit": (wavenumber, transmittance_noslit),
+            # (mW/cm2/sr/nm)
+            "radiance_noslit": (wavenumber, radiance_noslit),
+        }
+
+        # Store results in Spectrum class
+        s = Spectrum(
+            quantities=quantities,
+            units=self.units,
+            conditions=conditions,
+            lines=lines,
+            cond_units=self.cond_units,
+            waveunit=self.params.waveunit,  # cm-1
+            # dont check input (much faster, and Spectrum
+            warnings=False,
+            # is freshly baken so probably in a good format
+            name=name,
+        )
+
+        # update database if asked so
+        if self.autoupdatedatabase:
+            self.SpecDatabase.add(s, if_exists_then="increment")
+            # Tvib=Trot=Tgas... but this way names in a database
+            # generated with eq_spectrum are consistent with names
+            # in one generated with non_eq_spectrum
+
+        # Get generation & total calculation time
+        if verbose >= 2:
+            printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+
+        #  In the less verbose case, we print the total calculation+generation time:
+
+        return s
 
     def non_eq_spectrum(
         self,
@@ -1243,42 +1134,38 @@ class SpectrumFactory(BandFactory):
 
         Parameters
         ----------
-
         Tvib: float
             vibrational temperature [K]
             can be a tuple of float for the special case of more-than-diatomic
             molecules (e.g: CO2)
-
         Trot: float
             rotational temperature [K]
-
         Ttrans: float
             translational temperature [K]. If None, translational temperature is
             taken as rotational temperature (valid at 1 atm for times above ~ 2ns
             which is the RT characteristic time)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
+        path_length: float or `~astropy.units.quantity.Quantity`
+            slab size (cm). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
+        pressure: float or `~astropy.units.quantity.Quantity`
+            pressure (bar). If ``None``, the default Factory
+            :py:attr:`~radis.lbl.factory.SpectrumFactor.input.pressure` is used.
 
-        path_length: float
-            slab size (cm). If None, Factory mole fraction is used.
-
-        pressure: float
-            pressure (bar). If None, the default Factory pressure is used.
-
+        Other Parameters
+        ----------------
         vib_distribution: ``'boltzmann'``, ``'treanor'``
             vibrational distribution
-
         rot_distribution: ``'boltzmann'``
             rotational distribution
-
         overpopulation: dict, or ``None``
             add overpopulation factors for given levels:
 
             >>> {level:overpopulation_factor}
 
         name: str
-            case name (useful in batch)
+            output Spectrum name (useful in batch)
 
         Returns
         -------
@@ -1286,11 +1173,11 @@ class SpectrumFactory(BandFactory):
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-        Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-        among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-        Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-        to plot it. See [1]_ to get an overview of all Spectrum methods
+                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+                to plot it. See [1]_ to get an overview of all Spectrum methods
 
         References
         ----------
@@ -1302,285 +1189,270 @@ class SpectrumFactory(BandFactory):
 
         :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
         :meth:`~radis.lbl.factory.SpectrumFactory.optically_thin_power`
-
         """
 
-        try:
+        # %% Preprocessing
+        # --------------------------------------------------------------------
 
-            # %% Preprocessing
-            # --------------------------------------------------------------------
+        # Convert units
+        Tvib = convert_and_strip_units(Tvib, u.K)
+        Trot = convert_and_strip_units(Trot, u.K)
+        Ttrans = convert_and_strip_units(Ttrans, u.K)
+        path_length = convert_and_strip_units(path_length, u.cm)
+        pressure = convert_and_strip_units(pressure, u.bar)
 
-            # Convert units
-            Tvib = convert_and_strip_units(Tvib, u.K)
-            Trot = convert_and_strip_units(Trot, u.K)
-            Ttrans = convert_and_strip_units(Ttrans, u.K)
-            path_length = convert_and_strip_units(path_length, u.cm)
-            pressure = convert_and_strip_units(pressure, u.bar)
-
-            # check inputs, update defaults
-            if path_length is not None:
-                self.input.path_length = path_length
-            if mole_fraction is not None:
-                self.input.mole_fraction = mole_fraction
-            if pressure is not None:
-                self.input.pressure_mbar = pressure * 1e3
-            if isinstance(Tvib, tuple):
-                Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
-            elif not is_float(Tvib):
-                raise TypeError(
-                    "Tvib should be float, or tuple (got {0})".format(type(Tvib))
-                    + "For parallel processing use ParallelFactory with a "
-                    + "list of float or a list of tuple"
-                )
-            singleTvibmode = is_float(Tvib)
-            if not is_float(Trot):
-                raise ValueError(
-                    "Trot should be float. Use ParallelFactory for multiple cases"
-                )
-            if overpopulation is None:
-                overpopulation = {}
-            assert vib_distribution in ["boltzmann", "treanor"]
-            assert rot_distribution in ["boltzmann"]
-            self.input.overpopulation = overpopulation
-            self.input.rot_distribution = rot_distribution
-            self.input.vib_distribution = vib_distribution
-
-            # Get translational temperature
-            Tgas = Ttrans
-            if Tgas is None:
-                Tgas = Trot  # assuming Ttrans = Trot
-            self.input.Tgas = Tgas
-            self.input.Tvib = Tvib
-            self.input.Trot = Trot
-
-            # Init variables
-            path_length = self.input.path_length
-            mole_fraction = self.input.mole_fraction
-            pressure_mbar = self.input.pressure_mbar
-            verbose = self.verbose
-
-            # Check variables
-            self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
-
-            # Retrieve Spectrum from database if it exists
-            if self.autoretrievedatabase:
-                s = self._retrieve_from_database()
-                if s is not None:
-                    return s  # exit function
-
-            # %% Start
-            # --------------------------------------------------------------------
-
-            t0 = time()
-            if verbose:
-                self.print_conditions("Calculating Non-Equilibrium Spectrum")
-
-            # Check line database and parameters, reset populations and scaled line dataframe
-            # ----------
-            self._check_line_databank()
-            # add nonequilibrium energies if needed (this may be a bottleneck
-            # for a first calculation):
-            self._check_noneq_parameters(vib_distribution, singleTvibmode)
-            self._reinitialize()  # creates scaled dataframe df1 from df0
-
-            # ----------------------------------------------------------------------
-            # Calculate Populations, Linestrength and Emission Integral
-            if singleTvibmode:
-                self._calc_populations_noneq(
-                    Tvib,
-                    Trot,
-                    vib_distribution=vib_distribution,
-                    rot_distribution=rot_distribution,
-                    overpopulation=overpopulation,
-                )
-            else:
-                self._calc_populations_noneq_multiTvib(
-                    Tvib,
-                    Trot,
-                    vib_distribution=vib_distribution,
-                    rot_distribution=rot_distribution,
-                    overpopulation=overpopulation,
-                )
-
-            self._calc_linestrength_noneq()
-            self._calc_emission_integral()
-
-            # ----------------------------------------------------------------------
-            # Cutoff linestrength
-            self._cutoff_linestrength()
-
-            # ----------------------------------------------------------------------
-
-            # Calculate lineshift
-            self._calc_lineshift()
-
-            # ----------------------------------------------------------------------
-
-            # Line broadening
-
-            # ... calculate broadening  HWHM
-            self._calc_broadening_HWHM()
-
-            # ... find weak lines and calculate semi-continuum (optional)
-            k_continuum, j_continuum = self._calculate_pseudo_continuum(noneq=True)
-
-            # ... apply lineshape and get absorption coefficient
-            # ... (this is the performance bottleneck)
-            wavenumber, abscoeff_v, emisscoeff_v = self._calc_broadening_noneq()
-            #    :         :            :
-            #   cm-1    1/(#.cm-2)   mW/sr/cm-1
-
-            # ... add semi-continuum (optional)
-            abscoeff_v = self._add_pseudo_continuum(abscoeff_v, k_continuum)
-            emisscoeff_v = self._add_pseudo_continuum(emisscoeff_v, j_continuum)
-
-            # Calculate output quantities
-            # ----------------------------------------------------------------------
-
-            if self.verbose >= 2:
-                t1 = time()
-
-            # incorporate density of molecules (see Rothman 1996 equation (A.16) )
-            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
-            #  :
-            # (#/cm3)
-
-            abscoeff = abscoeff_v * density  # cm-1
-            emisscoeff = emisscoeff_v * density  # mW/sr/cm3/cm-1
-
-            # ... # TODO: if the code is extended to multi-species, then density has to be added
-            # ... before lineshape broadening (as it would not be constant for all species)
-
-            # get absorbance (technically it's the optical depth `tau`,
-            #                absorbance `A` being `A = tau/ln(10)` )
-
-            # Generate output quantities
-            absorbance = abscoeff * path_length  # (adim)
-            transmittance_noslit = exp(-absorbance)
-
-            if self.input.self_absorption:
-                # Analytical output of computing RTE over a single slab of constant
-                # emissivity and absorption coefficient
-                b = abscoeff == 0  # optically thin mask
-                radiance_noslit = np.zeros_like(emisscoeff)
-                radiance_noslit[~b] = (
-                    emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
-                )
-                radiance_noslit[b] = emisscoeff[b] * path_length
-            else:
-                # Note that for k -> 0,
-                radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
-
-            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
-            radiance_noslit = convert_rad2nm(
-                radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
+        # check inputs, update defaults
+        if path_length is not None:
+            self.input.path_length = path_length
+        if mole_fraction is not None:
+            self.input.mole_fraction = mole_fraction
+        if pressure is not None:
+            self.input.pressure_mbar = pressure * 1e3
+        if isinstance(Tvib, tuple):
+            Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
+        elif not is_float(Tvib):
+            raise TypeError(
+                "Tvib should be float, or tuple (got {0})".format(type(Tvib))
             )
-            # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
-            emisscoeff = convert_emi2nm(
-                emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
+        singleTvibmode = is_float(Tvib)
+        if not is_float(Trot):
+            raise ValueError("Trot should be float")
+        if overpopulation is None:
+            overpopulation = {}
+        assert vib_distribution in ["boltzmann", "treanor"]
+        assert rot_distribution in ["boltzmann"]
+        self.input.overpopulation = overpopulation
+        self.input.rot_distribution = rot_distribution
+        self.input.vib_distribution = vib_distribution
+
+        # Get translational temperature
+        Tgas = Ttrans
+        if Tgas is None:
+            Tgas = Trot  # assuming Ttrans = Trot
+        self.input.Tgas = Tgas
+        self.input.Tvib = Tvib
+        self.input.Trot = Trot
+
+        # Init variables
+        path_length = self.input.path_length
+        mole_fraction = self.input.mole_fraction
+        pressure_mbar = self.input.pressure_mbar
+        verbose = self.verbose
+
+        # Check variables
+        self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
+
+        # Retrieve Spectrum from database if it exists
+        if self.autoretrievedatabase:
+            s = self._retrieve_from_database()
+            if s is not None:
+                return s  # exit function
+
+        # %% Start
+        # --------------------------------------------------------------------
+
+        t0 = time()
+        if verbose:
+            self.print_conditions("Calculating Non-Equilibrium Spectrum")
+
+        # Check line database and parameters, reset populations and scaled line dataframe
+        # ----------
+        self._check_line_databank()
+        # add nonequilibrium energies if needed (this may be a bottleneck
+        # for a first calculation):
+        self._check_noneq_parameters(vib_distribution, singleTvibmode)
+        self._reinitialize()  # creates scaled dataframe df1 from df0
+
+        # ----------------------------------------------------------------------
+        # Calculate Populations, Linestrength and Emission Integral
+        if singleTvibmode:
+            self._calc_populations_noneq(
+                Tvib,
+                Trot,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+                overpopulation=overpopulation,
+            )
+        else:
+            self._calc_populations_noneq_multiTvib(
+                Tvib,
+                Trot,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+                overpopulation=overpopulation,
             )
 
-            if self.verbose >= 2:
-                printg(
-                    "Calculated other spectral quantities in {0:.2f}s".format(
-                        time() - t1
-                    )
-                )
+        self._calc_linestrength_noneq()
+        self._calc_emission_integral()
 
-            # Note: emissivity not defined under non equilibrium
+        # ----------------------------------------------------------------------
+        # Cutoff linestrength
+        self._cutoff_linestrength()
 
-            # %% Export
-            # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
 
-            t = round(time() - t0, 2)
-            if verbose >= 2:
-                printg(
-                    "Spectrum calculated in {0:.2f}s (before object generation)".format(
-                        t
-                    )
-                )
-            if self.verbose >= 2:
-                t1 = time()
+        # Calculate lineshift
+        self._calc_lineshift()
 
-            # Get conditions
-            conditions = self.get_conditions()
-            conditions.update(
+        # ----------------------------------------------------------------------
+
+        # Line broadening
+
+        # ... calculate broadening  HWHM
+        self._calc_broadening_HWHM()
+
+        # ... find weak lines and calculate semi-continuum (optional)
+        k_continuum, j_continuum = self._calculate_pseudo_continuum(noneq=True)
+
+        # ... apply lineshape and get absorption coefficient
+        # ... (this is the performance bottleneck)
+        wavenumber, abscoeff_v, emisscoeff_v = self._calc_broadening_noneq()
+        #    :         :            :
+        #   cm-1    1/(#.cm-2)   mW/sr/cm-1
+
+        # ... add semi-continuum (optional)
+        abscoeff_v = self._add_pseudo_continuum(abscoeff_v, k_continuum)
+        emisscoeff_v = self._add_pseudo_continuum(emisscoeff_v, j_continuum)
+
+        # Calculate output quantities
+        # ----------------------------------------------------------------------
+
+        if self.verbose >= 2:
+            t1 = time()
+
+        # incorporate density of molecules (see Rothman 1996 equation (A.16) )
+        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        #  :
+        # (#/cm3)
+
+        abscoeff = abscoeff_v * density  # cm-1
+        emisscoeff = emisscoeff_v * density  # mW/sr/cm3/cm-1
+
+        # ... # TODO: if the code is extended to multi-species, then density has to be added
+        # ... before lineshape broadening (as it would not be constant for all species)
+
+        # get absorbance (technically it's the optical depth `tau`,
+        #                absorbance `A` being `A = tau/ln(10)` )
+
+        # Generate output quantities
+        absorbance = abscoeff * path_length  # (adim)
+        transmittance_noslit = exp(-absorbance)
+
+        if self.input.self_absorption:
+            # Analytical output of computing RTE over a single slab of constant
+            # emissivity and absorption coefficient
+            b = abscoeff == 0  # optically thin mask
+            radiance_noslit = np.zeros_like(emisscoeff)
+            radiance_noslit[~b] = (
+                emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+            )
+            radiance_noslit[b] = emisscoeff[b] * path_length
+        else:
+            # Note that for k -> 0,
+            radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
+
+        # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
+        radiance_noslit = convert_rad2nm(
+            radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
+        )
+        # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
+        emisscoeff = convert_emi2nm(
+            emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
+        )
+
+        if self.verbose >= 2:
+            printg(
+                "Calculated other spectral quantities in {0:.2f}s".format(time() - t1)
+            )
+
+        # Note: emissivity not defined under non equilibrium
+
+        # %% Export
+        # ----------------------------------------------------------------------
+
+        t = round(time() - t0, 2)
+        if verbose >= 2:
+            printg(
+                "Spectrum calculated in {0:.2f}s (before object generation)".format(t)
+            )
+        if self.verbose >= 2:
+            t1 = time()
+
+        # Get conditions
+        conditions = self.get_conditions()
+        conditions.update(
+            {
+                "calculation_time": t,
+                "lines_calculated": self._Nlines_calculated,
+                "lines_cutoff": self._Nlines_cutoff,
+                "lines_in_continuum": self._Nlines_in_continuum,
+                "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
+                "radis_version": get_version(),
+            }
+        )
+
+        # Get populations of levels as calculated in RovibrationalPartitionFunctions
+        populations = self.get_populations(self.misc.export_populations)
+
+        # Get lines (intensities + populations)
+        lines = self.get_lines()
+
+        # Spectral quantities
+        quantities = {
+            "abscoeff": (wavenumber, abscoeff),
+            "absorbance": (wavenumber, absorbance),
+            # (mW/cm3/sr/nm)
+            "emisscoeff": (wavenumber, emisscoeff),
+            "transmittance_noslit": (wavenumber, transmittance_noslit),
+            # (mW/cm2/sr/nm)
+            "radiance_noslit": (wavenumber, radiance_noslit),
+        }
+        if k_continuum is not None and self._export_continuum:
+            quantities.update(
                 {
-                    "calculation_time": t,
-                    "lines_calculated": self._Nlines_calculated,
-                    "lines_cutoff": self._Nlines_cutoff,
-                    "lines_in_continuum": self._Nlines_in_continuum,
-                    "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
-                    "radis_version": get_version(),
+                    "abscoeff_continuum": (wavenumber, k_continuum * density),
+                    "emisscoeff_continuum": (wavenumber, j_continuum * density),
                 }
             )
 
-            # Get populations of levels as calculated in RovibrationalPartitionFunctions
-            populations = self.get_populations(self.misc.export_populations)
+        # Store results in Spectrum class
+        s = Spectrum(
+            quantities=quantities,
+            conditions=conditions,
+            populations=populations,
+            lines=lines,
+            units=self.units,
+            cond_units=self.cond_units,
+            waveunit=self.params.waveunit,  # cm-1
+            # dont check input (much faster, and Spectrum
+            warnings=False,
+            # is freshly baken so probably in a good format
+            name=name,
+        )
 
-            # Get lines (intensities + populations)
-            lines = self.get_lines()
-
-            # Spectral quantities
-            quantities = {
-                "abscoeff": (wavenumber, abscoeff),
-                "absorbance": (wavenumber, absorbance),
-                # (mW/cm3/sr/nm)
-                "emisscoeff": (wavenumber, emisscoeff),
-                "transmittance_noslit": (wavenumber, transmittance_noslit),
-                # (mW/cm2/sr/nm)
-                "radiance_noslit": (wavenumber, radiance_noslit),
-            }
-            if k_continuum is not None and self._export_continuum:
-                quantities.update(
-                    {
-                        "abscoeff_continuum": (wavenumber, k_continuum * density),
-                        "emisscoeff_continuum": (wavenumber, j_continuum * density),
-                    }
-                )
-
-            # Store results in Spectrum class
-            s = Spectrum(
-                quantities=quantities,
-                conditions=conditions,
-                populations=populations,
-                lines=lines,
-                units=self.units,
-                cond_units=self.cond_units,
-                waveunit=self.params.waveunit,  # cm-1
-                # dont check input (much faster, and Spectrum
-                warnings=False,
-                # is freshly baken so probably in a good format
-                name=name,
+        # update database if asked so
+        if self.autoupdatedatabase:
+            self.SpecDatabase.add(
+                s,
+                add_info=["Tvib", "Trot"],
+                add_date="%Y%m%d",
+                if_exists_then="increment",
             )
 
-            # update database if asked so
-            if self.autoupdatedatabase:
-                self.SpecDatabase.add(
-                    s,
-                    add_info=["Tvib", "Trot"],
-                    add_date="%Y%m%d",
-                    if_exists_then="increment",
-                )
+        # Get generation & total calculation time
+        if self.verbose >= 2:
+            printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
 
-            # Get generation & total calculation time
-            if self.verbose >= 2:
-                printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+        #  In the less verbose case, we print the total calculation+generation time:
+        t = round(time() - t0, 2)
+        if verbose:
+            print("Spectrum calculated in {0:.2f}s".format(t))
 
-            #  In the less verbose case, we print the total calculation+generation time:
-            t = round(time() - t0, 2)
-            if verbose:
-                print("Spectrum calculated in {0:.2f}s".format(t))
-
-            return s
-
-        except:
-            # An error occured: clean before crashing
-            self._clean_temp_file()
-            raise
+        return s
 
     def _get_log_2gs(self):
-        """ Returns log_2gs if it already exists in the dataframe, otherwise computes it using gamma_air """
+        """Returns log_2gs if it already exists in the dataframe, otherwise
+        computes it using gamma_air."""
         df = self.df0
         # TODO: deal with the case of gamma_self [so we don't forget]
 
@@ -1599,7 +1471,9 @@ class SpectrumFactory(BandFactory):
             ) from err
 
     def _get_log_2vMm(self, molarmass_arr):
-        """ Returns log_2vMm if it already exists in the dataframe, otherwise computes it using the abundance and molar mass for each isotope passed in the input """
+        """Returns log_2vMm if it already exists in the dataframe, otherwise
+        computes it using the abundance and molar mass for each isotope passed
+        in the input."""
         df = self.df0
 
         # if the column already exists, then return
@@ -1621,7 +1495,8 @@ class SpectrumFactory(BandFactory):
             ) from err
 
     def _get_S0(self, Ia_arr):
-        """ Returns S0 if it already exists, otherwise computes the value using abundance, gamma_air and Einstein's number """
+        """Returns S0 if it already exists, otherwise computes the value using
+        abundance, gamma_air and Einstein's number."""
         df = self.df0
 
         # if the column already exists, then return it
@@ -1676,24 +1551,18 @@ class SpectrumFactory(BandFactory):
             equilibrium temperature [K]
             If doing a non equilibrium case it should be None. Use Ttrans for
             translational temperature
-
         Tvib: float
             vibrational temperature [K]
-
         Trot: float
             rotational temperature [K]
-
         Ttrans: float
             translational temperature [K]. If None, translational temperature is
             taken as rotational temperature (valid at 1 atm for times above ~ 2ns
             which is the RT characteristic time)
-
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-
         path_length: float
             slab size (cm). If None, Factory mole fraction is used.
-
         unit: str
             output unit. Default ``'mW/cm2/sr'``
 
@@ -1710,121 +1579,113 @@ class SpectrumFactory(BandFactory):
         :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_power`,
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_integral`
-
         """
 
-        try:
+        # Check inputs
 
-            # Check inputs
+        # ... temperatures
 
-            # ... temperatures
-
-            if Tgas is None and Trot is None:
-                raise ValueError(
-                    "Choose either Tgas (equilibrium) or Tvib / Trot "
-                    + ". Ttrans (non equilibrium)"
-                )
-
-            non_eq_mode = Tgas is None
-
-            if Tvib is None and Trot is not None or Tvib is not None and Trot is None:
-                raise ValueError("Choose both Tvib and Trot")
-
-            if non_eq_mode and Ttrans is None:
-                Ttrans = Trot
-
-            # update defaults
-            if path_length is not None:
-                self.input.path_length = path_length
-            if mole_fraction is not None:
-                self.input.mole_fraction = mole_fraction
-
-            # Get translational temperature
-            if Tgas is None:
-                Tgas = Ttrans
-            self.input.Tgas = Tgas
-            self.input.Tvib = Tvib
-            self.input.Trot = Trot
-
-            # Init variables
-            path_length = self.input.path_length
-            mole_fraction = self.input.mole_fraction
-            pressure_mbar = self.input.pressure_mbar
-            verbose = self.verbose
-
-            # Make sure database is loaded
-            if self.df0 is None:
-                if not self.save_memory:
-                    raise AttributeError("Load databank first (.load_databank())")
-                else:
-                    self._reload_databank()
-
-            if non_eq_mode:
-                # Make sure database has pre-computed non equilibrium quantities
-                # (Evib, Erot, etc.)
-                try:
-                    self.df0["Evib"]
-                except KeyError:
-                    self._calc_noneq_parameters()
-
-                try:
-                    self.df0["Aul"]
-                except KeyError:
-                    self._calc_weighted_trans_moment()
-                    self._calc_einstein_coefficients()
-
-            # %% Start
-            # ----------------------------------------------------------------------
-
-            # Print conditions
-            if verbose:
-                self.print_conditions(
-                    "Calculating Radiative Power (optically thin approximation)"
-                )
-
-            # Calculate power
-            # ---------------------------------------------------
-
-            self._reinitialize()  # creates scaled dataframe df1 from df0
-
-            # ----------------------------------------------------------------------
-            # Calculate Populations and Emission Integral
-            # (Note: Emission Integral is non canonical quantity, equivalent to
-            #  Linestrength for absorption)
-            if non_eq_mode:
-                self._calc_populations_noneq(Tvib, Trot)
-            else:
-                self._calc_populations_eq(Tgas)
-                self.df1["Aul"] = self.df1.A  # update einstein coefficients
-            self._calc_emission_integral()
-
-            #        # ----------------------------------------------------------------------
-            #        # Cutoff linestrength  (note that cuting linestrength doesnt make this
-            #        # process faster here, but we still give this option to be consistent
-            #        # with spectra)
-            #        self._cutoff_linestrength()
-
-            # ----------------------------------------------------------------------
-
-            # Sum over all emission integrals (in the valid range)
-            b = (self.df1.wav > self.input.wavenum_min) & (
-                self.df1.wav < self.input.wavenum_max
+        if Tgas is None and Trot is None:
+            raise ValueError(
+                "Choose either Tgas (equilibrium) or Tvib / Trot "
+                + ". Ttrans (non equilibrium)"
             )
-            P = self.df1["Ei"][b].sum()  # Ei  >> (mW/sr)
 
-            # incorporate density of molecules (see equation (A.16) )
-            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
-            Pv = P * density  # (mW/sr/cm3)
+        non_eq_mode = Tgas is None
 
-            # Optically thin case (no self absorption):
-            Ptot = Pv * path_length  # (mW/sr/cm2)
+        if Tvib is None and Trot is not None or Tvib is not None and Trot is None:
+            raise ValueError("Choose both Tvib and Trot")
 
-            return conv2(Ptot, "mW/cm2/sr", unit)
+        if non_eq_mode and Ttrans is None:
+            Ttrans = Trot
 
-        except:
-            # An error occured: clean before crashing
-            self._clean_temp_file()
-            raise
+        # update defaults
+        if path_length is not None:
+            self.input.path_length = path_length
+        if mole_fraction is not None:
+            self.input.mole_fraction = mole_fraction
+
+        # Get translational temperature
+        if Tgas is None:
+            Tgas = Ttrans
+        self.input.Tgas = Tgas
+        self.input.Tvib = Tvib
+        self.input.Trot = Trot
+
+        # Init variables
+        path_length = self.input.path_length
+        mole_fraction = self.input.mole_fraction
+        pressure_mbar = self.input.pressure_mbar
+        verbose = self.verbose
+
+        # Make sure database is loaded
+        if self.df0 is None:
+            if not self.save_memory:
+                raise AttributeError("Load databank first (.load_databank())")
+            else:
+                self._reload_databank()
+
+        if non_eq_mode:
+            # Make sure database has pre-computed non equilibrium quantities
+            # (Evib, Erot, etc.)
+            try:
+                self.df0["Evib"]
+            except KeyError:
+                self._calc_noneq_parameters()
+
+            try:
+                self.df0["Aul"]
+            except KeyError:
+                self._calc_weighted_trans_moment()
+                self._calc_einstein_coefficients()
+
+        # %% Start
+        # ----------------------------------------------------------------------
+
+        # Print conditions
+        if verbose:
+            self.print_conditions(
+                "Calculating Radiative Power (optically thin approximation)"
+            )
+
+        # Calculate power
+        # ---------------------------------------------------
+
+        self._reinitialize()  # creates scaled dataframe df1 from df0
+
+        # ----------------------------------------------------------------------
+        # Calculate Populations and Emission Integral
+        # (Note: Emission Integral is non canonical quantity, equivalent to
+        #  Linestrength for absorption)
+        if non_eq_mode:
+            self._calc_populations_noneq(Tvib, Trot)
+        else:
+            self._calc_populations_eq(Tgas)
+            self.df1["Aul"] = self.df1.A  # update einstein coefficients
+        self._calc_emission_integral()
+
+        #        # ----------------------------------------------------------------------
+        #        # Cutoff linestrength  (note that cuting linestrength doesnt make this
+        #        # process faster here, but we still give this option to be consistent
+        #        # with spectra)
+        #        self._cutoff_linestrength()
+
+        # ----------------------------------------------------------------------
+
+        # Sum over all emission integrals (in the valid range)
+        b = (self.df1.wav > self.input.wavenum_min) & (
+            self.df1.wav < self.input.wavenum_max
+        )
+        P = self.df1["Ei"][b].sum()  # Ei  >> (mW/sr)
+
+        # incorporate density of molecules (see equation (A.16) )
+        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        Pv = P * density  # (mW/sr/cm3)
+
+        # Optically thin case (no self absorption):
+        Ptot = Pv * path_length  # (mW/sr/cm2)
+
+        return conv2(Ptot, "mW/cm2/sr", unit)
 
 
 # %% ======================================================================
@@ -1839,8 +1700,8 @@ class SpectrumFactory(BandFactory):
 
 def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_width):
     """define waverange vectors, with ``wavenumber`` the ouput spectral range
-    and ``wavenumber_calc`` the spectral range used for calculation, that includes
-    neighbour lines within ``broadening_max_width`` distance
+    and ``wavenumber_calc`` the spectral range used for calculation, that
+    includes neighbour lines within ``broadening_max_width`` distance.
 
     Parameters
     ----------
@@ -1865,7 +1726,6 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
     wavenumber_calc: numpy array
         an evenly spaced array between ``wavenum_min-broadening_max_width/2`` and
         ``wavenum_max+broadening_max_width/2`` with a spacing of ``wstep``
-
     """
 
     assert wavenum_min < wavenum_max
@@ -1900,7 +1760,7 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
 
 
 def _generate_broadening_range(wstep, broadening_max_width):
-    """Generate array on which to compute line broadening
+    """Generate array on which to compute line broadening.
 
     Parameters
     ----------
@@ -1918,7 +1778,6 @@ def _generate_broadening_range(wstep, broadening_max_width):
     wbroad_centered: numpy array
         an evenly spaced array, of odd-parity length, centered on 0, and of width
         ``broadening_max_width``
-
     """
 
     # create a broadening array, on which lineshape will be calculated.
@@ -1940,6 +1799,7 @@ def _generate_broadening_range(wstep, broadening_max_width):
 
 # --------------------------
 if __name__ == "__main__":
+
     import pytest
 
-    print("Testing factory:", pytest.main(["../test/test_factory.py"]))
+    print("Testing factory:", pytest.main(["../test/lbl/test_factory.py"]))

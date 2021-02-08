@@ -54,7 +54,6 @@ def test_load_spectrum(plot=False, verbose=True, warnings=True, *args, **kwargs)
             mole_fraction=400e-6,
             path_length=0.1,  # cm
             isotope=[1],
-            db_use_cached=True,
             cutoff=1e-20,
             verbose=verbose,
         )
@@ -102,7 +101,6 @@ def test_load_lines_pops(plot=False, verbose=True, warnings=True, *args, **kwarg
             mole_fraction=400e-6,
             path_length=0.1,  # cm
             isotope=[1, 2],
-            db_use_cached=True,
             cutoff=1e-20,
             verbose=verbose,
         )

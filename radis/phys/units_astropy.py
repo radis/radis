@@ -2,8 +2,7 @@ import astropy.units as u
 
 
 def convert_and_strip_units(quantity, output_unit=None, digit=10):
-    """
-    Strips units and return the numerical value.
+    """Strips units and return the numerical value.
 
     Parameters
     ----------
@@ -37,7 +36,6 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
     ------
     TypeError
         Raised when ``quantity`` is a astropy.units quantity and ``output_unit`` is ``None``.
-
     """
     if isinstance(quantity, u.Quantity):
         if output_unit in (u.deg_C, u.imperial.deg_F, u.K):

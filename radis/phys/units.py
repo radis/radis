@@ -27,7 +27,6 @@ def Unit(st, *args, **kwargs):
         from radis.phys.units import Unit as u
         a = 200 * u("mW/cm2/sr/nm")
         a += 0.1 * u("W/cm2/sr/nm")
-
     """
 
     try:
@@ -46,7 +45,6 @@ def Unit(st, *args, **kwargs):
 
 def conv2(quantity, fromunit, tounit):
     """Converts `quantity` from unit `fromunit` to unit `tounit`
-
 
     Parameters
     ----------
@@ -71,8 +69,6 @@ def conv2(quantity, fromunit, tounit):
     drop in computationaly-expensive task. Instead, we assume we know for
     sure the units in which some of our quantities will be created, and just
     want to let the users choose another output unit
-
-
     """
 
     try:
@@ -88,15 +84,13 @@ def conv2(quantity, fromunit, tounit):
 
 
 def is_homogeneous(unit1, unit2):
-    """Tells if unit1 and unit2 are homogeneous, using the Astropy library
-
+    """Tells if unit1 and unit2 are homogeneous, using the Astropy library.
 
     Parameters
     ----------
 
     unit1, unit2: str
         units
-
     """
 
     try:
@@ -110,10 +104,9 @@ def is_homogeneous(unit1, unit2):
 
 
 def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
-    """
-    Convert spectral emission density in wavelength base (typically ~mW/cm3/sr/nm)
-    to spectral emission density in wavenumber base (~mW/cm3/sr/cm-1)
-
+    """Convert spectral emission density in wavelength base (typically
+    ~mW/cm3/sr/nm) to spectral emission density in wavenumber base
+    (~mW/cm3/sr/cm-1)
 
     Parameters
     ----------
@@ -155,7 +148,6 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
         >>> print(trapz(y_cm, x_cm))
 
     Both integrals are to be the same
-
     """
 
     j_nm = conv2(j_nm, Iunit0, "mW/cm**3/sr/nm")
@@ -174,10 +166,8 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
 
 
 def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
-    """
-    Convert spectral emission density in wavenumber base (typically ~mW/cm3/sr/cm-1) to
-    spectral radiance in wavelength base (~mW/cm3/sr/nm)
-
+    """Convert spectral emission density in wavenumber base (typically
+    ~mW/cm3/sr/cm-1) to spectral radiance in wavelength base (~mW/cm3/sr/nm)
 
     Parameters
     ----------
@@ -206,7 +196,6 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
 
     We want   Lν.dν = Lλ.dλ
     so        Lλ  = - Lν * 1e-7 * ν^2
-
     """
 
     j_cm = conv2(j_cm, Iunit0, "mW/cm3/sr/cm-1")
@@ -228,10 +217,8 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
 
 
 def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
-    """
-    Convert spectral radiance in wavelength base (~1/nm) to spectral radiance in
-    wavenumber base (~1/cm-1)
-
+    """Convert spectral radiance in wavelength base (~1/nm) to spectral
+    radiance in wavenumber base (~1/cm-1)
 
     Parameters
     ----------
@@ -273,7 +260,6 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
         >>> print(trapz(y_cm, x_cm))
 
     Both integrals are to be the same
-
     """
 
     l_nm = conv2(l_nm, Iunit0, "mW/cm2/sr/nm")
@@ -292,10 +278,8 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
 
 
 def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
-    """
-    Convert spectral radiance in wavenumber base (~1/cm-1) to spectral radiance in
-    wavelength base (~1/nm)
-
+    """Convert spectral radiance in wavenumber base (~1/cm-1) to spectral
+    radiance in wavelength base (~1/nm)
 
     Parameters
     ----------
@@ -323,7 +307,6 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
 
     We want   Lν.dν = Lλ.dλ
     so        Lλ  = - Lν * 1e-7 * ν^2
-
     """
 
     l_cm = conv2(l_cm, Iunit0, "mW/cm2/sr/cm-1")
@@ -349,10 +332,9 @@ def convert_universal(
     per_nm_is_like="mW/sr/cm2/nm",
     per_cm_is_like="mW/sr/cm2/cm-1",
 ):
-    """Return variable var in whatever unit, and converts to to_unit
-    Also deal with cases where var is in ~1/nm (per_nm_is_like) or ~1/cm-1
+    """Return variable var in whatever unit, and converts to to_unit Also deal
+    with cases where var is in ~1/nm (per_nm_is_like) or ~1/cm-1
     (per_cm_is_like)
-
 
     Parameters
     ----------
@@ -375,7 +357,6 @@ def convert_universal(
 
     wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires
     a change of variable in the integral)
-
     """
     Iunit0 = from_unit
     Iunit = to_unit

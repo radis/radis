@@ -253,6 +253,8 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
                 "NegativeEnergiesWarning": "ignore",
                 "HighTemperatureWarning": "ignore",
                 "GaussianBroadeningWarning": "ignore",
+                "AccuracyError": "ignore",
+                "AccuracyWarning": "ignore",
             },
         )  # 0.2)
         sf.load_databank("HITRAN-CO-TEST")
@@ -494,6 +496,56 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     assert res <= 1e-4
 
 
+@pytest.mark.needs_connection
+@pytest.mark.fast
+def test_broadening_warnings(*args, **kwargs):
+    """Test AccuracyWarning and AccuracyErrors are properly triggered.
+
+    Inspired by https://github.com/radis/radis/issues/186
+
+    Examples
+    --------
+
+    ::
+            AccuracyError: Some lines are too narrow (FWHM ~ 0.0011 cm⁻¹) for
+            the current spectral grid (wstep=0.01). Please reduce wstep to (at least)
+            below 0.00055 cm⁻¹ or (suggested) 0.00022 cm⁻¹
+    """
+    import astropy.units as u
+
+    from radis.misc.warning import AccuracyError, AccuracyWarning
+
+    conditions = {
+        "wavenum_min": 667.58 / u.cm,
+        "wavenum_max": 667.61 / u.cm,
+        "molecule": "CO2",
+        "isotope": "1",
+        "broadening_max_width": 0,  # no neighbour lines in LDM method (note : with LDM method we still resolve the full lineshape!)
+        "verbose": False,
+    }
+
+    # Try with low resolution, expect error :
+    with pytest.raises(AccuracyError):
+        sf = SpectrumFactory(**conditions, wstep=0.01)
+        sf.fetch_databank("hitran")
+
+        sf.eq_spectrum(
+            Tgas=234.5,
+            pressure=0.00646122 * u.bar,
+            mole_fraction=400e-6,
+        )
+
+    with pytest.warns(AccuracyWarning):
+        sf = SpectrumFactory(**conditions, wstep=0.00055)
+        sf.fetch_databank("hitran")
+
+        sf.eq_spectrum(
+            Tgas=234.5,
+            pressure=0.00646122 * u.bar,
+            mole_fraction=400e-6,
+        )
+
+
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
@@ -524,12 +576,9 @@ def test_abscoeff_continuum(
     sf = SpectrumFactory(
         wavelength_min=4200,
         wavelength_max=4500,
-        parallel=False,
-        bplot=False,
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
-        db_use_cached=True,
         broadening_max_width=10,
         path_length=0.1,
         mole_fraction=1e-3,
@@ -545,7 +594,9 @@ def test_abscoeff_continuum(
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+    sf.fetch_databank(
+        "hitran"
+    )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
     sf._export_continuum = True  # activate it
 
@@ -585,7 +636,9 @@ def test_abscoeff_continuum(
         s2.plot(
             "abscoeff_continuum",
             nfig="same",
-            label="Pseudo-continuum".format(s2.conditions["lines_in_continuum"]),
+            label="Pseudo-continuum ({0} lines in continuum))".format(
+                s2.conditions["lines_in_continuum"]
+            ),
             force=True,
         )
         plt.legend()
@@ -628,12 +681,9 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     sf = SpectrumFactory(
         wavelength_min=4200,
         wavelength_max=4500,
-        parallel=False,
-        bplot=False,
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
-        db_use_cached=True,
         broadening_max_width=10,
         path_length=0.1,
         mole_fraction=1e-3,
@@ -649,7 +699,9 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+    sf.fetch_databank(
+        "hitran"
+    )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
     sf._export_continuum = True  # activate it
 
@@ -713,6 +765,9 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
     test_broadening_DLM_FT(plot=plot, verbose=3, *args, **kwargs)
     test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
+
+    # Test warnings
+    test_broadening_warnings(*args, **kwargs)
 
     # Test pseudo-continuum
     test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)

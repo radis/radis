@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 18 15:38:14 2017
+"""Created on Wed Oct 18 15:38:14 2017.
 
 @author: erwan
 
 -------------------------------------------------------------------------------
-
-
 """
 
 import sys
@@ -14,11 +11,21 @@ from time import time
 
 
 class ProgressBar:
-    """A console progress-bar
+    """Writes completion status and expended time.
+
+    Set it up by creating the object, then calling
+    :py:meth:`~radis.misc.progress_bar.ProgressBar.update` and
+    :py:meth:`~radis.misc.progress_bar.ProgressBar.done`.
+
+    Parameters
+    ----------
+    N: int
+        (expected) number of iterations
+    active: bool
+        if ``False``, do not show anything (tip : feed it a ``verbose`` argument)
 
     Example
     -------
-
     add a progress bar in a loop::
 
         pb = ProgressBar(N)
@@ -28,48 +35,45 @@ class ProgressBar:
         pb.done()
 
     See test in progress_bar.py
-
     """
 
     # Todo: One day extend for multiprocss with several progress values?
     # https://stackoverflow.com/questions/7392779/is-it-possible-to-print-a-string-at-a-certain-screen-position-inside-idle
 
     def __init__(self, N, active=True):
-        """
-        write to progress bar completion status i/N.
 
-
-        Parameters
-        ----------
-
-        N: int
-            total number of iterations
-
-        """
         self.t0 = time()
         self.N = N
         self.active = active
 
     def set_active(self, active=True):
-        """Option to activate/deactivate the ProgressBar. Used not to make it
-        appear on small processes (based on a condition) without changing most
-        of the code"""
+        """Option to activate/deactivate the ProgressBar.
 
+        Used not to make it appear on small processes (based on a
+        condition) without changing most of the code
+        """
         self.active = active
 
-    def update(self, i, modulo=1):
-        """
-        write to progress bar completion status i/N. If t0 is not None, also
-        write the time spent
-
+    def update(self, i, modulo=1, message=""):
+        """Update the completion status i/N and time spent.
 
         Parameters
         ----------
-
         i: int
             current iteration
-        """
+        modulo: int
+            if higher than ``1``, skip some iterations.
+        message: str
+            add a custom message. Tip: evaluate your own variables with
+            f'{my_variable}' strings
 
+        Example
+        -------
+
+        ::
+
+
+        """
         if not self.active:
             return
 
@@ -77,16 +81,18 @@ class ProgressBar:
         t0 = self.t0
         if i % modulo == 0:
             if t0 is None:
-                msg = "{0:.1f}%".format(i / N * 100)
+                msg = "{0:.1f}%\t{1}".format(i / N * 100, message)
             else:
-                msg = "({0:.0f}s)\t{1:.1f}%".format(time() - t0, i / N * 100)
+                msg = "({0:.0f}s)\t{1:.1f}%\t{2}".format(
+                    time() - t0, i / N * 100, message
+                )
 
             if sys.stdout is not None:
                 sys.stdout.write("\r" + msg)
                 sys.stdout.flush()
 
     def done(self):
-
+        """Close the Progress bar."""
         if not self.active:
             return
 

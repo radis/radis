@@ -1,5 +1,5 @@
- | |badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_binder| |badge_gitter| |badge_slack|
- | |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
+ | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder|
+ | |badge_slack| |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
 
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
@@ -47,6 +47,7 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
                       Tgas=700,           # K
                       mole_fraction=0.1,
                       path_length=1,      # cm
+                      databank='hitran'   # or 'hitemp'
                       )
     s.apply_slit(0.5, 'nm')       # simulate an experimental slit
     s.plot('radiance')
@@ -54,31 +55,24 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
 .. figure:: https://radis.readthedocs.io/en/latest/_images/co_spectrum_700K.png
     :scale: 60 %
 
-Calculate a CO *nonequilibrium* spectrum from the HITRAN database
-(on your first call, this will calculate and cache the CO(X) rovibrational
-energies): ::
 
-    s2 = calc_spectrum(1900, 2300,         # cm-1
-                      molecule='CO',
-                      isotope='1,2,3',
-                      pressure=1.01325,   # bar
-                      Tvib=700,           # K
-                      Trot=300,           # K
-                      mole_fraction=0.1,
-                      path_length=1,      # cm
-                      )
-    s2.apply_slit(0.5, 'nm')
-    s2.plot('radiance', nfig='same')    # compare with previous
+Advanced use
+------------
 
-The Quick Start examples automatically download the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/references/references.html#hitran-2016>`__, which is valid for temperatures below 700 K.
+
+The Quick Start examples automatically downloads the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/references/references.html#hitran-2016>`__, which is valid for temperatures below 700 K.
 For *high temperature* cases, you may need to use other line databases such as
-`HITEMP-2010 <https://radis.readthedocs.io/en/latest/references/references.html#hitemp-2010>`__ (typically T < 2000 K) or `CDSD-4000 <https://radis.readthedocs.io/en/latest/references/references.html#cdsd-4000>`__ (T < 5000 K). These databases must be described in a ``~/.radis``
+`HITEMP-2010 <https://radis.readthedocs.io/en/latest/references/references.html#hitemp-2010>`__ (typically T < 2000 K) or `CDSD-4000 <https://radis.readthedocs.io/en/latest/references/references.html#cdsd-4000>`__ (T < 5000 K). HITEMP can also be downloaded
+automatically, or can be downloaded manually and described in a ``~/.radis``
 `Configuration file <https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file>`__.
 
 More complex `examples <https://radis.readthedocs.io/en/latest/examples.html#label-examples>`__ will require to use the `SpectrumFactory <https://radis.readthedocs.io/en/latest/source/radis.lbl.factory.html#radis.lbl.factory.SpectrumFactory>`__
 class, which is the core of RADIS line-by-line calculations.
 `calc_spectrum <https://radis.readthedocs.io/en/latest/source/radis.lbl.calc.html#radis.lbl.calc.calc_spectrum>`__ is a wrapper to `SpectrumFactory <https://radis.readthedocs.io/en/latest/source/radis.lbl.factory.html#radis.lbl.factory.SpectrumFactory>`__
 for the simple cases.
+
+Compare with experiments
+------------------------
 
 Experimental spectra can be loaded using the `experimental_spectrum <https://radis.readthedocs.io/en/latest/source/radis.spectrum.models.html#radis.spectrum.models.experimental_spectrum>`__ function
 and compared with the `plot_diff <https://radis.readthedocs.io/en/latest/source/radis.spectrum.compare.html#radis.spectrum.compare.plot_diff>`__ function. For instance::
@@ -99,26 +93,50 @@ Typical output of `plot_diff <https://radis.readthedocs.io/en/latest/source/radi
 Refer to the `Examples <https://radis.readthedocs.io/en/latest/examples/examples.html>`__ section for more examples, and to the
 `Spectrum page <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html>`__ for more post-processing functions.
 
-In the browser (no installation needed!)
-----------------------------------------
+---------------------------------------------------------------------
 
-Alternatively, you can also run RADIS directly in the browser with the
-`RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project.
-For instance, run the Quick Start example on the link below:
+=======================================
+🌱 Try online (no installation needed!)
+=======================================
 
-.. image:: https://mybinder.org/badge.svg
-    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
-    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+radis-app
+---------
 
-Or start a bare RADIS online session:
+A simple web-app for RADIS under development.
 
-|badge_binder|
+.. image:: https://user-images.githubusercontent.com/16088743/103406077-b2457100-4b59-11eb-82c0-e4de027a91c4.png
+    :target: https://radis.app/
+    :alt: https://radis.app/
+
+See more `on GitHub <https://github.com/radis/radis-ui>`__
 
 
+RADIS-lab
+---------
+
+An online environment for advanced spectrum processing and comparison with experimental data :
+
+- no need to install anything
+- use pre-configured line databases (HITEMP)
+- upload your data files, download your results !
+
+
+.. image:: https://user-images.githubusercontent.com/16088743/103448773-7d8f0200-4c9e-11eb-8bf1-ce3385519b77.png
+    :target: https://radis.github.io/radis-lab/
+    :alt: https://radis.github.io/radis-lab/
+
+🌱 Try it : https://radis.github.io/radis-lab/
+
+See more `on GitHub <https://github.com/radis/radis-lab>`__
+
+
+---------------------------------------------------------------------
+
+====
 Cite
-----
+====
 
-Article is available at |badge_article|
+Articles are available at |badge_article1| |badge_article2|
 
 For reproducibility, do not forget to cite the line database used, and the spectroscopic constants
 if running nonquilibrium  calculations. See `How to cite? <https://radis.readthedocs.io/en/latest/references/references.html#cite>`__
@@ -177,7 +195,7 @@ Links
 
 - Help: |badge_gitter| |badge_slack|  `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 
-- Article: |badge_article|
+- Articles: |badge_article1| |badge_article2|
 
 - Source Code: |badge_stars| |badge_contributors| |badge_license|
 
@@ -212,9 +230,13 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                 :target: https://radis.readthedocs.io/en/latest/?badge=latest
                 :alt: Documentation Status
 
-.. |badge_article| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
+.. |badge_article1| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg
                    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867
                    :alt: Article
+
+.. |badge_article2| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2020.107476.svg
+                   :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407320310049
+                   :alt: Spectral Synthesis Algorithm
 
 .. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star
                 :target: https://github.com/radis/radis/stargazers
@@ -257,8 +279,8 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                            :alt: Examples
 
 .. |badge_binder| image:: https://mybinder.org/badge.svg
-                  :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
-                  :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=radis_online.ipynb
+                  :target: https://radis.github.io/radis-lab/
+                  :alt: https://radis.github.io/radis-lab/
 
 .. |badge_gitter| image:: https://badges.gitter.im/Join%20Chat.svg
                   :target: https://gitter.im/radis-radiation/community
@@ -267,6 +289,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
+
 
 
 

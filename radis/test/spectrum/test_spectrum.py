@@ -176,7 +176,7 @@ def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs)
 def test_store_functions(verbose=True, *args, **kwargs):
     """ Test some store / retrieve functions """
 
-    from radis.spectrum.spectrum import transmittance_spectrum
+    from radis.spectrum.models import transmittance_spectrum
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
 

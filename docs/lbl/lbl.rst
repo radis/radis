@@ -29,8 +29,8 @@ Calculating spectra
 Calculate one molecule spectrum
 -------------------------------
 
-In the following example, we calculate a CO spectrum at equilibirum,
-and plot the transmittance: ::
+In the following example, we calculate a CO spectrum at equilibrium
+from the latest HITRAN database, and plot the transmittance: ::
 
 	s = calc_spectrum(
         		wavenum_min=1900,
@@ -40,6 +40,7 @@ and plot the transmittance: ::
         		molecule='CO',
         		mole_fraction=0.5,
         		isotope=1,
+            databank='hitran'   # or 'hitemp'
     		  	)
 	s.plot('transmittance_noslit')
 
@@ -351,7 +352,7 @@ available on your computer.
 Without a configuration file, you can still:
 
 - download the corresponding [HITRAN-2016]_ line database automatically,
-  either with the (default) ``databank='fetch'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`,
+  either with the (default) ``databank='hitran'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`,
   or the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method of
   :py:class:`~radis.lbl.factory.SpectrumFactory`,
 - give a single file as an input to the ``databank=`` parameter of :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -625,7 +626,7 @@ to calculate the lineshapes efficiently.
   database becomes the performance bottleneck.
   parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`,
   :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
-  (this is the default strategy implemented in RADIS)
+  (this is the default strategy implemented in RADIS). Learn more in [Spectral Synthesis Algorithm]_
 
 More details on the parameters below:
 
@@ -662,10 +663,6 @@ or [CDSD-4000]_ databases.
 Line database files are automatically cached by RADIS under a ``.h5`` format after they are loaded the first time.
 If you want to deactivate this behaviour, use ``use_cached=False`` in :py:func:`~radis.lbl.calc.calc_spectrum`,
 or ``db_use_cached=False, lvl_use_cached=False`` in :py:class:`~radis.lbl.factory.SpectrumFactory`.
-
-If you are downloading the line database from [HITRAN-2016]_ with :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
-or the ``databank='fetch'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`, then it is at the moment
-impossible to cache the database.
 
 You can also use :py:meth:`~radis.lbl.loader.DatabankLoader.init_databank` instead of the default
 :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`. The former will save the line database parameter,
@@ -704,37 +701,13 @@ with the calculated conditions.
 Parallelization
 ---------------
 
-Two parallelization are built-in RADIS. You can either run several :py:class:`~radis.lbl.factory.SpectrumFactory`
-in parallel. For that, just replace the :py:class:`~radis.lbl.factory.SpectrumFactory` with
-:py:class:`~radis.lbl.parallel.ParallelFactory` in your code, and use lists instead of single values
-for your input parameters. Example::
+Note : internal CPU-parallelization was discarded in RADIS 0.9.28, as not efficient
+enough with the new lineshape algorithms implemented with radis==0.9.20.
 
-    from radis import SpectrumFactory
-    sf = SpectrumFactory(...)
-    sf.init_database(...)              # to store all spectra automatically
-    for T in Tlist:
-        s = sf.eq_spectrum(T)
+A much faster GPU-parallelization is available for equilibrium calculation::
 
-Becomes::
+    SpectrumFactory.eq_spectrum(mode='gpu')
 
-    from radis import ParallelFactory
-    sf = ParallelFactory(...)
-    sf.init_database(...)              # to store all spectra automatically
-    sf.eq_spectrum(Tlist)
-
-
-Another parallelization is possible within one :py:class:`~radis.lbl.factory.SpectrumFactory` instance.
-In that case, the line database is split in different chuncks of lines that are processed independantly.
-See the ``parallel=`` parameter in :py:class:`~radis.lbl.factory.SpectrumFactory`.
-
-.. warning::
-    Because LBL computations are usually more memory-heavy than CPU-heavy, you may not get
-    a lot of improvement by using parallelization. Ensure that your test works.
-
-Parallelized code can be tested against the linear code in `radis/test/lbl/test_parallel.py`, which can be run
-with::
-
-    pytest radis/test/lbl/test_parallel.py
 
 GPU accelerated spectrum calculation
 ------------------------------------

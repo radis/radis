@@ -32,8 +32,8 @@ from radis import SpectrumFactory
 from radis.db.molecules import Molecules
 from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
-from radis.misc.cache_files import DeprecatedFileError
 from radis.misc.printer import printm
+from radis.misc.warning import DeprecatedFileWarning
 from radis.phys.constants import hc_k
 from radis.test.utils import getTestFile, setup_test_line_databases
 
@@ -110,7 +110,7 @@ def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
     # Recompute with different parameters
 
     # ... if using 'force', ensures that an error is raised
-    with pytest.raises(DeprecatedFileError):  # DeprecatedFileError is expected
+    with pytest.raises(DeprecatedFileWarning):  # DeprecatedFileError is expected
         db = PartFunc_Dunham(
             S, vmax=11, vmax_morse=48, Jmax=300, use_cached="force", verbose=verbose
         )
@@ -703,11 +703,13 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
             path_length=0.1,
             mole_fraction=400e-6,
             isotope=[1],
-            db_use_cached=True,  # important to test CAche file here
             verbose=2,
         )
         sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-        sf.load_databank("HITEMP-CO2-HAMIL-TEST")
+        sf.load_databank(
+            "HITEMP-CO2-HAMIL-TEST",
+            db_use_cached=True,  # important to test CAche file here
+        )
 
         # Now generate vibrational energies for a 2-T model
         levels = sf.parsum_calc["CO2"][1]["X"].df

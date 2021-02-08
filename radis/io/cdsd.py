@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Parser for CDSD-HITEMP, CDSD-4000 format
+"""Parser for CDSD-HITEMP, CDSD-4000 format.
 
 Routine Listing
 ---------------
@@ -13,8 +13,6 @@ References
 CDSD-4000 manual
 
 -------------------------------------------------------------------------------
-
-
 """
 
 # TODO: remove wangl2  after loading database (wangl is enough, with 1=e and 2=f)
@@ -26,12 +24,12 @@ from os.path import exists, getmtime
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
+from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 from radis.io.tools import (
     drop_object_format_columns,
     parse_hitran_file,
     replace_PQR_with_m101,
 )
-from radis.misc.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 
 # fmt: off
 columns_hitemp = OrderedDict(
@@ -116,41 +114,43 @@ columns_4000 = OrderedDict(
 
 
 def cdsd2df(
-    fname, version="hitemp", count=-1, cache=False, verbose=True, drop_non_numeric=True
+    fname,
+    version="hitemp",
+    cache=True,
+    verbose=True,
+    drop_non_numeric=True,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
 ):
-    """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe
+    """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe.
 
-    Parameters
+    Parameter
     ----------
-
     fname: str
         CDSD file name
-
     version: str ('4000', 'hitemp')
         CDSD version
-
-    count: int
-        number of items to read (-1 means all file)
-
     cache: boolean, or 'regen'
         if ``True``, a pandas-readable HDF5 file is generated on first access,
         and later used. This saves on the datatype cast and conversion and
         improves performances a lot (but changes in the database are not
         taken into account). If ``False``, no database is used. If 'regen', temp
-        file are reconstructed. Default ``False``.
+        file are reconstructed. Default ``True``.
 
     Other Parameters
     ----------------
-
     drop_non_numeric: boolean
         if ``True``, non numeric columns are dropped. This improves performances,
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
+    load_wavenum_min, load_wavenum_max: float
+        if not ``'None'``, only load the cached file if it contains data for
+        wavenumbers above/below the specified value. See :py:func`~radis.io.cache_files.load_h5_cache_file`.
+        Default ``'None'``.
 
     Returns
     -------
-
     df: pandas Dataframe
         dataframe containing all lines and parameters
 
@@ -210,10 +210,11 @@ def cdsd2df(
     --------
 
     :func:`~radis.io.hitran.hit2df`
-
     """
     metadata = {}
     metadata["last_modification"] = time.ctime(getmtime(fname))
+    if load_wavenum_min and load_wavenum_max:
+        assert load_wavenum_min < load_wavenum_max
 
     if verbose >= 2:
         print(
@@ -233,10 +234,18 @@ def cdsd2df(
     # Use cache file if possible
     fcache = cache_file_name(fname)
     if cache and exists(fcache):
+        relevant_if_metadata_above = (
+            {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
+        )  # not relevant if wavenum_max of file is < wavenum min required
+        relevant_if_metadata_below = (
+            {"wavenum_min": load_wavenum_max} if load_wavenum_max else {}
+        )  # not relevant if wavenum_min of file is > wavenum max required
         df = load_h5_cache_file(
             fcache,
             cache,
-            metadata=metadata,
+            valid_if_metadata_is=metadata,
+            relevant_if_metadata_above=relevant_if_metadata_above,
+            relevant_if_metadata_below=relevant_if_metadata_below,
             current_version=radis.__version__,
             last_compatible_version=OLDEST_COMPATIBLE_VERSION,
             verbose=verbose,
@@ -246,7 +255,7 @@ def cdsd2df(
 
     # %% Start reading the full file
 
-    df = parse_hitran_file(fname, columns, count)
+    df = parse_hitran_file(fname, columns)
 
     # Remove non numerical attributes
     if drop_non_numeric:
@@ -255,22 +264,37 @@ def cdsd2df(
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
+        new_metadata = {
+            # Last modification time of the original file :
+            "last_modification": time.ctime(getmtime(fname)),
+            "wavenum_min": df.wav.min(),
+            "wavenum_max": df.wav.max(),
+        }
         if verbose:
-            print("Generating cached file: {0}".format(fcache))
+            print(
+                "Generating cache file {0} with metadata :\n{1}".format(
+                    fcache, new_metadata
+                )
+            )
         try:
             save_to_hdf(
                 df,
                 fcache,
-                metadata=metadata,
+                metadata=new_metadata,
                 version=radis.__version__,
                 key="df",
                 overwrite=True,
                 verbose=verbose,
             )
-        except:
+        except PermissionError:
             if verbose:
                 print("An error occured in cache file generation. Lookup access rights")
             pass
+
+    # TODO : get only wavenum above/below 'load_only_wavenum_above', 'load_only_wavenum_below'
+    # by parsing df.wav.   Completely irrelevant files are discarded in 'load_h5_cache_file'
+    # but files that have partly relevant lines are fully loaded.
+    # Note : cache file is generated with the full line list.
 
     return df
 

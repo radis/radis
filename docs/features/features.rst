@@ -33,8 +33,9 @@ RADIS does *not* include, so far:
 RADIS also features:
 
 - :ref:`High Performances <label_lbl_performance>`: spectra are calculated up to several orders of magnitude faster than equivalent line-by-line codes.
+- In-the-browser calculations (no install needed) : see :ref:`🌱 RADIS Online <label_radis_online>
+- Automatic download of the latest HITRAN and HITEMP databases with :py:func:`~radis.lbl.calc.calc_spectrum`
 - Automatic testing and continuous integration tools for a reliable :ref:`Open-source Development <label_developer_guide>`.
-- In-the-browser `Online Calculations <https://github.com/radis/radis-examples#interactive-examples>`_ (no install needed).
 
 Remarks and request for features can be done on `GitHub <https://github.com/radis/radis/issues>`__ ,
 on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__ or on the Gitter community chat:

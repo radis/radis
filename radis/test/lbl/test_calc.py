@@ -59,11 +59,10 @@ def test_sPlanck_conversions(verbose=True, *args, **kwargs):
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
 def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
-    """Basic example, used as a non-regression test
+    """Basic example, used as a non-regression test.
 
     Notes
     -----
-
     How long it tooks to calculate this Spectrum?
 
     Performance test on old NeQ package, with the [CDSD-HITEMP-JMIN] databank.
@@ -91,7 +90,6 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
                      4.05 s    on [CDSD-HITEMP-JMIN]
 
     """
-
     if verbose:
         printm("Testing calc_spectrum match reference")
 
@@ -104,7 +102,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         wavelength_min=4165,
         wavelength_max=4200,
         #                          databank='CDSD-HITEMP-JMIN',
-        databank="fetch",  # not appropriate for these temperatures, but convenient for automatic testing
+        databank="hitran",  # not appropriate for these temperatures, but convenient for automatic testing
         Tgas=300,
         Tvib=1700,
         Trot=1550,
@@ -200,14 +198,13 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 def test_calc_spectrum_overpopulations(
     verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
-    """Non-regression test:
+    """Non-regression test.
 
     Example using overpopulation of the 001 asymmetric stretch first level of CO2,
     which is written (p,c,N) = (3,1,4) in [CDSD-4000]_ notation
 
     Notes
     -----
-
     In old Neq package (before RADIS):
 
     the test uses a CDSD-PCN notation for vibrational energy assignation, i.e,
@@ -221,7 +218,6 @@ def test_calc_spectrum_overpopulations(
     downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
 
     """
-
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         import matplotlib.pyplot as plt
 
@@ -231,7 +227,7 @@ def test_calc_spectrum_overpopulations(
         wavelength_min=4165,
         wavelength_max=4200,
         #                          databank='CDSD-HITEMP-PCN',
-        databank="fetch",  # not appropriate for these temperatures, but convenient for automatic testings
+        databank="hitran",  # not appropriate for these temperatures, but convenient for automatic testings
         Tgas=300,
         Tvib=1700,
         Trot=1550,
@@ -441,9 +437,8 @@ def test_all_calc_methods_CO2pcN(
         cutoff=1e-25,
         molecule="CO2",
         isotope=iso,
-        db_use_cached=True,
-        lvl_use_cached=True,
         verbose=verbose,
+        export_lines=True,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
@@ -507,11 +502,6 @@ def test_all_calc_methods_CO2pcN(
     return True
 
 
-# TODO @EP: Implement the same, 'cdsd-pc' and 'cdsd-hamil' and 'radis'?
-# def test_all_calc_methods_CO2pc():
-#    return
-
-
 @pytest.mark.needs_connection
 def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **kwargs):
     """Test same spectrum for 2 different calculation codes (equilibrium,
@@ -538,14 +528,14 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
         cutoff=1e-25,
         molecule="CO2",
         isotope="1,2",
-        db_use_cached=True,
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.fetch_databank()  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
-    #        sf.load_databank('HITEMP-CO2-DUNHAM')
+    sf.fetch_databank(
+        "hitran"
+    )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")
 

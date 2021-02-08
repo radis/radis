@@ -68,22 +68,18 @@ def LineSurvey(
     xunit=None,
     yunit=None,  # deprecated
 ):
-    """Plot Line Survey (all linestrengths above cutoff criteria) in Plotly (html)
-
+    """Plot Line Survey (all linestrengths above cutoff criteria) in Plotly
+    (html)
 
     Parameters
     ----------
-
     spec: Spectrum
         result from SpectrumFactory calculation (see spectrum.py)
-
     overlay: tuple (w, I, [name], [units]), or list or tuples
         plot (w, I) on a secondary axis. Useful to compare linestrength with
         calculated / measured data
-
     wunit: ``'nm'``, ``'cm-1'``
         wavelength / wavenumber units
-
     Iunit: ``'hitran'``, ``'splot'``
         Linestrength output units:
 
@@ -92,31 +88,25 @@ def LineSurvey(
 
         Note: if not None, cutoff criteria is applied in this unit.
         Not used if plot is not 'S'
-
     medium: ``'air'``, ``'vacuum'``
         show wavelength either in air or vacuum. Default ``'air'``
-
     plot: str
         what to plot. Default ``'S'`` (scaled line intensity). But it can be
         any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'Aul'``)
-
     lineinfo: list, or ``'all'``
         extra line information to plot. Should be a column name in the databank
         (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
 
     Other Parameters
     ----------------
-
     writefile: str
         if not ``None``, a valid filename to save the plot under .html format.
         If ``None``, use the ``fig`` object returned to show the plot.
-
     yscale: ``'log'``, ``'linear'``
         Default ``'log'``
 
     Returns
     -------
-
     fig: a Plotly figure.
         If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
         to export to an html file.
@@ -125,7 +115,6 @@ def LineSurvey(
 
     Examples
     --------
-
     An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
 
         from radis import SpectrumFactory
@@ -135,6 +124,7 @@ def LineSurvey(
                              mole_fraction=400e-6,
                              path_length=100,  # cm
                              isotope=[1],
+                             export_lines=True,    # required for LineSurvey!
                              db_use_cached=True)
         sf.load_databank('HITRAN-CO2-TEST')
         s = sf.eq_spectrum(Tgas=1500)
@@ -143,14 +133,16 @@ def LineSurvey(
 
     See the output in :ref:`Examples <label_examples>`
 
+    .. raw:: html
+
+        <iframe id="igraph" src="//plotly.com/~erwanp/6.embed" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
+
     References
     ----------
 
     .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
 
     .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
-
-
     """
 
     # Check inputs
@@ -231,8 +223,8 @@ def LineSurvey(
     # %% Plot - Plotly version
 
     def get_x(w):
-        """w (input) is supposed to be in vacuum wavenumbers in the
-        lines database"""
+        """w (input) is supposed to be in vacuum wavenumbers in the lines
+        database."""
 
         # Convert wavelength / wavenumber
         if wunit == "cm-1":

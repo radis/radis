@@ -1,4 +1,4 @@
-""" Install file for RADIS
+"""Install file for RADIS.
 
 Typical install procedure, plus:
 
@@ -30,8 +30,6 @@ when creating a new version, just update the __version__.txt file
 to register it on Pypi see register.py::
 
     python register.py
-
-
 """
 import io
 import re
@@ -44,9 +42,8 @@ from setuptools import find_packages, setup
 
 # Utils to format RST
 def yield_sphinx_only_markup(lines):
-    """
-    Cleans-up Sphinx-only constructs (ie from README.rst),
-    so that *PyPi* can format it properly.
+    """Cleans-up Sphinx-only constructs (ie from README.rst), so that *PyPi*
+    can format it properly.
 
     To check for remaining errors, install ``sphinx`` and run::
 
@@ -66,7 +63,6 @@ def yield_sphinx_only_markup(lines):
     Check output with::
 
         python setup.py --long-description | rst2html.py > output.html
-
     """
     substs = [
         ## Selected Sphinx-only Roles.
@@ -153,9 +149,8 @@ setup(
         "numpy",
         "scipy",
         "matplotlib",
-        "pandas",
+        "pandas>=1.0.5",
         "plotly",
-        "h5py",
         "numba",
         "mpldatacursor",
         "astropy",  # Unit aware calculations
@@ -167,7 +162,6 @@ setup(
         "json-tricks>=3.15.0",  # to deal with non jsonable formats
         "tables",  # for pandas to HDF5 export
         "pytest",  # to run test suite
-        "h5py",  # to write HDF5 files
         "joblib",  # for parallel loading of SpecDatabase
         "numba",  # just-in-time compiler
     ],

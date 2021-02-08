@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 import radis
-from radis.lbl import SpectrumFactory
+from radis.lbl.factory import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
 
@@ -164,11 +164,8 @@ def test_spec_generation(
     sf = SpectrumFactory(
         wavelength_min=4150,
         wavelength_max=4400,
-        parallel=False,
-        bplot=False,
         cutoff=1e-27,
         isotope="1,2",
-        db_use_cached=True,
         broadening_max_width=50,
         optimization=None,
         # optimization="min-RMS",
@@ -306,13 +303,10 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
         wavelength_min=4300,
         wavelength_max=4666,
         wstep=0.001,
-        parallel=False,
-        bplot=False,
         cutoff=1e-30,
         path_length=10,
         mole_fraction=400e-6,
         isotope=[1],
-        db_use_cached=True,
         broadening_max_width=10,
         verbose=verbose,
     )
@@ -323,7 +317,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", db_use_cached=True)
     unit = "µW/sr/cm2"
     T = 600
 
@@ -369,13 +363,10 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         wavelength_min=4500,
         wavelength_max=4600,
         wstep=0.001,
-        parallel=False,
-        bplot=False,
         cutoff=1e-30,
         path_length=0.1,
         mole_fraction=400e-6,
         isotope=[1],
-        db_use_cached=True,
         medium="vacuum",
         broadening_max_width=10,
         verbose=verbose,
@@ -496,6 +487,7 @@ def test_pressure_units_conversion(
         mole_fraction=1,
         isotope=[1],
         verbose=verbose,
+        warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
     )
     sf.load_databank("HITRAN-CO-TEST")
     s = sf.eq_spectrum(Tgas=300)
@@ -549,7 +541,7 @@ def test_temperature_units_conversion(
     sf = SpectrumFactory(
         wavelength_min=4300,
         wavelength_max=4500,
-        wstep=0.01,
+        wstep=0.001,
         cutoff=1e-30,
         pressure=1,
         mole_fraction=1,
@@ -569,5 +561,5 @@ def test_temperature_units_conversion(
 # --------------------------
 if __name__ == "__main__":
 
-    printm("Testing factory:", pytest.main(["test_factory.py"]))
+    printm("Testing factory:", pytest.main(["test_factory.py", "--pdb"]))
 #    printm('Testing factory:', pytest.main(['test_factory.py', '-k', 'test_wavenumber_units_conversion']))

@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Jan  3 17:52:04 2016
+"""Created on Sun Jan  3 17:52:04 2016.
 
 @author: Erwan
 
 Debug functions
 
 -------------------------------------------------------------------------------
-
-
 """
 
 
@@ -19,7 +16,8 @@ Debug functions
 
 
 def printdbg(*args, **kwargs):
-    """Function that prints only in debug mode. change this at runtime with
+    """Function that prints only in debug mode. change this at runtime with.
+
     >>> radis.debug = True
 
     Examples
@@ -38,8 +36,6 @@ def printdbg(*args, **kwargs):
     --------
 
     :py:data:`~radis.DEBUG_MODE`
-
-
     """
 
     from radis import DEBUG_MODE
@@ -49,7 +45,7 @@ def printdbg(*args, **kwargs):
 
 
 def export(var=locals()):
-    """Export local variables. Useful for debugging
+    """Export local variables. Useful for debugging.
 
     Debugging inside a function may be tedious because you can't access the
     local variables. One of the option is to use the ipython magic::
@@ -78,8 +74,6 @@ def export(var=locals()):
 
     - seems not to work for functions nested in functions
     - 01/05 : doesn't seem to work at all.. @Erwan
-
-
     """
 
     globals().update(var)

@@ -76,7 +76,6 @@ def test_direct_overpopulation_vs_recombined_bands(
         cutoff=1e-25,
         molecule="CO2",
         isotope=iso,
-        db_use_cached=True,
         wstep=0.01,
         broadening_max_width=5,
         medium="air",
@@ -156,6 +155,9 @@ def test_direct_overpopulation_vs_recombined_bands(
 
 
 def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs):
+    """Compare 3-vibrational Temperature algorithm with 1 vibrational temperature
+    algorithm, at equilibrium. Expect same output.
+    """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
@@ -169,19 +171,20 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
         wavenum_min=2380,
         wavenum_max=2400,
         pressure=20 * 1e-3,
-        db_use_cached=True,
         cutoff=1e-25,
         isotope=iso,  # ,2',
         path_length=10,
         mole_fraction=0.1,
         broadening_max_width=1,
         medium="vacuum",
+        wstep=0.001,
         verbose=verbose,
     )
     sf.warnings.update(
         {
             "MissingSelfBroadeningWarning": "ignore",
             "VoigtBroadeningWarning": "ignore",
+            "HighTemperatureWarning": "ignore",
         }
     )
     sf.load_databank("HITRAN-CO2-TEST")

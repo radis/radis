@@ -77,11 +77,11 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwa
         mole_fraction=1,
         pressure=0.01,  # bar
         path_length=1,  # we dont care for abscoeff anyway
-        parallel=False,
         cutoff=1e-30,
         wstep=wstep,
         isotope=1,  # '1,2,3',
         medium="vacuum",
+        export_lines=True,
     )  # 0.2)
     pl.warnings["MissingSelfBroadeningWarning"] = "ignore"
 

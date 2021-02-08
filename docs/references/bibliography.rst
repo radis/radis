@@ -16,8 +16,8 @@ List of bibliographic references used in this project:
                 HITRAN-like database species, Journal of Quantitative Spectroscopy and Radiative Transfer
                 (2018) `doi:10.1016/j.jqsrt.2018.09.027 <https://www.sciencedirect.com/science/article/pii/S0022407318305867?via%3Dihub>`__
 
-.. [DLM_article] D. van den Bekerom, E. Pannier, A Discrete Integral Transform for Rapid Spectral Synthesis,
-                Journal of Quantitative Spectroscopy and Radiative Transfer (2021), submitted.
+.. [Spectral Synthesis Algorithm] D.C.M. van den Bekerom, E. Pannier, A Discrete Integral Transform for Rapid Spectral Synthesis,
+                Journal of Quantitative Spectroscopy and Radiative Transfer (2021) `doi:10.1016/j.jqsrt.2020.107476 <https://www.sciencedirect.com/science/article/abs/pii/S0022407320310049>`__
 
 Line Databases
 --------------
@@ -29,10 +29,14 @@ Reference of supported line databases:
                  The HITRAN2016 Molecular Spectroscopic Database, Journal of Quantitative Spectroscopy and Radiative
                  Transfer 6 (38) (2017) 3–69, ISSN 00224073, `doi:10.1016/j.jqsrt.2017.06.038 <https://www.sciencedirect.com/science/article/pii/S0022407317301073>`__.
 
+The latest HITRAN database version is automatically downloaded if using ``databank='hitran'``.
+
 .. [HITEMP-2010] L. S. Rothman, I. E. Gordon, R. J. Barber, H. Dothe, R. R. Gamache, A. Goldman, V. I. Perevalov,
                  S. A. Tashkun, J. Tennyson, HITEMP, the high-temperature molecular spectroscopic database,
                  Journal of Quantitative Spectroscopy and Radiative Transfer 111 (15) (2010)
                  2139–2150, ISSN 00224073, `doi:10.1016/j.jqsrt.2010.05.001 <https://www.sciencedirect.com/science/article/pii/S002240731000169X>`__.
+
+The latest HITEMP database version is automatically downloaded if using ``databank='hitran'``.
 
 .. [CDSD-4000] S. A. Tashkun, V. I. Perevalov, CDSD-4000: High-resolution, high-temperature carbon dioxide
                spectroscopic databank, Journal of Quantitative Spectroscopy and Radiative Transfer 112 (9) (2011)

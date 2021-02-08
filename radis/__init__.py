@@ -141,16 +141,17 @@ OLDEST_COMPATIBLE_VERSION = "0.9.1"
 See Also
 --------
 
-:py:func:`~radis.misc.cache_files.load_h5_cache_file`
+:py:func:`~radis.io.cache_files.load_h5_cache_file`
 """
 
 # %% Version
 
 
 def get_version(verbose=False, add_git_number=True):
-    """Reads `__version.txt__ <https://github.com/radis/radis/blob/master/radis/__version__.txt>`__
-    and retrieve version number.
-    If ``add_git_number``, also appends Git commit number if we're on a gitted session
+    """Reads `__version.txt__
+    <https://github.com/radis/radis/blob/master/radis/__version__.txt>`__ and
+    retrieve version number. If ``add_git_number``, also appends Git commit
+    number if we're on a gitted session.
 
     Examples
     --------
@@ -160,7 +161,6 @@ def get_version(verbose=False, add_git_number=True):
         import radis
         print(radis.get_version())
         >>> '0.9.17'
-
     """
 
     # First get version
