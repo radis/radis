@@ -73,7 +73,9 @@ from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
-from radis.misc.warning import AccuracyError, AccuracyWarning, reset_warnings
+
+# from radis.misc.warning import AccuracyError, AccuracyWarning
+from radis.misc.warnings import reset_warnings
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
 # %% Broadening functions
@@ -896,22 +898,22 @@ class BroadenFactory(BaseFactory):
             # but it's quite expensive to compute
             min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
 
-        WARN_THRESHOLD = 6
+        WARN_THRESHOLD = 5
         ERROR_TRESHOLD = 2
         if wstep > min_width / ERROR_TRESHOLD:
-            raise AccuracyError(
+            self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
                 + f"wstep to (at least) below {min_width/ERROR_TRESHOLD:.2g} cm⁻¹ "
-                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹"
+                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹",
+                "AccuracyError",
             )
         elif wstep > min_width / WARN_THRESHOLD:
-            warn(
-                AccuracyWarning(
-                    f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
-                    + f"the current spectral grid (wstep={wstep}). Please reduce "
-                    + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹"
-                )
+            self.warn(
+                f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
+                + f"the current spectral grid (wstep={wstep}). Please reduce "
+                + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹",
+                "AccuracyWarning",
             )
         else:
             pass

@@ -2541,6 +2541,15 @@ class DatabankLoader(object):
             for ``verbose>=2``, etc..  Warnings of level 0 appear only the time.
             Default ``0``
 
+        Examples
+        --------
+        ::
+            if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
+                self.warn(
+                    "There are negative rotational energies in the database",
+                    "NegativeEnergiesWarning",
+                )
+
         Notes
         -----
         All warnings in the SpectrumFactory should call to this method rather

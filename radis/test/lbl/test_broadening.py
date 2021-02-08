@@ -253,6 +253,8 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
                 "NegativeEnergiesWarning": "ignore",
                 "HighTemperatureWarning": "ignore",
                 "GaussianBroadeningWarning": "ignore",
+                "AccuracyError": "ignore",
+                "AccuracyWarning": "ignore",
             },
         )  # 0.2)
         sf.load_databank("HITRAN-CO-TEST")
@@ -524,7 +526,7 @@ def test_broadening_warnings(*args, **kwargs):
 
     # Try with low resolution, expect error :
     with pytest.raises(AccuracyError):
-        sf = SpectrumFactory(**conditions, wstep=0.01)
+        sf = SpectrumFactory(**conditions, wstep=0.02)
         sf.fetch_databank("hitran")
 
         sf.eq_spectrum(
@@ -775,5 +777,4 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
-    test_broadening_warnings()
+    printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
