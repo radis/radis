@@ -54,6 +54,7 @@ def test_line_survey_CO2(verbose=True, plot=True, warnings=True, *args, **kwargs
         path_length=100,  # cm
         cutoff=1e-30,
         isotope=[1],
+        export_lines=True,
         save_memory=True,
     )  # 0.2)
     pl.warnings["MissingSelfBroadeningWarning"] = "ignore"

@@ -191,7 +191,9 @@ class SpectrumFactory(BandFactory):
         if not None, store populations in Spectrum. Either store vibrational
         populations ('vib') or rovibrational populations ('rovib'). Default ``None``
     export_lines: boolean
-        if ``True``, saves lines in Spectrum. Default ``True``.
+        if ``True``, saves details of all calculated lines in Spectrum. This is
+        necessary to later use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
+        but can take some space. Default ``False``.
     chunksize: int, or ``None``
         Splits the lines database in several chuncks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
@@ -355,7 +357,7 @@ class SpectrumFactory(BandFactory):
         warnings=True,
         save_memory=False,
         export_populations=None,
-        export_lines=True,
+        export_lines=False,
         **kwargs
     ):
 

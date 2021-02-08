@@ -29,7 +29,7 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
 **That's it!** You can now run your first example below.
 If you encounter any problem or if you need to upgrade, please refer to the
 :ref:`detailed installation procedure <label_install>`. If you don't have a Python
-environment, try :ref:`🌱 RADIS Online <label_radis_online> first !
+environment, try :ref:`🌱 RADIS Online <label_radis_online>` first !
 
 .. _label_first_example:
 
@@ -58,8 +58,8 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
     :scale: 60 %
 
 Calculate a CO *nonequilibrium* spectrum from the HITRAN database, with
-arbitrary :py:mod:`~astropy.units` (on your first call, this will calculate and
-cache the CO(X) rovibrational energies): ::
+arbitrary :py:mod:`~astropy.units` (on your first call, this will compute and
+store the CO(X) rovibrational energies): ::
 
     from astropy import units as u
     s2 = calc_spectrum(1900 / u.cm, 2300 / u.cm,

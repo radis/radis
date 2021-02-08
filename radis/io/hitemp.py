@@ -20,7 +20,7 @@ from numpy import DataSource
 
 import radis
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
-from radis.io.cache_files import check_not_deprecated, check_relevancy
+from radis.io.cache_files import check_not_deprecated
 from radis.io.hdf5 import hdf2df
 from radis.io.hitran import columns_2004
 from radis.io.tools import _create_dtype, _get_linereturnformat, _ndarray2df
@@ -185,15 +185,6 @@ def fetch_hitemp(
             output,
             metadata_is={},
             metadata_keys_contain=["wavenumber_min", "wavenumber_max"],
-        )
-        check_relevancy(
-            output,
-            relevant_if_metadata_above={"wavenumber_max": load_wavenum_min}
-            if load_wavenum_min
-            else {},
-            relevant_if_metadata_below={"wavenumber_min": load_wavenum_max}
-            if load_wavenum_max
-            else {},
         )
         # check database is registered in ~/.radis
         if not databank_name in getDatabankList():

@@ -345,10 +345,7 @@ Example of output::
 
 .. raw:: html
 
-    <iframe id="igraph" src="https://chart-studio.plotly.com/~erwanp/6/" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
-
-The method uses the :class:`~radis.tools.line_survey.LineSurvey` class.
-
+    <iframe id="igraph" src="//plotly.com/~erwanp/6.embed" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
 
 Know if a spectrum has nan
 --------------------------
