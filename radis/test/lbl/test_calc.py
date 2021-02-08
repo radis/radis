@@ -438,6 +438,7 @@ def test_all_calc_methods_CO2pcN(
         molecule="CO2",
         isotope=iso,
         verbose=verbose,
+        export_lines=True,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"

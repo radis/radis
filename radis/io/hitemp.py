@@ -418,10 +418,9 @@ def register_database(
         try:
             from radis.misc.config import getDatabankEntries
 
-            for k, v in getDatabankEntries(
-                databank_name,
-                get_extra_keys=["download_url", "wavenumber_min", "wavenumber_max"],
-            ).items():
+            for k, v in getDatabankEntries(databank_name).items():
+                if k == "download_date":
+                    continue
                 assert dict_entries[k] == v
             # TODO @dev : replace once we have configfile as JSON (https://github.com/radis/radis/issues/167)
         except AssertionError:

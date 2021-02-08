@@ -82,7 +82,6 @@ class LevelsList(object):
         """
         Parameters
         ----------
-
         bands: dict of bands
             bands are Spectrum objects calculated at equilibrium or non-equilibrim.
             Tgas, or (Tvib, Trot) must be given and the same in all bands conditions.
@@ -95,6 +94,10 @@ class LevelsList(object):
                 raise ValueError(
                     "`bands` must be a list of Spectrum objects. "
                     + "Got {0}".format(type(s))
+                )
+            if s.lines is None:
+                raise ValueError(
+                    "To be used in LevelsList spectra must have been calculated with 'export_lines=True'"
                 )
 
         # Assert all conditions are the same

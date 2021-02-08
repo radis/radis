@@ -695,7 +695,7 @@ class BandFactory(BroadenFactory):
 
             def add_attr(attr):
                 """# TODO: implement properly"""
-                if lines and attr in lines:
+                if lines is not None and attr in lines:
                     if band == "others":
                         val = "N/A"
                     else:

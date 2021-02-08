@@ -125,10 +125,10 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    # test_fetch_hitemp_OH()
-    # test_partial_loading()
-    # test_calc_hitemp_spectrum()
-    # test_fetch_hitemp_all_molecules("OH")
-    # test_fetch_hitemp_all_molecules("CO")
-    # test_fetch_hitemp_all_molecules("N2O", verbose=3)
+    test_fetch_hitemp_OH()
+    test_partial_loading()
+    test_calc_hitemp_spectrum()
+    test_fetch_hitemp_all_molecules("OH")
+    test_fetch_hitemp_all_molecules("CO")
+    test_fetch_hitemp_all_molecules("N2O", verbose=3)
     test_fetch_hitemp_all_molecules("NO", verbose=3)
