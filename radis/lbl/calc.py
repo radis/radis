@@ -39,17 +39,19 @@ def calc_spectrum(
     isotope="all",
     mole_fraction=1,
     path_length=1,
-    medium="air",
     databank="hitran",
+    medium="air",
     wstep=0.01,
     broadening_max_width=10,
+    cutoff=1e-27,
     optimization="min-RMS",
     overpopulation=None,
     name=None,
+    save_to="",
     use_cached=True,
-    verbose=True,
     mode="cpu",
-    cutoff=1e-27,
+    export_lines=False,
+    verbose=True,
     **kwargs
 ):
     """Multipurpose function to calculate a :class:`~radis.spectrum.spectrum.Spectrum`
@@ -135,14 +137,13 @@ def calc_spectrum(
                 databank='HITEMP-2019-CO'   # user-defined database in Configuration file
                 databank = {'CO2' : 'PATH/TO/05_HITEMP2019.par', 'CO' : 'hitran'}  # for multiple molecules
 
+        Other Parameters
+        ----------------
         medium: ``'air'``, ``'vacuum'``
             propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
             Does not change anything when giving inputs in wavenumber. Default ``'air'``​.
         wstep: float (:math:`cm^{-1}`)
             Spacing of calculated spectrum. Default ``0.01 cm-1``.
-    ​
-        Other Parameters
-        ----------------
         broadening_max_width: float (cm-1)
             Full width over which to compute the broadening. Large values will create
             a huge performance drop (scales as ~broadening_width^2 without DLM)
@@ -172,29 +173,24 @@ def calc_spectrum(
                                            '(01`1`0)->(01`1`1)': 1,
                                            '(01`1`1)->(01`1`2)': 1 }
                                  }​
-        plot: str
-            any parameter such as 'radiance' (if slit is given), 'radiance_noslit',
-            'absorbance', etc...   Default ``None``​
+        export_lines: boolean
+            if ``True``, saves details of all calculated lines in Spectrum. This is
+            necessary to later use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
+            but can take some space. Default ``False``.
         name: str
             name of the output Spectrum. If ``None``, a unique ID is generated.
+        save_to: str
+            save to a `.spec` file which contains absorption & emission features, all
+            calculation parameters, and can be opened with :py:func:`~radis.tools.database.load_spec`.
+            File can be reloaded and exported to text formats afterwards, see
+            :py:meth:`~radis.spectrum.spectrum.Spectrum.savetxt`.
+            If file already exists, replace.
         use_cached: boolean
             use cached files for line database and energy database. Default ``True``​.
         verbose: boolean, or int
             If ``False``, stays quiet. If ``True``, tells what is going on.
             If ``>=2``, gives more detailed messages (for instance, details of
             calculation times). Default ``True``.​
-        **kwargs: other inputs forwarded to SpectrumFactory
-            For instance: ``warnings``.
-            See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
-            details on input.
-            For instance:​
-        pseudo_continuum_threshold: float
-            if not 0, first calculate a rough approximation of the spectrum, then
-            moves all lines whose linestrength intensity is less than this threshold
-            of the maximum in a semi-continuum. Values above 0.01 can yield significant
-            errors, mostly in highly populated areas. 80% of the lines can typically
-            be moved in a continuum, resulting in 5 times faster spectra. If 0,
-            no semi-continuum is used. Default ``0``.
         mode: ``'cpu'``, ``'gpu'``
             if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
             offloads the calculations of lineshape and broadening steps to the GPU
@@ -202,7 +198,11 @@ def calc_spectrum(
             Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
             For more information on how to setup your system to run GPU-accelerated
             methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
-    ​
+        **kwargs: other inputs forwarded to SpectrumFactory
+            For instance: ``warnings``.
+            See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
+            details on input.
+
         Returns
         -------
         s: :class:`~radis.spectrum.spectrum.Spectrum`
@@ -218,13 +218,11 @@ def calc_spectrum(
 
         References
         ----------
-    ​
         .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
     ​    .. [2] RADIS GPU support: 'GPU Calculations on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>'
     ​
         Examples
         --------
-    ​
         Calculate a CO spectrum from the HITRAN database::
     ​
             s = calc_spectrum(1900, 2300,         # cm-1
@@ -270,7 +268,6 @@ def calc_spectrum(
     ​
         See Also
         --------
-
         :class:`~radis.lbl.factory.SpectrumFactory`,
         and the :ref:`Spectrum page <label_spectrum>`
     """
@@ -427,7 +424,12 @@ def calc_spectrum(
         )
 
     # Stage 4: merge all molecules and return
-    return MergeSlabs(*s_list)
+    s = MergeSlabs(*s_list)
+
+    if save_to:
+        s.store(path=save_to, if_exists_then="replace", verbose=verbose)
+
+    return s
 
 
 def _calc_spectrum(
