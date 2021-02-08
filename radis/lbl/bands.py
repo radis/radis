@@ -848,9 +848,9 @@ class BandFactory(BroadenFactory):
         lines are processed on the same core) Band specific version: returns a
         list of all broadened vibrational bands :
 
-        Implementation
-        -----------
-        note: there is no more splitting over line chuncks of given different
+        Notes
+        -----
+        Implementation: there is no more splitting over line chuncks of given different
         (NotImplemented). This may result in large arrays and MemoryErrors for
         extreme spectral ranges. If that ever happens we may have to insert
         a chunck splitting loop in the band groupby loop
@@ -898,9 +898,9 @@ class BandFactory(BroadenFactory):
         lines are processed on the same core) Band specific version: returns a
         list of all broadened vibrational bands.
 
-        Implementation
-        -----------
-        note: there is no more splitting over line chuncks of given different
+        Notes
+        -----
+        Implementation: there is no more splitting over line chuncks of given different
         (NotImplemented). This may result in large arrays and MemoryErrors for
         extreme spectral ranges. If that ever happens we may have to insert
         a chunck splitting loop in the band groupby loop

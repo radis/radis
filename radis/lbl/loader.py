@@ -571,7 +571,7 @@ class DatabankLoader(object):
         # - 'ignore'  (do nothing)
         # The key self.warnings['default'] will set the warning behavior for all
         # other warnings
-        self.warnings = default_warning_status
+        self.warnings = default_warning_status.copy()
         """ dict: Default warnings for SpectrumFactory. See
         :py:data:`~radis.misc.warnings.default_warning_status`"""
 
@@ -2268,6 +2268,15 @@ class DatabankLoader(object):
             if ``verbose==True``, warnings of level 2 appear only
             for ``verbose>=2``, etc..  Warnings of level 0 appear only the time.
             Default ``0``
+
+        Examples
+        --------
+        ::
+            if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
+                self.warn(
+                    "There are negative rotational energies in the database",
+                    "NegativeEnergiesWarning",
+                )
 
         Notes
         -----

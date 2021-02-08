@@ -5,6 +5,12 @@ Define warnings for radiation code, and how to deal with them
 ----------
 
 
+Main warning classes :
+- :py:class:`~radis.misc.warning.AccuracyWarning`
+- :py:class:`~radis.misc.warning.PerformanceWarning`
+- default ``UserWarning``
+
+
 """
 
 
@@ -22,6 +28,34 @@ class SlitDispersionWarning(UserWarning):
 
 # %% Spectrum Factory warnings / errors
 # -------------------------------------
+
+
+# Main warning classes :
+# - AccuracyWarning
+# - PerformanceWarning
+# - default UserWarning
+
+
+class AccuracyError(ValueError):
+    """ Output spectrum is not valid """
+
+    pass
+
+
+class AccuracyWarning(UserWarning):
+    """Warning triggered when it seems accuracy is low."""
+
+    pass
+
+
+class PerformanceWarning(UserWarning):
+    """Warning triggered when it seems computation parameters are not
+    optimized."""
+
+    pass
+
+
+# Other warnings
 
 
 class OutOfBoundError(ValueError):
@@ -44,19 +78,19 @@ class EmptyDatabaseError(ValueError):
 # Warnings
 
 
-class GaussianBroadeningWarning(UserWarning):
+class GaussianBroadeningWarning(AccuracyWarning):
     pass
 
 
-class CollisionalBroadeningWarning(UserWarning):
+class CollisionalBroadeningWarning(AccuracyWarning):
     pass
 
 
-class VoigtBroadeningWarning(UserWarning):
+class VoigtBroadeningWarning(AccuracyWarning):
     pass
 
 
-class MemoryUsageWarning(UserWarning):
+class MemoryUsageWarning(PerformanceWarning):
     pass
 
 
@@ -94,7 +128,7 @@ class MissingSelfBroadeningWarning(UserWarning):
     pass
 
 
-class LinestrengthCutoffWarning(UserWarning):
+class LinestrengthCutoffWarning(AccuracyWarning):
     """Warning triggered when the cumulated linestrength after intensity cutoff
     has changed too much."""
 
@@ -107,27 +141,24 @@ class InputConditionsWarning(UserWarning):
     pass
 
 
-class PerformanceWarning(UserWarning):
-    """Warning triggered when it seems computation parameters are not
-    optimized."""
-
-    pass
-
-
 class DeprecatedFileWarning(DeprecationWarning):
     """ Warning triggered when the cached file was generated in a previous version of radis """
 
     pass
 
 
-class IrrelevantFileWarning(Warning):
+class IrrelevantFileWarning(PerformanceWarning):
     """ Warning triggered when the cached file is irrelevant for the current calcul """
 
     pass
 
 
+# @dev: list all your custom warnings below so they are handled by RADIS user params.
 WarningClasses = {
     "default": UserWarning,
+    "AccuracyWarning": AccuracyWarning,
+    "PerformanceWarning": PerformanceWarning,
+    "AccuracyError": AccuracyError,
     "SlitDispersionWarning": SlitDispersionWarning,
     "GaussianBroadeningWarning": GaussianBroadeningWarning,
     "CollisionalBroadeningWarning": CollisionalBroadeningWarning,
@@ -140,13 +171,11 @@ WarningClasses = {
     "MissingSelfBroadeningWarning": MissingSelfBroadeningWarning,
     "LinestrengthCutoffWarning": LinestrengthCutoffWarning,
     "InputConditionsWarning": InputConditionsWarning,
-    "PerformanceWarning": PerformanceWarning,
     "DeprecatedFileWarning": DeprecatedFileWarning,
     "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
 }
 """ dict: warnings used in RADIS Spectrum calculations.
-
 
 Setup individual warnings. Value of keys can be:
 - 'warning' (default: just trigger a warning)
@@ -166,6 +195,9 @@ See Also
 """
 default_warning_status = {
     "default": "warn",  # default
+    "AccuracyWarning": "warn",
+    "AccuracyError": "error",
+    "PerformanceWarning": "warn",
     "SlitDispersionWarning": "warn",
     "GaussianBroadeningWarning": "once",  # once per Spectrum calculation
     "CollisionalBroadeningWarning": "once",  # once per Spectrum calculation
@@ -180,7 +212,6 @@ default_warning_status = {
     # warning if self-broadening abs coefficnet missing (Air is used instead)
     "MissingSelfBroadeningWarning": "warn",
     "InputConditionsWarning": "warn",
-    "PerformanceWarning": "warn",
     "DeprecatedFileWarning": "warn",
     "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
@@ -189,9 +220,9 @@ default_warning_status = {
 
 Value of keys can be:
 
-- 'warning' (default: just trigger a warning)
-- 'error' (raises an error on this warning)
-- 'ignore'  (do nothing)
+- ``'warning'`` (default: just trigger a warning)
+- ``'error'`` (raises an error on this warning)
+- ``'ignore'``  (do nothing)
 
 The key self.warnings['default'] will set the warning behavior for all
 other warnings. All warnings can be disabled by setting the SpectrumFactory
@@ -212,7 +243,6 @@ def reset_warnings(status):
 
     Parameters
     ----------
-
     status: dict
         dictionary of Warnings with associated status
     """
@@ -236,17 +266,30 @@ def warn(message, category="default", status={}):
 
     Parameters
     ----------
-
     message: str
         what to print
-
     category: str
         one of the keys of self.warnings.
-
     status: dict
         status for all warning categories. Can be one of ``'warn'``, ``'ignore'``,
         ``'print'``, ``'error'``
+
+    Examples
+    --------
+    ::
+
+        if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
+            warn(
+                "There are negative rotational energies in the database",
+                "NegativeEnergiesWarning",
+            )
+
     """
+    # TODO (refactor): make it possible to run warn(NegativeEnergiesWarning("message"))
+    # instead of warn("message, "NegativeEnergiesWarning")
+    # ex :
+    # if isinstance(message, Warning):
+    #     etc.
 
     if status == False:
         return

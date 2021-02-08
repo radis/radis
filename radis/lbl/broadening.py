@@ -73,6 +73,8 @@ from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
+
+# from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
@@ -799,19 +801,16 @@ class BroadenFactory(BaseFactory):
 
         Parameters
         ----------
-
         df: pandas Dataframe
             lines dataframe
 
         Returns
         -------
-
-        None
+        None:
             Dataframe self.df1 is updated
 
         Notes
         -----
-
         Called in :py:meth:`radis.lbl.factory.eq_spectrum`, :py:meth:`radis.lbl.factory.non_eq_spectrum`
 
         Run this method before using `_calc_lineshape`
@@ -860,16 +859,71 @@ class BroadenFactory(BaseFactory):
                 )
             )
 
+        # AccuracyWarning. Check there are enough gridpoints per line.
+        self._check_accuracy(df, self.params.wstep)
+
         if self.verbose >= 2:
             printg("Calculated broadening HWHM in {0:.2f}s".format(time() - t0))
+
+    def _check_accuracy(self, df, wstep):
+        """Check there are enough gridpoints per line.
+
+        Raises
+        ------
+        AccuracyWarning or AccuracyError.
+
+        Examples
+        --------
+
+        ::
+
+            AccuracyError: Some lines are too narrow (FWHM ~ 0.0011 cm⁻¹) for the
+            current spectral grid (wstep=0.01). Please reduce wstep to (at least)
+            below 0.00055 cm⁻¹ or (suggested) 0.00022 cm⁻¹
+
+        """
+        # TODO : make it a Method of a PhysicalHypothesis class, with a
+        # WarningTreshold and an ErrorThreshold ?
+
+        # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
+        # for a homogeneous slab, or self-absorbed radiance combined with other slabs.
+
+        if "hwhm_voigt" in df:
+            min_width = 2 * df.hwhm_voigt.min()
+        else:
+            min_lorentz_fwhm = 2 * df.hwhm_lorentz.min()
+            min_gauss_fwhm = 2 * df.hwhm_gauss.min()
+            # We take the max of both. Note: could also have used
+            # Olivero1977 to get the Voigt-equivlaent width of all lines,
+            # but it's quite expensive to compute
+            min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
+
+        WARN_THRESHOLD = 5
+        ERROR_TRESHOLD = 2
+        if wstep > min_width / ERROR_TRESHOLD:
+            self.warn(
+                f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
+                + f"the current spectral grid (wstep={wstep}). Please reduce "
+                + f"wstep to (at least) below {min_width/ERROR_TRESHOLD:.2g} cm⁻¹ "
+                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹",
+                "AccuracyError",
+            )
+        elif wstep > min_width / WARN_THRESHOLD:
+            self.warn(
+                f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
+                + f"the current spectral grid (wstep={wstep}). Please reduce "
+                + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹",
+                "AccuracyWarning",
+            )
+        else:
+            pass
 
     def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
         """Update dataframe with Voigt HWHM.
 
         Returns
         -------
-
-        Note:
+        None:
             But input pandas Dataframe ``'df'`` is updated with keys:
 
             - ``hwhm_voigt``
@@ -918,14 +972,12 @@ class BroadenFactory(BaseFactory):
 
         Returns
         -------
-
         Input pandas Dataframe ``df`` is updated with keys:
 
             - hwhm_lorentz
 
         Notes
         -----
-
         Temperature and pressure dependent half width
 
         Hypothesis: we only consider self broadening, and air broadening,
@@ -935,7 +987,6 @@ class BroadenFactory(BaseFactory):
 
         References
         ----------
-
         .. [1] `Rothman 1998 (HITRAN 1996) eq (A.12) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
         """
 

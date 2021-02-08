@@ -487,6 +487,7 @@ def test_pressure_units_conversion(
         mole_fraction=1,
         isotope=[1],
         verbose=verbose,
+        warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
     )
     sf.load_databank("HITRAN-CO-TEST")
     s = sf.eq_spectrum(Tgas=300)
@@ -540,7 +541,7 @@ def test_temperature_units_conversion(
     sf = SpectrumFactory(
         wavelength_min=4300,
         wavelength_max=4500,
-        wstep=0.01,
+        wstep=0.001,
         cutoff=1e-30,
         pressure=1,
         mole_fraction=1,
