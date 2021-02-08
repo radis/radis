@@ -526,7 +526,7 @@ def test_broadening_warnings(*args, **kwargs):
 
     # Try with low resolution, expect error :
     with pytest.raises(AccuracyError):
-        sf = SpectrumFactory(**conditions, wstep=0.02)
+        sf = SpectrumFactory(**conditions, wstep=0.01)
         sf.fetch_databank("hitran")
 
         sf.eq_spectrum(

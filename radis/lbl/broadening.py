@@ -75,7 +75,7 @@ from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
 
 # from radis.misc.warning import AccuracyError, AccuracyWarning
-from radis.misc.warnings import reset_warnings
+from radis.misc.warning import reset_warnings
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
 # %% Broadening functions

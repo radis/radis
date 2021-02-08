@@ -577,7 +577,7 @@ class DatabankLoader(object):
         # - 'ignore'  (do nothing)
         # The key self.warnings['default'] will set the warning behavior for all
         # other warnings
-        self.warnings = default_warning_status
+        self.warnings = default_warning_status.copy()
         """ dict: Default warnings for SpectrumFactory. See
         :py:data:`~radis.misc.warnings.default_warning_status`"""
 
