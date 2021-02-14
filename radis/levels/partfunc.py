@@ -76,6 +76,7 @@ from radis.io.cache_files import load_h5_cache_file, save_to_hdf
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.misc.basics import all_in
 from radis.misc.debug import printdbg
+from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
 from radis.phys.constants import hc_k  # ~ 1.44 cm.K
 
@@ -761,11 +762,18 @@ class PartFuncHAPI(RovibParFuncTabulator):
         if path is not None:
             partitionSum = self.import_from_file(path)
         else:
-            # Use RADIS embedded
-            from hapi import HAPI_VERSION, partitionSum
+            # Use TIPS-2017 through HAPI
+            if not verbose:
+                # import HAPI without printing details if verbose=False.
+                from contextlib import redirect_stdout
 
-            if self.verbose >= 2:
-                print("HAPI version: %s" % HAPI_VERSION)
+                with redirect_stdout(None):
+                    from hapi import HAPI_VERSION, partitionSum
+            else:
+                from hapi import HAPI_VERSION, partitionSum
+
+                if self.verbose >= 2:
+                    printg("HAPI version: %s" % HAPI_VERSION)
 
         # Check inputs
         if isinstance(M, str):
