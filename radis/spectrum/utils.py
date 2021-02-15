@@ -100,6 +100,7 @@ INFORMATIVE_PARAMS = [
     "lvl_use_cached",
     "chunksize",
     "calculation_time",
+    "total_lines",
     "lines_calculated",
     "lines_cutoff",
     "lines_in_continuum",

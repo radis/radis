@@ -481,6 +481,7 @@ class MiscParams(ConditionDict):
             None  #: float: [0-1] raise a warning if the lineshape area is different
         )
         self.warning_linestrength_cutoff = None  #: float [0-1]: raise a warning if the sum of linestrength cut is above that
+        self.total_lines = 0  #: int : number of lines in database.
 
 
 def format_paths(s):
@@ -804,7 +805,6 @@ class DatabankLoader(object):
 
         Other Parameters
         ----------------
-
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
@@ -839,7 +839,6 @@ class DatabankLoader(object):
 
         Notes
         -----
-
         HITRAN is fetched with Astroquery [1]_  and HITEMP with
         :py:func:`~radis.io.hitemp.fetch_hitemp`
 
@@ -935,7 +934,7 @@ class DatabankLoader(object):
             if isotope == "all":
                 isotope_list = None
             else:
-                isotope_list = ",".join(self._get_isotope_list())
+                isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
 
             df = fetch_hitemp(
                 molecule,
@@ -975,6 +974,7 @@ class DatabankLoader(object):
         self._fetch_molecular_parameters(df)
 
         self.df0 = df
+        self.misc.total_lines = len(df)  # will be stored in Spectrum metadata
 
         # %% Init Partition functions (with energies)
         # ------------
@@ -1170,6 +1170,7 @@ class DatabankLoader(object):
             drop_columns=drop_columns,
             include_neighbouring_lines=include_neighbouring_lines,
         )
+        self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
         # Check the molecule is what we expected
         if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
