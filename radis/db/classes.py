@@ -322,7 +322,7 @@ class Molecule(object):
 
             try:
                 self.id = get_molecule_identifier(filtername)
-            except KeyError:  # Not an HITRAN molecule
+            except NotImplementedError:  # Not an HITRAN molecule
                 self.id = None
         elif type(name) == int:
             self.id = name
@@ -410,24 +410,18 @@ class ElectronicState(Isotope):
 
     Parameters
     ----------
-
     molecule_name: str, int
         molecule name, or HITRAN identifier
-
     isotope: int
         isotope number of the molecule (sorted by abundance on Earth, HITRAN
         convention).
-
     state: str
         Electronic state name
-
     term_symbol: str
         Term symbol. Default ''
-
     g_e: int
         Degeneracy. Default ``None``
-
-    spectroscopic_constants: str, or ``'default'``
+    spectroscopic_constants: str, ``'default'``, or dict
         filename of spectroscopic constants under Herzberg or Dunham format.
 
         Expected in the file:
@@ -448,36 +442,32 @@ class ElectronicState(Isotope):
         If ``default``, the constants defined in
         :ref:`spectroscopic constants <label_db_spectroscopic_constants>` are used.
 
+        One can also directly give a dictionary directly::
+
+            spectroscopic_constants = {'we':2300, 'wexe':20}
 
     spectroscopic_constants_type: ``'herzberg'``, ``'dunham'``
         convention for spectroscopic constants. Default ``'herzberg'``
-
     Erovib: function
         Rovibrational energy of the molecule. Accessible with, typically, Mol.Erovib(v,J)
-
     Ehaj: function
         To return vibrational energy in harmonic and anharmonic component,
         plus rotational energy. Used to build Treanor distributions
-
     vmax, vmax_morse: int, or ``None``
         maximum vibrational number (required for partition function calculation)
         to be calculated with Dunham expansion, and Morse potential
         If None, number will be infered from dissociation energy
-
     Jmax: int, or ``None``
         maximum rotational number (required for partition function calculation)
         If None, number will be infered from dissociation energy
-
     Ediss: cm-1
         dissociation energy. Required for partition function calculation
         if neither vmax nor Jmax are given
-
     kwargs: **dict
         forwarded to parent class
 
     See Also
     --------
-
     :py:class:`~radis.db.classes.Isotope`, :py:class:`~radis.db.classes.Molecule`,
     :py:func:`~radis.db.molecules.getMolecule`
 
@@ -543,8 +533,7 @@ class ElectronicState(Isotope):
 
         Parameters
         ----------
-
-        spectroscopic_constants: str, or ``'default'``
+        spectroscopic_constants: str, or ``'default'``, or dict
             filename of spectroscopic constants under Herzberg or Dunham format.
 
             Expected in the file:
@@ -565,44 +554,52 @@ class ElectronicState(Isotope):
             If ``default``, the constants defined in
             :ref:`spectroscopic constants <label_db_spectroscopic_constants>` are used.
 
+            One can also directly give a dictionary directly::
+
+                spectroscopic_constants = {'we':2300, 'wexe':20}
 
         spectroscopic_constants_type: ``'herzberg'``, ``'dunham'``
             convention for spectroscopic constants. Default ``'herzberg'``
 
         Returns
         -------
-
         None:
             but constants are stored under :py:attr:`~radis.db.classes.ElectronicState.rovib_constants`,
             and store json file in :py:attr:`~radis.db.classes.ElectronicState.jsonfile`
 
         """
 
-        # Get file name
-        if spectroscopic_constants == "default":
-            jsonfile = get_default_jsonfile(self.name)
-        elif exists(spectroscopic_constants):  # absolute path
-            jsonfile = spectroscopic_constants
-        else:  # assume a json file stored in the default folder
-            jsonfile = join(
-                dirname(get_default_jsonfile(self.name)), spectroscopic_constants
-            )
+        if isinstance(spectroscopic_constants, dict):
+            rovib_constants = spectroscopic_constants
+            jsonfile = None
 
-        # Parse file
-        if spectroscopic_constants_type == "dunham":
-            rovib_constants = get_dunham_coefficients(
-                self.name, self.iso, self.get_statename_utf(), jsonfile=jsonfile
-            )
-        elif spectroscopic_constants_type == "herzberg":
-            rovib_constants = get_herzberg_coefficients(
-                self.name, self.iso, self.get_statename_utf(), jsonfile=jsonfile
-            )
-        else:
-            raise ValueError(
-                "Unexpected spectroscopic constant type: {0}".format(
-                    spectroscopic_constants_type
+        else:  # file
+
+            # Get file name
+            if spectroscopic_constants == "default":
+                jsonfile = get_default_jsonfile(self.name)
+            elif exists(spectroscopic_constants):  # absolute path
+                jsonfile = spectroscopic_constants
+            else:  # assume a json file stored in the default folder
+                jsonfile = join(
+                    dirname(get_default_jsonfile(self.name)), spectroscopic_constants
                 )
-            )
+
+            # Parse file
+            if spectroscopic_constants_type == "dunham":
+                rovib_constants = get_dunham_coefficients(
+                    self.name, self.iso, self.get_statename_utf(), jsonfile=jsonfile
+                )
+            elif spectroscopic_constants_type == "herzberg":
+                rovib_constants = get_herzberg_coefficients(
+                    self.name, self.iso, self.get_statename_utf(), jsonfile=jsonfile
+                )
+            else:
+                raise ValueError(
+                    "Unexpected spectroscopic constant type: {0}".format(
+                        spectroscopic_constants_type
+                    )
+                )
 
         # Clean keys
         # In particular, remove trailing '_cm-1' if given in dict or database
