@@ -30,6 +30,11 @@ def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
 
     assert exists(_temp_file)
 
+    with open(_temp_file) as f:
+        d = f.read()
+    assert "Linestrength" in d
+    assert "Wavenumber" in d
+
     if verbose:
         print("test_line_survey: html file was correctly generated")
 
