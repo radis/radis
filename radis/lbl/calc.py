@@ -419,6 +419,7 @@ def calc_spectrum(
                 use_cached=use_cached,
                 verbose=verbose,
                 mode=mode,
+                export_lines=export_lines,
                 **kwargs_molecule
             )
         )
@@ -456,6 +457,7 @@ def _calc_spectrum(
     use_cached,
     verbose,
     mode,
+    export_lines,
     **kwargs
 ):
     """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
@@ -531,6 +533,7 @@ def _calc_spectrum(
         cutoff=cutoff,
         verbose=verbose,
         optimization=optimization,
+        export_lines=export_lines,
         **kwargs
     )
     if databank in [
