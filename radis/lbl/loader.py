@@ -2044,17 +2044,15 @@ class DatabankLoader(object):
         isotope = int(isotope)
 
         # Use HAPI (HITRAN Python interface, integrated in RADIS)
-        if parfuncfmt == "hapi":
+        # no tabulated partition functions defined. Only non-eq spectra can
+        # be calculated if energies are also given
+        if parfuncfmt == "hapi" or parfuncfmt is None:
             parsum = PartFuncHAPI(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             assert molecule == "CO2"
             parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
-        elif parfuncfmt is None:
-            # no tabulated partition functions defined. Only non-eq spectra can
-            # be calculated if energies are also given
-            parsum = None
         else:
             raise ValueError(
                 "Unknown format for partition function: {0}".format(parfuncfmt)
