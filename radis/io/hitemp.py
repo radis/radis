@@ -22,8 +22,13 @@ import radis
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.io.cache_files import check_not_deprecated
 from radis.io.hdf5 import hdf2df
-from radis.io.hitran import columns_2004
-from radis.io.tools import _create_dtype, _get_linereturnformat, _ndarray2df
+from radis.io.hitran import columns_2004, parse_global_quanta, parse_local_quanta
+from radis.io.tools import (
+    _create_dtype,
+    _get_linereturnformat,
+    _ndarray2df,
+    replace_PQR_with_m101,
+)
 from radis.misc.config import addDatabankEntries, getDatabankList
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import DatabaseAlreadyExists
@@ -301,6 +306,17 @@ def fetch_hitemp(
 
                 df = _ndarray2df(b, columns, linereturnformat)
 
+                # Post-processing :
+                # ... Add local quanta attributes, based on the HITRAN group
+                df = parse_local_quanta(df, molecule)
+
+                # ... Add global quanta attributes, based on the HITRAN class
+                df = parse_global_quanta(df, molecule)
+
+                # Switch 'P', 'Q', 'R' to -1, 0, 1
+                if "branch" in df:
+                    replace_PQR_with_m101(df)
+
                 # df.to_hdf(
                 #     output, "df", format="table", append=True, complib="blosc", complevel=9
                 # )
@@ -353,14 +369,6 @@ def fetch_hitemp(
         databank_name, [output], molecule, wmin, wmax, download_date, urlname, verbose
     )
 
-    # Fully unzipped : clean
-    if clean_cache_files:
-        os.remove(ds._findfile(urlname))
-        if verbose >= 3:
-            from radis.misc.printer import printg
-
-            printg("... removed downloaded cache file")
-
     df = hdf2df(
         output,
         isotope=isotope,
@@ -368,6 +376,15 @@ def fetch_hitemp(
         load_wavenum_max=load_wavenum_max,
         verbose=verbose,
     )
+
+    # Fully unzipped (and working, as it was reloaded): clean
+    if clean_cache_files:
+        os.remove(ds._findfile(urlname))
+        if verbose >= 3:
+            from radis.misc.printer import printg
+
+            printg("... removed downloaded cache file")
+
     return df, output if return_local_path else df
 
 

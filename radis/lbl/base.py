@@ -1453,6 +1453,7 @@ class BaseFactory(DatabankLoader):
                 + "format for (P, Q, R) branch is now required. "
                 + "If using cache files, regenerate them?"
             )
+        # TODO @dev : switch to CategorialGroup ? (less memory)
 
         #        df['ju'] = df.jl
         #        df.loc[df.branch==-1,'ju'] -= 1    # branch P

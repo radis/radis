@@ -973,9 +973,10 @@ class DatabankLoader(object):
                 + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
             )
 
-        # Post-processing of the line database :
+        # Post-processing of the line database
+        # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         if (
-            levelsfmt != None
+            levelsfmt != None and "locu" in df and "globu" in df
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
             df = parse_local_quanta(df, molecule)
             df = parse_global_quanta(df, molecule)
