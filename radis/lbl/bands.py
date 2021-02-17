@@ -1146,7 +1146,13 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         if lvlformat in ["cdsd-pc", "cdsd-pcN", "cdsd-hamil"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ["cdsd-hitemp", "cdsd-4000", "hitran"]:
+            if dbformat not in [
+                "cdsd-hitemp",
+                "cdsd-4000",
+                "hitran",
+                "hitemp",
+                "hitemp-radisdb",
+            ]:
                 raise NotImplementedError(
                     "lvlformat {0} not supported with dbformat {1}".format(
                         lvlformat, dbformat
@@ -1198,7 +1204,13 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         # 'radis' uses Dunham development based on v1v2l2v3 HITRAN convention
         elif lvlformat in ["radis"]:
 
-            if dbformat not in ["hitran", "cdsd-hitemp", "cdsd-4000"]:
+            if dbformat not in [
+                "hitran",
+                "hitemp",
+                "cdsd-hitemp",
+                "cdsd-4000",
+                "hitemp-radisdb",
+            ]:
                 raise NotImplementedError(
                     "lvlformat `{0}` not supported with dbformat `{1}`".format(
                         lvlformat, dbformat
@@ -1226,7 +1238,7 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         if lvlformat in ["radis"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ["hitran"]:
+            if dbformat not in ["hitran", "hitemp", "hitemp-radisdb"]:
                 raise NotImplementedError(
                     "lvlformat {0} not supported with dbformat {1}".format(
                         lvlformat, dbformat

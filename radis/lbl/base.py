@@ -1433,13 +1433,11 @@ class BaseFactory(DatabankLoader):
 
         Returns
         -------
-
-        None
+        None:
             df is updated automatically with column ``'ju'``
 
         Notes
         -----
-
         Reminder::
 
             P branch: J' - J'' = -1
@@ -1455,6 +1453,7 @@ class BaseFactory(DatabankLoader):
                 + "format for (P, Q, R) branch is now required. "
                 + "If using cache files, regenerate them?"
             )
+        # TODO @dev : switch to CategorialGroup ? (less memory)
 
         #        df['ju'] = df.jl
         #        df.loc[df.branch==-1,'ju'] -= 1    # branch P
@@ -1476,7 +1475,6 @@ class BaseFactory(DatabankLoader):
 
         Returns
         -------
-
         None:
             df is updated automatically with new column ``'Eu'``
         """
@@ -1503,12 +1501,22 @@ class BaseFactory(DatabankLoader):
         if len(df) == 0:
             return  # no lines
 
+        # Check spectroscopic parameters required for non-equilibrium (to identify lines)
+        for k in ["branch"]:
+            if k not in df:
+                error_details = ""
+                if "globu" in df:
+                    error_details = ". However, it looks like `globu` is defined. Maybe HITRAN-like database wasn't fully parsed? See radis.io.hitran.hit2df"
+                raise KeyError(
+                    f"`{k}` not defined in database ({list(df.columns)})"
+                    + error_details
+                )
+
         # Make sure database has pre-computed non equilibrium quantities
         # (Evib, Erot, etc.)
         # This may be a bottleneck for a first calculation (has to calculate
         # the nonequilibrium energies)
         calc_Evib_harmonic_anharmonic = vib_distribution in ["treanor"]
-
         if singleTvibmode:
             if (
                 not "Evib" in df
@@ -1702,7 +1710,13 @@ class BaseFactory(DatabankLoader):
 
         # %%
 
-        if dbformat in ["hitran", "cdsd-hitemp", "cdsd-4000"]:
+        if dbformat in [
+            "hitran",
+            "hitemp",
+            "hitemp-radisdb",
+            "cdsd-hitemp",
+            "cdsd-4000",
+        ]:
             # In HITRAN, AFAIK all molecules have a complete assignment of rovibrational
             # levels hence gvib=1 for all vibrational levels.
             #
@@ -3117,7 +3131,7 @@ class BaseFactory(DatabankLoader):
             self.warn("mole_fraction is > 1", "InputConditionsWarning")
 
         # Check temperature range
-        if Tmax > 700 and self.params.dbformat in ["hitran", "hitran_tab"]:
+        if Tmax > 700 and self.params.dbformat in ["hitran"]:
             self.warn(
                 "HITRAN is valid for low temperatures (typically < 700 K). "
                 + "For higher temperatures you may need HITEMP or CDSD. See the "

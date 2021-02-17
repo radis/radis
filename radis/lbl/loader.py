@@ -101,14 +101,22 @@ from radis.misc.warning import (
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 
-KNOWN_DBFORMAT = ["hitran", "hitemp", "cdsd-hitemp", "cdsd-4000", "hdf5"]
+KNOWN_DBFORMAT = [
+    "hitran",
+    "hitemp",
+    "cdsd-hitemp",
+    "cdsd-4000",
+    "hitemp-radisdb",
+    "hdf5-radisdb",
+]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : HITRAN original .par format
-- ``'hitemp'`` : HITEMP-2010 original format (same format as 'hitran')
-- ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
-- ``'cdsd-4000'`` : CDSD-4000 original format (CO2 only)
-- ``'hdf5'`` : HDF5 file with RADIS column names.
+- ``'hitran'`` : [HITRAN-2016]_ original .par format
+- ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran')
+- ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010)
+- ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only)
+- ``'hitemp-radisdb'`` : HITEMP under RADISDB format (pytables-HDF5 with RADIS column names).
+- ``'hdf5-radisdb'`` : arbitrary HDF5 file with RADIS column names.
 
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
 and the :ref:`list of databases <label_line_databases>` .
@@ -156,7 +164,8 @@ drop_auto_columns_for_dbformat = {
     "hitemp": ["ierr", "iref", "lmix", "gp", "gpp"],
     "cdsd-4000": ["wang2"],
     "cdsd-hitemp": ["wang2", "lsrc"],
-    "hdf5": [],
+    "hdf5-radisdb": [],
+    "hitemp-radisdb": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -188,6 +197,9 @@ See Also
 - 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`,
 
 """
+# TODO @dev : switch from a model where we drop certain useless columns (RADIS==0.9.28)
+# to a model where we only-load the required ones initially (if possible with lazy-loading,
+# i.e. only load them on demand. See https://github.com/radis/radis/issues/118 )
 drop_all_but_these = [
     "id",
     "iso",
@@ -214,7 +226,7 @@ See Also
 
 """
 
-# Sanity checks
+# @dev: Sanity checks
 # (make sure all variables are defined everywhere)
 assert compare_lists(drop_auto_columns_for_dbformat, KNOWN_DBFORMAT) == 1
 assert compare_lists(drop_auto_columns_for_levelsfmt, KNOWN_LVLFORMAT) == 1
@@ -875,7 +887,9 @@ class DatabankLoader(object):
         if source == "hitran":
             dbformat = "hitran"
         elif source == "hitemp":
-            dbformat = "hdf5"  # downloaded in RADIS local databases ~/.radisdb
+            dbformat = (
+                "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
+            )
 
         # Get inputs
         molecule = self.input.molecule
@@ -892,7 +906,6 @@ class DatabankLoader(object):
 
         # Let's store all params so they can be parsed by "get_conditions()"
         # and saved in output spectra information
-        self.params.dbpath = "fetched from " + source
         self.params.dbformat = dbformat
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
@@ -928,6 +941,7 @@ class DatabankLoader(object):
             else:
                 df = pd.concat(frames, ignore_index=True)  # reindex
 
+            self.params.dbpath = "fetched from hitran"
         elif source == "hitemp":
             # Download, setup local databases, and fetch (use existing if possible)
 
@@ -936,14 +950,16 @@ class DatabankLoader(object):
             else:
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
 
-            df = fetch_hitemp(
+            df, local_path = fetch_hitemp(
                 molecule,
                 isotope=isotope_list,
                 load_wavenum_min=wavenum_min,
                 load_wavenum_max=wavenum_max,
                 cache=db_use_cached,
                 verbose=self.verbose,
+                return_local_path=True,
             )
+            self.params.dbpath = local_path
 
             # ... explicitely write all isotopes based on isotopes found in the database
             if isotope == "all":
@@ -957,9 +973,10 @@ class DatabankLoader(object):
                 + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
             )
 
-        # Post-processing of the line database :
+        # Post-processing of the line database
+        # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         if (
-            levelsfmt != None
+            levelsfmt != None and "locu" in df and "globu" in df
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
             df = parse_local_quanta(df, molecule)
             df = parse_global_quanta(df, molecule)
@@ -1728,7 +1745,7 @@ class DatabankLoader(object):
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
                         )
-                    elif dbformat == "hdf5":
+                    elif dbformat in ["hdf5-radisdb", "hitemp-radisdb"]:
                         df = hdf2df(
                             filename,
                             # cache=db_use_cached,
