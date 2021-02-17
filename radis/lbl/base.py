@@ -1702,7 +1702,13 @@ class BaseFactory(DatabankLoader):
 
         # %%
 
-        if dbformat in ["hitran", "cdsd-hitemp", "cdsd-4000"]:
+        if dbformat in [
+            "hitran",
+            "hitemp",
+            "hitemp-radisdb",
+            "cdsd-hitemp",
+            "cdsd-4000",
+        ]:
             # In HITRAN, AFAIK all molecules have a complete assignment of rovibrational
             # levels hence gvib=1 for all vibrational levels.
             #
@@ -3117,7 +3123,7 @@ class BaseFactory(DatabankLoader):
             self.warn("mole_fraction is > 1", "InputConditionsWarning")
 
         # Check temperature range
-        if Tmax > 700 and self.params.dbformat in ["hitran", "hitran_tab"]:
+        if Tmax > 700 and self.params.dbformat in ["hitran"]:
             self.warn(
                 "HITRAN is valid for low temperatures (typically < 700 K). "
                 + "For higher temperatures you may need HITEMP or CDSD. See the "

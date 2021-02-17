@@ -580,8 +580,14 @@ def _calc_spectrum(
                 # constants (not all molecules are supported!)
                 conditions["levelsfmt"] = "radis"
                 conditions["lvl_use_cached"] = use_cached
-        elif databank.endswith(".h5"):
-            conditions["format"] = "hdf5"
+        elif databank.endswith(".h5") or databank.endswith(".hdf5"):
+            if verbose:
+                print(
+                    "Infered {0} is a HDF5 file with RADISDB columns format".format(
+                        databank
+                    )
+                )
+            conditions["format"] = "hdf5-radisdb"
             if not _equilibrium:
                 conditions["levelsfmt"] = "radis"
         else:

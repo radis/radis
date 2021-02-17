@@ -85,6 +85,7 @@ def fetch_hitemp(
     verbose=True,
     chunksize=100000,
     clean_cache_files=True,
+    return_local_path=False,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -115,6 +116,8 @@ def fetch_hitemp(
         but can create Memory problems and keep the user uninformed of the progress.
     clean_cache_files: bool
         if ``True`` clean downloaded cache files after HDF5 are created.
+    return_local_path: bool
+        if ``True``, also returns the path of the local database file.
 
     Returns
     -------
@@ -123,6 +126,8 @@ def fetch_hitemp(
         A HDF5 file is also created in ``local_databases`` and referenced
         in the :ref:`RADIS config file <label_lbl_config_file>` with name
         ``databank_name``
+    local_path: str
+        path of local database file if ``return_local_path``
 
     Notes
     -----
@@ -245,13 +250,14 @@ def fetch_hitemp(
 
         if verbose:
             print(f"Using existing database {databank_name}")
-        return hdf2df(
+        df = hdf2df(
             output,
             isotope=isotope,
             load_wavenum_min=load_wavenum_min,
             load_wavenum_max=load_wavenum_max,
             verbose=verbose,
         )
+        return df, output if return_local_path else df
 
     # Doesnt exist : download
     ds = DataSource(join(local_databases, "downloads"))
@@ -355,13 +361,14 @@ def fetch_hitemp(
 
             printg("... removed downloaded cache file")
 
-    return hdf2df(
+    df = hdf2df(
         output,
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,
         load_wavenum_max=load_wavenum_max,
         verbose=verbose,
     )
+    return df, output if return_local_path else df
 
 
 def register_database(
@@ -386,7 +393,7 @@ def register_database(
         adds to :ref:`~/.radis <label_lbl_config_file>` with all the input
         parameters. Also adds ::
 
-            format : "hdf5"
+            format : "hitemp-radisdb"
             parfuncfmt : "hapi"   # TIPS-2017 for equilibrium partition functions
 
         And if the molecule is in :py:attr:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`::
@@ -397,7 +404,7 @@ def register_database(
     dict_entries = {
         "info": f"HITEMP {molecule} lines ({wmin:.1f}-{wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions",
         "path": path_list,
-        "format": "hdf5",
+        "format": "hitemp-radisdb",
         "parfuncfmt": "hapi",
         "wavenumber_min": f"{wmin}",
         "wavenumber_max": f"{wmax}",
