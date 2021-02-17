@@ -197,6 +197,9 @@ See Also
 - 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`,
 
 """
+# TODO @dev : switch from a model where we drop certain useless columns (RADIS==0.9.28)
+# to a model where we only-load the required ones initially (if possible with lazy-loading,
+# i.e. only load them on demand. See https://github.com/radis/radis/issues/118 )
 drop_all_but_these = [
     "id",
     "iso",

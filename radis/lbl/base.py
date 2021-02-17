@@ -1433,13 +1433,11 @@ class BaseFactory(DatabankLoader):
 
         Returns
         -------
-
-        None
+        None:
             df is updated automatically with column ``'ju'``
 
         Notes
         -----
-
         Reminder::
 
             P branch: J' - J'' = -1
@@ -1476,7 +1474,6 @@ class BaseFactory(DatabankLoader):
 
         Returns
         -------
-
         None:
             df is updated automatically with new column ``'Eu'``
         """
@@ -1503,12 +1500,22 @@ class BaseFactory(DatabankLoader):
         if len(df) == 0:
             return  # no lines
 
+        # Check spectroscopic parameters required for non-equilibrium (to identify lines)
+        for k in ["branch"]:
+            if k not in df:
+                error_details = ""
+                if "globu" in df:
+                    error_details = ". However, it looks like `globu` is defined. Maybe HITRAN-like database wasn't fully parsed? See radis.io.hitran.hit2df"
+                raise KeyError(
+                    f"`{k}` not defined in database ({list(df.columns)})"
+                    + error_details
+                )
+
         # Make sure database has pre-computed non equilibrium quantities
         # (Evib, Erot, etc.)
         # This may be a bottleneck for a first calculation (has to calculate
         # the nonequilibrium energies)
         calc_Evib_harmonic_anharmonic = vib_distribution in ["treanor"]
-
         if singleTvibmode:
             if (
                 not "Evib" in df
