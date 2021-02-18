@@ -1133,11 +1133,11 @@ class DatabankLoader(object):
         """
         # %% Check inputs
         # ---------
-        
-        # use radis default for calculations non equilibrium calculations 
+
+        # use radis default for calculations non equilibrium calculations
         # if the levelsfmt is not specified in the databank
         if levelsfmt is None:
-            levelsfmt = 'radis'
+            levelsfmt = "radis"
 
         (
             name,
