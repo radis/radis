@@ -694,7 +694,7 @@ class DatabankLoader(object):
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version.
+            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
@@ -706,7 +706,7 @@ class DatabankLoader(object):
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
-            If None, non equilibrium calculations are not possible. Default ``None``.
+            If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         db_use_cached: boolean, or ``None``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -821,7 +821,7 @@ class DatabankLoader(object):
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version.
+            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
@@ -1073,7 +1073,7 @@ class DatabankLoader(object):
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version.
+            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
@@ -1085,7 +1085,7 @@ class DatabankLoader(object):
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
-            If None, non equilibrium calculations are not possible. Default ``None``.
+            If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         db_use_cached: boolean, or ``None``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -1133,6 +1133,11 @@ class DatabankLoader(object):
         """
         # %% Check inputs
         # ---------
+        
+        # use radis default for calculations non equilibrium calculations 
+        # if the levelsfmt is not specified in the databank
+        if levelsfmt is None:
+            levelsfmt = 'radis'
 
         (
             name,

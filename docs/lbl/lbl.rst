@@ -414,7 +414,8 @@ partition functions, for instance::
                                      # file. If `hapi`, then HAPI (HITRAN Python
                                      # interface) is used to retrieve them (valid if
                                      # your databank is HITRAN data). HAPI is embedded
-                                     # into RADIS. Check the version.
+                                     # into RADIS. Check the version. If not specified then 'hapi'
+                                     # is used as default
     parfunc = PATH/TO/cdsd_partition_functions.txt
                                      #  path to tabulated partition function to use.
                                      # If `parfuncfmt` is `hapi` then `parfunc`
