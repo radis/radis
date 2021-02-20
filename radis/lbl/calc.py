@@ -560,6 +560,8 @@ def _calc_spectrum(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
+        # Details to identify lines
+        conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {

@@ -802,6 +802,7 @@ class DatabankLoader(object):
         levelsfmt="radis",
         load_energies=True,
         include_neighbouring_lines=True,
+        parse_local_global_quanta=True,
         drop_non_numeric=True,
         db_use_cached=True,
         lvl_use_cached=True,
@@ -838,9 +839,14 @@ class DatabankLoader(object):
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
         include_neighbouring_lines: bool
-            ``True``, includes off-range, neighbouring lines that contribute
+            if ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``broadening_max_width``
             parameter is used to determine the limit. Default ``True``.
+        parse_local_global_quanta: bool, or ``'auto'``
+            if ``True``, parses the HITRAN/HITEMP 'glob' and 'loc' columns to extract
+            quanta identifying the lines. Required for nonequilibrium calculations,
+            or to use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
+            but takes up more space.
         drop_non_numeric: boolean
             if ``True``, non numeric columns are dropped. This improves performances,
             but make sure all the columns you need are converted to numeric formats
@@ -975,10 +981,12 @@ class DatabankLoader(object):
 
         # Post-processing of the line database
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
-        if (
-            levelsfmt != None and "locu" in df and "globu" in df
-        ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
+        # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
+        if parse_local_global_quanta and "locu" in df:
             df = parse_local_quanta(df, molecule)
+        if (
+            parse_local_global_quanta and "globu" in df
+        ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
             df = parse_global_quanta(df, molecule)
 
         # Remove non numerical attributes
