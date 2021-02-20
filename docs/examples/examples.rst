@@ -12,7 +12,6 @@ Examples
 Many other examples scripts are available on the `radis-examples project <https://github.com/radis/radis-examples>`__.
 
 
-
 Line Survey
 ===========
 
@@ -196,6 +195,7 @@ also featured in the [RADIS-2018]_ article ::
                          cutoff=1e-23,
                          broadening_max_width=5.73,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
                          molecule=molecule,
+                         optimization=None,
                          )
     sf.fetch_databank('astroquery', load_energies=False)
 
