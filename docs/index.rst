@@ -193,6 +193,7 @@ Content
    spectrum/spectrum
    los/los
    examples/examples
+   auto_examples/index
    examples/hitran-spectra
    online/online
    dev/developer

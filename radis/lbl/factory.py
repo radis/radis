@@ -112,7 +112,6 @@ class SpectrumFactory(BandFactory):
 
     Parameters
     ----------
-
     wmin, wmax : float or `~astropy.units.quantity.Quantity`
         a hybrid parameter which can stand for minimum (maximum) wavenumber or minimum
         (maximum) wavelength depending upon the unit accompanying it. If dimensionless,
@@ -155,7 +154,6 @@ class SpectrumFactory(BandFactory):
 
     Other Parameters
     ----------------
-
     *Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`)*
 
     Tref: K
