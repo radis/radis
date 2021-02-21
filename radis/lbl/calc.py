@@ -223,6 +223,7 @@ def calc_spectrum(
     References
     ----------
     .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
+
     ​.. [2] RADIS GPU support: `GPU Calculations on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
     ​
     Examples
@@ -271,9 +272,14 @@ def calc_spectrum(
     For more details on how to use the GPU method and process the database, refer to the examples
     linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
+    Examples using calc_spectrum :
+
+    .. minigallery:: radis.lbl.calc.calc_spectrum
+        :add-heading:
+
     See Also
     --------
-    :class:`~radis.lbl.factory.SpectrumFactory`, the :ref:`Spectrum page <label_spectrum>`
+    :py:class:`~radis.lbl.factory.SpectrumFactory`
     """
     from radis.los.slabs import MergeSlabs
 

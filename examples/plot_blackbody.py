@@ -12,7 +12,7 @@ Uses :py:class:`~radis.phys.blackbody.sPlanck`.
 """
 
 
-from radis import sPlanck
+from radis.phys.blackbody import sPlanck
 
 sPlanck(wavelength_min=135, wavelength_max=3000, T=4000).plot()
 sPlanck(wavelength_min=135, wavelength_max=3000, T=5000).plot(nfig="same")

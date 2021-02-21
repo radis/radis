@@ -24,6 +24,10 @@ which features methods to:
 - compute transmittance from absorbance, or whatever :ref:`missing spectral quantity<label_spectrum_missing_quantities>`.
 - use the :ref:`line survey<label_spectrum_linesurvey>` tool to identify each line.
 
+
+.. minigallery:: radis.Spectrum
+
+
 Refer to the guide below for an exhaustive list of all features:
 
 ---------------------------------------------------------------------
@@ -124,6 +128,9 @@ Example::
     s = sPlanck(wavelength_min=3000, wavelength_max=50000,
                 T=288, eps=1)
     s.plot()
+
+
+.. minigallery:: radis.sPlanck
 
 
 Load from a .spec file
@@ -347,6 +354,11 @@ Example of output::
 
     <iframe id="igraph" src="//plotly.com/~erwanp/6.embed" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
 
+
+.. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
+
+
+
 Know if a spectrum has nan
 --------------------------
 
@@ -497,6 +509,8 @@ Use :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`::
 
 By default, convoluted spectra are thinner than non convoluted spectra, to remove
 side effects. Use the ``mode=`` argument to change this behaviour.
+
+.. minigallery:: radis.Spectrum.apply_slit
 
 
 Plot the slit function that was applied

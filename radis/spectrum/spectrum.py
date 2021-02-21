@@ -1422,6 +1422,9 @@ class Spectrum(object):
 
         See more examples in :ref:`the plot Spectral quantities page <label_spectrum_plot>`.
 
+
+        .. minigallery:: radis.Spectrum.plot
+
         See Also
         --------
         :py:func:`~radis.spectrum.compare.plot_diff`,
@@ -2033,6 +2036,10 @@ class Spectrum(object):
         The slit is made considering the "center wavelength" which is
         the mean wavelength of the full spectrum you are applying it to.
 
+        Examples using apply_slit :
+
+        .. minigallery:: radis.Spectrum.apply_slit
+            :add-heading:
 
         See Also
         --------
