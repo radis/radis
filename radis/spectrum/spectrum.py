@@ -2511,6 +2511,7 @@ class Spectrum(object):
 
         See the output in :ref:`Examples <label_examples>`
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
 
         References
         ----------
