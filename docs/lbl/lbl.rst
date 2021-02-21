@@ -626,7 +626,7 @@ to calculate the lineshapes efficiently.
   database becomes the performance bottleneck.
   parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`,
   :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
-  (this is the default strategy implemented in RADIS). Learn more in [Spectral Synthesis Algorithm]_
+  (this is the default strategy implemented in RADIS). Learn more in [Spectral-Synthesis-Algorithm]_
 
 More details on the parameters below:
 
