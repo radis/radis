@@ -137,6 +137,11 @@ def LineSurvey(
 
         <iframe id="igraph" src="//plotly.com/~erwanp/6.embed" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
 
+    See example in :ref:`sphx_glr_auto_examples_plot_line_survey.py`
+
+    .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
+        :add-heading:
+
     References
     ----------
 
