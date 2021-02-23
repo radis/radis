@@ -1155,14 +1155,45 @@ class SpecList(object):
                 "Please choose one of the two input format (str or dict) exclusively"
             )
 
-        if conditions == "" and kwconditions == {}:
-            # Get all Spectrum objects
+        if conditions == "" and kwconditions == {}: #get all spectra
+            # Get all unloaded Spectrum objects and load them
+            files = [self.df['file'][idx] for idx in self.df.index if self.df["Spectrum"][idx] is None]
+            # Parallel loading
+            if len(files) > self.minimum_nfiles:
+                nJobs = self.nJobs
+                batch_size = self.batch_size
+                if self.verbose:
+                    print(
+                        "*** Loading the database with {0} ".format(nJobs)
+                        + "processor(s) ({0} files)***".format(len(files))
+                    )
+    
+                def funLoad(f):
+                    spectrum = load_spec(self.path + "/" + f,binary=self.binary)
+                    indx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
+                    if len(indx) > 1:
+                        raise ValueError("Multiple files found for the name {} of indexes {}. Update the database manually".format(f, indx))
+                    # self.df.loc[indx[0],"Spectrum"] = spectrum
+                    return indx[0],spectrum
+    
+                spec_loaded = Parallel(
+                    n_jobs=nJobs, batch_size=batch_size, verbose=5 * self.verbose
+                )(delayed(funLoad)(f) for f in files)
+                for val in spec_loaded:
+                    self.df.loc[val[0],"Spectrum"] = val[1]
+            else:
+                for f in files:
+                    idx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
+                    if len(idx) > 1:
+                        raise ValueError("Multiple files found for the name {} of indexes {}. Update the database manually".format(f, idx))
+                    spectrum = load_spec(self.path + "/" + f,binary=self.binary)
+                    self.df.loc[idx[0],"Spectrum"] = spectrum
             out = list(self.df["Spectrum"])
 
         else:
             # Find Spectrum that match conditions
             if conditions != "":  # ... with input conditions query directly
-                dg = self.df.query(conditions)
+                dg = self.df.query(conditions).copy()
             else:  # ... first write input conditions query
                 query = []
                 for (k, v) in kwconditions.items():
@@ -1182,18 +1213,51 @@ class SpecList(object):
                     query = " & ".join(query)
                     if __debug__:
                         printdbg("Database query: {0}".format(query))
-                    dg = self.df.query(query)
+                    dg = self.df.query(query).copy()
                 else:
                     # cut in <32-long parts
                     N = len(query) // 32 + 1
                     querypart = " & ".join(query[::N])
-                    dg = self.df.query(querypart)
+                    dg = self.df.query(querypart).copy()
                     for i in range(1, N + 1):
                         querypart = " & ".join(query[i::N])
                         if __debug__:
                             printdbg("Database query: {0}".format(querypart))
-                        dg = dg.query(querypart)
-
+                        dg = dg.query(querypart).copy()
+            #Get all unloaded Spectrum objects and load them
+            files = [dg['file'][idx] for idx in dg.index if dg["Spectrum"][idx] is None]
+            # Parallel loading
+            if len(files) > self.minimum_nfiles:
+                nJobs = self.nJobs
+                batch_size = self.batch_size
+                if self.verbose:
+                    print(
+                        "*** Loading the database with {0} ".format(nJobs)
+                        + "processor(s) ({0} files)***".format(len(files))
+                    )
+    
+                def funLoad(f):
+                    spectrum = load_spec(self.path + "/" + f,binary=self.binary)
+                    indx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
+                    if len(indx) > 1:
+                        raise ValueError("Multiple files found for the name {} of indexes {}. Update the database manually".format(f, indx))
+                    # self.df.loc[indx[0],"Spectrum"] = spectrum
+                    return indx[0],spectrum
+    
+                spec_loaded = Parallel(
+                    n_jobs=nJobs, batch_size=batch_size, verbose=5 * self.verbose
+                )(delayed(funLoad)(f) for f in files)
+                for val in spec_loaded:
+                    self.df.loc[val[0],"Spectrum"] = val[1]
+                    dg.loc[val[0],"Spectrum"] = val[1]
+            else:
+                for f in files:
+                    idx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
+                    if len(idx) > 1:
+                        raise ValueError("Multiple files found for the name {} of indexes {}. Update the database manually".format(f, idx))
+                    spectrum = load_spec(self.path + "/" + f,binary=self.binary)
+                    self.df.loc[idx[0],"Spectrum"] = spectrum
+                    dg.loc[idx[0],"Spectrum"] = spectrum
             out = list(dg["Spectrum"])
 
         if not inplace:
@@ -1372,6 +1436,11 @@ class SpecList(object):
             # Get spectrum with minimum distance to target conditions
             ## type: Spectrum
             sout = self.df.loc[dg["_d"].idxmin(), "Spectrum"]
+            #Load the spectrum if not already done
+            if sout is None:
+                spectrum = load_spec(self.path + "/" + self.df.loc[dg["_d"].idxmin(), "file"],binary=self.binary)
+                self.df.loc[dg["_d"].idxmin(), "Spectrum"] = spectrum
+                sout = spectrum
             # Note @EP 07/12/20 : do we have the same index as dg ?? (created with reindex on L1335)  #  TODO
         finally:
             del dg["_d"]
@@ -1684,6 +1753,7 @@ class SpecDatabase(SpecList):
         binary=True,
         nJobs=-2,
         batch_size="auto",
+        load_all = True,
     ):
         """A Spectrum Database class to manage them all.
 
@@ -1705,6 +1775,9 @@ class SpecDatabase(SpecList):
         binary: boolean
             if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
             try as binary file anyway. Default ``False``
+        load_all: bool
+            If True, load all the spectrum files. 
+            If False, load only the data from the csv file and the spectra will be loaded when accessed by the get functions.
 
         Other Parameters
         ----------------
@@ -1818,7 +1891,27 @@ class SpecDatabase(SpecList):
         # init with 0 spectra
         super(SpecDatabase, self).__init__()
         # now load from the folder with the update() function
-        self.update(force_reload=True, filt=filt)
+        if load_all:
+            self.update(force_reload=True, filt=filt)
+        else:
+            print("Warning: database loaded without data. They will be downloaded when accessed by the get function")
+            csv_file = [f for f in os.listdir( self.path ) if f.endswith('.csv')]
+            if len(csv_file) != 1:
+                raise ValueError("Only 1 csv file should be in the database directory but {} found".format(len(csv_file)))
+            spec_files = [f for f in os.listdir( self.path ) if not f.endswith('.csv')]
+            self.df = pd.read_csv(self.path + '/' + csv_file[0])
+            self.df["Spectrum"] = [None]*len(self.df["file"])
+            if len(self.df["file"]) != len(spec_files):
+                raise ValueError("Number of files stored in the csv ({}) doesn't match the number of files found in the database folder ({}). Update the csv first by setting load_spec to True".format(len(self.df["file"]),len(spec_files)))
+            for f in spec_files:
+                if not f in self.df["file"].values:
+                    raise ValueError("{} not found in the csv.  Update the csv first by setting load_spec to True".format(f))
+                else:
+                    if "last_modified" in self.df:
+                        if round(self.df["last_modified"][self.df.index[self.df["file"] == f].to_list()[0]],2) != round(os.path.getmtime(self.path + '/' + f),2): # take rounded numbers to prevent errors
+                            raise ValueError("Spectrum {} last modification don't match the date stored in the csv. Update the database first".format(f))
+                    else:
+                        raise ValueError("Csv file wasn't created with last modifications informations. Update the database first.")
 
     def update(self, force_reload=False, filt=".spec"):
         """Reloads database, updates internal index structure and export it in
@@ -2247,7 +2340,7 @@ class SpecDatabase(SpecList):
         """return Spectrum attributes for insertion in database."""
 
         s = load_spec(file, binary=binary)
-
+        s.conditions["last_modified"] = os.path.getmtime(file)
         if self.verbose:
             print(("loaded {0}".format(basename(file))))
 
