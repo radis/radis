@@ -7,6 +7,10 @@ Line-by-line (LBL) module
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+
+.. minigallery:: radis.calc_spectrum
+
+
 ---------------------------------------------------------------------
 
 .. toctree::
@@ -627,7 +631,7 @@ to calculate the lineshapes efficiently.
   database becomes the performance bottleneck.
   parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`,
   :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
-  (this is the default strategy implemented in RADIS). Learn more in [Spectral Synthesis Algorithm]_
+  (this is the default strategy implemented in RADIS). Learn more in [Spectral-Synthesis-Algorithm]_
 
 More details on the parameters below:
 

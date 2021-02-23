@@ -202,13 +202,13 @@ class SpectrumFactory(BandFactory):
         can create memory problems. Default ``None``
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used:
-        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral Synthesis Algorithm]_)
+        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
         - ``"simple"`` : weights equal to their relative position in the grid
 
         If using the DLM optimization, broadening method is automatically set to ``'fft'``.
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
 
-        Refer to [Spectral Synthesis Algorithm]_ for more explanation on the DLM method for lineshape interpolation.
+        Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the DLM method for lineshape interpolation.
 
         Default ``"min-RMS"``
     folding_thresh: float

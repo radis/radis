@@ -16,7 +16,7 @@ List of bibliographic references used in this project:
                 HITRAN-like database species, Journal of Quantitative Spectroscopy and Radiative Transfer
                 (2018) `doi:10.1016/j.jqsrt.2018.09.027 <https://www.sciencedirect.com/science/article/pii/S0022407318305867?via%3Dihub>`__
 
-.. [Spectral Synthesis Algorithm] D.C.M. van den Bekerom, E. Pannier, A Discrete Integral Transform for Rapid Spectral Synthesis,
+.. [Spectral-Synthesis-Algorithm] D.C.M. van den Bekerom, E. Pannier, A Discrete Integral Transform for Rapid Spectral Synthesis,
                 Journal of Quantitative Spectroscopy and Radiative Transfer (2021) `doi:10.1016/j.jqsrt.2020.107476 <https://www.sciencedirect.com/science/article/abs/pii/S0022407320310049>`__
 
 Line Databases

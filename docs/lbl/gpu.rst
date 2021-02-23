@@ -129,10 +129,10 @@ before the spectrum calculation begins.
 # TODO: perform timing test to see how much time calculating log_2gs separately takes
 
 Currently, GPU-powered spectra calculations are supported only at thermal equilibrium
-and therefore, the method to calculate the spectra has been named :py:func:`~radis.lbl.calc.eq_spectrum_gpu`.
+and therefore, the method to calculate the spectra has been named :py:func:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`.
 In order to use this method to calculate the spectra, follow the same steps as in the
 case of a normal equilibrium spectra, and if using :py:func:`~radis.lbl.calc.calc_spectrum`
-function set the parameter `mode` to `gpu`, or use :py:func:`~radis.lbl.calc.eq_spectrum_gpu`
+function set the parameter `mode` to `gpu`, or use :py:func:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
 
 Consider the following example which demonstrates the above information::
 

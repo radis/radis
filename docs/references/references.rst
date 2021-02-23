@@ -19,7 +19,7 @@ Cite
 If using RADIS for your work, cite:
 
 - the line-by-line code as [RADIS-2018]_ |badge_article1|
-- the new spectral synthesis algorithm [Spectral Synthesis Algorithm]_ |badge_article2|
+- the new spectral synthesis algorithm [Spectral-Synthesis-Algorithm]_ |badge_article2|
 - the RADIS version number. Get your version with py:func:`~radis.get_version`
   (latest version available is |badge_pypi|) ::
 

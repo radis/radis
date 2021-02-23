@@ -54,224 +54,233 @@ def calc_spectrum(
     verbose=True,
     **kwargs
 ):
-    """Multipurpose function to calculate a :class:`~radis.spectrum.spectrum.Spectrum`
-        from automatically downloaded databases (HITRAN/HITEMP) or manually downloaded
-        local databases, under equilibrium or non-equilibrium, with or without overpopulation,
-        using either CPU or GPU.
+    r"""Multipurpose function to calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
-        It is a wrapper to :class:`~radis.lbl.factory.SpectrumFactory` class.
-        For advanced used, please refer to the aforementionned class.
+    Can automatically download databases (HITRAN/HITEMP) or use manually downloaded
+    local databases, under equilibrium or non-equilibrium, with or without overpopulation,
+    using either CPU or GPU.
+
+    It is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory` class.
+    For advanced used, please refer to the aforementionned class.
+
+
+    Parameters
+    ----------
+    wavenum_min, wavenum_max: float [:math:`cm^{-1}`] or `~astropy.units.quantity.Quantity`
+        wavenumber range to be processed in :math:`cm^{-1}`. Use arbitrary units::
+
+            import astropy.units as u
+            calc_spectrum(2.5*u.um, 3.0*u.um, ...)
+
+    wavelength_min, wavelength_max: float [:math:`nm`] or `~astropy.units.quantity.Quantity`
+        wavelength range to be processed in :math:`nm`. Wavelength in ``'air'`` or
+        ``'vacuum'`` depending of the value of ``'medium'``.
+    Tgas: float [:math:`K`]
+        Gas temperature. If non equilibrium, is used for :math:`T_{translational}`.
+        Default ``300`` K​
+    Tvib, Trot: float [:math:`K`]
+        Vibrational and rotational temperatures (for non-LTE calculations).
+        If ``None``, they are at equilibrium with ``Tgas`` ​.
+    pressure: float [:math:`bar`] or `~astropy.units.quantity.Quantity`
+        partial pressure of gas in bar. Default ``1.01325`` (1 atm)​. Use arbitrary units::
+
+            import astropy.units as u
+            calc_spectrum(..., pressure=20*u.mbar)
+
+    molecule: int, str, list or ``None``
+        molecule id (HITRAN format) or name. For multiple molecules, use a list.
+        The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
+        be dictionaries.
+        If ``None``, the molecule can be infered
+        from the database files being loaded. See the list of supported molecules
+        in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
+        and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
+        Default ``None``.​
+    isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
+        isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
+        See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
+        all isotopes in database are used (this may result in larger computation
+        times!). Default ``'all'``.
+
+        For multiple molecules, use a dictionary with molecule names as keys ::
+
+            isotope={'CO2':'1,2' ,  'CO':'1,2,3' }​
+
+    mole_fraction: float or dict
+        database species mole fraction. Default ``1``.
+
+        For multiple molecules, use a dictionary with molecule names as keys ::
+
+            mole_fraction={'CO2': 0.8, 'CO':0.2}​
+
+    path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
+        slab size. Default ``1`` cm​. Use arbitrary units::
+
+            import astropy.units as u
+            calc_spectrum(..., path_length=1000*u.km)
+
+    databank: str or dict
+        can be either:
+        - ``'hitran'``, to fetch automatically the latest HITRAN version
+          through :py:func:`~radis.io.query.fetch_astroquery`.
+        - ``'hitemp'``, to fetch automatically the latest HITEMP version
+          through :py:func:`~radis.io.hitemp.fetch_hitemp`.
+        - the name of a a valid database file, in which case the format is inferred.
+          For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
+          Accepts wildcards ``'*'`` to select multiple files.
+        - the name of a spectral database registered in your ``~/.radis``
+          :ref:`configuration file <label_lbl_config_file>`.
+          This allows to use multiple database files.
+
+        Default ``'hitran'``. See :class:`~radis.lbl.loader.DatabankLoader` for more
+        information on line databases, and :data:`~radis.misc.config.DBFORMAT` for
+        your ``~/.radis`` file format.
+
+        For multiple molecules, use a dictionary with molecule names as keys::
+
+            databank='hitran'     # automatic download (or 'hitemp')
+            databank='PATH/TO/05_HITEMP2019.par'    # path to a file
+            databank='*CO2*.par' #to get all the files that have CO2 in their names (case insensitive)
+            databank='HITEMP-2019-CO'   # user-defined database in Configuration file
+            databank = {'CO2' : 'PATH/TO/05_HITEMP2019.par', 'CO' : 'hitran'}  # for multiple molecules
+
+    Other Parameters
+    ----------------
+    medium: ``'air'``, ``'vacuum'``
+        propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``​.
+    wstep: float (:math:`cm^{-1}`)
+        Spacing of calculated spectrum. Default ``0.01 cm-1``.
+    broadening_max_width: float (cm-1)
+        Full width over which to compute the broadening. Large values will create
+        a huge performance drop (scales as :math:`~broadening_max_width^2` without LDM)
+        The calculated spectral range is increased (by broadening_max_width/2
+        on each side) to take into account overlaps from out-of-range lines.
+        Default ``10`` cm-1.​
+    cutoff: float (~ unit of Linestrength: :math:`cm^{-1}/(#.cm^{-2})`)
+        discard linestrengths that are lower that this, to reduce calculation
+        times. ``1e-27`` is what is generally used to generate databases such as
+        CDSD. If ``0``, no cutoff. Default ``1e-27``.
+    optimization : ``"simple"``, ``"min-RMS"``, ``None``
+        If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
+
+        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
+        - ``"simple"`` : weights equal to their relative position in the grid
+
+        If using the LDM optimization, broadening method is automatically set to ``'fft'``.
+        If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
+        Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
+        Default ``"min-RMS"``.
+    overpopulation: dict
+        dictionary of overpopulation compared to the given vibrational temperature.
+        Default ``None``. Example::
+
+            overpopulation = {'CO2' : {'(00`0`0)->(00`0`1)': 2.5,
+                                       '(00`0`1)->(00`0`2)': 1,
+                                       '(01`1`0)->(01`1`1)': 1,
+                                       '(01`1`1)->(01`1`2)': 1 }
+                             }​
+    export_lines: boolean
+        if ``True``, saves details of all calculated lines in Spectrum. This is
+        necessary to later use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
+        but can take some space. Default ``False``.
+    name: str
+        name of the output Spectrum. If ``None``, a unique ID is generated.
+    save_to: str
+        save to a `.spec` file which contains absorption & emission features, all
+        calculation parameters, and can be opened with :py:func:`~radis.tools.database.load_spec`.
+        File can be reloaded and exported to text formats afterwards, see
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.savetxt`.
+        If file already exists, replace.
+    use_cached: boolean
+        use cached files for line database and energy database. Default ``True``.​
+    verbose: boolean, or int
+        If ``False``, stays quiet. If ``True``, tells what is going on.
+        If ``>=2``, gives more detailed messages (for instance, details of
+        calculation times). Default ``True``.​
+    mode: ``'cpu'``, ``'gpu'``
+        if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
+        offloads the calculations of lineshape and broadening steps to the GPU
+        making use of parallel computations to speed up the process. Default ``'cpu'``.
+        Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
+        For more information on how to setup your system to run GPU-accelerated
+        methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
+    **kwargs: other inputs forwarded to SpectrumFactory
+        For instance: ``warnings``.
+        See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
+        details on input.
+
+    Returns
+    -------
+    s: :class:`~radis.spectrum.spectrum.Spectrum`
+        Output spectrum:
+        - Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a
+          spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
+        - Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
+        directly.
+        - See [1]_ to get an overview of all Spectrum methods
+
+    References
+    ----------
+    .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
+
+    ​.. [2] RADIS GPU support: `GPU Calculations on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
     ​
-        Parameters
-        ----------
-        wavenum_min, wavenum_max: float [:math:`cm^{-1}`] or `~astropy.units.quantity.Quantity`
-            wavenumber range to be processed in :math:`cm^{-1}`
-        wavelength_min, wavelength_max: float [:math:`nm`] or `~astropy.units.quantity.Quantity`
-            wavelength range to be processed in :math:`nm`. Wavelength in ``'air'`` or
-            ``'vacuum'`` depending of the value of ``'medium'``. Use arbitrary units::
-        Tgas: float [:math:`K`]
-            Gas temperature. If non equilibrium, is used for :math:`T_{translational}`.
-            Default ``300``K​
-        Tvib, Trot: float [:math:`K`]
-            Vibrational and rotational temperatures (for non-LTE calculations).
-            If ``None``, they are at equilibrium with ``Tgas``​
-        pressure: float [:math:`bar`] or `~astropy.units.quantity.Quantity`
-            partial pressure of gas in bar. Default ``1.01325`` (1 atm)​. Use arbitrary units::
+    Examples
+    --------
+    Calculate a CO spectrum from the HITRAN database::
 
-                import astropy.units as u
-                calc_spectrum(..., pressure=20*u.mbar)
+        from radis import calc_spectrum
+        s = calc_spectrum(1900, 2300,         # cm-1
+                          molecule='CO',
+                          isotope='1,2,3',
+                          pressure=1.01325,   # bar
+                          Tgas=1000,
+                          mole_fraction=0.1,
+                          databank='hitran',  # or 'hitemp'
+                          )
+        s.apply_slit(0.5, 'nm')
+        s.plot('radiance')
 
-        molecule: int, str, list or ``None``
-            molecule id (HITRAN format) or name. For multiple molecules, use a list.
-            The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
-            be dictionaries.
-            If ``None``, the molecule can be infered
-            from the database files being loaded. See the list of supported molecules
-            in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
-            and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
-            Default ``None``.​
-        isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
-            isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-            See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
-            all isotopes in database are used (this may result in larger computation
-            times!). Default ``'all'``.
+    This example uses the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`
+    and :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` methods. See also
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`::
 
-            For multiple molecules, use a dictionary with molecule names as keys ::
+        s.line_survey(overlay='radiance')
 
-                mole_fraction={'CO2':0.8 ,  'CO':0.2 }​
-        mole_fraction: float or dict
-            database species mole fraction. Default ``1``.
+    Calculate a CO2 spectrum from the CDSD-4000 database::
 
-            For multiple molecules, use a dictionary with molecule names as keys ::
+        s = calc_spectrum(2200, 2400,   # cm-1
+                          molecule='CO2',
+                          isotope='1',
+                          databank='/path/to/cdsd/databank/in/npy/format/',
+                          pressure=0.1,  # bar
+                          Tgas=1000,
+                          mole_fraction=0.1,
+                          mode='gpu'
+                          )
 
-                mole_fraction={'CO2': 0.8, 'CO':0.2}​
-        path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
-            slab size. Default ``1`` cm​. Use arbitrary units::
+        s.plot('absorbance')
 
-                import astropy.units as u
-                calc_spectrum(..., path_length=1000*u.km)
-
-        databank: str or dict
-            can be either:
+    This example uses the :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` method to calculate
+    the spectrum on the GPU. The databank points to the CDSD-4000 databank that has been
+    pre-processed and stored in ``numpy.npy`` format.
     ​
-            - ``'hitran'``, to fetch automatically the latest HITRAN version
-              through :py:func:`~radis.io.query.fetch_astroquery
-            - ``'hitemp'``, to fetch automatically the latest HITEMP version
-              through :py:func:`~radis.io.hitemp.fetch_hitemp`.
-            - the name of a a valid database file, in which case the format is inferred.
-              For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
-              Accepts wildcards ``'*'`` to select multiple files.
-            - the name of a spectral database registered in your ``~/.radis``
-              :ref:`configuration file <label_lbl_config_file>`.
-              This allows to use multiple database files.
+    Refer to the online :ref:`Examples <label_examples>` for more cases, and to
+    the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
 
-            Default ``'hitran'``. See :class:`~radis.lbl.loader.DatabankLoader` for more
-            information on line databases, and :data:`~radis.misc.config.DBFORMAT` for
-            your ``~/.radis`` file format.
-
-            For multiple molecules, use a dictionary with molecule names as keys::
-
-                databank='hitran'     # automatic download (or 'hitemp')
-                databank='PATH/TO/05_HITEMP2019.par'    # path to a file
-                databank='*CO2*.par' #to get all the files that have CO2 in their names (case insensitive)
-                databank='HITEMP-2019-CO'   # user-defined database in Configuration file
-                databank = {'CO2' : 'PATH/TO/05_HITEMP2019.par', 'CO' : 'hitran'}  # for multiple molecules
-
-        Other Parameters
-        ----------------
-        medium: ``'air'``, ``'vacuum'``
-            propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
-            Does not change anything when giving inputs in wavenumber. Default ``'air'``​.
-        wstep: float (:math:`cm^{-1}`)
-            Spacing of calculated spectrum. Default ``0.01 cm-1``.
-        broadening_max_width: float (cm-1)
-            Full width over which to compute the broadening. Large values will create
-            a huge performance drop (scales as ~broadening_width^2 without DLM)
-            The calculated spectral range is increased (by broadening_max_width/2
-            on each side) to take into account overlaps from out-of-range lines.
-            Default ``10`` cm-1.​
-        cutoff: float (~ unit of Linestrength: :math:`cm^{-1}/(#.cm^{-2})`)
-            discard linestrengths that are lower that this, to reduce calculation
-            times. ``1e-27`` is what is generally used to generate databases such as
-            CDSD. If ``0``, no cutoff. Default ``1e-27``.
-        optimization : ``"simple"``, ``"min-RMS"``, ``None``
-            If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used:
-
-            - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral Synthesis Algorithm]_)
-            - ``"simple"`` : weights equal to their relative position in the grid
-
-            If using the LDM optimization, broadening method is automatically set to ``'fft'``.
-            If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
-            Refer to [Spectral Synthesis Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
-            Default ``"min-RMS"``.
-        overpopulation: dict
-            dictionary of overpopulation compared to the given vibrational temperature.
-            Default ``None``. Example::
-
-                overpopulation = {'CO2' : {'(00`0`0)->(00`0`1)': 2.5,
-                                           '(00`0`1)->(00`0`2)': 1,
-                                           '(01`1`0)->(01`1`1)': 1,
-                                           '(01`1`1)->(01`1`2)': 1 }
-                                 }​
-        export_lines: boolean
-            if ``True``, saves details of all calculated lines in Spectrum. This is
-            necessary to later use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
-            but can take some space. Default ``False``.
-        name: str
-            name of the output Spectrum. If ``None``, a unique ID is generated.
-        save_to: str
-            save to a `.spec` file which contains absorption & emission features, all
-            calculation parameters, and can be opened with :py:func:`~radis.tools.database.load_spec`.
-            File can be reloaded and exported to text formats afterwards, see
-            :py:meth:`~radis.spectrum.spectrum.Spectrum.savetxt`.
-            If file already exists, replace.
-        use_cached: boolean
-            use cached files for line database and energy database. Default ``True``​.
-        verbose: boolean, or int
-            If ``False``, stays quiet. If ``True``, tells what is going on.
-            If ``>=2``, gives more detailed messages (for instance, details of
-            calculation times). Default ``True``.​
-        mode: ``'cpu'``, ``'gpu'``
-            if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
-            offloads the calculations of lineshape and broadening steps to the GPU
-            making use of parallel computations to speed up the process. Default ``'cpu'``.
-            Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
-            For more information on how to setup your system to run GPU-accelerated
-            methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
-        **kwargs: other inputs forwarded to SpectrumFactory
-            For instance: ``warnings``.
-            See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
-            details on input.
-
-        Returns
-        -------
-        s: :class:`~radis.spectrum.spectrum.Spectrum`
-            Output spectrum.
+    For more details on how to use the GPU method and process the database, refer to the examples
+    linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
-            Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a
-            spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
-    ​
-            Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
-            directly.
-    ​
-            See [1]_ to get an overview of all Spectrum methods
+    Examples using calc_spectrum :
 
-        References
-        ----------
-        .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
-    ​    .. [2] RADIS GPU support: 'GPU Calculations on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>'
-    ​
-        Examples
-        --------
-        Calculate a CO spectrum from the HITRAN database::
-    ​
-            s = calc_spectrum(1900, 2300,         # cm-1
-                              molecule='CO',
-                              isotope='1,2,3',
-                              pressure=1.01325,   # bar
-                              Tgas=1000,
-                              mole_fraction=0.1,
-                              databank='hitran',  # or 'hitemp'
-                              )
-            s.apply_slit(0.5, 'nm')
-            s.plot('radiance')
+    .. minigallery:: radis.lbl.calc.calc_spectrum
+        :add-heading:
 
-        This example uses the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`
-        and :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` methods. See also
-        :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`::
-
-            s.line_survey(overlay='radiance')
-
-        Calculate a CO2 spectrum from the CDSD-4000 database::
-
-            s = calc_spectrum(2200, 2400,   # cm-1
-                              molecule='CO2',
-                              isotope='1',
-                              databank='/path/to/cdsd/databank/in/npy/format/',
-                              pressure=0.1,  # bar
-                              Tgas=1000,
-                              mole_fraction=0.1,
-                              mode='gpu'
-                              )
-
-            s.plot('absorbance')
-
-        This example uses the :py:meth:`~radis.lbl.factory.eq_spectrum_gpu` method to calculate
-        the spectrum on the GPU. The databank points to the CDSD-4000 databank that has been
-        pre-processed and stored in ``numpy.npy`` format.
-    ​
-        Refer to the online :ref:`Examples <label_examples>` for more cases, and to
-        the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
-
-        For more details on how to use the GPU method and process the database, refer to the examples
-        linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
-    ​
-        See Also
-        --------
-        :class:`~radis.lbl.factory.SpectrumFactory`,
-        and the :ref:`Spectrum page <label_spectrum>`
+    See Also
+    --------
+    :py:class:`~radis.lbl.factory.SpectrumFactory`
     """
-
     from radis.los.slabs import MergeSlabs
 
     if molecule is not None and type(molecule) != list:
@@ -303,7 +312,6 @@ def calc_spectrum(
 
         Note that names are just here to provide clear error messages to the user if there is a contradiction.
         """
-
         if isinstance(new_argument, dict):
             if molecule_reference_set is None:  # input molecules are still unknown
                 return set(new_argument.keys()), new_argument_name
@@ -560,6 +568,8 @@ def _calc_spectrum(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
+        # Details to identify lines
+        conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {

@@ -55,6 +55,7 @@ extensions = [
     "sphinx.ext.mathjax",
     #'sphinx.ext.viewcode',
     "sphinx.ext.autosummary",
+    "sphinx_gallery.gen_gallery",
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
@@ -63,6 +64,22 @@ extensions = [
     "sphinxcontrib.apidoc",
 ]
 
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",  # path to your example scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    # to make references clickable
+    "doc_module": "radis",
+    "reference_url": {
+        "radis": None,
+    },
+    # directory where function/class granular galleries are stored
+    "backreferences_dir": "gen_modules/backreferences",
+    # Modules for which function/class level galleries are created.
+    "doc_module": ("radis"),
+}
+
+# used to mini-galleries : https://sphinx-gallery.github.io/stable/configuration.html#add-mini-galleries-for-api-documentation
+autosummary_generate = True
 
 # %% ------------------------------------
 # Added EP 2018:
