@@ -151,10 +151,14 @@ Contribute
 ----------
 
 Want to contribute to RADIS ? Join the Slack community and we'll help you through the process.
+Want to get started immediatly ? Nice. Have a look at the `CONTRIBUTE.md <./CONTRIBUTE.md>`__ guide.
 
 |badge_contributors| |badge_slack|
 
-Want to get started immediatly ? Nice. Have a look at the `CONTRIBUTE.md <./CONTRIBUTE.md>`__ guide.
+You need to know more about Spectroscopy ? We're working on Tutorials to
+make spectroscopy available to everyone. For the moment, join the
+`Slack channel <https://radis-radiation.slack.com/archives/C01N7R9728M>`__ .
+
 
 
 Architecture

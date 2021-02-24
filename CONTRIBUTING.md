@@ -42,16 +42,15 @@ You can suggest or vote for new features below:
 
 ## Change the code : become a Contributor.
 
-If it's your first time contributing to an open-source project, have a look at [Github Flow](https://guides.github.com/introduction/flow/index.html)
-
-All code changes should happen through Pull Requests (PR). PR are the best way to propose changes to the codebase :
+We use the [Github Flow](https://guides.github.com/introduction/flow/index.html), where
+all code changes should happen through Pull Requests (PR). PR are the best way to propose changes to the codebase :
 Maintainers of the code can comment, help you, and even edit your code directly.
 
 1. **Fork** the repo : this creates your own RADIS version.
 2. If it's an easy fix (ex : fix a typo, update a single file, ...), edit it online on your Fork then open the PR (go directly to 6.)
 3. Else, **Clone** your fork : this adds RADIS on your local computer.
 
-```git clone https://github.com/[MY-NAME]/radis.git```
+```git clone https://github.com/[YOUR-USERNAME]/radis.git```
 
 4. Time to work now : make your changes locally ! If you plan to work on multiple fixes at the same time,
 create a new branch (with a descriptive name) for your feature.
@@ -59,14 +58,60 @@ create a new branch (with a descriptive name) for your feature.
 5. Push your changes and open a Pull request (PR). If things aren't final, it's okay: just mark is as a draft `[WIP]`. Maintainers will review and start helping you from there !
 6. Once the review is complete (physical tests + code linting), the pull request is merged : welcome to the [RADIS contributors](https://github.com/radis/radis/graphs/contributors) ! :clap:
 
+# TODO : add a .gif for the SmartGit/GitHub Desktop version ?
 
-# TODO : add a gif for the SmartGit version ?
+## Where to start ?
+
+If it's your first time contributing to an open-source project, welcome !
+The best is to get familiar with the procedure above.
+
+For instance, there are many tiny improvements to be made to the Documentation :
+- Have a look at the [Documentation TODO List](https://github.com/radis/radis/issues/77).
+- Pick one of them, create your GitHub account, and start the procedure above to become a Contributor.
+
+Then, have a look at the
+`GitHub opened issues <https://github.com/radis/radis/issues>`__.
+Easy issues that will help you understand the code structure are labelled as
+`Good First Issue <https://github.com/radis/radis/contribute>`__.
 
 
-## Change the code : keep your Fork updated.
+## Regular Contributor ? Keep your Fork updated.
 
 If you keep on using your own local RADIS version, you want to keep it updated with the main branch.
-- The idea is
+In usual Git Flow, your own Fork ``[YOUR-USERNAME]/radis`` is refered to as ``origin``, and the main
+repo ``radis/radis`` as ``upstream``.
+
+One workflow is to have at least 2 branches locally :
+
+- one pointing to the latest developer version, e.g. named, ``upstream-develop``.
+- one per feature or fix you're currently working on, poiting to your own fork ``origin`` : could be ``develop``, ``fix/something``, ``this_new_idea_i_work_on`` , etc.
+
+A way to do this is to :
+
+1. set-up another remote :
+
+```
+git remote add upstream git://github.com/radis/radis.git
+git fetch upstream
+```
+
+2. Starting a new fix/feature ? Branch from the latest ``upstream-develop``.
+```
+git branch -b [NEW_BRANCH] upstream/develop
+```
+
+3. Need to update your local branch, by 'rebasing', i.e. without creating a merge-commit for the changes that were done by others  :
+
+```
+git pull --rebase upstream [NEW_BRANCH]
+```
+4. Push your changes to your own Fork
+```
+git push -u origin [NEW-BRANCH]
+```
+5. Open a PR, as in "Become a Contributor" above.
+
+
 
 ## Linting : use a Consistent Coding Style
 
