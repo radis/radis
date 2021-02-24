@@ -10,50 +10,21 @@ We love spectroscopy, and we love your input! We want to make contributing to th
 
 This document is a quick summary, more information can be found on the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html)
 
-## We Develop with Github
-We use github to host code, to track issues and feature requests, as well as accept pull requests.
-
-## We (try to) use [Github Flow](https://guides.github.com/introduction/flow/index.html)
-So all code changes (should) happen through Pull Requests.
-Pull requests are the best way to propose changes to the codebase:
-
-1. Fork the repo and create your branch from `develop`.
-2. Clone your fork, make your changes locally (for a quick change you may edit it directly online with the GitHub editor).
-3. Push your changes and open a Pull request (PR). If things aren't final, it's okay: just mark is as a draft `[WIP]`.
-4. PR are a good support for discussion on your changes. Maintainers of the code can comment, help you, and even edit your code directly.
-5. If you've added code that should be tested, add tests.
-6. Once the physical tests pass, lint your code.
-7. The pull request is merged, welcome to the [RADIS contributors](https://github.com/radis/radis/graphs/contributors)
 
 ## Report bugs using Github's [issues](https://github.com/radis/radis/issues)
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](); it's that easy!
-
-Issues labeled [Good First Issue](https://github.com/radis/radis/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-are also a nice way to get started with contributing to the project.
-
-## Write bug reports with detail, background, and sample code
+We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/radis/radis/issues/new/choose); it's that easy!
 
 **Great Bug Reports** tend to have:
 
 - A quick summary and/or background
-- Steps to reproduce
-  - Be specific!
-  - Give sample code if you can.
+- Steps to reproduce : specific, with code samples if possible
 - What you expected would happen
 - What actually happens
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 
-People *love* thorough bug reports. Not even kidding.
+Issues labeled [Good First Issue](https://github.com/radis/radis/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+are also a nice way to get started with contributing to the project.
 
-## Use a Consistent Coding Style
-
-We're using the Black coding style. See the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html#code-linting)
-for more information. Can you also install pre-commit that will take care of all the formatting :
-
-```
-cd radis
-pre-commit install
-```
 
 ## Ask questions
 
@@ -67,6 +38,50 @@ Join the community chat:
 You can suggest or vote for new features below:
 
 [![Feature Requests](https://feathub.com/radis/radis?format=svg)](https://feathub.com/radis/radis)
+
+
+## Change the code : become a Contributor.
+
+If it's your first time contributing to an open-source project, have a look at [Github Flow](https://guides.github.com/introduction/flow/index.html)
+
+All code changes should happen through Pull Requests (PR). PR are the best way to propose changes to the codebase :
+Maintainers of the code can comment, help you, and even edit your code directly.
+
+1. **Fork** the repo : this creates your own RADIS version.
+2. If it's an easy fix (ex : fix a typo, update a single file, ...), edit it online on your Fork then open the PR (go directly to 6.)
+3. Else, **Clone** your fork : this adds RADIS on your local computer.
+
+```git clone https://github.com/[MY-NAME]/radis.git```
+
+4. Time to work now : make your changes locally ! If you plan to work on multiple fixes at the same time,
+create a new branch (with a descriptive name) for your feature.
+
+5. Push your changes and open a Pull request (PR). If things aren't final, it's okay: just mark is as a draft `[WIP]`. Maintainers will review and start helping you from there !
+6. Once the review is complete (physical tests + code linting), the pull request is merged : welcome to the [RADIS contributors](https://github.com/radis/radis/graphs/contributors) ! :clap:
+
+
+# TODO : add a gif for the SmartGit version ?
+
+
+## Change the code : keep your Fork updated.
+
+If you keep on using your own local RADIS version, you want to keep it updated with the main branch.
+- The idea is
+
+## Linting : use a Consistent Coding Style
+
+We're using the Black coding style, and Flake8 to ensure no syntax errors are introduced.
+If you're a first time contributor, do not worry about Linting. Other developers will do it for you.
+
+Once you're a regular contributor, we advise you install pre-commit that will take care of all the formatting :
+
+```
+cd radis
+pre-commit install
+```
+
+See the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html#code-linting)
+for more information.
 
 ## License
 By contributing, you agree that your contributions will be licensed under the [GNU Lesser General Public License v3.0](https://github.com/radis/radis/blob/develop/LICENSE)

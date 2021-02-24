@@ -147,6 +147,16 @@ if running nonquilibrium  calculations. See `How to cite? <https://radis.readthe
 Developer Guide
 ===============
 
+Contribute
+----------
+
+Want to contribute to RADIS ? Join the Slack community and we'll help you through the process.
+
+|badge_contributors| |badge_slack|
+
+Want to get started immediatly ? Nice. Have a look at the `CONTRIBUTE.md <./CONTRIBUTE.md>`__ guide.
+
+
 Architecture
 ------------
 
