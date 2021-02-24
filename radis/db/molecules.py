@@ -177,13 +177,13 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
     # molecule
     try:
         mol = Molecules[molecule]
-    except KeyError:
+    except KeyError as err:
         raise KeyError(
             "{0} is not defined in molecules with built-in ".format(molecule)
             + "spectroscopic constants. Choose one of: {0}".format(
                 list(Molecules.keys())
             )
-        )
+        ) from err
 
     # isotope
     if isotope is None:
@@ -194,12 +194,12 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
         isotope = list(mol.keys())[0]
     try:
         iso = mol[isotope]
-    except KeyError:
+    except KeyError as err:
         raise KeyError(
             "Isotope {0} is not defined for molecule {1}. Choose one of: {2}".format(
                 isotope, molecule, list(mol.keys())
             )
-        )
+        ) from err
 
     # electronic state
     if electronic_state is None:
@@ -212,12 +212,12 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
         electronic_state = list(iso.keys())[0]
     try:
         state = iso[electronic_state]
-    except KeyError:
+    except KeyError as err:
         raise KeyError(
             "{0} is not defined for molecule {1}(iso={2}). Choose one of: {3}".format(
                 electronic_state, molecule, isotope, list(mol.keys())
             )
-        )
+        ) from err
 
     # print name
     if verbose >= 2:

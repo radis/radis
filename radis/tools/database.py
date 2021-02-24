@@ -179,10 +179,11 @@ def save(
 
             add_date = '%Y%m%d'
 
-    if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
+    if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
         what to do if file already exists. If ``'increment'`` an incremental digit
-        is added. If ``'replace'`` file is replaced (!). If ``'error'`` (or anything else)
-        an error is raised. Default ``'increment'``
+        is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
+        Spectrum is not added to the database and no file is created.
+        If ``'error'`` (or anything else) an error is raised. Default ``'increment'``.
 
     Returns
     -------
@@ -203,6 +204,8 @@ def save(
 
     # 2) Get final output name (add info, extension, increment number if needed)
     fout = _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose)
+    if exists(fout) and if_exists_then == "ignore":
+        return fout
 
     # 3) Now is time to save
     if compress:
@@ -360,6 +363,10 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
         elif if_exists_then == "replace":
             if verbose:
                 print(("File exists and will be replaced: {0}".format(name)))
+        elif if_exists_then == "ignore":
+            if verbose:
+                print(("File already exists : {0}. Ignoring".format(name)))
+            # main function will return after this function returns.
         else:
             raise ValueError(
                 "File already exists {0}. Choose another filename".format(fout)
@@ -1059,6 +1066,59 @@ class SpecList(object):
         for s in self:
             function(s)
 
+    def _load_existing_files(self, files):
+        """Loadspectra already registered in the database.
+
+        Parameters
+        ----------
+        files : list
+
+        Returns
+        -------
+        list
+            of Spectrum
+
+        """
+        # Parallel loading
+        if len(files) > self.minimum_nfiles:
+            nJobs = self.nJobs
+            batch_size = self.batch_size
+            if self.verbose:
+                print(
+                    "*** Loading the database with {0} ".format(nJobs)
+                    + "processor(s) ({0} files)***".format(len(files))
+                )
+
+            def funLoad(f):
+                spectrum = load_spec(join(self.path, f), binary=self.binary)
+                indx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
+                if len(indx) > 1:
+                    raise ValueError(
+                        "Multiple files found for the name {} of indexes {}. Update the database manually".format(
+                            f, indx
+                        )
+                    )
+                # self.df.loc[indx[0],"Spectrum"] = spectrum
+                return indx[0], spectrum
+
+            spec_loaded = Parallel(
+                n_jobs=nJobs, batch_size=batch_size, verbose=5 * self.verbose
+            )(delayed(funLoad)(f) for f in files)
+            for val in spec_loaded:
+                self.df.loc[val[0], "Spectrum"] = val[1]
+        else:
+            for f in files:
+                idx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
+                if len(idx) > 1:
+                    raise ValueError(
+                        "Multiple files found for the name {} of indexes {}. Update the database manually".format(
+                            f, idx
+                        )
+                    )
+                spectrum = load_spec(join(self.path, f), binary=self.binary)
+                self.df.loc[idx[0], "Spectrum"] = spectrum
+        return list(self.df["Spectrum"])
+
     def get(self, conditions="", **kwconditions):
         """Returns a list of spectra that match given conditions.
 
@@ -1142,55 +1202,14 @@ class SpecList(object):
 
         if conditions == "" and kwconditions == {}:  # get all spectra
             # Get all unloaded Spectrum objects and load them
-            files = [
-                self.df["file"][idx]
-                for idx in self.df.index
-                if self.df["Spectrum"][idx] is None
-            ]
-            # Parallel loading
-            if len(files) > self.minimum_nfiles:
-                nJobs = self.nJobs
-                batch_size = self.batch_size
-                if self.verbose:
-                    print(
-                        "*** Loading the database with {0} ".format(nJobs)
-                        + "processor(s) ({0} files)***".format(len(files))
-                    )
-
-                def funLoad(f):
-                    spectrum = load_spec(self.path + "/" + f, binary=self.binary)
-                    indx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
-                    if len(indx) > 1:
-                        raise ValueError(
-                            "Multiple files found for the name {} of indexes {}. Update the database manually".format(
-                                f, indx
-                            )
-                        )
-                    # self.df.loc[indx[0],"Spectrum"] = spectrum
-                    return indx[0], spectrum
-
-                spec_loaded = Parallel(
-                    n_jobs=nJobs, batch_size=batch_size, verbose=5 * self.verbose
-                )(delayed(funLoad)(f) for f in files)
-                for val in spec_loaded:
-                    self.df.loc[val[0], "Spectrum"] = val[1]
-            else:
-                for f in files:
-                    idx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
-                    if len(idx) > 1:
-                        raise ValueError(
-                            "Multiple files found for the name {} of indexes {}. Update the database manually".format(
-                                f, idx
-                            )
-                        )
-                    spectrum = load_spec(self.path + "/" + f, binary=self.binary)
-                    self.df.loc[idx[0], "Spectrum"] = spectrum
+            files = self.df["file"][self.df["Spectrum"].isnull()]
+            self._load_existing_files(files)
             out = list(self.df["Spectrum"])
 
         else:
             # Find Spectrum that match conditions
             if conditions != "":  # ... with input conditions query directly
-                dg = self.df.query(conditions).copy()
+                dg = self.df.query(conditions)
             else:  # ... first write input conditions query
                 query = []
                 for (k, v) in kwconditions.items():
@@ -1210,60 +1229,22 @@ class SpecList(object):
                     query = " & ".join(query)
                     if __debug__:
                         printdbg("Database query: {0}".format(query))
-                    dg = self.df.query(query).copy()
+                    dg = self.df.query(query)
                 else:
                     # cut in <32-long parts
                     N = len(query) // 32 + 1
                     querypart = " & ".join(query[::N])
-                    dg = self.df.query(querypart).copy()
+                    dg = self.df.query(querypart)
                     for i in range(1, N + 1):
                         querypart = " & ".join(query[i::N])
                         if __debug__:
                             printdbg("Database query: {0}".format(querypart))
-                        dg = dg.query(querypart).copy()
+                        dg = dg.query(querypart)
             # Get all unloaded Spectrum objects and load them
-            files = [dg["file"][idx] for idx in dg.index if dg["Spectrum"][idx] is None]
-            # Parallel loading
-            if len(files) > self.minimum_nfiles:
-                nJobs = self.nJobs
-                batch_size = self.batch_size
-                if self.verbose:
-                    print(
-                        "*** Loading the database with {0} ".format(nJobs)
-                        + "processor(s) ({0} files)***".format(len(files))
-                    )
+            files = dg["file"][dg["Spectrum"].isnull()]
 
-                def funLoad(f):
-                    spectrum = load_spec(self.path + "/" + f, binary=self.binary)
-                    indx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
-                    if len(indx) > 1:
-                        raise ValueError(
-                            "Multiple files found for the name {} of indexes {}. Update the database manually".format(
-                                f, indx
-                            )
-                        )
-                    # self.df.loc[indx[0],"Spectrum"] = spectrum
-                    return indx[0], spectrum
-
-                spec_loaded = Parallel(
-                    n_jobs=nJobs, batch_size=batch_size, verbose=5 * self.verbose
-                )(delayed(funLoad)(f) for f in files)
-                for val in spec_loaded:
-                    self.df.loc[val[0], "Spectrum"] = val[1]
-                    dg.loc[val[0], "Spectrum"] = val[1]
-            else:
-                for f in files:
-                    idx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
-                    if len(idx) > 1:
-                        raise ValueError(
-                            "Multiple files found for the name {} of indexes {}. Update the database manually".format(
-                                f, idx
-                            )
-                        )
-                    spectrum = load_spec(self.path + "/" + f, binary=self.binary)
-                    self.df.loc[idx[0], "Spectrum"] = spectrum
-                    dg.loc[idx[0], "Spectrum"] = spectrum
-            out = list(dg["Spectrum"])
+            self._load_existing_files(files)
+            out = list(self.df.loc[dg.index, "Spectrum"])
 
         if not inplace:
             out = [s.copy() for s in out]
@@ -1441,7 +1422,7 @@ class SpecList(object):
             # Load the spectrum if not already done
             if sout is None:
                 spectrum = load_spec(
-                    self.path + "/" + self.df.loc[dg["_d"].idxmin(), "file"],
+                    join(self.path, self.df.loc[dg["_d"].idxmin(), "file"]),
                     binary=self.binary,
                 )
                 self.df.loc[dg["_d"].idxmin(), "Spectrum"] = spectrum
@@ -1726,6 +1707,9 @@ class SpecList(object):
     def __len__(self):
         return len(self.df)
 
+    def __str__(self):
+        return self.see().__str__()
+
 
 # %% Database class
 # ... loads database and manipulate it
@@ -1892,12 +1876,13 @@ class SpecDatabase(SpecList):
                     )
                 )
             spec_files = [f for f in os.listdir(self.path) if f.endswith(".spec")]
-            self.df = pd.read_csv(self.path + "/" + csv_file[0])
+            # Initialize database without loading the spectra
+            self.df = pd.read_csv(join(self.path, csv_file[0]))
             self.df["Spectrum"] = [None] * len(self.df["file"])
             if len(self.df["file"]) != len(spec_files):
                 raise ValueError(
-                    "Number of files stored in the csv ({}) doesn't match the number of files found in the database folder ({}). Update the csv first by setting load_spec to True".format(
-                        len(self.df["file"]), len(spec_files)
+                    "Number of files stored in {0} ({1}) doesn't match the number of files found in the database folder ({2}). Update the csv first by setting load_spec to True".format(
+                        csv_file[0], len(self.df["file"]), len(spec_files)
                     )
                 )
             # Check file was not modified since it was registered in the .csv
@@ -1951,7 +1936,7 @@ class SpecDatabase(SpecList):
         if force_reload:
             # Reloads whole database  (necessary on database init to create self.df
             files = [join(path, f) for f in os.listdir(path) if f.endswith(filt)]
-            self.df = self._load_files(files=files)
+            self.df = self._load_new_files(files=files)
         else:
             dbfiles = list(self.df["file"])
             files = [
@@ -1962,7 +1947,7 @@ class SpecDatabase(SpecList):
             # no parallelization here because the number of files is supposed to be small
             for f in files:
                 self.df = self.df.append(
-                    self._load_file(f, binary=self.binary), ignore_index=True
+                    self._load_new_file(f, binary=self.binary), ignore_index=True
                 )
 
         # Print index
@@ -2061,14 +2046,14 @@ class SpecDatabase(SpecList):
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
 
-    def add(self, spectrum, store_name=None, **kwargs):
+    def add(self, spectrum, store_name=None, if_exists_then="increment", **kwargs):
         """Add Spectrum to database, whether it's a
         :py:class:`~radis.spectrum.spectrum.Spectrum` object or a file that
         stores one. Check it's not in database already.
 
         Parameters
         ----------
-        spectrum: path to a .spec file (``str``), or :py:class:`~radis.spectrum.spectrum.Spectrum` object
+        spectrum: :py:class:`~radis.spectrum.spectrum.Spectrum` object, or path to a .spec file (``str``)
             if a :py:class:`~radis.spectrum.spectrum.Spectrum` object:
             stores it in the database (using the :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
             method), then adds the file to the database folder.
@@ -2081,6 +2066,12 @@ class SpecDatabase(SpecList):
             name of the file where the spectrum will be stored. If ``None``,
             name is generated automatically from the Spectrum conditions (see
             ``add_info=`` and ``if_exists_then=``)
+        if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
+            what to do if file already exists. If ``'increment'`` an incremental digit
+            is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
+            Spectrum is not added to the database and no file is created.
+            If ``'error'`` (or anything else) an error is raised. Default ``'increment'``.
+
         **kwargs: **dict
             extra parameters used in the case where spectrum is a file and a .spec object
             has to be created (useless if `spectrum` is a file already). kwargs
@@ -2098,7 +2089,6 @@ class SpecDatabase(SpecList):
             emisscoeff and abscoeff are given in non-optically thin case, etc.
             If not given, use the value of ``SpecDatabase.binary``
             The performances are usually better if compress = 2. See https://github.com/radis/radis/issues/84.
-
         add_info: list
             append these parameters and their values if they are in conditions
             example::
@@ -2111,11 +2101,6 @@ class SpecDatabase(SpecList):
             :meth:`~radis.spectrum.spectrum.Spectrum.line_survey` and
             :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` methods
             (but it saves a ton of memory!).
-
-        if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
-            what to do if file already exists. If ``'increment'`` an incremental digit
-            is added. If ``'replace'`` file is replaced (!). If ``'error'`` (or anything else)
-            an error is raised. Default ``'increment'``.
 
         Examples
         --------
@@ -2143,8 +2128,13 @@ class SpecDatabase(SpecList):
                 "path is an invalid Parameter. The database path " + "is used"
             )
         compress = kwargs.pop("compress", self.binary)
+        store_path = join(self.path, str(store_name))
+        if exists(store_path) and if_exists_then == "ignore":
+            if self.verbose:
+                print(("File already exists : {0}. Ignoring".format(store_name)))
+            return
 
-        # First, store the spectrum on a file
+        # First, store the spectrum in a file
         # ... input is a Spectrum. Store it in database and load it from there
         if is_spectrum(spectrum):
             # add defaults
@@ -2153,14 +2143,19 @@ class SpecDatabase(SpecList):
                     kwargs["add_info"] = self.add_info
                 if not "add_date" in kwargs:
                     kwargs["add_date"] = self.add_date
-                file = spectrum.store(self.path, compress=compress, **kwargs)
+                file = spectrum.store(
+                    self.path,
+                    compress=compress,
+                    if_exists_then=if_exists_then,
+                    **kwargs
+                )
             else:
                 file = spectrum.store(
-                    self.path + "/" + str(store_name), compress=compress, **kwargs
+                    store_path,
+                    compress=compress,
+                    if_exists_then=if_exists_then,
+                    **kwargs
                 )
-            # Note we could have added the Spectrum directly
-            # (saves the load stage) but it also serves to
-            # check the file we just stored is readable
 
         # ... input is a file name. Copy it in database and load it
         elif isinstance(spectrum, str):
@@ -2193,19 +2188,14 @@ class SpecDatabase(SpecList):
                     "You are manually adding a file that is in the database folder directly. Consider using db.update()"
                 )
                 file = spectrum
+            spectrum = self._load_file(file, binary=compress)
 
         else:
             raise ValueError("Unvalid Spectrum type: {0}".format(type(spectrum)))
 
-        # PREVIOUS VERSION (with reloading)
-        # Then, load the Spectrum again (so we're sure it works!) and add the
-        # information to the database
-        # self.df = self.df.append(
-        #     self._load_file(file, binary=compress), ignore_index=True
-        # )
+        # Now register the spectrum in the database :
 
-        # NEW VERSION (no reloading)
-        out = spectrum.get_conditions().copy()
+        out = spectrum.get_conditions()
         # Add filename, and a link to the Spectrum object itself
         out.update({"file": basename(file), "Spectrum": spectrum})
         self.df = self.df.append(out, ignore_index=True)
@@ -2301,12 +2291,16 @@ class SpecDatabase(SpecList):
 
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
 
-    def _load_files(self, files):
+    def _load_new_files(self, files):
         """Parse files and generate a database.
+
+        Returns
+        -------
+        db: pandas.DataFrame
+            dataFrame of loaded spectra.
 
         Notes
         -----
-
         Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
         attributes of :class:`~radis.tools.database.SpecDatabase`.
         See :class:`joblib.parallel.Parallel` for information on the arguments
@@ -2318,6 +2312,9 @@ class SpecDatabase(SpecList):
         batch_size = self.batch_size
         minimum_nfiles = self.minimum_nfiles
 
+        def funLoad(f):
+            return self._load_new_file(f, binary=self.binary)
+
         # Sequential loading
         if nJobs == 1 or len(files) < minimum_nfiles:
             if self.verbose:
@@ -2326,7 +2323,7 @@ class SpecDatabase(SpecList):
                     + "({0} files)***".format(len(files))
                 )
             for f in files:
-                db.append(self._load_file(f, binary=self.binary))
+                db.append(funLoad(f))
         # Parallel loading
         else:
             if self.verbose:
@@ -2335,26 +2332,28 @@ class SpecDatabase(SpecList):
                     + "processor(s) ({0} files)***".format(len(files))
                 )
 
-            def funLoad(f):
-                return self._load_file(f, binary=self.binary)
-
             db = Parallel(
                 n_jobs=nJobs, batch_size=batch_size, verbose=5 * self.verbose
             )(delayed(funLoad)(f) for f in files)
         return pd.DataFrame(db)
 
-    def _load_file(self, file, binary=False):
-        """return Spectrum attributes for insertion in database."""
+    def _load_new_file(self, file, binary=False):
+        """return Spectrum attributes for insertion in database.
+
+        Returns
+        -------
+        out: dict
+            dictionary of conditions of loaded spectrum"""
 
         s = load_spec(file, binary=binary)
-        s.conditions["last_modified"] = os.path.getmtime(file)
         if self.verbose:
             print(("loaded {0}".format(basename(file))))
 
-        out = s.get_conditions().copy()
+        out = s.get_conditions()
 
         # Add filename, and a link to the Spectrum object itself
         out.update({"file": basename(file), "Spectrum": s})
+        out["last_modified"] = os.path.getmtime(file)
 
         return out
 
