@@ -27,7 +27,7 @@ Line-by-line algorithm :
 
 - the line-by-line code as [RADIS-2018]_ |badge_article1|
 - the new spectral synthesis algorithm [Spectral-Synthesis-Algorithm]_ |badge_article2|
-- for reproducibility, mention the RADIS version number. Get your version with py:func:`~radis.get_version`
+- for reproducibility, mention the RADIS version number. Get your version with :py:func:`~radis.get_version`
   (latest version available is |badge_pypi|) ::
 
     import radis
@@ -49,7 +49,7 @@ RADIS:
 
 - Documentation: |badge_docs|
 
-- Help: |badge_gitter| `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
+- Help: |badge_slack| |badge_gitter| `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 
 - RADIS Articles: |badge_article1| |badge_article2|
 
@@ -61,6 +61,7 @@ RADIS:
 
 - Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
 
+- Try online : :ref:`🌱 RADIS Lab <label_radis_online>`
 
 .. include:: similar_tools.rst
 
