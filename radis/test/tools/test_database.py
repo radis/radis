@@ -166,8 +166,92 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
         assert s.compare_with(s_bis, spectra_only=var, plot=False, verbose=verbose)
 
 
+def test_lazy_loading(verbose=True, *args, **kwargs):
+    """ Test lazy loading """
+
+    import numpy as np
+
+    from radis import calc_spectrum
+
+    DBNAME = "test_CO_OH_database"
+    db = SpecDatabase(DBNAME, lazy_loading=False)  # create the database
+
+    #%% Simulate a fake database
+
+    #%% Compute spectra of CO and OH and add them to the database
+    T_db = np.linspace(300, 1200, 5)  # Temperature array
+    for T in T_db:
+        s1 = (
+            calc_spectrum(
+                wavenum_min=3000,
+                wavenum_max=4500,
+                molecule="CO",
+                Tgas=T,
+                databank="hitemp",  # test by fetching directly
+                verbose=False,
+            )
+            .apply_slit(2, "nm")
+            .take("radiance")
+        )
+        db.add(s1, store_name=f"CO_{T}K.spec", if_exists_then="ignore")
+        s2 = (
+            calc_spectrum(
+                wavenum_min=3000,
+                wavenum_max=4500,
+                molecule="OH",
+                Tgas=T,
+                databank="hitemp",  # test by fetching directly
+                verbose=False,
+            )
+            .apply_slit(2, "nm")
+            .take("radiance")
+        )
+        db.add(s2, store_name=f"OH_{T}K.spec", if_exists_then="ignore")
+
+    #%% Access the spectra in the database via the get functions.
+    # Check what species are in the database at a given temperature (300)
+    s300 = db.get(Tgas=300)  # simple use of get
+    if verbose:
+        print([s.conditions["molecule"] for s in s300])
+    # Check what species are in the database at a given species
+    sCO = db.get(molecule="CO")
+    if verbose:
+        print([s.conditions["Tgas"] for s in sCO])
+    # Advanced use of the get function
+    sdb = db.get('Tgas>=600 & Tgas<900 & molecule=="CO"')
+    if verbose:
+        print("Number of spectra found for the given conditions: ", len(sdb))
+
+    #%% Do the same in lazy-loading mode, and compare :
+
+    db2 = SpecDatabase(DBNAME, lazy_loading=True)  # create the database
+
+    #%% Access the spectra in the database via the get functions.
+    # Check what species are in the database at a given temperature (300)
+    s300_2 = db2.get(Tgas=300)  # simple use of get
+    print([s.conditions["molecule"] for s in s300_2])
+
+    assert s300 == s300_2
+
+    # Check what species are in the database at a given species
+    sCO_2 = db2.get(molecule="CO")
+    if verbose:
+        print([s.conditions["Tgas"] for s in sCO_2])
+
+    assert sCO == sCO_2
+
+    # Advanced use of the get function
+    sdb_2 = db2.get('Tgas>=600 & Tgas<900 & molecule=="CO"')
+    if verbose:
+        print("Number of spectra found for the given conditions: ", len(sdb))
+
+    assert sdb == sdb_2
+
+
 if __name__ == "__main__":
     import pytest
+
+    test_lazy_loading()
 
     # -s is to plot
     pytest.main(["test_database.py", "-s"])
