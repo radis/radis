@@ -22,8 +22,9 @@ Routine Listing
 - :func:`~radis.misc.config.diffDatabankEntries`
 - :func:`~radis.misc.config.printDatabankEntries`
 - :func:`~radis.misc.config.printDatabankList`
-
-
+- :func:`~radis.misc.config.getConfigJSON`
+- :func:`~radis.misc.config.convertRadisToJSON`
+- :func:`~radis.misc.config.getDatabankListJSON`
 
 -------------------------------------------------------------------------------
 
@@ -153,6 +154,7 @@ See Also
 """
 
 CONFIG_PATH = join(expanduser("~"), ".radis")
+CONFIG_PATH_JSON = join(expanduser("~"), ".radisjson")
 
 
 def getConfig():
@@ -179,7 +181,25 @@ def getConfig():
     return config
 
 
-#
+def getConfigJSON():
+    """Read config file and returns it.
+
+    Config file name is harcoded: :ref:`~/.radisjson`
+    """
+    configpath = CONFIG_PATH_JSON
+    # Test ~/.radisjson exists
+    if not exists(configpath):
+
+        raise FileNotFoundError(
+            "Create a `.radisjson file in {0} to store links to ".format(
+                dirname(configpath)
+            ))
+    
+    with open(configpath) as f:
+         config = json.load(f)
+    f.close()
+      
+    return config
 
 
 def getDatabankEntries(dbname, get_extra_keys=[]):
@@ -462,7 +482,7 @@ def printDatabankEntries(dbname, crop=200):
 
 
 def printDatabankList():
-    """Print all databanks available in ~/.radis."""
+    """Print all databanks available in ~/.radisjson"""
     try:
         print("Databanks in {0}: ".format(CONFIG_PATH), ",".join(getDatabankList()))
         for dbname in getDatabankList():
@@ -472,6 +492,86 @@ def printDatabankList():
         print("No config file {0}".format(CONFIG_PATH))
         # it's okay
 
+def convertRadisToJSON():
+    '''Converts the ~/.radis file into json formatted file ~/.radisjson
+    
+    Example 
+    -------
+    original ~/.radis file format
+    
+    [HITRAN-CO2-TEST]
+    info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
+    path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
+    format = hitran
+    parfuncfmt = hapi
+    levelsfmt = radis
+    
+    -----------
+    Converted ~/.radisjson file format
+    
+    {"HITRAN-CO2-TEST": {"info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)", 
+    "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
+    "format": "hitran", 
+    "parfuncfmt": "hapi", 
+    "levelsfmt": "radis"}}  
+    '''
+    
+    # Loads configuration file ~/.radis
+    config = getConfig()
+    
+    # Variable to store data in JSON format
+    config_json = {}
+    
+    # Converting configuration into JSON format and storing in config_json variable
+    for i in config.sections():
+        temp = {}
+        for j in config[i]:
+            temp[j] = config[i][j]
+            
+        config_json[i] = temp
+    
+ 
+    # Creating json file 
+    config_json_dir = CONFIG_PATH_JSON
+    with open(config_json_dir, 'w') as outfile:
+        json.dump(config_json, outfile, indent=2)
+    outfile.close()
+
+    return 
+
+def getDatabankListJSON():
+    """Get all databanks available in :ref:`~/.radisjson"""
+
+    config = getConfigJSON()
+    
+
+    # Get databank path and format
+    validdb = []
+    for dbname in config:
+        try:
+            config[dbname]["path"]
+            config[dbname]["format"]
+            
+        except configparser.NoSectionError:
+            # not a db
+            msg = (
+                    "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH_JSON)
+                    + "Available databanks: {0}. ".format(getDatabankListJSON())
+                    + "See databank format above. More information in "
+                    + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
+            )
+            raise DatabankNotFound(msg)
+            
+        except configparser.NoOptionError:
+            # not a db
+            continue
+        # looks like a db. add to db
+        validdb.append(dbname)
+    return validdb
+
+
+
+    
 
 # %% Test
 
