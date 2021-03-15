@@ -122,7 +122,7 @@ def calc_spectrum(
     databank: str or dict
         can be either:
         - ``'hitran'``, to fetch automatically the latest HITRAN version
-          through :py:func:`~radis.io.query.fetch_astroquery`.
+          through :py:func:`~radis.io.query.fetch_astroquery` (based on [HAPI]_ ).
         - ``'hitemp'``, to fetch automatically the latest HITEMP version
           through :py:func:`~radis.io.hitemp.fetch_hitemp`.
         - the name of a a valid database file, in which case the format is inferred.
@@ -276,6 +276,13 @@ def calc_spectrum(
 
     .. minigallery:: radis.lbl.calc.calc_spectrum
         :add-heading:
+
+    Cite
+    ----
+
+    RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
+    to compute spectra, make sure you cite all of them, for proper reproducibility and acknowledgement of
+    the work ! See :ref:`How to cite? <label_cite>`
 
     See Also
     --------

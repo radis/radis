@@ -37,8 +37,9 @@ Quick Start
 ===========
 
 
-Calculate a CO equilibrium spectrum from the HITRAN database, using the
-:py:func:`~radis.lbl.calc.calc_spectrum` function. Output is a
+Calculate a CO equilibrium spectrum from the [HITRAN-2016]_ database, using the
+:py:func:`~radis.lbl.calc.calc_spectrum` function. Lines are downloaded automatically
+using Astroquery (based on [HAPI]_). Output is a
 :ref:`Spectrum object <label_spectrum>`: ::
 
     from radis import calc_spectrum
@@ -146,6 +147,13 @@ or on the community chats on `Gitter <https://gitter.im/radis-radiation/communit
 
 |badge_gitter| |badge_slack|
 
+
+Cite
+====
+
+RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
+to compute spectra, make sure you cite all of them, for proper reproducibility and acknowledgement of
+the work ! See :ref:`How to cite? <label_cite>`
 
 
 ---------------------------------------------------------------------
