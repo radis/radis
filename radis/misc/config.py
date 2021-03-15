@@ -499,23 +499,23 @@ def convertRadisToJSON():
 
     Example
     -------
-    original ~/.radis file format
+    original ~/.radis file format::
 
-    [HITRAN-CO2-TEST]
-    info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
-    path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
-    format = hitran
-    parfuncfmt = hapi
-    levelsfmt = radis
+        [HITRAN-CO2-TEST]
+        info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
+        path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
+        format = hitran
+        parfuncfmt = hapi
+        levelsfmt = radis
 
     -----------
-    Converted ~/.radisjson file format
+    Converted ~/.radisjson file format::
 
-    {"HITRAN-CO2-TEST": {"info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
-    "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
-    "format": "hitran",
-    "parfuncfmt": "hapi",
-    "levelsfmt": "radis"}}
+        {"HITRAN-CO2-TEST": {"info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
+        "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
+        "format": "hitran",
+        "parfuncfmt": "hapi",
+        "levelsfmt": "radis"}}
     """
 
     # Loads configuration file ~/.radis
