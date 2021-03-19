@@ -639,6 +639,7 @@ def convertRadisToJSON():
 
     return
 
+
 def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
     r"""Read :ref:`~/radis.json <label_lbl_config_file>` config file and returns a dictionary of entries.
 
@@ -732,6 +733,7 @@ def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
 
     return entries
 
+
 def getDatabankListJSON():
     """Get all databanks available in :ref:`~/radis.json"""
 
@@ -752,6 +754,7 @@ def getDatabankListJSON():
         # looks like a db. add to db
         validdb.append(dbname)
     return validdb
+
 
 def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
     """Add database dbname with entries from dict_entries.
@@ -870,6 +873,7 @@ def printDatabankEntriesJSON(dbname, crop=200):
         # Print item
         print(k, ":", v, *args)
 
+
 def printDatabankListJSON():
     """Print all databanks available in ~/radis.json"""
     try:
@@ -883,6 +887,7 @@ def printDatabankListJSON():
     except FileNotFoundError:
         print("No config file {0}".format(CONFIG_PATH_JSON))
         # it's okay
+
 
 # %% Test
 
