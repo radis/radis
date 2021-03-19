@@ -24,7 +24,11 @@ Routine Listing
 - :func:`~radis.misc.config.printDatabankList`
 - :func:`~radis.misc.config.getConfigJSON`
 - :func:`~radis.misc.config.convertRadisToJSON`
+- :func:`~radis.misc.config.getDatabankEntriesJSON`
 - :func:`~radis.misc.config.getDatabankListJSON`
+- :func:`~radis.misc.config.addDatabankEntriesJSON`
+- :func:`~radis.misc.config.printDatabankEntriesJSON`
+- :func:`~radis.misc.config.printDatabankListJSON`
 
 -------------------------------------------------------------------------------
 
@@ -153,6 +157,99 @@ See Also
 :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
 """
 
+DBFORMATJSON = r"""
+--------------------------
+
+{
+    "MY-HITEMP-CO2":                 #  your databank name: use this in calc_spectrum()
+    {                            #  or SpectrumFactory.load_databank()
+    "info": "HITEMP 2010 databank",      #  whatever you want
+    "path":                           #  no "", multipath allowed
+        ["D:\Databases\HITEMP-CO2\hitemp_07",
+        "D:\Databases\HITEMP-CO2\hitemp_08",
+        "D:\Databases\HITEMP-CO2\hitemp_09"],
+    "format": "hitran",                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                    # databank text file format. More info in
+                                    # SpectrumFactory.load_databank function.
+    "parfuncfmt":                      #  'cdsd', 'hapi', etc.
+                                    # format to read tabulated partition function
+                                    # file. If `hapi`, then HAPI (HITRAN Python
+                                    # interface) is used to retrieve them (valid if
+                                    # your databank is HITRAN data). HAPI is embedded
+                                    # into RADIS. Check the version.
+    # Optional
+    # ----------
+    "parfunc":                         #  path to tabulated partition function to use.
+                                    # If `parfuncfmt` is `hapi` then `parfunc`
+                                    # should be the link to the hapi.py file. If
+                                    # not given, then the hapi.py embedded in RADIS
+                                    # is used (check version)
+    "levels_iso1"                      #  path to energy levels (needed for non-eq
+                                    # calculations). Default None
+    "levels_iso2"                     # etc
+    "levels_iso4"                      # etc
+    "levelsfmt":                       #  'cdsd', etc.
+                                    # how to read the previous file. Default None.
+    "levelsZPE":                     #  zero-point-energy (cm-1): offset for all level
+    }                                # energies. Default 0 (if not given)
+}
+
+--------------------------"""
+"""str: Typical expected format of a ~/radis.json entry::
+
+    --------------------------
+
+    "MY-HITEMP-CO2": {                 #  your databank name: use this in calc_spectrum()
+                                       #  or SpectrumFactory.load_databank()
+    "info": "HITEMP 2010 databank",      #  whatever you want
+    "path":                           #  no "", multipath allowed
+           ["D:\Databases\HITEMP-CO2\hitemp_07"
+           "D:\Databases\HITEMP-CO2\hitemp_08"
+           "D:\Databases\HITEMP-CO2\hitemp_09"],
+    "format": "hitran",                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                     # databank text file format. List of all
+                                     # formats in :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+                                     # More info in
+                                     # :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` function.
+    "parfuncfmt":                      #  'cdsd', 'hapi', etc.
+                                     # format to read tabulated partition function
+                                     # file. If `hapi`, then HAPI (HITRAN Python
+                                     # interface) is used to retrieve them (valid if
+                                     # your databank is HITRAN data). HAPI is embedded
+                                     # into RADIS. Check the version.
+                                     # List of all formats in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
+    # Optional
+    # ----------
+    "parfunc":                         #  path to tabulated partition function to use.
+                                     # If `parfuncfmt` is `hapi` then `parfunc`
+                                     # should be the link to the hapi.py file. If
+                                     # not given, then the hapi.py embedded in RADIS
+                                     # is used (check version)
+    "levels_iso1"                      #  path to energy levels (needed for non-eq
+                                     # calculations). Default None
+    "levels_iso2"                      # etc
+    levels_iso4"                      # etc
+    "levelsfmt":                       #  'cdsd', etc.
+                                     # how to read the previous file. Default None.
+    "levelsZPE":  }                     #  zero-point-energy (cm-1): offset for all level
+                                     # energies. Default 0 (if not given)
+    }
+    --------------------------
+
+For more information refer to the documentation: :ref:`Configuration file <label_lbl_config_file>` :
+
+- Setup test databases with :py:func:`~radis.test.utils.setup_test_line_databases`
+- `format` :  format: :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+
+
+See Also
+--------
+
+:ref:`Configuration file <label_lbl_config_file>`,
+:py:func:`~radis.misc.config.getConfig`,
+:py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
+"""
+
 CONFIG_PATH = join(expanduser("~"), ".radis")
 CONFIG_PATH_JSON = join(expanduser("~"), ".radisjson")
 
@@ -184,16 +281,18 @@ def getConfig():
 def getConfigJSON():
     """Read config file and returns it.
 
-    Config file name is harcoded: :ref:`~/.radisjson`
+    Config file name is harcoded: :ref:`~/radis.json`
     """
     configpath = CONFIG_PATH_JSON
-    # Test ~/.radisjson exists
+    # Test ~/radis.json exists
     if not exists(configpath):
 
         raise FileNotFoundError(
-            "Create a `.radisjson file in {0} to store links to ".format(
+            "Create a `radis.json file in {0} to store links to ".format(
                 dirname(configpath)
             )
+            + "your local databanks. Format must be:\n {0}".format(DBFORMATJSON)
+            + "\n(it can be empty too)"
         )
 
     with open(configpath) as f:
@@ -495,7 +594,7 @@ def printDatabankList():
 
 
 def convertRadisToJSON():
-    """Converts the ~/.radis file into json formatted file ~/.radisjson
+    """Converts the ~/.radis file into json formatted file ~/radis.json
 
     Example
     -------
@@ -509,7 +608,7 @@ def convertRadisToJSON():
         levelsfmt = radis
 
     -----------
-    Converted ~/.radisjson file format::
+    Converted ~/radis.json file format::
 
         {"HITRAN-CO2-TEST": {"info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
         "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
@@ -540,9 +639,101 @@ def convertRadisToJSON():
 
     return
 
+def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
+    r"""Read :ref:`~/radis.json <label_lbl_config_file>` config file and returns a dictionary of entries.
+
+    Parameters
+    ----------
+    dbname: str
+        database name in :ref:`~/radis.json <label_lbl_config_file>` config file
+    get_extra_keys: list
+        read additional parameters on top of the usual Databank format keys :
+
+    Notes
+    -----
+    Databank format::
+
+        {
+            "MY-HITEMP-CO2": {                 #  your databank name: use this in calc_spectrum()
+                                            #  or SpectrumFactory.load_databank()
+            "info": "HITEMP 2010 databank"      # whatever you want
+            "path":                           # no "", multipath allowed
+                "D:\Databases\HITEMP-CO2\hitemp_07"
+                "D:\Databases\HITEMP-CO2\hitemp_08"
+                "D:\Databases\HITEMP-CO2\hitemp_09"
+            "format": "hitemp"                  # 'hitran' (HITRAN / HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                            # Databank text file format. More info in
+                                            # SpectrumFactory.load_databank function.
+
+            # Optional:
+
+            "parfunc"                          # path or 'USE_HAPI'
+                                            # path to tabulated partition functions. If
+                                            # `USE_HAPI`, then HAPI (HITRAN Python
+                                            interface) [1]_ is used to retrieve them (valid
+                                            if your databank is HITRAN data). HAPI
+                                            is embedded into RADIS. Check the version.
+
+            "parfuncfmt"                      # 'cdsd'
+                                            # format to read tabulated partition function
+                                            # file. If `USE_HAPI` is given as `parfunc`
+                                            # parameter then this line should not be used.
+
+            "levels_iso1"                      # path to energy levels (needed for non-eq)
+                                            # calculations.
+            "levels_iso2"                      # etc
+            "levels_iso4"                      # etc
+
+            "levelsfmt"                        # 'cdsd'
+            }                               # how to read the previous file.
+        }
+
+    References
+    ----------
+    .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
+
+
+    """
+    config = getConfigJSON()
+
+    # Make sure it looks like a databank (path and format are given)
+    try:
+        config[dbname]["path"]
+        config[dbname]["format"]
+    except configparser.NoSectionError:
+        msg = (
+            "{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)
+            + "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH_JSON)
+            + "Available databanks: {0}. ".format(getDatabankListJSON())
+            + "See databank format above. More information in "
+            + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
+        )
+        raise DatabankNotFound(msg)
+
+    entries = config[dbname]
+
+    # Parse paths correctly
+    entries["path"] = entries["path"].strip("\n").split("\n")
+
+    # Merge all isotope-dependant levels into one dict
+    iso_list = [k for k in entries if k.startswith("levels_iso")]
+    if len(iso_list) > 0:
+        levels = {}
+        for k in iso_list:
+            iso = float(k[10:])
+            levels[iso] = entries.pop(k)
+        entries["levels"] = levels
+    else:
+        if "levels" in entries:
+            raise SyntaxError(
+                "in {0}: `levels` replaced with ".format(CONFIG_PATH_JSON)
+                + "`levels_iso#` where # is the isotope number"
+            )
+
+    return entries
 
 def getDatabankListJSON():
-    """Get all databanks available in :ref:`~/.radisjson"""
+    """Get all databanks available in :ref:`~/radis.json"""
 
     config = getConfigJSON()
 
@@ -552,17 +743,9 @@ def getDatabankListJSON():
         try:
             config[dbname]["path"]
             config[dbname]["format"]
-
         except configparser.NoSectionError:
             # not a db
-            msg = (
-                "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH_JSON)
-                + "Available databanks: {0}. ".format(getDatabankListJSON())
-                + "See databank format above. More information in "
-                + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
-            )
-            raise DatabankNotFound(msg)
-
+            continue
         except configparser.NoOptionError:
             # not a db
             continue
@@ -570,6 +753,136 @@ def getDatabankListJSON():
         validdb.append(dbname)
     return validdb
 
+def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
+    """Add database dbname with entries from dict_entries.
+
+    If database already exists in :ref:`~/radis.json <label_lbl_config_file>`, raises an error
+
+    Examples
+    --------
+
+    ::
+
+        addDatabankEntries("HITEMP2010-CO2",
+            {
+                "info": "HITEMP2020 CO2 lines with TIPS-2017 for partition functions (equilibrium) and RADIS for rovibrational energies (nonequilibrium) ",
+                "path": ["PATH/TO/HITEMP/CO2/*.par"],
+                "format": "hitran",
+                "parfuncfmt": "hapi",
+                "levelsfmt": "radis",
+            })
+    """
+
+    # Get ~/radis.json if exists, else create it
+    try:
+        dbnames = getDatabankListJSON()
+    except FileNotFoundError:
+        # generate ~/radis.json:
+        dbnames = []
+        open(CONFIG_PATH_JSON, "w").close()
+        if verbose:
+            print("Created ~/radis.json in {0}".format(dirname(CONFIG_PATH_JSON)))
+
+    # Check database doesnt exist
+    if dbname in dbnames:
+        raise DatabaseAlreadyExists(
+            "Database already exists: {0}".format(dbname) + ". Cant add it"
+        )
+
+    # Loading `~/radis.json`
+    try:
+        with open(CONFIG_PATH_JSON) as json_file:
+            config = json.load(json_file)
+            json_file.close()
+    except:
+        # Empty Dictionary
+        config = {}
+
+    # Adding entries in `config[dbname]`
+    config[dbname] = {}
+
+    if "info" in dict_entries:  # optional
+        config[dbname]["info"] = dict_entries.pop("info")
+
+    # ... Parse paths correctly
+    if isinstance(dict_entries["path"], str):
+        config[dbname]["path"] = dict_entries.pop("path")
+    else:  # list
+        config[dbname]["path"] = dict_entries.pop("path")
+
+    config[dbname]["format"] = dict_entries.pop("format")
+    config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
+
+    # Optional:
+    # ... partition functions:
+    if "parfunc" in dict_entries:
+        config[dbname]["parfunc"] = dict_entries.pop("parfunc")
+
+    # ... Split all isotopes in separate keys
+    levels_dict = dict_entries.pop("levels", {})
+    for iso, levels_iso in levels_dict.items():
+        config[dbname]["levels_iso{0}".format(iso)] = levels_iso
+
+    if "levelsfmt" in dict_entries:
+        config[dbname]["levelsfmt"] = dict_entries.pop("levelsfmt")
+
+    # Allow some informative parameters
+    # ... "download_url", "download_date", "wavenumber_min", "wavenumber_max" generated by fetch_hitemp
+    for entry in ["download_url", "download_date", "wavenumber_min", "wavenumber_max"]:
+        if entry in dict_entries:
+            config[dbname][entry] = dict_entries.pop(entry)
+
+    # Check nothing is left
+    if dict_entries != {}:
+        raise ValueError("Unexpected keys: {0}".format(list(dict_entries.keys())))
+
+    # Write to `~/radis.json`
+    with open(CONFIG_PATH_JSON, "w") as configfile:
+        json.dump(config, configfile, indent=2)
+        configfile.close()
+
+    if verbose:
+        print("Added {0} database in {1}".format(dbname, CONFIG_PATH_JSON))
+
+    return
+
+
+def printDatabankEntriesJSON(dbname, crop=200):
+    """Print databank info.
+
+    Parameters
+    ----------
+    dbname: str
+        database name in :ref:`~/radis.json <label_lbl_config_file>`
+    crop: int
+        if > 0, cutoff entries larger than that
+    """
+    entries = getDatabankEntriesJSON(dbname)
+    print(dbname, "\n-------")
+    for k, v in entries.items():
+        # Add extra arguments
+        args = []
+        if k == "levelszpe":
+            args.append("cm-1")
+        v = "{0}".format(v)
+        if len(v) > crop and crop > 0:
+            v = v[:crop] + "..."
+        # Print item
+        print(k, ":", v, *args)
+
+def printDatabankListJSON():
+    """Print all databanks available in ~/radis.json"""
+    try:
+        print(
+            "Databanks in {0}: ".format(CONFIG_PATH_JSON),
+            ",".join(getDatabankListJSON()),
+        )
+        for dbname in getDatabankListJSON():
+            print("\n")
+            printDatabankEntriesJSON(dbname)
+    except FileNotFoundError:
+        print("No config file {0}".format(CONFIG_PATH_JSON))
+        # it's okay
 
 # %% Test
 
