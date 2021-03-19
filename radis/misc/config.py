@@ -714,7 +714,7 @@ def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
     entries = config[dbname]
 
     # Parse paths correctly
-    entries["path"] = entries["path"].strip("\n").split("\n")
+    # entries["path"] = entries["path"].strip("\n").split("\n")
 
     # Merge all isotope-dependant levels into one dict
     iso_list = [k for k in entries if k.startswith("levels_iso")]
