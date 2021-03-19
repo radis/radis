@@ -251,7 +251,7 @@ See Also
 """
 
 CONFIG_PATH = join(expanduser("~"), ".radis")
-CONFIG_PATH_JSON = join(expanduser("~"), ".radisjson")
+CONFIG_PATH_JSON = join(expanduser("~"), "radis.json")
 
 
 def getConfig():
