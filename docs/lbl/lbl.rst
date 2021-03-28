@@ -144,7 +144,7 @@ various strategies to improve :ref:`Performances <label_lbl_performance>`,
 and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
 the flow chart below:
 
-.. image:: RADIS_flow_chart.*
+.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
     :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
     :scale: 100 %
 
