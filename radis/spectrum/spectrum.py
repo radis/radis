@@ -98,7 +98,7 @@ class Spectrum(object):
         and wavenum is in cm-1
         example::
 
-        >>> {'radiance_noslit:':(wavenum, radiance_noslit),
+        >>> {'radiance_noslit':(wavenum, radiance_noslit),
              'absorbance':(wavenum, absorbance)}
     units: dict
         units for quantities

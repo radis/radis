@@ -627,7 +627,15 @@ def convertRadisToJSON():
     for i in config.sections():
         temp = {}
         for j in config[i]:
-            temp[j] = config[i][j]
+            # Checking if the `path` is multiple then creating list otherwise string
+            if j == "path":
+                if "\n" in config[i][j]:
+                    temp[j] = config[i][j].split()
+                else:
+                    temp[j] = config[i][j]
+            else:
+                # Adding to `temp` dictionaru
+                temp[j] = config[i][j]
 
         config_json[i] = temp
 
@@ -811,7 +819,11 @@ def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
     if isinstance(dict_entries["path"], str):
         config[dbname]["path"] = dict_entries.pop("path")
     else:  # list
-        config[dbname]["path"] = dict_entries.pop("path")
+        # If list has a single path
+        if len(dict_entries["path"]) == 1:
+            config[dbname]["path"] = dict_entries.pop("path")[0]
+        else:
+            config[dbname]["path"] = dict_entries.pop("path")
 
     config[dbname]["format"] = dict_entries.pop("format")
     config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
