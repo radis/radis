@@ -3228,7 +3228,7 @@ class BaseFactory(DatabankLoader):
 def get_waverange(
     wmin=None,
     wmax=None,
-    wunit=None,
+    wunit=Default('cm-1'),
     wavenum_min=None,
     wavenum_max=None,
     wavelength_min=None,
