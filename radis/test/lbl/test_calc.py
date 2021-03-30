@@ -732,9 +732,13 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
 
 def check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
-
+    """Check that input wavelength is correctly taken into account.
+    See https://github.com/radis/radis/issues/214
+    """
     if verbose:
         printm("Testing calc_spectrum wavelength range")
+
+    wstep = 0.01
 
     s = calc_spectrum(
         wavelength_min=4348,  # nm
@@ -745,12 +749,12 @@ def check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
         Tvib=1700,  # K
         Trot=1700,  # K
         databank="HITRAN-CO-TEST",
-        wstep=0.01,
+        wstep=wstep,
     )
     w, I = s.get("radiance_noslit", wunit="nm", Iunit="mW/sr/cm2/nm")
 
-    assert np.isclose(w.min(), 4348, atol=0.01)
-    assert np.isclose(w.max(), 5000, atol=0.01)
+    assert np.isclose(w.min(), 4348, atol=wstep)
+    assert np.isclose(w.max(), 5000, atol=wstep)
 
     return True
 
