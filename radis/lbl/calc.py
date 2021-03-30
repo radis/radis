@@ -4,7 +4,7 @@ Summary
 -------
 
 Public (front-end) functions to calculate Spectrum with HITRAN / CDSD databanks.
-Uses the SpectrumFactory classe from `factory.py`, Spectrum from `spectrum.py`
+Uses the SpectrumFactory class from `factory.py`, Spectrum from `spectrum.py`
 and line survey from `line_survey.py`
 
 Routine Listing

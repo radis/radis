@@ -38,6 +38,7 @@ Routine Listing
 
 import configparser
 import json
+import os
 from os.path import dirname, exists, expanduser, join
 
 from radis.misc.basics import compare_dict, compare_lists, stdpath
@@ -271,7 +272,6 @@ def getConfig():
                 dirname(configpath)
             )
             + "your local databanks. Format must be:\n {0}".format(DBFORMAT)
-            + "\n(it can be empty too)"
         )
     config.read(configpath)
 
@@ -295,9 +295,22 @@ def getConfigJSON():
             + "\n(it can be empty too)"
         )
 
+    # Checking file is empty
+    if os.stat(configpath).st_size == 0:
+        return {}
+
+    # Load the JSON file
     with open(configpath) as f:
-        config = json.load(f)
-    f.close()
+        try:
+            config = json.load(f)
+        except json.JSONDecodeError as err:
+            raise json.JSONDecodeError(
+                "Error reading '{0}' (line {2} col {3}): \n{1}".format(
+                    configpath, err.msg, err.lineno, err.colno
+                ),
+                err.doc,
+                err.pos,
+            ) from err
 
     return config
 
@@ -630,7 +643,15 @@ def convertRadisToJSON():
             # Checking if the `path` is multiple then creating list otherwise string
             if j == "path":
                 if "\n" in config[i][j]:
-                    temp[j] = config[i][j].split()
+                    store_list = config[i][j].split("\n")
+                    # using remove() to remove empty list elements
+                    while "" in store_list:
+                        store_list.remove("")
+
+                    if len(store_list) == 1:
+                        temp[j] = store_list[0]
+                    else:
+                        temp[j] = store_list
                 else:
                     temp[j] = config[i][j]
             else:
@@ -639,10 +660,14 @@ def convertRadisToJSON():
 
         config_json[i] = temp
 
+    # Adding all config element to a `database` key
+    config_final = {}
+    config_final["database"] = config_json
+
     # Creating json file
     config_json_dir = CONFIG_PATH_JSON
     with open(config_json_dir, "w") as outfile:
-        json.dump(config_json, outfile, indent=2)
+        json.dump(config_final, outfile, indent=3)
     outfile.close()
 
     return
@@ -703,10 +728,13 @@ def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
 
 
     """
-    config = getConfigJSON()
+    # Loading `~/radis.json` file
+    _config = getConfigJSON()
 
     # Make sure it looks like a databank (path and format are given)
     try:
+        # Getting the databases
+        config = _config["database"]
         config[dbname]["path"]
         config[dbname]["format"]
     except configparser.NoSectionError:
@@ -745,7 +773,14 @@ def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
 def getDatabankListJSON():
     """Get all databanks available in :ref:`~/radis.json"""
 
-    config = getConfigJSON()
+    _config = getConfigJSON()
+
+    # If `_config` is empty dictionary then return empty list
+    if len(_config) == 0:
+        return []
+
+    # Getting the databases
+    config = _config["database"]
 
     # Get databank path and format
     validdb = []
@@ -803,11 +838,19 @@ def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
     # Loading `~/radis.json`
     try:
         with open(CONFIG_PATH_JSON) as json_file:
-            config = json.load(json_file)
+            _config = json.load(json_file)
             json_file.close()
     except:
         # Empty Dictionary
-        config = {}
+        _config = {}
+
+    try:
+        # Accessing `database` key in file
+        config = _config["database"]
+    except:
+        # Creating `database` key
+        _config["database"] = {}
+        config = _config["database"]
 
     # Adding entries in `config[dbname]`
     config[dbname] = {}
@@ -825,8 +868,11 @@ def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
         else:
             config[dbname]["path"] = dict_entries.pop("path")
 
-    config[dbname]["format"] = dict_entries.pop("format")
-    config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
+    if "format" in dict_entries:
+        config[dbname]["format"] = dict_entries.pop("format")
+
+    if "parfunc" in dict_entries:
+        config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
 
     # Optional:
     # ... partition functions:
@@ -853,7 +899,7 @@ def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
 
     # Write to `~/radis.json`
     with open(CONFIG_PATH_JSON, "w") as configfile:
-        json.dump(config, configfile, indent=2)
+        json.dump(_config, configfile, indent=3)
         configfile.close()
 
     if verbose:
