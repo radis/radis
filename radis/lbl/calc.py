@@ -22,8 +22,8 @@ from os.path import exists
 
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.basics import all_in
-from radis.phys.convert import nm2cm
 from radis.phys.air import air2vacuum
+from radis.phys.convert import nm2cm
 
 
 # %%

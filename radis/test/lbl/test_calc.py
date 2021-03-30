@@ -731,6 +731,30 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     return True
 
 
+def check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
+
+    if verbose:
+        printm("Testing calc_spectrum wavelength range")
+
+    s = calc_spectrum(
+        wavelength_min=4348,  # nm
+        wavelength_max=5000,
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tvib=1700,  # K
+        Trot=1700,  # K
+        databank="HITRAN-CO-TEST",
+        wstep=0.01,
+    )
+    w, I = s.get("radiance_noslit", wunit="nm", Iunit="mW/sr/cm2/nm")
+
+    assert np.isclose(w.min(), 4348, atol=0.01)
+    assert np.isclose(w.max(), 5000, atol=0.01)
+
+    return True
+
+
 # --------------------------
 if __name__ == "__main__":
 

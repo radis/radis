@@ -1,21 +1,28 @@
 # distutils: language=c++
 
 import pickle
+
 from cpython cimport array
-import numpy as np
+
 import cupy as cp
+import numpy as np
+
 cimport numpy as np
+
 import sys
-from libcpp.vector cimport vector
+
+from libcpp.map cimport map as mapcpp
 from libcpp.set cimport set
 from libcpp.utility cimport pair
-from libcpp.map cimport map as mapcpp
-from cython.operator import dereference, postincrement
+from libcpp.vector cimport vector
+
 import ctypes
-from matplotlib import pyplot as plt
+
 import cupyx
 import cupyx.scipy.fftpack
 import cython
+from cython.operator import dereference, postincrement
+from matplotlib import pyplot as plt
 
 
 cdef float epsilon   = <float> 0.0001
