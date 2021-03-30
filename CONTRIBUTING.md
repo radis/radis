@@ -58,21 +58,18 @@ create a new branch (with a descriptive name) for your feature.
 5. Push your changes and open a Pull request (PR). If things aren't final, it's okay: just mark is as a draft `[WIP]`. Maintainers will review and start helping you from there !
 6. Once the review is complete (physical tests + code linting), the pull request is merged : welcome to the [RADIS contributors](https://github.com/radis/radis/graphs/contributors) ! :clap:
 
-# TODO : add a .gif for the SmartGit/GitHub Desktop version ?
+*TODO : add a .gif for the SmartGit/GitHub Desktop version ?*
 
-## Where to start ?
+## Where to start ? 
 
-If it's your first time contributing to an open-source project, welcome !
-The best is to get familiar with the procedure above.
+If it's your first time contributing to an open-source project, welcome ! 👋
 
-For instance, there are many tiny improvements to be made to the Documentation :
+The best is to get familiar with the procedure above. For instance, there are many tiny improvements to be made to the Documentation :
 - Have a look at the [Documentation TODO List](https://github.com/radis/radis/issues/77).
 - Pick one of them, create your GitHub account, and start the procedure above to become a Contributor.
 
-Then, have a look at the
-`GitHub opened issues <https://github.com/radis/radis/issues>`__.
-Easy issues that will help you understand the code structure are labelled as
-`Good First Issue <https://github.com/radis/radis/contribute>`__.
+Then, have a look at the [GitHub opened issues](https://github.com/radis/radis/issues). Easy issues that will help you understand the code structure are labelled as
+[Good First Issue](https://github.com/radis/radis/contribute).
 
 
 ## Regular Contributor ? Keep your Fork updated.
