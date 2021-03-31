@@ -22,6 +22,7 @@ from os.path import exists
 
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.basics import all_in
+from radis.phys.air import air2vacuum
 from radis.phys.convert import nm2cm
 
 
@@ -485,11 +486,18 @@ def _calc_spectrum(
     ):
         raise ValueError("Wavenumber and Wavelength both given... it's time to choose!")
 
+    if not medium in ["air", "vacuum"]:
+        raise NotImplementedError("Unknown propagating medium: {0}".format(medium))
+
     if wavenum_min is None and wavenum_max is None:
         assert wavelength_max is not None
         assert wavelength_min is not None
-        wavenum_min = nm2cm(wavelength_max)
-        wavenum_max = nm2cm(wavelength_min)
+        if medium == "vacuum":
+            wavenum_min = nm2cm(wavelength_max)
+            wavenum_max = nm2cm(wavelength_min)
+        else:
+            wavenum_min = nm2cm(air2vacuum(wavelength_max))
+            wavenum_max = nm2cm(air2vacuum(wavelength_min))
     else:
         assert wavenum_min is not None
         assert wavenum_max is not None
