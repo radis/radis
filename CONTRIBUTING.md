@@ -60,7 +60,7 @@ create a new branch (with a descriptive name) for your feature.
 
 *TODO : add a .gif for the SmartGit/GitHub Desktop version ?*
 
-## Where to start ? 
+## Where to start ?
 
 If it's your first time contributing to an open-source project, welcome ! 👋
 
