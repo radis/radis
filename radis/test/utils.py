@@ -30,12 +30,9 @@ from os.path import dirname, exists, join
 from radis.db.utils import getFile
 from radis.misc.config import (
     addDatabankEntries,
-    addDatabankEntriesJSON,
     diffDatabankEntries,
     getDatabankEntries,
-    getDatabankEntriesJSON,
     getDatabankList,
-    getDatabankListJSON,
 )
 
 TEST_FOLDER_PATH = join(dirname(dirname(__file__)), "test")
@@ -207,7 +204,7 @@ by :py:func:`~radis.test.utils.setup_test_line_databases`
 # %% Utils to test spec module
 
 
-def setup_test_line_databases_configformat(verbose=True):
+def setup_test_line_databases(verbose=True):
     """Build :py:data:`~radis.test.utils.TEST_DATABASES` and add them in
     ~/.radis. Generate the file if it  doesnt exist.
 
@@ -302,7 +299,8 @@ def setup_test_line_databases_configformat(verbose=True):
     return
 
 
-def setup_test_line_databases(verbose=True):
+'''
+def setup_test_line_databases_configformat(verbose=True):
     """Build :py:data:`~radis.test.utils.TEST_DATABASES` and add them in
     ~/radis.json Generate the file if it  doesnt exist.
 
@@ -376,13 +374,13 @@ def setup_test_line_databases(verbose=True):
         if dbname in dbnames:  # Check entries are correct
             #            for k
             diff = diffDatabankEntries(
-                getDatabankEntriesJSON(dbname), dbentries, verbose=False
+                getDatabankEntries_configformat(dbname), dbentries, verbose=False
             )
             if diff is not None:
                 raise ValueError(
                     "{0}".format(diff)
                     + "\nIn ~/.radis\n----------\n{0}".format(
-                        getDatabankEntriesJSON(dbname)
+                        getDatabankEntries_configformat(dbname)
                     )
                     + "\n\nExpected\n---------\n{0}\n\n".format(dbentries)
                     + "Test Database {0} doesnt match expected ".format(dbname)
@@ -395,7 +393,7 @@ def setup_test_line_databases(verbose=True):
             addDatabankEntriesJSON(dbname, dbentries)
 
     return
-
+'''
 
 # %% Edit existing Line databases
 

@@ -15,20 +15,20 @@ format
 Routine Listing
 ---------------
 
+- :func:`~radis.misc.config.getConfig_configformat`
+- :func:`~radis.misc.config.getDatabankEntries_configformat`
+- :func:`~radis.misc.config.getDatabankList_configformat`
+- :func:`~radis.misc.config.addDatabankEntries_configformat`
+- :func:`~radis.misc.config.diffDatabankEntries`
+- :func:`~radis.misc.config.printDatabankEntries_configformat`
+- :func:`~radis.misc.config.printDatabankList_configformat`
 - :func:`~radis.misc.config.getConfig`
+- :func:`~radis.misc.config.convertRadisToJSON`
 - :func:`~radis.misc.config.getDatabankEntries`
 - :func:`~radis.misc.config.getDatabankList`
 - :func:`~radis.misc.config.addDatabankEntries`
-- :func:`~radis.misc.config.diffDatabankEntries`
 - :func:`~radis.misc.config.printDatabankEntries`
 - :func:`~radis.misc.config.printDatabankList`
-- :func:`~radis.misc.config.getConfigJSON`
-- :func:`~radis.misc.config.convertRadisToJSON`
-- :func:`~radis.misc.config.getDatabankEntriesJSON`
-- :func:`~radis.misc.config.getDatabankListJSON`
-- :func:`~radis.misc.config.addDatabankEntriesJSON`
-- :func:`~radis.misc.config.printDatabankEntriesJSON`
-- :func:`~radis.misc.config.printDatabankListJSON`
 
 -------------------------------------------------------------------------------
 
@@ -255,7 +255,7 @@ CONFIG_PATH = join(expanduser("~"), ".radis")
 CONFIG_PATH_JSON = join(expanduser("~"), "radis.json")
 
 
-def getConfig():
+def getConfig_configformat():
     """Read config file and returns it.
 
     Config file name is harcoded: :ref:`~/.radis <label_lbl_config_file>`
@@ -278,7 +278,7 @@ def getConfig():
     return config
 
 
-def getConfigJSON():
+def getConfig():
     """Read config file and returns it.
 
     Config file name is harcoded: :ref:`~/radis.json`
@@ -315,7 +315,7 @@ def getConfigJSON():
     return config
 
 
-def getDatabankEntries(dbname, get_extra_keys=[]):
+def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
     r"""Read :ref:`~/.radis <label_lbl_config_file>` config file and returns a dictionary of entries.
 
     Parameters
@@ -407,7 +407,7 @@ def getDatabankEntries(dbname, get_extra_keys=[]):
     return entries
 
 
-def getDatabankList():
+def getDatabankList_configformat():
     """Get all databanks available in :ref:`~/.radis <label_lbl_config_file>`."""
 
     config = getConfig()
@@ -429,7 +429,7 @@ def getDatabankList():
     return validdb
 
 
-def addDatabankEntries(dbname, dict_entries, verbose=True):
+def addDatabankEntries0(dbname, dict_entries, verbose=True):
     """Add database dbname with entries from dict_entries.
 
     If database already exists in :ref:`~/.radis <label_lbl_config_file>`, raises an error
@@ -570,7 +570,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
         return k
 
 
-def printDatabankEntries(dbname, crop=200):
+def printDatabankEntries_configformat(dbname, crop=200):
     """Print databank info.
 
     Parameters
@@ -594,7 +594,7 @@ def printDatabankEntries(dbname, crop=200):
         print(k, ":", v, *args)
 
 
-def printDatabankList():
+def printDatabankList_configformat():
     """Print all databanks available in ~/.radis"""
     try:
         print("Databanks in {0}: ".format(CONFIG_PATH), ",".join(getDatabankList()))
@@ -673,7 +673,7 @@ def convertRadisToJSON():
     return
 
 
-def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
+def getDatabankEntries(dbname, get_extra_keys=[]):
     r"""Read :ref:`~/radis.json <label_lbl_config_file>` config file and returns a dictionary of entries.
 
     Parameters
@@ -729,7 +729,7 @@ def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
 
     """
     # Loading `~/radis.json` file
-    _config = getConfigJSON()
+    _config = getConfig()
 
     # Make sure it looks like a databank (path and format are given)
     try:
@@ -741,7 +741,7 @@ def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
         msg = (
             "{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)
             + "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH_JSON)
-            + "Available databanks: {0}. ".format(getDatabankListJSON())
+            + "Available databanks: {0}. ".format(getDatabankList())
             + "See databank format above. More information in "
             + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
         )
@@ -749,8 +749,9 @@ def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
 
     entries = config[dbname]
 
-    # Parse paths correctly
-    # entries["path"] = entries["path"].strip("\n").split("\n")
+    # Path correction for all tests
+    if type(entries["path"]) == str:
+        entries["path"] = entries["path"].split()
 
     # Merge all isotope-dependant levels into one dict
     iso_list = [k for k in entries if k.startswith("levels_iso")]
@@ -770,10 +771,10 @@ def getDatabankEntriesJSON(dbname, get_extra_keys=[]):
     return entries
 
 
-def getDatabankListJSON():
+def getDatabankList():
     """Get all databanks available in :ref:`~/radis.json"""
 
-    _config = getConfigJSON()
+    _config = getConfig()
 
     # If `_config` is empty dictionary then return empty list
     if len(_config) == 0:
@@ -799,7 +800,7 @@ def getDatabankListJSON():
     return validdb
 
 
-def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
+def addDatabankEntries(dbname, dict_entries, verbose=True):
     """Add database dbname with entries from dict_entries.
 
     If database already exists in :ref:`~/radis.json <label_lbl_config_file>`, raises an error
@@ -821,7 +822,7 @@ def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
 
     # Get ~/radis.json if exists, else create it
     try:
-        dbnames = getDatabankListJSON()
+        dbnames = getDatabankList()
     except FileNotFoundError:
         # generate ~/radis.json:
         dbnames = []
@@ -868,11 +869,8 @@ def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
         else:
             config[dbname]["path"] = dict_entries.pop("path")
 
-    if "format" in dict_entries:
-        config[dbname]["format"] = dict_entries.pop("format")
-
-    if "parfunc" in dict_entries:
-        config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
+    config[dbname]["format"] = dict_entries.pop("format")
+    config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
 
     # Optional:
     # ... partition functions:
@@ -908,7 +906,7 @@ def addDatabankEntriesJSON(dbname, dict_entries, verbose=True):
     return
 
 
-def printDatabankEntriesJSON(dbname, crop=200):
+def printDatabankEntries(dbname, crop=200):
     """Print databank info.
 
     Parameters
@@ -918,30 +916,21 @@ def printDatabankEntriesJSON(dbname, crop=200):
     crop: int
         if > 0, cutoff entries larger than that
     """
-    entries = getDatabankEntriesJSON(dbname)
-    print(dbname, "\n-------")
-    for k, v in entries.items():
-        # Add extra arguments
-        args = []
-        if k == "levelszpe":
-            args.append("cm-1")
-        v = "{0}".format(v)
-        if len(v) > crop and crop > 0:
-            v = v[:crop] + "..."
-        # Print item
-        print(k, ":", v, *args)
+    entries = getDatabankEntries(dbname)
+    print("'{0}':".format(dbname))
+    print(entries, "\n")
 
 
-def printDatabankListJSON():
+def printDatabankList():
     """Print all databanks available in ~/radis.json"""
     try:
         print(
             "Databanks in {0}: ".format(CONFIG_PATH_JSON),
-            ",".join(getDatabankListJSON()),
+            ",".join(getDatabankList()),
         )
-        for dbname in getDatabankListJSON():
+        for dbname in getDatabankList():
             print("\n")
-            printDatabankEntriesJSON(dbname)
+            printDatabankEntries(dbname)
     except FileNotFoundError:
         print("No config file {0}".format(CONFIG_PATH_JSON))
         # it's okay
