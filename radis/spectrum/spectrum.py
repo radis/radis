@@ -2129,7 +2129,7 @@ class Spectrum(object):
         else:
             w_nm = cm2nm(w)
             wslit0_nm = cm2nm(wslit0)
-        if slit_dispersion is not None:
+        if slit_dispersion is not None and mode != 'valid':
             # add space (wings) on the side of each slice. This space is cut
             # after convolution, removing side effects. Too much space and we'll
             # overlap too much and loose performance. Not enough and we'll have
@@ -2194,7 +2194,7 @@ class Spectrum(object):
                     wslit,
                     Islit,
                     norm_by=None,  # already norm.
-                    mode="same",  # dont loose information yet
+                    mode=mode,
                     waveunit=waveunit,
                     verbose=verbose,
                     assert_evenly_spaced=False,
@@ -2203,7 +2203,7 @@ class Spectrum(object):
                 )
 
                 # Crop wings to remove overlaps (before merging)
-                if slit_dispersion is not None:
+                if slit_dispersion is not None and mode != 'valid':
                     w_conv_window, I_conv_window = remove_boundary(
                         w_conv_window,
                         I_conv_window,
@@ -4017,7 +4017,7 @@ def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
         slice_w[imin:imax:increment] = 1
         slices.append(slice_w)
 
-    ##    # make sure we didnt miss anyone
+    # make sure we didnt miss anyone
     #    assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
 
     return slices[::increment], wings_min[::increment], wings_max[::increment]
