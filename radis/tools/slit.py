@@ -723,12 +723,14 @@ def convolve_with_slit(
     if bplot:
         plot_slit(w_slit, I_slit, waveunit="")
 
-    # 7. Convolve!
+    # 6. Convolve!
     # --------------
 
+    # We actually do not use mode valid in np.convolve,
+    # instead we use mode=same and remove the same boundaries from I and W in remove_boundary()
     I_conv = np.convolve(I, I_slit_interp, mode="same") * wstep
 
-    # 6. Remove boundary effects
+    # 7. Remove boundary effects
     # --------------
 
     w_conv, I_conv = remove_boundary(
