@@ -128,7 +128,6 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         s.plot(wunit="nm")
 
     w, I = s.get("radiance", wunit="nm")
-    w_ref = w[::100]
     # Compare against hardcoded results (neq 0.9.22, 28/06/18)
     #        I_ref = np.array([0.28694463, 0.29141711, 0.32461613, 0.32909566, 0.21939511, 0.18606445,
     #                          0.19740763, 0.16948599, 0.16780345, 0.15572173, 0.16770853, 0.14966064,
@@ -160,6 +159,30 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     # Updated with RADIS 0.9.26+ (13/12/20) and switch to latest HAPI version
     # therefore TIPS 2017 (instead of TIPS 2011) which changed CO2 partition functions
     # Q(Tref=300) 291.9025 --> 291.0405
+    w_ref = np.array(
+        [
+            4197.60321744,
+            4195.84148905,
+            4194.08123884,
+            4192.32246493,
+            4190.56516548,
+            4188.80933862,
+            4187.05498252,
+            4185.30209532,
+            4183.55067518,
+            4181.80072025,
+            4180.05222871,
+            4178.30519870,
+            4176.55962842,
+            4174.81551601,
+            4173.07285967,
+            4171.33165756,
+            4169.59190786,
+            4167.85360877,
+            4166.11675846,
+        ]
+    )
+
     I_ref = np.array(
         [
             0.29057002,
@@ -188,6 +211,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
 
+    assert np.allclose(w[::100], w_ref, atol=1e-6)
     assert np.allclose(I[::100], I_ref, atol=1e-6)
 
     return True
@@ -329,7 +353,7 @@ def test_calc_spectrum_overpopulations(
 
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_CDSD_HITEMP_PC
-## @pytest.mark.needs_connection
+# @pytest.mark.needs_connection
 # def test_all_calc_methods(
 #    verbose=True, plot=False, warnings=True, rtol=1e-3, *args, **kwargs
 # ):
@@ -424,7 +448,7 @@ def test_all_calc_methods_CO2pcN(
         import matplotlib.pyplot as plt
 
         plt.ion()
-    #%%
+    # %%
     Tgas = 500
 
     iso = 1
