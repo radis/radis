@@ -2055,7 +2055,6 @@ class Spectrum(object):
             get_slit_function,
             normalize_slit,
             offset_dilate_slit_function,
-            remove_boundary,
         )
 
         # Check inputs
@@ -2129,19 +2128,8 @@ class Spectrum(object):
         else:
             w_nm = cm2nm(w)
             wslit0_nm = cm2nm(wslit0)
-        if slit_dispersion is not None and mode != 'valid':
-            # add space (wings) on the side of each slice. This space is cut
-            # after convolution, removing side effects. Too much space and we'll
-            # overlap too much and loose performance. Not enough and we'll have
-            # artifacts on the jonction. We use the slit width to be conservative.
-            wings = len(wslit0)
-            # correct if the slit is to be interpolated (because wstep is different):
-            wings *= max(1, abs(int(np.diff(wslit0).mean() / wstep)))
-            slice_windows, wings_min, wings_max = _cut_slices(
-                w_nm, slit_dispersion, wings=wings
-            )
-        else:
-            slice_windows = [np.ones_like(w, dtype=np.bool)]
+
+        slice_windows = [np.ones_like(w, dtype=np.bool)]
 
         # Create dictionary to store convolved
         I_conv_slices = {}
@@ -2203,14 +2191,6 @@ class Spectrum(object):
                 )
 
                 # Crop wings to remove overlaps (before merging)
-                if slit_dispersion is not None and mode != 'valid':
-                    w_conv_window, I_conv_window = remove_boundary(
-                        w_conv_window,
-                        I_conv_window,
-                        "crop",
-                        crop_left=wings_min[islice],
-                        crop_right=wings_max[islice],
-                    )
 
                 if i == 0:
                     w_conv_slices.append(w_conv_window)
@@ -2220,27 +2200,11 @@ class Spectrum(object):
         # ---------
         for q in I_conv_slices.keys():
             qns = q + "_noslit"
-            I_not_conv = self._q[qns]
 
             # Merge all slices
             w_conv = np.hstack(w_conv_slices)
             I_conv = np.hstack(I_conv_slices[q])
 
-            #            assert all(sorted(w_conv) == w_conv)
-
-            # Crop to remove boundary effects (after merging)
-            # this uses the mode='valid', 'same' attribute
-            # ... if slit was imported, it has been interpolated on the Spectrum
-            # ... grid and its initial length has changed: get the scaling factor
-            # ... to remove the correct number of non valid points on the side
-            scale_factor = abs((wslit0_nm[1] - wslit0_nm[0]) / (w_nm[1] - w_nm[0]))
-            w_conv, I_conv = remove_boundary(
-                w_conv,
-                I_conv,
-                mode,
-                len_I=len(I_not_conv),
-                len_I_slit_interp=int(len(Islit0) * scale_factor) + 1,
-            )
             # Store
             self._q_conv["wavespace"] = w_conv
             self._q_conv[q] = I_conv
