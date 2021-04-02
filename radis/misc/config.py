@@ -368,7 +368,7 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
 
 
     """
-    config = getConfig()
+    config = getConfig_configformat()
 
     # Make sure it looks like a databank (path and format are given)
     try:
@@ -378,7 +378,7 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
         msg = (
             "{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)
             + "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH)
-            + "Available databanks: {0}. ".format(getDatabankList())
+            + "Available databanks: {0}. ".format(getDatabankList_configformat())
             + "See databank format above. More information in "
             + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
         )
@@ -410,7 +410,7 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
 def getDatabankList_configformat():
     """Get all databanks available in :ref:`~/.radis <label_lbl_config_file>`."""
 
-    config = getConfig()
+    config = getConfig_configformat()
 
     # Get databank path and format
     validdb = []
@@ -429,7 +429,7 @@ def getDatabankList_configformat():
     return validdb
 
 
-def addDatabankEntries0(dbname, dict_entries, verbose=True):
+def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
     """Add database dbname with entries from dict_entries.
 
     If database already exists in :ref:`~/.radis <label_lbl_config_file>`, raises an error
@@ -451,7 +451,7 @@ def addDatabankEntries0(dbname, dict_entries, verbose=True):
 
     # Get ~/.radis if exists, else create it
     try:
-        dbnames = getDatabankList()
+        dbnames = getDatabankList_configformat()
     except FileNotFoundError:
         # generate ~/.radis:
         dbnames = []
@@ -580,7 +580,7 @@ def printDatabankEntries_configformat(dbname, crop=200):
     crop: int
         if > 0, cutoff entries larger than that
     """
-    entries = getDatabankEntries(dbname)
+    entries = getDatabankEntries_configformat(dbname)
     print(dbname, "\n-------")
     for k, v in entries.items():
         # Add extra arguments
@@ -597,10 +597,13 @@ def printDatabankEntries_configformat(dbname, crop=200):
 def printDatabankList_configformat():
     """Print all databanks available in ~/.radis"""
     try:
-        print("Databanks in {0}: ".format(CONFIG_PATH), ",".join(getDatabankList()))
-        for dbname in getDatabankList():
+        print(
+            "Databanks in {0}: ".format(CONFIG_PATH),
+            ",".join(getDatabankList_configformat()),
+        )
+        for dbname in getDatabankList_configformat():
             print("\n")
-            printDatabankEntries(dbname)
+            printDatabankEntries_configformat(dbname)
     except FileNotFoundError:
         print("No config file {0}".format(CONFIG_PATH))
         # it's okay
@@ -680,13 +683,10 @@ def automatic_conversion():
     to convert `~/.radis` into `~/radis.json`
     """
     if exists(CONFIG_PATH_JSON):
-        print("File exists")
         pass
     elif exists(CONFIG_PATH):
-        print("convering")
         convertRadisToJSON()
     else:
-        "DO Nothing"
         pass
 
     return

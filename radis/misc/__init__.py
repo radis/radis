@@ -36,7 +36,7 @@ from .basics import (
     partition,
     remove_duplicates,
 )
-from .config import getDatabankEntries, getDatabankList
+from .config import automatic_conversion, getDatabankEntries, getDatabankList
 from .curve import (
     curve_add,
     curve_distance,
@@ -48,3 +48,9 @@ from .debug import export
 from .progress_bar import ProgressBar
 from .signal import resample, resample_even
 from .utils import DatabankNotFound, NotInstalled, getProjectRoot
+
+# Checking `~radis.json` exist or not, if not then converting `~.radis` into `~/radis.json`
+try:
+    automatic_conversion()
+except:
+    raise ("Couldn't Convert `.radis` to `radis.json`")
