@@ -631,7 +631,7 @@ def convertRadisToJSON():
     """
 
     # Loads configuration file ~/.radis
-    config = getConfig()
+    config = getConfig_configformat()
 
     # Variable to store data in JSON format
     config_json = {}
@@ -669,6 +669,25 @@ def convertRadisToJSON():
     with open(config_json_dir, "w") as outfile:
         json.dump(config_final, outfile, indent=3)
     outfile.close()
+
+    return
+
+
+def automatic_conversion():
+    """Checks whether `~/radis.json` exists.
+    If not then we use
+    :func:`~radis.misc.config.convertRadisToJSON`
+    to convert `~/.radis` into `~/radis.json`
+    """
+    if exists(CONFIG_PATH_JSON):
+        print("File exists")
+        pass
+    elif exists(CONFIG_PATH):
+        print("convering")
+        convertRadisToJSON()
+    else:
+        "DO Nothing"
+        pass
 
     return
 
