@@ -75,9 +75,8 @@ def fetch_astroquery(
 
     See Also
     --------
-    :py:func:`astroquery.hitran.reader.download_hitran`,
-    :py:func:`astroquery.hitran.reader.read_hitran_file`,
-    :py:attr:`~astroquery.query.BaseQuery.cache_location`
+    :py:meth:`astroquery.hitran.core.Hitran.query_lines_async`,
+    :py:attr:`astroquery.query.BaseQuery.cache_location`
 
     """
     # Check input

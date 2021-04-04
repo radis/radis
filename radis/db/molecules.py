@@ -32,6 +32,7 @@ CO_X_iso1 = ElectronicState(
     vmax_morse=48,
     Ediss=eV2cm(11.16),
 )
+""":math:``^{16}O^{12}C`` electronic ground state"""
 CO_X_iso2 = ElectronicState(
     "CO",
     isotope=2,
@@ -43,6 +44,7 @@ CO_X_iso2 = ElectronicState(
     vmax_morse=48,
     Ediss=eV2cm(11.16),
 )
+""":math:``^{16}O^{13}C`` electronic ground state"""
 CO_X_iso3 = ElectronicState(
     "CO",
     isotope=3,
@@ -54,6 +56,7 @@ CO_X_iso3 = ElectronicState(
     vmax_morse=48,
     Ediss=eV2cm(11.16),
 )
+""":math:``^{18}O^{12}C`` electronic ground state"""
 
 # CO2
 # ----------
@@ -67,6 +70,7 @@ CO2_X_626 = ElectronicState(
     spectroscopic_constants_type="herzberg",
     Ediss=44600,
 )
+""":math:``^{16}O^{12}C^{16}O`` electronic ground state"""
 CO2_X_636 = ElectronicState(
     "CO2",
     isotope=2,
@@ -76,6 +80,7 @@ CO2_X_636 = ElectronicState(
     spectroscopic_constants_type="herzberg",
     Ediss=44600,
 )
+""":math:``^{16}O^{13}C^{16}O`` electronic ground state"""
 CO2_X_628 = ElectronicState(
     "CO2",
     isotope=3,
@@ -85,6 +90,7 @@ CO2_X_628 = ElectronicState(
     spectroscopic_constants_type="herzberg",
     Ediss=44600,
 )
+""":math:``^{16}O^{12}C^{18}O`` electronic ground state"""
 CO2_X_627 = ElectronicState(
     "CO2",
     isotope=4,
@@ -94,6 +100,7 @@ CO2_X_627 = ElectronicState(
     spectroscopic_constants_type="herzberg",
     Ediss=44600,
 )
+""":math:``^{16}O^{12}C^{17}O`` electronic ground state"""
 
 
 # %% Dictionary of predefined molecules
@@ -116,8 +123,8 @@ Molecules = {
 }
 """dict: list of Electronic states whose energy levels can be calculated with RADIS
 built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`.
-For references refer to the definition of each molecule:
 
+For references refer to the definition of each molecule:
 CO:
 
 - :py:data:`~radis.db.molecules.CO_X_iso1`
