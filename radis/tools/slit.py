@@ -49,6 +49,7 @@ from numpy import exp
 from numpy import log as ln
 from numpy import sqrt, trapz
 from scipy.interpolate import splev, splrep
+from scipy.signal import oaconvolve
 
 from radis.misc.arrays import evenly_distributed
 from radis.misc.basics import is_float
@@ -728,7 +729,7 @@ def convolve_with_slit(
 
     # We actually do not use mode valid in np.convolve,
     # instead we use mode=same and remove the same boundaries from I and W in remove_boundary()
-    I_conv = np.convolve(I, I_slit_interp, mode="same") * wstep
+    I_conv = oaconvolve(I, I_slit_interp, mode="same") * wstep
 
     # 7. Remove boundary effects
     # --------------
