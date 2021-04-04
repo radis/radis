@@ -257,7 +257,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                 :alt: GitHub
 
 .. |badge_contributors| image:: https://img.shields.io/github/contributors/radis/radis.svg
-                        :target: https://github.com/radis/radis/stargazers
+                        :target: https://github.com/radis/radis/graphs/contributors
                         :alt: Contributors
 
 .. |badge_license| image:: https://img.shields.io/badge/License-LGPL3-blue.svg

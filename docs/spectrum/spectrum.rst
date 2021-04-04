@@ -169,10 +169,10 @@ with other spectra by solving the :ref:`radiative transfer equation <label_los_i
 Some variables represent quantities that have been convolved with an instrumental slit function,
 as measured in experimental spectra:
 
-- ``'radiance'``: the spectral radiance, convolved by the instrument function (typically in ``'mW/cm2/sr/nm'``). This
+- ``'radiance'``: the spectral radiance, convolved by the instrument function (typically in :math:``'mW/cm^2/sr/nm'``). This
   is sometimes confusingly called *spectral intensity*.
-- ``'transmittance'``: the directional spectral transmittance (``0`` to ``1``), convolved by the instrument function.
-- ``'emissivity'``: the directional spectral emissivity (``0`` to ``1``), convolved by the instrument function.
+- ``'transmittance'``: the directional spectral transmittance (:math:``0`` to :math:``1``), convolved by the instrument function.
+- ``'emissivity'``: the directional spectral emissivity (:math:``0`` to :math:``1``), convolved by the instrument function.
   The spectral emissivity is the radiance emitted by a surface
   divided by that emitted by a black body at the same temperature as that surface. This value is only
   defined under thermal equilibrium.
@@ -181,13 +181,13 @@ Other variables represent quantities that have not been convolved (theoretical s
 
 - ``'radiance_noslit'``: the spectral radiance (typically in :math:`mW/cm^2/sr/nm`). This
 is sometimes confusingly called *spectral intensity*.
-- ``'transmittance_noslit'``: the directional spectral transmittance (``0`` to ``1``)
+- ``'transmittance_noslit'``: the directional spectral transmittance (:math:``0`` to :math:``1``)
 - ``'emissivity_noslit'``: spectral emissivity (``0`` to ``1``) *i.e.* the radiance emitted by a surface
   divided by that emitted by a black body at the same temperature as that surface. This value is only
   defined under thermal equilibrium.
-- ``'emisscoeff'``: the directional spectral emission density (typically in ``'mW/cm3/sr/nm'``).
+- ``'emisscoeff'``: the directional spectral emission density (typically in :math:``'mW/cm^3/sr/nm'``).
 - ``'absorbance'``: the directional spectral absorbance (no dimension), also called *optical depth*.
-- ``'abscoeff'``: spectral absorption coefficient (typically in ``'cm-1'``), also called *opacity*.
+- ``'abscoeff'``: spectral absorption coefficient (typically in :math:``'cm^{-1}'``), also called *opacity*.
   This is sometimes found as the *extinction coefficient* in the literature (strictly speaking, *extinction*
   is *absorption* + *diffusion*, the latter being negligible in the infrared).
 
@@ -215,8 +215,8 @@ Custom spectral quantities with arbitrary units can be defined when creating a S
 
 Although not recommended, it is also possible to directly edit the dictionary containing the objects.
 For instance, this is done in
-`CO2 radiative forcing example <https://github.com/radis/radis-examples/blob/master/ex_radiative_forcing_co2/radiative_forcing_co2.py>`__ ::
-to calculate irradiance from radiance (by multiplying by ``'pi'`` and changing the unit).
+`CO2 radiative forcing example <https://github.com/radis/radis-examples/blob/master/ex_radiative_forcing_co2/radiative_forcing_co2.py>`__
+to calculate irradiance from radiance (by multiplying by ``'pi'`` and changing the unit)::
 
     s._q['irradiance'] = s.get('radiance_noslit')[1]*pi
     s.units['irradiance'] = s.units['radiance_noslit'].replace('/sr', '')
@@ -225,7 +225,7 @@ The unit conversion methods will properly work with custom units.
 
 .. warning::
 
-    However, rescaling or combining spectra with custom quantities may result in errors.
+    Rescaling or combining spectra with custom quantities may result in errors.
 
 Relations between quantities
 ----------------------------
@@ -414,15 +414,13 @@ requires long computational times!
 Export to txt
 -------------
 
-Saving to .txt in general isn't recommended as you will loose some information (for instance,
+Saving to ``.txt`` in general isn't recommended as you will loose some information (for instance,
 the conditions). You better use :py:meth:`~radis.spectrum.spectrum.Spectrum.store` and export
-to .spec [hidden .json] format.
+to ``.spec`` [a hidden ``.json``] format.
 
 If you really need to export a given spectral quantity to txt file (for use in another software,
 for instance), you can use the :py:meth:`~radis.spectrum.spectrum.Spectrum.savetxt` method that
-will export a given spectral quantity.
-
-Example::
+will export a given spectral quantity::
 
     s.savetxt('radiance_W_cm2_sr_um.csv', 'radiance_noslit', wunit='nm', Iunit='W/cm2/sr/µm')
 
@@ -561,6 +559,11 @@ the spectral radiance of a spectrum with a low resolution::
 
     (10*Radiance(s.apply_slit(10, 'nm'))).plot()
 
+The same can be achieved with the :py:meth:`~radis.spectrum.spectrum.Spectrum.take`
+method, which returns the spectrum with only one spectral quantity::
+
+    (10*(s.apply_slit(10, 'nm')).take('radiance')).plot()
+
 Algebraic operations also work with dimensioned `~astropy.units.quantity.Quantity`.
 For instance, remove a constant baseline in a given unit::
 
@@ -584,7 +587,7 @@ Use the associated functions: :py:func:`~radis.spectrum.operations.crop`,
 :py:func:`~radis.spectrum.operations.offset`.
 
 They are also defined as methods of the Spectrum objects (see
-:py:meth:`~radis.spectrum.Spectrum.crop`, :py:meth:`~radis.spectrum.Spectrum.offset`),
+:py:meth:`~radis.spectrum.spectrum.Spectrum.crop`, :py:meth:`~radis.spectrum.spectrum.Spectrum.offset`),
 so they can be used directly with::
 
     s.offset(3, 'nm')
@@ -596,7 +599,7 @@ generate a new Spectrum.
 Normalize
 ---------
 
-Use :py:meth:`~radis.spectrum.spectrum.normalize` directly, if your spectrum
+Use :py:meth:`~radis.spectrum.spectrum.Spectrum.normalize` directly, if your spectrum
 only has one spectral quantity ::
 
     s.normalize()
@@ -611,7 +614,7 @@ This returns a new spectrum and does not modify the Spectrum itself. To do so us
 
     s.normalize(inplace=True)
 
-You can chain the commands :
+You can chain the commands::
 
     s.normalize().plot()
 
