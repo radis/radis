@@ -21,12 +21,12 @@ Cite
 ====
 
 RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
-for your work, cite all of them that made it possible :
+for your work, **cite all of them that made it possible** :
 
 Line-by-line algorithm :
 
-- the line-by-line code as [RADIS-2018]_ |badge_article1|
-- the new spectral synthesis algorithm [Spectral-Synthesis-Algorithm]_ |badge_article2|
+- cite the line-by-line code as [RADIS-2018]_ |badge_article1|
+- if using the default optimization, cite the new spectral synthesis algorithm [Spectral-Synthesis-Algorithm]_ |badge_article2|
 - for reproducibility, mention the RADIS version number. Get your version with :py:func:`~radis.get_version`
   (latest version available is |badge_pypi|) ::
 
@@ -35,12 +35,23 @@ Line-by-line algorithm :
 
 Database and database retrieval algorithms :
 
-- the Line Databases used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
+- cite the Line Databases used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
 - if downloading [HITRAN-2016]_ directly with ``fetch('hitran')``, cite [HAPI]_ which is the underlying
   interface that makes it work !
 - if running nonequilibrium calculations, mention the reference of the spectroscopic constants used
   to calculate the energies (for instance, the
   :ref:`RADIS built-in constants <label_db_spectroscopic_constants>`)
+
+
+Research Work
+=============
+
+Research papers using RADIS and the associated algorithms :
+
+- Papers citing |badge_article1| : https://scholar.google.fr/scholar?cites=5826973099621508256
+
+- Papers citing |badge_article2| : https://scholar.google.fr/scholar?cites=17363432006874800849
+
 
 Useful Links
 ============
@@ -59,7 +70,7 @@ RADIS:
 
 - PyPi Repository: |badge_pypi|  |badge_pypistats|
 
-- Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
+- Interactive Examples: |badge_examples| |badge_binder|
 
 - Try online : :ref:`🌱 RADIS Lab <label_radis_online>`
 
@@ -78,7 +89,7 @@ RADIS:
                    :target: https://linkinghub.elsevier.com/retrieve/pii/S0022407320310049
                    :alt: Spectral Synthesis Algorithm
 
-.. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star
+.. |badge_stars| image:: https://img.shields.io/github/stars/radis/radis.svg?style=social&label=GitHub
                 :target: https://github.com/radis/radis/stargazers
                 :alt: GitHub
 
@@ -106,7 +117,7 @@ RADIS:
                      :target: https://pypistats.org/packages/radis
                      :alt: Downloads
 
-.. |badge_examples| image:: https://img.shields.io/github/stars/radis/radis-examples.svg?style=social&label=Star
+.. |badge_examples| image:: https://img.shields.io/github/stars/radis/radis-examples.svg?style=social&label=Examples
                 :target: https://github.com/radis/radis-examples
                 :alt: Examples
 
