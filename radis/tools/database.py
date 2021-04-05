@@ -1085,7 +1085,9 @@ class SpecList(object):
             batch_size = self.batch_size
             if self.verbose:
                 print(
-                    "*** Loading the database with {0} ".format(nJobs)
+                    "*** Loading the database with {0} ".format(
+                        nJobs if nJobs > 0 else f"all minus {abs(nJobs+1)}"
+                    )
                     + "processor(s) ({0} files)***".format(len(files))
                 )
 
@@ -2147,14 +2149,14 @@ class SpecDatabase(SpecList):
                     self.path,
                     compress=compress,
                     if_exists_then=if_exists_then,
-                    **kwargs
+                    **kwargs,
                 )
             else:
                 file = spectrum.store(
                     store_path,
                     compress=compress,
                     if_exists_then=if_exists_then,
-                    **kwargs
+                    **kwargs,
                 )
 
         # ... input is a file name. Copy it in database and load it
@@ -2188,17 +2190,13 @@ class SpecDatabase(SpecList):
                     "You are manually adding a file that is in the database folder directly. Consider using db.update()"
                 )
                 file = spectrum
-            spectrum = self._load_file(file, binary=compress)
 
         else:
             raise ValueError("Unvalid Spectrum type: {0}".format(type(spectrum)))
 
         # Now register the spectrum in the database :
-
-        out = spectrum.get_conditions()
-        # Add filename, and a link to the Spectrum object itself
-        out.update({"file": basename(file), "Spectrum": spectrum})
-        self.df = self.df.append(out, ignore_index=True)
+        conditions_and_spectrum = self._load_new_file(file, binary=compress)
+        self.df = self.df.append(conditions_and_spectrum, ignore_index=True)
 
         # Update index .csv
         self.print_index()
@@ -2212,7 +2210,7 @@ class SpecDatabase(SpecList):
         normalize=False,
         normalize_how="max",
         conditions="",
-        **kwconditions
+        **kwconditions,
     ):
         """Returns the Spectrum in the database that has the lowest residual
         with ``s_exp``.
@@ -2338,18 +2336,20 @@ class SpecDatabase(SpecList):
         return pd.DataFrame(db)
 
     def _load_new_file(self, file, binary=False):
-        """return Spectrum attributes for insertion in database.
+        """Load spectrum and return Spectrum attributes for insertion in database.
+
+        The Spectrum itself is stored under the "Spectrum" key, and the filename
+        under "file".
 
         Returns
         -------
-        out: dict
-            dictionary of conditions of loaded spectrum"""
+        dict: dictionary of conditions of loaded spectrum"""
 
         s = load_spec(file, binary=binary)
         if self.verbose:
             print(("loaded {0}".format(basename(file))))
 
-        out = s.get_conditions()
+        out = s.get_conditions().copy()
 
         # Add filename, and a link to the Spectrum object itself
         out.update({"file": basename(file), "Spectrum": s})
@@ -2364,7 +2364,7 @@ class SpecDatabase(SpecList):
         new_conditions_list = []
         for _, r in self.df.iterrows():
             s = r.Spectrum
-            new_conditions = dict(s.get_conditions())  # copy
+            new_conditions = s.get_conditions().copy()
             new_conditions["file"] = r.file
             new_conditions["Spectrum"] = r.Spectrum
             new_conditions_list.append(new_conditions)

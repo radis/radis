@@ -86,7 +86,7 @@ def test_database_functions(
         assert s2 in db
         # .. ensures that you cant add it twice
         with pytest.raises(ValueError):
-            db.add(s2, add_info=["Tvib", "Trot"])
+            db.add(s2, add_info=["Tvib", "Trot"], if_exists_then="error")
 
     # Now remove the Spectrum, update the database and ensures it's not there anymore
     finally:
@@ -178,7 +178,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
 
     #%% Simulate a fake database
 
-    #%% Compute spectra of CO and OH and add them to the database
+    # Compute spectra of CO and OH and add them to the database
     T_db = np.linspace(300, 1200, 5)  # Temperature array
     for T in T_db:
         s1 = (
@@ -192,6 +192,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
             )
             .apply_slit(2, "nm")
             .take("radiance")
+            # TODO : use https://github.com/radis/radis/issues/135 once implemented
         )
         db.add(s1, store_name=f"CO_{T}K.spec", if_exists_then="ignore")
         s2 = (
@@ -205,6 +206,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
             )
             .apply_slit(2, "nm")
             .take("radiance")
+            # TODO : use https://github.com/radis/radis/issues/135 once implemented
         )
         db.add(s2, store_name=f"OH_{T}K.spec", if_exists_then="ignore")
 
@@ -251,8 +253,5 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
 if __name__ == "__main__":
     import pytest
 
-    test_lazy_loading()
-
     # -s is to plot
     pytest.main(["test_database.py", "-s"])
-    # test_save_compressed2()
