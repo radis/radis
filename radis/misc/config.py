@@ -39,6 +39,7 @@ Routine Listing
 import configparser
 import json
 import os
+import warnings
 from os.path import dirname, exists, expanduser, join
 
 from radis.misc.basics import compare_dict, compare_lists, stdpath
@@ -204,7 +205,7 @@ DBFORMATJSON = r"""
                                        #  or SpectrumFactory.load_databank()
     "info": "HITEMP 2010 databank",      #  whatever you want
     "path":                           #  no "", multipath allowed
-           ["D:\Databases\HITEMP-CO2\hitemp_07"
+          ["D:\Databases\HITEMP-CO2\hitemp_07"
            "D:\Databases\HITEMP-CO2\hitemp_08"
            "D:\Databases\HITEMP-CO2\hitemp_09"],
     "format": "hitran",                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
@@ -278,11 +279,110 @@ def getConfig_configformat():
     return config
 
 
+def convertRadisToJSON():
+    """Converts the ~/.radis file into json formatted file ~/radis.json
+
+    Example
+    -------
+    original ~/.radis file format::
+
+        [HITRAN-CO2-TEST]
+        info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
+        path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
+        format = hitran
+        parfuncfmt = hapi
+        levelsfmt = radis
+
+    -----------
+    Converted ~/radis.json file format::
+
+        {"HITRAN-CO2-TEST": {"info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
+        "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
+        "format": "hitran",
+        "parfuncfmt": "hapi",
+        "levelsfmt": "radis"}}
+    """
+
+    # Loads configuration file ~/.radis
+    config = getConfig_configformat()
+
+    # Variable to store data in JSON format
+    config_json = {}
+
+    # Converting configuration into JSON format and storing in config_json variable
+    for i in config.sections():
+        temp = {}
+        for j in config[i]:
+            # Checking if the `path` is multiple then creating list otherwise string
+            if j == "path":
+                if "\n" in config[i][j]:
+                    store_list = config[i][j].split("\n")
+                    # using remove() to remove empty list elements
+                    while "" in store_list:
+                        store_list.remove("")
+
+                    if len(store_list) == 1:
+                        temp[j] = store_list[0]
+                    else:
+                        temp[j] = store_list
+                else:
+                    temp[j] = config[i][j]
+            else:
+                # Adding to `temp` dictionaru
+                temp[j] = config[i][j]
+
+        config_json[i] = temp
+
+    # Adding all config element to a `database` key
+    config_final = {}
+    config_final["database"] = config_json
+
+    # Creating json file
+    config_json_dir = CONFIG_PATH_JSON
+    with open(config_json_dir, "w") as outfile:
+        json.dump(config_final, outfile, indent=3)
+    outfile.close()
+
+    return
+
+
+def automatic_conversion():
+    """Checks whether `~/radis.json` exists.
+    If not then we use
+    :func:`~radis.misc.config.convertRadisToJSON`
+    to convert `~/.radis` into `~/radis.json`
+    """
+
+    # If `~/.radis` and `~/radis.json` both found, raises DeprecationWarning
+    if exists(CONFIG_PATH_JSON) and exists(CONFIG_PATH):
+        warnings.warn(
+            DeprecationWarning(
+                "`~/.radis` and `~/radis.json` both found. "
+                + "`~/.radis` config file was replaced by `~/radis.json` in version '0.9.29'."
+                + " Remove `~/.radis` to remove this warning.",
+            )
+        )
+    elif exists(CONFIG_PATH_JSON):
+        pass
+    elif exists(CONFIG_PATH):
+        convertRadisToJSON()
+    else:
+        pass
+
+    return
+
+
 def getConfig():
     """Read config file and returns it.
 
     Config file name is harcoded: :ref:`~/radis.json`
     """
+    # First checking `~radis.json` exist or not, if not then converting `~.radis` into `~/radis.json`
+    try:
+        automatic_conversion()
+    except Exception as err:
+        raise ValueError("Couldn't Convert `.radis` to `radis.json`") from err
+
     configpath = CONFIG_PATH_JSON
     # Test ~/radis.json exists
     if not exists(configpath):
@@ -609,89 +709,6 @@ def printDatabankList_configformat():
         # it's okay
 
 
-def convertRadisToJSON():
-    """Converts the ~/.radis file into json formatted file ~/radis.json
-
-    Example
-    -------
-    original ~/.radis file format::
-
-        [HITRAN-CO2-TEST]
-        info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
-        path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
-        format = hitran
-        parfuncfmt = hapi
-        levelsfmt = radis
-
-    -----------
-    Converted ~/radis.json file format::
-
-        {"HITRAN-CO2-TEST": {"info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
-        "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
-        "format": "hitran",
-        "parfuncfmt": "hapi",
-        "levelsfmt": "radis"}}
-    """
-
-    # Loads configuration file ~/.radis
-    config = getConfig_configformat()
-
-    # Variable to store data in JSON format
-    config_json = {}
-
-    # Converting configuration into JSON format and storing in config_json variable
-    for i in config.sections():
-        temp = {}
-        for j in config[i]:
-            # Checking if the `path` is multiple then creating list otherwise string
-            if j == "path":
-                if "\n" in config[i][j]:
-                    store_list = config[i][j].split("\n")
-                    # using remove() to remove empty list elements
-                    while "" in store_list:
-                        store_list.remove("")
-
-                    if len(store_list) == 1:
-                        temp[j] = store_list[0]
-                    else:
-                        temp[j] = store_list
-                else:
-                    temp[j] = config[i][j]
-            else:
-                # Adding to `temp` dictionaru
-                temp[j] = config[i][j]
-
-        config_json[i] = temp
-
-    # Adding all config element to a `database` key
-    config_final = {}
-    config_final["database"] = config_json
-
-    # Creating json file
-    config_json_dir = CONFIG_PATH_JSON
-    with open(config_json_dir, "w") as outfile:
-        json.dump(config_final, outfile, indent=3)
-    outfile.close()
-
-    return
-
-
-def automatic_conversion():
-    """Checks whether `~/radis.json` exists.
-    If not then we use
-    :func:`~radis.misc.config.convertRadisToJSON`
-    to convert `~/.radis` into `~/radis.json`
-    """
-    if exists(CONFIG_PATH_JSON):
-        pass
-    elif exists(CONFIG_PATH):
-        convertRadisToJSON()
-    else:
-        pass
-
-    return
-
-
 def getDatabankEntries(dbname, get_extra_keys=[]):
     r"""Read :ref:`~/radis.json <label_lbl_config_file>` config file and returns a dictionary of entries.
 
@@ -711,9 +728,9 @@ def getDatabankEntries(dbname, get_extra_keys=[]):
                                             #  or SpectrumFactory.load_databank()
             "info": "HITEMP 2010 databank"      # whatever you want
             "path":                           # no "", multipath allowed
-                "D:\Databases\HITEMP-CO2\hitemp_07"
+               ["D:\Databases\HITEMP-CO2\hitemp_07"
                 "D:\Databases\HITEMP-CO2\hitemp_08"
-                "D:\Databases\HITEMP-CO2\hitemp_09"
+                "D:\Databases\HITEMP-CO2\hitemp_09"]
             "format": "hitemp"                  # 'hitran' (HITRAN / HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                             # Databank text file format. More info in
                                             # SpectrumFactory.load_databank function.
