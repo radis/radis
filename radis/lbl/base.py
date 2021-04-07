@@ -81,7 +81,7 @@ import radis
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
+from radis.lbl.labels import vib_lvl_name_hitran_class1
 from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
@@ -414,7 +414,7 @@ class BaseFactory(DatabankLoader):
             raise NotImplementedError("3 Tvib mode for CDSD in pcN convention")  # TODO
 
         elif self.params.levelsfmt == "radis":  # calculate with Dunham expansions
-            if self.input.molecule in HITRAN_CLASS5:  # class 1
+            if self.input.molecule in HITRAN_CLASS5:  # class 5
                 if calc_Evib_harmonic_anharmonic:
                     return self._add_Evib123Erot_RADIS_cls5_harmonicanharmonic(df)
                 else:
@@ -1285,67 +1285,39 @@ class BaseFactory(DatabankLoader):
             energies = self.get_energy_levels(molecule, iso, state)
 
             # only keep vibrational energies
-            index = ["viblvl"]
-            energies = energies.drop_duplicates(index, inplace=False)
+            energies = energies.drop_duplicates("viblvl", inplace=False)
             # (work on a copy)
 
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
+            index = ["v1", "v2", "l2", "v3"]
             energies.set_index(index, inplace=True)
+            Evib1_h_dict = dict(list(zip(energies.index, energies.Evib1_h)))
+            Evib1_a_dict = dict(list(zip(energies.index, energies.Evib1_a)))
+            Evib2_h_dict = dict(list(zip(energies.index, energies.Evib2_h)))
+            Evib2_a_dict = dict(list(zip(energies.index, energies.Evib2_a)))
+            Evib3_h_dict = dict(list(zip(energies.index, energies.Evib3_h)))
+            Evib3_a_dict = dict(list(zip(energies.index, energies.Evib3_a)))
 
-            # Calculate vibrational / rotational levels for all transitions
-            def fillEvib123u(r):
-                """Treanor version of the parser above.
+            # Add lower state energy
+            df_v1v2l2v3 = df.set_index(["v1l", "v2l", "l2l", "v3l"])
+            # the map below is crazy fast compared to above loop
+            df["Evib1l_h"] = df_v1v2l2v3.index.map(Evib1_h_dict.get).values
+            df["Evib1l_a"] = df_v1v2l2v3.index.map(Evib1_a_dict.get).values
+            df["Evib2l_h"] = df_v1v2l2v3.index.map(Evib2_h_dict.get).values
+            df["Evib2l_a"] = df_v1v2l2v3.index.map(Evib2_a_dict.get).values
+            df["Evib3l_h"] = df_v1v2l2v3.index.map(Evib3_h_dict.get).values
+            df["Evib3l_a"] = df_v1v2l2v3.index.map(Evib3_a_dict.get).values
+            # TODO @dev # performance: try getting all 3 values at the same time?
+            # with:  Evib123_dict = dict(list(zip(energies.index, (energies.Evib1, energies.Evib2, energies.Evib3))))
 
-                Add both the harmonic and anharmonic components of the vibrational
-                energies Evib1_h, Evib1_a, Evib2_h, etc. for the levels in group r
-
-                Group r corresponds to levels of a same (v1, v2, l2, v3): they
-                have the same vibrational energy.
-
-                Notes
-                -----
-
-                (v1, v2, l2, v3, j) is a partition and we just did a groupby(these)
-                # so all r.vu are the same
-
-                Implementation:
-
-                How to fetch the corresponding rovib level in the Energy Database? ::
-
-                    r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
-                                all the same
-                    r.ju.iloc[0]  not necessary (same Evib) but explicitely mentionning it
-                             yields a x20 on performances (60s -> 3s)
-                    In 0.9.19 the energy database was reduced to vibrational energies only
-                """
-                viblvl = vib_lvl_name_hitran_class5(
-                    r.v1u.iloc[0], r.v2u.iloc[0], r.l2u.iloc[0], r.v3u.iloc[0]
-                )
-
-                r["Evib1u_h"] = energies.at[viblvl, "Evib1_h"]
-                r["Evib1u_a"] = energies.at[viblvl, "Evib1_a"]
-                r["Evib2u_h"] = energies.at[viblvl, "Evib2_h"]
-                r["Evib2u_a"] = energies.at[viblvl, "Evib2_a"]
-                r["Evib3u_h"] = energies.at[viblvl, "Evib3_h"]
-                r["Evib3u_a"] = energies.at[viblvl, "Evib3_a"]
-                return r
-
-            def fillEvib123l(r):
-                """cf above."""
-                viblvl = vib_lvl_name_hitran_class5(
-                    r.v1l.iloc[0], r.v2l.iloc[0], r.l2l.iloc[0], r.v3l.iloc[0]
-                )
-
-                r["Evib1l_h"] = energies.at[viblvl, "Evib1_h"]
-                r["Evib1l_a"] = energies.at[viblvl, "Evib1_a"]
-                r["Evib2l_h"] = energies.at[viblvl, "Evib2_h"]
-                r["Evib2l_a"] = energies.at[viblvl, "Evib2_a"]
-                r["Evib3l_h"] = energies.at[viblvl, "Evib3_h"]
-                r["Evib3l_a"] = energies.at[viblvl, "Evib3_a"]
-                return r
-
-            df = df.groupby(by=["v1u", "v2u", "l2u", "v3u"]).apply(fillEvib123u)
-            df = df.groupby(by=["v1l", "v2l", "l2l", "v3l"]).apply(fillEvib123l)
+            # Add upper state energy
+            df_v1v2l2v3 = df.set_index(["v1u", "v2u", "l2u", "v3u"])
+            df["Evib1u_h"] = df_v1v2l2v3.index.map(Evib1_h_dict.get).values
+            df["Evib1u_a"] = df_v1v2l2v3.index.map(Evib1_a_dict.get).values
+            df["Evib2u_h"] = df_v1v2l2v3.index.map(Evib2_h_dict.get).values
+            df["Evib2u_a"] = df_v1v2l2v3.index.map(Evib2_a_dict.get).values
+            df["Evib3u_h"] = df_v1v2l2v3.index.map(Evib3_h_dict.get).values
+            df["Evib3u_a"] = df_v1v2l2v3.index.map(Evib3_a_dict.get).values
 
             return df.loc[
                 :,
@@ -1364,8 +1336,6 @@ class BaseFactory(DatabankLoader):
                     "Evib3u_a",
                 ],
             ]
-
-        #        df = df.groupby('iso').apply(lambda x: get_Evib123_RADIS_cls5_1iso_ah(x, x.name))
 
         # Slower than the version below:
         df["Evib1l_h"] = np.nan
