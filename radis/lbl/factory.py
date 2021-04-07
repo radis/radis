@@ -1525,6 +1525,8 @@ class SpectrumFactory(BandFactory):
         Tvib=None,
         Trot=None,
         Ttrans=None,
+        vib_distribution="boltzmann",
+        rot_distribution="boltzmann",
         mole_fraction=None,
         path_length=None,
         unit="mW/cm2/sr",
@@ -1546,7 +1548,6 @@ class SpectrumFactory(BandFactory):
 
         Parameters
         ----------
-
         Tgas: float
             equilibrium temperature [K]
             If doing a non equilibrium case it should be None. Use Ttrans for
@@ -1568,9 +1569,8 @@ class SpectrumFactory(BandFactory):
 
         Returns
         -------
-
-        Returns total power density in mW/cm2/sr (unless different unit is chosen),
-        see ``unit=``.
+        float: Returns total power density in mW/cm2/sr (unless different unit is chosen),
+            see ``unit=``.
 
 
         See Also
@@ -1626,9 +1626,10 @@ class SpectrumFactory(BandFactory):
                 self._reload_databank()
 
         if non_eq_mode:
+            singleTvibmode = is_float(Tvib)
             # Make sure database has pre-computed non equilibrium quantities
             # (Evib, Erot, etc.)
-            self._calc_noneq_parameters()
+            self._calc_noneq_parameters(vib_distribution, singleTvibmode)
 
         # %% Start
         # ----------------------------------------------------------------------
@@ -1649,7 +1650,12 @@ class SpectrumFactory(BandFactory):
         # (Note: Emission Integral is non canonical quantity, equivalent to
         #  Linestrength for absorption)
         if non_eq_mode:
-            self.calc_populations_noneq(Tvib, Trot)
+            self.calc_populations_noneq(
+                Tvib,
+                Trot,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+            )
         else:
             self.calc_populations_eq(Tgas)
             self.df1["Aul"] = self.df1.A  # update einstein coefficients
