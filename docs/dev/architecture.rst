@@ -78,18 +78,18 @@ Methods from the Flow Chart: this methods are called successively from the
 
 - Populations: methods of :py:class:`~radis.lbl.base.BaseFactory` :
 
-    - :py:meth:`radis.lbl.base.BaseFactory._calc_populations_eq`
-    - :py:meth:`radis.lbl.base.BaseFactory._calc_populations_noneq`
+    - :py:meth:`radis.lbl.base.BaseFactory.calc_populations_eq`
+    - :py:meth:`radis.lbl.base.BaseFactory.calc_populations_noneq`
 
 - Line Intensities: methods of :py:class:`~radis.lbl.base.BaseFactory` :
 
-    - :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_eq`
+    - :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_eq`
     - :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_noneq`
     - :py:meth:`radis.lbl.base.BaseFactory._calc_emission_integral`
 
 - Line Positions:  methods of :py:class:`~radis.lbl.base.BaseFactory` :
 
-    - :py:meth:`radis.lbl.base.BaseFactory._calc_lineshift`
+    - :py:meth:`radis.lbl.base.BaseFactory.calc_lineshift`
 
 - Reduced line set: methods of :py:class:`~radis.lbl.base.BaseFactory` :
 

@@ -669,13 +669,13 @@ class SpectrumFactory(BandFactory):
         # --------------------------------------------------------------------
 
         # First calculate the linestrength at given temperature
-        self._calc_linestrength_eq(Tgas)  # scales S0 to S (equivalent to S0 in code)
+        self.calc_linestrength_eq(Tgas)  # scales S0 to S (equivalent to S0 in code)
         self._cutoff_linestrength()
 
         # ----------------------------------------------------------------------
 
         # Calculate line shift
-        self._calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
+        self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
 
         # ----------------------------------------------------------------------
         # Line broadening
@@ -1266,7 +1266,7 @@ class SpectrumFactory(BandFactory):
         # ----------------------------------------------------------------------
         # Calculate Populations, Linestrength and Emission Integral
         if singleTvibmode:
-            self._calc_populations_noneq(
+            self.calc_populations_noneq(
                 Tvib,
                 Trot,
                 vib_distribution=vib_distribution,
@@ -1292,7 +1292,7 @@ class SpectrumFactory(BandFactory):
         # ----------------------------------------------------------------------
 
         # Calculate lineshift
-        self._calc_lineshift()
+        self.calc_lineshift()
 
         # ----------------------------------------------------------------------
 
@@ -1636,8 +1636,8 @@ class SpectrumFactory(BandFactory):
             try:
                 self.df0["Aul"]
             except KeyError:
-                self._calc_weighted_trans_moment()
-                self._calc_einstein_coefficients()
+                self.calc_weighted_trans_moment()
+                self.calc_einstein_coefficients()
 
         # %% Start
         # ----------------------------------------------------------------------
@@ -1658,9 +1658,9 @@ class SpectrumFactory(BandFactory):
         # (Note: Emission Integral is non canonical quantity, equivalent to
         #  Linestrength for absorption)
         if non_eq_mode:
-            self._calc_populations_noneq(Tvib, Trot)
+            self.calc_populations_noneq(Tvib, Trot)
         else:
-            self._calc_populations_eq(Tgas)
+            self.calc_populations_eq(Tgas)
             self.df1["Aul"] = self.df1.A  # update einstein coefficients
         self._calc_emission_integral()
 
