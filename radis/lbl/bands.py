@@ -215,13 +215,13 @@ class BandFactory(BroadenFactory):
         # --------------------------------------------------------------------
 
         # First calculate the linestrength at given temperature
-        self._calc_linestrength_eq(Tgas)
+        self.calc_linestrength_eq(Tgas)
         self._cutoff_linestrength()
 
         # ----------------------------------------------------------------------
 
         # Calculate line shift
-        self._calc_lineshift()
+        self.calc_lineshift()
 
         # ----------------------------------------------------------------------
 
@@ -524,8 +524,8 @@ class BandFactory(BroadenFactory):
             self._calc_noneq_parameters()
 
         if not "Aul" in self.df0:
-            self._calc_weighted_trans_moment()
-            self._calc_einstein_coefficients()
+            self.calc_weighted_trans_moment()
+            self.calc_einstein_coefficients()
 
         if not "band" in self.df0:
             self._add_bands()
@@ -540,7 +540,7 @@ class BandFactory(BroadenFactory):
         # Calculate Populations, Linestrength and Emission Integral
         # (Note: Emission Integral is non canonical quantity, equivalent to
         #  Linestrength for absorption)
-        self._calc_populations_noneq(Tvib, Trot)
+        self.calc_populations_noneq(Tvib, Trot)
         self._calc_linestrength_noneq()
         self._calc_emission_integral()
 
@@ -551,7 +551,7 @@ class BandFactory(BroadenFactory):
         # ----------------------------------------------------------------------
 
         # Calculate lineshift
-        self._calc_lineshift()
+        self.calc_lineshift()
 
         # ----------------------------------------------------------------------
 

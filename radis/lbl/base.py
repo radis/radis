@@ -34,18 +34,18 @@ PRIVATE METHODS - CALCULATE SPECTROSCOPIC PARAMETERS
 - :py:meth:`radis.lbl.base.BaseFactory._add_Eu`
 - :py:meth:`radis.lbl.base.BaseFactory._check_noneq_parameters`
 - :py:meth:`radis.lbl.base.BaseFactory._calc_noneq_parameters`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_weighted_trans_moment`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_einstein_coefficients`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_weighted_trans_moment`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_einstein_coefficients`
 
 PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 (all functions that depends upon T or P)
 (calculates populations, linestrength & radiance, lineshift)
 (computation: work on df1, called by or after eq_spectrum() )
 
-- :py:meth:`radis.lbl.base.BaseFactory._calc_lineshift`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_eq`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_populations_eq`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_populations_noneq`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_lineshift`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_eq`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_populations_eq`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_populations_noneq`
 - :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_noneq`
 - :py:meth:`radis.lbl.base.BaseFactory._calc_emission_integral`
 - :py:meth:`radis.lbl.base.BaseFactory._cutoff_linestrength`
@@ -287,8 +287,8 @@ class BaseFactory(DatabankLoader):
     # _add_Eu
     # _check_noneq_parameters
     # _calc_noneq_parameters
-    # _calc_weighted_trans_moment
-    # _calc_einstein_coefficients
+    # calc_weighted_trans_moment
+    # calc_einstein_coefficients
     # =========================================================================
 
     @staticmethod
@@ -1541,8 +1541,8 @@ class BaseFactory(DatabankLoader):
                 )
 
         if not "Aul" in df:
-            self._calc_weighted_trans_moment()
-            self._calc_einstein_coefficients()
+            self.calc_weighted_trans_moment()
+            self.calc_einstein_coefficients()
 
         if self.verbose >= 2:
             printg("Checked nonequilibrium parameters in {0:.2f}s".format(time() - t0))
@@ -1736,15 +1736,22 @@ class BaseFactory(DatabankLoader):
 
         return None  # dataframe updated directly
 
-    def _calc_weighted_trans_moment(self):
-        """Calculate weighted transition-moment squared R (in ``Debye^2``)
+    def calc_weighted_trans_moment(self):
+        """Calculate weighted transition-moment squared :math:`R_s^2` (in ``Debye^2``)
 
         Returns
         -------
-
         None:
             ``self.df0`` is updated directly with new column ``Rs2``  .
             R is in ``Debye^2``   (1e-36 ergs.cm3)
+
+        References
+        ----------
+        Weighted transition-moment squared :math:`R_s^2` from linestrength :math:`S_0`
+        at temperature :math:`T_ref`, derived from Eq.(A5) in [Rothman-1998]_
+
+        .. math:
+            R_s^2=10^{+36}\\frac{3h c}{8{\\pi}^3} \\frac{1}{n_u} \\frac{1}{\\frac{I_a g_l}{Q_{ref}} \\operatorname{exp}\\left(\\frac{-E_l}{T_{ref}}\\right)} \\frac{1}{1-\\operatorname{exp}\\left(\\frac{-n_u}{T_{ref}}\\right)} S_0
         """
 
         df = self.df0
@@ -1806,7 +1813,7 @@ class BaseFactory(DatabankLoader):
         weighted_trans_moment_sq = (
             (3 * h * c / 8 / pi ** 3)
             / nu
-            / (Ia * gl * exp(-hc_k * El / Tref) / Qref)
+            / (Ia * gl / Qref * exp(-hc_k * El / Tref))
             / (1 - exp(-hc_k * nu / Tref))
             * 1e36
         ) * S
@@ -1820,21 +1827,39 @@ class BaseFactory(DatabankLoader):
 
         return
 
-    def _calc_einstein_coefficients(self):
-        """Calculate A_ul, B_lu, B_ul Einstein coefficients from weighted
-        transition moments.
+    def calc_einstein_coefficients(self):
+        """Calculate :math:`A_{ul}`, :math:`B_{lu}`, :math:`B_{ul}` Einstein coefficients from weighted
+        transition moments squared :math:`R_s^2`.
 
         Returns
         -------
-
-        None:
-            ``self.df0`` is updated directly with new columns ``Aul``, ``Blu``, ``Bul``
+        None: ``self.df0`` is updated directly with new columns ``Aul``, ``Blu``, ``Bul``
 
         Notes
         -----
 
         Einstein A coefficient already in database under df0.A
         Difference between df0.A and df0.Aul < 0.5%
+
+        References
+        ----------
+        Einstein induced absorption coefficient (in :math:`cm^3/J/s^2`)
+
+        .. math::
+            B_{lu}=10^{-36}\\cdot\\frac{8{\\pi}^3}{3h^2} R_s^2 \\cdot 10^{-7}
+
+        Einstein induced emission coefficient (in :math:`cm^3/J/s^2`)
+
+        .. math::
+            B_{ul}=10^{-36}\\cdot\\frac{8{\\pi}^3}{3h^2} \\frac{gl}{gu} R_s^2 \\cdot 10^{-7}
+
+        Einstein spontaneous emission coefficient (in :math:`s^{-1}`)
+
+        .. math::
+            A_{ul}=10^{-36}\\cdot\\frac{\\frac{64{\\pi}^4}{3h} {\\nu}^3 gl}{gu} R_s^2
+
+        See (Eqs.(A7), (A8), (A9) in [Rothman-1998]_)
+
         """
 
         df = self.df0
@@ -1853,7 +1878,7 @@ class BaseFactory(DatabankLoader):
         # Calculate coefficients
         df["Blu"] = 8 * pi ** 3 / (3 * h ** 2) * Rs2 * 1e-36 * 1e7  # cm3/(J.s^2)
         df["Bul"] = (
-            8 * pi ** 3 / (3 * h ** 2) * gl / gu * Rs2 * 1e-36 * 1e7
+            8 * pi ** 3 / (3 * h ** 2) * (gl / gu) * Rs2 * 1e-36 * 1e7
         )  # cm3/(J.s^2)
         df["Aul"] = 64 * pi ** 4 / (3 * h) * nu ** 3 * gl / gu * Rs2 * 1e-36  # s-1
 
@@ -1865,24 +1890,32 @@ class BaseFactory(DatabankLoader):
     # (calculates populations, linestrength & radiance, lineshift)
     # (computation: work on df1, called by or after eq_spectrum() )
     # ---------------------------------
-    # _calc_lineshift
-    # _calc_linestrength_eq
-    # _calc_populations_eq
-    # _calc_populations_noneq
+    # calc_lineshift
+    # calc_linestrength_eq
+    # calc_populations_eq
+    # calc_populations_noneq
     # _calc_linestrength_noneq
     # _calc_emission_integral
     # _cutoff_linestrength
 
     # XXX =====================================================================
 
-    def _calc_lineshift(self):
+    def calc_lineshift(self):
         """Calculate lineshift due to pressure.
 
         Returns
         -------
+        None: ``self.df1`` is updated directly with new column ``shiftwav``
 
-        None:
-            ``self.df1`` is updated directly with new column ``shiftwav``
+        References
+        ----------
+        Shifted line center based on pressure shift coefficient :math:`lambda_{shift}`
+        and pressure :math:`P`.
+
+        .. math::
+            \\omega_{shift}=\\omega_0+\\lambda_{shift} P
+
+        See Eq.(A13) in [Rothman-1998]_
         """
 
         if self.verbose >= 2:
@@ -1893,7 +1926,6 @@ class BaseFactory(DatabankLoader):
 
         # Calculate
         air_pressure = self.input.pressure_mbar / 1013.25  # convert from mbar to atm
-        #        df['shiftwav'] = df.wav.values + (df.Pshft.values*air_pressure)
         df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
 
         if self.verbose >= 2:
@@ -1901,25 +1933,29 @@ class BaseFactory(DatabankLoader):
 
         return
 
-    def _calc_linestrength_eq(self, Tgas):
+    def calc_linestrength_eq(self, Tgas):
         """Calculate linestrength at temperature Tgas correcting the database
-        linestrength tabulated at temperature Tref.
+        linestrength tabulated at temperature :math:`T_{ref}`.
 
         Parameters
         ----------
-
         Tgas: float (K)
             gas temperature
 
         Returns
         -------
+        None: ``self.df1`` is updated directly with new column ``S``
 
-        None:
-            ``self.df1`` is updated directly with new column ``S``
+        References
+        ----------
+
+        .. math::
+            S(T) = S_0 \\frac{Q_{ref}}{Q_{gas}} \\operatorname{exp}\\left(-E_l \\left(\\frac{1}{T_{gas}}-\\frac{1}{T_{ref}}\\right)\\right) \\frac{1-\\operatorname{exp}\\left(\\frac{-\\omega_0}{Tgas}\\right)}{1-\\operatorname{exp}\\left(\\frac{-\\omega_0}{T_{ref}}\\right)}
+
+        See Eq.(A11) in [Rothman-1998]_
 
         Notes
         -----
-
         Internals:
 
         (some more informations about what this function does)
@@ -1947,7 +1983,6 @@ class BaseFactory(DatabankLoader):
 
             Returns
             -------
-
             Qref, Qgas: float
                 partition functions at reference temperature and gas temperature
             """
@@ -2048,34 +2083,37 @@ class BaseFactory(DatabankLoader):
         return
 
     # %%
-    def _calc_populations_eq(self, Tgas):
+    def calc_populations_eq(self, Tgas):
         """Calculate upper state population for all active transitions in
         equilibrium case (only used in total power calculation)
 
         Parameters
         ----------
-
         Tgas: float (K)
             temperature
 
         Returns
         -------
-
         None:
             `nu` is stored in self.df1
 
         Notes
         -----
-
         Isotopes: these populations are not corrected for the isotopic abundance,
         i.e, abundance has to be accounted for if used for emission density
         calculations (based on Einstein A coefficient), but not for linestrengths
         (that include the abundance dependency already)
 
+        References
+        ----------
+        Population of upper state follows a Boltzmann distribution:
+
+        .. math::
+            n_u = g_u \\frac{\\operatorname{exp}\\left(\\frac{-E_u}{T_{gas}}\\right)}{Q_{gas}}
+
         See Also
         --------
-
-        :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq`,
+        :meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`,
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq_multiTvib`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at`
         """
@@ -2135,7 +2173,7 @@ class BaseFactory(DatabankLoader):
         return
 
     # %%
-    def _calc_populations_noneq(
+    def calc_populations_noneq(
         self,
         Tvib,
         Trot,
@@ -2149,28 +2187,21 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         Tvib, Trot: float (K)
             temperatures
-
         vib_distribution: ``'boltzmann'``, ``'treanor'``
             vibrational level distribution
-
         rot_distribution: ``'boltzmann'``
             rotational level distribution
-
         overpopulation: dict, or ``None``
             dictionary of overpopulation factors for vibrational levels
 
         Returns
         -------
-
-        None
-            `nu`, `nl`, `nu_vib`, `nl_vib` are stored in self.df1
+        None: `nu`, `nl`, `nu_vib`, `nl_vib` are stored in self.df1
 
         Notes
         -----
-
         Isotopic abundance:
 
         Note that these populations are not corrected for the isotopic abundance,
@@ -2185,10 +2216,41 @@ class BaseFactory(DatabankLoader):
         range considered) are calculated during the Partition function calculation.
         See: :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`
 
+        References
+        ----------
+        Boltzmann vibrational distributions
+
+        .. math::
+
+            n_{vib}=\\frac{g_{vib}}{Q_{vib}} \\operatorname{exp}\\left(\\frac{-E_{vib}}{T_{vib}}\\right)
+
+        or Treanor vibrational distributions
+
+        .. math::
+
+            n_{vib}=\\frac{g_{vib}}{Qvib} \\operatorname{exp}\\left(-\\left(\\frac{E_{vib,harm}}{T_{vib}}+\\frac{E_{vib,anharm}}{T_{rot}}\\right)\\right)
+
+        Overpopulation of vibrational levels
+
+        .. math::
+
+            n_{vib}=\\alpha n_{vib}
+
+        Boltzmann rotational distributions
+
+        .. math::
+
+            n_{rot}=\\frac{g_{rot}}{Q_{rot}} \\operatorname{exp}\\left(\\frac{-E_{rot}}{T_{rot}}\\right)
+
+        Final rovibrational population of one level
+
+        .. math::
+
+            n=n_{vib} n_{rot} \\frac{Q_{rot} Q_{vib}}{Q}
+
         See Also
         --------
-
-        :meth:`~radis.lbl.base.BaseFactory._calc_populations_eq`,
+        :meth:`~radis.lbl.base.BaseFactory.calc_populations_eq`,
         :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq_multiTvib`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`
         """
@@ -2333,18 +2395,19 @@ class BaseFactory(DatabankLoader):
         #  Derive populations
         # ... vibrational distribution
         if vib_distribution == "boltzmann":
-            df["nu_vib"] = df.gvibu * exp(-hc_k * df.Evibu / Tvib) / df.Qvib
-            df["nl_vib"] = df.gvibl * exp(-hc_k * df.Evibl / Tvib) / df.Qvib
+            # equation generated with @pytexit.py2tex > see docstrings.
+            df["nu_vib"] = df.gvibu / df.Qvib * exp(-hc_k * df.Evibu / Tvib)
+            df["nl_vib"] = df.gvibl / df.Qvib * exp(-hc_k * df.Evibl / Tvib)
         elif vib_distribution == "treanor":
             df["nu_vib"] = (
                 df.gvibu
-                * exp(-hc_k * (df.Evibu_h / Tvib + df.Evibu_a / Trot))
                 / df.Qvib
+                * exp(-hc_k * (df.Evibu_h / Tvib + df.Evibu_a / Trot))
             )
             df["nl_vib"] = (
                 df.gvibl
-                * exp(-hc_k * (df.Evibl_h / Tvib + df.Evibl_a / Trot))
                 / df.Qvib
+                * exp(-hc_k * (df.Evibl_h / Tvib + df.Evibl_a / Trot))
             )
         else:
             raise ValueError(
@@ -2360,8 +2423,8 @@ class BaseFactory(DatabankLoader):
 
         # ... Rotational distributions
         if rot_distribution == "boltzmann":
-            df["nu_rot"] = df.grotu * exp(-df.Erotu * hc_k / Trot) / df.Qrotu
-            df["nl_rot"] = df.grotl * exp(-df.Erotl * hc_k / Trot) / df.Qrotl
+            df["nu_rot"] = df.grotu / df.Qrotu * exp(-df.Erotu * hc_k / Trot)
+            df["nl_rot"] = df.grotl / df.Qrotl * exp(-df.Erotl * hc_k / Trot)
         else:
             raise ValueError(
                 "Unknown rotational distribution: {0}".format(rot_distribution)
@@ -2401,22 +2464,17 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         Tvib, Trot: float (K)
             temperatures
-
         vib_distribution: ``'boltzmann'``, ``'treanor'``
             vibrational level distribution
-
         rot_distribution: ``'boltzmann'``
             rotational level distribution
-
         overpopulation: dict, or ``None``
             dictionary of overpopulation factors for vibrational levels
 
         Notes
         -----
-
         Isotopic abundance:
 
         Note that these populations are not corrected for the isotopic abundance,
@@ -2438,9 +2496,8 @@ class BaseFactory(DatabankLoader):
 
         See Also
         --------
-
-        :meth:`~radis.lbl.base.BaseFactory._calc_populations_eq`,
-        :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq`,
+        :meth:`~radis.lbl.base.BaseFactory.calc_populations_eq`,
+        :meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
         """
 
