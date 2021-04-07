@@ -32,7 +32,6 @@ PRIVATE METHODS - CALCULATE SPECTROSCOPIC PARAMETERS
 - :py:meth:`radis.lbl.base.BaseFactory._add_Evib123Erot_RADIS_cls5`
 - :py:meth:`radis.lbl.base.BaseFactory._add_ju`
 - :py:meth:`radis.lbl.base.BaseFactory._add_Eu`
-- :py:meth:`radis.lbl.base.BaseFactory._check_noneq_parameters`
 - :py:meth:`radis.lbl.base.BaseFactory._calc_noneq_parameters`
 - :py:meth:`radis.lbl.base.BaseFactory.calc_weighted_trans_moment`
 - :py:meth:`radis.lbl.base.BaseFactory.calc_einstein_coefficients`
@@ -285,7 +284,6 @@ class BaseFactory(DatabankLoader):
     # _add_Evib123Erot_RADIS_cls5
     # _add_ju
     # _add_Eu
-    # _check_noneq_parameters
     # _calc_noneq_parameters
     # calc_weighted_trans_moment
     # calc_einstein_coefficients
@@ -1149,8 +1147,9 @@ class BaseFactory(DatabankLoader):
                 )
 
         def get_Evib123_RADIS_cls5_1iso(df, iso):
-            """Fetch Evib & Erot for a given isotope (energies are specific to
-            a given isotope)
+            """Fetch Evib & Erot for a given isotope.
+
+            energies are specific  a given isotope)
 
             Notes
             -----
@@ -1460,7 +1459,7 @@ class BaseFactory(DatabankLoader):
 
         return None
 
-    def _check_noneq_parameters(self, vib_distribution, singleTvibmode):
+    def _calc_noneq_parameters(self, vib_distribution, singleTvibmode):
         """Make sure database has non equilibrium quantities (Evib, Erot, etc.)
 
         Notes
@@ -1489,6 +1488,15 @@ class BaseFactory(DatabankLoader):
                 )
 
         # Make sure database has pre-computed non equilibrium quantities
+
+        # ... Make sure upper J' is calculated  (needed to compute populations)
+        if not "ju" in df:
+            self._add_ju(df)
+
+        # ... Make sure upper energy level is calculated (needed to compute populations)
+        if not "Eu" in df:
+            self._add_Eu(df)
+
         # (Evib, Erot, etc.)
         # This may be a bottleneck for a first calculation (has to calculate
         # the nonequilibrium energies)
@@ -1512,128 +1520,19 @@ class BaseFactory(DatabankLoader):
                 required_columns = ["Evib1l", "Evib2l", "Evib3l"]
 
         if not all_in(required_columns, df):
-            self._calc_noneq_parameters(
-                singleTvibmode=singleTvibmode,
-                calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
-            )
+            if singleTvibmode:
+                self._add_EvibErot(
+                    df,
+                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
+                )
+            else:
+                self._add_Evib123Erot(
+                    df,
+                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
+                )
             assert all_in(required_columns, df)
 
-        if not "Aul" in df:
-            self.calc_weighted_trans_moment()
-            self.calc_einstein_coefficients()
-
-        if self.verbose >= 2:
-            printg("Checked nonequilibrium parameters in {0:.2f}s".format(time() - t0))
-
-    def _calc_noneq_parameters(
-        self, singleTvibmode=True, calc_Evib_harmonic_anharmonic=False
-    ):
-        """Update database with Evib, Erot, and degeneracies.
-
-        Parameters
-        ----------
-
-        singleTvibmode: boolean
-            switch between 1 Tvib and 3 Tvib mode
-
-        calc_Evib_harmonic_anharmonic: boolean
-            if ``True``, calculate harmonic and anharmonic components of
-            vibrational energies (for Treanor distributions)
-
-        Notes
-        -----
-
-        Update in 0.9.16: assign bands by default too
-        """
-
-        # TODO @dev: refactor
-        # 3 Tvib mode is CO2-specific. Shouldnt appear in this function yet?
-
-        if __debug__:
-            printdbg(
-                "called _calc_noneq_parameters(singleTvibmode="
-                + "{0},calc_Evib_harmonic_anharmonic={1})".format(
-                    singleTvibmode, calc_Evib_harmonic_anharmonic
-                )
-            )
-
-        df = self.df0
-
-        # ... Make sure upper J' is calculated  (needed to compute populations)
-        if not "ju" in df:
-            self._add_ju(df)
-
-        # ... Make sure upper energy level is calculated (needed to compute populations)
-        if not "Eu" in df:
-            self._add_Eu(df)
-
-        # ... Make sure Evib / Erot are calculated
-        if singleTvibmode:
-            if (
-                (not all_in(["Evibu", "Erotu", "Evibl", "Erotl"], df))
-                or calc_Evib_harmonic_anharmonic
-                and not all_in(
-                    [
-                        "Evibu_a",
-                        "Evibu_h",
-                        "Erotu_a",
-                        "Erotu_h",
-                        "Evibl_a",
-                        "Evibl_h",
-                        "Erotl_a",
-                        "Erotl_h",
-                    ],
-                    df,
-                )
-            ):
-                self._add_EvibErot(
-                    df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
-                )
-        else:
-            if (
-                not all_in(
-                    [
-                        "Evib1u",
-                        "Evib2u",
-                        "Evib3u",
-                        "Erotu",
-                        "Evib1l",
-                        "Evib2l",
-                        "Evib3l",
-                        "Erotl",
-                    ],
-                    df,
-                )
-                or calc_Evib_harmonic_anharmonic
-                and not all_in(
-                    [
-                        "Evib1u_a",
-                        "Evib1u_h",
-                        "Erotu_a",
-                        "Erotu_h",
-                        "Evib1l_a",
-                        "Evib1l_h",
-                        "Erotl_a",
-                        "Erotl_h",
-                        "Evib2u_a",
-                        "Evib2u_h",
-                        "Evib3u_a",
-                        "Evib3u_h",
-                        "Evib2l_a",
-                        "Evib2l_h",
-                        "Erot3l_a",
-                        "Erot3l_h",
-                    ],
-                    df,
-                )
-            ):
-                self._add_Evib123Erot(
-                    df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
-                )
-
-        #        # ... Assign bands
-
-        # Look up results
+        # ... Check no negative energies
         tol = -1e-4  # tolerance for negative energies (in cm-1)
         if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
             self.warn(
@@ -1645,7 +1544,12 @@ class BaseFactory(DatabankLoader):
         if not all_in(["gju", "gjl", "gvibu", "gvibl", "gu", "gl"], df):
             self._calc_degeneracies(df)
 
-        return None  # dataframe already updated
+        if not "Aul" in df:
+            self.calc_weighted_trans_moment()
+            self.calc_einstein_coefficients()
+
+        if self.verbose >= 2:
+            printg("Checked nonequilibrium parameters in {0:.2f}s".format(time() - t0))
 
     def _calc_degeneracies(self, df):
         """Calculate vibrational and rotational degeneracies.
@@ -3404,6 +3308,3 @@ if __name__ == "__main__":
     from radis.test.lbl.test_base import _run_testcases
 
     _run_testcases()
-
-    _, _, wlmin, wlmax = get_waverange("air", 2000, 2400)
-    assert np.allclose((wlmin, wlmax), (4165.53069, 4998.6369))

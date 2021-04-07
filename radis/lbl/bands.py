@@ -513,19 +513,10 @@ class BandFactory(BroadenFactory):
 
         # %% Make sure database is loaded
         self._check_line_databank()
-        self._check_noneq_parameters(vib_distribution, singleTvibmode)
+        self._calc_noneq_parameters(vib_distribution, singleTvibmode)
 
         if self.df0 is None:
             raise AttributeError("Load databank first (.load_databank())")
-
-        # Make sure database has pre-computed non equilibrium quantities
-        # (Evib, Erot, etc.)
-        if not "Evib" in self.df0:
-            self._calc_noneq_parameters()
-
-        if not "Aul" in self.df0:
-            self.calc_weighted_trans_moment()
-            self.calc_einstein_coefficients()
 
         if not "band" in self.df0:
             self._add_bands()

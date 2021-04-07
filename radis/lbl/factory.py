@@ -1260,7 +1260,7 @@ class SpectrumFactory(BandFactory):
         self._check_line_databank()
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):
-        self._check_noneq_parameters(vib_distribution, singleTvibmode)
+        self._calc_noneq_parameters(vib_distribution, singleTvibmode)
         self._reinitialize()  # creates scaled dataframe df1 from df0
 
         # ----------------------------------------------------------------------
@@ -1628,16 +1628,7 @@ class SpectrumFactory(BandFactory):
         if non_eq_mode:
             # Make sure database has pre-computed non equilibrium quantities
             # (Evib, Erot, etc.)
-            try:
-                self.df0["Evib"]
-            except KeyError:
-                self._calc_noneq_parameters()
-
-            try:
-                self.df0["Aul"]
-            except KeyError:
-                self.calc_weighted_trans_moment()
-                self.calc_einstein_coefficients()
+            self._calc_noneq_parameters()
 
         # %% Start
         # ----------------------------------------------------------------------
