@@ -291,21 +291,27 @@ class BaseFactory(DatabankLoader):
     # calc_einstein_coefficients
     # =========================================================================
 
-    @staticmethod
-    def assert_no_nan(df, column):
+    def assert_no_nan(self, df, column):
         """Assert there are no nan in the column, and crash with a nice
-        explanation if it is found."""
+        explanation if it is found"""
         from radis.misc.printer import get_print_full
 
         try:
             assert np.isnan(df[column]).sum() == 0
         except AssertionError as err:
             index = np.isnan(df[column]).idxmax()
+            if self.input.molecule == 'CO2':
+                fix_idea = "If using HITEMP2010 for CO2, some lines are " \
+                           "unlabelled and therefore cannot be used at " \
+                           "equilibrium. This is a known issue of the HITEMP " \
+                           "database and will soon be fixed in the " \
+                           "edition. In the meantime you can use: " \
+                           "'sf.df0.dropna(subset=['v1u'], inplace=True)' " \
+                           "where 'sf' is SpectrumFactory object"
             raise AssertionError(
                 "{0}=NaN in line database at index {1}".format(column, index)
-                + " corresponding to Line:\n {1}".format(
-                    index, get_print_full(df.loc[index])
-                )
+                + " corresponding to Line:\n {1}".format(index, \
+                get_print_full(df.loc[index]) + fix_idea)
             ) from err
 
     def _add_EvibErot(self, df, calc_Evib_harmonic_anharmonic=False):
