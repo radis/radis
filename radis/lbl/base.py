@@ -476,9 +476,6 @@ class BaseFactory(DatabankLoader):
                 )
         if self.verbose >= 2:
             t0 = time()
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
 
         def get_Evib_CDSD_pc_1iso(df, iso):
             """Calculate Evib for a given isotope (energies are specific to a
@@ -569,7 +566,11 @@ class BaseFactory(DatabankLoader):
         df["Erotl"] = df.El - df.Evibl
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -615,9 +616,6 @@ class BaseFactory(DatabankLoader):
         assert molecule == "CO2"
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -681,7 +679,11 @@ class BaseFactory(DatabankLoader):
         df["Erotl"] = df.El - df.Evibl
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -724,9 +726,6 @@ class BaseFactory(DatabankLoader):
         assert molecule == "CO2"
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -799,7 +798,11 @@ class BaseFactory(DatabankLoader):
         df["Erotl"] = df.El - df.Evibl
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -953,7 +956,7 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib3l")
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg("Fetched energies in {0:.2f}s".format(time() - t0))
 
         return  # None: Dataframe updated
 
@@ -989,9 +992,6 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -1098,7 +1098,11 @@ class BaseFactory(DatabankLoader):
         assert np.isnan(df.Evibl).sum() == 0
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         return  # None: Dataframe updated
 
@@ -1129,9 +1133,6 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -1226,7 +1227,11 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib3l")
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         return  # None: Dataframe updated
 
@@ -1248,9 +1253,6 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -1424,7 +1426,11 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib3l")
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         return df
 
@@ -1517,28 +1523,30 @@ class BaseFactory(DatabankLoader):
         # This may be a bottleneck for a first calculation (has to calculate
         # the nonequilibrium energies)
         calc_Evib_harmonic_anharmonic = vib_distribution in ["treanor"]
-        if singleTvibmode:
-            if (
-                not "Evib" in df
-                or calc_Evib_harmonic_anharmonic
-                and not all_in(["Evib_a", "Evib_h"], df)
-            ):
-                self._calc_noneq_parameters(
-                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
-                )
+        if calc_Evib_harmonic_anharmonic:
+            if singleTvibmode:
+                required_columns = ["Evibl_a", "Evibl_h"]
+            else:
+                required_columns = [
+                    "Evib1l_a",
+                    "Evib1l_h",
+                    "Evib2l_a",
+                    "Evib2l_h",
+                    "Evib3l_a",
+                    "Evib3l_h",
+                ]
         else:
-            if (
-                not all_in(["Evib1", "Evib2", "Evib3"], df)
-                or calc_Evib_harmonic_anharmonic
-                and not all_in(
-                    ["Evib1_a", "Evib1_h", "Evib2_a", "Evib2_h", "Evib3_a", "Evib3_h"],
-                    df,
-                )
-            ):
-                self._calc_noneq_parameters(
-                    singleTvibmode=False,
-                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
-                )
+            if singleTvibmode:
+                required_columns = ["Evibl"]
+            else:
+                required_columns = ["Evib1l", "Evib2l", "Evib3l"]
+
+        if not all_in(required_columns, df):
+            self._calc_noneq_parameters(
+                singleTvibmode=singleTvibmode,
+                calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
+            )
+            assert all_in(required_columns, df)
 
         if not "Aul" in df:
             self.calc_weighted_trans_moment()
@@ -1759,7 +1767,6 @@ class BaseFactory(DatabankLoader):
 
         if self.verbose >= 2:
             t0 = time()
-            printg("Calculate weighted transition moment")
 
         id_set = df.id.unique()
         iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
@@ -1822,7 +1829,9 @@ class BaseFactory(DatabankLoader):
 
         if self.verbose >= 2:
             printg(
-                "Calculated weighted transition moment in {0:.2f}".format(time() - t0)
+                "... calculated weighted transition moment in {0:.2f}s".format(
+                    time() - t0
+                )
             )
 
         return
