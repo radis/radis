@@ -291,9 +291,10 @@ class BaseFactory(DatabankLoader):
     # calc_einstein_coefficients
     # =========================================================================
 
-        def assert_no_nan(self, df, column):
-        """Assert there are no nan in the column, and crash with a nice
-        explanation if it is found"""
+    def assert_no_nan(self, df, column):
+        """Assert there are no nan in the column.
+
+        Crash with a nice explanation if one is found"""
         from radis.misc.printer import get_print_full
 
         try:
