@@ -32,7 +32,6 @@ PRIVATE METHODS - CALCULATE SPECTROSCOPIC PARAMETERS
 - :py:meth:`radis.lbl.base.BaseFactory._add_Evib123Erot_RADIS_cls5`
 - :py:meth:`radis.lbl.base.BaseFactory._add_ju`
 - :py:meth:`radis.lbl.base.BaseFactory._add_Eu`
-- :py:meth:`radis.lbl.base.BaseFactory._check_noneq_parameters`
 - :py:meth:`radis.lbl.base.BaseFactory._calc_noneq_parameters`
 - :py:meth:`radis.lbl.base.BaseFactory.calc_weighted_trans_moment`
 - :py:meth:`radis.lbl.base.BaseFactory.calc_einstein_coefficients`
@@ -81,7 +80,6 @@ import radis
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
@@ -285,7 +283,6 @@ class BaseFactory(DatabankLoader):
     # _add_Evib123Erot_RADIS_cls5
     # _add_ju
     # _add_Eu
-    # _check_noneq_parameters
     # _calc_noneq_parameters
     # calc_weighted_trans_moment
     # calc_einstein_coefficients
@@ -421,7 +418,7 @@ class BaseFactory(DatabankLoader):
             raise NotImplementedError("3 Tvib mode for CDSD in pcN convention")  # TODO
 
         elif self.params.levelsfmt == "radis":  # calculate with Dunham expansions
-            if self.input.molecule in HITRAN_CLASS5:  # class 1
+            if self.input.molecule in HITRAN_CLASS5:  # class 5
                 if calc_Evib_harmonic_anharmonic:
                     return self._add_Evib123Erot_RADIS_cls5_harmonicanharmonic(df)
                 else:
@@ -483,9 +480,6 @@ class BaseFactory(DatabankLoader):
                 )
         if self.verbose >= 2:
             t0 = time()
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
 
         def get_Evib_CDSD_pc_1iso(df, iso):
             """Calculate Evib for a given isotope (energies are specific to a
@@ -576,7 +570,11 @@ class BaseFactory(DatabankLoader):
         df["Erotl"] = df.El - df.Evibl
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -622,9 +620,6 @@ class BaseFactory(DatabankLoader):
         assert molecule == "CO2"
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -688,7 +683,11 @@ class BaseFactory(DatabankLoader):
         df["Erotl"] = df.El - df.Evibl
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -731,9 +730,6 @@ class BaseFactory(DatabankLoader):
         assert molecule == "CO2"
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -806,7 +802,11 @@ class BaseFactory(DatabankLoader):
         df["Erotl"] = df.El - df.Evibl
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -960,7 +960,7 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib3l")
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg("Fetched energies in {0:.2f}s".format(time() - t0))
 
         return  # None: Dataframe updated
 
@@ -996,9 +996,6 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -1015,83 +1012,32 @@ class BaseFactory(DatabankLoader):
                 )
 
         def get_Evib_RADIS_cls1_1iso(df, iso):
-            """Calculate Evib & Erot for a given isotope (energies are specific
-            to a given isotope)"""
-            # TODO: implement with map() instead (much faster!! see get_Evib_CDSD_* )
+            """Calculate Evib & Erot for a given isotope.
 
+            (energies are specific to a given isotope)
+            """
             energies = self.get_energy_levels(molecule, iso, state)
             # TODO: for multi-molecule mode: add loops on molecules and states too
 
             # only keep vibrational energies
-            index = ["viblvl"]
+            index = ["v"]
             energies = energies.drop_duplicates(index, inplace=False)
             # (work on a copy)
 
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
             energies.set_index(index, inplace=True)
+            Evib_dict = dict(list(zip(energies.index, energies.Evib)))
 
-            # Calculate vibrational / rotational levels for all transitions
-            def fillEvibu(r):
-                """
-                Note: v, j, is a partition and we just did a groupby(these)
-                # so all r.vu are the same
+            # Add lower state energy
+            df_v = df.set_index(["vl"])
+            df["Evibl"] = df_v.index.map(Evib_dict.get).values
 
-                Implementation
-                --------------
-
-                    r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
-                                all the same
-                    r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
-                             yields a x20 on performances (60s -> 3s)
-
-                (probably faster since neq==0.9.20) (radis<1.0)
-                """
-                viblvl = vib_lvl_name_hitran_class1(r.vu.iloc[0])
-                r["Evibu"] = energies.at[viblvl, "Evib"]
-
-                return r
-
-            def fillEvibl(r):
-                # Not: p, c, j, n is a partition and we just did a groupby(these)
-                # so all r.vl, etc. are the same
-                viblvl = vib_lvl_name_hitran_class1(r.vl.iloc[0])
-                r["Evibl"] = energies.at[viblvl, "Evib"]
-
-                return r
-
-            #            try:
-            df = df.groupby(by=["vu"]).apply(fillEvibu)
-            df = df.groupby(by=["vl"]).apply(fillEvibl)
-            #            except KeyError:
-            #                printr("{0} -> An error (see below) occured that usually ".format(sys.exc_info()[1]) +
-            #                       "happens when the energy level is not referenced in the database. " +
-            #                       "Check your partition function calculator, and energies " +
-            #                       "for isotope {0} (Factory.parsum_calc[{0}][{1}][{2}].df)".format(
-            #                    molecule, iso, state))
-            #                raise
-
-            # Another version that failed because twice slower than apply() in that case
-            # ~ keep it for information
-            #        try:
-            #            dgb = df.groupby(by=['vu'])
-            #            for vu, dg in dgb: #indices.items():
-            #                idx = dgb.indices[vu]
-            #                j0 = dg['ju'].iloc[0]     # they all have the same Evib anyway
-            #                Evib = energies.at[(vu, j0),'Evib']
-            #                df.loc[idx, 'Evibu'] = Evib
-            #
-            #            dgb = df.groupby(by=['vl'])
-            #            for vl, dg in dgb: #indices.items():
-            #                idx = dgb.indices[vl]
-            #                j0 = dg['jl'].iloc[0]     # they all have the same Evib anyway
-            #                Evib = energies.at[(vl, j0),'Evib']
-            #                df.loc[idx, 'Evibl'] = Evib
+            # Add upper state energy
+            df_v = df.set_index(["vu"])
+            df["Evibu"] = df_v.index.map(Evib_dict.get).values
 
             return df.loc[:, ["Evibl", "Evibu"]]
 
-        #        df = df.groupby('iso').apply(lambda x: get_Evib_RADIS_cls1_1iso(x, x.name))
-
-        # Slower than the version below:
         df["Evibl"] = np.nan
         df["Evibu"] = np.nan
         for iso, idx in df.groupby("iso").indices.items():
@@ -1105,7 +1051,11 @@ class BaseFactory(DatabankLoader):
         assert np.isnan(df.Evibl).sum() == 0
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         return  # None: Dataframe updated
 
@@ -1136,9 +1086,6 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -1155,8 +1102,9 @@ class BaseFactory(DatabankLoader):
                 )
 
         def get_Evib123_RADIS_cls5_1iso(df, iso):
-            """Fetch Evib & Erot for a given isotope (energies are specific to
-            a given isotope)
+            """Fetch Evib & Erot for a given isotope.
+
+            energies are specific  a given isotope)
 
             Notes
             -----
@@ -1233,7 +1181,11 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib3l")
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         return  # None: Dataframe updated
 
@@ -1255,9 +1207,6 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
         if self.verbose >= 2:
-            printg(
-                "Fetching vib / rot energies for all {0} transitions".format(len(df))
-            )
             t0 = time()
 
         # Check energy levels are here
@@ -1290,67 +1239,39 @@ class BaseFactory(DatabankLoader):
             energies = self.get_energy_levels(molecule, iso, state)
 
             # only keep vibrational energies
-            index = ["viblvl"]
-            energies = energies.drop_duplicates(index, inplace=False)
+            energies = energies.drop_duplicates("viblvl", inplace=False)
             # (work on a copy)
 
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
+            index = ["v1", "v2", "l2", "v3"]
             energies.set_index(index, inplace=True)
+            Evib1_h_dict = dict(list(zip(energies.index, energies.Evib1_h)))
+            Evib1_a_dict = dict(list(zip(energies.index, energies.Evib1_a)))
+            Evib2_h_dict = dict(list(zip(energies.index, energies.Evib2_h)))
+            Evib2_a_dict = dict(list(zip(energies.index, energies.Evib2_a)))
+            Evib3_h_dict = dict(list(zip(energies.index, energies.Evib3_h)))
+            Evib3_a_dict = dict(list(zip(energies.index, energies.Evib3_a)))
 
-            # Calculate vibrational / rotational levels for all transitions
-            def fillEvib123u(r):
-                """Treanor version of the parser above.
+            # Add lower state energy
+            df_v1v2l2v3 = df.set_index(["v1l", "v2l", "l2l", "v3l"])
+            # the map below is crazy fast compared to above loop
+            df["Evib1l_h"] = df_v1v2l2v3.index.map(Evib1_h_dict.get).values
+            df["Evib1l_a"] = df_v1v2l2v3.index.map(Evib1_a_dict.get).values
+            df["Evib2l_h"] = df_v1v2l2v3.index.map(Evib2_h_dict.get).values
+            df["Evib2l_a"] = df_v1v2l2v3.index.map(Evib2_a_dict.get).values
+            df["Evib3l_h"] = df_v1v2l2v3.index.map(Evib3_h_dict.get).values
+            df["Evib3l_a"] = df_v1v2l2v3.index.map(Evib3_a_dict.get).values
+            # TODO @dev # performance: try getting all 3 values at the same time?
+            # with:  Evib123_dict = dict(list(zip(energies.index, (energies.Evib1, energies.Evib2, energies.Evib3))))
 
-                Add both the harmonic and anharmonic components of the vibrational
-                energies Evib1_h, Evib1_a, Evib2_h, etc. for the levels in group r
-
-                Group r corresponds to levels of a same (v1, v2, l2, v3): they
-                have the same vibrational energy.
-
-                Notes
-                -----
-
-                (v1, v2, l2, v3, j) is a partition and we just did a groupby(these)
-                # so all r.vu are the same
-
-                Implementation:
-
-                How to fetch the corresponding rovib level in the Energy Database? ::
-
-                    r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
-                                all the same
-                    r.ju.iloc[0]  not necessary (same Evib) but explicitely mentionning it
-                             yields a x20 on performances (60s -> 3s)
-                    In 0.9.19 the energy database was reduced to vibrational energies only
-                """
-                viblvl = vib_lvl_name_hitran_class5(
-                    r.v1u.iloc[0], r.v2u.iloc[0], r.l2u.iloc[0], r.v3u.iloc[0]
-                )
-
-                r["Evib1u_h"] = energies.at[viblvl, "Evib1_h"]
-                r["Evib1u_a"] = energies.at[viblvl, "Evib1_a"]
-                r["Evib2u_h"] = energies.at[viblvl, "Evib2_h"]
-                r["Evib2u_a"] = energies.at[viblvl, "Evib2_a"]
-                r["Evib3u_h"] = energies.at[viblvl, "Evib3_h"]
-                r["Evib3u_a"] = energies.at[viblvl, "Evib3_a"]
-                return r
-
-            def fillEvib123l(r):
-                """cf above."""
-                viblvl = vib_lvl_name_hitran_class5(
-                    r.v1l.iloc[0], r.v2l.iloc[0], r.l2l.iloc[0], r.v3l.iloc[0]
-                )
-
-                r["Evib1l_h"] = energies.at[viblvl, "Evib1_h"]
-                r["Evib1l_a"] = energies.at[viblvl, "Evib1_a"]
-                r["Evib2l_h"] = energies.at[viblvl, "Evib2_h"]
-                r["Evib2l_a"] = energies.at[viblvl, "Evib2_a"]
-                r["Evib3l_h"] = energies.at[viblvl, "Evib3_h"]
-                r["Evib3l_a"] = energies.at[viblvl, "Evib3_a"]
-                return r
-
-            df = df.groupby(by=["v1u", "v2u", "l2u", "v3u"]).apply(fillEvib123u)
-            df = df.groupby(by=["v1l", "v2l", "l2l", "v3l"]).apply(fillEvib123l)
+            # Add upper state energy
+            df_v1v2l2v3 = df.set_index(["v1u", "v2u", "l2u", "v3u"])
+            df["Evib1u_h"] = df_v1v2l2v3.index.map(Evib1_h_dict.get).values
+            df["Evib1u_a"] = df_v1v2l2v3.index.map(Evib1_a_dict.get).values
+            df["Evib2u_h"] = df_v1v2l2v3.index.map(Evib2_h_dict.get).values
+            df["Evib2u_a"] = df_v1v2l2v3.index.map(Evib2_a_dict.get).values
+            df["Evib3u_h"] = df_v1v2l2v3.index.map(Evib3_h_dict.get).values
+            df["Evib3u_a"] = df_v1v2l2v3.index.map(Evib3_a_dict.get).values
 
             return df.loc[
                 :,
@@ -1369,8 +1290,6 @@ class BaseFactory(DatabankLoader):
                     "Evib3u_a",
                 ],
             ]
-
-        #        df = df.groupby('iso').apply(lambda x: get_Evib123_RADIS_cls5_1iso_ah(x, x.name))
 
         # Slower than the version below:
         df["Evib1l_h"] = np.nan
@@ -1431,7 +1350,11 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib3l")
 
         if self.verbose >= 2:
-            printg("Fetched energies in {0:.0f}s".format(time() - t0))
+            printg(
+                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
+                    time() - t0, len(df)
+                )
+            )
 
         return df
 
@@ -1491,7 +1414,7 @@ class BaseFactory(DatabankLoader):
 
         return None
 
-    def _check_noneq_parameters(self, vib_distribution, singleTvibmode):
+    def _calc_noneq_parameters(self, vib_distribution, singleTvibmode):
         """Make sure database has non equilibrium quantities (Evib, Erot, etc.)
 
         Notes
@@ -1520,73 +1443,6 @@ class BaseFactory(DatabankLoader):
                 )
 
         # Make sure database has pre-computed non equilibrium quantities
-        # (Evib, Erot, etc.)
-        # This may be a bottleneck for a first calculation (has to calculate
-        # the nonequilibrium energies)
-        calc_Evib_harmonic_anharmonic = vib_distribution in ["treanor"]
-        if singleTvibmode:
-            if (
-                not "Evib" in df
-                or calc_Evib_harmonic_anharmonic
-                and not all_in(["Evib_a", "Evib_h"], df)
-            ):
-                self._calc_noneq_parameters(
-                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
-                )
-        else:
-            if (
-                not all_in(["Evib1", "Evib2", "Evib3"], df)
-                or calc_Evib_harmonic_anharmonic
-                and not all_in(
-                    ["Evib1_a", "Evib1_h", "Evib2_a", "Evib2_h", "Evib3_a", "Evib3_h"],
-                    df,
-                )
-            ):
-                self._calc_noneq_parameters(
-                    singleTvibmode=False,
-                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
-                )
-
-        if not "Aul" in df:
-            self.calc_weighted_trans_moment()
-            self.calc_einstein_coefficients()
-
-        if self.verbose >= 2:
-            printg("Checked nonequilibrium parameters in {0:.2f}s".format(time() - t0))
-
-    def _calc_noneq_parameters(
-        self, singleTvibmode=True, calc_Evib_harmonic_anharmonic=False
-    ):
-        """Update database with Evib, Erot, and degeneracies.
-
-        Parameters
-        ----------
-
-        singleTvibmode: boolean
-            switch between 1 Tvib and 3 Tvib mode
-
-        calc_Evib_harmonic_anharmonic: boolean
-            if ``True``, calculate harmonic and anharmonic components of
-            vibrational energies (for Treanor distributions)
-
-        Notes
-        -----
-
-        Update in 0.9.16: assign bands by default too
-        """
-
-        # TODO @dev: refactor
-        # 3 Tvib mode is CO2-specific. Shouldnt appear in this function yet?
-
-        if __debug__:
-            printdbg(
-                "called _calc_noneq_parameters(singleTvibmode="
-                + "{0},calc_Evib_harmonic_anharmonic={1})".format(
-                    singleTvibmode, calc_Evib_harmonic_anharmonic
-                )
-            )
-
-        df = self.df0
 
         # ... Make sure upper J' is calculated  (needed to compute populations)
         if not "ju" in df:
@@ -1596,73 +1452,42 @@ class BaseFactory(DatabankLoader):
         if not "Eu" in df:
             self._add_Eu(df)
 
-        # ... Make sure Evib / Erot are calculated
-        if singleTvibmode:
-            if (
-                (not all_in(["Evibu", "Erotu", "Evibl", "Erotl"], df))
-                or calc_Evib_harmonic_anharmonic
-                and not all_in(
-                    [
-                        "Evibu_a",
-                        "Evibu_h",
-                        "Erotu_a",
-                        "Erotu_h",
-                        "Evibl_a",
-                        "Evibl_h",
-                        "Erotl_a",
-                        "Erotl_h",
-                    ],
-                    df,
-                )
-            ):
-                self._add_EvibErot(
-                    df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
-                )
+        # (Evib, Erot, etc.)
+        # This may be a bottleneck for a first calculation (has to calculate
+        # the nonequilibrium energies)
+        calc_Evib_harmonic_anharmonic = vib_distribution in ["treanor"]
+        if calc_Evib_harmonic_anharmonic:
+            if singleTvibmode:
+                required_columns = ["Evibl_a", "Evibl_h"]
+            else:
+                required_columns = [
+                    "Evib1l_a",
+                    "Evib1l_h",
+                    "Evib2l_a",
+                    "Evib2l_h",
+                    "Evib3l_a",
+                    "Evib3l_h",
+                ]
         else:
-            if (
-                not all_in(
-                    [
-                        "Evib1u",
-                        "Evib2u",
-                        "Evib3u",
-                        "Erotu",
-                        "Evib1l",
-                        "Evib2l",
-                        "Evib3l",
-                        "Erotl",
-                    ],
+            if singleTvibmode:
+                required_columns = ["Evibl"]
+            else:
+                required_columns = ["Evib1l", "Evib2l", "Evib3l"]
+
+        if not all_in(required_columns, df):
+            if singleTvibmode:
+                self._add_EvibErot(
                     df,
+                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
                 )
-                or calc_Evib_harmonic_anharmonic
-                and not all_in(
-                    [
-                        "Evib1u_a",
-                        "Evib1u_h",
-                        "Erotu_a",
-                        "Erotu_h",
-                        "Evib1l_a",
-                        "Evib1l_h",
-                        "Erotl_a",
-                        "Erotl_h",
-                        "Evib2u_a",
-                        "Evib2u_h",
-                        "Evib3u_a",
-                        "Evib3u_h",
-                        "Evib2l_a",
-                        "Evib2l_h",
-                        "Erot3l_a",
-                        "Erot3l_h",
-                    ],
-                    df,
-                )
-            ):
+            else:
                 self._add_Evib123Erot(
-                    df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
+                    df,
+                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
                 )
+            assert all_in(required_columns, df)
 
-        #        # ... Assign bands
-
-        # Look up results
+        # ... Check no negative energies
         tol = -1e-4  # tolerance for negative energies (in cm-1)
         if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
             self.warn(
@@ -1674,7 +1499,12 @@ class BaseFactory(DatabankLoader):
         if not all_in(["gju", "gjl", "gvibu", "gvibl", "gu", "gl"], df):
             self._calc_degeneracies(df)
 
-        return None  # dataframe already updated
+        if not "Aul" in df:
+            self.calc_weighted_trans_moment()
+            self.calc_einstein_coefficients()
+
+        if self.verbose >= 2:
+            printg("Checked nonequilibrium parameters in {0:.2f}s".format(time() - t0))
 
     def _calc_degeneracies(self, df):
         """Calculate vibrational and rotational degeneracies.
@@ -1766,7 +1596,6 @@ class BaseFactory(DatabankLoader):
 
         if self.verbose >= 2:
             t0 = time()
-            printg("Calculate weighted transition moment")
 
         id_set = df.id.unique()
         iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
@@ -1829,7 +1658,9 @@ class BaseFactory(DatabankLoader):
 
         if self.verbose >= 2:
             printg(
-                "Calculated weighted transition moment in {0:.2f}".format(time() - t0)
+                "... calculated weighted transition moment in {0:.2f}s".format(
+                    time() - t0
+                )
             )
 
         return
@@ -3432,6 +3263,3 @@ if __name__ == "__main__":
     from radis.test.lbl.test_base import _run_testcases
 
     _run_testcases()
-
-    _, _, wlmin, wlmax = get_waverange("air", 2000, 2400)
-    assert np.allclose((wlmin, wlmax), (4165.53069, 4998.6369))
