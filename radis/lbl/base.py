@@ -80,7 +80,6 @@ import radis
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.lbl.labels import vib_lvl_name_hitran_class1
 from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
@@ -1006,83 +1005,32 @@ class BaseFactory(DatabankLoader):
                 )
 
         def get_Evib_RADIS_cls1_1iso(df, iso):
-            """Calculate Evib & Erot for a given isotope (energies are specific
-            to a given isotope)"""
-            # TODO: implement with map() instead (much faster!! see get_Evib_CDSD_* )
+            """Calculate Evib & Erot for a given isotope.
 
+            (energies are specific to a given isotope)
+            """
             energies = self.get_energy_levels(molecule, iso, state)
             # TODO: for multi-molecule mode: add loops on molecules and states too
 
             # only keep vibrational energies
-            index = ["viblvl"]
+            index = ["v"]
             energies = energies.drop_duplicates(index, inplace=False)
             # (work on a copy)
 
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
             energies.set_index(index, inplace=True)
+            Evib_dict = dict(list(zip(energies.index, energies.Evib)))
 
-            # Calculate vibrational / rotational levels for all transitions
-            def fillEvibu(r):
-                """
-                Note: v, j, is a partition and we just did a groupby(these)
-                # so all r.vu are the same
+            # Add lower state energy
+            df_v = df.set_index(["vl"])
+            df["Evibl"] = df_v.index.map(Evib_dict.get).values
 
-                Implementation
-                --------------
-
-                    r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
-                                all the same
-                    r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
-                             yields a x20 on performances (60s -> 3s)
-
-                (probably faster since neq==0.9.20) (radis<1.0)
-                """
-                viblvl = vib_lvl_name_hitran_class1(r.vu.iloc[0])
-                r["Evibu"] = energies.at[viblvl, "Evib"]
-
-                return r
-
-            def fillEvibl(r):
-                # Not: p, c, j, n is a partition and we just did a groupby(these)
-                # so all r.vl, etc. are the same
-                viblvl = vib_lvl_name_hitran_class1(r.vl.iloc[0])
-                r["Evibl"] = energies.at[viblvl, "Evib"]
-
-                return r
-
-            #            try:
-            df = df.groupby(by=["vu"]).apply(fillEvibu)
-            df = df.groupby(by=["vl"]).apply(fillEvibl)
-            #            except KeyError:
-            #                printr("{0} -> An error (see below) occured that usually ".format(sys.exc_info()[1]) +
-            #                       "happens when the energy level is not referenced in the database. " +
-            #                       "Check your partition function calculator, and energies " +
-            #                       "for isotope {0} (Factory.parsum_calc[{0}][{1}][{2}].df)".format(
-            #                    molecule, iso, state))
-            #                raise
-
-            # Another version that failed because twice slower than apply() in that case
-            # ~ keep it for information
-            #        try:
-            #            dgb = df.groupby(by=['vu'])
-            #            for vu, dg in dgb: #indices.items():
-            #                idx = dgb.indices[vu]
-            #                j0 = dg['ju'].iloc[0]     # they all have the same Evib anyway
-            #                Evib = energies.at[(vu, j0),'Evib']
-            #                df.loc[idx, 'Evibu'] = Evib
-            #
-            #            dgb = df.groupby(by=['vl'])
-            #            for vl, dg in dgb: #indices.items():
-            #                idx = dgb.indices[vl]
-            #                j0 = dg['jl'].iloc[0]     # they all have the same Evib anyway
-            #                Evib = energies.at[(vl, j0),'Evib']
-            #                df.loc[idx, 'Evibl'] = Evib
+            # Add upper state energy
+            df_v = df.set_index(["vu"])
+            df["Evibu"] = df_v.index.map(Evib_dict.get).values
 
             return df.loc[:, ["Evibl", "Evibu"]]
 
-        #        df = df.groupby('iso').apply(lambda x: get_Evib_RADIS_cls1_1iso(x, x.name))
-
-        # Slower than the version below:
         df["Evibl"] = np.nan
         df["Evibu"] = np.nan
         for iso, idx in df.groupby("iso").indices.items():
