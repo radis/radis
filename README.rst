@@ -151,7 +151,7 @@ Contribute
 ----------
 
 Want to contribute to RADIS ? Join the Slack community and we'll help you through the process.
-Want to get started immediatly ? Nice. Have a look at the `CONTRIBUTE.md <./CONTRIBUTE.md>`__ guide.
+Want to get started immediatly ? Nice. Have a look at the `CONTRIBUTING.md <./CONTRIBUTING.md>`__ guide.
 
 |badge_contributors| |badge_slack|
 
