@@ -868,12 +868,25 @@ class BroadenFactory(BaseFactory):
     def _check_accuracy(self, df, wstep):
         """Check there are enough gridpoints per line.
 
+        AccuracyWarning:
+            if less than `3` grid points per spectral line
+        AccuracyError:
+            if less than `1` grid point per spectral line
+
+        .. note::
+            Warning and Error treshold reduced from `5, 2`  to `3, 1` in 0.9.29,
+            because some outlier lines with very small lineshapes would systematically
+            raise an error. Suggestion : ignore outlier lines (1% smallest?) in normal/performance
+            mode.
+
         Raises
         ------
         AccuracyWarning or AccuracyError.
 
         Examples
         --------
+
+        (with thresholds of `5,2`):
 
         ::
 
@@ -898,21 +911,25 @@ class BroadenFactory(BaseFactory):
             # but it's quite expensive to compute
             min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
 
-        WARN_THRESHOLD = 5
-        ERROR_TRESHOLD = 2
+        WARN_THRESHOLD = 3
+        ERROR_TRESHOLD = 1
         if wstep > min_width / ERROR_TRESHOLD:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
                 + f"wstep to (at least) below {min_width/ERROR_TRESHOLD:.2g} cm⁻¹ "
-                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹",
+                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                + "You can also ignore by setting `warnings={'AccuracyError':'ignore'}` "
+                + "(if you know what you're doing!)",
                 "AccuracyError",
             )
         elif wstep > min_width / WARN_THRESHOLD:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
-                + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹",
+                + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                + "You can also ignore by setting `warnings={'AccuracyWarning':'ignore'}` "
+                + "(if you know what you're doing!)"
                 "AccuracyWarning",
             )
         else:
