@@ -101,7 +101,7 @@ def test_copy(verbose=True, *args, **kwargs):
     """Test that a Spectrum is correctly copied
 
     We compare a Spectrum that has:
-    - all available spectral quantities
+    - all available spectral arrays
     - a slit
     - many calculation conditions
     - no populations

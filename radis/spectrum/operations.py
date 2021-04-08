@@ -35,7 +35,7 @@ Functions to discard all but one spectral quantity:
 - :py:func:`~radis.spectrum.operations.Radiance`
 - :py:func:`~radis.spectrum.operations.Radiance_noslit`
 
-Keeps all spectral quantities, but make emission equal to 0 (useful when
+Keeps all spectral arrays, but make emission equal to 0 (useful when
 calculating contributions of line of sight slabs):
 
 - :py:func:`~radis.spectrum.operations.PerfectAbsorber`

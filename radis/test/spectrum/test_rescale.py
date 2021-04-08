@@ -25,7 +25,7 @@ from radis.tools.database import load_spec
 @pytest.mark.fast
 def test_compression(verbose=True, warnings=True, *args, **kwargs):
     """Test that redundant quantities are properly infered from already known
-    spectral quantities"""
+    spectral arrays"""
 
     # Get spectrum
     s1 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
@@ -33,7 +33,7 @@ def test_compression(verbose=True, warnings=True, *args, **kwargs):
     s1.conditions["thermal_equilibrium"] = True
     s1.update()
 
-    # Analyse redundant spectral quantities
+    # Analyse redundant spectral arrays
     redundant = get_redundant(s1)
     if verbose:
         print(redundant)
@@ -123,7 +123,7 @@ def test_get_recompute(verbose=True, *args, **kwargs):
 
 
 def test_recompute_equilibrium(verbose=True, warnings=True, plot=True, *args, **kwargs):
-    """Test that spectral quantities recomputed under equilibrium assumption
+    """Test that spectral arrays recomputed under equilibrium assumption
     yields the same output as with non equilibrium routines when Tvib = Trot"""
 
     if plot:
@@ -188,7 +188,7 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
         radis.DEBUG_MODE = True
     from radis.spectrum.rescale import _build_update_graph, get_reachable, ordered_keys
 
-    # ordered_keys: all spectral quantities that can be rescaled
+    # ordered_keys: all spectral arrays that can be rescaled
     can_be_recomputed = get_reachable(s0)
     # can_be_recomputed: all spectra quantities that can be rescaled for this
     # particular spectrum

@@ -3,7 +3,7 @@
 
 @author: erwan
 
-Formula to calculate most spectral quantities
+Formula to calculate most spectral arrays
 
 Are stored here all equations that need to be used by both the factory (to
 generate the spectrum) or the spectrum class (to recompute some quantities

@@ -1051,7 +1051,7 @@ def compare_spectra(
         another Spectrum to compare with
 
     spectra_only: boolean, or str
-        if ``True``, only compares spectral quantities (in the same waveunit)
+        if ``True``, only compares spectral arrays (in the same waveunit)
         and not lines or conditions. If str, compare a particular quantity
         name. If False, compare everything (including lines and conditions
         and populations). Default ``False``
@@ -1065,10 +1065,10 @@ def compare_spectra(
         of first Spectrum is taken
 
     rtol: float
-        relative difference to use for spectral quantities comparison
+        relative difference to use for spectral arrays comparison
 
     ignore_nan: boolean
-        if ``True``, nans are ignored when comparing spectral quantities
+        if ``True``, nans are ignored when comparing spectral arrays
 
     ignore_outliers: boolean, or float
         if not False, outliers are discarded. i.e, output is determined by::
@@ -1189,7 +1189,7 @@ def compare_spectra(
         return out
 
     def _compare_variables(I, Ie):
-        """Compare spectral quantities I and Ie."""
+        """Compare spectral arrays I and Ie."""
 
         if ignore_nan:
             b = ~(np.isnan(I) + np.isnan(Ie))

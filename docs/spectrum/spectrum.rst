@@ -136,16 +136,16 @@ Example::
 Load from a .spec file
 ----------------------
 
-A ``.spec`` file contains all the Spectrum spectral quantities as well as the input
+A ``.spec`` file contains all the Spectrum spectral arrays as well as the input
 conditions used to generate it. To retrieve it use the
 :func:`~radis.tools.database.load_spec` function::
 
     s = load_spec('my_spectrum.spec')
 
 Sometimes the ``.spec`` file may have been generated under a compressed format
-where redundant spectral quantities have been removed (for instance, transmittance
+where redundant spectral arrays have been removed (for instance, transmittance
 if you already know absorbance). Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.update`
-method to regenerate missing spectral quantities::
+method to regenerate missing spectral arrays::
 
     s = load_spec('my_spectrum.spec', binary=True)
     s.update()
@@ -158,7 +158,7 @@ Spectrum conditions and get Spectrum that suits specific parameters
 
 .. _label_spectral_quantities:
 
-Spectral quantities
+spectral arrays
 ===================
 
 A :class:`~radis.spectrum.spectrum.Spectrum` object can contain one spectral quantity, such as
@@ -201,13 +201,13 @@ Additionally, RADIS may calculate extra quantities such as:
 See the latest list in the :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES` and
 :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`.
 
-Custom spectral quantities
+Custom spectral arrays
 --------------------------
 
 A :class:`~radis.spectrum.spectrum.Spectrum` object is built on top of a dictionary structure, and can handle
-spectral quantities with any name.
+spectral arrays with any name.
 
-Custom spectral quantities with arbitrary units can be defined when creating a Spectrum object, for instance::
+Custom spectral arrays with arbitrary units can be defined when creating a Spectrum object, for instance::
 
     # w, I are two numpy arrays
     s = Spectrum.from_array(w, I, 'irradiance',
@@ -242,12 +242,12 @@ Units
 
 Default units are stored in the :attr:`~radis.spectrum.spectrum.Spectrum.units` dictionary
 
-It is strongly advised not to modify the dictionary above. However, spectral quantities
+It is strongly advised not to modify the dictionary above. However, spectral arrays
 can be retrieved in arbitrary units with the :meth:`~radis.spectrum.spectrum.Spectrum.get`
 method.
 
 When a spectral unit is convolved with :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`,
-a new convolved spectral quantities is created. The unit of the convolved quantity may be different,
+a new convolved spectral arrays is created. The unit of the convolved quantity may be different,
 depending on how the slit function was normalised. Several options are available in RADIS.
 Please refer to the documentation of the :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` method.
 
@@ -259,10 +259,10 @@ How to access a Spectrum properties?
 ====================================
 
 
-Get spectral quantities
+Get spectral arrays
 -----------------------
 
-Spectral quantities of a Spectrum object can be stored in arbitrary
+spectral arrays of a Spectrum object can be stored in arbitrary
 wavespace (wavenumbers, wavelengths in air, or wavelengths in vacuum) and arbitrary units.
 
 Therefore, it is recommendeded to use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get`
@@ -272,8 +272,8 @@ method to retrieve the quantity un the units you want::
     _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
                  medium='air')
 
-See :ref:`spectral quantities <label_spectral_quantities>` for the list
-of spectral quantities.
+See :ref:`spectral arrays <label_spectral_quantities>` for the list
+of spectral arrays.
 
 Get wavelength / wavenumber
 ---------------------------
@@ -293,7 +293,7 @@ Just print it::
 
     print(s)
 
-(that shows all spectral quantities stored in the object, all keys and
+(that shows all spectral arrays stored in the object, all keys and
 values in the :attr:`~radis.spectrum.spectrum.Spectrum.conditions` dictionary,
 and all atoms/molecules stored in the :attr:`~radis.spectrum.spectrum.Spectrum.populations`
 dictionary)
@@ -306,7 +306,7 @@ You can also show the conditions only with
 
 .. _label_spectrum_plot:
 
-Plot spectral quantities
+Plot spectral arrays
 ------------------------
 
 Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`::
@@ -387,7 +387,7 @@ To store use the :py:meth:`~radis.spectrum.spectrum.Spectrum.store` method::
 
 The generated ``.spec`` file can be read (and edited) with any text editor. However,
 it may take a lot of space. If memory is important, you may use the ``compress=True``
-argument which will remove redundant spectral quantities (for instance, transmittance
+argument which will remove redundant spectral arrays (for instance, transmittance
 if you already know absorbance), and store the .spec file under binary format. Use
 the :py:meth:`~radis.spectrum.spectrum.Spectrum.update` method to regenerate missing
 quantities::
@@ -433,7 +433,7 @@ How to modify a Spectrum object?
 Calculate missing quantities
 ----------------------------
 
-Some spectral quantities can be infered from quantities stored in the Spectrum
+Some spectral arrays can be infered from quantities stored in the Spectrum
 if enough conditions are given. For instance, transmittance can be recomputed
 from the spectral absorption coefficient if the path length is stored in the
 conditions.
@@ -638,7 +638,7 @@ Or remove a linear baseline with:
 Calculate transmittance from radiance with Kirchoff's law
 ---------------------------------------------------------
 
-RADIS can be used to infer spectral quantities from others if they can
+RADIS can be used to infer spectral arrays from others if they can
 be derived. If on top that, equilibrium is assumed, then Kirchoff's law
 is used. See ``How to ... calculate missing quantities?`` and the
 :py:meth:`~radis.spectrum.rescale.update` method with argument ``assume_equilibrium=True``.
@@ -683,12 +683,12 @@ method, or simply the ``==`` statement (which is essentially the same thing)::
 
 However, :py:meth:`~radis.spectrum.spectrum.Spectrum.compare_with` allows more freedom
 regarding what quantities to compare. ``==`` will compare everything of two spectra,
-including input conditions, units under which spectral quantities are stored,
+including input conditions, units under which spectral arrays are stored,
 populations of species if they were saved, etc. In many situations we may want
 to simply compare the spectra themselves, or even a particular quantity like
 *transmittance_noslit*. Use::
 
-    s1.compare_with(s2, spectra_only=True)                    # compares all spectral quantities
+    s1.compare_with(s2, spectra_only=True)                    # compares all spectral arrays
     s1.compare_with(s2, spectra_only='transmittance_noslit')  # compares transmittance only
 
 The aforementionned methods will return a boolean array (True/False). If you

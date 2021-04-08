@@ -16,7 +16,7 @@ Routine Listing
 See Also
 --------
 
-To extract some spectral quantities from a Spectrum, and create a new Spectrum,
+To extract some spectral arrays from a Spectrum, and create a new Spectrum,
 see the functions in :py:mod:`radis.spectrum.operations`:
 
 - :func:`~radis.spectrum.operations.Radiance`

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Functions to update :class:`~radis.spectrum.spectrum.Spectrum` objects with
-new spectral quantities that can be derived from existing ones, or rescale
+new spectral arrays that can be derived from existing ones, or rescale
 path_length or mole_fraction, or add overpopulations.
 
 Most of these are binded as methods to the Spectrum class, but stored here to
@@ -93,7 +93,7 @@ def _build_update_graph(
     -------
 
     derivation: dict
-        {spectral_quantity: [list of combinations of spectral quantities needed to calculate it]}
+        {spectral_quantity: [list of combinations of spectral arrays needed to calculate it]}
 
     Examples
     --------
@@ -248,7 +248,7 @@ def _build_update_graph(
 
 
 def get_redundant(spec):
-    """Returns a dictionary of all spectral quantities in spectrum and whether
+    """Returns a dictionary of all spectral arrays in spectrum and whether
     they are redundant.
 
     Examples
@@ -262,7 +262,7 @@ def get_redundant(spec):
          'transmittance_noslit': True}
     """
 
-    # Get all spectral quantities that derive from existing ones
+    # Get all spectral arrays that derive from existing ones
     derivation_graph = _build_update_graph(spec)
 
     activated = dict().fromkeys(ordered_keys, False)
@@ -1389,7 +1389,7 @@ def _recalculate(
     :func:`~radis.spectrum.rescale.rescale_path_length`, :func:`~radis.spectrum.rescale.rescale_mole_fraction`
     and :func:`~radis.spectrum.rescale.update`.
 
-    Determines with spectral quantities should be recomputed, then scales
+    Determines with spectral arrays should be recomputed, then scales
     them solving the Radiative Transfer Equation in the process.
 
 
@@ -1471,7 +1471,7 @@ def _recalculate(
     extra = []
     if greedy:
         # ... let's be greedy: recompute all possible quantities. The list of
-        # all spectral quantities is calculated by parsing a tree in get_reachable
+        # all spectral arrays is calculated by parsing a tree in get_reachable
         reachable = get_reachable(spec)
         extra = [k for k, v in reachable.items() if v]
     wanted = set(wanted + extra)
