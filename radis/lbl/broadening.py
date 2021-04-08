@@ -929,7 +929,7 @@ class BroadenFactory(BaseFactory):
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
                 + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
                 + "You can also ignore by setting `warnings={'AccuracyWarning':'ignore'}` "
-                + "(if you know what you're doing!)"
+                + "(if you know what you're doing!)",
                 "AccuracyWarning",
             )
         else:
