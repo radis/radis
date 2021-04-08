@@ -32,7 +32,10 @@ from radis.phys.units import conv2
 
 
 def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
-    """Planck function for blackbody radiation.
+    r"""Planck function for blackbody radiation.
+
+    .. math::
+        \epsilon \frac{2h c^2}{{\lambda}^5} \frac{1}{\operatorname{exp}\left(\frac{h c}{\lambda k T}\right)-1}
 
     Parameters
     ----------
@@ -45,17 +48,19 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
     unit: output unit
         default 'mW/sr/cm2/nm'
 
-
     Returns
     -------
-    planck: np.array   (mW.sr-1.cm-2/nm)
+    np.array :  (mW.sr-1.cm-2/nm)
         equilibrium radiance
-    """
 
+    See Also
+    --------
+    :py:func:`~radis.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck_wn`
+    """
     k = k_b
     lbd = lmbda * 1e-9
     iplanck = (
-        eps * (2 * h * c ** 2 / lbd ** 5) * 1 / (exp(h * c / (lbd * k * T)) - 1)
+        eps * (2 * h * c ** 2 / lbd ** 5) * (1 / (exp(h * c / (lbd * k * T)) - 1))
     )  # S.I  (W.sr-1.m-3)
     iplanck *= 1e-10  # W.sr-1.m-3 >>> mW.sr-1.cm-2.nm-1
 
@@ -66,7 +71,10 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
 
 
 def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
-    """Planck function for blackbody radiation, wavenumber version.
+    r"""Planck function for blackbody radiation, wavenumber version.
+
+    .. math::
+        \epsilon 2h c^2 {\nu}^3 \frac{1}{\operatorname{exp}\left(\frac{h c \nu}{k T}\right)-1}
 
     Parameters
     ----------
@@ -82,16 +90,21 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
 
     Returns
     -------
-    planck: np.array   default (mW/sr/cm2/cm-1)
+    np.array :  default (mW/sr/cm2/cm-1)
         equilibrium radiance
-    """
 
+    See Also
+    --------
+    :py:func:`~radis.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck`
+    """
     k = k_b_CGS
     h = h_CGS
     c = c_CGS
 
     iplanck = (
-        eps * (2 * h * c ** 2 * wavenum ** 3) * 1 / (exp(h * c * wavenum / (k * T)) - 1)
+        eps
+        * (2 * h * c ** 2 * wavenum ** 3)
+        * (1 / (exp(h * c * wavenum / (k * T)) - 1))
     )
     # iplanck in erg/s/sr/cm2/cm-1
     iplanck *= 1e-4  # erg/s/sr/cm2/cm-1 > mW/sr/cm^2/cm-1
@@ -116,24 +129,24 @@ def sPlanck(
     medium="air",
     **kwargs
 ):
-    """Return a RADIS Spectrum object with blackbody radiation.
+    r"""Return a RADIS :py:class:`~radis.spectrum.spectrum.Spectrum` object with blackbody radiation.
 
-    It's easier to plug in a MergeSlabs / SerialSlabs config than the Planck
-    radiance calculated by iPlanck. And you don't need to worry about units as
-    they are handled internally.
+    It's easier to plug in a :py:func:`~radis.los.slabs.SerialSlabs` line-of-sight than the Planck
+    radiance calculated by :py:func:`~radis.phys.blackbody.planck`.
+    And you don't need to worry about units as they are handled internally.
 
-    See radis.lbl.Spectrum documentation for more information
+    See :py:class:`~radis.spectrum.spectrum.Spectrum` documentation for more information
 
     Parameters
     ----------
-    wavenum_min / wavenum_max: (cm-1)
-        minimum / maximum wavenumber to be processed in cm^-1.
-    wavelength_min / wavelength_max: (nm)
-        minimum / maximum wavelength to be processed in nm
+    wavenum_min / wavenum_max: ():math:`cm^{-1}`)
+        minimum / maximum wavenumber to be processed in :math:`cm^{-1}`.
+    wavelength_min / wavelength_max: (:math:`nm`)
+        minimum / maximum wavelength to be processed in :math:`nm`.
     T: float (K)
         blackbody temperature
     eps: float [0-1]
-        blackbody emissivity. Default 1
+        blackbody emissivity. Default ``1``
 
     Other Parameters
     ----------------
@@ -155,8 +168,23 @@ def sPlanck(
 
     .. minigallery:: radis.sPlanck
 
-    """
+    References
+    ----------
+    In wavelength:
 
+    .. math::
+        \epsilon \frac{2h c^2}{{\lambda}^5} \frac{1}{\operatorname{exp}\left(\frac{h c}{\lambda k T}\right)-1}
+
+    In wavenumber:
+
+    .. math::
+        \epsilon 2h c^2 {\nu}^3 \frac{1}{\operatorname{exp}\left(\frac{h c \nu}{k T}\right)-1}
+
+    See Also
+    --------
+    :py:func:`~radis.phys.blackbody.planck`, :py:func:`~radis.phys.blackbody.planck_wn`
+
+    """
     from radis.spectrum.spectrum import Spectrum
 
     # Check inputs

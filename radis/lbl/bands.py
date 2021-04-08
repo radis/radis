@@ -231,7 +231,7 @@ class BandFactory(BroadenFactory):
         self._calc_broadening_HWHM()
 
         # ... find weak lines and calculate semi-continuum (optional)
-        I_continuum = self._calculate_pseudo_continuum()
+        I_continuum = self.calculate_pseudo_continuum()
         if I_continuum:
             raise NotImplementedError("pseudo continuum not implemented for bands")
 
@@ -552,7 +552,7 @@ class BandFactory(BroadenFactory):
         self._calc_broadening_HWHM()
 
         # ... find weak lines and calculate semi-continuum (optional)
-        I_continuum = self._calculate_pseudo_continuum()
+        I_continuum = self.calculate_pseudo_continuum()
         if I_continuum:
             raise NotImplementedError("pseudo continuum not implemented for bands")
 
