@@ -101,14 +101,22 @@ from radis.misc.warning import (
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 
-KNOWN_DBFORMAT = ["hitran", "hitemp", "cdsd-hitemp", "cdsd-4000", "hdf5"]
+KNOWN_DBFORMAT = [
+    "hitran",
+    "hitemp",
+    "cdsd-hitemp",
+    "cdsd-4000",
+    "hitemp-radisdb",
+    "hdf5-radisdb",
+]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : HITRAN original .par format
-- ``'hitemp'`` : HITEMP-2010 original format (same format as 'hitran')
-- ``'cdsd-hitemp'`` : CDSD-HITEMP (CO2 only, same lines as HITEMP-2010)
-- ``'cdsd-4000'`` : CDSD-4000 original format (CO2 only)
-- ``'hdf5'`` : HDF5 file with RADIS column names.
+- ``'hitran'`` : [HITRAN-2016]_ original .par format
+- ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran')
+- ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010)
+- ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only)
+- ``'hitemp-radisdb'`` : HITEMP under RADISDB format (pytables-HDF5 with RADIS column names).
+- ``'hdf5-radisdb'`` : arbitrary HDF5 file with RADIS column names.
 
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
 and the :ref:`list of databases <label_line_databases>` .
@@ -156,7 +164,8 @@ drop_auto_columns_for_dbformat = {
     "hitemp": ["ierr", "iref", "lmix", "gp", "gpp"],
     "cdsd-4000": ["wang2"],
     "cdsd-hitemp": ["wang2", "lsrc"],
-    "hdf5": [],
+    "hdf5-radisdb": [],
+    "hitemp-radisdb": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -188,6 +197,9 @@ See Also
 - 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`,
 
 """
+# TODO @dev : switch from a model where we drop certain useless columns (RADIS==0.9.28)
+# to a model where we only-load the required ones initially (if possible with lazy-loading,
+# i.e. only load them on demand. See https://github.com/radis/radis/issues/118 )
 drop_all_but_these = [
     "id",
     "iso",
@@ -214,7 +226,7 @@ See Also
 
 """
 
-# Sanity checks
+# @dev: Sanity checks
 # (make sure all variables are defined everywhere)
 assert compare_lists(drop_auto_columns_for_dbformat, KNOWN_DBFORMAT) == 1
 assert compare_lists(drop_auto_columns_for_levelsfmt, KNOWN_LVLFORMAT) == 1
@@ -481,6 +493,7 @@ class MiscParams(ConditionDict):
             None  #: float: [0-1] raise a warning if the lineshape area is different
         )
         self.warning_linestrength_cutoff = None  #: float [0-1]: raise a warning if the sum of linestrength cut is above that
+        self.total_lines = 0  #: int : number of lines in database.
 
 
 def format_paths(s):
@@ -681,7 +694,7 @@ class DatabankLoader(object):
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version.
+            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
@@ -693,7 +706,7 @@ class DatabankLoader(object):
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
-            If None, non equilibrium calculations are not possible. Default ``None``.
+            If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         db_use_cached: boolean, or ``None``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -789,6 +802,7 @@ class DatabankLoader(object):
         levelsfmt="radis",
         load_energies=True,
         include_neighbouring_lines=True,
+        parse_local_global_quanta=True,
         drop_non_numeric=True,
         db_use_cached=True,
         lvl_use_cached=True,
@@ -804,12 +818,11 @@ class DatabankLoader(object):
 
         Other Parameters
         ----------------
-
         parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version.
+            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
@@ -826,9 +839,14 @@ class DatabankLoader(object):
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
         include_neighbouring_lines: bool
-            ``True``, includes off-range, neighbouring lines that contribute
+            if ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``broadening_max_width``
             parameter is used to determine the limit. Default ``True``.
+        parse_local_global_quanta: bool, or ``'auto'``
+            if ``True``, parses the HITRAN/HITEMP 'glob' and 'loc' columns to extract
+            quanta identifying the lines. Required for nonequilibrium calculations,
+            or to use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
+            but takes up more space.
         drop_non_numeric: boolean
             if ``True``, non numeric columns are dropped. This improves performances,
             but make sure all the columns you need are converted to numeric formats
@@ -839,7 +857,6 @@ class DatabankLoader(object):
 
         Notes
         -----
-
         HITRAN is fetched with Astroquery [1]_  and HITEMP with
         :py:func:`~radis.io.hitemp.fetch_hitemp`
 
@@ -876,7 +893,9 @@ class DatabankLoader(object):
         if source == "hitran":
             dbformat = "hitran"
         elif source == "hitemp":
-            dbformat = "hdf5"  # downloaded in RADIS local databases ~/.radisdb
+            dbformat = (
+                "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
+            )
 
         # Get inputs
         molecule = self.input.molecule
@@ -893,7 +912,6 @@ class DatabankLoader(object):
 
         # Let's store all params so they can be parsed by "get_conditions()"
         # and saved in output spectra information
-        self.params.dbpath = "fetched from " + source
         self.params.dbformat = dbformat
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
@@ -929,22 +947,25 @@ class DatabankLoader(object):
             else:
                 df = pd.concat(frames, ignore_index=True)  # reindex
 
+            self.params.dbpath = "fetched from hitran"
         elif source == "hitemp":
             # Download, setup local databases, and fetch (use existing if possible)
 
             if isotope == "all":
                 isotope_list = None
             else:
-                isotope_list = ",".join(self._get_isotope_list())
+                isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
 
-            df = fetch_hitemp(
+            df, local_path = fetch_hitemp(
                 molecule,
                 isotope=isotope_list,
                 load_wavenum_min=wavenum_min,
                 load_wavenum_max=wavenum_max,
                 cache=db_use_cached,
                 verbose=self.verbose,
+                return_local_path=True,
             )
+            self.params.dbpath = local_path
 
             # ... explicitely write all isotopes based on isotopes found in the database
             if isotope == "all":
@@ -958,11 +979,14 @@ class DatabankLoader(object):
                 + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
             )
 
-        # Post-processing of the line database :
-        if (
-            levelsfmt != None
-        ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
+        # Post-processing of the line database
+        # (note : this is now done in 'fetch_hitemp' before saving to the disk)
+        # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
+        if parse_local_global_quanta and "locu" in df:
             df = parse_local_quanta(df, molecule)
+        if (
+            parse_local_global_quanta and "globu" in df
+        ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
             df = parse_global_quanta(df, molecule)
 
         # Remove non numerical attributes
@@ -975,6 +999,7 @@ class DatabankLoader(object):
         self._fetch_molecular_parameters(df)
 
         self.df0 = df
+        self.misc.total_lines = len(df)  # will be stored in Spectrum metadata
 
         # %% Init Partition functions (with energies)
         # ------------
@@ -1056,7 +1081,7 @@ class DatabankLoader(object):
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version.
+            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
@@ -1068,7 +1093,7 @@ class DatabankLoader(object):
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
-            If None, non equilibrium calculations are not possible. Default ``None``.
+            If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         db_use_cached: boolean, or ``None``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -1116,6 +1141,11 @@ class DatabankLoader(object):
         """
         # %% Check inputs
         # ---------
+
+        # use radis default for calculations non equilibrium calculations
+        # if the levelsfmt is not specified in the databank
+        if levelsfmt is None:
+            levelsfmt = "radis"
 
         (
             name,
@@ -1170,6 +1200,7 @@ class DatabankLoader(object):
             drop_columns=drop_columns,
             include_neighbouring_lines=include_neighbouring_lines,
         )
+        self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
         # Check the molecule is what we expected
         if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
@@ -1727,7 +1758,7 @@ class DatabankLoader(object):
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
                         )
-                    elif dbformat == "hdf5":
+                    elif dbformat in ["hdf5-radisdb", "hitemp-radisdb"]:
                         df = hdf2df(
                             filename,
                             # cache=db_use_cached,
@@ -2026,17 +2057,15 @@ class DatabankLoader(object):
         isotope = int(isotope)
 
         # Use HAPI (HITRAN Python interface, integrated in RADIS)
-        if parfuncfmt == "hapi":
+        # no tabulated partition functions defined. Only non-eq spectra can
+        # be calculated if energies are also given
+        if parfuncfmt == "hapi" or parfuncfmt is None:
             parsum = PartFuncHAPI(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             assert molecule == "CO2"
             parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
-        elif parfuncfmt is None:
-            # no tabulated partition functions defined. Only non-eq spectra can
-            # be calculated if energies are also given
-            parsum = None
         else:
             raise ValueError(
                 "Unknown format for partition function: {0}".format(parfuncfmt)

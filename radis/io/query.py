@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """ Wrapper to fetch line database from HITRAN with Astroquery [1]_
+(based on [HAPI]_)
 
-Notes
------
-
-Astroquery [R1]_ is itself based on [HAPI]_
+.. note::
+    if using, cite [HAPI]_ and [HITRAN-2016]_
 
 
 References
@@ -41,7 +40,10 @@ def fetch_astroquery(
 ):
     """Download a HITRAN line database to a Pandas DataFrame.
 
-    Wrapper to Astroquery [1]_ fetch function
+    Wrapper to the fetch function of Astroquery [1]_ (itself based on [HAPI]_)
+
+    .. note::
+        if using, cite [HAPI]_ and [HITRAN-2016]_
 
     Parameters
     ----------
@@ -67,19 +69,14 @@ def fetch_astroquery(
         to these attributes. Arguments ``molecule``, ``isotope``, ``wmin``, ``wmax``
         are already added by default.
 
-    Notes
-    -----
-    The HITRAN module in Astroquery [1]_ is itself based on [HAPI]_
-
     References
     ----------
     .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
 
     See Also
     --------
-    :py:func:`astroquery.hitran.reader.download_hitran`,
-    :py:func:`astroquery.hitran.reader.read_hitran_file`,
-    :py:attr:`~astroquery.query.BaseQuery.cache_location`
+    :py:meth:`astroquery.hitran.core.Hitran.query_lines_async`,
+    :py:attr:`astroquery.query.BaseQuery.cache_location`
 
     """
     # Check input

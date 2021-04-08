@@ -22,8 +22,13 @@ import radis
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.io.cache_files import check_not_deprecated
 from radis.io.hdf5 import hdf2df
-from radis.io.hitran import columns_2004
-from radis.io.tools import _create_dtype, _get_linereturnformat, _ndarray2df
+from radis.io.hitran import columns_2004, parse_global_quanta, parse_local_quanta
+from radis.io.tools import (
+    _create_dtype,
+    _get_linereturnformat,
+    _ndarray2df,
+    replace_PQR_with_m101,
+)
 from radis.misc.config import addDatabankEntries, getDatabankList
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import DatabaseAlreadyExists
@@ -85,6 +90,7 @@ def fetch_hitemp(
     verbose=True,
     chunksize=100000,
     clean_cache_files=True,
+    return_local_path=False,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -115,6 +121,8 @@ def fetch_hitemp(
         but can create Memory problems and keep the user uninformed of the progress.
     clean_cache_files: bool
         if ``True`` clean downloaded cache files after HDF5 are created.
+    return_local_path: bool
+        if ``True``, also returns the path of the local database file.
 
     Returns
     -------
@@ -123,6 +131,8 @@ def fetch_hitemp(
         A HDF5 file is also created in ``local_databases`` and referenced
         in the :ref:`RADIS config file <label_lbl_config_file>` with name
         ``databank_name``
+    local_path: str
+        path of local database file if ``return_local_path``
 
     Notes
     -----
@@ -167,22 +177,24 @@ def fetch_hitemp(
         if verbose:
             print("Created folder :", local_databases)
 
-    output = abspath(
+    local_file = abspath(
         join(local_databases, molecule + "-" + inputf.replace(".par.bz2", ".h5"))
     )
 
     if not cache or cache == "regen":
         # Delete existing HDF5 file
-        if exists(output):
+        if exists(local_file):
             if verbose:
-                print("Removing existing file ", output)
+                print("Removing existing file ", local_file)
                 # TODO: also clean the getDatabankList? Todo once it is in JSON format. https://github.com/radis/radis/issues/167
-            os.remove(output)
+            os.remove(local_file)
 
-    if exists(output):
+    if exists(local_file):
+        # Read and return from local file
+
         # check metadata :
         check_not_deprecated(
-            output,
+            local_file,
             metadata_is={},
             metadata_keys_contain=["wavenumber_min", "wavenumber_max"],
         )
@@ -190,7 +202,7 @@ def fetch_hitemp(
         if not databank_name in getDatabankList():
             # if not, check number of rows is correct :
             error_msg = ""
-            with pd.HDFStore(output, "r") as store:
+            with pd.HDFStore(local_file, "r") as store:
                 nrows = store.get_storer("df").nrows
                 if nrows != INFO_HITEMP_LINE_COUNT[molecule]:
                     error_msg += (
@@ -214,7 +226,7 @@ def fetch_hitemp(
             if error_msg:
                 raise ValueError(
                     f"{databank_name} not declared in your RADIS ~/.config file although "
-                    + f"{output} exists. {error_msg}\n"
+                    + f"{local_file} exists. {error_msg}\n"
                     + "If you know this file, add it to ~/.radisdb manually. "
                     + "Else regenerate the database with:\n\t"
                     + ">>> radis.SpectrumFactory().fetch_databank(..., use_cached='regen')"
@@ -222,19 +234,19 @@ def fetch_hitemp(
                     + ">>> radis.io.hitemp.fetch_hitemp({molecule}, cache='regen')"
                     + "\n\n⚠️ It will re-download & uncompress the whole database "
                     + "from HITEMP.\n\nList of declared databanks: {getDatabankList()}.\n"
-                    + f"{output} metadata: {file_metadata}"
+                    + f"{local_file} metadata: {file_metadata}"
                 )
 
             # Else database looks ok : register it
             if verbose:
                 print(
                     f"{databank_name} not declared in your RADIS ~/.config file although "
-                    + f"{output} exists. Registering the database automatically."
+                    + f"{local_file} exists. Registering the database automatically."
                 )
 
             register_database(
                 databank_name,
-                [output],
+                [local_file],
                 molecule=molecule,
                 wmin=file_metadata["wavenumber_min"],
                 wmax=file_metadata["wavenumber_max"],
@@ -245,13 +257,14 @@ def fetch_hitemp(
 
         if verbose:
             print(f"Using existing database {databank_name}")
-        return hdf2df(
-            output,
+        df = hdf2df(
+            local_file,
             isotope=isotope,
             load_wavenum_min=load_wavenum_min,
             load_wavenum_max=load_wavenum_max,
             verbose=verbose,
         )
+        return (df, local_file) if return_local_path else df
 
     # Doesnt exist : download
     ds = DataSource(join(local_databases, "downloads"))
@@ -280,9 +293,9 @@ def fetch_hitemp(
         wmin = np.inf
         wmax = 0
         if verbose:
-            print(f"Download complete. Building {molecule} database to {output}")
+            print(f"Download complete. Building {molecule} database to {local_file}")
 
-        with pd.HDFStore(output, mode="a", complib="blosc", complevel=9) as f:
+        with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
             Nlines = 0
             Ntotal_lines_expected = INFO_HITEMP_LINE_COUNT[molecule]
             pb = ProgressBar(N=Ntotal_lines_expected, active=verbose)
@@ -295,8 +308,19 @@ def fetch_hitemp(
 
                 df = _ndarray2df(b, columns, linereturnformat)
 
+                # Post-processing :
+                # ... Add local quanta attributes, based on the HITRAN group
+                df = parse_local_quanta(df, molecule)
+
+                # ... Add global quanta attributes, based on the HITRAN class
+                df = parse_global_quanta(df, molecule)
+
+                # Switch 'P', 'Q', 'R' to -1, 0, 1
+                if "branch" in df:
+                    replace_PQR_with_m101(df)
+
                 # df.to_hdf(
-                #     output, "df", format="table", append=True, complib="blosc", complevel=9
+                #     local_file, "df", format="table", append=True, complib="blosc", complevel=9
                 # )
                 f.put(
                     key="df",
@@ -330,7 +354,7 @@ def fetch_hitemp(
 
     # Done: add final checks
     # ... check on the created file that all lines are there :
-    with pd.HDFStore(output, "r") as store:
+    with pd.HDFStore(local_file, "r") as store:
         nrows = store.get_storer("df").nrows
         assert nrows == Nlines
         if nrows != INFO_HITEMP_LINE_COUNT[molecule]:
@@ -344,10 +368,25 @@ def fetch_hitemp(
 
     # Add database to  ~/.radis
     register_database(
-        databank_name, [output], molecule, wmin, wmax, download_date, urlname, verbose
+        databank_name,
+        [local_file],
+        molecule,
+        wmin,
+        wmax,
+        download_date,
+        urlname,
+        verbose,
     )
 
-    # Fully unzipped : clean
+    df = hdf2df(
+        local_file,
+        isotope=isotope,
+        load_wavenum_min=load_wavenum_min,
+        load_wavenum_max=load_wavenum_max,
+        verbose=verbose,
+    )
+
+    # Fully unzipped (and working, as it was reloaded): clean
     if clean_cache_files:
         os.remove(ds._findfile(urlname))
         if verbose >= 3:
@@ -355,13 +394,7 @@ def fetch_hitemp(
 
             printg("... removed downloaded cache file")
 
-    return hdf2df(
-        output,
-        isotope=isotope,
-        load_wavenum_min=load_wavenum_min,
-        load_wavenum_max=load_wavenum_max,
-        verbose=verbose,
-    )
+    return (df, local_file) if return_local_path else df
 
 
 def register_database(
@@ -386,7 +419,7 @@ def register_database(
         adds to :ref:`~/.radis <label_lbl_config_file>` with all the input
         parameters. Also adds ::
 
-            format : "hdf5"
+            format : "hitemp-radisdb"
             parfuncfmt : "hapi"   # TIPS-2017 for equilibrium partition functions
 
         And if the molecule is in :py:attr:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`::
@@ -397,7 +430,7 @@ def register_database(
     dict_entries = {
         "info": f"HITEMP {molecule} lines ({wmin:.1f}-{wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions",
         "path": path_list,
-        "format": "hdf5",
+        "format": "hitemp-radisdb",
         "parfuncfmt": "hapi",
         "wavenumber_min": f"{wmin}",
         "wavenumber_max": f"{wmax}",
@@ -425,9 +458,12 @@ def register_database(
             # TODO @dev : replace once we have configfile as JSON (https://github.com/radis/radis/issues/167)
         except AssertionError:
             raise DatabaseAlreadyExists(
-                f"{databank_name} already exists in your ~/.radis config file. "
-                + "Remove it from your config file, or choose a different name "
-                + "for the downloaded database with `fetch_hitemp(databank_name=...)`"
+                f"{databank_name} already exists in your ~/.radis config file, "
+                + f"with different key `{k}` : `{v}` (~/.radis) ≠ `{dict_entries[k]}` (new). "
+                + "If you're sure of what you're doing, fix the registered database in ~/.radis. "
+                + "Else, remove it from your config file, or choose a different name "
+                + "for the downloaded database with `fetch_hitemp(databank_name=...)`, "
+                + "and restart."
             ) from err
         else:  # no other error raised
             if verbose:

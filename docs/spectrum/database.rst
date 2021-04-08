@@ -94,7 +94,7 @@ Updating a database
 -------------------
 
 Update all spectra in current folder with a new condition ('author'), making
-use of the :meth:`~radis.tools.database.SpecDatabase.items` method::
+use of the :meth:`~radis.tools.database.SpecList.items` method::
 
     from radis import SpecDatabase
     db = SpecDatabase('.')
@@ -102,7 +102,7 @@ use of the :meth:`~radis.tools.database.SpecDatabase.items` method::
         s.conditions['author'] = 'me'
         s.store(path, if_exists_then='replace')
 
-You may also be interested in the :meth:`~radis.tools.database.SpecDatabase.map`
+You may also be interested in the :py:meth:`~radis.tools.database.SpecList.map`
 method.
 
 

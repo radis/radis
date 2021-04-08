@@ -3,21 +3,31 @@ Bibliography
 
 List of bibliographic references used in this project:
 
-.. [CANTERA] D. G. Goodwin, H. K. Moffat, R. L. Speth, Cantera: An Object-oriented Software
-             Toolkit for Chemical Kinetics, Thermodynamics, and Transport Processes,
+.. [CANTERA] D. G. Goodwin, H. K. Moffat, R. L. Speth, "Cantera: An Object-oriented Software
+             Toolkit for Chemical Kinetics"", Thermodynamics, and Transport Processes,
              http://www.cantera.org, `doi:10.5281/zenodo.170284 <https://zenodo.org/record/170284#.XRIOno-xVEY>`__, 2017.
 
 .. [HAPI] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
-          R. Kochanov, I. Gordon, L. Rothman, P. Wcisło, C. Hill, J. Wilzewski, HITRAN Application Programming Interface (HAPI):
-          A comprehensive approach to working with spectroscopic data, Journal of Quantitative Spectroscopy
+          R. Kochanov, I. Gordon, L. Rothman, P. Wcisło, C. Hill, J. Wilzewski,
+          "HITRAN Application Programming Interface (HAPI):
+          A comprehensive approach to working with spectroscopic data", Journal of Quantitative Spectroscopy
           and Radiative Transfer 177 (2016) 15–30, ISSN 00224073, `doi:10.1016/j.jqsrt.2016.03.005 <https://www.researchgate.net/publication/297682202_HITRAN_Application_Programming_Interface_HAPI_A_comprehensive_approach_to_working_with_spectroscopic_data>`__.
 
-.. [RADIS-2018] E. Pannier, C. O. Laux, RADIS: A Nonequilibrium Line-by-Line Radiative Code for CO2 and
-                HITRAN-like database species, Journal of Quantitative Spectroscopy and Radiative Transfer
+.. [RADIS-2018] E. Pannier, C. O. Laux, "RADIS: A Nonequilibrium Line-by-Line Radiative Code for CO2 and
+                HITRAN-like database species", Journal of Quantitative Spectroscopy and Radiative Transfer
                 (2018) `doi:10.1016/j.jqsrt.2018.09.027 <https://www.sciencedirect.com/science/article/pii/S0022407318305867?via%3Dihub>`__
 
-.. [Spectral Synthesis Algorithm] D.C.M. van den Bekerom, E. Pannier, A Discrete Integral Transform for Rapid Spectral Synthesis,
+.. [Spectral-Synthesis-Algorithm] D.C.M. van den Bekerom, E. Pannier,
+                "A Discrete Integral Transform for Rapid Spectral Synthesis",
                 Journal of Quantitative Spectroscopy and Radiative Transfer (2021) `doi:10.1016/j.jqsrt.2020.107476 <https://www.sciencedirect.com/science/article/abs/pii/S0022407320310049>`__
+
+.. [Rothman-1998] L.S. Rothman, C.P. Rinsland, A. Goldman, S.T. Massie D.P. Edwards, J-M. Flaud,
+                 A. Perrin, C. Camy-Peyret, V. Dana, J.-Y. Mandin, J. Schroeder, A. McCann,
+                 R.R. Gamache, R.B. Wattson, K. Yoshino, K.V. Chance, K.W. Jucks, L.R. Brown,
+                 V. Nemtchinov, P. Varanasi "The Hitran Molecular Spectroscopic Database
+                 and Hawks (Hitran Atmospheric Workstation): 1996 Edition",
+                 Journal of Quantitative Spectroscopy and Radiative Transfer 60 (1998)
+                 665 - 710, `doi:10.1016/S0022-4073(98)00078-8 <https://www.sciencedirect.com/science/article/abs/pii/S0022407398000788?via%3Dihub>`__
 
 Line Databases
 --------------

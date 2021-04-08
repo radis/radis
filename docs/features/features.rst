@@ -33,7 +33,7 @@ RADIS does *not* include, so far:
 RADIS also features:
 
 - :ref:`High Performances <label_lbl_performance>`: spectra are calculated up to several orders of magnitude faster than equivalent line-by-line codes.
-- In-the-browser calculations (no install needed) : see :ref:`🌱 RADIS Online <label_radis_online>
+- In-the-browser calculations (no install needed) : see :ref:`🌱 RADIS Online <label_radis_online>`.
 - Automatic download of the latest HITRAN and HITEMP databases with :py:func:`~radis.lbl.calc.calc_spectrum`
 - Automatic testing and continuous integration tools for a reliable :ref:`Open-source Development <label_developer_guide>`.
 
@@ -63,8 +63,9 @@ Use RADIS to:
   See the comparison of two CO2 spectra calculated with [HITEMP-2010]_ and [CDSD-4000]_
   below:
 
-  .. image:: spectrum/cdsd4000_vs_hitemp_3409K.*
+  .. image:: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
       :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
+      :scale: 100 %
 
 
 - Use the RADIS post-processing methods with the calculation results of another spectral code. For instance,

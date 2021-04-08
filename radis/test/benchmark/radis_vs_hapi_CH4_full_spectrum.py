@@ -56,6 +56,7 @@ if __name__ == "__main__":
         cutoff=1e-23,
         broadening_max_width=5.73,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
         molecule=molecule,
+        optimization=None,
     )
     sf.fetch_databank("hitran", load_energies=False)
 

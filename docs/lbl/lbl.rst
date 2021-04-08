@@ -7,6 +7,10 @@ Line-by-line (LBL) module
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+
+.. minigallery:: radis.calc_spectrum
+
+
 ---------------------------------------------------------------------
 
 .. toctree::
@@ -140,7 +144,7 @@ various strategies to improve :ref:`Performances <label_lbl_performance>`,
 and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
 the flow chart below:
 
-.. image:: RADIS_flow_chart.*
+.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
     :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
     :scale: 100 %
 
@@ -414,7 +418,8 @@ partition functions, for instance::
                                      # file. If `hapi`, then HAPI (HITRAN Python
                                      # interface) is used to retrieve them (valid if
                                      # your databank is HITRAN data). HAPI is embedded
-                                     # into RADIS. Check the version.
+                                     # into RADIS. Check the version. If not specified then 'hapi'
+                                     # is used as default
     parfunc = PATH/TO/cdsd_partition_functions.txt
                                      #  path to tabulated partition function to use.
                                      # If `parfuncfmt` is `hapi` then `parfunc`
@@ -626,7 +631,7 @@ to calculate the lineshapes efficiently.
   database becomes the performance bottleneck.
   parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`,
   :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
-  (this is the default strategy implemented in RADIS). Learn more in [Spectral Synthesis Algorithm]_
+  (this is the default strategy implemented in RADIS). Learn more in [Spectral-Synthesis-Algorithm]_
 
 More details on the parameters below:
 

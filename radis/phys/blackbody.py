@@ -36,23 +36,18 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
 
     Parameters
     ----------
-
     λ: np.array   (nm)
        wavelength
-
     T: float    (K)
         equilibrium temperature
-
     eps: grey-body emissivity
         default 1
-
     unit: output unit
         default 'mW/sr/cm2/nm'
 
 
     Returns
     -------
-
     planck: np.array   (mW.sr-1.cm-2/nm)
         equilibrium radiance
     """
@@ -75,23 +70,18 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
 
     Parameters
     ----------
-
     wavenum: np.array   (cm-1)
        wavenumber
-
     T: float    (K)
         equilibrium temperature
-
     eps: grey-body emissivity
         default 1
-
     unit: str
         output unit. Default 'mW/sr/cm2/cm-1'
 
 
     Returns
     -------
-
     planck: np.array   default (mW/sr/cm2/cm-1)
         equilibrium radiance
     """
@@ -136,37 +126,35 @@ def sPlanck(
 
     Parameters
     ----------
-
     wavenum_min / wavenum_max: (cm-1)
         minimum / maximum wavenumber to be processed in cm^-1.
-
     wavelength_min / wavelength_max: (nm)
         minimum / maximum wavelength to be processed in nm
-
     T: float (K)
         blackbody temperature
-
     eps: float [0-1]
         blackbody emissivity. Default 1
 
     Other Parameters
     ----------------
-
     wstep: float (cm-1 or nm)
         wavespace step for calculation
-
     **kwargs: other keyword inputs
         all are forwarded to spectrum conditions. For instance you can add
         a 'path_length=1' after all the other arguments
 
-    Example
-    -------
-
+    Examples
+    --------
     Generate Earth blackbody::
 
         s = sPlanck(wavelength_min=3000, wavelength_max=50000,
                     T=288, eps=1)
         s.plot()
+
+    Examples using sPlanck :
+
+    .. minigallery:: radis.sPlanck
+
     """
 
     from radis.spectrum.spectrum import Spectrum

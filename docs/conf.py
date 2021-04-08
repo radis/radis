@@ -55,6 +55,7 @@ extensions = [
     "sphinx.ext.mathjax",
     #'sphinx.ext.viewcode',
     "sphinx.ext.autosummary",
+    "sphinx_gallery.gen_gallery",
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
@@ -63,6 +64,22 @@ extensions = [
     "sphinxcontrib.apidoc",
 ]
 
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",  # path to your example scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    # to make references clickable
+    "doc_module": "radis",
+    "reference_url": {
+        "radis": None,
+    },
+    # directory where function/class granular galleries are stored
+    "backreferences_dir": "gen_modules/backreferences",
+    # Modules for which function/class level galleries are created.
+    "doc_module": ("radis"),
+}
+
+# used to mini-galleries : https://sphinx-gallery.github.io/stable/configuration.html#add-mini-galleries-for-api-documentation
+autosummary_generate = True
 
 # %% ------------------------------------
 # Added EP 2018:
@@ -137,11 +154,10 @@ master_doc = "index"
 
 # General information about the project.
 project = "RADIS"
-copyright = "2020, Erwan Pannier and the 🌱 RADIS contributors (https://github.com/radis/radis/graphs/contributors)"
+copyright = "2021, Erwan Pannier and the 🌱 RADIS contributors (https://github.com/radis/radis/graphs/contributors)"
 author = (
-    "Erwan Pannier \\and Nicolas Minesi \\and "
-    + "Dirk van den Bekerom \\and Pankaj Mishra \\and "
-    + "all the 🌱 RADIS contributors \\and (https://github.com/radis/radis/graphs/contributors)"
+    "Erwan Pannier, Dirk van den Bekerom, Nicolas Minesi, "
+    + "et al. (https://github.com/radis/radis/graphs/contributors)"
 )
 
 # The version info for the project you're documenting, acts as replacement for

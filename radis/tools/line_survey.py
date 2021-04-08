@@ -137,6 +137,8 @@ def LineSurvey(
 
         <iframe id="igraph" src="//plotly.com/~erwanp/6.embed" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
 
+    .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
+
     References
     ----------
 

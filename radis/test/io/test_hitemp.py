@@ -124,6 +124,48 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
     return
 
 
+@pytest.mark.needs_connection
+def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
+    """Test proper download of HITEMP CO database.
+
+    Good to test noneq calculations with direct-download of HITEMP.
+
+    ``05_HITEMP2020.par.bz2`` is about 14 Mb. We still download it
+    (once per machine) because it allows to compute & test noneq spectra,
+    which failed with direct HITEMP download in RADIS 0.9.28.
+
+    Approximate cost for the planet 🌳 :  ~ 14 gr CO2
+    (hard to evaluate !).
+
+
+    """
+
+    from astropy import units as u
+
+    from radis import calc_spectrum
+
+    calc_spectrum(
+        wavenum_min=2000 / u.cm,
+        wavenum_max=2300 / u.cm,
+        molecule="CO",
+        isotope="1,2",
+        Tvib=1500,
+        Trot=300,
+        databank="hitemp",  # test by fetching directly
+    )
+
+    # Recompute with (now) locally downloaded database [note : this failed on 0.9.28]
+    calc_spectrum(
+        wavenum_min=2000 / u.cm,
+        wavenum_max=2300 / u.cm,
+        molecule="CO",
+        isotope="1,2",
+        Tvib=1500,
+        Trot=300,
+        databank="HITEMP-CO",  # registered in ~/.radis
+    )
+
+
 if __name__ == "__main__":
     test_fetch_hitemp_OH()
     test_partial_loading()
@@ -132,3 +174,4 @@ if __name__ == "__main__":
     test_fetch_hitemp_all_molecules("CO")
     test_fetch_hitemp_all_molecules("N2O", verbose=3)
     test_fetch_hitemp_all_molecules("NO", verbose=3)
+    test_calc_hitemp_CO_noneq()

@@ -215,7 +215,7 @@ def hit2df(
             + "below: \n{0}".format(secondline)
         )
 
-    # dd local quanta attributes, based on the HITRAN group
+    # Add local quanta attributes, based on the HITRAN group
     df = parse_local_quanta(df, mol)
 
     # Add global quanta attributes, based on the HITRAN class

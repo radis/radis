@@ -215,13 +215,13 @@ class BandFactory(BroadenFactory):
         # --------------------------------------------------------------------
 
         # First calculate the linestrength at given temperature
-        self._calc_linestrength_eq(Tgas)
+        self.calc_linestrength_eq(Tgas)
         self._cutoff_linestrength()
 
         # ----------------------------------------------------------------------
 
         # Calculate line shift
-        self._calc_lineshift()
+        self.calc_lineshift()
 
         # ----------------------------------------------------------------------
 
@@ -513,19 +513,10 @@ class BandFactory(BroadenFactory):
 
         # %% Make sure database is loaded
         self._check_line_databank()
-        self._check_noneq_parameters(vib_distribution, singleTvibmode)
+        self._calc_noneq_parameters(vib_distribution, singleTvibmode)
 
         if self.df0 is None:
             raise AttributeError("Load databank first (.load_databank())")
-
-        # Make sure database has pre-computed non equilibrium quantities
-        # (Evib, Erot, etc.)
-        if not "Evib" in self.df0:
-            self._calc_noneq_parameters()
-
-        if not "Aul" in self.df0:
-            self._calc_weighted_trans_moment()
-            self._calc_einstein_coefficients()
 
         if not "band" in self.df0:
             self._add_bands()
@@ -540,7 +531,7 @@ class BandFactory(BroadenFactory):
         # Calculate Populations, Linestrength and Emission Integral
         # (Note: Emission Integral is non canonical quantity, equivalent to
         #  Linestrength for absorption)
-        self._calc_populations_noneq(Tvib, Trot)
+        self.calc_populations_noneq(Tvib, Trot)
         self._calc_linestrength_noneq()
         self._calc_emission_integral()
 
@@ -551,7 +542,7 @@ class BandFactory(BroadenFactory):
         # ----------------------------------------------------------------------
 
         # Calculate lineshift
-        self._calc_lineshift()
+        self.calc_lineshift()
 
         # ----------------------------------------------------------------------
 
@@ -1146,7 +1137,13 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         if lvlformat in ["cdsd-pc", "cdsd-pcN", "cdsd-hamil"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ["cdsd-hitemp", "cdsd-4000", "hitran"]:
+            if dbformat not in [
+                "cdsd-hitemp",
+                "cdsd-4000",
+                "hitran",
+                "hitemp",
+                "hitemp-radisdb",
+            ]:
                 raise NotImplementedError(
                     "lvlformat {0} not supported with dbformat {1}".format(
                         lvlformat, dbformat
@@ -1198,7 +1195,13 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         # 'radis' uses Dunham development based on v1v2l2v3 HITRAN convention
         elif lvlformat in ["radis"]:
 
-            if dbformat not in ["hitran", "cdsd-hitemp", "cdsd-4000"]:
+            if dbformat not in [
+                "hitran",
+                "hitemp",
+                "cdsd-hitemp",
+                "cdsd-4000",
+                "hitemp-radisdb",
+            ]:
                 raise NotImplementedError(
                     "lvlformat `{0}` not supported with dbformat `{1}`".format(
                         lvlformat, dbformat
@@ -1226,7 +1229,7 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         if lvlformat in ["radis"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ["hitran"]:
+            if dbformat not in ["hitran", "hitemp", "hitemp-radisdb"]:
                 raise NotImplementedError(
                     "lvlformat {0} not supported with dbformat {1}".format(
                         lvlformat, dbformat

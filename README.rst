@@ -147,6 +147,20 @@ if running nonquilibrium  calculations. See `How to cite? <https://radis.readthe
 Developer Guide
 ===============
 
+Contribute
+----------
+
+Want to contribute to RADIS ? Join the Slack community and we'll help you through the process.
+Want to get started immediatly ? Nice. Have a look at the `CONTRIBUTE.md <./CONTRIBUTE.md>`__ guide.
+
+|badge_contributors| |badge_slack|
+
+You need to know more about Spectroscopy ? We're working on Tutorials to
+make spectroscopy available to everyone. For the moment, join the
+`Slack channel <https://radis-radiation.slack.com/archives/C01N7R9728M>`__ .
+
+
+
 Architecture
 ------------
 
@@ -243,7 +257,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                 :alt: GitHub
 
 .. |badge_contributors| image:: https://img.shields.io/github/contributors/radis/radis.svg
-                        :target: https://github.com/radis/radis/stargazers
+                        :target: https://github.com/radis/radis/graphs/contributors
                         :alt: Contributors
 
 .. |badge_license| image:: https://img.shields.io/badge/License-LGPL3-blue.svg
