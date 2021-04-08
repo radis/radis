@@ -95,11 +95,12 @@ class Spectrum(object):
     ----------
     quantities: dict of tuples   {'quantity':(wavenum, quantity)}
         where quantities are spectral quantities (absorbance, radiance, etc.)
-        and wavenum is in cm-1
+        and wavenum is in :math:`cm^{-1}`
         example::
 
-        >>> {'radiance_noslit':(wavenum, radiance_noslit),
-             'absorbance':(wavenum, absorbance)}
+        {'radiance_noslit':(wavenum, radiance_noslit),
+        'absorbance':(wavenum, absorbance)}
+
     units: dict
         units for quantities
 

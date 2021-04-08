@@ -684,7 +684,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # ... find weak lines and calculate semi-continuum (optional)
-        I_continuum = self._calculate_pseudo_continuum()
+        I_continuum = self.calculate_pseudo_continuum()
         # ... apply lineshape and get absorption coefficient
         # ... (this is the performance bottleneck)
         wavenumber, abscoeff_v = self._calc_broadening()
@@ -1302,7 +1302,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # ... find weak lines and calculate semi-continuum (optional)
-        k_continuum, j_continuum = self._calculate_pseudo_continuum(noneq=True)
+        k_continuum, j_continuum = self.calculate_pseudo_continuum(noneq=True)
 
         # ... apply lineshape and get absorption coefficient
         # ... (this is the performance bottleneck)

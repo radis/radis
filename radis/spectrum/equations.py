@@ -17,12 +17,21 @@ from radis.phys.convert import cm2nm
 
 
 def calc_radiance(wavenumber, emissivity, Tgas, unit="mW/sr/cm2/nm"):
-    """Derive radiance (mW/cm2/sr/nm) from the emissivity.
+    """Derive radiance (:math:`mW/cm^2/sr/nm`) from the emissivity.
+
+    .. math::
+        I(\lambda) = \epsilon(\lambda) \cdot L_0(\lambda, T)
 
     Returns
     -------
 
-    radiance: mW/sr/cm2/nm
+    radiance: array in :math:`mW/sr/cm2/nm`
+        unless ``unit`` is different
+
+    See Also
+    --------
+
+    :py:func:`~radis.phys.blackbody.planck`
     """
 
     radiance = emissivity * planck(cm2nm(wavenumber), Tgas, unit=unit)
