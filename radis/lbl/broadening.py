@@ -114,11 +114,11 @@ except:
         radis_add_at = cython_radis.add_at
 
     except:
-        raise (
-            ModuleNotFoundError(
-                "Failed to load cython_radis module, using numpy functions instead."
-            )
-        )
+        ##        raise (
+        ##            ModuleNotFoundError(
+        ##                "Failed to load cython_radis module, using numpy functions instead."
+        ##            )
+        ##        )
 
         # If it doesn't work, fall back to Numpy's add.at():
         def radis_add_at(LDM, k, l, m, I):
