@@ -33,13 +33,15 @@ PRIVATE METHODS - BROADENING
 (all computational-heavy functions: calculates all lines broadening,
 convolve them, apply them on all calculated range)
 
-- :py:func:`radis.lbl.broadening._whiting`
+- :py:func:`radis.lbl.broadening.whiting`
 - :py:func:`radis.lbl.broadening._whiting_jit` : precompiled version
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_HWHM`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._add_voigt_broadening_HWHM`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._voigt_broadening`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_lineshape`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._calc_lineshape_DLM`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape`
+- :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_noneq`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._find_weak_lines`
@@ -241,7 +243,7 @@ def gaussian_FT(w_centered, hwhm):
     See Also
     --------
 
-    :py:func:`~radis.lbl.broadneing.gaussian_lineshape`
+    :py:func:`~radis.lbl.broadening.gaussian_lineshape`
     """
 
     I = np.exp(-((2 * np.pi * w_centered * hwhm) ** 2) / (4 * np.log(2)))
@@ -393,7 +395,7 @@ def lorentzian_FT(w_centered, gamma_lb):
     See Also
     --------
 
-    :py:func:`~radis.lbl.broadneing.lorentzian_lineshape`
+    :py:func:`~radis.lbl.broadening.lorentzian_lineshape`
     """
 
     I = np.exp(-2 * np.pi * w_centered * gamma_lb)
@@ -413,8 +415,7 @@ def voigt_broadening_HWHM(
     Tref,
 ):
     """Calculate Voigt profile half-width at half-maximum (HWHM) from the
-    Gaussian and Collisional broadening with the empirical formula of Olivero
-    [1]_
+    Gaussian and Collisional broadening with the empirical formula of [Olivero-1977]_
 
     Gaussian broadening is calculated with [2]_, Collisional broadening with [3]_
 
@@ -422,60 +423,50 @@ def voigt_broadening_HWHM(
 
     Parameters
     ----------
-
-    Line parameters   [length N]
+    Line parameters   [length N] :
 
     airbrd: np.array  [length N]  (cm-1/atm)
         air broadening half-width half maximum (HWHM)
-
     selbrd:   np.array  [length N]  (cm-1/atm)
         self broadening half-width half maximum (HWHM)
-
     Tdpair:   np.array  [length N]
         temperature dependance of collisional broadening
         by air
-
     Tdpsel:   np.array  [length N]
         temperature dependance of collisional self-broadening
-
     wav:   np.array  [length N]    (cm-1)
         transition wavenumber
-
     molar_mass:   np.array  [length N]   (g/mol)
         molar mass for isotope of given transition
 
-    Environment parameters
+    Environment parameters:
 
     pressure_atm: float  [atm]
         pressure
-
     mole_fraction: float [0-1]
         mole fraction
-
     Tgas: K
         (translational) gas temperature
-
     Tref: K
         reference temperature at which tabulated HWHM pressure
         broadening coefficients were tabulated
 
     Returns
     -------
-
     gamma_voigt, gamma_lb, gamma_db: numpy array
         Voigt, Lorentz, and Gaussian HWHM
 
     References
     ----------
 
-    Notes: Olivero [1] uses FWHM.
+    Notes: [Olivero-1977]_ uses FWHM.
 
-    .. [1] `Olivero 1977 "Empirical fits to the Voigt line width: A brief review" <https://www.sciencedirect.com/science/article/pii/0022407377901613>`_
+    .. [Olivero-1977] `Olivero 1977 "Empirical fits to the Voigt line width: A brief review" <https://www.sciencedirect.com/science/article/pii/0022407377901613>`_
            Also found in NEQAIR96 Manual.
 
     .. [2] `Wikipedia <https://en.wikipedia.org/wiki/Doppler_broadening>`_ (in cm-1)
 
-    .. [3] `Rothman 1998 (HITRAN 1996) eq (A.12) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
+    .. [3] Eq. (A.12) in [Rothman-1998]_
 
     See Also
     --------
@@ -506,8 +497,9 @@ def voigt_broadening_HWHM(
 
 
 def olivero_1977(wg, wl):
-    """Calculate approximate Voigt FWHM with Olivero 77, also in NEQAIR 96
-    manual Eqn. (D2) Note that formula is given in wavelength (nm) [doesnt
+    r"""Calculate approximate Voigt FWHM with [Olivero-1977]_.
+
+    also in NEQAIR 96 manual Eqn. (D2) Note that formula is given in wavelength (nm) [doesnt
     change anything] and uses full width half maximum (FWHM) of Gaussian and
     Lorentzian profiles.
 
@@ -515,18 +507,24 @@ def olivero_1977(wg, wl):
 
     Parameters
     ----------
-
     wg: numpy array
         Gaussian profile FWHM
-
     wl: numpy array
         Lorentzian profile FWHM
 
     Returns
     -------
-
     gamma_voigt: numpy array
         Voigt FWHM
+
+    References
+    ----------
+    [Olivero-1977]_ uses FWHM.
+
+    .. math::
+        s_d=\frac{w_l-w_g}{w_l+w_g}
+
+        w_v=\left(1-0.18121\left(1-{s_d}^2\right)-\left(0.023665\operatorname{exp}\left(0.6s_d\right)+0.00418\operatorname{exp}\left(-1.9s_d\right)\right) sin\left(\pi s_d\right)\right) \left(w_l+w_g\right)
 
     See Also
     --------
@@ -546,46 +544,38 @@ def olivero_1977(wg, wl):
 
 def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     """Calculates Voigt lineshape using the approximation of the Voigt profile
-    of Whiting [1]_, [2]_ that maintains a good accuracy in the far wings.
+    of [NEQAIR-1996]_, [Whiting-1968]_ that maintains a good accuracy in the far wings.
     Exact for a pure Gaussian and pure Lorentzian.
 
     Parameters
     ----------
-
     w_centered: 2D array       [one per line: shape W x N]
         waverange (nm / cm-1) (centered on 0)
-
     hwhm_lorentz: array   (cm-1)        [length N]
         half-width half maximum coefficient (HWHM) for Lorentzian broadening
-
     hwhm_voigt: array   (cm-1)        [length N]
         half-width half maximum coefficient (HWHM) for Voigt broadening,
         calculated by :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
 
     Other Parameters
     ----------------
-
     jit: boolean
         if ``True``, use just in time compiler. Usually faster when > 10k lines.
         Default ``True``.
 
     Returns
     -------
-
     lineshape: pandas Series        [shape N x W]
         line profile
 
     References
     ----------
-
-    .. [1] `NEQAIR 1996 User Manual, Appendix D <https://ntrs.nasa.gov/search.jsp?R=19970004690>`_
-
-    .. [2] `Whiting 1968 "An empirical approximation to the Voigt profile", JQSRT <https://www.sciencedirect.com/science/article/pii/0022407368900812>`_
+    .. [NEQAIR-1996] `NEQAIR 1996 User Manual, Appendix D <https://ntrs.nasa.gov/search.jsp?R=19970004690>`_
 
     See Also
     --------
-
-     :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
+    :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
+    :py:func:`~radis.lbl.broadening.whiting1968`
     """
 
     # Note: Whiting and Olivero use FWHM. Here we keep HWHM in all public function
@@ -596,7 +586,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     if jit:
         lineshape = _whiting_jit(w_centered, wl, wv)
     else:
-        lineshape = _whiting(w_centered, wl, wv)
+        lineshape = whiting1968(w_centered, wl, wv)
 
     # Normalization
     #    integral = wv*(1.065+0.447*(wl/wv)+0.058*(wl/wv)**2)
@@ -620,22 +610,18 @@ def voigt_FT(w_lineshape_ft, hwhmG, hwhmL):
 
     Parameters
     ----------
-
     w_centered: 2D array       [one per line: shape W x N]
         waverange (nm / cm-1) (centered on 0)
-
     hwhmG:  array   [shape N = number of lines]
         Half-width at half-maximum (HWHM) of Gaussian
-
-
     hwhmL: array   (cm-1)        [length N]
         Half-width at half-maximum (HWHM) of Lorentzian
 
     See Also
     --------
 
-    :py:func:`~radis.lbl.broadneing.gaussian_FT`
-    :py:func:`~radis.lbl.broadneing.lorentzian_FT`
+    :py:func:`~radis.lbl.broadening.gaussian_FT`
+    :py:func:`~radis.lbl.broadening.lorentzian_FT`
     """
 
     IG_FT = gaussian_FT(w_lineshape_ft, hwhmG)
@@ -646,27 +632,39 @@ def voigt_FT(w_lineshape_ft, hwhmG, hwhmL):
 # Pseudo-voigts approximations:
 
 
-def _whiting(w_centered, wl, wv):
-    """
+def whiting1968(w_centered, wl, wv):
+    r"""A pseudo-voigt analytical approximation.
+
+    .. math::
+        \Phi(w)=\left(1-\frac{w_l}{w_v}\right) \operatorname{exp}\left(-2.772{\left(\frac{w}{w_v}\right)}^{2.25}\right)+\frac{1\frac{w_l}{w_v}}{1+4{\left(\frac{w}{w_v}\right)}^{2.25}}+0.016\left(1-\frac{w_l}{w_v}\right) \frac{w_l}{w_v} \left(\operatorname{exp}\left(-0.4w_{wv,225}\right)-\frac{10}{10+{\left(\frac{w}{w_v}\right)}^{2.25}}\right)
+
     Parameters
     ----------
-
+    w_centered: 2D array
+        broadening spectral range for all lines
     wl: array
         Lorentzian FWHM
-
     wv: array
         Voigt FWHM
 
-    w_centered: 2D array
-        broadening spectral range for all lines
+    References
+    ----------
+
+    .. [Whiting-1968] `Whiting 1968 "An empirical approximation to the Voigt profile", JQSRT <https://www.sciencedirect.com/science/article/pii/0022407368900812>`_
+
+    Used in the expression of [Olivero-1977]
 
     Notes
     -----
-
     Performances:
 
     using @jit yield a performance increase from 8.9s down to 5.1s
     on a 50k lines, 250k wavegrid case (performances.py)
+
+    See Also
+    --------
+    :py:func:`~radis.lbl.broadening.olivero_1977`
+
     """
     # Calculate some temporary arrays
     # ... fasten up the calculation by 25% (ex: test on 20 cm-1, ~6000 lines:
@@ -699,19 +697,15 @@ def _whiting_jit(w_centered, wl, wv):
     """
     Parameters
     ----------
-
     wl: array
         Lorentzian FWHM
-
     wv: array
         Voigt FWHM
-
     w_centered: 2D array
         broadening spectral range for all lines
 
     Notes
     -----
-
     Performances:
 
     using @jit yield a performance increase from 8.9s down to 5.1s
@@ -743,15 +737,15 @@ def _whiting_jit(w_centered, wl, wv):
 
 
 class BroadenFactory(BaseFactory):
-    """A class that holds all broadening methods, inherited by
-    :class:`~radis.lbl.factory.SpectrumFactory` eventually
+    """A class that holds all broadening methods.
+
+    Eventually inherited by :class:`~radis.lbl.factory.SpectrumFactory`
 
     .. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
        :parts: 1
 
     See Also
     --------
-
     :class:`~radis.lbl.factory.SpectrumFactory`
     """
 
@@ -805,7 +799,7 @@ class BroadenFactory(BaseFactory):
     # %% Functions to calculate broadening HWHM
 
     def _calc_broadening_HWHM(self):
-        """Calculate broadening HWHM and store in line dataframe (df1)
+        """Calculate broadening HWHM and store in line dataframe (df1).
 
         Parameters
         ----------
@@ -823,7 +817,6 @@ class BroadenFactory(BaseFactory):
 
         Run this method before using `_calc_lineshape`
         """
-
         # Init variables
         df = self.df1
 
@@ -893,7 +886,6 @@ class BroadenFactory(BaseFactory):
 
         Examples
         --------
-
         (with thresholds of `5,2`):
 
         ::
