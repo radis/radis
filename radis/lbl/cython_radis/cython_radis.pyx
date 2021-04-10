@@ -6,9 +6,9 @@ def add_at(arr, k,l,m, I):
     if arr.dtype != I.dtype:
         I = I.astype(arr.dtype)
     if arr.dtype == np.float32:
-        return my_add_at_32(arr, k, l, m, I)
+        return add_at_32(arr, k, l, m, I)
     else:
-        return my_add_at_64(arr, k, l, m, I)
+        return add_at_64(arr, k, l, m, I)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
