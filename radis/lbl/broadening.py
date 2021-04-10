@@ -91,6 +91,10 @@ sys.path.insert(1, project_path)
 
 try:
     import cython_radis
+
+    radis_add_at = cython_radis.add_at
+##    print('add_at(): Cython')
+
 except:
     try:
 
@@ -112,6 +116,7 @@ except:
         ##            print("cython_radis imported succesfully!")
 
         radis_add_at = cython_radis.add_at
+    ##        print('add_at(): Cython')
 
     except:
         ##        raise (
@@ -123,6 +128,9 @@ except:
         # If it doesn't work, fall back to Numpy's add.at():
         def radis_add_at(LDM, k, l, m, I):
             return np.add.at(LDM, (k, l, m), I)
+
+
+##        print('add_at(): Numpy')
 
 
 ### --- ###
