@@ -179,10 +179,11 @@ def save(
 
             add_date = '%Y%m%d'
 
-    if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
+    if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
         what to do if file already exists. If ``'increment'`` an incremental digit
-        is added. If ``'replace'`` file is replaced (!). If ``'error'`` (or anything else)
-        an error is raised. Default ``'increment'``
+        is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
+        Spectrum is not added to the database and no file is created.
+        If ``'error'`` (or anything else) an error is raised. Default ``'increment'``.
 
     Returns
     -------
@@ -203,6 +204,8 @@ def save(
 
     # 2) Get final output name (add info, extension, increment number if needed)
     fout = _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose)
+    if exists(fout) and if_exists_then == "ignore":
+        return fout
 
     # 3) Now is time to save
     if compress:
@@ -360,6 +363,10 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
         elif if_exists_then == "replace":
             if verbose:
                 print(("File exists and will be replaced: {0}".format(name)))
+        elif if_exists_then == "ignore":
+            if verbose:
+                print(("File already exists : {0}. Ignoring".format(name)))
+            # main function will return after this function returns.
         else:
             raise ValueError(
                 "File already exists {0}. Choose another filename".format(fout)
@@ -422,17 +429,14 @@ def load_spec(file, binary=True):  # , return_binary_status=False):
 
     Parameters
     ----------
-
     file: str
         .spec file to load
-
     binary: boolean
         set to ``True`` if the file is encoded as binary. Default ``True``. Will autodetect
         if it fails, but that may take longer.
 
     Returns
     -------
-
     s: Spectrum
         a :class:`~radis.spectrum.spectrum.Spectrum` object
 
@@ -495,13 +499,11 @@ def _json_to_spec(sload, file=""):
 
     Parameters
     ----------
-
     sload: dict
         Spectrum object content stored under a dictonary
 
     Returns
     -------
-
     s: Spectrum
         a :class:`~radis.spectrum.spectrum.Spectrum` object
     """
@@ -844,13 +846,10 @@ def _update_to_latest_format(s, file, binary):
 
     Parameters
     ----------
-
     s: a Spectrum object
         already loaded, already updated. See fixes in :func:`~radis.tools.database._fix_format`
-
     file: str
         current storage file of the object
-
     binary: boolean
         the binary format that was used to open the object. Keep the same.
         if ``True``, saves under binary format. Faster and takes less space.
@@ -858,7 +857,6 @@ def _update_to_latest_format(s, file, binary):
 
     Examples
     --------
-
     add to the start of your script::
 
         import radis
@@ -884,20 +882,17 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
 
     Parameters
     ----------
-
     file: str,  or Spectrum object
         .spec file to load, or Spectrum object directly
 
     Other Parameters
     ----------------
-
     kwargs: dict
         arguments forwarded to :meth:`~radis.spectrum.spectrum.Spectrum.plot`
 
 
     Returns
     -------
-
     fig: matplotlib figure
         where the Spectrum has been plotted
 
@@ -1071,15 +1066,68 @@ class SpecList(object):
         for s in self:
             function(s)
 
+    def _load_existing_files(self, files):
+        """Loadspectra already registered in the database.
+
+        Parameters
+        ----------
+        files : list
+
+        Returns
+        -------
+        list
+            of Spectrum
+
+        """
+        # Parallel loading
+        if len(files) > self.minimum_nfiles:
+            nJobs = self.nJobs
+            batch_size = self.batch_size
+            if self.verbose:
+                print(
+                    "*** Loading the database with {0} ".format(
+                        nJobs if nJobs > 0 else f"all minus {abs(nJobs+1)}"
+                    )
+                    + "processor(s) ({0} files)***".format(len(files))
+                )
+
+            def funLoad(f):
+                spectrum = load_spec(join(self.path, f), binary=self.binary)
+                indx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
+                if len(indx) > 1:
+                    raise ValueError(
+                        "Multiple files found for the name {} of indexes {}. Update the database manually".format(
+                            f, indx
+                        )
+                    )
+                # self.df.loc[indx[0],"Spectrum"] = spectrum
+                return indx[0], spectrum
+
+            spec_loaded = Parallel(
+                n_jobs=nJobs, batch_size=batch_size, verbose=5 * self.verbose
+            )(delayed(funLoad)(f) for f in files)
+            for val in spec_loaded:
+                self.df.loc[val[0], "Spectrum"] = val[1]
+        else:
+            for f in files:
+                idx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
+                if len(idx) > 1:
+                    raise ValueError(
+                        "Multiple files found for the name {} of indexes {}. Update the database manually".format(
+                            f, idx
+                        )
+                    )
+                spectrum = load_spec(join(self.path, f), binary=self.binary)
+                self.df.loc[idx[0], "Spectrum"] = spectrum
+        return list(self.df["Spectrum"])
+
     def get(self, conditions="", **kwconditions):
         """Returns a list of spectra that match given conditions.
 
         Parameters
         ----------
-
         database: list of Spectrum objects
             the database
-
         conditions: str
             a list of conditions. Example::
 
@@ -1092,22 +1140,22 @@ class SpecList(object):
 
         Other Parameters
         ----------------
-
         inplace: ``bool``
             if True, return the actual object in the database. Else, return
             copies. Default ``False``
-
         verbose: ``bool``
             more blabla
-
         scale_if_possible: ``bool``
             if ``True``, spectrum is scaled for parameters that can be computed
             directly from spectroscopic quantities (e.g: ``'path_length'``,
             ``'molar_fraction'``). Default ``False``
 
+        Returns
+        -------
+        out: list of Spectrum
+
         Examples
         --------
-
         ::
 
             spec_list = db.get('Tvib==3000 & Trot==1300')
@@ -1119,7 +1167,6 @@ class SpecList(object):
 
         See Also
         --------
-
         :meth:`~radis.tools.database.SpecList.get_unique`,
         :meth:`~radis.tools.database.SpecList.get_closest`,
         :meth:`~radis.tools.database.SpecList.items`
@@ -1155,8 +1202,10 @@ class SpecList(object):
                 "Please choose one of the two input format (str or dict) exclusively"
             )
 
-        if conditions == "" and kwconditions == {}:
-            # Get all Spectrum objects
+        if conditions == "" and kwconditions == {}:  # get all spectra
+            # Get all unloaded Spectrum objects and load them
+            files = self.df["file"][self.df["Spectrum"].isnull()]
+            self._load_existing_files(files)
             out = list(self.df["Spectrum"])
 
         else:
@@ -1193,8 +1242,11 @@ class SpecList(object):
                         if __debug__:
                             printdbg("Database query: {0}".format(querypart))
                         dg = dg.query(querypart)
+            # Get all unloaded Spectrum objects and load them
+            files = dg["file"][dg["Spectrum"].isnull()]
 
-            out = list(dg["Spectrum"])
+            self._load_existing_files(files)
+            out = list(self.df.loc[dg.index, "Spectrum"])
 
         if not inplace:
             out = [s.copy() for s in out]
@@ -1213,19 +1265,21 @@ class SpecList(object):
         return out
 
     def get_unique(self, conditions="", scale_if_possible=False, **kwconditions):
-        """Returns a spectrum that match given conditions. Raises an error if
-        the spectrum is not unique.
+        """Returns a spectrum that match given conditions.
+
+        Raises an error if the spectrum is not unique.
 
         Parameters
         ----------
-
         args:
             see :py:meth:`~radis.tools.database.SpecList.get` for more details
 
+        Returns
+        -------
+        s: Spectrum
 
         See Also
         --------
-
         :py:meth:`~radis.tools.database.SpecList.get`,
         :py:meth:`~radis.tools.database.SpecList.get_closest`
         """
@@ -1234,11 +1288,18 @@ class SpecList(object):
 
         if len(out) == 0:
             # Give a better error message before crashing:
-            prevVerbose = kwconditions["verbose"]
-            kwconditions["verbose"] = True
-            self.get_closest(**kwconditions)  # note: wont work with conditions=..
-            raise ValueError("Spectrum not found. See closest above. Use get_closest()")
-            kwconditions["verbose"] = prevVerbose
+            try:
+                prevVerbose = kwconditions.get("verbose", None)
+                kwconditions["verbose"] = True
+                self.get_closest(**kwconditions)  # note: wont work with conditions=..
+            except:
+                pass
+            finally:
+                if prevVerbose is not None:
+                    kwconditions["verbose"] = prevVerbose
+                raise ValueError(
+                    "Spectrum not found. See closest above. Use get_closest()"
+                )
         elif len(out) > 1:
             raise ValueError(
                 "Spectrum is not unique ({0} match found)".format(len(out))
@@ -1257,10 +1318,8 @@ class SpecList(object):
 
         Parameters
         ----------
-
         kwconditions: named arguments
             i.e: ``Tgas=300, path_length=1.5``
-
         scale_if_possible: boolean
             if ``True``, spectrum is scaled for parameters that can be computed
             directly from spectroscopic quantities (e.g: ``'path_length'``, ``'molar_fraction'``).
@@ -1268,17 +1327,14 @@ class SpecList(object):
 
         Other Parameters
         ----------------
-
         verbose: boolean
             print messages. Default ``True``
-
         inplace: boolean
             if ``True``, returns the actual object in database. Else, return a copy.
             Default ``False``
 
         See Also
         --------
-
         :meth:`~radis.tools.database.SpecList.get`,
         :meth:`~radis.tools.database.SpecList.get_unique`
         """
@@ -1357,7 +1413,7 @@ class SpecList(object):
                     # Deal with case where formats dont match:
                     try:
                         dg[k] - v
-                    except TypeError:
+                    except TypeError as err2:
                         print(sys.exc_info())
                         raise TypeError(
                             "An error occured (see above) when calculating "
@@ -1365,13 +1421,21 @@ class SpecList(object):
                             + "({0} - {1}). ".format(dg[k].iloc[0], v)
                             + "Check that your requested conditions match "
                             + "the database format"
-                        )
+                        ) from err2
                     else:
-                        raise (err)
+                        raise err
 
             # Get spectrum with minimum distance to target conditions
             ## type: Spectrum
             sout = self.df.loc[dg["_d"].idxmin(), "Spectrum"]
+            # Load the spectrum if not already done
+            if sout is None:
+                spectrum = load_spec(
+                    join(self.path, self.df.loc[dg["_d"].idxmin(), "file"]),
+                    binary=self.binary,
+                )
+                self.df.loc[dg["_d"].idxmin(), "Spectrum"] = spectrum
+                sout = spectrum
             # Note @EP 07/12/20 : do we have the same index as dg ?? (created with reindex on L1335)  #  TODO
         finally:
             del dg["_d"]
@@ -1421,19 +1485,16 @@ class SpecList(object):
 
         Parameters
         ----------
-
         condition: str
             condition. Ex: ``Trot``
 
         Returns
         -------
-
         out: dict
             {condition:Spectrum}
 
         See Also
         --------
-
         :meth:`~radis.tools.database.SpecList.to_dict`,
         :meth:`~radis.tools.database.SpecList.get`
         """
@@ -1457,7 +1518,6 @@ class SpecList(object):
 
         Examples
         --------
-
         Print name of all Spectra in dictionary::
 
             db = SpecDatabase('.')
@@ -1477,7 +1537,6 @@ class SpecList(object):
 
         See Also
         --------
-
         :meth:`~radis.tools.database.SpecList.keys`,
         :meth:`~radis.tools.database.SpecList.values`,
         :meth:`~radis.tools.database.SpecList.items`,
@@ -1518,7 +1577,6 @@ class SpecList(object):
 
         Examples
         --------
-
         Print name of all Spectra in dictionary::
 
             db = SpecDatabase('.')
@@ -1534,7 +1592,6 @@ class SpecList(object):
 
         See Also
         --------
-
         :meth:`~radis.tools.database.SpecList.keys`,
         :meth:`~radis.tools.database.SpecList.values`,
         :meth:`~radis.tools.database.SpecList.to_dict`
@@ -1547,29 +1604,24 @@ class SpecList(object):
 
         Parameters
         ----------
-
         nfig: str, or int, or ``None``
             figure to plot on. Default ``None``: creates one
 
         Other Parameters
         ----------------
-
         kwargs: dict
             parameters forwarded to the Spectrum :meth:`~radis.spectrum.spectrum.plot`
             method
-
         legend: bool
             if ``True``, plot legend.
 
         Returns
         -------
-
         fig, ax: matplotlib figure and ax
             figure
 
         Examples
         --------
-
         Plot all spectra in a folder::
 
             db = SpecDatabase('my_folder')
@@ -1596,22 +1648,20 @@ class SpecList(object):
 
         Parameters
         ----------
-
         cond_x, cond_y: str
             columns (conditions) of database.
-
         z_value: array, or None
             if not None, colors the 2D map with z_value. z_value is ordered
             so that z_value[i] corresponds to row[i] in database.
 
         Examples
         --------
+        ::
+            >>> db.plot(Tvib, Trot)     # plot all points calculated
 
-        >>> db.plot(Tvib, Trot)     # plot all points calculated
 
-
-        >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
-                                              # procedure...
+            >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
+                                                  # procedure...
         """
         # %%
 
@@ -1666,6 +1716,9 @@ class SpecList(object):
     def __len__(self):
         return len(self.df)
 
+    def __str__(self):
+        return self.see().__str__()
+
 
 # %% Database class
 # ... loads database and manipulate it
@@ -1684,6 +1737,7 @@ class SpecDatabase(SpecList):
         binary=True,
         nJobs=-2,
         batch_size="auto",
+        lazy_loading=True,
     ):
         """A Spectrum Database class to manage them all.
 
@@ -1697,18 +1751,21 @@ class SpecDatabase(SpecList):
 
         Parameters
         ----------
-
         path: str
             a folder to initialize the database
         filt: str
-            only consider files ending with filt
+            only consider files ending with ``filt``. Default ``.spec``
         binary: boolean
             if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
             try as binary file anyway. Default ``False``
+        lazy_loading: bool``
+            If ``True``, load only the data from the summary csv file and the spectra will
+            be loaded when accessed by the get functions. If ``False``, load all
+            the spectrum files. If ``True`` and the summary .csv file does not exist,
+            load all spectra
 
         Other Parameters
         ----------------
-
         *input for :class:`~joblib.parallel.Parallel` loading of database*
 
         nJobs: int
@@ -1728,6 +1785,8 @@ class SpecDatabase(SpecList):
         Examples
         --------
 
+        ::
+
             >>> db = SpecDatabase(r"path/to/database")     # create or loads database
 
             >>> db.update()  # in case something changed
@@ -1745,17 +1804,14 @@ class SpecDatabase(SpecList):
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
         of the website.
 
-        Note
-        ----
-
-        Database interaction is based on Pandas query functions. As such, it
-        requires all conditions to be either float, string, or boolean. List
-        won't work!
+        .. notes:
+            Database interaction is based on Pandas query functions. As such, it
+            requires all conditions to be either float, string, or boolean. List
+            won't work!
 
 
         See Also
         --------
-
         :func:`~radis.tools.database.load_spec`,
         :meth:`~radis.spectrum.spectrum.Spectrum.store`
 
@@ -1812,13 +1868,67 @@ class SpecDatabase(SpecList):
         self.nJobs = nJobs
         self.batch_size = batch_size
         self.minimum_nfiles = (
-            6  #: type: int. If there are less files, don't use parallel mode.
+            10  #: type: int. If there are less files, don't use parallel mode.
         )
 
         # init with 0 spectra
         super(SpecDatabase, self).__init__()
         # now load from the folder with the update() function
-        self.update(force_reload=True, filt=filt)
+        if not lazy_loading:
+            return self.update(force_reload=True, filt=filt)
+        else:
+            if verbose >= 2:
+                print(
+                    "Database initialized without loading spectra. They will be loaded when accessed by the get function"
+                )
+            csv_file = [f for f in os.listdir(self.path) if f.endswith(".csv")]
+            if len(csv_file) == 0:
+                # load from the folder and initialize the csv with the update() function
+                return self.update(force_reload=True, filt=filt)
+            if len(csv_file) > 1:
+                raise ValueError(
+                    "Only 1 csv file should be in the database directory but {0} found : {1}".format(
+                        len(csv_file), csv_file
+                    )
+                    + ". Clean the files then initialize the database with lazy_loading=False"
+                )
+            spec_files = [f for f in os.listdir(self.path) if f.endswith(".spec")]
+            # Initialize database without loading the spectra
+            self.df = read_conditions_file(join(self.path, csv_file[0]))
+
+            if len(self.df["file"]) != len(spec_files):
+                raise ValueError(
+                    "Number of files stored in {0} ({1}) doesn't match the number of files found in the database folder ({2}). Update the csv first by setting lazy_loading=False".format(
+                        csv_file[0], len(self.df["file"]), len(spec_files)
+                    )
+                )
+            # Check file was not modified since it was registered in the .csv
+            for f in spec_files:
+                if not f in self.df["file"].values:
+                    raise ValueError(
+                        "{} not found in the csv registry.  Update the csv first with `SpecDatabase(..., lazy_loading=False)`".format(
+                            f
+                        )
+                    )
+                else:
+                    if "last_modified" in self.df:
+                        if round(
+                            self.df["last_modified"][
+                                self.df.index[self.df["file"] == f].to_list()[0]
+                            ],
+                            2,
+                        ) != round(
+                            os.path.getmtime(self.path + "/" + f), 2
+                        ):  # take rounded numbers to prevent errors
+                            raise ValueError(
+                                "Spectrum {} last modification don't match the date stored in the csv. Update the database first with `SpecDatabase(..., lazy_loading=False)`".format(
+                                    f
+                                )
+                            )
+                    else:
+                        raise ValueError(
+                            "Csv file wasn't created with last modifications informations. Update the database first with `SpecDatabase(..., lazy_loading=False)`."
+                        )
 
     def update(self, force_reload=False, filt=".spec"):
         """Reloads database, updates internal index structure and export it in
@@ -1843,7 +1953,7 @@ class SpecDatabase(SpecList):
         if force_reload:
             # Reloads whole database  (necessary on database init to create self.df
             files = [join(path, f) for f in os.listdir(path) if f.endswith(filt)]
-            self.df = self._load_files(files=files)
+            self.df = self._load_new_files(files=files)
         else:
             dbfiles = list(self.df["file"])
             files = [
@@ -1854,7 +1964,7 @@ class SpecDatabase(SpecList):
             # no parallelization here because the number of files is supposed to be small
             for f in files:
                 self.df = self.df.append(
-                    self._load_file(f, binary=self.binary), ignore_index=True
+                    self._load_new_file(f, binary=self.binary), ignore_index=True
                 )
 
         # Print index
@@ -1877,7 +1987,6 @@ class SpecDatabase(SpecList):
 
         See Also
         --------
-
         :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
         """
 
@@ -1954,14 +2063,14 @@ class SpecDatabase(SpecList):
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
 
-    def add(self, spectrum, store_name=None, **kwargs):
+    def add(self, spectrum, store_name=None, if_exists_then="increment", **kwargs):
         """Add Spectrum to database, whether it's a
         :py:class:`~radis.spectrum.spectrum.Spectrum` object or a file that
         stores one. Check it's not in database already.
 
         Parameters
         ----------
-        spectrum: path to a .spec file (``str``), or :py:class:`~radis.spectrum.spectrum.Spectrum` object
+        spectrum: :py:class:`~radis.spectrum.spectrum.Spectrum` object, or path to a .spec file (``str``)
             if a :py:class:`~radis.spectrum.spectrum.Spectrum` object:
             stores it in the database (using the :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
             method), then adds the file to the database folder.
@@ -1974,14 +2083,20 @@ class SpecDatabase(SpecList):
             name of the file where the spectrum will be stored. If ``None``,
             name is generated automatically from the Spectrum conditions (see
             ``add_info=`` and ``if_exists_then=``)
+        if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
+            what to do if file already exists. If ``'increment'`` an incremental digit
+            is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
+            Spectrum is not added to the database and no file is created.
+            If ``'error'`` (or anything else) an error is raised. Default ``'increment'``.
+
         **kwargs: **dict
             extra parameters used in the case where spectrum is a file and a .spec object
             has to be created (useless if `spectrum` is a file already). kwargs
             are forwarded to Spectrum.store() method. See the :meth:`~radis.spectrum.spectrum.Spectrum.store`
             method for more information.
 
-            Other :py:meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given
-            as kwargs arguments:
+        *Other :py:meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given
+        as kwargs arguments:*
 
         compress: 0, 1, 2
             if ``True`` or 1, save the spectrum in a compressed form
@@ -1991,7 +2106,6 @@ class SpecDatabase(SpecList):
             emisscoeff and abscoeff are given in non-optically thin case, etc.
             If not given, use the value of ``SpecDatabase.binary``
             The performances are usually better if compress = 2. See https://github.com/radis/radis/issues/84.
-
         add_info: list
             append these parameters and their values if they are in conditions
             example::
@@ -2004,11 +2118,6 @@ class SpecDatabase(SpecList):
             :meth:`~radis.spectrum.spectrum.Spectrum.line_survey` and
             :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` methods
             (but it saves a ton of memory!).
-
-        if_exists_then: ``'increment'``, ``'replace'``, ``'error'``
-            what to do if file already exists. If ``'increment'`` an incremental digit
-            is added. If ``'replace'`` file is replaced (!). If ``'error'`` (or anything else)
-            an error is raised. Default ``'increment'``.
 
         Examples
         --------
@@ -2036,8 +2145,13 @@ class SpecDatabase(SpecList):
                 "path is an invalid Parameter. The database path " + "is used"
             )
         compress = kwargs.pop("compress", self.binary)
+        store_path = join(self.path, str(store_name))
+        if exists(store_path) and if_exists_then == "ignore":
+            if self.verbose:
+                print(("File already exists : {0}. Ignoring".format(store_name)))
+            return
 
-        # First, store the spectrum on a file
+        # First, store the spectrum in a file
         # ... input is a Spectrum. Store it in database and load it from there
         if is_spectrum(spectrum):
             # add defaults
@@ -2046,14 +2160,19 @@ class SpecDatabase(SpecList):
                     kwargs["add_info"] = self.add_info
                 if not "add_date" in kwargs:
                     kwargs["add_date"] = self.add_date
-                file = spectrum.store(self.path, compress=compress, **kwargs)
+                file = spectrum.store(
+                    self.path,
+                    compress=compress,
+                    if_exists_then=if_exists_then,
+                    **kwargs,
+                )
             else:
                 file = spectrum.store(
-                    self.path + "/" + str(store_name), compress=compress, **kwargs
+                    store_path,
+                    compress=compress,
+                    if_exists_then=if_exists_then,
+                    **kwargs,
                 )
-            # Note we could have added the Spectrum directly
-            # (saves the load stage) but it also serves to
-            # check the file we just stored is readable
 
         # ... input is a file name. Copy it in database and load it
         elif isinstance(spectrum, str):
@@ -2090,18 +2209,9 @@ class SpecDatabase(SpecList):
         else:
             raise ValueError("Unvalid Spectrum type: {0}".format(type(spectrum)))
 
-        # PREVIOUS VERSION (with reloading)
-        # Then, load the Spectrum again (so we're sure it works!) and add the
-        # information to the database
-        # self.df = self.df.append(
-        #     self._load_file(file, binary=compress), ignore_index=True
-        # )
-
-        # NEW VERSION (no reloading)
-        out = spectrum.get_conditions().copy()
-        # Add filename, and a link to the Spectrum object itself
-        out.update({"file": basename(file), "Spectrum": spectrum})
-        self.df = self.df.append(out, ignore_index=True)
+        # Now register the spectrum in the database :
+        spectrum_conditions = self._load_new_file(file, binary=compress)
+        self.df = self.df.append(spectrum_conditions, ignore_index=True)
 
         # Update index .csv
         self.print_index()
@@ -2115,21 +2225,19 @@ class SpecDatabase(SpecList):
         normalize=False,
         normalize_how="max",
         conditions="",
-        **kwconditions
+        **kwconditions,
     ):
         """Returns the Spectrum in the database that has the lowest residual
         with ``s_exp``.
 
         Parameters
         ----------
-
         s_exp: Spectrum
             :class:`~radis.spectrum.spectrum.Spectrum` to fit (typically:
             experimental spectrum)
 
         Other Parameters
         ----------------
-
         residual: func, or ``None``
             which residual function to use. If ``None``, use
             :func:`~radis.spectrum.compare.get_residual` with option
@@ -2142,28 +2250,23 @@ class SpecDatabase(SpecList):
 
             where the output is a float.
             Default ``None``
-
         conditions, **kwconditions: str, **dict
             restrain fitting to only Spectrum that match the given conditions
             in the database. See :meth:`~radis.tools.database.SpecList.get`
             for more information.
-
         normalize: bool, or Tuple
             see :func:`~radis.spectrum.compare.get_residual`
-
         normalize_how: 'max', 'area'
             see :func:`~radis.spectrum.compare.get_residual`
 
 
         Returns
         -------
-
         s_best: Spectrum
             closest Spectrum to ``s_exp``
 
         Examples
         --------
-
         Using a customized residual function (below: to get the transmittance)::
 
             from radis import get_residual
@@ -2201,12 +2304,16 @@ class SpecDatabase(SpecList):
 
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
 
-    def _load_files(self, files):
+    def _load_new_files(self, files):
         """Parse files and generate a database.
+
+        Returns
+        -------
+        db: pandas.DataFrame
+            dataFrame of loaded spectra.
 
         Notes
         -----
-
         Can be loaded in parallel using joblib by setting the `nJobs` and `batch_size`
         attributes of :class:`~radis.tools.database.SpecDatabase`.
         See :class:`joblib.parallel.Parallel` for information on the arguments
@@ -2218,6 +2325,9 @@ class SpecDatabase(SpecList):
         batch_size = self.batch_size
         minimum_nfiles = self.minimum_nfiles
 
+        def funLoad(f):
+            return self._load_new_file(f, binary=self.binary)
+
         # Sequential loading
         if nJobs == 1 or len(files) < minimum_nfiles:
             if self.verbose:
@@ -2226,7 +2336,7 @@ class SpecDatabase(SpecList):
                     + "({0} files)***".format(len(files))
                 )
             for f in files:
-                db.append(self._load_file(f, binary=self.binary))
+                db.append(funLoad(f))
         # Parallel loading
         else:
             if self.verbose:
@@ -2235,19 +2345,22 @@ class SpecDatabase(SpecList):
                     + "processor(s) ({0} files)***".format(len(files))
                 )
 
-            def funLoad(f):
-                return self._load_file(f, binary=self.binary)
-
             db = Parallel(
                 n_jobs=nJobs, batch_size=batch_size, verbose=5 * self.verbose
             )(delayed(funLoad)(f) for f in files)
         return pd.DataFrame(db)
 
-    def _load_file(self, file, binary=False):
-        """return Spectrum attributes for insertion in database."""
+    def _load_new_file(self, file, binary=False):
+        """Load spectrum and return Spectrum attributes for insertion in database.
+
+        The Spectrum itself is stored under the "Spectrum" key, and the filename
+        under "file".
+
+        Returns
+        -------
+        dict: dictionary of conditions of loaded spectrum"""
 
         s = load_spec(file, binary=binary)
-
         if self.verbose:
             print(("loaded {0}".format(basename(file))))
 
@@ -2255,6 +2368,7 @@ class SpecDatabase(SpecList):
 
         # Add filename, and a link to the Spectrum object itself
         out.update({"file": basename(file), "Spectrum": s})
+        out["last_modified"] = os.path.getmtime(file)
 
         return out
 
@@ -2265,7 +2379,7 @@ class SpecDatabase(SpecList):
         new_conditions_list = []
         for _, r in self.df.iterrows():
             s = r.Spectrum
-            new_conditions = dict(s.get_conditions())  # copy
+            new_conditions = s.get_conditions().copy()
             new_conditions["file"] = r.file
             new_conditions["Spectrum"] = r.Spectrum
             new_conditions_list.append(new_conditions)
@@ -2300,8 +2414,35 @@ class SpecDatabase(SpecList):
         return dict(list(zip(self.df.file, self.df.Spectrum)))
 
 
+def read_conditions_file(path):
+    """Read .csv file with calculation/measurement conditions of all spectra.
+
+    File must have at least the column "file"
+
+    Parameters
+    ----------
+    path : csv file
+        summary of all spectra conditions.
+
+    Returns
+    -------
+    None.
+
+    """
+    df = pd.read_csv(path, float_precision="round_trip")
+    # thank you https://stackoverflow.com/questions/36909368/precision-lost-while-using-read-csv-in-pandas
+
+    # if only "1" in isotopes they are read as numbers and later get() function fails.
+    if "isotope" in df:
+        df["isotope"] = df["isotope"].astype(str).str.replace(".0", "")
+
+    df["Spectrum"] = [None] * len(df["file"])
+
+    return df
+
+
 def in_database(smatch, db=".", filt=".spec"):
-    """old function."""
+    """Old function."""
     match_cond = smatch.get_conditions()
     for f in [f for f in os.listdir(db) if f.endswith(filt)]:
         fname = join(db, f)

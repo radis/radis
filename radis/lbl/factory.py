@@ -669,13 +669,13 @@ class SpectrumFactory(BandFactory):
         # --------------------------------------------------------------------
 
         # First calculate the linestrength at given temperature
-        self._calc_linestrength_eq(Tgas)  # scales S0 to S (equivalent to S0 in code)
+        self.calc_linestrength_eq(Tgas)  # scales S0 to S (equivalent to S0 in code)
         self._cutoff_linestrength()
 
         # ----------------------------------------------------------------------
 
         # Calculate line shift
-        self._calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
+        self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
 
         # ----------------------------------------------------------------------
         # Line broadening
@@ -684,7 +684,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # ... find weak lines and calculate semi-continuum (optional)
-        I_continuum = self._calculate_pseudo_continuum()
+        I_continuum = self.calculate_pseudo_continuum()
         # ... apply lineshape and get absorption coefficient
         # ... (this is the performance bottleneck)
         wavenumber, abscoeff_v = self._calc_broadening()
@@ -1260,13 +1260,13 @@ class SpectrumFactory(BandFactory):
         self._check_line_databank()
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):
-        self._check_noneq_parameters(vib_distribution, singleTvibmode)
+        self._calc_noneq_parameters(vib_distribution, singleTvibmode)
         self._reinitialize()  # creates scaled dataframe df1 from df0
 
         # ----------------------------------------------------------------------
         # Calculate Populations, Linestrength and Emission Integral
         if singleTvibmode:
-            self._calc_populations_noneq(
+            self.calc_populations_noneq(
                 Tvib,
                 Trot,
                 vib_distribution=vib_distribution,
@@ -1292,7 +1292,7 @@ class SpectrumFactory(BandFactory):
         # ----------------------------------------------------------------------
 
         # Calculate lineshift
-        self._calc_lineshift()
+        self.calc_lineshift()
 
         # ----------------------------------------------------------------------
 
@@ -1302,7 +1302,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # ... find weak lines and calculate semi-continuum (optional)
-        k_continuum, j_continuum = self._calculate_pseudo_continuum(noneq=True)
+        k_continuum, j_continuum = self.calculate_pseudo_continuum(noneq=True)
 
         # ... apply lineshape and get absorption coefficient
         # ... (this is the performance bottleneck)
@@ -1525,6 +1525,8 @@ class SpectrumFactory(BandFactory):
         Tvib=None,
         Trot=None,
         Ttrans=None,
+        vib_distribution="boltzmann",
+        rot_distribution="boltzmann",
         mole_fraction=None,
         path_length=None,
         unit="mW/cm2/sr",
@@ -1546,7 +1548,6 @@ class SpectrumFactory(BandFactory):
 
         Parameters
         ----------
-
         Tgas: float
             equilibrium temperature [K]
             If doing a non equilibrium case it should be None. Use Ttrans for
@@ -1568,9 +1569,8 @@ class SpectrumFactory(BandFactory):
 
         Returns
         -------
-
-        Returns total power density in mW/cm2/sr (unless different unit is chosen),
-        see ``unit=``.
+        float: Returns total power density in mW/cm2/sr (unless different unit is chosen),
+            see ``unit=``.
 
 
         See Also
@@ -1626,18 +1626,10 @@ class SpectrumFactory(BandFactory):
                 self._reload_databank()
 
         if non_eq_mode:
+            singleTvibmode = is_float(Tvib)
             # Make sure database has pre-computed non equilibrium quantities
             # (Evib, Erot, etc.)
-            try:
-                self.df0["Evib"]
-            except KeyError:
-                self._calc_noneq_parameters()
-
-            try:
-                self.df0["Aul"]
-            except KeyError:
-                self._calc_weighted_trans_moment()
-                self._calc_einstein_coefficients()
+            self._calc_noneq_parameters(vib_distribution, singleTvibmode)
 
         # %% Start
         # ----------------------------------------------------------------------
@@ -1658,9 +1650,14 @@ class SpectrumFactory(BandFactory):
         # (Note: Emission Integral is non canonical quantity, equivalent to
         #  Linestrength for absorption)
         if non_eq_mode:
-            self._calc_populations_noneq(Tvib, Trot)
+            self.calc_populations_noneq(
+                Tvib,
+                Trot,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+            )
         else:
-            self._calc_populations_eq(Tgas)
+            self.calc_populations_eq(Tgas)
             self.df1["Aul"] = self.df1.A  # update einstein coefficients
         self._calc_emission_integral()
 

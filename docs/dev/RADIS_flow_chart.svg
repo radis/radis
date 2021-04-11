@@ -13,7 +13,7 @@
    viewBox="0 0 946.799927 639.359924"
    version="1.1"
    id="svg3549"
-   sodipodi:docname="RADIS_flow_chart.pdf.svg"
+   sodipodi:docname="RADIS_flow_chart.svg"
    inkscape:version="0.92.3 (2405546, 2018-03-11)">
   <metadata
      id="metadata3553">
@@ -36,16 +36,16 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:window-width="1920"
-     inkscape:window-height="1001"
+     inkscape:window-height="1017"
      id="namedview3551"
      showgrid="false"
-     inkscape:zoom="0.78301999"
-     inkscape:cx="714.12058"
-     inkscape:cy="433.34893"
-     inkscape:window-x="-9"
-     inkscape:window-y="-9"
+     inkscape:zoom="1.1073575"
+     inkscape:cx="605.19794"
+     inkscape:cy="528.56223"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g3308" />
+     inkscape:current-layer="surface1" />
   <defs
      id="defs784">
     <g
@@ -2584,11 +2584,15 @@
        d="M 486 -539.28125 L 508.800781 -539.28125 L 508.800781 -550.320313 L 486 -550.320313 Z M 486 -539.28125 "
        transform="matrix(1,0,0,-1,0,0)"
        id="path978" />
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 358.320313 -529.058594 C 358.320313 -525.160156 361.480469 -522 365.378906 -522 L 501.738281 -522 C 505.640625 -522 508.800781 -525.160156 508.800781 -529.058594 L 508.800781 -557.300781 C 508.800781 -561.199219 505.640625 -564.359375 501.738281 -564.359375 L 365.378906 -564.359375 C 361.480469 -564.359375 358.320313 -561.199219 358.320313 -557.300781 Z M 358.320313 -529.058594 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path980" />
+    <a
+       id="a6465"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.spectrum.spectrum.html#radis.spectrum.spectrum.Spectrum">
+      <path
+         id="path980"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 358.320313 -529.058594 C 358.320313 -525.160156 361.480469 -522 365.378906 -522 L 501.738281 -522 C 505.640625 -522 508.800781 -525.160156 508.800781 -529.058594 L 508.800781 -557.300781 C 508.800781 -561.199219 505.640625 -564.359375 501.738281 -564.359375 L 365.378906 -564.359375 C 361.480469 -564.359375 358.320313 -561.199219 358.320313 -557.300781 Z M 358.320313 -529.058594 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g986">
@@ -3525,10 +3529,14 @@
          y="498.460054"
          id="use1380" />
     </g>
-    <path
-       style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;"
-       d="M 746.039063 365.300781 C 746.039063 362.699219 748.140625 360.601563 750.738281 360.601563 L 870.578125 360.601563 C 873.179688 360.601563 875.28125 362.699219 875.28125 365.300781 L 875.28125 384.101563 C 875.28125 386.699219 873.179688 388.800781 870.578125 388.800781 L 750.738281 388.800781 C 748.140625 388.800781 746.039063 386.699219 746.039063 384.101563 Z M 746.039063 365.300781 "
-       id="path1384" />
+    <a
+       id="a6450"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.lbl.calc.html#radis.lbl.calc.calc_spectrum">
+      <path
+         id="path1384"
+         d="M 746.039063 365.300781 C 746.039063 362.699219 748.140625 360.601563 750.738281 360.601563 L 870.578125 360.601563 C 873.179688 360.601563 875.28125 362.699219 875.28125 365.300781 L 875.28125 384.101563 C 875.28125 386.699219 873.179688 388.800781 870.578125 388.800781 L 750.738281 388.800781 C 748.140625 388.800781 746.039063 386.699219 746.039063 384.101563 Z M 746.039063 365.300781 "
+         style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g1390">
@@ -3797,10 +3805,14 @@
          y="347.300055"
          id="use1496" />
     </g>
-    <path
-       style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;"
-       d="M 746.039063 417.621094 C 746.039063 415.019531 748.140625 412.921875 750.738281 412.921875 L 888.460938 412.921875 C 891.058594 412.921875 893.160156 415.019531 893.160156 417.621094 L 893.160156 436.421875 C 893.160156 439.019531 891.058594 441.121094 888.460938 441.121094 L 750.738281 441.121094 C 748.140625 441.121094 746.039063 439.019531 746.039063 436.421875 Z M 746.039063 417.621094 "
-       id="path1500" />
+    <a
+       id="a6456"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.lbl.calc.html#radis.lbl.calc.calc_spectrum">
+      <path
+         id="path1500"
+         d="M 746.039063 417.621094 C 746.039063 415.019531 748.140625 412.921875 750.738281 412.921875 L 888.460938 412.921875 C 891.058594 412.921875 893.160156 415.019531 893.160156 417.621094 L 893.160156 436.421875 C 893.160156 439.019531 891.058594 441.121094 888.460938 441.121094 L 750.738281 441.121094 C 748.140625 441.121094 746.039063 439.019531 746.039063 436.421875 Z M 746.039063 417.621094 "
+         style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g1506">
@@ -4007,10 +4019,14 @@
        style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;"
        d="M 432.601563 305.21875 L 432.601563 310.539063 L 434.640625 310.539063 L 434.640625 305.21875 Z M 430.558594 309.519531 L 433.621094 315.640625 L 436.679688 309.519531 Z M 430.558594 309.519531 "
        id="path1590" />
-    <path
-       style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;"
-       d="M 746.039063 392.179688 C 746.039063 389.578125 748.140625 387.480469 750.738281 387.480469 L 881.859375 387.480469 C 884.460938 387.480469 886.558594 389.578125 886.558594 392.179688 L 886.558594 410.980469 C 886.558594 413.578125 884.460938 415.679688 881.859375 415.679688 L 750.738281 415.679688 C 748.140625 415.679688 746.039063 413.578125 746.039063 410.980469 Z M 746.039063 392.179688 "
-       id="path1592" />
+    <a
+       id="a6453"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.lbl.calc.html#radis.lbl.calc.calc_spectrum">
+      <path
+         id="path1592"
+         d="M 746.039063 392.179688 C 746.039063 389.578125 748.140625 387.480469 750.738281 387.480469 L 881.859375 387.480469 C 884.460938 387.480469 886.558594 389.578125 886.558594 392.179688 L 886.558594 410.980469 C 886.558594 413.578125 884.460938 415.679688 881.859375 415.679688 L 750.738281 415.679688 C 748.140625 415.679688 746.039063 413.578125 746.039063 410.980469 Z M 746.039063 392.179688 "
+         style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g1596">
@@ -4135,10 +4151,14 @@
          y="405.740055"
          id="use1644" />
     </g>
-    <path
-       style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;"
-       d="M 363.839844 204.5 C 363.839844 201.898438 365.941406 199.800781 368.539063 199.800781 L 498.460938 199.800781 C 501.058594 199.800781 503.160156 201.898438 503.160156 204.5 L 503.160156 223.300781 C 503.160156 225.898438 501.058594 228 498.460938 228 L 368.539063 228 C 365.941406 228 363.839844 225.898438 363.839844 223.300781 Z M 363.839844 204.5 "
-       id="path1648" />
+    <a
+       id="a6474"
+       xlink:href="file:///D:/GitHub/radis/docs/_build/html/source/radis.lbl.base.html">
+      <path
+         id="path1648"
+         d="M 363.839844 204.5 C 363.839844 201.898438 365.941406 199.800781 368.539063 199.800781 L 498.460938 199.800781 C 501.058594 199.800781 503.160156 201.898438 503.160156 204.5 L 503.160156 223.300781 C 503.160156 225.898438 501.058594 228 498.460938 228 L 368.539063 228 C 365.941406 228 363.839844 225.898438 363.839844 223.300781 Z M 363.839844 204.5 "
+         style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;" />
+    </a>
     <path
        style="fill:none;stroke-width:0.900475;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
        d="M 363.839844 -203.933594 C 363.839844 -201.648438 365.941406 -199.800781 368.539063 -199.800781 L 498.460938 -199.800781 C 501.058594 -199.800781 503.160156 -201.648438 503.160156 -203.933594 L 503.160156 -220.476563 C 503.160156 -222.765625 501.058594 -224.613281 498.460938 -224.613281 L 368.539063 -224.613281 C 365.941406 -224.613281 363.839844 -222.765625 363.839844 -220.476563 Z M 363.839844 -203.933594 "
@@ -4211,11 +4231,15 @@
          y="216.460057"
          id="use1676" />
     </g>
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 225.359375 -77.300781 C 225.359375 -74.699219 227.460938 -72.601563 230.058594 -72.601563 L 309.21875 -72.601563 C 311.820313 -72.601563 313.921875 -74.699219 313.921875 -77.300781 L 313.921875 -96.101563 C 313.921875 -98.699219 311.820313 -100.800781 309.21875 -100.800781 L 230.058594 -100.800781 C 227.460938 -100.800781 225.359375 -98.699219 225.359375 -96.101563 Z M 225.359375 -77.300781 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path1680" />
+    <a
+       id="a6432"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.levels.partfunc.html#radis.levels.partfunc.PartFuncHAPI">
+      <path
+         id="path1680"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 225.359375 -77.300781 C 225.359375 -74.699219 227.460938 -72.601563 230.058594 -72.601563 L 309.21875 -72.601563 C 311.820313 -72.601563 313.921875 -74.699219 313.921875 -77.300781 L 313.921875 -96.101563 C 313.921875 -98.699219 311.820313 -100.800781 309.21875 -100.800781 L 230.058594 -100.800781 C 227.460938 -100.800781 225.359375 -98.699219 225.359375 -96.101563 Z M 225.359375 -77.300781 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(26.66626%,44.7052%,76.861572%);fill-opacity:1;"
        id="g1684">
@@ -4252,10 +4276,14 @@
          y="92.260058"
          id="use1694" />
     </g>
-    <path
-       style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;"
-       d="M 576.359375 14.019531 C 576.359375 11.710938 578.230469 9.839844 580.539063 9.839844 L 742.21875 9.839844 C 744.53125 9.839844 746.398438 11.710938 746.398438 14.019531 L 746.398438 30.738281 C 746.398438 33.050781 744.53125 34.921875 742.21875 34.921875 L 580.539063 34.921875 C 578.230469 34.921875 576.359375 33.050781 576.359375 30.738281 Z M 576.359375 14.019531 "
-       id="path1698" />
+    <a
+       id="a6483"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.lbl.factory.html#radis.lbl.factory.SpectrumFactory.non_eq_spectrum">
+      <path
+         id="path1698"
+         d="M 576.359375 14.019531 C 576.359375 11.710938 578.230469 9.839844 580.539063 9.839844 L 742.21875 9.839844 C 744.53125 9.839844 746.398438 11.710938 746.398438 14.019531 L 746.398438 30.738281 C 746.398438 33.050781 744.53125 34.921875 742.21875 34.921875 L 580.539063 34.921875 C 578.230469 34.921875 576.359375 33.050781 576.359375 30.738281 Z M 576.359375 14.019531 "
+         style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;" />
+    </a>
     <g
        style="fill:rgb(75.292969%,0%,0%);fill-opacity:1;"
        id="g1706">
@@ -4527,11 +4555,15 @@
          y="580.848053"
          id="use1814" />
     </g>
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 337.921875 -77.300781 C 337.921875 -74.699219 340.019531 -72.601563 342.621094 -72.601563 L 451.300781 -72.601563 C 453.898438 -72.601563 456 -74.699219 456 -77.300781 L 456 -96.101563 C 456 -98.699219 453.898438 -100.800781 451.300781 -100.800781 L 342.621094 -100.800781 C 340.019531 -100.800781 337.921875 -98.699219 337.921875 -96.101563 Z M 337.921875 -77.300781 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path1818" />
+    <a
+       id="a6435"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.levels.partfunc.html#radis.levels.partfunc.RovibParFuncTabulator">
+      <path
+         id="path1818"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 337.921875 -77.300781 C 337.921875 -74.699219 340.019531 -72.601563 342.621094 -72.601563 L 451.300781 -72.601563 C 453.898438 -72.601563 456 -74.699219 456 -77.300781 L 456 -96.101563 C 456 -98.699219 453.898438 -100.800781 451.300781 -100.800781 L 342.621094 -100.800781 C 340.019531 -100.800781 337.921875 -98.699219 337.921875 -96.101563 Z M 337.921875 -77.300781 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(26.66626%,44.7052%,76.861572%);fill-opacity:1;"
        id="g1822">
@@ -4621,10 +4653,14 @@
          y="90.860058"
          id="use1854" />
     </g>
-    <path
-       style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;"
-       d="M 288 15.078125 C 288 12.191406 290.351563 9.839844 293.238281 9.839844 L 416.320313 9.839844 C 419.210938 9.839844 421.558594 12.191406 421.558594 15.078125 L 421.558594 36.039063 C 421.558594 38.929688 419.210938 41.28125 416.320313 41.28125 L 293.238281 41.28125 C 290.351563 41.28125 288 38.929688 288 36.039063 Z M 288 15.078125 "
-       id="path1858" />
+    <a
+       id="a6480"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.lbl.factory.html#radis.lbl.factory.SpectrumFactory.eq_spectrum">
+      <path
+         id="path1858"
+         d="M 288 15.078125 C 288 12.191406 290.351563 9.839844 293.238281 9.839844 L 416.320313 9.839844 C 419.210938 9.839844 421.558594 12.191406 421.558594 15.078125 L 421.558594 36.039063 C 421.558594 38.929688 419.210938 41.28125 416.320313 41.28125 L 293.238281 41.28125 C 290.351563 41.28125 288 38.929688 288 36.039063 Z M 288 15.078125 "
+         style=" stroke:none;fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;" />
+    </a>
     <g
        style="fill:rgb(26.66626%,44.7052%,76.861572%);fill-opacity:1;"
        id="g1862">
@@ -4878,11 +4914,15 @@
          y="546.624053"
          id="use1964" />
     </g>
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 354.359375 -585.621094 C 354.359375 -583.023438 356.460938 -580.921875 359.058594 -580.921875 L 528.101563 -580.921875 C 530.699219 -580.921875 532.800781 -583.023438 532.800781 -585.621094 L 532.800781 -604.421875 C 532.800781 -607.015625 530.699219 -609.121094 528.101563 -609.121094 L 359.058594 -609.121094 C 356.460938 -609.121094 354.359375 -607.015625 354.359375 -604.421875 Z M 354.359375 -585.621094 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path1968" />
+    <a
+       id="a6471"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.tools.line_survey.html#radis.tools.line_survey.LineSurvey">
+      <path
+         id="path1968"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 354.359375 -585.621094 C 354.359375 -583.023438 356.460938 -580.921875 359.058594 -580.921875 L 528.101563 -580.921875 C 530.699219 -580.921875 532.800781 -583.023438 532.800781 -585.621094 L 532.800781 -604.421875 C 532.800781 -607.015625 530.699219 -609.121094 528.101563 -609.121094 L 359.058594 -609.121094 C 356.460938 -609.121094 354.359375 -607.015625 354.359375 -604.421875 Z M 354.359375 -585.621094 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g1974">
@@ -5594,11 +5634,16 @@
        d="M 315.71875 -359.878906 L 340.558594 -359.878906 L 340.558594 -387.238281 L 315.71875 -387.238281 Z M 315.71875 -359.878906 "
        transform="matrix(1,0,0,-1,0,0)"
        id="path2278" />
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 226.320313 -364.578125 C 226.320313 -361.980469 228.421875 -359.878906 231.019531 -359.878906 L 368.019531 -359.878906 C 370.621094 -359.878906 372.71875 -361.980469 372.71875 -364.578125 L 372.71875 -383.378906 C 372.71875 -385.980469 370.621094 -388.078125 368.019531 -388.078125 L 231.019531 -388.078125 C 228.421875 -388.078125 226.320313 -385.980469 226.320313 -383.378906 Z M 226.320313 -364.578125 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path2280" />
+    <a
+       id="a2713"
+       target=""
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.lbl.broadening.html#radis.lbl.broadening.voigt_lineshape">
+      <path
+         id="path2280"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 226.320313 -364.578125 C 226.320313 -361.980469 228.421875 -359.878906 231.019531 -359.878906 L 368.019531 -359.878906 C 370.621094 -359.878906 372.71875 -361.980469 372.71875 -364.578125 L 372.71875 -383.378906 C 372.71875 -385.980469 370.621094 -388.078125 368.019531 -388.078125 L 231.019531 -388.078125 C 228.421875 -388.078125 226.320313 -385.980469 226.320313 -383.378906 Z M 226.320313 -364.578125 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g2284">
@@ -5637,50 +5682,53 @@
          y="379.510055"
          id="use2294" />
     </g>
-    <g
-       style="fill:rgb(0%,0%,0%);fill-opacity:1;"
-       id="g2314">
-      <use
-         xlink:href="#glyph0-33"
-         x="281.619597"
-         y="379.510055"
-         id="use2298" />
-      <use
-         xlink:href="#glyph0-15"
-         x="292.664397"
-         y="379.510055"
-         id="use2300" />
-      <use
-         xlink:href="#glyph0-21"
-         x="298.779597"
-         y="379.510055"
-         id="use2302" />
-      <use
-         xlink:href="#glyph0-16"
-         x="306.579597"
-         y="379.510055"
-         id="use2304" />
-      <use
-         xlink:href="#glyph0-26"
-         x="314.379597"
-         y="379.510055"
-         id="use2306" />
-      <use
-         xlink:href="#glyph0-9"
-         x="323.053197"
-         y="379.510055"
-         id="use2308" />
-      <use
-         xlink:href="#glyph0-8"
-         x="329.979597"
-         y="379.510055"
-         id="use2310" />
-      <use
-         xlink:href="#glyph0-7"
-         x="338.653197"
-         y="379.510055"
-         id="use2312" />
-    </g>
+    <a
+       id="a6421">
+      <g
+         id="g2314"
+         style="fill:rgb(0%,0%,0%);fill-opacity:1;">
+        <use
+           id="use2298"
+           y="379.510055"
+           x="281.619597"
+           xlink:href="#glyph0-33" />
+        <use
+           id="use2300"
+           y="379.510055"
+           x="292.664397"
+           xlink:href="#glyph0-15" />
+        <use
+           id="use2302"
+           y="379.510055"
+           x="298.779597"
+           xlink:href="#glyph0-21" />
+        <use
+           id="use2304"
+           y="379.510055"
+           x="306.579597"
+           xlink:href="#glyph0-16" />
+        <use
+           id="use2306"
+           y="379.510055"
+           x="314.379597"
+           xlink:href="#glyph0-26" />
+        <use
+           id="use2308"
+           y="379.510055"
+           x="323.053197"
+           xlink:href="#glyph0-9" />
+        <use
+           id="use2310"
+           y="379.510055"
+           x="329.979597"
+           xlink:href="#glyph0-8" />
+        <use
+           id="use2312"
+           y="379.510055"
+           x="338.653197"
+           xlink:href="#glyph0-7" />
+      </g>
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g2318">
@@ -5838,11 +5886,15 @@
        style=" stroke:none;fill-rule:evenodd;fill:rgb(26.66626%,44.7052%,76.861572%);fill-opacity:1;"
        d="M 409.679688 161.640625 L 419.398438 161.640625 L 419.398438 189.238281 L 409.679688 189.238281 Z M 409.679688 161.640625 "
        id="path2382" />
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 354.480469 -165.960938 C 354.480469 -163.378906 356.578125 -161.28125 359.160156 -161.28125 L 508.199219 -161.28125 C 510.78125 -161.28125 512.878906 -163.378906 512.878906 -165.960938 L 512.878906 -184.679688 C 512.878906 -187.261719 510.78125 -189.359375 508.199219 -189.359375 L 359.160156 -189.359375 C 356.578125 -189.359375 354.480469 -187.261719 354.480469 -184.679688 Z M 354.480469 -165.960938 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path2384" />
+    <a
+       id="a6477"
+       xlink:href="file:///D:/GitHub/radis/docs/_build/html/source/radis.lbl.loader.html">
+      <path
+         id="path2384"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 354.480469 -165.960938 C 354.480469 -163.378906 356.578125 -161.28125 359.160156 -161.28125 L 508.199219 -161.28125 C 510.78125 -161.28125 512.878906 -163.378906 512.878906 -165.960938 L 512.878906 -184.679688 C 512.878906 -187.261719 510.78125 -189.359375 508.199219 -189.359375 L 359.160156 -189.359375 C 356.578125 -189.359375 354.480469 -187.261719 354.480469 -184.679688 Z M 354.480469 -165.960938 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g2388">
@@ -5963,11 +6015,15 @@
        d="M 746.761719 -220.558594 L 892.921875 -220.558594 L 892.921875 -237.960938 L 746.761719 -237.960938 Z M 746.761719 -220.558594 "
        transform="matrix(1,0,0,-1,0,0)"
        id="path2434" />
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 743.878906 -198.820313 C 743.878906 -192.339844 749.140625 -187.078125 755.621094 -187.078125 L 881.179688 -187.078125 C 887.660156 -187.078125 892.921875 -192.339844 892.921875 -198.820313 L 892.921875 -245.78125 C 892.921875 -252.261719 887.660156 -257.519531 881.179688 -257.519531 L 755.621094 -257.519531 C 749.140625 -257.519531 743.878906 -252.261719 743.878906 -245.78125 Z M 743.878906 -198.820313 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path2436" />
+    <a
+       id="a6447"
+       xlink:href="file:///D:/GitHub/radis/docs/_build/html/lbl/lbl.html#line-databases">
+      <path
+         transform="matrix(1,0,0,-1,0,0)"
+         d="m 743.87891,-198.82031 c 0,6.48047 5.26171,11.74219 11.74218,11.74219 h 125.5586 c 6.48047,0 11.74218,-5.26172 11.74218,-11.74219 v -46.96094 c 0,-6.48047 -5.26171,-11.73828 -11.74218,-11.73828 h -125.5586 c -6.48047,0 -11.74218,5.25781 -11.74218,11.73828 z m 0,0"
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
+         id="path2436" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g2442">
@@ -6706,15 +6762,19 @@
          y="89.450058"
          id="use2748" />
     </g>
-    <g
-       style="fill:rgb(100%,0%,0%);fill-opacity:1;"
-       id="g2754">
-      <use
-         xlink:href="#glyph7-4"
-         x="869.864192"
-         y="89.450058"
-         id="use2752" />
-    </g>
+    <a
+       id="a6442"
+       xlink:href="https://radis.readthedocs.io/en/latest/examples/examples.html#get-rovibrational-energies">
+      <g
+         id="g2754"
+         style="fill:rgb(100%,0%,0%);fill-opacity:1;">
+        <use
+           id="use2752"
+           y="89.450058"
+           x="869.864192"
+           xlink:href="#glyph7-4" />
+      </g>
+    </a>
     <g
        style="fill:rgb(100%,0%,0%);fill-opacity:1;"
        id="g2760">
@@ -6799,11 +6859,15 @@
        d="M 546.480469 -539.160156 L 569.160156 -539.160156 L 569.160156 -550.078125 L 546.480469 -550.078125 Z M 546.480469 -539.160156 "
        transform="matrix(1,0,0,-1,0,0)"
        id="path2790" />
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 545.878906 -533.660156 C 545.878906 -531.058594 547.980469 -528.960938 550.578125 -528.960938 L 693.578125 -528.960938 C 696.179688 -528.960938 698.28125 -531.058594 698.28125 -533.660156 L 698.28125 -552.460938 C 698.28125 -555.054688 696.179688 -557.160156 693.578125 -557.160156 L 550.578125 -557.160156 C 547.980469 -557.160156 545.878906 -555.054688 545.878906 -552.460938 Z M 545.878906 -533.660156 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path2792" />
+    <a
+       id="a6462"
+       xlink:href="https://radis.readthedocs.io/en/latest/los/los.html">
+      <path
+         id="path2792"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 545.878906 -533.660156 C 545.878906 -531.058594 547.980469 -528.960938 550.578125 -528.960938 L 693.578125 -528.960938 C 696.179688 -528.960938 698.28125 -531.058594 698.28125 -533.660156 L 698.28125 -552.460938 C 698.28125 -555.054688 696.179688 -557.160156 693.578125 -557.160156 L 550.578125 -557.160156 C 547.980469 -557.160156 545.878906 -555.054688 545.878906 -552.460938 Z M 545.878906 -533.660156 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g2796">
@@ -6948,11 +7012,14 @@
        d="M 533.519531 -360 L 558.238281 -360 L 558.238281 -387.839844 L 533.519531 -387.839844 Z M 533.519531 -360 "
        transform="matrix(1,0,0,-1,0,0)"
        id="path2854" />
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 497.160156 -364.578125 C 497.160156 -361.980469 499.261719 -359.878906 501.859375 -359.878906 L 653.261719 -359.878906 C 655.859375 -359.878906 657.960938 -361.980469 657.960938 -364.578125 L 657.960938 -383.378906 C 657.960938 -385.980469 655.859375 -388.078125 653.261719 -388.078125 L 501.859375 -388.078125 C 499.261719 -388.078125 497.160156 -385.980469 497.160156 -383.378906 Z M 497.160156 -364.578125 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path2856" />
+    <a
+       id="a6459">
+      <path
+         id="path2856"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 497.160156 -364.578125 C 497.160156 -361.980469 499.261719 -359.878906 501.859375 -359.878906 L 653.261719 -359.878906 C 655.859375 -359.878906 657.960938 -361.980469 657.960938 -364.578125 L 657.960938 -383.378906 C 657.960938 -385.980469 655.859375 -388.078125 653.261719 -388.078125 L 501.859375 -388.078125 C 499.261719 -388.078125 497.160156 -385.980469 497.160156 -383.378906 Z M 497.160156 -364.578125 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g2860">
@@ -7085,11 +7152,15 @@
        style=" stroke:none;fill-rule:evenodd;fill:rgb(26.66626%,44.7052%,76.861572%);fill-opacity:1;"
        d="M 309 576.71875 L 330 576.71875 L 330 589.558594 L 309 589.558594 Z M 309 576.71875 "
        id="path2914" />
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 178.800781 -543.421875 C 178.800781 -536.160156 184.679688 -530.28125 191.941406 -530.28125 L 317.101563 -530.28125 C 324.359375 -530.28125 330.238281 -536.160156 330.238281 -543.421875 L 330.238281 -595.980469 C 330.238281 -603.238281 324.359375 -609.121094 317.101563 -609.121094 L 191.941406 -609.121094 C 184.679688 -609.121094 178.800781 -603.238281 178.800781 -595.980469 Z M 178.800781 -543.421875 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path2916" />
+    <a
+       id="a6468"
+       xlink:href="https://radis.readthedocs.io/en/latest/spectrum/spectrum.html">
+      <path
+         id="path2916"
+         transform="matrix(1,0,0,-1,0,0)"
+         d="M 178.800781 -543.421875 C 178.800781 -536.160156 184.679688 -530.28125 191.941406 -530.28125 L 317.101563 -530.28125 C 324.359375 -530.28125 330.238281 -536.160156 330.238281 -543.421875 L 330.238281 -595.980469 C 330.238281 -603.238281 324.359375 -609.121094 317.101563 -609.121094 L 191.941406 -609.121094 C 184.679688 -609.121094 178.800781 -603.238281 178.800781 -595.980469 Z M 178.800781 -543.421875 "
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;" />
+    </a>
     <g
        style="fill:rgb(0%,0%,0%);fill-opacity:1;"
        id="g2920">
@@ -7852,11 +7923,15 @@
        style=" stroke:none;fill-rule:evenodd;fill:rgb(26.66626%,44.7052%,76.861572%);fill-opacity:1;"
        d="M 600.121094 86.761719 L 613.078125 86.761719 L 613.078125 100.320313 L 600.121094 100.320313 Z M 600.121094 86.761719 "
        id="path3242" />
-    <path
-       style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
-       d="M 529.921875 -77.300781 C 529.921875 -74.699219 532.019531 -72.601563 534.621094 -72.601563 L 706.421875 -72.601563 C 709.019531 -72.601563 711.121094 -74.699219 711.121094 -77.300781 L 711.121094 -96.101563 C 711.121094 -98.699219 709.019531 -100.800781 706.421875 -100.800781 L 534.621094 -100.800781 C 532.019531 -100.800781 529.921875 -98.699219 529.921875 -96.101563 Z M 529.921875 -77.300781 "
-       transform="matrix(1,0,0,-1,0,0)"
-       id="path3244" />
+    <a
+       id="a6439"
+       xlink:href="https://radis.readthedocs.io/en/latest/references/references.html#spectroscopic-constants">
+      <path
+         d="m 529.92187,-77.300781 c 0,2.601562 2.09766,4.699218 4.69922,4.699218 h 171.80078 c 2.59766,0 4.69922,-2.097656 4.69922,-4.699218 v -18.800782 c 0,-2.597656 -2.10156,-4.699217 -4.69922,-4.699217 H 534.62109 c -2.60156,0 -4.69922,2.101561 -4.69922,4.699217 z m 0,0"
+         style="fill-rule:evenodd;fill:rgb(100%,100%,100%);fill-opacity:1;stroke-width:0.96;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-miterlimit:10;"
+         transform="matrix(1,0,0,-1,0,0)"
+         id="path3244" />
+    </a>
     <g
        style="fill:rgb(100%,0%,0%);fill-opacity:1;"
        id="g3250">
@@ -8208,10 +8283,14 @@
          y="498.425239"
          id="use3394" />
     </g>
-    <path
-       style="fill:none;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(79.998779%,79.998779%,79.998779%);stroke-opacity:1;stroke-dasharray:4.5,4.5;stroke-miterlimit:4;"
-       d="M 25.261719 100.199219 L 157.890625 100.199219 L 157.890625 615.539063 L 25.261719 615.539063 Z M 25.261719 100.199219 "
-       id="path3398" />
+    <a
+       id="a6486"
+       xlink:href="https://radis.readthedocs.io/en/latest/source/radis.lbl.calc.html#radis.lbl.calc.calc_spectrum">
+      <path
+         id="path3398"
+         d="M 25.261719 100.199219 L 157.890625 100.199219 L 157.890625 615.539063 L 25.261719 615.539063 Z M 25.261719 100.199219 "
+         style="fill:none;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(79.998779%,79.998779%,79.998779%);stroke-opacity:1;stroke-dasharray:4.5,4.5;stroke-miterlimit:4;" />
+    </a>
     <path
        style="fill:none;stroke-width:0.95653;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(79.998779%,79.998779%,79.998779%);stroke-opacity:1;stroke-dasharray:2.869589,2.869589;stroke-miterlimit:4;"
        d="M 733.199219 295.761719 L 902.101563 295.761719 L 902.101563 460.320313 L 733.199219 460.320313 Z M 733.199219 295.761719 "
@@ -8228,10 +8307,14 @@
        style="fill:none;stroke-width:0.45;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-dasharray:1.8,1.8;stroke-miterlimit:4;"
        d="M 538.382813 522.792969 L 902.089844 522.792969 L 902.089844 567.242188 L 538.382813 567.242188 Z M 538.382813 522.792969 "
        id="path3406" />
-    <path
-       style="fill:none;stroke-width:0.45;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-dasharray:1.8,1.8;stroke-miterlimit:4;"
-       d="M 28.003906 40.671875 L 161.632813 40.671875 C 164.867188 40.671875 167.46875 43.273438 167.46875 46.507813 L 167.46875 82.875 C 167.46875 86.105469 164.867188 88.710938 161.632813 88.710938 L 28.003906 88.710938 C 24.769531 88.710938 22.167969 86.105469 22.167969 82.875 L 22.167969 46.507813 C 22.167969 43.273438 24.769531 40.671875 28.003906 40.671875 Z M 28.003906 40.671875 "
-       id="path3408" />
+    <a
+       id="a6489"
+       xlink:href="https://radis.github.io/">
+      <path
+         id="path3408"
+         d="M 28.003906 40.671875 L 161.632813 40.671875 C 164.867188 40.671875 167.46875 43.273438 167.46875 46.507813 L 167.46875 82.875 C 167.46875 86.105469 164.867188 88.710938 161.632813 88.710938 L 28.003906 88.710938 C 24.769531 88.710938 22.167969 86.105469 22.167969 82.875 L 22.167969 46.507813 C 22.167969 43.273438 24.769531 40.671875 28.003906 40.671875 Z M 28.003906 40.671875 "
+         style="fill:none;stroke-width:0.45;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:1;stroke-dasharray:1.8,1.8;stroke-miterlimit:4;" />
+    </a>
     <path
        style=" stroke:none;fill-rule:nonzero;fill:rgb(99.215698%,99.215698%,99.215698%);fill-opacity:1;"
        d="M 30.253906 63.28125 L 30.253906 45 L 66.820313 45 L 66.820313 81.5625 L 30.253906 81.5625 Z M 30.253906 63.28125 "

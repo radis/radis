@@ -94,12 +94,13 @@ class Spectrum(object):
     Parameters
     ----------
     quantities: dict of tuples   {'quantity':(wavenum, quantity)}
-        where quantities are Spectral arrays (absorbance, radiance, etc.)
-        and wavenum is in cm-1
+        where quantities are spectral quantities (absorbance, radiance, etc.)
+        and wavenum is in :math:`cm^{-1}`
         example::
 
-        >>> {'radiance_noslit:':(wavenum, radiance_noslit),
-             'absorbance':(wavenum, absorbance)}
+        {'radiance_noslit':(wavenum, radiance_noslit),
+        'absorbance':(wavenum, absorbance)}
+
     units: dict
         units for quantities
 
@@ -2617,9 +2618,10 @@ class Spectrum(object):
             :meth:`~radis.spectrum.spectrum.Spectrum.line_survey` ability,
             and :meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`
             (but it saves tons of memory!)
-        if_exists_then: 'increment', 'replace', 'error'
+        if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
             what to do if file already exists. If increment an incremental digit
-            is added. If replace file is replaced (yeah). If error (or anything else)
+            is added. If replace file is replaced (yeah). If ``'ignore'``
+            no file is created. If error (or anything else)
             an error is raised. Default `error`
 
 
@@ -4005,7 +4007,7 @@ def is_spectrum(a):
 
     Returns
     -------
-    True if a is a Spectrum object
+    bool: True if a is a Spectrum object
 
     Notes
     -----
@@ -4013,11 +4015,11 @@ def is_spectrum(a):
     class gets imported twice (when databases are involved, mostly), and a purely
     isinstance() comparison fails
     """
-
-    #    return isinstance(a, Spectrum)
+    return isinstance(a, Spectrum)
     # removed: was used initially in the early RADIS development phase. Spectrum
-    # object would not be recognized if the library was modified
-    return isinstance(a, Spectrum) or repr(a.__class__) == repr(Spectrum)
+    # object would not be recognized if the library was modified. The following
+    # line is more flexible :
+    # return isinstance(a, Spectrum) or repr(a.__class__) == repr(Spectrum)
 
 
 # %% Test functions

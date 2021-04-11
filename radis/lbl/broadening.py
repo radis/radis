@@ -43,7 +43,7 @@ convolve them, apply them on all calculated range)
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_noneq`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._find_weak_lines`
-- :py:meth:`radis.lbl.broadening.BroadenFactory._calculate_pseudo_continuum`
+- :py:meth:`radis.lbl.broadening.BroadenFactory.calculate_pseudo_continuum`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._add_pseudo_continuum`
 
 
@@ -868,12 +868,25 @@ class BroadenFactory(BaseFactory):
     def _check_accuracy(self, df, wstep):
         """Check there are enough gridpoints per line.
 
+        AccuracyWarning:
+            if less than `3` grid points per spectral line
+        AccuracyError:
+            if less than `1` grid point per spectral line
+
+        .. note::
+            Warning and Error treshold reduced from `5, 2`  to `3, 1` in 0.9.29,
+            because some outlier lines with very small lineshapes would systematically
+            raise an error. Suggestion : ignore outlier lines (1% smallest?) in normal/performance
+            mode.
+
         Raises
         ------
         AccuracyWarning or AccuracyError.
 
         Examples
         --------
+
+        (with thresholds of `5,2`):
 
         ::
 
@@ -898,21 +911,25 @@ class BroadenFactory(BaseFactory):
             # but it's quite expensive to compute
             min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
 
-        WARN_THRESHOLD = 5
-        ERROR_TRESHOLD = 2
+        WARN_THRESHOLD = 3
+        ERROR_TRESHOLD = 1
         if wstep > min_width / ERROR_TRESHOLD:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
                 + f"wstep to (at least) below {min_width/ERROR_TRESHOLD:.2g} cm⁻¹ "
-                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹",
+                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                + "You can also ignore by setting `warnings={'AccuracyError':'ignore'}` "
+                + "(if you know what you're doing!)",
                 "AccuracyError",
             )
         elif wstep > min_width / WARN_THRESHOLD:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
-                + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹",
+                + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                + "You can also ignore by setting `warnings={'AccuracyWarning':'ignore'}` "
+                + "(if you know what you're doing!)",
                 "AccuracyWarning",
             )
         else:
@@ -2423,14 +2440,13 @@ class BroadenFactory(BaseFactory):
 
         return
 
-    def _calculate_pseudo_continuum(self, noneq=False):
+    def calculate_pseudo_continuum(self, noneq=False):
         """Find weak lines, add them in pseudo-continuum  (note that pseudo-
-        continuum by RADIS definition is actually more of sum of low-resolution
+        continuum by RADIS definition is actually more a sum of low-resolution
         lines)
 
         Parameters
         ----------
-
         noneq: bool
             if ``True``, also returns the emisscoeff pseudo continuum (for noneq
             cases). Default ``False``
@@ -2438,7 +2454,6 @@ class BroadenFactory(BaseFactory):
 
         Returns
         -------
-
         k_continuum: numpy array    (1/(#.cm-2))
             abscoeff semi-continuum  on wavenumber space
         j_continuum: numpy array
@@ -2470,8 +2485,8 @@ class BroadenFactory(BaseFactory):
 
         .. [1] `RADIS User Guide, RADIS Paper`
 
-        # TODO: export continuum in Spectrum ? (under q['continuum'] ? )
         """
+        # TODO: export continuum in Spectrum ? (under q['continuum'] ? )
 
         if self.params.pseudo_continuum_threshold > 0:
 
@@ -2616,36 +2631,30 @@ class BroadenFactory(BaseFactory):
 
 def project_lines_on_grid(df, wavenumber, wstep):
     """Quickly sums all lines on wavespace grid as rectangles of HWHM
-    corresponding to hwhm_voigt and a spectral absorption coefficient value so
+    corresponding to ``hwhm_voigt`` and a spectral absorption coefficient value so
     that linestrength is conserved.
 
-    i.e. profiles are approximated as a rectangle of width Alpha*FWHM_Voigt,
-    and same linestrength.
+    i.e. profiles are approximated as a rectangle of width :math:`\\alpha \\cdot FWHM_{Voigt}`,
+    and with the same linestrength.
 
     Parameters
     ----------
-
     df: pandas Dataframe
         Contains ``shiftwav`` (wavenumbers) and ``S`` (linestrengths) and ``hwhm_voigt``
         (Voigt HWHM) size ``N`` (number of lines)
-
     wavenumber: np.array
         spectral grid. Size ``W``. Expected to be regular
-
     wstep: float  (cm-1)
         wavenumber step
 
     Returns
     -------
-
     k_rough_spectrum: np.array
         spectral absorption coefficient for the waverange ``wavenumber``,
         calculated by assuming a rectangular profile for each line. Size ``W``
-
     S_density_on_grid
         average spectral linestrength intensity of each line (abscoeff ~k), assuming
         rectangular profile. size ``N``
-
     line2grid_projection
         closest index of the center of each line in ``df`` on the spectral grid
         ``wavenumber``. Size ``N``
@@ -2756,47 +2765,38 @@ def project_lines_on_grid(df, wavenumber, wstep):
 
 def project_lines_on_grid_noneq(df, wavenumber, wstep):
     """Quickly sums all lines on wavespace grid as rectangles of HWHM
-    corresponding to hwhm_voigt and a spectral absorption coefficient value so
+    corresponding to ``hwhm_voigt`` and a spectral absorption coefficient value so
     that linestrength is conserved.
 
-    i.e. profiles are approximated as a rectangle of width Alpha*FWHM_Voigt,
-    and same linestrength.
+    i.e. profiles are approximated as a rectangle of width :math:`\\alpha \\cdot FWHM_{Voigt}`,
+    and with the same linestrength.
 
     Parameters
     ----------
-
     df: pandas Dataframe
         Contains ``shiftwav`` (wavenumbers) and ``S`` (linestrengths) and ``hwhm_voigt``
         (Voigt HWHM) size ``N`` (number of lines)
-
     wavenumber: np.array
         spectral grid. Size ``W``. Expected to be regular
-
     wstep: float  (cm-1)
         wavenumber step
-
     quantity: 'S' or 'Ei'
         use 'S' for Linestrength, 'Ei' for emission integral. Default 'S'
 
     Returns
     -------
-
     k_rough_spectrum: np.array
         spectral absorption coefficient for the waverange ``wavenumber``,
         calculated by assuming a rectangular profile for each line. Size ``W``
-
     j_rough_spectrum: np.array
         spectral emission coefficient for the waverange ``wavenumber``,
         calculated by assuming a rectangular profile for each line. Size ``W``
-
     S_density_on_grid
         average spectral linestrength intensity of each line (abscoeff ~k), assuming
         rectangular profile. size ``N``
-
     Ei_density_on_grid
         average spectral emission intensity of each line (emisscoeff ~j), assuming
         rectangular profile. size ``N``
-
     line2grid_projection
         closest index of the center of each line in ``df`` on the spectral grid
         ``wavenumber``. Size ``N``

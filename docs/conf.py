@@ -62,6 +62,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     "sphinxcontrib.apidoc",
+    "sphinx.ext.linkcode",
 ]
 
 sphinx_gallery_conf = {
@@ -77,6 +78,17 @@ sphinx_gallery_conf = {
     # Modules for which function/class level galleries are created.
     "doc_module": ("radis"),
 }
+
+
+def linkcode_resolve(domain, info):
+    """ for sphinx.ext.linkcode"""
+    if domain != "py":
+        return None
+    if not info["module"]:
+        return None
+    filename = info["module"].replace(".", "/")
+    return "https://github.com/radis/radis/tree/develop/%s.py" % filename
+
 
 # used to mini-galleries : https://sphinx-gallery.github.io/stable/configuration.html#add-mini-galleries-for-api-documentation
 autosummary_generate = True

@@ -503,6 +503,8 @@ def test_broadening_warnings(*args, **kwargs):
 
     Inspired by https://github.com/radis/radis/issues/186
 
+    Test :py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
+
     Examples
     --------
 
@@ -526,7 +528,7 @@ def test_broadening_warnings(*args, **kwargs):
 
     # Try with low resolution, expect error :
     with pytest.raises(AccuracyError):
-        sf = SpectrumFactory(**conditions, wstep=0.01)
+        sf = SpectrumFactory(**conditions, wstep=0.02)
         sf.fetch_databank("hitran")
 
         sf.eq_spectrum(
@@ -536,7 +538,7 @@ def test_broadening_warnings(*args, **kwargs):
         )
 
     with pytest.warns(AccuracyWarning):
-        sf = SpectrumFactory(**conditions, wstep=0.00055)
+        sf = SpectrumFactory(**conditions, wstep=0.0009)
         sf.fetch_databank("hitran")
 
         sf.eq_spectrum(
