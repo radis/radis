@@ -157,7 +157,7 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
 
     # we check the loaded spectrum contains less information than the calculated one
     assert not s == s_bis
-    assert s_bis.get_vars() == ["abscoeff"]  # only this spectral quantity was stored
+    assert s_bis.get_vars() == ["abscoeff"]  # only this Spectral arrays was stored
     assert s_bis.lines is None
     assert s_bis.conditions is not None  # we kept the metadata
     # now we check if it works

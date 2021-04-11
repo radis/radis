@@ -28,14 +28,14 @@ Play with baselines:
 - :py:func:`~radis.spectrum.operations.get_baseline`
 - :py:func:`~radis.spectrum.operations.sub_baseline`
 
-Functions to discard all but one spectral quantity:
+Functions to discard all but one Spectral arrays:
 
 - :py:func:`~radis.spectrum.operations.Transmittance`
 - :py:func:`~radis.spectrum.operations.Transmittance_noslit`
 - :py:func:`~radis.spectrum.operations.Radiance`
 - :py:func:`~radis.spectrum.operations.Radiance_noslit`
 
-Keeps all spectral arrays, but make emission equal to 0 (useful when
+Keeps all Spectral arrays, but make emission equal to 0 (useful when
 calculating contributions of line of sight slabs):
 
 - :py:func:`~radis.spectrum.operations.PerfectAbsorber`
@@ -454,7 +454,7 @@ def crop(s, wmin=None, wmax=None, wunit=None, inplace=False):
 
 
 def _get_unique_var(s, var, inplace):
-    """Returns the unique spectral quantity in the Spectrum ``s``. If there are more,
+    """Returns the unique Spectral arrays in the Spectrum ``s``. If there are more,
     raises an error.
     """
     # If var is undefined, get it if there is no ambiguity
@@ -463,7 +463,7 @@ def _get_unique_var(s, var, inplace):
     # If inplace, assert there is only one var
     if inplace and len(s.get_vars()) > 1:
         raise ValueError(
-            "Cant modify inplace one spectral quantity of a Spectrum "
+            "Cant modify inplace one Spectral arrays of a Spectrum "
             + "that contains several ({0}). Use 'inplace=False'".format(s.get_vars())
         )
     return var
@@ -766,7 +766,7 @@ def add_spectra(s1, s2, var=None, force=False):
         Spectrum you want to substract
     var: str
         quantity to manipulate: 'radiance', 'transmittance', ... If ``None``,
-        get the unique spectral quantity of ``s1``, or the unique spectral
+        get the unique Spectral arrays of ``s1``, or the unique spectral
         quantity of ``s2``, or raises an error if there is any ambiguity
 
     Returns
@@ -838,7 +838,7 @@ def substract_spectra(s1, s2, var=None):
         Spectrum you want to substract
     var: str
         quantity to manipulate: 'radiance', 'transmittance', ... If ``None``,
-        get the unique spectral quantity of ``s1``, or the unique spectral
+        get the unique Spectral arrays of ``s1``, or the unique spectral
         quantity of ``s2``, or raises an error if there is any ambiguity
 
     Returns
@@ -907,7 +907,7 @@ def concat_spectra(s1, s2, var=None):
         Spectrum you want to concatenate
     var: str
         quantity to manipulate: 'radiance', 'transmittance', ... If ``None``,
-        get the unique spectral quantity of ``s1``, or the unique spectral
+        get the unique Spectral arrays of ``s1``, or the unique spectral
         quantity of ``s2``, or raises an error if there is any ambiguity
 
     Notes
@@ -1125,8 +1125,8 @@ def get_baseline(s, var="radiance", Iunit=None):
         Spectrum which needs a baseline
 
     var: str
-        on which spectral quantity to read the baseline. Default ``'radiance'``.
-        See :py:data:`~radis.spectrum.utils.SPECTRAL_QUANTITIES`
+        on which Spectral arrays to read the baseline. Default ``'radiance'``.
+        See :py:data:`~radis.spectrum.utils.Spectral_arrays`
 
     Returns
     -------

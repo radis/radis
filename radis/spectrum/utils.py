@@ -27,9 +27,9 @@ WAVESPACE = ["nm", "nm_vac", "cm-1"]
 - ``'nm_vac'``: wavelength (in vacuum)
 - ``'cm-1'``: wavenumber"""
 
-# spectral arrays
+# Spectral arrays
 CONVOLUTED_QUANTITIES = ["radiance", "transmittance", "emissivity"]
-"""list: name of spectral arrays after convolution with slit function"""
+"""list: name of Spectral arrays after convolution with slit function"""
 NON_CONVOLUTED_QUANTITIES = [
     "radiance_noslit",
     "transmittance_noslit",
@@ -40,14 +40,14 @@ NON_CONVOLUTED_QUANTITIES = [
     "abscoeff_continuum",
     "emissivity_noslit",
 ]
-"""list: name of spectral arrays not convolved with slit function
+"""list: name of Spectral arrays not convolved with slit function
 
-See :ref:`the description of spectral arrays <label_spectral_quantities>`"""
-SPECTRAL_QUANTITIES = CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
-"""list: all spectral arrays defined in a :class:`~radis.spectrum.spectrum.Spectrum`
+See :ref:`the description of Spectral arrays <label_Spectral_arrays>`"""
+Spectral_arrays = CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
+"""list: all Spectral arrays defined in a :class:`~radis.spectrum.spectrum.Spectrum`
 object.
 
-See :ref:`the description of spectral arrays <label_spectral_quantities>`"""
+See :ref:`the description of Spectral arrays <label_Spectral_arrays>`"""
 
 # note: it is hardcoded (and needed) that quantities that are convoluted are
 # generated from a non convoluted quantity with the same name + _noslit
@@ -360,7 +360,7 @@ def has_nan(s):
     Note
     ----
 
-    ``print(s)`` will also show which spectral arrays have ````nan.
+    ``print(s)`` will also show which Spectral arrays have ````nan.
 
     """
 

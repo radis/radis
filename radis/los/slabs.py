@@ -554,7 +554,7 @@ def MergeSlabs(*slabs, **kwargs):
         for f in ['spec1.spec', 'spec2.spec', ...]:
             spectra.append(load_spec(f))
         s = MergeSlabs(*spectra, resample='full', out='transparent')
-        s.update()   # Generate missing spectral arrays
+        s.update()   # Generate missing Spectral arrays
         s.plot()
 
     See Also
@@ -732,7 +732,7 @@ def MergeSlabs(*slabs, **kwargs):
                     + "Emissivity was not calculated"
                 )
 
-        # Add the rest of the spectral arrays afterwards:
+        # Add the rest of the Spectral arrays afterwards:
         s.update(
             [k for k in requested if k not in ["emisscoeff", "abscoeff"]],
             optically_thin=optically_thin,

@@ -65,7 +65,7 @@ def get_diff(
         2 spectra to compare.
 
     var: str
-        spectral quantity (ex: ``'radiance'``, ``'transmittance'``...)
+        Spectral arrays (ex: ``'radiance'``, ``'transmittance'``...)
 
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
@@ -148,7 +148,7 @@ def get_ratio(s1, s2, var, wunit="default", Iunit="default", resample=True):
         :py:class:`~radis.spectrum.spectrum.Spectrum`
 
     var: str
-        spectral quantity
+        Spectral arrays
 
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
@@ -216,7 +216,7 @@ def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
         :py:class:`~radis.spectrum.spectrum.Spectrum`
 
     var: str
-        spectral quantity
+        Spectral arrays
 
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
@@ -288,7 +288,7 @@ def get_residual(
         if not on the same range, ``s2`` is resampled on ``s1``.
 
     var: str
-        spectral quantity
+        Spectral arrays
 
     norm: 'L2', 'L1'
         which norm to use
@@ -403,7 +403,7 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
         :py:class:`~radis.spectrum.spectrum.Spectrum`
 
     var: str
-        spectral quantity
+        Spectral arrays
 
     Other Parameters
     ----------------
@@ -540,7 +540,7 @@ def plot_diff(
     s1, s2: Spectrum objects
 
     var: str, or None
-        spectral quantity to plot (ex: ``'abscoeff'``). If None,
+        Spectral arrays to plot (ex: ``'abscoeff'``). If None,
         plot the first one in the Spectrum from ``'radiance'``,
         ``'radiance_noslit'``, ``'transmittance'``, etc.
 
@@ -996,7 +996,7 @@ def averageDistance(s1, s2, var="radiance"):
         spectra to be compared
 
     var: str, optional
-        spectral quantity (ex: 'radiance', 'transmittance'...)
+        Spectral arrays (ex: 'radiance', 'transmittance'...)
 
     Returns
     -------
@@ -1051,7 +1051,7 @@ def compare_spectra(
         another Spectrum to compare with
 
     spectra_only: boolean, or str
-        if ``True``, only compares spectral arrays (in the same waveunit)
+        if ``True``, only compares Spectral arrays (in the same waveunit)
         and not lines or conditions. If str, compare a particular quantity
         name. If False, compare everything (including lines and conditions
         and populations). Default ``False``
@@ -1065,10 +1065,10 @@ def compare_spectra(
         of first Spectrum is taken
 
     rtol: float
-        relative difference to use for spectral arrays comparison
+        relative difference to use for Spectral arrays comparison
 
     ignore_nan: boolean
-        if ``True``, nans are ignored when comparing spectral arrays
+        if ``True``, nans are ignored when comparing Spectral arrays
 
     ignore_outliers: boolean, or float
         if not False, outliers are discarded. i.e, output is determined by::
@@ -1117,13 +1117,13 @@ def compare_spectra(
     if isinstance(spectra_only, str):  # case where we compare all quantities
         if not spectra_only in first.get_vars():
             raise ValueError(
-                "{0} is not a spectral quantity in our Spectrum ({1})".format(
+                "{0} is not a Spectral arrays in our Spectrum ({1})".format(
                     spectra_only, first.get_vars()
                 )
             )
         if not spectra_only in other.get_vars():
             raise ValueError(
-                "{0} is not a spectral quantity in the other Spectrum ({1})".format(
+                "{0} is not a Spectral arrays in the other Spectrum ({1})".format(
                     spectra_only, other.get_vars()
                 )
             )
@@ -1189,7 +1189,7 @@ def compare_spectra(
         return out
 
     def _compare_variables(I, Ie):
-        """Compare spectral arrays I and Ie."""
+        """Compare Spectral arrays I and Ie."""
 
         if ignore_nan:
             b = ~(np.isnan(I) + np.isnan(Ie))

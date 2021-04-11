@@ -158,7 +158,7 @@ Load a Spectrum object ::
     >>> Out:
 
         Spectrum Name:  CO_Tgas1500K_mole_fraction0.5.spec
-    spectral arrays
+    Spectral arrays
     ----------------------------------------
        abscoeff 	(37,870 points)
     Populations Stored

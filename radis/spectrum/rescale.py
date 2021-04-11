@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Functions to update :class:`~radis.spectrum.spectrum.Spectrum` objects with
-new spectral arrays that can be derived from existing ones, or rescale
+new Spectral arrays that can be derived from existing ones, or rescale
 path_length or mole_fraction, or add overpopulations.
 
 Most of these are binded as methods to the Spectrum class, but stored here to
@@ -93,7 +93,7 @@ def _build_update_graph(
     -------
 
     derivation: dict
-        {spectral_quantity: [list of combinations of spectral arrays needed to calculate it]}
+        {Spectral_arrays: [list of combinations of Spectral arrays needed to calculate it]}
 
     Examples
     --------
@@ -248,7 +248,7 @@ def _build_update_graph(
 
 
 def get_redundant(spec):
-    """Returns a dictionary of all spectral arrays in spectrum and whether
+    """Returns a dictionary of all Spectral arrays in spectrum and whether
     they are redundant.
 
     Examples
@@ -262,7 +262,7 @@ def get_redundant(spec):
          'transmittance_noslit': True}
     """
 
-    # Get all spectral arrays that derive from existing ones
+    # Get all Spectral arrays that derive from existing ones
     derivation_graph = _build_update_graph(spec)
 
     activated = dict().fromkeys(ordered_keys, False)
@@ -494,7 +494,7 @@ def update(
     spec: Spectrum
 
     quantity: str, ``'same'``, ``'all'``, or list of str
-        name of the spectral quantity to recompute. If ``'same'``, only the quantities
+        name of the Spectral arrays to recompute. If ``'same'``, only the quantities
         in the Spectrum are recomputed. If ``'all'``, then all quantities that can
         be derived are recomputed. Default ``'all'``. See
         :py:data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
@@ -1389,7 +1389,7 @@ def _recalculate(
     :func:`~radis.spectrum.rescale.rescale_path_length`, :func:`~radis.spectrum.rescale.rescale_mole_fraction`
     and :func:`~radis.spectrum.rescale.update`.
 
-    Determines with spectral arrays should be recomputed, then scales
+    Determines with Spectral arrays should be recomputed, then scales
     them solving the Radiative Transfer Equation in the process.
 
 
@@ -1400,7 +1400,7 @@ def _recalculate(
         the Spectrum object to recompute
 
     quantity: str, ``'same'``, ``'all'``, or list of str
-        name of the spectral quantity to recompute. If ``'same'``, only the quantities
+        name of the Spectral arrays to recompute. If ``'same'``, only the quantities
         in the Spectrum are recomputed. If ``'all'``, then all quantities that can
         be derived are recomputed. See :py:data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
         and :py:data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`
@@ -1471,7 +1471,7 @@ def _recalculate(
     extra = []
     if greedy:
         # ... let's be greedy: recompute all possible quantities. The list of
-        # all spectral arrays is calculated by parsing a tree in get_reachable
+        # all Spectral arrays is calculated by parsing a tree in get_reachable
         reachable = get_reachable(spec)
         extra = [k for k, v in reachable.items() if v]
     wanted = set(wanted + extra)

@@ -216,7 +216,7 @@ def calc_spectrum(
     s: :class:`~radis.spectrum.spectrum.Spectrum`
         Output spectrum:
         - Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a
-          spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
+          Spectral arrays (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
         - Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
         directly.
         - See [1]_ to get an overview of all Spectrum methods

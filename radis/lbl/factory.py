@@ -720,7 +720,7 @@ class SpectrumFactory(BandFactory):
 
         if self.verbose >= 2:
             printg(
-                "Calculated other spectral arrays in {0:.2f}s".format(time() - t1)
+                "Calculated other Spectral arrays in {0:.2f}s".format(time() - t1)
             )
 
         # %% Export
@@ -755,7 +755,7 @@ class SpectrumFactory(BandFactory):
         # Get lines (intensities + populations)
         lines = self.get_lines()
 
-        # spectral arrays
+        # Spectral arrays
         quantities = {
             "abscoeff": (wavenumber, abscoeff),
             "absorbance": (wavenumber, absorbance),
@@ -1054,7 +1054,7 @@ class SpectrumFactory(BandFactory):
         )
         if verbose >= 2:
             printg(
-                "Calculated other spectral arrays in {0:.2f}s".format(time() - t1)
+                "Calculated other Spectral arrays in {0:.2f}s".format(time() - t1)
             )
 
         lines = self.get_lines()
@@ -1076,7 +1076,7 @@ class SpectrumFactory(BandFactory):
             }
         )
 
-        # spectral arrays
+        # Spectral arrays
         quantities = {
             "abscoeff": (wavenumber, abscoeff),
             "absorbance": (wavenumber, absorbance),
@@ -1362,7 +1362,7 @@ class SpectrumFactory(BandFactory):
 
         if self.verbose >= 2:
             printg(
-                "Calculated other spectral arrays in {0:.2f}s".format(time() - t1)
+                "Calculated other Spectral arrays in {0:.2f}s".format(time() - t1)
             )
 
         # Note: emissivity not defined under non equilibrium
@@ -1397,7 +1397,7 @@ class SpectrumFactory(BandFactory):
         # Get lines (intensities + populations)
         lines = self.get_lines()
 
-        # spectral arrays
+        # Spectral arrays
         quantities = {
             "abscoeff": (wavenumber, abscoeff),
             "absorbance": (wavenumber, absorbance),
