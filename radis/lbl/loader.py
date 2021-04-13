@@ -1321,8 +1321,8 @@ class DatabankLoader(object):
         # ... Parse all paths and read wildcards
         path_list = path
         new_paths = []
-        for path in path_list:
-            path = get_files_from_regex(path)
+        for pathrg in path_list:
+            path = get_files_from_regex(pathrg)
 
             # Ensure that `path` does not contain the cached dataset files in
             # case a wildcard input is given by the user. For instance, if the
@@ -1336,6 +1336,15 @@ class DatabankLoader(object):
                 if cache_file_name(fname) in path and cache_file_name(fname) != fname:
                     filtered_path.remove(cache_file_name(fname))
             new_paths += filtered_path
+
+            # Raise errors if no file / print which files were selected.
+            if len(filtered_path) == 0:
+                self.warn(f"Path `{pathrg}` match no file", "DatabaseNotFoundError")
+            if self.verbose >= 3 and pathrg != filtered_path:
+                printg(
+                    f"Regex `{pathrg}` match {len(filtered_path)} files: {filtered_path}"
+                )
+
         path = new_paths
 
         # ... Check all path exists

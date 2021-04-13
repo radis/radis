@@ -1640,6 +1640,7 @@ class BroadenFactory(BaseFactory):
         iwbroad_half = len(wbroad_centered) // 2
 
         # Calculate matrix of broadened parameter (for all lines)
+        # ... Note @dev : this is the memory bottleneck !
         profile_S = line_profile * S
 
         # ---------------------------
@@ -2110,7 +2111,7 @@ class BroadenFactory(BaseFactory):
                 "Too many lines*wavepoints (see details above). Try to use or reduce the "
                 + "chunksize parameter (current={0}{1})".format(
                     chunksize,
-                    " so {0:.3e} lines*wavepoints was used".format(
+                    " so chunksize={0:.3e} lines*wavepoints was used. ".format(
                         len(df) * len(wavenumber)
                     )
                     if chunksize is None
