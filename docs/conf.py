@@ -59,7 +59,7 @@ extensions = [
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
-    'sphinx_autodoc_defaultargs'
+    "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     "sphinxcontrib.apidoc",
