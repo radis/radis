@@ -159,7 +159,7 @@ Spectrum conditions and get Spectrum that suits specific parameters
 .. _label_spectral _arrays:
 
 Spectral Arrays
-===================
+===============
 
 A :class:`~radis.spectrum.spectrum.Spectrum` object can contain one spectral arrays, such as
 ``'radiance'`` for emission spectra, or ``'transmittance'`` for absorption spectra.
@@ -202,7 +202,7 @@ See the latest list in the :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES` a
 :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`.
 
 Custom spectral arrays
---------------------------
+----------------------
 
 A :class:`~radis.spectrum.spectrum.Spectrum` object is built on top of a dictionary structure, and can handle
 spectral arrays with any name.
@@ -260,7 +260,7 @@ How to access a Spectrum properties?
 
 
 Get spectral arrays
------------------------
+-------------------
 
 Spectral Arrays of a Spectrum object can be stored in arbitrary
 wavespace (wavenumbers, wavelengths in air, or wavelengths in vacuum) and arbitrary units.
@@ -307,7 +307,7 @@ You can also show the conditions only with
 .. _label_spectrum_plot:
 
 Plot spectral arrays
-------------------------
+--------------------
 
 Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`::
 
