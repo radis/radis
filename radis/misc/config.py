@@ -773,7 +773,7 @@ def getDatabankEntries(dbname, get_extra_keys=[]):
         config = _config["database"]
         config[dbname]["path"]
         config[dbname]["format"]
-    except configparser.NoSectionError:
+    except KeyError:
         msg = (
             "{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)
             + "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH_JSON)
