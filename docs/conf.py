@@ -307,14 +307,16 @@ html_sidebars = {
 }
 
 
-# The default values of all documented arguments, and undocumented arguments if enabled, are automatically detected and added to the docstring. 
+# The default values of all documented arguments, and undocumented arguments if enabled, are automatically detected and added to the docstring.
 # It also detects existing documentation of default arguments with the text unchanged.
 
-rst_prolog = """
+rst_prolog = (
+    """
 .. |default| raw:: html
 
-    <div class="default-value-section">""" + \
-    ' <span class="default-value-label">Default:</span>'
+    <div class="default-value-section">"""
+    + ' <span class="default-value-label">Default:</span>'
+)
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 # html_additional_pages = {}
