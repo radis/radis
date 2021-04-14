@@ -1897,7 +1897,8 @@ class Spectrum(object):
         slit_function: float or str or array
             If ``float``:
                 generate slit function with FWHM of slit function (in nm or
-                cm-1 depending on ``unit=``)
+                cm-1 depending on ``unit=``). A (top, base) tuple of (``float``, ``float``)
+                is required when asking for a trapezoidal slit function.
             If ``.txt``:
                 import experimental slit function from .txt file: format must be 2-columns with
                 wavelengths and intensity (doesn't have to be normalized)
