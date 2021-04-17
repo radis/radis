@@ -35,7 +35,8 @@ import io
 import re
 from os.path import abspath, dirname, exists, join
 
-from setuptools import find_packages, setup
+from numpy import get_include
+from setuptools import Extension, find_packages, setup
 
 # Build description from README (PyPi compatible)
 # -----------------------------------------------
@@ -122,6 +123,26 @@ else:
 with open(join(dirname(__file__), "radis", "__version__.txt")) as version_file:
     __version__ = version_file.read().strip()
 
+
+# Cython accelerated operations:
+try:
+    import cython
+
+    print("Cython " + cython.__version__)
+    ext_modules = [
+        Extension(
+            "radis_cython_extensions",
+            sources=["./radis/cython/radis_cython_extensions.pyx"],
+            include_dirs=[get_include()],
+            language="c",
+            extra_compile_args=["/O2", "/favor:INTEL64", "/fp:fast"],
+            extra_link_args=[],
+        )
+    ]
+except (ModuleNotFoundError):
+    ext_modules = []
+
+
 # Main install routine
 setup(
     name="radis",
@@ -185,6 +206,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Operating System :: OS Independent",
     ],
+    ext_modules=ext_modules,
     include_package_data=True,  # add non .py data files in MANIFEST.in
     # package_data={'radis': ['radis/phys/units.txt']},
     zip_safe=False,  # impossible as long as we have external files read with __file__ syntax

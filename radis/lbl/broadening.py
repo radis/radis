@@ -58,8 +58,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 ----------
 
 """
-import sys
-from subprocess import call
 from time import time
 from warnings import warn
 
@@ -71,7 +69,7 @@ from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
 
 from radis.lbl.base import BaseFactory
-from radis.misc import getProjectRoot
+from radis.misc.arrays import add_at
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg
@@ -80,61 +78,6 @@ from radis.misc.progress_bar import ProgressBar
 # from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
 from radis.phys.constants import Na, c_CGS, k_b_CGS
-
-# Try to import fast Cython implementation of add_at():
-# [[ Copied from lbl/factory.py eq_spectrum_gpu() ]]
-### EXPERIMENTAL ###
-
-project_path = getProjectRoot()
-project_path += "/lbl/cython_radis/"
-sys.path.insert(1, project_path)
-
-try:
-    import cython_radis
-
-    radis_add_at = cython_radis.add_at
-##    print('add_at(): Cython')
-
-except:
-    try:
-
-        ##        if verbose >= 2:
-        ##            print("cython_radis module not found in directory...")
-        ##            print("Compiling module from source...")
-
-        call(
-            "python setup.py build_ext --inplace",
-            cwd=project_path,
-            shell=True,
-        )
-
-        ##        if verbose >= 2:
-        ##            print("Finished compilation...trying to import module again")
-        import cython_radis
-
-        ##        if verbose:
-        ##            print("cython_radis imported succesfully!")
-
-        radis_add_at = cython_radis.add_at
-    ##        print('add_at(): Cython')
-
-    except:
-        ##        raise (
-        ##            ModuleNotFoundError(
-        ##                "Failed to load cython_radis module, using numpy functions instead."
-        ##            )
-        ##        )
-
-        # If it doesn't work, fall back to Numpy's add.at():
-        def radis_add_at(LDM, k, l, m, I):
-            return np.add.at(LDM, (k, l, m), I)
-
-
-##        print('add_at(): Numpy')
-
-
-### --- ###
-
 
 # %% Broadening functions
 
@@ -2012,14 +1955,14 @@ class BroadenFactory(BaseFactory):
             raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
-        radis_add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
-        radis_add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
-        radis_add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
-        radis_add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
-        radis_add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
-        radis_add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
-        radis_add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
-        radis_add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
+        add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
+        add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
+        add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
+        add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
+        add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
+        add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
+        add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
+        add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
 
         # All lines within each bins are convolved with the same lineshape.
         # Let's do it:

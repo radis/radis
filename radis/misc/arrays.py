@@ -354,3 +354,19 @@ def logspace(xmin, xmax, npoints):
     """
 
     return np.logspace(np.log10(xmin), np.log10(xmax), npoints)
+
+
+## Cython functions:
+
+try:
+    import radis_cython_extensions as rcx
+
+    add_at = rcx.add_at
+    # def add_at(LDM, k, l, m, I):
+    #    print('Cython add_at()')
+    #    return rcx.add_at(LDM, k, l, m, I)
+except:
+
+    def add_at(LDM, k, l, m, I):
+        # print('Numpy add.at()')
+        return np.add.at(LDM, (k, l, m), I)
