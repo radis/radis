@@ -163,8 +163,6 @@ def get_ext_modules():
                 sources=["./radis/cython/radis_cython_extensions.pyx"],
                 include_dirs=[get_include()],
                 language="c",
-                extra_compile_args=["/O2", "/favor:blend", "/fp:fast"],
-                # TO-DO: Favor ATOM/AMD64/INTL64 depending on processor
                 extra_link_args=[],
             )
         ]
