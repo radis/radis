@@ -365,7 +365,7 @@ try:
     # def add_at(LDM, k, l, m, I):
     #    print('Cython add_at()')
     #    return rcx.add_at(LDM, k, l, m, I)
-except:
+except (ModuleNotFoundError):
 
     def add_at(LDM, k, l, m, I):
         # print('Numpy add.at()')
