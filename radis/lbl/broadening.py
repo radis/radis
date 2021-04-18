@@ -69,7 +69,7 @@ from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
 
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import add_at
+from radis.misc.arrays import add_at, numpy_add_at
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg
@@ -77,6 +77,7 @@ from radis.misc.progress_bar import ProgressBar
 
 # from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
+from radis.params import USE_CYTHON
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
 # %% Broadening functions
@@ -768,6 +769,12 @@ class BroadenFactory(BaseFactory):
         self.params.broadening_method = ""
         """ See :py:meth:`~radis.lbl.factory.SpectrumFactory`
         """
+
+        # Try to use Cython ?
+        self.use_cython = USE_CYTHON  # default value (to be read from config file)
+        # ... Note: whether Cython will be used eventually depends whether it was installed,
+        # ... else it default to the non-cython version. What was used eventually
+        # ... is stored in self.params.use_cython
 
         # Predict broadening times (helps trigger warnings for optimization)
         self._broadening_time_ruleofthumb = 1e-7  # s / lines / point
@@ -1799,11 +1806,9 @@ class BroadenFactory(BaseFactory):
 
         Parameters
         ----------
-
         broadened_param: pandas Series (or numpy array)   [size N = number of lines]
             Series to apply lineshape to. Typically linestrength `S` for absorption,
             or `nu * Aul / 4pi * DeltaE` for emission
-
         line_profile_DLM:  dict
             dict of line profiles ::
 
@@ -1814,32 +1819,25 @@ class BroadenFactory(BaseFactory):
 
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
             center wavelength (used to project broaded lineshapes )
-
         wL: array       (size DL)
             array of all Lorentzian widths in DLM
-
         wG: array       (size DG)
             array of all Gaussian widths in DLM
-
         wL_dat: array    (size N)
             FWHM of all lines. Used to lookup the DLM
-
         wG_dat: array    (size N)
             FWHM of all lines. Used to lookup the DLM
-
         optimization :
             if ``"min-RMS"`` weights optimized by analytical minimization of the RMS-error.
             Otherwise, weights equal to their relative position in the grid.
 
         Returns
         -------
-
         sumoflines: array (size W  = size of output wavenumbers)
             sum of (broadened_param x line_profile)
 
         Notes
         -----
-
         Units change during convolution::
 
             [sumoflines] = [broadened_param] * cm
@@ -1852,10 +1850,8 @@ class BroadenFactory(BaseFactory):
 
         See Also
         --------
-
         :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape_DLM`
         """
-
         if __debug__:
             t0 = time()
 
@@ -1863,6 +1859,17 @@ class BroadenFactory(BaseFactory):
         wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
         wavenumber_calc = self.wavenumber_calc
         broadening_method = self.params.broadening_method
+
+        # Get add-at method
+        # ... 1. allow user to use non-cython method (useful for tests ?)
+        # ... 2. write in the Spectrum object whether Cython was used or not
+        # ...    (either because deactivated, or because not installed)
+        if self.use_cython and add_at != numpy_add_at:
+            _add_at = add_at
+            self.params.use_cython = True
+        else:
+            _add_at = numpy_add_at
+            self.params.use_cython = False
 
         # Vectorize the chunk of lines
         S = broadened_param
@@ -1955,14 +1962,14 @@ class BroadenFactory(BaseFactory):
             raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
-        add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
-        add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
-        add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
-        add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
-        add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
-        add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
-        add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
-        add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
+        _add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
+        _add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
+        _add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
+        _add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
+        _add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
+        _add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
+        _add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
+        _add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
 
         # All lines within each bins are convolved with the same lineshape.
         # Let's do it:

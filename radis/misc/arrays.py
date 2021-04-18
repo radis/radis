@@ -356,8 +356,40 @@ def logspace(xmin, xmax, npoints):
     return np.logspace(np.log10(xmin), np.log10(xmax), npoints)
 
 
-## Cython functions:
+def numpy_add_at(LDM, k, l, m, I):
+    """Add the linestrengths on the LDM grid.
 
+    Uses the numpy implementation of :py:func:`~numpy.add.at`, which
+    add arguments element-wise.
+
+    Parameters
+    ----------
+    LDM : ndarray
+        LDM grid
+    k, l, m : array
+        index
+    I : array
+        intensity to add
+
+    Returns
+    -------
+    add: ndarray
+        linestrengths distributed over the LDM grid
+
+    Notes
+    -----
+    Cython version implemented in https://github.com/radis/radis/pull/234
+
+    See Also
+    --------
+    :py:func:`numpy.add.at`
+
+    """
+    # print('Numpy add.at()')
+    return np.add.at(LDM, (k, l, m), I)
+
+
+## Cython functions:
 try:
     import radis_cython_extensions as rcx
 
@@ -366,7 +398,5 @@ try:
     #    print('Cython add_at()')
     #    return rcx.add_at(LDM, k, l, m, I)
 except:
-
-    def add_at(LDM, k, l, m, I):
-        # print('Numpy add.at()')
-        return np.add.at(LDM, (k, l, m), I)
+    add_at = numpy_add_at
+    #  or use radis.misc.utils.NotInstalled() ?
