@@ -169,10 +169,11 @@ setup(
     install_requires=[
         "hitran-api",
         "numpy",
-        "scipy",
+        "scipy>=1.4.0",
         "matplotlib",
+        "cython",
         "pandas>=1.0.5",
-        "plotly",
+        "plotly>=2.5.1",
         "numba",
         "mpldatacursor",
         "astropy",  # Unit aware calculations
