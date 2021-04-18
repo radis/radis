@@ -392,11 +392,8 @@ def numpy_add_at(LDM, k, l, m, I):
 ## Cython functions:
 try:
     import radis_cython_extensions as rcx
-
-    add_at = rcx.add_at
-    # def add_at(LDM, k, l, m, I):
-    #    print('Cython add_at()')
-    #    return rcx.add_at(LDM, k, l, m, I)
-except:
+except (ModuleNotFoundError):
     add_at = numpy_add_at
     #  or use radis.misc.utils.NotInstalled() ?
+else:
+    add_at = rcx.add_at
