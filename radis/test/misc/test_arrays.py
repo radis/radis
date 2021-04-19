@@ -162,7 +162,7 @@ def test_cython_add_at(*args, **kwargs):
     """
 
     # First check if Python was able to import the Cython version of add at:
-    from radis_cython_extensions import cython_add_at
+    from radis_cython_extensions import add_at as cython_add_at
 
     assert add_at == cython_add_at
 
