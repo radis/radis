@@ -800,7 +800,7 @@ class DatabankLoader(object):
         parfuncfmt="hapi",
         levels=None,
         levelsfmt="radis",
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         parse_local_global_quanta=True,
         drop_non_numeric=True,
@@ -1037,7 +1037,7 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=True,
         lvl_use_cached=True,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         drop_columns="auto",
     ):
@@ -1240,7 +1240,7 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=None,
         lvl_use_cached=None,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         drop_columns="auto",
     ):
@@ -1394,7 +1394,7 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=None,
         lvl_use_cached=None,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
     ):
         """store all params so they can be parsed by "get_conditions()" and
