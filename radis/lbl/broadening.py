@@ -1866,11 +1866,10 @@ class BroadenFactory(BaseFactory):
         # ...    (either because deactivated, or because not installed)
         if self.use_cython and add_at != numpy_add_at:
             _add_at = add_at
-            self.params.use_cython = True
+            self.params.add_at_used = "cython"
         else:
             _add_at = numpy_add_at
-            self.params.use_cython = False
-
+            self.params.add_at_used = "numpy"
         # Vectorize the chunk of lines
         S = broadened_param
 
