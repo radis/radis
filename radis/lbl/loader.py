@@ -60,8 +60,8 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
-from copy import deepcopy
 import warnings
+from copy import deepcopy
 from os.path import exists
 from time import time
 from uuid import uuid1
@@ -941,7 +941,11 @@ class DatabankLoader(object):
                 if len(df) > 0:
                     frames.append(df)
                 else:
-                    self.warn("No line for isotope n°{}".format(iso), "EmptyDatabaseWarning", level=2)
+                    self.warn(
+                        "No line for isotope n°{}".format(iso),
+                        "EmptyDatabaseWarning",
+                        level=2,
+                    )
 
             # Merge
             if frames == []:
