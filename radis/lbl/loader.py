@@ -61,6 +61,7 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # (on the slide bar on the right)
 
 import warnings
+from copy import deepcopy
 from os.path import exists
 from time import time
 from uuid import uuid1
@@ -233,8 +234,6 @@ assert compare_lists(drop_auto_columns_for_levelsfmt, KNOWN_LVLFORMAT) == 1
 
 # %% Main class
 
-from copy import deepcopy
-
 
 class ConditionDict(dict):
     """A class to hold Spectrum calculation input conditions
@@ -379,7 +378,7 @@ class Input(ConditionDict):
         self.wavenum_min = None  #: str: wavenumber min (cm-1)
 
 
-## TO-DO: these error estimations are horribly outdated...
+# TO-DO: these error estimations are horribly outdated...
 def _lorentzian_step(res_L):
     log_pL = np.log((res_L / 0.20) ** 0.5 + 1)
     return log_pL
@@ -889,7 +888,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if not source in ["hitran", "hitemp"]:
+        if source not in ["hitran", "hitemp"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -940,7 +939,14 @@ class DatabankLoader(object):
                 df = fetch_astroquery(
                     molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
                 )
-                frames.append(df)
+                if len(df) > 0:
+                    frames.append(df)
+                else:
+                    self.warn(
+                        "No line for isotope n°{}".format(iso),
+                        "EmptyDatabaseWarning",
+                        level=2,
+                    )
 
             # Merge
             if frames == []:
@@ -1989,7 +1995,7 @@ class DatabankLoader(object):
         conditions = {
             k: v
             for (k, v) in conditions.items()
-            if not k in self._autoretrieveignoreconditions
+            if k not in self._autoretrieveignoreconditions
         }
 
         s = self.SpecDatabase.get(**conditions)
