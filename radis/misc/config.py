@@ -787,7 +787,7 @@ def getDatabankEntries(dbname, get_extra_keys=[]):
 
     # Path correction for all tests
     if type(entries["path"]) == str:
-        entries["path"] = entries["path"].split()
+        entries["path"] = [entries["path"]]
 
     # Merge all isotope-dependant levels into one dict
     iso_list = [k for k in entries if k.startswith("levels_iso")]
