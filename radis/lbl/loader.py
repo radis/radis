@@ -1935,7 +1935,11 @@ class DatabankLoader(object):
         try:
             self._fetch_molecular_parameters(df)
         except KeyError as err:
-            raise KeyError("Isotope {} parameters not found, check https://github.com/radis/radis/blob/develop/radis/db/molparam.txt".format(err)) from err
+            raise KeyError(
+                "Isotope {} parameters not found, check https://github.com/radis/radis/blob/develop/radis/db/molparam.txt".format(
+                    err
+                )
+            ) from err
 
         if self.verbose >= 2:
             printg(
