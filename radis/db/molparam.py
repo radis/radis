@@ -9,6 +9,7 @@
 
 import pandas as pd
 
+from radis.db.classes import get_molecule_identifier
 from radis.db.utils import getFile
 
 
@@ -18,13 +19,11 @@ class MolParams:
 
         Parameters
         ----------
-
         file: str
             if None the one in RADIS is taken
 
         Examples
         --------
-
         Get abundance of CO2, isotope 1::
 
             molpar = Molparams()
@@ -37,7 +36,6 @@ class MolParams:
 
         References
         ----------
-
         http://hitran.org/media/molparam.txt
         """
 
@@ -59,18 +57,15 @@ class MolParams:
         """
         Parameters
         ----------
-
-        M: int
-            molecule id
-            # TODO: allow name here with get_molecule()
-
+        M: int or str
+            molecule id or molecule name
         I: int
             molecule isotope #
-
         key: ``'abundance'``, ``'mol_mass'``
             parameter
-
         """
+        if isinstance(M, str):
+            M = get_molecule_identifier(M)
         return self.df.loc[(M, I), key]
 
 
