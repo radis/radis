@@ -352,7 +352,7 @@ class SpectrumFactory(BandFactory):
         folding_thresh=1e-6,
         zero_padding=-1,
         broadening_method=Default("fft"),
-        cutoff=1e-27,
+        cutoff=0,
         verbose=True,
         warnings=True,
         save_memory=False,
@@ -476,7 +476,12 @@ class SpectrumFactory(BandFactory):
         # Initialize computation variables
         self.params.wstep = wstep
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
+
+        if cutoff is None:
+            # If None, use no cutoff : https://github.com/radis/radis/pull/259
+            cutoff = 0
         self.params.cutoff = cutoff
+
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
