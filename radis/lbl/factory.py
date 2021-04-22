@@ -1258,9 +1258,38 @@ class SpectrumFactory(BandFactory):
         # Check line database and parameters, reset populations and scaled line dataframe
         # ----------
         self._check_line_databank()
+        # Checking and loading Energy level database
+        # self.load_databank('HITEMP-CO2-TEST', load_energies=True)
+
+        # conditions_check = self.get_conditions()
+        # print(conditions_check)
+        # print(self.misc.load_energies)
+        """
+        if conditions_check['load_energies'] == True:
+            pass
+        else:
+            self.misc.load_energies = True
+            self._init_rovibrational_energies(self.levelspath, self.params.levelsfmt)
+            #self.load_databank('HITEMP-CO2-TEST')
+        print(self.get_conditions())
+        print(self.levelspath)
+        print(self.params.levelsfmt)
+        """
+        # self.load_databank('HITEMP-CO2-TEST', load_energies=True)
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):
+
+        print(self.levelspath)
+        print(self.params.levelsfmt)
+        print(self.misc.load_energies)
+        print(self.levels)
+
+        if self.levels is not None:
+            self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
+        else:
+            self._init_rovibrational_energies(self.levelspath, self.params.levelsfmt)
         self._calc_noneq_parameters(vib_distribution, singleTvibmode)
+
         self._reinitialize()  # creates scaled dataframe df1 from df0
 
         # ----------------------------------------------------------------------

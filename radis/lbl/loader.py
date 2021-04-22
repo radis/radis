@@ -913,6 +913,7 @@ class DatabankLoader(object):
         # Let's store all params so they can be parsed by "get_conditions()"
         # and saved in output spectra information
         self.params.dbformat = dbformat
+        self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
         else:
@@ -1413,6 +1414,7 @@ class DatabankLoader(object):
             [format_paths(k) for k in path]
         )  # else it's a nightmare to store
         self.params.dbformat = format
+        self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
         else:

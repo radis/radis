@@ -583,6 +583,7 @@ def _calc_spectrum(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
+            conditions["load_energies"] = True
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
         sf.fetch_databank(**conditions)
@@ -605,6 +606,7 @@ def _calc_spectrum(
                 # constants (not all molecules are supported!)
                 conditions["levelsfmt"] = "radis"
                 conditions["lvl_use_cached"] = use_cached
+                conditions["load_energies"] = True
         elif databank.endswith(".h5") or databank.endswith(".hdf5"):
             if verbose:
                 print(
@@ -615,6 +617,7 @@ def _calc_spectrum(
             conditions["format"] = "hdf5-radisdb"
             if not _equilibrium:
                 conditions["levelsfmt"] = "radis"
+                conditions["load_energies"] = True
         else:
             raise ValueError(
                 "Couldnt infer the format of the line database file: {0}. ".format(

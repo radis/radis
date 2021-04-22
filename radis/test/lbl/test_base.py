@@ -47,7 +47,7 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", load_energies=True)
 
     # Populations cannot be calculated at equilibrium (no access to energy levels)
     s = sf.eq_spectrum(300)
