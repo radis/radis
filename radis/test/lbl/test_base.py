@@ -47,7 +47,7 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO-TEST", load_energies=True)
+    sf.load_databank("HITRAN-CO-TEST")
 
     # Populations cannot be calculated at equilibrium (no access to energy levels)
     s = sf.eq_spectrum(300)
@@ -123,7 +123,7 @@ def test_populations_CO2_hamiltonian(
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITEMP-CO2-HAMIL-TEST")
+    sf.load_databank("HITEMP-CO2-HAMIL-TEST", load_energies=True)
 
     # First run a calculation at equilibrium
     s = sf.eq_spectrum(300)

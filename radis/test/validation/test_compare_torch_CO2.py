@@ -132,7 +132,6 @@ def test_compare_torch_CO2(
     #                             add_info=['Tgas'])
     sf.init_databank(
         "HITEMP-CO2-DUNHAM",
-        load_energies=False,
         db_use_cached=use_cache,
     )  # saves some memory
     #    sf.init_databank('CDSD-4000')

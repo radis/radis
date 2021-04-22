@@ -12,7 +12,7 @@ Examples
 
 See and get objects from database::
 
-    from radis.lbl import SpecDatabase
+    from radis.tools import SpecDatabase
     db = SpecDatabase(r"path/to/database")     # create or loads database
 
     db.update()  # in case something changed (like a file was added manually)
@@ -2123,7 +2123,7 @@ class SpecDatabase(SpecList):
         --------
         ::
 
-            from radis.lbl import SpecDatabase
+            from radis.tools import SpecDatabase
             db = SpecDatabase(r"path/to/database")     # create or loads database
             db.add(s, discard=['populations'])
 

@@ -913,6 +913,7 @@ class DatabankLoader(object):
         # Let's store all params so they can be parsed by "get_conditions()"
         # and saved in output spectra information
         self.params.dbformat = dbformat
+        self.misc.load_energies = load_energies
         self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
@@ -1186,6 +1187,7 @@ class DatabankLoader(object):
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
+            load_energies=load_energies,
             lvl_use_cached=lvl_use_cached,
             include_neighbouring_lines=include_neighbouring_lines,
         )
@@ -2262,9 +2264,14 @@ class DatabankLoader(object):
         isotope: int
         elec_state: str
         """
-
-        parsum = self.parsum_calc[molecule][isotope][elec_state]
-
+        try:
+            parsum = self.parsum_calc[molecule][isotope][elec_state]
+        except:
+            raise KeyError(
+                "Error while Retrieving Partition Function Calculator!"
+                + " Load the energies levels with SpectrumFactory.load_databank"
+                + "('path', load_energies=True)"
+            )
         # helps IDE find methods
         assert isinstance(parsum, RovibParFuncCalculator)
 

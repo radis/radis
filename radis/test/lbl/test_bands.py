@@ -59,7 +59,7 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.fetch_databank("hitran", load_energies=True)
+    sf.fetch_databank("hitran")
 
     s_tot = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas)
     s_bands = sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)

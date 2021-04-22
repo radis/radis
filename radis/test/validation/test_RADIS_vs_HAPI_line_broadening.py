@@ -146,7 +146,6 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
         pl.warnings["HighTemperatureWarning"] = "ignore"
         pl.fetch_databank(
             source="hitran",
-            load_energies=False,
             db_use_cached=True,
         )
 
