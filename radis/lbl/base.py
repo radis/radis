@@ -1445,6 +1445,11 @@ class BaseFactory(DatabankLoader):
         the nonequilibrium energies)
         """
 
+        # Checks and loads Energy level database
+        if self.misc.load_energies == False:
+            self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
+            self.misc.load_energies = True
+
         if self.verbose >= 2:
             t0 = time()
 

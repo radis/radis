@@ -1258,10 +1258,6 @@ class SpectrumFactory(BandFactory):
         # Check line database and parameters, reset populations and scaled line dataframe
         # ----------
         self._check_line_databank()
-        # Checks and loads Energy level database
-        if self.misc.load_energies == False:
-            self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
-            self.misc.load_energies = True
 
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):

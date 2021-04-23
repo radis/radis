@@ -314,7 +314,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.load_databank("HITRAN-CO-TEST", db_use_cached=True, load_energies=True)
+    sf.load_databank("HITRAN-CO-TEST", db_use_cached=True)
     unit = "µW/sr/cm2"
     T = 600
 
