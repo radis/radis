@@ -468,7 +468,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
-            if not iso in self.parsum_calc["CO2"]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
@@ -623,24 +623,17 @@ class BaseFactory(DatabankLoader):
             t0 = time()
 
         # Check energy levels are here
-        try:
-            for iso in self._get_isotope_list():
-                if not iso in self.parsum_calc["CO2"]:
-                    raise AttributeError(
-                        "No Partition function calculator defined for isotope {0}".format(
-                            iso
-                        )
-                        + ". You need energies to calculate a non-equilibrium spectrum!"
-                        + " Fill the levels parameter in your database definition, "
-                        + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
-                        + ". See SpectrumFactory.load_databank() help for more details"
+        for iso in self._get_isotope_list():
+            if not iso in self.get_partition_function_molecule(molecule):
+                raise AttributeError(
+                    "No Partition function calculator defined for isotope {0}".format(
+                        iso
                     )
-        except:
-            raise KeyError(
-                "Error while calculating the non-equilibrium spectrum!"
-                + " Load the energies levels with SpectrumFactory.load_databank"
-                + "('path', load_energies=True)"
-            )
+                    + ". You need energies to calculate a non-equilibrium spectrum!"
+                    + " Fill the levels parameter in your database definition, "
+                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + ". See SpectrumFactory.load_databank() help for more details"
+                )
 
         def get_Evib_CDSD_pcN_1iso(df, iso):
             """Calculate Evib for a given isotope (energies are specific to a
@@ -741,7 +734,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
-            if not iso in self.parsum_calc["CO2"]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
@@ -1006,24 +999,20 @@ class BaseFactory(DatabankLoader):
             t0 = time()
 
         # Check energy levels are here
-        try:
-            for iso in self._get_isotope_list():
-                if not iso in self.parsum_calc[molecule]:
-                    raise AttributeError(
-                        "No Partition function calculator defined for isotope {0}".format(
-                            iso
-                        )
-                        + ". You need energies to calculate a non-equilibrium spectrum!"
-                        + " Fill the levels parameter in your database definition, "
-                        + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
-                        + ". See SpectrumFactory.load_databank() help for more details"
-                    )
-        except:
-            raise KeyError(
-                "Error while calculating the non-equilibrium spectrum!"
-                + " Load the energies levels with SpectrumFactory.load_databank"
-                + "('path', load_energies=True)"
+        for iso in self._get_isotope_list():
+            print(
+                "molecule - ", molecule, "\nisotope - ", iso, "\nelec-state - ", state
             )
+            if not iso in self.get_partition_function_molecule(molecule):
+                raise AttributeError(
+                    "No Partition function calculator defined for isotope {0}".format(
+                        iso
+                    )
+                    + ". You need energies to calculate a non-equilibrium spectrum!"
+                    + " Fill the levels parameter in your database definition, "
+                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + ". See SpectrumFactory.load_databank() help for more details"
+                )
 
         def get_Evib_RADIS_cls1_1iso(df, iso):
             """Calculate Evib & Erot for a given isotope.
@@ -1103,24 +1092,17 @@ class BaseFactory(DatabankLoader):
             t0 = time()
 
         # Check energy levels are here
-        try:
-            for iso in self._get_isotope_list(molecule):
-                if not iso in self.parsum_calc[molecule]:
-                    raise AttributeError(
-                        "No Partition function calculator defined for isotope {0}".format(
-                            iso
-                        )
-                        + ". You need energies to calculate a non-equilibrium spectrum!"
-                        + " Fill the levels parameter in your database definition, "
-                        + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
-                        + ". See SpectrumFactory.load_databank() help for more details"
+        for iso in self._get_isotope_list(molecule):
+            if not iso in self.get_partition_function_molecule(molecule):
+                raise AttributeError(
+                    "No Partition function calculator defined for isotope {0}".format(
+                        iso
                     )
-        except:
-            raise KeyError(
-                "Error while calculating the non-equilibrium spectrum!"
-                + " Load the energies levels with SpectrumFactory.load_databank"
-                + "('path', load_energies=True)"
-            )
+                    + ". You need energies to calculate a non-equilibrium spectrum!"
+                    + " Fill the levels parameter in your database definition, "
+                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + ". See SpectrumFactory.load_databank() help for more details"
+                )
 
         def get_Evib123_RADIS_cls5_1iso(df, iso):
             """Fetch Evib & Erot for a given isotope.
@@ -1232,7 +1214,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
-            if not iso in self.parsum_calc[molecule]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
