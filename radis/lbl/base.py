@@ -1000,9 +1000,6 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list():
-            print(
-                "molecule - ", molecule, "\nisotope - ", iso, "\nelec-state - ", state
-            )
             if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
