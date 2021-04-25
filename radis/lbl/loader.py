@@ -2264,14 +2264,9 @@ class DatabankLoader(object):
         isotope: int
         elec_state: str
         """
-        try:
-            parsum = self.parsum_calc[molecule][isotope][elec_state]
-        except KeyError as err:
-            raise KeyError(
-                "Error while Retrieving Partition Function Calculator!"
-                + " Load the energies levels with SpectrumFactory.load_databank"
-                + "('path', load_energies=True)"
-            ) from err
+
+        parsum = self.get_partition_function_molecule(molecule)[isotope][elec_state]
+
         # helps IDE find methods
         assert isinstance(parsum, RovibParFuncCalculator)
 
@@ -2290,7 +2285,8 @@ class DatabankLoader(object):
             raise KeyError(
                 "Error while Retrieving Partition Function of Molecule!"
                 + " Load the energies levels with SpectrumFactory.load_databank"
-                + "('path', load_energies=True)"
+                + "('path', load_energies=True). If using SpectrumFactory.fetch_databank()"
+                + " consider adding arguement load_energies=True"
             ) from err
 
         return parsum
