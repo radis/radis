@@ -187,7 +187,7 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.load_databank("HITRAN-CO2-TEST")
+    sf.load_databank("HITRAN-CO2-TEST", load_energies=True)
 
     # Compare energies
     for I in iso:

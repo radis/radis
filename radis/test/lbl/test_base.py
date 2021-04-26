@@ -123,7 +123,7 @@ def test_populations_CO2_hamiltonian(
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITEMP-CO2-HAMIL-TEST")
+    sf.load_databank("HITEMP-CO2-HAMIL-TEST", load_energies=True)
 
     # First run a calculation at equilibrium
     s = sf.eq_spectrum(300)

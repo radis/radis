@@ -58,7 +58,7 @@ if __name__ == "__main__":
         molecule=molecule,
         optimization=None,
     )
-    sf.fetch_databank("hitran", load_energies=False)
+    sf.fetch_databank("hitran")
 
     s = sf.eq_spectrum(Tgas=T, pressure=pressure_bar)
     s.name = "RADIS ({0:.1f}s)".format(s.conditions["calculation_time"])

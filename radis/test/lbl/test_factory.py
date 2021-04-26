@@ -175,10 +175,7 @@ def test_spec_generation(
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
-    sf.load_databank(
-        "HITEMP-CO2-DUNHAM",
-        load_energies=False,  # no need to load energies at equilibrium
-    )
+    sf.load_databank("HITEMP-CO2-DUNHAM")
     s = sf.eq_spectrum(Tgas=300, name="test_spec_generation")
     if verbose:
         printm(

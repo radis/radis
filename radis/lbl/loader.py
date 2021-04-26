@@ -800,7 +800,7 @@ class DatabankLoader(object):
         parfuncfmt="hapi",
         levels=None,
         levelsfmt="radis",
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         parse_local_global_quanta=True,
         drop_non_numeric=True,
@@ -913,6 +913,8 @@ class DatabankLoader(object):
         # Let's store all params so they can be parsed by "get_conditions()"
         # and saved in output spectra information
         self.params.dbformat = dbformat
+        self.misc.load_energies = load_energies
+        self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
         else:
@@ -1044,7 +1046,7 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=True,
         lvl_use_cached=True,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         drop_columns="auto",
     ):
@@ -1192,6 +1194,7 @@ class DatabankLoader(object):
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
+            load_energies=load_energies,
             lvl_use_cached=lvl_use_cached,
             include_neighbouring_lines=include_neighbouring_lines,
         )
@@ -1247,7 +1250,7 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=None,
         lvl_use_cached=None,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         drop_columns="auto",
     ):
@@ -1401,7 +1404,7 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=None,
         lvl_use_cached=None,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
     ):
         """store all params so they can be parsed by "get_conditions()" and
@@ -1420,6 +1423,7 @@ class DatabankLoader(object):
             [format_paths(k) for k in path]
         )  # else it's a nightmare to store
         self.params.dbformat = format
+        self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
         else:
@@ -2275,10 +2279,29 @@ class DatabankLoader(object):
         elec_state: str
         """
 
-        parsum = self.parsum_calc[molecule][isotope][elec_state]
+        parsum = self.get_partition_function_molecule(molecule)[isotope][elec_state]
 
         # helps IDE find methods
         assert isinstance(parsum, RovibParFuncCalculator)
+
+        return parsum
+
+    def get_partition_function_molecule(self, molecule):
+        """Retrieve Partition Function for Molecule.
+
+        Parameters
+        ----------
+        molecule: str
+        """
+        try:
+            parsum = self.parsum_calc[molecule]
+        except KeyError as err:
+            raise KeyError(
+                "Error while Retrieving Partition Function of Molecule!"
+                + " Load the energies levels with SpectrumFactory.load_databank"
+                + "('path', load_energies=True). If using SpectrumFactory.fetch_databank()"
+                + " consider adding arguement load_energies=True"
+            ) from err
 
         return parsum
 

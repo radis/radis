@@ -468,7 +468,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
-            if not iso in self.parsum_calc["CO2"]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
@@ -624,7 +624,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list():
-            if not iso in self.parsum_calc["CO2"]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
@@ -734,7 +734,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
-            if not iso in self.parsum_calc["CO2"]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
@@ -1000,7 +1000,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list():
-            if not iso in self.parsum_calc[molecule]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
@@ -1090,7 +1090,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
-            if not iso in self.parsum_calc[molecule]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
@@ -1211,7 +1211,7 @@ class BaseFactory(DatabankLoader):
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
-            if not iso in self.parsum_calc[molecule]:
+            if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
                     "No Partition function calculator defined for isotope {0}".format(
                         iso
@@ -1423,6 +1423,11 @@ class BaseFactory(DatabankLoader):
         This may be a bottleneck for a first calculation (has to calculate
         the nonequilibrium energies)
         """
+
+        # Checks and loads Energy level database
+        if self.misc.load_energies == False:
+            self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
+            self.misc.load_energies = True
 
         if self.verbose >= 2:
             t0 = time()

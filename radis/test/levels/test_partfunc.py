@@ -708,7 +708,8 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
         sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
         sf.load_databank(
             "HITEMP-CO2-HAMIL-TEST",
-            db_use_cached=True,  # important to test CAche file here
+            load_energies=True,  # Loading Energy Database
+            db_use_cached=True,  # important to test Cache file here
         )
 
         # Now generate vibrational energies for a 2-T model

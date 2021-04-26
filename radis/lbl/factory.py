@@ -1258,6 +1258,7 @@ class SpectrumFactory(BandFactory):
         # Check line database and parameters, reset populations and scaled line dataframe
         # ----------
         self._check_line_databank()
+
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):
         self._calc_noneq_parameters(vib_distribution, singleTvibmode)
