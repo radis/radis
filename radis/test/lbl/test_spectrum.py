@@ -91,7 +91,7 @@ def test_rescaling_path_length(
 
     from radis.lbl import SpectrumFactory
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     Tgas = 1500
     sf = SpectrumFactory(
@@ -147,7 +147,7 @@ def test_rescaling_mole_fraction(
     if plot:  # Make sure matplotlib is interactive so that test are not stuck
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     Tgas = 1500
     sf = SpectrumFactory(
@@ -206,7 +206,7 @@ def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **k
 
     T = 300
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     pl = SpectrumFactory(
         wavenum_min=2171.5,

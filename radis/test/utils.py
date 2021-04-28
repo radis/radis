@@ -206,7 +206,7 @@ by :py:func:`~radis.test.utils.setup_test_line_databases`
 
 def setup_test_line_databases(verbose=True):
     """Build :py:data:`~radis.test.utils.TEST_DATABASES` and add them in
-    ~/.radis. Generate the file if it  doesnt exist.
+    ~/radis.json. Generate the file if it  doesnt exist.
 
     In particular:
 
@@ -219,7 +219,7 @@ def setup_test_line_databases(verbose=True):
 
     These test databases are used to run the different test routines. They can
     obviously be used by Users to run simulations, but we suggest Users to download
-    their own line databases files and add them to ~/.radis so they have more control
+    their own line databases files and add them to ~/radis.json so they have more control
     on it
 
     Examples
@@ -247,13 +247,12 @@ def setup_test_line_databases(verbose=True):
         from radis.misc.config import printDatabankEntries
         printDatabankEntries('HITEMP-CO2-TEST')
 
-        >>> HITEMP-CO2-TEST
-        >>> -------
-        >>> info : HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
-        >>> path : ['/USER/PATH/TO\\radis\\radis\\test\\files\\cdsd_hitemp_09_fragment.txt']
-        >>> format : cdsd-hitemp
-        >>> parfuncfmt : hapi
-        >>> levelsfmt : radis
+        >>> 'HITEMP-CO2-TEST':
+        >>> {'info': 'HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1',
+        >>> 'path': ['/USER/PATH/TO\\radis\\radis\\test\\files\\cdsd_hitemp_09_fragment.txt'],
+        >>> 'format': 'cdsd-hitemp'
+        >>> 'parfuncfmt': 'hapi'
+        >>> 'levelsfmt': 'radis'
 
 
     See Also
@@ -283,17 +282,17 @@ def setup_test_line_databases(verbose=True):
             if diff is not None:
                 raise ValueError(
                     "{0}".format(diff)
-                    + "\nIn ~/.radis\n----------\n{0}".format(
+                    + "\nIn ~/radis.json\n----------\n{0}".format(
                         getDatabankEntries(dbname)
                     )
                     + "\n\nExpected\n---------\n{0}\n\n".format(dbentries)
                     + "Test Database {0} doesnt match expected ".format(dbname)
                     + "entries for key `{0}`. See comparison above. ".format(diff)
                     + "To regenerate test databases just delete the {0} ".format(dbname)
-                    + "entry in your ~/.radis"
+                    + "entry in your ~/radis.json"
                 )
 
-        else:  # add them (create ~/.radis file if doesnt exist yet)
+        else:  # add them (create ~/radis.json file if doesnt exist yet)
             addDatabankEntries(dbname, dbentries)
 
     return

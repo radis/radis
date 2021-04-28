@@ -379,18 +379,18 @@ is specific to a given molecule. It typically looks like::
 str: Typical expected format of a ~/radis.json entry::
 
     {
-      "database": {                                     // database key: all databanks information are stored in this key
-          "MY-HITEMP-CO2": {                            // your databank name: use this in calc_spectrum()
-                                                        // or SpectrumFactory.load_databank()
-            "path": [                                   // no "", multipath allowed
+      "database": {                                     # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                            # your databank name: use this in calc_spectrum()
+                                                        # or SpectrumFactory.load_databank()
+            "path": [                                   # no "", multipath allowed
                 "D:\\Databases\\HITEMP-CO2\\hitemp_07",
                 "D:\\Databases\\HITEMP-CO2\\hitemp_08",
                 "D:\\Databases\\HITEMP-CO2\\hitemp_09"
             ],
-            "format": "hitran",                         // 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                                        // databank text file format. More info in
-                                                        // SpectrumFactory.load_databank function.
-            "parfuncfmt": "hapi"                        // calculate partition functions
+            "format": "hitran",                         # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                        # databank text file format. More info in
+                                                        # SpectrumFactory.load_databank function.
+            "parfuncfmt": "hapi"                        # calculate partition functions
           }
       }
     }
@@ -398,14 +398,14 @@ str: Typical expected format of a ~/radis.json entry::
 Following is an example where the path variable uses a wildcard ``*`` to find all the files that have ``hitemp_*`` in their names::
 
     {
-      "database": {                                     // database key: all databanks information are stored in this key
-          "MY-HITEMP-CO2": {                            // your databank name: use this in calc_spectrum()
-                                                        // or SpectrumFactory.load_databank()
-            "path": "D:\\Databases\\HITEMP-CO2\\hitemp_*",   // To load all hitemp files directly
-            "format": "hitran",                         // 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                                        // databank text file format. More info in
-                                                        // SpectrumFactory.load_databank function.
-            "parfuncfmt": "hapi"                        // calculate partition functions
+      "database": {                                     # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                            # your databank name: use this in calc_spectrum()
+                                                        # or SpectrumFactory.load_databank()
+            "path": "D:\\Databases\\HITEMP-CO2\\hitemp_*",   # To load all hitemp files directly
+            "format": "hitran",                         # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                        # databank text file format. More info in
+                                                        # SpectrumFactory.load_databank function.
+            "parfuncfmt": "hapi"                        # calculate partition functions
           }
       }
     }
@@ -416,30 +416,30 @@ partition functions tabulated with TIPS-2017. It is also possible to use your ow
 partition functions, for instance::
 
     {
-      "database": {                                       // database key: all databanks information are stored in this key
-          "MY-HITEMP-CO2": {                              // your databank name: use this in calc_spectrum()
-                                                          // or SpectrumFactory.load_databank()
-            "path": [                                     // no "", multipath allowed
+      "database": {                                       # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                              # your databank name: use this in calc_spectrum()
+                                                          # or SpectrumFactory.load_databank()
+            "path": [                                     # no "", multipath allowed
                 "D:\\Databases\\HITEMP-CO2\\hitemp_07",
                 "D:\\Databases\\HITEMP-CO2\\hitemp_08",
                 "D:\\Databases\\HITEMP-CO2\\hitemp_09"
             ],
-            "format": "hitran",                           // 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                                          // databank text file format. More info in
-                                                          // SpectrumFactory.load_databank function.
-            "parfuncfmt": "cdsd",                         // 'cdsd', 'hapi', etc.
-                                                          // format to read tabulated partition function
-                                                          // file. If `hapi`, then HAPI (HITRAN Python
-                                                          // interface) is used to retrieve them (valid if
-                                                          // your databank is HITRAN data). HAPI is embedded
-                                                          // into RADIS. Check the version. If not specified then 'hapi'
-                                                          // is used as default
+            "format": "hitran",                           # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                          # databank text file format. More info in
+                                                          # SpectrumFactory.load_databank function.
+            "parfuncfmt": "cdsd",                         # 'cdsd', 'hapi', etc.
+                                                          # format to read tabulated partition function
+                                                          # file. If `hapi`, then HAPI (HITRAN Python
+                                                          # interface) is used to retrieve them (valid if
+                                                          # your databank is HITRAN data). HAPI is embedded
+                                                          # into RADIS. Check the version. If not specified then 'hapi'
+                                                          # is used as default
             "parfunc": "PATH/TO/cdsd_partition_functions.txt"
-                                                          // path to tabulated partition function to use.
-                                                          // If `parfuncfmt` is `hapi` then `parfunc`
-                                                          // should be the link to the hapi.py file. If
-                                                          // not given, then the hapi.py embedded in RADIS
-                                                          // is used (check version)
+                                                          # path to tabulated partition function to use.
+                                                          # If `parfuncfmt` is `hapi` then `parfunc`
+                                                          # should be the link to the hapi.py file. If
+                                                          # not given, then the hapi.py embedded in RADIS
+                                                          # is used (check version)
           }
       }
     }
@@ -450,24 +450,24 @@ It is also possible to use your own Energy level database. For instance::
 
 
     {
-      "database": {                                        // database key: all databanks information are stored in this key
-          "MY-HITEMP-CO2": {                               // your databank name: use this in calc_spectrum()
-                                                           // or SpectrumFactory.load_databank()
-            "path": [                                      // no "", multipath allowed
+      "database": {                                        # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                               # your databank name: use this in calc_spectrum()
+                                                           # or SpectrumFactory.load_databank()
+            "path": [                                      # no "", multipath allowed
                 "D:\\Databases\\HITEMP-CO2\\hitemp_07",
                 "D:\\Databases\\HITEMP-CO2\\hitemp_08",
                 "D:\\Databases\\HITEMP-CO2\\hitemp_09"
             ],
-            "format": "hitran",                             // 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                                            // databank text file format. More info in
-                                                            // SpectrumFactory.load_databank function.
-                                                            // is used (check version)
+            "format": "hitran",                             # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                            # databank text file format. More info in
+                                                            # SpectrumFactory.load_databank function.
+                                                            # is used (check version)
             "levels_iso1": "D:\\PATH_TO\\energies_of_626_isotope.levels",
             "levels_iso2": "D:\\PATH_TO\\energies_of_636_isotope.levels",
-            "levelsfmt": "cdsd",                            // 'cdsd', etc.
-                                                            // how to read the previous file. Default None.
-            "levelszpe": "2531.828"                         // zero-point-energy (cm-1): offset for all level
-                                                            // energies. Default 0 (if not given)
+            "levelsfmt": "cdsd",                            # 'cdsd', etc.
+                                                            # how to read the previous file. Default None.
+            "levelszpe": "2531.828"                         # zero-point-energy (cm-1): offset for all level
+                                                            # energies. Default 0 (if not given)
           }
       }
     }

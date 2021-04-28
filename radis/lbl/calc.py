@@ -129,13 +129,13 @@ def calc_spectrum(
         - the name of a a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
           Accepts wildcards ``'*'`` to select multiple files.
-        - the name of a spectral database registered in your ``~/.radis``
+        - the name of a spectral database registered in your ``~/radis.json``
           :ref:`configuration file <label_lbl_config_file>`.
           This allows to use multiple database files.
 
         Default ``'hitran'``. See :class:`~radis.lbl.loader.DatabankLoader` for more
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for
-        your ``~/.radis`` file format.
+        your ``~/radis.json`` file format.
 
         For multiple molecules, use a dictionary with molecule names as keys::
 
@@ -623,14 +623,14 @@ def _calc_spectrum(
                 "Couldnt infer the format of the line database file: {0}. ".format(
                     databank
                 )
-                + "Create a user-defined database in your ~/.radis file "
+                + "Create a user-defined database in your ~/radis.json file "
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
             )
 
         sf.load_databank(**conditions)
 
-    else:  # manual mode: get from user-defined line databases defined in ~/.radis
+    else:  # manual mode: get from user-defined line databases defined in ~/radis.json
         sf.load_databank(
             databank,
             load_energies=not _equilibrium,  # no need to load/calculate energies at eq.

@@ -19,7 +19,7 @@ def test_json_config_file(*args, **kwargs):
 
 @pytest.mark.fast
 def test_databanks(*args, **kwargs):
-    """ Test .radis is readable """
+    """ Test radis.json is readable """
     printDatabankList()
 
 

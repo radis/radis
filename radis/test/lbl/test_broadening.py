@@ -36,7 +36,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     T = 3000
@@ -135,7 +135,7 @@ def test_broadening_methods_different_conditions(
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     wstep = 0.005
@@ -224,7 +224,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     T = 3000
@@ -294,7 +294,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     T = 3000
@@ -370,7 +370,7 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     T = 3000
@@ -443,7 +443,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO2-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO2-TEST in ~/radis.json if not there
 
     # Conditions
     p = 1
