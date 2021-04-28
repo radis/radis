@@ -1712,7 +1712,7 @@ def _recalculate(
             slit_unit = spec.conditions["slit_unit"]
             norm_by = spec.conditions["norm_by"]
             try:
-                shape = spec.conditions["shape"]
+                shape = spec.conditions["slit_shape"]
             except KeyError:
                 shape = "triangular"
             spec.apply_slit(
