@@ -246,7 +246,7 @@ can be retrieved in arbitrary units with the :meth:`~radis.spectrum.spectrum.Spe
 method.
 
 When a spectral unit is convolved with :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`,
-a new convolved spectral quantity is created. The unit of the convolved quantity may be different,
+a new convolved spectral array is created. The unit of the convolved spectral array may be different,
 depending on how the slit function was normalized. Several options are available in RADIS.
 Please refer to the documentation of the :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` method.
 
