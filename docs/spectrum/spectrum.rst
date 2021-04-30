@@ -524,7 +524,7 @@ change the unit::
 .. _label_spectrum_algebra:
 
 Multiply, subtract
--------------------
+------------------
 
 Sometimes you need to manipulate an experimental spectrum, to account
 for calibration or remove a baseline. Spectrum operations are done
