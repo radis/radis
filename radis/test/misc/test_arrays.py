@@ -197,7 +197,7 @@ def test_cython_add_at_spectra(*args, **kwargs):
     with numpy add.at().
     """
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     wstep = 0.005

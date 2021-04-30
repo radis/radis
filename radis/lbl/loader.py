@@ -671,21 +671,21 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-        name: a section name specified in your ``~/.radis``
+        name: a section name specified in your ``~/radis.json``
             ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
             not ``None``, all other arguments are discarded.
             Note that all files in database will be loaded and it may takes some
             time. Better limit the database size if you already know what
             range you need. See :ref:`Configuration file <label_lbl_config_file>` and
             :data:`~radis.misc.config.DBFORMAT` for expected
-            ``~/.radis`` format
+            ``~/radis.json`` format
 
 
         Other Parameters
         ----------------
         path: str, list of str, None
             list of database files, or name of a predefined database in the
-            :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
+            :ref:`Configuration file <label_lbl_config_file>` (`~/radis.json`)
             Accepts wildcards ``*`` to select multiple files
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lblinit_databank.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
@@ -1052,7 +1052,7 @@ class DatabankLoader(object):
     ):
         """Loads databank from shortname in the :ref:`Configuration file.
 
-        <label_lbl_config_file>` (`~/.radis`), or by manually setting all
+        <label_lbl_config_file>` (`~/radis.json`), or by manually setting all
         attributes.
 
         Databank includes:
@@ -1067,21 +1067,21 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-        name: a section name specified in your ``~/.radis``
+        name: a section name specified in your ``~/radis.json``
             ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
             not ``None``, all other arguments are discarded.
             Note that all files in database will be loaded and it may takes some
             time. Better limit the database size if you already know what
             range you need. See :ref:`Configuration file <label_lbl_config_file>` and
             :data:`~radis.misc.config.DBFORMAT` for expected
-            ``~/.radis`` format
+            ``~/radis.json`` format
 
 
         Other Parameters
         ----------------
         path: str, list of str, None
             list of database files, or name of a predefined database in the
-            :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
+            :ref:`Configuration file <label_lbl_config_file>` (`~/radis.json`)
             Accepts wildcards ``*`` to select multiple files
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
@@ -1255,7 +1255,7 @@ class DatabankLoader(object):
         drop_columns="auto",
     ):
         """Check that database parameters are valid, in particular that paths
-        exist. Loads all parameters if a Database from .radis config file was
+        exist. Loads all parameters if a Database from radis.json config file was
         given.
 
         Returns
@@ -1268,7 +1268,7 @@ class DatabankLoader(object):
         dbformat = format
 
         # Get database format and path
-        # ... either from name (~/.radis config file)
+        # ... either from name (~/radis.json config file)
         if name is not None:
             try:
                 entries = getDatabankEntries(name)
@@ -1301,7 +1301,7 @@ class DatabankLoader(object):
                 raise ValueError(
                     "No database name. Please give a path and a dbformat"
                     + ", or use one of the predefined databases in your"
-                    + " ~/.radis: {0}".format(",".join(dblist))
+                    + " ~/radis.json: {0}".format(",".join(dblist))
                 )
 
         # Check database format

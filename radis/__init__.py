@@ -78,9 +78,9 @@ from .misc.utils import getProjectRoot
 # %% Config files
 
 # @dev: refactor in progress.
-# So far there are config files in ~/.radis (for databanks), global variables
+# So far there are config files in ~/radis.json (for databanks), global variables
 # here, and a radis/config.json file.
-# Everything should be merged in a user JSON file ~/.radis (json) overriding
+# Everything should be merged in a user JSON file ~/radis.json (json) overriding
 # the default one.
 
 config = get_config()
@@ -90,9 +90,9 @@ Notes
 -----
 
 refactor in progress.
-So far there are config files in ~/.radis (for databanks), global variables
+So far there are config files in ~/radis.json (for databanks), global variables
 here, and a radis/config.json file.
-Everything should be merged in a user JSON file ~/.radis (json) overriding
+Everything should be merged in a user JSON file ~/radis.json (json) overriding
 the default one.
 """
 

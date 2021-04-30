@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     from radis import SpectrumFactory
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     Tgas = 1500
     sf = SpectrumFactory(

@@ -31,7 +31,7 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
     if verbose:
         printm(">>> _test_media_line_shift")
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4500,
@@ -107,7 +107,7 @@ def test_populations_CO2_hamiltonian(
     if verbose:
         printm(">>> _test_media_line_shift")
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavenum_min=2283.7,

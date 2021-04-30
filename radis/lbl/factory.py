@@ -276,7 +276,7 @@ class SpectrumFactory(BandFactory):
                              medium='vacuum',
                              verbose=1,    # more for more details
                              )
-        sf.load_databank('HITRAN-CO2-TEST')        # predefined in ~/.radis
+        sf.load_databank('HITRAN-CO2-TEST')        # predefined in ~/radis.json
         s = sf.eq_spectrum(Tgas=300 * u.K, path_length=1 * u.cm)
         s.rescale_path_length(0.01)    # cm
         s.plot('radiance_noslit', Iunit='µW/cm2/sr/nm')

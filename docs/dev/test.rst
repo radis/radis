@@ -74,14 +74,14 @@ The list of tags is:
 - fast : each test should run under 1s
 - needs_connection : requires an internet connection
 - needs_python3 : a Python-3 only test
-- needs_config_file: needs ``~/.radis`` to be defined.
+- needs_config_file: needs ``~/radis.json`` to be defined.
 
 Plus some tags for user-defined [HITEMP-2010]_ databases, as given in the :ref:`Configuration file <label_lbl_config_file>`
 section
 
-- needs_db_HITEMP_CO2_DUNHAM : requires HITEMP-CO2-DUNHAM database in ``~/.radis``
-- needs_db_HITEMP_CO_DUNHAM : requires HITEMP-CO-DUNHAM database in ``~/.radis``
-- needs_db_CDSD_HITEMP_PC : requires CDSD-HITEMP-PC database in ``~/.radis``
+- needs_db_HITEMP_CO2_DUNHAM : requires HITEMP-CO2-DUNHAM database in ``~/radis.json``
+- needs_db_HITEMP_CO_DUNHAM : requires HITEMP-CO-DUNHAM database in ``~/radis.json``
+- needs_db_CDSD_HITEMP_PC : requires CDSD-HITEMP-PC database in ``~/radis.json``
 
 The default test routine run on `Travis CI <https://travis-ci.com/radis/radis>`__
 is (see the ``radis/.gitlab-ci.yml`` file)::

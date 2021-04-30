@@ -162,7 +162,7 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
         isotope="1,2",
         Tvib=1500,
         Trot=300,
-        databank="HITEMP-CO",  # registered in ~/.radis
+        databank="HITEMP-CO",  # registered in ~/radis.json
     )
 
 

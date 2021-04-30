@@ -48,7 +48,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
         transmittanceSpectrum,
     )
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     molecule = "CO2"

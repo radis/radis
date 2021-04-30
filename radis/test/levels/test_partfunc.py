@@ -693,7 +693,7 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
 
         setup_test_line_databases(
             verbose=True
-        )  # add HITEMP-CO2-HAMIL-TEST in ~/.radis if not there
+        )  # add HITEMP-CO2-HAMIL-TEST in ~/radis.json if not there
 
         sf = SpectrumFactory(
             wavenum_min=2283.7,

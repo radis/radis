@@ -340,7 +340,7 @@ and :py:mod:`~astropy.units` ::
                          cutoff=1e-25,              # cm/molecule
                          broadening_max_width=10,   # cm-1
                          )
-    sf.load_databank('HITRAN-CO2-TEST')        # this database must be defined in ~/.radis
+    sf.load_databank('HITRAN-CO2-TEST')        # this database must be defined in ~/radis.json
     s1 = sf.eq_spectrum(Tgas=300 * u.K)
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
@@ -350,7 +350,7 @@ and :py:mod:`~astropy.units` ::
 Configuration file
 ------------------
 
-The ``~/.radis`` configuration file is used to store the list and attributes of the Line databases
+The ``~/radis.json`` configuration file is used to store the list and attributes of the Line databases
 available on your computer.
 
 Without a configuration file, you can still:
@@ -373,83 +373,106 @@ A configuration file will help to:
     format, and partition function format directly, but this is not recommended and should only be used if for some
     reason you cannot create a configuration file.
 
-A ``~/.radis`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which
+A ``~/radis.json`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which
 is specific to a given molecule. It typically looks like::
 
-str: Typical expected format of a ~/.radis entry::
+str: Typical expected format of a ~/radis.json entry::
 
-    [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-                                     #  or SpectrumFactory.load_databank()
-    path =                           #  no "", multipath allowed
-           D:\Databases\HITEMP-CO2\hitemp_07
-           D:\Databases\HITEMP-CO2\hitemp_08
-           D:\Databases\HITEMP-CO2\hitemp_09
-    format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                     # databank text file format. More info in
-                                     # SpectrumFactory.load_databank function.
-    parfuncfmt = hapi                # calculate partition functions
+    {
+      "database": {                                     # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                            # your databank name: use this in calc_spectrum()
+                                                        # or SpectrumFactory.load_databank()
+            "path": [                                   # no "", multipath allowed
+                "D:\\Databases\\HITEMP-CO2\\hitemp_07",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_08",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_09"
+            ],
+            "format": "hitran",                         # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                        # databank text file format. More info in
+                                                        # SpectrumFactory.load_databank function.
+            "parfuncfmt": "hapi"                        # calculate partition functions
+          }
+      }
+    }
 
 Following is an example where the path variable uses a wildcard ``*`` to find all the files that have ``hitemp_*`` in their names::
 
-	[MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-	                                 #  or SpectrumFactory.load_databank()
-	path =  D:\Databases\HITEMP-CO2\hitemp_*    # To load all hitemp files directly
-	format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-	                                 # databank text file format. More info in
-	                                 # SpectrumFactory.load_databank function.
-	parfuncfmt = hapi                # calculate partition functions
+    {
+      "database": {                                     # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                            # your databank name: use this in calc_spectrum()
+                                                        # or SpectrumFactory.load_databank()
+            "path": "D:\\Databases\\HITEMP-CO2\\hitemp_*",   # To load all hitemp files directly
+            "format": "hitran",                         # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                        # databank text file format. More info in
+                                                        # SpectrumFactory.load_databank function.
+            "parfuncfmt": "hapi"                        # calculate partition functions
+          }
+      }
+    }
 
 
 In the former example, for equilibrium calculations, RADIS uses [HAPI]_ to retrieve
 partition functions tabulated with TIPS-2017. It is also possible to use your own
 partition functions, for instance::
 
-    [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-                                     #  or SpectrumFactory.load_databank()
-    path =                           #  no "", multipath allowed
-           D:\Databases\HITEMP-CO2\hitemp_07
-           D:\Databases\HITEMP-CO2\hitemp_08
-           D:\Databases\HITEMP-CO2\hitemp_09
-    format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                     # databank text file format. More info in
-                                     # SpectrumFactory.load_databank function.
-    parfuncfmt: cdsd                 #  'cdsd', 'hapi', etc.
-                                     # format to read tabulated partition function
-                                     # file. If `hapi`, then HAPI (HITRAN Python
-                                     # interface) is used to retrieve them (valid if
-                                     # your databank is HITRAN data). HAPI is embedded
-                                     # into RADIS. Check the version. If not specified then 'hapi'
-                                     # is used as default
-    parfunc = PATH/TO/cdsd_partition_functions.txt
-                                     #  path to tabulated partition function to use.
-                                     # If `parfuncfmt` is `hapi` then `parfunc`
-                                     # should be the link to the hapi.py file. If
-                                     # not given, then the hapi.py embedded in RADIS
-                                     # is used (check version)
+    {
+      "database": {                                       # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                              # your databank name: use this in calc_spectrum()
+                                                          # or SpectrumFactory.load_databank()
+            "path": [                                     # no "", multipath allowed
+                "D:\\Databases\\HITEMP-CO2\\hitemp_07",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_08",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_09"
+            ],
+            "format": "hitran",                           # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                          # databank text file format. More info in
+                                                          # SpectrumFactory.load_databank function.
+            "parfuncfmt": "cdsd",                         # 'cdsd', 'hapi', etc.
+                                                          # format to read tabulated partition function
+                                                          # file. If `hapi`, then HAPI (HITRAN Python
+                                                          # interface) is used to retrieve them (valid if
+                                                          # your databank is HITRAN data). HAPI is embedded
+                                                          # into RADIS. Check the version. If not specified then 'hapi'
+                                                          # is used as default
+            "parfunc": "PATH/TO/cdsd_partition_functions.txt"
+                                                          # path to tabulated partition function to use.
+                                                          # If `parfuncfmt` is `hapi` then `parfunc`
+                                                          # should be the link to the hapi.py file. If
+                                                          # not given, then the hapi.py embedded in RADIS
+                                                          # is used (check version)
+          }
+      }
+    }
 
 By default, for nonequilibrium calculations, RADIS built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`
 are used to calculate the energy levels for CO2.
 It is also possible to use your own Energy level database. For instance::
 
 
-    [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-                                     #  or SpectrumFactory.load_databank()
-    path =                           #  no "", multipath allowed
-           D:\Databases\HITEMP-CO2\hitemp_07
-           D:\Databases\HITEMP-CO2\hitemp_08
-           D:\Databases\HITEMP-CO2\hitemp_09
-    format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                     # databank text file format. More info in
-                                     # SpectrumFactory.load_databank function.
-                                     # is used (check version)
-    levels_iso1 = D:\PATH_TO\energies_of_626_isotope.levels
-    levels_iso2 = D:\PATH_TO\energies_of_636_isotope.levels
-    levelsfmt = cdsd                 #  'cdsd', etc.
-                                     # how to read the previous file. Default None.
-    levelsZPE = 2531.828             #  zero-point-energy (cm-1): offset for all level
-                                     # energies. Default 0 (if not given)
+    {
+      "database": {                                        # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                               # your databank name: use this in calc_spectrum()
+                                                           # or SpectrumFactory.load_databank()
+            "path": [                                      # no "", multipath allowed
+                "D:\\Databases\\HITEMP-CO2\\hitemp_07",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_08",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_09"
+            ],
+            "format": "hitran",                             # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                            # databank text file format. More info in
+                                                            # SpectrumFactory.load_databank function.
+                                                            # is used (check version)
+            "levels_iso1": "D:\\PATH_TO\\energies_of_626_isotope.levels",
+            "levels_iso2": "D:\\PATH_TO\\energies_of_636_isotope.levels",
+            "levelsfmt": "cdsd",                            # 'cdsd', etc.
+                                                            # how to read the previous file. Default None.
+            "levelszpe": "2531.828"                         # zero-point-energy (cm-1): offset for all level
+                                                            # energies. Default 0 (if not given)
+          }
+      }
+    }
 
-The full description of a `~/.radis` entry is given in :py:data:`~radis.misc.config.DBFORMAT`:
+The full description of a `~/radis.json` entry is given in :py:data:`~radis.misc.config.DBFORMAT`:
 
 - ``path`` corresponds to Line databases (here: downloaded from [HITEMP-2010]_) and the ``levels_iso``
   are user generated Energy databases (here: calculated from the [CDSD-4000]_ Hamiltonian on non-distributed code,
@@ -477,37 +500,40 @@ The full description of a `~/.radis` entry is given in :py:data:`~radis.misc.con
 
 *How to create the configuration file?*
 
-A default ``~/.radis`` configuration file can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which
+A default ``~/radis.json`` configuration file can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which
 creates two test databases from fragments of [HITRAN-2016]_ line databases::
 
     from radis.test.utils import setup_test_line_databases
     setup_test_line_databases()
 
-which will create a ``~/.radis`` file with the following content ::
+which will create a ``~/radis.json`` file with the following content ::
 
 
-    [HITRAN-CO2-TEST]
-    info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
-    path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
-    format = hitran
-    parfuncfmt = hapi
-    levelsfmt = radis
-
-
-    [HITRAN-CO-TEST]
-    info = HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), 2000-2300 cm-1
-    path = PATH_TO\radis\radis\test\files\hitran_co_3iso_2000_2300cm.par
-    format = hitran
-    parfuncfmt = hapi
-    levelsfmt = radis
-
-
-    [HITEMP-CO2-TEST]
-    info = HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
-    path = PATH_TO\radis\radis\test\files\cdsd_hitemp_09_fragment.txt
-    format = cdsd-hitemp
-    parfuncfmt = hapi
-    levelsfmt = radis
+    {
+      "database": {
+          "HITRAN-CO2-TEST": {
+            "info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
+            "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
+            "format": "hitran",
+            "parfuncfmt": "hapi",
+            "levelsfmt": "radis"
+          },
+          "HITRAN-CO-TEST": {
+            "info": "HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), 2000-2300 cm-1",
+            "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co_3iso_2000_2300cm.par",
+            "format": "hitran",
+            "parfuncfmt": "hapi",
+            "levelsfmt": "radis"
+          },
+          "HITEMP-CO2-TEST": {
+            "info": "HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1",
+            "path": "PATH_TO\\radis\\radis\\test\\files\\cdsd_hitemp_09_fragment.txt",
+            "format": "cdsd-hitemp",
+            "parfuncfmt": "hapi",
+            "levelsfmt": "radis"
+          }
+      }
+    }
 
 
 If you configuration file exists already, the test databases will simply be appended.
