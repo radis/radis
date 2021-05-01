@@ -276,7 +276,7 @@ class SpectrumFactory(BandFactory):
                              medium='vacuum',
                              verbose=1,    # more for more details
                              )
-        sf.load_databank('HITRAN-CO2-TEST')        # predefined in ~/.radis
+        sf.load_databank('HITRAN-CO2-TEST')        # predefined in ~/radis.json
         s = sf.eq_spectrum(Tgas=300 * u.K, path_length=1 * u.cm)
         s.rescale_path_length(0.01)    # cm
         s.plot('radiance_noslit', Iunit='µW/cm2/sr/nm')
@@ -352,7 +352,7 @@ class SpectrumFactory(BandFactory):
         folding_thresh=1e-6,
         zero_padding=-1,
         broadening_method=Default("fft"),
-        cutoff=1e-27,
+        cutoff=0,
         verbose=True,
         warnings=True,
         save_memory=False,
@@ -476,7 +476,12 @@ class SpectrumFactory(BandFactory):
         # Initialize computation variables
         self.params.wstep = wstep
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
+
+        if cutoff is None:
+            # If None, use no cutoff : https://github.com/radis/radis/pull/259
+            cutoff = 0
         self.params.cutoff = cutoff
+
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
@@ -1258,6 +1263,7 @@ class SpectrumFactory(BandFactory):
         # Check line database and parameters, reset populations and scaled line dataframe
         # ----------
         self._check_line_databank()
+
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):
         self._calc_noneq_parameters(vib_distribution, singleTvibmode)

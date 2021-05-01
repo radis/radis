@@ -198,7 +198,7 @@ def fetch_hitemp(
             metadata_is={},
             metadata_keys_contain=["wavenumber_min", "wavenumber_max"],
         )
-        # check database is registered in ~/.radis
+        # check database is registered in ~/radis.json
         if not databank_name in getDatabankList():
             # if not, check number of rows is correct :
             error_msg = ""
@@ -366,7 +366,7 @@ def fetch_hitemp(
                 + "Else it may be a download error ?"
             )
 
-    # Add database to  ~/.radis
+    # Add database to  ~/radis.json
     register_database(
         databank_name,
         [local_file],
@@ -407,7 +407,7 @@ def register_database(
     Parameters
     ----------
     databank_name: str
-        name of the database in :ref:`~/.radis config file <label_lbl_config_file>`
+        name of the database in :ref:`~/radis.json config file <label_lbl_config_file>`
 
     Other Parameters
     ----------------
@@ -416,7 +416,7 @@ def register_database(
     Returns
     -------
     None:
-        adds to :ref:`~/.radis <label_lbl_config_file>` with all the input
+        adds to :ref:`~/radis.json <label_lbl_config_file>` with all the input
         parameters. Also adds ::
 
             format : "hitemp-radisdb"
@@ -443,7 +443,7 @@ def register_database(
         ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
         dict_entries["levelsfmt"] = "radis"
 
-    # Register database in ~/.radis to be able to use it with load_databank()
+    # Register database in ~/radis.json to be able to use it with load_databank()
     try:
         addDatabankEntries(databank_name, dict_entries)
     except DatabaseAlreadyExists as err:
@@ -458,9 +458,9 @@ def register_database(
             # TODO @dev : replace once we have configfile as JSON (https://github.com/radis/radis/issues/167)
         except AssertionError:
             raise DatabaseAlreadyExists(
-                f"{databank_name} already exists in your ~/.radis config file, "
-                + f"with different key `{k}` : `{v}` (~/.radis) ≠ `{dict_entries[k]}` (new). "
-                + "If you're sure of what you're doing, fix the registered database in ~/.radis. "
+                f"{databank_name} already exists in your ~/radis.json config file, "
+                + f"with different key `{k}` : `{v}` (~/radis.json) ≠ `{dict_entries[k]}` (new). "
+                + "If you're sure of what you're doing, fix the registered database in ~/radis.json. "
                 + "Else, remove it from your config file, or choose a different name "
                 + "for the downloaded database with `fetch_hitemp(databank_name=...)`, "
                 + "and restart."
@@ -468,7 +468,7 @@ def register_database(
         else:  # no other error raised
             if verbose:
                 print(
-                    f"{databank_name} already registered in ~/.radis config file, with the same parameters."
+                    f"{databank_name} already registered in ~/radis.json config file, with the same parameters."
                 )
 
 

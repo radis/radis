@@ -223,7 +223,7 @@ def _run_example(verbose=False):
 
     setup_test_line_databases(
         verbose=verbose
-    )  # add HITEMP-CO2-TEST in ~/.radis if not there
+    )  # add HITEMP-CO2-TEST in ~/radis.json if not there
     sf = SpectrumFactory(
         wavelength_min=4165,
         wavelength_max=4200,
@@ -236,7 +236,7 @@ def _run_example(verbose=False):
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/.radis
+    sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/radis.json
 
 
 def test_cache_regeneration(verbose=True, warnings=True, **kwargs):

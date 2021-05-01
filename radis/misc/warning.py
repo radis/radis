@@ -153,6 +153,19 @@ class IrrelevantFileWarning(PerformanceWarning):
     pass
 
 
+# %% Config file warnings & errors
+
+
+class DatabaseAlreadyExists(KeyError):
+    pass
+
+
+class DatabaseNotFoundError(FileNotFoundError):
+    """Warning triggered when path does not exist"""
+
+    pass
+
+
 # @dev: list all your custom warnings below so they are handled by RADIS user params.
 WarningClasses = {
     "default": UserWarning,
@@ -165,6 +178,8 @@ WarningClasses = {
     "VoigtBroadeningWarning": VoigtBroadeningWarning,
     "MemoryUsageWarning": MemoryUsageWarning,
     "EmptyDatabaseWarning": EmptyDatabaseWarning,
+    "DatabaseAlreadyExists": DatabaseAlreadyExists,
+    "DatabaseNotFoundError": DatabaseNotFoundError,
     "OutOfRangeLinesWarning": OutOfRangeLinesWarning,
     "HighTemperatureWarning": HighTemperatureWarning,
     "NegativeEnergiesWarning": NegativeEnergiesWarning,
@@ -206,6 +221,8 @@ default_warning_status = {
     "LinestrengthCutoffWarning": "warn",
     "MemoryUsageWarning": "warn",
     "EmptyDatabaseWarning": "warn",
+    "DatabaseAlreadyExists": "error",
+    "DatabaseNotFoundError": "error",
     "OutOfRangeLinesWarning": "warn",
     "HighTemperatureWarning": "warn",
     "NegativeEnergiesWarning": "warn",  # warning if negative energies in database
@@ -312,13 +329,6 @@ def warn(message, category="default", status={}):
         raise WarningType(message)
     else:
         raise ValueError("Unexpected action for warning: {0}".format(action))
-
-
-# %% Config file warnings & errors
-
-
-class DatabaseAlreadyExists(KeyError):
-    pass
 
 
 #%% Tests (on module load)

@@ -33,9 +33,12 @@ to register it on Pypi see register.py::
 """
 import io
 import re
+import sys
 from os.path import abspath, dirname, exists, join
 
-from setuptools import find_packages, setup
+from Cython.Distutils import build_ext
+from numpy import get_include
+from setuptools import Extension, find_packages, setup
 
 # Build description from README (PyPi compatible)
 # -----------------------------------------------
@@ -122,6 +125,52 @@ else:
 with open(join(dirname(__file__), "radis", "__version__.txt")) as version_file:
     __version__ = version_file.read().strip()
 
+
+# Cython accelerated operations:
+class build_ext_subclass(build_ext):
+    def build_extensions(self):
+        c = self.compiler.compiler_type
+        copt = {
+            "msvc": ["/openmp", "/Ox", "/fp:fast", "/favor:INTEL64"],
+            "mingw32": ["-fopenmp", "-O3", "-ffast-math", "-march=native"],
+        }
+
+        lopt = {"mingw32": ["-fopenmp"]}
+
+        print("Compiling with " + c + "...")
+        try:
+            for e in self.extensions:
+                e.extra_compile_args = copt[c]
+        except (KeyError):
+            pass
+        try:
+            for e in self.extensions:
+                e.extra_link_args = lopt[c]
+        except (KeyError):
+            pass
+        build_ext.build_extensions(self)
+
+
+def get_ext_modules():
+    print(sys.version)
+    try:
+        import cython
+
+        print("Cython " + cython.__version__)
+        ext_modules = [
+            Extension(
+                "radis_cython_extensions",
+                sources=["./radis/cython/radis_cython_extensions.pyx"],
+                include_dirs=[get_include()],
+                language="c",
+                extra_link_args=[],
+            )
+        ]
+        return ext_modules
+    except (ModuleNotFoundError):
+        return []
+
+
 # Main install routine
 setup(
     name="radis",
@@ -147,10 +196,11 @@ setup(
     install_requires=[
         "hitran-api",
         "numpy",
-        "scipy",
+        "scipy>=1.4.0",
         "matplotlib",
+        "cython",
         "pandas>=1.0.5",
-        "plotly",
+        "plotly>=2.5.1",
         "numba",
         "mpldatacursor",
         "astropy",  # Unit aware calculations
@@ -185,6 +235,8 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Operating System :: OS Independent",
     ],
+    cmdclass={"build_ext": build_ext_subclass},
+    ext_modules=get_ext_modules(),
     include_package_data=True,  # add non .py data files in MANIFEST.in
     # package_data={'radis': ['radis/phys/units.txt']},
     zip_safe=False,  # impossible as long as we have external files read with __file__ syntax

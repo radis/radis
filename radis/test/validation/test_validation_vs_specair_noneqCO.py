@@ -32,7 +32,7 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwa
 
     """
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # %% Specair calculation
     # -----------

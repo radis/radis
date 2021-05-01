@@ -61,6 +61,7 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # (on the slide bar on the right)
 
 import warnings
+from copy import deepcopy
 from os.path import exists
 from time import time
 from uuid import uuid1
@@ -233,8 +234,6 @@ assert compare_lists(drop_auto_columns_for_levelsfmt, KNOWN_LVLFORMAT) == 1
 
 # %% Main class
 
-from copy import deepcopy
-
 
 class ConditionDict(dict):
     """A class to hold Spectrum calculation input conditions
@@ -379,7 +378,7 @@ class Input(ConditionDict):
         self.wavenum_min = None  #: str: wavenumber min (cm-1)
 
 
-## TO-DO: these error estimations are horribly outdated...
+# TO-DO: these error estimations are horribly outdated...
 def _lorentzian_step(res_L):
     log_pL = np.log((res_L / 0.20) ** 0.5 + 1)
     return log_pL
@@ -451,6 +450,7 @@ class Parameters(ConditionDict):
         self.dlm_log_pG = _gaussian_step(
             0.01
         )  #: float : Gaussian step DLM lineshape database. Default _gaussian_step(0.01)
+        self.add_at_used = None  # use Cython-accelerated code
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
@@ -671,21 +671,21 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-        name: a section name specified in your ``~/.radis``
+        name: a section name specified in your ``~/radis.json``
             ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
             not ``None``, all other arguments are discarded.
             Note that all files in database will be loaded and it may takes some
             time. Better limit the database size if you already know what
             range you need. See :ref:`Configuration file <label_lbl_config_file>` and
             :data:`~radis.misc.config.DBFORMAT` for expected
-            ``~/.radis`` format
+            ``~/radis.json`` format
 
 
         Other Parameters
         ----------------
         path: str, list of str, None
             list of database files, or name of a predefined database in the
-            :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
+            :ref:`Configuration file <label_lbl_config_file>` (`~/radis.json`)
             Accepts wildcards ``*`` to select multiple files
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lblinit_databank.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
@@ -800,7 +800,7 @@ class DatabankLoader(object):
         parfuncfmt="hapi",
         levels=None,
         levelsfmt="radis",
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         parse_local_global_quanta=True,
         drop_non_numeric=True,
@@ -888,7 +888,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if not source in ["hitran", "hitemp"]:
+        if source not in ["hitran", "hitemp"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -913,6 +913,8 @@ class DatabankLoader(object):
         # Let's store all params so they can be parsed by "get_conditions()"
         # and saved in output spectra information
         self.params.dbformat = dbformat
+        self.misc.load_energies = load_energies
+        self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
         else:
@@ -939,7 +941,14 @@ class DatabankLoader(object):
                 df = fetch_astroquery(
                     molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
                 )
-                frames.append(df)
+                if len(df) > 0:
+                    frames.append(df)
+                else:
+                    self.warn(
+                        "No line for isotope n°{}".format(iso),
+                        "EmptyDatabaseWarning",
+                        level=2,
+                    )
 
             # Merge
             if frames == []:
@@ -1037,13 +1046,13 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=True,
         lvl_use_cached=True,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         drop_columns="auto",
     ):
         """Loads databank from shortname in the :ref:`Configuration file.
 
-        <label_lbl_config_file>` (`~/.radis`), or by manually setting all
+        <label_lbl_config_file>` (`~/radis.json`), or by manually setting all
         attributes.
 
         Databank includes:
@@ -1058,21 +1067,21 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-        name: a section name specified in your ``~/.radis``
+        name: a section name specified in your ``~/radis.json``
             ``.radis`` has to be created in your HOME (Unix) / User (Windows). If
             not ``None``, all other arguments are discarded.
             Note that all files in database will be loaded and it may takes some
             time. Better limit the database size if you already know what
             range you need. See :ref:`Configuration file <label_lbl_config_file>` and
             :data:`~radis.misc.config.DBFORMAT` for expected
-            ``~/.radis`` format
+            ``~/radis.json`` format
 
 
         Other Parameters
         ----------------
         path: str, list of str, None
             list of database files, or name of a predefined database in the
-            :ref:`Configuration file <label_lbl_config_file>` (`~/.radis`)
+            :ref:`Configuration file <label_lbl_config_file>` (`~/radis.json`)
             Accepts wildcards ``*`` to select multiple files
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
@@ -1185,6 +1194,7 @@ class DatabankLoader(object):
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
+            load_energies=load_energies,
             lvl_use_cached=lvl_use_cached,
             include_neighbouring_lines=include_neighbouring_lines,
         )
@@ -1240,12 +1250,12 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=None,
         lvl_use_cached=None,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
         drop_columns="auto",
     ):
         """Check that database parameters are valid, in particular that paths
-        exist. Loads all parameters if a Database from .radis config file was
+        exist. Loads all parameters if a Database from radis.json config file was
         given.
 
         Returns
@@ -1258,7 +1268,7 @@ class DatabankLoader(object):
         dbformat = format
 
         # Get database format and path
-        # ... either from name (~/.radis config file)
+        # ... either from name (~/radis.json config file)
         if name is not None:
             try:
                 entries = getDatabankEntries(name)
@@ -1291,7 +1301,7 @@ class DatabankLoader(object):
                 raise ValueError(
                     "No database name. Please give a path and a dbformat"
                     + ", or use one of the predefined databases in your"
-                    + " ~/.radis: {0}".format(",".join(dblist))
+                    + " ~/radis.json: {0}".format(",".join(dblist))
                 )
 
         # Check database format
@@ -1321,8 +1331,8 @@ class DatabankLoader(object):
         # ... Parse all paths and read wildcards
         path_list = path
         new_paths = []
-        for path in path_list:
-            path = get_files_from_regex(path)
+        for pathrg in path_list:
+            path = get_files_from_regex(pathrg)
 
             # Ensure that `path` does not contain the cached dataset files in
             # case a wildcard input is given by the user. For instance, if the
@@ -1336,6 +1346,15 @@ class DatabankLoader(object):
                 if cache_file_name(fname) in path and cache_file_name(fname) != fname:
                     filtered_path.remove(cache_file_name(fname))
             new_paths += filtered_path
+
+            # Raise errors if no file / print which files were selected.
+            if len(filtered_path) == 0:
+                self.warn(f"Path `{pathrg}` match no file", "DatabaseNotFoundError")
+            if self.verbose >= 3 and pathrg != filtered_path:
+                printg(
+                    f"Regex `{pathrg}` match {len(filtered_path)} files: {filtered_path}"
+                )
+
         path = new_paths
 
         # ... Check all path exists
@@ -1385,7 +1404,7 @@ class DatabankLoader(object):
         levelsfmt=None,
         db_use_cached=None,
         lvl_use_cached=None,
-        load_energies=True,
+        load_energies=False,
         include_neighbouring_lines=True,
     ):
         """store all params so they can be parsed by "get_conditions()" and
@@ -1404,6 +1423,7 @@ class DatabankLoader(object):
             [format_paths(k) for k in path]
         )  # else it's a nightmare to store
         self.params.dbformat = format
+        self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
         else:
@@ -1916,7 +1936,14 @@ class DatabankLoader(object):
                 )
 
         # Complete database with molecular parameters
-        self._fetch_molecular_parameters(df)
+        try:
+            self._fetch_molecular_parameters(df)
+        except KeyError as err:
+            raise KeyError(
+                "Isotope {} parameters not found, check https://github.com/radis/radis/blob/develop/radis/db/molparam.txt".format(
+                    err
+                )
+            ) from err
 
         if self.verbose >= 2:
             printg(
@@ -1979,7 +2006,7 @@ class DatabankLoader(object):
         conditions = {
             k: v
             for (k, v) in conditions.items()
-            if not k in self._autoretrieveignoreconditions
+            if k not in self._autoretrieveignoreconditions
         }
 
         s = self.SpecDatabase.get(**conditions)
@@ -2252,10 +2279,29 @@ class DatabankLoader(object):
         elec_state: str
         """
 
-        parsum = self.parsum_calc[molecule][isotope][elec_state]
+        parsum = self.get_partition_function_molecule(molecule)[isotope][elec_state]
 
         # helps IDE find methods
         assert isinstance(parsum, RovibParFuncCalculator)
+
+        return parsum
+
+    def get_partition_function_molecule(self, molecule):
+        """Retrieve Partition Function for Molecule.
+
+        Parameters
+        ----------
+        molecule: str
+        """
+        try:
+            parsum = self.parsum_calc[molecule]
+        except KeyError as err:
+            raise KeyError(
+                "Error while Retrieving Partition Function of Molecule!"
+                + " Load the energies levels with SpectrumFactory.load_databank"
+                + "('path', load_energies=True). If using SpectrumFactory.fetch_databank()"
+                + " consider adding arguement load_energies=True"
+            ) from err
 
         return parsum
 

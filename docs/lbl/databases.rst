@@ -37,7 +37,7 @@ RADIS can read files from the HITEMP database.
 - HITEMP-2010 files can be downloaded from https://hitran.org/hitemp/. Expect
   ~3 Gb for CO2 or ~10 Gb for H2O. Cite with [HITEMP-2010]_
 
-The ``~/.radis`` is then used to properly handle the line databases
+The ``~/radis.json`` is then used to properly handle the line databases
 on the User environment. See the :ref:`Configuration file <label_lbl_config_file>` section, as well as
 the :py:mod:`radis.misc.config` module and the :py:func:`~radis.misc.config.getDatabankList`
 function for more information.
@@ -75,9 +75,9 @@ downloaded manually.
   [CDSD-4000]_ FTP : ftp://ftp.iao.ru/pub/CDSD-4000/  . They can be loaded and interpolated
   with :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDtab`. This can be done automatically
   providing ``parfuncfmt: cdsd`` and ``parfunc = PATH/TO/cdsd_partition_functions.txt`` is given
-  in the ``~/.radis`` configuration file (see the :ref:`Configuration file <label_lbl_config_file>`).
+  in the ``~/radis.json`` configuration file (see the :ref:`Configuration file <label_lbl_config_file>`).
 
-The ``~/.radis`` is  used to properly handle the line databases
+The ``~/radis.json`` is  used to properly handle the line databases
 on the User environment. See the :ref:`Configuration file <label_lbl_config_file>` section, as well as
 the :py:mod:`radis.misc.config` module and the :py:func:`~radis.misc.config.getDatabankList`
 function for more information.

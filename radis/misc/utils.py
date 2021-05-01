@@ -144,7 +144,18 @@ class DatabankNotFound(FileNotFoundError):
 
 class NotInstalled(object):
     """A class to deal with optional packages Will raise an error only if the
-    package is used (but not if imported only)"""
+    package is used (but not if imported only)
+
+    Examples
+    --------
+
+    ::
+
+        some function = NotInstalled("you should install C drivers")
+        a = some_function   # no error
+        a()             # will raise the NotInstalled error and display the message
+
+    """
 
     def __init__(self, name, info=""):
         self.__name = name

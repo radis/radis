@@ -38,7 +38,7 @@ def test_retrieve_from_database(
 
         assert not exists(temp_database_name)
 
-        setup_test_line_databases()  # add HITEMP-CO2-TEST in ~/.radis if not there
+        setup_test_line_databases()  # add HITEMP-CO2-TEST in ~/radis.json if not there
 
         sf = SpectrumFactory(
             2284.2,

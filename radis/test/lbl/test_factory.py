@@ -175,10 +175,7 @@ def test_spec_generation(
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
-    sf.load_databank(
-        "HITEMP-CO2-DUNHAM",
-        load_energies=False,  # no need to load energies at equilibrium
-    )
+    sf.load_databank("HITEMP-CO2-DUNHAM")
     s = sf.eq_spectrum(Tgas=300, name="test_spec_generation")
     if verbose:
         printm(
@@ -297,7 +294,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
     if verbose:
         printm(">>> _test_power_integral")
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4300,
@@ -357,7 +354,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
     if verbose:
         printm(">>> _test_media_line_shift")
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4500,
@@ -411,7 +408,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
 def test_wavelength_units_conversion(
     input_wavelengths, expected_wavelengths_nm, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     wlmin, wlmax = input_wavelengths
     expected_wlmin, expected_wlmax = expected_wavelengths_nm
@@ -442,7 +439,7 @@ def test_wavelength_units_conversion(
 def test_wavenumber_units_conversion(
     input_wavenumbers, expected_wavenumbers_cm1, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     wmin, wmax = input_wavenumbers
     expected_wmin, expected_wmax = expected_wavenumbers_cm1
@@ -475,7 +472,7 @@ def test_wavenumber_units_conversion(
 def test_pressure_units_conversion(
     input_pressure, expected_pressure_bar, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4300,
@@ -506,7 +503,7 @@ def test_pressure_units_conversion(
 def test_pathlength_units_conversion(
     input_pathlength, expected_pathlength_cm, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4300,
@@ -536,7 +533,7 @@ def test_pathlength_units_conversion(
 def test_temperature_units_conversion(
     input_temperature, expected_temperature_K, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4300,

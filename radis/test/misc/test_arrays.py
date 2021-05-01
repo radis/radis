@@ -5,9 +5,14 @@ Created on Wed Aug 29 10:35:24 2018
 @author: erwan
 """
 
+from time import perf_counter
+
 import numpy as np
 
+from radis import get_residual
+from radis.lbl.factory import SpectrumFactory
 from radis.misc.arrays import (
+    add_at,
     autoturn,
     bining,
     calc_diff,
@@ -18,6 +23,7 @@ from radis.misc.arrays import (
     is_sorted_backward,
     logspace,
 )
+from radis.test.utils import setup_test_line_databases
 
 
 def test_is_sorted(*args, **kwargs):
@@ -147,6 +153,93 @@ def test_find_nearest(*args, **kwargs):
 
     assert (find_nearest(np.array([1, 3]), np.array([2])) == np.array([1])).all()
     assert (find_nearest(np.array([3, 1]), np.array([2])) == np.array([3])).all()
+
+
+def test_cython_add_at(*args, **kwargs):
+    """
+    Compare the workings of the Cython compiled add_at() function
+    versus the numpy add.at() function with bogus data.
+    """
+
+    # First check if Python was able to import the Cython version of add at:
+    from radis_cython_extensions import add_at as cython_add_at
+
+    assert add_at == cython_add_at
+
+    # Compare output LDM's between the two additions:
+    Nv = 300000
+    NG = 4
+    NL = 16
+    Ni = 1000000
+
+    I = np.random.rand(Ni).astype(np.float32)
+    k = np.random.randint(Nv, size=Ni, dtype=np.int32)
+    l = np.random.randint(NG, size=Ni, dtype=np.int32)
+    m = np.random.randint(NL, size=Ni, dtype=np.int32)
+
+    LDM1 = np.zeros((Nv, NG, NL), dtype=np.float32)
+    t0 = perf_counter()
+    np.add.at(LDM1, (k, l, m), I)
+    print("Numpy add.at(): ", perf_counter() - t0)
+
+    LDM2 = np.zeros((Nv, NG, NL), dtype=np.float32)
+    t0 = perf_counter()
+    cython_add_at(LDM2, k, l, m, I)
+    print("Cython add_at(): ", perf_counter() - t0)
+
+    print("Residual: ", np.sum(np.abs(LDM1 - LDM2)))
+    assert np.allclose(LDM1, LDM2)
+
+
+def test_cython_add_at_spectra(*args, **kwargs):
+    """
+    Test if the Cython add_at() produces the same spectra as
+    with numpy add.at().
+    """
+
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
+
+    # Conditions
+    wstep = 0.005
+    wmin = 2100  # cm-1
+    wmax = 2200  # cm-1
+
+    T = 1200  # K
+    p = 0.1  # bar
+
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        mole_fraction=1,
+        path_length=1,  # doesnt change anything
+        wstep=wstep,
+        pressure=p,
+        isotope="1",
+        verbose=False,
+        warnings={
+            "MissingSelfBroadeningWarning": "ignore",
+            "NegativeEnergiesWarning": "ignore",
+            "HighTemperatureWarning": "ignore",
+            "OutOfRangeLinesWarning": "ignore",
+            "GaussianBroadeningWarning": "ignore",
+            "CollisionalBroadeningWarning": "ignore",
+            "AccuracyWarning": "ignore",
+        },
+    )
+    sf.load_databank("HITRAN-CO-TEST")
+
+    sf.use_cython = False
+    s_numpy = sf.eq_spectrum(Tgas=T, name="numpy")
+    s_numpy.apply_slit(0.5, "nm")
+    assert sf.params.add_at_used == "numpy"
+
+    sf.use_cython = True
+    s_cython = sf.eq_spectrum(Tgas=T, name="cython")
+    s_cython.apply_slit(0.5, "nm")
+    assert sf.params.add_at_used == "cython"
+
+    res = get_residual(s_numpy, s_cython, "transmittance")
+    assert res < 2e-4
 
 
 if __name__ == "__main__":

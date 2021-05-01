@@ -197,7 +197,7 @@ also featured in the [RADIS-2018]_ article ::
                          molecule=molecule,
                          optimization=None,
                          )
-    sf.fetch_databank('astroquery', load_energies=False)
+    sf.fetch_databank('astroquery')
 
     s = sf.eq_spectrum(Tgas=T, pressure=pressure_bar)
     s.plot()

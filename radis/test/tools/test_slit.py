@@ -678,7 +678,7 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     plCO = SpectrumFactory(
         wavenum_min=2230,

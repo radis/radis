@@ -26,6 +26,7 @@ radis/test/validation/*.png
 __pycache__/
 *.py[cod]
 *.pyc
+*.c
 
 # IPython notebook checkpoints
 *-checkpoint.ipynb

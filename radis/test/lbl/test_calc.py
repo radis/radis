@@ -479,7 +479,7 @@ def test_all_calc_methods_CO2pcN(
     del database_kwargs["info"]
     database_kwargs["levelsfmt"] = "cdsd-pcN"
     # ... load the new database
-    sf.load_databank(**database_kwargs)
+    sf.load_databank(**database_kwargs, load_energies=True)
 
     # Now, define Evib:
     Q_calc = sf.parsum_calc["CO2"][1]["X"]
