@@ -216,10 +216,32 @@ def hit2df(
         )
 
     # Add local quanta attributes, based on the HITRAN group
-    df = parse_local_quanta(df, mol)
+    try:
+        df = parse_local_quanta(df, mol)
+    except ValueError as err:
+        # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
+        # In this case, do not parse (makes non-equilibrium calculations impossible).
+        # see https://github.com/radis/radis/issues/211
+        if verbose:
+            print(str(err))
+            print("-" * 10)
+            print(
+                f"Impossible to parse local quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+            )
 
     # Add global quanta attributes, based on the HITRAN class
-    df = parse_global_quanta(df, mol)
+    try:
+        df = parse_global_quanta(df, mol)
+    except ValueError as err:
+        # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
+        # In this case, do not parse (makes non-equilibrium calculations impossible).
+        # see https://github.com/radis/radis/issues/211
+        if verbose:
+            print(str(err))
+            print("-" * 10)
+            print(
+                f"Impossible to parse global quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+            )
 
     # Remove non numerical attributes
     if drop_non_numeric:
