@@ -2202,6 +2202,8 @@ class BroadenFactory(BaseFactory):
                 )
             ) from err
 
+        return wavenumber, abscoeff, emisscoeff
+
     # %% Generate absorption profile which includes linebroadening factors
 
     def _calc_broadening(self):
