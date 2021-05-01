@@ -440,12 +440,15 @@ def load_spec(file, binary=True):  # , return_binary_status=False):
     s: Spectrum
         a :class:`~radis.spectrum.spectrum.Spectrum` object
 
+    Examples
+    --------
+    .. minigallery:: radis.load_spec
 
     See Also
     --------
 
-    :class:`~radis.tools.database.SpecDatabase`,
-    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+    :py:class:`~radis.tools.database.SpecDatabase`,
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
     """
 
     def _load(binary):

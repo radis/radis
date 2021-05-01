@@ -154,6 +154,7 @@ If many spectra are stored in a folder, it may be time to set up a
 :class:`~radis.tools.database.SpecDatabase` structure to easily see all
 Spectrum conditions and get Spectrum that suits specific parameters
 
+.. minigallery:: radis.load_spec
 
 
 .. _label_spectral _arrays:
@@ -472,11 +473,11 @@ transfer equation again, so the ``emisscoeff`` and ``abscoeff`` (opacity) quanti
 will have to be stored in the Spectrum, or any equivalent combination
 (radiance_noslit and absorbance, for instance).
 
-Example:
+Example::
 
-    >>> from radis import load_spec
-    >>> s = load_spec('co_calculation.spec')
-    >>> s.rescale_path_length(0.5)      # calculate for new path_length
+    from radis import load_spec
+    s = load_spec('co_calculation.spec')
+    s.rescale_path_length(0.5)      # calculate for new path_length
 
 
 Rescale Spectrum with new mole fraction
