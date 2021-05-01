@@ -1036,6 +1036,7 @@ def compare_spectra(
     rtol=1e-5,
     ignore_nan=False,
     ignore_outliers=False,
+    ignore_conditions=["calculation_time"],
     normalize=False,
     **kwargs
 ):
@@ -1043,50 +1044,41 @@ def compare_spectra(
 
     Parameters
     ----------
-
     first: type Spectrum
         a Spectrum to be compared
-
     other: type Spectrum
         another Spectrum to compare with
-
     spectra_only: boolean, or str
         if ``True``, only compares spectral quantities (in the same waveunit)
         and not lines or conditions. If str, compare a particular quantity
         name. If False, compare everything (including lines and conditions
         and populations). Default ``False``
-
     plot: boolean
         if ``True``, use plot_diff to plot all quantities for the 2 spectra
         and the difference between them. Default ``True``.
-
     wunit: 'nm', 'cm-1', 'default'
         in which wavespace to compare (and plot). If default, natural wavespace
         of first Spectrum is taken
-
     rtol: float
         relative difference to use for spectral quantities comparison
-
     ignore_nan: boolean
         if ``True``, nans are ignored when comparing spectral quantities
-
     ignore_outliers: boolean, or float
         if not False, outliers are discarded. i.e, output is determined by::
 
             out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
-
+    ignore_conditions: list
+        do not compare the metadata of these keys
     normalize: bool
         Normalize the spectra to be plotted
 
     Other Parameters
     ----------------
-
     kwargs: dict
         arguments are forwarded to :func:`~radis.spectrum.compare.plot_diff`
 
     Returns
     -------
-
     equals: boolean
         return True if spectra are equal (respective to tolerance defined by
         rtol and other input conditions)
@@ -1094,7 +1086,6 @@ def compare_spectra(
 
     Examples
     --------
-
     Compare two Spectrum objects, or specifically the transmittance::
 
         s1.compare_with(s2)
@@ -1323,7 +1314,15 @@ def compare_spectra(
         # Compare conditions and units
         # -----------
         verbose_dict = "if_different" if verbose else False
-        b1 = compare_dict(first.conditions, other.conditions, verbose=verbose_dict) == 1
+        b1 = (
+            compare_dict(
+                first.conditions,
+                other.conditions,
+                verbose=verbose_dict,
+                ignore_keys=ignore_conditions,
+            )
+            == 1
+        )
         b2 = compare_dict(first.cond_units, other.cond_units, verbose=verbose_dict) == 1
         b3 = compare_dict(first.units, other.units, verbose=verbose_dict) == 1
         if not b1 and verbose:
