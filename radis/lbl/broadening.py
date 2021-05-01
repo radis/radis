@@ -97,25 +97,20 @@ def doppler_broadening_HWHM(wav, molar_mass, Tgas):
 
     Parameters
     ----------
-
     wav: array like (nm / cm-1)
         transition waverange  [length N = number of lines]
-
     molar_mass: array like (g/mol)
         molar mass for isotope of given transition, in ``g/mol``   [length N]
-
     Tgas: float (K)
         (translational) gas temperature
 
     Returns
     -------
-
-    hwhm_gauss: numpy array    (nm / cm-1)    [shape N]
+    array : (nm / cm-1)    [shape N]
         gaussian HWHM for all lines
 
     References
     ----------
-
     .. math::
 
         f_{G} = \\frac{1}{\\alpha} \\sqrt{\\frac{\\ln 2}{\\pi}} exp\\left(- \\ln 2 \\left(\\frac{w - w_0}{\\alpha}\\right)^2 \\right)
@@ -147,12 +142,10 @@ def doppler_broadening_HWHM(wav, molar_mass, Tgas):
 
     Notes
     -----
-
     *equation generated from the Python formula with* :py:func:`~pytexit.pytexit.py2tex`
 
     See Also
     --------
-
     :py:func:`~radis.lbl.broadening.gaussian_lineshape`
     """
 
@@ -169,39 +162,32 @@ def doppler_broadening_HWHM(wav, molar_mass, Tgas):
 
 
 def gaussian_lineshape(w_centered, hwhm):
-    """Computes Doppler (Gaussian) lineshape over all lines with [1]_, [2]_
+    r"""Computes Doppler (Gaussian) lineshape over all lines with [1]_, [2]_
 
     .. math::
 
-        \\frac{1}{\\alpha_g} \\sqrt{\\frac{\\ln(2)}{\\pi}}
-        \\operatorname{exp}\\left(-\\ln 2 {\\left(\\frac{w_{centered}}{\\alpha_g}\\right)}^2\\right)
+        \frac{1}{\alpha_g} \sqrt{\frac{\ln 2}{\pi}}
+        \operatorname{exp}\left(-\ln 2 {\left(\frac{w_{centered}}{\alpha_g}\right)}^2\right)
+
+    with :math:`\alpha_g` half-width at half maximum (HWHM)
 
     Parameters
     ----------
-
     w_centered: 2D array       [one per line: shape W x N]
         waverange (nm / cm-1) (centered on 0, size W = broadening width size)
-
     hwhm:  array   [shape N = number of lines]
         Half-width at half-maximum (HWHM) of Gaussian
-
     Tgas: K
         (translational) gas temperature
 
     Returns
     -------
-
-    lineshape: array          [shape N x W]
+    array :  [shape N x W]
         line profile
 
     References
     ----------
-
-    $$ I_{gaussian} = exp(- ln2 (Δw/HWHM)^2 )) $$
-
-    with HWHM full-width half maximum
-
-    .. [1] `Wikipedia <https://en.wikipedia.org/wiki/Doppler_broadening>`_ (in cm-1)
+    .. [1] `Wikipedia <https://en.wikipedia.org/wiki/Doppler_broadening>`_ (in :math:`cm^{-1}`)
 
     .. [2] `Laux et al, 2003, "Optical diagnostics of atmospheric pressure air plasmas" <http://iopscience.iop.org/article/10.1088/0963-0252/12/2/301/meta>`_
            (in nm)
@@ -210,15 +196,14 @@ def gaussian_lineshape(w_centered, hwhm):
 
     Notes
     -----
-
     *formula generated from the Python equation with* :py:func:`~pytexit.pytexit.py2tex`
 
     See Also
     --------
-
     :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`,
     :py:func:`~radis.lbl.broadening.lorentzian_lineshape`,
     :py:func:`~radis.lbl.broadening.voigt_lineshape`,
+    :py:func:`~radis.lbl.broadening.gaussian_FT`
     """
 
     # Calculate broadening
@@ -229,20 +214,24 @@ def gaussian_lineshape(w_centered, hwhm):
 
 
 def gaussian_FT(w_centered, hwhm):
-    """Fourier Transform of a Gaussian lineshape.
+    r"""Fourier Transform of a Gaussian lineshape.
+
+    .. math::
+        \operatorname{exp}\left(\frac{-\left({\left(2\pi w_{centered} hwhm\right)}^2\right)}{4\ln2}\right)
 
     Parameters
     ----------
-
     w_centered: 2D array       [one per line: shape W x N]
         waverange (nm / cm-1) (centered on 0)
-
     hwhm:  array   [shape N = number of lines]
         Half-width at half-maximum (HWHM) of Gaussian
 
+    Returns
+    -------
+    array
+
     See Also
     --------
-
     :py:func:`~radis.lbl.broadening.gaussian_lineshape`
     """
 
@@ -263,46 +252,35 @@ def pressure_broadening_HWHM(
 
     Parameters
     ----------
-
     airbrd: array like    [length N]
         half-width half max coefficient (HWHM ) for collisional broadening with air
-
     selbrd: array like    [length N]
         half-width half max coefficient (HWHM ) for resonant (self) broadening with air
-
     Tdpair: array like     [length N]
         temperature dependance coefficient for collisional broadening with air
-
     Tdpsel: array like     [length N]
         temperature dependance coefficient for resonant (self) broadening
-
     pressure_atm: float  [atm]
         pressure in atmosphere (warning, not bar!)
-
     mole_fraction: float    [0-1]
         mole fraction
-
     Tgas: float [K]
         (translational) gas temperature
-
     Tref: float [K]
         reference temperature at which tabulated HWHM pressure
         broadening coefficients were tabulated
 
     Returns
     -------
-
     lineshape: pandas Series        [shape N x W]
         Lorentzian half-width at half-maximum (FWHM) for each line profile
 
     References
     ----------
-
     .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
     See Also
     --------
-
     :py:func:`~radis.lbl.broadening.lorentzian_lineshape`
     """
 
@@ -332,44 +310,39 @@ def pressure_broadening_HWHM(
 
 
 def lorentzian_lineshape(w_centered, gamma_lb):
-    """Computes collisional broadening over all lines [1]_
+    r"""Computes collisional broadening over all lines [1]_
 
     .. math::
 
-        \\frac{1}{\\pi} \\frac{\\gamma_{lb}}{\\gamma_{lb}^2+w_{centered}^2}
+        \frac{1}{\pi} \frac{\gamma_{lb}}{\gamma_{lb}^2+w_{centered}^2}
 
     Parameters
     ----------
-
     w_centered: 2D array       [one per line: shape W x N]
         waverange (nm / cm-1) (centered on 0)
-
     gamma_lb: array   (cm-1)        [length N]
         half-width half maximum coefficient (HWHM) for pressure broadening
         calculation
 
     Returns
     -------
-
-    lineshape: array        [shape N x W]
+    array :  [shape N x W]
         line profile
 
     References
     ----------
-
     .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
     Notes
     -----
-
     *formula generated from the Python equation with* :py:func:`~pytexit.pytexit.py2tex`
 
     See Also
     --------
-
     :py:func:`~radis.lbl.broadening.pressure_broadening_HWHM`,
     :py:func:`~radis.lbl.broadening.gaussian_lineshape`,
-    :py:func:`~radis.lbl.broadening.voigt_lineshape`
+    :py:func:`~radis.lbl.broadening.voigt_lineshape`,
+    :py:func:`~radis.lbl.broadening.lorentzian_FT`
     """
 
     # Calculate broadening
@@ -380,21 +353,25 @@ def lorentzian_lineshape(w_centered, gamma_lb):
 
 
 def lorentzian_FT(w_centered, gamma_lb):
-    """Fourier Transform of a Lorentzian lineshape.
+    r"""Fourier Transform of a Lorentzian lineshape.
+
+    .. math::
+        \operatorname{exp}\left(-2\pi w_{centered} \gamma_{lb}\right)
 
     Parameters
     ----------
-
     w_centered: 2D array       [one per line: shape W x N]
         waverange (nm / cm-1) (centered on 0)
-
     gamma_lb: array   (cm-1)        [length N]
         half-width half maximum coefficient (HWHM) for pressure broadening
         calculation
 
+    Returns
+    -------
+    array
+
     See Also
     --------
-
     :py:func:`~radis.lbl.broadening.lorentzian_lineshape`
     """
 
@@ -649,10 +626,9 @@ def whiting1968(w_centered, wl, wv):
 
     References
     ----------
-
     .. [Whiting-1968] `Whiting 1968 "An empirical approximation to the Voigt profile", JQSRT <https://www.sciencedirect.com/science/article/pii/0022407368900812>`_
 
-    Used in the expression of [Olivero-1977]
+    Used in the expression of [Olivero-1977]_
 
     Notes
     -----
@@ -869,6 +845,8 @@ class BroadenFactory(BaseFactory):
     def _check_accuracy(self, df, wstep):
         """Check there are enough gridpoints per line.
 
+        Raises
+        ------
         AccuracyWarning:
             if less than `3` grid points per spectral line
         AccuracyError:
@@ -879,10 +857,6 @@ class BroadenFactory(BaseFactory):
             because some outlier lines with very small lineshapes would systematically
             raise an error. Suggestion : ignore outlier lines (1% smallest?) in normal/performance
             mode.
-
-        Raises
-        ------
-        AccuracyWarning or AccuracyError.
 
         Examples
         --------
@@ -1066,17 +1040,14 @@ class BroadenFactory(BaseFactory):
 
         Parameters
         ----------
-
         dg: pandas Dataframe  (shape N)
             list of lines  (includes `gamma_lb` for broadening calculation)
-
         wbroad: array       [one per line: shape ``W`` x ``N``]
             wavenumbers (centered on 0)
 
         Returns
         -------
-
-        pressure_lineshape: pandas Series
+        pandas Series
             line profile normalized with area = 1
         """
 
@@ -1124,17 +1095,14 @@ class BroadenFactory(BaseFactory):
 
         Parameters
         ----------
-
         dg: pandas Dataframe
             list of lines   (includes `gamma_db` for broadening calculation)
-
         wbroad_centered: array       [one per line: shape ``N`` x ``N``]
             wavenumber array (centered on 0, broadening width size)
 
         Returns
         -------
-
-        gaussian_lineshape: pandas Series
+        pandas Series
             line profile normalized with area = 1
         """
 
@@ -1210,7 +1178,6 @@ class BroadenFactory(BaseFactory):
 
         References
         --------
-
         .. [1] `NEQAIR 1996 User Manual, Appendix D <https://ntrs.nasa.gov/search.jsp?R=19970004690>`_
         .. [2] `Whiting 1968 "An empirical approximation to the Voigt profile", JQSRT <https://www.sciencedirect.com/science/article/pii/0022407368900812>`_
         """
@@ -1264,7 +1231,6 @@ class BroadenFactory(BaseFactory):
 
         Notes
         -----
-
         Implementation:
 
         - A broadening profile is calculated for each line, using the same
@@ -1313,10 +1279,8 @@ class BroadenFactory(BaseFactory):
             assert type(shifted_wavenum) is np.float64
             N = 1
 
-        # TODO (performance). Turn into a parabolic mesh? We need high resolution
-        # around the peak but low is enough on the wings
-
         # matrix of absorption (shape W * N)
+        # ... @dev : this is a memory bottleneck
         wbroad_centered = np.outer(wbroad_centered_oneline, np.ones(N))
         wbroad = wbroad_centered + shifted_wavenum
 
@@ -1351,7 +1315,9 @@ class BroadenFactory(BaseFactory):
             # ... if not perfectly distributed (spectrally). A warning is raised by the
             # ... broadening functions.
         elif broadening_method == "fft":
-            raise NotImplementedError("FFT")
+            raise NotImplementedError(
+                "FFT not implemented with `optimization=None`. Try using LDM method with `optimization='simple'`"
+            )
         else:
             raise ValueError(
                 "Unexpected lineshape broadening algorithm: broadening_method={0}".format(
@@ -1389,13 +1355,11 @@ class BroadenFactory(BaseFactory):
 
         Parameters
         ----------
-
         df: pandas DataFrame
             line database
 
         Returns
         -------
-
         line_profile_DLM: dict
             dictionary of Voigt profile template.
             If ``self.params.broadening_method == 'fft'``, templates are calculated
@@ -1407,13 +1371,11 @@ class BroadenFactory(BaseFactory):
 
         Reference
         ---------
-
         DLM implemented based on a code snippet from D.v.d.Bekerom.
         See: https://github.com/radis/radis/issues/37
 
         See Also
         --------
-
         :py:meth:`~radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
 
         """
@@ -1533,7 +1495,6 @@ class BroadenFactory(BaseFactory):
 
         Parameters
         ----------
-
         i: int
             line index
         pressure_atm: atm
@@ -1542,6 +1503,13 @@ class BroadenFactory(BaseFactory):
             if None, defaults to model mole fraction
         Tgas: K
             if None, defaults to model translational temperature
+
+        Examples
+        --------
+        ::
+            sf=SpectrumFactory(...)
+            sf.eq_spectrum(...)
+            sf.plot_broadening(i=500)   # plot line number 500
         """
         # TODO #clean: make it a standalone function.
 
@@ -1591,36 +1559,29 @@ class BroadenFactory(BaseFactory):
 
         Parameters
         ----------
-
         broadened_param: pandas Series (or numpy array)   [size N = number of lines]
             Series to apply lineshape to. Typically linestrength `S` for absorption,
             or `nu * Aul / 4pi * DeltaE` for emission
-
         line_profile:   (1/cm-1)        2D array of lines_profiles for all lines
                 (size B * N, B = width of lineshape)
-
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
             center wavelength (used to project broaded lineshapes )
 
         Returns
         -------
-
         sumoflines: array (size W  = size of output wavenumbers)
             sum of (broadened_param x line_profile)
 
         Notes
         -----
-
         Units change during convolution::
 
             [sumoflines] = [broadened_param] * cm
 
         See Also
         --------
-
         :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape`
         """
-
         if __debug__:
             t0 = time()
 
@@ -1837,7 +1798,6 @@ class BroadenFactory(BaseFactory):
 
         Reference
         ---------
-
         DLM implemented based on a code snippet from D.v.d.Bekerom.
         See: https://github.com/radis/radis/issues/37
 
@@ -2023,11 +1983,9 @@ class BroadenFactory(BaseFactory):
 
         Parameters
         ----------
-
         self: Factory
             contains the ``self.misc.chunksize`` parameter
             contains the ``self.params.optimization`` parameter
-
         df: DataFrame
             line dataframe
 
@@ -2102,10 +2060,7 @@ class BroadenFactory(BaseFactory):
                     "Unexpected value for optimization: {0}".format(optimization)
                 )
 
-        except MemoryError:
-            import traceback
-
-            traceback.print_exc()
+        except MemoryError as err:
             raise MemoryError(
                 "Too many lines*wavepoints (see details above). Try to use or reduce the "
                 + "chunksize parameter (current={0}{1})".format(
@@ -2116,7 +2071,7 @@ class BroadenFactory(BaseFactory):
                     if chunksize is None
                     else "",
                 )
-            )
+            ) from err
 
         return wavenumber, abscoeff
 
@@ -2234,15 +2189,18 @@ class BroadenFactory(BaseFactory):
                     "Unexpected value for optimization: {0}".format(optimization)
                 )
 
-        except MemoryError:
-            import traceback
-
-            traceback.print_exc()
+        except MemoryError as err:
             raise MemoryError(
-                "See details above. Try to use or reduce the chunksize parameter"
-            )
-
-        return wavenumber, abscoeff, emisscoeff
+                "Too many lines*wavepoints (see details above). Try to use or reduce the "
+                + "chunksize parameter (current={0}{1})".format(
+                    chunksize,
+                    " so {0:.3e} lines*wavepoints was used".format(
+                        len(df) * len(wavenumber)
+                    )
+                    if chunksize is None
+                    else "",
+                )
+            ) from err
 
     # %% Generate absorption profile which includes linebroadening factors
 
@@ -2255,7 +2213,6 @@ class BroadenFactory(BaseFactory):
 
         Returns
         -------
-
         abscoeff:  1/(#.cm-2)
             sum of all absorption coefficient k=1/(#.cm-2) for all lines in database
             `df` on the full calculation wavenumber range
@@ -2264,14 +2221,12 @@ class BroadenFactory(BaseFactory):
 
         Notes
         -----
-
         Units:
 
         - ``abscoeff`` and ``emisscoeff`` still have to be multiplied by the total
           number density (cm-3) to get (cm-1/#) unit.
 
         """
-
         df = self.df1
 
         if self.verbose >= 2:
@@ -2311,7 +2266,6 @@ class BroadenFactory(BaseFactory):
 
         Returns
         -------
-
         wavenumber: cm-1
             full calculation wavenumber range
         abscoeff:  1/(#.cm-2)
@@ -2322,7 +2276,6 @@ class BroadenFactory(BaseFactory):
 
         Notes
         -----
-
         Units:
 
         - Both `abscoeff` and `emisscoeff` still have to be multiplied by the total
@@ -2386,7 +2339,6 @@ class BroadenFactory(BaseFactory):
 
         Returns
         -------
-
         None
             store weak line status in dataframe as ``self.df1.weak_line``
         """
@@ -2451,7 +2403,6 @@ class BroadenFactory(BaseFactory):
             if ``True``, also returns the emisscoeff pseudo continuum (for noneq
             cases). Default ``False``
 
-
         Returns
         -------
         k_continuum: numpy array    (1/(#.cm-2))
@@ -2465,10 +2416,8 @@ class BroadenFactory(BaseFactory):
             local variables self._Nlines_in_continuum and self._Nlines_calculated
             are created
 
-
         Notes
         -----
-
         continuum can be exported in Spectrum is using the ``self.export_continuum``
         boolean. This is not available as a User input but can be edited manually
         in the Factory.
@@ -2482,7 +2431,6 @@ class BroadenFactory(BaseFactory):
 
         Reference
         ---------
-
         .. [1] `RADIS User Guide, RADIS Paper`
 
         """
