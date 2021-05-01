@@ -588,6 +588,9 @@ In RADIS, the same code can be used to retrieve precomputed spectra if they exis
 or calculate them and store them if they don't. See :ref:`Precompute Spectra <label_lbl_precompute_spectra>`
 
 
+.. minigallery:: radis.SpecDatabase
+
+
 
 .. _label_lbl_performance:
 
@@ -809,4 +812,3 @@ of :py:class:`~radis.tools.database.SpecDatabase` in a :py:class:`~radis.lbl.fac
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-

@@ -263,15 +263,24 @@ def SerialSlabs(*slabs, **kwargs):
             # slabs to calculate the total radiance
             quantities["transmittance_noslit"] = (w, Tn * T)
 
+        # Update conditions
+        # -----------------
+
         # Get conditions (if they're different, fill with 'N/A')
         conditions = intersect(s.conditions, sn.conditions)
         conditions["waveunit"] = waveunit
-        # sum path lengths
-        if "path_length" in s.conditions and "path_length" in sn.conditions:
-            conditions["path_length"] = (
-                s.conditions["path_length"] + sn.conditions["path_length"]
-            )
-
+        # Add extensive parameters :
+        for cond in [
+            "path_length",
+            "calculation_time",
+            "total_lines",
+            "lines_calculated",
+            "lines_cutoff",
+        ]:  # sum of all
+            if cond in s.conditions and cond in sn.conditions:
+                conditions[cond] = s.conditions[cond] + sn.conditions[cond]
+                if cond in s.cond_units and cond in sn.cond_units:
+                    assert s.cond_units == sn.cond_units
         cond_units = intersect(s.cond_units, sn.cond_units)
 
         # name
@@ -557,6 +566,8 @@ def MergeSlabs(*slabs, **kwargs):
         s.update()   # Generate missing spectral quantities
         s.plot()
 
+    .. minigallery:: radis.MergeSlabs
+
     See Also
     --------
     :func:`~radis.los.slabs.SerialSlabs`
@@ -635,9 +646,8 @@ def MergeSlabs(*slabs, **kwargs):
         )
         w_noconv = slabs[0]._get_wavespace()
 
-        # %%
-
-        # Get conditions of the Merged spectrum
+        # %% Update conditions of the Merged spectrum
+        # -------------------------------------------
         conditions = slabs[0].conditions
         conditions["waveunit"] = waveunit
         cond_units = slabs[0].cond_units
@@ -649,9 +659,29 @@ def MergeSlabs(*slabs, **kwargs):
             cond_units = intersect(cond_units, s.cond_units)
             # units = intersect(units0, s.units)  # we're actually using [slabs0].units insteads
         # ... Add extensive parameters
-        for cond in ["molecule"]:
+        for cond in ["molecule"]:  # list of all
             if in_all(cond, [s.conditions for s in slabs]):
                 conditions[cond] = set([s.conditions[cond] for s in slabs])
+        for cond in [
+            "calculation_time",
+            "total_lines",
+            "lines_calculated",
+            "lines_cutoff",
+        ]:  # sum of all
+            if in_all(cond, [s.conditions for s in slabs]):
+                conditions[cond] = sum([s.conditions[cond] for s in slabs])
+        # ... TODO @dev: create a large list/dictionary outside of SerialSlabS/MergeSlabs
+        # ... with how to deal with all every condition (sum, list, intersect, etc.)
+        # ... Example :
+        # {"calculation_time":sum,
+        #  "lines_calculated":sum,
+        #  "lines_cutoff":sum,
+        #  "lines_in_continuum":sum,
+        #  "molecule":{'MergeSlabs':set},
+        #  "path_length":{'SerialSlabs':sum}
+        #  "isotope":{'MergeSlabs':dict},  # make a dict, same for mole fractions?
+        #  "mole_fractions":{'MergeSlabs':dict},  # make a dict, same for mole fractions?
+        #  }
 
         # %% Get quantities that should be calculated
         # Try to keep all the quantities of the initial slabs:

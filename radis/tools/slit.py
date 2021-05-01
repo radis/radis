@@ -1076,28 +1076,28 @@ def plot_slit(
 
     Parameters
     ----------
-
     w, I: arrays    or   (str, None)
         if str, open file directly
-
     waveunit: ``'nm'``, ``'cm-1'`` or ``''``
         unit of input w
-
     plot_unit: ``'nm'``, ``'cm-1'`` or ``'same'``
         change plot unit (and FWHM units)
-
     Iunit: str, or None
         give Iunit
-
     warnings: boolean
         if True, test if slit is correctly centered and output a warning if it
         is not. Default ``True``
 
     Returns
     -------
-
     fix, ax: matplotlib objects
         figure and ax
+
+    Examples
+    --------
+
+    .. minigallery:: radis.plot_slit
+        :add-heading:
 
     See Also
     --------

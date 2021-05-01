@@ -127,7 +127,7 @@ A minimal working example is::
 Nonequilibrium partition functions can also be computed with
 :py:meth:`~radis.levels.partfunc.RovibParFuncCalculator.at_noneq` ::
 
-    print(Qt.at_noneq(Tvib=2000, Trot=1000))   # K
+    print(Qf.at_noneq(Tvib=2000, Trot=1000))   # K
 
 :py:meth:`~radis.levels.partfunc.RovibParFuncCalculator.at_noneq`
 can also return the vibrational partition function
