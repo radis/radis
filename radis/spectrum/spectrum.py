@@ -933,7 +933,9 @@ class Spectrum(object):
         elif self.file is not None:
             name = "{0}".format(basename(self.file))
         else:
-            name = "spectrum{0}".format(id(self))
+            name = "{0}spectrum{1}".format(
+                self.conditions.get("molecule", ""), id(self)
+            )
 
         return name
 
