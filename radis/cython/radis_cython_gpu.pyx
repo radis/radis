@@ -81,58 +81,6 @@ database_path = '/home/pankaj/radis-lab/data-2000-2400/'
 #Setting N_lines_to_load to None loads all lines in the file.
 N_lines_to_load = None
 
-
-class initData(ctypes.Structure):
-    _fields_= [
-        ("v_min", ctypes.c_float),
-        ("v_max", ctypes.c_float),
-        ("dv", ctypes.c_float),
-
-        ("N_v", ctypes.c_int),
-        ("N_wG", ctypes.c_int),
-        ("N_wL", ctypes.c_int),
-        ("N_wG_x_N_wL", ctypes.c_int),
-        ("N_total", ctypes.c_int),
-
-        ("Max_lines", ctypes.c_int),
-        ("N_lines", ctypes.c_int),
-        ("N_points_per_block", ctypes.c_int),
-        ("N_threads_per_block", ctypes.c_int),
-        ("N_blocks_per_grid", ctypes.c_int),
-        ("N_points_per_thread", ctypes.c_int),
-        ("Max_iterations_per_thread", ctypes.c_int),
-
-        ("shared_size_floats", ctypes.c_int)
-    ]
-
-class blockData(ctypes.Structure):
-    _fields_=[
-        ("line_offset", ctypes.c_int),
-        ("iv_offset", ctypes.c_int)
-    ]
-
-class iterData(ctypes.Structure):
-    _fields_=[
-        ("p", ctypes.c_float),
-        ("log_p", ctypes.c_float),
-        ("hlog_T", ctypes.c_float),
-        ("log_rT", ctypes.c_float),
-        ("c2T", ctypes.c_float),
-        ("N", ctypes.c_float),
-
-        ("log_wG_min", ctypes.c_float),
-        ("log_wL_min", ctypes.c_float),
-        ("log_dwG", ctypes.c_float),
-        ("log_dwL", ctypes.c_float),
-
-        ("blocks", blockData * 4096)
-    ]
-
-
-init_params_h = initData()
-iter_params_h = iterData()
-
-
 def read_npy(fname, arr):
     print("Loading {0}...".format(fname))
     arr = np.load(fname)
