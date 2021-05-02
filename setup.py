@@ -155,6 +155,8 @@ def get_ext_modules():
     print(sys.version)
     ext_modules = []
 
+    # TO-DO: set language level
+
     # Cython extensions:
     try:
         import cython
