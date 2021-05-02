@@ -712,7 +712,12 @@ cdef int prepare_blocks():
             i_max = i + init_params_h.Max_iterations_per_thread
 
     return n
-
+# TO-DO: the init function should be pure Python and doesn't have to be compiled.
+# For it's CPU processes it could optionally rely on compiled code, but there should
+# be a non-compiled alternative (which currently there isn't).
+# Most importantly; all the cupy calls should not be in the cython code as they
+# could be run from Python perfectly fine. This was in fact the reason to use cupy
+# in the first place.
 def init(v_arr,N_wG,N_wL,
         np.ndarray[dtype=np.int32_t, ndim=1] iso,
         np.ndarray[dtype=np.float32_t, ndim=1] v0,
@@ -855,7 +860,12 @@ def init(v_arr,N_wG,N_wL,
         print("Time to copy data from host to device = {0} ms".format(host_params_h_elapsedTimeData))
 
 
-
+# TO-DO: the iterate function should be pure Python and doesn't have to be compiled.
+# For it's CPU processes it could optionally rely on compiled code, but there should
+# be a non-compiled alternative (which currently there isn't).
+# Most importantly; all the cupy calls should not be in the cython code as they
+# could be run from Python perfectly fine. This was in fact the reason to use cupy
+# in the first place.
 def iterate(float p, float T, float mole_fraction,
             np.ndarray[dtype=np.float32_t, ndim=1] Ia_arr,
             np.ndarray[dtype=np.float32_t, ndim=1] molarmass_arr,
