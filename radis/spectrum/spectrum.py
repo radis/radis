@@ -61,6 +61,7 @@ from publib import fix_style, set_style
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import count_nans, evenly_distributed, nantrapz
 from radis.misc.debug import printdbg
+from radis.misc.plot import split_and_plot_by_parts
 from radis.misc.signal import resample
 from radis.phys.air import air2vacuum, vacuum2air
 from radis.phys.convert import cm2nm, conv2, nm2cm
@@ -74,7 +75,6 @@ from radis.spectrum.utils import (
     make_up,
     make_up_unit,
     print_conditions,
-    split_and_plot_by_parts,
 )
 
 # %% Spectrum class to hold results )
@@ -933,7 +933,9 @@ class Spectrum(object):
         elif self.file is not None:
             name = "{0}".format(basename(self.file))
         else:
-            name = "spectrum{0}".format(id(self))
+            name = "{0}spectrum{1}".format(
+                self.conditions.get("molecule", ""), id(self)
+            )
 
         return name
 
@@ -1400,7 +1402,7 @@ class Spectrum(object):
             the different parts without connecting lines. Useful for experimental
             spectra produced by overlapping step-and-glue. Additional parameters
             read from ``kwargs`` : ``split_threshold`` and ``cutwings``. See more in
-            :py:func:`~radis.spectrum.utils.split_and_plot_by_parts`.
+            :py:func:`~radis.misc.plot.split_and_plot_by_parts`.
         force: bool
             plotting on an existing figure is forbidden if labels are not the
             same. Use ``force=True`` to ignore that.

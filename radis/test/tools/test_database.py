@@ -12,18 +12,18 @@ from os.path import dirname, exists
 
 import pytest
 
-# from radis.misc.utils import DatabankNotFound
 from radis.test.utils import getTestFile
 from radis.tools.database import SpecDatabase, SpecList
 
 
 @pytest.mark.fast
 def test_speclist(*args, **kwargs):
+    """ Test :py:class:`~radis.tools.database.SpecList` functions """
 
     from radis.test.utils import getTestFile
 
     # Get a list of test files
-    spec_list = SpecDatabase(getTestFile(".")).get()
+    spec_list = SpecDatabase(getTestFile("."), lazy_loading=False).get()
 
     # Now generate a SpecList
     dbl = SpecList(*spec_list)
@@ -35,7 +35,7 @@ def test_speclist(*args, **kwargs):
 def test_database_functions(
     verbose=True, plot=True, close_plots=True, warnings=True, *args, **kwargs
 ):
-    """ Test SpecDatabase functions """
+    """ Test :py:class:`~radis.tools.database.SpecDatabase` functions """
 
     if plot:
         import matplotlib.pyplot as plt
@@ -44,9 +44,7 @@ def test_database_functions(
     if close_plots:
         plt.close("all")
 
-    import pytest
-
-    db = SpecDatabase(dirname(getTestFile(".")))
+    db = SpecDatabase(dirname(getTestFile(".")), lazy_loading=False)
 
     # Database visualisation methods
     if verbose:

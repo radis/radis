@@ -363,7 +363,7 @@ def test_noplot_different_quantities(*args, **kwargs):
 
 @pytest.mark.fast
 def test_plot_by_parts(plot=True, *args, **kwargs):
-    """Test :py:func:`~radis.spectrum.utils.split_and_plot_by_parts`
+    """Test :py:func:`~radis.misc.plot.split_and_plot_by_parts`
     and plot_by_parts=True in :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
     """
 

@@ -127,6 +127,7 @@ def compare_dict(
     return_string=False,
     df1_str="Left",
     df2_str="Right",
+    ignore_keys=[],
 ):
     """Returns ratio of equal keys [0-1]
     If verbose, also print all keys and values on 2 columns
@@ -134,6 +135,7 @@ def compare_dict(
     ----------
     d1, d2: dict
         two dictionaries to compare
+
     Other Parameters
     ----------------
     compare_as_paths: list of keys
@@ -144,6 +146,9 @@ def compare_dict(
     return_string: boolean
         if ``True``, returns message instead of just printing it (useful in error messages)
         Default ``False``
+    ignore_keys: list
+        do not compare these keys
+
     Returns
     -------
     out: float [0-1]
@@ -161,6 +166,7 @@ def compare_dict(
         print("{0:15}{1}\t{2}".format("Key", df1_str, df2_str))
         print("-" * 40)
         all_keys = set(list(d1.keys()) + list(d2.keys()))
+        all_keys = [k for k in all_keys if k not in ignore_keys]
         s = 0  # counter of all matching keys
         for k in all_keys:
             if k in d1 and k in d2:  # key in both dicts. Let's compare values

@@ -48,16 +48,12 @@ def conv2(quantity, fromunit, tounit):
 
     Parameters
     ----------
-
     quantity: array
         quantity to convert
-
     fromunit: str
         input unit
-
     tounit: str
         output unit
-
 
     Note
     ----
@@ -77,7 +73,7 @@ def conv2(quantity, fromunit, tounit):
 
     except u.UnitConversionError:
         raise TypeError(
-            "Cannot convert quantity to the specified unit. Please check the dimensions."
+            f"Cannot convert quantity `{fromunit}` to the specified unit `{tounit}`. Please check the dimensions."
         )
 
     return a.value
@@ -88,7 +84,6 @@ def is_homogeneous(unit1, unit2):
 
     Parameters
     ----------
-
     unit1, unit2: str
         units
     """
@@ -110,26 +105,22 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
 
     Parameters
     ----------
-
     j_nm: array
         spectral emission density in Iunit0 unit (~ per wavelength) )
-
     wavenum: array (cm-1)
         wavenumber
-
     Iunit0: str
         unit (~ per wavelength) to convert from
-
     Iunit: str
         unit (~ per wavenumber) to convert to
 
 
     Notes
     -----
-
     Implementation:
 
-    We use the variable substitution:
+    We use the variable substitution::
+
             dλ/dν = - 1/ν**2        [in SI]
             dλ/dν = - 10^7 / ν**2   [nm -> cm-1]
 
@@ -139,13 +130,12 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
 
     Example
     -------
+    Validation::
 
-    Validation:
-
-        >>> w_nm, j_nm = s.get('emisscoeff', 'nm', 'mW/cm2/sr/nm')
-        >>> w_cm, j_cm = s.get('emisscoeff', 'cm', 'mW/cm2/sr/cm-1')
-        >>> print(trapz(y_nm, x_nm))
-        >>> print(trapz(y_cm, x_cm))
+        w_nm, j_nm = s.get('emisscoeff', 'nm', 'mW/cm2/sr/nm')
+        w_cm, j_cm = s.get('emisscoeff', 'cm', 'mW/cm2/sr/cm-1')
+        print(trapz(y_nm, x_nm))
+        print(trapz(y_cm, x_cm))
 
     Both integrals are to be the same
     """
@@ -171,26 +161,22 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
 
     Parameters
     ----------
-
     j_cm: array
         spectral emission density in Iunit0 unit (~ per wavenumber)
-
     wavenum: array (cm-1)
         wavenumber
-
     Iunit0: str
         unit (~ per wavenumber) to convert from
-
     Iunit: str
         unit (~ per wavelength) to convert to
 
 
     Notes
     -----
-
     Implementation:
 
-    We use the variable substitution:
+    We use the variable substitution::
+
             dλ/dν = - 1/ν**2        [in SI]
             dλ/dν = - 10^7 / ν**2   [nm -> cm-1]
 
@@ -222,23 +208,18 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
 
     Parameters
     ----------
-
     l_nm: array
         spectral radiance in yunit0 unit (~ per wavelength)
-
     wavenum: array (cm-1)
         wavenumber
-
     Iunit0: str
         unit (~ per wavelength) to convert from
-
     Iunit: str
         unit (~ per wavenumber) to convert to
 
 
     Notes
     -----
-
     Implementation:
 
     We use the variable substitution:
@@ -251,13 +232,12 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
 
     Example
     -------
+    Validation::
 
-    Validation:
-
-        >>> x_nm, y_nm = s.get('radiance_noslit', 'nm', 'mW/cm2/sr/nm')
-        >>> x_cm, y_cm = s.get('radiance_noslit', 'cm', 'mW/cm2/sr/cm-1')
-        >>> print(trapz(y_nm, x_nm))
-        >>> print(trapz(y_cm, x_cm))
+        x_nm, y_nm = s.get('radiance_noslit', 'nm', 'mW/cm2/sr/nm')
+        x_cm, y_cm = s.get('radiance_noslit', 'cm', 'mW/cm2/sr/cm-1')
+        print(trapz(y_nm, x_nm))
+        print(trapz(y_cm, x_cm))
 
     Both integrals are to be the same
     """
@@ -283,25 +263,21 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
 
     Parameters
     ----------
-
     l_cm: array
         spectral radiance in yunit0 unit (~ per wavenumber)
-
     wavenum: array (cm-1)
         wavenumber
-
     Iunit0: str
         unit (~ per wavenumber) to convert from
-
     Iunit: str
         unit (~ per wavelength) to convert to
 
     Notes
     -----
-
     Implementation:
 
-    We use a variable substitution:
+    We use a variable substitution::
+
             dλ/dν = - 1/ν**2        [in SI]
             dλ/dν = - 10^7 / ν**2   [nm -> cm-1]
 
@@ -338,23 +314,19 @@ def convert_universal(
 
     Parameters
     ----------
-
     var: str
         variable to get. Usually 'radiance' or 'radiance_noslit'
-
     to_unit: str
         unit to convert variable to
 
     Other Parameters
     ----------------
-
     spec: :class:`~radis.spectrum.spectrum.Spectrum` object
         needed to get wavenumber in case we need to do a change of variable
         within the integral
 
     Notes
     -----
-
     wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires
     a change of variable in the integral)
     """
