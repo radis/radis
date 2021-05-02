@@ -161,15 +161,13 @@ def get_ext_modules():
 
         print("Cython " + cython.__version__)
         ext_modules.append(
-            [
-                Extension(
-                    "radis_cython_extensions",
-                    sources=["./radis/cython/radis_cython_extensions.pyx"],
-                    include_dirs=[get_include()],
-                    language="c",
-                    extra_link_args=[],
-                )
-            ]
+            Extension(
+                "radis_cython_extensions",
+                sources=["./radis/cython/radis_cython_extensions.pyx"],
+                include_dirs=[get_include()],
+                language="c",
+                extra_link_args=[],
+            )
         )
 
         # GPU:
@@ -181,15 +179,13 @@ def get_ext_modules():
             print("Cupy + " + cupyx_str + " " + cupy.__version__)
 
             ext_modules.append(
-                [
-                    Extension(
-                        "radis_cython_gpu",
-                        sources=["./radis/cython/radis_cython_gpu.pyx"],
-                        include_dirs=[get_include()],
-                        language="c++",
-                        extra_link_args=[],
-                    )
-                ]
+                Extension(
+                    "radis_cython_gpu",
+                    sources=["./radis/cython/radis_cython_gpu.pyx"],
+                    include_dirs=[get_include()],
+                    language="c++",
+                    extra_link_args=[],
+                )
             )
         except (ModuleNotFoundError):
             print(
