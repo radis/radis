@@ -19,6 +19,10 @@ import cupyx.scipy.fftpack
 import numpy as np
 cimport numpy as np
 
+#TO-DO: should this be in gpu.py or in radis_cython_gpu.pyx?
+class blockData(ctypes.Structure):
+    _fields_ = [("line_offset", ctypes.c_int), ("iv_offset", ctypes.c_int)]
+
 
 cdef float epsilon   = <float> 0.0001
 cdef float FLOAT_MAX = <float> 1e30
@@ -142,7 +146,7 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
     cdef vector[float] bottom_x
 
     if verbose_gpu >= 2:
-        print("Initializing Lorentzian parameters ", end = "")
+        print("Initializing Lorentzian parameters ")
 
     cdef size_t top_size = 0
     cdef size_t bottom_size = 0
@@ -156,7 +160,7 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
         with open(fname, 'rb') as f:
 
             if verbose_gpu >= 2:
-                print(" (from cache)... ", end=" ")
+                print(" (from cache)... ")
 
             lt = pickle.load(f)
 
@@ -181,7 +185,7 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
 
     except:
         if verbose_gpu >= 2:
-            print(" ... ", end = " ")
+            print(" ... ")
 
         na_len = na.size
         for i in range(na_len):
@@ -347,18 +351,18 @@ cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm, 
     cdef float log_2vMm_min
     cdef float log_2vMm_max
     if verbose_gpu >= 2:
-        print("Initializing Gaussian parameters", end="")
+        print("Initializing Gaussian parameters")
 
     fname = "Gaussian_minmax_" + str(len(log_2vMm)) + ".dat"
     try:
         lt = pickle.load(open(fname, "rb"))
         if verbose_gpu >= 2:
-            print(" (from cache)... ", end=" ")
+            print(" (from cache)... ")
         log_2vMm_min = lt[0]
         log_2vMm_max = lt[1]
     except (OSError, IOError) as e:
         if verbose_gpu >= 2:
-            print("... ", end=" ")
+            print("... ")
         log_2vMm_min = np.amin(log_2vMm)
         log_2vMm_max = np.amax(log_2vMm)
         lt = [log_2vMm_min, log_2vMm_max]

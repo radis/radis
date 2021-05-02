@@ -3,7 +3,7 @@ import ctypes
 import cupy as cp
 import numpy as np
 
-from radis_cython_extensions import (
+from radis_cython_gpu import (
     calc_gaussian_params,
     calc_lorentzian_params,
     init_gaussian_params,
@@ -111,7 +111,9 @@ def set_pT(p, T, mole_fraction):
     # iter_params_h.Q = Q
 
 
-def init(v_arr, N_wG, N_wL, iso, v0, da, log_2gs, na, log_2vMm, S0, El, Q, verbose_gpu):
+def gpu_init(
+    v_arr, N_wG, N_wL, iso, v0, da, log_2gs, na, log_2vMm, S0, El, Q, verbose_gpu
+):
 
     # ----------- setup global variables -----------------
     global init_params_h
@@ -268,7 +270,7 @@ def init(v_arr, N_wG, N_wL, iso, v0, da, log_2gs, na, log_2vMm, S0, El, Q, verbo
         )
 
 
-def iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
+def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
 
     # ----------- setup global variables -----------------
 
