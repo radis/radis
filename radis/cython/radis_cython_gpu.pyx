@@ -116,7 +116,7 @@ cdef extern from *:
 @cython.wraparound(False)
 @cython.nonecheck(False)
 
-cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs, np.ndarray[dtype=np.float32_t, ndim=1] na, verbose_gpu):
+def init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs, np.ndarray[dtype=np.float32_t, ndim=1] na, verbose_gpu):
 
     # ----------- setup global variables -----------------
     global host_params_h_top_a
@@ -308,7 +308,7 @@ cdef void init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
         print("done!")
     return
 
-cdef void calc_lorentzian_params():
+def calc_lorentzian_params():
 
     # ----------- setup global variables -----------------
     global host_params_h_top_x
@@ -341,7 +341,7 @@ cdef void calc_lorentzian_params():
     return
 
 
-cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm, verbose_gpu):
+def init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm, verbose_gpu):
 
     # ----------- setup global variables -----------------
     global host_params_h_log_2vMm_min
@@ -377,7 +377,7 @@ cdef void init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm, 
     return
 
 
-cdef void calc_gaussian_params():
+def calc_gaussian_params():
 
     # ----------- setup global variables -----------------
     global host_params_h_log_2vMm_min
@@ -395,7 +395,7 @@ cdef void calc_gaussian_params():
 
     return
 
-cdef int prepare_blocks():
+def prepare_blocks():
 
     # ----------- setup global variables -----------------
     global host_params_h_v0_dec

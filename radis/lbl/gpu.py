@@ -1,8 +1,10 @@
 import ctypes
+from os.path import join
 
 import cupy as cp
 import numpy as np
 
+from radis.misc.utils import getProjectRoot
 from radis_cython_gpu import (
     calc_gaussian_params,
     calc_lorentzian_params,
@@ -64,8 +66,10 @@ host_params_h_data_start = cp.cuda.Event()
 host_params_h_data_stop = cp.cuda.Event()
 
 # TO-DO: read and compile CUDA code at install time, then pickle the cuda object
-with open("gpu.cu", "rb") as f:
-    cuda_code = f.read()
+
+cuda_fname = join(getProjectRoot(), "lbl", "gpu.cu")
+with open(cuda_fname, "rb") as f:
+    cuda_code = f.read().decode()
 
 cuda_module = cp.RawModule(code=cuda_code)
 fillDLM = cuda_module.get_function("fillDLM")
@@ -232,7 +236,7 @@ def gpu_init(
 
     # CTYPES #2
     if verbose_gpu >= 2:
-        print("Copying initialization parameters to device memory...")  # , end = " ")
+        print("Copying initialization parameters to device memory...")
     memptr_init_params_d = cuda_module.get_global("init_params_d")
     init_params_ptr = ctypes.cast(ctypes.pointer(init_params_h), ctypes.c_void_p)
     init_params_size = ctypes.sizeof(init_params_h)
@@ -240,7 +244,7 @@ def gpu_init(
 
     if verbose_gpu >= 2:
         print("done!")
-        print("Copying spectral data to device memory...")  # , end = " ")
+        print("Copying spectral data to device memory...")
 
     # #Copy spectral data to device
     host_params_h_iso_d = cp.array(iso)
@@ -310,7 +314,7 @@ def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
     n_blocks = prepare_blocks()
 
     if verbose_gpu >= 2:
-        print("Copying iteration parameters to device...")  # , end = " ")
+        print("Copying iteration parameters to device...")
 
     ## CTYPES #1
     memptr_iter_params_d = cuda_module.get_global("iter_params_d")
@@ -363,7 +367,7 @@ def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
     )
 
     if verbose_gpu >= 2:
-        print("<<<LAUNCHED>>> ")  # , end = " ")
+        print("<<<LAUNCHED>>> ")
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -380,7 +384,7 @@ def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
 
     if verbose_gpu >= 2:
-        print("Applying lineshapes...")  # , end = " ")
+        print("Applying lineshapes...")
 
     applyLineshapes(
         (n_blocks,),
@@ -397,7 +401,7 @@ def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
         print("done!")
 
         # inverse FFT
-        print("Performing inverse Fourier transform...")  # , end = " ")
+        print("Performing inverse Fourier transform...")
 
     host_params_h_spectrum_d_out = cp.fft.irfft(host_params_h_spectrum_d_in)
     cp.cuda.runtime.deviceSynchronize()
@@ -415,16 +419,10 @@ def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
     )
 
     if verbose_gpu == 1:
-        print(
-            "[rG = {0}%".format((np.exp(iter_params_h.log_dwG) - 1) * 100)
-        )  # , end = " ")
-        print(
-            "rL = {0}%]".format((np.exp(iter_params_h.log_dwL) - 1) * 100)
-        )  # , end = " ")
-        print("Runtime: {0}".format(host_params_h_elapsedTimeDLM))  # , end = "")
-        print(
-            " + {0}".format(host_params_h_elapsedTime - host_params_h_elapsedTimeDLM)
-        )  # , end = "")
+        print("[rG = {0}%".format((np.exp(iter_params_h.log_dwG) - 1) * 100))
+        print("rL = {0}%]".format((np.exp(iter_params_h.log_dwL) - 1) * 100))
+        print("Runtime: {0}".format(host_params_h_elapsedTimeDLM))
+        print(" + {0}".format(host_params_h_elapsedTime - host_params_h_elapsedTimeDLM))
         print(" = {0} ms".format(host_params_h_elapsedTime))
         print("Finished calculating spectrum!")
 
