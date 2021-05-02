@@ -76,8 +76,6 @@ for Developers:
 
 ----------
 """
-import sys
-from subprocess import call
 from time import time
 from warnings import warn
 
@@ -92,7 +90,6 @@ from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
-from radis.misc import getProjectRoot
 from radis.misc.basics import flatten, is_float, list_if_float
 from radis.misc.printer import printg
 from radis.misc.utils import Default
@@ -935,42 +932,11 @@ class SpectrumFactory(BandFactory):
         Ia_arr[np.isnan(Ia_arr)] = 0
         molarmass_arr[np.isnan(molarmass_arr)] = 0
 
-        ### EXPERIMENTAL ###
-
-        project_path = getProjectRoot()
-        project_path += "/lbl/py_cuffs/"
-        sys.path.insert(1, project_path)
-
         try:
-            import py_cuffs
-        except:
-            try:
-
-                if verbose >= 2:
-                    print("py_cuFFS module not found in directory...")
-                    print("Compiling module from source...")
-
-                call(
-                    "python setup.py build_ext --inplace",
-                    cwd=project_path,
-                    shell=True,
-                )
-
-                if verbose >= 2:
-                    print("Finished compilation...trying to import module again")
-                import py_cuffs
-
-                if verbose:
-                    print("py_cuFFS imported succesfully!")
-            except:
-                raise (
-                    ModuleNotFoundError(
-                        "Failed to load py_cuFFS module, program will exit."
-                    )
-                )
-                exit()
-
-        ### --- ###
+            import radis_cython_gpu
+        except (ModuleNotFoundError):
+            print("Failed to load radis_cython_gpu module, program will exit.")
+            exit()
 
         t0 = time()
 
@@ -993,8 +959,8 @@ class SpectrumFactory(BandFactory):
         log_2vMm = np.array(self._get_log_2vMm(molarmass_arr), dtype=np.float32)
         S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
 
-        NwG = 4
-        NwL = 8
+        NwG = 4  # TO-DO: these shouldn't be hardcoded
+        NwL = 8  # TO-DO: these shouldn't be hardcoded
 
         _Nlines_calculated = len(v0)
 
@@ -1008,7 +974,7 @@ class SpectrumFactory(BandFactory):
         else:
             verbose_gpu = verbose
 
-        py_cuffs.init(
+        radis_cython_gpu.init(
             v_arr,
             NwG,
             NwL,
@@ -1032,7 +998,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff = py_cuffs.iterate(
+        abscoeff = radis_cython_gpu.iterate(
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
