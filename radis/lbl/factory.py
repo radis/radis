@@ -90,7 +90,6 @@ from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
-from radis.lbl.gpu import gpu_init, gpu_iterate
 from radis.misc.basics import flatten, is_float, list_if_float
 from radis.misc.printer import printg
 from radis.misc.utils import Default
@@ -968,6 +967,12 @@ class SpectrumFactory(BandFactory):
             verbose_gpu = 1
         else:
             verbose_gpu = verbose
+
+        try:
+            from radis.lbl.gpu import gpu_init, gpu_iterate
+        except (ModuleNotFoundError):
+            print("Failed to load GPU module, exiting!")
+            exit()
 
         gpu_init(
             v_arr,
