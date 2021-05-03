@@ -36,13 +36,6 @@ cdef  int host_params_h_Max_threads_per_block
 cdef  float host_params_h_log_2vMm_min
 cdef  float host_params_h_log_2vMm_max
 
-cdef  vector[float] host_params_h_top_x
-cdef  vector[float] host_params_h_top_a
-cdef  vector[float] host_params_h_top_b
-cdef  vector[float] host_params_h_bottom_x
-cdef  vector[float] host_params_h_bottom_a
-cdef  vector[float] host_params_h_bottom_b
-
 cdef  size_t host_params_h_dec_size
 cdef  int host_params_h_shared_size
 
@@ -111,39 +104,37 @@ cdef extern from *:
         float b
 
 
+
+
+
+cdef  vector[float] host_params_h_top_x
+cdef  vector[float] host_params_h_top_a
+cdef  vector[float] host_params_h_top_b
+cdef  vector[float] host_params_h_bottom_x
+cdef  vector[float] host_params_h_bottom_a
+cdef  vector[float] host_params_h_bottom_b
+
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 
-def init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs, np.ndarray[dtype=np.float32_t, ndim=1] na, verbose_gpu):
 
-    # ----------- setup global variables -----------------
-    global host_params_h_top_a
-    global host_params_h_top_b
-    global host_params_h_top_x
-    global host_params_h_bottom_a
-    global host_params_h_bottom_b
-    global host_params_h_bottom_x
-    #------------------------------------------------------
+
+
+def calc_lorentzian_envelope_params(
+    np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
+    np.ndarray[dtype=np.float32_t, ndim=1] na,
+    verbose_gpu):
 
     cdef set[pair[float,float]] unique_set
     cdef float float_pair[2]
-
 
     cdef vector[pair[float,float]] duplicates_removed
     cdef vector[float] na_short
     cdef vector[float] log_2gs_short
     cdef mapcpp[float, float, greater] bottom_envelope_map
     cdef mapcpp[float, float] top_envelope_map
-
-    cdef vector[float] top_a
-    cdef vector[float] top_b
-    cdef vector[float] top_x
-
-    cdef vector[float] bottom_a
-    cdef vector[float] bottom_b
-    cdef vector[float] bottom_x
 
     if verbose_gpu >= 2:
         print("Initializing Lorentzian parameters ")
@@ -156,255 +147,119 @@ def init_lorentzian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2gs, np.nd
     cdef unsigned int i,na_len
     cdef float na_i, log_2gs_i
 
-    try:
-        with open(fname, 'rb') as f:
+    na_len = na.size
+    for i in range(na_len):
+        # Somewhat of a hack; all of the structs I tried show Python interaction
+        # when storing values. float[2] didn't have this problem, so I fill the
+        # float[2] array, and then convert the float* pointer to a const
+        # pair[float,float]* pointer, which is then dereferenced by the [0].
+        # well it gets the job done I suppose, there are no yellow lines inside
+        # of this loop anymore.
 
-            if verbose_gpu >= 2:
-                print(" (from cache)... ")
+        float_pair[0] = na[i]
+        float_pair[1] = log_2gs[i]
+        unique_set.insert((<const pair[float,float]*>float_pair)[0])
 
-            lt = pickle.load(f)
+    duplicates_removed.assign(unique_set.begin(), unique_set.end())
 
-            top_size = lt[0]
-            host_params_h_top_a.resize(top_size)
-            host_params_h_top_b.resize(top_size)
-            host_params_h_top_x.resize(top_size)
+    # make two new vectors where all duplicates are removed:
+    for na_i, log_2gs_i in duplicates_removed:
+        na_short.push_back(na_i)
+        log_2gs_short.push_back(log_2gs_i)
 
-            # now read top_size bits 3 times to fill the above 3 vectors
-            host_params_h_top_a = lt[1]
-            host_params_h_top_b = lt[2]
-            host_params_h_top_x = lt[3]
+    # identify candidates that might be part of the envelope:
+    for i in range(len(na_short)):
+        na_i = na_short[i]
+        log_2gs_i = log_2gs_short[i]
 
-            bottom_size = lt[4]
-            host_params_h_bottom_a.resize(bottom_size)
-            host_params_h_bottom_b.resize(bottom_size)
-            host_params_h_bottom_x.resize(bottom_size)
+        if bottom_envelope_map.count(na_i):
+            if log_2gs_i < bottom_envelope_map.at(na_i):
+                bottom_envelope_map[na_i] = log_2gs_i
+        else:
+            bottom_envelope_map.insert({na_i, log_2gs_i})
 
-            host_params_h_bottom_a = lt[5]
-            host_params_h_bottom_b = lt[6]
-            host_params_h_bottom_x = lt[7]
+        if top_envelope_map.count(na_i):
+            if log_2gs_i > top_envelope_map.at(na_i):
+                top_envelope_map[na_i] = log_2gs_i
+        else:
+            top_envelope_map.insert({na_i, log_2gs_i})
 
-    except:
-        if verbose_gpu >= 2:
-            print(" ... ")
+    # For all candidates check which ones are actually part of the envelope:
+    # First for the top:
+    top_a = [dereference(top_envelope_map.begin()).first]
+    top_b = [dereference(top_envelope_map.begin()).second]
+    top_x = [FLOAT_MIN]
 
-        na_len = na.size
-        for i in range(na_len):
-            # Somewhat of a hack; all of the structs I tried show Python interaction
-            # when storing values. float[2] didn't have this problem, so I fill the
-            # float[2] array, and then convert the float* pointer to a const
-            # pair[float,float]* pointer, which is then dereferenced by the [0].
-            # well it gets the job done I suppose, there are no yellow lines inside
-            # of this loop anymore.
+    idx = 0
+    for first_el, second_el in top_envelope_map:
+        if idx != 0:
+            for i in range(len(top_x)):
+                x_ij = (second_el - top_b[i]) / (top_a[i] - first_el)
+                if x_ij >= top_x[i]:
+                    if i < len(top_x) - 1:
+                        if x_ij < top_x[i+1]:
+                            break;
+                    else:
+                        break
 
-            float_pair[0] = na[i]
-            float_pair[1] = log_2gs[i]
-            unique_set.insert((<const pair[float,float]*>float_pair)[0])
+            top_a.append(first_el)
+            top_b.append(second_el)
+            top_x.append(x_ij)
 
-        duplicates_removed.assign(unique_set.begin(), unique_set.end())
+        idx+=1
 
+    top_x = top_x[1:] + [FLOAT_MAX]
 
-        for na_i, log_2gs_i in duplicates_removed:
-            na_short.push_back(na_i)
-            log_2gs_short.push_back(log_2gs_i)
+    #Then for the bottom:
+    bottom_a = [dereference(bottom_envelope_map.begin()).first]
+    bottom_b = [dereference(bottom_envelope_map.begin()).second]
+    bottom_x = [FLOAT_MIN]
 
-        for i in range(len(na_short)):
-            na_i = na_short[i]
-            log_2gs_i = log_2gs_short[i]
-
-            if bottom_envelope_map.count(na_i):
-                if log_2gs_i < bottom_envelope_map.at(na_i):
-                    bottom_envelope_map[na_i] = log_2gs_i
-            else:
-                bottom_envelope_map.insert({na_i, log_2gs_i})
-
-            if top_envelope_map.count(na_i):
-                if log_2gs_i > top_envelope_map.at(na_i):
-                    top_envelope_map[na_i] = log_2gs_i
-            else:
-                top_envelope_map.insert({na_i, log_2gs_i})
-
-        top_a = { dereference(top_envelope_map.begin()).first }
-        top_b = { dereference(top_envelope_map.begin()).second }
-        top_x = { FLOAT_MIN }
-
-        idx = 0
-        for first_el, second_el in top_envelope_map:
-            if idx != 0:
-                for i in range(len(top_x)):
-                    x_ij = (second_el - top_b[i]) / (top_a[i] - first_el)
-                    if x_ij >= top_x[i]:
-                        if i < top_x.size() - 1:
-                            if x_ij < top_x[i+1]:
-                                break;
-                        else:
+    idx = 0
+    for first_el, second_el in bottom_envelope_map:
+        if idx != 0:
+            for i in range(len(bottom_x)):
+                x_ij = (second_el - bottom_b[i]) / (bottom_a[i] - first_el)
+                if x_ij >= bottom_x[i]:
+                    if i < len(bottom_x) - 1:
+                        if x_ij < bottom_x[i+1]:
                             break
+                    else:
+                        break
 
-                top_a.resize(i+1)
-                top_b.resize(i+1)
-                top_x.resize(i+1)
+            bottom_a.append(first_el)
+            bottom_b.append(second_el)
+            bottom_x.append(x_ij)
 
-                top_a.push_back(first_el)
-                top_b.push_back(second_el)
-                top_x.push_back(x_ij)
+        idx+=1
 
-            idx+=1
+    bottom_x = bottom_x[1:] + [FLOAT_MAX]
 
-        top_x.erase(top_x.begin())
-        top_x.push_back(FLOAT_MAX)
-
-        host_params_h_top_a = top_a
-        host_params_h_top_b = top_b
-        host_params_h_top_x = top_x
-        top_size = top_x.size()
-
-        bottom_a = { dereference(bottom_envelope_map.begin()).first }
-        bottom_b = { dereference(bottom_envelope_map.begin()).second }
-        bottom_x = { FLOAT_MIN }
-
-        idx = 0
-
-        for first_el, second_el in bottom_envelope_map:
-            if idx != 0:
-                for i in range(len(bottom_x)):
-                    x_ij = (second_el - bottom_b[i]) / (bottom_a[i] - first_el)
-                    if x_ij >= bottom_x[i]:
-                        if i < bottom_x.size() - 1:
-                            if x_ij < bottom_x[i+1]:
-                                break
-                        else:
-                            break
-
-                bottom_a.resize(i + 1)
-                bottom_b.resize(i + 1)
-                bottom_x.resize(i + 1)
-
-                bottom_a.push_back(first_el)
-                bottom_b.push_back(second_el)
-                bottom_x.push_back(x_ij)
-
-            idx+=1
-
-        bottom_x.erase(bottom_x.begin())
-        bottom_x.push_back(FLOAT_MAX)
-
-        host_params_h_bottom_a = bottom_a
-        host_params_h_bottom_b = bottom_b
-        host_params_h_bottom_x = bottom_x
-        bottom_size = bottom_x.size()
-
-        lt = [top_size,
-            host_params_h_top_a,
-            host_params_h_top_b,
-            host_params_h_top_x,
-            bottom_size,
-            host_params_h_bottom_a,
-            host_params_h_bottom_b,
-            host_params_h_bottom_x]
-
-        with open(fname, 'wb') as f:
-            pickle.dump(lt, f)
-
-    if verbose_gpu >= 2:
-        print("done!")
-    return
-
-def calc_lorentzian_params():
-
-    # ----------- setup global variables -----------------
-    global host_params_h_top_x
-    global host_params_h_bottom_x
-    global host_params_h_top_a
-    global host_params_h_bottom_a
-    global host_params_h_top_b
-    global host_params_h_bottom_b
-    global iter_params_h
-    global epsilon
-    #------------------------------------------------------
-
-    cdef float log_wL_min
-    cdef float log_wL_max
-
-    for i in range(host_params_h_bottom_x.size()):
-        if iter_params_h.log_rT < host_params_h_bottom_x[i]:
-            log_wL_min = iter_params_h.log_rT * host_params_h_bottom_a[i] + host_params_h_bottom_b[i]  + iter_params_h.log_p
-            break
-
-    for i in range(host_params_h_top_x.size()):
-        if iter_params_h.log_rT < host_params_h_top_x[i]:
-            log_wL_max = iter_params_h.log_rT * host_params_h_top_a[i] + host_params_h_top_b[i]  + iter_params_h.log_p + epsilon
-            break
-
-    cdef float log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
-
-    iter_params_h.log_wL_min = log_wL_min
-    iter_params_h.log_dwL = log_dwL
-    return
+    return (np.array(top_a),
+            np.array(top_b),
+            np.array(top_x),
+            np.array(bottom_a),
+            np.array(bottom_b),
+            np.array(bottom_x))
 
 
-def init_gaussian_params(np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm, verbose_gpu):
+def calc_gaussian_envelope_params(
+    np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm,
+    verbose_gpu):
 
-    # ----------- setup global variables -----------------
-    global host_params_h_log_2vMm_min
-    global host_params_h_log_2vMm_max
-    #------------------------------------------------------
+    log_2vMm_min = np.amin(log_2vMm)
+    log_2vMm_max = np.amax(log_2vMm)
 
-    cdef float log_2vMm_min
-    cdef float log_2vMm_max
-    if verbose_gpu >= 2:
-        print("Initializing Gaussian parameters")
-
-    fname = "Gaussian_minmax_" + str(len(log_2vMm)) + ".dat"
-    try:
-        lt = pickle.load(open(fname, "rb"))
-        if verbose_gpu >= 2:
-            print(" (from cache)... ")
-        log_2vMm_min = lt[0]
-        log_2vMm_max = lt[1]
-    except (OSError, IOError) as e:
-        if verbose_gpu >= 2:
-            print("... ")
-        log_2vMm_min = np.amin(log_2vMm)
-        log_2vMm_max = np.amax(log_2vMm)
-        lt = [log_2vMm_min, log_2vMm_max]
-        pickle.dump(lt, open(fname, "wb"))
-
-    host_params_h_log_2vMm_min = log_2vMm_min
-    host_params_h_log_2vMm_max = log_2vMm_max
-
-    if verbose_gpu >= 2:
-        print("done!")
-
-    return
+    return log_2vMm_min, log_2vMm_max
 
 
-def calc_gaussian_params():
-
-    # ----------- setup global variables -----------------
-    global host_params_h_log_2vMm_min
-    global host_params_h_log_2vMm_max
-    global init_params_h, iter_params_h
-    global epsilon
-    #------------------------------------------------------
-
-    cdef float log_wG_min = host_params_h_log_2vMm_min + iter_params_h.hlog_T
-    cdef float log_wG_max = host_params_h_log_2vMm_max + iter_params_h.hlog_T + epsilon
-    cdef float log_dwG = (log_wG_max - log_wG_min) / (init_params_h.N_wG - 1)
-
-    iter_params_h.log_wG_min = log_wG_min
-    iter_params_h.log_dwG = log_dwG
-
-    return
-
-def prepare_blocks():
-
-    # ----------- setup global variables -----------------
-    global host_params_h_v0_dec
-    global host_params_h_da_dec
-    global host_params_h_dec_size
-    global host_params_h_block_preparation_step_size
-
-    global iter_params_h, init_params_h
-    #------------------------------------------------------
+def prepare_blocks(
+    host_params_h_v0_dec,
+    host_params_h_da_dec,
+    host_params_h_dec_size,
+    host_params_h_block_preparation_step_size,
+    iter_params_h,
+    init_params_h):
 
     cdef np.ndarray[dtype=np.float32_t, ndim=1] v0 = host_params_h_v0_dec
     cdef np.ndarray[dtype=np.float32_t, ndim=1] da = host_params_h_da_dec

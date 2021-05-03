@@ -1,4 +1,5 @@
 import ctypes
+import pickle
 from os.path import join
 
 import cupy as cp
@@ -6,10 +7,9 @@ import numpy as np
 
 from radis.misc.utils import getProjectRoot
 from radis_cython_gpu import (
-    calc_gaussian_params,
-    calc_lorentzian_params,
-    init_gaussian_params,
-    init_lorentzian_params,
+    blockData,
+    calc_gaussian_envelope_params,
+    calc_lorentzian_envelope_params,
     prepare_blocks,
 )
 
@@ -35,8 +35,8 @@ class initData(ctypes.Structure):
     ]
 
 
-class blockData(ctypes.Structure):
-    _fields_ = [("line_offset", ctypes.c_int), ("iv_offset", ctypes.c_int)]
+##class blockData(ctypes.Structure):
+##    _fields_ = [("line_offset", ctypes.c_int), ("iv_offset", ctypes.c_int)]
 
 
 class iterData(ctypes.Structure):
@@ -58,6 +58,7 @@ class iterData(ctypes.Structure):
 init_params_h = initData()
 iter_params_h = iterData()
 
+
 host_params_h_start = cp.cuda.Event()
 host_params_h_stop = cp.cuda.Event()
 host_params_h_start_DLM = cp.cuda.Event()
@@ -74,6 +75,117 @@ with open(cuda_fname, "rb") as f:
 cuda_module = cp.RawModule(code=cuda_code)
 fillDLM = cuda_module.get_function("fillDLM")
 applyLineshapes = cuda_module.get_function("applyLineshapes")
+
+
+def init_gaussian_params(log_2vMm, verbose_gpu):
+
+    if verbose_gpu >= 2:
+        print("Initializing Gaussian parameters")
+
+    fname = "Gaussian_minmax_" + str(len(log_2vMm)) + ".dat"
+    try:
+        param_data = pickle.load(open(fname, "rb"))
+        if verbose_gpu >= 2:
+            print(" (from cache)... ")
+
+    except (OSError, IOError):
+        if verbose_gpu >= 2:
+            print("... ")
+
+        param_data = calc_gaussian_envelope_params(log_2vMm, verbose_gpu)
+        pickle.dump(param_data, open(fname, "wb"))
+
+    if verbose_gpu >= 2:
+        print("done!")
+
+    return param_data
+
+
+def init_lorentzian_params(log_2gs, na, verbose_gpu):
+
+    if verbose_gpu >= 2:
+        print("Initializing Lorentzian parameters ")
+
+    fname = "Lorenzian_minmax_" + str(len(log_2gs)) + ".dat"
+
+    try:
+        with open(fname, "rb") as f:
+            if verbose_gpu >= 2:
+                print(" (from cache)... ")
+            param_data = pickle.load(f)
+
+    except:
+        if verbose_gpu >= 2:
+            print(" ... ")
+
+        param_data = calc_lorentzian_envelope_params(log_2gs, na, verbose_gpu)
+        with open(fname, "wb") as f:
+            pickle.dump(param_data, f)
+
+    if verbose_gpu >= 2:
+        print("done!")
+
+    return param_data
+
+
+def calc_gaussian_params(
+    gaussian_param_data,
+    init_params_h,
+    iter_params_h,
+    epsilon=1e-4,
+):
+
+    host_params_h_log_2vMm_min, host_params_h_log_2vMm_max = gaussian_param_data
+    log_wG_min = host_params_h_log_2vMm_min + iter_params_h.hlog_T
+    log_wG_max = host_params_h_log_2vMm_max + iter_params_h.hlog_T + epsilon
+    log_dwG = (log_wG_max - log_wG_min) / (init_params_h.N_wG - 1)
+
+    iter_params_h.log_wG_min = log_wG_min
+    iter_params_h.log_dwG = log_dwG
+
+    return
+
+
+def calc_lorentzian_params(
+    lorentzian_param_data,
+    init_params_h,
+    iter_params_h,
+    epsilon=1e-4,
+):
+
+    (
+        host_params_h_top_x,
+        host_params_h_top_a,
+        host_params_h_top_b,
+        host_params_h_bottom_x,
+        host_params_h_bottom_a,
+        host_params_h_bottom_b,
+    ) = lorentzian_param_data
+
+    for i in range(host_params_h_bottom_x.size):
+        if iter_params_h.log_rT < host_params_h_bottom_x[i]:
+            log_wL_min = (
+                iter_params_h.log_rT * host_params_h_bottom_a[i]
+                + host_params_h_bottom_b[i]
+                + iter_params_h.log_p
+            )
+            break
+
+    for i in range(host_params_h_top_x.size):
+        if iter_params_h.log_rT < host_params_h_top_x[i]:
+            log_wL_max = (
+                iter_params_h.log_rT * host_params_h_top_a[i]
+                + host_params_h_top_b[i]
+                + iter_params_h.log_p
+                + epsilon
+            )
+            break
+
+    log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
+
+    iter_params_h.log_wL_min = log_wL_min
+    iter_params_h.log_dwL = log_dwL
+    return
 
 
 def set_pT(p, T, mole_fraction):
@@ -140,6 +252,9 @@ def gpu_init(
     global host_params_h_data_start
     global host_params_h_data_stop
     global host_params_h_elapsedTimeData
+
+    global lorentzian_param_data
+    global gaussian_param_data
 
     global cuda_module
     global database_path
@@ -212,8 +327,8 @@ def gpu_init(
     for i in range(0, len(v0) // init_params_h.N_threads_per_block):
         host_params_h_da_dec[i] = da[i * init_params_h.N_threads_per_block]
 
-    init_lorentzian_params(log_2gs, na, verbose_gpu)
-    init_gaussian_params(log_2vMm, verbose_gpu)
+    lorentzian_param_data = init_lorentzian_params(log_2gs, na, verbose_gpu)
+    gaussian_param_data = init_gaussian_params(log_2vMm, verbose_gpu)
     init_params_h.N_lines = int(len(v0))
 
     if verbose_gpu == 1:
@@ -309,9 +424,27 @@ def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
     # test comment
     ##    cdef int n_blocks
     set_pT(p, T, mole_fraction)
-    calc_gaussian_params()
-    calc_lorentzian_params()
-    n_blocks = prepare_blocks()
+
+    calc_gaussian_params(
+        gaussian_param_data,
+        init_params_h,
+        iter_params_h,
+    )
+
+    calc_lorentzian_params(
+        lorentzian_param_data,
+        init_params_h,
+        iter_params_h,
+    )
+
+    n_blocks = prepare_blocks(
+        host_params_h_v0_dec,
+        host_params_h_da_dec,
+        host_params_h_dec_size,
+        host_params_h_block_preparation_step_size,
+        iter_params_h,
+        init_params_h,
+    )
 
     if verbose_gpu >= 2:
         print("Copying iteration parameters to device...")
