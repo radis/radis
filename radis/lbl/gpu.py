@@ -131,10 +131,7 @@ def init_lorentzian_params(log_2gs, na, verbose_gpu):
 
 
 def calc_gaussian_params(
-    gaussian_param_data,
-    init_params_h,
-    iter_params_h,
-    epsilon=1e-4,
+    gaussian_param_data, init_params_h, iter_params_h, epsilon=1e-4
 ):
 
     host_params_h_log_2vMm_min, host_params_h_log_2vMm_max = gaussian_param_data
@@ -145,49 +142,39 @@ def calc_gaussian_params(
     iter_params_h.log_wG_min = log_wG_min
     iter_params_h.log_dwG = log_dwG
 
-    return
 
-
-def calc_lorentzian_params(
-    lorentzian_param_data,
-    init_params_h,
-    iter_params_h,
-    epsilon=1e-4,
-):
+def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-4):
 
     (
-        host_params_h_top_x,
-        host_params_h_top_a,
-        host_params_h_top_b,
-        host_params_h_bottom_x,
-        host_params_h_bottom_a,
-        host_params_h_bottom_b,
-    ) = lorentzian_param_data
+        top_x,
+        top_a,
+        top_b,
+        bottom_x,
+        bottom_a,
+        bottom_b,
+    ) = param_data
 
-    for i in range(host_params_h_bottom_x.size):
-        if iter_params_h.log_rT < host_params_h_bottom_x[i]:
+    for i in range(bottom_x.size):
+        if iter_params_h.log_rT < bottom_x[i]:
             log_wL_min = (
-                iter_params_h.log_rT * host_params_h_bottom_a[i]
-                + host_params_h_bottom_b[i]
-                + iter_params_h.log_p
+                iter_params_h.log_rT * bottom_a[i] + bottom_b[i] + iter_params_h.log_p
             )
             break
 
-    for i in range(host_params_h_top_x.size):
-        if iter_params_h.log_rT < host_params_h_top_x[i]:
+    for i in range(top_x.size):
+        if iter_params_h.log_rT < top_x[i]:
             log_wL_max = (
-                iter_params_h.log_rT * host_params_h_top_a[i]
-                + host_params_h_top_b[i]
+                iter_params_h.log_rT * top_a[i]
+                + top_b[i]
                 + iter_params_h.log_p
                 + epsilon
             )
             break
 
     log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
-
+    log_wL_min, log_dwL = -3.8011555671691895, 0.07515250146389008
     iter_params_h.log_wL_min = log_wL_min
     iter_params_h.log_dwL = log_dwL
-    return
 
 
 def set_pT(p, T, mole_fraction, iter_params_h):
@@ -310,16 +297,6 @@ def gpu_init(
             "Spectral points per thread : {0}".format(init_params_h.N_points_per_thread)
         )
         print()
-
-    ##    cdef np.ndarray[dtype=np.int32_t, ndim=1] spec_h_iso = iso
-    ##    cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_v0 = v0
-    ##    cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_da = da
-    ##    cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_log_2gs = log_2gs
-    ##    cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_na = na
-    ##    cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_log_2vMm = log_2vMm
-    ##    cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_S0 = S0
-    ##    cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_El = El
-    ##    cdef np.ndarray[dtype=np.float32_t, ndim=1] spec_h_Q = Q
 
     host_params_h_v0_dec = np.zeros(
         len(v0) // init_params_h.N_threads_per_block, dtype=np.float32

@@ -45,7 +45,7 @@ cdef extern from *:
 def calc_lorentzian_envelope_params(
     np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
     np.ndarray[dtype=np.float32_t, ndim=1] na,
-    verbose_gpu):
+    verbose_gpu = False):
 
     cdef set[pair[float,float]] unique_set
     cdef float float_pair[2]
@@ -126,9 +126,9 @@ def calc_lorentzian_envelope_params(
                     else:
                         break
 
-            top_a.append(first_el)
-            top_b.append(second_el)
-            top_x.append(x_ij)
+            top_a = top_a[:i+1] + [first_el]
+            top_b = top_b[:i+1] + [second_el]
+            top_x = top_x[:i+1] + [x_ij]
 
         idx+=1
 
@@ -151,9 +151,9 @@ def calc_lorentzian_envelope_params(
                     else:
                         break
 
-            bottom_a.append(first_el)
-            bottom_b.append(second_el)
-            bottom_x.append(x_ij)
+            bottom_a = bottom_a[:i+1] + [first_el]
+            bottom_b = bottom_b[:i+1] + [second_el]
+            bottom_x = bottom_x[:i+1] + [x_ij]
 
         idx+=1
 
@@ -169,7 +169,7 @@ def calc_lorentzian_envelope_params(
 
 def calc_gaussian_envelope_params(
     np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm,
-    verbose_gpu):
+    verbose_gpu=False):
 
     log_2vMm_min = np.amin(log_2vMm)
     log_2vMm_max = np.amax(log_2vMm)
