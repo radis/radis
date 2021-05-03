@@ -90,6 +90,7 @@ from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
+from radis.lbl.gpu import gpu_init, gpu_iterate
 from radis.misc.basics import flatten, is_float, list_if_float
 from radis.misc.printer import printg
 from radis.misc.utils import Default
@@ -932,12 +933,6 @@ class SpectrumFactory(BandFactory):
         Ia_arr[np.isnan(Ia_arr)] = 0
         molarmass_arr[np.isnan(molarmass_arr)] = 0
 
-        try:
-            import radis_cython_gpu
-        except (ModuleNotFoundError):
-            print("Failed to load radis_cython_gpu module, program will exit.")
-            exit()
-
         t0 = time()
 
         # generate the v_arr
@@ -974,7 +969,7 @@ class SpectrumFactory(BandFactory):
         else:
             verbose_gpu = verbose
 
-        radis_cython_gpu.init(
+        gpu_init(
             v_arr,
             NwG,
             NwL,
@@ -998,7 +993,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff = radis_cython_gpu.iterate(
+        abscoeff = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,

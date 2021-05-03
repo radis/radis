@@ -167,35 +167,13 @@ def get_ext_modules():
                 "radis_cython_extensions",
                 sources=["./radis/cython/radis_cython_extensions.pyx"],
                 include_dirs=[get_include()],
-                language="c",
+                language="c++",
                 extra_link_args=[],
             )
         )
 
-        # GPU:
-        try:
-            import cupy
-            import cupyx
-
-            cupyx_str = str(cupyx).split()[1].replace("'", "")
-            print("Cupy + " + cupyx_str + " " + cupy.__version__)
-
-            ext_modules.append(
-                Extension(
-                    "radis_cython_gpu",
-                    sources=["./radis/cython/radis_cython_gpu.pyx"],
-                    include_dirs=[get_include()],
-                    language="c++",
-                    extra_link_args=[],
-                )
-            )
-        except (ModuleNotFoundError):
-            print(
-                "Skipping GPU libraries.\nInstall 'cupy' and 'cupyx' packages and re-install RADIS for installation of GPU routines"
-            )
-
     except (ModuleNotFoundError):
-        print("Skipping all Cython extensions (including GPU)...!")
+        print("Skipping all Cython extensions...!")
 
     return ext_modules
 
