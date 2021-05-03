@@ -24,73 +24,7 @@ class blockData(ctypes.Structure):
     _fields_ = [("line_offset", ctypes.c_int), ("iv_offset", ctypes.c_int)]
 
 
-cdef float epsilon   = <float> 0.0001
-cdef float FLOAT_MAX = <float> 1e30
-cdef float FLOAT_MIN = <float>-1e30
 
-
-cdef  int host_params_h_block_preparation_step_size
-cdef  int host_params_h_Min_threads_per_block
-cdef  int host_params_h_Max_threads_per_block
-
-cdef  float host_params_h_log_2vMm_min
-cdef  float host_params_h_log_2vMm_max
-
-cdef  size_t host_params_h_dec_size
-cdef  int host_params_h_shared_size
-
-host_params_h_start = cp.cuda.Event()
-host_params_h_stop = cp.cuda.Event()
-host_params_h_start_DLM = cp.cuda.Event()
-host_params_h_stop_DLM = cp.cuda.Event()
-host_params_h_data_start = cp.cuda.Event()
-host_params_h_data_stop = cp.cuda.Event()
-
-cdef float host_params_h_elapsedTime
-cdef float host_params_h_elapsedTimeDLM
-cdef float host_params_h_elapsedTimeData
-
-host_params_h_iso_d = None
-host_params_h_v0_d = None
-host_params_h_da_d = None
-host_params_h_S0_d = None
-host_params_h_El_d = None
-host_params_h_log_2gs_d = None
-host_params_h_na_d = None
-host_params_h_log_2vMm_d = None
-host_params_h_DLM_d = None
-host_params_h_spectrum_d = None
-host_params_h_Q_d = None
-host_params_h_I_add = None
-
-# defined in 'iterate'
-host_params_h_DLM_d_in = None
-host_params_h_DLM_d_out = None
-
-host_params_h_spectrum_d_in = None
-host_params_h_spectrum_d_out = None
-
-#set default path:
-database_path = '/home/pankaj/radis-lab/data-2000-2400/'
-
-#Default number of lines to load
-#This is outside of the struct to allow it to be both None and int type;
-#Setting N_lines_to_load to None loads all lines in the file.
-N_lines_to_load = None
-
-def read_npy(fname, arr):
-    print("Loading {0}...".format(fname))
-    arr = np.load(fname)
-    print("Done!")
-
-
-def set_path(path):
-    global database_path
-    database_path = path
-
-def set_N_lines(int N):
-    global N_lines_to_load
-    N_lines_to_load = N
 
 # CUSTOM COMPARATOR to sort map keys in non increasing order
 cdef extern from *:
@@ -104,24 +38,10 @@ cdef extern from *:
         float b
 
 
-
-
-
-cdef  vector[float] host_params_h_top_x
-cdef  vector[float] host_params_h_top_a
-cdef  vector[float] host_params_h_top_b
-cdef  vector[float] host_params_h_bottom_x
-cdef  vector[float] host_params_h_bottom_a
-cdef  vector[float] host_params_h_bottom_b
-
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-
-
-
-
 def calc_lorentzian_envelope_params(
     np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
     np.ndarray[dtype=np.float32_t, ndim=1] na,
@@ -135,6 +55,10 @@ def calc_lorentzian_envelope_params(
     cdef vector[float] log_2gs_short
     cdef mapcpp[float, float, greater] bottom_envelope_map
     cdef mapcpp[float, float] top_envelope_map
+
+
+    cdef float FLOAT_MAX = <float> 1e30
+    cdef float FLOAT_MIN = <float>-1e30
 
     if verbose_gpu >= 2:
         print("Initializing Lorentzian parameters ")

@@ -7,7 +7,6 @@ import numpy as np
 
 from radis.misc.utils import getProjectRoot
 from radis_cython_gpu import (
-    blockData,
     calc_gaussian_envelope_params,
     calc_lorentzian_envelope_params,
     prepare_blocks,
@@ -35,8 +34,13 @@ class initData(ctypes.Structure):
     ]
 
 
-##class blockData(ctypes.Structure):
-##    _fields_ = [("line_offset", ctypes.c_int), ("iv_offset", ctypes.c_int)]
+try:
+    from radis_cython_gpu import blockData
+
+except (ModuleNotFoundError):
+
+    class blockData(ctypes.Structure):
+        _fields_ = [("line_offset", ctypes.c_int), ("iv_offset", ctypes.c_int)]
 
 
 class iterData(ctypes.Structure):
@@ -58,7 +62,6 @@ class iterData(ctypes.Structure):
 init_params_h = initData()
 iter_params_h = iterData()
 
-
 host_params_h_start = cp.cuda.Event()
 host_params_h_stop = cp.cuda.Event()
 host_params_h_start_DLM = cp.cuda.Event()
@@ -67,7 +70,6 @@ host_params_h_data_start = cp.cuda.Event()
 host_params_h_data_stop = cp.cuda.Event()
 
 # TO-DO: read and compile CUDA code at install time, then pickle the cuda object
-
 cuda_fname = join(getProjectRoot(), "lbl", "gpu.cu")
 with open(cuda_fname, "rb") as f:
     cuda_code = f.read().decode()
@@ -188,11 +190,7 @@ def calc_lorentzian_params(
     return
 
 
-def set_pT(p, T, mole_fraction):
-
-    # ----------- setup global variables -----------------
-    global iter_params_h
-    # ------------------------------------------------------
+def set_pT(p, T, mole_fraction, iter_params_h):
 
     c2 = 1.4387773538277204  # K.cm
     k = 1.38064852e-23  # J.K-1
@@ -225,6 +223,14 @@ def set_pT(p, T, mole_fraction):
     # cdef float Q = Qr * Qv1 * Qv2 * Qv3
 
     # iter_params_h.Q = Q
+
+
+def set_constant_memory(var_str):
+    var_h = globals()[var_str + "_h"]
+    memptr_d = cuda_module.get_global(var_str + "_d")
+    ptr = ctypes.cast(ctypes.pointer(var_h), ctypes.c_void_p)
+    struct_size = ctypes.sizeof(var_h)
+    memptr_d.copy_from_host(ptr, struct_size)
 
 
 def gpu_init(
@@ -349,13 +355,9 @@ def gpu_init(
 
     host_params_h_I_add = cp.zeros(init_params_h.N_lines, dtype=cp.float32)
 
-    # CTYPES #2
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
-    memptr_init_params_d = cuda_module.get_global("init_params_d")
-    init_params_ptr = ctypes.cast(ctypes.pointer(init_params_h), ctypes.c_void_p)
-    init_params_size = ctypes.sizeof(init_params_h)
-    memptr_init_params_d.copy_from_host(init_params_ptr, init_params_size)
+    set_constant_memory("init_params")
 
     if verbose_gpu >= 2:
         print("done!")
@@ -423,7 +425,7 @@ def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
     host_params_h_start.record()
     # test comment
     ##    cdef int n_blocks
-    set_pT(p, T, mole_fraction)
+    set_pT(p, T, mole_fraction, iter_params_h)
 
     calc_gaussian_params(
         gaussian_param_data,
@@ -448,12 +450,7 @@ def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
 
     if verbose_gpu >= 2:
         print("Copying iteration parameters to device...")
-
-    ## CTYPES #1
-    memptr_iter_params_d = cuda_module.get_global("iter_params_d")
-    iter_params_ptr = ctypes.cast(ctypes.pointer(iter_params_h), ctypes.c_void_p)
-    struct_size = ctypes.sizeof(iter_params_h)
-    memptr_iter_params_d.copy_from_host(iter_params_ptr, struct_size)
+    set_constant_memory("iter_params")
 
     if verbose_gpu >= 2:
         print("done!")
