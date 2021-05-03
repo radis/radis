@@ -30,7 +30,7 @@ class initData(ctypes.Structure):
 
 
 try:
-    from radis_cython_gpu import blockData
+    from radis_cython_extensions import blockData
 
 except (ModuleNotFoundError):
 
