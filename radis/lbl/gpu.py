@@ -6,11 +6,6 @@ import cupy as cp
 import numpy as np
 
 from radis.misc.utils import getProjectRoot
-from radis_cython_gpu import (
-    calc_gaussian_envelope_params,
-    calc_lorentzian_envelope_params,
-    prepare_blocks,
-)
 
 
 class initData(ctypes.Structure):
@@ -77,6 +72,93 @@ with open(cuda_fname, "rb") as f:
 cuda_module = cp.RawModule(code=cuda_code)
 fillDLM = cuda_module.get_function("fillDLM")
 applyLineshapes = cuda_module.get_function("applyLineshapes")
+
+
+def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
+    # Remove duplicates
+    unique_lines = set([])
+    for i in range(len(na)):
+        unique_lines.add(str(na[i]) + " " + str(log_2gs[i]))
+
+    # Only keep extremes
+    max_dict = {}
+    min_dict = {}
+    for s in unique_lines:
+        na_i, log_2gs_i = map(float, s.split())
+        try:
+            max_dict[na_i] = log_2gs_i if log_2gs_i > max_dict[na_i] else max_dict[na_i]
+        except (KeyError):
+            max_dict[na_i] = log_2gs_i
+
+        try:
+            min_dict[na_i] = log_2gs_i if log_2gs_i < min_dict[na_i] else min_dict[na_i]
+        except (KeyError):
+            min_dict[na_i] = log_2gs_i
+
+    # Check which ones are really at the top:
+    keys = sorted(max_dict.keys())
+
+    topA = [keys[0]]
+    topB = [max_dict[keys[0]]]
+    topX = [-np.inf]
+
+    for key in keys[1:]:
+        for i in range(len(topX)):
+            xi = (max_dict[key] - topB[i]) / (topA[i] - key)
+            if xi >= topX[i]:
+                if i < len(topX) - 1:
+                    if xi < topX[i + 1]:
+                        break
+                else:
+                    break
+
+        topA = topA[: i + 1] + [key]
+        topB = topB[: i + 1] + [max_dict[key]]
+        topX = topX[: i + 1] + [xi]
+
+    topX = topX[1:] + [np.inf]
+
+    # Check which ones are really at the bottom:
+    keys = sorted(min_dict.keys())[::-1]
+
+    bottomA = [keys[0]]
+    bottomB = [min_dict[keys[0]]]
+    bottomX = [-np.inf]
+
+    for key in keys[1:]:
+        for i in range(len(bottomX)):
+            xi = (min_dict[key] - bottomB[i]) / (bottomA[i] - key)
+            if xi >= bottomX[i]:
+                if i < len(bottomX) - 1:
+                    if xi < bottomX[i + 1]:
+                        break
+                else:
+                    break
+
+        bottomA = bottomA[: i + 1] + [key]
+        bottomB = bottomB[: i + 1] + [min_dict[key]]
+        bottomX = bottomX[: i + 1] + [xi]
+
+    bottomX = bottomX[1:] + [np.inf]
+
+    return (topA, topB, topX, bottomA, bottomB, bottomX)
+
+
+def py_calc_gaussian_envelope_params(log_2vMm, verbose=False):
+    return np.amin(log_2vMm), np.max(log_2vMm)
+
+
+try:
+    from radis_cython_extensions import (
+        calc_gaussian_envelope_params,
+        calc_lorentzian_envelope_params,
+        prepare_blocks,
+    )
+except (ModuleNotFoundError):
+    calc_gaussian_envelope_params = py_calc_gaussian_envelope_params
+    calc_lorentzian_envelope_params = py_calc_lorentzian_envelope_params
+    # TO-DO: currently we don't have a purely Python implementation for prepare_blocks
+    # prepare_blocks = py_prepare_blocks
 
 
 def init_gaussian_params(log_2vMm, verbose_gpu):
