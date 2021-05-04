@@ -1714,7 +1714,10 @@ def _recalculate(
             try:
                 shape = spec.conditions["slit_shape"]
             except KeyError:
-                warn("Recomputing with slit_shape not given. Assuming a triangular slit.", UserWarning)
+                warn(
+                    "Recomputing with slit_shape not given. Assuming a triangular slit.",
+                    UserWarning,
+                )
                 shape = "triangular"
             spec.apply_slit(
                 slit_function=slit_function,
