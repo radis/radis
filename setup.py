@@ -36,7 +36,6 @@ import re
 import sys
 from os.path import abspath, dirname, exists, join
 
-from Cython.Distutils import build_ext
 from numpy import get_include
 from setuptools import Extension, find_packages, setup
 
@@ -126,49 +125,60 @@ with open(join(dirname(__file__), "radis", "__version__.txt")) as version_file:
     __version__ = version_file.read().strip()
 
 
-# Cython accelerated operations:
-class build_ext_subclass(build_ext):
-    def build_extensions(self):
-        c = self.compiler.compiler_type
-        copt = {
-            "msvc": ["/openmp", "/Ox", "/fp:fast", "/favor:INTEL64"],
-            "mingw32": ["-fopenmp", "-O3", "-ffast-math", "-march=native"],
-        }
-
-        lopt = {"mingw32": ["-fopenmp"]}
-
-        print("Compiling with " + c + "...")
-        try:
-            for e in self.extensions:
-                e.extra_compile_args = copt[c]
-        except (KeyError):
-            pass
-        try:
-            for e in self.extensions:
-                e.extra_link_args = lopt[c]
-        except (KeyError):
-            pass
-        build_ext.build_extensions(self)
-
-
+# Cython extensions:
 def get_ext_modules():
     print(sys.version)
+    ext_modules = []
+    cmdclass = {}
+
+    # TO-DO: set language level
+
     try:
         import cython
 
         print("Cython " + cython.__version__)
-        ext_modules = [
+
+        from Cython.Distutils import build_ext
+
+        class build_ext_subclass(build_ext):
+            def build_extensions(self):
+                c = self.compiler.compiler_type
+                copt = {
+                    "msvc": ["/openmp", "/Ox", "/fp:fast", "/favor:INTEL64"],
+                    "mingw32": ["-fopenmp", "-O3", "-ffast-math", "-march=native"],
+                }
+
+                lopt = {"mingw32": ["-fopenmp"]}
+
+                print("Compiling with " + c + "...")
+                try:
+                    for e in self.extensions:
+                        e.extra_compile_args = copt[c]
+                except (KeyError):
+                    pass
+                try:
+                    for e in self.extensions:
+                        e.extra_link_args = lopt[c]
+                except (KeyError):
+                    pass
+                build_ext.build_extensions(self)
+
+        ext_modules.append(
             Extension(
                 "radis_cython_extensions",
                 sources=["./radis/cython/radis_cython_extensions.pyx"],
                 include_dirs=[get_include()],
-                language="c",
+                language="c++",
                 extra_link_args=[],
             )
-        ]
-        return ext_modules
+        )
+
+        cmdclass["build_ext"] = build_ext_subclass
+
     except (ModuleNotFoundError):
-        return []
+        print("Skipping all Cython extensions...!")
+
+    return {"cmdclass": cmdclass, "ext_modules": ext_modules}
 
 
 # Main install routine
@@ -235,8 +245,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Operating System :: OS Independent",
     ],
-    cmdclass={"build_ext": build_ext_subclass},
-    ext_modules=get_ext_modules(),
+    **get_ext_modules(),
     include_package_data=True,  # add non .py data files in MANIFEST.in
     # package_data={'radis': ['radis/phys/units.txt']},
     zip_safe=False,  # impossible as long as we have external files read with __file__ syntax
