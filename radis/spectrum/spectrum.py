@@ -2245,6 +2245,7 @@ class Spectrum(object):
         self.conditions["slit_function"] = slit_function
         self.conditions["slit_unit"] = unit  # input slit unit
         self.conditions["slit_dispersion"] = slit_dispersion
+        self.conditions["slit_shape"] = shape
         # TODO: probably removed after Spectrum is stored.
         self.conditions["norm_by"] = norm_by
 
