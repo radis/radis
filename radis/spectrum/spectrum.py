@@ -702,6 +702,12 @@ class Spectrum(object):
         else:
             pass
 
+        if I[0] > I[-1]:
+            I = I[::-1]
+
+        if w[0] > w[-1]:
+            w = w[::-1]
+
         return w, I
 
     def _get_wavespace(self, which="any", copy=True):
