@@ -55,8 +55,12 @@ from warnings import warn
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.widgets import Slider
 from numpy import abs, diff
 from publib import fix_style, set_style
+
+# %% Spectrum class to hold results )
+from radis.lbl.gpu import gpu_iterate
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import count_nans, evenly_distributed, nantrapz
@@ -76,8 +80,6 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
-
-# %% Spectrum class to hold results )
 
 
 class Spectrum(object):
@@ -241,6 +243,7 @@ class Spectrum(object):
         "name",
         "_slit",
         "file",
+        "plot_sliders",
     ]
 
     def __init__(
@@ -340,6 +343,7 @@ class Spectrum(object):
         self.cond_units = cond_units
         self.name = name
         self.file = None  # used to store filename when loaded from a file
+        self.plot_sliders = {}
 
     # %% Constructors
 
@@ -1358,6 +1362,7 @@ class Spectrum(object):
         normalize=False,
         force=False,
         plot_by_parts=False,
+        sliders={},
         **kwargs
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
@@ -1406,6 +1411,11 @@ class Spectrum(object):
         force: bool
             plotting on an existing figure is forbidden if labels are not the
             same. Use ``force=True`` to ignore that.
+        sliders:
+            dict that describes which variables will get a slider assigned in the plot.
+            the for each key:value pair the key should be the name of the variable and
+            the value should be a 2-tuple with (min_value, max_value). The default value
+            will be the value with which the spectrum was originally generated.
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
@@ -1534,6 +1544,7 @@ class Spectrum(object):
         label = kwargs.pop("label", self.get_name())
 
         # Actual plot :
+        print(len(y))
         # ... note: '-k' by default with style origin for first plot
         if not plot_by_parts:
             (line,) = plt.plot(x, y, label=label, **kwargs)
@@ -1548,14 +1559,45 @@ class Spectrum(object):
         plt.ticklabel_format(useOffset=False, axis="x")
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-
         plt.yscale(yscale)
-
         if "label" in kwargs:
             plt.legend()
         fix_style(str("origin"))
+
+        # Sliders
+        for key in sliders:
+            slider_axis = plt.axes([0.25, 0.1, 0.65, 0.03])
+            slider = Slider(
+                ax=slider_axis,
+                label=key,
+                valmin=sliders[key][0],
+                valmax=sliders[key][1],
+                valinit=self.conditions[key],
+            )
+            slider.on_changed(lambda val: self.update_plot(val, fig, line))
+            self.plot_sliders[key] = slider
+        plt.subplots_adjust(bottom=0.25)
+
         plt.show()
+
         return line
+
+    def update_plot(self, val, fig, line):
+        for key in self.plot_sliders:
+            self.conditions[key] = self.plot_sliders[key].val
+
+        abscoeff = gpu_iterate(
+            self.conditions["pressure_mbar"] * 1e-3,
+            self.conditions["Tgas"],
+            self.conditions["mole_fraction"],
+            None,  # Does nothing
+            None,
+            False,
+        )
+
+        absorbance = self.conditions["path_length"] * abscoeff
+        line.set_ydata(absorbance)
+        fig.canvas.draw_idle()
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
         """Return populations that are featured in the spectrum, either as
