@@ -12,11 +12,8 @@ from libcpp.set cimport set
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
 
-
-
-
-
-
+#This can be modified to see if the compiled/built/installed version is current:
+__version__ = 0.021
 
 # Fast compiled version of add_at():
 def add_at(arr, k,l,m, I):
@@ -82,8 +79,8 @@ cdef extern from *:
 @cython.wraparound(False)
 @cython.nonecheck(False)
 def calc_lorentzian_envelope_params(
-    np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
     np.ndarray[dtype=np.float32_t, ndim=1] na,
+    np.ndarray[dtype=np.float32_t, ndim=1] log_2gs,
     verbose_gpu = False):
 
     cdef set[pair[float,float]] unique_set
@@ -198,12 +195,8 @@ def calc_lorentzian_envelope_params(
 
     bottom_x = bottom_x[1:] + [FLOAT_MAX]
 
-    return (np.array(top_a),
-            np.array(top_b),
-            np.array(top_x),
-            np.array(bottom_a),
-            np.array(bottom_b),
-            np.array(bottom_x))
+    return ((bottom_a, bottom_b, bottom_x),
+            (top_a, top_b, top_x))
 
 
 def calc_gaussian_envelope_params(
@@ -231,7 +224,6 @@ def prepare_blocks(
 
     cdef np.ndarray[dtype=np.float32_t, ndim=1] v0 = host_params_h_v0_dec
     cdef np.ndarray[dtype=np.float32_t, ndim=1] da = host_params_h_da_dec
-
 
     cdef float v_prev
     cdef float dvdi

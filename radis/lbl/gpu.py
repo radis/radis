@@ -1,5 +1,6 @@
 import ctypes
-import pickle
+
+##import pickle
 from os.path import join
 
 import cupy as cp
@@ -86,62 +87,40 @@ def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
     for s in unique_lines:
         na_i, log_2gs_i = map(float, s.split())
         try:
-            max_dict[na_i] = log_2gs_i if log_2gs_i > max_dict[na_i] else max_dict[na_i]
-        except (KeyError):
-            max_dict[na_i] = log_2gs_i
-
-        try:
             min_dict[na_i] = log_2gs_i if log_2gs_i < min_dict[na_i] else min_dict[na_i]
+            max_dict[na_i] = log_2gs_i if log_2gs_i > max_dict[na_i] else max_dict[na_i]
+
         except (KeyError):
             min_dict[na_i] = log_2gs_i
+            max_dict[na_i] = log_2gs_i
 
     # Check which ones are really at the top:
-    keys = sorted(max_dict.keys())
+    result = []
+    for test_dict in (min_dict, max_dict):
 
-    topA = [keys[0]]
-    topB = [max_dict[keys[0]]]
-    topX = [-np.inf]
+        keys = sorted(test_dict.keys(), reverse=(test_dict == min_dict))
+        A = [keys[0]]
+        B = [test_dict[keys[0]]]
+        X = [-np.inf]
 
-    for key in keys[1:]:
-        for i in range(len(topX)):
-            xi = (max_dict[key] - topB[i]) / (topA[i] - key)
-            if xi >= topX[i]:
-                if i < len(topX) - 1:
-                    if xi < topX[i + 1]:
+        for key in keys[1:]:
+            for i in range(len(X)):
+                xi = (test_dict[key] - B[i]) / (A[i] - key)
+                if xi >= X[i]:
+                    if i < len(X) - 1:
+                        if xi < X[i + 1]:
+                            break
+                    else:
                         break
-                else:
-                    break
 
-        topA = topA[: i + 1] + [key]
-        topB = topB[: i + 1] + [max_dict[key]]
-        topX = topX[: i + 1] + [xi]
+            A = A[: i + 1] + [key]
+            B = B[: i + 1] + [test_dict[key]]
+            X = X[: i + 1] + [xi]
 
-    topX = topX[1:] + [np.inf]
+        X = X[1:] + [np.inf]
+        result.append((A, B, X))
 
-    # Check which ones are really at the bottom:
-    keys = sorted(min_dict.keys())[::-1]
-
-    bottomA = [keys[0]]
-    bottomB = [min_dict[keys[0]]]
-    bottomX = [-np.inf]
-
-    for key in keys[1:]:
-        for i in range(len(bottomX)):
-            xi = (min_dict[key] - bottomB[i]) / (bottomA[i] - key)
-            if xi >= bottomX[i]:
-                if i < len(bottomX) - 1:
-                    if xi < bottomX[i + 1]:
-                        break
-                else:
-                    break
-
-        bottomA = bottomA[: i + 1] + [key]
-        bottomB = bottomB[: i + 1] + [min_dict[key]]
-        bottomX = bottomX[: i + 1] + [xi]
-
-    bottomX = bottomX[1:] + [np.inf]
-
-    return (topA, topB, topX, bottomA, bottomB, bottomX)
+    return tuple(result)
 
 
 def py_calc_gaussian_envelope_params(log_2vMm, verbose=False):
@@ -160,24 +139,27 @@ except (ModuleNotFoundError):
     # TO-DO: currently we don't have a purely Python implementation for prepare_blocks
     # prepare_blocks = py_prepare_blocks
 
+##calc_lorentzian_envelope_params = py_calc_lorentzian_envelope_params
+
 
 def init_gaussian_params(log_2vMm, verbose_gpu):
 
     if verbose_gpu >= 2:
         print("Initializing Gaussian parameters")
 
-    fname = "Gaussian_minmax_" + str(len(log_2vMm)) + ".dat"
-    try:
-        param_data = pickle.load(open(fname, "rb"))
-        if verbose_gpu >= 2:
-            print(" (from cache)... ")
-
-    except (OSError, IOError):
+    ##fname = "Gaussian_minmax_" + str(len(log_2vMm)) + ".dat"
+    ##    try:
+    ##        param_data = pickle.load(open(fname, "rb"))
+    ##        if verbose_gpu >= 2:
+    ##            print(" (from cache)... ")
+    ##
+    ##    except (OSError, IOError):
+    if True:
         if verbose_gpu >= 2:
             print("... ")
 
         param_data = calc_gaussian_envelope_params(log_2vMm, verbose_gpu)
-        pickle.dump(param_data, open(fname, "wb"))
+    ##        pickle.dump(param_data, open(fname, "wb"))
 
     if verbose_gpu >= 2:
         print("done!")
@@ -185,26 +167,27 @@ def init_gaussian_params(log_2vMm, verbose_gpu):
     return param_data
 
 
-def init_lorentzian_params(log_2gs, na, verbose_gpu):
+def init_lorentzian_params(na, log_2gs, verbose_gpu):
 
     if verbose_gpu >= 2:
         print("Initializing Lorentzian parameters ")
 
-    fname = "Lorenzian_minmax_" + str(len(log_2gs)) + ".dat"
-
-    try:
-        with open(fname, "rb") as f:
-            if verbose_gpu >= 2:
-                print(" (from cache)... ")
-            param_data = pickle.load(f)
-
-    except:
+    ##fname = "Lorenzian_minmax_" + str(len(log_2gs)) + ".dat"
+    ##
+    ##    try:
+    ##        with open(fname, "rb") as f:
+    ##            if verbose_gpu >= 2:
+    ##                print(" (from cache)... ")
+    ##            param_data = pickle.load(f)
+    ##
+    ##    except:
+    if True:
         if verbose_gpu >= 2:
             print(" ... ")
 
-        param_data = calc_lorentzian_envelope_params(log_2gs, na, verbose_gpu)
-        with open(fname, "wb") as f:
-            pickle.dump(param_data, f)
+        param_data = calc_lorentzian_envelope_params(na, log_2gs, verbose_gpu)
+    ##        with open(fname, "wb") as f:
+    ##            pickle.dump(param_data, f)
 
     if verbose_gpu >= 2:
         print("done!")
@@ -225,36 +208,28 @@ def calc_gaussian_params(
     iter_params_h.log_dwG = log_dwG
 
 
+def calc_lorentzian_minmax(param_data, log_rT, log_p):
+
+    result = []
+    for params in param_data:
+        A, B, X = params
+        i = 0
+        while X[i] < log_rT:
+            i += 1
+        result.append(log_rT * A[i] + B[i] + log_p)
+
+    return tuple(result)
+
+
 def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-4):
 
-    (
-        top_x,
-        top_a,
-        top_b,
-        bottom_x,
-        bottom_a,
-        bottom_b,
-    ) = param_data
+    log_wL_min, log_wL_max = calc_lorentzian_minmax(
+        param_data, iter_params_h.log_rT, iter_params_h.log_p
+    )
 
-    for i in range(bottom_x.size):
-        if iter_params_h.log_rT < bottom_x[i]:
-            log_wL_min = (
-                iter_params_h.log_rT * bottom_a[i] + bottom_b[i] + iter_params_h.log_p
-            )
-            break
-
-    for i in range(top_x.size):
-        if iter_params_h.log_rT < top_x[i]:
-            log_wL_max = (
-                iter_params_h.log_rT * top_a[i]
-                + top_b[i]
-                + iter_params_h.log_p
-                + epsilon
-            )
-            break
-
+    log_wL_max += epsilon
     log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
-    log_wL_min, log_dwL = -3.8011555671691895, 0.07515250146389008
+
     iter_params_h.log_wL_min = log_wL_min
     iter_params_h.log_dwL = log_dwL
 
@@ -392,7 +367,7 @@ def gpu_init(
     for i in range(0, len(v0) // init_params_h.N_threads_per_block):
         host_params_h_da_dec[i] = da[i * init_params_h.N_threads_per_block]
 
-    lorentzian_param_data = init_lorentzian_params(log_2gs, na, verbose_gpu)
+    lorentzian_param_data = init_lorentzian_params(na, log_2gs, verbose_gpu)
     gaussian_param_data = init_gaussian_params(log_2vMm, verbose_gpu)
     init_params_h.N_lines = int(len(v0))
 
