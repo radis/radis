@@ -951,7 +951,10 @@ class SpectrumFactory(BandFactory):
 
         log_2gs = np.array(self._get_log_2gs(), dtype=np.float32)
         log_2vMm = np.array(self._get_log_2vMm(molarmass_arr), dtype=np.float32)
-        S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
+
+        self.calc_S0()
+        ##        S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
+        S0 = self.df0["S0"].to_numpy(dtype=np.float32)
 
         NwG = 4  # TO-DO: these shouldn't be hardcoded
         NwL = 8  # TO-DO: these shouldn't be hardcoded
@@ -1473,6 +1476,9 @@ class SpectrumFactory(BandFactory):
         if "S0" in df.columns:
             return df["S0"]
 
+        elif "int" in df.columns:
+            return df["int"]
+
         try:
             v0 = df["wav"].to_numpy()
             iso = df["iso"].to_numpy()
@@ -1484,6 +1490,7 @@ class SpectrumFactory(BandFactory):
             S0 = Ia_arr.take(iso) * gu * A21 / (8 * pi * c_cm * v0 ** 2)
             df["S0"] = S0
             return S0
+
         except KeyError as err:
             raise KeyError(
                 "Could not find wavenumber, Einstein's coefficient, lower state energy or S0 in the dataframe. PLease check the database"
