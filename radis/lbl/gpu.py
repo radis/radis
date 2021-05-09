@@ -450,7 +450,7 @@ def gpu_init(
         )
 
 
-def gpu_iterate(p, T, mole_fraction, Ia_arr, molarmass_arr, verbose_gpu):
+def gpu_iterate(p, T, mole_fraction, verbose_gpu):
 
     # ----------- setup global variables -----------------
 

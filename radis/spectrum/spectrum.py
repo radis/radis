@@ -1592,8 +1592,6 @@ class Spectrum(object):
             self.conditions["pressure_mbar"] * 1e-3,
             self.conditions["Tgas"],
             self.conditions["mole_fraction"],
-            None,  # Does nothing
-            None,
             False,
         )
 

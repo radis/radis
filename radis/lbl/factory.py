@@ -1002,8 +1002,6 @@ class SpectrumFactory(BandFactory):
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
-            Ia_arr,
-            molarmass_arr,
             verbose_gpu,
         )
         # Calculate output quantities
