@@ -1544,7 +1544,6 @@ class Spectrum(object):
         label = kwargs.pop("label", self.get_name())
 
         # Actual plot :
-        print(len(y))
         # ... note: '-k' by default with style origin for first plot
         if not plot_by_parts:
             (line,) = plt.plot(x, y, label=label, **kwargs)
@@ -1565,8 +1564,9 @@ class Spectrum(object):
         fix_style(str("origin"))
 
         # Sliders
+        n_sliders = 0
         for key in sliders:
-            slider_axis = plt.axes([0.25, 0.1, 0.65, 0.03])
+            slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
             slider = Slider(
                 ax=slider_axis,
                 label=key,
@@ -1576,7 +1576,9 @@ class Spectrum(object):
             )
             slider.on_changed(lambda val: self.update_plot(val, fig, line))
             self.plot_sliders[key] = slider
-        plt.subplots_adjust(bottom=0.25)
+            n_sliders += 1
+
+        plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
 
         plt.show()
 
