@@ -542,7 +542,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu):
             host_params_h_I_add,
         ),
     )
-
     cp.cuda.runtime.deviceSynchronize()
 
     # This makes the DLM array available in the calling module
@@ -569,7 +568,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu):
         print("done!")
 
     cp.cuda.runtime.deviceSynchronize()
-    n_threads = 1024
+    n_threads = 1024  # TO-DO: this should not be hard-coded
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
 
     if verbose_gpu >= 2:
