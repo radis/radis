@@ -65,7 +65,6 @@ host_params_h_stop_DLM = cp.cuda.Event()
 host_params_h_data_start = cp.cuda.Event()
 host_params_h_data_stop = cp.cuda.Event()
 
-# TO-DO: read and compile CUDA code at install time, then pickle the cuda object
 cuda_fname = join(getProjectRoot(), "lbl", "gpu.cu")
 with open(cuda_fname, "rb") as f:
     cuda_code = f.read().decode()
