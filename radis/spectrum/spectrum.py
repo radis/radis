@@ -55,10 +55,12 @@ from warnings import warn
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
-
-##from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider
 from numpy import abs, diff
 from publib import fix_style, set_style
+
+# %% Spectrum class to hold results )
+from radis.lbl.gpu import gpu_iterate
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import count_nans, evenly_distributed, nantrapz
@@ -78,9 +80,6 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
-
-# %% Spectrum class to hold results )
-##from radis.lbl.gpu import gpu_iterate
 
 
 class Spectrum(object):
@@ -1363,7 +1362,7 @@ class Spectrum(object):
         normalize=False,
         force=False,
         plot_by_parts=False,
-        ##        sliders={},
+        sliders={},
         **kwargs
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
@@ -1564,41 +1563,41 @@ class Spectrum(object):
             plt.legend()
         fix_style(str("origin"))
 
-        ##        # Sliders
-        ##        n_sliders = 0
-        ##        for key in sliders:
-        ##            slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
-        ##            slider = Slider(
-        ##                ax=slider_axis,
-        ##                label=key,
-        ##                valmin=sliders[key][0],
-        ##                valmax=sliders[key][1],
-        ##                valinit=self.conditions[key],
-        ##            )
-        ##            slider.on_changed(lambda val: self.update_plot(val, fig, line))
-        ##            self.plot_sliders[key] = slider
-        ##            n_sliders += 1
-        ##
-        ##        plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
+        # Sliders
+        n_sliders = 0
+        for key in sliders:
+            slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
+            slider = Slider(
+                ax=slider_axis,
+                label=key,
+                valmin=sliders[key][0],
+                valmax=sliders[key][1],
+                valinit=self.conditions[key],
+            )
+            slider.on_changed(lambda val: self.update_plot(val, fig, line))
+            self.plot_sliders[key] = slider
+            n_sliders += 1
+
+        plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
 
         plt.show()
 
         return line
 
-    ##    def update_plot(self, val, fig, line):
-    ##        for key in self.plot_sliders:
-    ##            self.conditions[key] = self.plot_sliders[key].val
-    ##
-    ##        abscoeff = gpu_iterate(
-    ##            self.conditions["pressure_mbar"] * 1e-3,
-    ##            self.conditions["Tgas"],
-    ##            self.conditions["mole_fraction"],
-    ##            False,
-    ##        )
-    ##
-    ##        absorbance = self.conditions["path_length"] * abscoeff
-    ##        line.set_ydata(absorbance)
-    ##        fig.canvas.draw_idle()
+    def update_plot(self, val, fig, line):
+        for key in self.plot_sliders:
+            self.conditions[key] = self.plot_sliders[key].val
+
+        abscoeff = gpu_iterate(
+            self.conditions["pressure_mbar"] * 1e-3,
+            self.conditions["Tgas"],
+            self.conditions["mole_fraction"],
+            False,
+        )
+
+        absorbance = self.conditions["path_length"] * abscoeff
+        line.set_ydata(absorbance)
+        fig.canvas.draw_idle()
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
         """Return populations that are featured in the spectrum, either as

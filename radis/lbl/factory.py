@@ -862,6 +862,7 @@ class SpectrumFactory(BandFactory):
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
+        print("pressure:", pressure)
 
         # update defaults
         if path_length is not None:
@@ -949,15 +950,26 @@ class SpectrumFactory(BandFactory):
         El = df["El"].to_numpy(dtype=np.float32)
         na = df["Tdpair"].to_numpy(dtype=np.float32)
 
-        log_2gs = np.array(self._get_log_2gs(), dtype=np.float32)
+        log_2gs = np.array(self._get_log_2gs(mole_fraction), dtype=np.float32)
         log_2vMm = np.array(self._get_log_2vMm(molarmass_arr), dtype=np.float32)
+
+        ##        log_p = np.log(pressure_mbar * 1e-3)
+        ##        hlog_T = 0.5 * np.log(Tgas)
+        ##        log_rT = np.log(296.0 / Tgas)
+        ##
+        ##        wG = log_2vMm + hlog_T
+        ##        wL = na * log_rT + log_2gs + log_p
+        ##
+        ##        print('REAL min/max values:')
+        ##        print('wG:',np.min(wG),np.max(wG))
+        ##        print('wL:',np.min(wL),np.max(wL))
 
         self.calc_S0()
         ##        S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
         S0 = self.df0["S0"].to_numpy(dtype=np.float32)
 
         NwG = 4  # TO-DO: these shouldn't be hardcoded
-        NwL = 8  # TO-DO: these shouldn't be hardcoded
+        NwL = 30  # TO-DO: these shouldn't be hardcoded
 
         _Nlines_calculated = len(v0)
 
@@ -1000,7 +1012,7 @@ class SpectrumFactory(BandFactory):
 
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
-
+        print("mbar:", pressure_mbar)
         abscoeff = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
@@ -1423,7 +1435,7 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def _get_log_2gs(self):
+    def _get_log_2gs(self, x):
         """Returns log_2gs if it already exists in the dataframe, otherwise
         computes it using gamma_air."""
         df = self.df0
@@ -1435,7 +1447,9 @@ class SpectrumFactory(BandFactory):
 
         try:
             gamma_air = df["airbrd"].to_numpy()
-            log_2gs = np.log(2 * gamma_air)
+            gamma_self = df["selbrd"].to_numpy()
+            gamma = x * gamma_self + (1 - x) * gamma_air
+            log_2gs = np.log(2 * gamma)
             df["log_2gs"] = log_2gs
             return log_2gs
         except KeyError as err:

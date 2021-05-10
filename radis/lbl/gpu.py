@@ -200,7 +200,9 @@ def calc_gaussian_params(
 
     host_params_h_log_2vMm_min, host_params_h_log_2vMm_max = gaussian_param_data
     log_wG_min = host_params_h_log_2vMm_min + iter_params_h.hlog_T
-    log_wG_max = host_params_h_log_2vMm_max + iter_params_h.hlog_T + epsilon
+    log_wG_max = host_params_h_log_2vMm_max + iter_params_h.hlog_T
+    print("wG:", log_wG_min, log_wG_max)
+    log_wG_max += epsilon
     log_dwG = (log_wG_max - log_wG_min) / (init_params_h.N_wG - 1)
 
     iter_params_h.log_wG_min = log_wG_min
@@ -216,7 +218,6 @@ def calc_lorentzian_minmax(param_data, log_rT, log_p):
         while X[i] < log_rT:
             i += 1
         result.append(log_rT * A[i] + B[i] + log_p)
-
     return tuple(result)
 
 
@@ -225,7 +226,7 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
     log_wL_min, log_wL_max = calc_lorentzian_minmax(
         param_data, iter_params_h.log_rT, iter_params_h.log_p
     )
-
+    print("wL:", log_wL_min, log_wL_max)
     log_wL_max += epsilon
     log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
 
@@ -243,6 +244,7 @@ def set_pT(p, T, mole_fraction, iter_params_h):
     iter_params_h.log_rT = np.log(296.0 / T)
     iter_params_h.c2T = -c2 / T
     iter_params_h.N = mole_fraction * p * 1e5 / (1e6 * k * T)  # cm-3
+    print("N:", iter_params_h.N)
 
     ## TO-DO: These are molecule/isotopologue specific params and should not be compiled
     # cdef float B  = <float>     0.3902 #cm-1
