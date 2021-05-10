@@ -862,7 +862,6 @@ class SpectrumFactory(BandFactory):
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
-        print("pressure:", pressure)
 
         # update defaults
         if path_length is not None:
@@ -1013,7 +1012,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
         print("mbar:", pressure_mbar)
-        abscoeff = gpu_iterate(
+        abscoeff, transmittance = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
@@ -1068,6 +1067,7 @@ class SpectrumFactory(BandFactory):
             "transmittance_noslit": (wavenumber, transmittance_noslit),
             # (mW/cm2/sr/nm)
             "radiance_noslit": (wavenumber, radiance_noslit),
+            "transmittance": (wavenumber, transmittance),
         }
 
         # Store results in Spectrum class

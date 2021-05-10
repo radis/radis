@@ -1588,15 +1588,16 @@ class Spectrum(object):
         for key in self.plot_sliders:
             self.conditions[key] = self.plot_sliders[key].val
 
-        abscoeff = gpu_iterate(
+        abscoeff, transmittance = gpu_iterate(
             self.conditions["pressure_mbar"] * 1e-3,
             self.conditions["Tgas"],
             self.conditions["mole_fraction"],
             False,
+            l=self.conditions["path_length"],
+            slit_FWHM=self.conditions["slit_FWHM"],
         )
 
-        absorbance = self.conditions["path_length"] * abscoeff
-        line.set_ydata(absorbance)
+        line.set_ydata(transmittance)
         fig.canvas.draw_idle()
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):

@@ -47,6 +47,8 @@ class iterData(ctypes.Structure):
         ("log_rT", ctypes.c_float),
         ("c2T", ctypes.c_float),
         ("N", ctypes.c_float),
+        ("l", ctypes.c_float),
+        ("slit_FWHM", ctypes.c_float),
         ("log_wG_min", ctypes.c_float),
         ("log_wL_min", ctypes.c_float),
         ("log_dwG", ctypes.c_float),
@@ -72,6 +74,8 @@ with open(cuda_fname, "rb") as f:
 cuda_module = cp.RawModule(code=cuda_code)
 fillDLM = cuda_module.get_function("fillDLM")
 applyLineshapes = cuda_module.get_function("applyLineshapes")
+calcTransmittanceNoslit = cuda_module.get_function("calcTransmittanceNoslit")
+applyGaussianSlit = cuda_module.get_function("applyGaussianSlit")
 
 
 def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
@@ -201,7 +205,7 @@ def calc_gaussian_params(
     host_params_h_log_2vMm_min, host_params_h_log_2vMm_max = gaussian_param_data
     log_wG_min = host_params_h_log_2vMm_min + iter_params_h.hlog_T
     log_wG_max = host_params_h_log_2vMm_max + iter_params_h.hlog_T
-    print("wG:", log_wG_min, log_wG_max)
+    ##    print("wG:", log_wG_min, log_wG_max)
     log_wG_max += epsilon
     log_dwG = (log_wG_max - log_wG_min) / (init_params_h.N_wG - 1)
 
@@ -226,7 +230,7 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
     log_wL_min, log_wL_max = calc_lorentzian_minmax(
         param_data, iter_params_h.log_rT, iter_params_h.log_p
     )
-    print("wL:", log_wL_min, log_wL_max)
+    ##    print("wL:", log_wL_min, log_wL_max)
     log_wL_max += epsilon
     log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
 
@@ -234,7 +238,7 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
     iter_params_h.log_dwL = log_dwL
 
 
-def set_pT(p, T, mole_fraction, iter_params_h):
+def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
 
     c2 = 1.4387773538277204  # K.cm
     k = 1.38064852e-23  # J.K-1
@@ -244,7 +248,8 @@ def set_pT(p, T, mole_fraction, iter_params_h):
     iter_params_h.log_rT = np.log(296.0 / T)
     iter_params_h.c2T = -c2 / T
     iter_params_h.N = mole_fraction * p * 1e5 / (1e6 * k * T)  # cm-3
-    print("N:", iter_params_h.N)
+    iter_params_h.l = l
+    iter_params_h.slit_FWHM = slit_FWHM
 
     ## TO-DO: These are molecule/isotopologue specific params and should not be compiled
     # cdef float B  = <float>     0.3902 #cm-1
@@ -381,14 +386,14 @@ def gpu_init(
 
     host_params_h_data_start.record()
 
-    host_params_h_DLM_d_in = cp.zeros(
-        (2 * init_params_h.N_v, init_params_h.N_wG, init_params_h.N_wL),
-        order="C",
-        dtype=cp.float32,
-    )
-    host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
-
-    host_params_h_I_add = cp.zeros(init_params_h.N_lines, dtype=cp.float32)
+    # moved to gpu_iterate()
+    ##    host_params_h_DLM_d_in = cp.zeros(
+    ##        (2 * init_params_h.N_v, init_params_h.N_wG, init_params_h.N_wL),
+    ##        order="C",
+    ##        dtype=cp.float32,
+    ##    )
+    ##    host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
+    ##    host_params_h_I_add = cp.zeros(init_params_h.N_lines, dtype=cp.float32)
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
@@ -426,7 +431,7 @@ def gpu_init(
         )
 
 
-def gpu_iterate(p, T, mole_fraction, verbose_gpu):
+def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
 
     # ----------- setup global variables -----------------
 
@@ -458,9 +463,11 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu):
     # ------------------------------------------------------
 
     host_params_h_start.record()
-    # test comment
-    ##    cdef int n_blocks
-    set_pT(p, T, mole_fraction, iter_params_h)
+
+    if verbose_gpu >= 2:
+        print("Copying iteration parameters to device...")
+
+    set_pT(p, T, mole_fraction, iter_params_h, l=l, slit_FWHM=slit_FWHM)
 
     calc_gaussian_params(
         gaussian_param_data,
@@ -483,21 +490,28 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu):
         init_params_h,
     )
 
-    if verbose_gpu >= 2:
-        print("Copying iteration parameters to device...")
     set_constant_memory("iter_params")
 
     if verbose_gpu >= 2:
         print("done!")
+        print("Filling DLM...")
 
-    # Zero DLM:
-    host_params_h_DLM_d_in.fill(0)
-    host_params_h_spectrum_d_in.fill(0)
+    host_params_h_DLM_d_in = cp.zeros(
+        (2 * init_params_h.N_v, init_params_h.N_wG, init_params_h.N_wL),
+        order="C",
+        dtype=cp.float32,
+    )
+    host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
+    host_params_h_I_add = cp.zeros(init_params_h.N_lines, dtype=cp.float32)
+    host_params_h_transmittance_noslit = cp.zeros(
+        init_params_h.N_v * 2, dtype=cp.float32
+    )
+    host_params_h_transmittance_FT = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
 
-    host_params_h_I_add.fill(0)
-
-    if verbose_gpu >= 2:
-        print("Getting ready...")
+    # Zeroing may or may not be necessary anymore after moving initialization to gpu_iterate()
+    ##    host_params_h_DLM_d_in.fill(0)
+    ##    host_params_h_spectrum_d_in.fill(0)
+    ##    host_params_h_I_add.fill(0)
 
     host_params_h_start_DLM.record()
 
@@ -520,36 +534,29 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu):
     )
     cp.cuda.runtime.deviceSynchronize()
 
-    # This makes the DLM array available in the calling module
-    DLM = cp.asnumpy(host_params_h_DLM_d_in)
-    I_ADD = cp.asnumpy(host_params_h_I_add)
-    # DLM /= 0.8816117 #difference between current code and benchmark.
+    ####Debug:
+    ##    # This makes the DLM array available in the calling module
+    ##    DLM = cp.asnumpy(host_params_h_DLM_d_in)
+    ##    I_ADD = cp.asnumpy(host_params_h_I_add)
+    ##    # DLM /= 0.8816117 #difference between current code and benchmark.
+
     host_params_h_stop_DLM.record()
     host_params_h_stop_DLM.synchronize()
     host_params_h_elapsedTimeDLM = cp.cuda.get_elapsed_time(
         host_params_h_start_DLM, host_params_h_stop_DLM
     )
 
-    if verbose_gpu >= 2:
-        print("<<<LAUNCHED>>> ")
-
+    # TO-DO: looks like we don't need this synchronize...
     cp.cuda.runtime.deviceSynchronize()
-
-    if verbose_gpu >= 2:
-        # FFT
-        print("Performing Fourier transform...", end=" ")
-    host_params_h_DLM_d_out = cp.fft.rfft(host_params_h_DLM_d_in, axis=0)
-
-    if verbose_gpu >= 2:
-        print("done!")
-
-    cp.cuda.runtime.deviceSynchronize()
-    n_threads = 1024  # TO-DO: this should not be hard-coded
-    n_blocks = (init_params_h.N_v + 1) // n_threads + 1
 
     if verbose_gpu >= 2:
         print("Applying lineshapes...")
 
+    host_params_h_DLM_d_out = cp.fft.rfft(host_params_h_DLM_d_in, axis=0)
+    cp.cuda.runtime.deviceSynchronize()
+
+    n_threads = 1024  # TO-DO: this should not be hard-coded
+    n_blocks = (init_params_h.N_v + 1) // n_threads + 1
     applyLineshapes(
         (n_blocks,),
         (n_threads,),
@@ -558,23 +565,57 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu):
             host_params_h_spectrum_d_in,
         ),
     )
-
     cp.cuda.runtime.deviceSynchronize()
-
-    if verbose_gpu >= 2:
-        print("done!")
-
-        # inverse FFT
-        print("Performing inverse Fourier transform...")
 
     host_params_h_spectrum_d_out = cp.fft.irfft(host_params_h_spectrum_d_in)
     cp.cuda.runtime.deviceSynchronize()
 
     if verbose_gpu >= 2:
-        print("done!")
-    spectrum_h = (
+        print("Done!")
+        print("Calculating transmittance...")
+
+    abscoeff_h = (
         host_params_h_spectrum_d_out.get()[: init_params_h.N_v] / init_params_h.dv
     )
+
+    ## Calc transmittance_noslit:
+    n_threads = 1024  # TO-DO: this should not be hard-coded
+    n_blocks = (2 * init_params_h.N_v) // n_threads + 1
+    calcTransmittanceNoslit(
+        (n_blocks,),
+        (n_threads,),
+        (host_params_h_spectrum_d_out, host_params_h_transmittance_noslit),
+    )
+
+    cp.cuda.runtime.deviceSynchronize()
+
+    if verbose_gpu >= 2:
+        print("Done!")
+        print("Applying slit function...")
+
+    ## Apply slit function:
+    host_params_h_transmittance_noslit_FT = cp.fft.rfft(
+        host_params_h_transmittance_noslit
+    )
+    cp.cuda.runtime.deviceSynchronize()
+
+    n_threads = 1024  # TO-DO: this should not be hard-coded
+    n_blocks = (init_params_h.N_v + 1) // n_threads + 1
+    applyGaussianSlit(
+        (n_blocks,),
+        (n_threads,),
+        (host_params_h_transmittance_noslit_FT, host_params_h_transmittance_FT),
+    )
+
+    cp.cuda.runtime.deviceSynchronize()
+
+    host_params_h_transmittance = cp.fft.irfft(host_params_h_transmittance_FT)
+    cp.cuda.runtime.deviceSynchronize()
+
+    transmittance_h = host_params_h_transmittance.get()[: init_params_h.N_v]
+
+    if verbose_gpu >= 2:
+        print("done!")
 
     host_params_h_stop.record()
     host_params_h_stop.synchronize()
@@ -590,4 +631,4 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu):
         print(" = {0} ms".format(host_params_h_elapsedTime))
         print("Finished calculating spectrum!")
 
-    return spectrum_h
+    return abscoeff_h, transmittance_h

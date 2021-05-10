@@ -1,6 +1,9 @@
 #include<cupy/complex.cuh>
 extern "C"{
 
+const float pi = 3.141592653589793f;
+const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
+
 struct initData {
 	float v_min;
 	float v_max;
@@ -32,6 +35,8 @@ struct iterData {
 	float log_rT;
 	float c2T;
     float N;
+    float l;
+    float slit_FWHM;
 	float log_wG_min;
 	float log_wL_min;
 	float log_dwG;
@@ -136,10 +141,8 @@ __global__ void fillDLM(
 	}
 }
 
-__global__ void applyLineshapes(complex<float>* DLM, complex<float>* spectrum) {
+__global__ void applyLineshapes(complex<float>* DLM, complex<float>* abscoeff) {
 
-	const float pi = 3.141592653589793f;
-	const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
 	int iv = threadIdx.x + blockDim.x * blockIdx.x;
 
 	if (iv < init_params_d.N_v + 1) {
@@ -158,13 +161,36 @@ __global__ void applyLineshapes(complex<float>* DLM, complex<float>* spectrum) {
 				//index = iwG + iwL * init_params_d.N_wG + iv * init_params_d.N_wG_x_N_wL;
                 index = iv + iwG * (init_params_d.N_v+1) + iwL * init_params_d.N_wG * (init_params_d.N_v+1);
 				wL = expf(iter_params_d.log_wL_min + iwL * iter_params_d.log_dwL);
-				mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL);
+				mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) / init_params_d.dv;
                 out_complex += mul* DLM[index];
                 //out_complex += DLM[index];
 			}
 		}
         complex<float> temp(out_complex.real(), out_complex.imag());
-		spectrum[iv] = temp;
+		abscoeff[iv] = temp;
 	}
+}
+
+__global__ void calcTransmittanceNoslit(float* abscoeff, float* transmittance_noslit)  {
+
+    int iv = threadIdx.x + blockDim.x * blockIdx.x;
+	if (iv < init_params_d.N_v) {
+        transmittance_noslit[iv] = expf(-iter_params_d.l * abscoeff[iv]);
+	}
+    else if (iv < init_params_d.N_v*2){
+        transmittance_noslit[iv] = 1.0;
+    }
+}
+
+__global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, complex<float>* transmittance_FT){
+
+    int iv = threadIdx.x + blockDim.x * blockIdx.x;
+    float x = iv / (2 * init_params_d.N_v * init_params_d.dv);
+    float window = expf(-r4log2 * powf(pi * x * iter_params_d.slit_FWHM, 2));
+
+    if (iv < init_params_d.N_v + 1) {
+        transmittance_FT[iv] = transmittance_noslit_FT[iv] * window;
+    }
+
 }
 }
