@@ -574,9 +574,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
         print("Done!")
         print("Calculating transmittance...")
 
-    abscoeff_h = (
-        host_params_h_spectrum_d_out.get()[: init_params_h.N_v] / init_params_h.dv
-    )
+    abscoeff_h = host_params_h_spectrum_d_out.get()[: init_params_h.N_v]
 
     ## Calc transmittance_noslit:
     n_threads = 1024  # TO-DO: this should not be hard-coded
