@@ -511,8 +511,6 @@ def multiply(s, coef, unit=None, var=None, inplace=False):
 
     if not inplace:
         s = s.copy(quantity=var)
-    #        if name is not None:
-    #            s.name = name
 
     # Multiply inplace       ( @dev: we have copied already if needed )
     w, I = s.get(var, wunit=s.get_waveunit(), copy=False)
