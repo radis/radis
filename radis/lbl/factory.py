@@ -410,6 +410,11 @@ class SpectrumFactory(BandFactory):
             wavelength_max,
             medium,
         )
+        # Verification step for wstep
+        self.wstep_auto = False
+        if wstep == "auto":
+            self.wstep_auto = True
+            wstep = 0.01
 
         # calculated range is broader than output waverange to take into account off-range line broadening
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
