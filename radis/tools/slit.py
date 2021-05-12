@@ -835,7 +835,7 @@ def get_effective_FWHM(w, I):
 def offset_dilate_slit_function(
     w_slit_nm, I_slit, w_nm, slit_dispersion, threshold=0.01, verbose=True
 ):
-    """Offset the slit wavelengths ``w_slit`` to the center of range ``w``, and
+    """Offset the slit wavelengths ``w_slit_nm`` to the center of range ``w_nm``, and
     dilate them with ``slit_dispersion(w0)``
 
     Parameters
@@ -1146,9 +1146,12 @@ def plot_slit(
     elif waveunit == "nm" and plot_unit == "cm-1":  # wavenumber > wavelength
         w = nm2cm(w)
         waveunit = "cm-1"
-    else:  # same units
+    elif waveunit == plot_unit:  # same units
         pass
-    #        raise ValueError('Unknown plot unit: {0}'.format(plot_unit))
+    elif plot_unit == "":  # ???
+        pass
+    else:
+        raise ValueError("Unknown plot unit: {0}".format(plot_unit))
 
     # Recalculate FWHM
     FWHM, xmin, xmax = get_FWHM(w, I, return_index=True)
