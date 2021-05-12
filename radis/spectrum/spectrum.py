@@ -3531,19 +3531,16 @@ class Spectrum(object):
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
 
-            out = multiply(s, 1 / norm, unit=norm_unit, inplace=inplace)
+            out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
 
         else:
             if normalize_how == "max":
                 norm = np.nanmax(s.get(var, copy=False)[1])
                 norm_unit = s.units[var]
-
             elif normalize_how == "mean":
                 norm = np.nanmean(s.get(var, copy=False)[1])
                 norm_unit = s.units[var]
-
             elif normalize_how == "area":
-
                 w, I = s.get(var, wunit=wunit, copy=False)
                 norm = nantrapz(I, w)
                 norm_unit = u.Unit(s.units[var]) * u.Unit(wunit)
@@ -3917,7 +3914,7 @@ class Spectrum(object):
 
 
 def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
-    """used to cut a waverange into slices where dispersion does not very too
+    """used to cut a waverange into slices where dispersion does not vary too
     much.
 
     Parameters
