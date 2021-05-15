@@ -19,14 +19,13 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 """
 
 
-from numpy import cos, pi, tan
 from os.path import basename
 from warnings import catch_warnings, filterwarnings
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from numpy import abs, linspace, sqrt, trapz
+from numpy import abs, cos, linspace, pi, sqrt, tan, trapz
 
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.printer import printm
