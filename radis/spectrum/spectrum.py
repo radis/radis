@@ -2132,7 +2132,9 @@ class Spectrum(object):
             else:
                 w_nm = cm2nm(w)
                 wslit0_nm = cm2nm(wslit0)
-            slice_windows = _cut_slices(w_nm, wslit0_nm, slit_dispersion, slit_dispersion_threshold)
+            slice_windows = _cut_slices(
+                w_nm, wslit0_nm, slit_dispersion, slit_dispersion_threshold
+            )
         else:
             slice_windows = [np.ones_like(w, dtype=np.bool)]
 
@@ -2341,7 +2343,10 @@ class Spectrum(object):
         )
 
         # Plot other slit functions if dispersion was applied:
-        if "slit_dispersion" in self.conditions and "slit_dispersion_threshold" in self.conditions:
+        if (
+            "slit_dispersion" in self.conditions
+            and "slit_dispersion_threshold" in self.conditions
+        ):
             slit_dispersion = self.conditions["slit_dispersion"]
             slit_dispersion_threshold = self.conditions["slit_dispersion_threshold"]
             if slit_dispersion is not None:
@@ -3907,6 +3912,7 @@ class Spectrum(object):
 
 # to cut
 
+
 def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold=0.01):
     """
     Used to cut a waverange into slices where dispersion does not vary too
@@ -3919,7 +3925,7 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
     w_slit_nm : numpy array
         The waverange of the slit function.
     slit_dispersion : function
-        The dispersion function of the spectrometer, 
+        The dispersion function of the spectrometer,
         must be monotone and accept arrays.
     slit_dispersion_threshold : float
         Threshold between 0 and 1, used to cut the waverange when
@@ -3945,8 +3951,12 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
     w_list_slices = [w_start]
     slit_disp_target = slit_dispersion(w_start) * (1 - slit_dispersion_threshold)
     while slit_disp_target > slit_dispersion(w_end):
-        res = root_scalar(lambda w: slit_dispersion(w)-slit_disp_target, bracket=[w_start, w_end])
-        assert res.converged, "Did not converged, something went wrong... +\
+        res = root_scalar(
+            lambda w: slit_dispersion(w) - slit_disp_target, bracket=[w_start, w_end]
+        )
+        assert (
+            res.converged
+        ), "Did not converged, something went wrong... +\
         Are you sure the slit dispersion function is monotone?"
         w_next = res.root
         w_list_slices.append(w_next)

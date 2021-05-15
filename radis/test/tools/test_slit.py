@@ -637,7 +637,8 @@ def test_auto_correct_dispersion(
         w, I, conditions={"Tvib": 3000, "Trot": 1200}, Iunit="mW/cm2/sr/µm"
     )
 
-    def slit_dispersion(w): return linear_dispersion(w, f=f, phi=phi, m=1, gr=gr)
+    def slit_dispersion(w):
+        return linear_dispersion(w, f=f, phi=phi, m=1, gr=gr)
 
     s.apply_slit(slit_measured_632nm)
     if plot:
@@ -655,7 +656,9 @@ def test_auto_correct_dispersion(
     with pytest.warns(
         SlitDispersionWarning
     ):  # expect a "large slit dispersion" warning
-        offset_dilate_slit_function(w_slit_632, I_slit_632, w, slit_dispersion, threshold=0.01, verbose=True)
+        offset_dilate_slit_function(
+            w_slit_632, I_slit_632, w, slit_dispersion, threshold=0.01, verbose=True
+        )
     if plot:
         s.plot(nfig="same", color="k", label="corrected")
         plt.legend()

@@ -898,9 +898,13 @@ def offset_dilate_slit_function(
     # Check that slit dispersion is about constant (<1% change) on the calculated range
     if threshold:
         if (
-            not 1 - threshold <=
-            slit_dispersion(w_nm.max()-range_nm/slit_disp_0*slit_dispersion(w_nm.max())) /
-            slit_dispersion(w_nm.min()+range_nm/slit_disp_0*slit_dispersion(w_nm.min()))
+            not 1 - threshold
+            <= slit_dispersion(
+                w_nm.max() - range_nm / slit_disp_0 * slit_dispersion(w_nm.max())
+            )
+            / slit_dispersion(
+                w_nm.min() + range_nm / slit_disp_0 * slit_dispersion(w_nm.min())
+            )
             <= 1 + threshold
         ):
             warn(
