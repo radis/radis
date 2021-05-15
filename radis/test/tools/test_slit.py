@@ -19,6 +19,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 """
 
 
+from numpy import cos, pi, tan
 from os.path import basename
 from warnings import catch_warnings, filterwarnings
 
@@ -485,7 +486,6 @@ def test_slit_energy_conservation(
 
 
 # Function used to test Slit dispersion
-from numpy import cos, pi, tan
 
 
 def dirac(w0, width=20, wstep=0.009):
@@ -622,6 +622,7 @@ def test_auto_correct_dispersion(
 
     from radis.misc.warning import SlitDispersionWarning
     from radis.test.utils import getTestFile
+    from radis.tools.slit import offset_dilate_slit_function
 
     if plot:
         plt.ion()  # dont get stuck with Matplotlib if executing through pytest
@@ -636,7 +637,7 @@ def test_auto_correct_dispersion(
         w, I, conditions={"Tvib": 3000, "Trot": 1200}, Iunit="mW/cm2/sr/µm"
     )
 
-    slit_dispersion = lambda w: linear_dispersion(w, f=f, phi=phi, m=1, gr=gr)
+    def slit_dispersion(w): return linear_dispersion(w, f=f, phi=phi, m=1, gr=gr)
 
     s.apply_slit(slit_measured_632nm)
     if plot:
@@ -654,7 +655,7 @@ def test_auto_correct_dispersion(
     with pytest.warns(
         SlitDispersionWarning
     ):  # expect a "large slit dispersion" warning
-        s.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
+        offset_dilate_slit_function(w_slit_632, I_slit_632, w, slit_dispersion, threshold=0.01, verbose=True)
     if plot:
         s.plot(nfig="same", color="k", label="corrected")
         plt.legend()
