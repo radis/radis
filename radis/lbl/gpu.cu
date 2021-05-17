@@ -72,10 +72,6 @@ __global__ void fillDLM(
 			int iv0 = (int)iv;
 			int iv1 = iv0 + 1  ;
 
-            //arr_idx[i] = iv0;
-
-			//^4
-
 			if ((iv0 >= 0) && (iv1 < init_params_d.N_v)) {
 
 				//Calc wG
@@ -84,23 +80,15 @@ __global__ void fillDLM(
 				float iwG = (log_wG_dat - iter_params_d.log_wG_min) / iter_params_d.log_dwG;
 				int iwG0 = (int)iwG;
 				int iwG1 = iwG0 + 1;
-				//^8
-
-                //arr_idx[i] = iwG0;
 
 				//Calc wL
 				float log_wL_dat = log_2gs[i] + iter_params_d.log_p + na[i] * iter_params_d.log_rT;
 				float iwL = (log_wL_dat - iter_params_d.log_wL_min) / iter_params_d.log_dwL;
 				int iwL0 = (int)iwL;
 				int iwL1 = iwL0 + 1;
-				//^12
-
-                //arr_idx[i] = iwL0;
 
 				//Calc I
 				float I_add = iter_params_d.N * S0[i] * (expf(iter_params_d.c2T * El[i]) - expf(iter_params_d.c2T * (El[i] + v0[i]))) / Q[iso[i]];
-
-                //I_add_arr[i] = I_add;
 
 				float av = iv - iv0;
 				float awG = (iwG - iwG0) * expf((iwG1 - iwG) * iter_params_d.log_dwG);
