@@ -5,6 +5,10 @@ from os.path import join
 
 import cupy as cp
 import numpy as np
+from scipy.constants import N_A, c, h, k
+
+c_cm = 100 * c
+c2 = h * c_cm / k
 
 from radis.misc.utils import getProjectRoot
 
@@ -25,18 +29,9 @@ class initData(ctypes.Structure):
         ("N_threads_per_block", ctypes.c_int),
         ("N_blocks_per_grid", ctypes.c_int),
         ("N_points_per_thread", ctypes.c_int),
-        ("Max_iterations_per_thread", ctypes.c_int),
+        ("N_iterations_per_thread", ctypes.c_int),
         ("shared_size_floats", ctypes.c_int),
     ]
-
-
-try:
-    from radis_cython_extensions import blockData
-
-except (ModuleNotFoundError):
-
-    class blockData(ctypes.Structure):
-        _fields_ = [("line_offset", ctypes.c_int), ("iv_offset", ctypes.c_int)]
 
 
 class iterData(ctypes.Structure):
@@ -53,7 +48,7 @@ class iterData(ctypes.Structure):
         ("log_wL_min", ctypes.c_float),
         ("log_dwG", ctypes.c_float),
         ("log_dwL", ctypes.c_float),
-        ("blocks", blockData * 4096),
+        ("log_c2Mm", ctypes.c_float * 16),
     ]
 
 
@@ -134,15 +129,10 @@ try:
     from radis_cython_extensions import (
         calc_gaussian_envelope_params,
         calc_lorentzian_envelope_params,
-        prepare_blocks,
     )
 except (ModuleNotFoundError):
     calc_gaussian_envelope_params = py_calc_gaussian_envelope_params
     calc_lorentzian_envelope_params = py_calc_lorentzian_envelope_params
-    # TO-DO: currently we don't have a purely Python implementation for prepare_blocks
-    # prepare_blocks = py_prepare_blocks
-
-##calc_lorentzian_envelope_params = py_calc_lorentzian_envelope_params
 
 
 def init_gaussian_params(log_2vMm, verbose_gpu):
@@ -240,8 +230,6 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
 
 def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
 
-    c2 = 1.4387773538277204  # K.cm
-    k = 1.38064852e-23  # J.K-1
     iter_params_h.p = p  # bar
     iter_params_h.log_p = np.log(p)
     iter_params_h.hlog_T = 0.5 * np.log(T)
@@ -250,6 +238,15 @@ def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
     iter_params_h.N = mole_fraction * p * 1e5 / (1e6 * k * T)  # cm-3
     iter_params_h.l = l
     iter_params_h.slit_FWHM = slit_FWHM
+    iter_params_h.log_c2Mm[0] = (
+        np.log(2) + 0.5 * np.log(2 * k * np.log(2)) - np.log(c ** 2 * 44e-3 / N_A)
+    )
+    iter_params_h.log_c2Mm[1] = (
+        np.log(2) + 0.5 * np.log(2 * k * np.log(2)) - np.log(c ** 2 * 45e-3 / N_A)
+    )
+    iter_params_h.log_c2Mm[2] = (
+        np.log(2) + 0.5 * np.log(2 * k * np.log(2)) - np.log(c ** 2 * 46e-3 / N_A)
+    )
 
     ## TO-DO: These are molecule/isotopologue specific params and should not be compiled
     # cdef float B  = <float>     0.3902 #cm-1
@@ -301,7 +298,6 @@ def gpu_init(
     global host_params_h_Q_d
     global host_params_h_log_2gs_d
     global host_params_h_na_d
-    global host_params_h_log_2vMm_d
     global host_params_h_DLM_d_in
 
     global host_params_h_data_start
@@ -309,7 +305,6 @@ def gpu_init(
     global host_params_h_elapsedTimeData
 
     global host_params_h_spectrum_d_in
-    ##    global host_params_h_I_add
     global host_params_h_transmittance_noslit
     global host_params_h_transmittance_FT
 
@@ -324,20 +319,14 @@ def gpu_init(
     init_params_h.v_min = np.min(v_arr)  # 2000.0
     init_params_h.v_max = np.max(v_arr)  # 2400.0
     init_params_h.dv = (v_arr[-1] - v_arr[0]) / (len(v_arr) - 1)  # 0.002
-    init_params_h.N_v = len(
-        v_arr
-    )  # int((init_params_h.v_max - init_params_h.v_min)/init_params_h.dv)
-
+    init_params_h.N_v = len(v_arr)
     init_params_h.N_wG = N_wG
     init_params_h.N_wL = N_wL
-    ##    spectrum_h = np.zeros(init_params_h.N_v, dtype=np.float32)
 
-    init_params_h.Max_iterations_per_thread = 1024
+    init_params_h.N_iterations_per_thread = 1024
     host_params_h_block_preparation_step_size = 128
 
     host_params_h_shared_size = 0x8000  # Bytes - Size of the shared memory
-    ##    host_params_h_Min_threads_per_block = 128   # Ensures a full warp from each of the 4 processors
-    ##    host_params_h_Max_threads_per_block = 1024  # Maximum determined by device parameters
     init_params_h.shared_size_floats = host_params_h_shared_size // 4  # size of float
 
     init_params_h.N_wG_x_N_wL = init_params_h.N_wG * init_params_h.N_wL
@@ -390,7 +379,6 @@ def gpu_init(
 
     host_params_h_data_start.record()
     host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
-    ##    host_params_h_I_add = cp.zeros(init_params_h.N_lines, dtype=cp.float32)
     host_params_h_transmittance_noslit = cp.zeros(
         init_params_h.N_v * 2, dtype=cp.float32
     )
@@ -412,7 +400,6 @@ def gpu_init(
     host_params_h_El_d = cp.array(El)
     host_params_h_log_2gs_d = cp.array(log_2gs)
     host_params_h_na_d = cp.array(na)
-    host_params_h_log_2vMm_d = cp.array(log_2vMm)
     host_params_h_Q_d = cp.array(Q)
 
     host_params_h_data_stop.record()
@@ -447,7 +434,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     global host_params_h_Q_d
     global host_params_h_log_2gs_d
     global host_params_h_na_d
-    global host_params_h_log_2vMm_d
     global host_params_h_stop
     global host_params_h_elapsedTime
 
@@ -457,8 +443,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     global host_params_h_spectrum_d_in
     global host_params_h_transmittance_noslit
     global host_params_h_transmittance_FT
-
-    ##    global host_params_h_I_add
 
     global cuda_module
     global host_params_h_v0_dec
@@ -485,15 +469,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
         iter_params_h,
     )
 
-    n_blocks = prepare_blocks(
-        host_params_h_v0_dec,
-        host_params_h_da_dec,
-        host_params_h_dec_size,
-        host_params_h_block_preparation_step_size,
-        iter_params_h,
-        init_params_h,
-    )
-
     set_constant_memory("iter_params")
 
     if verbose_gpu >= 2:
@@ -508,14 +483,18 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
 
     host_params_h_DLM_d_in.fill(0)
     host_params_h_spectrum_d_in.fill(0)
-    ##    host_params_h_I_add.fill(0)
     host_params_h_transmittance_FT.fill(0)
 
     host_params_h_start_DLM.record()
 
+    n_threads = init_params_h.N_threads_per_block
+    n_blocks = (
+        init_params_h.N_lines // (n_threads * init_params_h.N_iterations_per_thread) + 1
+    )
+
     fillDLM(
         (n_blocks,),
-        (init_params_h.N_threads_per_block,),
+        (n_threads,),
         (
             host_params_h_iso_d,
             host_params_h_v0_d,
@@ -524,20 +503,11 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
             host_params_h_El_d,
             host_params_h_log_2gs_d,
             host_params_h_na_d,
-            host_params_h_log_2vMm_d,
             host_params_h_DLM_d_in,
             host_params_h_Q_d,
-            ##            host_params_h_I_add,
         ),
     )
     cp.cuda.runtime.deviceSynchronize()
-
-    ####Debug:
-    ##    # This makes the DLM array available in the calling module
-    ##    DLM = cp.asnumpy(host_params_h_DLM_d_in)
-    ##    I_ADD = cp.asnumpy(host_params_h_I_add)
-    ##    print(I_ADD)
-    ##    # DLM /= 0.8816117 #difference between current code and benchmark.
 
     host_params_h_stop_DLM.record()
     host_params_h_stop_DLM.synchronize()
@@ -554,7 +524,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     host_params_h_DLM_d_out = cp.fft.rfft(host_params_h_DLM_d_in, axis=0)
     cp.cuda.runtime.deviceSynchronize()
 
-    n_threads = 1024  # TO-DO: this should not be hard-coded
+    n_threads = init_params_h.N_threads_per_block
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
     applyLineshapes(
         (n_blocks,),
@@ -576,7 +546,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     abscoeff_h = host_params_h_spectrum_d_out.get()[: init_params_h.N_v]
 
     ## Calc transmittance_noslit:
-    n_threads = 1024  # TO-DO: this should not be hard-coded
+    n_threads = init_params_h.N_threads_per_block
     n_blocks = (2 * init_params_h.N_v) // n_threads + 1
     calcTransmittanceNoslit(
         (n_blocks,),
@@ -596,7 +566,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     )
     cp.cuda.runtime.deviceSynchronize()
 
-    n_threads = 1024  # TO-DO: this should not be hard-coded
+    n_threads = init_params_h.N_threads_per_block
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
     applyGaussianSlit(
         (n_blocks,),

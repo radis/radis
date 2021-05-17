@@ -943,7 +943,7 @@ class SpectrumFactory(BandFactory):
 
         # load the data
         df = self.df0
-        iso = df["iso"].to_numpy(dtype=np.int32)
+        iso = df["iso"].to_numpy(dtype=np.uint8)
         v0 = df["wav"].to_numpy(dtype=np.float32)
         da = df["Pshft"].to_numpy(dtype=np.float32)
         El = df["El"].to_numpy(dtype=np.float32)

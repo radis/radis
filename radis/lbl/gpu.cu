@@ -19,14 +19,10 @@ struct initData {
 	int N_threads_per_block;
 	int N_blocks_per_grid;
 	int N_points_per_thread;
-	int	Max_iterations_per_thread;
+	int	N_iterations_per_thread;
 	int shared_size_floats;
 };
 
-struct blockData {
-	int line_offset;
-	int iv_offset;
-};
 
 struct iterData {
 	float p;
@@ -41,45 +37,33 @@ struct iterData {
 	float log_wL_min;
 	float log_dwG;
 	float log_dwL;
-	blockData blocks[4096];
+    float log_c2Mm[16];
 };
 
 __device__ __constant__ initData init_params_d;
 __device__ __constant__ iterData iter_params_d;
 
+
 __global__ void fillDLM(
-    int* iso,
+    unsigned char* iso,
 	float* v0,
 	float* da,
 	float* S0,
 	float* El,
 	float* log_2gs,
 	float* na,
-	float* log_2vMm,
-	float* global_DLM,
+	float* DLM,
     float* Q               // Q is an array of size max(isotopes_id) + 1
-    //float* I_add_arr
     ) {
 
-	// Some overhead for "efficient" block allocation:
-	blockData block = iter_params_d.blocks[blockIdx.x + gridDim.x * blockIdx.y];
-	int block_id = blockIdx.x + gridDim.x * blockIdx.y;
-	int N_iterations = (iter_params_d.blocks[block_id + 1].line_offset - iter_params_d.blocks[block_id].line_offset) / init_params_d.N_threads_per_block;
-	int DLM_offset = iter_params_d.blocks[block_id].iv_offset * init_params_d.N_wG_x_N_wL;
-	int iv_offset = iter_params_d.blocks[block_id].iv_offset;
 
 	int NwL = init_params_d.N_wL;
 	int NwGxNwL = init_params_d.N_wG_x_N_wL;
 
-	////Allocate and zero the Shared memory
-	//extern __shared__ float shared_DLM[];
-
-	float* DLM = global_DLM;
-
-	for (int n = 0; n < N_iterations; n++) { // eliminate for-loop
+	for (int n = 0; n < init_params_d.N_iterations_per_thread; n++) { // eliminate for-loop
 
 		// >>: Process from left to right edge:
-		int i = iter_params_d.blocks[block_id].line_offset + threadIdx.x + n * blockDim.x;
+		int i = threadIdx.x + blockDim.x * (n + blockIdx.x * init_params_d.N_iterations_per_thread);
 
 		if (i < init_params_d.N_lines) {
 			//Calc v
@@ -95,7 +79,8 @@ __global__ void fillDLM(
 			if ((iv0 >= 0) && (iv1 < init_params_d.N_v)) {
 
 				//Calc wG
-				float log_wG_dat = log_2vMm[i] + iter_params_d.hlog_T;
+                float log_2vMm = logf(v0[i]) + iter_params_d.log_c2Mm[iso[i]];
+				float log_wG_dat = log_2vMm + iter_params_d.hlog_T;
 				float iwG = (log_wG_dat - iter_params_d.log_wG_min) / iter_params_d.log_dwG;
 				int iwG0 = (int)iwG;
 				int iwG1 = iwG0 + 1;
@@ -141,6 +126,9 @@ __global__ void fillDLM(
 		}
 	}
 }
+
+
+
 
 __global__ void applyLineshapes(complex<float>* DLM, complex<float>* abscoeff) {
 
