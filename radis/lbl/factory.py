@@ -968,7 +968,7 @@ class SpectrumFactory(BandFactory):
         S0 = self.df0["S0"].to_numpy(dtype=np.float32)
 
         NwG = 4  # TO-DO: these shouldn't be hardcoded
-        NwL = 30  # TO-DO: these shouldn't be hardcoded
+        NwL = 8  # TO-DO: these shouldn't be hardcoded
 
         _Nlines_calculated = len(v0)
 

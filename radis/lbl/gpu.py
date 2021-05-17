@@ -303,11 +303,15 @@ def gpu_init(
     global host_params_h_na_d
     global host_params_h_log_2vMm_d
     global host_params_h_DLM_d_in
-    global host_params_h_spectrum_d_in
-    global host_params_h_I_add
+
     global host_params_h_data_start
     global host_params_h_data_stop
     global host_params_h_elapsedTimeData
+
+    global host_params_h_spectrum_d_in
+    ##    global host_params_h_I_add
+    global host_params_h_transmittance_noslit
+    global host_params_h_transmittance_FT
 
     global lorentzian_param_data
     global gaussian_param_data
@@ -385,15 +389,12 @@ def gpu_init(
         print("Allocating device memory and copying data...")
 
     host_params_h_data_start.record()
-
-    # moved to gpu_iterate()
-    ##    host_params_h_DLM_d_in = cp.zeros(
-    ##        (2 * init_params_h.N_v, init_params_h.N_wG, init_params_h.N_wL),
-    ##        order="C",
-    ##        dtype=cp.float32,
-    ##    )
-    ##    host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
+    host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
     ##    host_params_h_I_add = cp.zeros(init_params_h.N_lines, dtype=cp.float32)
+    host_params_h_transmittance_noslit = cp.zeros(
+        init_params_h.N_v * 2, dtype=cp.float32
+    )
+    host_params_h_transmittance_FT = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
@@ -453,13 +454,16 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     global host_params_h_DLM_d_in
     global host_params_h_spectrum_d_in
 
-    global host_params_h_I_add
+    global host_params_h_spectrum_d_in
+    global host_params_h_transmittance_noslit
+    global host_params_h_transmittance_FT
+
+    ##    global host_params_h_I_add
 
     global cuda_module
     global host_params_h_v0_dec
     global host_params_h_da_dec
     global DLM
-    global I_ADD
     # ------------------------------------------------------
 
     host_params_h_start.record()
@@ -501,17 +505,11 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
         order="C",
         dtype=cp.float32,
     )
-    host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
-    host_params_h_I_add = cp.zeros(init_params_h.N_lines, dtype=cp.float32)
-    host_params_h_transmittance_noslit = cp.zeros(
-        init_params_h.N_v * 2, dtype=cp.float32
-    )
-    host_params_h_transmittance_FT = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
 
-    # Zeroing may or may not be necessary anymore after moving initialization to gpu_iterate()
-    ##    host_params_h_DLM_d_in.fill(0)
-    ##    host_params_h_spectrum_d_in.fill(0)
+    host_params_h_DLM_d_in.fill(0)
+    host_params_h_spectrum_d_in.fill(0)
     ##    host_params_h_I_add.fill(0)
+    host_params_h_transmittance_FT.fill(0)
 
     host_params_h_start_DLM.record()
 
@@ -529,7 +527,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
             host_params_h_log_2vMm_d,
             host_params_h_DLM_d_in,
             host_params_h_Q_d,
-            host_params_h_I_add,
+            ##            host_params_h_I_add,
         ),
     )
     cp.cuda.runtime.deviceSynchronize()
@@ -538,6 +536,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     ##    # This makes the DLM array available in the calling module
     ##    DLM = cp.asnumpy(host_params_h_DLM_d_in)
     ##    I_ADD = cp.asnumpy(host_params_h_I_add)
+    ##    print(I_ADD)
     ##    # DLM /= 0.8816117 #difference between current code and benchmark.
 
     host_params_h_stop_DLM.record()

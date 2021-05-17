@@ -57,8 +57,9 @@ __global__ void fillDLM(
 	float* na,
 	float* log_2vMm,
 	float* global_DLM,
-    float* Q,               // Q is an array of size max(isotopes_id) + 1
-    float* I_add_arr) {
+    float* Q               // Q is an array of size max(isotopes_id) + 1
+    //float* I_add_arr
+    ) {
 
 	// Some overhead for "efficient" block allocation:
 	blockData block = iter_params_d.blocks[blockIdx.x + gridDim.x * blockIdx.y];
@@ -114,7 +115,7 @@ __global__ void fillDLM(
 				//Calc I
 				float I_add = iter_params_d.N * S0[i] * (expf(iter_params_d.c2T * El[i]) - expf(iter_params_d.c2T * (El[i] + v0[i]))) / Q[iso[i]];
 
-                I_add_arr[i] = I_add;
+                //I_add_arr[i] = I_add;
 
 				float av = iv - iv0;
 				float awG = (iwG - iwG0) * expf((iwG1 - iwG) * iter_params_d.log_dwG);
