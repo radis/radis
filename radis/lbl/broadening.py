@@ -897,6 +897,7 @@ class BroadenFactory(BaseFactory):
                     + f"the current spectral grid (wstep={wstep}). Please reduce "
                     + f"wstep to (at least) below {min_width/ERROR_TRESHOLD:.2g} cm⁻¹ "
                     + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                    + "You can use wstep='auto' to get the optimal spectral grid value. "
                     + "You can also ignore by setting `warnings={'AccuracyError':'ignore'}` "
                     + "(if you know what you're doing!)",
                     "AccuracyError",
@@ -909,6 +910,7 @@ class BroadenFactory(BaseFactory):
                     f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                     + f"the current spectral grid (wstep={wstep}). Please reduce "
                     + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                    + "You can use wstep='auto' to get the optimal spectral grid value. "
                     + "You can also ignore by setting `warnings={'AccuracyWarning':'ignore'}` "
                     + "(if you know what you're doing!)",
                     "AccuracyWarning",
