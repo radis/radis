@@ -3,6 +3,7 @@
 #ifdef __CUDACC__
 #include<cupy/complex.cuh>
 #define agnostic_loop(i, max_i)
+#define agnostic_add(addr, val) atomicAdd((addr),(val))
 
 #else
 #include <complex>
@@ -14,6 +15,7 @@ struct blockIdx_t {int x = 0; int y = 0; int z = 0;} blockIdx;
 struct gridDim_t {int x = 0; int y = 0; int z = 0;} gridDim;
 
 #define agnostic_loop(i, max_i) for (int (i) = 0; (i) < (max_i); (i)++)
+#define agnostic_add(addr, val) *(addr) += (val)
 
 #define __global__
 #define __device__
@@ -125,14 +127,14 @@ __global__ void fillDLM(
                         float Iv0 = I_add * (1 - av);
                         float Iv1 = I_add * av;
 
-                        atomicAdd(&DLM[iwL0 + iwG0 * NwL + iv0 * NwGxNwL], aV00 * Iv0);
-                        atomicAdd(&DLM[iwL0 + iwG0 * NwL + iv1 * NwGxNwL], aV00 * Iv1);
-                        atomicAdd(&DLM[iwL0 + iwG1 * NwL + iv0 * NwGxNwL], aV01 * Iv0);
-                        atomicAdd(&DLM[iwL0 + iwG1 * NwL + iv1 * NwGxNwL], aV01 * Iv1);
-                        atomicAdd(&DLM[iwL1 + iwG0 * NwL + iv0 * NwGxNwL], aV10 * Iv0);
-                        atomicAdd(&DLM[iwL1 + iwG0 * NwL + iv1 * NwGxNwL], aV10 * Iv1);
-                        atomicAdd(&DLM[iwL1 + iwG1 * NwL + iv0 * NwGxNwL], aV11 * Iv0);
-                        atomicAdd(&DLM[iwL1 + iwG1 * NwL + iv1 * NwGxNwL], aV11 * Iv1);
+                        agnostic_add(&DLM[iwL0 + iwG0 * NwL + iv0 * NwGxNwL], aV00 * Iv0);
+                        agnostic_add(&DLM[iwL0 + iwG0 * NwL + iv1 * NwGxNwL], aV00 * Iv1);
+                        agnostic_add(&DLM[iwL0 + iwG1 * NwL + iv0 * NwGxNwL], aV01 * Iv0);
+                        agnostic_add(&DLM[iwL0 + iwG1 * NwL + iv1 * NwGxNwL], aV01 * Iv1);
+                        agnostic_add(&DLM[iwL1 + iwG0 * NwL + iv0 * NwGxNwL], aV10 * Iv0);
+                        agnostic_add(&DLM[iwL1 + iwG0 * NwL + iv1 * NwGxNwL], aV10 * Iv1);
+                        agnostic_add(&DLM[iwL1 + iwG1 * NwL + iv0 * NwGxNwL], aV11 * Iv0);
+                        agnostic_add(&DLM[iwL1 + iwG1 * NwL + iv1 * NwGxNwL], aV11 * Iv1);
                     }
                 }
             }
