@@ -53,7 +53,7 @@ __global__ void fillDLM(
 	float* log_2gs,
 	float* na,
 	float* DLM,
-    float* Q               // Q is an array of size max(isotopes_id) + 1
+    float* Q // Q is an array of size max(isotopes_id) + 1 (should move to iter_params_d)
     ) {
 
 
@@ -62,13 +62,12 @@ __global__ void fillDLM(
 
 	for (int n = 0; n < init_params_d.N_iterations_per_thread; n++) { // eliminate for-loop
 
-		// >>: Process from left to right edge:
 		int i = threadIdx.x + blockDim.x * (n + blockIdx.x * init_params_d.N_iterations_per_thread);
 
 		if (i < init_params_d.N_lines) {
 			//Calc v
 			float v_dat = v0[i] + iter_params_d.p * da[i];
-			float iv = (v_dat - init_params_d.v_min) / init_params_d.dv; //- iv_offset;
+			float iv = (v_dat - init_params_d.v_min) / init_params_d.dv;
 			int iv0 = (int)iv;
 			int iv1 = iv0 + 1  ;
 
