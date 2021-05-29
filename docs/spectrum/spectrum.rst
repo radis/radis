@@ -255,7 +255,7 @@ Please refer to the documentation of the :meth:`~radis.spectrum.spectrum.Spectru
 
 
 How to access Spectrum properties?
-====================================
+==================================
 
 
 Get spectral arrays
@@ -275,7 +275,7 @@ See :ref:`spectral arrays <label_spectral _arrays>` for the list
 of spectral arrays.
 
 Get wavelength/wavenumber
----------------------------
+-------------------------
 
 Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get_wavelength` and
 :py:meth:`~radis.spectrum.spectrum.Spectrum.get_wavenumber` methods::
@@ -329,7 +329,7 @@ Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`::
 
 .. _label_spectrum_linesurvey:
 
-Plotline survey
+Plot line survey
 ----------------
 
 Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` method.
