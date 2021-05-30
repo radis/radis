@@ -298,11 +298,11 @@ def gpu_init(
     # -----------------------------------------------------
 
     if gpu:
-        from cp import array, complex64, float32, zeros
+        from cupy import array, complex64, float32, zeros
 
         set_init_params = constant_memory_setter("init_params_d")
     else:
-        from np import array, complex64, float32, zeros
+        from numpy import array, complex64, float32, zeros
 
         from radis_cython_extensions import set_init_params
 
@@ -425,7 +425,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0, gpu=True
     # ------------------------------------------------------
 
     if gpu:
-        from cp.fft import irfft, rfft
+        from cupy.fft import irfft, rfft
 
         fillDLM = cu_fillDLM
         applyLineshapes = cu_applyLineshapes
@@ -435,7 +435,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0, gpu=True
         asnumpy = cp.asnumpy
 
     else:
-        from np.fft import irfft, rfft
+        from numpy.fft import irfft, rfft
 
         from radis_cython_extensions import (
             applyGaussianSlit,
