@@ -4,3 +4,6 @@ cdef extern from "../gpu.h":
     void applyLineshapes(complex64_t* DLM, complex64_t* abscoeff);
     void calcTransmittanceNoslit(float* abscoeff, float* transmittance_noslit);
     void applyGaussianSlit(complex64_t* transmittance_noslit_FT, complex64_t* transmittance_FT);
+    void set_init_params(initData params);
+    void set_iter_params(iterData params);
+    void set_dims(int blockDim_x, int gridDim_x);

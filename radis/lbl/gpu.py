@@ -55,22 +55,15 @@ class iterData(ctypes.Structure):
 init_params_h = initData()
 iter_params_h = iterData()
 
-host_params_h_start = cp.cuda.Event()
-host_params_h_stop = cp.cuda.Event()
-host_params_h_start_DLM = cp.cuda.Event()
-host_params_h_stop_DLM = cp.cuda.Event()
-host_params_h_data_start = cp.cuda.Event()
-host_params_h_data_stop = cp.cuda.Event()
-
 cuda_fname = join(getProjectRoot(), "lbl", "gpu.cpp")
 with open(cuda_fname, "rb") as f:
     cuda_code = f.read().decode()
 
 cuda_module = cp.RawModule(code=cuda_code)
-fillDLM = cuda_module.get_function("fillDLM")
-applyLineshapes = cuda_module.get_function("applyLineshapes")
-calcTransmittanceNoslit = cuda_module.get_function("calcTransmittanceNoslit")
-applyGaussianSlit = cuda_module.get_function("applyGaussianSlit")
+cu_fillDLM = cuda_module.get_function("fillDLM")
+cu_applyLineshapes = cuda_module.get_function("applyLineshapes")
+cu_calcTransmittanceNoslit = cuda_module.get_function("calcTransmittanceNoslit")
+cu_applyGaussianSlit = cuda_module.get_function("applyGaussianSlit")
 
 
 def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
@@ -248,29 +241,6 @@ def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
         np.log(2) + 0.5 * np.log(2 * k * np.log(2)) - np.log(c ** 2 * 46e-3 / N_A)
     )
 
-    ## TO-DO: These are molecule/isotopologue specific params and should not be compiled
-    # cdef float B  = <float>     0.3902 #cm-1
-    # cdef float w1 = <float>  1354.31 #cm-1
-    # cdef float w2 = <float>   672.85 #cm-1
-    # cdef float w3 = <float>  2396.32 #cm-1
-
-    # cdef int d1 = 1
-    # cdef int d2 = 2
-    # cdef int d3 = 1
-    # cdef float gr = 0.5
-
-    # cdef float Trot = T
-    # cdef float Tv12 = T
-    # cdef float Tv3  = T
-
-    # cdef float Qr = gr * Trot/(c2 * B)*np.exp(c2*B/(<float>3.0*Trot)) #McDowell 1978
-    # cdef float Qv1 = 1 / np.power(1 - np.exp(-c2 * w1 / Tv12), d1)
-    # cdef float Qv2 = 1 / np.power(1 - np.exp(-c2 * w2 / Tv12), d2)
-    # cdef float Qv3 = 1 / np.power(1 - np.exp(-c2 * w3 / Tv3 ), d3)
-    # cdef float Q = Qr * Qv1 * Qv2 * Qv3
-
-    # iter_params_h.Q = Q
-
 
 def set_constant_memory(var_str):
     var_h = globals()[var_str + "_h"]
@@ -281,7 +251,20 @@ def set_constant_memory(var_str):
 
 
 def gpu_init(
-    v_arr, N_wG, N_wL, iso, v0, da, log_2gs, na, log_2vMm, S0, El, Q, verbose_gpu
+    v_arr,
+    N_wG,
+    N_wL,
+    iso,
+    v0,
+    da,
+    log_2gs,
+    na,
+    log_2vMm,
+    S0,
+    El,
+    Q,
+    verbose_gpu,
+    gpu=True,
 ):
 
     # ----------- setup global variables -----------------
@@ -300,10 +283,6 @@ def gpu_init(
     global host_params_h_na_d
     global host_params_h_DLM_d_in
 
-    global host_params_h_data_start
-    global host_params_h_data_stop
-    global host_params_h_elapsedTimeData
-
     global host_params_h_spectrum_d_in
     global host_params_h_transmittance_noslit
     global host_params_h_transmittance_FT
@@ -315,6 +294,11 @@ def gpu_init(
     global database_path
     global N_lines_to_load
     # -----------------------------------------------------
+
+    if gpu:
+        from cp import array, complex64, float32, zeros
+    else:
+        from np import array, complex64, float32, zeros
 
     init_params_h.v_min = np.min(v_arr)  # 2000.0
     init_params_h.v_max = np.max(v_arr)  # 2400.0
@@ -377,12 +361,9 @@ def gpu_init(
     if verbose_gpu >= 2:
         print("Allocating device memory and copying data...")
 
-    host_params_h_data_start.record()
-    host_params_h_spectrum_d_in = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
-    host_params_h_transmittance_noslit = cp.zeros(
-        init_params_h.N_v * 2, dtype=cp.float32
-    )
-    host_params_h_transmittance_FT = cp.zeros(init_params_h.N_v + 1, dtype=cp.complex64)
+    host_params_h_spectrum_d_in = zeros(init_params_h.N_v + 1, dtype=complex64)
+    host_params_h_transmittance_noslit = zeros(init_params_h.N_v * 2, dtype=float32)
+    host_params_h_transmittance_FT = zeros(init_params_h.N_v + 1, dtype=complex64)
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
@@ -393,33 +374,20 @@ def gpu_init(
         print("Copying spectral data to device memory...")
 
     # #Copy spectral data to device
-    host_params_h_iso_d = cp.array(iso)
-    host_params_h_v0_d = cp.array(v0)
-    host_params_h_da_d = cp.array(da)
-    host_params_h_S0_d = cp.array(S0)
-    host_params_h_El_d = cp.array(El)
-    host_params_h_log_2gs_d = cp.array(log_2gs)
-    host_params_h_na_d = cp.array(na)
-    host_params_h_Q_d = cp.array(Q)
-
-    host_params_h_data_stop.record()
-    host_params_h_data_stop.synchronize()
-    host_params_h_elapsedTimeData = cp.cuda.get_elapsed_time(
-        host_params_h_data_start, host_params_h_data_stop
-    )
+    host_params_h_iso_d = array(iso)
+    host_params_h_v0_d = array(v0)
+    host_params_h_da_d = array(da)
+    host_params_h_S0_d = array(S0)
+    host_params_h_El_d = array(El)
+    host_params_h_log_2gs_d = array(log_2gs)
+    host_params_h_na_d = array(na)
+    host_params_h_Q_d = array(Q)
 
     if verbose_gpu >= 2:
         print("done!")
 
-    if verbose_gpu >= 2:
-        print(
-            "Time to copy data from host to device = {0} ms".format(
-                host_params_h_elapsedTimeData
-            )
-        )
 
-
-def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
+def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0, gpu=True):
 
     # ----------- setup global variables -----------------
 
@@ -450,7 +418,26 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     global DLM
     # ------------------------------------------------------
 
-    host_params_h_start.record()
+    if gpu:
+        from cp.fft import irfft, rfft
+
+        fillDLM = cu_fillDLM
+        applyLineshapes = cu_applyLineshapes
+        calcTransmittanceNoslit = cu_calcTransmittanceNoslit
+        applyGaussianSlit = cu_applyGaussianSlit
+        asnumpy = cp.asnumpy
+
+    else:
+        from np.fft import irfft, rfft
+
+        from radis_cython_extensions import (
+            applyGaussianSlit,
+            applyLineshapes,
+            calcTransmittanceNoslit,
+            fillDLM,
+        )
+
+        asnumpy = np.array
 
     if verbose_gpu >= 2:
         print("Copying iteration parameters to device...")
@@ -485,8 +472,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
     host_params_h_spectrum_d_in.fill(0)
     host_params_h_transmittance_FT.fill(0)
 
-    host_params_h_start_DLM.record()
-
     n_threads = init_params_h.N_threads_per_block
     n_blocks = (
         init_params_h.N_lines // (n_threads * init_params_h.N_iterations_per_thread) + 1
@@ -507,22 +492,16 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
             host_params_h_Q_d,
         ),
     )
-    cp.cuda.runtime.deviceSynchronize()
-
-    host_params_h_stop_DLM.record()
-    host_params_h_stop_DLM.synchronize()
-    host_params_h_elapsedTimeDLM = cp.cuda.get_elapsed_time(
-        host_params_h_start_DLM, host_params_h_stop_DLM
-    )
-
-    # TO-DO: looks like we don't need this synchronize...
-    cp.cuda.runtime.deviceSynchronize()
+    if gpu:
+        cp.cuda.runtime.deviceSynchronize()
 
     if verbose_gpu >= 2:
         print("Applying lineshapes...")
 
-    host_params_h_DLM_d_out = cp.fft.rfft(host_params_h_DLM_d_in, axis=0)
-    cp.cuda.runtime.deviceSynchronize()
+    host_params_h_DLM_d_out = rfft(host_params_h_DLM_d_in, axis=0)
+
+    if gpu:
+        cp.cuda.runtime.deviceSynchronize()
 
     n_threads = init_params_h.N_threads_per_block
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
@@ -534,16 +513,20 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
             host_params_h_spectrum_d_in,
         ),
     )
-    cp.cuda.runtime.deviceSynchronize()
 
-    host_params_h_spectrum_d_out = cp.fft.irfft(host_params_h_spectrum_d_in)
-    cp.cuda.runtime.deviceSynchronize()
+    if gpu:
+        cp.cuda.runtime.deviceSynchronize()
+
+    host_params_h_spectrum_d_out = irfft(host_params_h_spectrum_d_in)
+
+    if gpu:
+        cp.cuda.runtime.deviceSynchronize()
 
     if verbose_gpu >= 2:
         print("Done!")
         print("Calculating transmittance...")
 
-    abscoeff_h = host_params_h_spectrum_d_out.get()[: init_params_h.N_v]
+    abscoeff_h = asnumpy(host_params_h_spectrum_d_out)[: init_params_h.N_v]
 
     ## Calc transmittance_noslit:
     n_threads = init_params_h.N_threads_per_block
@@ -554,17 +537,18 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
         (host_params_h_spectrum_d_out, host_params_h_transmittance_noslit),
     )
 
-    cp.cuda.runtime.deviceSynchronize()
+    if gpu:
+        cp.cuda.runtime.deviceSynchronize()
 
     if verbose_gpu >= 2:
         print("Done!")
         print("Applying slit function...")
 
     ## Apply slit function:
-    host_params_h_transmittance_noslit_FT = cp.fft.rfft(
-        host_params_h_transmittance_noslit
-    )
-    cp.cuda.runtime.deviceSynchronize()
+    host_params_h_transmittance_noslit_FT = rfft(host_params_h_transmittance_noslit)
+
+    if gpu:
+        cp.cuda.runtime.deviceSynchronize()
 
     n_threads = init_params_h.N_threads_per_block
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
@@ -574,28 +558,23 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0):
         (host_params_h_transmittance_noslit_FT, host_params_h_transmittance_FT),
     )
 
-    cp.cuda.runtime.deviceSynchronize()
+    if gpu:
+        cp.cuda.runtime.deviceSynchronize()
 
-    host_params_h_transmittance = cp.fft.irfft(host_params_h_transmittance_FT)
-    cp.cuda.runtime.deviceSynchronize()
+    host_params_h_transmittance = irfft(host_params_h_transmittance_FT)
 
-    transmittance_h = host_params_h_transmittance.get()[: init_params_h.N_v]
+    if gpu:
+        cp.cuda.runtime.deviceSynchronize()
+
+    transmittance_h = asnumpy(host_params_h_transmittance)[: init_params_h.N_v]
 
     if verbose_gpu >= 2:
         print("done!")
 
-    host_params_h_stop.record()
-    host_params_h_stop.synchronize()
-    host_params_h_elapsedTime = cp.cuda.get_elapsed_time(
-        host_params_h_start, host_params_h_stop
-    )
-
     if verbose_gpu == 1:
         print("[rG = {0}%".format((np.exp(iter_params_h.log_dwG) - 1) * 100))
         print("rL = {0}%]".format((np.exp(iter_params_h.log_dwL) - 1) * 100))
-        print("Runtime: {0}".format(host_params_h_elapsedTimeDLM))
-        print(" + {0}".format(host_params_h_elapsedTime - host_params_h_elapsedTimeDLM))
-        print(" = {0} ms".format(host_params_h_elapsedTime))
+
         print("Finished calculating spectrum!")
 
     return abscoeff_h, transmittance_h

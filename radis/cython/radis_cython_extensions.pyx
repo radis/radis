@@ -209,30 +209,47 @@ def calc_gaussian_envelope_params(
     return log_2vMm_min, log_2vMm_max
 
 # Below are CPU functions extracted from the GPU module
-cimport cpu_gpu_agnostic
-cpdef void fillDLM( np.ndarray[np.uint8_t, ndim=1] iso,
-                    np.ndarray[np.float32_t, ndim=1] v0,
-                    np.ndarray[np.float32_t, ndim=1] da,
-                    np.ndarray[np.float32_t, ndim=1] S0,
-                    np.ndarray[np.float32_t, ndim=1] El,
-                    np.ndarray[np.float32_t, ndim=1] log_2gs,
-                    np.ndarray[np.float32_t, ndim=1] na,
-                    np.ndarray[np.float32_t, ndim=3] DLM,
-                    np.ndarray[np.float32_t, ndim=1] Q):
 
-    cpu_gpu_agnostic.fillDLM(&iso[0], &v0[0], &da[0], &S0[0], &El[0], &log_2gs[0], &na[0], &DLM[0,0,0], &Q[0])
+cimport cpu_gpu_agnostic as cga
 
+cpdef void fillDLM(gridDim, blockDim, args):
 
-cpdef void applyLineshapes(np.ndarray[np.complex64_t, ndim=3] DLM,
-                              np.ndarray[np.complex64_t, ndim=1] abscoeff):
-    cpu_gpu_agnostic.applyLineshapes(&DLM[0,0,0], &abscoeff[0])
+   (np.ndarray[np.uint8_t, ndim=1] iso,
+    np.ndarray[np.float32_t, ndim=1] v0,
+    np.ndarray[np.float32_t, ndim=1] da,
+    np.ndarray[np.float32_t, ndim=1] S0,
+    np.ndarray[np.float32_t, ndim=1] El,
+    np.ndarray[np.float32_t, ndim=1] log_2gs,
+    np.ndarray[np.float32_t, ndim=1] na,
+    np.ndarray[np.float32_t, ndim=3] DLM,
+    np.ndarray[np.float32_t, ndim=1] Q) = args
 
-
-cpdef void calcTransmittanceNoslit(np.ndarray[np.float32_t, ndim=1] abscoeff,
-                                      np.ndarray[np.float32_t, ndim=1] transmittance_noslit):
-    cpu_gpu_agnostic.calcTransmittanceNoslit(&abscoeff[0], &transmittance_noslit[0])
+    cga.set_dims(blockDim[0],gridDim[0])
+    cga.fillDLM(&iso[0], &v0[0], &da[0], &S0[0], &El[0], &log_2gs[0], &na[0], &DLM[0,0,0], &Q[0])
 
 
-cpdef void applyGaussianSlit(np.ndarray[np.complex64_t, ndim=1] transmittance_noslit_FT,
-                                np.ndarray[np.complex64_t, ndim=1] transmittance_FT):
-    cpu_gpu_agnostic.applyGaussianSlit(&transmittance_noslit_FT[0], &transmittance_FT[0])
+cpdef void applyLineshapes(gridDim, blockDim, args):
+
+    (np.ndarray[np.complex64_t, ndim=3] DLM,
+     np.ndarray[np.complex64_t, ndim=1] abscoeff)) = args
+
+    cga.set_dims(blockDim[0], gridDim[0])
+    cga.applyLineshapes(&DLM[0,0,0], &abscoeff[0])
+
+
+cpdef void calcTransmittanceNoslit(gridDim, blockDim, args):
+
+    (np.ndarray[np.float32_t, ndim=1] abscoeff,
+     np.ndarray[np.float32_t, ndim=1] transmittance_noslit)) = args
+
+    cga.set_dims(blockDim[0], gridDim[0])
+    cga.calcTransmittanceNoslit(&abscoeff[0], &transmittance_noslit[0])
+
+
+cpdef void applyGaussianSlit(gridDim, blockDim, args):
+
+    (np.ndarray[np.complex64_t, ndim=1] transmittance_noslit_FT,
+     np.ndarray[np.complex64_t, ndim=1] transmittance_FT)) = args
+
+    cga.set_dims(blockDim[0],gridDim[0])
+    cga.applyGaussianSlit(&transmittance_noslit_FT[0], &transmittance_FT[0])

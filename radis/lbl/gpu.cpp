@@ -1,18 +1,14 @@
 
-
 #ifdef __CUDACC__
+
 #include<cupy/complex.cuh>
 #define agnostic_loop(i, max_i)
 #define agnostic_add(addr, val) atomicAdd((addr),(val))
 
 #else
+
 #include <complex>
 #include <cmath>
-
-struct threadIdx_t {int x; int y; int z;} threadIdx;
-struct blockDim_t {int x; int y; int z;} blockDim;
-struct blockIdx_t {int x; int y; int z;} blockIdx;
-struct gridDim_t {int x; int y; int z;} gridDim;
 
 #define agnostic_loop(i, max_i) for (i = 0; i < (max_i); i++)
 #define agnostic_add(addr, val) *(addr) += (val)
@@ -20,6 +16,21 @@ struct gridDim_t {int x; int y; int z;} gridDim;
 #define __global__
 #define __device__
 #define __constant__
+
+struct threadIdx_t {int x; int y; int z;} threadIdx;
+struct blockDim_t {int x; int y; int z;} blockDim;
+struct blockIdx_t {int x; int y; int z;} blockIdx;
+struct gridDim_t {int x; int y; int z;} gridDim;
+
+void set_init_params(initData params){
+    init_params_d = params;
+
+void set_iter_params(iterData params){
+    iter_params_d = params;
+
+void set_dims(int blockDim_x, int gridDim_x){
+    blockDim.x = blockDim_x;
+    gridDim.x = gridDim_x;
 
 #endif
 
