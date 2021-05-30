@@ -211,6 +211,7 @@ def calc_gaussian_envelope_params(
 # Below are CPU functions extracted from the GPU module
 
 cimport cpu_gpu_agnostic as cga
+from radis.lbl.gpu import initData, iterData
 
 cpdef void fillDLM(gridDim, blockDim, args):
 
@@ -253,3 +254,12 @@ cpdef void applyGaussianSlit(gridDim, blockDim, args):
 
     cga.set_dims(blockDim[0],gridDim[0])
     cga.applyGaussianSlit(&transmittance_noslit_FT[0], &transmittance_FT[0])
+
+
+cpdef set_init_params(initData params):
+    cga.set_init_params(params)
+
+
+cpdef set_iter_params(iterData params):
+    cga.set_iter_params(params)
+

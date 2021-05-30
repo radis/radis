@@ -242,12 +242,14 @@ def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
     )
 
 
-def set_constant_memory(var_str):
-    var_h = globals()[var_str + "_h"]
-    memptr_d = cuda_module.get_global(var_str + "_d")
-    ptr = ctypes.cast(ctypes.pointer(var_h), ctypes.c_void_p)
-    struct_size = ctypes.sizeof(var_h)
-    memptr_d.copy_from_host(ptr, struct_size)
+def constant_memory_setter(var_str):
+    def setter(var_h):
+        memptr_d = cuda_module.get_global(var_str)
+        ptr = ctypes.cast(ctypes.pointer(var_h), ctypes.c_void_p)
+        struct_size = ctypes.sizeof(var_h)
+        memptr_d.copy_from_host(ptr, struct_size)
+
+    return setter
 
 
 def gpu_init(
@@ -297,8 +299,12 @@ def gpu_init(
 
     if gpu:
         from cp import array, complex64, float32, zeros
+
+        set_init_params = constant_memory_setter("init_params_d")
     else:
         from np import array, complex64, float32, zeros
+
+        from radis_cython_extensions import set_init_params
 
     init_params_h.v_min = np.min(v_arr)  # 2000.0
     init_params_h.v_max = np.max(v_arr)  # 2400.0
@@ -367,7 +373,7 @@ def gpu_init(
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
-    set_constant_memory("init_params")
+    set_init_params(init_params_h)
 
     if verbose_gpu >= 2:
         print("done!")
@@ -425,6 +431,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0, gpu=True
         applyLineshapes = cu_applyLineshapes
         calcTransmittanceNoslit = cu_calcTransmittanceNoslit
         applyGaussianSlit = cu_applyGaussianSlit
+        set_iter_params = constant_memory_setter("iter_params_d")
         asnumpy = cp.asnumpy
 
     else:
@@ -435,6 +442,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0, gpu=True
             applyLineshapes,
             calcTransmittanceNoslit,
             fillDLM,
+            set_iter_params,
         )
 
         asnumpy = np.array
@@ -456,7 +464,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu, l=1.0, slit_FWHM=0.0, gpu=True
         iter_params_h,
     )
 
-    set_constant_memory("iter_params")
+    set_iter_params(iter_params_h)
 
     if verbose_gpu >= 2:
         print("done!")
