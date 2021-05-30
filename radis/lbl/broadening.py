@@ -890,7 +890,7 @@ class BroadenFactory(BaseFactory):
         wstep_auto = self.wstep_auto
         if wstep > min_width / ERROR_TRESHOLD:
             if wstep_auto:
-                wstep = min_width / WARN_THRESHOLD
+                self.params.wstep = min_width / WARN_THRESHOLD
             else:
                 self.warn(
                     f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
@@ -904,7 +904,7 @@ class BroadenFactory(BaseFactory):
                 )
         elif wstep > min_width / WARN_THRESHOLD:
             if wstep_auto:
-                wstep = min_width / WARN_THRESHOLD
+                self.params.wstep = min_width / WARN_THRESHOLD
             else:
                 self.warn(
                     f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
@@ -917,6 +917,7 @@ class BroadenFactory(BaseFactory):
                 )
         else:
             pass
+        print("wstep = ", self.params.wstep)
 
     def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
         """Update dataframe with Voigt HWHM.

@@ -410,7 +410,7 @@ class SpectrumFactory(BandFactory):
             wavelength_max,
             medium,
         )
-        # Verification step for wstep
+        # Checking if 'auto' mode used for wstep
         self.wstep_auto = False
         if wstep == "auto":
             self.wstep_auto = True
@@ -431,7 +431,9 @@ class SpectrumFactory(BandFactory):
         self.wavenumber = wavenumber
         self.wavenumber_calc = wavenumber_calc
         self.woutrange = woutrange
-
+        print("e ->wavenum - ", self.wavenumber)
+        print("e ->wavenum_calc - ", self.wavenumber_calc)
+        print("e ->wbroad - ", self.wbroad_centered)
         # Init variables
         # --------------
 
@@ -689,6 +691,28 @@ class SpectrumFactory(BandFactory):
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
+
+        #################################################
+        # Copied wstep dependent parameters here
+        # calculated range is broader than output waverange to take into account off-range line broadening
+        wavenumber, wavenumber_calc = _generate_wavenumber_range(
+            self.input.wavenum_min, self.input.wavenum_max, self.params.wstep, self.params.broadening_max_width
+        )
+        wbroad_centered = _generate_broadening_range(self.params.wstep, self.params.broadening_max_width)
+
+        # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
+        woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
+        self.wbroad_centered = wbroad_centered
+        self.wavenumber = wavenumber
+        self.wavenumber_calc = wavenumber_calc
+        self.woutrange = woutrange
+        self.params.wavenum_min_calc = wavenumber_calc[0]
+        self.params.wavenum_max_calc = wavenumber_calc[-1]
+        print("l ->wavenum - ", self.wavenumber)
+        print("l ->wavenum_calc - ", self.wavenumber_calc)
+        print(" ->wbroad - ", self.wbroad_centered)
+
+        #####################################################
 
         # ... find weak lines and calculate semi-continuum (optional)
         I_continuum = self.calculate_pseudo_continuum()
