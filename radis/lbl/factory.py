@@ -696,9 +696,14 @@ class SpectrumFactory(BandFactory):
         # Copied wstep dependent parameters here
         # calculated range is broader than output waverange to take into account off-range line broadening
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
-            self.input.wavenum_min, self.input.wavenum_max, self.params.wstep, self.params.broadening_max_width
+            self.input.wavenum_min,
+            self.input.wavenum_max,
+            self.params.wstep,
+            self.params.broadening_max_width,
         )
-        wbroad_centered = _generate_broadening_range(self.params.wstep, self.params.broadening_max_width)
+        wbroad_centered = _generate_broadening_range(
+            self.params.wstep, self.params.broadening_max_width
+        )
 
         # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
         woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
