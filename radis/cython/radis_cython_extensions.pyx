@@ -6,11 +6,22 @@ from cpython cimport array
 from cython.operator import dereference
 
 import ctypes
-
+from libcpp cimport bool
 from libcpp.map cimport map as mapcpp
 from libcpp.set cimport set
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
+#from libcpp.functional cimport greater
+
+# std::greater is currently not implemented in cython (but will be in the future)
+# for now we have to import it in this way:
+cdef extern from "<functional>" namespace "std" nogil:
+    # Comparisons
+    cdef cppclass greater[T=*]:
+        greater() except +
+        bool operator()(const T& lhs, const T& rhs) except +
+
+
 
 #This can be modified to see if the compiled/built/installed version is current:
 __version__ = 0.021
@@ -62,16 +73,6 @@ def add_at_32(np.ndarray[np.float32_t, ndim=3] arr,
 
 
 # Fast compiled functions for determining the min/max broadening envelope.
-
-cdef extern from *:
-    """
-    struct greater {
-        bool operator () (const float x, const float y) const {return x > y;}
-    };
-    """
-    ctypedef struct greater:
-        float a
-        float b
 
 
 @cython.cdivision(True)
@@ -211,28 +212,31 @@ def calc_gaussian_envelope_params(
 # Below are CPU functions extracted from the GPU module
 
 cimport cpu_gpu_agnostic as cga
-from radis.lbl.gpu import initData, iterData
+#from radis.lbl.gpu import initData, iterData
 
 cpdef void fillDLM(gridDim, blockDim, args):
 
-   (np.ndarray[np.uint8_t, ndim=1] iso,
-    np.ndarray[np.float32_t, ndim=1] v0,
-    np.ndarray[np.float32_t, ndim=1] da,
-    np.ndarray[np.float32_t, ndim=1] S0,
-    np.ndarray[np.float32_t, ndim=1] El,
-    np.ndarray[np.float32_t, ndim=1] log_2gs,
-    np.ndarray[np.float32_t, ndim=1] na,
-    np.ndarray[np.float32_t, ndim=3] DLM,
-    np.ndarray[np.float32_t, ndim=1] Q) = args
+   cdef np.ndarray[np.uint8_t, ndim=1] iso
+   cdef np.ndarray[np.float32_t, ndim=1] v0
+   cdef np.ndarray[np.float32_t, ndim=1] da
+   cdef np.ndarray[np.float32_t, ndim=1] S0
+   cdef np.ndarray[np.float32_t, ndim=1] El
+   cdef np.ndarray[np.float32_t, ndim=1] log_2gs
+   cdef np.ndarray[np.float32_t, ndim=1] na
+   cdef np.ndarray[np.float32_t, ndim=3] DLM
+   cdef np.ndarray[np.float32_t, ndim=1] Q
 
-    cga.set_dims(blockDim[0],gridDim[0])
-    cga.fillDLM(&iso[0], &v0[0], &da[0], &S0[0], &El[0], &log_2gs[0], &na[0], &DLM[0,0,0], &Q[0])
+   iso, v0, da, S0, El, log_2gs, na, DLM, Q = args
+
+   cga.set_dims(blockDim[0],gridDim[0])
+   cga.fillDLM(&iso[0], &v0[0], &da[0], &S0[0], &El[0], &log_2gs[0], &na[0], &DLM[0,0,0], &Q[0])
 
 
 cpdef void applyLineshapes(gridDim, blockDim, args):
 
-    (np.ndarray[np.complex64_t, ndim=3] DLM,
-     np.ndarray[np.complex64_t, ndim=1] abscoeff)) = args
+    cdef np.ndarray[np.complex64_t, ndim=3] DLM
+    cdef np.ndarray[np.complex64_t, ndim=1] abscoeff
+    DLM, abscoeff = args
 
     cga.set_dims(blockDim[0], gridDim[0])
     cga.applyLineshapes(&DLM[0,0,0], &abscoeff[0])
@@ -240,8 +244,9 @@ cpdef void applyLineshapes(gridDim, blockDim, args):
 
 cpdef void calcTransmittanceNoslit(gridDim, blockDim, args):
 
-    (np.ndarray[np.float32_t, ndim=1] abscoeff,
-     np.ndarray[np.float32_t, ndim=1] transmittance_noslit)) = args
+    cdef np.ndarray[np.float32_t, ndim=1] abscoeff,
+    cdef np.ndarray[np.float32_t, ndim=1] transmittance_noslit
+    abscoeff, transmittance_noslit = args
 
     cga.set_dims(blockDim[0], gridDim[0])
     cga.calcTransmittanceNoslit(&abscoeff[0], &transmittance_noslit[0])
@@ -249,17 +254,22 @@ cpdef void calcTransmittanceNoslit(gridDim, blockDim, args):
 
 cpdef void applyGaussianSlit(gridDim, blockDim, args):
 
-    (np.ndarray[np.complex64_t, ndim=1] transmittance_noslit_FT,
-     np.ndarray[np.complex64_t, ndim=1] transmittance_FT)) = args
+    cdef np.ndarray[np.complex64_t, ndim=1] transmittance_noslit_FT,
+    cdef np.ndarray[np.complex64_t, ndim=1] transmittance_FT
+    transmittance_noslit_FT, transmittance_FT = args
 
     cga.set_dims(blockDim[0],gridDim[0])
     cga.applyGaussianSlit(&transmittance_noslit_FT[0], &transmittance_FT[0])
 
 
-cpdef set_init_params(initData params):
-    cga.set_init_params(params)
+cpdef set_init_params(params):
+    cdef void* host_ptr = <void*> params
+    cga.set_init_params(host_ptr)
 
 
-cpdef set_iter_params(iterData params):
-    cga.set_iter_params(params)
+cpdef set_iter_params(params):
+    cdef void* host_ptr = <void*> params
+    cga.set_iter_params(host_ptr)
 
+cpdef get_T():
+    return cga.get_T()

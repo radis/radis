@@ -22,16 +22,10 @@ struct blockDim_t {int x; int y; int z;} blockDim;
 struct blockIdx_t {int x; int y; int z;} blockIdx;
 struct gridDim_t {int x; int y; int z;} gridDim;
 
-void set_init_params(initData params){
-    init_params_d = params;
-
-void set_iter_params(iterData params){
-    iter_params_d = params;
-
 void set_dims(int blockDim_x, int gridDim_x){
     blockDim.x = blockDim_x;
     gridDim.x = gridDim_x;
-
+}
 #endif
 
 #ifdef __CUDACC__
@@ -43,7 +37,8 @@ using namespace std;
 const float pi = 3.141592653589793f;
 const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
 
-__device__ __constant__ struct initData {
+//TO-DO: These should really be in gpu.h but cupy fails to load this file if it's included.
+struct initData {
     float v_min;
     float v_max;
     float dv;
@@ -60,10 +55,10 @@ __device__ __constant__ struct initData {
     int N_points_per_thread;
     int	N_iterations_per_thread;
     int shared_size_floats;
-} init_params_d;
+};
 
 
-__device__ __constant__ struct iterData {
+struct iterData {
     float p;
     float log_p;
     float hlog_T;
@@ -77,8 +72,25 @@ __device__ __constant__ struct iterData {
     float log_dwG;
     float log_dwL;
     float log_c2Mm[16];
-} iter_params_d;
+};
 
+__device__ __constant__ struct initData init_params_d;
+__device__ __constant__ struct iterData iter_params_d;
+
+
+#ifndef __CUDACC__
+void set_init_params(void* host_ptr){
+    init_params_d = *reinterpret_cast<initData*> (host_ptr);
+}
+
+void set_iter_params(void* host_ptr){
+    iter_params_d = *reinterpret_cast<iterData*> (host_ptr);
+}
+
+float get_T(){
+    return expf(2*iter_params_d.hlog_T);
+}
+#endif
 
 __global__ void fillDLM(
     unsigned char* iso,
