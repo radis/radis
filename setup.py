@@ -166,7 +166,10 @@ def get_ext_modules():
         ext_modules.append(
             Extension(
                 "radis_cython_extensions",
-                sources=["./radis/cython/radis_cython_extensions.pyx"],
+                sources=[
+                    "./radis/cython/radis_cython_extensions.pyx",
+                    "./radis/lbl/gpu.cpp",
+                ],
                 include_dirs=[get_include()],
                 language="c++",
                 extra_link_args=[],

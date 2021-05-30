@@ -62,7 +62,7 @@ host_params_h_stop_DLM = cp.cuda.Event()
 host_params_h_data_start = cp.cuda.Event()
 host_params_h_data_stop = cp.cuda.Event()
 
-cuda_fname = join(getProjectRoot(), "lbl", "gpu.cu")
+cuda_fname = join(getProjectRoot(), "lbl", "gpu.cpp")
 with open(cuda_fname, "rb") as f:
     cuda_code = f.read().decode()
 

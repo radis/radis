@@ -9,27 +9,30 @@
 #include <complex>
 #include <cmath>
 
-struct threadIdx_t {int x = 0; int y = 0; int z = 0;} threadIdx;
-struct blockDim_t {int x = 0; int y = 0; int z = 0;} blockDim;
-struct blockIdx_t {int x = 0; int y = 0; int z = 0;} blockIdx;
-struct gridDim_t {int x = 0; int y = 0; int z = 0;} gridDim;
+struct threadIdx_t {int x; int y; int z;} threadIdx;
+struct blockDim_t {int x; int y; int z;} blockDim;
+struct blockIdx_t {int x; int y; int z;} blockIdx;
+struct gridDim_t {int x; int y; int z;} gridDim;
 
-#define agnostic_loop(i, max_i) for (int (i) = 0; (i) < (max_i); (i)++)
+#define agnostic_loop(i, max_i) for (i = 0; i < (max_i); i++)
 #define agnostic_add(addr, val) *(addr) += (val)
 
 #define __global__
 #define __device__
 #define __constant__
 
-
 #endif
 
+#ifdef __CUDACC__
 extern "C"{
+#else
+using namespace std;
+#endif
 
 const float pi = 3.141592653589793f;
 const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
 
-struct initData {
+__device__ __constant__ struct initData {
     float v_min;
     float v_max;
     float dv;
@@ -46,10 +49,10 @@ struct initData {
     int N_points_per_thread;
     int	N_iterations_per_thread;
     int shared_size_floats;
-};
+} init_params_d;
 
 
-struct iterData {
+__device__ __constant__ struct iterData {
     float p;
     float log_p;
     float hlog_T;
@@ -63,10 +66,7 @@ struct iterData {
     float log_dwG;
     float log_dwL;
     float log_c2Mm[16];
-};
-
-__device__ __constant__ initData init_params_d;
-__device__ __constant__ iterData iter_params_d;
+} iter_params_d;
 
 
 __global__ void fillDLM(
@@ -205,4 +205,7 @@ __global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, compl
     }
 }
 
+
+#ifdef __CUDACC__
 }
+#endif
