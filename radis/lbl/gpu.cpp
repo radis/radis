@@ -87,11 +87,8 @@ void* get_iter_ptr(void){
     return &iter_params_d;
 }
 
-float local_T = 1234.0;
-
 float get_T(){
-    return local_T;
-    //return expf(2*iter_params_d.hlog_T);
+    return expf(2*iter_params_d.hlog_T);
 }
 #endif
 
