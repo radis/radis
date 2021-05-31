@@ -436,7 +436,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
             applyLineshapes,
             calcTransmittanceNoslit,
             fillDLM,
-            get_T,
             set_iter_params,
         )
 
@@ -460,8 +459,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     )
 
     set_iter_params(iter_params_h)
-    if not gpu:
-        print("T:", get_T())
 
     if verbose_gpu >= 2:
         print("done!")

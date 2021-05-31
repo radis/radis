@@ -1019,7 +1019,7 @@ class SpectrumFactory(BandFactory):
 
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
-        print("mbar:", pressure_mbar)
+
         abscoeff, transmittance = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
