@@ -489,8 +489,8 @@ class SpectrumFactory(BandFactory):
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
-        self.params.wavenum_min_calc = wavenumber_calc[0]
-        self.params.wavenum_max_calc = wavenumber_calc[-1]
+        self.params.wavenum_min_calc = wavenumber[0] - broadening_max_width / 2
+        self.params.wavenum_max_calc = wavenumber[-1] + broadening_max_width / 2
 
         # if optimization is ``'simple'`` or ``'min-RMS'``, or None :
         # Adjust default values of broadening method :
