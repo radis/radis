@@ -79,16 +79,19 @@ __device__ __constant__ struct iterData iter_params_d;
 
 
 #ifndef __CUDACC__
-void set_init_params(void* host_ptr){
-    init_params_d = *reinterpret_cast<initData*> (host_ptr);
+void* get_init_ptr(void){
+    return &init_params_d;
 }
 
-void set_iter_params(void* host_ptr){
-    iter_params_d = *reinterpret_cast<iterData*> (host_ptr);
+void* get_iter_ptr(void){
+    return &iter_params_d;
 }
+
+float local_T = 1234.0;
 
 float get_T(){
-    return expf(2*iter_params_d.hlog_T);
+    return local_T;
+    //return expf(2*iter_params_d.hlog_T);
 }
 #endif
 

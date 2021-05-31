@@ -9,8 +9,8 @@ void calcTransmittanceNoslit(float* abscoeff, float* transmittance_noslit);
 void applyGaussianSlit(complex<float>* transmittance_noslit_FT, complex<float>* transmittance_FT);
 
 // CPU only:
-void set_init_params(void* host_ptr);
-void set_iter_params(void* host_ptr);
+void* get_init_ptr(void);
+void* get_iter_ptr(void);
 void set_dims(int blockDim_x, int gridDim_x);
 float get_T();
 

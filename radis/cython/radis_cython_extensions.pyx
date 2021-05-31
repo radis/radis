@@ -11,6 +11,7 @@ from libcpp.map cimport map as mapcpp
 from libcpp.set cimport set
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
+from libc.string cimport memcpy
 #from libcpp.functional cimport greater
 
 # std::greater is currently not implemented in cython (but will be in the future)
@@ -263,13 +264,17 @@ cpdef void applyGaussianSlit(gridDim, blockDim, args):
 
 
 cpdef set_init_params(params):
-    cdef void* host_ptr = <void*> params
-    cga.set_init_params(host_ptr)
+    cdef void* cpp_ptr = cga.get_init_ptr()
+    cdef size_t size = ctypes.sizeof(params)
+    cdef char[:] struct_memview = bytearray(params)
+    memcpy(cpp_ptr, &struct_memview[0], size)
 
 
 cpdef set_iter_params(params):
-    cdef void* host_ptr = <void*> params
-    cga.set_iter_params(host_ptr)
+    cdef void* cpp_ptr = cga.get_iter_ptr()
+    cdef size_t size = ctypes.sizeof(params)
+    cdef char[:] struct_memview = bytearray(params)
+    memcpy(cpp_ptr, &struct_memview[0], size)
 
 cpdef get_T():
     return cga.get_T()
