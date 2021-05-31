@@ -3,7 +3,6 @@ import ctypes
 ##import pickle
 from os.path import join
 
-import cupy as cp
 import numpy as np
 from scipy.constants import N_A, c, h, k
 
@@ -54,16 +53,6 @@ class iterData(ctypes.Structure):
 
 init_params_h = initData()
 iter_params_h = iterData()
-
-cuda_fname = join(getProjectRoot(), "lbl", "gpu.cpp")
-with open(cuda_fname, "rb") as f:
-    cuda_code = f.read().decode()
-
-cuda_module = cp.RawModule(code=cuda_code)
-cu_fillDLM = cuda_module.get_function("fillDLM")
-cu_applyLineshapes = cuda_module.get_function("applyLineshapes")
-cu_calcTransmittanceNoslit = cuda_module.get_function("calcTransmittanceNoslit")
-cu_applyGaussianSlit = cuda_module.get_function("applyGaussianSlit")
 
 
 def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
@@ -242,7 +231,7 @@ def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
     )
 
 
-def constant_memory_setter(var_str):
+def constant_memory_setter(cuda_module, var_str):
     def setter(var_h):
         memptr_d = cuda_module.get_global(var_str)
         ptr = ctypes.cast(ctypes.pointer(var_h), ctypes.c_void_p)
@@ -266,7 +255,7 @@ def gpu_init(
     El,
     Q,
     verbose_gpu=True,
-    gpu=True,
+    gpu=False,
 ):
 
     # ----------- setup global variables -----------------
@@ -295,12 +284,27 @@ def gpu_init(
     global cuda_module
     global database_path
     global N_lines_to_load
+
+    global cuda_functions
     # -----------------------------------------------------
 
     if gpu:
-        from cupy import array, complex64, float32, zeros
+        from cupy import RawModule, array, complex64, float32, zeros
 
-        set_init_params = constant_memory_setter("init_params_d")
+        cuda_fname = join(getProjectRoot(), "lbl", "gpu.cpp")
+        with open(cuda_fname, "rb") as f:
+            cuda_code = f.read().decode()
+
+        cuda_module = RawModule(code=cuda_code)
+        cuda_functions = (
+            cuda_module.get_function("fillDLM"),
+            cuda_module.get_function("applyLineshapes"),
+            cuda_module.get_function("calcTransmittanceNoslit"),
+            cuda_module.get_function("applyGaussianSlit"),
+        )
+
+        set_init_params = constant_memory_setter(cuda_module, "init_params_d")
+
     else:
         from numpy import complex64, float32, zeros
 
@@ -387,7 +391,7 @@ def gpu_init(
         print("done!")
 
 
-def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=True):
+def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False):
 
     # ----------- setup global variables -----------------
 
@@ -411,21 +415,22 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     global host_params_h_transmittance_FT
 
     global cuda_module
-    ##    global host_params_h_v0_dec
-    ##    global host_params_h_da_dec
+    global cuda_functions
     global DLM
     # ------------------------------------------------------
 
     if gpu:
-        from cupy import complex64, float32
+        from cupy import asnumpy, complex64, float32
+        from cupy.cuda.runtime import deviceSynchronize
         from cupy.fft import irfft, rfft
 
-        fillDLM = cu_fillDLM
-        applyLineshapes = cu_applyLineshapes
-        calcTransmittanceNoslit = cu_calcTransmittanceNoslit
-        applyGaussianSlit = cu_applyGaussianSlit
-        set_iter_params = constant_memory_setter("iter_params_d")
-        asnumpy = cp.asnumpy
+        (
+            fillDLM,
+            applyLineshapes,
+            calcTransmittanceNoslit,
+            applyGaussianSlit,
+        ) = cuda_functions
+        set_iter_params = constant_memory_setter(cuda_module, "iter_params_d")
 
     else:
         from numpy import complex64, float32
@@ -439,7 +444,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
             set_iter_params,
         )
 
-        asnumpy = np.array
+        asnumpy = lambda arr: arr
 
     if verbose_gpu >= 2:
         print("Copying iteration parameters to device...")
@@ -489,7 +494,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
         ),
     )
     if gpu:
-        cp.cuda.runtime.deviceSynchronize()
+        deviceSynchronize()
 
     if verbose_gpu >= 2:
         print("Applying lineshapes...")
@@ -497,7 +502,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     host_params_h_DLM_d_out = rfft(host_params_h_DLM_d_in, axis=0).astype(complex64)
 
     if gpu:
-        cp.cuda.runtime.deviceSynchronize()
+        deviceSynchronize()
 
     n_threads = init_params_h.N_threads_per_block
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
@@ -511,12 +516,12 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     )
 
     if gpu:
-        cp.cuda.runtime.deviceSynchronize()
+        deviceSynchronize()
 
     host_params_h_spectrum_d_out = irfft(host_params_h_spectrum_d_in).astype(float32)
 
     if gpu:
-        cp.cuda.runtime.deviceSynchronize()
+        deviceSynchronize()
 
     if verbose_gpu >= 2:
         print("Done!")
@@ -534,7 +539,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     )
 
     if gpu:
-        cp.cuda.runtime.deviceSynchronize()
+        deviceSynchronize()
 
     if verbose_gpu >= 2:
         print("Done!")
@@ -546,7 +551,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     ).astype(complex64)
 
     if gpu:
-        cp.cuda.runtime.deviceSynchronize()
+        deviceSynchronize()
 
     n_threads = init_params_h.N_threads_per_block
     n_blocks = (init_params_h.N_v + 1) // n_threads + 1
@@ -557,12 +562,12 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     )
 
     if gpu:
-        cp.cuda.runtime.deviceSynchronize()
+        deviceSynchronize()
 
     host_params_h_transmittance = irfft(host_params_h_transmittance_FT).astype(float32)
 
     if gpu:
-        cp.cuda.runtime.deviceSynchronize()
+        deviceSynchronize()
 
     transmittance_h = asnumpy(host_params_h_transmittance)[: init_params_h.N_v]
 
