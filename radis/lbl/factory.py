@@ -420,14 +420,14 @@ class SpectrumFactory(BandFactory):
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
             wavenum_min, wavenum_max, wstep, broadening_max_width
         )
-        wbroad_centered = _generate_broadening_range(wstep, broadening_max_width)
+        # wbroad_centered = _generate_broadening_range(wstep, broadening_max_width)
         # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
         self._wstep = wstep
         self._broadening_max_width = broadening_max_width
 
         # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
         woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
-        self.wbroad_centered = wbroad_centered
+        # self.wbroad_centered = wbroad_centered
         self.wavenumber = wavenumber
         self.wavenumber_calc = wavenumber_calc
         self.woutrange = woutrange
@@ -715,7 +715,7 @@ class SpectrumFactory(BandFactory):
         self.params.wavenum_max_calc = wavenumber_calc[-1]
         print("l ->wavenum - ", self.wavenumber)
         print("l ->wavenum_calc - ", self.wavenumber_calc)
-        print(" ->wbroad - ", self.wbroad_centered)
+        print("l ->wbroad - ", self.wbroad_centered)
 
         #####################################################
 
@@ -1306,6 +1306,33 @@ class SpectrumFactory(BandFactory):
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
+
+        #################################################
+        # Copied wstep dependent parameters here
+        # calculated range is broader than output waverange to take into account off-range line broadening
+        wavenumber, wavenumber_calc = _generate_wavenumber_range(
+            self.input.wavenum_min,
+            self.input.wavenum_max,
+            self.params.wstep,
+            self.params.broadening_max_width,
+        )
+        wbroad_centered = _generate_broadening_range(
+            self.params.wstep, self.params.broadening_max_width
+        )
+
+        # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
+        woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
+        self.wbroad_centered = wbroad_centered
+        self.wavenumber = wavenumber
+        self.wavenumber_calc = wavenumber_calc
+        self.woutrange = woutrange
+        self.params.wavenum_min_calc = wavenumber_calc[0]
+        self.params.wavenum_max_calc = wavenumber_calc[-1]
+        print("l ->wavenum - ", self.wavenumber)
+        print("l ->wavenum_calc - ", self.wavenumber_calc)
+        print("l ->wbroad - ", self.wbroad_centered)
+
+        #####################################################
 
         # ... find weak lines and calculate semi-continuum (optional)
         k_continuum, j_continuum = self.calculate_pseudo_continuum(noneq=True)

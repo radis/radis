@@ -2831,9 +2831,7 @@ class BaseFactory(DatabankLoader):
 
         # Estimate time gained
         expected_broadening_time_gain = (
-            self._broadening_time_ruleofthumb
-            * Nlines_cutoff
-            * len(self.wbroad_centered)
+            self._broadening_time_ruleofthumb * Nlines_cutoff
         )
 
         # Estimate error being made:
