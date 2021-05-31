@@ -199,13 +199,15 @@ def calc_spectrum(
         If ``False``, stays quiet. If ``True``, tells what is going on.
         If ``>=2``, gives more detailed messages (for instance, details of
         calculation times). Default ``True``.​
-    mode: ``'cpu'``, ``'gpu'``
+    mode: ``'cpu'``, ``'gpu'``, ``'emulated_gpu'``
         if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
         offloads the calculations of lineshape and broadening steps to the GPU
         making use of parallel computations to speed up the process. Default ``'cpu'``.
         Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
         For more information on how to setup your system to run GPU-accelerated
         methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
+        To try the GPU code without an actual GPU, you can use ``mode='emulated_gpu'``.
+        This will run the GPU equivalent code on the CPU.
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -654,13 +656,14 @@ def _calc_spectrum(
                 path_length=path_length,
                 name=name,
             )
-        else:
+        elif mode in ("gpu", "emulated_gpu"):
             s = sf.eq_spectrum_gpu(
                 Tgas=Tgas,
                 mole_fraction=mole_fraction,
                 pressure=pressure,
                 path_length=path_length,
                 name=name,
+                emulate=(True if mode == "emulated_gpu" else False),
             )
     else:
         s = sf.non_eq_spectrum(

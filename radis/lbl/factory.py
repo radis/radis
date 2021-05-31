@@ -355,6 +355,7 @@ class SpectrumFactory(BandFactory):
         save_memory=False,
         export_populations=None,
         export_lines=False,
+        emulate_gpu=False,
         **kwargs
     ):
 
@@ -805,7 +806,13 @@ class SpectrumFactory(BandFactory):
         return s
 
     def eq_spectrum_gpu(
-        self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
+        self,
+        Tgas,
+        mole_fraction=None,
+        path_length=None,
+        pressure=None,
+        name=None,
+        emulate=False,
     ):
 
         """Generate a spectrum at equilibrium with calculation of lineshapes
@@ -1002,6 +1009,7 @@ class SpectrumFactory(BandFactory):
             El,
             Q_arr,
             verbose_gpu,
+            gpu=(not emulate),
         )
 
         if verbose >= 2:
@@ -1017,6 +1025,7 @@ class SpectrumFactory(BandFactory):
             Tgas,
             mole_fraction,
             verbose_gpu,
+            gpu=(not emulate),
         )
         # Calculate output quantities
         # ----------------------------------------------------------------------
@@ -1056,6 +1065,7 @@ class SpectrumFactory(BandFactory):
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
                 "radis_version": get_version(),
+                "emulate_gpu": emulate,
             }
         )
 

@@ -1595,6 +1595,7 @@ class Spectrum(object):
             False,
             l=self.conditions["path_length"],
             slit_FWHM=self.conditions["slit_FWHM"],
+            gpu=(not self.conditions["emulate_gpu"]),
         )
 
         line.set_ydata(transmittance)

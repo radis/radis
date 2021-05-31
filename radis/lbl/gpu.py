@@ -7,9 +7,6 @@ import cupy as cp
 import numpy as np
 from scipy.constants import N_A, c, h, k
 
-VERBOSE = 999
-GPU_USE = False
-
 c_cm = 100 * c
 c2 = h * c_cm / k
 
@@ -268,8 +265,8 @@ def gpu_init(
     S0,
     El,
     Q,
-    verbose_gpu=VERBOSE,
-    gpu=GPU_USE,
+    verbose_gpu=True,
+    gpu=True,
 ):
 
     # ----------- setup global variables -----------------
@@ -390,9 +387,7 @@ def gpu_init(
         print("done!")
 
 
-def gpu_iterate(
-    p, T, mole_fraction, verbose_gpu=VERBOSE, l=1.0, slit_FWHM=0.0, gpu=GPU_USE
-):
+def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=True):
 
     # ----------- setup global variables -----------------
 
