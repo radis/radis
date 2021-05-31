@@ -451,3 +451,13 @@ def to_str(a):
         return a.decode("utf-8")
     else:
         return a
+
+
+def round_off(n):
+    # Getting rounded off value (atleast order 3)
+    for i in range(0, 10):
+        val = round(n, 3 + i)
+        if val == 0:
+            continue
+        return val
+    return 0

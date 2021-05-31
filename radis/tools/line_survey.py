@@ -184,12 +184,14 @@ def LineSurvey(
         return S / (k_b * T) / 10
 
     # Parsers to get units and more details
-    if dbformat == "hitran":
+    if dbformat in ["hitran", "hitemp"]:
         columndescriptor = hitrancolumns
     elif dbformat == "cdsd-hitemp":
         columndescriptor = cdsdcolumns
     elif dbformat == "cdsd-4000":
         columndescriptor = cdsd4000columns
+    else:
+        raise NotImplementedError(f"unknown dbformat {dbformat}")
 
     # Apply cutoff, get ylabel
     if plot == "S":
@@ -422,7 +424,7 @@ def LineSurvey(
                 details[k] = ("", None, "")  # keep short name
 
     # Get label
-    if dbformat == "hitran":
+    if dbformat in ["hitran", "hitemp"]:
         sp["label"] = sp.apply(lambda r: get_label_hitran(r, details), axis=1)
     elif dbformat in ["cdsd-hitemp", "cdsd-4000"]:
         try:

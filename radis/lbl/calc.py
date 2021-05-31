@@ -150,8 +150,15 @@ def calc_spectrum(
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
         Does not change anything when giving inputs in wavenumber. Default ``'air'``​.
-    wstep: float (:math:`cm^{-1}`)
-        Spacing of calculated spectrum. Default ``0.01 cm-1``.
+    wstep: float (:math:`cm^{-1}`)  or `'auto'`
+        Resolution of wavenumber grid. Default ``0.01`` cm-1.
+        If `'auto'`, it is ensured that there
+        are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+        points for each linewidth.
+
+        .. note::
+            wstep = 'auto' is optimized for performances while ensuring accuracy,
+            but is still experimental in 0.9.30. Feedback welcome!
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
         a huge performance drop (scales as :math:`~broadening_max_width^2` without LDM)
@@ -282,7 +289,6 @@ def calc_spectrum(
 
     Cite
     ----
-
     RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
     to compute spectra, make sure you cite all of them, for proper reproducibility and acknowledgement of
     the work ! See :ref:`How to cite? <label_cite>`

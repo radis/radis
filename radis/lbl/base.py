@@ -2969,11 +2969,12 @@ class BaseFactory(DatabankLoader):
         Nlines_cutoff = b.sum()
 
         # Estimate time gained
-        expected_broadening_time_gain = (
-            self._broadening_time_ruleofthumb
-            * Nlines_cutoff
-            * len(self.wbroad_centered)
-        )
+        # TODO: Add a better formula to estimate time gained during broadening process
+        """ Previous method used was:
+            expected_broadening_time_gain = (
+                self._broadening_time_ruleofthumb * Nlines_cutoff * len(self.wbroad_centered)
+            )
+        """
 
         # Estimate error being made:
         if self.warnings["LinestrengthCutoffWarning"] != "ignore":
@@ -2985,9 +2986,7 @@ class BaseFactory(DatabankLoader):
                     "Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))".format(
                         Nlines_cutoff / len(df.S) * 100, cutoff
                     )
-                    + " Estimated error: {0:.2f}%, Expected time saved: {1:.1f}s".format(
-                        error, expected_broadening_time_gain
-                    )
+                    + " Estimated error: {0:.2f}%".format(error)
                 )
             if error > self.misc.warning_linestrength_cutoff:
                 self.warn(
@@ -3026,24 +3025,7 @@ class BaseFactory(DatabankLoader):
 
         time_spent = time() - t0
         if self.verbose >= 2:
-            printg(
-                "Applied linestrength cutoff in {0:.1f}s (expected time saved ~ {1:.1f}s)".format(
-                    time_spent, expected_broadening_time_gain
-                )
-            )
-
-        # Raise a warning if we dont expect any performance improvement
-        if time_spent > 0.3 and time_spent > 3 * expected_broadening_time_gain:
-            self.warn(
-                "Your linestrength cutoff is too high. "
-                + "Time spent on applying cutoff "
-                + "({0:.1f}s) is much longer than expected gain ({1:.1f}s). ".format(
-                    time_spent, expected_broadening_time_gain
-                )
-                + "If the number of lines is low, you can consider "
-                + "using cutoff=0",
-                "PerformanceWarning",
-            )
+            printg("Applied linestrength cutoff in {0:.1f}s ".format(time_spent))
 
         return
 
@@ -3183,7 +3165,10 @@ class BaseFactory(DatabankLoader):
         # ... that wstep and broadening_max_width were not inadvertanly changed
         # ... (would have no effect as the waverange is calculated on SpectrumFactory
         # ... initialization)
-        assert self._wstep == self.params.wstep
+
+        # Checks there if there is change in wstep value if initial wstep != "auto"
+        if self.wstep != "auto":
+            assert self.wstep == self.params.wstep
         assert self._broadening_max_width == self.params.broadening_max_width
 
     def _get_parsum(self, molecule, iso, state):
