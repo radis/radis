@@ -77,13 +77,13 @@ Note that the :class:`~radis.lbl.factory.SpectrumFactory` class has the
 automatically retrieves a spectrum from a
 :class:`~radis.tools.database.SpecDatabase` if you calculated it already,
 or calculates it and stores it if you didn't. Very useful for spectra that
-requires long computational times!
+require long computational times!
 
 
 Initialize from text file or arrays
 -----------------------------------
 
-Spectrum objects can also be generated from numpy arrays, or files.
+Spectrum objects can also be generated from NumPy arrays or files.
 
 From numpy arrays, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array` ::
 
@@ -170,8 +170,7 @@ with other spectra by solving the :ref:`radiative transfer equation <label_los_i
 Some variables represent quantities that have been convolved with an instrumental slit function,
 as measured in experimental spectra:
 
-- ``'radiance'``: the spectral radiance, convolved by the instrument function (typically in :math:``'mW/cm^2/sr/nm'``). This
-  is sometimes confusingly called *spectral intensity*.
+- ``'radiance'``: the spectral radiance, convolved by the instrument function (typically in :math:``'mW/cm^2/sr/nm'``). This is sometimes confusingly called *spectral intensity*.
 - ``'transmittance'``: the directional spectral transmittance (:math:``0`` to :math:``1``), convolved by the instrument function.
 - ``'emissivity'``: the directional spectral emissivity (:math:``0`` to :math:``1``), convolved by the instrument function.
   The spectral emissivity is the radiance emitted by a surface
@@ -231,7 +230,7 @@ The unit conversion methods will properly work with custom units.
 Relations between quantities
 ----------------------------
 
-Most of the quantities above can be recomputed from one another. In an homogeneous
+Most of the quantities above can be recomputed from one another. In a homogeneous
 slab, one requires an emission spectral density, and an absorption spectral density,
 to be able to recompute the other quantities (provided that conditions such as path length
 are given). Under equilibrium, only one quantity is needed. Missing quantities
@@ -248,16 +247,16 @@ can be retrieved in arbitrary units with the :meth:`~radis.spectrum.spectrum.Spe
 method.
 
 When a spectral unit is convolved with :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`,
-a new convolved spectral arrays is created. The unit of the convolved quantity may be different,
-depending on how the slit function was normalised. Several options are available in RADIS.
+a new convolved spectral array is created. The unit of the convolved spectral array may be different,
+depending on how the slit function was normalized. Several options are available in RADIS.
 Please refer to the documentation of the :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` method.
 
 
 
 
 
-How to access a Spectrum properties?
-====================================
+How to access Spectrum properties?
+==================================
 
 
 Get spectral arrays
@@ -276,8 +275,8 @@ method to retrieve the quantity un the units you want::
 See :ref:`spectral arrays <label_spectral _arrays>` for the list
 of spectral arrays.
 
-Get wavelength / wavenumber
----------------------------
+Get wavelength/wavenumber
+-------------------------
 
 Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get_wavelength` and
 :py:meth:`~radis.spectrum.spectrum.Spectrum.get_wavenumber` methods::
@@ -466,9 +465,9 @@ Conditions can be updated *a posteriori* by modifying the dictionary::
 Rescale Spectrum with new path length
 -------------------------------------
 
-Path length can be changed after the spectra was calculated with the
+Path length can be changed after the spectra were calculated with the
 :py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length` method.
-If the spectrum is not optically thin, this requires to solve the radiative
+If the spectrum is not optically thin, this requires solving the radiative
 transfer equation again, so the ``emisscoeff`` and ``abscoeff`` (opacity) quantities
 will have to be stored in the Spectrum, or any equivalent combination
 (radiance_noslit and absorbance, for instance).
@@ -506,8 +505,8 @@ Use :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`::
 
     s.apply_slit(1.5)    # nm
 
-By default, convoluted spectra are thinner than non convoluted spectra, to remove
-side effects. Use the ``mode=`` argument to change this behaviour.
+By default, convoluted spectra are thinner than non-convoluted spectra, to remove
+side effects. Use the ``mode=`` argument to change this behavior.
 
 .. minigallery:: radis.Spectrum.apply_slit
 
@@ -525,8 +524,8 @@ change the unit::
 
 .. _label_spectrum_algebra:
 
-Multiply, substract
--------------------
+Multiply, subtract
+------------------
 
 Sometimes you need to manipulate an experimental spectrum, to account
 for calibration or remove a baseline. Spectrum operations are done
@@ -594,7 +593,7 @@ so they can be used directly with::
     s.offset(3, 'nm')
     s.crop(370, 380, 'nm')
 
-By default, using methods will modify the object inplace, using the functions will
+By default, using methods that will modify the object in place, using the functions will
 generate a new Spectrum.
 
 Normalize
@@ -684,8 +683,8 @@ method, or simply the ``==`` statement (which is essentially the same thing)::
 
 However, :py:meth:`~radis.spectrum.spectrum.Spectrum.compare_with` allows more freedom
 regarding what quantities to compare. ``==`` will compare everything of two spectra,
-including input conditions, units under which spectral arrays are stored,
-populations of species if they were saved, etc. In many situations we may want
+including input conditions, units under which spectral quantities are stored,
+populations of species if they were saved, etc. In many situations, we may want
 to simply compare the spectra themselves, or even a particular quantity like
 *transmittance_noslit*. Use::
 
@@ -761,13 +760,13 @@ A simple fitting procedure could be::
     T_best = best.x
 
 Note however that the performances of a fitting procedure can be
-vastly improved by not reloading the line database everytime. In that
+vastly improved by not reloading the line database every time. In that
 case, it becomes interesting to use the :class:`~radis.lbl.factory.SpectrumFactory`
 class.
 
-An example of script that uses the :class:`~radis.lbl.factory.SpectrumFactory`,
+An example of a script that uses the :class:`~radis.lbl.factory.SpectrumFactory`,
 multiple fitting parameters, and plots the residual and the calculated spectrum
-in real time, can be found :ref:`in the Examples page <label_examples_multitemperature_fit>`
+in real-time, can be found :ref:`in the Examples page <label_examples_multitemperature_fit>`
 
 
 .. _label_spectrum_howto_interpolate:
@@ -824,5 +823,3 @@ See more information about databases below.
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-
-

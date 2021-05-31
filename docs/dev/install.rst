@@ -5,13 +5,13 @@ Install
 
 You can either install RADIS from `pip`, the Python package manager. But if
 you want to access the latest features, or modify the code and contribute,
-we suggest that you Clone or Fork the source code from `GitHub <https://github.com/radis/radis>`_.
+we suggest that you Fork the source code from `GitHub <https://github.com/radis/radis>`_.
 
 **Use-only version** : cant modify the code
 
 In a terminal, run::
 
-    pip install --user radis
+    pip install --user radis -v
 
 The 'pip' module has to be installed (by default if you've installed Python
 with Anaconda).
@@ -29,7 +29,7 @@ In a terminal, run::
 
     git clone https://github.com/<GITHUB USERNAME>/radis.git
     cd radis
-    pip install -e .[dev]
+    pip install -e .[dev] -v
 
 - The ``-e`` (editable) argument creates a link from the local folder ``./`` into Python
   site-packages.
@@ -39,6 +39,20 @@ In a terminal, run::
 
 To make sure the install worked, run the :ref:`first example <label_first_example>`
 from the Quick Start page. Then, you're all set.
+
+
+
+For a best experience, it is recommended to install Radis on an Anaconda Python distribution, in an
+isolated environment. You can create a radis environment with all dependencies with::
+
+    cd radis
+    conda env create --file environment.yml
+
+Then install radis in the `radis` environment::
+
+    conda activate radis
+    pip install -e .
+
 
 
 Test your changes
@@ -110,7 +124,7 @@ With Pip you can keep the package up-to-date with::
 
     pip install radis --upgrade
 
-If using the latest developer version (cloned from `GitHub <https://github.com/radis/radis>`_ and installed with `pip install -e .`), use git to `pull` the latest changes.
+If using the latest developer version (cloned from `GitHub <https://github.com/radis/radis>`_ and installed with `pip install -e .[dev]`), use git to `pull` the latest changes.
 
 Help
 ----

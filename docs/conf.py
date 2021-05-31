@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.abspath("."))
 # %% ------------------------------------
 # Added EP 2018:
 # Auto-generate files with sphinx.apidoc
-# (else it requires /docs/source files to be generated manually and commited
+# (else it requires /docs/source files to be generated manually and committed
 # to the git directory)
 #
 # Reference:
@@ -59,7 +59,7 @@ extensions = [
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
-    # "sphinx_autodoc_defaultargs",
+    "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     "sphinxcontrib.apidoc",
@@ -97,7 +97,7 @@ autosummary_generate = True
 # %% ------------------------------------
 # Added EP 2018:
 # Auto-generate files with sphinx.apidoc
-# (else it requires /docs/source files to be generated manually and commited
+# (else it requires /docs/source files to be generated manually and committed
 # to the git directory)
 #
 # Reference:
@@ -173,7 +173,7 @@ author = (
     + "et al. (https://github.com/radis/radis/graphs/contributors)"
 )
 
-# The version info for the project you're documenting, acts as replacement for
+# The version info for the project you're documenting, acts as a replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
@@ -199,7 +199,7 @@ language = None
 # Else, today_fmt is used as the format for a strftime call.
 # today_fmt = '%B %d, %Y'
 
-# List of patterns, relative to source directory, that match files and
+# List of patterns, relative to the source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ["_build"]
 
@@ -271,14 +271,14 @@ html_theme_options = {
 # of the sidebar.
 html_logo = "radis_ico.png"
 
-# The name of an image file (within the static path) to use as favicon of the
+# The name of an image file (within the static path) to use as the favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 # html_favicon = None
 
 # Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
+# relative to this directory. They are copied after the built-in static files,
+# so a file named "default.css" will overwrite the built-in "default.css".
 html_static_path = ["_static"]
 
 # Add any extra paths that contain custom files (such as robots.txt or
