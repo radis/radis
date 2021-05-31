@@ -202,7 +202,6 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
     log_wL_min, log_wL_max = calc_lorentzian_minmax(
         param_data, iter_params_h.log_rT, iter_params_h.log_p
     )
-    ##    print("wL:", log_wL_min, log_wL_max)
     log_wL_max += epsilon
     log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
 
