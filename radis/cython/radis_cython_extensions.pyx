@@ -16,12 +16,21 @@ from libc.string cimport memcpy
 
 # std::greater is currently not implemented in cython (but will be in the future)
 # for now we have to import it in this way:
-cdef extern from "<functional>" namespace "std" nogil:
-    # Comparisons
-    cdef cppclass greater[T=*]:
-        greater() except +
-        bool operator()(const T& lhs, const T& rhs) except +
+#cdef extern from "<functional>" namespace "std" nogil:
+#    # Comparisons
+#    cdef cppclass greater[T=*]:
+#        greater() except +
+#        bool operator()(const T& lhs, const T& rhs) except +
 
+cdef extern from *:
+    """
+    struct greatercpp {
+        bool operator () (const float x, const float y) const {return x > y;}
+    };
+    """
+    ctypedef struct greatercpp:
+        float a
+        float b
 
 
 #This can be modified to see if the compiled/built/installed version is current:
@@ -91,7 +100,7 @@ def calc_lorentzian_envelope_params(
     cdef vector[pair[float,float]] duplicates_removed
     cdef vector[float] na_short
     cdef vector[float] log_2gs_short
-    cdef mapcpp[float, float, greater] bottom_envelope_map
+    cdef mapcpp[float, float, greatercpp] bottom_envelope_map
     cdef mapcpp[float, float] top_envelope_map
 
 
