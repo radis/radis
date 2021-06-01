@@ -69,8 +69,7 @@ from radis.phys.units import convert_emi2nm, convert_rad2nm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
-from radis.lbl import factory
-from radis.params import WARN_THRESHOLD
+
 # %% BandFactory
 
 
@@ -552,13 +551,8 @@ class BandFactory(BroadenFactory):
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
 
-        #################################################
-        # Copied wstep dependent parameters here
-        # calculated range is broader than output waverange to take into account off-range line broadening
-        # Round off function
+        # ... generates all wstep related entities
         self._generate_wavenumber_entities()
-
-        #####################################################
 
         # ... find weak lines and calculate semi-continuum (optional)
         I_continuum = self.calculate_pseudo_continuum()

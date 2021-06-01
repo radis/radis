@@ -2831,11 +2831,11 @@ class BaseFactory(DatabankLoader):
 
         # Estimate time gained
         # TODO: Add a better formula to estimate time gained during broadening process
-        ''' Previous method used was:
+        """ Previous method used was:
             expected_broadening_time_gain = (
                 self._broadening_time_ruleofthumb * Nlines_cutoff * len(self.wbroad_centered)
             )
-        '''
+        """
 
         # Estimate error being made:
         if self.warnings["LinestrengthCutoffWarning"] != "ignore":
@@ -2847,9 +2847,7 @@ class BaseFactory(DatabankLoader):
                     "Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))".format(
                         Nlines_cutoff / len(df.S) * 100, cutoff
                     )
-                    + " Estimated error: {0:.2f}%".format(
-                        error
-                    )
+                    + " Estimated error: {0:.2f}%".format(error)
                 )
             if error > self.misc.warning_linestrength_cutoff:
                 self.warn(
@@ -2888,11 +2886,7 @@ class BaseFactory(DatabankLoader):
 
         time_spent = time() - t0
         if self.verbose >= 2:
-            printg(
-                "Applied linestrength cutoff in {0:.1f}s ".format(
-                    time_spent
-                )
-            )
+            printg("Applied linestrength cutoff in {0:.1f}s ".format(time_spent))
 
         return
 
@@ -3032,9 +3026,9 @@ class BaseFactory(DatabankLoader):
         # ... that wstep and broadening_max_width were not inadvertanly changed
         # ... (would have no effect as the waverange is calculated on SpectrumFactory
         # ... initialization)
-        print("wstep - ",self.params.wstep)
+
         # TODO: Add other tests for wstep to include "auto" method
-        #assert self._wstep == self.params.wstep
+        # assert self._wstep == self.params.wstep
         assert self._broadening_max_width == self.params.broadening_max_width
 
     def _get_parsum(self, molecule, iso, state):
