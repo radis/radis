@@ -11,9 +11,11 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 """
 
 import os
+import re
+import urllib.request
 from datetime import date
 from io import BytesIO
-from os.path import abspath, exists, expanduser, join
+from os.path import abspath, exists, expanduser, join, splitext
 from zipfile import ZipFile
 
 import numpy as np
@@ -36,9 +38,10 @@ from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import DatabaseAlreadyExists
 
 BASE_URL = "https://hitran.org/hitemp/data/bzip2format/"
+BASE_URL_MULTI = "https://hitran.org/hitemp/data/HITEMP-2010/{:s}_line_list/"
 HITEMP_SOURCE_FILES = {
-    "H2O": "",  # NotImplemented
-    "CO2": "",  # NotImplemented
+    "H2O": "01_HITEMP2010.zip",  # Only for purpose of naming local file
+    "CO2": "02_HITEMP2010.zip",  # Only for purpose of naming local file
     "N2O": "04_HITEMP2019.par.bz2",
     "CO": "05_HITEMP2019.par.bz2",
     "CH4": "06_HITEMP2020.par.bz2",
@@ -188,19 +191,23 @@ def fetch_hitemp(
     local_databases = abspath(local_databases.replace("~", expanduser("~")))
 
     if molecule in ["H2O", "CO2"]:
-        raise NotImplementedError(
-            "Automatic HITEMP download not implemented for {0} : multiple files. Download manually on https://hitran.org/hitemp/ ".format(
-                molecule
-            )
-        )
+        if verbose:
+            print("Fetching filelist...")
+        url = BASE_URL_MULTI.format(molecule)
+        response = urllib.request.urlopen(url)
+        response_string = response.read().decode()
+        inputfiles = re.findall('href="(\S+.zip)"', response_string)
+        base_url = BASE_URL_MULTI
 
     try:
-        inputf = HITEMP_SOURCE_FILES[molecule]
+        inputfiles = [HITEMP_SOURCE_FILES[molecule]]
+        base_url = BASE_URL
     except KeyError as err:
         raise KeyError(
             f"Please choose one of HITEMP molecules : {list(HITEMP_SOURCE_FILES.keys())}. Got '{molecule}'"
         ) from err
-    urlname = BASE_URL + inputf
+
+    urlnames = [base_url + f for f in inputfiles]
 
     try:
         os.mkdir(local_databases)
@@ -211,7 +218,10 @@ def fetch_hitemp(
             print("Created folder :", local_databases)
 
     local_file = abspath(
-        join(local_databases, molecule + "-" + inputf.replace(".par.bz2", ".h5"))
+        join(
+            local_databases,
+            molecule + "-" + splitext(HITEMP_SOURCE_FILES[molecule])[0] + ".h5",
+        )
     )
 
     if not cache or cache == "regen":
@@ -299,91 +309,108 @@ def fetch_hitemp(
         )
         return (df, local_file) if return_local_path else df
 
+    ###################################################
+
+    # from here we start downloading
+
     # Doesnt exist : download
     ds = DataSource(join(local_databases, "downloads"))
+    Ndownload = 1
+    Ntotal_downloads = len(urlnames)
 
-    if verbose:
-        print(f"Downloading {inputf} for {molecule}.")
-    download_date = date.today().strftime("%d %b %Y")
+    Nlines = 0
+    Ntotal_lines_expected = INFO_HITEMP_LINE_COUNT[molecule]
+    pb = ProgressBar(N=Ntotal_lines_expected, active=verbose)
 
-    columns = columns_2004
+    wmin = np.inf
+    wmax = 0
 
-    # Get linereturn (depends on OS, but file may also have been generated
-    # on a different OS. Here we simply read the file to find out)
-    with ds.open(urlname) as gfile:  # locally downloaded file
+    for urlname, inputf in zip(urlnames, inputfiles):
 
-        dt = _create_dtype(
-            columns, "a2"
-        )  # 'a2' allocates space to get \n or \n\r for linereturn character
-        b = np.zeros(1, dtype=dt)
-        gfile.readinto(b)
-        linereturnformat = _get_linereturnformat(b, columns)
-
-    with ds.open(urlname) as gfile:  # locally downloaded file
-
-        dt = _create_dtype(columns, linereturnformat)
-        b = np.zeros(chunksize, dtype=dt)  # receives the HITRAN 160-character data.
-        wmin = np.inf
-        wmax = 0
         if verbose:
-            print(f"Download complete. Building {molecule} database to {local_file}")
+            print(
+                f"Downloading {inputf} ({Ndownload}/{Ntotal_downloads}) for {molecule}."
+            )
+        download_date = date.today().strftime("%d %b %Y")
 
-        with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
-            Nlines = 0
-            Ntotal_lines_expected = INFO_HITEMP_LINE_COUNT[molecule]
-            pb = ProgressBar(N=Ntotal_lines_expected, active=verbose)
-            for nbytes in iter(lambda: gfile.readinto(b), 0):
+        columns = columns_2004
 
-                if not b[-1]:
-                    # End of file flag within the chunk (but does not start
-                    # with End of file flag) so nbytes != 0
-                    b = get_last(b)
+        # Get linereturn (depends on OS, but file may also have been generated
+        # on a different OS. Here we simply read the file to find out)
+        with ds.open(urlname) as gfile:  # locally downloaded file
+            dt = _create_dtype(
+                columns, "a2"
+            )  # 'a2' allocates space to get \n or \n\r for linereturn character
+            b = np.zeros(1, dtype=dt)
+            gfile.readinto(b)
+            linereturnformat = _get_linereturnformat(b, columns)
 
-                df = _ndarray2df(b, columns, linereturnformat)
+        with ds.open(urlname) as gfile:  # locally downloaded file
 
-                # Post-processing :
-                # ... Add local quanta attributes, based on the HITRAN group
-                df = parse_local_quanta(df, molecule)
+            dt = _create_dtype(columns, linereturnformat)
+            b = np.zeros(chunksize, dtype=dt)  # receives the HITRAN 160-character data.
 
-                # ... Add global quanta attributes, based on the HITRAN class
-                df = parse_global_quanta(df, molecule)
-
-                # Switch 'P', 'Q', 'R' to -1, 0, 1
-                if "branch" in df:
-                    replace_PQR_with_m101(df)
-
-                # df.to_hdf(
-                #     local_file, "df", format="table", append=True, complib="blosc", complevel=9
-                # )
-                f.put(
-                    key="df",
-                    value=df,
-                    append=True,
-                    format="table",
-                    data_columns=DATA_COLUMNS,
+            if verbose:
+                print(
+                    f"Download complete. Building {molecule} database to {local_file}"
                 )
 
-                wmin = np.min((wmin, df.wav.min()))
-                wmax = np.max((wmax, df.wav.max()))
-                Nlines += len(df)
-                pb.update(
-                    Nlines,
-                    message=f"Parsed {Nlines:,} / {Ntotal_lines_expected:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
-                )
+            with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
 
-                # Reinitialize for next read
-                b = np.zeros(
-                    chunksize, dtype=dt
-                )  # receives the HITRAN 160-character data.
+                for nbytes in iter(lambda: gfile.readinto(b), 0):
 
-            f.get_storer("df").attrs.metadata = {
-                "wavenumber_min": wmin,
-                "wavenumber_max": wmax,
-                "download_date": download_date,
-                "download_url": urlname,
-                "version": radis.__version__,
-            }
-            pb.done()
+                    if not b[-1]:
+                        # End of file flag within the chunk (but does not start
+                        # with End of file flag) so nbytes != 0
+                        b = get_last(b)
+
+                    df = _ndarray2df(b, columns, linereturnformat)
+
+                    # Post-processing :
+                    # ... Add local quanta attributes, based on the HITRAN group
+                    df = parse_local_quanta(df, molecule)
+
+                    # ... Add global quanta attributes, based on the HITRAN class
+                    df = parse_global_quanta(df, molecule)
+
+                    # Switch 'P', 'Q', 'R' to -1, 0, 1
+                    if "branch" in df:
+                        replace_PQR_with_m101(df)
+
+                    # df.to_hdf(
+                    #     local_file, "df", format="table", append=True, complib="blosc", complevel=9
+                    # )
+                    f.put(
+                        key="df",
+                        value=df,
+                        append=True,
+                        format="table",
+                        data_columns=DATA_COLUMNS,
+                    )
+
+                    wmin = np.min((wmin, df.wav.min()))
+                    wmax = np.max((wmax, df.wav.max()))
+                    Nlines += len(df)
+                    pb.update(
+                        Nlines,
+                        message=f"Parsed {Nlines:,} / {Ntotal_lines_expected:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+                    )
+
+                    # Reinitialize for next read
+                    b = np.zeros(
+                        chunksize, dtype=dt
+                    )  # receives the HITRAN 160-character data.
+
+        Ndownload += 1
+
+    f.get_storer("df").attrs.metadata = {
+        "wavenumber_min": wmin,
+        "wavenumber_max": wmax,
+        "download_date": download_date,
+        "download_url": "\n".join(urlnames),
+        "version": radis.__version__,
+    }
+    pb.done()
 
     # Done: add final checks
     # ... check on the created file that all lines are there :
