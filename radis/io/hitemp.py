@@ -174,21 +174,21 @@ def fetch_hitemp(
     local_databases = abspath(local_databases.replace("~", expanduser("~")))
 
     if molecule in ["H2O", "CO2"]:
-        if verbose:
-            print("Fetching filelist...")
-        url = BASE_URL_MULTI.format(molecule)
-        response = urllib.request.urlopen(url)
+
+        base_url = BASE_URL_MULTI.format(molecule)
+        response = urllib.request.urlopen(base_url)
         response_string = response.read().decode()
         inputfiles = re.findall('href="(\S+.zip)"', response_string)
-        base_url = BASE_URL_MULTI
 
-    try:
-        inputfiles = [HITEMP_SOURCE_FILES[molecule]]
-        base_url = BASE_URL
-    except KeyError as err:
-        raise KeyError(
-            f"Please choose one of HITEMP molecules : {list(HITEMP_SOURCE_FILES.keys())}. Got '{molecule}'"
-        ) from err
+    else:
+
+        try:
+            inputfiles = [HITEMP_SOURCE_FILES[molecule]]
+            base_url = BASE_URL
+        except KeyError as err:
+            raise KeyError(
+                f"Please choose one of HITEMP molecules : {list(HITEMP_SOURCE_FILES.keys())}. Got '{molecule}'"
+            ) from err
 
     urlnames = [base_url + f for f in inputfiles]
 
@@ -294,8 +294,6 @@ def fetch_hitemp(
 
     ###################################################
 
-    # from here we start downloading
-
     # Doesnt exist : download
     ds = DataSource(join(local_databases, "downloads"))
     Ndownload = 1
@@ -312,7 +310,7 @@ def fetch_hitemp(
 
         if verbose:
             print(
-                f"Downloading {inputf} ({Ndownload}/{Ntotal_downloads}) for {molecule}."
+                f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
             )
         download_date = date.today().strftime("%d %b %Y")
 
@@ -370,9 +368,9 @@ def fetch_hitemp(
                         format="table",
                         data_columns=DATA_COLUMNS,
                     )
-
                     wmin = np.min((wmin, df.wav.min()))
                     wmax = np.max((wmax, df.wav.max()))
+
                     Nlines += len(df)
                     pb.update(
                         Nlines,
@@ -386,14 +384,18 @@ def fetch_hitemp(
 
         Ndownload += 1
 
-    f.get_storer("df").attrs.metadata = {
-        "wavenumber_min": wmin,
-        "wavenumber_max": wmax,
-        "download_date": download_date,
-        "download_url": "\n".join(urlnames),
-        "version": radis.__version__,
-    }
     pb.done()
+
+    url_store = urlnames[0] if len(urlnames) == 1 else urlnames
+    with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
+
+        f.get_storer("df").attrs.metadata = {
+            "wavenumber_min": wmin,
+            "wavenumber_max": wmax,
+            "download_date": download_date,
+            "download_url": url_store,
+            "version": radis.__version__,
+        }
 
     # Done: add final checks
     # ... check on the created file that all lines are there :
@@ -417,7 +419,7 @@ def fetch_hitemp(
         wmin,
         wmax,
         download_date,
-        urlname,
+        url_store,
         verbose,
     )
 
