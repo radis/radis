@@ -79,7 +79,7 @@ from radis.misc.progress_bar import ProgressBar
 
 # from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
-from radis.params import USE_CYTHON
+from radis.params import USE_CYTHON, WARN_THRESHOLD
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
 # %% Broadening functions
@@ -886,7 +886,7 @@ class BroadenFactory(BaseFactory):
             min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
 
         self.min_width = min_width
-        WARN_THRESHOLD = 3
+
         ERROR_TRESHOLD = 1
 
         if self.params.wstep == "auto":
