@@ -12,7 +12,9 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 import os
 from datetime import date
+from io import BytesIO
 from os.path import abspath, exists, expanduser, join
+from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
@@ -77,6 +79,20 @@ list : only these column names will be searchable directly on disk to
 only load certain lines. See :py:func:`~radis.io.hdf5.hdf2df`
 """
 # TODO: WIP. Maybe move somewhere else to be also used by HITRAN queries
+
+
+# Add a zip opener to the datasource _file_openers
+def open_zip(zipname, mode="r", encoding=None, newline=None):
+    output = BytesIO()
+    with ZipFile(zipname, mode[0]) as myzip:
+        fnames = myzip.namelist()
+        for fname in fnames:
+            output.write(myzip.read(fname))
+    output.seek(0)
+    return output
+
+
+np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
 
 
 def fetch_hitemp(
