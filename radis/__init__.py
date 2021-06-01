@@ -98,7 +98,7 @@ the default one.
 
 
 # %% Global constants
-from .params import AUTO_UPDATE_SPEC, DEBUG_MODE, OLDEST_COMPATIBLE_VERSION, USE_CYTHON
+from .params import AUTO_UPDATE_SPEC, DEBUG_MODE, OLDEST_COMPATIBLE_VERSION, USE_CYTHON, WARN_THRESHOLD
 
 # %% Version
 

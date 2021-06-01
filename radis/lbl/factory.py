@@ -99,6 +99,7 @@ from radis.phys.units import convert_emi2nm, convert_rad2nm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
+from radis.params import WARN_THRESHOLD
 
 c_cm = c * 100
 
@@ -417,7 +418,7 @@ class SpectrumFactory(BandFactory):
             wstep = 0.01
 
         # calculated range is broader than output waverange to take into account off-range line broadening
-        wavenumber, wavenumber_calc = _generate_wavenumber_range(
+        wavenumber, _ = _generate_wavenumber_range(
             wavenum_min, wavenum_max, wstep, broadening_max_width
         )
         # wbroad_centered = _generate_broadening_range(wstep, broadening_max_width)
@@ -426,14 +427,15 @@ class SpectrumFactory(BandFactory):
         self._broadening_max_width = broadening_max_width
 
         # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
-        woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
+        #woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
         # self.wbroad_centered = wbroad_centered
         self.wavenumber = wavenumber
-        self.wavenumber_calc = wavenumber_calc
-        self.woutrange = woutrange
+        #self.wavenumber_calc = wavenumber_calc
+        #self.woutrange = woutrange
         print("e ->wavenum - ", self.wavenumber)
         print("e ->wavenum_calc - ", self.wavenumber_calc)
         print("e ->wbroad - ", self.wbroad_centered)
+        print("WARN THRESHOLD", WARN_THRESHOLD)
         # Init variables
         # --------------
 

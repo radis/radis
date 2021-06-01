@@ -69,7 +69,7 @@ from radis.phys.units import convert_emi2nm, convert_rad2nm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
-
+from radis.lbl import factory
 # %% BandFactory
 
 
@@ -550,6 +550,33 @@ class BandFactory(BroadenFactory):
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
+
+        #################################################
+        # Copied wstep dependent parameters here
+        # calculated range is broader than output waverange to take into account off-range line broadening
+        wavenumber, wavenumber_calc = factory._generate_wavenumber_range(
+            self.input.wavenum_min,
+            self.input.wavenum_max,
+            self.params.wstep,
+            self.params.broadening_max_width,
+        )
+        wbroad_centered = factory._generate_broadening_range(
+            self.params.wstep, self.params.broadening_max_width
+        )
+
+        # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
+        woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
+        self.wbroad_centered = wbroad_centered
+        self.wavenumber = wavenumber
+        self.wavenumber_calc = wavenumber_calc
+        self.woutrange = woutrange
+        self.params.wavenum_min_calc = wavenumber_calc[0]
+        self.params.wavenum_max_calc = wavenumber_calc[-1]
+        print("l ->wavenum - ", self.wavenumber)
+        print("l ->wavenum_calc - ", self.wavenumber_calc)
+        print("l ->wbroad - ", self.wbroad_centered)
+
+        #####################################################
 
         # ... find weak lines and calculate semi-continuum (optional)
         I_continuum = self.calculate_pseudo_continuum()
