@@ -412,29 +412,29 @@ class SpectrumFactory(BandFactory):
             medium,
         )
         # Checking if 'auto' mode used for wstep
-        self.wstep_auto = False
+        '''
         if wstep == "auto":
-            self.wstep_auto = True
-            wstep = 0.01
-
+            self._wstep = 0.01
+        else:
+            self._wstep = wstep'''
+        print("WSTEP initial - ", wstep)
         # calculated range is broader than output waverange to take into account off-range line broadening
-        wavenumber, _ = _generate_wavenumber_range(
+        '''wavenumber, _ = _generate_wavenumber_range(
             wavenum_min, wavenum_max, wstep, broadening_max_width
-        )
+        )'''
         # wbroad_centered = _generate_broadening_range(wstep, broadening_max_width)
         # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
-        self._wstep = wstep
         self._broadening_max_width = broadening_max_width
 
         # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
-        #woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
+        # woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
         # self.wbroad_centered = wbroad_centered
-        self.wavenumber = wavenumber
+        # self.wavenumber = wavenumber
         #self.wavenumber_calc = wavenumber_calc
         #self.woutrange = woutrange
-        print("e ->wavenum - ", self.wavenumber)
-        print("e ->wavenum_calc - ", self.wavenumber_calc)
-        print("e ->wbroad - ", self.wbroad_centered)
+        #print("e ->wavenum - ", self.wavenumber)
+        #print("e ->wavenum_calc - ", self.wavenumber_calc)
+        #print("e ->wbroad - ", self.wbroad_centered)
         print("WARN THRESHOLD", WARN_THRESHOLD)
         # Init variables
         # --------------
@@ -491,8 +491,8 @@ class SpectrumFactory(BandFactory):
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
-        self.params.wavenum_min_calc = wavenumber[0] - broadening_max_width / 2
-        self.params.wavenum_max_calc = wavenumber[-1] + broadening_max_width / 2
+        self.params.wavenum_min_calc = wavenum_min - broadening_max_width / 2
+        self.params.wavenum_max_calc = wavenum_max + broadening_max_width / 2
 
         # if optimization is ``'simple'`` or ``'min-RMS'``, or None :
         # Adjust default values of broadening method :
@@ -697,6 +697,21 @@ class SpectrumFactory(BandFactory):
         #################################################
         # Copied wstep dependent parameters here
         # calculated range is broader than output waverange to take into account off-range line broadening
+        
+        # Round off function
+        def round_off(n):  
+            # Getting rounded off value (atleast order 3)
+            for i in range(0,10):
+                val = round(n, 3 + i)
+                if val == 0:
+                    continue
+                return val
+            return 0
+
+        # Setting wstep to optimal value and rounding it to a degree 3
+        if self.params.wstep == "auto":
+            self.params.wstep = round_off(self.min_width / WARN_THRESHOLD)
+
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
             self.input.wavenum_min,
             self.input.wavenum_max,
@@ -715,9 +730,10 @@ class SpectrumFactory(BandFactory):
         self.woutrange = woutrange
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
-        print("l ->wavenum - ", self.wavenumber)
-        print("l ->wavenum_calc - ", self.wavenumber_calc)
-        print("l ->wbroad - ", self.wbroad_centered)
+        print("wstep Final- ",self.params.wstep)
+        # print("l ->wavenum - ", self.wavenumber)
+        # print("l ->wavenum_calc - ", self.wavenumber_calc)
+        # print("l ->wbroad - ", self.wbroad_centered)
 
         #####################################################
 
@@ -970,6 +986,7 @@ class SpectrumFactory(BandFactory):
 
         t0 = time()
 
+        
         # generate the v_arr
         v_arr = np.arange(
             self.input.wavenum_min,
@@ -1312,6 +1329,20 @@ class SpectrumFactory(BandFactory):
         #################################################
         # Copied wstep dependent parameters here
         # calculated range is broader than output waverange to take into account off-range line broadening
+        # Round off function
+        def round_off(n):  
+            # Getting rounded off value (atleast order 3)
+            for i in range(0,10):
+                val = round(n, 3 + i)
+                if val == 0:
+                    continue
+                return val
+            return 0
+
+        # Setting wstep to optimal value and rounding it to a degree 3
+        if self.params.wstep == "auto":
+            self.params.wstep = round_off(self.min_width / WARN_THRESHOLD)
+
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
             self.input.wavenum_min,
             self.input.wavenum_max,
@@ -1330,9 +1361,11 @@ class SpectrumFactory(BandFactory):
         self.woutrange = woutrange
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
-        print("l ->wavenum - ", self.wavenumber)
-        print("l ->wavenum_calc - ", self.wavenumber_calc)
-        print("l ->wbroad - ", self.wbroad_centered)
+        print("wstep Final- ",self.params.wstep)
+        #print("l ->wavenum - ", self.wavenumber)
+        #print("l ->wavenum_calc - ", self.wavenumber_calc)
+        #print("l ->wbroad - ", self.wbroad_centered)
+
 
         #####################################################
 

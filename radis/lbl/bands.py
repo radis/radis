@@ -70,6 +70,7 @@ from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
 from radis.lbl import factory
+from radis.params import WARN_THRESHOLD
 # %% BandFactory
 
 
@@ -554,6 +555,20 @@ class BandFactory(BroadenFactory):
         #################################################
         # Copied wstep dependent parameters here
         # calculated range is broader than output waverange to take into account off-range line broadening
+        # Round off function
+        def round_off(n):  
+            # Getting rounded off value (atleast order 3)
+            for i in range(0,10):
+                val = round(n, 3 + i)
+                if val == 0:
+                    continue
+                return val
+            return 0
+
+        # Setting wstep to optimal value and rounding it to a degree 3
+        if self.params.wstep == "auto":
+            self.params.wstep = round_off(self.min_width / WARN_THRESHOLD)
+
         wavenumber, wavenumber_calc = factory._generate_wavenumber_range(
             self.input.wavenum_min,
             self.input.wavenum_max,
@@ -572,9 +587,10 @@ class BandFactory(BroadenFactory):
         self.woutrange = woutrange
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
-        print("l ->wavenum - ", self.wavenumber)
-        print("l ->wavenum_calc - ", self.wavenumber_calc)
-        print("l ->wbroad - ", self.wbroad_centered)
+        print("wstep Final- ",self.params.wstep)
+        #print("l ->wavenum - ", self.wavenumber)
+        #print("l ->wavenum_calc - ", self.wavenumber_calc)
+        #print("l ->wbroad - ", self.wbroad_centered)
 
         #####################################################
 
