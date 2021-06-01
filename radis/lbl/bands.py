@@ -556,41 +556,7 @@ class BandFactory(BroadenFactory):
         # Copied wstep dependent parameters here
         # calculated range is broader than output waverange to take into account off-range line broadening
         # Round off function
-        def round_off(n):  
-            # Getting rounded off value (atleast order 3)
-            for i in range(0,10):
-                val = round(n, 3 + i)
-                if val == 0:
-                    continue
-                return val
-            return 0
-
-        # Setting wstep to optimal value and rounding it to a degree 3
-        if self.params.wstep == "auto":
-            self.params.wstep = round_off(self.min_width / WARN_THRESHOLD)
-
-        wavenumber, wavenumber_calc = factory._generate_wavenumber_range(
-            self.input.wavenum_min,
-            self.input.wavenum_max,
-            self.params.wstep,
-            self.params.broadening_max_width,
-        )
-        wbroad_centered = factory._generate_broadening_range(
-            self.params.wstep, self.params.broadening_max_width
-        )
-
-        # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
-        woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
-        self.wbroad_centered = wbroad_centered
-        self.wavenumber = wavenumber
-        self.wavenumber_calc = wavenumber_calc
-        self.woutrange = woutrange
-        self.params.wavenum_min_calc = wavenumber_calc[0]
-        self.params.wavenum_max_calc = wavenumber_calc[-1]
-        print("wstep Final- ",self.params.wstep)
-        #print("l ->wavenum - ", self.wavenumber)
-        #print("l ->wavenum_calc - ", self.wavenumber_calc)
-        #print("l ->wbroad - ", self.wbroad_centered)
+        self._generate_wavenumber_entities()
 
         #####################################################
 

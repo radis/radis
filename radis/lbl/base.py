@@ -3033,6 +3033,7 @@ class BaseFactory(DatabankLoader):
         # ... (would have no effect as the waverange is calculated on SpectrumFactory
         # ... initialization)
         print("wstep - ",self.params.wstep)
+        # TODO: Add other tests for wstep to include "auto" method
         #assert self._wstep == self.params.wstep
         assert self._broadening_max_width == self.params.broadening_max_width
 
