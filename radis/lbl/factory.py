@@ -1449,8 +1449,6 @@ class SpectrumFactory(BandFactory):
         self.wavenumber = wavenumber
         self.wavenumber_calc = wavenumber_calc
         self.woutrange = woutrange
-        self.params.wavenum_min_calc = wavenumber_calc[0]
-        self.params.wavenum_max_calc = wavenumber_calc[-1]
 
         return
 
