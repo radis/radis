@@ -3459,7 +3459,13 @@ class Spectrum(object):
         return I.min()
 
     def normalize(
-        self, normalize_how="max", wrange=(), wunit=None, inplace=False, force=False, verbose=True,
+        self,
+        normalize_how="max",
+        wrange=(),
+        wunit=None,
+        inplace=False,
+        force=False,
+        verbose=True,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 
