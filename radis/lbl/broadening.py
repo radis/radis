@@ -889,7 +889,7 @@ class BroadenFactory(BaseFactory):
 
         ERROR_TRESHOLD = 1
 
-        if self.params.wstep == "auto":
+        if self.wstep == "auto":
             pass
         elif wstep > min_width / ERROR_TRESHOLD:
             self.warn(
@@ -914,6 +914,8 @@ class BroadenFactory(BaseFactory):
             )
         else:
             pass
+
+        return
 
     def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
         """Update dataframe with Voigt HWHM.

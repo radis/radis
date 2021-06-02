@@ -3027,9 +3027,9 @@ class BaseFactory(DatabankLoader):
         # ... (would have no effect as the waverange is calculated on SpectrumFactory
         # ... initialization)
 
-        # TODO: Add other tests for wstep to include "auto" method
-        if self.params.wstep != "auto":
-            assert self._wstep == self.params.wstep
+        # Checks there if there is change in wstep value if initial wstep != "auto"
+        if self.wstep != "auto":
+            assert self.wstep == self.params.wstep
         assert self._broadening_max_width == self.params.broadening_max_width
 
     def _get_parsum(self, molecule, iso, state):

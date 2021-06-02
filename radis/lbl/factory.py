@@ -416,8 +416,7 @@ class SpectrumFactory(BandFactory):
         self._broadening_max_width = broadening_max_width
 
         # Storing inital value of wstep if wstep != "auto"
-        if self.params.wstep != "auto":
-            self._wstep = wstep
+        self.wstep = wstep
 
         # Init variables
         # --------------
@@ -932,8 +931,8 @@ class SpectrumFactory(BandFactory):
         # generate the v_arr
         v_arr = np.arange(
             self.input.wavenum_min,
-            self.input.wavenum_max + self._wstep,
-            self._wstep,
+            self.input.wavenum_max + self.wstep,
+            self.wstep,
         )
 
         # load the data
@@ -1431,7 +1430,7 @@ class SpectrumFactory(BandFactory):
             return 0
 
         # Setting wstep to optimal value and rounding it to a degree 3
-        if self.params.wstep == "auto":
+        if self.wstep == "auto":
             self.params.wstep = round_off(self.min_width / WARN_THRESHOLD)
 
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
@@ -1452,6 +1451,8 @@ class SpectrumFactory(BandFactory):
         self.woutrange = woutrange
         self.params.wavenum_min_calc = wavenumber_calc[0]
         self.params.wavenum_max_calc = wavenumber_calc[-1]
+
+        return
 
     def _get_log_2gs(self):
         """Returns log_2gs if it already exists in the dataframe, otherwise
