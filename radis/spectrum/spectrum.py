@@ -2228,15 +2228,6 @@ class Spectrum(object):
             else:
                 raise ValueError("Unknown normalization type: {0}".format(norm_by))
 
-        # Sort if needed (sorting can be broken after applying corrected slits
-        # on different slices)
-        # | @EP: deactivated for the moment. It's dangerous to reorder because
-        # | it creates features that could be confused with spectral features.
-        #        if not is_sorted(w_conv) or not is_sorted_backward(w_conv):
-        #            b = np.argsort(w_conv)
-        #            for q in list(self._q_conv.keys()):
-        #                self._q_conv[q] = self._q_conv[q][b]
-
         # Store slit in Spectrum, in the Spectrum unit
         if store:
             self._slit["wavespace"] = wslit0  # in 'waveunit'
@@ -3969,7 +3960,7 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
         w_list_slices[::-1]
     w_slices = np.array(w_list_slices)
 
-    # Extend the slice accordingly to the slit function
+    # Extend the slices accordingly to the slit function
     # to remove boundary effect caused by the convolution
     range_nm = abs(w_slit_nm[-1] - w_slit_nm[0]) / 2
     slit_disp_0 = slit_dispersion(w_slit_nm[len(w_slit_nm) // 2])
@@ -3983,6 +3974,8 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
     for w_min, w_max in zip(w_mins, w_maxs):
         slice_w = np.logical_and(w_min < w_spec_nm, w_spec_nm < w_max)
         slices.append(slice_w)
+    if w_spec_nm[-1] < w_spec_nm[0]:
+        slices = slices[::-1]
     return slices
 
 
