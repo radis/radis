@@ -923,7 +923,7 @@ def offset_dilate_slit_function(
         w_slit_nm - wslit0
     )
 
-    if verbose:
+    if verbose > 2:
         print(
             "{0:.2f} to {1:.2f}nm: slit function FWHM changed from {2:.2f} to {3:.2f}".format(
                 wslit0,
