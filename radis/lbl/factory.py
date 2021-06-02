@@ -93,7 +93,7 @@ from radis.lbl.base import get_waverange
 from radis.misc.basics import flatten, is_float, list_if_float
 from radis.misc.printer import printg
 from radis.misc.utils import Default
-from radis.params import WARN_THRESHOLD
+from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
 from radis.phys.constants import k_b
 from radis.phys.convert import conv2
 from radis.phys.units import convert_emi2nm, convert_rad2nm
@@ -677,7 +677,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # ... generates all wstep related entities
-        self._generate_wavenumber_entities()
+        self._generate_wavenumber_arrays()
 
         # ... find weak lines and calculate semi-continuum (optional)
         I_continuum = self.calculate_pseudo_continuum()
@@ -931,8 +931,8 @@ class SpectrumFactory(BandFactory):
         # generate the v_arr
         v_arr = np.arange(
             self.input.wavenum_min,
-            self.input.wavenum_max + self.wstep,
-            self.wstep,
+            self.input.wavenum_max + self.params.wstep,
+            self.params.wstep,
         )
 
         # load the data
@@ -1268,7 +1268,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # ... generates all wstep related entities
-        self._generate_wavenumber_entities()
+        self._generate_wavenumber_arrays()
 
         # ... find weak lines and calculate semi-continuum (optional)
         k_continuum, j_continuum = self.calculate_pseudo_continuum(noneq=True)
@@ -1419,7 +1419,7 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def _generate_wavenumber_entities(self):
+    def _generate_wavenumber_arrays(self):
         def round_off(n):
             # Getting rounded off value (atleast order 3)
             for i in range(0, 10):
@@ -1431,7 +1431,9 @@ class SpectrumFactory(BandFactory):
 
         # Setting wstep to optimal value and rounding it to a degree 3
         if self.wstep == "auto":
-            self.params.wstep = round_off(self.min_width / WARN_THRESHOLD)
+            self.params.wstep = round_off(
+                self.min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
+            )
 
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
             self.input.wavenum_min,

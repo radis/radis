@@ -58,8 +58,18 @@ See Also
 :py:func:`~radis.misc.arrays.add_at`
 """
 
-WARN_THRESHOLD = 3
+GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD = 3
 """float: to determine the optimal value
+of wstep using minimum FWHM value of spectrum.
+Makes sure there are enough gridpoints per line.
+
+See Also
+--------
+:py:func:`~radis.lbl.broadening._check_accuarcy`
+"""
+
+GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD = 1
+"""float: to determine the minimum feasible value
 of wstep using minimum FWHM value of spectrum.
 Makes sure there are enough gridpoints per line.
 

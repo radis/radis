@@ -79,7 +79,11 @@ from radis.misc.progress_bar import ProgressBar
 
 # from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
-from radis.params import USE_CYTHON, WARN_THRESHOLD
+from radis.params import (
+    GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD,
+    GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD,
+    USE_CYTHON,
+)
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
 # %% Broadening functions
@@ -887,26 +891,24 @@ class BroadenFactory(BaseFactory):
 
         self.min_width = min_width
 
-        ERROR_TRESHOLD = 1
-
         if self.wstep == "auto":
             pass
-        elif wstep > min_width / ERROR_TRESHOLD:
+        elif wstep > min_width / GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
-                + f"wstep to (at least) below {min_width/ERROR_TRESHOLD:.2g} cm⁻¹ "
-                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                + f"wstep to (at least) below {min_width/GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD:.2g} cm⁻¹ "
+                + f"or (suggested) {min_width/GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:.2g} cm⁻¹. "
                 + "You can use wstep='auto' to get the optimal spectral grid value. "
                 + "You can also ignore by setting `warnings={'AccuracyError':'ignore'}` "
                 + "(if you know what you're doing!)",
                 "AccuracyError",
             )
-        elif wstep > min_width / WARN_THRESHOLD:
+        elif wstep > min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
-                + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                + f"wstep to below {min_width/GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:.2g} cm⁻¹. "
                 + "You can use wstep='auto' to get the optimal spectral grid value. "
                 + "You can also ignore by setting `warnings={'AccuracyWarning':'ignore'}` "
                 + "(if you know what you're doing!)",
