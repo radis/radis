@@ -415,6 +415,10 @@ class SpectrumFactory(BandFactory):
         # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
         self._broadening_max_width = broadening_max_width
 
+        # Storing inital value of wstep if wstep != "auto"
+        if self.params.wstep != "auto":
+            self._wstep = wstep
+
         # Init variables
         # --------------
 

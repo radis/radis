@@ -3028,7 +3028,8 @@ class BaseFactory(DatabankLoader):
         # ... initialization)
 
         # TODO: Add other tests for wstep to include "auto" method
-        # assert self._wstep == self.params.wstep
+        if self.params.wstep != "auto":
+            assert self._wstep == self.params.wstep
         assert self._broadening_max_width == self.params.broadening_max_width
 
     def _get_parsum(self, molecule, iso, state):
