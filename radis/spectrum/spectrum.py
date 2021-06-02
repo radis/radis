@@ -3468,7 +3468,7 @@ class Spectrum(object):
         return I.min()
 
     def normalize(
-        self, normalize_how="max", wrange=(), wunit=None, inplace=False, force=False
+        self, normalize_how="max", wrange=(), wunit=None, inplace=False, force=False, verbose=True,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 
@@ -3551,7 +3551,8 @@ class Spectrum(object):
                 )
             # Ensure we use the same unit system!
             out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
-
+        if verbose:
+            print("Normalization factor : {0}".format(norm))
         return out
 
     # %% Define Spectrum Algebra
