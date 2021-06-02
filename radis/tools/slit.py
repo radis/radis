@@ -492,9 +492,7 @@ def convolve_with_slit(
     I,
     w_slit,
     I_slit,
-    norm_by="area",
     mode="valid",
-    slit_dispersion=None,
     k=1,
     bplot=False,
     verbose=True,
@@ -527,17 +525,6 @@ def convolve_with_slit(
 
             Both wavespaces have to be the same!
 
-    norm_by: ``'area'``, ``'max'``, or ``None``
-        how to normalize. ``'area'`` conserves energy. With ``'max'`` the slit is normalized
-        at peak so that the maximum is one.
-
-        .. note::
-
-            ``'max'`` changes the unit of the spectral array, e.g. from
-            ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr')``
-
-        ``None`` doesnt normalize. Default ``'area'``
-
     mode: ``'valid'``, ``'same'``
         ``'same'`` returns output of same length as initial spectra,
         but boundary effects are still visible. ``'valid'`` returns
@@ -547,47 +534,6 @@ def convolve_with_slit(
 
     Other Parameters
     ----------------
-
-    slit_dispersion: func of (lambda), or ``None``
-        spectrometer reciprocal function : dλ/dx(λ)
-        If not None, then the slit_dispersion function is used to correct the
-        slit function for the whole range. Can be important if slit function
-        was measured far from the measured spectrum  (e.g: a slit function
-        measured at 632.8 nm will look broader at 350 nm because the spectrometer
-        dispersion is higher at 350 nm. Therefore it should be corrected)
-        Default ``None``
-
-        .. warning::
-            slit dispersion is not unit aware: if your spectrum is stored
-            in cm-1 the slit function is converted in cm-1 but the slit dispersion
-            is not changed, so that may result in errors
-            # TODO. If slit dispersion first force slit function to be given in nm ?
-            # Else it's not relevant
-
-        a Python implementation:
-
-        >>> def f(lbd):
-        >>>    return  w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w*1e-9)*cos(Φ))^2-1))
-
-        Theoretical / References:
-
-        >>> dλ/dx ~ d/mf    # at first order
-        >>> dλ/dx = w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w)*cos(Φ))^2-1))  # cf
-
-        with:
-
-        - Φ: spectrometer angle (°)
-        - f: focal length (mm)
-        - m: order of dispersion
-        - d: grooves spacing (mm)   = 1/gr  with gr in (gr/mm)
-
-        See Laux 1999 "Experimental study and modeling of infrared air plasma
-        radiation" for more information
-
-        slit_dispersion is assumed to be constant on the whole measured range,
-        and corrected for the center wavelength. If there is an error >1% on
-        the whole range a warning is raised.
-
     k: int
         order of spline interpolation. 3: cubic, 1: linear. Default 1.
 
@@ -616,13 +562,11 @@ def convolve_with_slit(
     Notes
     -----
 
-    Implementation is done in 7 steps:
+    Implementation is done in 5 steps:
 
     - Check input
-    - Correct for Slit dispersion
     - Interpolate the slit function on the spectrum grid, resample it if not
       evenly spaced
-    - Normalize
     - Check slit aspect, plot slit if asked for
     - Convolve!
     - Remove boundary effects
@@ -649,15 +593,7 @@ def convolve_with_slit(
             + " ({0:.1f}nm). No valid range.".format(abs(w[-1] - w[0]))
         )
 
-    # 2. Correct for Slit dispersion
-    # --------------
-
-    if slit_dispersion is not None:
-        w_slit, I_slit = offset_dilate_slit_function(
-            w_slit, I_slit, w, slit_dispersion, threshold=0.01, verbose=verbose
-        )
-
-    # 3. Interpolate the slit function on the spectrum grid, resample it if not
+    # 2. Interpolate the slit function on the spectrum grid, resample it if not
     #    evenly spaced
     # --------------
 
@@ -701,14 +637,7 @@ def convolve_with_slit(
         w_slit_interp = w_slit
         I_slit_interp = I_slit
 
-    # 4. Normalize
-    # --------------
-
-    w_slit_interp, I_slit_interp = normalize_slit(
-        w_slit_interp, I_slit_interp, norm_by=norm_by
-    )
-
-    # 5. Check aspect
+    # 3. Check aspect
     # -------------
 
     # Check no nan
@@ -724,14 +653,14 @@ def convolve_with_slit(
     if bplot:
         plot_slit(w_slit, I_slit, waveunit="")
 
-    # 6. Convolve!
+    # 4. Convolve!
     # --------------
 
     # We actually do not use mode valid in np.convolve,
     # instead we use mode=same and remove the same boundaries from I and W in remove_boundary()
     I_conv = oaconvolve(I, I_slit_interp, mode="same") * wstep
 
-    # 7. Remove boundary effects
+    # 5. Remove boundary effects
     # --------------
 
     w_conv, I_conv = remove_boundary(

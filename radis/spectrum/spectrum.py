@@ -2188,7 +2188,6 @@ class Spectrum(object):
                     I_window,
                     wslit,
                     Islit,
-                    norm_by=None,  # already norm.
                     mode=mode,
                     waveunit=waveunit,
                     verbose=verbose,
