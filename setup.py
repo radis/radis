@@ -292,6 +292,9 @@ def run_setup(with_binary):
 try:
     run_setup(with_binary=True)
 except BuildFailed:
+    import traceback
+
+    traceback.print_exc()
     show_message(
         "WARNING: RADIS C-extension could not be compiled, speedups",
         " are not enabled.",
