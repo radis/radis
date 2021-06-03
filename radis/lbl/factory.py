@@ -169,6 +169,9 @@ class SpectrumFactory(BandFactory):
         Default ``10`` cm-1.
     wstep: float (cm-1)
         Spacing of calculated spectrum. Default ``0.01`` cm-1
+
+        NOTE: Warning / New:  wstep = 'auto' is optimized for performances while ensuring accuracy,
+        but is still experimental in 0.9.30. Feedback welcome!
     cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate databases such as

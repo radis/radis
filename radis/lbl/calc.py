@@ -67,6 +67,7 @@ def calc_spectrum(
 
     Parameters
     ----------
+
     wavenum_min, wavenum_max: float [:math:`cm^{-1}`] or `~astropy.units.quantity.Quantity`
         wavenumber range to be processed in :math:`cm^{-1}`. Use arbitrary units::
 
@@ -147,11 +148,15 @@ def calc_spectrum(
 
     Other Parameters
     ----------------
+
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
         Does not change anything when giving inputs in wavenumber. Default ``'air'``​.
     wstep: float (:math:`cm^{-1}`)
         Spacing of calculated spectrum. Default ``0.01 cm-1``.
+
+        NOTE: Warning / New:  wstep = 'auto' is optimized for performances while ensuring accuracy,
+        but is still experimental in 0.9.30. Feedback welcome!
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
         a huge performance drop (scales as :math:`~broadening_max_width^2` without LDM)
@@ -213,6 +218,7 @@ def calc_spectrum(
 
     Returns
     -------
+
     s: :class:`~radis.spectrum.spectrum.Spectrum`
         Output spectrum:
         - Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a
@@ -223,6 +229,7 @@ def calc_spectrum(
 
     References
     ----------
+
     .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
     ​.. [2] RADIS GPU support: `GPU Calculations on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__

@@ -44,6 +44,7 @@ from the latest HITRAN database, and plot the transmittance: ::
         		molecule='CO',
         		mole_fraction=0.5,
         		isotope=1,
+            wstep=0.01,
             databank='hitran'   # or 'hitemp'
     		  	)
 	s.plot('transmittance_noslit')
@@ -62,7 +63,8 @@ transmittance: ::
         	Tgas=700,
         	path_length=0.1,
         	mole_fraction={'CO2':0.5, 'CO':0.5},
-        	isotope=1,
+        	wstep=0.01,
+          isotope=1,
     		)
 	s.plot('transmittance_noslit')
 
@@ -81,6 +83,7 @@ following commands give the same result: ::
             molecule=["CO2", "CO"],
             mole_fraction=1,
             isotope={"CO2": "1,2", "CO": "1,2,3"},
+            wstep=0.01,
             verbose=verbose,
       )
 
@@ -132,6 +135,8 @@ Be careful to be consistent and not to give partial or contradictory inputs. ::
             verbose=verbose,
         )
 
+**NOTE:** Warning / New:  wstep = 'auto' is optimized for performances while ensuring accuracy,
+but is still experimental in 0.9.30. Feedback welcome!
 
 
 Flow Chart
@@ -336,6 +341,7 @@ and :py:mod:`~astropy.units` ::
                          path_length=0.1 * u.m,
                          pressure=20 * u.mbar,
                          molecule='CO2',
+                         wstep = 0.01,
                          isotope='1,2',
                          cutoff=1e-25,              # cm/molecule
                          broadening_max_width=10,   # cm-1
@@ -345,6 +351,8 @@ and :py:mod:`~astropy.units` ::
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
 
+**NOTE:** Warning / New:  wstep = 'auto' is optimized for performances while ensuring accuracy,
+but is still experimental in 0.9.30. Feedback welcome!
 .. _label_lbl_config_file:
 
 Configuration file
