@@ -1420,6 +1420,10 @@ class SpectrumFactory(BandFactory):
         return s
 
     def _generate_wavenumber_arrays(self):
+
+        # calculates minimum FWHM of lines
+        self._calc_min_width(self.df1)
+
         def round_off(n):
             # Getting rounded off value (atleast order 3)
             for i in range(0, 10):
@@ -1451,6 +1455,9 @@ class SpectrumFactory(BandFactory):
         self.wavenumber = wavenumber
         self.wavenumber_calc = wavenumber_calc
         self.woutrange = woutrange
+
+        # AccuracyWarning. Check there are enough gridpoints per line.
+        self._check_accuracy(self.params.wstep)
 
         return
 
