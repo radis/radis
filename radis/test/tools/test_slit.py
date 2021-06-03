@@ -39,7 +39,6 @@ from radis.spectrum.spectrum import _cut_slices
 from radis.test.utils import setup_test_line_databases
 from radis.tools.database import load_spec
 from radis.tools.slit import (
-    convolve_with_slit,
     get_effective_FWHM,
     get_FWHM,
     import_experimental_slit,
@@ -585,6 +584,7 @@ def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     is  triggered and succeeds if the spectrum is sliced into 8 segments.
     """
     from radis.misc.warning import SlitDispersionWarning
+
     _clean(plot, close_plots)
 
     threshold = 0.01
@@ -595,11 +595,21 @@ def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
 
     for sl in slices:
         try:
-            offset_dilate_slit_function(w_slit, np.ones_like(w_slit), w[sl], linear_dispersion, threshold, True)
+            offset_dilate_slit_function(
+                w_slit, np.ones_like(w_slit), w[sl], linear_dispersion, threshold, True
+            )
         except SlitDispersionWarning:
             return False
         if plot:
-            plt.plot(w, sl, label="Slice {0:.0f}-{1:.0f} nm , slit dispersion ratio (boundaries not removed): {2:.3f}".format(w[sl][0], w[sl][-1], linear_dispersion(w[sl][-1])/linear_dispersion(w[sl][0])))
+            plt.plot(
+                w,
+                sl,
+                label="Slice {0:.2f}-{1:.2f} nm , slit dispersion ratio: {2:.3f}".format(
+                    w[sl][0],
+                    w[sl][-1],
+                    linear_dispersion(w[sl][-1]) / linear_dispersion(w[sl][0]),
+                ),
+            )
     if plot:
         plt.title("Cut slices, threshold (boundaries removed) = {0}".format(threshold))
         plt.xlabel("Wavelength (nm)")
@@ -614,8 +624,9 @@ def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
 
 
 @pytest.mark.fast
-def test_auto_correct_dispersion(verbose=True, plot=True, close_plots=True, *args, **kwargs
-                                 ):
+def test_auto_correct_dispersion(
+    verbose=True, plot=True, close_plots=True, *args, **kwargs
+):
     """A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function
 
@@ -626,13 +637,13 @@ def test_auto_correct_dispersion(verbose=True, plot=True, close_plots=True, *arg
 
     _clean(plot, close_plots)
 
-    w_slit_632, I_slit_632 = import_experimental_slit(getTestFile("slitfunction.txt"))
     slit_measured_632nm = getTestFile("slitfunction.txt")
 
     w, I = np.loadtxt(getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt")).T
     s = calculated_spectrum(
         w, I, conditions={"Tvib": 3000, "Trot": 1200}, Iunit="mW/cm2/sr/µm"
     )
+    s2 = s.copy()
 
     def slit_dispersion(w):
         return linear_dispersion(w, f=750, phi=-6, m=1, gr=2400)
@@ -640,6 +651,9 @@ def test_auto_correct_dispersion(verbose=True, plot=True, close_plots=True, *arg
     s.apply_slit(slit_measured_632nm)
 
     if plot:
+        w_slit_632, I_slit_632 = import_experimental_slit(
+            getTestFile("slitfunction.txt")
+        )
         w_full_range = np.linspace(w.min(), w_slit_632.max())
         plt.figure(
             "Spectrometer Dispersion (f={0}mm, phi={1}°, gr={2}".format(750, -0.6, 2400)
@@ -651,14 +665,16 @@ def test_auto_correct_dispersion(verbose=True, plot=True, close_plots=True, *arg
         # Compare 2 spectra
         s.plot(nfig="Linear dispersion effect", color="r", label="not corrected")
 
-    # s.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
+    s2.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
 
-    # if plot:
-    #     s.plot(nfig="same", color="k", label="corrected")
-    #     plt.legend()
-    #     # Plot different slits:
-    #     s.plot_slit()
-
+    if plot:
+        s2.plot(nfig="same", color="k", label="corrected")
+        plt.legend()
+        # Plot different slits:
+        s2.plot_slit()
+    assert np.isclose(
+        s.take("radiance").max() / (s2.take("radiance").max()), 1.183, atol=0.001
+    )
     return True
 
 
