@@ -607,7 +607,7 @@ def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
         plt.legend(loc="best", prop={"size": 15})
 
     assert len(slices) == 8
-    slices = _cut_slices(w[::-1], linear_dispersion, threshold)
+    slices = _cut_slices(w[::-1], w_slit, linear_dispersion, threshold)
     assert len(slices) == 8
 
     return True
