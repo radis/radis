@@ -211,8 +211,8 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
 
-    assert np.allclose(w[::100], w_ref, atol=1e-6)
-    assert np.allclose(I[::100], I_ref, atol=1e-6)
+    assert np.allclose(w[::-1][::100], w_ref, atol=1e-6)
+    assert np.allclose(I[::-1][::100], I_ref, atol=1e-6)
 
     return True
 
@@ -343,7 +343,7 @@ def test_calc_spectrum_overpopulations(
         plt.legend()
         s.plot_populations()
 
-    assert np.allclose(I[::100], I_ref, atol=1e-6)
+    assert np.allclose(I[::-1][::100], I_ref, atol=1e-6)
 
     if verbose:
         printm("Test overpopulations: OK")

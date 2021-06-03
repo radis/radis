@@ -62,7 +62,7 @@ def test_load_spectrum(plot=False, verbose=True, warnings=True, *args, **kwargs)
         s1 = sf.eq_spectrum(Tgas=300)
         s1.apply_slit(2, verbose=False)
         s1.update()
-        s2 = load_spec(s1.store(temp_file_name, compress=True))
+        s2 = load_spec(s1.store(temp_file_name, compress=False))
         s2.update()
         if plot:
             fig = plt.figure(fig_prefix + "Calculated vs stored+retrieved")
