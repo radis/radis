@@ -555,6 +555,87 @@ def test_temperature_units_conversion(
     assert np.isclose(s.conditions["pressure_mbar"], 20)
 
 
+@pytest.mark.fast
+def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
+    """Test to check that on computing several spectrum from the same Spectrum
+    Factory object we get the different wstep for each case using auto method"""
+
+    from radis.misc.basics import round_off
+    from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
+
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
+
+    sf = SpectrumFactory(
+        wavelength_min=4400,
+        wavelength_max=4800,
+        mole_fraction=0.01,
+        cutoff=1e-25,
+        wstep="auto",
+        isotope=[1],
+        db_use_cached=True,
+        self_absorption=True,
+        verbose=verbose,
+    )
+
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.warnings["NegativeEnergiesWarning"] = "ignore"
+    sf.warnings["HighTemperatureWarning"] = "ignore"
+
+    sf.load_databank("HITRAN-CO-TEST")
+
+    s1 = sf.eq_spectrum(300, pressure=1)
+    assert sf.wstep == "auto"
+
+    wstep_calculated = s1.get_conditions()["wstep"]
+
+    # Checking computed wstep and expected wstep are equal
+    assert wstep_calculated == round_off(
+        sf.min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
+    )
+
+    s2 = sf.eq_spectrum(300, pressure=0.2)
+    assert sf.wstep == "auto"
+
+    s3 = sf.eq_spectrum(300, pressure=0.001)
+    assert sf.wstep == "auto"
+
+    assert (
+        s1.get_conditions()["wstep"]
+        != s2.get_conditions()["wstep"]
+        != s3.get_conditions()["wstep"]
+    )
+
+
+@pytest.mark.fast
+def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs):
+    """Checks all methods to calculate Spectrum works with "auto" mode"""
+    Tgas = 1000
+
+    sf = SpectrumFactory(
+        wavelength_min=4160,
+        wavelength_max=4220,
+        mole_fraction=1,
+        path_length=0.3,
+        cutoff=1e-23,
+        molecule="CO2",
+        isotope=1,
+        wstep="auto",
+        optimization=None,
+        verbose=verbose,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.warnings["NegativeEnergiesWarning"] = "ignore"
+    sf.warnings["HighTemperatureWarning"] = "ignore"
+    sf.fetch_databank("hitran")
+
+    sf.eq_spectrum(Tgas)
+    sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas)
+    sf.eq_bands(Tgas)
+    sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
+
+    assert sf.wstep == "auto"
+
+
 # --------------------------
 if __name__ == "__main__":
 

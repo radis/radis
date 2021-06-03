@@ -90,7 +90,7 @@ from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
-from radis.misc.basics import flatten, is_float, list_if_float
+from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
 from radis.misc.utils import Default
 from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
@@ -1424,20 +1424,12 @@ class SpectrumFactory(BandFactory):
         # calculates minimum FWHM of lines
         self._calc_min_width(self.df1)
 
-        def round_off(n):
-            # Getting rounded off value (atleast order 3)
-            for i in range(0, 10):
-                val = round(n, 3 + i)
-                if val == 0:
-                    continue
-                return val
-            return 0
-
         # Setting wstep to optimal value and rounding it to a degree 3
         if self.wstep == "auto":
             self.params.wstep = round_off(
                 self.min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
             )
+            self.warnings["AccuracyWarning"] = "ignore"
 
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
             self.input.wavenum_min,

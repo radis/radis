@@ -230,6 +230,9 @@ class BandFactory(BroadenFactory):
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
 
+        # ... generates all wstep related entities
+        self._generate_wavenumber_arrays()
+
         # ... find weak lines and calculate semi-continuum (optional)
         I_continuum = self.calculate_pseudo_continuum()
         if I_continuum:
