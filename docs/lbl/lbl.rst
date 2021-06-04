@@ -135,9 +135,6 @@ Be careful to be consistent and not to give partial or contradictory inputs. ::
             verbose=verbose,
         )
 
-**NOTE:** Warning / New:  wstep = 'auto' is optimized for performances while ensuring accuracy,
-but is still experimental in 0.9.30. Feedback welcome!
-
 
 Flow Chart
 ----------
@@ -212,10 +209,10 @@ before the spectrum calculation begins.
 # TODO: perform timing test to see how much time calculating log_2gs separately takes
 
 Currently, GPU-powered spectra calculations are supported only at thermal equilibrium
-and therefore, the method to calculate the spectra has been named :py:func:`~radis.lbl.calc.eq_spectrum_gpu`.
+and therefore, the method to calculate the spectra has been named :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`.
 In order to use this method to calculate the spectra, follow the same steps as in the
 case of a normal equilibrium spectra, and if using :py:func:`~radis.lbl.calc.calc_spectrum`
-function set the parameter `mode` to `gpu`, or use :py:func:`~radis.lbl.calc.eq_spectrum_gpu`
+function set the parameter `mode` to `gpu`, or use :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
 
 Consider the following example which demonstrates the above information::
 
@@ -351,8 +348,6 @@ and :py:mod:`~astropy.units` ::
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
 
-**NOTE:** Warning / New:  wstep = 'auto' is optimized for performances while ensuring accuracy,
-but is still experimental in 0.9.30. Feedback welcome!
 .. _label_lbl_config_file:
 
 Configuration file
@@ -696,6 +691,27 @@ for an example, which can be run with (you will need the CDSD-HITEMP database in
 
     pytest radis/test/lbl/test_broadening.py -m "test_abscoeff_continuum"
 
+Choose the right wavenumber grid
+--------------------------------
+
+``wstep`` determines the wavenumber grid's resolution. Smaller the value, higher the resolution and
+vice-versa. By default **radis** uses ``wstep=0.01``. You can manually set the ``wstep`` value
+in :py:func:`~radis.lbl.calc.calc_spectrum` and :py:class:`~radis.lbl.factory.SpectrumFactory`.
+To get more accurate result you can further reduce the value, and to increase the performance you can increase the value.
+
+Based on ``wstep``, it will determine the number of gridpoints per linewidth.
+To make sure that there are enough gridpoints, Radis will raise an Accuracy Warning :py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
+if number of gridpoints are less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD` and raises an Accuracy Error
+if number of gridpoints are less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD`.
+
+From ``0.9.30`` a new mode ``wstep='auto'`` has been added which directly computes the optimum value of ``wstep``
+ensuring both performance and accuracy. It is ensured that there are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+points for each linewidth.
+
+.. Note::
+    wstep = 'auto' is optimized for performances while ensuring accuracy,
+    but is still experimental in 0.9.30. Feedback welcome!
+
 
 Database loading
 ----------------
@@ -756,7 +772,7 @@ GPU accelerated spectrum calculation
 
 Apart from the parallelization method mentioned above, RADIS also supports CUDA-native parallel computation, specifically
 for lineshape calculation and broadening. To use these GPU-accelerated methods to compute the spectra, use either :py:func:`~radis.lbl.calc.calc_spectrum`
-function with parameter `mode` set to `gpu`, or :py:func:`~radis.lbl.calc.eq_spectrum_gpu`. In order to use these methods,
+function with parameter `mode` set to `gpu`, or :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`. In order to use these methods,
 ensure that your system has an Nvidia GPU with compute capability of atleast 3.0 and CUDA Toolkit 8.0 or above. Refer to
 :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` to see how to setup your system to run GPU accelerated spectrum
 calculation methods, examples and performance tests.

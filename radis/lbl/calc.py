@@ -153,7 +153,7 @@ def calc_spectrum(
     wstep: float (:math:`cm^{-1}`)  or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
-        are slightly more than :py:param:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+        are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
         points for each linewidth.
 
         .. note::

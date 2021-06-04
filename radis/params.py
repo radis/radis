@@ -65,7 +65,7 @@ Makes sure there are enough gridpoints per line.
 
 See Also
 --------
-:py:func:`~radis.lbl.broadening._check_accuarcy`
+:py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
 """
 
 GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD = 1
@@ -75,5 +75,5 @@ Makes sure there are enough gridpoints per line.
 
 See Also
 --------
-:py:func:`~radis.lbl.broadening._check_accuarcy`
+:py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
 """

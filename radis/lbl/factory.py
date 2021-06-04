@@ -170,7 +170,7 @@ class SpectrumFactory(BandFactory):
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
-        are slightly more than :py:param:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+        are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
         points for each linewidth.
 
         .. note::
@@ -1701,7 +1701,7 @@ class SpectrumFactory(BandFactory):
 
 
 def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_width):
-    """define waverange vectors, with ``wavenumber`` the ouput spectral range
+    """define waverange vectors, with ``wavenumber`` the output spectral range
     and ``wavenumber_calc`` the spectral range used for calculation, that
     includes neighbour lines within ``broadening_max_width`` distance.
 
