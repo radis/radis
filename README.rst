@@ -25,7 +25,7 @@ Install
 
 Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution just use::
 
-    pip install radis
+    pip install radis -v
 
 **That's it!** You can now run your first example below.
 If you encounter any issue, or to upgrade the package later, please refer to the
@@ -303,7 +303,3 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-
-
-
-

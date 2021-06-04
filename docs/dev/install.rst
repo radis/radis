@@ -11,7 +11,7 @@ we suggest that you Clone or Fork the source code from `GitHub <https://github.c
 
 In a terminal, run::
 
-    pip install --user radis
+    pip install --user radis -v
 
 The 'pip' module has to be installed (by default if you've installed Python
 with Anaconda).
@@ -29,7 +29,7 @@ In a terminal, run::
 
     git clone https://github.com/<GITHUB USERNAME>/radis.git
     cd radis
-    pip install -e .[dev]
+    pip install -e .[dev] -v
 
 - The ``-e`` (editable) argument creates a link from the local folder ``./`` into Python
   site-packages.
@@ -110,7 +110,7 @@ With Pip you can keep the package up-to-date with::
 
     pip install radis --upgrade
 
-If using the latest developer version (cloned from `GitHub <https://github.com/radis/radis>`_ and installed with `pip install -e .`), use git to `pull` the latest changes.
+If using the latest developer version (cloned from `GitHub <https://github.com/radis/radis>`_ and installed with `pip install -e .[dev]`), use git to `pull` the latest changes.
 
 Help
 ----
