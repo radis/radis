@@ -1878,7 +1878,7 @@ class Spectrum(object):
         plot_slit=False,
         store=True,
         slit_dispersion=None,
-        slit_dispersion_warning_threshold=0.01,
+        slit_dispersion_threshold=0.01,
         auto_recenter_crop=True,
         verbose=True,
         *args,
@@ -2124,16 +2124,19 @@ class Spectrum(object):
             **kwargs
         )
 
-        # Check if dispersion is too large
-        # ----
-        if waveunit == "nm":
-            w_nm = w
-            wslit0_nm = wslit0
+        # Check if dispersion is specified
+        if slit_dispersion is not None:
+            if waveunit == "nm":
+                w_nm = w
+                wslit0_nm = wslit0
+            else:
+                w_nm = cm2nm(w)
+                wslit0_nm = cm2nm(wslit0)
+            slice_windows = _cut_slices(
+                w_nm, wslit0_nm, slit_dispersion, slit_dispersion_threshold
+            )
         else:
-            w_nm = cm2nm(w)
-            wslit0_nm = cm2nm(wslit0)
-
-        slice_windows = [np.ones_like(w, dtype=np.bool)]
+            slice_windows = [np.ones_like(w, dtype=np.bool)]
 
         # Create dictionary to store convolved
         I_conv_slices = {}
@@ -2157,7 +2160,7 @@ class Spectrum(object):
                     Islit0,
                     w_nm[slice_window],
                     slit_dispersion,
-                    threshold=slit_dispersion_warning_threshold,
+                    threshold=slit_dispersion_threshold,
                     verbose=verbose,
                 )
                 # Convert it back if needed
@@ -2185,7 +2188,6 @@ class Spectrum(object):
                     I_window,
                     wslit,
                     Islit,
-                    norm_by=None,  # already norm.
                     mode=mode,
                     waveunit=waveunit,
                     verbose=verbose,
@@ -2193,8 +2195,6 @@ class Spectrum(object):
                     # assumes Spectrum is correct by construction
                     **kwargsconvolve
                 )
-
-                # Crop wings to remove overlaps (before merging)
 
                 if i == 0:
                     w_conv_slices.append(w_conv_window)
@@ -2227,15 +2227,6 @@ class Spectrum(object):
             else:
                 raise ValueError("Unknown normalization type: {0}".format(norm_by))
 
-        # Sort if needed (sorting can be broken after applying corrected slits
-        # on different slices)
-        # | @EP: deactivated for the moment. It's dangerous to reorder because
-        # | it creates features that could be confused with spectral features.
-        #        if not is_sorted(w_conv) or not is_sorted_backward(w_conv):
-        #            b = np.argsort(w_conv)
-        #            for q in list(self._q_conv.keys()):
-        #                self._q_conv[q] = self._q_conv[q][b]
-
         # Store slit in Spectrum, in the Spectrum unit
         if store:
             self._slit["wavespace"] = wslit0  # in 'waveunit'
@@ -2245,6 +2236,7 @@ class Spectrum(object):
         self.conditions["slit_function"] = slit_function
         self.conditions["slit_unit"] = unit  # input slit unit
         self.conditions["slit_dispersion"] = slit_dispersion
+        self.conditions["slit_dispersion_threshold"] = slit_dispersion_threshold
         self.conditions["slit_shape"] = shape
         # TODO: probably removed after Spectrum is stored.
         self.conditions["norm_by"] = norm_by
@@ -2341,8 +2333,12 @@ class Spectrum(object):
         )
 
         # Plot other slit functions if dispersion was applied:
-        if "slit_dispersion" in self.conditions:
+        if (
+            "slit_dispersion" in self.conditions
+            and "slit_dispersion_threshold" in self.conditions
+        ):
             slit_dispersion = self.conditions["slit_dispersion"]
+            slit_dispersion_threshold = self.conditions["slit_dispersion_threshold"]
             if slit_dispersion is not None:
                 waveunit = self.get_waveunit()
                 # Get slit in air wavelength:
@@ -2353,14 +2349,8 @@ class Spectrum(object):
                 else:
                     wslit0_nm = cm2nm(wslit0)
                 w_nm = self.get_wavelength(medium="air", which="non_convoluted")
-                wings = len(
-                    wslit0
-                )  # note: hardcoded. Make sure it's the same as in apply_slit
-                wings *= max(
-                    1, abs(int(np.diff(wslit0_nm).mean() / np.diff(w_nm).mean()))
-                )
-                slice_windows, wings_min, wings_max = _cut_slices(
-                    w_nm, slit_dispersion, wings=wings
+                slice_windows = _cut_slices(
+                    w_nm, wslit0, slit_dispersion, slit_dispersion_threshold
                 )
 
                 # Loop over all waverange slices (needed if slit changes over the spectral range)
@@ -2377,7 +2367,7 @@ class Spectrum(object):
                         Islit0,
                         w_nm[slice_window],
                         slit_dispersion,
-                        threshold=0.01,
+                        threshold=slit_dispersion_threshold,
                         verbose=False,
                     )
                     # Convert it back if needed
@@ -3468,7 +3458,13 @@ class Spectrum(object):
         return I.min()
 
     def normalize(
-        self, normalize_how="max", wrange=(), wunit=None, inplace=False, force=False
+        self,
+        normalize_how="max",
+        wrange=(),
+        wunit=None,
+        inplace=False,
+        force=False,
+        verbose=True,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 
@@ -3531,19 +3527,16 @@ class Spectrum(object):
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
 
-            out = multiply(s, 1 / norm, unit=norm_unit, inplace=inplace)
+            out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
 
         else:
             if normalize_how == "max":
                 norm = np.nanmax(s.get(var, copy=False)[1])
                 norm_unit = s.units[var]
-
             elif normalize_how == "mean":
                 norm = np.nanmean(s.get(var, copy=False)[1])
                 norm_unit = s.units[var]
-
             elif normalize_how == "area":
-
                 w, I = s.get(var, wunit=wunit, copy=False)
                 norm = nantrapz(I, w)
                 norm_unit = u.Unit(s.units[var]) * u.Unit(wunit)
@@ -3554,7 +3547,8 @@ class Spectrum(object):
                 )
             # Ensure we use the same unit system!
             out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
-
+        if verbose:
+            print("Normalization factor : {0}".format(norm))
         return out
 
     # %% Define Spectrum Algebra
@@ -3916,81 +3910,78 @@ class Spectrum(object):
 # to cut
 
 
-def _cut_slices(w_nm, dispersion, threshold=0.01, wings=0):
-    """used to cut a waverange into slices where dispersion does not very too
-    much.
+def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold=0.01):
+    """
+    Used to cut a waverange into slices where dispersion does not vary too
+    much. Works whether the waverange is reversed or not.
 
     Parameters
     ----------
-    w_nm: numpy arrays
-        wavelengths. If wavenumbers
-    threshold: float
-        must be a negative power of 10
-    wings: int
-        extend with that many points on each side of the slice. This space is cut
-        after convolution (in apply_slit), removing side effects. Too much space and we'll
-        overlap too much and loose performance. Not enough and we'll have
-        artifacts on the jonction. A good number is to use the slit width, to be
-        conservative.
+    w_spec_nm : numpy array
+        The warenage (reversed or not) to cut into slices.
+    w_slit_nm : numpy array
+        The waverange of the slit function.
+    slit_dispersion : function
+        The dispersion function of the spectrometer,
+        must be monotone and accept arrays.
+    slit_dispersion_threshold : float
+        Threshold between 0 and 1, used to cut the waverange when
+        the slit dispersion variations exceed the threshold.
+
+    Returns
+    -------
+    slices : list
+        List of boolean arrays, corresponding to each slice.
+
     """
 
-    # TODO: just test every 10 or 100
-    blocs = dispersion(w_nm)
-    diff = np.round(
-        blocs[0] / blocs - 1, int(-np.log10(threshold))
-    )  # difference in slit dispersion, +- 10%
-    _, index_blocs = np.unique(diff, return_index=True)
-    # check direction, add last element
+    from scipy.optimize import root_scalar
 
-    if index_blocs[0] < index_blocs[-1]:
-        increment = 1
-        index_blocs = np.hstack((index_blocs, len(w_nm)))
+    if slit_dispersion(w_spec_nm[0]) > slit_dispersion(w_spec_nm[-1]):
+        w_start = w_spec_nm[0]
+        w_end = w_spec_nm[-1]
     else:
-        increment = -1
-        index_blocs = np.hstack((len(w_nm), index_blocs))
-    #        index_blocs[-1] = None
+        w_start = w_spec_nm[-1]
+        w_end = w_spec_nm[0]
 
-    imins, imaxs = index_blocs[:-1].copy(), index_blocs[1:].copy()
+    # Find the wavelengths to delimit each slice
+    w_list_slices = [w_start]
+    slit_disp_target = slit_dispersion(w_start) * (1 - slit_dispersion_threshold)
+    while slit_disp_target > slit_dispersion(w_end):
+        res = root_scalar(
+            lambda w: slit_dispersion(w) - slit_disp_target, bracket=[w_start, w_end]
+        )
+        assert (
+            res.converged
+        ), "Did not converged, something went wrong... +\
+        Are you sure the slit dispersion function is monotone?"
+        w_next = res.root
+        w_list_slices.append(w_next)
+        slit_disp_target = slit_dispersion(w_next) * (1 - slit_dispersion_threshold)
+        w_start = w_next
+    w_list_slices.append(w_end)
 
-    # Add wings
-    if increment == 1:
-        imins -= wings
-        imaxs += wings
-    else:
-        imins += wings
-        imaxs -= wings
+    if w_list_slices[0] > w_list_slices[-1]:
+        w_list_slices[::-1]
+    w_slices = np.array(w_list_slices)
 
-    # add last if needed
+    # Extend the slices accordingly to the slit function
+    # to remove boundary effect caused by the convolution
+    range_nm = abs(w_slit_nm[-1] - w_slit_nm[0]) / 2
+    slit_disp_0 = slit_dispersion(w_slit_nm[len(w_slit_nm) // 2])
+
+    w_mins, w_maxs = w_slices[:-1].copy(), w_slices[1:].copy()
+
+    w_mins -= range_nm / slit_disp_0 * slit_dispersion(w_mins)
+    w_maxs += range_nm / slit_disp_0 * slit_dispersion(w_maxs)
 
     slices = []
-    wings_min = []
-    wings_max = []
-    for imin, imax in zip(imins, imaxs):
-        # Keep track of what was added on each side
-        #        if imin <= - wings:
-        #            wings_min.append(None)
-        #            imin = None
-        if imin <= 0:
-            wings_min.append(wings + imin)
-            imin = None
-        else:
-            wings_min.append(wings)
-        #        if imax <= - wings:
-        #            wings_max.append(None)
-        #            imax = None
-        if imax <= 0:
-            wings_max.append(wings + imax)
-            imax = None
-        else:
-            wings_max.append(wings)
-        slice_w = np.zeros_like(w_nm, dtype=np.bool)
-        slice_w[imin:imax:increment] = 1
+    for w_min, w_max in zip(w_mins, w_maxs):
+        slice_w = np.logical_and(w_min < w_spec_nm, w_spec_nm < w_max)
         slices.append(slice_w)
-
-    # make sure we didnt miss anyone
-    #    assert len(w_nm) == sum([slice_w.sum() for slice_w in slices])
-
-    return slices[::increment], wings_min[::increment], wings_max[::increment]
+    if w_spec_nm[-1] < w_spec_nm[0]:
+        slices = slices[::-1]
+    return slices
 
 
 # %% ======================================================================
