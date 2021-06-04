@@ -708,7 +708,7 @@ From ``0.9.30`` a new mode ``wstep='auto'`` has been added which directly comput
 ensuring both performance and accuracy. It is ensured that there are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
 points for each linewidth.
 
-.. Note::
+.. note::
     wstep = 'auto' is optimized for performances while ensuring accuracy,
     but is still experimental in 0.9.30. Feedback welcome!
 
