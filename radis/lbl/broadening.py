@@ -1449,7 +1449,7 @@ class BroadenFactory(BaseFactory):
             wstep = self.params.wstep
             w_lineshape_ft = np.fft.rfftfreq(
                 2 * len(w), wstep
-            )  # TO-DO: add  + self.params.zero_padding
+            )  # TO-DO: add  + self.misc.zero_padding
 
             w_fold = (w_lineshape_ft, w_lineshape_ft[::-1])
 
@@ -1462,7 +1462,7 @@ class BroadenFactory(BaseFactory):
                         w_lineshape_ft, wG[l] / 2, wL[m] / 2
                     )
 
-                    ## Add folding until threshold is reached:
+                    # Add folding until threshold is reached:
                     n = 1
                     while (
                         voigt_FT(n / (2 * wstep), wG[l] / 2, wL[m] / 2)
@@ -1665,10 +1665,10 @@ class BroadenFactory(BaseFactory):
             for i, (fr_left, fr_right, profS) in enumerate(
                 zip(frac_left[binrange], frac_right[binrange], lines_in)
             ):
-                sumoflines_calc[I_low_in_left[i] : I_high_in_left[i] + 1] += (
+                sumoflines_calc[I_low_in_left[i]: I_high_in_left[i] + 1] += (
                     fr_left * profS
                 )
-                sumoflines_calc[I_low_in_right[i] : I_high_in_right[i] + 1] += (
+                sumoflines_calc[I_low_in_right[i]: I_high_in_right[i] + 1] += (
                     fr_right * profS
                 )
 
@@ -1691,11 +1691,11 @@ class BroadenFactory(BaseFactory):
                 zip(frac_left[boffrangeleft], frac_right[boffrangeleft], lines_l)
             ):
                 # cut left wing & peak  with the [iwbroad_half+1:] mask
-                sumoflines_calc[I_low_l_left[i] : I_high_l_left[i] + 1] += (
-                    fr_left * profS[iwbroad_half + 1 :]
+                sumoflines_calc[I_low_l_left[i]: I_high_l_left[i] + 1] += (
+                    fr_left * profS[iwbroad_half + 1:]
                 )
-                sumoflines_calc[I_low_l_right[i] : I_high_l_right[i] + 1] += (
-                    fr_right * profS[iwbroad_half + 1 :]
+                sumoflines_calc[I_low_l_right[i]: I_high_l_right[i] + 1] += (
+                    fr_right * profS[iwbroad_half + 1:]
                 )
 
         # Off Range, Right : only aggregate the left wing
@@ -1713,10 +1713,10 @@ class BroadenFactory(BaseFactory):
                 zip(frac_left[boffrangeright], frac_right[boffrangeright], lines_r)
             ):
                 # cut right wing & peak  with the [:iwbroad_half] mask
-                sumoflines_calc[I_low_r_left[i] : I_high_r_left[i] + 1] += (
+                sumoflines_calc[I_low_r_left[i]: I_high_r_left[i] + 1] += (
                     fr_left * profS[:iwbroad_half]
                 )
-                sumoflines_calc[I_low_r_right[i] : I_high_r_right[i] + 1] += (
+                sumoflines_calc[I_low_r_right[i]: I_high_r_right[i] + 1] += (
                     fr_right * profS[:iwbroad_half]
                 )
 
@@ -1905,7 +1905,7 @@ class BroadenFactory(BaseFactory):
         elif broadening_method == "fft":
             DLM = np.zeros(
                 (
-                    2 * len(wavenumber_calc),  # TO-DO: Add  + self.params.zero_padding
+                    2 * len(wavenumber_calc),  # TO-DO: Add  + self.misc.zero_padding
                     len(wG),
                     len(wL),
                 )
@@ -2003,10 +2003,10 @@ class BroadenFactory(BaseFactory):
         # Get which optimization method to use:
         optimization = self.params.optimization
 
-        if self.params.zero_padding < 0 or self.params.zero_padding > len(
+        if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
             self.wavenumber_calc
         ):
-            self.params.zero_padding = len(self.wavenumber_calc)
+            self.misc.zero_padding = len(self.wavenumber_calc)
 
         try:
             if optimization in ("simple", "min-RMS"):
@@ -2099,10 +2099,10 @@ class BroadenFactory(BaseFactory):
             if optimization in ("simple", "min-RMS"):
                 # Use DLM
 
-                if self.params.zero_padding < 0 or self.params.zero_padding > len(
+                if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
                     self.wavenumber_calc
                 ):
-                    self.params.zero_padding = len(self.wavenumber_calc)
+                    self.misc.zero_padding = len(self.wavenumber_calc)
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(
@@ -2694,8 +2694,8 @@ def project_lines_on_grid(df, wavenumber, wstep):
             imax_left = imax_broadened_wav_offset_left[i]
             imin_right = imin_broadened_wav_offset_right[i]
             imax_right = imax_broadened_wav_offset_right[i]
-            rough_spectrum[imin_left : imax_left + 1] += fr_left * Iline_density
-            rough_spectrum[imin_right : imax_right + 1] += fr_right * Iline_density
+            rough_spectrum[imin_left: imax_left + 1] += fr_left * Iline_density
+            rough_spectrum[imin_right: imax_right + 1] += fr_right * Iline_density
 
         # Nomenclature for lines above:
         # - min/max: start/end of a lineshape
@@ -2844,16 +2844,16 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
             imax_left = imax_broadened_wav_offset_left[i]
             imin_right = imin_broadened_wav_offset_right[i]
             imax_right = imax_broadened_wav_offset_right[i]
-            k_rough_spectrum[imin_left : imax_left + 1] += (
+            k_rough_spectrum[imin_left: imax_left + 1] += (
                 frac_left[i] * S_density_on_grid[i]
             )
-            k_rough_spectrum[imin_right : imax_right + 1] += (
+            k_rough_spectrum[imin_right: imax_right + 1] += (
                 frac_right[i] * S_density_on_grid[i]
             )
-            j_rough_spectrum[imin_left : imax_left + 1] += (
+            j_rough_spectrum[imin_left: imax_left + 1] += (
                 frac_left[i] * Ei_density_on_grid[i]
             )
-            j_rough_spectrum[imin_right : imax_right + 1] += (
+            j_rough_spectrum[imin_right: imax_right + 1] += (
                 frac_right[i] * Ei_density_on_grid[i]
             )
         # crop out of range points
