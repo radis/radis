@@ -167,11 +167,15 @@ class SpectrumFactory(BandFactory):
         The calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default ``10`` cm-1.
-    wstep: float (cm-1)
-        Spacing of calculated spectrum. Default ``0.01`` cm-1
+    wstep: float (cm-1) or `'auto'`
+        Resolution of wavenumber grid. Default ``0.01`` cm-1.
+        If `'auto'`, it is ensured that there
+        are slightly more than :py:param:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+        points for each linewidth.
 
-        NOTE: Warning / New:  wstep = 'auto' is optimized for performances while ensuring accuracy,
-        but is still experimental in 0.9.30. Feedback welcome!
+        .. note::
+            wstep = 'auto' is optimized for performances while ensuring accuracy,
+            but is still experimental in 0.9.30. Feedback welcome!
     cutoff: float (~ unit of Linestrength: cm-1/(#.cm-2))
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate databases such as
@@ -563,7 +567,6 @@ class SpectrumFactory(BandFactory):
 
         Parameters
         ----------
-
         Tgas: float or `~astropy.units.quantity.Quantity`
             Gas temperature (K)
         mole_fraction: float
@@ -579,7 +582,6 @@ class SpectrumFactory(BandFactory):
 
         Returns
         -------
-
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
@@ -591,13 +593,11 @@ class SpectrumFactory(BandFactory):
 
         References
         ----------
-
         .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
 
         See Also
         --------
-
         :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
         """
 
@@ -808,6 +808,11 @@ class SpectrumFactory(BandFactory):
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
 
+        .. note::
+            This method requires CUDA compatible hardware to execute.
+            For more information on how to setup your system to run GPU-accelerated methods
+            using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
+
         Parameters
         ----------
         Tgas: float or `~astropy.units.quantity.Quantity`
@@ -834,14 +839,8 @@ class SpectrumFactory(BandFactory):
                 Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
                 to plot it. See [1]_ to get an overview of all Spectrum methods
 
-        Notes
-        -----
-
-        This method requires CUDA compatible hardware to execute. For more information on how to setup your system to run GPU-accelerated methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
-
         See Also
         --------
-
         :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
         """
 
@@ -1128,16 +1127,14 @@ class SpectrumFactory(BandFactory):
         rot_distribution: ``'boltzmann'``
             rotational distribution
         overpopulation: dict, or ``None``
-            add overpopulation factors for given levels:
+            add overpopulation factors for given levels::
 
-            >>> {level:overpopulation_factor}
-
+                {level:overpopulation_factor}
         name: str
             output Spectrum name (useful in batch)
 
         Returns
         -------
-
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
@@ -1149,7 +1146,6 @@ class SpectrumFactory(BandFactory):
 
         References
         ----------
-
         .. [1] RADIS doc: `Spectrum how to? <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__
 
         See Also
@@ -1423,7 +1419,11 @@ class SpectrumFactory(BandFactory):
         return s
 
     def _generate_wavenumber_arrays(self):
+        """define wavenumber grid vectors
 
+        `SpectrumFactory.wavenumber` is the output spectral range and
+        ``SpectrumFactory.wavenumber_calc`` the spectral range used for calculation, that
+        includes neighbour lines within ``broadening_max_width`` distance."""
         # calculates minimum FWHM of lines
         self._calc_min_width(self.df1)
 
@@ -1461,6 +1461,7 @@ class SpectrumFactory(BandFactory):
         computes it using gamma_air."""
         df = self.df0
         # TODO: deal with the case of gamma_self [so we don't forget]
+        # TODO (refactor) : move into BaseFactory or BroadenFactory (parent classes)
 
         # if the column already exists, then return
         if "log_2gs" in df.columns:
@@ -1581,12 +1582,10 @@ class SpectrumFactory(BandFactory):
 
         See Also
         --------
-
         :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_power`,
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_integral`
         """
-
         # Check inputs
 
         # ... temperatures
@@ -1708,29 +1707,23 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
 
     Parameters
     ----------
-
     wavenum_min, wavenum_max: float
         wavenumber range limits (cm-1)
-
     wstep: float
         wavenumber step (cm-1)
-
     broadening_max_width: float
         wavenumber full width of broadening calculation: used to define which
         neighbour lines shall be included in the calculation
 
     Returns
     -------
-
     wavenumber: numpy array
         an evenly spaced array between ``wavenum_min`` and ``wavenum_max`` with
         a spacing of ``wstep``
-
     wavenumber_calc: numpy array
         an evenly spaced array between ``wavenum_min-broadening_max_width/2`` and
         ``wavenum_max+broadening_max_width/2`` with a spacing of ``wstep``
     """
-
     assert wavenum_min < wavenum_max
 
     # Output range
@@ -1767,17 +1760,14 @@ def _generate_broadening_range(wstep, broadening_max_width):
 
     Parameters
     ----------
-
     wstep: float
         wavenumber step (cm-1)
-
     broadening_max_width: float
         wavenumber full width of broadening calculation: used to define which
         neighbour lines shall be included in the calculation
 
     Returns
     -------
-
     wbroad_centered: numpy array
         an evenly spaced array, of odd-parity length, centered on 0, and of width
         ``broadening_max_width``

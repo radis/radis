@@ -214,7 +214,6 @@ class Spectrum(object):
 
     See Also
     --------
-
     :func:`~radis.spectrum.models.calculated_spectrum`,
     :func:`~radis.spectrum.models.transmittance_spectrum`,
     :func:`~radis.spectrum.models.experimental_spectrum`
