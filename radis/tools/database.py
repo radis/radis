@@ -1175,7 +1175,7 @@ class SpecList(object):
         :meth:`~radis.tools.database.SpecList.items`
         """
 
-        ## type: bool, default False
+        # type: bool, default False
         kwconditions.pop("verbose", True)  #: type: bool
         inplace = kwconditions.pop("inplace", False)
         scale_if_possible = kwconditions.pop("scale_if_possible", False)
@@ -1420,8 +1420,8 @@ class SpecList(object):
                         print(sys.exc_info())
                         raise TypeError(
                             "An error occured (see above) when calculating "
-                            + "(dg[{0}]-{1}). Example: ".format(k, v)
-                            + "({0} - {1}). ".format(dg[k].iloc[0], v)
+                            + f"(dg[{k}] - {v}). Example: "
+                            + f"({dg[k].iloc[0]} - {v}). "
                             + "Check that your requested conditions match "
                             + "the database format"
                         ) from err2
@@ -2289,7 +2289,8 @@ class SpecDatabase(SpecList):
                     + "define which residual to use with, for instance: "
                     + "`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)"
                 )
-            residual = lambda s_exp, s, normalize: get_residual(
+
+            def residual(s_exp, s, normalize): return get_residual(
                 s_exp,
                 s,
                 var=s_exp.get_vars()[0],
