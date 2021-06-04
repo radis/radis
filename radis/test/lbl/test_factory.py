@@ -629,10 +629,18 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     sf.fetch_databank("hitran")
 
     sf.eq_spectrum(Tgas)
-    sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas)
-    sf.eq_bands(Tgas)
-    sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
+    wstep_1 = sf.params.wstep
 
+    sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas)
+    wstep_2 = sf.params.wstep
+
+    sf.eq_bands(Tgas)
+    wstep_3 = sf.params.wstep
+
+    sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
+    wstep_4 = sf.params.wstep
+
+    assert wstep_1 == wstep_2 == wstep_3 == wstep_4
     assert sf.wstep == "auto"
 
 
