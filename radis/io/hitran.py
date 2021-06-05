@@ -28,6 +28,7 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import pandas as pd
+from numpy import float64
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
@@ -472,7 +473,7 @@ def _parse_HITRAN_class5(df):
     )
 
     # 2. Convert to numeric
-    dgu = dgu.apply(pd.to_numeric)
+    dgu = dgu.apply(pd.to_numeric).astype(float64)
     dgl = dgl.apply(pd.to_numeric)
 
     # 3. Clean
