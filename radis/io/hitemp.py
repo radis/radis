@@ -95,7 +95,7 @@ def fetch_hitemp(
     Parameters
     ----------
     molecule: `"H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
-        HITEMP molecule. See :py:attr:`~radis.io.hitemp.HITEMP_SOURCE_FILES`
+        HITEMP molecule. See https://hitran.org/hitemp/
     local_databases: str
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/"``
     databank_name: str
@@ -167,6 +167,15 @@ def fetch_hitemp(
         databank_name = databank_name.format(**{"molecule": molecule})
     local_databases = abspath(local_databases.replace("~", expanduser("~")))
 
+    if databank_name in getDatabankList():
+        raise DatabaseAlreadyExists(
+                  f"{databank_name} already exists in your ~/radis.json config file, "
+                + "remove it from your config file, or choose a different name "
+                + "for the downloaded database with `fetch_hitemp(databank_name=...)`, "
+                + "and restart.")
+        return
+
+
     if molecule in ["H2O", "CO2"]:
 
         base_url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
@@ -175,7 +184,10 @@ def fetch_hitemp(
         response_string = response.read().decode()
         inputfiles = re.findall('href="(\S+.zip)"', response_string)
         urlnames = [base_url + f for f in inputfiles]
-        local_fname = '-'.join(base_url.split('/')[-3:-1]) + '.h5'
+
+        fname_wmin = re.findall(r'\d{5}',inputfiles[0])[0]
+        fname_wmax = re.findall(r'\d{5}',inputfiles[-1])[-1]
+        local_fname = splitext(re.sub(r'(\d{5})',r'{:s}',inputfiles[0]).format(fname_wmin,fname_wmax))[0]+'.h5'
 
     else:
 
@@ -228,11 +240,11 @@ def fetch_hitemp(
             error_msg = ""
             with pd.HDFStore(local_file, "r") as store:
                 nrows = store.get_storer("df").nrows
-                if nrows != INFO_HITEMP_LINE_COUNT[molecule]:
+                if nrows != Ntotal_lines_expected:
                     error_msg += (
                         f"\nNumber of lines in local database ({nrows:,}) "
                         + "differ from the expected number of lines for "
-                        + f"HITEMP {molecule}: {INFO_HITEMP_LINE_COUNT[molecule]}"
+                        + f"HITEMP {molecule}: {Ntotal_lines_expected}"
                     )
                 file_metadata = store.get_storer("df").attrs.metadata
                 for k in [
@@ -400,13 +412,11 @@ def fetch_hitemp(
     with pd.HDFStore(local_file, "r") as store:
         nrows = store.get_storer("df").nrows
         assert nrows == Nlines
-        if nrows != INFO_HITEMP_LINE_COUNT[molecule]:
+        if nrows != Ntotal_lines_expected:
             raise AssertionError(
                 f"Number of lines in local database ({nrows:,}) "
                 + "differ from the expected number of lines for "
-                + f"HITEMP {molecule}: {INFO_HITEMP_LINE_COUNT[molecule]}"
-                + ". Check that there was no recent update on HITEMP. "
-                + "Else it may be a download error ?"
+                + f"HITEMP {molecule}: {Ntotal_lines_expected}"
             )
 
     # Add database to  ~/radis.json
@@ -486,34 +496,8 @@ def register_database(
         ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
         dict_entries["levelsfmt"] = "radis"
 
-    # Register database in ~/radis.json to be able to use it with load_databank()
-    try:
-        addDatabankEntries(databank_name, dict_entries)
-    except DatabaseAlreadyExists as err:
-        # Check that the existing database had the same entries
-        try:
-            from radis.misc.config import getDatabankEntries
-
-            for k, v in getDatabankEntries(databank_name).items():
-                if k == "download_date":
-                    continue
-                assert dict_entries[k] == v
-            # TODO @dev : replace once we have configfile as JSON (https://github.com/radis/radis/issues/167)
-        except AssertionError:
-            raise DatabaseAlreadyExists(
-                f"{databank_name} already exists in your ~/radis.json config file, "
-                + f"with different key `{k}` : `{v}` (~/radis.json) ≠ `{dict_entries[k]}` (new). "
-                + "If you're sure of what you're doing, fix the registered database in ~/radis.json. "
-                + "Else, remove it from your config file, or choose a different name "
-                + "for the downloaded database with `fetch_hitemp(databank_name=...)`, "
-                + "and restart."
-            ) from err
-        else:  # no other error raised
-            if verbose:
-                print(
-                    f"{databank_name} already registered in ~/radis.json config file, with the same parameters."
-                )
-
+    addDatabankEntries(databank_name, dict_entries)
+    
 
 #%%
 def get_last(b):
