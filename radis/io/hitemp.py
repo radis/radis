@@ -37,45 +37,7 @@ from radis.misc.config import addDatabankEntries, getDatabankList
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import DatabaseAlreadyExists
 
-BASE_URL = "https://hitran.org/hitemp/data/bzip2format/"
-BASE_URL_MULTI = "https://hitran.org/hitemp/data/HITEMP-2010/{:s}_line_list/"
-HITEMP_SOURCE_FILES = {
-    "H2O": "01_HITEMP2010.zip",  # Only for purpose of naming local file
-    "CO2": "02_HITEMP2010.zip",  # Only for purpose of naming local file
-    "N2O": "04_HITEMP2019.par.bz2",
-    "CO": "05_HITEMP2019.par.bz2",
-    "CH4": "06_HITEMP2020.par.bz2",
-    "NO": "08_HITEMP2019.par.bz2",
-    "NO2": "10_HITEMP2019.par.bz2",
-    "OH": "13_HITEMP2020.par.bz2",
-}
-"""
-dict: list of available HITEMP source files
-
-Last update : 02 Feb 2021
-Compare with files available on https://hitran.org/hitemp/
-"""
-
-INFO_HITEMP_LINE_COUNT = {
-    "H2O": 114241164,
-    "CO2": 11193608,
-    "N2O": 3626425,
-    "CO": 752976,
-    "CH4": 31880412,
-    "NO": 1137192,
-    "NO2": 1108709,
-    "OH": 57019,
-}
-"""
-dict: total line count according to https://hitran.org/hitemp/
-Used for tests and to give an idea of the uncompress progress
-in :py:func:`~radis.io.hitemp.fetch_hitemp
-
-.. warning::
-    may change with new HITEMP updates. Only use as an informative
-    param, do not rely on this in the code.
-"""
-
+HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
 DATA_COLUMNS = ["iso", "wav"]
 """
 list : only these column names will be searchable directly on disk to
@@ -98,6 +60,21 @@ def open_zip(zipname, mode="r", encoding=None, newline=None):
 np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
 
 
+def get_url_and_Nlines(molecule, hitemp_url='https://hitran.org/hitemp/'):
+    response = urllib.request.urlopen(hitemp_url)
+    text = response.read().decode()
+    text = text[text.find('<table id="hitemp-molecules-table" class="selectable-table list-table">'):text.find('</table>')]
+    text = re.sub(r'<!--.+?-->\s*\n','',text) #remove commented lines
+    html_molecule = re.sub(r'(\d{1})',r'(<sub>\1</sub>)',molecule)
+    text = text[re.search('<td>(?:<strong>)?'+html_molecule+'(?:</strong>)?</td>',text).start():]
+    lines = text.splitlines()
+
+    Nlines = int(re.findall(r'(\d+)',lines[3].replace('&nbsp;',''))[0])
+    url = 'https://hitran.org' + re.findall(r'href="(.+?)"',lines[7])[0]
+
+    return url, Nlines
+
+
 def fetch_hitemp(
     molecule,
     local_databases="~/.radisdb/",
@@ -117,7 +94,7 @@ def fetch_hitemp(
 
     Parameters
     ----------
-    molecule: `"CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
+    molecule: `"H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
         HITEMP molecule. See :py:attr:`~radis.io.hitemp.HITEMP_SOURCE_FILES`
     local_databases: str
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/"``
@@ -175,22 +152,26 @@ def fetch_hitemp(
 
     if molecule in ["H2O", "CO2"]:
 
-        base_url = BASE_URL_MULTI.format(molecule)
+        base_url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
+        print(base_url)
         response = urllib.request.urlopen(base_url)
         response_string = response.read().decode()
         inputfiles = re.findall('href="(\S+.zip)"', response_string)
+        urlnames = [base_url + f for f in inputfiles]
+        local_fname = '-'.join(base_url.split('/')[-3:-1]) + '.h5'
 
     else:
 
         try:
-            inputfiles = [HITEMP_SOURCE_FILES[molecule]]
-            base_url = BASE_URL
+            url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
+            urlnames = [url]
+            local_fname = splitext(url.split('/')[-1])[0] + '.h5'
         except KeyError as err:
             raise KeyError(
-                f"Please choose one of HITEMP molecules : {list(HITEMP_SOURCE_FILES.keys())}. Got '{molecule}'"
+                f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
             ) from err
 
-    urlnames = [base_url + f for f in inputfiles]
+    
 
     try:
         os.mkdir(local_databases)
@@ -203,7 +184,7 @@ def fetch_hitemp(
     local_file = abspath(
         join(
             local_databases,
-            molecule + "-" + splitext(HITEMP_SOURCE_FILES[molecule])[0] + ".h5",
+            molecule + "-" + local_fname,
         )
     )
 
@@ -300,15 +281,15 @@ def fetch_hitemp(
     Ntotal_downloads = len(urlnames)
 
     Nlines = 0
-    Ntotal_lines_expected = INFO_HITEMP_LINE_COUNT[molecule]
     pb = ProgressBar(N=Ntotal_lines_expected, active=verbose)
 
     wmin = np.inf
     wmax = 0
 
-    for urlname, inputf in zip(urlnames, inputfiles):
+    for urlname in urlnames:
 
         if verbose:
+            inputf = urlname.split('/')[-1]
             print(
                 f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
             )
