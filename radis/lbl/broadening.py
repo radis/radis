@@ -79,7 +79,11 @@ from radis.misc.progress_bar import ProgressBar
 
 # from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
-from radis.params import USE_CYTHON
+from radis.params import (
+    GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD,
+    GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD,
+    USE_CYTHON,
+)
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
 # %% Broadening functions
@@ -836,13 +840,28 @@ class BroadenFactory(BaseFactory):
                 )
             )
 
-        # AccuracyWarning. Check there are enough gridpoints per line.
-        self._check_accuracy(df, self.params.wstep)
-
         if self.verbose >= 2:
             printg("Calculated broadening HWHM in {0:.2f}s".format(time() - t0))
 
-    def _check_accuracy(self, df, wstep):
+    def _calc_min_width(self, df):
+        """Calculates the minimum FWHW of the lines
+        and stores in self.min_width
+        """
+        if "hwhm_voigt" in df:
+            min_width = 2 * df.hwhm_voigt.min()
+        else:
+            min_lorentz_fwhm = 2 * df.hwhm_lorentz.min()
+            min_gauss_fwhm = 2 * df.hwhm_gauss.min()
+            # We take the max of both. Note: could also have used
+            # Olivero1977 to get the Voigt-equivlaent width of all lines,
+            # but it's quite expensive to compute
+            min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
+
+        self.min_width = min_width
+
+        return
+
+    def _check_accuracy(self, wstep):
         """Check there are enough gridpoints per line.
 
         Raises
@@ -875,39 +894,33 @@ class BroadenFactory(BaseFactory):
         # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
         # for a homogeneous slab, or self-absorbed radiance combined with other slabs.
 
-        if "hwhm_voigt" in df:
-            min_width = 2 * df.hwhm_voigt.min()
-        else:
-            min_lorentz_fwhm = 2 * df.hwhm_lorentz.min()
-            min_gauss_fwhm = 2 * df.hwhm_gauss.min()
-            # We take the max of both. Note: could also have used
-            # Olivero1977 to get the Voigt-equivlaent width of all lines,
-            # but it's quite expensive to compute
-            min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
+        min_width = self.min_width
 
-        WARN_THRESHOLD = 3
-        ERROR_TRESHOLD = 1
-        if wstep > min_width / ERROR_TRESHOLD:
+        if wstep > min_width / GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
-                + f"wstep to (at least) below {min_width/ERROR_TRESHOLD:.2g} cm⁻¹ "
-                + f"or (suggested) {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                + f"wstep to (at least) below {min_width/GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD:.2g} cm⁻¹ "
+                + f"or (suggested) {min_width/GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:.2g} cm⁻¹. "
+                + "You can use wstep='auto' to get the optimal spectral grid value. "
                 + "You can also ignore by setting `warnings={'AccuracyError':'ignore'}` "
                 + "(if you know what you're doing!)",
                 "AccuracyError",
             )
-        elif wstep > min_width / WARN_THRESHOLD:
+        elif wstep > min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
-                + f"wstep to below {min_width/WARN_THRESHOLD:.2g} cm⁻¹. "
+                + f"wstep to below {min_width/GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:.2g} cm⁻¹. "
+                + "You can use wstep='auto' to get the optimal spectral grid value. "
                 + "You can also ignore by setting `warnings={'AccuracyWarning':'ignore'}` "
                 + "(if you know what you're doing!)",
                 "AccuracyWarning",
             )
         else:
             pass
+
+        return
 
     def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
         """Update dataframe with Voigt HWHM.

@@ -39,7 +39,7 @@ Add to the top of your script (once is enough!)::
 
 See Also
 --------
-:func:`~radis.tools.database._update_to_latest_format`
+:py:func:`~radis.tools.database._update_to_latest_format`
 """
 
 OLDEST_COMPATIBLE_VERSION = "0.9.1"
@@ -56,4 +56,24 @@ USE_CYTHON = True
 See Also
 --------
 :py:func:`~radis.misc.arrays.add_at`
+"""
+
+GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD = 3
+"""float: to determine the optimal value
+of wstep using minimum FWHM value of spectrum.
+Makes sure there are enough gridpoints per line.
+
+See Also
+--------
+:py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
+"""
+
+GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD = 1
+"""float: to determine the minimum feasible value
+of wstep using minimum FWHM value of spectrum.
+Makes sure there are enough gridpoints per line.
+
+See Also
+--------
+:py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
 """
