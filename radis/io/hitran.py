@@ -524,8 +524,8 @@ def _parse_HITRAN_class6(df):
     # ... somehow negative. The regex above is adapted to catch negation signs with \-
 
     # 2. Convert to numeric
-    dgu = dgu.apply(pd.to_numeric)
-    dgl = dgl.apply(pd.to_numeric)
+    dgu = dgu.apply(pd.to_numeric, errors='coerce').astype(float64)
+    dgl = dgl.apply(pd.to_numeric, errors='coerce').astype(float64)
 
     # 3. Clean
     del df["globu"]
@@ -691,12 +691,16 @@ def _parse_HITRAN_group1(df):
     )
     # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
     # ... be negative. The regex above is adapted to catch negation signs with \-
+    
+    try:
+        # 2. Convert to numeric
+        for k in ["ju", "Kau", "Kcu"]:
+            dgu[k] = pd.to_numeric(dgu[k], errors='coerce').astype(float64)
+        for k in ["jl", "Kal", "Kcl"]:
+            dgl[k] = pd.to_numeric(dgl[k], errors='coerce').astype(float64)
 
-    # 2. Convert to numeric
-    for k in ["ju", "Kau", "Kcu"]:
-        dgu[k] = pd.to_numeric(dgu[k])
-    for k in ["jl", "Kal", "Kcl"]:
-        dgl[k] = pd.to_numeric(dgl[k])
+    except:
+        print(dgu)
 
     # 3. Clean
     del df["locu"]
