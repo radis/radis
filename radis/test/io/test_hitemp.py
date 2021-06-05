@@ -8,7 +8,7 @@ Created on Tue Feb  2 13:51:40 2021
 
 import pytest
 
-from radis.io.hitemp import HITEMP_SOURCE_FILES, INFO_HITEMP_LINE_COUNT, fetch_hitemp
+from radis.io.hitemp import fetch_hitemp, HITEMP_MOLECULES, get_url_and_Nlines
 from radis.misc.config import getDatabankList
 
 
@@ -40,7 +40,7 @@ def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
 @pytest.mark.needs_connection
 @pytest.mark.download_large_databases
 @pytest.mark.parametrize(
-    "molecule", [mol for mol, url in HITEMP_SOURCE_FILES.items() if url]
+    "molecule", [mol for mol in HITEMP_MOLECULES]
 )
 def test_fetch_hitemp_all_molecules(molecule, verbose=False, *args, **kwargs):
     """Test fetch HITEMP for all molecules whose download URL is available.
@@ -72,8 +72,10 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=False, *args, **kwargs):
     df = fetch_hitemp(molecule, verbose=verbose)
 
     assert f"HITEMP-{molecule}" in getDatabankList()
+    
+    url, Nlines = get_url_and_Nlines(molecule)
 
-    assert len(df) == INFO_HITEMP_LINE_COUNT[molecule]
+    assert len(df) == Nlines
 
 
 @pytest.mark.needs_connection
