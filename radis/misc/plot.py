@@ -43,7 +43,7 @@ def split_and_plot_by_parts(w, I, *args, **kwargs):
 
     # Get defaults
     ax = kwargs.pop("ax", None)
-    if ax == None:
+    if ax is None:
         ax = plt.gca()
     split_threshold = kwargs.pop("split_threshold", 10)  # type: int
     cutwings = kwargs.pop("cutwings", 0)  # type: int
