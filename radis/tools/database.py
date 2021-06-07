@@ -1453,10 +1453,10 @@ class SpecList(object):
             if "mole_fraction" in kwconditions:
                 sout.rescale_mole_fraction(kwconditions["mole_fraction"])
 
-        if verbose:
+        if verbose > 1:
             print(
                 (
-                    "------- \t"
+                    "{:^7} \t".format(self.df.molecule[0])
                     + "\t".join(["{0}".format(k) for k in kwconditions.keys()])
                 )
             )
