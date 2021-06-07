@@ -2438,7 +2438,7 @@ def read_conditions_file(path):
 
     # if only "1" in isotopes they are read as numbers and later get() function fails.
     if "isotope" in df:
-        df["isotope"] = df["isotope"].astype(str).str.replace(".0", "")
+        df["isotope"] = df["isotope"].astype(str).str.replace(".0", "", regex=True)
 
     df["Spectrum"] = [None] * len(df["file"])
 
