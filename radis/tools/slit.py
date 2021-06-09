@@ -500,11 +500,14 @@ def convolve_with_slit(
     waveunit=None,
 ):
     """Convolves spectrum (w,I) with instrumental slit function (w_slit, I_slit)
-    Returns a convolved spectrum on a valid range.
+
+        Returns a convolved spectrum on a valid range. 
+
+        Check Notes section below for more details about its implementation.
 
         This function is called directly from a :py:class:`~radis.spectrum.spectrum.Spectrum`
         object with the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` method.
-
+    
 
     .. warning::
 
@@ -520,17 +523,24 @@ def convolve_with_slit(
 
     w_slit, I_slit: array
         instrumental slit function  (wavespace unit (nm / cm-1))
+        It is recommended to truncate the input slit function to its minimum spectral
+        extension (see Notes).
 
         .. warning::
 
             Both wavespaces have to be the same!
 
     mode: ``'valid'``, ``'same'``
-        ``'same'`` returns output of same length as initial spectra,
-        but boundary effects are still visible. ``'valid'`` returns
-        output of length len(spectra) - len(slit) + 1, for
-        which lines outside of the calculated range have
-        no impact. Default ``'valid'``.
+
+        ``'same'``:
+        returns output of same length as initial spectra,
+        but boundary effects are still visible. 
+
+        ``'valid'``:
+        returns output of length len(spectra) - len(slit) + 1, assuming len(I_slit) < len(I),
+        for which lines outside of the calculated range have no impact. 
+
+        Default ``'valid'``.
 
     Other Parameters
     ----------------
@@ -561,12 +571,54 @@ def convolve_with_slit(
 
     Notes
     -----
+    The discrete convolution operation is defined as
 
-    Implementation is done in 5 steps:
+    .. math:: (I * I_{slit})[n] = \\sum_{m = -\\infty}^{\\infty} I[m] I_{slit}[n - m]
 
-    - Check input
+    This numerical discrete convolution doesn't take care of respecting the physical distances.
+    Therefore we have to make sure that the ``I`` and ``I_slit`` are expressed using the same
+    spectral spacing (e.g. that ``w`` and ``w`_slit`` have the same step in nm between
+    two adjacent points). The minimal step between values of ``w`` is used to determine
+    this reference spacing.
+
+    If the slit function covers a spectral interval much larger than its 
+    Full Width a Half Maximum (FWHM), it will potentially add non-zero elements in the sum 
+    and mix spectral features that are much further away from each other than the FWHM, as
+    it would have been expected.
+    For an experimental slit function, this also means introducing more noise and artificial
+    broadening. It is thus recommended to truncate the input slit function to its minimum
+    useful spectral range.
+
+    For instance, if you have an instrumental slit function that looks like so, we recommend
+    to cut it where the vertical lines are drawn.
+    
+    ::
+    
+        I_slit  ^
+                |     |   _   |
+                |     |  / \\  |
+                |     | /   \\ |
+               0|_____|/     \\|________
+              --|-----         --------->
+                    cut       cut        w_slit
+
+    When we apply a slit function, we should consider the contributions of spectral features outside
+    of the initial spectral range (i.e. ``w[0]`` - FWHM, ``w[-1]`` + FWHM) that would matter to reproduce 
+    the entire spectrum. Those points are probably not taken into account during the simulation and
+    it could be interesting to extend the spectral range of ``w`` when possible to gauge this contribution.
+
+    Since, we don't have access to this extra points, we truncated the output spectrum to the spectral
+    range we can trust (no missing information). The ``valid`` mode operates this truncation by cutting 
+    the edge of the spectrum ever a spectral width corresponding to the spectral width of the provided 
+    slit function. This is meant to remove incorrect points on the edge. We recommend using this mode.
+    You can however access those removed points using the ``same`` mode (at your own risk).
+
+    Implementation of :func:`~radis.tools.slit.convolve_with_slit` is done in 5 steps:
+
+    - Check input slit function: compare input slit spectral range to spectrum spectral range
+      if ranges are comparable, check FHWM and send a warning.
     - Interpolate the slit function on the spectrum grid, resample it if not
-      evenly spaced
+      evenly spaced (in order to match physical distances)
     - Check slit aspect, plot slit if asked for
     - Convolve!
     - Remove boundary effects
@@ -591,15 +643,49 @@ def convolve_with_slit(
         wunit = waveunit
 
     # Assert slit function is thin enough
-    try:
-        assert abs(w[-1] - w[0]) > abs(w_slit[-1] - w_slit[0])
-    except AssertionError:
-        raise AssertionError(
-            "Slit function is broader ({0:.1f}nm) than spectrum".format(
-                abs(w_slit[-1] - w_slit[0])
-            )
-            + " ({0:.1f}nm). No valid range.".format(abs(w[-1] - w[0]))
+
+    def lin_interp(x, y, i, half):
+        return x[i] + (x[i+1] - x[i]) * ((half - y[i]) / (y[i+1] - y[i]))
+
+    def half_max_x(x, y):
+        half = max(y)/2.0
+        signs = np.sign(np.add(y, -half))
+        zero_crossings = (signs[0:-2] != signs[1:-1])
+        zero_crossings_i = np.where(zero_crossings)[0]
+        return [lin_interp(x, y, zero_crossings_i[0], half),
+                lin_interp(x, y, zero_crossings_i[1], half)]
+    def fwhm(x,y):
+        hmx = half_max_x(x,y)
+        return hmx[1] - hmx[0]
+
+    w_range = w[-1] - w[0]
+    w_slit_range = w_slit[-1] - w_slit[0]
+    slit_FWHM = fwhm(w_slit, I_slit)
+
+    if np.abs(w_slit_range) >10*slit_FWHM:
+        warn(
+            f"FWHM >> spectral range!\n" \
+          + f"Slit Function is provided with a spectral range {w_slit_range:.1f} nm that is much " \
+          + f"wider than its estimated FWHM {slit_FWHM:.1f}. We recommend truncating the input " \
+          + f"slit function. See radis documentation about convolve_with_slit for more information."
         )
+
+    if np.abs(w_range) < np.abs(w_slit_range):
+        if mode == "valid":
+            raise AssertionError(
+                f"Slit spectral range > Spectrum spectral range and mode is set to valid!\n" \
+              + f"Slit function is provided with a spectral range ({w_slit_range:.1f} nm) larger than " \
+              + f"the spectral range of the spectrum ({w_range:.1f} nm). The output spectrum is therefore empty! " \
+              + f"Set mode to same in this case. However, we recommend truncating the input slit function. "
+              + f"See radis documentation about convolve_with_slit for more information."
+            )
+        else:
+            warn(
+                f"Slit spectral range > Spectrum spectral range!\n" \
+              + f"Slit function is provided with a spectral range ({w_slit_range:.1f} nm) larger than " \
+              + f"the spectral range of the spectrum ({w_range:.1f} nm). We recommend truncating the input " \
+              + f"slit function. See radis documentation about convolve_with_slit for more information."
+            )
 
     # 2. Interpolate the slit function on the spectrum grid, resample it if not
     #    evenly spaced
