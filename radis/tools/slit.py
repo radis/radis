@@ -647,7 +647,6 @@ def convolve_with_slit(
     w_range = abs(w[-1] - w[0])
     w_slit_range = abs(w_slit[-1] - w_slit[0])
     slit_FWHM = get_FWHM(w_slit, I_slit)
-    print(slit_FWHM)
 
     if w_slit_range >10*slit_FWHM:
         warn(
