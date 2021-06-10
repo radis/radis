@@ -1730,6 +1730,100 @@ class SpecList(object):
 
 
 class SpecDatabase(SpecList):
+    """A Spectrum Database class to manage them all.
+
+    It basically manages a list of Spectrum JSON files, adding a Pandas
+    dataframe structure on top to serve as an efficient index to visualize
+    the spectra input conditions, and slice through the Dataframe with
+    easy queries
+
+    Similar to :class:`~radis.tools.database.SpecList`, but associated and
+    synchronized with a folder
+
+    Parameters
+    ----------
+    path: str
+        a folder to initialize the database
+    filt: str
+        only consider files ending with ``filt``. Default ``.spec``
+    binary: boolean
+        if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
+        try as binary file anyway. Default ``False``.
+    lazy_loading: bool``
+        If ``True``, load only the data from the summary csv file and the spectra will
+        be loaded when accessed by the get functions. If ``False``, load all
+        the spectrum files. If ``True`` and the summary .csv file does not exist,
+        load all spectra
+
+    Other Parameters
+    ----------------
+    *input for :class:`~joblib.parallel.Parallel` loading of database*
+
+    nJobs: int
+        Number of processors to use to load a database (usefull for big
+        databases). BE CAREFULL, no check is done on processor use prior
+        to the execution ! Default ``-2``: use all but 1 processors.
+        Use ``1`` for single processor.
+    batch_size: int or ``'auto'``
+        The number of atomic tasks to dispatch at once to each
+        worker. When individual evaluations are very fast, dispatching
+        calls to workers can be slower than sequential computation because
+        of the overhead. Batching fast computations together can mitigate
+        this. Default: ``'auto'``
+
+    More information in :class:`joblib.parallel.Parallel`
+
+    Examples
+    --------
+
+    ::
+
+        >>> db = SpecDatabase(r"path/to/database")     # create or loads database
+
+        >>> db.update()  # in case something changed
+        >>> db.see(['Tvib', 'Trot'])   # nice print in console
+
+        >>> s = db.get('Tvib==3000')[0]  # get a Spectrum back
+        >>> db.add(s)  # update database (and raise error because duplicate!)
+
+    Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to
+    automatically look-up and update a database when spectra are calculated.
+
+    The function to auto retrieve a Spectrum from database on calculation
+    time is a method of DatabankLoader class
+
+    You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
+    of the website.
+
+    .. notes:
+        Database interaction is based on Pandas query functions. As such, it
+        requires all conditions to be either float, string, or boolean. List
+        won't work!
+
+
+    See Also
+    --------
+    :func:`~radis.tools.database.load_spec`,
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+
+    Methods to retrieve objects:
+
+    :meth:`~radis.tools.database.SpecList.get`,
+    :meth:`~radis.tools.database.SpecList.get_closest`,
+    :meth:`~radis.tools.database.SpecList.get_unique`,
+
+    Methods to manipulate the SpecDatabase:
+
+    :meth:`~radis.tools.database.SpecList.see`,
+    :meth:`~radis.tools.database.SpecDatabase.update`,
+    :meth:`~radis.tools.database.SpecDatabase.add`,
+    :meth:`~radis.tools.database.SpecDatabase.compress_to`,
+    :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
+
+    Compare another Spectrum to all spectra in the database:
+
+    :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`,
+    """
     def __init__(
         self,
         path=".",
@@ -1742,100 +1836,6 @@ class SpecDatabase(SpecList):
         batch_size="auto",
         lazy_loading=True,
     ):
-        """A Spectrum Database class to manage them all.
-
-        It basically manages a list of Spectrum JSON files, adding a Pandas
-        dataframe structure on top to serve as an efficient index to visualize
-        the spectra input conditions, and slice through the Dataframe with
-        easy queries
-
-        Similar to :class:`~radis.tools.database.SpecList`, but associated and
-        synchronized with a folder
-
-        Parameters
-        ----------
-        path: str
-            a folder to initialize the database
-        filt: str
-            only consider files ending with ``filt``. Default ``.spec``
-        binary: boolean
-            if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
-            try as binary file anyway. Default ``False``
-        lazy_loading: bool``
-            If ``True``, load only the data from the summary csv file and the spectra will
-            be loaded when accessed by the get functions. If ``False``, load all
-            the spectrum files. If ``True`` and the summary .csv file does not exist,
-            load all spectra
-
-        Other Parameters
-        ----------------
-        *input for :class:`~joblib.parallel.Parallel` loading of database*
-
-        nJobs: int
-            Number of processors to use to load a database (usefull for big
-            databases). BE CAREFULL, no check is done on processor use prior
-            to the execution ! Default ``-2``: use all but 1 processors.
-            Use ``1`` for single processor.
-        batch_size: int or ``'auto'``
-            The number of atomic tasks to dispatch at once to each
-            worker. When individual evaluations are very fast, dispatching
-            calls to workers can be slower than sequential computation because
-            of the overhead. Batching fast computations together can mitigate
-            this. Default: ``'auto'``
-
-        More information in :class:`joblib.parallel.Parallel`
-
-        Examples
-        --------
-
-        ::
-
-            >>> db = SpecDatabase(r"path/to/database")     # create or loads database
-
-            >>> db.update()  # in case something changed
-            >>> db.see(['Tvib', 'Trot'])   # nice print in console
-
-            >>> s = db.get('Tvib==3000')[0]  # get a Spectrum back
-            >>> db.add(s)  # update database (and raise error because duplicate!)
-
-        Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to
-        automatically look-up and update a database when spectra are calculated.
-
-        The function to auto retrieve a Spectrum from database on calculation
-        time is a method of DatabankLoader class
-
-        You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
-        of the website.
-
-        .. notes:
-            Database interaction is based on Pandas query functions. As such, it
-            requires all conditions to be either float, string, or boolean. List
-            won't work!
-
-
-        See Also
-        --------
-        :func:`~radis.tools.database.load_spec`,
-        :meth:`~radis.spectrum.spectrum.Spectrum.store`
-
-        Methods to retrieve objects:
-
-        :meth:`~radis.tools.database.SpecList.get`,
-        :meth:`~radis.tools.database.SpecList.get_closest`,
-        :meth:`~radis.tools.database.SpecList.get_unique`,
-
-        Methods to manipulate the SpecDatabase:
-
-        :meth:`~radis.tools.database.SpecList.see`,
-        :meth:`~radis.tools.database.SpecDatabase.update`,
-        :meth:`~radis.tools.database.SpecDatabase.add`,
-        :meth:`~radis.tools.database.SpecDatabase.compress_to`,
-        :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
-
-        Compare another Spectrum to all spectra in the database:
-
-        :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`,
-        """
         # TODO @devs: generate a SpecDatabase from a dict.
         # use the key of the dict insted of the file.
 
