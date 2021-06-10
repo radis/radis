@@ -661,6 +661,11 @@ def convolve_with_slit(
     w_range = w[-1] - w[0]
     w_slit_range = w_slit[-1] - w_slit[0]
     slit_FWHM = fwhm(w_slit, I_slit)
+    print(slit_FWHM)
+    w_range = abs(w[-1] - w[0])
+    w_slit_range = abs(w_slit[-1] - w_slit[0])
+    slit_FWHM = get_FWHM(w_slit, I_slit)
+    print(slit_FWHM)
 
     if np.abs(w_slit_range) >10*slit_FWHM:
         warn(
@@ -808,15 +813,27 @@ def get_FWHM(w, I, return_index=False):
     """
     # TODO: Linearly interpolate at the boundary? insignificant for large number of points
 
-    upper = np.argwhere(I >= I.max() / 2)
+    half = I.max() / 2
+    I_offset = I - half
+    upper = np.argwhere(I_offset >= 0)
 
     xmin = upper.min()
     xmax = upper.max()
 
+    def get_zero(x1, y1, x2, y2):
+        """
+        Linear interpolation on data to get zero
+        Return location of zero by solving for f(x) = (y2-y1)/(x2-x1) * (x-x1) + y1 = 0 
+        """
+        return x1 - y1*(x2-x1)/(y2-y1)
+
+    wmin = get_zero(w[xmin-1], I_offset[xmin-1], w[xmin], I_offset[xmin])
+    wmax = get_zero(w[xmax], I_offset[xmax], w[xmax+1], I_offset[xmax+1])
+
     if return_index:
-        return abs(w[xmax] - w[xmin]), xmin, xmax
+        return abs(wmin - wmax), xmin, xmax
     else:
-        return abs(w[xmax] - w[xmin])
+        return abs(wmax - wmin)
 
 
 def get_effective_FWHM(w, I):
