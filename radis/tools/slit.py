@@ -813,7 +813,7 @@ def get_FWHM(w, I, return_index=False):
     wmax = get_zero(w[xmax], I_offset[xmax], w[xmax+1], I_offset[xmax+1])
 
     if return_index:
-        return abs(wmin - wmax), xmin, xmax
+        return abs(wmax - wmin), xmin, xmax
     else:
         return abs(wmax - wmin)
 
