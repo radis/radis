@@ -673,10 +673,10 @@ def convolve_with_slit(
     if np.abs(w_range) < np.abs(w_slit_range):
         if mode == "valid":
             raise AssertionError(
-                f"Slit spectral range > Spectrum spectral range and mode is set to valid!\n" \
-              + f"Slit function is provided with a spectral range ({w_slit_range:.1f} nm) larger than " \
-              + f"the spectral range of the spectrum ({w_range:.1f} nm). The output spectrum is therefore empty! " \
-              + f"Set mode to same in this case. However, we recommend truncating the input slit function. "
+              f"Slit function is provided with a spectral range ({w_slit_range:.1f} {waveunit}) larger than " \
+              + f"the spectral range of the spectrum ({w_range:.1f} {waveunit}) : the output spectrum will therefore be empty " \
+              + f"as boundary effects of the convolution are automatically discarded. If you still want to apply the slit "
+              + f"despite potential boundary effects, set `mode='same'`. However, we recommend truncating the input slit function if possible, or compute the spectrum on a larger spectral range. "
               + f"See radis documentation about convolve_with_slit for more information."
             )
         else:
