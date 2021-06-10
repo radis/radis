@@ -658,16 +658,12 @@ def convolve_with_slit(
         hmx = half_max_x(x,y)
         return hmx[1] - hmx[0]
 
-    w_range = w[-1] - w[0]
-    w_slit_range = w_slit[-1] - w_slit[0]
-    slit_FWHM = fwhm(w_slit, I_slit)
-    print(slit_FWHM)
     w_range = abs(w[-1] - w[0])
     w_slit_range = abs(w_slit[-1] - w_slit[0])
     slit_FWHM = get_FWHM(w_slit, I_slit)
     print(slit_FWHM)
 
-    if np.abs(w_slit_range) >10*slit_FWHM:
+    if w_slit_range >10*slit_FWHM:
         warn(
             f"FWHM >> spectral range!\n" \
           + f"Slit Function is provided with a spectral range {w_slit_range:.1f} nm that is much " \
@@ -675,7 +671,7 @@ def convolve_with_slit(
           + f"slit function. See radis documentation about convolve_with_slit for more information."
         )
 
-    if np.abs(w_range) < np.abs(w_slit_range):
+    if w_range < w_slit_range:
         if mode == "valid":
             raise AssertionError(
               f"Slit function is provided with a spectral range ({w_slit_range:.1f} {waveunit}) larger than " \
