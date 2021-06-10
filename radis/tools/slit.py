@@ -644,20 +644,6 @@ def convolve_with_slit(
 
     # Assert slit function is thin enough
 
-    def lin_interp(x, y, i, half):
-        return x[i] + (x[i+1] - x[i]) * ((half - y[i]) / (y[i+1] - y[i]))
-
-    def half_max_x(x, y):
-        half = max(y)/2.0
-        signs = np.sign(np.add(y, -half))
-        zero_crossings = (signs[0:-2] != signs[1:-1])
-        zero_crossings_i = np.where(zero_crossings)[0]
-        return [lin_interp(x, y, zero_crossings_i[0], half),
-                lin_interp(x, y, zero_crossings_i[1], half)]
-    def fwhm(x,y):
-        hmx = half_max_x(x,y)
-        return hmx[1] - hmx[0]
-
     w_range = abs(w[-1] - w[0])
     w_slit_range = abs(w_slit[-1] - w_slit[0])
     slit_FWHM = get_FWHM(w_slit, I_slit)
