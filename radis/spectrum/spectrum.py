@@ -1523,7 +1523,7 @@ class Spectrum(object):
                 + "on a same figure with different ylabel: \n{0}\n{1}".format(
                     clean_error_msg(fig.gca().get_ylabel()), clean_error_msg(ylabel)
                 )
-                + "\nUse force=True if you really want to plot"
+                + "\nIf it's a unit problem, you can change the unit with `Iunit=`. Use `force=True` if you really want to plot with these units."
             )
 
         # Add extra plotting parameters
