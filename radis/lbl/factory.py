@@ -745,6 +745,7 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
+        conditions.update(self.time.dict_time)
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -1042,6 +1043,7 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
+        conditions.update(self.time.dict_time)
 
         # Spectral quantities
         quantities = {
@@ -1358,6 +1360,7 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
+        conditions.update(self.time.dict_time)
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         populations = self.get_populations(self.misc.export_populations)

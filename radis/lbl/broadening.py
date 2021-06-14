@@ -558,7 +558,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
     :py:func:`~radis.lbl.broadening.whiting1968`
     """
-
+    t0 = time()
     # Note: Whiting and Olivero use FWHM. Here we keep HWHM in all public function
     # arguments for consistency.
     wl = 2 * hwhm_lorentz  # HWHM > FWHM
@@ -582,7 +582,8 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     lineshape /= integral
 
     assert not np.isnan(lineshape).any()
-
+    print("lineshape-",lineshape)
+    print("time _lineshape- ", time()-t0)
     return lineshape
 
 
@@ -1222,7 +1223,7 @@ class BroadenFactory(BaseFactory):
         # Calculate broadening for all lines
         # ----------------------------------
         lineshape = voigt_lineshape(wbroad_centered, hwhm_lorentz, hwhm_voigt, jit=jit)
-
+        self.lineshape = lineshape
         return lineshape
 
     # %% Function to calculate lineshapes from HWHM
@@ -1358,6 +1359,8 @@ class BroadenFactory(BaseFactory):
                     printg("... Convolved both profiles in {0:.1f}s".format(t2 - t12))
                 elif broadening_method == "fft":
                     raise NotImplementedError("FFT")
+        
+        self.time.dict_time["Voigt_Broadening_Legacy"] = t2 - t1
 
         return line_profile
 

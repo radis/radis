@@ -495,6 +495,30 @@ class MiscParams(ConditionDict):
         self.warning_linestrength_cutoff = None  #: float [0-1]: raise a warning if the sum of linestrength cut is above that
         self.total_lines = 0  #: int : number of lines in database.
 
+class Time(ConditionDict):
+    """A class to hold Spectrum calculation time dependent parameters, under the attribute
+    :py:attr:`~radis.lbl.loader.DatabankLoader.time.dict_time` of
+    :py:class:`~radis.lbl.factory.SpectrumFactory`.
+
+    It also stores functions to print all the entities based on verbose value
+
+    See Also
+    --------
+
+    :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
+    :py:attr:`~radis.lbl.loader.DatabankLoader.time`,
+
+    """
+
+    def __init__(self):
+        super(Time, self).__init__()
+
+        # Dev: Init here to be found by autocomplete
+        self.dict_time = {}
+
+    def _calc_lineshape_time(self):
+        
+
 
 def format_paths(s):
     """escape all special characters."""
@@ -578,6 +602,7 @@ class DatabankLoader(object):
         """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
         params that cannot change the output of calculations (ex: number of CPU, etc.)
         """
+        self.time = Time()
         # Setup individual warnings. Value of keys can be:
         # - 'warning' (default: just trigger a warning)
         # - 'error' (raises an error on this warning)
