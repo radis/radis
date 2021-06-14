@@ -495,6 +495,7 @@ class MiscParams(ConditionDict):
         self.warning_linestrength_cutoff = None  #: float [0-1]: raise a warning if the sum of linestrength cut is above that
         self.total_lines = 0  #: int : number of lines in database.
 
+
 class Time(ConditionDict):
     """A class to hold Spectrum calculation time dependent parameters, under the attribute
     :py:attr:`~radis.lbl.loader.DatabankLoader.time.dict_time` of
@@ -516,8 +517,42 @@ class Time(ConditionDict):
         # Dev: Init here to be found by autocomplete
         self.dict_time = {}
 
-    def _calc_lineshape_time(self):
-        
+    def _calc_lineshape_time(self, verbose, broadening_method, _time, jit):
+        t = self.dict_time
+        if verbose >= 3:
+            printg(
+                "... Initialized vectors in {0:.1f}s".format(_time["t1"] - _time["t0"])
+            )
+            if broadening_method == "voigt":
+                printg(
+                    "... Calculated Voigt profile (jit={1}) in {0:.1f}s".format(
+                        _time["t2"] - _time["t1"], jit
+                    )
+                )
+                t["Legacy_Voigt_Broadening"] = _time["t2"] - _time["t1"]
+            elif broadening_method == "convolve":
+                printg(
+                    "... Calculated Lorentzian profile in {0:.1f}s".format(
+                        _time["t11"] - _time["t1"]
+                    )
+                )
+                t["Legacy_Lorentzian_Broadening"] = _time["t11"] - _time["t1"]
+
+                printg(
+                    "... Calculated Gaussian profile in {0:.1f}s".format(
+                        _time["t12"] - _time["t11"]
+                    )
+                )
+                t["Legacy_Gaussian_Broadening"] = _time["t12"] - _time["t11"]
+
+                printg(
+                    "... Convolved both profiles in {0:.1f}s".format(
+                        _time["t2"] - _time["t12"]
+                    )
+                )
+                t["Legacy_Convolve"] = _time["t2"] - _time["t12"]
+            elif broadening_method == "fft":
+                raise NotImplementedError("FFT")
 
 
 def format_paths(s):

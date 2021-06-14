@@ -582,8 +582,8 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     lineshape /= integral
 
     assert not np.isnan(lineshape).any()
-    print("lineshape-",lineshape)
-    print("time _lineshape- ", time()-t0)
+    # print("lineshape-",lineshape)
+    print("time_lineshape- ", time() - t0)
     return lineshape
 
 
@@ -1273,7 +1273,8 @@ class BroadenFactory(BaseFactory):
         # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
         if __debug__:
-            t0 = time()
+            _time = {}
+            _time["t0"] = time()
 
         # Init variables
         if self.input.Tgas is None:
@@ -1299,7 +1300,7 @@ class BroadenFactory(BaseFactory):
         wbroad = wbroad_centered + shifted_wavenum
 
         if __debug__:
-            t1 = time()
+            _time["t1"] = time()
 
         # Calculate lineshape (using precomputed HWHM)
         broadening_method = (
@@ -1312,10 +1313,10 @@ class BroadenFactory(BaseFactory):
             # Get pressure and gaussian profiles
             pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
             if __debug__:
-                t11 = time()
+                _time["t11"] = time()
             gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
             if __debug__:
-                t12 = time()
+                _time["t12"] = time()
 
             # Convolve and get final line profile:
             line_profile = np.empty_like(pressure_profile)  # size (B, N)
@@ -1340,27 +1341,10 @@ class BroadenFactory(BaseFactory):
             )
 
         if __debug__:
-            t2 = time()
-            if self.verbose >= 3:
-                printg("... Initialized vectors in {0:.1f}s".format(t1 - t0))
-                if broadening_method == "voigt":
-                    printg(
-                        "... Calculated Voigt profile (jit={1}) in {0:.1f}s".format(
-                            t2 - t1, jit
-                        )
-                    )
-                elif broadening_method == "convolve":
-                    printg(
-                        "... Calculated Lorentzian profile in {0:.1f}s".format(t11 - t1)
-                    )
-                    printg(
-                        "... Calculated Gaussian profile in {0:.1f}s".format(t12 - t11)
-                    )
-                    printg("... Convolved both profiles in {0:.1f}s".format(t2 - t12))
-                elif broadening_method == "fft":
-                    raise NotImplementedError("FFT")
-        
-        self.time.dict_time["Voigt_Broadening_Legacy"] = t2 - t1
+            _time["t2"] = time()
+            self.time._calc_lineshape_time(
+                self.verbose, broadening_method, _time, jit=True
+            )
 
         return line_profile
 
