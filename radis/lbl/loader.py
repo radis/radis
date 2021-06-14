@@ -529,30 +529,34 @@ class Time(ConditionDict):
                         _time["t2"] - _time["t1"], jit
                     )
                 )
-                t["Legacy_Voigt_Broadening"] = _time["t2"] - _time["t1"]
             elif broadening_method == "convolve":
                 printg(
                     "... Calculated Lorentzian profile in {0:.1f}s".format(
                         _time["t11"] - _time["t1"]
                     )
                 )
-                t["Legacy_Lorentzian_Broadening"] = _time["t11"] - _time["t1"]
-
                 printg(
                     "... Calculated Gaussian profile in {0:.1f}s".format(
                         _time["t12"] - _time["t11"]
                     )
                 )
-                t["Legacy_Gaussian_Broadening"] = _time["t12"] - _time["t11"]
-
                 printg(
                     "... Convolved both profiles in {0:.1f}s".format(
                         _time["t2"] - _time["t12"]
                     )
                 )
-                t["Legacy_Convolve"] = _time["t2"] - _time["t12"]
             elif broadening_method == "fft":
                 raise NotImplementedError("FFT")
+
+        # Assigning Values
+        if broadening_method == "voigt":
+            t["Legacy_Voigt_Broadening"] = _time["t2"] - _time["t1"]
+        elif broadening_method == "convolve":
+            t["Legacy_Lorentzian_Broadening"] = _time["t11"] - _time["t1"]
+            t["Legacy_Gaussian_Broadening"] = _time["t12"] - _time["t11"]
+            t["Legacy_Convolve"] = _time["t2"] - _time["t12"]
+        elif broadening_method == "fft":
+            raise NotImplementedError("FFT")
 
 
 def format_paths(s):
