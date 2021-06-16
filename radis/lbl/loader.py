@@ -1033,6 +1033,15 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
+        id_set = df.id.unique()
+
+        if len(id_set) != 1:  # only 1 molecule supported ftm
+            raise NotImplementedError(
+                "Only 1 molecule at a time is currently supported "
+                + "in SpectrumFactory. Use radis.calc_spectrum, which "
+                + "calculates them independently then use MergeSlabs"
+            )
+
         return
 
     def load_databank(
@@ -1213,18 +1222,12 @@ class DatabankLoader(object):
         self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
         # Check the molecule is what we expected
-        if len(set(self.df0.id)) != 1:  # only 1 molecule supported ftm
-            raise NotImplementedError(
-                "Only 1 molecule at a time is currently supported "
-                + "in SpectrumFactory. Use radis.calc_spectrum, which "
-                + "calculates them independently then use MergeSlabs"
-            )
         if self.input.molecule not in ["", None]:
             assert self.input.molecule == get_molecule(
-                self.df0.id[0]
+                self.df0.attrs["id"]
             )  # assert molecule is what we expected
         else:
-            self.input.molecule = get_molecule(self.df0.id[0])  # get molecule
+            self.input.molecule = get_molecule(self.df0.attrs["id"])  # get molecule
 
         # %% Partition functions (with energies)
         # ------------
@@ -1951,6 +1954,20 @@ class DatabankLoader(object):
                     time() - t0, len(df)
                 )
             )
+
+        id_set = df.id.unique()
+
+        if len(id_set) != 1:  # only 1 molecule supported ftm
+            raise NotImplementedError(
+                "Only 1 molecule at a time is currently supported "
+                + "in SpectrumFactory. Use radis.calc_spectrum, which "
+                + "calculates them independently then use MergeSlabs"
+            )
+
+        df.drop("id", axis=1, inplace=True)
+        print(df.head())
+        df_metadata.append("id")
+        df.attrs["id"] = id_set[0]
 
         return df
 

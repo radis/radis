@@ -897,10 +897,14 @@ class SpectrumFactory(BandFactory):
         molpar = MolParams()
 
         try:
-            id_set = self.df0[
-                "id"
-            ].unique()  # get all the molecules in the dataframe, should ideally be 1 element for GPU
-            mol_id = id_set[0]
+            if "id" in self.df0:
+                id_set = self.df0[
+                    "id"
+                ].unique()  # get all the molecules in the dataframe, should ideally be 1 element for GPU
+                mol_id = id_set[0]
+
+            else:
+                mol_id = self.df0.attrs["id"]
             molecule = get_molecule(mol_id)
         except:
             mol_id = get_molecule_identifier(self.input.molecule)
