@@ -1273,8 +1273,7 @@ class BroadenFactory(BaseFactory):
         # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
         if __debug__:
-            _time = {}
-            _time["t0"] = time()
+            t0 = time()
 
         # Init variables
         if self.input.Tgas is None:
@@ -1287,6 +1286,7 @@ class BroadenFactory(BaseFactory):
         wbroad_centered_oneline = self.wbroad_centered  # size (B,)
 
         shifted_wavenum = dg.shiftwav
+        verbose = self.verbose
         try:  # make it a row vector
             shifted_wavenum = shifted_wavenum.values.reshape((1, -1))
             N = len(dg)
@@ -1300,7 +1300,7 @@ class BroadenFactory(BaseFactory):
         wbroad = wbroad_centered + shifted_wavenum
 
         if __debug__:
-            _time["t1"] = time()
+            t1 = time()
 
         # Calculate lineshape (using precomputed HWHM)
         broadening_method = (
@@ -1313,10 +1313,11 @@ class BroadenFactory(BaseFactory):
             # Get pressure and gaussian profiles
             pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
             if __debug__:
-                _time["t11"] = time()
+                t11 = time()
+
             gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
             if __debug__:
-                _time["t12"] = time()
+                t12 = time()
 
             # Convolve and get final line profile:
             line_profile = np.empty_like(pressure_profile)  # size (B, N)
@@ -1341,10 +1342,38 @@ class BroadenFactory(BaseFactory):
             )
 
         if __debug__:
-            _time["t2"] = time()
-            self.time._calc_lineshape_time(
-                self.verbose, broadening_method, _time, jit=True
+            t2 = time()
+            self.time.print_time(
+                verbose, t0, t1, statement="... Initialized vectors", save=True
             )
+            if broadening_method == "voigt":
+                self.time.print_time(
+                    verbose,
+                    t1,
+                    t2,
+                    statement=f"... Calculated Voigt profile (jit={jit})",
+                    save=True,
+                )
+            elif broadening_method == "convolve":
+                self.time.print_time(
+                    verbose,
+                    t1,
+                    t11,
+                    statement="... Calculated Lorentzian profile",
+                    save=True,
+                )
+                self.time.print_time(
+                    verbose,
+                    t11,
+                    t12,
+                    statement="... Calculated Gaussian profile",
+                    save=True,
+                )
+                self.time.print_time(
+                    verbose, t12, t2, statement="... Convolved both profiles", save=True
+                )
+            elif broadening_method == "fft":
+                raise NotImplementedError("FFT")
 
         return line_profile
 

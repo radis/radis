@@ -60,6 +60,8 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
+import random
+import string
 import warnings
 from copy import deepcopy
 from os.path import exists
@@ -87,7 +89,7 @@ from radis.levels.partfunc import (
 )
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.arrays import count_nans
-from radis.misc.basics import compare_dict, compare_lists
+from radis.misc.basics import compare_dict, compare_lists, round_off
 from radis.misc.config import getDatabankEntries, getDatabankList, printDatabankEntries
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
@@ -496,7 +498,7 @@ class MiscParams(ConditionDict):
         self.total_lines = 0  #: int : number of lines in database.
 
 
-class Time(ConditionDict):
+class CalcTime(ConditionDict):
     """A class to hold Spectrum calculation time dependent parameters, under the attribute
     :py:attr:`~radis.lbl.loader.DatabankLoader.time.dict_time` of
     :py:class:`~radis.lbl.factory.SpectrumFactory`.
@@ -512,11 +514,37 @@ class Time(ConditionDict):
     """
 
     def __init__(self):
-        super(Time, self).__init__()
+        super(CalcTime, self).__init__()
 
         # Dev: Init here to be found by autocomplete
         self.dict_time = {}
+        # Storing temporary key for each operation
+        # self.key_dict = {}
 
+    """
+    def get_random_string(self, length):
+        # choose from all lowercase letter
+        letters = string.ascii_lowercase
+        result_str = ''.join(random.choice(letters) for i in range(length))
+        return result_str
+
+    def start(self):
+        time_initial = time()
+        key = self.get_random_string(6)
+        self.key_dict[key] = time_initial
+    """
+
+    def print_time(self, verbose, time_initial, time_final, statement, save=False):
+
+        # time_final = time()
+        total_time = time_final - time_initial
+
+        if verbose >= 3:
+            printg(statement, "in {0:.1f}s".format(total_time))
+        if save:
+            self.dict_time[statement] = round_off(total_time)
+
+    """
     def _calc_lineshape_time(self, verbose, broadening_method, _time, jit):
         t = self.dict_time
         if verbose >= 3:
@@ -557,6 +585,7 @@ class Time(ConditionDict):
             t["Legacy_Convolve"] = _time["t2"] - _time["t12"]
         elif broadening_method == "fft":
             raise NotImplementedError("FFT")
+        """
 
 
 def format_paths(s):
@@ -641,7 +670,9 @@ class DatabankLoader(object):
         """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
         params that cannot change the output of calculations (ex: number of CPU, etc.)
         """
-        self.time = Time()
+        self.time = CalcTime()
+        """Calculation Time (:py:class:`~radis.lbl.loader.CalcTime`)
+        prints, stores various functions computational time based on Verbose value (eg - Voigt Broadening, Convolution, etc"""
         # Setup individual warnings. Value of keys can be:
         # - 'warning' (default: just trigger a warning)
         # - 'error' (raises an error on this warning)
