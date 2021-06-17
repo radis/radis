@@ -271,19 +271,17 @@ def LineSurvey(
 
         # Get global labels
         if molecule in HITRAN_CLASS1:
-            label = (
-                "{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
-                    **dict(
-                        [(k, row[k]) for k in ["vu", "vl", "jl", "iso"]]
-                        + [
-                            ("molec", molecule),
-                            ("branch", _fix_branch_format[row["branch"]]),
-                        ]
-                    )
+            label = "{molec} [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
+                **dict(
+                    [(k, row[k]) for k in ["vu", "vl", "jl"]]
+                    + [
+                        ("molec", molecule),
+                        ("branch", _fix_branch_format[row["branch"]]),
+                    ]
                 )
             )
         elif molecule in HITRAN_CLASS4:
-            label = "{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
+            label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
                 **dict(
                     [
                         (k, row[k])
@@ -297,7 +295,6 @@ def LineSurvey(
                             "l2l",
                             "v3l",
                             "jl",
-                            "iso",
                         ]
                     ]
                     + [
@@ -307,7 +304,7 @@ def LineSurvey(
                 )
             )
         elif molecule in HITRAN_CLASS5:
-            label = "{molec}[iso{iso:.0f}] [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f} {rl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f} {ru:.0f})".format(
+            label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f} {rl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f} {ru:.0f})".format(
                 **dict(
                     [
                         (k, row[k])
@@ -323,7 +320,6 @@ def LineSurvey(
                             "rl",
                             "ru",
                             "jl",
-                            "iso",
                         ]
                     ]
                     + [
@@ -348,7 +344,7 @@ def LineSurvey(
         return label
 
     def get_label_cdsd(row, details):
-        label = "CO2[iso{iso}] [{branch}{jl:.0f}](p{polyl:.0f}c{wangl:.0f}n{rankl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
+        label = "CO2 [{branch}{jl:.0f}](p{polyl:.0f}c{wangl:.0f}n{rankl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
             **dict(
                 [
                     (k, row[k])
@@ -360,7 +356,6 @@ def LineSurvey(
                         "wangu",
                         "ranku",
                         "jl",
-                        "iso",
                     ]
                 ]
                 + [("branch", _fix_branch_format[row["branch"]])]
@@ -377,7 +372,7 @@ def LineSurvey(
         return label
 
     def get_label_cdsd_hitran(row, details):
-        label = "CO2[iso{iso}] [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
+        label = "CO2 [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
             **dict(
                 [
                     (k, row[k])
@@ -391,7 +386,6 @@ def LineSurvey(
                         "l2l",
                         "v3l",
                         "jl",
-                        "iso",
                     ]
                 ]
                 + [("branch", _fix_branch_format[row["branch"]])]

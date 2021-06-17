@@ -1042,6 +1042,13 @@ class DatabankLoader(object):
                 + "calculates them independently then use MergeSlabs"
             )
 
+        isotope_set = df.iso.unique()
+
+        if len(isotope_set) == 1:
+            df.drop("iso", axis=1, inplace=True)
+            df_metadata.append("iso")
+            df.attrs["iso"] = isotope_set[0]
+
         return
 
     def load_databank(
@@ -1967,6 +1974,13 @@ class DatabankLoader(object):
         df.drop("id", axis=1, inplace=True)
         df_metadata.append("id")
         df.attrs["id"] = id_set[0]
+
+        isotope_set = df.iso.unique()
+
+        if len(isotope_set) == 1:
+            df.drop("iso", axis=1, inplace=True)
+            df_metadata.append("iso")
+            df.attrs["iso"] = isotope_set[0]
 
         return df
 
