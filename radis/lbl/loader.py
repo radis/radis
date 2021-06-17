@@ -60,8 +60,7 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
-import random
-import string
+
 import warnings
 from copy import deepcopy
 from os.path import exists
@@ -518,6 +517,8 @@ class CalcTime(ConditionDict):
 
         # Dev: Init here to be found by autocomplete
         self.dict_time = {}
+
+        # To update condition
         # Storing temporary key for each operation
         # self.key_dict = {}
 
