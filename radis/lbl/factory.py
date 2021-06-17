@@ -611,6 +611,11 @@ class SpectrumFactory(BandFactory):
                 + "without self_absorption"
             )
 
+        if "id" in self.df0.attrs:
+            id = self.df0.attrs["id"]
+
+        else:
+            id = None
         # Convert units
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
@@ -798,6 +803,9 @@ class SpectrumFactory(BandFactory):
         t = round(time() - t0, 2)
         if verbose:
             print("Spectrum calculated in {0:.2f}s".format(t))
+
+        if (id != "") and (s.lines is not None):
+            s.lines.attrs["id"] = id
 
         return s
 

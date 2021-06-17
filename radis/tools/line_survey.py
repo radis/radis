@@ -250,7 +250,7 @@ def LineSurvey(
     # Parse databank to get relevant information on each line
     # (one function per databank format)
 
-    def get_label_hitran(row, details):
+    def get_label_hitran(row, details, attrs):
         """
         Todo
         -------
@@ -263,8 +263,11 @@ def LineSurvey(
 
         will be much faster!
         """
+        if "id" in attrs:
+            molecule = get_molecule(attrs["id"])
 
-        molecule = get_molecule(row.id)
+        else:
+            molecule = get_molecule(row.id)
 
         # Get global labels
         if molecule in HITRAN_CLASS1:
@@ -425,7 +428,7 @@ def LineSurvey(
 
     # Get label
     if dbformat in ["hitran", "hitemp"]:
-        sp["label"] = sp.apply(lambda r: get_label_hitran(r, details), axis=1)
+        sp["label"] = sp.apply(lambda r: get_label_hitran(r, details, sp.attrs), axis=1)
     elif dbformat in ["cdsd-hitemp", "cdsd-4000"]:
         try:
             sp["label"] = sp.apply(lambda r: get_label_cdsd_hitran(r, details), axis=1)

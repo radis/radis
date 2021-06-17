@@ -1965,7 +1965,6 @@ class DatabankLoader(object):
             )
 
         df.drop("id", axis=1, inplace=True)
-        print(df.head())
         df_metadata.append("id")
         df.attrs["id"] = id_set[0]
 
