@@ -37,6 +37,7 @@ from radis.misc.basics import compare_dict, compare_lists
 from radis.misc.curve import curve_distance, curve_divide, curve_substract
 from radis.spectrum.spectrum import Spectrum, is_spectrum
 from radis.spectrum.utils import cast_waveunit, format_xlabel, make_up, make_up_unit
+from radis.tools.plot_tools import add_ruler
 
 # %% ======================================================================
 # External functions
@@ -962,7 +963,8 @@ def plot_diff(
         pos = ax1[i].get_position()
         fig.text(0.09, pos.ymax + 0.02, difftext)
 
-    # Add cursors
+    # Add tools
+    # ... Add cursors
     axes = [ax0] + ax1
     fig.cursors = MultiCursor(
         fig.canvas,
@@ -973,6 +975,10 @@ def plot_diff(
         horizOn=False,
         vertOn=True,
     )
+
+    # ... Add
+    add_ruler(fig, wunit=wunit, Iunit=Iunit, ax=axes[0])
+
     if show:
         plt.show()
     if save:

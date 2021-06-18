@@ -77,6 +77,7 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
+from radis.tools.plot_tools import add_ruler
 
 # %% Spectrum class to hold results )
 
@@ -1555,12 +1556,16 @@ class Spectrum(object):
             plt.legend()
         fix_style(str("origin"))
 
-        # Add cursor
+        # Add plotting tools
+        # ... Add cursor
         try:
             fig.cursor
             # if already exist, do not add again
         except AttributeError:
             fig.cursor = Cursor(fig.gca(), useblit=True, color="r", lw=1, alpha=0.2)
+
+        # ... Add Ruler
+        add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
         plt.show()
         return line
