@@ -55,6 +55,7 @@ from warnings import warn
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.widgets import Cursor
 from numpy import abs, diff
 from publib import fix_style, set_style
 
@@ -1553,6 +1554,14 @@ class Spectrum(object):
         if "label" in kwargs:
             plt.legend()
         fix_style(str("origin"))
+
+        # Add cursor
+        try:
+            fig.cursor
+            # if already exist, do not add again
+        except AttributeError:
+            fig.cursor = Cursor(fig.gca(), useblit=True, color="r", lw=1, alpha=0.2)
+
         plt.show()
         return line
 
