@@ -536,21 +536,16 @@ def plot_diff(
 
     Parameters
     ----------
-
     s1, s2: Spectrum objects
-
     var: str, or None
         spectral quantity to plot (ex: ``'abscoeff'``). If None,
         plot the first one in the Spectrum from ``'radiance'``,
         ``'radiance_noslit'``, ``'transmittance'``, etc.
-
     wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         wavespace unit:  wavelength air, wavenumber, wavelength vacuum.
         If ``'default'``, use first spectrum wunit
-
     Iunit: str
         if ``'default'``, use first spectrum unit
-
     method: ``'distance'``, ``'diff'``, ``'ratio'``, or list of them.
         If ``'diff'``, plot difference of the two spectra.
         If ``'distance'``, plot Euclidian distance (note that units are meaningless then)
@@ -565,51 +560,38 @@ def plot_diff(
         Can also be a list::
 
             method=['diff', 'ratio']
-
     normalize: bool
         Normalize the spectra to be ploted
 
     Other Parameters
     ----------------
-
     diff_window: int
         If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
         units on either side, and returns the minimum. Kinda compensates for experimental
         errors on the w axis. Default 0. (look up code to understand...)
-
     show_points: boolean
         if ``True``, make all points appear with 'o'
-
     label1, label2: str
         curve names
-
     figsize
         figure size
-
     nfig: int, str
         figure number of name
-
     title: str
         title
-
     verbose: boolean
         if ``True``, plot stuff such as rescale ratio in normalize mode. Default ``True``
-
     save: str
         Default is ``False``. By default won't save anything, type the path of the
         destination if you want to save it (format in the name).
-
     show: Bool
         Default is ``True``. Will show the plots : bad if there are more than 20.
-
     show_residual: bool
         if ``True``, calculates and shows on the graph the residual in L2 norm.
         See :func:`~radis.spectrum.compare.get_residual`. ``diff_window`` is
         used in the residual calculation too. ``normalize`` has no effect.
-
     diff_scale_multiplier: float
         dilate the diff plot scale. Default ``1``
-
     discard_centile: int
         if not ``0``, discard the firsts and lasts centile when setting the limits
         of the diff window. Example::
@@ -621,7 +603,6 @@ def plot_diff(
         Note that this does not change the values of the residual. It's just
         a plot feature.
         Default ``0``
-
     plot_medium: bool, ``'vacuum_only'``
         if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
         in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``,
@@ -634,17 +615,13 @@ def plot_diff(
 
     Returns
     -------
-
     fig: figure
-        fig
-
     [ax0, ax1]: axes
         spectra and difference axis
 
 
     Examples
     --------
-
     Simple use::
 
         from radis import plot_diff
@@ -673,7 +650,6 @@ def plot_diff(
 
     See Also
     --------
-
     :func:`~radis.spectrum.compare.get_diff`,
     :func:`~radis.spectrum.compare.get_ratio`,
     :func:`~radis.spectrum.compare.get_distance`,
@@ -692,20 +668,25 @@ def plot_diff(
     # Get defaults
     # ---
     if var is None:  # if nothing is defined, try these first:
-        params = s1.get_vars()
-        if "radiance" in params:
+        s1_arrays = s1.get_vars()
+        common_arrays = [k for k in s2.get_vars() if k in s1_arrays]
+        if "radiance" in common_arrays:
             var = "radiance"
-        elif "radiance_noslit" in params:
+        elif "radiance_noslit" in common_arrays:
             var = "radiance_noslit"
-        elif "transmittance" in params:
+        elif "transmittance" in common_arrays:
             var = "transmittance"
-        elif "transmittance_noslit" in params:
+        elif "transmittance_noslit" in common_arrays:
             var = "transmittance_noslit"
+        elif len(common_arrays) == 0:
+            raise ValueError(
+                f"Spectra {s1.get_name()} {s1.get_vars()} and {s2.get_name()} {s2.get_vars()} do not have spectral arrays in common, and cannot be compared. Try to use `s1.update()` or `s2.update()` to infer missing arrays from existing ones?"
+            )
         else:
             # or plot the first variable we find
-            var = list(params)[0]
-            if var.replace("_noslit", "") in params:
-                var = var.replace("_noslit", "")
+            var = list(common_arrays)[0]
+            if var.replace("_noslit", "") in common_arrays:
+                var = var.replace("_noslit", "")  # if possible use the no-slit version
     # ... check variable exist
     if var not in s1.get_vars():
         raise ValueError(
@@ -843,14 +824,14 @@ def plot_diff(
             style,
             color="k",
             lw=3 * lw_multiplier,
-            label=label1
+            label=label1,
         )
         ax0.plot(
             *s2.get(var, wunit=wunit, Iunit=Iunit),
             style,
             color="r",
             lw=1 * lw_multiplier,
-            label=label2
+            label=label2,
         )
 
     # cosmetic changes
@@ -991,16 +972,13 @@ def averageDistance(s1, s2, var="radiance"):
 
     Parameters
     ----------
-
     s1, s2: Spectrum objects
         spectra to be compared
-
     var: str, optional
         spectral quantity (ex: 'radiance', 'transmittance'...)
 
     Returns
     -------
-
     distance: float
         Average distance as in the following equation:
 
@@ -1009,7 +987,6 @@ def averageDistance(s1, s2, var="radiance"):
             dist = \\frac{\\sqrt{\\sum_i {(s1_i-s2_i)^2}}}{N}.
 
     """
-
     warn(
         FutureWarning(
             "will be deprecated in future versions. Use get_residual(s1, s2, norm=L2) instead"
@@ -1038,7 +1015,7 @@ def compare_spectra(
     ignore_outliers=False,
     ignore_conditions=["calculation_time"],
     normalize=False,
-    **kwargs
+    **kwargs,
 ):
     """Compare Spectrum with another Spectrum object.
 
@@ -1265,7 +1242,7 @@ def compare_spectra(
                         wunit=wunit,
                         normalize=normalize,
                         verbose=verbose,
-                        **kwargs
+                        **kwargs,
                     )
                 except:
                     print("... couldn't plot {0}".format(k))
@@ -1306,7 +1283,7 @@ def compare_spectra(
                         wunit=wunit,
                         normalize=normalize,
                         verbose=verbose,
-                        **kwargs
+                        **kwargs,
                     )
                 except:
                     print("... there was an error while plotting {0}".format(k))
