@@ -90,6 +90,7 @@ from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
+from radis.lbl.loader import CalcTime
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
 from radis.misc.utils import Default
@@ -477,6 +478,12 @@ class SpectrumFactory(BandFactory):
             cutoff = 0
         self.params.cutoff = cutoff
 
+        # Time Based variables
+        self.verbose = verbose
+        self.time = CalcTime(verbose)
+        """Calculation Time (:py:class:`~radis.lbl.loader.CalcTime`)
+        prints, stores various functions computational time based on Verbose value (eg - Voigt Broadening, Convolution, etc"""
+
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
@@ -512,7 +519,6 @@ class SpectrumFactory(BandFactory):
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
         # Other parameters:
-        self.verbose = verbose
         self.save_memory = save_memory
         self.autoupdatedatabase = False  # a boolean to automatically store calculated
         # spectra in a Spectrum database. See init_database
@@ -745,7 +751,9 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        conditions.update(self.time.dict_time)
+        time_calc = {}
+        time_calc["time"] = self.time.dict_time
+        conditions.update(time_calc)
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -1043,7 +1051,9 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        conditions.update(self.time.dict_time)
+        time_calc = {}
+        time_calc["time"] = self.time.dict_time
+        conditions.update(time_calc)
 
         # Spectral quantities
         quantities = {
@@ -1360,7 +1370,9 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        conditions.update(self.time.dict_time)
+        time_calc = {}
+        time_calc["time"] = self.time.dict_time
+        conditions.update(time_calc)
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         populations = self.get_populations(self.misc.export_populations)

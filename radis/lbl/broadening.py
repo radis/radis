@@ -566,6 +566,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
 
     if jit:
         lineshape = _whiting_jit(w_centered, wl, wv)
+        print("Whiting_jit: ", time() - t0)
     else:
         lineshape = whiting1968(w_centered, wl, wv)
 
@@ -576,14 +577,17 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     # ... But not used because:
     # ... - it may yield wrong results when the broadening range is not refined enough
     # ... - it is defined for wavelengths only. Here we may have wavenumbers as well
+    t1 = time()
     integral = np.trapz(lineshape, w_centered, axis=0)
-
+    print("Integral: ", time() - t1)
+    t2 = time()
     # Normalize
     lineshape /= integral
+    print("Lineshape: ", time() - t2)
 
     assert not np.isnan(lineshape).any()
     # print("lineshape-",lineshape)
-    print("time_lineshape- ", time() - t0)
+    print("time_lineshape_total- ", time() - t0)
     return lineshape
 
 
@@ -671,7 +675,7 @@ def whiting1968(w_centered, wl, wv):
 
 @jit(
     float64[:, :](float64[:, :], float64[:, :], float64[:, :]),
-    nopython=True,
+    nopython=False,
     cache=True,
 )
 def _whiting_jit(w_centered, wl, wv):
@@ -696,21 +700,26 @@ def _whiting_jit(w_centered, wl, wv):
     # ... fasten up the calculation by 25% (ex: test on 20 cm-1, ~6000 lines:
     # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
     # ... w_wv is typically a (10.001, 1997) array
+    # from time import time
+    a = time()
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
     w_wv_2 = w_wv ** 2
     wl_wv = wl / wv
     w_wv_225 = np.abs(w_wv) ** 2.25
+    print("Preprocess- Whiting: ", time() - a)
 
     # Calculate!  (>>> this is the performance bottleneck <<< : ~ 2/3 of the time spent
     #              on lineshape equation below + temp array calculation above
     #              In particular exp(...) and ()**2.25 are very expensive <<< )
     # ... Voigt 1st order approximation
+    b = time()
     lineshape = (
         (1 - wl_wv) * exp(-2.772 * w_wv_2)
         + wl_wv * 1 / (1 + 4 * w_wv_2)
         # ... 2nd order correction
         + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
     )
+    print("Lineshape: ", time() - b)
     return lineshape
 
 
@@ -1223,7 +1232,7 @@ class BroadenFactory(BaseFactory):
         # Calculate broadening for all lines
         # ----------------------------------
         lineshape = voigt_lineshape(wbroad_centered, hwhm_lorentz, hwhm_voigt, jit=jit)
-        self.lineshape = lineshape
+        #self.lineshape = lineshape
         return lineshape
 
     # %% Function to calculate lineshapes from HWHM
@@ -1272,8 +1281,7 @@ class BroadenFactory(BaseFactory):
         """
         # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
-        if __debug__:
-            t0 = time()
+        self.time.start(key="a", verbose=3)
 
         # Init variables
         if self.input.Tgas is None:
@@ -1287,9 +1295,6 @@ class BroadenFactory(BaseFactory):
 
         shifted_wavenum = dg.shiftwav
 
-        verbose = self.verbose
-        pt = self.time.print_time
-
         try:  # make it a row vector
             shifted_wavenum = shifted_wavenum.values.reshape((1, -1))
             N = len(dg)
@@ -1302,8 +1307,8 @@ class BroadenFactory(BaseFactory):
         wbroad_centered = np.outer(wbroad_centered_oneline, np.ones(N))
         wbroad = wbroad_centered + shifted_wavenum
 
-        if __debug__:
-            t1 = time()
+        self.time.stop("a", details="... Initialized vectors")
+        self.time.start(key="b", verbose=3)
 
         # Calculate lineshape (using precomputed HWHM)
         broadening_method = (
@@ -1312,21 +1317,23 @@ class BroadenFactory(BaseFactory):
         if broadening_method == "voigt":
             jit = True
             line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
+            self.time.stop("b", details=f"... Calculated Voigt profile (jit={jit})")
         elif broadening_method == "convolve":
             # Get pressure and gaussian profiles
             pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
-            if __debug__:
-                t11 = time()
+            self.time.stop("b", "... Calculated Lorentzian profile")
 
+            self.time.start(key="c", verbose=3)
             gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
-            if __debug__:
-                t12 = time()
+            self.time.stop("c", "... Calculated Gaussian profile")
 
+            self.time.start(key="d", verbose=3)
             # Convolve and get final line profile:
             line_profile = np.empty_like(pressure_profile)  # size (B, N)
             for i, (x, y) in enumerate(zip(pressure_profile.T, gaussian_profile.T)):
                 line_profile[:, i] = np.convolve(x, y, "same")
             line_profile = line_profile / trapz(line_profile.T, x=wbroad.T)  # normalize
+            self.time.stop("d", "... Convolved both profiles")
             # ... Note that normalization should not be needed as broadening profiles
             # ... are created normalized already. However, we do normalize to reduce
             # ... the impact of any error in line_profiles (due to wstep too big or
@@ -1343,18 +1350,6 @@ class BroadenFactory(BaseFactory):
                     broadening_method
                 )
             )
-
-        if __debug__:
-            t2 = time()
-            pt(verbose, t0, t1, statement="... Initialized vectors", save=True)
-            if broadening_method == "voigt":
-                pt(verbose, t1, t2, f"... Calculated Voigt profile (jit={jit})", True)
-            elif broadening_method == "convolve":
-                pt(verbose, t1, t11, "... Calculated Lorentzian profile", save=True)
-                pt(verbose, t11, t12, "... Calculated Gaussian profile", save=True)
-                pt(verbose, t12, t2, "... Convolved both profiles", save=True)
-            elif broadening_method == "fft":
-                raise NotImplementedError("FFT")
 
         return line_profile
 

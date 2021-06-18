@@ -512,81 +512,27 @@ class CalcTime(ConditionDict):
 
     """
 
-    def __init__(self):
+    def __init__(self, verbose):
         super(CalcTime, self).__init__()
 
         # Dev: Init here to be found by autocomplete
+        self.initial = {}
         self.dict_time = {}
+        self.verbose = verbose
 
-        # To update condition
-        # Storing temporary key for each operation
-        # self.key_dict = {}
+    def start(self, key, verbose):
+        if __debug__:
+            self.initial[key] = {"start_time": time(), "verbose": verbose}
 
-    """
-    def get_random_string(self, length):
-        # choose from all lowercase letter
-        letters = string.ascii_lowercase
-        result_str = ''.join(random.choice(letters) for i in range(length))
-        return result_str
-
-    def start(self):
-        time_initial = time()
-        key = self.get_random_string(6)
-        self.key_dict[key] = time_initial
-    """
-
-    def print_time(self, verbose, time_initial, time_final, statement, save=False):
-
-        # time_final = time()
-        total_time = time_final - time_initial
-
-        if verbose >= 3:
-            printg(statement, "in {0:.1f}s".format(total_time))
-        if save:
-            self.dict_time[statement] = round_off(total_time)
-
-    """
-    def _calc_lineshape_time(self, verbose, broadening_method, _time, jit):
-        t = self.dict_time
-        if verbose >= 3:
-            printg(
-                "... Initialized vectors in {0:.1f}s".format(_time["t1"] - _time["t0"])
-            )
-            if broadening_method == "voigt":
-                printg(
-                    "... Calculated Voigt profile (jit={1}) in {0:.1f}s".format(
-                        _time["t2"] - _time["t1"], jit
-                    )
-                )
-            elif broadening_method == "convolve":
-                printg(
-                    "... Calculated Lorentzian profile in {0:.1f}s".format(
-                        _time["t11"] - _time["t1"]
-                    )
-                )
-                printg(
-                    "... Calculated Gaussian profile in {0:.1f}s".format(
-                        _time["t12"] - _time["t11"]
-                    )
-                )
-                printg(
-                    "... Convolved both profiles in {0:.1f}s".format(
-                        _time["t2"] - _time["t12"]
-                    )
-                )
-            elif broadening_method == "fft":
-                raise NotImplementedError("FFT")
-
-        # Assigning Values
-        if broadening_method == "voigt":
-            t["Legacy_Voigt_Broadening"] = _time["t2"] - _time["t1"]
-        elif broadening_method == "convolve":
-            t["Legacy_Lorentzian_Broadening"] = _time["t11"] - _time["t1"]
-            t["Legacy_Gaussian_Broadening"] = _time["t12"] - _time["t11"]
-            t["Legacy_Convolve"] = _time["t2"] - _time["t12"]
-        elif broadening_method == "fft":
-            raise NotImplementedError("FFT")
-        """
+    def stop(self, key, details=""):
+        if __debug__:
+            items = self.initial.pop(key)
+            # print("ITEMS: ",items)
+            self.dict_time[details] = round_off(time() - items["start_time"])
+            # print("items['verbose']: ",items['verbose'])
+            # print("self.verbose: ",self.verbose)
+            if self.verbose >= items["verbose"]:
+                printg(details, "in {0:.1f}s".format(self.dict_time[details]))
 
 
 def format_paths(s):
@@ -671,9 +617,6 @@ class DatabankLoader(object):
         """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
         params that cannot change the output of calculations (ex: number of CPU, etc.)
         """
-        self.time = CalcTime()
-        """Calculation Time (:py:class:`~radis.lbl.loader.CalcTime`)
-        prints, stores various functions computational time based on Verbose value (eg - Voigt Broadening, Convolution, etc"""
         # Setup individual warnings. Value of keys can be:
         # - 'warning' (default: just trigger a warning)
         # - 'error' (raises an error on this warning)
