@@ -522,7 +522,7 @@ class Spectrum(object):
         Internally, the pandas :py:func:`~pandas.read_csv` function is used.
         Data is transposed if needed::
 
-            w, I = .read_csv(file, **kwloadtxt).values.T
+            w, I = pd.read_csv(file, **kwloadtxt).values.T
 
         You can use ``'delimiter'`` and '``skiprows'`` as arguments.
 
