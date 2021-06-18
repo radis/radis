@@ -675,7 +675,7 @@ def whiting1968(w_centered, wl, wv):
 
 @jit(
     float64[:, :](float64[:, :], float64[:, :], float64[:, :]),
-    nopython=False,
+    nopython=True,
     cache=True,
 )
 def _whiting_jit(w_centered, wl, wv):
@@ -701,25 +701,25 @@ def _whiting_jit(w_centered, wl, wv):
     # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
     # ... w_wv is typically a (10.001, 1997) array
     # from time import time
-    a = time()
+    # a = time()
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
     w_wv_2 = w_wv ** 2
     wl_wv = wl / wv
     w_wv_225 = np.abs(w_wv) ** 2.25
-    print("Preprocess- Whiting: ", time() - a)
+    # print("Preprocess- Whiting: ", time() - a)
 
     # Calculate!  (>>> this is the performance bottleneck <<< : ~ 2/3 of the time spent
     #              on lineshape equation below + temp array calculation above
     #              In particular exp(...) and ()**2.25 are very expensive <<< )
     # ... Voigt 1st order approximation
-    b = time()
+    # b = time()
     lineshape = (
         (1 - wl_wv) * exp(-2.772 * w_wv_2)
         + wl_wv * 1 / (1 + 4 * w_wv_2)
         # ... 2nd order correction
         + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
     )
-    print("Lineshape: ", time() - b)
+    # print("Lineshape: ", time() - b)
     return lineshape
 
 
@@ -1232,7 +1232,7 @@ class BroadenFactory(BaseFactory):
         # Calculate broadening for all lines
         # ----------------------------------
         lineshape = voigt_lineshape(wbroad_centered, hwhm_lorentz, hwhm_voigt, jit=jit)
-        #self.lineshape = lineshape
+        # self.lineshape = lineshape
         return lineshape
 
     # %% Function to calculate lineshapes from HWHM
