@@ -55,6 +55,7 @@ from warnings import warn
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from numpy import abs, diff
 from publib import fix_style, set_style
 
@@ -518,9 +519,10 @@ class Spectrum(object):
 
         Notes
         -----
-        Internally, the numpy :py:func:`~numpy.loadtxt` function is used and transposed::
+        Internally, the pandas :py:func:`~pandas.read_csv` function is used.
+        Data is transposed if needed::
 
-            w, I = np.loadtxt(file).T
+            w, I = .read_csv(file, **kwloadtxt).values.T
 
         You can use ``'delimiter'`` and '``skiprows'`` as arguments.
 
@@ -541,7 +543,10 @@ class Spectrum(object):
                 kwloadtxt[k] = kwargs.pop(k)
         argsort = kwargs.pop("argsort", False)
 
-        w, I = np.loadtxt(file, **kwloadtxt).T
+        data = pd.read_csv(file, **kwloadtxt).values
+        if data.shape[0] != 2 and data.shape[1] == 2:
+            data = data.T
+        w, I = data
         if argsort:
             b = np.argsort(w)
             w, I = w[b], I[b]
