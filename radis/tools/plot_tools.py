@@ -549,13 +549,13 @@ class RulerTool(ToolToggleBase):
 
 def add_ruler(fig, wunit="", Iunit="", ax=None):
 
-    if "📐" in fig.canvas.manager.toolmanager.tools:
-        return
-
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         plt.rcParams["toolbar"] = "toolmanager"
         # Filters https://github.com/matplotlib/matplotlib/issues/15284
+
+    if "📐" in fig.canvas.manager.toolmanager.tools:
+        return
 
     # Add the custom tools that we created
     fig.canvas.manager.toolmanager.add_tool("📐", RulerTool)
