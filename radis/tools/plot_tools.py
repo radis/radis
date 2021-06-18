@@ -474,7 +474,7 @@ class Ruler(AxesWidget):
             self.canvas.draw_idle()
 
     def _update_text(self):
-        detail_string = "{:0.3f} {}; {:0.3f} {}".format(
+        detail_string = "{:0.4f} {}; {:0.3f} {}".format(
             self.ruler_dx, self.wunit, self.ruler_dy, self.Iunit
         )
 
