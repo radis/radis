@@ -461,9 +461,9 @@ class Spectrum(object):
         Other Parameters
         ----------------
         delimiter: ``','``, etc.
-            see :py:func:`numpy.loadtxt`
+            see :py:func:`pandas.read_csv` or :py:func:`numpy.loadtxt`
         skiprows: int
-            see :py:func:`numpy.loadtxt`
+            see :py:func:`pandas.read_csv` :py:func:`numpy.loadtxt`
         argsort: bool
             sorts the arrays in ``file`` by wavespace. Convenient way to load
             a file where points have been manually added at the end. Default ``False``.
@@ -519,12 +519,13 @@ class Spectrum(object):
 
         Notes
         -----
-        Internally, the pandas :py:func:`~pandas.read_csv` function is used.
+        Internally, the :py:func:`~numpy.loadtxt` function is used.
         Data is transposed if needed::
 
-            w, I = pd.read_csv(file, **kwloadtxt).values.T
+            w, I = np.loadtxt(file, **kwloadtxt)
 
         You can use ``'delimiter'`` and '``skiprows'`` as arguments.
+        If it doesnt work, also try with pandas :py:func:`~pandas.read_csv` before failing.
 
         See Also
         --------
@@ -543,8 +544,19 @@ class Spectrum(object):
                 kwloadtxt[k] = kwargs.pop(k)
         argsort = kwargs.pop("argsort", False)
 
-        data = pd.read_csv(file, **kwloadtxt).values
-        if data.shape[0] != 2 and data.shape[1] == 2:
+        try:
+            data = np.loadtxt(file, **kwloadtxt)
+        except Exception as err:
+            # invalid format ; expected (w,I)
+            print(f"Invalid format in {file} ({str(err)}). Trying with pandas.read_csv")
+            data = pd.read_csv(file, **kwloadtxt).values
+        if data.shape[0] != 2 and data.shape[1] != 2:
+            # invalid format ; expected (w,I)
+            raise ValueError(
+                f"Invalid format in {file} : {data.shape} (see first line : {data[0]}). Expected two arrays (w, I)"
+            )
+        elif data.shape[0] != 2 and data.shape[1] == 2:
+            # 2 arrays have been found, but transposed :
             data = data.T
         w, I = data
         if argsort:
@@ -1362,7 +1374,7 @@ class Spectrum(object):
         normalize=False,
         force=False,
         plot_by_parts=False,
-        **kwargs
+        **kwargs,
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
@@ -1886,7 +1898,7 @@ class Spectrum(object):
         auto_recenter_crop=True,
         verbose=True,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Apply an instrumental slit function to all quantities in Spectrum.
         Slit function can be generated with usual shapes (see ``shape=``) or
@@ -2125,7 +2137,7 @@ class Spectrum(object):
             verbose=verbose,
             plot=plot_slit,
             *args,
-            **kwargs
+            **kwargs,
         )
 
         # Check if dispersion is specified
@@ -2197,7 +2209,7 @@ class Spectrum(object):
                     verbose=verbose,
                     assert_evenly_spaced=False,
                     # assumes Spectrum is correct by construction
-                    **kwargsconvolve
+                    **kwargsconvolve,
                 )
 
                 if i == 0:
@@ -2402,7 +2414,7 @@ class Spectrum(object):
         writefile=None,
         cutoff=None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Plot Line Survey (all linestrengths used for calculation) Output in
         Plotly (html)
@@ -2534,7 +2546,7 @@ class Spectrum(object):
                 writefile=writefile,
                 cutoff=cutoff,
                 *args,
-                **kwargs
+                **kwargs,
             )
 
         else:
@@ -2697,7 +2709,7 @@ class Spectrum(object):
         energy_threshold=1e-3,
         print_conservation=False,
         inplace=True,
-        **kwargs
+        **kwargs,
     ):
         """Resample spectrum over a new wavelength. Fills with transparent
         medium when out of bound (transmittance 1, radiance 0)
@@ -2876,7 +2888,7 @@ class Spectrum(object):
                     ext=fill_with,
                     energy_threshold=energy_threshold,
                     print_conservation=False,
-                    **kwargs
+                    **kwargs,
                 )
                 s._q[k] = Inew
             # update wavespace
@@ -2894,7 +2906,7 @@ class Spectrum(object):
                     ext=fill_with,
                     energy_threshold=energy_threshold,
                     print_conservation=False,
-                    **kwargs
+                    **kwargs,
                 )
                 s._q_conv[k] = Inew
             # update wavespace
@@ -3138,7 +3150,7 @@ class Spectrum(object):
         ignore_nan=False,
         ignore_outliers=False,
         normalize=False,
-        **kwargs
+        **kwargs,
     ):
         """Compare Spectrum with another Spectrum object.
 
@@ -3213,7 +3225,7 @@ class Spectrum(object):
             ignore_nan=ignore_nan,
             ignore_outliers=ignore_outliers,
             normalize=normalize,
-            **kwargs
+            **kwargs,
         )
 
     # %% ======================================================================
