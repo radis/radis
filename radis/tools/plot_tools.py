@@ -554,6 +554,14 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
         plt.rcParams["toolbar"] = "toolmanager"
         # Filters https://github.com/matplotlib/matplotlib/issues/15284
 
+    if fig.canvas.manager.toolmanager is None:
+        from warnings import warn
+
+        warn(
+            "Couldn't add Ruler tool (still an experimental feature in RADIS : please report the error !)"
+        )
+        return
+
     if "📐" in fig.canvas.manager.toolmanager.tools:
         return
 
