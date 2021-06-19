@@ -480,9 +480,6 @@ class SpectrumFactory(BandFactory):
 
         # Time Based variables
         self.verbose = verbose
-        self.time = CalcTime(verbose)
-        """Calculation Time (:py:class:`~radis.lbl.loader.CalcTime`)
-        prints, stores various functions computational time based on Verbose value (eg - Voigt Broadening, Convolution, etc"""
 
         self.params.broadening_max_width = broadening_max_width  # line broadening
         self.misc.export_lines = export_lines
@@ -647,6 +644,9 @@ class SpectrumFactory(BandFactory):
         path_length = self.input.path_length
         verbose = self.verbose
 
+        # New CalcTime object
+        self.profiler = CalcTime(verbose)
+
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas)))
 
@@ -751,9 +751,7 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        time_calc = {}
-        time_calc["time"] = self.time.dict_time
-        conditions.update(time_calc)
+        conditions.update({"profiler": self.profiler.dict_time})
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -886,6 +884,9 @@ class SpectrumFactory(BandFactory):
         self.input.Trot = Tgas  # just for info
 
         verbose = self.verbose
+
+        # New CalcTime object
+        self.profiler = CalcTime(verbose)
 
         # Init variables
         pressure_mbar = self.input.pressure_mbar
@@ -1051,9 +1052,7 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        time_calc = {}
-        time_calc["time"] = self.time.dict_time
-        conditions.update(time_calc)
+        conditions.update({"profiler": self.profiler.dict_time})
 
         # Spectral quantities
         quantities = {
@@ -1215,6 +1214,9 @@ class SpectrumFactory(BandFactory):
         pressure_mbar = self.input.pressure_mbar
         verbose = self.verbose
 
+        # New CalcTime object
+        self.profiler = CalcTime(verbose)
+
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
 
@@ -1370,9 +1372,7 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        time_calc = {}
-        time_calc["time"] = self.time.dict_time
-        conditions.update(time_calc)
+        conditions.update({"profiler": self.profiler.dict_time})
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         populations = self.get_populations(self.misc.export_populations)

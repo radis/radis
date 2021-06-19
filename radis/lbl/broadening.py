@@ -813,9 +813,7 @@ class BroadenFactory(BaseFactory):
         if len(df) == 0:
             return  # no lines
 
-        if self.verbose >= 2:
-            #            printg('> Calculate broadening HWHM')
-            t0 = time()
+        self.profiler.start("calc_hwhm", 2, "Calculate broadening HWHM")
 
         if self.input.Tgas is None:
             raise AttributeError(
@@ -850,8 +848,7 @@ class BroadenFactory(BaseFactory):
                 )
             )
 
-        if self.verbose >= 2:
-            printg("Calculated broadening HWHM in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("calc_hwhm")
 
     def _calc_min_width(self, df):
         """Calculates the minimum FWHW of the lines
@@ -1281,7 +1278,9 @@ class BroadenFactory(BaseFactory):
         """
         # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
-        self.time.start(key="a", verbose=3)
+        self.profiler.start(
+            key="init_vectors", verbose=3, details="Initialized vectors"
+        )
 
         # Init variables
         if self.input.Tgas is None:
@@ -1307,8 +1306,7 @@ class BroadenFactory(BaseFactory):
         wbroad_centered = np.outer(wbroad_centered_oneline, np.ones(N))
         wbroad = wbroad_centered + shifted_wavenum
 
-        self.time.stop("a", details="... Initialized vectors")
-        self.time.start(key="b", verbose=3)
+        self.profiler.stop("init_vectors")
 
         # Calculate lineshape (using precomputed HWHM)
         broadening_method = (
@@ -1316,24 +1314,30 @@ class BroadenFactory(BaseFactory):
         )  # Lineshape broadening algorithm
         if broadening_method == "voigt":
             jit = True
+            self.profiler.start(
+                "voigt_broadening", 3, f"Calculated Voigt profile (jit={jit})"
+            )
             line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
-            self.time.stop("b", details=f"... Calculated Voigt profile (jit={jit})")
+            self.profiler.stop("voigt_broadening")
         elif broadening_method == "convolve":
+            self.profiler.start(
+                "lorentzian_broadening", 3, "Calculated Lorentzian profile"
+            )
             # Get pressure and gaussian profiles
             pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
-            self.time.stop("b", "... Calculated Lorentzian profile")
+            self.profiler.stop("lorentzian_broadening")
 
-            self.time.start(key="c", verbose=3)
+            self.profiler.start("gaussian_broadening", 3, "Calculated Gaussian profile")
             gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
-            self.time.stop("c", "... Calculated Gaussian profile")
+            self.profiler.stop("gaussian_broadening")
 
-            self.time.start(key="d", verbose=3)
+            self.profiler.start("convolve_l_g", 3, "Convolved both profiles")
             # Convolve and get final line profile:
             line_profile = np.empty_like(pressure_profile)  # size (B, N)
             for i, (x, y) in enumerate(zip(pressure_profile.T, gaussian_profile.T)):
                 line_profile[:, i] = np.convolve(x, y, "same")
             line_profile = line_profile / trapz(line_profile.T, x=wbroad.T)  # normalize
-            self.time.stop("d", "... Convolved both profiles")
+            self.profiler.stop("convolve_l_g")
             # ... Note that normalization should not be needed as broadening profiles
             # ... are created normalized already. However, we do normalize to reduce
             # ... the impact of any error in line_profiles (due to wstep too big or
@@ -1587,8 +1591,8 @@ class BroadenFactory(BaseFactory):
         --------
         :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape`
         """
-        if __debug__:
-            t0 = time()
+
+        self.profiler.start("init_vectors_apply", 3, "Initialized vectors")
 
         #        # Get spectrum range
         wavenumber = self.wavenumber  # final vector of wavenumbers (shape W)
@@ -1612,9 +1616,10 @@ class BroadenFactory(BaseFactory):
         # ---------------------------
         # Apply line profile
 
-        if __debug__:
-            t1 = time()
-
+        self.profiler.stop("init_vectors_apply")
+        self.profiler.start(
+            "get_matching_line", 3, "Get closest matching line & fraction"
+        )
         # ... First get closest matching line (on the left, and on the right)
         # ... note @dev: wavenumber_calc must be sorted, which it is by construction.
         idcenter_left = (
@@ -1650,8 +1655,8 @@ class BroadenFactory(BaseFactory):
             boffrangeleft + boffrangeright
         )
 
-        if __debug__:
-            t2 = time()
+        self.profiler.stop("get_matching_line")
+        self.profiler.start("aggregate__center_lines", 3, "Aggregate center lines")
 
         #        # Performance for lines below
         #        # ----------
@@ -1681,8 +1686,8 @@ class BroadenFactory(BaseFactory):
         # - low/high: start/end of a lineshape
         # - left/right: closest spectral grid point on the left/right
 
-        if __debug__:
-            t3 = time()
+        self.profiler.stop("aggregate__center_lines")
+        self.profiler.start("aggregate_wing_lines", 3, "Aggregate wing lines")
 
         # Off Range, left : only aggregate the Right wing
         # @dev: the only difference with In range is the extra mask to cut the left wing.
@@ -1725,22 +1730,9 @@ class BroadenFactory(BaseFactory):
                     fr_right * profS[:iwbroad_half]
                 )
 
-        if __debug__:
-            t4 = time()
-
         # Get valid range (discard wings)
         sumoflines = sumoflines_calc[self.woutrange]
-
-        if __debug__:
-            if self.verbose >= 3:
-                printg("... Initialized vectors in {0:.1f}s".format(t1 - t0))
-                printg(
-                    "... Get closest matching line & fraction in {0:.1f}s".format(
-                        t2 - t1
-                    )
-                )
-                printg("... Aggregate center lines in {0:.1f}s".format(t3 - t2))
-                printg("... Aggregate wing lines in {0:.1f}s".format(t4 - t3))
+        self.profiler.stop("aggregate_wing_lines")
 
         return wavenumber, sumoflines
 
@@ -2236,16 +2228,15 @@ class BroadenFactory(BaseFactory):
         """
         df = self.df1
 
-        if self.verbose >= 2:
-            printg(
-                "> Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
-                    len(df),
-                    self._broadening_time_ruleofthumb
-                    * len(df)
-                    * len(self.wbroad_centered),
-                )
-            )
-            t0 = time()
+        self.profiler._print(
+            None,
+            2,
+            "Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
+                len(df),
+                self._broadening_time_ruleofthumb * len(df) * len(self.wbroad_centered),
+            ),
+        )
+        self.profiler.start("calc_line_broadening", 2, "Calculated line broadening")
 
         # Just some tests
         try:
@@ -2258,9 +2249,7 @@ class BroadenFactory(BaseFactory):
             )
 
         (wavenumber, abscoeff) = self._broaden_lines(df)
-
-        if self.verbose >= 2:
-            printg("Calculated line broadening in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("calc_line_broadening")
 
         return wavenumber, abscoeff
 
@@ -2291,16 +2280,15 @@ class BroadenFactory(BaseFactory):
 
         df = self.df1
 
-        if self.verbose >= 2:
-            printg(
-                "Calculating line broadening ({0:,d} lines: expect ~ {1:.2f}s on 1 CPU)".format(
-                    len(df),
-                    self._broadening_time_ruleofthumb
-                    * len(df)
-                    * len(self.wbroad_centered),
-                )
-            )
-            t0 = time()
+        self.profiler._print(
+            None,
+            2,
+            "Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
+                len(df),
+                self._broadening_time_ruleofthumb * len(df) * len(self.wbroad_centered),
+            ),
+        )
+        self.profiler.start("calc_line_broadening", 2, "Calculated line broadening")
 
         # Just some tests
         try:
@@ -2314,9 +2302,7 @@ class BroadenFactory(BaseFactory):
 
         (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
 
-        if self.verbose >= 2:
-            printg("Calculated line broadening in {0:.2f}s".format(time() - t0))
-
+        self.profiler.stop("calc_line_broadening")
         return wavenumber, abscoeff, emisscoeff
 
     # %% Functions to calculate semi-continuum
@@ -2447,6 +2433,7 @@ class BroadenFactory(BaseFactory):
 
             if self.verbose >= 2:
                 printg("Calculating pseudo continuum")
+            self.profiler._print(None, 2, "Calculating pseudo continuum")
             t0 = time()
 
             # Check inputs
