@@ -242,7 +242,7 @@ def run_setup(with_binary):
             "hitran-api",
             "numpy",
             "scipy>=1.4.0",
-            "matplotlib>=3.4.0",
+            "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
             "cython",
             "pandas>=1.0.5",
             "plotly>=2.5.1",
