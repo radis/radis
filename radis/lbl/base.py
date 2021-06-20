@@ -1769,7 +1769,7 @@ class BaseFactory(DatabankLoader):
 
         # Calculate
         air_pressure = self.input.pressure_mbar / 1013.25  # convert from mbar to atm
-        df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
+        df["shiftwav"] = df.wav + (df.Pshft * air_pressure)  # Pshft in cm-1/atm
 
         if self.verbose >= 2:
             printg("Calculated lineshift in {0:.2f}s".format(time() - t0))

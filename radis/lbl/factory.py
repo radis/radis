@@ -836,6 +836,11 @@ class SpectrumFactory(BandFactory):
         name: str
             output Spectrum name (useful in batch)
 
+        Other Parameters
+        ----------------
+        emulate: bool
+            if ``True``, execute the GPU code on the CPU (useful for development)
+
         Returns
         -------
         s : Spectrum
