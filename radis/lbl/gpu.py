@@ -56,6 +56,24 @@ iter_params_h = iterData()
 
 
 def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
+    """
+
+
+    Parameters
+    ----------
+    na : TYPE
+        DESCRIPTION.
+    log_2gs : TYPE
+        DESCRIPTION.
+    verbose : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
     # Remove duplicates
     unique_lines = set([])
     for i in range(len(na)):
@@ -104,6 +122,22 @@ def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
 
 
 def py_calc_gaussian_envelope_params(log_2vMm, verbose=False):
+    """
+
+
+    Parameters
+    ----------
+    log_2vMm : TYPE
+        DESCRIPTION.
+    verbose : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
     return np.amin(log_2vMm), np.max(log_2vMm)
 
 
@@ -118,6 +152,22 @@ except (ModuleNotFoundError):
 
 
 def init_gaussian_params(log_2vMm, verbose_gpu):
+    """
+
+
+    Parameters
+    ----------
+    log_2vMm : TYPE
+        DESCRIPTION.
+    verbose_gpu : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    param_data : TYPE
+        DESCRIPTION.
+
+    """
 
     if verbose_gpu >= 2:
         print("Initializing Gaussian parameters")
@@ -143,6 +193,24 @@ def init_gaussian_params(log_2vMm, verbose_gpu):
 
 
 def init_lorentzian_params(na, log_2gs, verbose_gpu):
+    """
+
+
+    Parameters
+    ----------
+    na : TYPE
+        DESCRIPTION.
+    log_2gs : TYPE
+        DESCRIPTION.
+    verbose_gpu : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    param_data : TYPE
+        DESCRIPTION.
+
+    """
 
     if verbose_gpu >= 2:
         print("Initializing Lorentzian parameters ")
@@ -173,6 +241,25 @@ def init_lorentzian_params(na, log_2gs, verbose_gpu):
 def calc_gaussian_params(
     gaussian_param_data, init_params_h, iter_params_h, epsilon=1e-4
 ):
+    """
+
+
+    Parameters
+    ----------
+    gaussian_param_data : TYPE
+        DESCRIPTION.
+    init_params_h : TYPE
+        DESCRIPTION.
+    iter_params_h : TYPE
+        DESCRIPTION.
+    epsilon : TYPE, optional
+        DESCRIPTION. The default is 1e-4.
+
+    Returns
+    -------
+    None.
+
+    """
 
     host_params_h_log_2vMm_min, host_params_h_log_2vMm_max = gaussian_param_data
     log_wG_min = host_params_h_log_2vMm_min + iter_params_h.hlog_T
@@ -186,6 +273,24 @@ def calc_gaussian_params(
 
 
 def calc_lorentzian_minmax(param_data, log_rT, log_p):
+    """
+
+
+    Parameters
+    ----------
+    param_data : TYPE
+        DESCRIPTION.
+    log_rT : TYPE
+        DESCRIPTION.
+    log_p : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
 
     result = []
     for params in param_data:
@@ -198,6 +303,25 @@ def calc_lorentzian_minmax(param_data, log_rT, log_p):
 
 
 def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-4):
+    """
+
+
+    Parameters
+    ----------
+    param_data : TYPE
+        DESCRIPTION.
+    init_params_h : TYPE
+        DESCRIPTION.
+    iter_params_h : TYPE
+        DESCRIPTION.
+    epsilon : TYPE, optional
+        DESCRIPTION. The default is 1e-4.
+
+    Returns
+    -------
+    None.
+
+    """
 
     log_wL_min, log_wL_max = calc_lorentzian_minmax(
         param_data, iter_params_h.log_rT, iter_params_h.log_p
@@ -210,6 +334,28 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
 
 
 def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
+    """
+
+
+    Parameters
+    ----------
+    p : float
+        pressure [bar].
+    T : float
+        temperature [K].
+    mole_fraction : float
+    iter_params_h : TYPE
+        DESCRIPTION.
+    l : TYPE, optional
+        DESCRIPTION. The default is 1.0.
+    slit_FWHM : TYPE, optional
+        DESCRIPTION. The default is 0.0.
+
+    Returns
+    -------
+    None.
+
+    """
 
     iter_params_h.p = p  # bar
     iter_params_h.log_p = np.log(p)
@@ -256,6 +402,45 @@ def gpu_init(
     verbose_gpu=True,
     gpu=False,
 ):
+    """
+
+
+    Parameters
+    ----------
+    v_arr : TYPE
+        DESCRIPTION.
+    N_wG : TYPE
+        DESCRIPTION.
+    N_wL : TYPE
+        DESCRIPTION.
+    iso : TYPE
+        DESCRIPTION.
+    v0 : TYPE
+        DESCRIPTION.
+    da : TYPE
+        DESCRIPTION.
+    log_2gs : TYPE
+        DESCRIPTION.
+    na : TYPE
+        DESCRIPTION.
+    log_2vMm : TYPE
+        DESCRIPTION.
+    S0 : TYPE
+        DESCRIPTION.
+    El : TYPE
+        DESCRIPTION.
+    Q : TYPE
+        DESCRIPTION.
+    verbose_gpu : TYPE, optional
+        DESCRIPTION. The default is True.
+    gpu : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    None.
+
+    """
 
     # ----------- setup global variables -----------------
     global init_params_h
@@ -391,6 +576,34 @@ def gpu_init(
 
 
 def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False):
+    """
+    Parameters
+    ----------
+    p : float
+        pressure [bar]
+    T : float
+        temperature [K]
+    mole_fraction : float
+
+    Other Parameters
+    ----------------
+    verbose_gpu : bool, optional
+        The default is True.
+    l : TYPE, optional
+        DESCRIPTION. The default is 1.0.
+    slit_FWHM : TYPE, optional
+        DESCRIPTION. The default is 0.0.
+    gpu : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    abscoeff_h : TYPE
+        DESCRIPTION.
+    transmittance_h : TYPE
+        DESCRIPTION.
+
+    """
 
     # ----------- setup global variables -----------------
 
@@ -434,6 +647,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     else:
         from numpy import complex64, float32
         from numpy.fft import irfft, rfft
+
         from radis_cython_extensions import (
             applyGaussianSlit,
             applyLineshapes,

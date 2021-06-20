@@ -95,8 +95,8 @@ float get_T(){
 __global__ void fillDLM(
     unsigned char* iso,
     float* v0,
-    float* da,
-    float* S0,
+    float* da,  // pressure shift  in cm-1/atm
+    float* S0,  // initial linestrength
     float* El,
     float* log_2gs,
     float* na,
@@ -115,6 +115,7 @@ __global__ void fillDLM(
 
                 if (i < init_params_d.N_lines) {
                     //Calc v
+                    // ... pressure-shift
                     float v_dat = v0[i] + iter_params_d.p * da[i];
                     float iv = (v_dat - init_params_d.v_min) / init_params_d.dv;
                     int iv0 = (int)iv;
@@ -136,6 +137,7 @@ __global__ void fillDLM(
                         int iwL1 = iwL0 + 1;
 
                         //Calc I
+                        // ... scale linestrengths under equilibrium
                         float I_add = iter_params_d.N * S0[i] * (expf(iter_params_d.c2T * El[i]) - expf(iter_params_d.c2T * (El[i] + v0[i]))) / Q[iso[i]];
 
                         float av = iv - iv0;
