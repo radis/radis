@@ -497,61 +497,6 @@ class MiscParams(ConditionDict):
         self.total_lines = 0  #: int : number of lines in database.
 
 
-class CalcTime(object):
-    """A class to hold Spectrum calculation time dependent parameters, under the attribute
-    :py:attr:`~radis.lbl.loader.DatabankLoader.profiler.dict_time` of
-    :py:class:`~radis.lbl.factory.SpectrumFactory`.
-
-    It also stores functions to print all the entities based on verbose value
-
-    See Also
-    --------
-
-    :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
-    :py:attr:`~radis.lbl.loader.DatabankLoader.profiler`,
-
-    """
-
-    def __init__(self, verbose):
-        super(CalcTime, self).__init__()
-
-        # Dev: Init here to be found by autocomplete
-        self.initial = {}
-        self.dict_time = {}
-        self.verbose = verbose
-
-    def start(self, key, verbose, details=""):
-        if __debug__:
-            self.initial[key] = {
-                "start_time": time(),
-                "verbose": verbose,
-                "details": details,
-            }
-
-    def stop(self, key):
-        if __debug__:
-            items = self.initial.pop(key)
-            self.dict_time[key] = time() - items["start_time"]
-            if self.verbose >= items["verbose"]:
-                self._print(key, items["verbose"], items["details"])
-
-    def _print(self, key, verbose, details):
-        if verbose == 1:
-            if key == None:
-                print(details)
-            else:
-                print(details, "in {0:.1f}s".format(self.dict_time[key]))
-        elif verbose >= 2:
-            if key == None:
-                printg("..." * (verbose - 1), details)
-            else:
-                printg(
-                    "..." * (verbose - 1),
-                    details,
-                    "in {0:.2f}s".format(self.dict_time[key]),
-                )
-
-
 def format_paths(s):
     """escape all special characters."""
     if s is not None:

@@ -90,9 +90,9 @@ from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
 from radis.lbl.bands import BandFactory
 from radis.lbl.base import get_waverange
-from radis.lbl.loader import CalcTime
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
+from radis.misc.profiler import Profiler
 from radis.misc.utils import Default
 from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
 from radis.phys.constants import k_b
@@ -644,8 +644,8 @@ class SpectrumFactory(BandFactory):
         path_length = self.input.path_length
         verbose = self.verbose
 
-        # New CalcTime object
-        self.profiler = CalcTime(verbose)
+        # New Profiler object
+        self.profiler = Profiler(verbose)
 
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas)))
@@ -885,8 +885,8 @@ class SpectrumFactory(BandFactory):
 
         verbose = self.verbose
 
-        # New CalcTime object
-        self.profiler = CalcTime(verbose)
+        # New Profiler object
+        self.profiler = Profiler(verbose)
 
         # Init variables
         pressure_mbar = self.input.pressure_mbar
@@ -1214,8 +1214,8 @@ class SpectrumFactory(BandFactory):
         pressure_mbar = self.input.pressure_mbar
         verbose = self.verbose
 
-        # New CalcTime object
-        self.profiler = CalcTime(verbose)
+        # New Profiler object
+        self.profiler = Profiler(verbose)
 
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
