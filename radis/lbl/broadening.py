@@ -698,11 +698,19 @@ def _whiting_jit(w_centered, wl, wv):
     # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
     # ... w_wv is typically a (10.001, 1997) array
     # from time import time
+    # print("w_centered : ", w_centered)
+    print("w_centered shape : ", np.shape(w_centered))
+    print("wl shape : ", np.shape(wl))
+    print("wv shape : ", np.shape(wv))
     a = time()
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
+    print("w_wv shape : ", np.shape(w_wv))
     w_wv_2 = w_wv ** 2
+    print("w_wv_2 shape : ", np.shape(w_wv_2))
     wl_wv = wl / wv
+    print("wl_wv shape : ", np.shape(wl_wv))
     w_wv_225 = np.abs(w_wv) ** 2.25
+    print("w_wv_225 shape : ", np.shape(w_wv_225))
     print("Preprocess- Whiting: ", time() - a)
 
     # Calculate!  (>>> this is the performance bottleneck <<< : ~ 2/3 of the time spent
@@ -710,12 +718,19 @@ def _whiting_jit(w_centered, wl, wv):
     #              In particular exp(...) and ()**2.25 are very expensive <<< )
     # ... Voigt 1st order approximation
     b = time()
-    lineshape = (
-        (1 - wl_wv) * exp(-2.772 * w_wv_2)
-        + wl_wv * 1 / (1 + 4 * w_wv_2)
-        # ... 2nd order correction
-        + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
-    )
+    p1 = (1 - wl_wv) * exp(-2.772 * w_wv_2)
+    print("p1: ", time() - b)
+    c = time()
+    p2 = wl_wv * 1 / (1 + 4 * w_wv_2)
+    print("p2: ", time() - c)
+    d = time()
+    # ... 2nd order correction
+    p3 = 0.016 * (1 - wl_wv) * wl_wv * exp(-0.4 * w_wv_225)
+    print("p3: ", time() - c)
+    d = time()
+    p4 = -10 / (10 + w_wv_225)
+    print("p4: ", time() - d)
+    lineshape = p1 + p2 + p3 + p4
     print("Lineshape: ", time() - b)
     return lineshape
 
@@ -1226,7 +1241,7 @@ class BroadenFactory(BaseFactory):
         # Calculate broadening for all lines
         # ----------------------------------
         lineshape = voigt_lineshape(wbroad_centered, hwhm_lorentz, hwhm_voigt, jit=jit)
-        # self.lineshape = lineshape
+
         return lineshape
 
     # %% Function to calculate lineshapes from HWHM

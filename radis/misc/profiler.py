@@ -15,8 +15,10 @@ Routine Listing
 -------------------------------------------------------------------------------
 """
 
-from radis.misc.printer import printg
 from time import time
+
+from radis.misc.printer import printg
+
 
 class Profiler(object):
     """A class to store Spectrum calculation time dependent parameters, under the attribute
