@@ -179,7 +179,8 @@ class Ruler(AxesWidget):
             markerfacecolor="white",
             markeredgecolor="black",
             markeredgewidth=0.5,
-            picker=5,
+            picker=True,
+            pickradius=5,
             visible=False,
         )
 
