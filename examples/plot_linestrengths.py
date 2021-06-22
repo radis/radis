@@ -1,3 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+================================================
+Scale Linestrengths of carbon-monoxide
+================================================
+
+This example scales the linestrengths of CO to Tgas=300 from Tref = 296 and then plots
+the linestrengths against the wavenumbers. We are using :py:func:`~radis.io.hitemp.fetch_hitemp`
+function to retrieve the dataframe from the HITEMP-CO databank. The calculations done
+for scaling use the  equation that can be found in Rotham's paper (equation A11).
+
+"""
+
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy import exp
@@ -63,11 +76,11 @@ def calc_linestrength_eq(df, Tref, Tgas):
 if __name__ == "__main__":
     Tref = 296
     df = fetch_hitemp(
-        molecule="CH4",
-        databank_name="HITEMP-CH4",
+        molecule="CO",
+        databank_name="HITEMP",
         isotope="1, 2, 3",
         load_wavenum_min=2000,
-        load_wavenum_max=2020,
+        load_wavenum_max=2250,
     )
 
     Tgas = 300
