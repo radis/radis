@@ -1963,6 +1963,14 @@ class BaseFactory(DatabankLoader):
 
         # %% Load partition function values
 
+        def list_to_dict(list0):
+
+            dict0 = dict()
+            for index, value in enumerate(list0):
+                dict0[index] = value
+
+            return dict0
+
         def _calc_Q(molecule, iso, state):
             """Get partition function from tabulated values, try with
             calculated one if Out of Bounds.
@@ -2012,17 +2020,14 @@ class BaseFactory(DatabankLoader):
 
             if len(iso_set) == 1:
                 Qref, Qgas = _calc_Q(molecule, iso_set[0], self.input.state)
-                df1.Qref = float(Qref)  # attribute, not column
-                df1.Qgas = float(Qgas)  # attribute, not column
-                assert "Qref" not in df1.columns
-                assert "Qgas" not in df1.columns
+                df1["S"] = float(Qref) / float(Qgas)
 
-            # Else, parse for all isotopes. Use np.take that is very fast
+            # Else, parse for all isotopes. Use df.map that is very fast
             # Use the fact that isotopes are int, and thus can be considered as
             # index in an array.
-            # ... in the following we exploit this to use the np.take function,
+            # ... in the following we exploit this to use the np.map function,
             # ... which is amazingly fast
-            # ... Read https://stackoverflow.com/a/51388828/5622825 to understand more
+            # ... Read https://stackoverflow.com/questions/49259580 to understand more
 
             else:
 
@@ -2035,9 +2040,21 @@ class BaseFactory(DatabankLoader):
                         Qref, Qgas = _calc_Q(molecule, iso, self.input.state)
                         Qref_arr[iso] = Qref
                         Qgas_arr[iso] = Qgas
-                # ... the trick below is that iso is used as index in the array
-                df1["Qref"] = Qref_arr.take(df1.iso)
-                df1["Qgas"] = Qgas_arr.take(df1.iso)
+
+                # convert dictionaries to lists
+                Qref_dict = list_to_dict(Qref_arr)
+                Qgas_dict = list_to_dict(Qgas_arr)
+
+                Qref_Qgas_ratio = {
+                    k: Qref_dict.get(k, 0) / Qgas_dict.get(k, 0)
+                    for k in set(Qref_dict) | set(Qgas_dict)
+                }
+
+                # copy iso column
+                df1["S"] = df1["iso"]
+
+                # map the ratios in the dictionary to the iso column vallues
+                df1["S"].map(Qref_Qgas_ratio)
 
         else:
             raise NotImplementedError(
@@ -2057,7 +2074,7 @@ class BaseFactory(DatabankLoader):
         # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
 
         # correct for Partition Function
-        line_strength = df1.int * (df1.Qref / df1.Qgas)
+        line_strength = df1.int * (df1["S"])
         # ratio of Boltzman populations
         line_strength *= exp(-hc_k * df1.El * (1 / Tgas - 1 / Tref))
         # effect of stimulated emission
@@ -2124,7 +2141,9 @@ class BaseFactory(DatabankLoader):
             molecule1 = get_molecule(id1)
             state = self.input.state
             parsum1 = self.get_partition_function_interpolator(molecule1, iso1, state)
-            df1["Qgas"] = parsum1.at(Tgas)
+            df1["nu"] = parsum1.at(
+                Tgas
+            )  # Storing Qgas in nu column to avoid loading another column
 
             # ... now fill the rest:
             for (id, iso), idx in dgb.indices.items():
@@ -2133,7 +2152,9 @@ class BaseFactory(DatabankLoader):
                 molecule = get_molecule(id)
                 state = self.input.state
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
-                df1.loc[idx, "Qgas"] = parsum.at(Tgas)
+                df1.loc[idx, "nu"] = parsum.at(
+                    Tgas
+                )  # Storing Qgas in nu column to avoid loading another column
 
                 if radis.DEBUG_MODE:
                     assert (df1.loc[idx, "id"] == id).all()
@@ -2149,7 +2170,9 @@ class BaseFactory(DatabankLoader):
             molecule = get_molecule(id)
             state = self.input.state
             parsum = self.get_partition_function_interpolator(molecule, iso1, state)
-            df1["Qgas"] = parsum.at(Tgas)
+            df1["nu"] = parsum.at(
+                Tgas
+            )  # Storing Qgas in nu column to avoid loading another column
 
             # ... now fill the rest:
             for (iso), idx in dgb.indices.items():
@@ -2169,7 +2192,9 @@ class BaseFactory(DatabankLoader):
             molecule1 = get_molecule(id1)
             state = self.input.state
             parsum1 = self.get_partition_function_interpolator(molecule1, iso, state)
-            df1["Qgas"] = parsum1.at(Tgas)
+            df1["nu"] = parsum1.at(
+                Tgas
+            )  # Storing Qgas in nu column to avoid loading another column
 
             # ... now fill the rest:
             for (id), idx in dgb.indices.items():
@@ -2178,7 +2203,9 @@ class BaseFactory(DatabankLoader):
                 molecule = get_molecule(id)
                 state = self.input.state
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
-                df1.loc[idx, "Qgas"] = parsum.at(Tgas)
+                df1.loc[idx, "nu"] = parsum.at(
+                    Tgas
+                )  # Storing Qgas in nu column to avoid loading another column
 
                 if radis.DEBUG_MODE:
                     assert (df1.loc[idx, "id"] == id).all()
@@ -2191,8 +2218,10 @@ class BaseFactory(DatabankLoader):
             molecule = get_molecule(id)
             state = self.input.state
             parsum = self.get_partition_function_interpolator(molecule, iso, state)
-            df1["Qgas"] = parsum.at(Tgas)
-            df1.loc[df1.index.tolist(), "Qgas"] = parsum.at(Tgas)
+            df1["nu"] = parsum.at(
+                Tgas
+            )  # Storing Qgas in nu column to avoid loading another column
+            df1.loc[df1.index.tolist(), "nu"] = parsum.at(Tgas)
 
         # Calculate degeneracies
         # ----------------------------------------------------------------------
@@ -2210,7 +2239,8 @@ class BaseFactory(DatabankLoader):
         # Calculate population
         # ----------------------------------------------------------------------
         # equilibrium: Boltzmann in any case
-        df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / df1.Qgas.values
+        # df1.nu.values is actually the value of Qgas here
+        df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / df1.nu.values
 
         assert "nu" in self.df1
 
