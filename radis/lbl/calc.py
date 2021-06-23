@@ -149,7 +149,7 @@ def calc_spectrum(
     ----------------
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
-        Does not change anything when giving inputs in wavenumber. Default ``'air'``​.
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``​ .
     wstep: float (:math:`cm^{-1}`)  or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
@@ -161,13 +161,13 @@ def calc_spectrum(
             but is still experimental in 0.9.30. Feedback welcome!
     broadening_max_width: float (cm-1)
         Full width over which to compute the broadening. Large values will create
-        a huge performance drop (scales as :math:`~broadening_max_width^2` without LDM)
+        a huge performance drop (scales as :math:`~{w_{width}}^2` without LDM)
         The calculated spectral range is increased (by broadening_max_width/2
         on each side) to take into account overlaps from out-of-range lines.
         Default ``10`` cm-1.​
-    cutoff: float (~ unit of Linestrength: :math:`cm^{-1}/(#.cm^{-2})`)
+    cutoff: float (~ unit of Linestrength: :math:`cm^{-1}/(molec.cm^{-2})`)
         discard linestrengths that are lower that this, to reduce calculation
-        times. ``1e-27`` is what is generally used to generate databases such as
+        times. ``1e-27`` is what is generally used to generate line databases such as
         CDSD. If ``0``, no cutoff. Default ``1e-27``.
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
@@ -220,12 +220,13 @@ def calc_spectrum(
 
     Returns
     -------
-    s: :class:`~radis.spectrum.spectrum.Spectrum`
+    :class:`~radis.spectrum.spectrum.Spectrum`
         Output spectrum:
+
         - Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a
           spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
         - Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
-        directly.
+          directly.
         - See [1]_ to get an overview of all Spectrum methods
 
     References
@@ -280,9 +281,7 @@ def calc_spectrum(
     For more details on how to use the GPU method and process the database, refer to the examples
     linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
-    Examples using calc_spectrum :
-
-    .. minigallery:: radis.lbl.calc.calc_spectrum
+    .. minigallery:: radis.calc_spectrum
         :add-heading:
 
     Cite

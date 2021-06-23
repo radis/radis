@@ -952,7 +952,10 @@ class DatabankLoader(object):
 
             # Merge
             if frames == []:
-                raise EmptyDatabaseError("Dataframe is empty")
+                raise EmptyDatabaseError(
+                    f"{molecule} has no lines on range "
+                    + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                )
             else:
                 df = pd.concat(frames, ignore_index=True)  # reindex
 
@@ -984,7 +987,7 @@ class DatabankLoader(object):
 
         if len(df) == 0:
             raise EmptyDatabaseError(
-                "Dataframe is empty on range "
+                f"{molecule} has no lines on range "
                 + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
             )
 
