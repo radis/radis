@@ -55,14 +55,11 @@ def calc_linestrength_eq(df, Tref, Tgas):
     molecule = get_molecule(id)  # retrieve the molecule
     iso_set = set(df.iso)  # df1.iso.unique()
 
-    iso_arr = list(range(max(iso_set) + 1))
-
     Qref_Qgas_ratio = {}
 
-    for iso in iso_arr:
-        if iso in iso_set:
-            Qref, Qgas = _calc_Q(molecule, iso, Tref, Tgas)
-            Qref_Qgas_ratio = {iso: Qref / Qgas}
+    for iso in iso_set:
+        Qref, Qgas = _calc_Q(molecule, iso, Tref, Tgas)
+        Qref_Qgas_ratio = {iso: Qref / Qgas}
 
     # Scaling linestrength with the equations from Rotham's paper
     line_strength = df.int * df["iso"].map(Qref_Qgas_ratio)
