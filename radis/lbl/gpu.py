@@ -542,8 +542,6 @@ def gpu_init(
     host_params_h_transmittance_noslit = zeros(init_params_h.N_v * 2, dtype=float32)
     host_params_h_transmittance_FT = zeros(init_params_h.N_v + 1, dtype=complex64)
 
-
-
     # #Copy spectral data to device
     host_params_h_iso_d = array(iso)
     host_params_h_v0_d = array(v0)
@@ -557,12 +555,13 @@ def gpu_init(
     if verbose_gpu >= 2:
         print("done!")
 
+    # TO-DO: This should obviously not be hardcoded!!!!
+    Mm_arr = np.array([-1, 28, 29, 30]) * 1e-3 / N_A  # kg
 
-    #TO-DO: This should obviously not be hardcoded!!!!
-    Mm_arr = np.array([-1,28,29,30])* 1e-3 / N_A #kg
-
-    for i in range(1,len(Mm_arr)):
-        init_params_h.log_c2Mm[i] = 0.5 * np.log(8 * k * np.log(2) / (c ** 2 * Mm_arr[i]))
+    for i in range(1, len(Mm_arr)):
+        init_params_h.log_c2Mm[i] = 0.5 * np.log(
+            8 * k * np.log(2) / (c ** 2 * Mm_arr[i])
+        )
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
