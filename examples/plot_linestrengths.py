@@ -6,12 +6,20 @@ Scale Linestrengths of carbon-monoxide
 
 This example scales the linestrengths of CO to Tgas=300 from Tref = 296 and then plots
 the linestrengths against the wavenumbers. We are using :py:func:`~radis.io.hitemp.fetch_hitemp`
-function to retrieve the dataframe from the HITEMP-CO databank. The calculations done
-for scaling use the  equation that can be found in Rotham's paper (equation A11).
+function to retrieve the dataframe from the HITEMP-CO databank.
 
+References
+----------
+
+.. math::
+    S(T) = S_0 \\frac{Q_{ref}}{Q_{gas}} \\operatorname{exp}\\left(-E_l \\left(\\frac{1}{T_{gas}}-\\frac{1}{T_{ref}}\\right)\\right) \\frac{1-\\operatorname{exp}\\left(\\frac{-\\omega_0}{Tgas}\\right)}{1-\\operatorname{exp}\\left(\\frac{-\\omega_0}{T_{ref}}\\right)}
+
+See Eq.(A11) in [Rothman-1998]_
+
+Similar functions are used directly at the hearth of RADIS's SpectrumFactory in the
+:py:meth:`~radis.lbl.base.BaseFactory.calc_linestrength_eq` and :py:meth:`~radis.lbl.base.BaseFactory.calc_linestrength_noneq` methods
 """
 
-import numpy as np
 from matplotlib import pyplot as plt
 from numpy import exp
 
@@ -49,19 +57,15 @@ def calc_linestrength_eq(df, Tref, Tgas):
 
     iso_arr = list(range(max(iso_set) + 1))
 
-    Qref_arr = np.empty_like(iso_arr, dtype=np.float64)
-    Qgas_arr = np.empty_like(iso_arr, dtype=np.float64)
+    Qref_Qgas_ratio = {}
+
     for iso in iso_arr:
         if iso in iso_set:
             Qref, Qgas = _calc_Q(molecule, iso, Tref, Tgas)
-            Qref_arr[iso] = Qref
-            Qgas_arr[iso] = Qgas
-
-    df["Qref"] = Qref_arr.take(df.iso)
-    df["Qgas"] = Qgas_arr.take(df.iso)
+            Qref_Qgas_ratio = {iso: Qref / Qgas}
 
     # Scaling linestrength with the equations from Rotham's paper
-    line_strength = df.int * (df.Qref / df.Qgas)
+    line_strength = df.int * df["iso"].map(Qref_Qgas_ratio)
     line_strength *= exp(-hc_k * df.El * (1 / Tgas - 1 / Tref))
     line_strength *= (1 - exp(-hc_k * df.wav / Tgas)) / (1 - exp(-hc_k * df.wav / Tref))
     # Add a fresh columns with the scaled linestrength
@@ -83,7 +87,7 @@ if __name__ == "__main__":
         load_wavenum_max=2250,
     )
 
-    Tgas = 300
+    Tgas = 450
 
     df = calc_linestrength_eq(df, Tref, Tgas)
     plt.bar(df["wav"], df["S"])
