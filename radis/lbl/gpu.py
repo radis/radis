@@ -28,6 +28,7 @@ class initData(ctypes.Structure):
         ("N_points_per_thread", ctypes.c_int),
         ("N_iterations_per_thread", ctypes.c_int),
         ("shared_size_floats", ctypes.c_int),
+        ("log_c2Mm", ctypes.c_float * 16),
     ]
 
 
@@ -45,7 +46,6 @@ class iterData(ctypes.Structure):
         ("log_wL_min", ctypes.c_float),
         ("log_dwG", ctypes.c_float),
         ("log_dwL", ctypes.c_float),
-        ("log_c2Mm", ctypes.c_float * 16),
     ]
 
 
@@ -363,15 +363,6 @@ def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
     iter_params_h.N = mole_fraction * p * 1e5 / (1e6 * k * T)  # cm-3
     iter_params_h.l = l
     iter_params_h.slit_FWHM = slit_FWHM
-    iter_params_h.log_c2Mm[0] = (
-        np.log(2) + 0.5 * np.log(2 * k * np.log(2)) - np.log(c ** 2 * 44e-3 / N_A)
-    )
-    iter_params_h.log_c2Mm[1] = (
-        np.log(2) + 0.5 * np.log(2 * k * np.log(2)) - np.log(c ** 2 * 45e-3 / N_A)
-    )
-    iter_params_h.log_c2Mm[2] = (
-        np.log(2) + 0.5 * np.log(2 * k * np.log(2)) - np.log(c ** 2 * 46e-3 / N_A)
-    )
 
 
 def constant_memory_setter(cuda_module, var_str):
@@ -551,13 +542,7 @@ def gpu_init(
     host_params_h_transmittance_noslit = zeros(init_params_h.N_v * 2, dtype=float32)
     host_params_h_transmittance_FT = zeros(init_params_h.N_v + 1, dtype=complex64)
 
-    if verbose_gpu >= 2:
-        print("Copying initialization parameters to device memory...")
-    set_init_params(init_params_h)
 
-    if verbose_gpu >= 2:
-        print("done!")
-        print("Copying spectral data to device memory...")
 
     # #Copy spectral data to device
     host_params_h_iso_d = array(iso)
@@ -571,6 +556,27 @@ def gpu_init(
 
     if verbose_gpu >= 2:
         print("done!")
+
+
+    #TO-DO: This should obviously not be hardcoded!!!!
+    Mm_arr = np.array([-1,28,29,30])* 1e-3 / N_A #kg
+
+    for i in range(1,len(Mm_arr)):
+        init_params_h.log_c2Mm[i] = 0.5 * np.log(8 * k * np.log(2) / (c ** 2 * Mm_arr[i]))
+
+    if verbose_gpu >= 2:
+        print("Copying initialization parameters to device memory...")
+    set_init_params(init_params_h)
+
+    if verbose_gpu >= 2:
+        print("done!")
+        print("Copying spectral data to device memory...")
+
+
+##    print("wG fast:",np.min(log_2vMm),np.max(log_2vMm))
+##
+##    log_wG_debug_h = np.log(v0) + 0.5*np.log(8*k*np.log(2)/(c**2*Mm_arr[iso]))
+##    print("wG arr:",np.min(log_wG_debug_h),np.max(log_wG_debug_h))
 
 
 def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False):
