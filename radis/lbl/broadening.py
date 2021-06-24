@@ -74,7 +74,6 @@ from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
-from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
 
 # from radis.misc.warning import AccuracyError, AccuracyWarning
@@ -566,7 +565,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
 
     if jit:
         lineshape = _whiting_jit(w_centered, wl, wv)
-        print("Whiting_jit: ", time() - t0)
+        # print("Whiting_jit: ", time() - t0)
     else:
         lineshape = whiting1968(w_centered, wl, wv)
 
@@ -672,7 +671,7 @@ def whiting1968(w_centered, wl, wv):
 
 @jit(
     float64[:, :](float64[:, :], float64[:, :], float64[:, :]),
-    nopython=False,
+    nopython=True,
     cache=True,
 )
 def _whiting_jit(w_centered, wl, wv):
@@ -702,7 +701,7 @@ def _whiting_jit(w_centered, wl, wv):
     #   print("w_centered shape : ", np.shape(w_centered))
     #   print("wl shape : ", np.shape(wl))
     #   print("wv shape : ", np.shape(wv))
-    a = time()
+    # a = time()
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
     #   print("w_wv shape : ", np.shape(w_wv))
     w_wv_2 = w_wv ** 2
@@ -711,13 +710,14 @@ def _whiting_jit(w_centered, wl, wv):
     #   print("wl_wv shape : ", np.shape(wl_wv))
     w_wv_225 = np.abs(w_wv) ** 2.25
     #   print("w_wv_225 shape : ", np.shape(w_wv_225))
-    print("Preprocess- Whiting: ", time() - a)
+    # print("Preprocess- Whiting: ", time() - a)
 
     # Calculate!  (>>> this is the performance bottleneck <<< : ~ 2/3 of the time spent
     #              on lineshape equation below + temp array calculation above
     #              In particular exp(...) and ()**2.25 are very expensive <<< )
     # ... Voigt 1st order approximation
-    b = time()
+
+    """b = time()
     p1 = (1 - wl_wv) * exp(-2.772 * w_wv_2)
     print("p1: ", time() - b)
     c = time()
@@ -731,7 +731,13 @@ def _whiting_jit(w_centered, wl, wv):
     p4 = -10 / (10 + w_wv_225)
     print("p4: ", time() - d)
     lineshape = p1 + p2 + p3 + p4
-    print("Lineshape: ", time() - b)
+    print("Lineshape: ", time() - b)"""
+    lineshape = (
+        (1 - wl_wv) * exp(-2.772 * w_wv_2)
+        + wl_wv * 1 / (1 + 4 * w_wv_2)
+        # ... 2nd order correction
+        + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
+    )
     return lineshape
 
 
@@ -1396,7 +1402,6 @@ class BroadenFactory(BaseFactory):
         :py:meth:`~radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
 
         """
-        t0 = time()
         self.profiler.start("precompute_DLM_lineshapes", 3)
 
         # Prepare steps for Lineshape database
@@ -1496,12 +1501,6 @@ class BroadenFactory(BaseFactory):
                 "Broadening method with DLM: {0}".format(broadening_method)
             )
 
-        if __debug__ and self.verbose >= 3:
-            printg(
-                "... Precomputed DLM lineshapes ({1}) in {0:.1f}s".format(
-                    time() - t0, len(wL) * len(wG)
-                )
-            )
         self.profiler.stop(
             "precompute_DLM_lineshapes",
             f"Precomputed DLM lineshapes ({len(wL) * len(wG)})",
@@ -1811,8 +1810,7 @@ class BroadenFactory(BaseFactory):
         --------
         :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape_DLM`
         """
-        if __debug__:
-            t0 = time()
+
         self.profiler.start("DLM_Initialized_vectors", 3)
         # Get spectrum range
         wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
@@ -1835,8 +1833,6 @@ class BroadenFactory(BaseFactory):
         # ---------------------------
         # Apply line profile
 
-        if __debug__:
-            t1 = time()
         self.profiler.stop("DLM_Initialized_vectors", "Initialized vectors")
         self.profiler.start("DLM_closest_matching_line", 3)
         # ... First get closest matching spectral point  (on the left, and on the right)
@@ -1903,8 +1899,6 @@ class BroadenFactory(BaseFactory):
         Iv0 = S * (1 - avi)
         Iv1 = S * avi
 
-        if __debug__:
-            t2 = time()
         self.profiler.stop(
             "DLM_closest_matching_line", "Get closest matching line & fraction"
         )
@@ -1936,9 +1930,9 @@ class BroadenFactory(BaseFactory):
         # All lines within each bins are convolved with the same lineshape.
         # Let's do it:
 
-        if __debug__:
-            t21 = time()
-        self.profiler.stop("Distribute lines over DLM", 3)
+        self.profiler.stop("DLM_Distribute_lines", "Distribute lines over DLM")
+        self.profiler.start("DLM_convolve", 3)
+
         # For each value from the DLM, retrieve the lineshape and convolve all
         # corresponding lines with it before summing.
         if broadening_method in ["voigt", "convolve"]:
@@ -1965,24 +1959,9 @@ class BroadenFactory(BaseFactory):
         else:
             raise NotImplementedError(broadening_method)
 
-        if __debug__:
-            t3 = time()
-
+        self.profiler.stop("DLM_convolve", "Convolve and sum on spectral range")
         # Get valid range (discard wings)
         sumoflines = sumoflines_calc[self.woutrange]
-
-        if __debug__:
-            if self.verbose >= 3:
-                printg("... Initialized vectors in {0:.1f}s".format(t1 - t0))
-                printg(
-                    "... Get closest matching line & fraction in {0:.1f}s".format(
-                        t2 - t1
-                    )
-                )
-                printg("... Distribute lines over DLM {0:.1f}s".format(t21 - t2))
-                printg(
-                    "... Convolve and sum on spectral range {0:.1f}s".format(t3 - t21)
-                )
 
         return wavenumber, sumoflines
 
@@ -2354,10 +2333,8 @@ class BroadenFactory(BaseFactory):
         wstep = self.params.wstep
         df = self.df1  # lines already scaled with current temperature, size N
 
-        if self.verbose >= 2:
-            printg("... classifying lines as weak or strong")
-            t0 = time()
-
+        self.profiler._print(None, 2, "classifying lines as weak or strong")
+        self.profiler.start("weak_lines", 2)
         # Get approximate spectral absorption coefficient
         rough_spectrum, S_density_on_grid, line2grid_proj_left = project_lines_on_grid(
             df, wavenumber_calc, wstep
@@ -2387,14 +2364,12 @@ class BroadenFactory(BaseFactory):
         # ... Store weak line label in df
         df["weak_line"] = line_is_weak
 
-        if self.verbose >= 2:
-            printg(
-                "... {0:,d} lines classified as weak lines ({1:.2f}%) in {2:.1f}s".format(
-                    line_is_weak.sum(),
-                    line_is_weak.sum() / len(line_is_weak) * 100,
-                    time() - t0,
-                )
-            )
+        self.profiler.stop(
+            "weak_lines",
+            "{0:,d} lines classified as weak lines ({1:.2f}%)".format(
+                line_is_weak.sum(), line_is_weak.sum() / len(line_is_weak) * 100
+            ),
+        )
 
         return
 
@@ -2444,9 +2419,8 @@ class BroadenFactory(BaseFactory):
 
         if self.params.pseudo_continuum_threshold > 0:
 
-            if self.verbose >= 2:
-                printg("Calculating pseudo continuum")
             self.profiler._print(None, 2, "Calculating pseudo continuum")
+            self.profiler.start("calc_pseudo_continuum", 2)
             t0 = time()
 
             # Check inputs
@@ -2529,19 +2503,21 @@ class BroadenFactory(BaseFactory):
 
             # Check performances
             time_spent = time() - t0
+            self.profiler.stop("calc_pseudo_continuum", "Calculated pseudo-continuum")
             # ... Expected broadening time gain (see Rule of Thumb)
             expected_broadening_time_gain = (
                 self._broadening_time_ruleofthumb
                 * self._Nlines_in_continuum
                 * len(self.wbroad_centered)
             )
-            if self.verbose >= 2:
-                printg(
-                    "Calculated pseudo-continuum in {0:.1f}s (expected time saved: {1:.1f}s)".format(
-                        time_spent, expected_broadening_time_gain
-                    )
-                )
-                # Add a warning if it looks like it wasnt worth it
+
+            self.profiler._print(
+                None,
+                2,
+                "expected time saved: {0:.1f}s".format(expected_broadening_time_gain),
+            )
+
+            # Add a warning if it looks like it wasnt worth it
             if time_spent > 3 * expected_broadening_time_gain:
                 self.warn(
                     "Pseudo-continuum may not be adapted to this kind "

@@ -58,7 +58,7 @@ class Profiler(object):
                 self._print(key, items["verbose"], details)
 
     def _print(self, key, verbose, details):
-        if verbose == 1:
+        if verbose == 1 or verbose == True:
             if key == None:
                 print(details)
             else:
