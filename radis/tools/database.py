@@ -1175,7 +1175,7 @@ class SpecList(object):
         :meth:`~radis.tools.database.SpecList.items`
         """
 
-        # type: bool, default False
+        ## type: bool, default False
         kwconditions.pop("verbose", True)  #: type: bool
         inplace = kwconditions.pop("inplace", False)
         scale_if_possible = kwconditions.pop("scale_if_possible", False)
