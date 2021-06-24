@@ -43,20 +43,19 @@ class Profiler(object):
         self.dict_time = {}
         self.verbose = verbose
 
-    def start(self, key, verbose, details=""):
+    def start(self, key, verbose):
         if __debug__:
             self.initial[key] = {
                 "start_time": time(),
                 "verbose": verbose,
-                "details": details,
             }
 
-    def stop(self, key):
+    def stop(self, key, details=""):
         if __debug__:
             items = self.initial.pop(key)
             self.dict_time[key] = time() - items["start_time"]
             if self.verbose >= items["verbose"]:
-                self._print(key, items["verbose"], items["details"])
+                self._print(key, items["verbose"], details)
 
     def _print(self, key, verbose, details):
         if verbose == 1:
