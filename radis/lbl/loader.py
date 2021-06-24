@@ -1474,9 +1474,10 @@ class DatabankLoader(object):
         add_date: str, or ``None``/``False``
             adds date in strftime format to the beginning of the filename.
             Default '%Y%m%d'
-        compress: boolean
+        compress: boolean, or 2
             if ``True``, Spectrum are read and written in binary format. This is faster,
-            and takes less memory space. Default ``True``
+            and takes less memory space. Default ``True``.
+            If ``2``, additionaly remove all redundant quantities.
 
         Returns
         -------
