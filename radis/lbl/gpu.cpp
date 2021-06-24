@@ -55,6 +55,7 @@ struct initData {
     int N_points_per_thread;
     int	N_iterations_per_thread;
     int shared_size_floats;
+    float log_c2Mm[16];
 };
 
 
@@ -71,7 +72,6 @@ struct iterData {
     float log_wL_min;
     float log_dwG;
     float log_dwL;
-    float log_c2Mm[16];
 };
 
 __device__ __constant__ struct initData init_params_d;
@@ -124,8 +124,7 @@ __global__ void fillDLM(
                     if ((iv0 >= 0) && (iv1 < init_params_d.N_v)) {
 
                         //Calc wG
-                        float log_2vMm = logf(v0[i]) + iter_params_d.log_c2Mm[iso[i]];
-                        float log_wG_dat = log_2vMm + iter_params_d.hlog_T;
+                        float log_wG_dat = logf(v0[i]) + init_params_d.log_c2Mm[iso[i]] + iter_params_d.hlog_T;
                         float iwG = (log_wG_dat - iter_params_d.log_wG_min) / iter_params_d.log_dwG;
                         int iwG0 = (int)iwG;
                         int iwG1 = iwG0 + 1;
