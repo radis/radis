@@ -1824,6 +1824,7 @@ class SpecDatabase(SpecList):
 
     :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`,
     """
+
     def __init__(
         self,
         path=".",
@@ -2290,14 +2291,15 @@ class SpecDatabase(SpecList):
                     + "`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)"
                 )
 
-            def residual(s_exp, s, normalize): return get_residual(
-                s_exp,
-                s,
-                var=s_exp.get_vars()[0],
-                ignore_nan=True,
-                normalize=normalize,
-                normalize_how=normalize_how,
-            )
+            def residual(s_exp, s, normalize):
+                return get_residual(
+                    s_exp,
+                    s,
+                    var=s_exp.get_vars()[0],
+                    ignore_nan=True,
+                    normalize=normalize,
+                    normalize_how=normalize_how,
+                )
 
         kwconditions.update({"inplace": True})  # dont copy Spectrum to be faster
         spectra = self.get(conditions=conditions, **kwconditions)
