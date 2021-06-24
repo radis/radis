@@ -59,7 +59,7 @@ def calc_linestrength_eq(df, Tref, Tgas):
 
     for iso in iso_set:
         Qref, Qgas = _calc_Q(molecule, iso, Tref, Tgas)
-        Qref_Qgas_ratio = {iso: Qref / Qgas}
+        Qref_Qgas_ratio[iso] = Qref / Qgas
 
     # Scaling linestrength with the equations from Rotham's paper
     line_strength = df.int * df["iso"].map(Qref_Qgas_ratio)
