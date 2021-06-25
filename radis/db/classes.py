@@ -655,10 +655,6 @@ class ElectronicState(Isotope):
                         self.get_fullname(), Erovib
                     )
                 )
-            """
-            self.profiler._print(None, 2, "{0}: overwritting Energy calculation with {1}".format(
-                        self.get_fullname(), Erovib
-                    ))"""
         else:
             # Autofind which energy model to use for the given molecule
             c = self.rovib_constants

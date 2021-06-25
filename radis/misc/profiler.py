@@ -55,10 +55,10 @@ class Profiler(object):
             items = self.initial.pop(key)
             self.dict_time[key] = time() - items["start_time"]
             if self.verbose >= items["verbose"]:
-                self._print(key, items["verbose"], details)
+                self._print(items["verbose"], details, key)
 
-    def _print(self, key, verbose, details):
-        if verbose == 1 or verbose == True:
+    def _print(self, verbose, details, key=None):
+        if verbose == 1:
             if key == None:
                 print(details)
             else:

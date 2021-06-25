@@ -557,7 +557,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
     :py:func:`~radis.lbl.broadening.whiting1968`
     """
-    t0 = time()
+
     # Note: Whiting and Olivero use FWHM. Here we keep HWHM in all public function
     # arguments for consistency.
     wl = 2 * hwhm_lorentz  # HWHM > FWHM
@@ -565,7 +565,6 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
 
     if jit:
         lineshape = _whiting_jit(w_centered, wl, wv)
-        # print("Whiting_jit: ", time() - t0)
     else:
         lineshape = whiting1968(w_centered, wl, wv)
 
@@ -582,8 +581,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     lineshape /= integral
 
     assert not np.isnan(lineshape).any()
-    # print("lineshape-",lineshape)
-    print("time_lineshape_total- ", time() - t0)
+
     return lineshape
 
 
@@ -696,42 +694,17 @@ def _whiting_jit(w_centered, wl, wv):
     # ... fasten up the calculation by 25% (ex: test on 20 cm-1, ~6000 lines:
     # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
     # ... w_wv is typically a (10.001, 1997) array
-    #   from time import time
-    #   print("w_centered : ", w_centered)
-    #   print("w_centered shape : ", np.shape(w_centered))
-    #   print("wl shape : ", np.shape(wl))
-    #   print("wv shape : ", np.shape(wv))
-    # a = time()
+
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
-    #   print("w_wv shape : ", np.shape(w_wv))
     w_wv_2 = w_wv ** 2
-    #   print("w_wv_2 shape : ", np.shape(w_wv_2))
     wl_wv = wl / wv
-    #   print("wl_wv shape : ", np.shape(wl_wv))
     w_wv_225 = np.abs(w_wv) ** 2.25
-    #   print("w_wv_225 shape : ", np.shape(w_wv_225))
-    # print("Preprocess- Whiting: ", time() - a)
 
     # Calculate!  (>>> this is the performance bottleneck <<< : ~ 2/3 of the time spent
     #              on lineshape equation below + temp array calculation above
     #              In particular exp(...) and ()**2.25 are very expensive <<< )
     # ... Voigt 1st order approximation
 
-    """b = time()
-    p1 = (1 - wl_wv) * exp(-2.772 * w_wv_2)
-    print("p1: ", time() - b)
-    c = time()
-    p2 = wl_wv * 1 / (1 + 4 * w_wv_2)
-    print("p2: ", time() - c)
-    d = time()
-    # ... 2nd order correction
-    p3 = 0.016 * (1 - wl_wv) * wl_wv * exp(-0.4 * w_wv_225)
-    print("p3: ", time() - c)
-    d = time()
-    p4 = -10 / (10 + w_wv_225)
-    print("p4: ", time() - d)
-    lineshape = p1 + p2 + p3 + p4
-    print("Lineshape: ", time() - b)"""
     lineshape = (
         (1 - wl_wv) * exp(-2.772 * w_wv_2)
         + wl_wv * 1 / (1 + 4 * w_wv_2)
@@ -760,7 +733,7 @@ class BroadenFactory(BaseFactory):
     def __init__(self):
 
         super(BroadenFactory, self).__init__()
-
+        print("Broaden Factory verbose-", self.verbose)
         # Name variables (initialized later in SpectrumFactory)
         self.wbroad_centered = None
 
@@ -2221,7 +2194,6 @@ class BroadenFactory(BaseFactory):
         df = self.df1
 
         self.profiler._print(
-            None,
             2,
             "Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
                 len(df),
@@ -2273,7 +2245,6 @@ class BroadenFactory(BaseFactory):
         df = self.df1
 
         self.profiler._print(
-            None,
             2,
             "Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
                 len(df),
@@ -2333,7 +2304,7 @@ class BroadenFactory(BaseFactory):
         wstep = self.params.wstep
         df = self.df1  # lines already scaled with current temperature, size N
 
-        self.profiler._print(None, 2, "classifying lines as weak or strong")
+        self.profiler._print(2, "classifying lines as weak or strong")
         self.profiler.start("weak_lines", 2)
         # Get approximate spectral absorption coefficient
         rough_spectrum, S_density_on_grid, line2grid_proj_left = project_lines_on_grid(
@@ -2419,7 +2390,7 @@ class BroadenFactory(BaseFactory):
 
         if self.params.pseudo_continuum_threshold > 0:
 
-            self.profiler._print(None, 2, "Calculating pseudo continuum")
+            self.profiler._print(2, "Calculating pseudo continuum")
             self.profiler.start("calc_pseudo_continuum", 2)
             t0 = time()
 
@@ -2512,7 +2483,6 @@ class BroadenFactory(BaseFactory):
             )
 
             self.profiler._print(
-                None,
                 2,
                 "expected time saved: {0:.1f}s".format(expected_broadening_time_gain),
             )
