@@ -733,7 +733,7 @@ class BroadenFactory(BaseFactory):
     def __init__(self):
 
         super(BroadenFactory, self).__init__()
-        print("Broaden Factory verbose-", self.verbose)
+
         # Name variables (initialized later in SpectrumFactory)
         self.wbroad_centered = None
 

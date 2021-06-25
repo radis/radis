@@ -67,7 +67,6 @@ Most methods are written in inherited class with the following inheritance schem
 
 
 import sys
-from time import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -478,8 +477,8 @@ class BaseFactory(DatabankLoader):
                     + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
                     + ". See SpectrumFactory.load_databank() help for more details"
                 )
-        if self.verbose >= 2:
-            t0 = time()
+
+        self.profiler.start("fetch_energy", 2)
 
         def get_Evib_CDSD_pc_1iso(df, iso):
             """Calculate Evib for a given isotope (energies are specific to a
@@ -569,12 +568,9 @@ class BaseFactory(DatabankLoader):
         df["Erotu"] = df.Eu - df.Evibu
         df["Erotl"] = df.El - df.Evibl
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy", f"Fetched energies for all {len(df)} transitions"
+        )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -619,8 +615,7 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_2", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list():
@@ -682,12 +677,9 @@ class BaseFactory(DatabankLoader):
         df["Erotu"] = df.Eu - df.Evibu
         df["Erotl"] = df.El - df.Evibl
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_2", f"Fetched energies for all {len(df)} transitions"
+        )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -729,8 +721,7 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_3", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
@@ -801,12 +792,9 @@ class BaseFactory(DatabankLoader):
         df["Erotu"] = df.Eu - df.Evibu
         df["Erotl"] = df.El - df.Evibl
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_3", f"Fetched energies for all {len(df)} transitions"
+        )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -848,11 +836,10 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
 
-        if self.verbose >= 2:
-            printg(
-                "Fetching vib123 / rot energies for all {0} transitions".format(len(df))
-            )
-            t0 = time()
+        self.profiler._print(
+            2, "Fetching vib123 / rot energies for all {0} transitions".format(len(df))
+        )
+        self.profiler.start("fetch_energy_4", 2)
 
         # Get Energy database
         if self.parsum_calc == {}:
@@ -959,9 +946,7 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib2l")
             self.assert_no_nan(df, "Evib3l")
 
-        if self.verbose >= 2:
-            printg("Fetched energies in {0:.2f}s".format(time() - t0))
-
+        self.profiler.stop("fetch_energy_4", "Fetched energies")
         return  # None: Dataframe updated
 
     def _add_EvibErot_RADIS_cls1(self, df, calc_Evib_harmonic_anharmonic=False):
@@ -995,8 +980,7 @@ class BaseFactory(DatabankLoader):
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_5", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list():
@@ -1050,12 +1034,9 @@ class BaseFactory(DatabankLoader):
         assert np.isnan(df.Evibu).sum() == 0
         assert np.isnan(df.Evibl).sum() == 0
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_5", "Fetched energies for all {0} transitions".format(len(df))
+        )
 
         return  # None: Dataframe updated
 
@@ -1085,8 +1066,7 @@ class BaseFactory(DatabankLoader):
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_6", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
@@ -1180,12 +1160,9 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib2l")
             self.assert_no_nan(df, "Evib3l")
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_6", "Fetched energies for all {0} transitions".format(len(df))
+        )
 
         return  # None: Dataframe updated
 
@@ -1206,8 +1183,7 @@ class BaseFactory(DatabankLoader):
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_7", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
@@ -1349,12 +1325,9 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib2l")
             self.assert_no_nan(df, "Evib3l")
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_7", "Fetched energies for all {0} transitions".format(len(df))
+        )
 
         return df
 
@@ -1429,8 +1402,7 @@ class BaseFactory(DatabankLoader):
             self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
             self.misc.load_energies = True
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("check_non_eq_param", 2)
 
         df = self.df0
         if len(df) == 0:
@@ -1508,8 +1480,7 @@ class BaseFactory(DatabankLoader):
             self.calc_weighted_trans_moment()
             self.calc_einstein_coefficients()
 
-        if self.verbose >= 2:
-            printg("Checked nonequilibrium parameters in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("check_non_eq_param", "Checked nonequilibrium parameters")
 
     def _calc_degeneracies(self, df):
         """Calculate vibrational and rotational degeneracies.
@@ -1599,8 +1570,7 @@ class BaseFactory(DatabankLoader):
         df = self.df0
         Tref = self.input.Tref
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("calc_weight_trans", 2)
 
         id_set = df.id.unique()
         iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
@@ -1661,12 +1631,7 @@ class BaseFactory(DatabankLoader):
 
         df["Rs2"] = weighted_trans_moment_sq
 
-        if self.verbose >= 2:
-            printg(
-                "... calculated weighted transition moment in {0:.2f}s".format(
-                    time() - t0
-                )
-            )
+        self.profiler.stop("calc_weight_trans", "calculated weighted transition moment")
 
         return
 
@@ -1761,8 +1726,7 @@ class BaseFactory(DatabankLoader):
         See Eq.(A13) in [Rothman-1998]_
         """
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("calc_lineshift", 2)
         #            printg('> Calculating lineshift')
 
         df = self.df1
@@ -1771,8 +1735,7 @@ class BaseFactory(DatabankLoader):
         air_pressure = self.input.pressure_mbar / 1013.25  # convert from mbar to atm
         df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
 
-        if self.verbose >= 2:
-            printg("Calculated lineshift in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("calc_lineshift", "Calculated lineshift")
 
         return
 
@@ -1814,9 +1777,8 @@ class BaseFactory(DatabankLoader):
         if len(df1) == 0:
             return  # no lines
 
-        if self.verbose >= 2:
-            t0 = time()
-            printg("Scaling equilibrium linestrength")
+        self.profiler._print(2, "Scaling equilibrium linestrength")
+        self.profiler.start("scaled_eq_lineshift", 2)
 
         # %% Load partition function values
 
@@ -1920,8 +1882,7 @@ class BaseFactory(DatabankLoader):
 
         assert "S" in self.df1
 
-        if self.verbose >= 2:
-            printg("Scaled equilibrium linestrength in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("scaled_eq_lineshift", "Scaled equilibrium linestrength")
 
         return
 
@@ -1963,8 +1924,7 @@ class BaseFactory(DatabankLoader):
 
         df1 = self.df1
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("calc_eq_population", 2)
         #            printg('> Calculating equilibrium populations')
 
         # Load partition function values
@@ -2010,8 +1970,7 @@ class BaseFactory(DatabankLoader):
 
         assert "nu" in self.df1
 
-        if self.verbose >= 2:
-            printg("Calculated equilibrium populations in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("calc_eq_population", "Calculated equilibrium populations")
 
         return
 
@@ -2104,11 +2063,8 @@ class BaseFactory(DatabankLoader):
 
         df = self.df1
 
-        if self.verbose >= 2:
-            t0 = time()
-            #            printg('> Calculating nonequilibrium populations')
-            if self.verbose >= 3:
-                t1 = t0
+        self.profiler.start("calc_noneq_population", 2)
+        self.profiler.start("part_function", 3)
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -2229,9 +2185,8 @@ class BaseFactory(DatabankLoader):
                     assert (df.loc[idx, "id"] == id).all()
                     assert (df.loc[idx, "iso"] == iso).all()
 
-        if self.verbose >= 3:
-            printg("... partition functions in {0:.1f}s".format(time() - t1))
-            t1 = time()
+        self.profiler.stop("part_function", "partition functions")
+        self.profiler.start("population", 3)
 
         # %%
 
@@ -2283,12 +2238,10 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(self.df1, "nu")
             self.assert_no_nan(self.df1, "nl")
 
-        if self.verbose >= 2:
-            if self.verbose >= 3:
-                printg("... populations in {0:.1f}s".format(time() - t1))
-            printg(
-                "Calculated nonequilibrium populations in {0:.2f}s".format(time() - t0)
-            )
+        self.profiler.stop("population", "populations")
+        self.profiler.stop(
+            "calc_noneq_population", "Calculated nonequilibrium populations"
+        )
 
         return
 
@@ -2353,11 +2306,8 @@ class BaseFactory(DatabankLoader):
 
         df = self.df1
 
-        if self.verbose >= 2:
-            t0 = time()
-            #            printg('> Calculating nonequilibrium populations (multiTvib)')
-            if self.verbose >= 3:
-                t1 = t0
+        self.profiler.start("calc_noneq_population_multiTvib", 2)
+        self.profiler.start("part_function", 3)
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -2392,9 +2342,8 @@ class BaseFactory(DatabankLoader):
                 assert (df.loc[idx, "id"] == id).all()
                 assert (df.loc[idx, "iso"] == iso).all()
 
-        if self.verbose >= 3:
-            printg("... partition functions in {0:.2f}s".format(time() - t1))
-            t1 = time()
+        self.profiler.stop("part_function", "partition functions")
+        self.profiler.start("populations", 3)
 
         #  Derive populations
         # ... vibrational distribution
@@ -2473,14 +2422,11 @@ class BaseFactory(DatabankLoader):
         assert "nu" in self.df1
         assert "nl" in self.df1
 
-        if self.verbose >= 2:
-            if self.verbose >= 3:
-                printg("... populations in {0:.1f}s".format(time() - t1))
-            printg(
-                "Calculated nonequilibrium populations (multiTvib) in {0:.2f}s".format(
-                    time() - t0
-                )
-            )
+        self.profiler.stop("populations", "populations")
+        self.profiler.stop(
+            "calc_noneq_population_multiTvib",
+            "Calculated nonequilibrium populations (multiTvib)",
+        )
 
         return
 
@@ -2633,8 +2579,7 @@ class BaseFactory(DatabankLoader):
         if len(df) == 0:
             return  # no lines in database, no need to go further
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("non_eq_linestrength", 2)
         #            printg('> scale nonequilibrium linestrength')
 
         try:
@@ -2643,9 +2588,7 @@ class BaseFactory(DatabankLoader):
             raise KeyError("Calculate populations first")
 
         # %% Calculation
-
-        if self.verbose >= 3:
-            t1 = time()
+        self.profiler.start("map_part_func", 3)
 
         id_set = df.id.unique()
         iso_set = self._get_isotope_list()  # df1.iso.unique()
@@ -2683,10 +2626,8 @@ class BaseFactory(DatabankLoader):
                     assert (df.loc[idx, "id"] == id).all()
                     assert (df.loc[idx, "iso"] == iso).all()
 
-        if self.verbose >= 3:
-            printg("... map partition functions in {0:.2f}s".format(time() - t1))
-            t1 = time()
-
+        self.profiler.stop("map_part_func", "map partition functions")
+        self.profiler.start("corrected_population_se", 3)
         # Correct linestrength
 
         # ... populations without abundance dependance (already in linestrength)
@@ -2705,15 +2646,11 @@ class BaseFactory(DatabankLoader):
         line_strength *= 1 - df.gl / df.gu * nu / nl
         df["S"] = line_strength
 
-        if self.verbose >= 3:
-            printg(
-                "... corrected for populations and stimulated emission in {0:.2f}s".format(
-                    time() - t1
-                )
-            )
-
-        if self.verbose >= 2:
-            printg("scaled nonequilibrium linestrength in {0:.2f}s".format(time() - t0))
+        self.profiler.stop(
+            "corrected_population_se",
+            "corrected for populations and stimulated emission",
+        )
+        self.profiler.stop("non_eq_linestrength", "scaled nonequilibrium linestrength")
 
         return  # df1 automatically updated
 
@@ -2746,8 +2683,7 @@ class BaseFactory(DatabankLoader):
 
         df = self.df1
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("calc_emission_integral", 2)
         #            printg('> calculated emission integral')
 
         if len(df) == 0:
@@ -2776,8 +2712,7 @@ class BaseFactory(DatabankLoader):
         #        # Store lines with emission integrals under df0
         #        self.df1 = df
 
-        if self.verbose >= 2:
-            printg("calculated emission integral in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("calc_emission_integral", "calculated emission integral")
 
         return
 
@@ -2820,10 +2755,7 @@ class BaseFactory(DatabankLoader):
             self._Nlines_cutoff = 0
             return  # dont update self.df1
 
-        if self.verbose >= 2:
-            #            printg('> Applying linestrength cutoff')
-            pass
-        t0 = time()
+        self.profiler.start("applied_linestrength_cutoff", 2)
 
         # Cutoff:
         b = df.S <= cutoff
@@ -2884,9 +2816,7 @@ class BaseFactory(DatabankLoader):
         # Store number of lines cut (for information)
         self._Nlines_cutoff = Nlines_cutoff
 
-        time_spent = time() - t0
-        if self.verbose >= 2:
-            printg("Applied linestrength cutoff in {0:.1f}s ".format(time_spent))
+        self.profiler.stop("applied_linestrength_cutoff", "Applied linestrength cutoff")
 
         return
 

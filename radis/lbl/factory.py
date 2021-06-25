@@ -1638,6 +1638,9 @@ class SpectrumFactory(BandFactory):
         pressure_mbar = self.input.pressure_mbar
         verbose = self.verbose
 
+        # New Profiler object
+        self.profiler = Profiler(verbose)
+
         # Make sure database is loaded
         if self.df0 is None:
             if not self.save_memory:
