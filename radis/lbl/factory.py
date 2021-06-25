@@ -739,7 +739,7 @@ class SpectrumFactory(BandFactory):
         conditions.update(
             {
                 "calculation_time": round(
-                    self.profiler.dict_time["spectrum_calc_before_obj"], 2
+                    self.profiler.dict_time["spectrum_calc_before_obj"][0], 2
                 ),
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
@@ -748,7 +748,6 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        conditions.update({"profiler": self.profiler.dict_time})
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -799,6 +798,10 @@ class SpectrumFactory(BandFactory):
 
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
+
+        # For calculating time distribution and storing it
+        self.profiler.percentage_distribution()
+        conditions.update({"profiler": self.profiler.relative_time_percentage})
 
         return s
 
@@ -1052,7 +1055,6 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        conditions.update({"profiler": self.profiler.dict_time})
 
         # Spectral quantities
         quantities = {
@@ -1090,6 +1092,10 @@ class SpectrumFactory(BandFactory):
 
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
+
+        # For calculating time distribution and storing it
+        self.profiler.percentage_distribution()
+        conditions.update({"profiler": self.profiler.relative_time_percentage})
 
         return s
 
@@ -1361,7 +1367,7 @@ class SpectrumFactory(BandFactory):
         conditions.update(
             {
                 "calculation_time": round(
-                    self.profiler.dict_time["spectrum_calc_before_obj"], 2
+                    self.profiler.dict_time["spectrum_calc_before_obj"][0], 2
                 ),
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
@@ -1370,7 +1376,6 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
-        conditions.update({"profiler": self.profiler.dict_time})
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         populations = self.get_populations(self.misc.export_populations)
@@ -1425,6 +1430,10 @@ class SpectrumFactory(BandFactory):
 
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
+
+        # For calculating time distribution and storing it
+        self.profiler.percentage_distribution()
+        conditions.update({"profiler": self.profiler.relative_time_percentage})
 
         return s
 
