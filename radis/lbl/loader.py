@@ -64,7 +64,6 @@ to force regenerating them after a given version. See :py:data:`radis.OLDEST_COM
 import warnings
 from copy import deepcopy
 from os.path import exists
-from time import time
 from uuid import uuid1
 
 import numpy as np
@@ -1713,9 +1712,8 @@ class DatabankLoader(object):
         # Check inputs
         assert db_use_cached in [True, False, "regen", "force"]
 
-        if self.verbose >= 2:
-            printg("Loading Line databank")
-            t0 = time()
+        self.profiler._print(2, "Loading Line databank")
+        self.profiler.start("load_databank", 2)
 
         # Init variables
         verbose = self.verbose
@@ -1946,12 +1944,9 @@ class DatabankLoader(object):
                 )
             ) from err
 
-        if self.verbose >= 2:
-            printg(
-                "Loaded databank in {0:.1f}s ({1:,d} lines)".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "load_databank", "Loaded databank ({0:,d} lines)".format(len(df))
+        )
 
         return df
 
@@ -2183,9 +2178,8 @@ class DatabankLoader(object):
         # TODO: replace with attributes of Isotope>ElectronicState objects
         molpar = MolParams()
 
-        if self.verbose >= 2:
-            printg("... Fetching molecular parameters for all transitions")
-            t0 = time()
+        self.profiler._print(2, "Fetching molecular parameters for all transitions")
+        self.profiler.start("fetch_mol_params", 2)
 
         # prefill:
 
@@ -2245,8 +2239,7 @@ class DatabankLoader(object):
             )
             # TODO: Implement. Read https://stackoverflow.com/a/51388828/5622825 to understand more
 
-        if self.verbose >= 2:
-            printg("... Fetched molecular params in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("fetch_mol_params", "Fetch molecular params")
 
         return
 

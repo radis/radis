@@ -62,13 +62,13 @@ class Profiler(object):
             if key == None:
                 print(details)
             else:
-                print(details, "in {0:.2f}s".format(self.dict_time[key]))
+                print("{0:.2f}s -".format(self.dict_time[key]), details)
         elif verbose >= 2:
             if key == None:
                 printg("..." * (verbose - 1), details)
             else:
                 printg(
                     "..." * (verbose - 1),
+                    "{0:.2f}s -".format(self.dict_time[key]),
                     details,
-                    "in {0:.2f}s".format(self.dict_time[key]),
                 )
