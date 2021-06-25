@@ -104,6 +104,8 @@ from radis.spectrum.spectrum import Spectrum
 c_cm = c * 100
 
 # %% Main functions
+
+
 class SpectrumFactory(BandFactory):
     """A class to put together all functions related to loading CDSD / HITRAN
     databases, calculating the broadenings, and summing over all the lines.
@@ -510,7 +512,7 @@ class SpectrumFactory(BandFactory):
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
         self.params.folding_thresh = folding_thresh
-        self.params.zero_padding = zero_padding
+        self.misc.zero_padding = zero_padding
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
@@ -808,7 +810,6 @@ class SpectrumFactory(BandFactory):
     def eq_spectrum_gpu(
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
     ):
-
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
 

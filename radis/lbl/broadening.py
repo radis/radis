@@ -1443,7 +1443,7 @@ class BroadenFactory(BaseFactory):
             wstep = self.params.wstep
             w_lineshape_ft = np.fft.rfftfreq(
                 2 * len(w), wstep
-            )  # TO-DO: add  + self.params.zero_padding
+            )  # TO-DO: add  + self.misc.zero_padding
 
             w_fold = (w_lineshape_ft, w_lineshape_ft[::-1])
 
@@ -1456,7 +1456,7 @@ class BroadenFactory(BaseFactory):
                         w_lineshape_ft, wG[l] / 2, wL[m] / 2
                     )
 
-                    ## Add folding until threshold is reached:
+                    # Add folding until threshold is reached:
                     n = 1
                     while (
                         voigt_FT(n / (2 * wstep), wG[l] / 2, wL[m] / 2)
@@ -1882,7 +1882,7 @@ class BroadenFactory(BaseFactory):
         elif broadening_method == "fft":
             DLM = np.zeros(
                 (
-                    2 * len(wavenumber_calc),  # TO-DO: Add  + self.params.zero_padding
+                    2 * len(wavenumber_calc),  # TO-DO: Add  + self.misc.zero_padding
                     len(wG),
                     len(wL),
                 )
@@ -1965,10 +1965,10 @@ class BroadenFactory(BaseFactory):
         # Get which optimization method to use:
         optimization = self.params.optimization
 
-        if self.params.zero_padding < 0 or self.params.zero_padding > len(
+        if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
             self.wavenumber_calc
         ):
-            self.params.zero_padding = len(self.wavenumber_calc)
+            self.misc.zero_padding = len(self.wavenumber_calc)
 
         try:
             if optimization in ("simple", "min-RMS"):
@@ -2061,10 +2061,10 @@ class BroadenFactory(BaseFactory):
             if optimization in ("simple", "min-RMS"):
                 # Use DLM
 
-                if self.params.zero_padding < 0 or self.params.zero_padding > len(
+                if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
                     self.wavenumber_calc
                 ):
-                    self.params.zero_padding = len(self.wavenumber_calc)
+                    self.misc.zero_padding = len(self.wavenumber_calc)
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(
