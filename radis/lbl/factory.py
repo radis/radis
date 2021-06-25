@@ -76,7 +76,6 @@ for Developers:
 
 ----------
 """
-from time import time
 from warnings import warn
 
 import astropy.units as u
@@ -659,7 +658,8 @@ class SpectrumFactory(BandFactory):
         # %% Start
         # --------------------------------------------------------------------
 
-        t0 = time()
+        self.profiler.start("spectrum_calc_before_obj", 2)
+        self.profiler.start("spectrum_calculation", 1)
         if verbose:
             self.print_conditions("Calculating Equilibrium Spectrum")
 
@@ -701,8 +701,7 @@ class SpectrumFactory(BandFactory):
         # Calculate output quantities
         # ----------------------------------------------------------------------
 
-        if self.verbose >= 2:
-            t1 = time()
+        self.profiler.start("calc_other_spectral_quan", 2)
 
         # incorporate density of molecules (see equation (A.16) )
         density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
@@ -723,27 +722,25 @@ class SpectrumFactory(BandFactory):
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
 
-        if self.verbose >= 2:
-            printg(
-                "Calculated other spectral quantities in {0:.2f}s".format(time() - t1)
-            )
+        self.profiler.stop(
+            "calc_other_spectral_quan", "Calculated other spectral quantities"
+        )
 
         # %% Export
         # --------------------------------------------------------------------
 
-        t = round(time() - t0, 2)
-        if verbose >= 2:
-            printg(
-                "Spectrum calculated in {0:.2f}s (before object generation)".format(t)
-            )
-        if self.verbose >= 2:
-            t1 = time()
+        self.profiler.stop(
+            "spectrum_calc_before_obj", "Spectrum calculated (before object generation)"
+        )
+        self.profiler.start("generate_spectrum_obj", 2)
 
         # Get conditions
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": t,
+                "calculation_time": round(
+                    self.profiler.dict_time["spectrum_calc_before_obj"], 2
+                ),
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
@@ -798,13 +795,10 @@ class SpectrumFactory(BandFactory):
             # in one generated with non_eq_spectrum
 
         # Get generation & total calculation time
-        if self.verbose >= 2:
-            printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+        self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
-        t = round(time() - t0, 2)
-        if verbose:
-            print("Spectrum calculated in {0:.2f}s".format(t))
+        self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         return s
 
@@ -938,7 +932,8 @@ class SpectrumFactory(BandFactory):
         Ia_arr[np.isnan(Ia_arr)] = 0
         molarmass_arr[np.isnan(molarmass_arr)] = 0
 
-        t0 = time()
+        self.profiler.start("spectrum_calc_before_obj", 2)
+        self.profiler.start("spectrum_calculation", 1)
 
         # generate the v_arr
         v_arr = np.arange(
@@ -1014,8 +1009,8 @@ class SpectrumFactory(BandFactory):
         )
         # Calculate output quantities
         # ----------------------------------------------------------------------
-        if verbose >= 2:
-            t1 = time()
+
+        self.profiler.start("calc_other_spectral_quan", 2)
 
         # ... # TODO: if the code is extended to multi-species, then density has to be added
         # ... before lineshape broadening (as it would not be constant for all species)
@@ -1029,24 +1024,29 @@ class SpectrumFactory(BandFactory):
         radiance_noslit = calc_radiance(
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
-        if verbose >= 2:
-            printg(
-                "Calculated other spectral quantities in {0:.2f}s".format(time() - t1)
-            )
+
+        self.profiler.stop(
+            "calc_other_spectral_quan", "Calculated other spectral quantities"
+        )
 
         lines = self.get_lines()
 
         # %% Export
         # --------------------------------------------------------------------
-        t = round(time() - t0, 2)
-        if verbose >= 2:
-            t1 = time()
+
+        self.profiler.stop(
+            "spectrum_calc_before_obj", "Spectrum calculated (before object generation)"
+        )
+        self.profiler.start("generate_spectrum_obj", 2)
+
         # Get lines (intensities + populations)
 
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": t,
+                "calculation_time": round(
+                    self.profiler.dict_time["spectrum_calc_before_obj"], 2
+                ),
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
                 "radis_version": get_version(),
@@ -1086,10 +1086,10 @@ class SpectrumFactory(BandFactory):
             # in one generated with non_eq_spectrum
 
         # Get generation & total calculation time
-        if verbose >= 2:
-            printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+        self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
+        self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         return s
 
@@ -1229,7 +1229,8 @@ class SpectrumFactory(BandFactory):
         # %% Start
         # --------------------------------------------------------------------
 
-        t0 = time()
+        self.profiler.start("spectrum_calc_before_obj", 2)
+        self.profiler.start("spectrum_calculation", 1)
         if verbose:
             self.print_conditions("Calculating Non-Equilibrium Spectrum")
 
@@ -1299,8 +1300,7 @@ class SpectrumFactory(BandFactory):
         # Calculate output quantities
         # ----------------------------------------------------------------------
 
-        if self.verbose >= 2:
-            t1 = time()
+        self.profiler.start("calc_other_spectral_quan", 2)
 
         # incorporate density of molecules (see Rothman 1996 equation (A.16) )
         density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
@@ -1342,29 +1342,27 @@ class SpectrumFactory(BandFactory):
             emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
         )
 
-        if self.verbose >= 2:
-            printg(
-                "Calculated other spectral quantities in {0:.2f}s".format(time() - t1)
-            )
+        self.profiler.stop(
+            "calc_other_spectral_quan", "Calculated other spectral quantities"
+        )
 
         # Note: emissivity not defined under non equilibrium
 
         # %% Export
         # ----------------------------------------------------------------------
 
-        t = round(time() - t0, 2)
-        if verbose >= 2:
-            printg(
-                "Spectrum calculated in {0:.2f}s (before object generation)".format(t)
-            )
-        if self.verbose >= 2:
-            t1 = time()
+        self.profiler.stop(
+            "spectrum_calc_before_obj", "Spectrum calculated (before object generation)"
+        )
+        self.profiler.start("generate_spectrum_obj", 2)
 
         # Get conditions
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": t,
+                "calculation_time": round(
+                    self.profiler.dict_time["spectrum_calc_before_obj"], 2
+                ),
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
@@ -1423,13 +1421,10 @@ class SpectrumFactory(BandFactory):
             )
 
         # Get generation & total calculation time
-        if self.verbose >= 2:
-            printg("Generated Spectrum object in {0:.2f}s".format(time() - t1))
+        self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
-        t = round(time() - t0, 2)
-        if verbose:
-            print("Spectrum calculated in {0:.2f}s".format(t))
+        self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         return s
 
