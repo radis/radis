@@ -43,9 +43,8 @@ struct initData {
     float v_max;
     float dv;
     int N_v;
-    int N_wG;
-    int N_wL;
-    int N_wG_x_N_wL;
+    int N_G;
+    int N_L;
     int N_total;
     int Max_lines;
     int N_lines;
@@ -70,30 +69,30 @@ struct iterData {
     float slit_FWHM;
     float log_wG_min;
     float log_wL_min;
-    float log_dwG;
-    float log_dwL;
+    float dxG;
+    float dxL;
     float Q[16];
 };
 
-__device__ __constant__ struct initData init_params_d;
-__device__ __constant__ struct iterData iter_params_d;
+__device__ __constant__ struct initData init_d;
+__device__ __constant__ struct iterData iter_d;
 
 
 #ifndef __CUDACC__
 void* get_init_ptr(void){
-    return &init_params_d;
+    return &init_d;
 }
 
 void* get_iter_ptr(void){
-    return &iter_params_d;
+    return &iter_d;
 }
 
 float get_T(){
-    return expf(2*iter_params_d.hlog_T);
+    return expf(2*iter_d.hlog_T);
 }
 #endif
 
-__global__ void fillDLM(
+__global__ void fillLDM(
     unsigned char* iso,
     float* v0,
     float* da,  // pressure shift  in cm-1/atm
@@ -101,64 +100,64 @@ __global__ void fillDLM(
     float* El,
     float* gamma,
     float* na,
-    float* DLM
+    float* S_klm
     ) {
 
-    int NwL = init_params_d.N_wL;
-    int NwGxNwL = init_params_d.N_wG_x_N_wL;
+    int N_G = init_d.N_G;
+    int N_L = init_d.N_L;
 
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
-            for (int n = 0; n < init_params_d.N_iterations_per_thread; n++) {
+            for (int n = 0; n < init_d.N_iterations_per_thread; n++) {
 
-                int i = threadIdx.x + blockDim.x * (n + blockIdx.x * init_params_d.N_iterations_per_thread);
+                int i = threadIdx.x + blockDim.x * (n + blockIdx.x * init_d.N_iterations_per_thread);
 
-                if (i < init_params_d.N_lines) {
+                if (i < init_d.N_lines) {
                     //Calc v
                     // ... pressure-shift
-                    float v_dat = v0[i] + iter_params_d.p * da[i];
-                    float iv = (v_dat - init_params_d.v_min) / init_params_d.dv;
-                    int iv0 = (int)iv;
-                    int iv1 = iv0 + 1  ;
+                    float vi = v0[i] + iter_d.p * da[i];
+                    float ki = (vi - init_d.v_min) / init_d.dv;
+                    int k0i = (int)ki;
+                    int k1i = k0i + 1  ;
 
-                    if ((iv0 >= 0) && (iv1 < init_params_d.N_v)) {
+                    if ((k0i >= 0) && (k1i < init_d.N_v)) {
 
                         //Calc wG
-                        float log_wG_dat = logf(v0[i]) + init_params_d.log_c2Mm[iso[i]] + iter_params_d.hlog_T;
-                        float iwG = (log_wG_dat - iter_params_d.log_wG_min) / iter_params_d.log_dwG;
-                        int iwG0 = (int)iwG;
-                        int iwG1 = iwG0 + 1;
+                        float log_wGi = logf(v0[i]) + init_d.log_c2Mm[iso[i]] + iter_d.hlog_T;
+                        float li = (log_wGi - iter_d.log_wG_min) / iter_d.dxG;
+                        int l0i = (int)li;
+                        int l1i = l0i + 1;
 
                         //Calc wL
-                        float log_wL_dat = logf(gamma[i]) + iter_params_d.log_2p + na[i] * iter_params_d.log_rT;
-                        float iwL = (log_wL_dat - iter_params_d.log_wL_min) / iter_params_d.log_dwL;
-                        int iwL0 = (int)iwL;
-                        int iwL1 = iwL0 + 1;
+                        float log_wLi = logf(gamma[i]) + iter_d.log_2p + na[i] * iter_d.log_rT;
+                        float mi = (log_wLi - iter_d.log_wL_min) / iter_d.dxL;
+                        int m0i = (int)mi;
+                        int m1i = m0i + 1;
 
                         //Calc I
                         // ... scale linestrengths under equilibrium
-                        float I_add = iter_params_d.N * S0[i] * (expf(iter_params_d.c2T * El[i]) - expf(iter_params_d.c2T * (El[i] + v0[i]))) / iter_params_d.Q[iso[i]];
+                        float Si = iter_d.N * S0[i] * (expf(iter_d.c2T * El[i]) - expf(iter_d.c2T * (El[i] + v0[i]))) / iter_d.Q[iso[i]];
 
-                        float av = iv - iv0;
-                        float awG = (iwG - iwG0) * expf((iwG1 - iwG) * iter_params_d.log_dwG);
-                        float awL = (iwL - iwL0) * expf((iwL1 - iwL) * iter_params_d.log_dwL);
+                        float avi = ki - k0i;
+                        float aGi = li - l0i;
+                        float aLi = mi - m0i;
 
-                        float aV00 = (1 - awG) * (1 - awL);
-                        float aV01 = (1 - awG) * awL;
-                        float aV10 = awG * (1 - awL);
-                        float aV11 = awG * awL;
+                        float aV00i = (1 - aGi) * (1 - aLi);
+                        float aV01i = (1 - aGi) * aLi;
+                        float aV10i = aGi * (1 - aLi);
+                        float aV11i = aGi * aLi;
 
-                        float Iv0 = I_add * (1 - av);
-                        float Iv1 = I_add * av;
+                        float Sv0i = Si * (1 - avi);
+                        float Sv1i = Si * avi;
 
-                        agnostic_add(&DLM[iwL0 + iwG0 * NwL + iv0 * NwGxNwL], aV00 * Iv0);
-                        agnostic_add(&DLM[iwL0 + iwG0 * NwL + iv1 * NwGxNwL], aV00 * Iv1);
-                        agnostic_add(&DLM[iwL0 + iwG1 * NwL + iv0 * NwGxNwL], aV01 * Iv0);
-                        agnostic_add(&DLM[iwL0 + iwG1 * NwL + iv1 * NwGxNwL], aV01 * Iv1);
-                        agnostic_add(&DLM[iwL1 + iwG0 * NwL + iv0 * NwGxNwL], aV10 * Iv0);
-                        agnostic_add(&DLM[iwL1 + iwG0 * NwL + iv1 * NwGxNwL], aV10 * Iv1);
-                        agnostic_add(&DLM[iwL1 + iwG1 * NwL + iv0 * NwGxNwL], aV11 * Iv0);
-                        agnostic_add(&DLM[iwL1 + iwG1 * NwL + iv1 * NwGxNwL], aV11 * Iv1);
+                        agnostic_add(&S_klm[m0i + l0i * N_L + k0i * N_G * N_L], aV00i * Sv0i);
+                        agnostic_add(&S_klm[m0i + l0i * N_L + k1i * N_G * N_L], aV00i * Sv1i);
+                        agnostic_add(&S_klm[m0i + l1i * N_L + k0i * N_G * N_L], aV01i * Sv0i);
+                        agnostic_add(&S_klm[m0i + l1i * N_L + k1i * N_G * N_L], aV01i * Sv1i);
+                        agnostic_add(&S_klm[m1i + l0i * N_L + k0i * N_G * N_L], aV10i * Sv0i);
+                        agnostic_add(&S_klm[m1i + l0i * N_L + k1i * N_G * N_L], aV10i * Sv1i);
+                        agnostic_add(&S_klm[m1i + l1i * N_L + k0i * N_G * N_L], aV11i * Sv0i);
+                        agnostic_add(&S_klm[m1i + l1i * N_L + k1i * N_G * N_L], aV11i * Sv1i);
                     }
                 }
             }
@@ -167,13 +166,13 @@ __global__ void fillDLM(
 }
 
 
-__global__ void applyLineshapes(complex<float>* DLM, complex<float>* abscoeff) {
+__global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoeff) {
 
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
-            int iv = threadIdx.x + blockDim.x * blockIdx.x;
-            if (iv < init_params_d.N_v + 1) {
-                float x = iv / (2 * init_params_d.N_v * init_params_d.dv);
+            int k = threadIdx.x + blockDim.x * blockIdx.x;
+            if (k < init_d.N_v + 1) {
+                float x = k / (2 * init_d.N_v * init_d.dv);
                 float mul = 0.0;
                 complex<float> out_complex = 0;
                 // float out_re = 0.0;
@@ -181,19 +180,18 @@ __global__ void applyLineshapes(complex<float>* DLM, complex<float>* abscoeff) {
                 float wG, wL;
                 int index;
 
-                for (int iwG = 0; iwG < init_params_d.N_wG; iwG++) {
-                    wG = expf(iter_params_d.log_wG_min + iwG * iter_params_d.log_dwG);
-                    for (int iwL = 0; iwL < init_params_d.N_wL; iwL++) {
-                        //index = iwG + iwL * init_params_d.N_wG + iv * init_params_d.N_wG_x_N_wL;
-                        index = iv + iwG * (init_params_d.N_v+1) + iwL * init_params_d.N_wG * (init_params_d.N_v+1);
-                        wL = expf(iter_params_d.log_wL_min + iwL * iter_params_d.log_dwL);
-                        mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) / init_params_d.dv;
-                        out_complex += mul* DLM[index];
+                for (int l = 0; l < init_d.N_G; l++) {
+                    wG = expf(iter_d.log_wG_min + l * iter_d.dxG);
+                    for (int m = 0; m < init_d.N_L; m++) {
+                        index = k + l * (init_d.N_v+1) + m * init_d.N_G * (init_d.N_v+1);
+                        wL = expf(iter_d.log_wL_min + m * iter_d.dxL);
+                        mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) / init_d.dv;
+                        out_complex += mul * S_klm_FT[index];
                         //out_complex += DLM[index];
                     }
                 }
-                abscoeff[iv].real(out_complex.real());
-                abscoeff[iv].imag(out_complex.imag());
+                abscoeff[k].real(out_complex.real());
+                abscoeff[k].imag(out_complex.imag());
             }
         }
     }
@@ -204,10 +202,10 @@ __global__ void calcTransmittanceNoslit(float* abscoeff, float* transmittance_no
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
             int iv = threadIdx.x + blockDim.x * blockIdx.x;
-            if (iv < init_params_d.N_v) {
-                transmittance_noslit[iv] = expf(-iter_params_d.l * abscoeff[iv]);
+            if (iv < init_d.N_v) {
+                transmittance_noslit[iv] = expf(-iter_d.l * abscoeff[iv]);
             }
-            else if (iv < init_params_d.N_v*2){
+            else if (iv < init_d.N_v*2){
                 transmittance_noslit[iv] = 1.0;
             }
         }
@@ -219,10 +217,10 @@ __global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, compl
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
             int iv = threadIdx.x + blockDim.x * blockIdx.x;
-            float x = iv / (2 * init_params_d.N_v * init_params_d.dv);
-            float window = expf(-r4log2 * powf(pi * x * iter_params_d.slit_FWHM, 2));
+            float x = iv / (2 * init_d.N_v * init_d.dv);
+            float window = expf(-r4log2 * powf(pi * x * iter_d.slit_FWHM, 2));
 
-            if (iv < init_params_d.N_v + 1) {
+            if (iv < init_d.N_v + 1) {
                 transmittance_FT[iv] = transmittance_noslit_FT[iv] * window;
             }
         }

@@ -96,8 +96,6 @@ def calc_lorentzian_envelope_params(
     np.ndarray[dtype=np.float32_t, ndim=1] gamma,
     verbose_gpu = False):
 
-    print('CYTHON HELLO3')
-
     cdef set[pair[float,float]] unique_set
     cdef float float_pair[2]
 
@@ -228,7 +226,7 @@ def calc_gaussian_envelope_params(
 cimport cpu_gpu_agnostic as cga
 #from radis.lbl.gpu import initData, iterData
 
-cpdef void fillDLM(gridDim, blockDim, args):
+cpdef void fillLDM(gridDim, blockDim, args):
 
    cdef np.ndarray[np.uint8_t, ndim=1] iso
    cdef np.ndarray[np.float32_t, ndim=1] v0
@@ -237,22 +235,22 @@ cpdef void fillDLM(gridDim, blockDim, args):
    cdef np.ndarray[np.float32_t, ndim=1] El
    cdef np.ndarray[np.float32_t, ndim=1] gamma
    cdef np.ndarray[np.float32_t, ndim=1] na
-   cdef np.ndarray[np.float32_t, ndim=3] DLM
+   cdef np.ndarray[np.float32_t, ndim=3] S_klm
 
-   iso, v0, da, S0, El, gamma, na, DLM = args
+   iso, v0, da, S0, El, gamma, na, S_klm = args
 
    cga.set_dims(blockDim[0],gridDim[0])
-   cga.fillDLM(&iso[0], &v0[0], &da[0], &S0[0], &El[0], &gamma[0], &na[0], &DLM[0,0,0])
+   cga.fillLDM(&iso[0], &v0[0], &da[0], &S0[0], &El[0], &gamma[0], &na[0], &S_klm[0,0,0])
 
 
 cpdef void applyLineshapes(gridDim, blockDim, args):
 
-    cdef np.ndarray[np.complex64_t, ndim=3] DLM
+    cdef np.ndarray[np.complex64_t, ndim=3] S_klm_FT
     cdef np.ndarray[np.complex64_t, ndim=1] abscoeff
-    DLM, abscoeff = args
+    S_klm_FT, abscoeff = args
 
     cga.set_dims(blockDim[0], gridDim[0])
-    cga.applyLineshapes(&DLM[0,0,0], &abscoeff[0])
+    cga.applyLineshapes(&S_klm_FT[0,0,0], &abscoeff[0])
 
 
 cpdef void calcTransmittanceNoslit(gridDim, blockDim, args):
