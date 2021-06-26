@@ -82,7 +82,7 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp
-from scipy.constants import N_A, c, k, pi
+from scipy.constants import c, pi
 
 from radis import get_version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
@@ -958,7 +958,9 @@ class SpectrumFactory(BandFactory):
         El = df["El"].to_numpy(dtype=np.float32)
         na = df["Tdpair"].to_numpy(dtype=np.float32)
 
-        gamma = np.array(self._get_lorentzian_broadening(mole_fraction), dtype=np.float32)
+        gamma = np.array(
+            self._get_lorentzian_broadening(mole_fraction), dtype=np.float32
+        )
 
         self.calc_S0()
         ##        S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
@@ -1483,8 +1485,6 @@ class SpectrumFactory(BandFactory):
         gamma_self = df["selbrd"].to_numpy()
         gamma = x * gamma_self + (1 - x) * gamma_air
         return gamma
-
-
 
     def _get_S0(self, Ia_arr):
         """Returns S0 if it already exists, otherwise computes the value using
