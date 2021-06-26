@@ -46,6 +46,7 @@ class iterData(ctypes.Structure):
         ("log_wL_min", ctypes.c_float),
         ("log_dwG", ctypes.c_float),
         ("log_dwL", ctypes.c_float),
+        ("Q", ctypes.c_float * 16),
     ]
 
 
@@ -331,7 +332,7 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
     iter_params_h.log_dwL = log_dwL
 
 
-def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
+def set_pTQ(p, T, mole_fraction, Q_arr, iter_params_h, l=1.0, slit_FWHM=0.0):
     """
 
 
@@ -364,6 +365,9 @@ def set_pT(p, T, mole_fraction, iter_params_h, l=1.0, slit_FWHM=0.0):
     iter_params_h.l = l
     iter_params_h.slit_FWHM = slit_FWHM
 
+    for i in range(len(Q_arr)):
+        iter_params_h.Q[i] = Q_arr[i]
+
 
 def constant_memory_setter(cuda_module, var_str):
     def setter(var_h):
@@ -387,7 +391,6 @@ def gpu_init(
     S0,
     El,
     Mm_arr,
-    Q,
     verbose_gpu=True,
     gpu=False,
 ):
@@ -418,8 +421,6 @@ def gpu_init(
         DESCRIPTION.
     Mm_arr  : TYPE
         DESCRIPTION.
-    Q : TYPE
-        DESCRIPTION.
     verbose_gpu : TYPE, optional
         DESCRIPTION. The default is True.
     gpu : TYPE, optional
@@ -438,11 +439,8 @@ def gpu_init(
     global host_params_h_iso_d
     global host_params_h_v0_d
     global host_params_h_da_d
-    ##    global host_params_h_v0_dec
-    ##    global host_params_h_da_dec
     global host_params_h_S0_d
     global host_params_h_El_d
-    global host_params_h_Q_d
     global host_params_h_log_2gs_d
     global host_params_h_na_d
 
@@ -548,7 +546,6 @@ def gpu_init(
     host_params_h_El_d = array(El)
     host_params_h_log_2gs_d = array(log_2gs)
     host_params_h_na_d = array(na)
-    host_params_h_Q_d = array(Q)
 
     if verbose_gpu >= 2:
         print("done!")
@@ -576,7 +573,7 @@ def gpu_init(
 ##    print("wG arr:",np.min(log_wG_debug_h),np.max(log_wG_debug_h))
 
 
-def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False):
+def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False):
     """
     Parameters
     ----------
@@ -616,7 +613,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     global host_params_h_da_d
     global host_params_h_S0_d
     global host_params_h_El_d
-    global host_params_h_Q_d
     global host_params_h_log_2gs_d
     global host_params_h_na_d
     global host_params_h_stop
@@ -662,7 +658,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     if verbose_gpu >= 2:
         print("Copying iteration parameters to device...")
 
-    set_pT(p, T, mole_fraction, iter_params_h, l=l, slit_FWHM=slit_FWHM)
+    set_pTQ(p, T, mole_fraction, Q_arr, iter_params_h, l=l, slit_FWHM=slit_FWHM)
 
     calc_gaussian_params(
         gaussian_param_data,
@@ -703,7 +699,6 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
             host_params_h_log_2gs_d,
             host_params_h_na_d,
             host_params_h_DLM_d_in,
-            host_params_h_Q_d,
         ),
     )
     if gpu:

@@ -1008,7 +1008,6 @@ class SpectrumFactory(BandFactory):
             S0,
             El,
             molarmass_arr,
-            Q_arr,
             verbose_gpu,
             gpu=(not emulate),
         )
@@ -1025,6 +1024,7 @@ class SpectrumFactory(BandFactory):
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
+            Q_arr,
             verbose_gpu,
             gpu=(not emulate),
         )
