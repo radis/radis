@@ -959,7 +959,6 @@ class SpectrumFactory(BandFactory):
         na = df["Tdpair"].to_numpy(dtype=np.float32)
 
         log_2gs = np.array(self._get_log_2gs(mole_fraction), dtype=np.float32)
-        log_2vMm = np.array(self._get_log_2vMm(molarmass_arr), dtype=np.float32)
 
         ##        log_p = np.log(pressure_mbar * 1e-3)
         ##        hlog_T = 0.5 * np.log(Tgas)
@@ -1006,7 +1005,6 @@ class SpectrumFactory(BandFactory):
             da,
             log_2gs,
             na,
-            log_2vMm,
             S0,
             El,
             molarmass_arr,
@@ -1509,29 +1507,6 @@ class SpectrumFactory(BandFactory):
                 "Cannot find air-broadened half-width or log_2gs in the database... please check the database"
             ) from err
 
-    def _get_log_2vMm(self, molarmass_arr):
-        """Returns log_2vMm if it already exists in the dataframe, otherwise
-        computes it using the abundance and molar mass for each isotope passed
-        in the input."""
-        df = self.df0
-
-        # if the column already exists, then return
-        if "log_2vMm" in df.columns:
-            return df["log_2vMm"]
-
-        try:
-            v0 = df["wav"].to_numpy()  # get wavenumber
-            iso = df["iso"].to_numpy()  # get isotope
-            Mm = molarmass_arr * 1e-3 / N_A
-            log_2vMm = np.log(2 * v0) + 0.5 * np.log(
-                2 * k * np.log(2) / (c ** 2 * Mm.take(iso))
-            )
-            df["log_2vMm"] = log_2vMm
-            return log_2vMm
-        except KeyError as err:
-            raise KeyError(
-                "Cannot find wavenumber, isotope and/or log_2vMm in the database. Please check the database"
-            ) from err
 
     def _get_S0(self, Ia_arr):
         """Returns S0 if it already exists, otherwise computes the value using
