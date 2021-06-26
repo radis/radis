@@ -44,33 +44,33 @@ class Profiler(object):
         self.verbose = verbose
         self.relative_time_percentage = {}
 
-    def start(self, key, verbose):
+    def start(self, key, verbose_level):
         if __debug__:
             self.initial[key] = {
                 "start_time": time(),
-                "verbose": verbose,
+                "verbose_level": verbose_level,
             }
 
     def stop(self, key, details=""):
         if __debug__:
             items = self.initial.pop(key)
             # Storing time with verbose level
-            self.dict_time[key] = [time() - items["start_time"], items["verbose"]]
-            if self.verbose >= items["verbose"]:
-                self._print(items["verbose"], details, key)
+            self.dict_time[key] = [time() - items["start_time"], items["verbose_level"]]
+            if self.verbose >= items["verbose_level"]:
+                self._print(items["verbose_level"], details, key)
 
-    def _print(self, verbose, details, key=None):
-        if verbose == 1:
+    def _print(self, verbose_level, details, key=None):
+        if verbose_level == 1:
             if key == None:
                 print(details)
             else:
                 print("{0:.2f}s -".format(self.dict_time[key][0]), details)
-        elif verbose >= 2:
+        elif verbose_level >= 2:
             if key == None:
-                printg("..." * (verbose - 1), details)
+                printg("..." * (verbose_level - 1), details)
             else:
                 printg(
-                    "..." * (verbose - 1),
+                    "..." * (verbose_level - 1),
                     "{0:.2f}s -".format(self.dict_time[key][0]),
                     details,
                 )

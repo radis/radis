@@ -750,6 +750,13 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
+        conditions.update(
+            {
+                "profiler": {
+                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
+                }
+            }
+        )
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -803,13 +810,6 @@ class SpectrumFactory(BandFactory):
 
         # For calculating time distribution and storing it
         self.profiler.percentage_distribution()
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
-            }
-        )
 
         return s
 
@@ -1062,6 +1062,13 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
+        conditions.update(
+            {
+                "profiler": {
+                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
+                }
+            }
+        )
 
         # Spectral quantities
         quantities = {
@@ -1102,13 +1109,6 @@ class SpectrumFactory(BandFactory):
 
         # For calculating time distribution and storing it
         self.profiler.percentage_distribution()
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
-            }
-        )
 
         return s
 
@@ -1389,6 +1389,13 @@ class SpectrumFactory(BandFactory):
                 "radis_version": get_version(),
             }
         )
+        conditions.update(
+            {
+                "profiler": {
+                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
+                }
+            }
+        )
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         populations = self.get_populations(self.misc.export_populations)
@@ -1446,13 +1453,6 @@ class SpectrumFactory(BandFactory):
 
         # For calculating time distribution and storing it
         self.profiler.percentage_distribution()
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
-            }
-        )
 
         return s
 
