@@ -9,7 +9,6 @@ c2 = h * c_cm / k
 
 from radis.misc.utils import getProjectRoot
 
-
 class initData(ctypes.Structure):
     _fields_ = [
         ("v_min", ctypes.c_float),
@@ -35,7 +34,7 @@ class initData(ctypes.Structure):
 class iterData(ctypes.Structure):
     _fields_ = [
         ("p", ctypes.c_float),
-        ("log_p", ctypes.c_float),
+        ("log_2p", ctypes.c_float),
         ("hlog_T", ctypes.c_float),
         ("log_rT", ctypes.c_float),
         ("c2T", ctypes.c_float),
@@ -54,7 +53,7 @@ init_params_h = initData()
 iter_params_h = iterData()
 
 
-def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
+def py_calc_lorentzian_envelope_params(na, gamma, verbose=False):
     """
 
 
@@ -62,7 +61,7 @@ def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
     ----------
     na : TYPE
         DESCRIPTION.
-    log_2gs : TYPE
+    gamma : TYPE
         DESCRIPTION.
     verbose : TYPE, optional
         DESCRIPTION. The default is False.
@@ -76,20 +75,20 @@ def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
     # Remove duplicates
     unique_lines = set([])
     for i in range(len(na)):
-        unique_lines.add(str(na[i]) + " " + str(log_2gs[i]))
+        unique_lines.add(str(na[i]) + " " + str(gamma[i]))
 
     # Only keep extremes
     max_dict = {}
     min_dict = {}
     for s in unique_lines:
-        na_i, log_2gs_i = map(float, s.split())
+        na_i, gamma_i = map(float, s.split())
         try:
-            min_dict[na_i] = log_2gs_i if log_2gs_i < min_dict[na_i] else min_dict[na_i]
-            max_dict[na_i] = log_2gs_i if log_2gs_i > max_dict[na_i] else max_dict[na_i]
+            min_dict[na_i] = gamma_i if gamma_i < min_dict[na_i] else min_dict[na_i]
+            max_dict[na_i] = gamma_i if gamma_i > max_dict[na_i] else max_dict[na_i]
 
         except (KeyError):
-            min_dict[na_i] = log_2gs_i
-            max_dict[na_i] = log_2gs_i
+            min_dict[na_i] = gamma_i
+            max_dict[na_i] = gamma_i
 
     # Check which ones are really at the top:
     result = []
@@ -97,12 +96,12 @@ def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
 
         keys = sorted(test_dict.keys(), reverse=(test_dict == min_dict))
         A = [keys[0]]
-        B = [test_dict[keys[0]]]
+        B = [np.log(test_dict[keys[0]])]
         X = [-np.inf]
 
         for key in keys[1:]:
             for i in range(len(X)):
-                xi = (test_dict[key] - B[i]) / (A[i] - key)
+                xi = (np.log(test_dict[key]) - B[i]) / (A[i] - key)
                 if xi >= X[i]:
                     if i < len(X) - 1:
                         if xi < X[i + 1]:
@@ -111,7 +110,7 @@ def py_calc_lorentzian_envelope_params(na, log_2gs, verbose=False):
                         break
 
             A = A[: i + 1] + [key]
-            B = B[: i + 1] + [test_dict[key]]
+            B = B[: i + 1] + [np.log(test_dict[key])]
             X = X[: i + 1] + [xi]
 
         X = X[1:] + [np.inf]
@@ -141,15 +140,17 @@ def py_calc_gaussian_envelope_params(log_2vMm, verbose=False):
 
 
 try:
+    import happiness
     from radis_cython_extensions import (
         calc_gaussian_envelope_params,
         calc_lorentzian_envelope_params,
     )
+    print('CYTHON MIN/MAX')
 except (ModuleNotFoundError):
     calc_gaussian_envelope_params = py_calc_gaussian_envelope_params
     calc_lorentzian_envelope_params = py_calc_lorentzian_envelope_params
-
-
+    print('PYTHON MIN/MAX')
+    
 def init_gaussian_params(log_2vMm, verbose_gpu):
     """
 
@@ -191,7 +192,7 @@ def init_gaussian_params(log_2vMm, verbose_gpu):
     return param_data
 
 
-def init_lorentzian_params(na, log_2gs, verbose_gpu):
+def init_lorentzian_params(na, gamma, verbose_gpu):
     """
 
 
@@ -199,7 +200,7 @@ def init_lorentzian_params(na, log_2gs, verbose_gpu):
     ----------
     na : TYPE
         DESCRIPTION.
-    log_2gs : TYPE
+    gamma : TYPE
         DESCRIPTION.
     verbose_gpu : TYPE
         DESCRIPTION.
@@ -214,7 +215,7 @@ def init_lorentzian_params(na, log_2gs, verbose_gpu):
     if verbose_gpu >= 2:
         print("Initializing Lorentzian parameters ")
 
-    ##fname = "Lorenzian_minmax_" + str(len(log_2gs)) + ".dat"
+    ##fname = "Lorenzian_minmax_" + str(len(gamma)) + ".dat"
     ##
     ##    try:
     ##        with open(fname, "rb") as f:
@@ -227,7 +228,7 @@ def init_lorentzian_params(na, log_2gs, verbose_gpu):
         if verbose_gpu >= 2:
             print(" ... ")
 
-        param_data = calc_lorentzian_envelope_params(na, log_2gs, verbose_gpu)
+        param_data = calc_lorentzian_envelope_params(na, gamma, verbose_gpu)
     ##        with open(fname, "wb") as f:
     ##            pickle.dump(param_data, f)
 
@@ -271,7 +272,7 @@ def calc_gaussian_params(
     iter_params_h.log_dwG = log_dwG
 
 
-def calc_lorentzian_minmax(param_data, log_rT, log_p):
+def calc_lorentzian_minmax(param_data, log_rT, log_2p):
     """
 
 
@@ -281,7 +282,7 @@ def calc_lorentzian_minmax(param_data, log_rT, log_p):
         DESCRIPTION.
     log_rT : TYPE
         DESCRIPTION.
-    log_p : TYPE
+    log_2p : TYPE
         DESCRIPTION.
 
     Returns
@@ -297,7 +298,7 @@ def calc_lorentzian_minmax(param_data, log_rT, log_p):
         i = 0
         while X[i] < log_rT:
             i += 1
-        result.append(log_rT * A[i] + B[i] + log_p)
+        result.append(log_rT * A[i] + B[i] + log_2p)
     return tuple(result)
 
 
@@ -323,7 +324,7 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
     """
 
     log_wL_min, log_wL_max = calc_lorentzian_minmax(
-        param_data, iter_params_h.log_rT, iter_params_h.log_p
+        param_data, iter_params_h.log_rT, iter_params_h.log_2p
     )
     log_wL_max += epsilon
     log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
@@ -357,7 +358,7 @@ def set_pTQ(p, T, mole_fraction, Q_arr, iter_params_h, l=1.0, slit_FWHM=0.0):
     """
 
     iter_params_h.p = p  # bar
-    iter_params_h.log_p = np.log(p)
+    iter_params_h.log_2p = np.log(2*p)
     iter_params_h.hlog_T = 0.5 * np.log(T)
     iter_params_h.log_rT = np.log(296.0 / T)
     iter_params_h.c2T = -c2 / T
@@ -386,7 +387,7 @@ def gpu_init(
     iso,
     v0,
     da,
-    log_2gs,
+    gamma,
     na,
     S0,
     El,
@@ -411,7 +412,7 @@ def gpu_init(
         DESCRIPTION.
     da : TYPE
         DESCRIPTION.
-    log_2gs : TYPE
+    gamma : TYPE
         DESCRIPTION.
     na : TYPE
         DESCRIPTION.
@@ -441,7 +442,7 @@ def gpu_init(
     global host_params_h_da_d
     global host_params_h_S0_d
     global host_params_h_El_d
-    global host_params_h_log_2gs_d
+    global host_params_h_gamma_d
     global host_params_h_na_d
 
     global host_params_h_DLM_d_in
@@ -544,7 +545,7 @@ def gpu_init(
     host_params_h_da_d = array(da)
     host_params_h_S0_d = array(S0)
     host_params_h_El_d = array(El)
-    host_params_h_log_2gs_d = array(log_2gs)
+    host_params_h_gamma_d = array(gamma)
     host_params_h_na_d = array(na)
 
     if verbose_gpu >= 2:
@@ -556,7 +557,7 @@ def gpu_init(
 
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
     gaussian_param_data = init_gaussian_params(log_2vMm.astype(np.float32), verbose_gpu)
-    lorentzian_param_data = init_lorentzian_params(na, log_2gs, verbose_gpu)
+    lorentzian_param_data = init_lorentzian_params(na, gamma, verbose_gpu)
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
@@ -613,7 +614,7 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
     global host_params_h_da_d
     global host_params_h_S0_d
     global host_params_h_El_d
-    global host_params_h_log_2gs_d
+    global host_params_h_gamma_d
     global host_params_h_na_d
     global host_params_h_stop
     global host_params_h_elapsedTime
@@ -696,7 +697,7 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
             host_params_h_da_d,
             host_params_h_S0_d,
             host_params_h_El_d,
-            host_params_h_log_2gs_d,
+            host_params_h_gamma_d,
             host_params_h_na_d,
             host_params_h_DLM_d_in,
         ),
