@@ -9,15 +9,15 @@ c2 = h * c_cm / k
 
 from radis.misc.utils import getProjectRoot
 
+
 class initData(ctypes.Structure):
     _fields_ = [
         ("v_min", ctypes.c_float),
         ("v_max", ctypes.c_float),
         ("dv", ctypes.c_float),
         ("N_v", ctypes.c_int),
-        ("N_wG", ctypes.c_int),
-        ("N_wL", ctypes.c_int),
-        ("N_wG_x_N_wL", ctypes.c_int),
+        ("N_G", ctypes.c_int),
+        ("N_L", ctypes.c_int),
         ("N_total", ctypes.c_int),
         ("Max_lines", ctypes.c_int),
         ("N_lines", ctypes.c_int),
@@ -43,14 +43,14 @@ class iterData(ctypes.Structure):
         ("slit_FWHM", ctypes.c_float),
         ("log_wG_min", ctypes.c_float),
         ("log_wL_min", ctypes.c_float),
-        ("log_dwG", ctypes.c_float),
-        ("log_dwL", ctypes.c_float),
+        ("dxG", ctypes.c_float),
+        ("dxL", ctypes.c_float),
         ("Q", ctypes.c_float * 16),
     ]
 
 
-init_params_h = initData()
-iter_params_h = iterData()
+init_h = initData()
+iter_h = iterData()
 
 
 def py_calc_lorentzian_envelope_params(na, gamma, verbose=False):
@@ -140,17 +140,15 @@ def py_calc_gaussian_envelope_params(log_2vMm, verbose=False):
 
 
 try:
-    #import happiness
     from radis_cython_extensions import (
         calc_gaussian_envelope_params,
         calc_lorentzian_envelope_params,
     )
-    print('CYTHON MIN/MAX')
 except (ModuleNotFoundError):
     calc_gaussian_envelope_params = py_calc_gaussian_envelope_params
     calc_lorentzian_envelope_params = py_calc_lorentzian_envelope_params
-    print('PYTHON MIN/MAX')
-    
+
+
 def init_gaussian_params(log_2vMm, verbose_gpu):
     """
 
@@ -238,9 +236,7 @@ def init_lorentzian_params(na, gamma, verbose_gpu):
     return param_data
 
 
-def calc_gaussian_params(
-    gaussian_param_data, init_params_h, iter_params_h, epsilon=1e-4
-):
+def calc_gaussian_params(gaussian_param_data, init_h, iter_h, epsilon=1e-4):
     """
 
 
@@ -248,9 +244,9 @@ def calc_gaussian_params(
     ----------
     gaussian_param_data : TYPE
         DESCRIPTION.
-    init_params_h : TYPE
+    init_h : TYPE
         DESCRIPTION.
-    iter_params_h : TYPE
+    iter_h : TYPE
         DESCRIPTION.
     epsilon : TYPE, optional
         DESCRIPTION. The default is 1e-4.
@@ -261,15 +257,15 @@ def calc_gaussian_params(
 
     """
 
-    host_params_h_log_2vMm_min, host_params_h_log_2vMm_max = gaussian_param_data
-    log_wG_min = host_params_h_log_2vMm_min + iter_params_h.hlog_T
-    log_wG_max = host_params_h_log_2vMm_max + iter_params_h.hlog_T
+    log_2vMm_min, log_2vMm_max = gaussian_param_data
+    log_wG_min = log_2vMm_min + iter_h.hlog_T
+    log_wG_max = log_2vMm_max + iter_h.hlog_T
     ##    print("wG:", log_wG_min, log_wG_max)
     log_wG_max += epsilon
-    log_dwG = (log_wG_max - log_wG_min) / (init_params_h.N_wG - 1)
+    dxG = (log_wG_max - log_wG_min) / (init_h.N_G - 1)
 
-    iter_params_h.log_wG_min = log_wG_min
-    iter_params_h.log_dwG = log_dwG
+    iter_h.log_wG_min = log_wG_min
+    iter_h.dxG = dxG
 
 
 def calc_lorentzian_minmax(param_data, log_rT, log_2p):
@@ -302,7 +298,7 @@ def calc_lorentzian_minmax(param_data, log_rT, log_2p):
     return tuple(result)
 
 
-def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-4):
+def calc_lorentzian_params(param_data, init_h, iter_h, epsilon=1e-4):
     """
 
 
@@ -310,9 +306,9 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
     ----------
     param_data : TYPE
         DESCRIPTION.
-    init_params_h : TYPE
+    init_h : TYPE
         DESCRIPTION.
-    iter_params_h : TYPE
+    iter_h : TYPE
         DESCRIPTION.
     epsilon : TYPE, optional
         DESCRIPTION. The default is 1e-4.
@@ -324,16 +320,16 @@ def calc_lorentzian_params(param_data, init_params_h, iter_params_h, epsilon=1e-
     """
 
     log_wL_min, log_wL_max = calc_lorentzian_minmax(
-        param_data, iter_params_h.log_rT, iter_params_h.log_2p
+        param_data, iter_h.log_rT, iter_h.log_2p
     )
     log_wL_max += epsilon
-    log_dwL = (log_wL_max - log_wL_min) / (init_params_h.N_wL - 1)
+    dxL = (log_wL_max - log_wL_min) / (init_h.N_L - 1)
 
-    iter_params_h.log_wL_min = log_wL_min
-    iter_params_h.log_dwL = log_dwL
+    iter_h.log_wL_min = log_wL_min
+    iter_h.dxL = dxL
 
 
-def set_pTQ(p, T, mole_fraction, Q_arr, iter_params_h, l=1.0, slit_FWHM=0.0):
+def set_pTQ(p, T, mole_fraction, Q_arr, iter_h, l=1.0, slit_FWHM=0.0):
     """
 
 
@@ -344,7 +340,7 @@ def set_pTQ(p, T, mole_fraction, Q_arr, iter_params_h, l=1.0, slit_FWHM=0.0):
     T : float
         temperature [K].
     mole_fraction : float
-    iter_params_h : TYPE
+    iter_h : TYPE
         DESCRIPTION.
     l : TYPE, optional
         DESCRIPTION. The default is 1.0.
@@ -357,17 +353,17 @@ def set_pTQ(p, T, mole_fraction, Q_arr, iter_params_h, l=1.0, slit_FWHM=0.0):
 
     """
 
-    iter_params_h.p = p  # bar
-    iter_params_h.log_2p = np.log(2*p)
-    iter_params_h.hlog_T = 0.5 * np.log(T)
-    iter_params_h.log_rT = np.log(296.0 / T)
-    iter_params_h.c2T = -c2 / T
-    iter_params_h.N = mole_fraction * p * 1e5 / (1e6 * k * T)  # cm-3
-    iter_params_h.l = l
-    iter_params_h.slit_FWHM = slit_FWHM
+    iter_h.p = p  # bar
+    iter_h.log_2p = np.log(2 * p)
+    iter_h.hlog_T = 0.5 * np.log(T)
+    iter_h.log_rT = np.log(296.0 / T)
+    iter_h.c2T = -c2 / T
+    iter_h.N = mole_fraction * p * 1e5 / (1e6 * k * T)  # cm-3
+    iter_h.l = l
+    iter_h.slit_FWHM = slit_FWHM
 
     for i in range(len(Q_arr)):
-        iter_params_h.Q[i] = Q_arr[i]
+        iter_h.Q[i] = Q_arr[i]
 
 
 def constant_memory_setter(cuda_module, var_str):
@@ -382,8 +378,8 @@ def constant_memory_setter(cuda_module, var_str):
 
 def gpu_init(
     v_arr,
-    N_wG,
-    N_wL,
+    N_G,
+    N_L,
     iso,
     v0,
     da,
@@ -402,9 +398,9 @@ def gpu_init(
     ----------
     v_arr : TYPE
         DESCRIPTION.
-    N_wG : TYPE
+    N_G : TYPE
         DESCRIPTION.
-    N_wL : TYPE
+    N_L : TYPE
         DESCRIPTION.
     iso : TYPE
         DESCRIPTION.
@@ -434,30 +430,12 @@ def gpu_init(
     """
 
     # ----------- setup global variables -----------------
-    global init_params_h
-    global host_params_h_dec_size
-    global host_params_h_block_preparation_step_size
-    global host_params_h_iso_d
-    global host_params_h_v0_d
-    global host_params_h_da_d
-    global host_params_h_S0_d
-    global host_params_h_El_d
-    global host_params_h_gamma_d
-    global host_params_h_na_d
-
-    global host_params_h_DLM_d_in
-    global host_params_h_spectrum_d_in
-    global host_params_h_transmittance_noslit
-    global host_params_h_transmittance_FT
-
-    global lorentzian_param_data
-    global gaussian_param_data
-
-    global cuda_module
-    global database_path
-    global N_lines_to_load
-
-    global cuda_functions
+    global init_h
+    global block_preparation_step_size
+    global iso_d, v0_d, da_d, S0_d, El_d, gamma_d, na_d
+    global S_klm_d, spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
+    global lorentzian_param_data, gaussian_param_data
+    global cuda_module, cuda_functions
     # -----------------------------------------------------
 
     if gpu:
@@ -469,13 +447,13 @@ def gpu_init(
 
         cuda_module = RawModule(code=cuda_code)
         cuda_functions = (
-            cuda_module.get_function("fillDLM"),
+            cuda_module.get_function("fillLDM"),
             cuda_module.get_function("applyLineshapes"),
             cuda_module.get_function("calcTransmittanceNoslit"),
             cuda_module.get_function("applyGaussianSlit"),
         )
 
-        set_init_params = constant_memory_setter(cuda_module, "init_params_d")
+        set_init_params = constant_memory_setter(cuda_module, "init_d")
 
     else:
         from numpy import complex64, float32, zeros
@@ -483,77 +461,72 @@ def gpu_init(
         array = lambda arr: arr
         from radis_cython_extensions import set_init_params
 
-    init_params_h.v_min = np.min(v_arr)  # 2000.0
-    init_params_h.v_max = np.max(v_arr)  # 2400.0
-    init_params_h.dv = (v_arr[-1] - v_arr[0]) / (len(v_arr) - 1)  # 0.002
-    init_params_h.N_v = len(v_arr)
-    init_params_h.N_wG = N_wG
-    init_params_h.N_wL = N_wL
+    init_h.v_min = np.min(v_arr)  # 2000.0
+    init_h.v_max = np.max(v_arr)  # 2400.0
+    init_h.dv = (v_arr[-1] - v_arr[0]) / (len(v_arr) - 1)  # 0.002
+    init_h.N_v = len(v_arr)
+    init_h.N_G = N_G
+    init_h.N_L = N_L
 
-    init_params_h.N_iterations_per_thread = 1024
-    host_params_h_block_preparation_step_size = 128
+    init_h.N_iterations_per_thread = 1024
+    block_preparation_step_size = 128
 
-    host_params_h_shared_size = 0x8000  # Bytes - Size of the shared memory
-    init_params_h.shared_size_floats = host_params_h_shared_size // 4  # size of float
+    shared_size = 0x8000  # Bytes - Size of the shared memory
+    init_h.shared_size_floats = shared_size // 4  # size of float
 
-    init_params_h.N_wG_x_N_wL = init_params_h.N_wG * init_params_h.N_wL
-    init_params_h.N_total = init_params_h.N_wG_x_N_wL * init_params_h.N_v
-    init_params_h.N_points_per_block = (
-        init_params_h.shared_size_floats // init_params_h.N_wG_x_N_wL
-    )
+    init_h.N_total = init_h.N_v * init_h.N_G * init_h.N_L
+    init_h.N_points_per_block = init_h.shared_size_floats // (init_h.N_v * init_h.N_G)
 
-    init_params_h.N_threads_per_block = 1024
-    init_params_h.N_blocks_per_grid = 4 * 256 * 256
-    init_params_h.N_points_per_thread = (
-        init_params_h.N_points_per_block // init_params_h.N_threads_per_block
-    )
+    init_h.N_threads_per_block = 1024
+    init_h.N_blocks_per_grid = 4 * 256 * 256
+    init_h.N_points_per_thread = init_h.N_points_per_block // init_h.N_threads_per_block
 
     if verbose_gpu >= 2:
         print()
-        print(
-            "Spectral points per block  : {0}".format(init_params_h.N_points_per_block)
-        )
-        print(
-            "Threads per block          : {0}".format(init_params_h.N_threads_per_block)
-        )
-        print(
-            "Spectral points per thread : {0}".format(init_params_h.N_points_per_thread)
-        )
+        print("Spectral points per block  : {0}".format(init_h.N_points_per_block))
+        print("Threads per block          : {0}".format(init_h.N_threads_per_block))
+        print("Spectral points per thread : {0}".format(init_h.N_points_per_thread))
         print()
 
-    init_params_h.N_lines = int(len(v0))
+    init_h.N_lines = int(len(v0))
 
     if verbose_gpu == 1:
-        print("Number of lines loaded: {0}".format(init_params_h.N_lines))
+        print("Number of lines loaded: {0}".format(init_h.N_lines))
         print()
 
     if verbose_gpu >= 2:
         print("Allocating device memory and copying data...")
 
-    host_params_h_DLM_d_in = zeros(
-        (2 * init_params_h.N_v, init_params_h.N_wG, init_params_h.N_wL),
+    S_klm_d = zeros(
+        (2 * init_h.N_v, init_h.N_G, init_h.N_L),
         order="C",
         dtype=float32,
     )
-    host_params_h_spectrum_d_in = zeros(init_params_h.N_v + 1, dtype=complex64)
-    host_params_h_transmittance_noslit = zeros(init_params_h.N_v * 2, dtype=float32)
-    host_params_h_transmittance_FT = zeros(init_params_h.N_v + 1, dtype=complex64)
+    spectrum_in_d = zeros(init_h.N_v + 1, dtype=complex64)
+    transmittance_noslit_d = zeros(init_h.N_v * 2, dtype=float32)
+    transmittance_FT_d = zeros(init_h.N_v + 1, dtype=complex64)
 
     # #Copy spectral data to device
-    host_params_h_iso_d = array(iso)
-    host_params_h_v0_d = array(v0)
-    host_params_h_da_d = array(da)
-    host_params_h_S0_d = array(S0)
-    host_params_h_El_d = array(El)
-    host_params_h_gamma_d = array(gamma)
-    host_params_h_na_d = array(na)
+    iso_d = array(iso)
+    v0_d = array(v0)
+    da_d = array(da)
+    S0_d = array(S0)
+    El_d = array(El)
+    gamma_d = array(gamma)
+    na_d = array(na)
 
     if verbose_gpu >= 2:
         print("done!")
 
-    log_c2Mm_arr = np.array([0] + [0.5 * np.log(8 * k * np.log(2) / (c ** 2 * Mm * 1e-3 / N_A)) for Mm in Mm_arr[1:]])
+    log_c2Mm_arr = np.array(
+        [0]
+        + [
+            0.5 * np.log(8 * k * np.log(2) / (c ** 2 * Mm * 1e-3 / N_A))
+            for Mm in Mm_arr[1:]
+        ]
+    )
     for i in range(len(log_c2Mm_arr)):
-        init_params_h.log_c2Mm[i] = log_c2Mm_arr[i] 
+        init_h.log_c2Mm[i] = log_c2Mm_arr[i]
 
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
     gaussian_param_data = init_gaussian_params(log_2vMm.astype(np.float32), verbose_gpu)
@@ -561,7 +534,7 @@ def gpu_init(
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
-    set_init_params(init_params_h)
+    set_init_params(init_h)
 
     if verbose_gpu >= 2:
         print("done!")
@@ -574,7 +547,9 @@ def gpu_init(
 ##    print("wG arr:",np.min(log_wG_debug_h),np.max(log_wG_debug_h))
 
 
-def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False):
+def gpu_iterate(
+    p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False
+):
     """
     Parameters
     ----------
@@ -605,28 +580,11 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
     """
 
     # ----------- setup global variables -----------------
-
-    global host_params_h_start
-
-    global init_params_h, iter_params_h
-    global host_params_h_iso
-    global host_params_h_v0_d
-    global host_params_h_da_d
-    global host_params_h_S0_d
-    global host_params_h_El_d
-    global host_params_h_gamma_d
-    global host_params_h_na_d
-    global host_params_h_stop
-    global host_params_h_elapsedTime
-
-    global host_params_h_DLM_d_in
-    global host_params_h_spectrum_d_in
-    global host_params_h_transmittance_noslit
-    global host_params_h_transmittance_FT
-
-    global cuda_module
-    global cuda_functions
-    global DLM
+    global init_h, iter_h
+    global iso_d, v0_d, da_d, S0_d, El_d, gamma_d, na_d
+    global S_klm_d, spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
+    global cuda_module, cuda_functions
+    global start, stop, elapsedTime
     # ------------------------------------------------------
 
     if gpu:
@@ -635,12 +593,12 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
         from cupy.fft import irfft, rfft
 
         (
-            fillDLM,
+            fillLDM,
             applyLineshapes,
             calcTransmittanceNoslit,
             applyGaussianSlit,
         ) = cuda_functions
-        set_iter_params = constant_memory_setter(cuda_module, "iter_params_d")
+        set_iter_params = constant_memory_setter(cuda_module, "iter_d")
 
     else:
         from numpy import complex64, float32
@@ -650,7 +608,7 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
             applyGaussianSlit,
             applyLineshapes,
             calcTransmittanceNoslit,
-            fillDLM,
+            fillLDM,
             set_iter_params,
         )
 
@@ -659,47 +617,45 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
     if verbose_gpu >= 2:
         print("Copying iteration parameters to device...")
 
-    set_pTQ(p, T, mole_fraction, Q_arr, iter_params_h, l=l, slit_FWHM=slit_FWHM)
+    set_pTQ(p, T, mole_fraction, Q_arr, iter_h, l=l, slit_FWHM=slit_FWHM)
 
     calc_gaussian_params(
         gaussian_param_data,
-        init_params_h,
-        iter_params_h,
+        init_h,
+        iter_h,
     )
 
     calc_lorentzian_params(
         lorentzian_param_data,
-        init_params_h,
-        iter_params_h,
+        init_h,
+        iter_h,
     )
 
-    set_iter_params(iter_params_h)
+    set_iter_params(iter_h)
 
     if verbose_gpu >= 2:
         print("done!")
-        print("Filling DLM...")
+        print("Filling LDM...")
 
-    host_params_h_DLM_d_in.fill(0)
-    host_params_h_spectrum_d_in.fill(0)
-    host_params_h_transmittance_FT.fill(0)
+    S_klm_d.fill(0)
+    spectrum_in_d.fill(0)
+    transmittance_FT_d.fill(0)
 
-    n_threads = init_params_h.N_threads_per_block
-    n_blocks = (
-        init_params_h.N_lines // (n_threads * init_params_h.N_iterations_per_thread) + 1
-    )
+    n_threads = init_h.N_threads_per_block
+    n_blocks = init_h.N_lines // (n_threads * init_h.N_iterations_per_thread) + 1
 
-    fillDLM(
+    fillLDM(
         (n_blocks,),
         (n_threads,),
         (
-            host_params_h_iso_d,
-            host_params_h_v0_d,
-            host_params_h_da_d,
-            host_params_h_S0_d,
-            host_params_h_El_d,
-            host_params_h_gamma_d,
-            host_params_h_na_d,
-            host_params_h_DLM_d_in,
+            iso_d,
+            v0_d,
+            da_d,
+            S0_d,
+            El_d,
+            gamma_d,
+            na_d,
+            S_klm_d,
         ),
     )
     if gpu:
@@ -708,26 +664,26 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
     if verbose_gpu >= 2:
         print("Applying lineshapes...")
 
-    host_params_h_DLM_d_out = rfft(host_params_h_DLM_d_in, axis=0).astype(complex64)
+    S_klm_FT_d = rfft(S_klm_d, axis=0).astype(complex64)
 
     if gpu:
         deviceSynchronize()
 
-    n_threads = init_params_h.N_threads_per_block
-    n_blocks = (init_params_h.N_v + 1) // n_threads + 1
+    n_threads = init_h.N_threads_per_block
+    n_blocks = (init_h.N_v + 1) // n_threads + 1
     applyLineshapes(
         (n_blocks,),
         (n_threads,),
         (
-            host_params_h_DLM_d_out,
-            host_params_h_spectrum_d_in,
+            S_klm_FT_d,
+            spectrum_in_d,
         ),
     )
 
     if gpu:
         deviceSynchronize()
 
-    host_params_h_spectrum_d_out = irfft(host_params_h_spectrum_d_in).astype(float32)
+    spectrum_out_d = irfft(spectrum_in_d).astype(float32)
 
     if gpu:
         deviceSynchronize()
@@ -736,15 +692,15 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
         print("Done!")
         print("Calculating transmittance...")
 
-    abscoeff_h = asnumpy(host_params_h_spectrum_d_out)[: init_params_h.N_v]
+    abscoeff_h = asnumpy(spectrum_out_d)[: init_h.N_v]
 
     ## Calc transmittance_noslit:
-    n_threads = init_params_h.N_threads_per_block
-    n_blocks = (2 * init_params_h.N_v) // n_threads + 1
+    n_threads = init_h.N_threads_per_block
+    n_blocks = (2 * init_h.N_v) // n_threads + 1
     calcTransmittanceNoslit(
         (n_blocks,),
         (n_threads,),
-        (host_params_h_spectrum_d_out, host_params_h_transmittance_noslit),
+        (spectrum_out_d, transmittance_noslit_d),
     )
 
     if gpu:
@@ -755,37 +711,35 @@ def gpu_iterate(p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0
         print("Applying slit function...")
 
     ## Apply slit function:
-    host_params_h_transmittance_noslit_FT = rfft(
-        host_params_h_transmittance_noslit
-    ).astype(complex64)
+    transmittance_noslit_FT_d = rfft(transmittance_noslit_d).astype(complex64)
 
     if gpu:
         deviceSynchronize()
 
-    n_threads = init_params_h.N_threads_per_block
-    n_blocks = (init_params_h.N_v + 1) // n_threads + 1
+    n_threads = init_h.N_threads_per_block
+    n_blocks = (init_h.N_v + 1) // n_threads + 1
     applyGaussianSlit(
         (n_blocks,),
         (n_threads,),
-        (host_params_h_transmittance_noslit_FT, host_params_h_transmittance_FT),
+        (transmittance_noslit_FT_d, transmittance_FT_d),
     )
 
     if gpu:
         deviceSynchronize()
 
-    host_params_h_transmittance = irfft(host_params_h_transmittance_FT).astype(float32)
+    transmittance_d = irfft(transmittance_FT_d).astype(float32)
 
     if gpu:
         deviceSynchronize()
 
-    transmittance_h = asnumpy(host_params_h_transmittance)[: init_params_h.N_v]
+    transmittance_h = asnumpy(transmittance_d)[: init_h.N_v]
 
     if verbose_gpu >= 2:
         print("done!")
 
     if verbose_gpu == 1:
-        print("[rG = {0}%".format((np.exp(iter_params_h.log_dwG) - 1) * 100))
-        print("rL = {0}%]".format((np.exp(iter_params_h.log_dwL) - 1) * 100))
+        print("[rG = {0}%".format((np.exp(iter_h.dxG) - 1) * 100))
+        print("rL = {0}%]".format((np.exp(iter_h.dxL) - 1) * 100))
 
         print("Finished calculating spectrum!")
 
