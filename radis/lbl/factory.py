@@ -803,7 +803,13 @@ class SpectrumFactory(BandFactory):
 
         # For calculating time distribution and storing it
         self.profiler.percentage_distribution()
-        conditions.update({"profiler": self.profiler.relative_time_percentage})
+        conditions.update(
+            {
+                "profiler": {
+                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
+                }
+            }
+        )
 
         return s
 
@@ -1096,7 +1102,13 @@ class SpectrumFactory(BandFactory):
 
         # For calculating time distribution and storing it
         self.profiler.percentage_distribution()
-        conditions.update({"profiler": self.profiler.relative_time_percentage})
+        conditions.update(
+            {
+                "profiler": {
+                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
+                }
+            }
+        )
 
         return s
 
@@ -1434,7 +1446,13 @@ class SpectrumFactory(BandFactory):
 
         # For calculating time distribution and storing it
         self.profiler.percentage_distribution()
-        conditions.update({"profiler": self.profiler.relative_time_percentage})
+        conditions.update(
+            {
+                "profiler": {
+                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
+                }
+            }
+        )
 
         return s
 

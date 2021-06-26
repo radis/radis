@@ -79,10 +79,10 @@ class Profiler(object):
         """Computes and stores the percentage of time spent by each step of a particular verbose level.
         Stored in sorted order:
         {
-            verbose_level: {
-                "key_1": [percentage_time, time],
-                "key_2": [percentage_time, time],
-            }
+            verbose_level: [
+                ("key_1", [percentage_time, time]),
+                ("key_2", [percentage_time, time]),
+            ]
         }
 
         """
