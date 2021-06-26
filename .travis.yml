@@ -39,7 +39,7 @@ jobs:
         # Activate and install test-only dependencies
         - source activate radis-env
         - pip install pytest-cov
-        - python setup.py install
+        - pip install -e . -v
 
       script:
         # Your test script goes here
