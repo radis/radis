@@ -958,18 +958,7 @@ class SpectrumFactory(BandFactory):
         El = df["El"].to_numpy(dtype=np.float32)
         na = df["Tdpair"].to_numpy(dtype=np.float32)
 
-        log_2gs = np.array(self._get_log_2gs(mole_fraction), dtype=np.float32)
-
-        ##        log_p = np.log(pressure_mbar * 1e-3)
-        ##        hlog_T = 0.5 * np.log(Tgas)
-        ##        log_rT = np.log(296.0 / Tgas)
-        ##
-        ##        wG = log_2vMm + hlog_T
-        ##        wL = na * log_rT + log_2gs + log_p
-        ##
-        ##        print('REAL min/max values:')
-        ##        print('wG:',np.min(wG),np.max(wG))
-        ##        print('wL:',np.min(wL),np.max(wL))
+        gamma = np.array(self._get_lorentzian_broadening(mole_fraction), dtype=np.float32)
 
         self.calc_S0()
         ##        S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
@@ -1003,7 +992,7 @@ class SpectrumFactory(BandFactory):
             iso,
             v0,
             da,
-            log_2gs,
+            gamma,
             na,
             S0,
             El,
@@ -1484,28 +1473,17 @@ class SpectrumFactory(BandFactory):
 
         return
 
-    def _get_log_2gs(self, x):
-        """Returns log_2gs if it already exists in the dataframe, otherwise
-        computes it using gamma_air."""
+    def _get_lorentzian_broadening(self, x):
+        """Calculates ratioed self/air broadening based on molefraction"""
         df = self.df0
         # TODO: deal with the case of gamma_self [so we don't forget]
         # TODO (refactor) : move into BaseFactory or BroadenFactory (parent classes)
 
-        # if the column already exists, then return
-        if "log_2gs" in df.columns:
-            return df["log_2gs"]
+        gamma_air = df["airbrd"].to_numpy()
+        gamma_self = df["selbrd"].to_numpy()
+        gamma = x * gamma_self + (1 - x) * gamma_air
+        return gamma
 
-        try:
-            gamma_air = df["airbrd"].to_numpy()
-            gamma_self = df["selbrd"].to_numpy()
-            gamma = x * gamma_self + (1 - x) * gamma_air
-            log_2gs = np.log(2 * gamma)
-            df["log_2gs"] = log_2gs
-            return log_2gs
-        except KeyError as err:
-            raise KeyError(
-                "Cannot find air-broadened half-width or log_2gs in the database... please check the database"
-            ) from err
 
 
     def _get_S0(self, Ia_arr):

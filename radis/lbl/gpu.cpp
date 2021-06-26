@@ -61,7 +61,7 @@ struct initData {
 
 struct iterData {
     float p;
-    float log_p;
+    float log_2p;
     float hlog_T;
     float log_rT;
     float c2T;
@@ -99,7 +99,7 @@ __global__ void fillDLM(
     float* da,  // pressure shift  in cm-1/atm
     float* S0,  // initial linestrength
     float* El,
-    float* log_2gs,
+    float* gamma,
     float* na,
     float* DLM
     ) {
@@ -130,7 +130,7 @@ __global__ void fillDLM(
                         int iwG1 = iwG0 + 1;
 
                         //Calc wL
-                        float log_wL_dat = log_2gs[i] + iter_params_d.log_p + na[i] * iter_params_d.log_rT;
+                        float log_wL_dat = logf(gamma[i]) + iter_params_d.log_2p + na[i] * iter_params_d.log_rT;
                         float iwL = (log_wL_dat - iter_params_d.log_wL_min) / iter_params_d.log_dwL;
                         int iwL0 = (int)iwL;
                         int iwL1 = iwL0 + 1;
