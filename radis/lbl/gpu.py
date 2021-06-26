@@ -140,7 +140,7 @@ def py_calc_gaussian_envelope_params(log_2vMm, verbose=False):
 
 
 try:
-    import happiness
+    #import happiness
     from radis_cython_extensions import (
         calc_gaussian_envelope_params,
         calc_lorentzian_envelope_params,
