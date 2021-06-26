@@ -387,6 +387,7 @@ def gpu_init(
     log_2vMm,
     S0,
     El,
+    Mm_arr,
     Q,
     verbose_gpu=True,
     gpu=False,
@@ -522,8 +523,6 @@ def gpu_init(
         )
         print()
 
-    lorentzian_param_data = init_lorentzian_params(na, log_2gs, verbose_gpu)
-    gaussian_param_data = init_gaussian_params(log_2vMm, verbose_gpu)
     init_params_h.N_lines = int(len(v0))
 
     if verbose_gpu == 1:
@@ -556,12 +555,15 @@ def gpu_init(
         print("done!")
 
     # TO-DO: This should obviously not be hardcoded!!!!
-    Mm_arr = np.array([-1, 28, 29, 30]) * 1e-3 / N_A  # kg
-
     for i in range(1, len(Mm_arr)):
         init_params_h.log_c2Mm[i] = 0.5 * np.log(
-            8 * k * np.log(2) / (c ** 2 * Mm_arr[i])
+            8 * k * np.log(2) / (c ** 2 * Mm_arr[i] * 1e-3 / N_A)
         )
+
+
+    lorentzian_param_data = init_lorentzian_params(na, log_2gs, verbose_gpu)
+    gaussian_param_data = init_gaussian_params(log_2vMm, verbose_gpu)
+
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")

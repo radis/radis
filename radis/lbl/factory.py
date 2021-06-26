@@ -1008,6 +1008,7 @@ class SpectrumFactory(BandFactory):
             log_2vMm,
             S0,
             El,
+            molarmass_arr,
             Q_arr,
             verbose_gpu,
             gpu=(not emulate),
