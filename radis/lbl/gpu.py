@@ -384,7 +384,6 @@ def gpu_init(
     da,
     log_2gs,
     na,
-    log_2vMm,
     S0,
     El,
     Mm_arr,
@@ -413,11 +412,11 @@ def gpu_init(
         DESCRIPTION.
     na : TYPE
         DESCRIPTION.
-    log_2vMm : TYPE
-        DESCRIPTION.
     S0 : TYPE
         DESCRIPTION.
     El : TYPE
+        DESCRIPTION.
+    Mm_arr  : TYPE
         DESCRIPTION.
     Q : TYPE
         DESCRIPTION.
@@ -554,16 +553,13 @@ def gpu_init(
     if verbose_gpu >= 2:
         print("done!")
 
-    # TO-DO: This should obviously not be hardcoded!!!!
-    for i in range(1, len(Mm_arr)):
-        init_params_h.log_c2Mm[i] = 0.5 * np.log(
-            8 * k * np.log(2) / (c ** 2 * Mm_arr[i] * 1e-3 / N_A)
-        )
+    log_c2Mm_arr = np.array([0] + [0.5 * np.log(8 * k * np.log(2) / (c ** 2 * Mm * 1e-3 / N_A)) for Mm in Mm_arr[1:]])
+    for i in range(len(log_c2Mm_arr)):
+        init_params_h.log_c2Mm[i] = log_c2Mm_arr[i] 
 
-
+    log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
+    gaussian_param_data = init_gaussian_params(log_2vMm.astype(np.float32), verbose_gpu)
     lorentzian_param_data = init_lorentzian_params(na, log_2gs, verbose_gpu)
-    gaussian_param_data = init_gaussian_params(log_2vMm, verbose_gpu)
-
 
     if verbose_gpu >= 2:
         print("Copying initialization parameters to device memory...")
