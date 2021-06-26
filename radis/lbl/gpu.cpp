@@ -72,6 +72,7 @@ struct iterData {
     float log_wL_min;
     float log_dwG;
     float log_dwL;
+    float Q[16];
 };
 
 __device__ __constant__ struct initData init_params_d;
@@ -100,8 +101,7 @@ __global__ void fillDLM(
     float* El,
     float* log_2gs,
     float* na,
-    float* DLM,
-    float* Q // Q is an array of size max(isotopes_id) + 1 (should move to iter_params_d)
+    float* DLM
     ) {
 
     int NwL = init_params_d.N_wL;
@@ -137,7 +137,7 @@ __global__ void fillDLM(
 
                         //Calc I
                         // ... scale linestrengths under equilibrium
-                        float I_add = iter_params_d.N * S0[i] * (expf(iter_params_d.c2T * El[i]) - expf(iter_params_d.c2T * (El[i] + v0[i]))) / Q[iso[i]];
+                        float I_add = iter_params_d.N * S0[i] * (expf(iter_params_d.c2T * El[i]) - expf(iter_params_d.c2T * (El[i] + v0[i]))) / iter_params_d.Q[iso[i]];
 
                         float av = iv - iv0;
                         float awG = (iwG - iwG0) * expf((iwG1 - iwG) * iter_params_d.log_dwG);
