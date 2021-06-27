@@ -2193,13 +2193,15 @@ class BroadenFactory(BaseFactory):
         """
         df = self.df1
 
-        self.profiler._print(
-            2,
-            "Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
-                len(df),
-                self._broadening_time_ruleofthumb * len(df) * len(self.wbroad_centered),
-            ),
-        )
+        if self.verbose >= 2:
+            print(
+                "... Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
+                    len(df),
+                    self._broadening_time_ruleofthumb
+                    * len(df)
+                    * len(self.wbroad_centered),
+                ),
+            )
         self.profiler.start("calc_line_broadening", 2)
 
         # Just some tests
@@ -2244,13 +2246,15 @@ class BroadenFactory(BaseFactory):
 
         df = self.df1
 
-        self.profiler._print(
-            2,
-            "Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
-                len(df),
-                self._broadening_time_ruleofthumb * len(df) * len(self.wbroad_centered),
-            ),
-        )
+        if self.verbose >= 2:
+            print(
+                "... Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
+                    len(df),
+                    self._broadening_time_ruleofthumb
+                    * len(df)
+                    * len(self.wbroad_centered),
+                ),
+            )
         self.profiler.start("calc_line_broadening", 2)
 
         # Just some tests
@@ -2304,7 +2308,9 @@ class BroadenFactory(BaseFactory):
         wstep = self.params.wstep
         df = self.df1  # lines already scaled with current temperature, size N
 
-        self.profiler._print(2, "classifying lines as weak or strong")
+        if self.verbose >= 2:
+            print("... classifying lines as weak or strong")
+
         self.profiler.start("weak_lines", 2)
         # Get approximate spectral absorption coefficient
         rough_spectrum, S_density_on_grid, line2grid_proj_left = project_lines_on_grid(
@@ -2390,7 +2396,9 @@ class BroadenFactory(BaseFactory):
 
         if self.params.pseudo_continuum_threshold > 0:
 
-            self.profiler._print(2, "Calculating pseudo continuum")
+            if self.verbose >= 2:
+                print("... Calculating pseudo continuum")
+
             self.profiler.start("calc_pseudo_continuum", 2)
             t0 = time()
 
@@ -2482,10 +2490,12 @@ class BroadenFactory(BaseFactory):
                 * len(self.wbroad_centered)
             )
 
-            self.profiler._print(
-                2,
-                "expected time saved: {0:.1f}s".format(expected_broadening_time_gain),
-            )
+            if self.verbose >= 2:
+                print(
+                    "... expected time saved: {0:.1f}s".format(
+                        expected_broadening_time_gain
+                    ),
+                )
 
             # Add a warning if it looks like it wasnt worth it
             if time_spent > 3 * expected_broadening_time_gain:
