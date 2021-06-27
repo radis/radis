@@ -272,9 +272,17 @@ def LineSurvey(
 
         # Get global labels
         if molecule in HITRAN_CLASS1:
+
+            add = ["vu", "vl", "jl", "iso"]
+
+            if "isotope" in spec.conditions:
+                iso = spec.conditions["isotope"]
+                add.append("iso")
+                row["iso"] = iso
+
             label = "{molec} [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
                 **dict(
-                    [(k, row[k]) for k in ["vu", "vl", "jl"]]
+                    [(k, row[k]) for k in add]
                     + [
                         ("molec", molecule),
                         ("branch", _fix_branch_format[row["branch"]]),
@@ -282,22 +290,27 @@ def LineSurvey(
                 )
             )
         elif molecule in HITRAN_CLASS4:
+
+            add = [
+                "v1u",
+                "v2u",
+                "l2u",
+                "v3u",
+                "v1l",
+                "v2l",
+                "l2l",
+                "v3l",
+                "jl",
+            ]
+
+            if "isotope" in spec.conditions:
+                iso = spec.conditions["isotope"]
+                add.append("iso")
+                row["iso"] = iso
+
             label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
                 **dict(
-                    [
-                        (k, row[k])
-                        for k in [
-                            "v1u",
-                            "v2u",
-                            "l2u",
-                            "v3u",
-                            "v1l",
-                            "v2l",
-                            "l2l",
-                            "v3l",
-                            "jl",
-                        ]
-                    ]
+                    [(k, row[k]) for k in add]
                     + [
                         ("molec", molecule),
                         ("branch", _fix_branch_format[row["branch"]]),
@@ -305,24 +318,29 @@ def LineSurvey(
                 )
             )
         elif molecule in HITRAN_CLASS5:
+
+            add = [
+                "v1u",
+                "v2u",
+                "l2u",
+                "v3u",
+                "v1l",
+                "v2l",
+                "l2l",
+                "v3l",
+                "rl",
+                "ru",
+                "jl",
+            ]
+
+            if "isotope" in spec.conditions:
+                iso = spec.conditions["isotope"]
+                add.append("iso")
+                row["iso"] = iso
+
             label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f} {rl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f} {ru:.0f})".format(
                 **dict(
-                    [
-                        (k, row[k])
-                        for k in [
-                            "v1u",
-                            "v2u",
-                            "l2u",
-                            "v3u",
-                            "v1l",
-                            "v2l",
-                            "l2l",
-                            "v3l",
-                            "rl",
-                            "ru",
-                            "jl",
-                        ]
-                    ]
+                    [(k, row[k]) for k in add]
                     + [
                         ("molec", molecule),
                         ("branch", _fix_branch_format[row["branch"]]),
@@ -345,20 +363,25 @@ def LineSurvey(
         return label
 
     def get_label_cdsd(row, details):
+
+        add = [
+            "polyl",
+            "wangl",
+            "rankl",
+            "polyu",
+            "wangu",
+            "ranku",
+            "jl",
+        ]
+
+        if "isotope" in spec.conditions:
+            iso = spec.conditions["isotope"]
+            add.append("iso")
+            row["iso"] = iso
+
         label = "CO2 [{branch}{jl:.0f}](p{polyl:.0f}c{wangl:.0f}n{rankl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
             **dict(
-                [
-                    (k, row[k])
-                    for k in [
-                        "polyl",
-                        "wangl",
-                        "rankl",
-                        "polyu",
-                        "wangu",
-                        "ranku",
-                        "jl",
-                    ]
-                ]
+                [(k, row[k]) for k in add]
                 + [("branch", _fix_branch_format[row["branch"]])]
             )
         )
