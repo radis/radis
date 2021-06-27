@@ -13,7 +13,7 @@ from warnings import warn
 
 import numpy as np
 
-from radis.db.classes import get_molecule
+from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.io.cdsd import columns_4000 as cdsd4000columns
 from radis.io.cdsd import columns_hitemp as cdsdcolumns
 from radis.io.hitran import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,; HITRAN_CLASS7,; HITRAN_CLASS8,; HITRAN_CLASS9,; HITRAN_CLASS10,
@@ -267,7 +267,8 @@ def LineSurvey(
             molecule = get_molecule(attrs["id"])
 
         else:
-            molecule = get_molecule(row.id)
+            id = get_molecule_identifier(spec.conditions["molecule"])
+            molecule = get_molecule(id)
 
         # Get global labels
         if molecule in HITRAN_CLASS1:
