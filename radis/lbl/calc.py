@@ -588,7 +588,7 @@ def _calc_spectrum(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
-            conditions["load_energies"] = True
+        conditions["load_energies"] = not _equilibrium
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
         sf.fetch_databank(**conditions)
@@ -611,7 +611,6 @@ def _calc_spectrum(
                 # constants (not all molecules are supported!)
                 conditions["levelsfmt"] = "radis"
                 conditions["lvl_use_cached"] = use_cached
-                conditions["load_energies"] = True
         elif databank.endswith(".h5") or databank.endswith(".hdf5"):
             if verbose:
                 print(
@@ -622,7 +621,6 @@ def _calc_spectrum(
             conditions["format"] = "hdf5-radisdb"
             if not _equilibrium:
                 conditions["levelsfmt"] = "radis"
-                conditions["load_energies"] = True
         else:
             raise ValueError(
                 "Couldnt infer the format of the line database file: {0}. ".format(
@@ -632,7 +630,7 @@ def _calc_spectrum(
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
             )
-
+        conditions["load_energies"] = not _equilibrium
         sf.load_databank(**conditions)
 
     else:  # manual mode: get from user-defined line databases defined in ~/radis.json
