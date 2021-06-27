@@ -82,7 +82,7 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp
-from scipy.constants import N_A, c, k, pi
+from scipy.constants import c, pi
 
 from radis import get_version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
@@ -104,6 +104,8 @@ from radis.spectrum.spectrum import Spectrum
 c_cm = c * 100
 
 # %% Main functions
+
+
 class SpectrumFactory(BandFactory):
     """A class to put together all functions related to loading CDSD / HITRAN
     databases, calculating the broadenings, and summing over all the lines.
@@ -508,7 +510,7 @@ class SpectrumFactory(BandFactory):
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
         self.params.folding_thresh = folding_thresh
-        self.params.zero_padding = zero_padding
+        self.misc.zero_padding = zero_padding
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
@@ -811,7 +813,6 @@ class SpectrumFactory(BandFactory):
         name=None,
         emulate=False,
     ):
-
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
 
@@ -957,7 +958,9 @@ class SpectrumFactory(BandFactory):
         El = df["El"].to_numpy(dtype=np.float32)
         na = df["Tdpair"].to_numpy(dtype=np.float32)
 
-        gamma = np.array(self._get_lorentzian_broadening(mole_fraction), dtype=np.float32)
+        gamma = np.array(
+            self._get_lorentzian_broadening(mole_fraction), dtype=np.float32
+        )
 
         self.calc_S0()
         ##        S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
@@ -1482,8 +1485,6 @@ class SpectrumFactory(BandFactory):
         gamma_self = df["selbrd"].to_numpy()
         gamma = x * gamma_self + (1 - x) * gamma_air
         return gamma
-
-
 
     def _get_S0(self, Ia_arr):
         """Returns S0 if it already exists, otherwise computes the value using

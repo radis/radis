@@ -952,7 +952,10 @@ class DatabankLoader(object):
 
             # Merge
             if frames == []:
-                raise EmptyDatabaseError("Dataframe is empty")
+                raise EmptyDatabaseError(
+                    f"{molecule} has no lines on range "
+                    + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                )
             else:
                 df = pd.concat(frames, ignore_index=True)  # reindex
 
@@ -984,7 +987,7 @@ class DatabankLoader(object):
 
         if len(df) == 0:
             raise EmptyDatabaseError(
-                "Dataframe is empty on range "
+                f"{molecule} has no lines on range "
                 + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
             )
 
@@ -1471,9 +1474,10 @@ class DatabankLoader(object):
         add_date: str, or ``None``/``False``
             adds date in strftime format to the beginning of the filename.
             Default '%Y%m%d'
-        compress: boolean
+        compress: boolean, or 2
             if ``True``, Spectrum are read and written in binary format. This is faster,
-            and takes less memory space. Default ``True``
+            and takes less memory space. Default ``True``.
+            If ``2``, additionaly remove all redundant quantities.
 
         Returns
         -------

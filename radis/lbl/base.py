@@ -1945,6 +1945,8 @@ class BaseFactory(DatabankLoader):
         Starts with df1 which is still a copy of df0 loaded by
         :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
         Updates linestrength in df1. Cutoff criteria is applied afterwards.
+
+        .. minigallery:: radis.lbl.base.BaseFactory.calc_linestrength_eq
         """
 
         Tref = self.input.Tref
