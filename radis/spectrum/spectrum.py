@@ -1359,6 +1359,7 @@ class Spectrum(object):
         normalize=False,
         force=False,
         plot_by_parts=False,
+        show_ruler=False,
         **kwargs
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
@@ -1407,6 +1408,11 @@ class Spectrum(object):
         force: bool
             plotting on an existing figure is forbidden if labels are not the
             same. Use ``force=True`` to ignore that.
+        show_ruler: bool
+            if `True`, add a ruler tool to the Matplotlib toolbar.
+
+            .. warning::
+                still experimental in 0.9.30 ! Try it, feedback welcome !
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
@@ -1565,7 +1571,8 @@ class Spectrum(object):
             fig.cursor = Cursor(fig.gca(), useblit=True, color="r", lw=1, alpha=0.2)
 
         # ... Add Ruler
-        add_ruler(fig, wunit=wunit, Iunit=Iunit)
+        if show_ruler:
+            add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
         plt.show()
         return line

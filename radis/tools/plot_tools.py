@@ -605,4 +605,4 @@ if __name__ == "__main__":
 
     from radis import plot_diff
 
-    plot_diff(s, s.take("radiance") * 1.1)
+    plot_diff(s, s.take("radiance") * 1.1, show_ruler=True)

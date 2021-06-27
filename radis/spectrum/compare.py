@@ -528,6 +528,7 @@ def plot_diff(
     discard_centile=0,
     plot_medium="vacuum_only",
     legendargs={"loc": "best"},
+    show_ruler=False,
 ):
     """Plot two spectra, and the difference between them. ``method=`` allows
     you to plot the absolute difference, ratio, or both.
@@ -632,6 +633,12 @@ def plot_diff(
 
     legendargs: dict
         format arguments forwarded to the legend
+
+    show_ruler: bool
+        if `True`, add a ruler tool to the Matplotlib toolbar.
+
+        .. warning::
+            still experimental in 0.9.30 ! Try it, feedback welcome !
 
     Returns
     -------
@@ -977,7 +984,8 @@ def plot_diff(
     )
 
     # ... Add
-    add_ruler(fig, wunit=wunit, Iunit=Iunit, ax=axes[0])
+    if show_ruler:
+        add_ruler(fig, wunit=wunit, Iunit=Iunit, ax=axes[0])
 
     if show:
         plt.show()
