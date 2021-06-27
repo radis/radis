@@ -2685,10 +2685,6 @@ class BaseFactory(DatabankLoader):
             df.loc[df.index.tolist(), "Q"] = Q
             #            dg_list.append(dg)
 
-            if radis.DEBUG_MODE:
-                assert (df.loc[idx, "id"] == id).all()
-                assert (df.loc[idx, "iso"] == iso).all()
-
         self.profiler.stop("part_function", "partition functions")
         self.profiler.start("populations", 3)
 

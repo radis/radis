@@ -273,7 +273,7 @@ def LineSurvey(
         # Get global labels
         if molecule in HITRAN_CLASS1:
 
-            add = ["vu", "vl", "jl", "iso"]
+            add = ["vu", "vl", "jl"]
 
             if "isotope" in spec.conditions:
                 iso = spec.conditions["isotope"]
