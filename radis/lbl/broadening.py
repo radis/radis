@@ -60,7 +60,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 ----------
 
 """
-from time import time
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -2193,16 +2192,14 @@ class BroadenFactory(BaseFactory):
         """
         df = self.df1
 
-        if self.verbose >= 2:
-            print(
-                "... Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
-                    len(df),
-                    self._broadening_time_ruleofthumb
-                    * len(df)
-                    * len(self.wbroad_centered),
-                ),
-            )
-        self.profiler.start("calc_line_broadening", 2)
+        self.profiler.start(
+            "calc_line_broadening",
+            2,
+            "... Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
+                len(df),
+                self._broadening_time_ruleofthumb * len(df) * len(self.wbroad_centered),
+            ),
+        )
 
         # Just some tests
         try:
@@ -2246,16 +2243,14 @@ class BroadenFactory(BaseFactory):
 
         df = self.df1
 
-        if self.verbose >= 2:
-            print(
-                "... Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
-                    len(df),
-                    self._broadening_time_ruleofthumb
-                    * len(df)
-                    * len(self.wbroad_centered),
-                ),
-            )
-        self.profiler.start("calc_line_broadening", 2)
+        self.profiler.start(
+            "calc_line_broadening",
+            2,
+            "... Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
+                len(df),
+                self._broadening_time_ruleofthumb * len(df) * len(self.wbroad_centered),
+            ),
+        )
 
         # Just some tests
         try:
@@ -2308,10 +2303,7 @@ class BroadenFactory(BaseFactory):
         wstep = self.params.wstep
         df = self.df1  # lines already scaled with current temperature, size N
 
-        if self.verbose >= 2:
-            print("... classifying lines as weak or strong")
-
-        self.profiler.start("weak_lines", 2)
+        self.profiler.start("weak_lines", 2, "... classifying lines as weak or strong")
         # Get approximate spectral absorption coefficient
         rough_spectrum, S_density_on_grid, line2grid_proj_left = project_lines_on_grid(
             df, wavenumber_calc, wstep
@@ -2396,11 +2388,9 @@ class BroadenFactory(BaseFactory):
 
         if self.params.pseudo_continuum_threshold > 0:
 
-            if self.verbose >= 2:
-                print("... Calculating pseudo continuum")
-
-            self.profiler.start("calc_pseudo_continuum", 2)
-            t0 = time()
+            self.profiler.start(
+                "calc_pseudo_continuum", 2, "... Calculating pseudo continuum"
+            )
 
             # Check inputs
             wavenumber_calc = self.wavenumber_calc
@@ -2481,7 +2471,6 @@ class BroadenFactory(BaseFactory):
             self._Nlines_calculated = len(self.df1)
 
             # Check performances
-            time_spent = time() - t0
             self.profiler.stop("calc_pseudo_continuum", "Calculated pseudo-continuum")
             # ... Expected broadening time gain (see Rule of Thumb)
             expected_broadening_time_gain = (
@@ -2497,6 +2486,7 @@ class BroadenFactory(BaseFactory):
                     ),
                 )
 
+            time_spent = self.profiler.dict_time["calc_pseudo_continuum"][0]
             # Add a warning if it looks like it wasnt worth it
             if time_spent > 3 * expected_broadening_time_gain:
                 self.warn(

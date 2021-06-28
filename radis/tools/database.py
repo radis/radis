@@ -2372,7 +2372,11 @@ class SpecDatabase(SpecList):
 
         out = s.get_conditions().copy()
 
-        # Add filename, and a link to the Spectrum object itself
+        # Add filename, name and a link to the Spectrum object itself
+        if s.name == None:
+            out["name"] = s.get_name()
+        else:
+            out["name"] = s.name
         out.update({"file": basename(file), "Spectrum": s})
         out["last_modified"] = os.path.getmtime(file)
 
