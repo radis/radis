@@ -663,12 +663,14 @@ class BaseFactory(DatabankLoader):
             try:
                 return df.loc[idx, ["Evibl", "Evibu"]]
             except:
-                return df.loc[df.index.tolist(), ["Evibl", "Evibu"]]
+                return df.loc[:, ["Evibl", "Evibu"]]
 
         #        df = df.groupby('iso').apply(lambda x: get_Evib_CDSD_pcN_1iso(x, x.name))
 
         df["Evibl"] = np.nan
         df["Evibu"] = np.nan
+
+        # multiple-isotopes in database
         if "iso" in df:
             for iso, idx in df.groupby("iso").indices.items():
                 df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(
@@ -680,9 +682,7 @@ class BaseFactory(DatabankLoader):
 
         else:
             iso = df.attrs["iso"]
-            df.loc[df.index.tolist(), ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(
-                df.loc[df.index.tolist()], iso
-            )
+            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(df, iso)
 
         # Get rotational energy: better recalculate than look up the database
         # (much faster!: perf ~25s -> 765µs)
@@ -793,6 +793,8 @@ class BaseFactory(DatabankLoader):
         # slower than the following:
         df["Evibl"] = np.nan
         df["Evibu"] = np.nan
+
+        # multiple-isotopes in database
         if "iso" in df:
             for iso, idx in df.groupby("iso").indices.items():
                 df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(
@@ -804,9 +806,7 @@ class BaseFactory(DatabankLoader):
 
         else:
             iso = df.attrs["iso"]
-            df.loc[df.index.tolist(), ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(
-                df.loc[df.index.tolist()], iso
-            )
+            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(df, iso)
 
         # Get rotational energy: better recalculate than look up the database
         # (much faster!: perf ~25s -> 765µs)
@@ -1045,6 +1045,8 @@ class BaseFactory(DatabankLoader):
 
         df["Evibl"] = np.nan
         df["Evibu"] = np.nan
+
+        # multiple-isotopes in database
         if "iso" in df:
             for iso, idx in df.groupby("iso").indices.items():
                 df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(
@@ -1053,9 +1055,7 @@ class BaseFactory(DatabankLoader):
 
         else:
             iso = df.attrs["iso"]
-            df.loc[df.index.tolist(), ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(
-                df.loc[df.index.tolist()], iso
-            )
+            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(df, iso)
 
         # Get rotational energy: better recalculate than look up the database (much faster!)
         df["Erotu"] = df.Eu - df.Evibu
@@ -1170,6 +1170,7 @@ class BaseFactory(DatabankLoader):
         df["Evib2u"] = np.nan
         df["Evib3u"] = np.nan
 
+        # multiple-isotopes in database
         if "iso" in df:
             for iso, idx in df.groupby("iso").indices.items():
                 df.loc[
@@ -1179,9 +1180,9 @@ class BaseFactory(DatabankLoader):
         else:
             iso = df.attrs["iso"]
             df.loc[
-                df.index.tolist(),
+                :,
                 ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"],
-            ] = get_Evib123_RADIS_cls5_1iso(df.loc[df.index.tolist()], iso)
+            ] = get_Evib123_RADIS_cls5_1iso(df, iso)
 
         # Add total vibrational energy too (doesnt cost much, and can plot populations in spectrum)
         df["Evibu"] = df.Evib1u + df.Evib2u + df.Evib3u
@@ -1538,6 +1539,7 @@ class BaseFactory(DatabankLoader):
         df["gju"] = 2 * df.ju + 1
         df["gjl"] = 2 * df.jl + 1
 
+        # multiple-isotopes in database
         if "iso" in df:
             isotope_set = df.iso.unique()
             isotope = isotope_set[0]
@@ -1604,10 +1606,10 @@ class BaseFactory(DatabankLoader):
                 # dont exist (gs=0) and they should not be in the line database.
                 _gs = _gs[0]
 
-            dg = df.loc[df.index.tolist()]
+            dg = df
             _gi = gi(id, isotope)
-            df.loc[df.index.tolist(), "grotu"] = dg.gju * _gs * _gi
-            df.loc[df.index.tolist(), "grotl"] = dg.gjl * _gs * _gi
+            df.loc[:, "grotu"] = dg.gju * _gs * _gi
+            df.loc[:, "grotl"] = dg.gjl * _gs * _gi
 
         elif ("id" in df) and ("iso" not in df):
             dgb = df.groupby(by=["id"])
@@ -1714,35 +1716,13 @@ class BaseFactory(DatabankLoader):
             # still much faster than the groupby().apply() method (see radis<=0.9.19)
             # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
 
-            if "iso" in df:
-                isotope_set = df.iso.unique()
-                isotope = isotope_set[0]
-
-            else:
-                isotope = df.attrs["iso"]
-
             molecule = get_molecule(id)
 
-            if ("iso" in df and len(isotope_set) != 1) or ("iso" not in df and isotope):
-                dgb = df.groupby(by=["iso"])
-                for (iso), idx in dgb.indices.items():
-                    state = self.input.state
-                    parsum = self.get_partition_function_calculator(
-                        molecule, iso, state
-                    )  # partition function
-                    df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
-                    # ... note: do not update the populations here, so populations in the
-                    # ... energy level list correspond to the one calculated for T and not Tref
-
-                    if radis.DEBUG_MODE:
-                        if "id" in df:
-                            assert (df.loc[idx, "id"] == id).all()
-                        assert (df.loc[idx, "iso"] == iso).all()
-
-            else:
+            dgb = df.groupby(by=["iso"])
+            for (iso), idx in dgb.indices.items():
                 state = self.input.state
                 parsum = self.get_partition_function_calculator(
-                    molecule, isotope_set[0], state
+                    molecule, iso, state
                 )  # partition function
                 df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
                 # ... note: do not update the populations here, so populations in the
@@ -1751,8 +1731,7 @@ class BaseFactory(DatabankLoader):
                 if radis.DEBUG_MODE:
                     if "id" in df:
                         assert (df.loc[idx, "id"] == id).all()
-                    if "iso" in df:
-                        assert (df.loc[idx, "iso"] == iso).all()
+                    assert (df.loc[idx, "iso"] == iso).all()
 
         # Get moment
         gl = df.gl
@@ -2014,6 +1993,8 @@ class BaseFactory(DatabankLoader):
         # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
 
         # correct for Partition Function
+
+        # multiple-isotopes in database
         if "iso" in df1:
             line_strength = df1.int * (df1["iso"].map(Qref_Qgas_ratio))
         else:
@@ -2080,17 +2061,8 @@ class BaseFactory(DatabankLoader):
             # Load partition function values
             dgb = df1.groupby(by=["id", "iso"])
 
-            # ... optimize by filling all with first isotope first
-            id1, iso1 = list(dgb.indices.keys())[0]
-            molecule1 = get_molecule(id1)
-            state = self.input.state
-            parsum1 = self.get_partition_function_interpolator(molecule1, iso1, state)
-            Qgas[iso1] = parsum1.at(Tgas)
-
             # ... now fill the rest:
             for (id, iso), idx in dgb.indices.items():
-                if (id, iso) == (id1, iso1):
-                    continue
                 molecule = get_molecule(id)
                 state = self.input.state
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
@@ -2125,17 +2097,8 @@ class BaseFactory(DatabankLoader):
             dgb = df1.groupby(by=["id"])
             iso = df1.attrs["iso"]
 
-            # ... optimize by filling all with first isotope first
-            id1 = list(dgb.indices.keys())[0]
-            molecule1 = get_molecule(id1)
-            state = self.input.state
-            parsum1 = self.get_partition_function_interpolator(molecule1, iso, state)
-            Qgas[iso] = parsum1.at(Tgas)
-
             # ... now fill the rest:
             for (id), idx in dgb.indices.items():
-                if (id) == (id1):
-                    continue
                 molecule = get_molecule(id)
                 state = self.input.state
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
@@ -2170,6 +2133,8 @@ class BaseFactory(DatabankLoader):
         # Calculate population
         # ----------------------------------------------------------------------
         # equilibrium: Boltzmann in any case
+
+        # multiple-isotopes in database
         if "iso" in df1:
             df1["nu"] = (
                 df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / df1["iso"].map(Qgas)
@@ -2584,10 +2549,10 @@ class BaseFactory(DatabankLoader):
         # ... unlike the (tabulated) equilibrium case, here we recalculate it from
         # scratch
 
+        Q_dict = {}
+
         if "id" in df and "iso" in df:
             dgb = df.groupby(by=["id", "iso"])
-
-            # TODO: optimize with np.take trick (see equilibrium case)
 
             for (id, iso), idx in dgb.indices.items():
 
@@ -2604,7 +2569,7 @@ class BaseFactory(DatabankLoader):
                 )
 
                 #            df.loc[idx, 'Qvib'] = Qvib
-                df.loc[idx, "Q"] = Q
+                Q_dict[iso] = Q
                 #            dg_list.append(dg)
 
                 if radis.DEBUG_MODE:
@@ -2615,8 +2580,6 @@ class BaseFactory(DatabankLoader):
             dgb = df.groupby(by=["iso"])
             id = df.attrs["id"]
             molecule = get_molecule(id)
-
-            # TODO: optimize with np.take trick (see equilibrium case)
 
             for (iso), idx in dgb.indices.items():
 
@@ -2632,7 +2595,7 @@ class BaseFactory(DatabankLoader):
                 )
 
                 #            df.loc[idx, 'Qvib'] = Qvib
-                df.loc[idx, "Q"] = Q
+                Q_dict[iso] = Q
                 #            dg_list.append(dg)
 
                 if radis.DEBUG_MODE:
@@ -2641,8 +2604,6 @@ class BaseFactory(DatabankLoader):
         elif "id" in df and "iso" not in df:
             dgb = df.groupby(by=["id"])
             iso = df.attrs["iso"]
-
-            # TODO: optimize with np.take trick (see equilibrium case)
 
             for (id), idx in dgb.indices.items():
 
@@ -2659,7 +2620,7 @@ class BaseFactory(DatabankLoader):
                 )
 
                 #            df.loc[idx, 'Qvib'] = Qvib
-                df.loc[idx, "Q"] = Q
+                Q_dict[iso] = Q
                 #            dg_list.append(dg)
 
                 if radis.DEBUG_MODE:
@@ -2682,7 +2643,7 @@ class BaseFactory(DatabankLoader):
             )
 
             #            df.loc[idx, 'Qvib'] = Qvib
-            df.loc[df.index.tolist(), "Q"] = Q
+            Q_dict[iso] = Q
             #            dg_list.append(dg)
 
         self.profiler.stop("part_function", "partition functions")
@@ -2741,22 +2702,46 @@ class BaseFactory(DatabankLoader):
         # ... Total
         if rot_distribution == "boltzmann":
             # ... total
-            df["nu"] = (
-                nu_vib1Qvib1
-                * nu_vib2Qvib2
-                * nu_vib3Qvib3
-                * df.grotu
-                * exp(-df.Erotu * hc_k / Trot)
-                / df.Q
-            )
-            df["nl"] = (
-                nl_vib1Qvib1
-                * nl_vib2Qvib2
-                * nl_vib3Qvib3
-                * df.grotl
-                * exp(-df.Erotl * hc_k / Trot)
-                / df.Q
-            )
+
+            if "iso" in df:
+
+                df["nu"] = (
+                    nu_vib1Qvib1
+                    * nu_vib2Qvib2
+                    * nu_vib3Qvib3
+                    * df.grotu
+                    * exp(-df.Erotu * hc_k / Trot)
+                    / df["iso"].map(Q_dict)
+                )
+                df["nl"] = (
+                    nl_vib1Qvib1
+                    * nl_vib2Qvib2
+                    * nl_vib3Qvib3
+                    * df.grotl
+                    * exp(-df.Erotl * hc_k / Trot)
+                    / df["iso"].map(Q_dict)
+                )
+
+            else:
+
+                Q_dict = list(Q_dict.values())
+
+                df["nu"] = (
+                    nu_vib1Qvib1
+                    * nu_vib2Qvib2
+                    * nu_vib3Qvib3
+                    * df.grotu
+                    * exp(-df.Erotu * hc_k / Trot)
+                    / Q_dict[0]
+                )
+                df["nl"] = (
+                    nl_vib1Qvib1
+                    * nl_vib2Qvib2
+                    * nl_vib3Qvib3
+                    * df.grotl
+                    * exp(-df.Erotl * hc_k / Trot)
+                    / Q_dict[0]
+                )
         else:
             raise ValueError(
                 "Unknown rotational distribution: {0}".format(rot_distribution)
