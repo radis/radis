@@ -660,10 +660,7 @@ class BaseFactory(DatabankLoader):
             # the map below is crazy fast compared to above loop
             df["Evibu"] = df_pcN.index.map(Evib_dict.get).values
 
-            try:
-                return df.loc[idx, ["Evibl", "Evibu"]]
-            except:
-                return df.loc[:, ["Evibl", "Evibu"]]
+            return df.loc[:, ["Evibl", "Evibu"]]
 
         #        df = df.groupby('iso').apply(lambda x: get_Evib_CDSD_pcN_1iso(x, x.name))
 
@@ -2058,10 +2055,9 @@ class BaseFactory(DatabankLoader):
         Qgas = {}
 
         if "id" in df1 and "iso" in df1:
-            # Load partition function values
+
             dgb = df1.groupby(by=["id", "iso"])
 
-            # ... now fill the rest:
             for (id, iso), idx in dgb.indices.items():
                 molecule = get_molecule(id)
                 state = self.input.state
@@ -2073,10 +2069,7 @@ class BaseFactory(DatabankLoader):
                     assert (df1.loc[idx, "iso"] == iso).all()
 
         elif "id" not in df1 and "iso" in df1:
-            # Load partition function values
-            dgb = df1.groupby(by=["iso"])
 
-            # ... optimize by filling all with first isotope first
             id = df1.attrs["id"]
             iso1 = list(dgb.indices.keys())[0]
             molecule = get_molecule(id)
@@ -2084,20 +2077,11 @@ class BaseFactory(DatabankLoader):
             parsum = self.get_partition_function_interpolator(molecule, iso1, state)
             Qgas[iso1] = parsum.at(Tgas)
 
-            # ... now fill the rest:
-            for (iso), idx in dgb.indices.items():
-                if iso == iso1:
-                    continue
-
-                if radis.DEBUG_MODE:
-                    assert (df1.loc[idx, "iso"] == iso).all()
-
         elif "id" in df1 and "iso" not in df1:
-            # Load partition function values
+
             dgb = df1.groupby(by=["id"])
             iso = df1.attrs["iso"]
 
-            # ... now fill the rest:
             for (id), idx in dgb.indices.items():
                 molecule = get_molecule(id)
                 state = self.input.state
@@ -2108,7 +2092,7 @@ class BaseFactory(DatabankLoader):
                     assert (df1.loc[idx, "id"] == id).all()
 
         elif "id" not in df1 and "iso" not in df1:
-            # Load partition function values
+
             iso = df1.attrs["iso"]
             id = df1.attrs["id"]
 
@@ -2927,6 +2911,8 @@ class BaseFactory(DatabankLoader):
 
         iso_set = self._get_isotope_list()  # df1.iso.unique()
 
+        Qref_dict = {}
+
         # TODO for multi-molecule code: add above line in the loop
         if (("id" in df and len(id_set) == 1) or ("id" not in df and id)) and len(
             iso_set
@@ -2939,10 +2925,9 @@ class BaseFactory(DatabankLoader):
             molecule = get_molecule(id)
             state = self.input.state
             parsum = self._get_parsum(molecule, iso_set[0], state)  # partition function
-            df.Qref = parsum.at(
+            Qref_dict[iso_set[0]] = parsum.at(
                 Tref, update_populations=False
             )  # stored as attribute, not column
-            assert "Qref" not in df.columns
 
         else:
 
@@ -2957,7 +2942,7 @@ class BaseFactory(DatabankLoader):
                     molecule = get_molecule(id)
                     state = self.input.state
                     parsum = self._get_parsum(molecule, iso, state)
-                    df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
+                    Qref_dict[iso] = parsum.at(Tref, update_populations=False)
 
                     if radis.DEBUG_MODE:
                         assert (df.loc[idx, "id"] == id).all()
@@ -2971,7 +2956,7 @@ class BaseFactory(DatabankLoader):
                 for (iso), idx in dgb.indices.items():
                     state = self.input.state
                     parsum = self._get_parsum(molecule, iso, state)
-                    df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
+                    Qref_dict[iso] = parsum.at(Tref, update_populations=False)
 
                     if radis.DEBUG_MODE:
                         assert (df.loc[idx, "iso"] == iso).all()
@@ -2988,7 +2973,14 @@ class BaseFactory(DatabankLoader):
         line_strength = df.int.copy()
 
         # ... correct for lower state population
-        line_strength /= df.gl * exp(-hc_k * df.El / Tref) / df.Qref
+        if "iso" in df:
+            print(Qref_dict)
+            line_strength /= (
+                df.gl * exp(-hc_k * df.El / Tref) / df["iso"].map(Qref_dict)
+            )
+        else:
+            Qref_dict = list(Qref_dict.values())
+            line_strength /= df.gl * exp(-hc_k * df.El / Tref) / Qref_dict[0]
         line_strength *= nl
 
         # ... correct effect of stimulated emission
