@@ -18,7 +18,6 @@ PUBLIC METHODS
 
 - :py:meth:`radis.lbl.base.BaseFactory.print_conditions`         >>> get all calculation conditions
 - :py:meth:`radis.lbl.base.BaseFactory.get_energy_levels`        >>> return energy database
-- :py:meth:`radis.lbl.base.BaseFactory.get_abundance`            >>> return energy database
 - :py:meth:`radis.lbl.base.BaseFactory.plot_linestrength_hist`   >>>  plot distribution of linestrengths
 - :py:meth:`radis.lbl.base.BaseFactory.plot_hist`                >>> same
 
@@ -45,8 +44,8 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 - :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_eq`
 - :py:meth:`radis.lbl.base.BaseFactory.calc_populations_eq`
 - :py:meth:`radis.lbl.base.BaseFactory.calc_populations_noneq`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_noneq`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_emission_integral`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_noneq`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_emission_integral`
 - :py:meth:`radis.lbl.base.BaseFactory._cutoff_linestrength`
 
 Most methods are written in inherited class with the following inheritance scheme:
@@ -65,25 +64,26 @@ Most methods are written in inherited class with the following inheritance schem
 """
 # TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.
 
-
-import sys
-from time import time
-
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from astropy import units as u
 from numpy import exp, pi
+from psutil import virtual_memory
 
 import radis
 
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.db.molparam import MolParams
-from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+
+try:  # Proper import
+    from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+except ImportError:  # if ran from here
+    from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+from radis.misc.arrays import anynan
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
+from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printg
 from radis.misc.utils import Default
 from radis.misc.warning import OutOfBoundError
@@ -132,7 +132,8 @@ class BaseFactory(DatabankLoader):
         "path_length": "cm",
         #        'slit_function_FWHM':   'nm',
         "cutoff": "cm-1/(#.cm-2)",
-        "broadening_max_width": "cm-1",
+        "truncation": "cm-1",
+        "neighbour_lines": "cm-1",
         # The later is never stored in Factory, but exported in Spectrum at the end of the calculation
         "calculation_time": "s",
     }
@@ -171,7 +172,6 @@ class BaseFactory(DatabankLoader):
     # ------------------------
     # print_conditions         >>> get all calculation conditions
     # get_energy_levels        >>> return energy database
-    # get_abundance            >>> return energy database
     # plot_linestrength_hist   >>> get all linestrength distribution
     # plot_hist                >>> same
     #
@@ -239,11 +239,6 @@ class BaseFactory(DatabankLoader):
 
         return energies
 
-    def get_abundance(self, molecule, isotope):
-        """Returns abundance of molecule > isotope."""
-
-        return self.parsum_calc[molecule][isotope].Ia
-
     def plot_linestrength_hist(self):
         """Plot linestrength distribution (to help determine a cutoff
         criteria)"""
@@ -262,6 +257,8 @@ class BaseFactory(DatabankLoader):
             which feature to plot. Default ``'S'`` (scaled linestrength). Could also
             be ``'int'`` (reference linestrength intensity), ``'A'`` (Einstein coefficient)
         """
+        import matplotlib.pyplot as plt
+
         assert dataframe in ["df0", "df1"]
         plt.figure()
         df = getattr(self, dataframe)
@@ -295,20 +292,20 @@ class BaseFactory(DatabankLoader):
         from radis.misc.printer import get_print_full
 
         try:
-            assert np.isnan(df[column]).sum() == 0
+            assert not anynan(df[column])
         except AssertionError as err:
             index = np.isnan(df[column]).idxmax()
             if self.input.molecule == "CO2":
                 fix_idea = (
                     "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
                     "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
-                    "edition. In the meantime you can use: 'sf.df0.dropna(subset=['v1u'], inplace=True)' "
+                    "edition. In the meantime you can use:\n 'sf.df0.drop(sf.df0.index[sf.df0['v1u']==-1], inplace=True)' "
                     "where 'sf' is SpectrumFactory object"
                 )
             raise AssertionError(
                 "{0}=NaN in line database at index {1}".format(column, index)
-                + " corresponding to Line:\n {1}".format(
-                    index, get_print_full(df.loc[index]) + fix_idea
+                + " corresponding to Line:\n {0}".format(
+                    get_print_full(df.loc[index]) + fix_idea
                 )
             ) from err
 
@@ -478,8 +475,8 @@ class BaseFactory(DatabankLoader):
                     + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
                     + ". See SpectrumFactory.load_databank() help for more details"
                 )
-        if self.verbose >= 2:
-            t0 = time()
+
+        self.profiler.start("fetch_energy", 2)
 
         def get_Evib_CDSD_pc_1iso(df, iso):
             """Calculate Evib for a given isotope (energies are specific to a
@@ -529,6 +526,8 @@ class BaseFactory(DatabankLoader):
             df = df.groupby(by=["polyu", "wangu"]).apply(fillEvibu)
             # ~ 6.6 s (probably faster since neq==0.9.20 (radis<1.0)
             df = df.groupby(by=["polyl", "wangl"]).apply(fillEvibl)
+            # TODO : use map(dict) version (see _add_EvibErot_CDSD_pcN)
+
             #            except KeyError:
             #                import traceback
             #                traceback.print_exc()
@@ -561,7 +560,7 @@ class BaseFactory(DatabankLoader):
         for iso, idx in df.groupby("iso").indices.items():
             df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pc_1iso(df.loc[idx], iso)
 
-            if radis.DEBUG_MODE:
+            if radis.config["DEBUG_MODE"]:
                 assert (df.loc[idx, "iso"] == iso).all()
 
         # Get rotational energy: better recalculate than look up the database
@@ -569,12 +568,9 @@ class BaseFactory(DatabankLoader):
         df["Erotu"] = df.Eu - df.Evibu
         df["Erotl"] = df.El - df.Evibl
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy", f"Fetched energies for all {len(df)} transitions"
+        )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -619,8 +615,7 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_2", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list():
@@ -654,40 +649,38 @@ class BaseFactory(DatabankLoader):
 
             # Add lower state energy
             df_pcN = df.set_index(["polyl", "wangl", "rankl"])
-            #            for i in df.index:
-            #                df.loc[i, 'Evibl'] = energies.at[i, 'Evib']
-            # the map below is crazy fast compared to above loop
             df["Evibl"] = df_pcN.index.map(Evib_dict.get).values
             # Add upper state energy
             df_pcN = df.set_index(["polyu", "wangu", "ranku"])
-            #            for i in df.index:
-            #                df.loc[i, 'Evibu'] = energies.at[i, 'Evib']
-            # the map below is crazy fast compared to above loop
             df["Evibu"] = df_pcN.index.map(Evib_dict.get).values
 
-            return df.loc[idx, ["Evibl", "Evibu"]]
-
-        #        df = df.groupby('iso').apply(lambda x: get_Evib_CDSD_pcN_1iso(x, x.name))
+            return df.loc[:, ["Evibl", "Evibu"]]
 
         df["Evibl"] = np.nan
         df["Evibu"] = np.nan
-        for iso, idx in df.groupby("iso").indices.items():
-            df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(df.loc[idx], iso)
 
-            if radis.DEBUG_MODE:
-                assert (df.loc[idx, "iso"] == iso).all()
+        # multiple-isotopes in database
+        if "iso" in df:
+            for iso, idx in df.groupby("iso").indices.items():
+                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(
+                    df.loc[idx], iso
+                )
+
+                if radis.config["DEBUG_MODE"]:
+                    assert (df.loc[idx, "iso"] == iso).all()
+
+        else:
+            iso = df.attrs["iso"]
+            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(df, iso)
 
         # Get rotational energy: better recalculate than look up the database
         # (much faster!: perf ~25s -> 765µs)
         df["Erotu"] = df.Eu - df.Evibu
         df["Erotl"] = df.El - df.Evibl
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_2", f"Fetched energies for all {len(df)} transitions"
+        )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -703,13 +696,11 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         df: DataFrame
             list of transitions
 
         Other Parameters
         ----------------
-
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
@@ -729,8 +720,7 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_3", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
@@ -751,7 +741,6 @@ class BaseFactory(DatabankLoader):
 
             Notes
             -----
-
             for devs:
 
             Unlike get_EvibErot_CDSD_pcN_1iso and get_EvibErot_CDSD_pc_1iso,
@@ -790,23 +779,29 @@ class BaseFactory(DatabankLoader):
         # slower than the following:
         df["Evibl"] = np.nan
         df["Evibu"] = np.nan
-        for iso, idx in df.groupby("iso").indices.items():
-            df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(df.loc[idx], iso)
 
-            if radis.DEBUG_MODE:
-                assert (df.loc[idx, "iso"] == iso).all()
+        # multiple-isotopes in database
+        if "iso" in df:
+            for iso, idx in df.groupby("iso").indices.items():
+                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(
+                    df.loc[idx], iso
+                )
+
+                if radis.config["DEBUG_MODE"]:
+                    assert (df.loc[idx, "iso"] == iso).all()
+
+        else:
+            iso = df.attrs["iso"]
+            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(df, iso)
 
         # Get rotational energy: better recalculate than look up the database
         # (much faster!: perf ~25s -> 765µs)
         df["Erotu"] = df.Eu - df.Evibu
         df["Erotl"] = df.El - df.Evibl
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_3", f"Fetched energies for all {len(df)} transitions"
+        )
 
         if __debug__:
             self.assert_no_nan(df, "Evibu")
@@ -822,13 +817,11 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         df: DataFrame
             list of transitions
 
         Other Parameters
         ----------------
-
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
@@ -848,11 +841,13 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
 
-        if self.verbose >= 2:
-            printg(
-                "Fetching vib123 / rot energies for all {0} transitions".format(len(df))
-            )
-            t0 = time()
+        self.profiler.start(
+            "fetch_energy_4",
+            2,
+            "... Fetching vib123 / rot energies for all {0} transitions".format(
+                len(df)
+            ),
+        )
 
         # Get Energy database
         if self.parsum_calc == {}:
@@ -959,9 +954,7 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib2l")
             self.assert_no_nan(df, "Evib3l")
 
-        if self.verbose >= 2:
-            printg("Fetched energies in {0:.2f}s".format(time() - t0))
-
+        self.profiler.stop("fetch_energy_4", "Fetched energies")
         return  # None: Dataframe updated
 
     def _add_EvibErot_RADIS_cls1(self, df, calc_Evib_harmonic_anharmonic=False):
@@ -970,13 +963,11 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         df: DataFrame
             list of transitions
 
         Other Parameters
         ----------------
-
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
@@ -995,8 +986,7 @@ class BaseFactory(DatabankLoader):
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_5", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list():
@@ -1040,8 +1030,17 @@ class BaseFactory(DatabankLoader):
 
         df["Evibl"] = np.nan
         df["Evibu"] = np.nan
-        for iso, idx in df.groupby("iso").indices.items():
-            df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(df.loc[idx], iso)
+
+        # multiple-isotopes in database
+        if "iso" in df:
+            for iso, idx in df.groupby("iso").indices.items():
+                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(
+                    df.loc[idx], iso
+                )
+
+        else:
+            iso = df.attrs["iso"]
+            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(df, iso)
 
         # Get rotational energy: better recalculate than look up the database (much faster!)
         df["Erotu"] = df.Eu - df.Evibu
@@ -1050,12 +1049,9 @@ class BaseFactory(DatabankLoader):
         assert np.isnan(df.Evibu).sum() == 0
         assert np.isnan(df.Evibl).sum() == 0
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_5", "Fetched energies for all {0} transitions".format(len(df))
+        )
 
         return  # None: Dataframe updated
 
@@ -1065,17 +1061,14 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         df: DataFrame
             list of transitions
 
         Other Parameters
         ----------------
-
         calc_Evib_harmonic_anharmonic: boolean
             if ``True``, calculate harmonic and anharmonic components of
             vibrational energies (for Treanor distributions)
-
 
         """
         if __debug__:
@@ -1085,8 +1078,7 @@ class BaseFactory(DatabankLoader):
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_6", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
@@ -1108,7 +1100,6 @@ class BaseFactory(DatabankLoader):
 
             Notes
             -----
-
             We comb the Line Database with groups of same vibrational level,
             and fetch the corresponding vibrational energy from the Energy Level
             Database.
@@ -1159,10 +1150,20 @@ class BaseFactory(DatabankLoader):
         df["Evib1u"] = np.nan
         df["Evib2u"] = np.nan
         df["Evib3u"] = np.nan
-        for iso, idx in df.groupby("iso").indices.items():
+
+        # multiple-isotopes in database
+        if "iso" in df:
+            for iso, idx in df.groupby("iso").indices.items():
+                df.loc[
+                    idx, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
+                ] = get_Evib123_RADIS_cls5_1iso(df.loc[idx], iso)
+
+        else:
+            iso = df.attrs["iso"]
             df.loc[
-                idx, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
-            ] = get_Evib123_RADIS_cls5_1iso(df.loc[idx], iso)
+                :,
+                ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"],
+            ] = get_Evib123_RADIS_cls5_1iso(df, iso)
 
         # Add total vibrational energy too (doesnt cost much, and can plot populations in spectrum)
         df["Evibu"] = df.Evib1u + df.Evib2u + df.Evib3u
@@ -1180,12 +1181,9 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib2l")
             self.assert_no_nan(df, "Evib3l")
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_6", "Fetched energies for all {0} transitions".format(len(df))
+        )
 
         return  # None: Dataframe updated
 
@@ -1195,7 +1193,6 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         df: DataFrame
             list of transitions
         """
@@ -1206,8 +1203,7 @@ class BaseFactory(DatabankLoader):
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("fetch_energy_7", 2)
 
         # Check energy levels are here
         for iso in self._get_isotope_list(molecule):
@@ -1349,12 +1345,9 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib2l")
             self.assert_no_nan(df, "Evib3l")
 
-        if self.verbose >= 2:
-            printg(
-                "... Fetched energies in {0:.2f}s for all {1} transitions".format(
-                    time() - t0, len(df)
-                )
-            )
+        self.profiler.stop(
+            "fetch_energy_7", "Fetched energies for all {0} transitions".format(len(df))
+        )
 
         return df
 
@@ -1429,8 +1422,7 @@ class BaseFactory(DatabankLoader):
             self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
             self.misc.load_energies = True
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("check_non_eq_param", 2)
 
         df = self.df0
         if len(df) == 0:
@@ -1508,29 +1500,63 @@ class BaseFactory(DatabankLoader):
             self.calc_weighted_trans_moment()
             self.calc_einstein_coefficients()
 
-        if self.verbose >= 2:
-            printg("Checked nonequilibrium parameters in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("check_non_eq_param", "Checked nonequilibrium parameters")
 
     def _calc_degeneracies(self, df):
         """Calculate vibrational and rotational degeneracies.
 
         See Also
         --------
-
         :func:`~radis.db.degeneracies.gs`, :func:`~radis.db.degeneracies.gi`
         """
         from radis.db.degeneracies import gi, gs
 
-        #        levelsfmt = self.params.levelsfmt
         dbformat = self.params.dbformat
 
         # Rotational + state specific degeneracy (J + isotope dependant)
         df["gju"] = 2 * df.ju + 1
         df["gjl"] = 2 * df.jl + 1
 
-        dgb = df.groupby(by=["id", "iso"])
-        for (id, iso), idx in dgb.indices.items():
-            _gs = gs(id, iso)
+        if "id" in df:
+            id_set = df.id.unique()
+            if len(id_set) > 1:
+                raise NotImplementedError("> 1 molecules in same DataFrame")
+            else:
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+            df.attrs["id"] = int(id_set)
+            if self.save_memory:
+                del df["id"]
+
+        if "iso" in df:  # multiple isotopes in database
+            id = df.attrs["id"]
+            dgb = df.groupby(by=["iso"])
+            for (iso), idx in dgb.indices.items():
+                _gs = gs(id, iso)
+                if isinstance(_gs, tuple):
+                    # Molecules that have alternating degeneracy.
+                    if id not in [2]:  # CO2
+                        raise NotImplementedError
+                    # normally we should find whether the rovibrational level is symmetric
+                    # or asymmetric. Here we just assume it's symmetric, because for
+                    # symmetric isotopes such as CO2(626), CO2 asymmetric levels
+                    # dont exist (gs=0) and they should not be in the line database.
+                    _gs = _gs[0]
+
+                dg = df.loc[idx]
+                _gi = gi(id, iso)
+                df.loc[idx, "grotu"] = dg.gju * _gs * _gi
+                df.loc[idx, "grotl"] = dg.gjl * _gs * _gi
+
+                if radis.config["DEBUG_MODE"]:
+                    assert (df.loc[idx, "iso"] == iso).all()
+
+        else:
+            id = df.attrs["id"]
+            isotope = df.attrs["iso"]
+            _gs = gs(id, isotope)
             if isinstance(_gs, tuple):
                 # Molecules that have alternating degeneracy.
                 if id not in [2]:  # CO2
@@ -1541,14 +1567,10 @@ class BaseFactory(DatabankLoader):
                 # dont exist (gs=0) and they should not be in the line database.
                 _gs = _gs[0]
 
-            dg = df.loc[idx]
-            _gi = gi(id, iso)
-            df.loc[idx, "grotu"] = dg.gju * _gs * _gi
-            df.loc[idx, "grotl"] = dg.gjl * _gs * _gi
-
-            if radis.DEBUG_MODE:
-                assert (df.loc[idx, "id"] == id).all()
-                assert (df.loc[idx, "iso"] == iso).all()
+            dg = df
+            _gi = gi(id, isotope)
+            df.loc[:, "grotu"] = dg.gju * _gs * _gi
+            df.loc[:, "grotl"] = dg.gjl * _gs * _gi
 
         # %%
 
@@ -1578,6 +1600,90 @@ class BaseFactory(DatabankLoader):
 
         return None  # dataframe updated directly
 
+    def get_lines_abundance(self, df):
+        """Returns the isotopic abundance of each line in `df`
+
+        Parameters
+        ----------
+        df: dataframe
+
+        Returns
+        -------
+        float or dict: The abundance of all the isotopes in the dataframe
+        """
+
+        molpar = self.molparam
+
+        if "id" in df.columns:
+            id_set = df.id.unique()
+            if len(id_set) > 1:
+                raise NotImplementedError("> 1 molecules in same DataFrame")
+            else:
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+                df.attrs["id"] = int(id_set)
+
+        if "iso" in df.columns:
+            iso_set = df.iso.unique()
+            if len(iso_set) == 1:
+                self.warn(
+                    "There shouldn't be a Column 'iso' with a unique value",
+                    "PerformanceWarning",
+                )
+                iso = int(iso_set)
+                return molpar.get(df.attrs["id"], iso, "abundance")
+            else:
+                abundance_dict = {}
+                for iso in iso_set:
+                    abundance_dict[iso] = molpar.get(df.attrs["id"], iso, "abundance")
+                return df["iso"].map(abundance_dict)
+        else:
+            iso = df.attrs["iso"]
+            return molpar.get(df.attrs["id"], iso, "abundance")
+
+    def get_molar_mass(self, df):
+        """Returns molar mass.
+
+        Parameters
+        ----------
+        df: dataframe
+
+        Returns
+        -------
+        The molar mass of all the isotopes in the dataframe
+        """
+        molpar = self.molparam
+
+        if "id" in df.columns:
+            raise NotImplementedError(">1 molecule")
+        elif "id" in df.attrs:
+            id = df.attrs["id"]
+        else:
+            # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
+            # is an attribute and can be updated with definitions from ExoMol.
+            # https://github.com/radis/radis/issues/321
+            HARCODED_MOLAR_MASS = {"SiO": {1: 43.971842}}
+            try:
+                return HARCODED_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
+            except KeyError:
+                raise NotImplementedError
+
+        if "iso" in df.columns:
+            iso_set = df.iso.unique()
+            molar_mass_dict = {}
+            for iso in iso_set:
+                molar_mass_dict[iso] = molpar.get(id, iso, "mol_mass")
+            molar_mass = df["iso"].map(molar_mass_dict)
+        else:
+            iso = df.attrs["iso"]
+            molar_mass = molpar.get(id, iso, "mol_mass")
+
+        return molar_mass
+
+        #
+
     def calc_weighted_trans_moment(self):
         """Calculate weighted transition-moment squared :math:`R_s^2` (in ``Debye^2``)
 
@@ -1599,57 +1705,88 @@ class BaseFactory(DatabankLoader):
         df = self.df0
         Tref = self.input.Tref
 
-        if self.verbose >= 2:
-            t0 = time()
+        self.profiler.start("calc_weight_trans", 2)
 
-        id_set = df.id.unique()
-        iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
-        if len(id_set) == 1 and len(iso_set) == 1:
+        if "id" in df:
+            id_set = df.id.unique()
+            if len(id_set) > 1:
+                raise NotImplementedError("> 1 molecules in same DataFrame")
+            else:
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+            df.attrs["id"] = int(id_set)
+            if self.save_memory:
+                del df["id"]
+        molecule = get_molecule(df.attrs["id"])
+
+        if not "iso" in df:
 
             # Shortcut if only 1 isotope. We attribute molar_mass & abundance
             # as attributes of the line database, instead of columns. Much
             # faster!
 
-            molecule = get_molecule(id_set[0])
             state = self.input.state
             parsum = self.get_partition_function_calculator(
-                molecule, iso_set[0], state
+                molecule, df.attrs["iso"], state
             )  # partition function
-            df.Qref = parsum.at(
+            df.attrs["Qref"] = parsum.at(
                 Tref, update_populations=False
             )  # stored as attribute, not column
             assert "Qref" not in df.columns
 
+            Qref = df.attrs["Qref"]
+
         else:
+            iso_set = df.iso.unique()
+            if len(iso_set) == 1:
+                self.warn(
+                    "There shouldn't be a Column 'iso' with a unique value",
+                    "PerformanceWarning",
+                )
 
             # normal method
             # still much faster than the groupby().apply() method (see radis<=0.9.19)
             # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
 
-            dgb = df.groupby(by=["id", "iso"])
-            for (id, iso), idx in dgb.indices.items():
-                molecule = get_molecule(id)
+            Qref_dict = {}
+
+            dgb = df.groupby(by=["iso"])
+            for (iso), idx in dgb.indices.items():
                 state = self.input.state
                 parsum = self.get_partition_function_calculator(
                     molecule, iso, state
                 )  # partition function
-                df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
+                Qref_dict[iso] = parsum.at(Tref, update_populations=False)
                 # ... note: do not update the populations here, so populations in the
                 # ... energy level list correspond to the one calculated for T and not Tref
 
-                if radis.DEBUG_MODE:
-                    assert (df.loc[idx, "id"] == id).all()
+                if radis.config["DEBUG_MODE"]:
+                    if "id" in df:
+                        assert (df.loc[idx, "id"] == id).all()
                     assert (df.loc[idx, "iso"] == iso).all()
 
+            Qref = df["iso"].map(Qref_dict)
+
         # Get moment
+
+        # get abundance
+        abundance = self.get_lines_abundance(df)
+        if not self.molparam.terrestrial_abundances:
+            raise NotImplementedError(
+                "Formula not corrected for non-terrestrial isotopic abundances"
+            )
+
         gl = df.gl
         El = df.El
         nu = df.wav
-        Ia = df.Ia
+        Ia = abundance
         h = h_CGS  # erg.s
         c = c_CGS
-        S = df.int  # reference linestrength
-        Qref = df.Qref
+        S = (
+            df.int
+        )  # reference linestrength   ( computed with terrestrial isotopic abundances)
 
         weighted_trans_moment_sq = (
             (3 * h * c / 8 / pi ** 3)
@@ -1661,14 +1798,84 @@ class BaseFactory(DatabankLoader):
 
         df["Rs2"] = weighted_trans_moment_sq
 
-        if self.verbose >= 2:
-            printg(
-                "... calculated weighted transition moment in {0:.2f}s".format(
-                    time() - t0
-                )
-            )
+        self.profiler.stop("calc_weight_trans", "calculated weighted transition moment")
 
         return
+
+    def calc_reference_linestrength(self):
+        """Calculate reference linestrength from Einstein coefficients"""
+
+        df = self.df0
+        Tref = self.input.Tref
+
+        self.profiler.start("calc_ref_linestrength", 2)
+
+        if "id" in df:
+            id_set = df.id.unique()
+            if len(id_set) > 1:
+                raise NotImplementedError("> 1 molecules in same DataFrame")
+            else:
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+            df.attrs["id"] = int(id_set)
+        molecule = get_molecule(df.attrs["id"])
+
+        if not "iso" in df:
+
+            # Shortcut if only 1 isotope. We attribute molar_mass & abundance
+            # as attributes of the line database, instead of columns. Much
+            # faster!
+
+            state = self.input.state
+            parsum = self.get_partition_function_calculator(
+                molecule, df.attrs["iso"], state
+            )  # partition function
+            df.attrs["Qref"] = parsum.at(
+                Tref, update_populations=False
+            )  # stored as attribute, not column
+            assert "Qref" not in df.columns
+            Qref = df.attrs["Qref"]
+
+        else:
+            iso_set = df.iso.unique()
+            if len(iso_set) == 1:
+                self.warn(
+                    "There shouldn't be a Column 'iso' with a unique value",
+                    "PerformanceWarning",
+                )
+
+            # normal method
+            # still much faster than the groupby().apply() method (see radis<=0.9.19)
+            # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
+
+            Qref_dict = {}
+
+            dgb = df.groupby(by=["iso"])
+            for (iso), idx in dgb.indices.items():
+                state = self.input.state
+                parsum = self.get_partition_function_calculator(
+                    molecule, iso, state
+                )  # partition function
+                Qref_dict[iso] = parsum.at(Tref, update_populations=False)
+                # ... note: do not update the populations here, so populations in the
+                # ... energy level list correspond to the one calculated for T and not Tref
+
+                if radis.config["DEBUG_MODE"]:
+                    if "id" in df:
+                        assert (df.loc[idx, "id"] == id).all()
+                    assert (df.loc[idx, "iso"] == iso).all()
+
+            Qref = df["iso"].map(Qref_dict)
+
+        S0 = linestrength_from_Einstein(
+            A=df.A, gu=df.gu, El=df.El, Ia=df.Ia, nu=df.wav, Q=Qref, T=Tref
+        )
+
+        self.profiler.stop("calc_ref_linestrength", "Calculated reference linestrength")
+
+        return S0
 
     def calc_einstein_coefficients(self):
         """Calculate :math:`A_{ul}`, :math:`B_{lu}`, :math:`B_{ul}` Einstein coefficients from weighted
@@ -1680,7 +1887,6 @@ class BaseFactory(DatabankLoader):
 
         Notes
         -----
-
         Einstein A coefficient already in database under df0.A
         Difference between df0.A and df0.Aul < 0.5%
 
@@ -1737,8 +1943,8 @@ class BaseFactory(DatabankLoader):
     # calc_linestrength_eq
     # calc_populations_eq
     # calc_populations_noneq
-    # _calc_linestrength_noneq
-    # _calc_emission_integral
+    # calc_linestrength_noneq
+    # calc_emission_integral
     # _cutoff_linestrength
 
     # XXX =====================================================================
@@ -1761,18 +1967,22 @@ class BaseFactory(DatabankLoader):
         See Eq.(A13) in [Rothman-1998]_
         """
 
-        if self.verbose >= 2:
-            t0 = time()
-        #            printg('> Calculating lineshift')
+        self.profiler.start("calc_lineshift", 2)
 
         df = self.df1
 
         # Calculate
         air_pressure = self.input.pressure_mbar / 1013.25  # convert from mbar to atm
-        df["shiftwav"] = df.wav + (df.Pshft * air_pressure)  # Pshft in cm-1/atm
+        if "Pshft" in df.columns:
+            df["shiftwav"] = df.wav + (df.Pshft * air_pressure)  # Pshft in cm-1/atm
+        else:
+            self.warn(
+                "Pressure-shift coefficient not given in database: assumed 0 pressure shift",
+                "MissingPressureShiftWarning",
+            )
+            df["shiftwav"] = df.wav
 
-        if self.verbose >= 2:
-            printg("Calculated lineshift in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("calc_lineshift", "Calculated lineshift")
 
         return
 
@@ -1947,6 +2157,11 @@ class BaseFactory(DatabankLoader):
         Updates linestrength in df1. Cutoff criteria is applied afterwards.
 
         .. minigallery:: radis.lbl.base.BaseFactory.calc_linestrength_eq
+            :add-heading:
+
+        See Also
+        --------
+        :py:func:`~radis.lbl.base.linestrength_from_Einstein`
         """
 
         Tref = self.input.Tref
@@ -1955,9 +2170,9 @@ class BaseFactory(DatabankLoader):
         if len(df1) == 0:
             return  # no lines
 
-        if self.verbose >= 2:
-            t0 = time()
-            printg("Scaling equilibrium linestrength")
+        self.profiler.start(
+            "scaled_eq_linestrength", 2, "... Scaling equilibrium linestrength"
+        )
 
         # %% Load partition function values
 
@@ -1991,78 +2206,135 @@ class BaseFactory(DatabankLoader):
                         + "({0}). Using calculated one instead".format(err.args[0]),
                         "OutOfBoundWarning",
                     )
+            df1.attrs["Qgas"] = Qgas
             return Qref, Qgas
 
-        id_set = df1.id.unique()
-        if len(id_set) == 1:
-            id = list(id_set)[0]
-            molecule = get_molecule(id)
-            iso_set = self._get_isotope_list(molecule)  # df1.iso.unique()
+        if "id" in df1.columns:
+            id_set = df1.id.unique()
+            if len(id_set) > 1:
+                raise NotImplementedError(">1 molecule.")
+            else:
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+                df1.attrs["id"] = int(id_set)
 
-            # Shortcut if only 1 molecule, 1 isotope. We attribute molar_mass & abundance
-            # as attributes of the line database, instead of columns. Much
-            # faster!
+        if "molecule" in df1.attrs:
+            molecule = df1.attrs["molecule"]  # used for ExoMol, which has no HITRAN-id
+        else:
+            molecule = get_molecule(df1.attrs["id"])
+        state = self.input.state
 
-            if len(iso_set) == 1:
-                Qref, Qgas = _calc_Q(molecule, iso_set[0], self.input.state)
-                df1.Qref = float(Qref)  # attribute, not column
-                df1.Qgas = float(Qgas)  # attribute, not column
-                assert "Qref" not in df1.columns
-                assert "Qgas" not in df1.columns
+        # Partition functions
+        def Qgas(Tgas):
+            """Aggregate the values of Qgas
 
-            # Else, parse for all isotopes. Use np.take that is very fast
-            # Use the fact that isotopes are int, and thus can be considered as
-            # index in an array.
-            # ... in the following we exploit this to use the np.take function,
-            # ... which is amazingly fast
-            # ... Read https://stackoverflow.com/a/51388828/5622825 to understand more
+            Parameters
+            ----------
+            Tgas: float (K)
+                gas temperature
+
+            Returns
+            -------
+            float or dict: Returns Qgas as a dictionary with isotope values as its keys
+
+            """
+            if "iso" in df1:
+                iso_set = df1.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+                    iso = int(iso_set)
+                    parsum = self.get_partition_function_interpolator(
+                        molecule, iso, state
+                    )
+                    # TODO : use _calc_Q instead ? (which switches to partition function calculator if possible?)
+                    Q = parsum.at(Tgas)
+                    df1.attrs["Q"] = Q
+                    return Q
+                else:
+                    Qgas_dict = {}
+                    for iso in iso_set:
+                        parsum = self.get_partition_function_interpolator(
+                            molecule, iso, state
+                        )
+                        Qgas_dict[iso] = parsum.at(Tgas)
+                    return df1["iso"].map(Qgas_dict)
+
+            else:  # "iso" not in df:
+                iso = df1.attrs["iso"]
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Q = parsum.at(Tgas)
+                df1.attrs["Q"] = Q
+                return Q
+
+        def Qref_Qgas_ratio():
+
+            if "iso" in df1:
+                iso_set = df1.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+                    iso = int(iso_set)
+                    Qref, Qgas = _calc_Q(molecule, iso, state)
+                    Qref_Qgas = Qref / Qgas
+
+                else:
+                    Qref_Qgas_ratio = {}
+                    for iso in iso_set:
+                        Qref, Qgas = _calc_Q(molecule, iso, state)
+                        Qref_Qgas_ratio[iso] = Qref / Qgas
+                    Qref_Qgas = df1["iso"].map(Qref_Qgas_ratio)
 
             else:
-
-                iso_arr = list(range(max(iso_set) + 1))
-
-                Qref_arr = np.empty_like(iso_arr, dtype=np.float64)
-                Qgas_arr = np.empty_like(iso_arr, dtype=np.float64)
-                for iso in iso_arr:
-                    if iso in iso_set:
-                        Qref, Qgas = _calc_Q(molecule, iso, self.input.state)
-                        Qref_arr[iso] = Qref
-                        Qgas_arr[iso] = Qgas
-                # ... the trick below is that iso is used as index in the array
-                df1["Qref"] = Qref_arr.take(df1.iso)
-                df1["Qgas"] = Qgas_arr.take(df1.iso)
-
-        else:
-            raise NotImplementedError(
-                ">1 molecule. Can use the np.take trick. Need to "
-                + "fallback to pandas.map(dict)"
-            )
-            # TODO: Implement. Read https://stackoverflow.com/a/51388828/5622825 to understand more
-
-        # Note on performance: few times faster than doing a groupby().apply()
+                iso = df1.attrs["iso"]
+                Qref, Qgas = _calc_Q(molecule, iso, state)
+                Qref_Qgas = Qref / Qgas
+            return Qref_Qgas
 
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
 
-        # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
-        # 60, No. 5, pp. 665-710"
-        # An alternative strategy would be to calculate the linestrength from the
-        # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
+        if self.molparam.terrestrial_abundances:
 
-        # correct for Partition Function
-        line_strength = df1.int * (df1.Qref / df1.Qgas)
-        # ratio of Boltzman populations
-        line_strength *= exp(-hc_k * df1.El * (1 / Tgas - 1 / Tref))
-        # effect of stimulated emission
-        line_strength *= (1 - exp(-hc_k * df1.wav / Tgas)) / (
-            1 - exp(-hc_k * df1.wav / Tref)
-        )
-        df1["S"] = line_strength  # [cm-1/(molecules/cm-2)]
+            # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
+            # 60, No. 5, pp. 665-710"
+
+            # correct for Partition Function
+            df1["S"] = (
+                df1.int
+                * Qref_Qgas_ratio()
+                *
+                # ratio of Boltzman populations
+                exp(-hc_k * df1.El * (1 / Tgas - 1 / Tref))
+                *
+                # effect of stimulated emission
+                (1 - exp(-hc_k * df1.wav / Tgas))
+                / (1 - exp(-hc_k * df1.wav / Tref))
+            )  # [cm-1/(molecules/cm-2)]
+
+        else:
+            # An alternative strategy is to calculate the linestrength from the
+            # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
+
+            if not "gu" in df1:
+                if not "ju" in df1:
+                    self._add_ju(df1)
+                self._calc_degeneracies(df1)
+
+            Ia = self.get_lines_abundance(df1)
+            df1["S"] = linestrength_from_Einstein(
+                df1.A, df1.gu, df1.El, Ia, df1.wav, Qgas(Tgas), Tgas
+            )
 
         assert "S" in self.df1
 
-        if self.verbose >= 2:
-            printg("Scaled equilibrium linestrength in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("scaled_eq_linestrength", "Scaled equilibrium linestrength")
 
         return
 
@@ -2104,32 +2376,65 @@ class BaseFactory(DatabankLoader):
 
         df1 = self.df1
 
-        if self.verbose >= 2:
-            t0 = time()
-        #            printg('> Calculating equilibrium populations')
+        self.profiler.start("calc_eq_population", 2)
 
-        # Load partition function values
-        dgb = df1.groupby(by=["id", "iso"])
+        # Partition functions
+        def Qgas(Tgas):
+            """Aggregate the values of Qgas
 
-        # ... optimize by filling all with first isotope first
-        id1, iso1 = list(dgb.indices.keys())[0]
-        molecule1 = get_molecule(id1)
-        state = self.input.state
-        parsum1 = self.get_partition_function_interpolator(molecule1, iso1, state)
-        df1["Qgas"] = parsum1.at(Tgas)
+            Parameters
+            ----------
+            Tgas: float (K)
+                gas temperature
 
-        # ... now fill the rest:
-        for (id, iso), idx in dgb.indices.items():
-            if (id, iso) == (id1, iso1):
-                continue
-            molecule = get_molecule(id)
+            Returns
+            -------
+            float or dict: Returns Qgas as a dictionary with isotope values as its keys
+
+            """
+            if "id" in df1:
+                id_set = df1.id.unique()
+                if len(id_set) > 1:
+                    raise NotImplementedError("> 1 molecules in same DataFrame")
+                else:
+                    self.warn(
+                        "There shouldn't be a Column 'id' with a unique value",
+                        "PerformanceWarning",
+                    )
+                    df1.attrs["id"] = int(id_set)
+
+            molecule = get_molecule(df1.attrs["id"])
             state = self.input.state
-            parsum = self.get_partition_function_interpolator(molecule, iso, state)
-            df1.loc[idx, "Qgas"] = parsum.at(Tgas)
 
-            if radis.DEBUG_MODE:
-                assert (df1.loc[idx, "id"] == id).all()
-                assert (df1.loc[idx, "iso"] == iso).all()
+            if "iso" in df1:
+                iso_set = df1.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+                    iso = int(iso_set)
+                    parsum = self.get_partition_function_interpolator(
+                        molecule, iso, state
+                    )
+                    # TODO : use _calc_Q instead ? (which switches to partition function calculator if possible?)
+                    Q = parsum.at(Tgas)
+                    df1.attrs["Q"] = Q
+                else:
+                    Qgas_dict = {}
+                    for iso in iso_set:
+                        parsum = self.get_partition_function_interpolator(
+                            molecule, iso, state
+                        )
+                        Qgas_dict[iso] = parsum.at(Tgas)
+                    Q = df1["iso"].map(Qgas_dict)
+
+            else:  # "iso" not in df:
+                iso = df1.attrs["iso"]
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Q = parsum.at(Tgas)
+                df1.attrs["Q"] = Q
+            return Q
 
         # Calculate degeneracies
         # ----------------------------------------------------------------------
@@ -2147,12 +2452,11 @@ class BaseFactory(DatabankLoader):
         # Calculate population
         # ----------------------------------------------------------------------
         # equilibrium: Boltzmann in any case
-        df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / df1.Qgas.values
+        df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / Qgas(Tgas)
 
         assert "nu" in self.df1
 
-        if self.verbose >= 2:
-            printg("Calculated equilibrium populations in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("calc_eq_population", "Calculated equilibrium populations")
 
         return
 
@@ -2245,11 +2549,7 @@ class BaseFactory(DatabankLoader):
 
         df = self.df1
 
-        if self.verbose >= 2:
-            t0 = time()
-            #            printg('> Calculating nonequilibrium populations')
-            if self.verbose >= 3:
-                t1 = t0
+        self.profiler.start("calc_noneq_population", 2)
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -2272,67 +2572,125 @@ class BaseFactory(DatabankLoader):
         # scratch
         # %%
 
-        id_set = df.id.unique()
-        iso_set = self._get_isotope_list()  # df1.iso.unique()
-        if len(id_set) == 1 and len(iso_set) == 1:
-            id = id_set[0]
-            iso = iso_set[0]
+        if "id" in df:
+            id_set = df.id.unique()
+            if len(id_set) > 1:
+                raise NotImplementedError("> 1 molecules in same DataFrame")
+            else:
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+                df.attrs["id"] = int(id_set)
+        molecule = get_molecule(df.attrs["id"])
+        state = self.input.state
 
-            # Shortcut if only 1 molecule, 1 isotope. We attribute molar_mass & abundance
-            # as attributes of the line database, instead of columns. Much
-            # faster!
+        def Q(Tvib, Trot):
+            """Nonequilibrium partition function
 
-            molecule = get_molecule(id)
-            state = self.input.state
-            parsum = self.get_partition_function_calculator(molecule, iso, state)
-            Q, Qvib, dfQrot = parsum.at_noneq(
-                Tvib,
-                Trot,
-                vib_distribution=vib_distribution,
-                rot_distribution=rot_distribution,
-                overpopulation=overpopulation,
-                returnQvibQrot=True,
-                update_populations=self.misc.export_populations,
-            )
-            # ... make sure PartitionFunction above is calculated with the same
-            # ... temperatures, rovibrational distributions and overpopulations
-            # ... as the populations of active levels (somewhere below)
-            df.Qvib = Qvib
-            df.Q = Q
-            assert "Qvib" not in df.columns
-            assert "Q" not in df.columns
+            Returns
+            -------
+            column or float: depending if there are many isotopes or one"""
+            self.profiler.start("part_function", 3)
+            if "iso" in df:
+                Q_dict = {}
+                iso_set = df.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+                for iso in iso_set:
+                    parsum = self.get_partition_function_calculator(
+                        molecule, iso, state
+                    )
+                    Q_dict[iso] = parsum.at_noneq(
+                        Tvib,
+                        Trot,
+                        vib_distribution=vib_distribution,
+                        rot_distribution=rot_distribution,
+                        overpopulation=overpopulation,
+                        update_populations=self.misc.export_populations,
+                    )
+                Q = df["iso"].map(Q_dict)
 
-            # reindexing to get a direct access to Qrot database
-            # create the lookup dictionary
-            # dfQrot index is already 'viblvl'
-            dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
-
-            dg = df.loc[:]
-
-            # Add lower state Qrot
-            dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-            df.loc[:, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
-            # Add upper state energy
-            dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-            df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
-
-            # ... note: the .map() version is about 3x faster than
-            # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
-
-        else:
-
-            # Normal version
-            # TODO: optimize by filling for first isotope first (see equilibrium case).
-            # TODO: use the np.take() trick if 1 molecule only
-
-            dgb = df.groupby(by=["id", "iso"])
-
-            for (id, iso), idx in dgb.indices.items():
-
-                # Get partition function for all lines
-                molecule = get_molecule(id)
-                state = self.input.state
+            else:  # "iso" not in df:
+                iso = df.attrs["iso"]
                 parsum = self.get_partition_function_calculator(molecule, iso, state)
+                Q = parsum.at_noneq(
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
+                    update_populations=self.misc.export_populations,
+                )
+                df.attrs["Q"] = Q
+            self.profiler.stop("part_function", "partition functions")
+            return Q
+
+        def Q_Qvib_Qrotu_Qrotl(Tvib, Trot):
+            """Nonequilibrium partition function; with the detail of
+            vibrational partition function and rotational partition functions"""
+            # TODO @ dev : implement the map(dict) approach to fill Q Qvib Qrotu Qrotl
+            # note : Qrot already use a map(dict) so we need a map with 2 keys. Is it worth it?
+            self.profiler.start("part_function", 3)
+            if "iso" in df:  #  multiple isotopes
+                iso_set = df.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+
+                dgb = df.groupby(by=["iso"])
+                for (iso), idx in dgb.indices.items():
+
+                    # Get partition function for all lines
+                    parsum = self.get_partition_function_calculator(
+                        molecule, iso, state
+                    )
+
+                    Q, Qvib, dfQrot = parsum.at_noneq(
+                        Tvib,
+                        Trot,
+                        vib_distribution=vib_distribution,
+                        rot_distribution=rot_distribution,
+                        overpopulation=overpopulation,
+                        returnQvibQrot=True,
+                        update_populations=self.misc.export_populations,
+                    )
+
+                    # ... make sure PartitionFunction above is calculated with the same
+                    # ... temperatures, rovibrational distributions and overpopulations
+                    # ... as the populations of active levels (somewhere below)
+                    df.at[idx, "Qvib"] = Qvib
+                    df.at[idx, "Q"] = Q
+
+                    # reindexing to get a direct access to Qrot database
+                    # create the lookup dictionary
+                    # dfQrot index is already 'viblvl'
+                    dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
+
+                    dg = df.loc[idx]
+
+                    # Add lower state Qrot
+                    dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+                    df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                    # Add upper state energy
+                    dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+                    df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+
+                    if radis.config["DEBUG_MODE"]:
+                        assert (df.loc[idx, "iso"] == iso).all()
+
+                Q, Qvib, Qrotu, Qrotl = df.Q, df.Qvib, df.Qrotu, df.Qrotl
+
+            else:
+                iso = df.attrs["iso"]
+
+                parsum = self.get_partition_function_calculator(molecule, iso, state)
+
                 Q, Qvib, dfQrot = parsum.at_noneq(
                     Tvib,
                     Trot,
@@ -2342,81 +2700,109 @@ class BaseFactory(DatabankLoader):
                     returnQvibQrot=True,
                     update_populations=self.misc.export_populations,
                 )
-
                 # ... make sure PartitionFunction above is calculated with the same
                 # ... temperatures, rovibrational distributions and overpopulations
                 # ... as the populations of active levels (somewhere below)
-                df.at[idx, "Qvib"] = Qvib
-                df.at[idx, "Q"] = Q
+                df.attrs["Qvib"] = Qvib
+                df.attrs["Q"] = Q
+                assert "Qvib" not in df.columns
+                assert "Q" not in df.columns
 
                 # reindexing to get a direct access to Qrot database
                 # create the lookup dictionary
                 # dfQrot index is already 'viblvl'
                 dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
 
-                dg = df.loc[idx]
+                dg = df.loc[:]
 
                 # Add lower state Qrot
                 dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-                df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                df.loc[:, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
                 # Add upper state energy
                 dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-                df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+                df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
 
-                # ... note: the .map() version is about 3x faster than
-                # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
+                Q, Qvib, Qrotu, Qrotl = Q, Qvib, df.Qrotu, df.Qrotl
 
-                if radis.DEBUG_MODE:
-                    assert (df.loc[idx, "id"] == id).all()
-                    assert (df.loc[idx, "iso"] == iso).all()
-
-        if self.verbose >= 3:
-            printg("... partition functions in {0:.1f}s".format(time() - t1))
-            t1 = time()
+            self.profiler.stop("part_function", "partition functions")
+            return Q, Qvib, Qrotu, Qrotl
 
         # %%
 
         #  Derive populations
-        # ... vibrational distribution
-        if vib_distribution == "boltzmann":
-            # equation generated with @pytexit.py2tex > see docstrings.
-            df["nu_vib"] = df.gvibu / df.Qvib * exp(-hc_k * df.Evibu / Tvib)
-            df["nl_vib"] = df.gvibl / df.Qvib * exp(-hc_k * df.Evibl / Tvib)
-        elif vib_distribution == "treanor":
-            df["nu_vib"] = (
-                df.gvibu
-                / df.Qvib
-                * exp(-hc_k * (df.Evibu_h / Tvib + df.Evibu_a / Trot))
-            )
-            df["nl_vib"] = (
-                df.gvibl
-                / df.Qvib
-                * exp(-hc_k * (df.Evibl_h / Tvib + df.Evibl_a / Trot))
-            )
-        else:
-            raise ValueError(
-                "Unknown vibrational distribution: {0}".format(vib_distribution)
-            )
+        if not self.misc.export_rovib_fraction:
+            if overpopulation != {}:
+                raise NotImplementedError(
+                    "Overpopulation not implemented in multi-Tvib mode"
+                )
+            # ... vibrational distribution
+            if vib_distribution == "boltzmann":
+                df["nu_vib_x_Qvib"] = df.gvibu * exp(-hc_k * df.Evibu / Tvib)
+                df["nl_vib_x_Qvib"] = df.gvibl * exp(-hc_k * df.Evibl / Tvib)
+            elif vib_distribution == "treanor":
+                raise NotImplementedError("TO DO!")  #!!!TODO
+            else:
+                raise ValueError(
+                    "Unknown vibrational distribution: {0}".format(vib_distribution)
+                )
 
-        # ... Add vibrational-specific overpopulation factors
-        if overpopulation != {}:
-            for viblvl, ov in overpopulation.items():
-                if ov != 1:
-                    df.loc[df.viblvl_u == viblvl, "nu_vib"] *= ov
-                    df.loc[df.viblvl_l == viblvl, "nl_vib"] *= ov
+            # ... Rotational distributions
+            if rot_distribution == "boltzmann":
+                df["nu_rot_x_Qrot"] = df.grotu * exp(-df.Erotu * hc_k / Trot)
+                df["nl_rot_x_Qrot"] = df.grotl * exp(-df.Erotl * hc_k / Trot)
+            else:
+                raise ValueError(
+                    "Unknown rotational distribution: {0}".format(rot_distribution)
+                )
 
-        # ... Rotational distributions
-        if rot_distribution == "boltzmann":
-            df["nu_rot"] = df.grotu / df.Qrotu * exp(-df.Erotu * hc_k / Trot)
-            df["nl_rot"] = df.grotl / df.Qrotl * exp(-df.Erotl * hc_k / Trot)
-        else:
-            raise ValueError(
-                "Unknown rotational distribution: {0}".format(rot_distribution)
-            )
+            # ... Total
+            df["nu"] = df.nu_vib_x_Qvib * df.nu_rot_x_Qrot / Q(Tvib, Trot)
+            df["nl"] = df.nl_vib_x_Qvib * df.nl_rot_x_Qrot / Q(Tvib, Trot)
 
-        # ... Total
-        df["nu"] = df.nu_vib * df.nu_rot * (df.Qrotu * df.Qvib / df.Q)
-        df["nl"] = df.nl_vib * df.nl_rot * (df.Qrotl * df.Qvib / df.Q)
+        else:  # self.misc.export_rovib_fraction:
+            # ... Partition functions
+            Q, Qvib, Qrotu, Qrotl = Q_Qvib_Qrotu_Qrotl(Tvib, Trot)
+
+            # ... vibrational distribution
+            if vib_distribution == "boltzmann":
+                # equation generated with @pytexit.py2tex > see docstrings.
+                df["nu_vib"] = df.gvibu / Qvib * exp(-hc_k * df.Evibu / Tvib)
+                df["nl_vib"] = df.gvibl / Qvib * exp(-hc_k * df.Evibl / Tvib)
+            elif vib_distribution == "treanor":
+                df["nu_vib"] = (
+                    df.gvibu
+                    / Qvib
+                    * exp(-hc_k * (df.Evibu_h / Tvib + df.Evibu_a / Trot))
+                )
+                df["nl_vib"] = (
+                    df.gvibl
+                    / Qvib
+                    * exp(-hc_k * (df.Evibl_h / Tvib + df.Evibl_a / Trot))
+                )
+            else:
+                raise ValueError(
+                    "Unknown vibrational distribution: {0}".format(vib_distribution)
+                )
+
+            # ... Add vibrational-specific overpopulation factors
+            if overpopulation != {}:
+                for viblvl, ov in overpopulation.items():
+                    if ov != 1:
+                        df.loc[df.viblvl_u == viblvl, "nu_vib"] *= ov
+                        df.loc[df.viblvl_l == viblvl, "nl_vib"] *= ov
+
+            # ... Rotational distributions
+            if rot_distribution == "boltzmann":
+                df["nu_rot"] = df.grotu / df.Qrotu * exp(-df.Erotu * hc_k / Trot)
+                df["nl_rot"] = df.grotl / df.Qrotl * exp(-df.Erotl * hc_k / Trot)
+            else:
+                raise ValueError(
+                    "Unknown rotational distribution: {0}".format(rot_distribution)
+                )
+
+            # ... Total
+            df["nu"] = df.nu_vib * df.nu_rot * (Qrotu * Qvib / Q)
+            df["nl"] = df.nl_vib * df.nl_rot * (Qrotl * Qvib / Q)
 
         if __debug__:
             assert "nu" in self.df1
@@ -2424,12 +2810,9 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(self.df1, "nu")
             self.assert_no_nan(self.df1, "nl")
 
-        if self.verbose >= 2:
-            if self.verbose >= 3:
-                printg("... populations in {0:.1f}s".format(time() - t1))
-            printg(
-                "Calculated nonequilibrium populations in {0:.2f}s".format(time() - t0)
-            )
+        self.profiler.stop(
+            "calc_noneq_population", "Calculated nonequilibrium populations"
+        )
 
         return
 
@@ -2494,11 +2877,7 @@ class BaseFactory(DatabankLoader):
 
         df = self.df1
 
-        if self.verbose >= 2:
-            t0 = time()
-            #            printg('> Calculating nonequilibrium populations (multiTvib)')
-            if self.verbose >= 3:
-                t1 = t0
+        self.profiler.start("calc_noneq_population_multiTvib", 2)
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -2507,35 +2886,62 @@ class BaseFactory(DatabankLoader):
         # ... unlike the (tabulated) equilibrium case, here we recalculate it from
         # scratch
 
-        dgb = df.groupby(by=["id", "iso"])
+        if "id" in df:
+            id_set = df.id.unique()
+            if len(id_set) > 1:
+                raise NotImplementedError("> 1 molecules in same DataFrame")
+            else:
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+                df.attrs["id"] = int(id_set)
+        molecule = get_molecule(df.attrs["id"])
+        state = self.input.state
 
-        # TODO: optimize with np.take trick (see equilibrium case)
+        def Q(Tvib, Trot):
+            """Nonequilibrium partition function
 
-        for (id, iso), idx in dgb.indices.items():
+            Returns
+            -------
+            column or float: depending if there are many isotopes or one"""
+            self.profiler.start("part_function", 3)
+            if "iso" in df:
+                Q_dict = {}
+                iso_set = df.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+                for iso in iso_set:
+                    parsum = self.get_partition_function_calculator(
+                        molecule, iso, state
+                    )
+                    Q_dict[iso] = parsum.at_noneq_3Tvib(
+                        Tvib,
+                        Trot,
+                        vib_distribution=vib_distribution,
+                        rot_distribution=rot_distribution,
+                        overpopulation=overpopulation,
+                        update_populations=self.misc.export_populations,
+                    )
+                Q_Tvib_Trot = df["iso"].map(Q_dict)
 
-            molecule = get_molecule(id)
-            state = self.input.state
-            parsum = self.get_partition_function_calculator(molecule, iso, state)
-            Q = parsum.at_noneq_3Tvib(
-                Tvib,
-                Trot,
-                vib_distribution=vib_distribution,
-                rot_distribution=rot_distribution,
-                overpopulation=overpopulation,
-                update_populations=self.misc.export_populations,
-            )
+            else:  # "iso" not in df:
+                iso = df.attrs["iso"]
+                parsum = self.get_partition_function_calculator(molecule, iso, state)
+                Q_Tvib_Trot = parsum.at_noneq_3Tvib(
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
+                    update_populations=self.misc.export_populations,
+                )
 
-            #            df.loc[idx, 'Qvib'] = Qvib
-            df.loc[idx, "Q"] = Q
-            #            dg_list.append(dg)
-
-            if radis.DEBUG_MODE:
-                assert (df.loc[idx, "id"] == id).all()
-                assert (df.loc[idx, "iso"] == iso).all()
-
-        if self.verbose >= 3:
-            printg("... partition functions in {0:.2f}s".format(time() - t1))
-            t1 = time()
+            self.profiler.stop("part_function", "partition functions")
+            return Q_Tvib_Trot
 
         #  Derive populations
         # ... vibrational distribution
@@ -2570,6 +2976,8 @@ class BaseFactory(DatabankLoader):
                 "Unknown vibrational distribution: {0}".format(vib_distribution)
             )
 
+        if overpopulation != {}:
+            raise NotImplementedError(overpopulation)
         # Not Implemented:
         #        if overpopulation != {}:
         #            if not ('viblvl_u' in df and not 'viblvl_l' in df):
@@ -2590,13 +2998,14 @@ class BaseFactory(DatabankLoader):
         # ... Total
         if rot_distribution == "boltzmann":
             # ... total
+
             df["nu"] = (
                 nu_vib1Qvib1
                 * nu_vib2Qvib2
                 * nu_vib3Qvib3
                 * df.grotu
                 * exp(-df.Erotu * hc_k / Trot)
-                / df.Q
+                / Q(Tvib, Trot)
             )
             df["nl"] = (
                 nl_vib1Qvib1
@@ -2604,8 +3013,9 @@ class BaseFactory(DatabankLoader):
                 * nl_vib3Qvib3
                 * df.grotl
                 * exp(-df.Erotl * hc_k / Trot)
-                / df.Q
+                / Q(Tvib, Trot)
             )
+
         else:
             raise ValueError(
                 "Unknown rotational distribution: {0}".format(rot_distribution)
@@ -2614,14 +3024,10 @@ class BaseFactory(DatabankLoader):
         assert "nu" in self.df1
         assert "nl" in self.df1
 
-        if self.verbose >= 2:
-            if self.verbose >= 3:
-                printg("... populations in {0:.1f}s".format(time() - t1))
-            printg(
-                "Calculated nonequilibrium populations (multiTvib) in {0:.2f}s".format(
-                    time() - t0
-                )
-            )
+        self.profiler.stop(
+            "calc_noneq_population_multiTvib",
+            "Calculated nonequilibrium populations (multiTvib)",
+        )
 
         return
 
@@ -2678,7 +3084,7 @@ class BaseFactory(DatabankLoader):
 
         # To get isotopic abundance
         # placeholder # TODO: replace with attributes of Isotope>ElectronicState objects
-        molpar = MolParams()
+        molpar = self.molparam
 
         pops = {}
         # Loop over molecules, isotopes, electronic states
@@ -2732,11 +3138,11 @@ class BaseFactory(DatabankLoader):
         # exported in a Spectrum but still connected to the Factory
         return pops
 
-    def _calc_linestrength_noneq(self):
-        """
+    def calc_linestrength_noneq(self):
+        """Calculate linestrengths at non-LTE
+
         Parameters
         ----------
-
         Pre-requisite:
 
             lower state population `nl` has already been calculated by
@@ -2745,7 +3151,6 @@ class BaseFactory(DatabankLoader):
 
         Returns
         -------
-
         None
             Linestrength `S` added in self.df
 
@@ -2764,7 +3169,9 @@ class BaseFactory(DatabankLoader):
         See Also
         --------
 
-        :meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`
+        :py:meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`,
+        :py:meth:`~radis.lbl.base.BaseFactory.calc_emission_integral`,
+        :py:func:`~radis.lbl.base.linestrength_from_Einstein`
 
         """
 
@@ -2774,9 +3181,7 @@ class BaseFactory(DatabankLoader):
         if len(df) == 0:
             return  # no lines in database, no need to go further
 
-        if self.verbose >= 2:
-            t0 = time()
-        #            printg('> scale nonequilibrium linestrength')
+        self.profiler.start("scaled_non_eq_linestrength", 2)
 
         try:
             df["nl"]
@@ -2784,49 +3189,65 @@ class BaseFactory(DatabankLoader):
             raise KeyError("Calculate populations first")
 
         # %% Calculation
+        self.profiler.start("map_part_func", 3)
 
-        if self.verbose >= 3:
-            t1 = time()
+        if "id" in df:
+            id_set = df.id.unique()
+            if len(id_set) > 0:
+                raise NotImplementedError("> 1 molecules in same DataFrame")
+            else:
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+                df.attrs["id"] = int(id_set)
+        molecule = get_molecule(df.attrs["id"])
+        state = self.input.state
 
-        id_set = df.id.unique()
-        iso_set = self._get_isotope_list()  # df1.iso.unique()
+        # Partition functions
+        def Qgas(Tref):
+            """Aggregate the values of Qgas
 
-        # TODO for multi-molecule code: add above line in the loop
-        if len(id_set) == 1 and len(iso_set) == 1:
+            Parameters
+            ----------
+            Tref: float (K)
+                reference gas temperature of database
 
-            # Shortcut if only 1 isotope. We attribute molar_mass & abundance
-            # as attributes of the line database, instead of columns. Much
-            # faster!
+            Returns
+            -------
+            float or dict: Returns Qgas as a dictionary with isotope values as its keys
 
-            molecule = get_molecule(id_set[0])
-            state = self.input.state
-            parsum = self._get_parsum(molecule, iso_set[0], state)  # partition function
-            df.Qref = parsum.at(
-                Tref, update_populations=False
-            )  # stored as attribute, not column
-            assert "Qref" not in df.columns
+            """
+            self.profiler.start("corrected_population_se", 3)
+            if "iso" in df:
+                iso_set = df.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+                    iso = int(iso_set)
+                    parsum = self.get_partition_function_interpolator(
+                        molecule, iso, state
+                    )
+                    Q = parsum.at(Tref, update_populations=False)
+                    df.attrs["Q"] = Q
+                else:
+                    Qref_dict = {}
+                    for iso in iso_set:
+                        parsum = self.get_partition_function_interpolator(
+                            molecule, iso, state
+                        )
+                        Qref_dict[iso] = parsum.at(Tref, update_populations=False)
+                    Q = df["iso"].map(Qref_dict)
 
-        else:
-
-            #            # normal method
-            #            # still much faster than the groupby().apply() method (see radis<=0.9.19)
-            #            # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
-            #
-            # partition function
-            dgb = df.groupby(by=["id", "iso"])
-            for (id, iso), idx in dgb.indices.items():
-                molecule = get_molecule(id)
-                state = self.input.state
-                parsum = self._get_parsum(molecule, iso, state)
-                df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
-
-                if radis.DEBUG_MODE:
-                    assert (df.loc[idx, "id"] == id).all()
-                    assert (df.loc[idx, "iso"] == iso).all()
-
-        if self.verbose >= 3:
-            printg("... map partition functions in {0:.2f}s".format(time() - t1))
-            t1 = time()
+            else:  # "iso" not in df:
+                iso = df.attrs["iso"]
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Q = parsum.at(Tref, update_populations=False)
+                df.attrs["Q"] = Q
+            self.profiler.stop("map_part_func", "map partition functions")
+            return Q
 
         # Correct linestrength
 
@@ -2835,10 +3256,14 @@ class BaseFactory(DatabankLoader):
         nl = df.nl
         # ... remove Qref, nref, etc.
         # start from for tabulated linestrength
-        line_strength = df.int.copy()
+        line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
+        if not self.molparam.terrestrial_abundances:
+            raise NotImplementedError(
+                "Formula not corrected for non-terrestrial isotopic abundances"
+            )
 
         # ... correct for lower state population
-        line_strength /= df.gl * exp(-hc_k * df.El / Tref) / df.Qref
+        line_strength /= df.gl * exp(-hc_k * df.El / Tref) / Qgas(Tref)
         line_strength *= nl
 
         # ... correct effect of stimulated emission
@@ -2846,34 +3271,37 @@ class BaseFactory(DatabankLoader):
         line_strength *= 1 - df.gl / df.gu * nu / nl
         df["S"] = line_strength
 
-        if self.verbose >= 3:
-            printg(
-                "... corrected for populations and stimulated emission in {0:.2f}s".format(
-                    time() - t1
-                )
-            )
-
-        if self.verbose >= 2:
-            printg("scaled nonequilibrium linestrength in {0:.2f}s".format(time() - t0))
+        self.profiler.stop(
+            "corrected_population_se",
+            "corrected for populations and stimulated emission",
+        )
+        self.profiler.stop(
+            "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength"
+        )
 
         return  # df1 automatically updated
 
     # %%
-    def _calc_emission_integral(self):
-        """Calculate Emission Integral.
+    def calc_emission_integral(self):
+        r"""Calculate Emission Integral.
+
+        .. math::
+            Ei=\frac{n_u A_{ul}}{4} \pi \Delta E_{ul}
 
         Emission Integral is a non usual quantity introduced here to have an
         equivalent of Linestrength in emission calculation
 
         Returns
         -------
-
         None
             Emission integral `Ei` added in self.df
 
+        Notes
+        -----
 
         emission_integral: (mW/sr)
-            emission integral is defined as
+            emission integral is defined as::
+
             Ei = n_u * A_ul / 4π * DeltaE_ul
                   :      :     :      :
                 (#/#)  (s-1) (sr)    (mJ)
@@ -2883,13 +3311,15 @@ class BaseFactory(DatabankLoader):
                 ϵ(λ)   =      Ei  *   Phi(λ)  * ntot   * path_length
                  :             :         :       :          :
             mW/cm2/sr/nm    (mW/sr)   (1/nm)   (cm-3)      (cm)
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.base.BaseFactory.calc_linestrength_noneq`
         """
 
         df = self.df1
 
-        if self.verbose >= 2:
-            t0 = time()
-        #            printg('> calculated emission integral')
+        self.profiler.start("calc_emission_integral", 2)
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -2904,7 +3334,7 @@ class BaseFactory(DatabankLoader):
         # adim. (#/#) (multiplied by n_tot later)
         n_u = df["nu"]
         # correct for abundance
-        n_ua = n_u * df.Ia
+        n_ua = n_u * self.get_lines_abundance(df)
 
         A_ul = df["Aul"]  # (s-1)
 
@@ -2914,11 +3344,7 @@ class BaseFactory(DatabankLoader):
         Ei *= 1e3  # (W/sr) -> (mW/sr)
         df["Ei"] = Ei
 
-        #        # Store lines with emission integrals under df0
-        #        self.df1 = df
-
-        if self.verbose >= 2:
-            printg("calculated emission integral in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("calc_emission_integral", "calculated emission integral")
 
         return
 
@@ -2961,10 +3387,7 @@ class BaseFactory(DatabankLoader):
             self._Nlines_cutoff = 0
             return  # dont update self.df1
 
-        if self.verbose >= 2:
-            #            printg('> Applying linestrength cutoff')
-            pass
-        t0 = time()
+        self.profiler.start("applied_linestrength_cutoff", 2)
 
         # Cutoff:
         b = df.S <= cutoff
@@ -3017,17 +3440,17 @@ class BaseFactory(DatabankLoader):
         # ... @dev performance: quite long to select here, but I couldn't find a faster
         # ... alternative
         # TODO: remove useless columns in df1 to save memory
+        # Note @EP : with Vaex; the selection should be updated here
 
         # Ensures abundance, molar mass and partition functions are transfered
         # (needed if they are attributes and not isotopes)
-        transfer_metadata(df, self.df1, [k for k in df_metadata if hasattr(df, k)])
+        transfer_metadata(df, self.df1, [k for k in df_metadata if k in df.attrs])
+        # assert len(self.df1.attrs) > 0
 
         # Store number of lines cut (for information)
         self._Nlines_cutoff = Nlines_cutoff
 
-        time_spent = time() - t0
-        if self.verbose >= 2:
-            printg("Applied linestrength cutoff in {0:.1f}s ".format(time_spent))
+        self.profiler.stop("applied_linestrength_cutoff", "Applied linestrength cutoff")
 
         return
 
@@ -3063,7 +3486,11 @@ class BaseFactory(DatabankLoader):
         if __debug__:
             printdbg("called ._clean_factory()")
 
+        self.profiler.start("reinitialize", 2)
+
         keep_initial_database = not self.save_memory
+
+        self.profiler.start("copy_database", 3)
 
         if keep_initial_database:
 
@@ -3083,29 +3510,33 @@ class BaseFactory(DatabankLoader):
         else:
             self.df1 = self.df0  # self.df0 will be deleted
             del self.df0  # delete attribute name
+        self.profiler.stop("copy_database", "Copying database")
 
-        # Check presence of attributes
-        try:
-            self.df1.molar_mass
-            self.df1.Ia
-        except AttributeError as err:
-            raise AttributeError(
-                str(err)
-                + " : attribute missing in line "
-                + "dataframe sf.df1. Make sure you didnt overwrite the line "
-                + "dataframe sf.df0 or sf.df1 manually. If so, replace any "
-                + "`sf.df0=...` line with inplace operations such as "
-                + "`sf.df0.drop(..., inplace=True)`. See "
-                + "https://stackoverflow.com/q/33103988"
-            )
-
+        self.profiler.start("memory_usage_warning", 3)
         # Check memory size
         try:
-            if sys.getsizeof(self.df1) > 500e6:
+            # Retrieving total user RAM
+            mem = virtual_memory()
+            mem = mem.total  # total physical memory available
+            # Checking if object type column exists
+            if "O" in self.df1.dtypes.unique():
+                limit = mem / 25  # 4% of user RAM
                 self.warn(
-                    "Line database is large: {0:.0f} Mb".format(
-                        sys.getsizeof(self.df1) * 1e-6
-                    )
+                    "'object' type column found in database, calculations and "
+                    + "memory usage would be faster with a numeric type. Possible "
+                    + "solution is to not use 'save_memory' and convert the columns to dtype.",
+                    "PerformanceWarning",
+                )
+            else:
+                limit = mem / 2  # 50 % of user RAM
+
+            # Note: the difference between deep=True and deep=False is around 4 times
+
+            df_size = self.df1.memory_usage(deep=False).sum()
+
+            if df_size > limit:
+                self.warn(
+                    "Line database is large: {0:.0f} Mb".format(df_size * 1e-6)
                     + ". Consider using save_memory "
                     + "option, if you don't need to reuse this factory to calculate new spectra",
                     "MemoryUsageWarning",
@@ -3113,6 +3544,9 @@ class BaseFactory(DatabankLoader):
         except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
             pass
 
+        self.profiler.stop("memory_usage_warning", "Check Memory usage of database")
+
+        self.profiler.start("reset_population", 3)
         # Reset populations from RovibrationalPartitionFunctions objects
         molecule = self.input.molecule
         state = self.input.state
@@ -3133,6 +3567,9 @@ class BaseFactory(DatabankLoader):
             else:
                 # ... Reset it
                 parsum.reset_populations()
+        self.profiler.stop("reset_population", "Reset populations")
+
+        self.profiler.stop("reinitialize", "Reinitialize database")
 
     def _check_inputs(self, mole_fraction, Tmax):
         """Check spectrum inputs, add warnings if suspicious values.
@@ -3164,14 +3601,24 @@ class BaseFactory(DatabankLoader):
 
         # Also check some computation parameters:
 
-        # ... that wstep and broadening_max_width were not inadvertanly changed
-        # ... (would have no effect as the waverange is calculated on SpectrumFactory
-        # ... initialization)
-
         # Checks there if there is change in wstep value if initial wstep != "auto"
         if self.wstep != "auto":
             assert self.wstep == self.params.wstep
-        assert self._broadening_max_width == self.params.broadening_max_width
+
+        # Checks there if there is change in truncation value
+        # (except in the case where truncation is None, where we set it to be the full range)
+        if self.params.truncation is not None:
+            assert self.truncation == self.params.truncation
+
+        # Check neighbour lines wasn't changed since first initialisation
+        # (can create problems if database is not reloaded
+        if self._neighbour_lines != self.params.neighbour_lines:
+            raise AssertionError(
+                f"neighbour_lines value changed from {self._neighbour_lines} to "
+                + f"{self.params.neighbour_lines}. Did you reset it manually ? This is currently forbidden as new "
+                + "lines won't be retrieved from the database"
+            )
+            # note @dev:  could be implemented; i.e. send `neighbour_lines` to load_databank instead of SpectrumFactory initialisation
 
     def _get_parsum(self, molecule, iso, state):
         """Get function that calculates the partition function.
@@ -3213,7 +3660,6 @@ class BaseFactory(DatabankLoader):
         """
 
         import matplotlib.pyplot as plt
-        from publib import fix_style, set_style
 
         # Check inputs
         assert what in ["vib", "rovib"]
@@ -3242,13 +3688,13 @@ class BaseFactory(DatabankLoader):
                 )
 
         # Plot
-        set_style("origin")
+        set_style()
         plt.figure(num=nfig)
         plt.plot(E, n / g, "ok")
         plt.xlabel("Energy (cm-1)")
         plt.ylabel("Population (n / g)")
         plt.yscale("log")
-        fix_style("origin")
+        fix_style()
 
 
 def get_waverange(
@@ -3388,6 +3834,53 @@ def get_waverange(
             wavenum_max = nm2cm(wavelength_min)
 
     return wavenum_min, wavenum_max
+
+
+def linestrength_from_Einstein(A, gu, El, Ia, nu, Q, T):
+    r"""Calculate linestrength at temperature ``T`` from Einstein coefficients.
+
+    Parameters
+    ----------
+    A : float, s-1
+        Einstein emission coefficients
+    gu : int
+        upper state degeneracy
+    El : float, cm-1
+        lower state energy
+    Ia : float
+        isotope abundance
+    nu : cm-1
+        transition wavenumber
+    Q : float
+        partition function at temperature ``T``
+    T : float
+        temperature
+
+    Returns
+    -------
+    S : float
+        linestrength at temperature ``T``.
+
+    References
+    ----------
+
+    .. math::
+        S(T) =\frac{1}{8\pi c_{CGS} {n_u}^2} A \frac{I_a g_u \operatorname{exp}\left(\frac{-c_2 E_l}{T}\right)}{Q(T)} \left(1-\operatorname{exp}\left(\frac{-c_2 n_u}{T}\right)\right)
+
+    Combine Eq.(A.5), (A.9) in [Rothman-1998]_
+
+    See Also
+    --------
+    :py:meth:`~radis.lbl.base.BaseFactory.calc_linestrength_eq`
+
+    """
+
+    return (
+        (1 / (8 * np.pi * c_CGS * nu ** 2))
+        * A
+        * ((Ia * gu * np.exp(-hc_k * El / T)) / Q)
+        * (1 - np.exp(-hc_k * nu / T))
+    )
 
 
 if __name__ == "__main__":

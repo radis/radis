@@ -33,5 +33,8 @@ s2 = calc_spectrum(
     path_length=1 * u.cm,
     databank="hitran",  # or use 'hitemp'
 )
-s2.apply_slit(0.5, "nm")
-s2.plot("radiance", nfig="same")  # compare with previous
+s2.plot("radiance_noslit")
+
+# Apply a (large) instrumental slit function :
+s2.apply_slit(10, "nm")
+s2.plot("radiance", nfig="same", lw=2)  # compare with previous

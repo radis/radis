@@ -13,8 +13,8 @@ RADIS is both an infrared :ref:`line-by-line code <label_line_by_line>`
 and a :ref:`post-processing library <label_spectrum>`.
 It includes:
 
-- Absorption and emission spectra of all [HITRAN-2016]_ species under equilibrium calculations (:py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`)
-- Absorption and emission spectra of CO2 and CO for nonequilibrium calculations (see :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM` )
+- Absorption and emission spectra of all [HITRAN-2016]_ and [ExoMol-2020]_ species under equilibrium calculations (:py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`)
+- Absorption and emission spectra of CO2 and CO for non-LTE calculations (see :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM` )
 - Different Line Databases: support of [HITRAN-2016]_, [HITEMP-2010]_ and [CDSD-4000]_ line databases (see :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`)
 - Calculation of :ref:`Rovibrational Energies of molecules <label_examples_rovibrational_energies>`.
 - Calculation of equilibrium and nonequilibrium :ref:`Partition Functions <label_examples_partition_functions>`.
@@ -92,6 +92,7 @@ List of supported line databases formats: :py:data:`~radis.lbl.loader.KNOWN_DBFO
 - [HITRAN-2016]_
 - [HITEMP-2010]_
 - [CDSD-4000]_
+- [ExoMol-2020]_
 
 For download and configuration of line databases, see the :ref:`Line Databases section <label_line_databases>`
 

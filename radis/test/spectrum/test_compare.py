@@ -28,7 +28,7 @@ from radis.tools.database import load_spec
 
 
 def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwargs):
-    """ Just run all Spectrum compare methods to check they work"""
+    """Just run all Spectrum compare methods to check they work"""
 
     if plot and close_plots:
         import matplotlib.pyplot as plt
@@ -176,8 +176,8 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test all Spectrum compare methods
     # ----------------------------------
-    # test_compare_methods(verbose=verbose, plot=plot, *args, **kwargs)
-    # test_plot_compare_with_nan(verbose=verbose, plot=True, *args, **kwargs)
+    test_compare_methods(verbose=verbose, plot=plot, *args, **kwargs)
+    test_plot_compare_with_nan(verbose=verbose, plot=True, *args, **kwargs)
     test_get_residual()
     return True
 

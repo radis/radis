@@ -23,8 +23,6 @@ from os.path import exists, isfile, join
 
 import numpy as np
 import pandas as pd
-from astropy import units as u
-from astroquery.hitran import Hitran
 
 import radis
 from radis.db.classes import get_molecule, get_molecule_identifier
@@ -79,6 +77,9 @@ def fetch_astroquery(
     :py:attr:`astroquery.query.BaseQuery.cache_location`
 
     """
+    from astropy import units as u
+    from astroquery.hitran import Hitran
+
     # Check input
     if not is_float(molecule):
         mol_id = get_molecule_identifier(molecule)
@@ -114,6 +115,7 @@ def fetch_astroquery(
                 use_cached=cache,
                 expected_metadata=expected_metadata,
                 verbose=verbose,
+                engine="pytables",
             )
             if exists(fcache):
                 try:
@@ -181,6 +183,7 @@ def fetch_astroquery(
     # Process response
 
     # Rename columns from Astroquery to RADIS format
+    # TODO : define RADIS database format somewhere else; with description of the column names.
     rename_columns = {
         "molec_id": "id",
         "local_iso_id": "iso",
@@ -202,7 +205,12 @@ def fetch_astroquery(
     }
 
     if not empty_range:
-        tbl = Hitran._parse_result(response)
+        try:
+            tbl = Hitran._parse_result(response)
+        except ValueError as err:
+            raise ValueError(
+                "Error while parsing HITRAN output : {}".format(response.text)
+            ) from err
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)
     else:

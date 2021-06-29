@@ -1,9 +1,11 @@
 Spectrum Database
 =================
 
-:class:`~radis.spectrum.spectrum.Spectrum` objects can be stored/loaded to/from
-.spec JSON files using the :meth:`~radis.spectrum.spectrum.Spectrum.store` method
-and the :func:`~radis.tools.database.load_spec` function.
+:py:class:`~radis.spectrum.spectrum.Spectrum` objects can be stored/loaded to/from
+.spec JSON files using the :py:meth:`~radis.spectrum.spectrum.Spectrum.store` method
+and the :py:func:`~radis.tools.database.load_spec` function.
+
+.. minigallery:: radis.SpecDatabase
 
 It is also possible to set up a :class:`~radis.tools.database.SpecDatabase`
 which reads all .spec files in a folder. The :class:`~radis.tools.database.SpecDatabase`
@@ -21,9 +23,9 @@ Example::
     s = db.get('Tvib==3000')[0]  # get a Spectrum back
     db.add(s)  # update database (and raise error because duplicate!)
 
-A:class:`~radis.tools.database.SpecDatabase` can also be used to simply
+A :py:class:`~radis.tools.database.SpecDatabase` can also be used to
 compare the physical and computation parameters of all spectra in a folder.
-Indeed, whenever the database is generated, a summary ``.csv`` file
+Indeed, whenever the database is loaded, a summary ``.csv`` file
 is generated that contains all conditions and can be read, for instance,
 with Excel.
 
@@ -87,7 +89,7 @@ an customized function too (below: to get the transmittance)::
     db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
 
 You don't necessarily need to precompute spectra to fit an experimental spectrum.
-You can find an example of:ref:`multi temperature fitting script <label_examples_multitemperature_fit>`
+You can find an example of :ref:`multi temperature fitting script <label_examples_multitemperature_fit>`
 in the Example pages, which shows the evolution of the spectra in real-time. You can get inspiration from there!
 
 Updating a database

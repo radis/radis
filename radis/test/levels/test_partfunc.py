@@ -23,14 +23,13 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 import os
 from os.path import basename, exists, getmtime
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import exp
 
 from radis import SpectrumFactory
 from radis.db.molecules import Molecules
-from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
+from radis.levels.partfunc import PartFunc_Dunham, PartFuncTIPS
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.printer import printm
 from radis.misc.warning import DeprecatedFileWarning
@@ -44,7 +43,7 @@ fig_prefix = basename(__file__) + ": "
 
 # never add @pytest.mark.fast so we don't delete cached files for 'fast' tests
 def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs):
-    """ Doesnt really test anything, but cleans all cached energy levels """
+    """Doesnt really test anything, but cleans all cached energy levels"""
 
     for molecule, isotopes in Molecules.items():
         for isotope, states in isotopes.items():
@@ -132,7 +131,7 @@ def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
 @pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
-    """ Test 1: compare calculated PartFunc to the tabulated one """
+    """Test 1: compare calculated PartFunc to the tabulated one"""
 
     from radis.misc.config import getDatabankEntries
 
@@ -206,7 +205,7 @@ def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
 def test_calculatedQ_match_HAPI_CO(
     vmax=11, jmax=300, plot=False, verbose=True, *args, **kwargs
 ):
-    """ Tested that Q ab_initio (Dunham) match HAPI for CO at different temperatures"""
+    """Tested that Q ab_initio (Dunham) match HAPI for CO at different temperatures"""
 
     vmax = 11
     vmax_morse = 48
@@ -223,7 +222,7 @@ def test_calculatedQ_match_HAPI_CO(
 
     #    if plot: db.plot_states()
 
-    hapi = PartFuncHAPI(M=5, I=1)  # CO  # isotope
+    hapi = PartFuncTIPS(M=5, I=1)  # CO  # isotope
 
     us = []
     hap = []
@@ -232,7 +231,11 @@ def test_calculatedQ_match_HAPI_CO(
         us.append(db.at(Ti))
         hap.append(hapi.at(Ti))
 
-    if plot:
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+
         plt.figure(fig_prefix + "Partition function Dunham vs Precomputed")
         plt.plot(T, us, "ok", label="NeQ")
         plt.plot(T, hap, "or", label="HAPI")
@@ -285,7 +288,7 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 
         from radis.db.classes import get_molecule_identifier
 
-        hapi = PartFuncHAPI(M=get_molecule_identifier(molecule), I=iso)
+        hapi = PartFuncTIPS(M=get_molecule_identifier(molecule), I=iso)
 
         Q_radis = db.at(T)
         Q_hapi = hapi.at(T)
@@ -762,6 +765,242 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     assert cache_last_modification_again > cache_last_modification
 
 
+def test_tabulated_partition_functions(
+    verbose=True, plot=True, rtol=1e-2, *args, **kwargs
+):
+    """Test just-in-time tabulated partition return the same results as
+    full summation within 0.5%  (adjust value with ``rtol``)
+
+    We compute up to 10,000 K (beyond the validity range of most spectroscopic
+    parameters)
+
+    Run with verbose=True to check the accuracy and calibrate the
+    :py:attr:`radis.levels.partfunc.RovibParFuncCalculator.N_bins_scaling` function"""
+
+    from radis.db.molecules import CO2_X_626
+    from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
+
+    Z_sum = PartFunc_Dunham(CO2_X_626, mode="full summation")
+    Z_tab = PartFunc_Dunham(
+        CO2_X_626, mode="tabulation", verbose=3 if verbose else False
+    )
+
+    # For reference, start by comparing full-summation partition functions with TIPS tabulated partition functions
+    Z_tips = PartFuncHAPI(M=2, I=1)  # CO  # isotope
+    for T in [296, 3000, 5000]:
+        z1 = Z_sum.at(T)
+        z2 = Z_tips.at(T)
+        accuracy = max(z1, z2) / min(z1, z2) - 1
+        # accuracy_dict[
+        if verbose:
+            print(
+                "full-sum & TIPS tabulated partition function of CO2 at {0}K close within {1:.2%}".format(
+                    T, accuracy
+                )
+            )
+        assert (
+            accuracy < 4 * rtol
+        )  # doesnt make sense to be extremely accurate in our tabulation if the full-summation doesnt match TIPS anyway
+
+    # accuracy_dict = {1:[], 2:[], 3:[]}  # accuracy as a function of number of temperatures (helps how to scale N_bins)
+
+    def compare_partition_functions(Z1, Z2, *T):
+        z1 = Z1(*T)
+        z2 = Z2(*T)
+        # accuracy_dict[
+        if verbose:
+            accuracy = max(z1, z2) / min(z1, z2) - 1
+            print(
+                "full-sum & jit-tabulated partition function of CO2 at {0}K close within {1:.2%}".format(
+                    T, accuracy
+                )
+            )
+        assert np.isclose(z1, z2, rtol=rtol)
+
+    # Equilibrium (same < 0.2%)
+    compare_partition_functions(Z_sum.at, Z_tab.at, 296)
+    compare_partition_functions(Z_sum.at, Z_tab.at, 3000)
+    compare_partition_functions(Z_sum.at, Z_tab.at, 5000)
+    compare_partition_functions(Z_sum.at, Z_tab.at, 10000)
+
+    # Nonequilibrium (same << 0.1%)
+
+    #  ... Compare with Partition function computed from PartFunc_Dunham
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 296, 296)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 1000, 300)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 1000, 3000)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 3000, 3000)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 5000, 5000)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 10000, 10000)
+
+    # Nonequilibrium 3 Tvib (same << 0.1%)
+
+    #  ... Compare with Partition function computed from PartFunc_Dunham
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (296, 296, 296), 296
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (1000, 1000, 2000), 300
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (1000, 1000, 3500), 3000
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (3000, 3000, 3000), 3000
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (5000, 5000, 5000), 5000
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (10000, 10000, 10000), 10000
+    )
+
+    # ... change Grid :
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+
+        Tvib = 3000
+        Trot_arr = np.linspace(300, 3000, 10)
+        plt.figure()
+        plt.plot(Trot_arr, [Z_sum.at_noneq(Tvib, T) for T in Trot_arr])
+        for N_bins in [10, 100, 1000]:
+            Z_tab.N_bins == N_bins
+            plt.plot(
+                Trot_arr,
+                [Z_tab.at_noneq(Tvib, T) for T in Trot_arr],
+                "--",
+                label=N_bins,
+            )
+        plt.legend()
+
+
+def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
+    """Test Partition function modes in SpectrumFactory
+
+    using :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
+
+    ::
+        # sf.params.parsum_mode = 'full summation'   # default
+
+        full summation profiler :
+            spectrum_calculation      0.197s ████████████████
+                check_line_databank             0.002s
+                check_non_eq_param              0.000s
+                reinitialize                    0.006s
+                    copy_database                   0.003s
+                    memory_usage_warning            0.003s
+                    reset_population                0.000s
+                calc_noneq_population           0.119s █████████
+                    part_function                   0.020s █
+                    population                      0.099s ████████
+                scaled_non_eq_linestrength      0.002s
+                    map_part_func                   0.000s
+                    corrected_population_se         0.002s
+                calc_emission_integral          0.012s
+                calc_lineshift                  0.000s
+                calc_hwhm                       0.013s █
+                generate_wavenumber_arrays      0.000s
+                calc_line_broadening            0.040s ███
+                    precompute_DLM_lineshapes       0.002s
+                    DLM_Initialized_vectors         0.000s
+                    DLM_closest_matching_line       0.000s
+                    DLM_Distribute_lines            0.001s
+                    DLM_convolve                    0.037s ██
+                calc_other_spectral_quan        0.004s
+                generate_spectrum_obj           0.000s
+
+    ::
+        # sf.params.parsum_mode = 'tabulation'
+
+        tabulation profiler :
+            spectrum_calculation      0.104s ████████████████
+                check_line_databank             0.002s
+                check_non_eq_param              0.001s
+                reinitialize                    0.004s
+                    copy_database                   0.001s
+                    memory_usage_warning            0.003s
+                    reset_population                0.000s
+                calc_noneq_population           0.026s ███
+                    part_function                   0.019s ██
+                    population                      0.007s █
+                scaled_non_eq_linestrength      0.003s
+                    map_part_func                   0.000s
+                    corrected_population_se         0.003s
+                calc_emission_integral          0.010s █
+                calc_lineshift                  0.001s
+                calc_hwhm                       0.017s ██
+                generate_wavenumber_arrays      0.001s
+                calc_line_broadening            0.035s █████
+                    precompute_DLM_lineshapes       0.001s
+                    DLM_Initialized_vectors         0.000s
+                    DLM_closest_matching_line       0.001s
+                    DLM_Distribute_lines            0.000s
+                    DLM_convolve                    0.032s ████
+                    others                          0.001s
+                calc_other_spectral_quan        0.003s
+                generate_spectrum_obj           0.000s
+                others                          0.002s
+
+    So calculation of populations is ~5x faster and the spectrum calculation itself
+    is 2x faster.
+
+    """
+    from radis import SpectrumFactory
+
+    wmin, wmax = 2284, 2285
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        molecule="CO2",
+        isotope="1",
+        truncation=2.5,  # cm-1
+        medium="air",
+        path_length=10.32,  # cm
+        wstep=0.001,
+        verbose=0,
+    )
+    conditions = {
+        "mole_fraction": 0.2,
+        "pressure": 1,
+        "Ttrans": 2000,
+        "Trot": 2100,
+        "Tvib": 1500,
+    }
+
+    # ... initialize tests :
+    sf.params.parsum_mode = "full summation"  # default
+    sf.load_databank("HITEMP-CO2-TEST")
+    sf._add_bands()
+    _ = sf.non_eq_spectrum(**conditions)  # initialize energies, etc.
+    # ... compare:
+    s_HITEMP = sf.non_eq_spectrum(**conditions, name=sf.params.parsum_mode)
+    s_HITEMP.print_perf_profile()
+
+    # Now, again with tabulation:
+    # ... init :
+    sf.params.parsum_mode = "tabulation"
+    sf.load_databank("HITEMP-CO2-TEST")
+    sf._add_bands()
+    _ = sf.non_eq_spectrum(**conditions)  # initialize energies, first tabulation
+    # ... compare:
+    s_HITEMP2 = sf.non_eq_spectrum(**conditions, name=sf.params.parsum_mode)
+    s_HITEMP2.print_perf_profile()
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+        from radis import plot_diff
+
+        plot_diff(s_HITEMP2, s_HITEMP, method="ratio")
+
+    from radis import get_residual
+
+    assert get_residual(s_HITEMP, s_HITEMP2, "abscoeff") < 6e-5
+
+
 def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
     # Test 0: delete all cached energies
@@ -799,16 +1038,20 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
 
     # Test 8: Regenerates levels file if it's manually changed
-    test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs)
+    test_levels_regeneration(verbose=verbose, warnings=True, *args, **kwargs)
+
+    # Test 9 : tabulation
+    test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
+    test_parsum_mode_in_factory(verbose=verbose, *args, **kwargs)
+
     return True
 
 
 if __name__ == "__main__":
     printm("Testing parfunc: {0}".format(_run_testcases()))
 
-    verbose = True
-    warnings = True
-
+    # test_tabulated_partition_functions()
+    # test_parsum_mode_in_factory()
 #    test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)

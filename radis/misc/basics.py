@@ -346,34 +346,39 @@ def transfer_metadata(df1, df2, metadata):
     """Transfer metadata between a DataFrame df1 and df2.
 
     For some reason metadata are sometimes not copied when a DataFrame is
-    sliced or copied, even if they explicitely figure in the df._metadata
-    attribute. Here we copy them back
+    sliced or copied, even if they explicitely appear in the ``df.attrs``
+    attribute. See https://github.com/pandas-dev/pandas/issues/28283
+
+    Here we copy them back. Attributes can be :
+        - keys of the ``df1.attrs`` dictionary
+        - simple attributes of ``df1``, i.e., ``df1.X``
 
     Parameters
     ----------
-
     df1: pandas DataFrame
         copy from df1
-
     df2: pandas DataFrame
         copy to df2
     """
 
     for k in metadata:
-        if __debug__ and k not in df1._metadata:
-            from radis.misc.debug import printdbg
-
-            printdbg("WARNING. {0} not in _metadata: {1}".format(k, df1._metadata))
         if not hasattr(df2, k):
             assert k not in df1.columns  # point is not to copy columns!
-            setattr(df2, k, getattr(df1, k))
+            if k in df1.attrs:  # Keys of attribute dictionary
+                df2.attrs[k] = df1.attrs[k]
+            else:  # Direct attributes of df1
+                setattr(df2, k, getattr(df1, k))
+
+    # @dev: refactor : we're updating the database to properly store values
+    # either in columns either in the .attrs dict, but so they can always
+    # be accessed with df.X
 
 
 def expand_metadata(df, metadata):
     """Turn metadata from a float to a column.
 
     For some reason metadata are sometimes not copied when a DataFrame is
-    sliced or copied, even if they explicitely figure in the df._metadata
+    sliced or copied, even if they explicitely figure in the df.attrs
     attribute. Here we add them as column before such operations.
 
     Parameters
@@ -390,10 +395,10 @@ def expand_metadata(df, metadata):
     """
 
     for k in metadata:
-        if __debug__ and k not in df._metadata:
+        if __debug__ and k not in df.attrs:
             from radis.misc.debug import printdbg
 
-            printdbg("WARNING. {0} not in _metadata: {1}".format(k, df._metadata))
+            printdbg("WARNING. {0} not in metadata: {1}".format(k, df.attrs))
         df[k] = getattr(df, k)
 
 

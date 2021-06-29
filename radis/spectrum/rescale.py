@@ -594,7 +594,7 @@ def rescale_abscoeff(
     old_mole_fraction,
     new_mole_fraction,
     old_path_length,
-    waveunit,
+    wunit,
     units,
     extra,
     true_path_length,
@@ -623,18 +623,18 @@ def rescale_abscoeff(
     # First get initial abscoeff
     # ---------------------
     if "abscoeff" in initial:
-        _, abscoeff_init = spec.get("abscoeff", wunit=waveunit)
+        _, abscoeff_init = spec.get("abscoeff", wunit=wunit)
     elif "absorbance" in initial and true_path_length:  # aka: true path_lengths given
         if __debug__:
             printdbg("... rescale: abscoeff k1 = A/L1")
-        _, A = spec.get("absorbance", wunit=waveunit)
+        _, A = spec.get("absorbance", wunit=wunit)
         abscoeff_init = A / old_path_length  # recalculate initial
         unit = "cm-1"
     elif "transmittance_noslit" in initial and true_path_length:
         if __debug__:
             printdbg("... rescale: abscoeff k1 = -ln(T1)/L1")
         # Get abscoeff from transmittance
-        _, T1 = spec.get("transmittance_noslit", wunit=waveunit)
+        _, T1 = spec.get("transmittance_noslit", wunit=wunit)
 
         # We'll have a problem if the spectrum is optically thick
         b = T1 == 0  # no transmittance: optically thick mask
@@ -748,7 +748,7 @@ def rescale_emisscoeff(
     new_mole_fraction,
     old_path_length,
     optically_thin,
-    waveunit,
+    wunit,
     units,
     extra,
     true_path_length,
@@ -783,15 +783,13 @@ def rescale_emisscoeff(
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = j1")
         _, emisscoeff_init = spec.get(
-            "emisscoeff", wunit=waveunit, Iunit=units["emisscoeff"]
+            "emisscoeff", wunit=wunit, Iunit=units["emisscoeff"]
         )
 
     elif "radiance_noslit" in initial and true_path_length and optically_thin:
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = I1/L1")
-        _, I = spec.get(
-            "radiance_noslit", wunit=waveunit, Iunit=units["radiance_noslit"]
-        )
+        _, I = spec.get("radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"])
         emisscoeff_init = I / old_path_length  # recalculate initial
         unit = get_unit(units["radiance_noslit"])
 
@@ -799,10 +797,8 @@ def rescale_emisscoeff(
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = k1*I1/(1-exp(-k1*L1))")
         # get emisscoeff from (initial) abscoeff and (initial) radiance
-        _, I = spec.get(
-            "radiance_noslit", wunit=waveunit, Iunit=units["radiance_noslit"]
-        )
-        _, k = spec.get("abscoeff", wunit=waveunit, Iunit=units["abscoeff"])
+        _, I = spec.get("radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"])
+        _, k = spec.get("abscoeff", wunit=wunit, Iunit=units["abscoeff"])
 
         # Recalculate in the optically thin range (T=1) and elsewhere
         b = k == 0  # optically thin mask
@@ -827,11 +823,9 @@ def rescale_emisscoeff(
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = k1*I1/(1-T1)")
         # get emisscoeff from (initial) transmittance and (initial) radiance
-        _, I = spec.get(
-            "radiance_noslit", wunit=waveunit, Iunit=units["radiance_noslit"]
-        )
+        _, I = spec.get("radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"])
         _, T = spec.get(
-            "transmittance_noslit", wunit=waveunit, Iunit=units["transmittance_noslit"]
+            "transmittance_noslit", wunit=wunit, Iunit=units["transmittance_noslit"]
         )
 
         # Recalculate in the optically thin range (T=1) and elsewhere
@@ -1559,7 +1553,7 @@ def _recalculate(
                     + "not look at equilibrium. Check spectrum conditions"
                 )
             )
-        wavenumber = spec.get_wavenumber("non_convoluted")
+        wavenumber = spec.get_wavenumber()
         Tgas = spec.conditions["Tgas"]
         rescaled, units = _recompute_all_at_equilibrium(
             spec, rescaled, wavenumber, Tgas, new_path_length, true_path_length, units
@@ -1669,18 +1663,15 @@ def _recalculate(
     # delete former convoluted value if apply_slit will be used (just to be sure
     # we arent keeping a non rescaled value if something goes wrong)
     if apply_slit:
-        for k in list(spec._q_conv.keys()):
-            if k != "wavespace":
-                del spec._q_conv[k]
+        for k in list(spec._q.keys()):
+            if k != "wavespace" and k in CONVOLUTED_QUANTITIES:
+                del spec._q[k]
                 del spec.units[k]
 
     # Save (only) the ones that we want, unless we want everything ('greedy')
     for q in rescaled:
         if q in wanted:  # or greedy:
-            if q in NON_CONVOLUTED_QUANTITIES:
-                spec._q[q] = rescaled[q]
-            else:
-                spec._q_conv[q] = rescaled[q]
+            spec._q[q] = rescaled[q]
 
     # Update units
     for k, u in units.items():
@@ -1732,7 +1723,9 @@ def _recalculate(
     # ... "everyone is here": check we didnt miss anyone
     rescaled_list = list(rescaled)
     # add the new quantities added by apply_slit
-    rescaled_list = rescaled_list + spec.get_vars("convoluted")
+    rescaled_list = rescaled_list + [
+        k for k in spec.get_vars() if k in CONVOLUTED_QUANTITIES
+    ]
     for q in wanted:
         if not q in rescaled_list:
             raise AssertionError(

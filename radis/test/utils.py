@@ -117,7 +117,7 @@ def getValidationCase(file, force=False):
                 )
             ),
             "transmittance_noslit",
-            waveunit="cm-1",
+            wunit="cm-1",
             unit="",
             delimiter=",",
             name="Klarenaar 2017",
@@ -141,13 +141,48 @@ def getValidationCase(file, force=False):
     return path
 
 
-try:  # Python 3.6 only
-    getTestFile.__annotations__["file"] = os.listdir(join(TEST_FOLDER_PATH, "files"))
-    getValidationCase.__annotations__["file"] = os.listdir(
-        join(TEST_FOLDER_PATH, "validation")
-    )
-except:
-    pass
+# Python 3.6+ only
+getTestFile.__annotations__["file"] = os.listdir(join(TEST_FOLDER_PATH, "files"))
+getValidationCase.__annotations__["file"] = os.listdir(
+    join(TEST_FOLDER_PATH, "validation")
+)
+
+
+# %% Convenience function
+
+
+def test_spectrum(**kwargs):
+    """Generate the :ref:`first example spectrum <label_first_example>` with ::
+
+        import radis
+        s = radis.test_spectrum()
+        s.plot()
+
+    Other Parameters
+    ----------------
+    kwargs: sent to :py:func:`~radis.lbl.calc.calc_spectrum`
+
+
+    """
+    from radis import calc_spectrum
+
+    conditions = {
+        "wavenum_min": 1900,
+        "wavenum_max": 2300,
+        "molecule": "CO",
+        "isotope": "1,2,3",
+        "pressure": 1.01325,  # bar
+        "Tgas": 700,  # K
+        "mole_fraction": 0.1,
+        "path_length": 1,  # cm
+        "databank": "hitran",
+    }
+
+    conditions.update(kwargs)
+
+    s = calc_spectrum(**conditions)
+    return s
+
 
 # %% Comparison functions
 

@@ -25,7 +25,10 @@ import numpy as np
 import pandas as pd
 from numpy import exp
 
-from radis.lbl.labels import vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN
+try:  # Proper import
+    from .labels import vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN
+except ImportError:  # if ran from here
+    from radis.lbl.labels import vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN
 from radis.misc.basics import is_float
 from radis.phys.constants import hc_k
 from radis.spectrum.rescale import (
@@ -35,8 +38,7 @@ from radis.spectrum.rescale import (
     rescale_radiance_noslit,
     rescale_transmittance_noslit,
 )
-from radis.spectrum.spectrum import is_spectrum
-from radis.spectrum.utils import NON_CONVOLUTED_QUANTITIES
+from radis.spectrum.spectrum import Spectrum
 
 # keys that may not be equals for different bands
 _IGNORE_KEYS = ["band", "band_htrn", "viblvl_u", "viblvl_l"]
@@ -90,7 +92,7 @@ class LevelsList(object):
 
         # Check inputs
         for br, s in bands.items():
-            if not is_spectrum(s):
+            if not isinstance(s, Spectrum):
                 raise ValueError(
                     "`bands` must be a list of Spectrum objects. "
                     + "Got {0}".format(type(s))
@@ -842,10 +844,7 @@ def rescale_updown_levels(
     # Save (only) the ones that were in the spectrum initially
     for q in rescaled:
         if q in initial:
-            if q in NON_CONVOLUTED_QUANTITIES:
-                spec._q[q] = rescaled[q]
-            else:
-                spec._q_conv[q] = rescaled[q]
+            spec._q[q] = rescaled[q]
 
     # Update units
     for k, u in units.items():
@@ -853,8 +852,8 @@ def rescale_updown_levels(
 
     # Drop convoluted values
     for q in ["transmittance", "radiance"]:
-        if q in list(spec._q_conv.keys()):
-            del spec._q_conv[q]
+        if q in list(spec._q.keys()):
+            del spec._q[q]
 
     # Reapply slit if possible
     if (

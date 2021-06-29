@@ -13,4 +13,4 @@ from radis import plot_slit
 from radis.test.utils import getTestFile
 
 my_slit = getTestFile("slitfunction.txt")  # for the example here
-plot_slit(my_slit, waveunit="nm")
+plot_slit(my_slit, wunit="nm")

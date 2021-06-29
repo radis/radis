@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Created on Tue May 26 11:52:15 2015.
-
-Erwan Pannier EM2C, CentraleSupélec, 2015 CNRS UPR 288
+"""Definition of molecules and list of spectroscopic constants
 """
 
 from .molecules import Molecules, getMolecule
@@ -12,9 +10,10 @@ def _get_supported_molecules_equilibrium():
     """Molecules supported in RADIS equilibrium calculations Basically, all
     [HITRAN-2016]_ species."""
     # Add all HITRAN species
-    from .classes import HITRAN_MOLECULES
+    # Add ExoMol species
+    from .classes import EXOMOL_MOLECULES, HITRAN_MOLECULES
 
-    return HITRAN_MOLECULES
+    return list(set(HITRAN_MOLECULES).union(set(EXOMOL_MOLECULES)))
 
 
 def _get_supported_molecules_nonequilibrium():
@@ -32,9 +31,10 @@ MOLECULES_LIST_EQUILIBRIUM = (
     __supported_molecules_equilibrium__
 ) = _get_supported_molecules_equilibrium()
 """ list: molecules that can be calculated in RADIS at equilibrium.
-All [HITRAN-2016]_ species are available.
+All [HITRAN-2016]_ and [ExoMol-2020]_ species are available.
+
 Absorption coefficient calculated with RADIS at 300 K, 1 atm are shown for all
-these molecules in the :ref:`Examples page <label_examples_hitran_spectra>` (HITRAN spectra).
+[HITRAN-2016]_ molecules in the :ref:`HITRAN spectra page <label_examples_hitran_spectra>` .
 
 - 1 	``'H2O'`` : 	Water 	(`spectrum <https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png>`__)
 - 2 	``'CO2'`` : 	Carbon Dioxide    (`spectrum <https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png>`__)
@@ -115,3 +115,11 @@ See Also
 :py:data:`~radis.db.molecules.Molecules`,
 :py:func:`~radis.db.molecules.getMolecule`
 """
+
+
+__all__ = [
+    "MOLECULES_LIST_EQUILIBRIUM",
+    "MOLECULES_LIST_NONEQUILIBRIUM",
+    "Molecules",
+    "getMolecule",
+]
