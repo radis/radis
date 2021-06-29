@@ -1935,7 +1935,7 @@ class BaseFactory(DatabankLoader):
                     )
             return Qref, Qgas
 
-        if "id" in df1:
+        if "id" in df1.columns:
             id_set = df1.id.unique()
             id = id_set[0]
 
@@ -2052,54 +2052,7 @@ class BaseFactory(DatabankLoader):
         self.profiler.start("calc_eq_population", 2)
         #            printg('> Calculating equilibrium populations')
 
-        Qgas = {}
-
-        if "id" in df1 and "iso" in df1:
-
-            dgb = df1.groupby(by=["id", "iso"])
-
-            for (id, iso), idx in dgb.indices.items():
-                molecule = get_molecule(id)
-                state = self.input.state
-                parsum = self.get_partition_function_interpolator(molecule, iso, state)
-                Qgas[iso] = parsum.at(Tgas)
-
-                if radis.DEBUG_MODE:
-                    assert (df1.loc[idx, "id"] == id).all()
-                    assert (df1.loc[idx, "iso"] == iso).all()
-
-        elif "id" not in df1 and "iso" in df1:
-
-            id = df1.attrs["id"]
-            iso1 = list(dgb.indices.keys())[0]
-            molecule = get_molecule(id)
-            state = self.input.state
-            parsum = self.get_partition_function_interpolator(molecule, iso1, state)
-            Qgas[iso1] = parsum.at(Tgas)
-
-        elif "id" in df1 and "iso" not in df1:
-
-            dgb = df1.groupby(by=["id"])
-            iso = df1.attrs["iso"]
-
-            for (id), idx in dgb.indices.items():
-                molecule = get_molecule(id)
-                state = self.input.state
-                parsum = self.get_partition_function_interpolator(molecule, iso, state)
-                Qgas[iso] = parsum.at(Tgas)
-
-                if radis.DEBUG_MODE:
-                    assert (df1.loc[idx, "id"] == id).all()
-
-        elif "id" not in df1 and "iso" not in df1:
-
-            iso = df1.attrs["iso"]
-            id = df1.attrs["id"]
-
-            molecule = get_molecule(id)
-            state = self.input.state
-            parsum = self.get_partition_function_interpolator(molecule, iso, state)
-            Qgas[iso] = parsum.at(Tgas)
+        Qgas = self.get_Qgas(df1, Tgas)
 
         # Calculate degeneracies
         # ----------------------------------------------------------------------
@@ -2119,19 +2072,82 @@ class BaseFactory(DatabankLoader):
         # equilibrium: Boltzmann in any case
 
         # multiple-isotopes in database
-        if "iso" in df1:
-            df1["nu"] = (
-                df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / df1["iso"].map(Qgas)
-            )
-        else:
-            Qgas = list(Qgas.values())
-            df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / Qgas[0]
+
+        Q_req = self.getQ_from_dict(df1, Qgas)
+
+        df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / Q_req
 
         assert "nu" in self.df1
 
         self.profiler.stop("calc_eq_population", "Calculated equilibrium populations")
 
         return
+
+    def getQ_from_dict(self, df, Qgas):
+
+        if "iso" in df:
+            Q_req = df["iso"].map(Qgas)
+
+        else:
+            Qgas = list(Qgas.values())
+            Q_req = Qgas[0]
+
+        return Q_req
+
+    def get_Qgas(self, df, Tgas):
+
+        Qgas = {}
+
+        if "id" in df and "iso" in df:
+
+            dgb = df.groupby(by=["id", "iso"])
+
+            for (id, iso), idx in dgb.indices.items():
+                molecule = get_molecule(id)
+                state = self.input.state
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Qgas[iso] = parsum.at(Tgas)
+
+                if radis.DEBUG_MODE:
+                    assert (df.loc[idx, "id"] == id).all()
+                    assert (df.loc[idx, "iso"] == iso).all()
+
+        elif "id" not in df and "iso" in df:
+
+            dgb = df.groupby(by=["id"])
+
+            id = df.attrs["id"]
+            iso1 = list(dgb.indices.keys())[0]
+            molecule = get_molecule(id)
+            state = self.input.state
+            parsum = self.get_partition_function_interpolator(molecule, iso1, state)
+            Qgas[iso1] = parsum.at(Tgas)
+
+        elif "id" in df and "iso" not in df:
+
+            dgb = df.groupby(by=["id"])
+            iso = df.attrs["iso"]
+
+            for (id), idx in dgb.indices.items():
+                molecule = get_molecule(id)
+                state = self.input.state
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Qgas[iso] = parsum.at(Tgas)
+
+                if radis.DEBUG_MODE:
+                    assert (df.loc[idx, "id"] == id).all()
+
+        elif "id" not in df and "iso" not in df:
+
+            iso = df.attrs["iso"]
+            id = df.attrs["id"]
+
+            molecule = get_molecule(id)
+            state = self.input.state
+            parsum = self.get_partition_function_interpolator(molecule, iso, state)
+            Qgas[iso] = parsum.at(Tgas)
+
+        return Qgas
 
     # %%
     def calc_populations_noneq(
@@ -2684,48 +2700,29 @@ class BaseFactory(DatabankLoader):
         # for 3 temperatures). Let's just get the total
 
         # ... Total
+
+        Q = self.getQ_from_dict(df, Q_dict)
+
         if rot_distribution == "boltzmann":
             # ... total
 
-            if "iso" in df:
+            df["nu"] = (
+                nu_vib1Qvib1
+                * nu_vib2Qvib2
+                * nu_vib3Qvib3
+                * df.grotu
+                * exp(-df.Erotu * hc_k / Trot)
+                / Q
+            )
+            df["nl"] = (
+                nl_vib1Qvib1
+                * nl_vib2Qvib2
+                * nl_vib3Qvib3
+                * df.grotl
+                * exp(-df.Erotl * hc_k / Trot)
+                / Q
+            )
 
-                df["nu"] = (
-                    nu_vib1Qvib1
-                    * nu_vib2Qvib2
-                    * nu_vib3Qvib3
-                    * df.grotu
-                    * exp(-df.Erotu * hc_k / Trot)
-                    / df["iso"].map(Q_dict)
-                )
-                df["nl"] = (
-                    nl_vib1Qvib1
-                    * nl_vib2Qvib2
-                    * nl_vib3Qvib3
-                    * df.grotl
-                    * exp(-df.Erotl * hc_k / Trot)
-                    / df["iso"].map(Q_dict)
-                )
-
-            else:
-
-                Q_dict = list(Q_dict.values())
-
-                df["nu"] = (
-                    nu_vib1Qvib1
-                    * nu_vib2Qvib2
-                    * nu_vib3Qvib3
-                    * df.grotu
-                    * exp(-df.Erotu * hc_k / Trot)
-                    / Q_dict[0]
-                )
-                df["nl"] = (
-                    nl_vib1Qvib1
-                    * nl_vib2Qvib2
-                    * nl_vib3Qvib3
-                    * df.grotl
-                    * exp(-df.Erotl * hc_k / Trot)
-                    / Q_dict[0]
-                )
         else:
             raise ValueError(
                 "Unknown rotational distribution: {0}".format(rot_distribution)
@@ -2925,9 +2922,7 @@ class BaseFactory(DatabankLoader):
             molecule = get_molecule(id)
             state = self.input.state
             parsum = self._get_parsum(molecule, iso_set[0], state)  # partition function
-            Qref_dict[iso_set[0]] = parsum.at(
-                Tref, update_populations=False
-            )  # stored as attribute, not column
+            Qref_dict[iso_set[0]] = parsum.at(Tref, update_populations=False)
 
         else:
 
@@ -2974,7 +2969,6 @@ class BaseFactory(DatabankLoader):
 
         # ... correct for lower state population
         if "iso" in df:
-            print(Qref_dict)
             line_strength /= (
                 df.gl * exp(-hc_k * df.El / Tref) / df["iso"].map(Qref_dict)
             )
