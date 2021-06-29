@@ -2053,7 +2053,7 @@ class BaseFactory(DatabankLoader):
         #            printg('> Calculating equilibrium populations')
 
         # get Qgas values in the form of a dictionary
-        Qgas = self.get_Qgas(df1, Tgas)
+        Qgas_dict = self.get_Qgas(df1, Tgas)
 
         # Calculate degeneracies
         # ----------------------------------------------------------------------
@@ -2075,9 +2075,9 @@ class BaseFactory(DatabankLoader):
         # multiple-isotopes in database
 
         # extract Qgas in the required form from the dictionary
-        Q_req = self.getQ_from_dict(df1, Qgas)
+        Qgas = self.getQ_from_dict(df1, Qgas_dict)
 
-        df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / Q_req
+        df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / Qgas
 
         assert "nu" in self.df1
 
