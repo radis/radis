@@ -836,10 +836,13 @@ class BaseFactory(DatabankLoader):
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
 
-        self.profiler._print(
-            2, "Fetching vib123 / rot energies for all {0} transitions".format(len(df))
+        self.profiler.start(
+            "fetch_energy_4",
+            2,
+            "... Fetching vib123 / rot energies for all {0} transitions".format(
+                len(df)
+            ),
         )
-        self.profiler.start("fetch_energy_4", 2)
 
         # Get Energy database
         if self.parsum_calc == {}:
@@ -1779,8 +1782,9 @@ class BaseFactory(DatabankLoader):
         if len(df1) == 0:
             return  # no lines
 
-        self.profiler._print(2, "Scaling equilibrium linestrength")
-        self.profiler.start("scaled_eq_lineshift", 2)
+        self.profiler.start(
+            "scaled_eq_lineshift", 2, "... Scaling equilibrium linestrength"
+        )
 
         # %% Load partition function values
 

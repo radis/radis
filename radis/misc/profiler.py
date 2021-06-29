@@ -44,12 +44,14 @@ class Profiler(object):
         self.verbose = verbose
         self.relative_time_percentage = {}
 
-    def start(self, key, verbose_level):
+    def start(self, key, verbose_level, optional=""):
         if __debug__:
             self.initial[key] = {
                 "start_time": time(),
                 "verbose_level": verbose_level,
             }
+        if len(optional) != 0 and self.verbose >= verbose_level:
+            print(optional)
 
     def stop(self, key, details=""):
         if __debug__:
@@ -59,21 +61,15 @@ class Profiler(object):
             if self.verbose >= items["verbose_level"]:
                 self._print(items["verbose_level"], details, key)
 
-    def _print(self, verbose_level, details, key=None):
+    def _print(self, verbose_level, details, key):
         if verbose_level == 1:
-            if key == None:
-                print(details)
-            else:
-                print("{0:.2f}s -".format(self.dict_time[key][0]), details)
+            print("{0:.2f}s -".format(self.dict_time[key][0]), details)
         elif verbose_level >= 2:
-            if key == None:
-                printg("..." * (verbose_level - 1), details)
-            else:
-                printg(
-                    "..." * (verbose_level - 1),
-                    "{0:.2f}s -".format(self.dict_time[key][0]),
-                    details,
-                )
+            printg(
+                "..." * (verbose_level - 1),
+                "{0:.2f}s -".format(self.dict_time[key][0]),
+                details,
+            )
 
     def percentage_distribution(self):
         """Computes and stores the percentage of time spent by each step of a particular verbose level.
