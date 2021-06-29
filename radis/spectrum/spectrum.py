@@ -55,7 +55,7 @@ from warnings import warn
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Cursor, Slider
 from numpy import abs, diff
 from publib import fix_style, set_style
 
@@ -80,6 +80,7 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
+from radis.tools.plot_tools import add_ruler
 
 
 class Spectrum(object):
@@ -1362,6 +1363,7 @@ class Spectrum(object):
         force=False,
         plot_by_parts=False,
         sliders={},
+        show_ruler=False,
         **kwargs
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
@@ -1415,6 +1417,11 @@ class Spectrum(object):
             the for each key:value pair the key should be the name of the variable and
             the value should be a 2-tuple with (min_value, max_value). The default value
             will be the value with which the spectrum was originally generated.
+        show_ruler: bool
+            if `True`, add a ruler tool to the Matplotlib toolbar.
+
+            .. warning::
+                still experimental in 0.9.30 ! Try it, feedback welcome !
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
@@ -1578,6 +1585,18 @@ class Spectrum(object):
             n_sliders += 1
 
         plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
+
+        # Add plotting tools
+        # ... Add cursor
+        try:
+            fig.cursor
+            # if already exist, do not add again
+        except AttributeError:
+            fig.cursor = Cursor(fig.gca(), useblit=True, color="r", lw=1, alpha=0.2)
+
+        # ... Add Ruler
+        if show_ruler:
+            add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
         plt.show()
 
