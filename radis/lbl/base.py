@@ -2052,6 +2052,7 @@ class BaseFactory(DatabankLoader):
         self.profiler.start("calc_eq_population", 2)
         #            printg('> Calculating equilibrium populations')
 
+        # get Qgas values in the form of a dictionary
         Qgas = self.get_Qgas(df1, Tgas)
 
         # Calculate degeneracies
@@ -2073,6 +2074,7 @@ class BaseFactory(DatabankLoader):
 
         # multiple-isotopes in database
 
+        # extract Qgas in the required form from the dictionary
         Q_req = self.getQ_from_dict(df1, Qgas)
 
         df1["nu"] = df1.gu.values * exp(-hc_k * df1.Eu.values / Tgas) / Q_req
@@ -2085,9 +2087,25 @@ class BaseFactory(DatabankLoader):
 
     def getQ_from_dict(self, df, Qgas):
 
+        """Returns the required value of Qgas for calculation of linestrength
+        from Qgas dictionary
+
+        Parameters
+        ----------
+        df: dataframe
+        Qgas: dictionary that contais Qgas values of various isotopes
+
+        Returns
+        -------
+        The required value of Qgas either in the form of just a float value or array-like value
+
+        """
+
+        # multiple isotopes
         if "iso" in df:
             Q_req = df["iso"].map(Qgas)
 
+        # single isotopes
         else:
             Qgas = list(Qgas.values())
             Q_req = Qgas[0]
@@ -2095,6 +2113,20 @@ class BaseFactory(DatabankLoader):
         return Q_req
 
     def get_Qgas(self, df, Tgas):
+
+        """Aggregates the values of Qgas
+
+        Parameters
+        ----------
+        df: dataframe
+        Tgas: float (K)
+            gas temperature
+
+        Returns
+        -------
+        Returns Qgas as a dictionary with isotope values as its keys
+
+        """
 
         Qgas = {}
 
