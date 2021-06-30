@@ -917,6 +917,8 @@ class SpectrumFactory(BandFactory):
                 ].unique()  # get all the molecules in the dataframe, should ideally be 1 element for GPU
                 mol_id = id_set[0]
 
+                assert len(id_set) == 1  # make sure there is only one molecule
+
             else:
                 mol_id = self.df0.attrs["id"]
             molecule = get_molecule(mol_id)
