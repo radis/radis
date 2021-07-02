@@ -3247,7 +3247,6 @@ class BaseFactory(DatabankLoader):
 
         # Check presence of attributes
         try:
-            self.df1.molar_mass
             self.df1.Ia
         except AttributeError as err:
             raise AttributeError(

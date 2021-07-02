@@ -1538,7 +1538,6 @@ class DatabankLoader(object):
         # Check metadata ('molar_mass' and 'Ia' are either columns either
         # metadata. They can be lost when transfering object.)
         try:
-            self.df0.molar_mass
             self.df0.Ia
         except AttributeError as err:
             raise AttributeError(
@@ -2095,7 +2094,6 @@ class DatabankLoader(object):
             if len(iso_set) == 1:
                 params = molpar.df.loc[(id, iso_set[0])]  # fetch all table directly
                 df.Ia = params.abundance  # attribute, not column
-                df.molar_mass = params.mol_mass  # attribute, not column
             #                # add in metadata so they follow when dataframe is copied/serialized
             #                for k in ['Ia', 'molar_mass']:
             #                    assert k not in df.columns
@@ -2118,7 +2116,6 @@ class DatabankLoader(object):
                         molarmass_arr[iso] = params.mol_mass
 
                 df["Ia"] = Ia_arr.take(df.iso)
-                df["molar_mass"] = molarmass_arr.take(df.iso)
 
         elif len(id_set) == 0:
 
