@@ -454,10 +454,10 @@ def load_spec(file, binary=True):  # , return_binary_status=False):
     def _load(binary):
         if not binary:
             with open(file, "r") as f:
-                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=False)
         else:
             with open(file, "rb") as f:
-                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=False)
         return sload
 
     # first try to open with given binary info
