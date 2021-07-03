@@ -25,7 +25,6 @@ PRIVATE METHODS - DATABASE LOADING
 - :py:meth:`radis.lbl.loader.DatabankLoader._retrieve_from_database`
 - :py:meth:`radis.lbl.loader.DatabankLoader._build_partition_function_interpolator`
 - :py:meth:`radis.lbl.loader.DatabankLoader._build_partition_function_calculator`
-- :py:meth:`radis.lbl.loader.DatabankLoader._fetch_molecular_parameters`
 Most methods are written in inherited class with the following inheritance scheme:
 :py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
@@ -55,7 +54,6 @@ import pandas as pd
 
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
-from radis.db.molparam import MolParams
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.hdf5 import hdf2df
@@ -902,9 +900,6 @@ class DatabankLoader(object):
                 replace_PQR_with_m101(df)
             df = drop_object_format_columns(df, verbose=self.verbose)
 
-        # Complete database with molecular parameters
-        self._fetch_molecular_parameters(df)
-
         self.df0 = df
         self.misc.total_lines = len(df)  # will be stored in Spectrum metadata
 
@@ -1391,7 +1386,6 @@ class DatabankLoader(object):
     # _retrieve_from_database
     # _get_partition_function_interpolator
     # _get_partition_function_calculator
-    # _fetch_molecular_parameters
     #
     # =========================================================================
 
@@ -1534,21 +1528,6 @@ class DatabankLoader(object):
                     )
                 )
                 self.df0[k] = self.df0[k].astype(np.int64)
-
-        # Check metadata ('molar_mass' and 'Ia' are either columns either
-        # metadata. They can be lost when transfering object.)
-        try:
-            self.df0.Ia
-        except AttributeError as err:
-            raise AttributeError(
-                str(err)
-                + " : attribute missing in line "
-                + "dataframe sf.df0. Make sure you didnt overwrite the line "
-                + "dataframe sf.df0 manually. If so, replace any "
-                + "`sf.df0=...` line with inplace operations such as "
-                + "`sf.df0.drop(..., inplace=True)`. See "
-                + "https://stackoverflow.com/q/33103988"
-            )
 
     def _load_databank(
         self,
@@ -1813,16 +1792,6 @@ class DatabankLoader(object):
                     "OutOfRangeLinesWarning",
                 )
 
-        # Complete database with molecular parameters
-        try:
-            self._fetch_molecular_parameters(df)
-        except KeyError as err:
-            raise KeyError(
-                "Isotope {} parameters not found, check https://github.com/radis/radis/blob/develop/radis/db/molparam.txt".format(
-                    err
-                )
-            ) from err
-
         if self.verbose >= 2:
             printg(
                 "Loaded databank in {0:.1f}s ({1:,d} lines)".format(
@@ -2047,91 +2016,6 @@ class DatabankLoader(object):
             # other formats ?
 
         return parsum
-
-    def _fetch_molecular_parameters(self, df):
-        """Fetch molecular parameters (``molar_mass``, ``abundance``)  from
-        Molecular Parameter database.
-        Parameters
-        ----------
-        df: pandas Dataframe
-            line database with keys ``molar_mass``, ``abundance``
-        Returns
-        -------
-        None:
-            updates dataframe ``df`` directly
-        See Also
-        --------
-        :class:`~radis.db.molparam.MolParams`
-        """
-
-        # order database
-        # TODO: replace with attributes of Isotope>ElectronicState objects
-        molpar = MolParams()
-
-        if self.verbose >= 2:
-            printg("... Fetching molecular parameters for all transitions")
-            t0 = time()
-
-        # prefill:
-
-        # Use the fact that isotopes are int, and thus can be considered as
-        # index in an array.
-        # ... in the following we exploit this to use the np.take function,
-        # ... which is amazingly fast
-        # ... Read https://stackoverflow.com/a/51388828/5622825 to understand more
-        # ... @dev: old versions: see radis <= 0.9.19
-        id_set = df.id.unique()
-
-        if len(id_set) == 1:
-            id = list(id_set)[0]
-            molecule = get_molecule(id)
-            iso_set = self._get_isotope_list(molecule)  # df.iso.unique()
-
-            # Shortcut if only 1 molecule & 1 isotope. We attribute molar_mass & abundance
-            # as attributes of the line database, instead of columns. Much
-            # faster!
-
-            if len(iso_set) == 1:
-                params = molpar.df.loc[(id, iso_set[0])]  # fetch all table directly
-                df.Ia = params.abundance  # attribute, not column
-            #                # add in metadata so they follow when dataframe is copied/serialized
-            #                for k in ['Ia', 'molar_mass']:
-            #                    assert k not in df.columns
-            #                    if k not in df._metadata:
-            #                        df._metadata.append(k)
-
-            # Else, parse for all isotopes. Use np.take that is very fast
-
-            else:
-
-                iso_arr = list(range(max(iso_set) + 1))
-
-                Ia_arr = np.empty_like(iso_arr, dtype=np.float64)
-                molarmass_arr = np.empty_like(iso_arr, dtype=np.float64)
-                for iso in iso_arr:
-                    if iso in iso_set:
-                        params = molpar.df.loc[(id, iso)]  # fetch all table directly
-                        # ... the trick below is that iso is used as index in the array
-                        Ia_arr[iso] = params.abundance
-                        molarmass_arr[iso] = params.mol_mass
-
-                df["Ia"] = Ia_arr.take(df.iso)
-
-        elif len(id_set) == 0:
-
-            raise ValueError("No molecule defined in this database.")
-
-        else:
-            raise NotImplementedError(
-                ">1 molecule. Can use the np.take trick. Need to "
-                + "fallback to pandas.map(dict)"
-            )
-            # TODO: Implement. Read https://stackoverflow.com/a/51388828/5622825 to understand more
-
-        if self.verbose >= 2:
-            printg("... Fetched molecular params in {0:.2f}s".format(time() - t0))
-
-        return
 
     def get_partition_function_interpolator(self, molecule, isotope, elec_state):
         """Retrieve Partition Function Interpolator.

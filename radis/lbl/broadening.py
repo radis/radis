@@ -1049,12 +1049,9 @@ class BroadenFactory(BaseFactory):
             - ``hwhm_gauss``
         """
 
-        print(df.head())
-        print(df.attrs)
         molar_mass = get_molar_mass(df)
 
         # Calculate broadening HWHM
-        print("it is here")
         wg = doppler_broadening_HWHM(df.wav, molar_mass, Tgas)
         # Note @EP: should we use the pressure-shifted wavenumber instead of df.wav?
 
@@ -2867,7 +2864,7 @@ def get_molar_mass(df):
         iso = df.attrs["iso"]
         molar_mass = molpar.get(id, iso, "mol_mass")
 
-        req = [molar_mass] * len(df.index)
+        req = molar_mass
 
     return req
 
