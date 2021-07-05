@@ -527,7 +527,7 @@ class SpectrumFactory(BandFactory):
         self.SpecDatabase = None  # the database to store spectra. Not to be confused
         # with the databank where lines are stored
         self.database = None  # path to previous database
-
+        self.version = get_version()
         # Warnings
         # --------
 
@@ -747,7 +747,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
-                "radis_version": get_version(),
+                "radis_version": self.version
             }
         )
         conditions.update(
@@ -1392,7 +1392,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
-                "radis_version": get_version(),
+                "radis_version": self.version,
             }
         )
         conditions.update(
