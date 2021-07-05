@@ -10,6 +10,12 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
 
+# TODO : also add auto conversino test
+#   from radis.io.hitemp import fetch_hitemp
+#   fetch_hitemp("OH", engine="pytables")       #  (make sure it doesn't exist?)
+#   import radis; radis.AUTO_UPDATE_DATABASE = True
+#   fetch_hitemp("OH")   #  auto-converts to HDF5
+
 import os
 import re
 import urllib.request
@@ -349,7 +355,7 @@ def fetch_hitemp(
                 )
 
             with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
-                # TODO: add H5PY / Vaex building of database
+                # TODO: add H5PY / Vaex building of database HERE
 
                 for nbytes in iter(lambda: gfile.readinto(b), 0):
 
@@ -398,7 +404,7 @@ def fetch_hitemp(
 
     url_store = urlnames[0] if len(urlnames) == 1 else urlnames
     with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
-        # TODO: add H5PY / Vaex building of database
+        # TODO: add H5PY / Vaex building of database HERE
 
         f.get_storer("df").attrs.metadata = {
             "wavenumber_min": wmin,
@@ -411,7 +417,7 @@ def fetch_hitemp(
     # Done: add final checks
     # ... check on the created file that all lines are there :
     with pd.HDFStore(local_file, "r") as store:
-        # TODO: add H5PY / Vaex building of database
+        # TODO: add H5PY / Vaex building of database  HERE
         nrows = store.get_storer("df").nrows
         assert nrows == Nlines
         if nrows != Ntotal_lines_expected:
