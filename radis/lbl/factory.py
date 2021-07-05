@@ -83,7 +83,7 @@ import numpy as np
 from numpy import arange, exp
 from scipy.constants import N_A, c, k, pi
 
-from radis import get_version
+from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
@@ -527,7 +527,6 @@ class SpectrumFactory(BandFactory):
         self.SpecDatabase = None  # the database to store spectra. Not to be confused
         # with the databank where lines are stored
         self.database = None  # path to previous database
-        self.version = get_version()
         # Warnings
         # --------
 
@@ -747,7 +746,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
-                "radis_version": self.version
+                "radis_version": version
             }
         )
         conditions.update(
@@ -1065,7 +1064,7 @@ class SpectrumFactory(BandFactory):
                 ),
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
-                "radis_version": get_version(),
+                "radis_version": version,
             }
         )
         conditions.update(
@@ -1392,7 +1391,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
-                "radis_version": self.version,
+                "radis_version": version,
             }
         )
         conditions.update(
