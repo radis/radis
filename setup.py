@@ -259,6 +259,8 @@ def run_setup(with_binary):
             "pytest",  # to run test suite
             "joblib",  # for parallel loading of SpecDatabase
             "numba",  # just-in-time compiler
+            "vaex",  # HDF5
+            "h5py",  # HDF5
         ],
         extras_require={
             "dev": [

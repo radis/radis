@@ -99,6 +99,7 @@ the default one.
 
 # %% Global constants
 from .params import (
+    AUTO_UPDATE_DATABASE,
     AUTO_UPDATE_SPEC,
     DEBUG_MODE,
     GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD,

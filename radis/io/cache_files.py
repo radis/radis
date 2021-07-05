@@ -32,6 +32,7 @@ import os
 from os.path import exists, splitext
 from warnings import warn
 
+import h5py
 import pandas as pd
 from packaging.version import parse
 
@@ -316,6 +317,7 @@ def check_not_deprecated(
     metadata_keys_contain=[],
     current_version=None,
     last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+    engine="auto",
 ):
     """Make sure cache file is not deprecated: checks that ``metadata`` is the
     same, and that the version under which the file was generated is valid.
@@ -343,27 +345,30 @@ def check_not_deprecated(
         Default :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
         (useful parameter to force regeneration of certain cache files after a
          breaking change in a new version)
+    engine: ``'h5py'``, ``'pytables'``, ``'vaex'``, ``'auto'``
+        which HDF5 library to use. If ``'auto'``, try to guess. Note: ``'vaex'``
+        uses ``'h5py'`` compatible HDF5.
     """
 
-    # # Get attributes (metadata+version)
-    with pd.HDFStore(file, mode="r") as store:
-        # Errors due to old files generated with h5py. Remove after 1.0
-        try:
+    if engine == "auto":
+        # See if it looks like PyTables
+        with pd.HDFStore(file, mode="r") as store:
+            try:
+                store.get_storer("df")
+            except KeyError:
+                engine = "h5py"
+            else:
+                engine = "pytables"
+
+    # Get metadata :
+    if engine == "pytables":
+        with pd.HDFStore(file, mode="r") as store:
             file_metadata = store.get_storer("df").attrs.metadata
-        except AttributeError as err:
-            if "Attribute 'metadata' does not exist in node: '/df'" in str(err):
-                raise DeprecatedFileWarning(
-                    "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file {0}".format(
-                        file
-                    )
-                ) from err
-        except TypeError as err:
-            if "cannot properly create the storer" in str(err):
-                raise DeprecatedFileWarning(
-                    "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file {0}".format(
-                        file
-                    )
-                ) from err
+    elif engine in ["h5py", "vaex"]:
+        with h5py.File(file, "r") as hf:
+            file_metadata = dict(hf.attrs)
+    else:
+        raise NotImplementedError
 
     # Raise an error if version is not found
     try:

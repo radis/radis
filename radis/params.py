@@ -42,6 +42,27 @@ See Also
 :py:func:`~radis.tools.database._update_to_latest_format`
 """
 
+AUTO_UPDATE_DATABASE = False
+"""bool: experimental feature
+used to autoupdate .h5 files to the latest format, by simply saving
+them again once they're loaded and fixed.
+Warning! Better have a copy of your files before that, or a way to regenerate
+them.
+
+Examples
+--------
+
+Add to the top of your script (once is enough!)::
+
+    import radis
+    radis.AUTO_UPDATE_DATABASE = True
+
+See Also
+--------
+:py:func:`~radis.io.hdf5.hdf2df`
+"""
+
+
 OLDEST_COMPATIBLE_VERSION = "0.9.1"
 """str: forces to regenerate cache files that were created in a previous version
 
