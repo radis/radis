@@ -1128,13 +1128,18 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         print("... sorting lines by vibrational bands")
 
     # Calculate bands:
-    id = list(pd.unique(df["id"]))
-    if len(id) > 1:
-        raise ValueError(
-            "Cant calculate vibrational bands for multiple " + "molecules yet"
-        )  # although it's an easy fix. Just
-        # groupby id
-    molecule = get_molecule(id[0])
+    if "id" in df:
+        id = list(pd.unique(df["id"]))
+        if len(id) > 1:
+            raise ValueError(
+                "Cant calculate vibrational bands for multiple " + "molecules yet"
+            )  # although it's an easy fix. Just
+            # groupby id
+        molecule = get_molecule(id[0])
+
+    else:
+        id = df.attrs["id"]
+        molecule = get_molecule(id)
 
     if molecule == "CO2":
 

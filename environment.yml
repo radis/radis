@@ -4,14 +4,14 @@ channels:
 - conda-forge
 - astropy
 dependencies:
-- python=3.6
+- python=3.8
 - numpy
 - scipy>=1.4.0
 - matplotlib
 - cython
 - pandas>=1.0.5
-- plotly
-- numba
+- pytables  # for pandas to HDF5 export
+- plotly    # used in line-survey
 - astropy  # Unit aware calculations
 - plotly>=2.5.1  # for line survey HTML output
 - termcolor  # terminal colors
@@ -24,7 +24,7 @@ dependencies:
 - pip
 - pip:
   - publib>=0.3.2  # Plotting styles for Matplotlib
-  - hitran-api
+  - hitran-api     # HAPI, used to access TIPS partition functions
   - json-tricks>=3.15.0  # to deal with non jsonable formats
   - mpldatacursor
   - tables  # for pandas to HDF5 export

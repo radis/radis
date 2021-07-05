@@ -454,10 +454,10 @@ def load_spec(file, binary=True):  # , return_binary_status=False):
     def _load(binary):
         if not binary:
             with open(file, "r") as f:
-                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=False)
         else:
             with open(file, "rb") as f:
-                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=False)
         return sload
 
     # first try to open with given binary info
@@ -1420,8 +1420,8 @@ class SpecList(object):
                         print(sys.exc_info())
                         raise TypeError(
                             "An error occured (see above) when calculating "
-                            + "(dg[{0}]-{1}). Example: ".format(k, v)
-                            + "({0} - {1}). ".format(dg[k].iloc[0], v)
+                            + f"(dg[{k}] - {v}). Example: "
+                            + f"({dg[k].iloc[0]} - {v}). "
                             + "Check that your requested conditions match "
                             + "the database format"
                         ) from err2
@@ -1453,10 +1453,10 @@ class SpecList(object):
             if "mole_fraction" in kwconditions:
                 sout.rescale_mole_fraction(kwconditions["mole_fraction"])
 
-        if verbose:
+        if verbose > 1:
             print(
                 (
-                    "------- \t"
+                    "{:^7} \t".format(self.df.molecule[0])
                     + "\t".join(["{0}".format(k) for k in kwconditions.keys()])
                 )
             )
@@ -1730,6 +1730,101 @@ class SpecList(object):
 
 
 class SpecDatabase(SpecList):
+    """A Spectrum Database class to manage them all.
+
+    It basically manages a list of Spectrum JSON files, adding a Pandas
+    dataframe structure on top to serve as an efficient index to visualize
+    the spectra input conditions, and slice through the Dataframe with
+    easy queries
+
+    Similar to :class:`~radis.tools.database.SpecList`, but associated and
+    synchronized with a folder
+
+    Parameters
+    ----------
+    path: str
+        a folder to initialize the database
+    filt: str
+        only consider files ending with ``filt``. Default ``.spec``
+    binary: boolean
+        if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
+        try as binary file anyway. Default ``False``.
+    lazy_loading: bool``
+        If ``True``, load only the data from the summary csv file and the spectra will
+        be loaded when accessed by the get functions. If ``False``, load all
+        the spectrum files. If ``True`` and the summary .csv file does not exist,
+        load all spectra
+
+    Other Parameters
+    ----------------
+    *input for :class:`~joblib.parallel.Parallel` loading of database*
+
+    nJobs: int
+        Number of processors to use to load a database (usefull for big
+        databases). BE CAREFULL, no check is done on processor use prior
+        to the execution ! Default ``-2``: use all but 1 processors.
+        Use ``1`` for single processor.
+    batch_size: int or ``'auto'``
+        The number of atomic tasks to dispatch at once to each
+        worker. When individual evaluations are very fast, dispatching
+        calls to workers can be slower than sequential computation because
+        of the overhead. Batching fast computations together can mitigate
+        this. Default: ``'auto'``
+
+    More information in :class:`joblib.parallel.Parallel`
+
+    Examples
+    --------
+
+    ::
+
+        >>> db = SpecDatabase(r"path/to/database")     # create or loads database
+
+        >>> db.update()  # in case something changed
+        >>> db.see(['Tvib', 'Trot'])   # nice print in console
+
+        >>> s = db.get('Tvib==3000')[0]  # get a Spectrum back
+        >>> db.add(s)  # update database (and raise error because duplicate!)
+
+    Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to
+    automatically look-up and update a database when spectra are calculated.
+
+    The function to auto retrieve a Spectrum from database on calculation
+    time is a method of DatabankLoader class
+
+    You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
+    of the website.
+
+    .. notes:
+        Database interaction is based on Pandas query functions. As such, it
+        requires all conditions to be either float, string, or boolean. List
+        won't work!
+
+
+    See Also
+    --------
+    :func:`~radis.tools.database.load_spec`,
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+
+    Methods to retrieve objects:
+
+    :meth:`~radis.tools.database.SpecList.get`,
+    :meth:`~radis.tools.database.SpecList.get_closest`,
+    :meth:`~radis.tools.database.SpecList.get_unique`,
+
+    Methods to manipulate the SpecDatabase:
+
+    :meth:`~radis.tools.database.SpecList.see`,
+    :meth:`~radis.tools.database.SpecDatabase.update`,
+    :meth:`~radis.tools.database.SpecDatabase.add`,
+    :meth:`~radis.tools.database.SpecDatabase.compress_to`,
+    :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
+
+    Compare another Spectrum to all spectra in the database:
+
+    :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`,
+    """
+
     def __init__(
         self,
         path=".",
@@ -1742,100 +1837,6 @@ class SpecDatabase(SpecList):
         batch_size="auto",
         lazy_loading=True,
     ):
-        """A Spectrum Database class to manage them all.
-
-        It basically manages a list of Spectrum JSON files, adding a Pandas
-        dataframe structure on top to serve as an efficient index to visualize
-        the spectra input conditions, and slice through the Dataframe with
-        easy queries
-
-        Similar to :class:`~radis.tools.database.SpecList`, but associated and
-        synchronized with a folder
-
-        Parameters
-        ----------
-        path: str
-            a folder to initialize the database
-        filt: str
-            only consider files ending with ``filt``. Default ``.spec``
-        binary: boolean
-            if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
-            try as binary file anyway. Default ``False``
-        lazy_loading: bool``
-            If ``True``, load only the data from the summary csv file and the spectra will
-            be loaded when accessed by the get functions. If ``False``, load all
-            the spectrum files. If ``True`` and the summary .csv file does not exist,
-            load all spectra
-
-        Other Parameters
-        ----------------
-        *input for :class:`~joblib.parallel.Parallel` loading of database*
-
-        nJobs: int
-            Number of processors to use to load a database (usefull for big
-            databases). BE CAREFULL, no check is done on processor use prior
-            to the execution ! Default ``-2``: use all but 1 processors.
-            Use ``1`` for single processor.
-        batch_size: int or ``'auto'``
-            The number of atomic tasks to dispatch at once to each
-            worker. When individual evaluations are very fast, dispatching
-            calls to workers can be slower than sequential computation because
-            of the overhead. Batching fast computations together can mitigate
-            this. Default: ``'auto'``
-
-        More information in :class:`joblib.parallel.Parallel`
-
-        Examples
-        --------
-
-        ::
-
-            >>> db = SpecDatabase(r"path/to/database")     # create or loads database
-
-            >>> db.update()  # in case something changed
-            >>> db.see(['Tvib', 'Trot'])   # nice print in console
-
-            >>> s = db.get('Tvib==3000')[0]  # get a Spectrum back
-            >>> db.add(s)  # update database (and raise error because duplicate!)
-
-        Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to
-        automatically look-up and update a database when spectra are calculated.
-
-        The function to auto retrieve a Spectrum from database on calculation
-        time is a method of DatabankLoader class
-
-        You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
-        of the website.
-
-        .. notes:
-            Database interaction is based on Pandas query functions. As such, it
-            requires all conditions to be either float, string, or boolean. List
-            won't work!
-
-
-        See Also
-        --------
-        :func:`~radis.tools.database.load_spec`,
-        :meth:`~radis.spectrum.spectrum.Spectrum.store`
-
-        Methods to retrieve objects:
-
-        :meth:`~radis.tools.database.SpecList.get`,
-        :meth:`~radis.tools.database.SpecList.get_closest`,
-        :meth:`~radis.tools.database.SpecList.get_unique`,
-
-        Methods to manipulate the SpecDatabase:
-
-        :meth:`~radis.tools.database.SpecList.see`,
-        :meth:`~radis.tools.database.SpecDatabase.update`,
-        :meth:`~radis.tools.database.SpecDatabase.add`,
-        :meth:`~radis.tools.database.SpecDatabase.compress_to`,
-        :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
-
-        Compare another Spectrum to all spectra in the database:
-
-        :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`,
-        """
         # TODO @devs: generate a SpecDatabase from a dict.
         # use the key of the dict insted of the file.
 
@@ -2289,14 +2290,16 @@ class SpecDatabase(SpecList):
                     + "define which residual to use with, for instance: "
                     + "`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)"
                 )
-            residual = lambda s_exp, s, normalize: get_residual(
-                s_exp,
-                s,
-                var=s_exp.get_vars()[0],
-                ignore_nan=True,
-                normalize=normalize,
-                normalize_how=normalize_how,
-            )
+
+            def residual(s_exp, s, normalize):
+                return get_residual(
+                    s_exp,
+                    s,
+                    var=s_exp.get_vars()[0],
+                    ignore_nan=True,
+                    normalize=normalize,
+                    normalize_how=normalize_how,
+                )
 
         kwconditions.update({"inplace": True})  # dont copy Spectrum to be faster
         spectra = self.get(conditions=conditions, **kwconditions)
@@ -2369,7 +2372,11 @@ class SpecDatabase(SpecList):
 
         out = s.get_conditions().copy()
 
-        # Add filename, and a link to the Spectrum object itself
+        # Add filename, name and a link to the Spectrum object itself
+        if s.name == None:
+            out["name"] = s.get_name()
+        else:
+            out["name"] = s.name
         out.update({"file": basename(file), "Spectrum": s})
         out["last_modified"] = os.path.getmtime(file)
 
@@ -2437,7 +2444,7 @@ def read_conditions_file(path):
 
     # if only "1" in isotopes they are read as numbers and later get() function fails.
     if "isotope" in df:
-        df["isotope"] = df["isotope"].astype(str).str.replace(".0", "")
+        df["isotope"] = df["isotope"].astype(str).str.replace(".0", "", regex=True)
 
     df["Spectrum"] = [None] * len(df["file"])
 

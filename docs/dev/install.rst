@@ -5,7 +5,7 @@ Install
 
 You can either install RADIS from `pip`, the Python package manager. But if
 you want to access the latest features, or modify the code and contribute,
-we suggest that you Clone or Fork the source code from `GitHub <https://github.com/radis/radis>`_.
+we suggest that you Fork the source code from `GitHub <https://github.com/radis/radis>`_.
 
 **Use-only version** : cant modify the code
 
@@ -39,6 +39,20 @@ In a terminal, run::
 
 To make sure the install worked, run the :ref:`first example <label_first_example>`
 from the Quick Start page. Then, you're all set.
+
+
+
+For a best experience, it is recommended to install Radis on an Anaconda Python distribution, in an
+isolated environment. You can create a radis environment with all dependencies with::
+
+    cd radis
+    conda env create --file environment.yml
+
+Then install radis in the `radis` environment::
+
+    conda activate radis
+    pip install -e .
+
 
 
 Test your changes
