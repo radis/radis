@@ -405,20 +405,21 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             else:
                 raise NotImplementedError
 
-            # If overpopulation, first check all levels exist
-            levels = df.viblvl.unique()
-            for viblvl in overpopulation.keys():
-                if not viblvl in levels:
-                    raise ValueError(
-                        "Level {0} not in energy levels database".format(viblvl)
-                    )
-                    # could be a simple warning too
-            # Add overpopulations (so they are taken into account in the partition function)
-            for viblvl, ov in overpopulation.items():
-                if ov != 1:
-                    df.loc[df.viblvl == viblvl, "nvibQvib"] *= ov
-                    # TODO: add warning if empty? I dont know how to do it without
-                    # an extra lookup though.
+            if overpopulation != {}:
+                # If overpopulation, first check all levels exist
+                levels = df.viblvl.unique()
+                for viblvl in overpopulation.keys():
+                    if not viblvl in levels:
+                        raise ValueError(
+                            "Level {0} not in energy levels database".format(viblvl)
+                        )
+                        # could be a simple warning too
+                # Add overpopulations (so they are taken into account in the partition function)
+                for viblvl, ov in overpopulation.items():
+                    if ov != 1:
+                        df.loc[df.viblvl == viblvl, "nvibQvib"] *= ov
+                        # TODO: add warning if empty? I dont know how to do it without
+                        # an extra lookup though.
 
             # Calculate sum of levels
             nQ = df.nvibQvib * df.nrotQrot
