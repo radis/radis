@@ -152,6 +152,7 @@ def get_version(verbose=False, add_git_number=True):
 
 
 __version__ = get_version(add_git_number=False)
+version = get_version() #complete version including commit number
 
 
 from .db import *  # database of molecules
