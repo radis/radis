@@ -2023,9 +2023,7 @@ class BaseFactory(DatabankLoader):
         if len(df0) == 0:
             return  # no lines
 
-        if self.verbose >= 2:
-            t0 = time()
-            printg("Scaling equilibrium linestrength")
+        self.profiler.start("scaled_S0", 2, "... Scaling equilibrium linestrength")
 
         # %% Load partition function values
 
@@ -2120,8 +2118,7 @@ class BaseFactory(DatabankLoader):
 
         assert "S0" in self.df0
 
-        if self.verbose >= 2:
-            printg("Calculated S0 in {0:.2f}s".format(time() - t0))
+        self.profiler.stop("scaled_S0", "Scaled equilibrium linestrength")
 
         return
 
