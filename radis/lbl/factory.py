@@ -739,14 +739,14 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": round(
-                    self.profiler.dict_time["spectrum_calc_before_obj"][0], 2
-                ),
+                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
+                    0
+                ],
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
-                "radis_version": version
+                "radis_version": version,
             }
         )
         conditions.update(
@@ -1059,9 +1059,9 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": round(
-                    self.profiler.dict_time["spectrum_calc_before_obj"], 2
-                ),
+                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
+                    0
+                ],
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
                 "radis_version": version,
@@ -1384,9 +1384,9 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": round(
-                    self.profiler.dict_time["spectrum_calc_before_obj"][0], 2
-                ),
+                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
+                    0
+                ],
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,

@@ -105,10 +105,16 @@ class Profiler(object):
             # Adding percentage of time taken by each key
             for i in range(1, upper_limit):
                 for j in verbose_distribution[i]:
-                    verbose_distribution[i][j].insert(
-                        0,
-                        verbose_distribution[i][j][0] / total_sum_verbose_wise[i] * 100,
-                    )
+                    try:
+                        verbose_distribution[i][j].insert(
+                            0,
+                            verbose_distribution[i][j][0]
+                            / total_sum_verbose_wise[i]
+                            * 100,
+                        )
+                    except ZeroDivisionError:
+                        # Adding percentage of time = 0
+                        verbose_distribution[i][j].insert(0, 0)
 
             # Sorting on the basis of value (Descending)
             for i in range(1, upper_limit):

@@ -1902,7 +1902,7 @@ class BaseFactory(DatabankLoader):
             return  # no lines
 
         self.profiler.start(
-            "scaled_eq_lineshift", 2, "... Scaling equilibrium linestrength"
+            "scaled_eq_linestrength", 2, "... Scaling equilibrium linestrength"
         )
 
         # %% Load partition function values
@@ -2011,7 +2011,7 @@ class BaseFactory(DatabankLoader):
 
         assert "S" in self.df1
 
-        self.profiler.stop("scaled_eq_lineshift", "Scaled equilibrium linestrength")
+        self.profiler.stop("scaled_eq_linestrength", "Scaled equilibrium linestrength")
 
         return
 
@@ -2924,7 +2924,7 @@ class BaseFactory(DatabankLoader):
         if len(df) == 0:
             return  # no lines in database, no need to go further
 
-        self.profiler.start("non_eq_linestrength", 2)
+        self.profiler.start("scaled_non_eq_linestrength", 2)
         #            printg('> scale nonequilibrium linestrength')
 
         try:
@@ -3022,7 +3022,9 @@ class BaseFactory(DatabankLoader):
             "corrected_population_se",
             "corrected for populations and stimulated emission",
         )
-        self.profiler.stop("non_eq_linestrength", "scaled nonequilibrium linestrength")
+        self.profiler.stop(
+            "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength"
+        )
 
         return  # df1 automatically updated
 
