@@ -62,7 +62,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 """
 from warnings import warn
 
-import matplotlib.pyplot as plt
 import numpy as np
 from numba import float64, jit
 from numpy import arange, exp
@@ -1504,6 +1503,7 @@ class BroadenFactory(BaseFactory):
         """
         # TODO #clean: make it a standalone function.
 
+        import matplotlib.pyplot as plt
         from publib import fix_style, set_style
 
         if pressure_atm is None:

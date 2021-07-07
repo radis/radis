@@ -23,8 +23,6 @@ from os.path import exists, isfile, join
 
 import numpy as np
 import pandas as pd
-from astropy import units as u
-from astroquery.hitran import Hitran
 
 import radis
 from radis.db.classes import get_molecule, get_molecule_identifier
@@ -79,6 +77,9 @@ def fetch_astroquery(
     :py:attr:`astroquery.query.BaseQuery.cache_location`
 
     """
+    from astropy import units as u
+    from astroquery.hitran import Hitran
+
     # Check input
     if not is_float(molecule):
         mol_id = get_molecule_identifier(molecule)

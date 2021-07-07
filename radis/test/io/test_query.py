@@ -10,7 +10,6 @@ from os.path import exists, join
 
 import pytest
 
-from radis.io.query import CACHE_FILE_NAME, Hitran, fetch_astroquery
 from radis.misc.warning import DeprecatedFileWarning
 
 
@@ -18,6 +17,8 @@ from radis.misc.warning import DeprecatedFileWarning
 @pytest.mark.needs_connection
 def test_fetch_astroquery(verbose=True, *args, **kwargs):
     """ Test astroquery """
+    from radis.io.query import fetch_astroquery
+
     df = fetch_astroquery("CO2", 1, 2200, 2400, verbose=verbose, cache=False)
 
     assert df.iloc[0].id == 2
@@ -30,6 +31,8 @@ def test_fetch_astroquery(verbose=True, *args, **kwargs):
 @pytest.mark.needs_connection
 def test_fetch_astroquery_empty(verbose=True, *args, **kwargs):
     """ Test astroquery: get a spectral range where there are no lines"""
+    from radis.io.query import fetch_astroquery
+
     df = fetch_astroquery(
         2, 1, 25000, 50000, verbose=verbose, cache=False
     )  # 200-400 nm
@@ -48,6 +51,9 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
     - Cache file is loaded.
     - Different metadata raises an error
     """
+    from astroquery.hitran import Hitran
+
+    from radis.io.query import CACHE_FILE_NAME, fetch_astroquery
 
     df = fetch_astroquery(
         "CO2",

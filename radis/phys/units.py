@@ -8,8 +8,6 @@
 
 import warnings
 
-import astropy.units as u
-
 
 def Unit(st, *args, **kwargs):
     """Radis evaluation of an unit, using :py:class:`~astropy.units.Unit`
@@ -28,6 +26,8 @@ def Unit(st, *args, **kwargs):
         a = 200 * u("mW/cm2/sr/nm")
         a += 0.1 * u("W/cm2/sr/nm")
     """
+
+    import astropy.units as u
 
     try:
         st = st.replace("µ", "u")
@@ -67,6 +67,8 @@ def conv2(quantity, fromunit, tounit):
     want to let the users choose another output unit
     """
 
+    import astropy.units as u
+
     try:
         a = quantity * Unit(fromunit)
         a = a.to(Unit(tounit))
@@ -87,6 +89,8 @@ def is_homogeneous(unit1, unit2):
     unit1, unit2: str
         units
     """
+
+    import astropy.units as u
 
     try:
         1 * Unit(unit1) + 1 * Unit(unit2)
@@ -330,6 +334,8 @@ def convert_universal(
     wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires
     a change of variable in the integral)
     """
+    import astropy.units as u
+
     Iunit0 = from_unit
     Iunit = to_unit
     try:

@@ -1,4 +1,10 @@
-import astropy.units as u
+# -*- coding: utf-8 -*-
+"""
+
+-------------------------------------------------------------------------------
+
+
+"""
 
 
 def convert_and_strip_units(quantity, output_unit=None, digit=10):
@@ -37,7 +43,12 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
     TypeError
         Raised when ``quantity`` is a astropy.units quantity and ``output_unit`` is ``None``.
     """
+
+    import astropy.units as u
+
     if isinstance(quantity, u.Quantity):
+        # TODO : make it possible to test if not adimensionned, before loading.
+        # This would allow not to have to load Astropy.units on start-up?
         if output_unit in (u.deg_C, u.imperial.deg_F, u.K):
             quantity = quantity.to_value(output_unit, equivalencies=u.temperature())
         elif isinstance(output_unit, (u.UnitBase, u.Quantity)):

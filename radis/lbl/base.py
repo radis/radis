@@ -68,7 +68,6 @@ Most methods are written in inherited class with the following inheritance schem
 
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from astropy import units as u
@@ -261,6 +260,8 @@ class BaseFactory(DatabankLoader):
             which feature to plot. Default ``'S'`` (scaled linestrength). Could also
             be ``'int'`` (reference linestrength intensity), ``'A'`` (Einstein coefficient)
         """
+        import matplotlib.pyplot as plt
+
         assert dataframe in ["df0", "df1"]
         plt.figure()
         df = getattr(self, dataframe)

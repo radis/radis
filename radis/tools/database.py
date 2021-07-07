@@ -64,7 +64,6 @@ from time import strftime
 from warnings import warn
 
 import json_tricks
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
@@ -905,6 +904,8 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
     :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
     """
 
+    import matplotlib.pyplot as plt
+
     if isinstance(file, str):
         s = load_spec(file)
     elif isinstance(file, Spectrum):
@@ -1636,6 +1637,8 @@ class SpecList(object):
         Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method
         """
 
+        import matplotlib.pyplot as plt
+
         fig = plt.figure(num=nfig)
         ax = fig.gca()
         for s in self:
@@ -1667,6 +1670,8 @@ class SpecList(object):
                                                   # procedure...
         """
         # %%
+
+        import matplotlib.pyplot as plt
 
         x = self.df[cond_x]
         y = self.df[cond_y]

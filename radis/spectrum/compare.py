@@ -26,11 +26,7 @@ Routine Listings
 
 from warnings import warn
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import gridspec
-from matplotlib.widgets import MultiCursor
-from publib import fix_style, set_style
 
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
@@ -688,6 +684,11 @@ def plot_diff(
     :func:`~radis.spectrum.compare.get_residual`,
     :meth:`~radis.spectrum.spectrum.compare_with`
     """
+
+    import matplotlib.pyplot as plt
+    from matplotlib import gridspec
+    from matplotlib.widgets import MultiCursor
+    from publib import fix_style, set_style
 
     if (not show) and (
         not save
