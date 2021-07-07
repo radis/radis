@@ -1692,6 +1692,9 @@ class BaseFactory(DatabankLoader):
             id = df.attrs["id"]
 
         iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
+
+        Qref_dict = {}
+
         if (("id" in df and len(id_set) == 1) or ("id" not in df and id)) and len(
             iso_set
         ) == 1:
@@ -1710,6 +1713,8 @@ class BaseFactory(DatabankLoader):
             )  # stored as attribute, not column
             assert "Qref" not in df.columns
 
+            Qref = df.Qref
+
         else:
 
             # normal method
@@ -1724,7 +1729,7 @@ class BaseFactory(DatabankLoader):
                 parsum = self.get_partition_function_calculator(
                     molecule, iso, state
                 )  # partition function
-                df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
+                Qref_dict[iso] = parsum.at(Tref, update_populations=False)
                 # ... note: do not update the populations here, so populations in the
                 # ... energy level list correspond to the one calculated for T and not Tref
 
@@ -1732,6 +1737,8 @@ class BaseFactory(DatabankLoader):
                     if "id" in df:
                         assert (df.loc[idx, "id"] == id).all()
                     assert (df.loc[idx, "iso"] == iso).all()
+
+            Qref = df["iso"].map(Qref_dict)
 
         # Get moment
         gl = df.gl
@@ -1741,7 +1748,6 @@ class BaseFactory(DatabankLoader):
         h = h_CGS  # erg.s
         c = c_CGS
         S = df.int  # reference linestrength
-        Qref = df.Qref
 
         weighted_trans_moment_sq = (
             (3 * h * c / 8 / pi ** 3)
@@ -1999,8 +2005,9 @@ class BaseFactory(DatabankLoader):
         if "iso" in df1:
             line_strength = df1.int * (df1["iso"].map(Qref_Qgas_ratio))
         else:
-            Qref_Qgas_ratio = list(Qref_Qgas_ratio.values())
-            line_strength = df1.int * Qref_Qgas_ratio[0]
+            assert len(Qref_Qgas_ratio) == 1
+            Qref_Qgas_ratio = list(Qref_Qgas_ratio.values())[0]
+            line_strength = df1.int * Qref_Qgas_ratio
         # ratio of Boltzman populations
         line_strength *= exp(-hc_k * df1.El * (1 / Tgas - 1 / Tref))
         # effect of stimulated emission
@@ -3009,8 +3016,9 @@ class BaseFactory(DatabankLoader):
                 df.gl * exp(-hc_k * df.El / Tref) / df["iso"].map(Qref_dict)
             )
         else:
-            Qref_dict = list(Qref_dict.values())
-            line_strength /= df.gl * exp(-hc_k * df.El / Tref) / Qref_dict[0]
+            assert len(Qref_dict) == 1
+            Qref = list(Qref_dict.values())[0]
+            line_strength /= df.gl * exp(-hc_k * df.El / Tref) / Qref
         line_strength *= nl
 
         # ... correct effect of stimulated emission
