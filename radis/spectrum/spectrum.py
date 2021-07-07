@@ -53,11 +53,8 @@ from os.path import basename
 from warnings import warn
 
 import astropy.units as u
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.widgets import Cursor
 from numpy import abs, diff
-from publib import fix_style, set_style
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import count_nans, evenly_distributed, nantrapz
@@ -1441,6 +1438,9 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
         """
 
+        import matplotlib.pyplot as plt
+        from publib import fix_style, set_style
+
         # Deprecated
         if "plot_medium" in kwargs:
             show_medium = kwargs.pop("plot_medium")
@@ -1568,6 +1568,8 @@ class Spectrum(object):
             fig.cursor
             # if already exist, do not add again
         except AttributeError:
+            from matplotlib.widgets import Cursor
+
             fig.cursor = Cursor(fig.gca(), useblit=True, color="r", lw=1, alpha=0.2)
 
         # ... Add Ruler
@@ -1783,6 +1785,8 @@ class Spectrum(object):
         kwargs: **dict
             are forwarded to the plot
         """
+        import matplotlib.pyplot as plt
+        from publib import fix_style, set_style
 
         # Check input, get defaults
         pops = self.populations

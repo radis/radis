@@ -6,17 +6,6 @@ Determine gas mixture composition under chemical equilibrium using CANTERA.
 
 """
 
-from radis.misc.utils import NotInstalled
-
-try:
-    import cantera as ct
-except:
-    ct = NotInstalled(
-        "cantera",
-        "Cantera is needed to calculate equilibrium mole fractions"
-        + ". Install with  `pip install cantera`",
-    )
-
 
 def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
     """Calculates chemical equilibrium mole fraction at temperature T, using
@@ -64,6 +53,14 @@ def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
 
     [CANTERA]_
     """
+
+    try:
+        import cantera as ct
+    except ImportError as err:
+        raise ImportError(
+            "Cantera is needed to calculate equilibrium mole fractions"
+            + ". Install with  `pip install cantera` or (better) `conda install -c cantera cantera`",
+        ) from err
 
     # %% Init Cantera
     g = ct.Solution("gri30.xml")

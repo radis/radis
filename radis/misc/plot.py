@@ -5,7 +5,6 @@ Created on Sat May  1 13:50:36 2021
 @author: erwan
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -39,6 +38,7 @@ def split_and_plot_by_parts(w, I, *args, **kwargs):
     ax.plot
     """
 
+    import matplotlib.pyplot as plt
     from publib.tools import keep_color
 
     # Get defaults

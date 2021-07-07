@@ -43,7 +43,6 @@ recenter_slit, crop_slit):
 
 from warnings import warn
 
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp
 from numpy import log as ln
@@ -1048,6 +1047,7 @@ def plot_slit(
 
     """
 
+    import matplotlib.pyplot as plt
     from publib import set_style
 
     set_style("origin")
