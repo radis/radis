@@ -746,7 +746,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
-                "radis_version": version
+                "radis_version": version,
             }
         )
         conditions.update(
