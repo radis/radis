@@ -3,11 +3,13 @@ name: radis-env
 channels:
 - conda-forge
 - astropy
+- cantera
 dependencies:
 - python=3.8
 - numpy
 - scipy>=1.4.0
 - matplotlib
+- cantera   # for chemical equilibrium computations
 - cython
 - pandas>=1.0.5
 - pytables  # for pandas to HDF5 export
