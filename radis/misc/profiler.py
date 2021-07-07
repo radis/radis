@@ -112,7 +112,7 @@ class Profiler(object):
                             / total_sum_verbose_wise[i]
                             * 100,
                         )
-                    except:
+                    except ZeroDivisionError:
                         # Adding percentage of time = 0
                         verbose_distribution[i][j].insert(0, 0)
 
