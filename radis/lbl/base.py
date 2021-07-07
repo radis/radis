@@ -1759,6 +1759,71 @@ class BaseFactory(DatabankLoader):
 
         return
 
+    def calc_reference_linestrength(self):
+        """ Calculate reference linestrength from Einstein coefficients"""
+
+        df = self.df0
+        Tref = self.input.Tref
+
+        self.profiler.start("calc_ref_linestrength", 2)
+
+        if "id" in df:
+            id_set = df.id.unique()
+            id = id_set[0]
+
+        else:
+            id = df.attrs["id"]
+
+        iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
+        if (("id" in df and len(id_set) == 1) or ("id" not in df and id)) and len(
+            iso_set
+        ) == 1:
+
+            # Shortcut if only 1 isotope. We attribute molar_mass & abundance
+            # as attributes of the line database, instead of columns. Much
+            # faster!
+
+            molecule = get_molecule(id)
+            state = self.input.state
+            parsum = self.get_partition_function_calculator(
+                molecule, iso_set[0], state
+            )  # partition function
+            df.Qref = parsum.at(
+                Tref, update_populations=False
+            )  # stored as attribute, not column
+            assert "Qref" not in df.columns
+
+        else:
+
+            # normal method
+            # still much faster than the groupby().apply() method (see radis<=0.9.19)
+            # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
+
+            molecule = get_molecule(id)
+
+            dgb = df.groupby(by=["iso"])
+            for (iso), idx in dgb.indices.items():
+                state = self.input.state
+                parsum = self.get_partition_function_calculator(
+                    molecule, iso, state
+                )  # partition function
+                df.at[idx, "Qref"] = parsum.at(Tref, update_populations=False)
+                # ... note: do not update the populations here, so populations in the
+                # ... energy level list correspond to the one calculated for T and not Tref
+
+                if radis.DEBUG_MODE:
+                    if "id" in df:
+                        assert (df.loc[idx, "id"] == id).all()
+                    assert (df.loc[idx, "iso"] == iso).all()
+
+        S0 = linestrength_from_Einstein(
+            A=df.A, gu=df.gu, El=df.El, Ia=df.Ia, nu=df.wav, Q=df.Qref, T=Tref
+        )
+
+        self.profiler.stop("calc_ref_linestrength", "Calculated reference linestrength")
+
+        return S0
+
     def calc_einstein_coefficients(self):
         """Calculate :math:`A_{ul}`, :math:`B_{lu}`, :math:`B_{ul}` Einstein coefficients from weighted
         transition moments squared :math:`R_s^2`.
@@ -3572,19 +3637,61 @@ def get_waverange(
     return wavenum_min, wavenum_max
 
 
+def linestrength_from_Einstein(A, gu, El, Ia, nu, Q, T):
+    """Calculate linestrength at temperature ``T`` from Einstein coefficients.
+
+    Parameters
+    ----------
+    A : float, s-1
+        Einstein emission coefficients
+    gu : int
+        upper state degeneracy
+    El : float, cm-1
+        lower state energy
+    Ia : float
+        isotope abundance
+    nu : cm-1
+        transition wavenumber
+    Q : float
+        partition function at temperature ``T``
+    T : float
+        temperature
+
+    Returns
+    -------
+    S : float
+        linestrength at temperature ``T``.
+
+    References
+    ----------
+
+    .. math::
+        S=\frac{A gu \operatorname{exp}\left(\frac{-hc_k El}{T}\right) \left(1-\operatorname{exp}\left(\frac{-hc_k \nu}{T}\right)\right)}{8\pi c_{CGS} {\nu}^2 Q}
+
+    Combine Eq.(A.5), (A.8) in [Rothman-1998]_
+
+
+    """
+
+    return (
+        A
+        * gu
+        * np.exp(-hc_k * El / T)
+        * (1 - np.exp(-hc_k * nu / T))
+        / (8 * np.pi * c_CGS * nu ** 2 * Q)
+    )
+
 def get_abundance(df):
 
     """Returns the abundance
 
     Parameters
     ----------
-
     df: dataframe
 
     Returns
     -------
-
-    The abundance of all the isotopes in the dataframe
+    dict: The abundance of all the isotopes in the dataframe
     """
 
     molpar = MolParams()
