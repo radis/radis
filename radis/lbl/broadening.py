@@ -802,20 +802,13 @@ class BroadenFactory(BaseFactory):
         # Init variables
         df = self.df1
 
-        try:
-            arr = list(self.df0.attrs.keys())
-
-            for k in arr:
-                df.attrs[k] = self.df0.attrs[k]
-
-        except:
-            isotope_set = list(self.input.isotope)
-            if len(isotope_set) == 1:
-                df.attrs["iso"] = int(isotope_set[0])
-            else:
-                df.attrs["iso"] = isotope_set
-            M = get_molecule_identifier(self.input.molecule)
-            df.attrs["id"] = M
+        isotope_set = list(self.input.isotope)
+        if len(isotope_set) == 1:
+            df.attrs["iso"] = int(isotope_set[0])
+        else:
+            df.attrs["iso"] = isotope_set
+        M = get_molecule_identifier(self.input.molecule)
+        df.attrs["id"] = M
 
         if len(df) == 0:
             return  # no lines
