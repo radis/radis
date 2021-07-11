@@ -380,6 +380,53 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         grot = df.grot
         # Calculate
 
+        from numpy import abs, isclose
+        from numba import jit
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from scipy.constants import h,c,k
+        c_cm = c * 100 #cm.s-1
+        from time import perf_counter
+        
+        @jit(nopython=True)
+        def partial_partition_sum_nargs(gvib_arr, Evib_arr, 
+                                        grot_arr, Erot_arr, 
+                                        Trot, Tvib, 
+                                        N=100000, rtol=0.003e-2):
+            """ same as `partial_sum_func_nargs` but with explicit parameters
+            to be able to Jit it"""
+            slast = 0
+            vib = gvib_arr[:N]*np.exp(-h*c_cm*Evib_arr[:N]/(k*Tvib)) 
+            rot = grot_arr[:N]*np.exp(-h*c_cm*Erot_arr[:N]/(k*Trot)) 
+            s = (rot * vib).sum()
+            i = N
+            while abs(slast - s)/s > rtol and i<=len(gvib_arr):
+                slast = s
+                vib_new = gvib_arr[i:i+N]*np.exp(-h*c_cm*Evib_arr[i:i+N]/(k*Tvib)) 
+                rot_new = grot_arr[i:i+N]*np.exp(-h*c_cm*Erot_arr[i:i+N]/(k*Trot)) 
+                s += (vib_new*rot_new).sum()
+                i += N
+                # print('after {}, {}'.format(slast, s))
+            # print(f"({i-N}/{len(gvib_arr)} points ({(i-N)/len(gvib_arr):.2%})")
+            return s
+                
+        t0 = perf_counter()
+        rtol = 1e-12 # 0.003e-2
+        Q_jitpart = partial_partition_sum_nargs(np.array(gvib), np.array(df.Evib), 
+                                                np.array(grot), np.array(df.Erot), 
+                                                Trot, Tvib,
+                                                N=1000, rtol=rtol)
+        print('First PARTSUMJIT (rtol {:%}) eval: {:.4f}s'.format(rtol, perf_counter() - t0))
+        
+        t0 = perf_counter()
+        rtol = 1e-15 # 0.003e-2
+        Q_jitpart = partial_partition_sum_nargs(np.array(gvib), np.array(df.Evib), 
+                                                np.array(grot), np.array(df.Erot), 
+                                                Trot, Tvib,
+                                                N=1000, rtol=rtol)
+        print('Second PARTSUMJIT (rtol {:%}) eval: {:.4f}s'.format(rtol, perf_counter() - t0))
+    
+        t0 = perf_counter()
         # ... mode: Trot, Tvib, + overpopulation
         if returnQvibQrot:
 
@@ -424,7 +471,10 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             # Calculate sum of levels
             nQ = df.nvibQvib * df.nrotQrot
             Q = nQ.sum()
+            print('classique eval: {:.4f}s'.format(perf_counter() - t0))
 
+            print(Q, Q_jitpart)
+            print("rtol = {}, ratio = {} %".format(rtol, Q_jitpart / Q))
             # Group by vibrational level, and get level-dependant
             # quantities such as vib degeneracy, Evib, etc.
             dgb = df.groupby(["viblvl"], as_index=True)
