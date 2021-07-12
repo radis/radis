@@ -2837,6 +2837,19 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
 
 def get_molar_mass(df):
 
+    """Returns molar mass
+
+    Parameters
+    ----------
+
+    df: dataframe
+
+    Returns
+    -------
+
+    The molar mass of all the isotopes in the dataframe
+    """
+
     molpar = MolParams()
 
     if "id" in df.columns:

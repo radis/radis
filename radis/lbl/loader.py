@@ -966,8 +966,6 @@ class DatabankLoader(object):
         - lines
         - partition function & format (tabulated or calculated)
         - (optional) energy levels, format
-        It also fetches molecular parameters (molar mass, abundance) for
-        all molecules in database
         Parameters
         ----------
         name: a section name specified in your ``~/radis.json``

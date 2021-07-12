@@ -3536,6 +3536,19 @@ def get_waverange(
 
 def get_abundance(df):
 
+    """Returns the abundance
+
+    Parameters
+    ----------
+
+    df: dataframe
+
+    Returns
+    -------
+
+    The abundance of all the isotopes in the dataframe
+    """
+
     molpar = MolParams()
 
     if "id" in df.columns:
