@@ -70,7 +70,19 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
         s_fast.get_integral("abscoeff"),
         rtol=1e-6,
     )
+    
+    
+    s_fast2 = sf.non_eq_spectrum(3000, 1500, fast_sum=True)
+    #we finish by one with the populations exported so that the next tests can run
+    s_slow = sf.non_eq_spectrum(3000, 1500, fast_sum=False) 
+    
+    b2 = np.isclose(
+        s_fast2.get_integral("abscoeff"),
+        s_slow.get_integral("abscoeff"),
+        rtol=1e-6,
+    )
     assert b1
+    assert b2
     
     # Compare with factory
     # Plot populations:
