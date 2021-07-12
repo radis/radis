@@ -2201,6 +2201,7 @@ class BaseFactory(DatabankLoader):
         vib_distribution="boltzmann",
         rot_distribution="boltzmann",
         overpopulation=None,
+        fast_sum = False
     ):
         """Calculate upper and lower state population for all active
         transitions, as well as all levels (through
@@ -2326,39 +2327,52 @@ class BaseFactory(DatabankLoader):
             molecule = get_molecule(id)
             state = self.input.state
             parsum = self.get_partition_function_calculator(molecule, iso, state)
-            Q, Qvib, dfQrot = parsum.at_noneq(
-                Tvib,
-                Trot,
-                vib_distribution=vib_distribution,
-                rot_distribution=rot_distribution,
-                overpopulation=overpopulation,
-                returnQvibQrot=True,
-                update_populations=self.misc.export_populations,
-            )
-            # ... make sure PartitionFunction above is calculated with the same
-            # ... temperatures, rovibrational distributions and overpopulations
-            # ... as the populations of active levels (somewhere below)
-            df.Qvib = Qvib
-            df.Q = Q
-            assert "Qvib" not in df.columns
-            assert "Q" not in df.columns
-
-            # reindexing to get a direct access to Qrot database
-            # create the lookup dictionary
-            # dfQrot index is already 'viblvl'
-            dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
-
-            dg = df.loc[:]
-
-            # Add lower state Qrot
-            dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-            df.loc[:, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
-            # Add upper state energy
-            dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-            df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
-
-            # ... note: the .map() version is about 3x faster than
-            # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
+            if fast_sum:
+                Q = parsum.at_noneq(
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
+                    returnQvibQrot=False,
+                    update_populations=self.misc.export_populations,
+                    fast_sum=fast_sum
+                )
+                df.Q = Q
+            else:
+                Q, Qvib, dfQrot = parsum.at_noneq(
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
+                    returnQvibQrot=True,
+                    update_populations=self.misc.export_populations,
+                )
+                # ... make sure PartitionFunction above is calculated with the same
+                # ... temperatures, rovibrational distributions and overpopulations
+                # ... as the populations of active levels (somewhere below)
+                df.Qvib = Qvib
+                df.Q = Q
+                assert "Qvib" not in df.columns
+                assert "Q" not in df.columns
+    
+                # reindexing to get a direct access to Qrot database
+                # create the lookup dictionary
+                # dfQrot index is already 'viblvl'
+                dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
+    
+                dg = df.loc[:]
+    
+                # Add lower state Qrot
+                dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+                df.loc[:, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                # Add upper state energy
+                dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+                df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+    
+                # ... note: the .map() version is about 3x faster than
+                # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
 
         else:
 
@@ -2468,46 +2482,72 @@ class BaseFactory(DatabankLoader):
         # %%
 
         #  Derive populations
-        # ... vibrational distribution
-        if vib_distribution == "boltzmann":
-            # equation generated with @pytexit.py2tex > see docstrings.
-            df["nu_vib"] = df.gvibu / df.Qvib * exp(-hc_k * df.Evibu / Tvib)
-            df["nl_vib"] = df.gvibl / df.Qvib * exp(-hc_k * df.Evibl / Tvib)
-        elif vib_distribution == "treanor":
-            df["nu_vib"] = (
-                df.gvibu
-                / df.Qvib
-                * exp(-hc_k * (df.Evibu_h / Tvib + df.Evibu_a / Trot))
-            )
-            df["nl_vib"] = (
-                df.gvibl
-                / df.Qvib
-                * exp(-hc_k * (df.Evibl_h / Tvib + df.Evibl_a / Trot))
-            )
-        else:
-            raise ValueError(
-                "Unknown vibrational distribution: {0}".format(vib_distribution)
-            )
+        if fast_sum:
+            # ... vibrational distribution
+            if vib_distribution == "boltzmann":
+                df["nu_vib_x_Qvib"] = df.gvibu * exp(-hc_k * df.Evibu / Tvib)
+                df["nl_vib_x_Qvib"] = df.gvibl * exp(-hc_k * df.Evibl / Tvib)
+            elif vib_distribution == "treanor":
+                raise NotImplementedError("TO DO!") #!!!TODO 
+            else:
+                raise ValueError(
+                    "Unknown vibrational distribution: {0}".format(vib_distribution)
+                )
+                
+            # ... Rotational distributions
+            if rot_distribution == "boltzmann":
+                df["nu_rot_x_Qrot"] = df.grotu * exp(-df.Erotu * hc_k / Trot)
+                df["nl_rot_x_Qrot"] = df.grotl * exp(-df.Erotl * hc_k / Trot)
+            else:
+                raise ValueError(
+                    "Unknown rotational distribution: {0}".format(rot_distribution)
+                )
+                
+            # ... Total
+            df["nu"] = df.nu_vib_x_Qvib * df.nu_rot_x_Qrot  / df.Q
+            df["nl"] = df.nl_vib_x_Qvib * df.nl_rot_x_Qrot  / df.Q
+            
+        else: #not fast_sum
+            # ... vibrational distribution
+            if vib_distribution == "boltzmann":
+                # equation generated with @pytexit.py2tex > see docstrings.
+                df["nu_vib"] = df.gvibu / df.Qvib * exp(-hc_k * df.Evibu / Tvib)
+                df["nl_vib"] = df.gvibl / df.Qvib * exp(-hc_k * df.Evibl / Tvib)
+            elif vib_distribution == "treanor":
+                df["nu_vib"] = (
+                    df.gvibu
+                    / df.Qvib
+                    * exp(-hc_k * (df.Evibu_h / Tvib + df.Evibu_a / Trot))
+                )
+                df["nl_vib"] = (
+                    df.gvibl
+                    / df.Qvib
+                    * exp(-hc_k * (df.Evibl_h / Tvib + df.Evibl_a / Trot))
+                )
+            else:
+                raise ValueError(
+                    "Unknown vibrational distribution: {0}".format(vib_distribution)
+                )
 
-        # ... Add vibrational-specific overpopulation factors
-        if overpopulation != {}:
-            for viblvl, ov in overpopulation.items():
-                if ov != 1:
-                    df.loc[df.viblvl_u == viblvl, "nu_vib"] *= ov
-                    df.loc[df.viblvl_l == viblvl, "nl_vib"] *= ov
+            # ... Add vibrational-specific overpopulation factors
+            if overpopulation != {}:
+                for viblvl, ov in overpopulation.items():
+                    if ov != 1:
+                        df.loc[df.viblvl_u == viblvl, "nu_vib"] *= ov
+                        df.loc[df.viblvl_l == viblvl, "nl_vib"] *= ov
 
-        # ... Rotational distributions
-        if rot_distribution == "boltzmann":
-            df["nu_rot"] = df.grotu / df.Qrotu * exp(-df.Erotu * hc_k / Trot)
-            df["nl_rot"] = df.grotl / df.Qrotl * exp(-df.Erotl * hc_k / Trot)
-        else:
-            raise ValueError(
-                "Unknown rotational distribution: {0}".format(rot_distribution)
-            )
+            # ... Rotational distributions
+            if rot_distribution == "boltzmann":
+                df["nu_rot"] = df.grotu / df.Qrotu * exp(-df.Erotu * hc_k / Trot)
+                df["nl_rot"] = df.grotl / df.Qrotl * exp(-df.Erotl * hc_k / Trot)
+            else:
+                raise ValueError(
+                    "Unknown rotational distribution: {0}".format(rot_distribution)
+                )
 
-        # ... Total
-        df["nu"] = df.nu_vib * df.nu_rot * (df.Qrotu * df.Qvib / df.Q)
-        df["nl"] = df.nl_vib * df.nl_rot * (df.Qrotl * df.Qvib / df.Q)
+            # ... Total
+            df["nu"] = df.nu_vib * df.nu_rot * (df.Qrotu * df.Qvib / df.Q)
+            df["nl"] = df.nl_vib * df.nl_rot * (df.Qrotl * df.Qvib / df.Q)
 
         if __debug__:
             assert "nu" in self.df1

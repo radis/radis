@@ -60,9 +60,8 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
-from numpy import exp, abs
-from numba import jit
-    
+from numpy import exp
+
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
 from radis.db.classes import (
@@ -82,6 +81,7 @@ from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import OutOfBoundError
 from radis.phys.constants import hc_k  # ~ 1.44 cm.K
+from radis.levels.part_sum_fun import partial_partition_sum_nargs
 
 
 class RovibPartitionFunction(object):
@@ -283,27 +283,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             df["n"] = nQ / Q
 
         return Q
-    
-    @jit(nopython=True)
-    def partial_partition_sum_nargs(gvib_arr, Evib_arr, 
-                                    grot_arr, Erot_arr, 
-                                    Trot, Tvib, 
-                                    N=100000, rtol=0.003e-2):
-        """ same as `partial_sum_func_nargs` but with explicit parameters
-        to be able to Jit it"""
-        slast = 0
-        vib = gvib_arr[:N]*np.exp(-hc_k*Evib_arr[:N]/Tvib) 
-        rot = grot_arr[:N]*np.exp(-hc_k*Erot_arr[:N]/Trot) 
-        s = (rot * vib).sum()
-        i = N
-        while abs(slast - s)/s > rtol and i<=len(gvib_arr):
-            slast = s
-            vib_new = gvib_arr[i:i+N]*np.exp(-hc_k*Evib_arr[i:i+N]/Tvib) 
-            rot_new = grot_arr[i:i+N]*np.exp(-hc_k*Erot_arr[i:i+N]/Trot)
-            s += (vib_new*rot_new).sum()
-            i += N
-            
-        return s
+
     def at_noneq(
         self,
         Tvib,
@@ -313,7 +293,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         rot_distribution="boltzmann",
         returnQvibQrot=False,
         update_populations=False,
-        fast_sum = False
+        fast_sum=False,
     ):
         """Calculate Partition Function under non equilibrium (Tvib, Trot),
         with boltzmann/treanor distributions and overpopulations as specified
@@ -367,22 +347,20 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         #                               'rot_distribution={0}'.format(rot_distribution)
 
         # Check inputs, initialize
-        if overpopulation is None:
+        if overpopulation is None or overpopulation == {}:
             overpopulation = {}
         else:
             if fast_sum:
-                raise NotImplementedError(
-                    "Cannot compute fast_sum with overpopulation"
-                )
+                raise NotImplementedError("Cannot compute fast_sum with overpopulation")
             if not returnQvibQrot:
                 raise ValueError(
                     "When using overpopulation, partition function "
                     + "must be calculated with returnQvibQrot=True"
                 )
         if returnQvibQrot and fast_sum:
-                raise ValueError(
-                    "Cannot compute fast and have all the informations. Make a choice :)"
-                )
+            raise ValueError(
+                "Cannot compute fast and have all the informations. Make a choice :)"
+            )
         assert vib_distribution in ["boltzmann", "treanor"]
         assert rot_distribution in ["boltzmann"]
         if vib_distribution == "boltzmann":
@@ -409,27 +387,9 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         gvib = df.gvib  # self.gvib(M, I)
         grot = df.grot
         # Calculate
-                     
-        # t0 = perf_counter()
-        # rtol = 1e-12 # 0.003e-2
-        # Q_jitpart = partial_partition_sum_nargs(np.array(gvib), np.array(df.Evib), 
-        #                                         np.array(grot), np.array(df.Erot), 
-        #                                         Trot, Tvib,
-        #                                         N=1000, rtol=rtol)
-        # print('First PARTSUMJIT (rtol {:%}) eval: {:.4f}s'.format(rtol, perf_counter() - t0))
-        
-        # t0 = perf_counter()
-        # rtol = 1e-15 # 0.003e-2
-        # Q_jitpart = partial_partition_sum_nargs(np.array(gvib), np.array(df.Evib), 
-        #                                         np.array(grot), np.array(df.Erot), 
-        #                                         Trot, Tvib,
-        #                                         N=1000, rtol=rtol)
-        # print('Second PARTSUMJIT (rtol {:%}) eval: {:.4f}s'.format(rtol, perf_counter() - t0))
-    
-        # t0 = perf_counter()
-        # ... mode: Trot, Tvib, + overpopulation
+
         if returnQvibQrot:
-            
+
             if not "viblvl" in self.df:
                 raise KeyError(
                     "To return Qrot and Qvib vibrational levels must be "
@@ -471,7 +431,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             # Calculate sum of levels
             nQ = df.nvibQvib * df.nrotQrot
             Q = nQ.sum()
-            
+
             # Group by vibrational level, and get level-dependant
             # quantities such as vib degeneracy, Evib, etc.
             dgb = df.groupby(["viblvl"], as_index=True)
@@ -534,33 +494,38 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
         # ... mode: Trot, Tvib, no overpopulation, no vib band details
         else:  # slightly faster, but doesnt return nvib nor Qvib
-
             if fast_sum:
-                rtol, N = 1e-15, 1000 # number found after a few tests on CO2(iso=1)
-                Q = self.partial_partition_sum_nargs(np.array(gvib), np.array(df.Evib), 
-                                                np.array(grot), np.array(df.Erot), 
-                                                Trot, Tvib,
-                                                N=N, rtol=rtol)
-                del df["n"]
-                if self.verbose>1:
-                    print("fast_sum=True: Remove 'n' column in df to avoid confusion")
+                
+                rtol, N = 1e-15, 1000  # number found after a few tests on CO2(iso=1)
+                Q = partial_partition_sum_nargs(
+                    gvib_arr=np.array(gvib),
+                    Evib_arr=np.array(df.Evib),
+                    grot_arr=np.array(grot),
+                    Erot_arr=np.array(df.Erot),
+                    Trot=Trot,
+                    Tvib=Tvib,
+                    N=N,
+                    rtol=rtol,
+                )
             else:
                 g = gvib * grot
-    
+
                 if vib_distribution == "boltzmann" and rot_distribution == "boltzmann":
                     nQ = g * exp(-hc_k * (df.Evib / Tvib + df.Erot / Trot))
                 elif vib_distribution == "treanor" and rot_distribution == "boltzmann":
-                    nQ = g * exp(-hc_k * (df.Evib_h / Tvib + (df.Evib_a + df.Erot) / Trot))
+                    nQ = g * exp(
+                        -hc_k * (df.Evib_h / Tvib + (df.Evib_a + df.Erot) / Trot)
+                    )
                 else:
                     raise NotImplementedError
-    
+
                 Q = nQ.sum()
 
-                # Update energy level table with populations (doesnt
-                # cost much and can be used to plot populations afterwards)
-                # ... add: 'n'
-                if update_populations:
-                    df["n"] = nQ / Q
+            # Update energy level table with populations (doesnt
+            # cost much and can be used to plot populations afterwards)
+            # ... add: 'n'
+            if update_populations:
+                df["n"] = nQ / Q
 
             return Q
 

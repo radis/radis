@@ -1129,6 +1129,7 @@ class SpectrumFactory(BandFactory):
         rot_distribution="boltzmann",
         overpopulation=None,
         name=None,
+        fast_sum=False
     ):
         """Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
@@ -1276,6 +1277,7 @@ class SpectrumFactory(BandFactory):
                 vib_distribution=vib_distribution,
                 rot_distribution=rot_distribution,
                 overpopulation=overpopulation,
+                fast_sum=fast_sum
             )
         else:
             self._calc_populations_noneq_multiTvib(
@@ -1284,6 +1286,7 @@ class SpectrumFactory(BandFactory):
                 vib_distribution=vib_distribution,
                 rot_distribution=rot_distribution,
                 overpopulation=overpopulation,
+                # fast_sum=fast_sum #!!!! TODO
             )
 
         self._calc_linestrength_noneq()
