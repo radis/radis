@@ -504,6 +504,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                     Erot_arr=np.array(df.Erot),
                     Trot=Trot,
                     Tvib=Tvib,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
                     N=N,
                     rtol=rtol,
                 )
@@ -521,11 +523,11 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
                 Q = nQ.sum()
 
-            # Update energy level table with populations (doesnt
-            # cost much and can be used to plot populations afterwards)
-            # ... add: 'n'
-            if update_populations:
-                df["n"] = nQ / Q
+                # Update energy level table with populations (doesnt
+                # cost much and can be used to plot populations afterwards)
+                # ... add: 'n'
+                if update_populations:
+                    df["n"] = nQ / Q
 
             return Q
 

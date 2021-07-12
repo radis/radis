@@ -3488,7 +3488,7 @@ class Spectrum(object):
         wunit=None,
         inplace=False,
         force=False,
-        verbose=True,
+        verbose=False,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 

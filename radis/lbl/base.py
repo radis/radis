@@ -2391,42 +2391,55 @@ class BaseFactory(DatabankLoader):
                     parsum = self.get_partition_function_calculator(
                         molecule, iso, state
                     )
-                    Q, Qvib, dfQrot = parsum.at_noneq(
-                        Tvib,
-                        Trot,
-                        vib_distribution=vib_distribution,
-                        rot_distribution=rot_distribution,
-                        overpopulation=overpopulation,
-                        returnQvibQrot=True,
-                        update_populations=self.misc.export_populations,
-                    )
-
-                    # ... make sure PartitionFunction above is calculated with the same
-                    # ... temperatures, rovibrational distributions and overpopulations
-                    # ... as the populations of active levels (somewhere below)
-                    df.at[idx, "Qvib"] = Qvib
-                    df.at[idx, "Q"] = Q
-
-                    # reindexing to get a direct access to Qrot database
-                    # create the lookup dictionary
-                    # dfQrot index is already 'viblvl'
-                    dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
-
-                    dg = df.loc[idx]
-
-                    # Add lower state Qrot
-                    dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-                    df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
-                    # Add upper state energy
-                    dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-                    df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
-
-                    # ... note: the .map() version is about 3x faster than
-                    # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
-
-                    if radis.DEBUG_MODE:
-                        assert (df.loc[idx, "id"] == id).all()
-                        assert (df.loc[idx, "iso"] == iso).all()
+                    if fast_sum:
+                        Q = parsum.at_noneq(
+                            Tvib,
+                            Trot,
+                            vib_distribution=vib_distribution,
+                            rot_distribution=rot_distribution,
+                            overpopulation=overpopulation,
+                            returnQvibQrot=False,
+                            update_populations=self.misc.export_populations,
+                            fast_sum=fast_sum
+                        )
+                        df.at[idx, "Q"] = Q
+                    else:
+                        Q, Qvib, dfQrot = parsum.at_noneq(
+                            Tvib,
+                            Trot,
+                            vib_distribution=vib_distribution,
+                            rot_distribution=rot_distribution,
+                            overpopulation=overpopulation,
+                            returnQvibQrot=True,
+                            update_populations=self.misc.export_populations,
+                        )
+    
+                        # ... make sure PartitionFunction above is calculated with the same
+                        # ... temperatures, rovibrational distributions and overpopulations
+                        # ... as the populations of active levels (somewhere below)
+                        df.at[idx, "Qvib"] = Qvib
+                        df.at[idx, "Q"] = Q
+    
+                        # reindexing to get a direct access to Qrot database
+                        # create the lookup dictionary
+                        # dfQrot index is already 'viblvl'
+                        dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
+    
+                        dg = df.loc[idx]
+    
+                        # Add lower state Qrot
+                        dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+                        df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                        # Add upper state energy
+                        dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+                        df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+    
+                        # ... note: the .map() version is about 3x faster than
+                        # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
+    
+                        if radis.DEBUG_MODE:
+                            assert (df.loc[idx, "id"] == id).all()
+                            assert (df.loc[idx, "iso"] == iso).all()
 
             else:
                 dgb = df.groupby(by=["iso"])
@@ -2440,41 +2453,54 @@ class BaseFactory(DatabankLoader):
                     parsum = self.get_partition_function_calculator(
                         molecule, iso, state
                     )
-                    Q, Qvib, dfQrot = parsum.at_noneq(
-                        Tvib,
-                        Trot,
-                        vib_distribution=vib_distribution,
-                        rot_distribution=rot_distribution,
-                        overpopulation=overpopulation,
-                        returnQvibQrot=True,
-                        update_populations=self.misc.export_populations,
-                    )
-
-                    # ... make sure PartitionFunction above is calculated with the same
-                    # ... temperatures, rovibrational distributions and overpopulations
-                    # ... as the populations of active levels (somewhere below)
-                    df.at[idx, "Qvib"] = Qvib
-                    df.at[idx, "Q"] = Q
-
-                    # reindexing to get a direct access to Qrot database
-                    # create the lookup dictionary
-                    # dfQrot index is already 'viblvl'
-                    dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
-
-                    dg = df.loc[idx]
-
-                    # Add lower state Qrot
-                    dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-                    df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
-                    # Add upper state energy
-                    dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-                    df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
-
-                    # ... note: the .map() version is about 3x faster than
-                    # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
-
-                    if radis.DEBUG_MODE:
-                        assert (df.loc[idx, "iso"] == iso).all()
+                    if fast_sum:
+                        Q = parsum.at_noneq(
+                            Tvib,
+                            Trot,
+                            vib_distribution=vib_distribution,
+                            rot_distribution=rot_distribution,
+                            overpopulation=overpopulation,
+                            returnQvibQrot=False,
+                            update_populations=self.misc.export_populations,
+                            fast_sum=fast_sum
+                        )
+                        df.at[idx, "Q"] = Q
+                    else:
+                        Q, Qvib, dfQrot = parsum.at_noneq(
+                            Tvib,
+                            Trot,
+                            vib_distribution=vib_distribution,
+                            rot_distribution=rot_distribution,
+                            overpopulation=overpopulation,
+                            returnQvibQrot=True,
+                            update_populations=self.misc.export_populations,
+                        )
+    
+                        # ... make sure PartitionFunction above is calculated with the same
+                        # ... temperatures, rovibrational distributions and overpopulations
+                        # ... as the populations of active levels (somewhere below)
+                        df.at[idx, "Qvib"] = Qvib
+                        df.at[idx, "Q"] = Q
+    
+                        # reindexing to get a direct access to Qrot database
+                        # create the lookup dictionary
+                        # dfQrot index is already 'viblvl'
+                        dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
+    
+                        dg = df.loc[idx]
+    
+                        # Add lower state Qrot
+                        dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+                        df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                        # Add upper state energy
+                        dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+                        df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+    
+                        # ... note: the .map() version is about 3x faster than
+                        # ... dg.groupby('viblvl_l').apply(lambda x: dfQrot_dict[x.name])
+    
+                        if radis.DEBUG_MODE:
+                            assert (df.loc[idx, "iso"] == iso).all()
 
         self.profiler.stop("part_function", "partition functions")
         self.profiler.start("population", 3)
