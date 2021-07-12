@@ -9,11 +9,19 @@ from numba import jit
 from numpy import exp, abs
 from radis.phys.constants import hc_k  # ~ 1.44 cm.K
 
+
 @jit(nopython=True)
 def partial_partition_sum_nargs(
-    gvib_arr, Evib_arr, grot_arr, Erot_arr, Trot, Tvib, 
-    vib_distribution, 
-    rot_distribution, N=1000, rtol=1e-15
+    gvib_arr,
+    Evib_arr,
+    grot_arr,
+    Erot_arr,
+    Trot,
+    Tvib,
+    vib_distribution,
+    rot_distribution,
+    N=1000,
+    rtol=1e-15,
 ):
     """
     Partial sum of the partition function is incremented until convergence. See also: https://github.com/radis/radis-benchmark/blob/master/manual_benchmarks/fast-parsum.ipynb.
@@ -55,12 +63,12 @@ def partial_partition_sum_nargs(
         vib = gvib_arr[:N] * exp(-hc_k * (Evib_arr[:N] / Tvib + Evib_arr[:N] / Trot))
     else:
         raise NotImplementedError
-            
+
     if rot_distribution == "boltzmann":
         rot = grot_arr[:N] * exp(-hc_k * Erot_arr[:N] / Trot)
     else:
         raise NotImplementedError
-    
+
     s = (rot * vib).sum()
     i = N
     while abs(slast - s) / s > rtol and i <= len(gvib_arr):

@@ -387,7 +387,6 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         gvib = df.gvib  # self.gvib(M, I)
         grot = df.grot
         # Calculate
-
         if returnQvibQrot:
 
             if not "viblvl" in self.df:
@@ -495,8 +494,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         # ... mode: Trot, Tvib, no overpopulation, no vib band details
         else:  # slightly faster, but doesnt return nvib nor Qvib
             if fast_sum:
-                
-                rtol, N = 1e-15, 1000  # number found after a few tests on CO2(iso=1)
+                rtol, N = 1e-15, 10000  # number found after a few tests on CO2(iso=1)
                 Q = partial_partition_sum_nargs(
                     gvib_arr=np.array(gvib),
                     Evib_arr=np.array(df.Evib),

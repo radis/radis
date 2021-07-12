@@ -62,6 +62,16 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
     if plot:
         s.plot_populations()
 
+    # Test the fast_sum module
+    s_fast = sf.non_eq_spectrum(300, 300, fast_sum=True)
+    
+    b1 = np.isclose(
+        s.get_integral("abscoeff"),
+        s_fast.get_integral("abscoeff"),
+        rtol=1e-6,
+    )
+    assert b1
+    
     # Compare with factory
     # Plot populations:
     with pytest.raises(ValueError):
