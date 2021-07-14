@@ -68,6 +68,8 @@ from numpy import arange, exp
 from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
 
+from radis.db.classes import get_molecule_identifier
+from radis.db.molparam import MolParams
 from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
 from radis.misc.basics import is_float
@@ -799,6 +801,14 @@ class BroadenFactory(BaseFactory):
         # Init variables
         df = self.df1
 
+        isotope_set = list(self.input.isotope)
+        if len(isotope_set) == 1:
+            df.attrs["iso"] = int(isotope_set[0])
+        else:
+            df.attrs["iso"] = isotope_set
+        M = get_molecule_identifier(self.input.molecule)
+        df.attrs["id"] = M
+
         if len(df) == 0:
             return  # no lines
 
@@ -944,6 +954,8 @@ class BroadenFactory(BaseFactory):
         else:
             Tdpsel = df.Tdpsel
 
+        molar_mass = get_molar_mass(df)
+
         # Calculate broadening FWHM
         wv, wl, wg = voigt_broadening_HWHM(
             df.airbrd,
@@ -951,7 +963,7 @@ class BroadenFactory(BaseFactory):
             df.Tdpair,
             Tdpsel,
             df.wav,
-            df.molar_mass,
+            molar_mass,
             pressure_atm,
             mole_fraction,
             Tgas,
@@ -1029,8 +1041,10 @@ class BroadenFactory(BaseFactory):
             - ``hwhm_gauss``
         """
 
+        molar_mass = get_molar_mass(df)
+
         # Calculate broadening HWHM
-        wg = doppler_broadening_HWHM(df.wav, df.molar_mass, Tgas)
+        wg = doppler_broadening_HWHM(df.wav, molar_mass, Tgas)
         # Note @EP: should we use the pressure-shifted wavenumber instead of df.wav?
 
         # Update dataframe
@@ -2819,6 +2833,46 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
         Ei_density_on_grid,
         line2grid_projection_left,
     )
+
+
+def get_molar_mass(df):
+
+    """Returns molar mass
+
+    Parameters
+    ----------
+
+    df: dataframe
+
+    Returns
+    -------
+
+    The molar mass of all the isotopes in the dataframe
+    """
+
+    molpar = MolParams()
+
+    if "id" in df.columns:
+        id = df.id.unique()
+        id = id[0]
+
+    else:
+        id = df.attrs["id"]
+
+    if "iso" in df.columns:
+        iso_set = df.iso.unique()
+        molar_mass = {}
+        for iso in iso_set:
+            molar_mass[iso] = molpar.get(id, iso, "mol_mass")
+
+        req = df["iso"].map(molar_mass)
+    else:
+        iso = df.attrs["iso"]
+        molar_mass = molpar.get(id, iso, "mol_mass")
+
+        req = molar_mass
+
+    return req
 
     #
 

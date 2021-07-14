@@ -18,7 +18,6 @@ PUBLIC METHODS
 
 - :py:meth:`radis.lbl.base.BaseFactory.print_conditions`         >>> get all calculation conditions
 - :py:meth:`radis.lbl.base.BaseFactory.get_energy_levels`        >>> return energy database
-- :py:meth:`radis.lbl.base.BaseFactory.get_abundance`            >>> return energy database
 - :py:meth:`radis.lbl.base.BaseFactory.plot_linestrength_hist`   >>>  plot distribution of linestrengths
 - :py:meth:`radis.lbl.base.BaseFactory.plot_hist`                >>> same
 
@@ -169,7 +168,6 @@ class BaseFactory(DatabankLoader):
     # ------------------------
     # print_conditions         >>> get all calculation conditions
     # get_energy_levels        >>> return energy database
-    # get_abundance            >>> return energy database
     # plot_linestrength_hist   >>> get all linestrength distribution
     # plot_hist                >>> same
     #
@@ -236,11 +234,6 @@ class BaseFactory(DatabankLoader):
             energies = energies.query(conditions)
 
         return energies
-
-    def get_abundance(self, molecule, isotope):
-        """Returns abundance of molecule > isotope."""
-
-        return self.parsum_calc[molecule][isotope].Ia
 
     def plot_linestrength_hist(self):
         """Plot linestrength distribution (to help determine a cutoff
@@ -1742,10 +1735,14 @@ class BaseFactory(DatabankLoader):
             Qref = df["iso"].map(Qref_dict)
 
         # Get moment
+
+        # get abundance
+        abundance = get_abundance(df)
+
         gl = df.gl
         El = df.El
         nu = df.wav
-        Ia = df.Ia
+        Ia = abundance
         h = h_CGS  # erg.s
         c = c_CGS
         S = df.int  # reference linestrength
@@ -3082,7 +3079,8 @@ class BaseFactory(DatabankLoader):
         # adim. (#/#) (multiplied by n_tot later)
         n_u = df["nu"]
         # correct for abundance
-        n_ua = n_u * df.Ia
+        abundance = get_abundance(df)
+        n_ua = n_u * abundance
 
         A_ul = df["Aul"]  # (s-1)
 
@@ -3255,21 +3253,6 @@ class BaseFactory(DatabankLoader):
         else:
             self.df1 = self.df0  # self.df0 will be deleted
             del self.df0  # delete attribute name
-
-        # Check presence of attributes
-        try:
-            self.df1.molar_mass
-            self.df1.Ia
-        except AttributeError as err:
-            raise AttributeError(
-                str(err)
-                + " : attribute missing in line "
-                + "dataframe sf.df1. Make sure you didnt overwrite the line "
-                + "dataframe sf.df0 or sf.df1 manually. If so, replace any "
-                + "`sf.df0=...` line with inplace operations such as "
-                + "`sf.df0.drop(..., inplace=True)`. See "
-                + "https://stackoverflow.com/q/33103988"
-            )
 
         # Check memory size
         try:
@@ -3560,6 +3543,46 @@ def get_waverange(
             wavenum_max = nm2cm(wavelength_min)
 
     return wavenum_min, wavenum_max
+
+
+def get_abundance(df):
+
+    """Returns the abundance
+
+    Parameters
+    ----------
+
+    df: dataframe
+
+    Returns
+    -------
+
+    The abundance of all the isotopes in the dataframe
+    """
+
+    molpar = MolParams()
+
+    if "id" in df.columns:
+        id = df.id.unique()
+        id = id[0]
+
+    else:
+        id = df.attrs["id"]
+
+    if "iso" in df.columns:
+        iso_set = df.iso.unique()
+        abundance = {}
+        for iso in iso_set:
+            abundance[iso] = molpar.get(id, iso, "abundance")
+
+        req = df["iso"].map(abundance)
+    else:
+        iso = df.attrs["iso"]
+        abundance = molpar.get(id, iso, "abundance")
+
+        req = abundance
+
+    return req
 
 
 if __name__ == "__main__":
