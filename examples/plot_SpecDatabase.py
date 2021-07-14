@@ -40,8 +40,10 @@ db = SpecDatabase(my_folder, lazy_loading=False)
 db.add(s1)
 db.add(s2)
 
-
+# Method 2: Using init_database()
 sf.init_database(my_folder)
+
+# Generates Spectrum and adds to SpecDatabase automatically
 sf.eq_spectrum(name="Spectum_CO2_500", Tgas=500, path_length=1)
 sf.eq_spectrum(name="Spectum_CO2_550", Tgas=550, path_length=1)
 sf.eq_spectrum(name="Spectum_CO2_600", Tgas=600, path_length=1)
@@ -50,16 +52,6 @@ sf.eq_spectrum(name="Spectum_CO2_650", Tgas=650, path_length=1)
 
 # Loading SpecDatabase
 db_new = SpecDatabase(my_folder)
-
-# Loading all spec files in a list
-list_Spectrum = []
-for s in db_new:
-    list_Spectrum.append(s)
-
-# Generating 'radiance_noslit' Plot from SpecDatabase
-for spec in list_Spectrum:
-    spec.plot("radiance_noslit", nfig="same")
-
 
 # Comparing data conditions of different spectrum from csv generated file
 db_new.plot_cond("Tgas", "wstep")
