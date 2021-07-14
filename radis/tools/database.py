@@ -1668,6 +1668,8 @@ class SpecList(object):
 
             >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
                                                   # procedure...
+        -------
+        .. minigallery:: radis.tools.database.SpecList.plot_cond
         """
         # %%
 
@@ -1686,7 +1688,7 @@ class SpecList(object):
 
         # Overlay color
         if z_value is not None:
-            assert (len(z_value)) == len(self.df)
+            assert (len(self.df[z_value])) == len(self.df)
 
             z = np.array(z_value) ** 0.5  # because the lower the better
 
@@ -1805,7 +1807,6 @@ class SpecDatabase(SpecList):
         requires all conditions to be either float, string, or boolean. List
         won't work!
 
-
     See Also
     --------
     :func:`~radis.tools.database.load_spec`,
@@ -1827,7 +1828,10 @@ class SpecDatabase(SpecList):
 
     Compare another Spectrum to all spectra in the database:
 
-    :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`,
+    :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`
+
+
+    .. minigallery:: radis.SpecDatabase
     """
 
     def __init__(
