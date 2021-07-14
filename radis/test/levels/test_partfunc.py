@@ -762,6 +762,45 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     assert cache_last_modification_again > cache_last_modification
 
 
+def test_tabulated_partition_functions(verbose=True, plot=True, *args, **kwargs):
+    """Test on-the-fly tabulated partition return the same results as
+    full summation within 0.2%"""
+
+    from radis.db.molecules import CO2_X_626
+    from radis.levels.partfunc import PartFunc_Dunham
+
+    Z_sum = PartFunc_Dunham(CO2_X_626, mode="full summation")
+    Z_tab = PartFunc_Dunham(CO2_X_626, mode="tabulation")
+
+    # Equilibrium (same < 0.2%)
+    assert np.isclose(Z_sum.at(300), Z_tab.at(300), rtol=2e-3)
+    assert np.isclose(Z_sum.at(3000), Z_tab.at(3000), rtol=2e-3)
+
+    # Nonequilibrium (same << 0.1%)
+
+    #  ... Compare with Partition function computed from PartFunc_Dunham
+    assert np.isclose(Z_sum.at_noneq(1000, 300), Z_tab.at_noneq(1000, 300), rtol=0.5e-3)
+    assert np.isclose(
+        Z_sum.at_noneq(1000, 3000), Z_tab.at_noneq(1000, 3000), rtol=0.3e-3
+    )
+
+    # ... change Grid :
+    if plot:
+        Tvib = 3000
+        Trot_arr = np.linspace(300, 3000, 10)
+        plt.figure()
+        plt.plot(Trot_arr, [Z_sum.at_noneq(Tvib, T) for T in Trot_arr])
+        for N_bins in [10, 100, 1000]:
+            Z_tab.N_bins == N_bins
+            plt.plot(
+                Trot_arr,
+                [Z_tab.at_noneq(Tvib, T) for T in Trot_arr],
+                "--",
+                label=N_bins,
+            )
+        plt.legend()
+
+
 def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
     # Test 0: delete all cached energies
@@ -799,16 +838,21 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
 
     # Test 8: Regenerates levels file if it's manually changed
-    test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs)
+    test_levels_regeneration(verbose=verbose, warnings=True, *args, **kwargs)
+
+    # Test 9 : tabulation
+    test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
+
     return True
 
 
 if __name__ == "__main__":
     printm("Testing parfunc: {0}".format(_run_testcases()))
 
-    verbose = True
-    warnings = True
+    # verbose = True
+    # warnings = True
 
+    # test_tabulated_partition_functions()
 #    test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)

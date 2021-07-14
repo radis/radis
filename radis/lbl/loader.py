@@ -451,6 +451,7 @@ class MiscParams(ConditionDict):
         )
         self.warning_linestrength_cutoff = None  #: float [0-1]: raise a warning if the sum of linestrength cut is above that
         self.total_lines = 0  #: int : number of lines in database.
+        self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
 
 
 def format_paths(s):
@@ -1565,7 +1566,10 @@ class DatabankLoader(object):
             for iso, lvl in levels.items():
                 self.parsum_calc[molecule][iso] = {}
                 ParsumCalc = self._build_partition_function_calculator(
-                    lvl, levelsfmt, isotope=iso
+                    lvl,
+                    levelsfmt,
+                    isotope=iso,
+                    parsum_mode=self.misc.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
         # energy levels arent specified in a tabulated file, but we can still
@@ -1574,7 +1578,10 @@ class DatabankLoader(object):
             for iso in self._get_isotope_list():
                 self.parsum_calc[molecule][iso] = {}
                 ParsumCalc = self._build_partition_function_calculator(
-                    None, levelsfmt, isotope=iso
+                    None,
+                    levelsfmt,
+                    isotope=iso,
+                    parsum_mode=self.misc.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
 
@@ -2122,7 +2129,9 @@ class DatabankLoader(object):
 
         return parsum
 
-    def _build_partition_function_calculator(self, levels, levelsfmt, isotope):
+    def _build_partition_function_calculator(
+        self, levels, levelsfmt, isotope, parsum_mode="full summation"
+    ):
         """Return an universal partition function  object ``parsum`` so that
         the following methods are defined::
             parsum.at(T)
@@ -2141,6 +2150,13 @@ class DatabankLoader(object):
             energy levels format
         isotope: int
             isotope identifier
+
+        Other Parameters
+        ----------------
+        parsum_mode: 'full summation', 'tabulation'
+            calculation mode. ``'tabulation'`` is much faster but not all possible
+            distributions are implemented. See ``mode`` in
+            :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
         """
         if __debug__:
             printdbg(
@@ -2160,6 +2176,7 @@ class DatabankLoader(object):
                 use_cached=self.params.lvl_use_cached,
                 verbose=self.verbose,
                 levelsfmt=levelsfmt,
+                mode=parsum_mode,
             )
 
         # calculate energy levels from RADIS Dunham parameters
@@ -2168,7 +2185,10 @@ class DatabankLoader(object):
                 self.input.molecule, isotope, self.input.state, verbose=self.verbose
             )
             parsum = PartFunc_Dunham(
-                state, use_cached=self.params.lvl_use_cached, verbose=self.verbose
+                state,
+                use_cached=self.params.lvl_use_cached,
+                verbose=self.verbose,
+                mode=parsum_mode,
             )
             # note: use 'levels' (useless here) to specify calculations options
             # for the abinitio calculation ? Like Jmax, etc.
