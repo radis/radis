@@ -13,8 +13,6 @@ You can use :py:meth:`~radis.tools.database.SpecList.plot_cond` to make a 2D plo
 
 """
 
-import numpy as np
-
 from radis import SpectrumFactory
 from radis.tools import SpecDatabase
 
@@ -30,9 +28,9 @@ sf = SpectrumFactory(
 )
 sf.fetch_databank("hitemp")
 
-# Generating 3 Spectrums
+# Generating 2 Spectrums
 s1 = sf.eq_spectrum(Tgas=300, path_length=1)
-s2 = sf.eq_spectrum(Tgas=450, path_length=1)
+s2 = sf.eq_spectrum(Tgas=600, path_length=1)
 
 # Creating SpecDatabase
 my_folder = r"/home/pipebomb/Desktop/SpecDatabase_Test/"
@@ -46,7 +44,12 @@ db.add(s2)
 sf.init_database(my_folder)
 
 # Generates Spectrum and adds to SpecDatabase automatically
-for i in np.arange(600, 3100, 150):
+# Increasing Temperature and decreasing wstep
+wstep_value = 2
+for i in range(900, 3100, 300):
+    wstep_value = wstep_value / 2
+    sf.wstep = wstep_value
+    sf.params.wstep = wstep_value
     sf.eq_spectrum(Tgas=i, path_length=1)
 
 

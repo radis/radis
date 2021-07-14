@@ -1688,7 +1688,6 @@ class SpecList(object):
 
         # Overlay color
         if z_value is not None:
-            print(type(z_value))
             if type(z_value) is str:
                 z = self.df[z_value]
             else:
