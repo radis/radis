@@ -8,10 +8,12 @@ from the SpecDatabase object itself.  A csv file is generated which contains all
 RADIS also has :py:meth:`~radis.lbl.loader.DatabankLoader.init_database` feature which initializes the SpecDatabase for the SpectrumFactory and every Spectrum
 generated from it will be stored in the SpecDatabase automatically.
 
-You can use :py:meth:`~radis.tools.database.SpecList.plot_cond` to make a 2D plot using the conditions of the Spectrums in the SpecDatabase.
+You can use :py:meth:`~radis.tools.database.SpecList.plot_cond` to make a 2D plot using the conditions of the Spectrums in the SpecDatabase and use a z_label to plot a heat map based on it.
 
 
 """
+
+import numpy as np
 
 from radis import SpectrumFactory
 from radis.tools import SpecDatabase
@@ -29,8 +31,8 @@ sf = SpectrumFactory(
 sf.fetch_databank("hitemp")
 
 # Generating 3 Spectrums
-s1 = sf.eq_spectrum(name="Spectum_CO2_400", Tgas=400, path_length=1)
-s2 = sf.eq_spectrum(name="Spectum_CO2_450", Tgas=450, path_length=1)
+s1 = sf.eq_spectrum(Tgas=300, path_length=1)
+s2 = sf.eq_spectrum(Tgas=450, path_length=1)
 
 # Creating SpecDatabase
 my_folder = r"/home/pipebomb/Desktop/SpecDatabase_Test/"
@@ -44,14 +46,12 @@ db.add(s2)
 sf.init_database(my_folder)
 
 # Generates Spectrum and adds to SpecDatabase automatically
-sf.eq_spectrum(name="Spectum_CO2_500", Tgas=500, path_length=1)
-sf.eq_spectrum(name="Spectum_CO2_550", Tgas=550, path_length=1)
-sf.eq_spectrum(name="Spectum_CO2_600", Tgas=600, path_length=1)
-sf.eq_spectrum(name="Spectum_CO2_650", Tgas=650, path_length=1)
+for i in np.arange(600, 3100, 150):
+    sf.eq_spectrum(Tgas=i, path_length=1)
 
 
 # Loading SpecDatabase
 db_new = SpecDatabase(my_folder)
 
 # Comparing data conditions of different spectrum from csv generated file
-db_new.plot_cond("Tgas", "wstep")
+db_new.plot_cond("Tgas", "wstep", "calculation_time")

@@ -1688,17 +1688,22 @@ class SpecList(object):
 
         # Overlay color
         if z_value is not None:
-            assert (len(self.df[z_value])) == len(self.df)
+            print(type(z_value))
+            if type(z_value) is str:
+                z = self.df[z_value]
+            else:
+                z = z_value
 
-            z = np.array(z_value) ** 0.5  # because the lower the better
+            assert len(z) == len(self.df)
 
+            z = np.array(z) ** 0.5  # because the lower the better
             #            norm = cm.colors.Normalize(vmax=z.max(), vmin=z.min())
             #            cmap = cm.PRGn
 
             xarr = np.linspace(min(x), max(x))
             yarr = np.linspace(min(y), max(y))
             mx, my = np.meshgrid(xarr, yarr)
-            zgrid = griddata((x, y), z, (mx, my), method="linear")
+            zgrid = griddata((x, y), z, (mx, my), method="nearest")
             levels = np.linspace(min(z), max(z), 20)
             ax.contourf(
                 mx,
