@@ -1332,6 +1332,7 @@ class DatabankLoader(object):
         """Init a :class:`~radis.tools.database.SpecDatabase` folder in
         ``path`` to later store our spectra. Spectra can also be automatically
         retrieved from the database instead of being calculated.
+
         Parameters
         ----------
         path: str
@@ -1362,6 +1363,9 @@ class DatabankLoader(object):
         -------
         db: SpecDatabase
             the database where spectra will be stored or retrieved
+
+
+        .. minigallery:: radis.lbl.loader.DatabankLoader.init_database
         """
 
         db = SpecDatabase(path, add_info=add_info, add_date=add_date, binary=compress)
