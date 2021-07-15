@@ -1702,7 +1702,7 @@ class SpecList(object):
             xarr = np.linspace(min(x), max(x))
             yarr = np.linspace(min(y), max(y))
             mx, my = np.meshgrid(xarr, yarr)
-            zgrid = griddata((x, y), z, (mx, my), method="nearest")
+            zgrid = griddata((x, y), z, (mx, my), method="linear", fill_value=np.nan)
             levels = np.linspace(min(z), max(z), 20)
             ax.contourf(
                 mx,
