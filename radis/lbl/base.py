@@ -64,9 +64,6 @@ Most methods are written in inherited class with the following inheritance schem
 """
 # TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.
 
-
-import sys
-
 import numpy as np
 import pandas as pd
 from astropy import units as u
@@ -3256,11 +3253,16 @@ class BaseFactory(DatabankLoader):
 
         # Check memory size
         try:
-            if sys.getsizeof(self.df1) > 500e6:
+            # Checking if object type column exists
+            if "O" in self.df1.dtypes.unique():
+                limit = 80e6
+            else:
+                limit = 500e6
+            df_size = self.df1.memory_usage(deep=False).sum()
+
+            if df_size > limit:
                 self.warn(
-                    "Line database is large: {0:.0f} Mb".format(
-                        sys.getsizeof(self.df1) * 1e-6
-                    )
+                    "Line database is large: {0:.0f} Mb".format(df_size * 1e-6)
                     + ". Consider using save_memory "
                     + "option, if you don't need to reuse this factory to calculate new spectra",
                     "MemoryUsageWarning",
