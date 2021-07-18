@@ -413,7 +413,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         #                               'rot_distribution={0}'.format(rot_distribution)
 
         # Check inputs, initialize
-        if overpopulation is None:
+        if overpopulation is None or overpopulation == {}:
             overpopulation = {}
         else:
             if not returnQvibQrot:
