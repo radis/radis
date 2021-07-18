@@ -22,6 +22,7 @@ dependencies:
 - pytest  # to run test suite
 - joblib  # for parallel loading of SpecDatabase
 - numba  # just-in-time compiler
+- psutil
 - pip
 - pip:
   - publib>=0.3.2  # Plotting styles for Matplotlib
