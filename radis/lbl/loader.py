@@ -416,6 +416,7 @@ class Parameters(ConditionDict):
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
+        self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
 
 
 class MiscParams(ConditionDict):
@@ -446,12 +447,12 @@ class MiscParams(ConditionDict):
         self.export_populations = (
             None  #: bool: export populations in output Spectrum (takes memory!)
         )
+        self.export_rovib_fraction = False  #: bool: calculate nu_vib, nu_rot in lines
         self.warning_broadening_threshold = (
             None  #: float: [0-1] raise a warning if the lineshape area is different
         )
         self.warning_linestrength_cutoff = None  #: float [0-1]: raise a warning if the sum of linestrength cut is above that
         self.total_lines = 0  #: int : number of lines in database.
-        self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
 
 
 def format_paths(s):
@@ -1569,7 +1570,7 @@ class DatabankLoader(object):
                     lvl,
                     levelsfmt,
                     isotope=iso,
-                    parsum_mode=self.misc.parsum_mode,
+                    parsum_mode=self.params.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
         # energy levels arent specified in a tabulated file, but we can still
@@ -1581,7 +1582,7 @@ class DatabankLoader(object):
                     None,
                     levelsfmt,
                     isotope=iso,
-                    parsum_mode=self.misc.parsum_mode,
+                    parsum_mode=self.params.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
 

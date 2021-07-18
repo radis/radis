@@ -21,15 +21,22 @@ from radis.test.utils import setup_test_line_databases
 
 
 @pytest.mark.fast
-def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
-    """Compare populations calculated in the nonequilibrium module
-    with hardcoded values"""
+def test_export_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
+    """Check populations calculated in the nonequilibrium module are exported in Spectrum.
+
+    Compare with hardcoded values
+
+    Examples
+    --------
+    ::
+        sf = SpectrumFactory(export_populations="rovib")
+    """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
     if verbose:
-        printm(">>> _test_media_line_shift")
+        printm(">>> test_export_populations")
 
     setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
@@ -62,6 +69,11 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
     if plot:
         s.plot_populations()
 
+    # Test hardcoded populations
+    assert np.isclose(pops["rovib"]["n"].iloc[0], 0.0091853446840826653)
+    assert np.isclose(pops["rovib"]["n"].iloc[1], 0.027052543988733215)
+    assert np.isclose(pops["rovib"]["n"].iloc[2], 0.04345502115897712)
+
     # Compare with factory
     # Plot populations:
     with pytest.raises(ValueError):
@@ -70,16 +82,58 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
         sf.plot_populations("rovib", isotope=1)
         plt.close()  # no need to keep it open, we just tested the function
 
+
+@pytest.mark.fast
+def test_export_rovib_fractions(
+    plot=True, verbose=True, warnings=True, *args, **kwargs
+):
+    """Compare rovib fraction (nu_vib, nl_vib, nu_rot, nl_rot) are calculated
+    in the nonequilibrium module
+
+    Examples
+    --------
+    ::
+        sf = SpectrumFactory(export_lines=True, ...)
+        sf.misc.export_rovib_fraction = True  # required from 0.9.30
+    """
+
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+    if verbose:
+        printm(">>> test_export_rovib_fractions")
+
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
+
+    sf = SpectrumFactory(
+        wavelength_min=4500,
+        wavelength_max=4600,
+        wstep=0.001,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=400e-6,
+        isotope=[1],
+        medium="vacuum",
+        broadening_max_width=10,
+        export_lines=True,
+        verbose=verbose,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.load_databank("HITRAN-CO-TEST")
+    sf.misc.export_rovib_fraction = True  # required from 0.9.30
+
+    # Calculate populations using the non-equilibrium module:
+    s = sf.non_eq_spectrum(300, 300)
     # Test calculated quantities are there
     assert "Qref" in sf.df1.attrs
     assert "Qvib" in sf.df1.attrs
     assert hasattr(sf.df1, "Qrotu")
     assert hasattr(sf.df1, "Qrotl")
 
-    # Test hardcoded populations
-    assert np.isclose(pops["rovib"]["n"].iloc[0], 0.0091853446840826653)
-    assert np.isclose(pops["rovib"]["n"].iloc[1], 0.027052543988733215)
-    assert np.isclose(pops["rovib"]["n"].iloc[2], 0.04345502115897712)
+    assert hasattr(s.lines, "nu_vib")
+    assert hasattr(s.lines, "nl_vib")
+    assert hasattr(s.lines, "nu_rot")
+    assert hasattr(s.lines, "nl_rot")
 
     return True
 
@@ -105,7 +159,7 @@ def test_populations_CO2_hamiltonian(
         plt.ion()
 
     if verbose:
-        printm(">>> _test_media_line_shift")
+        printm(">>> _test_populations_CO2_hamiltonian")
 
     setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
@@ -604,7 +658,8 @@ def test_get_waverange(*args, **kwargs):
 
 def _run_testcases(verbose=True, plot=True):
 
-    test_populations(plot=plot, verbose=verbose)
+    test_export_populations(plot=plot, verbose=verbose)
+    test_export_rovib_fractions(plot=plot, verbose=verbose)
     test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
     test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
     test_optically_thick_limit_2iso(plot=plot, verbose=verbose)

@@ -2335,7 +2335,7 @@ class BaseFactory(DatabankLoader):
             state = self.input.state
             parsum = self.get_partition_function_calculator(molecule, iso, state)
 
-            if self.misc.parsum_mode == 'tabulation':
+            if not self.misc.export_rovib_fraction:
 
                 Q = parsum.at_noneq(
                     Tvib,
@@ -2398,6 +2398,7 @@ class BaseFactory(DatabankLoader):
 	                    returnQvibQrot=False,
 	                    update_populations=self.misc.export_populations
 	                )
+					df.at[idx, "Q"] = Q
 	                # TODO: add to Qgas dictionary ?
 	                
 	            else:
@@ -2436,8 +2437,8 @@ class BaseFactory(DatabankLoader):
 	                if radis.DEBUG_MODE:
 	                    assert (df.loc[idx, "iso"] == iso).all()
 
-		            Qvib = df.Qvib
-		            Q = df.Q
+		        Qvib = df.Qvib
+		        Q = df.Q
 
         self.profiler.stop("part_function", "partition functions")
         self.profiler.start("population", 3)
@@ -2445,18 +2446,18 @@ class BaseFactory(DatabankLoader):
         # %%
 
         #  Derive populations
-        if self.misc.parsum_mode == 'tabulation':
+        if not self.misc.export_rovib_fraction:
             # ... vibrational distribution
             if vib_distribution == "boltzmann":
                 df["nu_vib_x_Qvib"] = df.gvibu * exp(-hc_k * df.Evibu / Tvib)
                 df["nl_vib_x_Qvib"] = df.gvibl * exp(-hc_k * df.Evibl / Tvib)
             elif vib_distribution == "treanor":
-                raise NotImplementedError("TO DO!") #!!!TODO 
+                raise NotImplementedError("TO DO!")  #!!!TODO
             else:
                 raise ValueError(
                     "Unknown vibrational distribution: {0}".format(vib_distribution)
                 )
-                
+
             # ... Rotational distributions
             if rot_distribution == "boltzmann":
                 df["nu_rot_x_Qrot"] = df.grotu * exp(-df.Erotu * hc_k / Trot)
@@ -2465,10 +2466,10 @@ class BaseFactory(DatabankLoader):
                 raise ValueError(
                     "Unknown rotational distribution: {0}".format(rot_distribution)
                 )
-                
+
             # ... Total
-            df["nu"] = df.nu_vib_x_Qvib * df.nu_rot_x_Qrot  / df.Q
-            df["nl"] = df.nl_vib_x_Qvib * df.nl_rot_x_Qrot  / df.Q
+            df["nu"] = df.nu_vib_x_Qvib * df.nu_rot_x_Qrot / Q
+            df["nl"] = df.nl_vib_x_Qvib * df.nl_rot_x_Qrot / Q
             
         else: #self.misc.parsum_mode == 'full summation':
             # ... vibrational distribution

@@ -450,7 +450,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 vib_distribution=vib_distribution,
                 rot_distribution=rot_distribution,
                 returnQvibQrot=returnQvibQrot,
-                update_populations=False,
+                update_populations=update_populations,
             )
         elif self.mode == "tabulation":
             if update_populations:
