@@ -1633,7 +1633,6 @@ class SpecList(object):
 
         See Also
         --------
-
         Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method
         """
 
@@ -1668,7 +1667,7 @@ class SpecList(object):
 
             >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
                                                   # procedure...
-        -------
+
         .. minigallery:: radis.tools.database.SpecList.plot_cond
         """
         # %%
