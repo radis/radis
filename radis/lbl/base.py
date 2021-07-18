@@ -2446,6 +2446,10 @@ class BaseFactory(DatabankLoader):
 
         #  Derive populations
         if self.misc.parsum_mode == 'tabulation':
+            if overpopulation != {}:
+                raise NotImplementedError(
+                    "Overpopulation not implemented in multi-Tvib mode"
+                )
             # ... vibrational distribution
             if vib_distribution == "boltzmann":
                 df["nu_vib_x_Qvib"] = df.gvibu * exp(-hc_k * df.Evibu / Tvib)
