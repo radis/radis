@@ -544,10 +544,11 @@ if __name__ == "__main__":
         4320,
         molecule="H2O",
         isotope="1",
+        verbose=3,
     )
     sf.fetch_databank("exomol")
     s = sf.eq_spectrum(500, name="ExoMol")
-
+    s.plot()
 
 #    mask=mdb.A>1.e-42
 #    mdb.masking(mask)

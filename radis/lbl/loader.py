@@ -889,9 +889,11 @@ class DatabankLoader(object):
                 # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
                 for df in frames:
                     assert "iso" in df.columns
-            df = pd.concat(frames, ignore_index=True)  # reindex
-
+                df = pd.concat(frames, ignore_index=True)  # reindex
+            else:
+                df = frames[0]
             self.params.dbpath = "fetched from hitran"
+
         elif source == "hitemp":
             # Download, setup local databases, and fetch (use existing if possible)
 
@@ -953,8 +955,11 @@ class DatabankLoader(object):
                 # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
                 for df in frames:
                     assert "iso" in df.columns
-            df = pd.concat(frames, ignore_index=True)  # reindex
-            self.params.dbpath = local_paths
+                df = pd.concat(frames, ignore_index=True)  # reindex
+                self.params.dbpath = local_paths
+            else:
+                df = frames[0]
+                self.params.dbpath = local_paths[0]
 
         else:
             raise NotImplementedError("source: {0}".format(source))
@@ -1007,21 +1012,27 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        id_set = df.id.unique()
+        # Check that molecule and isotope information are present, drop columns if needed
+        if "id" in df.columns:
+            id_set = df.id.unique()
+            if len(id_set) != 1:  # only 1 molecule supported ftm
+                raise NotImplementedError(
+                    "Only 1 molecule at a time is currently supported "
+                    + "in SpectrumFactory. Use radis.calc_spectrum, which "
+                    + "calculates them independently then use MergeSlabs"
+                )
+        else:
+            assert "id" in df.attrs
 
-        if len(id_set) != 1:  # only 1 molecule supported ftm
-            raise NotImplementedError(
-                "Only 1 molecule at a time is currently supported "
-                + "in SpectrumFactory. Use radis.calc_spectrum, which "
-                + "calculates them independently then use MergeSlabs"
-            )
-
-        isotope_set = df.iso.unique()
-
-        if len(isotope_set) == 1:
-            df.drop("iso", axis=1, inplace=True)
-            df_metadata.append("iso")
-            df.attrs["iso"] = isotope_set[0]
+        if "iso" in df.columns:
+            isotope_set = df.iso.unique()
+            if len(isotope_set) == 1:
+                # save memory : drop isotope column (all unique); keep it as attribute
+                df.drop("iso", axis=1, inplace=True)
+                df_metadata.append("iso")
+                df.attrs["iso"] = isotope_set[0]
+        else:
+            assert "iso" in df.attrs
 
         return
 
