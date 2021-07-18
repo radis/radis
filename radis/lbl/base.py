@@ -3259,16 +3259,17 @@ class BaseFactory(DatabankLoader):
             mem = mem.total  # total physical memory available
             # Checking if object type column exists
             if "O" in self.df1.dtypes.unique():
-                limit = (
-                    mem / 25  # 4% of user RAM
-                )  # Since the memory_usage(deep=False) will be alot less than actual
+                limit = mem / 25  # 4% of user RAM
                 self.warn(
                     "'object' type column found in database, calculations and "
                     + "memory usage would be faster with a numeric type. Possible "
-                    + "solution is to not use 'save_memory' and convert the columns to dtype."
+                    + "solution is to not use 'save_memory' and convert the columns to dtype.",
+                    "PerformanceWarning",
                 )
             else:
-                limit = mem * 2 / 5  # 40% of User available RAM
+                limit = (
+                    mem / 25 * 4
+                )  # the difference between deep=True and deep=False is around 4 times
 
             df_size = self.df1.memory_usage(deep=False).sum()
 
