@@ -68,6 +68,7 @@ import numpy as np
 import pandas as pd
 from astropy import units as u
 from numpy import exp, pi
+from psutil import virtual_memory
 
 import radis
 
@@ -3253,11 +3254,22 @@ class BaseFactory(DatabankLoader):
 
         # Check memory size
         try:
+            # Retrieving total user RAM
+            mem = virtual_memory()
+            mem = mem.total  # total physical memory available
             # Checking if object type column exists
             if "O" in self.df1.dtypes.unique():
-                limit = 80e6
+                limit = (
+                    mem / 25  # 4% of user RAM
+                )  # Since the memory_usage(deep=False) will be alot less than actual
+                self.warn(
+                    "'object' type column found in database, calculations and "
+                    + "memory usage would be faster with a numeric type. Possible "
+                    + "solution is to not use 'save_memory' and convert the columns to dtype."
+                )
             else:
-                limit = 500e6
+                limit = mem * 2 / 5  # 40% of User available RAM
+
             df_size = self.df1.memory_usage(deep=False).sum()
 
             if df_size > limit:
