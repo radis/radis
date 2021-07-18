@@ -11,14 +11,17 @@ import pandas as pd
 def read_def(deff):
     """Exomol IO for a definition file
 
-    Args:
-        deff: definition file
-    Returns:
-        temperature exponent n_Texp
-        broadening parameter alpha_ref
-        molecular mass
-        numinf: nu minimum for trans
-        numtag: tag for wavelength range
+    Parameters
+    ----------
+    deff: definition file
+
+    Returns
+    -------
+    temperature exponent n_Texp
+    broadening parameter alpha_ref
+    molecular mass
+    numinf: nu minimum for trans
+    numtag: tag for wavelength range
 
     Note:
        For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
@@ -28,7 +31,7 @@ def read_def(deff):
 
     dat = pd.read_csv(deff, sep="#", names=("VAL", "COMMENT"))
     alpha_ref = None
-    texp = None
+    # texp = None
     molmasssw = False
     n_Texp = None
     ntransf = 1
@@ -238,7 +241,7 @@ def pickup_gEslow(states, trans):
     A = trans["A"].to_numpy()
     nu_lines = trans["nu_lines"].to_numpy()
     elower = trans["elower"].to_numpy()
-    gpu = trans["gup"].to_numpy()
+    gup = trans["gup"].to_numpy()
     return A, nu_lines, elower, gup
 
 
@@ -372,7 +375,7 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
     alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
     n_Texp_arr = np.array(bdat["n_Texp"][cmask])
 
-    Nblower = len(j2alpha_ref_def)
+    # Nblower = len(j2alpha_ref_def)
 
     if jupper_max == None:
         Nbupper = np.max(jupper_arr) + 1

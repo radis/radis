@@ -182,6 +182,7 @@ def fetch_astroquery(
     # Process response
 
     # Rename columns from Astroquery to RADIS format
+    # TODO : define RADIS database format somewhere else; with description of the column names.
     rename_columns = {
         "molec_id": "id",
         "local_iso_id": "iso",

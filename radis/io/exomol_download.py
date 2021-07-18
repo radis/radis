@@ -21,6 +21,7 @@ except:  # if local import
     from radis.io import exomolapi
     from radis.io.exomol_utils import e2s
 
+from radis.db.classes import get_molecule_identifier
 from radis.lbl.base import linestrength_from_Einstein  # TODO: move elsewhere
 
 EXOMOL_URL = u"http://www.exomol.com/db/"
@@ -36,8 +37,7 @@ class MdbExomol(object):
         Sij0 (nd array): line strength at T=Tref (cm)
         dev_nu_lines (np array): line center in device (cm-1)
         logsij0 (np array): log line strength at T=Tref
-        A (np array): Einstein A coeeficient
-        gamma_natural (np array): gamma factor of the natural broadening
+        A (np array): Einstein A coefficient
         elower (np array): the lower state energy (cm-1)
         gpp (np array): statistical weight
         jlower (np array): J_lower
@@ -99,6 +99,11 @@ class MdbExomol(object):
             self.download(molec, extension=[".states.bz2"])
         if not self.broad_file.exists():
             self.download(molec, extension=[".broad"])
+
+        # Add molecule name
+        tag = molec.split("__")
+        self.molecule = e2s(tag[0])
+        self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
 
         # load def
         (
@@ -229,11 +234,11 @@ class MdbExomol(object):
         self._jlower = self._jlower[mask]
         self._jupper = self._jupper[mask]
 
-        # jnp arrays
+        # jnp arraysgamma_
         self.dev_nu_lines = np.array(self.nu_lines)
         self.logsij0 = np.array(np.log(self.Sij0))
         self.A = np.array(self._A)
-        self.gamma_natural = gn(self.A)
+        # self.gamma_natural = gn(self.A)   #  Natural Broadening neglected in RADIS
         self.elower = np.array(self._elower)
         self.gpp = np.array(self._gpp)
         self.jlower = np.array(self._jlower, dtype=int)
@@ -363,11 +368,64 @@ class MdbExomol(object):
                 except:
                     print("Error: Couldn't download " + ext + " file and save.")
 
+    def to_df(self):
+        """Export Line Database to a RADIS-friendly Pandas DataFrame"""
+
+        ##Broadening parameters
+        self.set_broadening()
+
+        # TODO : define RADIS database format somewhere else; with description of the column names.
+        df = pd.DataFrame(
+            {
+                "wav": self.nu_lines,
+                "int": self.Sij0,
+                "A": self._A,
+                "airbrd": self.alpha_ref,  # temperature dependance exponent for air broadening
+                # "selbrd": None,                  # self-temperature dependant exponent. Not implementedi in ExoMol
+                "El": self._elower,
+                # "Tdpair": None,
+                # "Pshft": None,
+                "ju": self._jupper,
+                "gpp": self._gpp,
+                "Tdpair": self.n_Texp,  # temperature dependance exponent. Here we use Tdair; no Tdpsel. TODO
+            }
+        )
+
+        df.attrs["id"] = get_molecule_identifier(self.molecule)
+        df.attrs["iso"] = 1  # TODO : get isotope number while parsing ExoMol name
+
+        assert self.Tref == 296  # default in RADIS
+
+        return df
+
 
 if __name__ == "__main__":
     # mdb=MdbExomol("/home/kawahara/exojax/data/CO/12C-16O/Li2015/")
     # mdb=MdbExomol("/home/kawahara/exojax/data/CH4/12C-1H4/YT34to10/",nurange=[6050.0,6150.0])
     mdb = MdbExomol(".database/H2O/1H2-16O/POKAZATEL", [4310.0, 4320.0], crit=1.0e-45)
+
+    df = mdb.to_df()
+
+    # %% Test
+    from radis import SpectrumFactory
+
+    sf = SpectrumFactory(
+        4310,
+        4320,
+        molecule="H2O",
+        isotope="1",
+    )
+    sf.fetch_databank(
+        "hitran"
+    )  # placeholder. Load lines (will be replaced), load partition function.
+    sf.df0 = df  # override.
+    s = sf.eq_spectrum(500, name="ExoMol")
+
+    # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
+    # s_hit = sf.eq_spectrum(500, name='HITRAN')
+
+    # import pytables
+
 
 #    mask=mdb.A>1.e-42
 #    mdb.masking(mask)

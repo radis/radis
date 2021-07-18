@@ -1922,7 +1922,14 @@ class BaseFactory(DatabankLoader):
 
         # Calculate
         air_pressure = self.input.pressure_mbar / 1013.25  # convert from mbar to atm
-        df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
+        if "Pshft" in df.columns:
+            df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
+        else:
+            self.warn(
+                "Pressure-shift coefficient not given in database: assumed 0 pressure shift",
+                "MissingPressureShiftWarning",
+            )
+            df["shiftwav"] = df.wav
 
         self.profiler.stop("calc_lineshift", "Calculated lineshift")
 
@@ -3680,6 +3687,7 @@ def linestrength_from_Einstein(A, gu, El, Ia, nu, Q, T):
         * (1 - np.exp(-hc_k * nu / T))
         / (8 * np.pi * c_CGS * nu ** 2 * Q)
     )
+
 
 def get_abundance(df):
 

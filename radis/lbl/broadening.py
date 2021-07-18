@@ -262,8 +262,9 @@ def pressure_broadening_HWHM(
         half-width half max coefficient (HWHM ) for resonant (self) broadening with air
     Tdpair: array like     [length N]
         temperature dependance coefficient for collisional broadening with air
-    Tdpsel: array like     [length N]
-        temperature dependance coefficient for resonant (self) broadening
+    Tdpsel: array like, optional    [length N]
+        temperature dependance coefficient for resonant (self) broadening.
+        If ``None``, use ``Tdpair``.
     pressure_atm: float  [atm]
         pressure in atmosphere (warning, not bar!)
     mole_fraction: float    [0-1]
@@ -276,11 +277,20 @@ def pressure_broadening_HWHM(
 
     Returns
     -------
-    lineshape: pandas Series        [shape N x W]
-        Lorentzian half-width at half-maximum (FWHM) for each line profile
+    pandas Series        [shape N]
+        Lorentzian half-width at half-maximum (HWHM) for each line profile
 
     References
     ----------
+
+    ..math::
+
+        \\gamma_{lb}={\\left(\\frac{T_{ref}}{T_{gas}}\\right)}^{n_{air}} \\gamma_{air} P \\left(1-x\\right)+{\\left(\\frac{T_{ref}}{T_{gas}}\\right)}^{n_{self}} \\gamma_{self} P x
+
+    With :math:`n_{air}, n_{self}` the temperature dependance coefficients
+    ``Tdpair, Tdpsel`` ; :math:`\\gamma_{air}, \\gamma_{self}` the air and resonant
+    broadening ``airbrd, selbrd``, :math:`x` the ``mole_fraction``.
+
     .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
     See Also
@@ -1003,21 +1013,31 @@ class BroadenFactory(BaseFactory):
         .. [1] `Rothman 1998 (HITRAN 1996) eq (A.12) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
         """
 
+        # Check self broadening temperature-dependance coefficient is here
+        if not "Tdpsel" in list(df.keys()):
+            self.warn(
+                "Self-broadening temperature coefficient `Tdpsel` not given in database: used `Tdpair` instead",
+                "MissingSelfBroadeningTdepWarning",
+                level=2,  # only appear if verbose>=2
+            )
+            Tdpsel = None  # will be corrected in pressure_broadening_HWHM()
+        else:
+            Tdpsel = df.Tdpsel
+
         # Check self broadening is here
         if not "Tdpsel" in list(df.keys()):
             self.warn(
-                "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
+                "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
                 "MissingSelfBroadeningWarning",
-                level=2,  # only appear if verbose>=2
             )
-            Tdpsel = None
+            selbrd = df.airbrd
         else:
-            Tdpsel = df.Tdpsel
+            selbrd = df.selbrd
 
         # Calculate broadening HWHM
         wl = pressure_broadening_HWHM(
             df.airbrd,
-            df.selbrd,
+            selbrd,
             df.Tdpair,
             Tdpsel,
             pressure_atm,

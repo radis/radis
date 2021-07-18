@@ -603,8 +603,8 @@ class DatabankLoader(object):
 
     def init_databank(self, *args, **kwargs):
         """Method to init databank parameters but only load them when needed.
-        Databank is reloaded by
-        :meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
+
+        Databank is reloaded by :py:meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
         Same inputs Parameters as :meth:`~radis.lbl.loader.DatabankLoader.load_databank`:
 
         Parameters
@@ -742,9 +742,9 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``
-            [Download database lines from the latest HITRAN (see [HITRAN-2016]_)
-            or HITEMP version (see [HITEMP-2010]_  )]
+        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``
+            [Download database lines from the latest HITRAN (see [HITRAN-2016]_),
+            HITEMP (see [HITEMP-2010]_  )] or EXOMOL see [ExoMol-2020]_  ) databases.
 
         Other Parameters
         ----------------
@@ -814,7 +814,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp"]:
+        if source not in ["hitran", "hitemp", "exomol"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -822,6 +822,8 @@ class DatabankLoader(object):
             dbformat = (
                 "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
+        elif source == "exomol":
+            dbformat = "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb  # Note @EP : still WIP.
 
         # Get inputs
         molecule = self.input.molecule
@@ -910,6 +912,11 @@ class DatabankLoader(object):
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
+
+        elif source == "exomol":
+            raise NotImplementedError("WIP")
+        else:
+            raise NotImplementedError("source: {0}".format(source))
 
         if len(df) == 0:
             raise EmptyDatabaseError(
