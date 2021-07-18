@@ -2,11 +2,13 @@
 
    * MdbExomol is the MDB for ExoMol
 
-Borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax>`__
+Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax>`__
 code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
 
 """
 import pathlib
+from ntpath import join
+from os.path import expanduser
 
 import numpy as np
 
@@ -22,9 +24,120 @@ except:  # if local import
     from radis.io.exomol_utils import e2s
 
 from radis.db.classes import get_molecule_identifier
-from radis.lbl.base import linestrength_from_Einstein  # TODO: move elsewhere
 
-EXOMOL_URL = u"http://www.exomol.com/db/"
+EXOMOL_URL = "http://www.exomol.com/db/"
+
+KNOWN_EXOMOL_ISOTOPES_NAMES = {
+    "H2O": {1: "1H2-16O"},
+    "NH3": {1: "14N-1H3"},
+    "H2S": {1: "1H2-32S"},
+    "FeH": {1: "56Fe-1H"},
+}
+"""molecule: isotope: full name"""
+KNOWN_EXOMOL_DATABASE_NAMES = {
+    "H2O": {"1H2-16O": ["POKAZATEL"]},
+    "NH3": {"14N-1H3": ["CoYuTe"]},
+    "H2S": {"1H2-32S": ["AYT2"]},
+    "FeH": {"56Fe-1H": ["MoLLIST"]},
+}
+
+
+def fetch_exomol(
+    molecule,
+    database=None,
+    local_databases="~/.radisdb/exomol/",
+    databank_name="EXOMOL-{molecule}",
+    isotope=None,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
+    cache=True,
+    verbose=True,
+    clean_cache_files=True,
+    return_local_path=False,
+):
+    """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
+
+    Returns a Pandas DataFrame containing all lines.
+
+    Parameters
+    ----------
+    molecule: str
+        ExoMol molecule
+    database: str
+        database name. Ex:: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
+        :py:data:`~radis.io.exomol.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
+        there is only one database available, use it.
+    local_databases: str
+        where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``
+    databank_name: str
+        name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
+        Default ``"EXOMOL-{molecule}"``
+    isotope: str
+        load only certain isotopes : ``'2'``, ``'1,2'``, etc. Default ``1``.
+    load_wavenum_min, load_wavenum_max: float (cm-1)
+        load only specific wavenumbers.
+
+    Other Parameters
+    ----------------
+    cache: bool, or ``'regen'``
+        if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
+        Default ``True``.
+    verbose: bool
+    clean_cache_files: bool
+        if ``True`` clean downloaded cache files after HDF5 are created.
+    return_local_path: bool
+        if ``True``, also returns the path of the local database file.
+
+    Returns
+    -------
+    df: pd.DataFrame
+        Line list
+        A HDF5 file is also created in ``local_databases`` and referenced
+        in the :ref:`RADIS config file <label_lbl_config_file>` with name
+        ``databank_name``
+    local_path: str
+        path of local database file if ``return_local_path``
+
+    Notes
+    -----
+    if using ``load_only_wavenum_above/below`` or ``isotope``, the whole
+    database is anyway downloaded and uncompressed to ``local_databases``
+    fast access .HDF5 files (which will take a long time on first call). Only
+    the expected wavenumber range & isotopes are returned. The .HFD5 parsing uses
+    :py:func:`~radis.io.hdf5.hdf2df`
+
+    See Also
+    --------
+    :py:func:`~radis.io.hdf5.hdf2df`
+
+    """
+    full_molecule_name = KNOWN_EXOMOL_ISOTOPES_NAMES[molecule][isotope]
+    known_exomol_databases = KNOWN_EXOMOL_DATABASE_NAMES[molecule][full_molecule_name]
+
+    if database is None:
+        if len(known_exomol_databases) == 1:
+            database = known_exomol_databases[0]
+            if verbose:
+                print(f"Using ExoMol database {database} for {full_molecule_name}")
+        else:
+            raise KeyError(
+                f"Choose one of the several databases available for {full_molecule_name} in ExoMol: {known_exomol_databases}"
+            )
+    else:
+        if database not in KNOWN_EXOMOL_DATABASE_NAMES[molecule][full_molecule_name]:
+            raise KeyError(
+                f"{database} is not of the known available ExoMol databases for {full_molecule_name}. Choose one of : {known_exomol_databases}"
+            )
+
+    local_path = join(
+        expanduser(local_databases), molecule, full_molecule_name, database
+    )
+
+    mdb = MdbExomol(local_path, [load_wavenum_min, load_wavenum_max])
+
+    df = mdb.to_df()
+
+    return (df, mdb.path) if return_local_path else df
 
 
 class MdbExomol(object):
@@ -196,6 +309,8 @@ class MdbExomol(object):
         self.QTref = np.array(self.QT_interp(self.Tref))
 
         Ia = 1  #  TODO    Add isotope abundance
+
+        from radis.lbl.base import linestrength_from_Einstein  # TODO: move elsewhere
 
         self.Sij0 = linestrength_from_Einstein(
             A=self._A,
@@ -402,11 +517,26 @@ class MdbExomol(object):
 if __name__ == "__main__":
     # mdb=MdbExomol("/home/kawahara/exojax/data/CO/12C-16O/Li2015/")
     # mdb=MdbExomol("/home/kawahara/exojax/data/CH4/12C-1H4/YT34to10/",nurange=[6050.0,6150.0])
-    mdb = MdbExomol(".database/H2O/1H2-16O/POKAZATEL", [4310.0, 4320.0], crit=1.0e-45)
 
-    df = mdb.to_df()
+    # %% Test  by overriding Spectrumfactory's DataFrame df0
+    # mdb = MdbExomol(".database/H2O/1H2-16O/POKAZATEL", [4310.0, 4320.0], crit=1.0e-45)
+    # df = mdb.to_df()
+    # from radis import SpectrumFactory
+    # sf = SpectrumFactory(
+    #     4310,
+    #     4320,
+    #     molecule="H2O",
+    #     isotope="1",
+    # )
+    # sf.fetch_databank(
+    #     "hitran"
+    # )  # placeholder. Load lines (will be replaced), load partition function.
+    # sf.df0 = df  # override.
+    # s = sf.eq_spectrum(500, name="ExoMol")
+    # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
+    # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
-    # %% Test
+    #%% Test by direct caclulation
     from radis import SpectrumFactory
 
     sf = SpectrumFactory(
@@ -415,16 +545,8 @@ if __name__ == "__main__":
         molecule="H2O",
         isotope="1",
     )
-    sf.fetch_databank(
-        "hitran"
-    )  # placeholder. Load lines (will be replaced), load partition function.
-    sf.df0 = df  # override.
+    sf.fetch_databank("exomol")
     s = sf.eq_spectrum(500, name="ExoMol")
-
-    # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
-    # s_hit = sf.eq_spectrum(500, name='HITRAN')
-
-    # import pytables
 
 
 #    mask=mdb.A>1.e-42

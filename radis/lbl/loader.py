@@ -61,6 +61,7 @@ from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
+from radis.io.exomol import fetch_exomol
 from radis.io.hdf5 import hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import hit2df, parse_global_quanta, parse_local_quanta
@@ -860,7 +861,7 @@ class DatabankLoader(object):
             # Query one isotope at a time
             if isotope == "all":
                 raise ValueError(
-                    "Please define isotope explicitely (cannot use 'all' with fetch_databank)"
+                    "Please define isotope explicitely (cannot use 'all' with fetch_databank('hitran'))"
                 )
             isotope_list = self._get_isotope_list()
 
@@ -884,8 +885,11 @@ class DatabankLoader(object):
                     f"{molecule} has no lines on range "
                     + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
                 )
-            else:
-                df = pd.concat(frames, ignore_index=True)  # reindex
+            if len(frames) > 1:
+                # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
+                for df in frames:
+                    assert "iso" in df.columns
+            df = pd.concat(frames, ignore_index=True)  # reindex
 
             self.params.dbpath = "fetched from hitran"
         elif source == "hitemp":
@@ -914,7 +918,44 @@ class DatabankLoader(object):
                 )
 
         elif source == "exomol":
-            raise NotImplementedError("WIP")
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                raise ValueError(
+                    "Please define isotope explicitely (cannot use 'all' with fetch_databank('exomol'))"
+                )
+            isotope_list = self._get_isotope_list()
+
+            local_paths = []
+            frames = []  # lines for all isotopes
+            for iso in isotope_list:
+                df, local_path = fetch_exomol(
+                    molecule,
+                    database=None,  # TODO : add database name
+                    isotope=iso,
+                    load_wavenum_min=wavenum_min,
+                    load_wavenum_max=wavenum_max,
+                    cache=db_use_cached,
+                    verbose=self.verbose,
+                    return_local_path=True,
+                )
+                if len(df) > 0:
+                    frames.append(df)
+                local_paths.append(local_path)
+
+            # Merge
+            if frames == []:
+                raise EmptyDatabaseError(
+                    f"{molecule} has no lines on range "
+                    + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                )
+            if len(frames) > 1:
+                # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
+                for df in frames:
+                    assert "iso" in df.columns
+            df = pd.concat(frames, ignore_index=True)  # reindex
+            self.params.dbpath = local_paths
+
         else:
             raise NotImplementedError("source: {0}".format(source))
 
