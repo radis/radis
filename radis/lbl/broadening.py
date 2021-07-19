@@ -1025,7 +1025,7 @@ class BroadenFactory(BaseFactory):
             Tdpsel = df.Tdpsel
 
         # Check self broadening is here
-        if not "Tdpsel" in list(df.keys()):
+        if not "selbrd" in list(df.keys()):
             self.warn(
                 "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
                 "MissingSelfBroadeningWarning",
