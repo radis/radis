@@ -64,13 +64,11 @@ Most methods are written in inherited class with the following inheritance schem
 """
 # TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.
 
-
-import sys
-
 import numpy as np
 import pandas as pd
 from astropy import units as u
 from numpy import exp, pi
+from psutil import virtual_memory
 
 import radis
 
@@ -3256,11 +3254,28 @@ class BaseFactory(DatabankLoader):
 
         # Check memory size
         try:
-            if sys.getsizeof(self.df1) > 500e6:
+            # Retrieving total user RAM
+            mem = virtual_memory()
+            mem = mem.total  # total physical memory available
+            # Checking if object type column exists
+            if "O" in self.df1.dtypes.unique():
+                limit = mem / 25  # 4% of user RAM
                 self.warn(
-                    "Line database is large: {0:.0f} Mb".format(
-                        sys.getsizeof(self.df1) * 1e-6
-                    )
+                    "'object' type column found in database, calculations and "
+                    + "memory usage would be faster with a numeric type. Possible "
+                    + "solution is to not use 'save_memory' and convert the columns to dtype.",
+                    "PerformanceWarning",
+                )
+            else:
+                limit = mem / 2  # 50 % of user RAM
+
+            # Note: the difference between deep=True and deep=False is around 4 times
+
+            df_size = self.df1.memory_usage(deep=False).sum()
+
+            if df_size > limit:
+                self.warn(
+                    "Line database is large: {0:.0f} Mb".format(df_size * 1e-6)
                     + ". Consider using save_memory "
                     + "option, if you don't need to reuse this factory to calculate new spectra",
                     "MemoryUsageWarning",
