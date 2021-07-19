@@ -3267,9 +3267,9 @@ class BaseFactory(DatabankLoader):
                     "PerformanceWarning",
                 )
             else:
-                limit = (
-                    mem / 25 * 4
-                )  # the difference between deep=True and deep=False is around 4 times
+                limit = mem / 2  # 50 % of user RAM
+
+            # Note: the difference between deep=True and deep=False is around 4 times
 
             df_size = self.df1.memory_usage(deep=False).sum()
 
