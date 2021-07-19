@@ -727,6 +727,7 @@ class DatabankLoader(object):
     def fetch_databank(
         self,
         source="hitran",
+        exomol_database=None,
         parfunc=None,
         parfuncfmt="hapi",
         levels=None,
@@ -746,6 +747,11 @@ class DatabankLoader(object):
         source: ``'hitran'``, ``'hitemp'``, ``'exomol'``
             [Download database lines from the latest HITRAN (see [HITRAN-2016]_),
             HITEMP (see [HITEMP-2010]_  )] or EXOMOL see [ExoMol-2020]_  ) databases.
+        exomol_database: None
+            if fetching from ''`exomol`'', choose which database to use. Keep
+            ``None`` to use the recommended one. See all available databases
+            with :py:func:`radis.io.exomol.get_exomol_database_list`
+
 
         Other Parameters
         ----------------
@@ -825,6 +831,9 @@ class DatabankLoader(object):
             )
         elif source == "exomol":
             dbformat = "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb  # Note @EP : still WIP.
+
+        if exomol_database != None:
+            assert source == "exomol"
 
         # Get inputs
         molecule = self.input.molecule
@@ -933,7 +942,7 @@ class DatabankLoader(object):
             for iso in isotope_list:
                 df, local_path = fetch_exomol(
                     molecule,
-                    database=None,  # TODO : add database name
+                    database=exomol_database,
                     isotope=iso,
                     load_wavenum_min=wavenum_min,
                     load_wavenum_max=wavenum_max,

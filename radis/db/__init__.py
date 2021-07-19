@@ -12,9 +12,10 @@ def _get_supported_molecules_equilibrium():
     """Molecules supported in RADIS equilibrium calculations Basically, all
     [HITRAN-2016]_ species."""
     # Add all HITRAN species
-    from .classes import HITRAN_MOLECULES
+    # Add ExoMol species
+    from .classes import HITRAN_MOLECULES, KNOWN_EXOMOL_ISOTOPES_NAMES
 
-    return HITRAN_MOLECULES
+    return list(set(HITRAN_MOLECULES).union(set(KNOWN_EXOMOL_ISOTOPES_NAMES)))
 
 
 def _get_supported_molecules_nonequilibrium():

@@ -243,6 +243,7 @@ def run_setup(with_binary):
         packages=find_packages(),
         install_requires=[
             "hitran-api",
+            "beautifulsoup4",  # parse ExoMol website
             "numpy",
             "scipy>=1.4.0",
             "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7

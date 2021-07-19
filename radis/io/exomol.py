@@ -27,19 +27,91 @@ from radis.db.classes import get_molecule_identifier
 
 EXOMOL_URL = "http://www.exomol.com/db/"
 
-KNOWN_EXOMOL_ISOTOPES_NAMES = {
-    "H2O": {1: "1H2-16O"},
-    "NH3": {1: "14N-1H3"},
-    "H2S": {1: "1H2-32S"},
-    "FeH": {1: "56Fe-1H"},
-}
-"""molecule: isotope: full name"""
-KNOWN_EXOMOL_DATABASE_NAMES = {
-    "H2O": {"1H2-16O": ["POKAZATEL"]},
-    "NH3": {"14N-1H3": ["CoYuTe"]},
-    "H2S": {"1H2-32S": ["AYT2"]},
-    "FeH": {"56Fe-1H": ["MoLLIST"]},
-}
+from urllib.request import HTTPError, urlopen
+
+from bs4 import BeautifulSoup
+
+
+def get_exomol_full_isotope_name(molecule, isotope):
+    """Get full isotope name for ``molecule`` and ``isotope`` number
+
+    Parameters
+    ----------
+    molecule: str
+    isotope: int
+        terrestrial abundance
+
+    Examples
+    --------
+    ::
+        get_exomol_full_isotope_name("CH4", 1)
+        >>> '12C-1H4'
+
+    See Also
+    --------
+    :py:func:`~radis.io.exomol.get_exomol_database_list`"""
+
+    from radis.db.classes import KNOWN_EXOMOL_ISOTOPES_NAMES
+
+    if (molecule, isotope) in KNOWN_EXOMOL_ISOTOPES_NAMES:
+        return KNOWN_EXOMOL_ISOTOPES_NAMES[(molecule, isotope)]
+    else:
+        # Read and convert from HITRAN molecules
+        from radis.db.molparam import MolParams
+
+        mp = MolParams()
+        return mp.get(molecule, isotope, "isotope_name_exomol")
+
+
+def get_exomol_database_list(molecule, isotope_full_name):
+    """Parse ExoMol website and return list of available databases, and recommended database
+
+    Parameters
+    ----------
+    molecule: str
+    isotope_full_name: str
+        isotope full name (ex. ``12C-1H4`` for CH4,1). Get it from
+        :py:func:`radis.io.exomol.get_exomol_full_isotope_name`
+
+    Returns
+    -------
+
+    Examples
+    --------
+    ::
+        databases, recommended = get_exomol_database_list("CH4", "12C-1H4")
+        >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
+
+    See Also
+    --------
+    :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
+    """
+
+    url = f"https://exomol.com/data/molecules/{molecule}/{isotope_full_name}"
+    try:
+        response = urlopen(url).read()
+    except HTTPError as err:
+        raise ValueError(f"HTTPError opening url={url}") from err
+
+    soup = BeautifulSoup(
+        response, features="lxml"
+    )  # make soup that is parse-able by bs
+
+    # Recommended database
+    rows = soup.find_all(
+        "a", {"class": "list-group-item link-list-group-item recommended"}
+    )
+    databases_recommended = [r.get_attribute_list("title")[0] for r in rows]
+
+    # All others
+    rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
+    databases = [r.get_attribute_list("title")[0] for r in rows]
+
+    assert len(databases_recommended) <= 1
+
+    databases = databases + databases_recommended
+
+    return databases, databases_recommended[0]
 
 
 def fetch_exomol(
@@ -111,22 +183,30 @@ def fetch_exomol(
     :py:func:`~radis.io.hdf5.hdf2df`
 
     """
-    full_molecule_name = KNOWN_EXOMOL_ISOTOPES_NAMES[molecule][isotope]
-    known_exomol_databases = KNOWN_EXOMOL_DATABASE_NAMES[molecule][full_molecule_name]
+    full_molecule_name = get_exomol_full_isotope_name(molecule, isotope)
+    known_exomol_databases, recommended_database = get_exomol_database_list(
+        molecule, full_molecule_name
+    )
 
     if database is None:
         if len(known_exomol_databases) == 1:
             database = known_exomol_databases[0]
             if verbose:
                 print(f"Using ExoMol database {database} for {full_molecule_name}")
+        elif recommended_database:
+            database = recommended_database
+            if verbose:
+                print(
+                    f"Using ExoMol database {database} for {full_molecule_name} (recommended by the ExoMol team). Other available databases: {known_exomol_databases}. Choose with `radis.fetch_exomol(DATABASE_NAME)` or `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`"
+                )
         else:
             raise KeyError(
-                f"Choose one of the several databases available for {full_molecule_name} in ExoMol: {known_exomol_databases}"
+                f"Choose one of the several databases available for {full_molecule_name} in ExoMol: {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). Choose with `radis.fetch_exomol(DATABASE_NAME)` or `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`"
             )
     else:
-        if database not in KNOWN_EXOMOL_DATABASE_NAMES[molecule][full_molecule_name]:
+        if database not in known_exomol_databases:
             raise KeyError(
-                f"{database} is not of the known available ExoMol databases for {full_molecule_name}. Choose one of : {known_exomol_databases}"
+                f"{database} is not of the known available ExoMol databases for {full_molecule_name}. Choose one of : {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). Choose with `radis.fetch_exomol(DATABASE_NAME)` or `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`"
             )
 
     local_path = join(
