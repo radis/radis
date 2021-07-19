@@ -268,9 +268,17 @@ class ConditionDict(dict):
     def __getattr__(self, attr):
         if attr == "__getstate__":
             return dict.__getattr__(attr)
+        if not attr in self.__slots__:
+            raise KeyError(
+                f"Undefined attribute `{attr}` for {self.__class__}. Did you mean : {self.__slots__}"
+            )
         return self[attr]
 
     def __setattr__(self, attr, value):
+        if not attr in self.__slots__:
+            raise KeyError(
+                f"Undefined attribute `{attr}` for {self.__class__}. Did you mean : {self.__slots__}"
+            )
         self[attr] = value
 
     # Methods needed for Multiprocessing
@@ -313,12 +321,28 @@ class Input(ConditionDict):
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
     """
 
-    #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
-    #    __slots__ = [
-    #         'Tgas', 'Tref', 'Tvib', 'Trot', 'isotope', 'medium', 'mole_fraction',
-    #         'molecule', 'overpopulation', 'path_length', 'pressure_mbar', 'rot_distribution',
-    #         'self_absorption', 'state', 'vib_distribution', 'wavelength_max',
-    #         'wavelength_min', 'wavenum_max', 'wavenum_min']
+    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
+    __slots__ = [
+        "Tgas",
+        "Tref",
+        "Tvib",
+        "Trot",
+        "isotope",
+        "medium",
+        "mole_fraction",
+        "molecule",
+        "overpopulation",
+        "path_length",
+        "pressure_mbar",
+        "rot_distribution",
+        "self_absorption",
+        "state",
+        "vib_distribution",
+        "wavelength_max",
+        "wavelength_min",
+        "wavenum_max",
+        "wavenum_min",
+    ]
 
     def __init__(self):
         super(Input, self).__init__()
@@ -372,15 +396,36 @@ class Parameters(ConditionDict):
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
     """
 
-    #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
-    #    __slots__ = [
-    #                 'broadening_max_width', 'chunksize', 'cutoff',
-    #                 'db_use_cached', 'dbformat', 'dbpath',
-    #                 'export_lines', 'export_populations', 'levelsfmt', 'lvl_use_cached',
-    #                 'parfuncfmt', 'parfuncpath',
-    #                 'pseudo_continuum_threshold', 'warning_broadening_threshold',
-    #                 'warning_linestrength_cutoff', 'wavenum_max_calc', 'wavenum_min_calc',
-    #                 'waveunit', 'wstep']
+    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
+    __slots__ = [
+        "add_at_used",
+        "broadening_method",
+        "broadening_max_width",
+        "chunksize",
+        "cutoff",
+        "db_use_cached",
+        "dbformat",
+        "dbpath",
+        "dlm_log_pL",
+        "dlm_log_pG",
+        "export_lines",
+        "export_populations",
+        "folding_thresh",
+        "include_neighbouring_lines",
+        "levelsfmt",
+        "lvl_use_cached",
+        "optimization",
+        "parfuncfmt",
+        "parfuncpath",
+        "parsum_mode",
+        "pseudo_continuum_threshold",
+        "warning_broadening_threshold",
+        "warning_linestrength_cutoff",
+        "wavenum_max_calc",
+        "wavenum_min_calc",
+        "waveunit",
+        "wstep",
+    ]
 
     def __init__(self):
         super(Parameters, self).__init__()
@@ -435,6 +480,19 @@ class MiscParams(ConditionDict):
     :py:attr:`~radis.lbl.loader.DatabankLoader.input`,
     :py:attr:`~radis.lbl.loader.DatabankLoader.params`,
     """
+
+    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
+    __slots__ = [
+        "chunksize",
+        "export_lines",
+        "export_populations",
+        "export_rovib_fraction",
+        "load_energies",
+        "warning_broadening_threshold",
+        "warning_linestrength_cutoff",
+        "total_lines",
+        "zero_padding",
+    ]
 
     def __init__(self):
         super(MiscParams, self).__init__()

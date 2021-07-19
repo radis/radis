@@ -178,6 +178,17 @@ class SpectrumFactory(BandFactory):
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate databases such as
         CDSD. If ``0``, no cutoff. Default ``1e-27``.
+    parsum_mode: 'full summation', 'tabulation'
+        how to compute partition functions, at nonequilibrium or when partition
+        function are not already tabulated. ``'full summation'`` : sums over all
+        (potentially millions) of rovibrational levels. ``'tabulation'`` :
+        builds an on-the-fly tabulation of rovibrational levels (500 - 4000x faster
+        and usually accurate within 0.1%). Default ``full summation'``
+
+        .. note::
+            parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
+            calculations of small spectra extremelly fast. Will become the default
+            after 0.9.31.
     pseudo_continuum_threshold: float
         if not ``0``, first calculate a rough approximation of the spectrum, then
         moves all lines whose linestrength intensity is less than this threshold
@@ -337,6 +348,8 @@ class SpectrumFactory(BandFactory):
     # TODO
     # store everything in a self.var class instead of self.[] directly
 
+    # TODO : move Tref in load_databank / fetch_databank only
+
     def __init__(
         self,
         wmin=None,
@@ -363,6 +376,7 @@ class SpectrumFactory(BandFactory):
         zero_padding=-1,
         broadening_method=Default("fft"),
         cutoff=0,
+        parsum_mode="full summation",
         verbose=True,
         warnings=True,
         save_memory=False,
@@ -482,6 +496,7 @@ class SpectrumFactory(BandFactory):
             # If None, use no cutoff : https://github.com/radis/radis/pull/259
             cutoff = 0
         self.params.cutoff = cutoff
+        self.params.parsum_mode = parsum_mode
 
         # Time Based variables
         self.verbose = verbose

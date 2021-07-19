@@ -409,20 +409,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 + "(Tvib={0}K, Trot={1}K, ... )".format(Tvib, Trot)
                 + "update_populations={0})".format(update_populations)
             )
-        #                               'overpopulation={0}, vib_distribution={1}'.format(overpopulation, vib_distribution)+\
-        #                               'rot_distribution={0}'.format(rot_distribution)
 
         # Check inputs, initialize
         if overpopulation is None:
             overpopulation = {}
-            
-        #sometimes overpopulation is already equal to {} 
-        #!!!Todo - resolve this minor inconsistency where sometimes overpopulation == None or == {} which means the same
-        if overpopulation != {}: 
+        if overpopulation != {}:
             if not returnQvibQrot:
                 raise ValueError(
                     "When using overpopulation, partition function "
-                    + "must be calculated with returnQvibQrot=True"
+                    + "must be calculated with returnQvibQrot=True. Set ``PartitionFunctionCalculator.at_noneq(..., returnQvibQrot=True)``, or ``SpectrumFactory.misc.export_rovib_fraction = True``"
                 )
         assert vib_distribution in ["boltzmann", "treanor"]
         assert rot_distribution in ["boltzmann"]

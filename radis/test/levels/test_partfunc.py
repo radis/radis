@@ -801,6 +801,78 @@ def test_tabulated_partition_functions(verbose=True, plot=True, *args, **kwargs)
         plt.legend()
 
 
+def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
+    """Test Partition function modes in SpectrumFactory
+
+    ::
+        # sf.params.parsum_mode = 'full summation'   # default
+        0.00s - Checked nonequilibrium parameters
+        sorting lines by vibrational bands
+        lines sorted in 0.0s
+        ...... 0.06s - partition functions
+        ...... 0.01s - populations
+
+    ::
+        # sf.params.parsum_mode = 'tabulation'
+        lines sorted in 0.0s
+        ...... 0.02s - partition functions
+        ...... 0.01s - populations
+    """
+    from radis import SpectrumFactory
+
+    wmin, wmax = 2284, 2285
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        molecule="CO2",
+        isotope="1",
+        broadening_max_width=5,  # cm-1
+        medium="air",
+        path_length=10.32,  # cm
+        wstep=0.001,
+    )
+    conditions = {
+        "mole_fraction": 0.2,
+        "pressure": 1,
+        "Ttrans": 2000,
+        "Trot": 2100,
+        "Tvib": 1500,
+    }
+
+    # ... initialize tests :
+    sf.verbose = 0
+    sf.params.parsum_mode = "full summation"  # default
+    sf.load_databank("HITEMP-CO2-TEST")
+    sf._add_bands()
+    _ = sf.non_eq_spectrum(**conditions)  # initialize energies, etc.
+    # ... compare:
+    sf.verbose = 3
+    s_HITEMP = sf.non_eq_spectrum(**conditions, name=sf.params.parsum_mode)
+
+    # Now, again with tabulation:
+    # ... init :
+    sf.params.parsum_mode = "tabulation"
+    sf.verbose = 0
+    sf.load_databank("HITEMP-CO2-TEST")
+    sf._add_bands()
+    _ = sf.non_eq_spectrum(**conditions)  # initialize energies, first tabulation
+    # ... compare:
+    sf.verbose = 3
+    s_HITEMP2 = sf.non_eq_spectrum(**conditions, name=sf.params.parsum_mode)
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+        from radis import plot_diff
+
+        plot_diff(s_HITEMP2, s_HITEMP, method="ratio")
+
+    from radis import get_residual
+
+    assert get_residual(s_HITEMP, s_HITEMP2, "abscoeff") < 1e-5
+
+
 def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
     # Test 0: delete all cached energies
@@ -848,9 +920,6 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
 if __name__ == "__main__":
     printm("Testing parfunc: {0}".format(_run_testcases()))
-
-    # verbose = True
-    # warnings = True
 
     # test_tabulated_partition_functions()
 #    test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
