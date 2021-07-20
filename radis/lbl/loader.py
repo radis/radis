@@ -2290,6 +2290,10 @@ class DatabankLoader(object):
         # helps IDE find methods
         assert isinstance(parsum, RovibParFuncCalculator)
 
+        # Update partition sum calculation mode (if has been reset by user)
+        if parsum.mode != self.params.parsum_mode:
+            parsum.mode = self.params.parsum_mode
+
         return parsum
 
     def get_partition_function_molecule(self, molecule):
