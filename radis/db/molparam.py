@@ -7,6 +7,8 @@
 """
 
 
+import re
+
 import pandas as pd
 
 from radis.db.utils import getFile
@@ -138,6 +140,9 @@ isotope_name_dict = {
     (49, 1): "(12C)(16O)(35Cl)2",
     (49, 2): "(12C)(16O)(35Cl)(37Cl)",
 }
+# TODO : add test in test_molparams comparing dictionary above to
+# latest values from HAPI; to make sure we never have any problem
+# even if HITRAN eventually changes the conventions and labels.
 
 
 class MolParams:
@@ -192,7 +197,7 @@ class MolParams:
             molecule id
         I: int
             molecule isotope #
-        key: ``'abundance'``, ``'mol_mass'``, ``'isotope_name_exomol'``, 
+        key: ``'abundance'``, ``'mol_mass'``, ``'isotope_name_exomol'``,
             parameter
 
         """
@@ -211,57 +216,31 @@ def _add_exomol_name(df):
     in ExoMol format
     """
 
-    # Add in molparams
-
     df["isotope_name"] = df.index.map(isotope_name_dict)
 
     # add exomol full name:
-    # deal with Hydrogen : H2, HD
-    isotope_fullname = (
-        df.isotope_name.str.replace("H2", "(1H2)", regex=False)
-        .str.replace("HD", "(1H)(2H)", regex=False)
-        .str.replace("H3", "(1H3)", regex=False)
-        .str.replace("H4", "(1H4)", regex=False)
-    )
-    
-    # deal with fuels finishing by H2
-    for i in range(5):
-        old_key = "{}(1H2)".format(i)
-        new_key = "{}-1H2".format(i)
-        isotope_fullname = isotope_fullname.str.replace(old_key, new_key, regex=False)
-    # deal with fuels finishing by H3
-    for i in range(5):
-        old_key = "{}(1H3)".format(i)
-        new_key = "{}-1H3".format(i)
-        isotope_fullname = isotope_fullname.str.replace(old_key, new_key, regex=False)
-    # deal with fuels finishing by H4
-    for i in range(5):
-        old_key = "{}(1H4)".format(i)
-        new_key = "{}-1H4".format(i)
-        isotope_fullname = isotope_fullname.str.replace(old_key, new_key, regex=False)
-    # Convert:
-    return (
-        isotope_fullname.str.replace(")(", "-", regex=False)
-        .str.replace("(", "", regex=False)
-        .str.replace(")", "", regex=False)
-    )
+    def replace_parenthesis(s):
+        s = str(s)
+        # add parenthesis for hydrogen : Eg. H2 -> (1H)2,   H->(1H)
+        s = re.sub("H([1-9])*", r"(1H)\1", s)
+        # add parenthesis for deuterium : Eg. D2 -> (2H)2,   D->(2H)
+        s = re.sub("D([1-9])*", r"(2H)\1", s)
 
+        # Cut elements and replace parenthesis with - :
+        elements = re.findall("\(.*?\)[1-9]*", s)
+        elements = [e.replace("(", "").replace(")", "") for e in elements]
+        s = "-".join(elements)
 
-def _test(verbose=True, *args, **kwargs):
-    molpar = MolParams()
+        return s
 
-    b = True
-
-    b *= molpar.get(2, 2, "abundance") == 0.0110574
-    if verbose:
-        print("CO2-636 abundance:", molpar.get(2, 2, "abundance"))
-
-    if verbose:
-        print("Testing molparams.py:", b)
-
-    return True
+    return df.isotope_name.apply(replace_parenthesis)
 
 
 if __name__ == "__main__":
+    from radis.test.io.test_exomol import test_exomol_parsing_functions
 
-    _test()
+    test_exomol_parsing_functions()
+
+    from radis.test.db.test_molparams import test_molparams
+
+    test_molparams()

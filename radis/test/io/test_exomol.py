@@ -11,6 +11,7 @@ from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_na
 def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     """Test functions used to parse ExoMol website"""
 
+    assert get_exomol_full_isotope_name("H2O", 1) == "1H2-16O"
     assert get_exomol_full_isotope_name("H2O", 4) == "1H-2H-16O"
     assert get_exomol_full_isotope_name("CO2", 3) == "16O-12C-18O"
     assert get_exomol_full_isotope_name("H2O", 1) == "1H2-16O"
@@ -20,7 +21,6 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     assert get_exomol_full_isotope_name("CH4", 1) == "12C-1H4"
     assert get_exomol_full_isotope_name("C2H4", 1) == "12C2-1H4"
     assert get_exomol_full_isotope_name("C2H2", 1) == "12C2-1H2"
-    
 
     #  Note : this may change if new databases are added ; test would have to
     # be updated in that case.
