@@ -17,6 +17,10 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     assert get_exomol_full_isotope_name("NH3", 1) == "14N-1H3"
     assert get_exomol_full_isotope_name("H2S", 1) == "1H2-32S"
     assert get_exomol_full_isotope_name("FeH", 1) == "56Fe-1H"
+    assert get_exomol_full_isotope_name("CH4", 1) == "12C-1H4"
+    assert get_exomol_full_isotope_name("C2H4", 1) == "12C2-1H4"
+    assert get_exomol_full_isotope_name("C2H2", 1) == "12C2-1H2"
+    
 
     #  Note : this may change if new databases are added ; test would have to
     # be updated in that case.

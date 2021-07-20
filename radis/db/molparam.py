@@ -192,7 +192,7 @@ class MolParams:
             molecule id
         I: int
             molecule isotope #
-        key: ``'abundance'``, ``'mol_mass'``
+        key: ``'abundance'``, ``'mol_mass'``, ``'isotope_name_exomol'``, 
             parameter
 
         """
@@ -221,7 +221,24 @@ def _add_exomol_name(df):
         df.isotope_name.str.replace("H2", "(1H2)", regex=False)
         .str.replace("HD", "(1H)(2H)", regex=False)
         .str.replace("H3", "(1H3)", regex=False)
+        .str.replace("H4", "(1H4)", regex=False)
     )
+    
+    # deal with fuels finishing by H2
+    for i in range(5):
+        old_key = "{}(1H2)".format(i)
+        new_key = "{}-1H2".format(i)
+        isotope_fullname = isotope_fullname.str.replace(old_key, new_key, regex=False)
+    # deal with fuels finishing by H3
+    for i in range(5):
+        old_key = "{}(1H3)".format(i)
+        new_key = "{}-1H3".format(i)
+        isotope_fullname = isotope_fullname.str.replace(old_key, new_key, regex=False)
+    # deal with fuels finishing by H4
+    for i in range(5):
+        old_key = "{}(1H4)".format(i)
+        new_key = "{}-1H4".format(i)
+        isotope_fullname = isotope_fullname.str.replace(old_key, new_key, regex=False)
     # Convert:
     return (
         isotope_fullname.str.replace(")(", "-", regex=False)
