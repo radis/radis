@@ -13,9 +13,9 @@ def _get_supported_molecules_equilibrium():
     [HITRAN-2016]_ species."""
     # Add all HITRAN species
     # Add ExoMol species
-    from .classes import HITRAN_MOLECULES, KNOWN_EXOMOL_ISOTOPES_NAMES
+    from .classes import EXOMOL_MOLECULES, HITRAN_MOLECULES
 
-    return list(set(HITRAN_MOLECULES).union(set(KNOWN_EXOMOL_ISOTOPES_NAMES)))
+    return list(set(HITRAN_MOLECULES).union(set(EXOMOL_MOLECULES)))
 
 
 def _get_supported_molecules_nonequilibrium():

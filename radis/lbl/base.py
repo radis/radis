@@ -2015,49 +2015,44 @@ class BaseFactory(DatabankLoader):
 
         if "id" in df1.columns:
             id_set = df1.id.unique()
-            id = id_set[0]
-
-        else:
-            id = df1.attrs["id"]
+            if len(id_set) > 1:
+                raise NotImplementedError(">1 molecule.")
+            else:
+                raise AttributeError(
+                    "Performance : there shouldn't be a Column 'id' with a unique value"
+                )
 
         Qref_Qgas_ratio = {}
 
-        if ("id" not in df1 and id) or ("id" in df1 and len(id_set) == 1):
-            molecule = get_molecule(id)
-            iso_set = self._get_isotope_list(molecule)  # df1.iso.unique()
+        if "molecule" in df1.attrs:
+            molecule = df1.attrs["molecule"]  # used for ExoMol, which has no HITRAN-id
+        else:
+            molecule = get_molecule(df1.attrs["id"])
+        iso_set = self._get_isotope_list(molecule)  # df1.iso.unique()
 
-            # Shortcut if only 1 molecule, 1 isotope. We attribute molar_mass & abundance
-            # as attributes of the line database, instead of columns. Much
-            # faster!
+        # Shortcut if only 1 molecule, 1 isotope. We attribute molar_mass & abundance
+        # as attributes of the line database, instead of columns. Much
+        # faster!
 
-            if len(iso_set) == 1:
-                Qref, Qgas = _calc_Q(molecule, iso_set[0], self.input.state)
-                Qref_Qgas_ratio[iso_set[0]] = Qref / Qgas
+        if len(iso_set) == 1:
+            Qref, Qgas = _calc_Q(molecule, iso_set[0], self.input.state)
+            Qref_Qgas_ratio[iso_set[0]] = Qref / Qgas
 
-            # Else, parse for all isotopes. Use df.map that is very fast
-            # Use the fact that isotopes are int, and thus can be considered as
-            # index in an array.
-            # ... in the following we exploit this to use the np.map function,
-            # ... which is amazingly fast
-            # ... Read https://stackoverflow.com/questions/49259580 to understand more
-
-            else:
-
-                iso_arr = list(range(max(iso_set) + 1))
-
-                for iso in iso_arr:
-                    if iso in iso_set:
-                        Qref, Qgas = _calc_Q(molecule, iso, self.input.state)
-                        Qref_Qgas_ratio[iso] = Qref / Qgas
+        # Else, parse for all isotopes. Use df.map that is very fast
+        # Use the fact that isotopes are int, and thus can be considered as
+        # index in an array.
+        # ... in the following we exploit this to use the np.map function,
+        # ... which is amazingly fast
+        # ... Read https://stackoverflow.com/questions/49259580 to understand more
 
         else:
-            raise NotImplementedError(
-                ">1 molecule. Can use the np.take trick. Need to "
-                + "fallback to pandas.map(dict)"
-            )
-            # TODO: Implement. Read https://stackoverflow.com/a/51388828/5622825 to understand more
 
-        # Note on performance: few times faster than doing a groupby().apply()
+            iso_arr = list(range(max(iso_set) + 1))
+
+            for iso in iso_arr:
+                if iso in iso_set:
+                    Qref, Qgas = _calc_Q(molecule, iso, self.input.state)
+                    Qref_Qgas_ratio[iso] = Qref / Qgas
 
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
@@ -3259,10 +3254,13 @@ class BaseFactory(DatabankLoader):
         # ... @dev performance: quite long to select here, but I couldn't find a faster
         # ... alternative
         # TODO: remove useless columns in df1 to save memory
+        # Note @EP : with Vaex; the selection should be updated here
 
         # Ensures abundance, molar mass and partition functions are transfered
         # (needed if they are attributes and not isotopes)
-        transfer_metadata(df, self.df1, [k for k in df_metadata if hasattr(df, k)])
+        transfer_metadata(df, self.df1, [k for k in df_metadata if k in df.attrs])
+
+        assert len(self.df1.attrs) > 0
 
         # Store number of lines cut (for information)
         self._Nlines_cutoff = Nlines_cutoff

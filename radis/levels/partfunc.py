@@ -690,6 +690,28 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 # %% Variants of Tabulated partition functions (interpolate)
 
 
+class PartFuncExoMol(RovibParFuncTabulator):
+    """Return partition function using interpolation of tabulated values.
+
+    Parameters
+    ----------
+    name: str
+        exomol isotope full name
+
+    See Also
+    --------
+    :py:func:`~radis.io.exomol.fetch_exomol`
+    """
+
+    def __init__(self, name, T_range, Q_range):
+        self.name = name
+        self.T_range = T_range
+        self.Q_range = Q_range
+
+    def _at(self, T):
+        return np.interp(T, self.T_range, self.Q_range)
+
+
 class PartFuncHAPI(RovibParFuncTabulator):
     """Return partition function using interpolation of tabulated values.
 

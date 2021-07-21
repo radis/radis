@@ -69,7 +69,6 @@ from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
 from scipy.signal import oaconvolve
 
-from radis.db.classes import get_molecule_identifier
 from radis.db.molparam import MolParams
 from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
@@ -811,14 +810,6 @@ class BroadenFactory(BaseFactory):
         """
         # Init variables
         df = self.df1
-
-        isotope_set = list(self.input.isotope)
-        if len(isotope_set) == 1:
-            df.attrs["iso"] = int(isotope_set[0])
-        else:
-            df.attrs["iso"] = isotope_set
-        M = get_molecule_identifier(self.input.molecule)
-        df.attrs["id"] = M
 
         if len(df) == 0:
             return  # no lines
@@ -2860,28 +2851,31 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
 
 
 def get_molar_mass(df):
-
-    """Returns molar mass
+    """Returns molar mass.
 
     Parameters
     ----------
-
     df: dataframe
 
     Returns
     -------
-
     The molar mass of all the isotopes in the dataframe
     """
-
     molpar = MolParams()
 
     if "id" in df.columns:
-        id = df.id.unique()
-        id = id[0]
-
-    else:
+        raise NotImplementedError(">1 molecule")
+    elif "id" in df.attrs:
         id = df.attrs["id"]
+    else:
+        # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
+        # is an attribute and can be updated with definitions from ExoMol.
+        # https://github.com/radis/radis/issues/321
+        HARCODED_MOLAR_MASS = {"SiO": {1: 43.971842}}
+        try:
+            return HARCODED_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
+        except KeyError:
+            raise NotImplementedError
 
     if "iso" in df.columns:
         iso_set = df.iso.unique()

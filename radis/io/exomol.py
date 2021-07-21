@@ -126,6 +126,7 @@ def fetch_exomol(
     verbose=True,
     clean_cache_files=True,
     return_local_path=False,
+    return_partition_function=False,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -159,6 +160,8 @@ def fetch_exomol(
         if ``True`` clean downloaded cache files after HDF5 are created.
     return_local_path: bool
         if ``True``, also returns the path of the local database file.
+    return_partition_function: bool
+        if ``True``, also returns a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object.
 
     Returns
     -------
@@ -188,6 +191,7 @@ def fetch_exomol(
         molecule, full_molecule_name
     )
 
+    _exomol_use_hint = f"Select one of them with `radis.fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
     if database is None:
         if len(known_exomol_databases) == 1:
             database = known_exomol_databases[0]
@@ -197,16 +201,16 @@ def fetch_exomol(
             database = recommended_database
             if verbose:
                 print(
-                    f"Using ExoMol database {database} for {full_molecule_name} (recommended by the ExoMol team). Other available databases: {known_exomol_databases}. Choose with `radis.fetch_exomol(DATABASE_NAME)` or `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`"
+                    f"Using ExoMol database {database} for {full_molecule_name} (recommended by the ExoMol team). All available databases are {known_exomol_databases}. {_exomol_use_hint}"
                 )
         else:
             raise KeyError(
-                f"Choose one of the several databases available for {full_molecule_name} in ExoMol: {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). Choose with `radis.fetch_exomol(DATABASE_NAME)` or `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`"
+                f"Choose one of the several databases available for {full_molecule_name} in ExoMol: {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). {_exomol_use_hint}"
             )
     else:
         if database not in known_exomol_databases:
             raise KeyError(
-                f"{database} is not of the known available ExoMol databases for {full_molecule_name}. Choose one of : {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). Choose with `radis.fetch_exomol(DATABASE_NAME)` or `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`"
+                f"{database} is not of the known available ExoMol databases for {full_molecule_name}. Choose one of : {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). {_exomol_use_hint}"
             )
 
     local_path = join(
@@ -217,7 +221,15 @@ def fetch_exomol(
 
     df = mdb.to_df()
 
-    return (df, mdb.path) if return_local_path else df
+    out = [df]
+
+    if return_local_path:
+        out.append(mdb.path)
+    if return_partition_function:
+        assert return_local_path
+        out.append(mdb.to_partition_function_tabulator())
+
+    return out
 
 
 class MdbExomol(object):
@@ -295,6 +307,7 @@ class MdbExomol(object):
 
         # Add molecule name
         tag = molec.split("__")
+        self.isotope_fullname = tag[0]
         self.molecule = e2s(tag[0])
         self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
 
@@ -563,6 +576,11 @@ class MdbExomol(object):
                 except:
                     print("Error: Couldn't download " + ext + " file and save.")
 
+    def to_partition_function_tabulator(self):
+        from radis.levels.partfunc import PartFuncExoMol
+
+        return PartFuncExoMol(self.isotope_fullname, self.T_gQT, self.gQT)
+
     def to_df(self):
         """Export Line Database to a RADIS-friendly Pandas DataFrame"""
 
@@ -586,7 +604,11 @@ class MdbExomol(object):
             }
         )
 
-        df.attrs["id"] = get_molecule_identifier(self.molecule)
+        from radis.db.classes import HITRAN_MOLECULES
+
+        if self.molecule in HITRAN_MOLECULES:
+            df.attrs["id"] = get_molecule_identifier(self.molecule)
+        df.attrs["molecule"] = self.molecule
         df.attrs["iso"] = 1  # TODO : get isotope number while parsing ExoMol name
 
         assert self.Tref == 296  # default in RADIS

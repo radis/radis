@@ -351,22 +351,20 @@ def transfer_metadata(df1, df2, metadata):
 
     Parameters
     ----------
-
     df1: pandas DataFrame
         copy from df1
-
     df2: pandas DataFrame
         copy to df2
     """
 
     for k in metadata:
-        if __debug__ and k not in df1._metadata:
+        if __debug__ and k not in df1.attrs:
             from radis.misc.debug import printdbg
 
-            printdbg("WARNING. {0} not in _metadata: {1}".format(k, df1._metadata))
-        if not hasattr(df2, k):
+            printdbg("WARNING. {0} not in attrs: {1}".format(k, df1.attrs))
+        if not k in df2.attrs:
             assert k not in df1.columns  # point is not to copy columns!
-            setattr(df2, k, getattr(df1, k))
+            df2.attrs[k] = df1.attrs[k]
 
 
 def expand_metadata(df, metadata):
