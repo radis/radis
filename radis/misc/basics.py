@@ -362,7 +362,7 @@ def transfer_metadata(df1, df2, metadata):
             from radis.misc.debug import printdbg
 
             printdbg("WARNING. {0} not in attrs: {1}".format(k, df1.attrs))
-        if not k in df2.attrs:
+        if not k in df2.columns:
             assert k not in df1.columns  # point is not to copy columns!
             df2.attrs[k] = df1.attrs[k]
 
