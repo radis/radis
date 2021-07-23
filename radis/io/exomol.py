@@ -9,7 +9,7 @@ code (which you should also have a look at !), by @HajimeKawahara, under MIT Lic
 import pathlib
 from ntpath import join
 from os.path import expanduser
-
+import warnings
 import numpy as np
 
 # from exojax.spec import hapi, exomolapi, exomol
@@ -321,9 +321,23 @@ class MdbExomol(object):
         ) = exomolapi.read_def(self.def_file)
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
+            warnings.warn(
+                Warning(
+                    """
+                    No default broadening exponent in database. Assigned n = 0.5
+                    """
+                )
+            )
             self.n_Texp_def = 0.5
         #  default alpha_ref value if not given
         if self.alpha_ref_def is None:
+            warnings.warn(
+                Warning(
+                    """
+                    No default broadening at 296 K in database. Assigned alpha_ref = 0.07
+                    """
+                )
+            )
             self.alpha_ref_def = 0.07
 
         # load states
@@ -599,6 +613,7 @@ class MdbExomol(object):
                 # "Tdpair": None,
                 # "Pshft": None,
                 "ju": self._jupper,
+                "jl": self._jlower,
                 "gpp": self._gpp,
                 "Tdpair": self.n_Texp,  # temperature dependance exponent. Here we use Tdair; no Tdpsel. TODO
             }
