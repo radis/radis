@@ -36,6 +36,7 @@ def read_def(deff):
     n_Texp = None
     ntransf = 1
     maxnu = 0.0
+    quantum_labels = []
     for i, com in enumerate(dat["COMMENT"]):
         if "Default value of Lorentzian half-width" in com:
             alpha_ref = float(dat["VAL"][i])
@@ -53,7 +54,15 @@ def read_def(deff):
             c = np.array(c, dtype=np.float)
             molmass = np.max(c)
             molmasssw = False
-
+            
+        elif "Lifetime availability" in com: 
+            lifetime = (dat["VAL"][i] == 1)
+        elif "Lande g-factor availability" in com:
+            lande = (dat["VAL"][i] == 1)
+            
+        elif "Quantum label" in com:
+            quantum_labels.append(dat["VAL"][i].strip(" "))
+            
         # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
         if deff.stem == "12C-16O2__UCL-4000":
             ntransf = 20
@@ -71,8 +80,17 @@ def read_def(deff):
     else:
         numinf = None
         numtag = ""
-
-    return n_Texp, alpha_ref, molmass, numinf, numtag
+    
+    output = {"n_Texp":n_Texp, 
+              "alpha_ref":alpha_ref, 
+              "molmass":molmass, 
+              "numinf":numinf, 
+              "numtag":numtag, 
+              "quantum_labels":quantum_labels, #array
+              "Landé":lande,        #bool
+              "lifetime":lifetime   #bool
+              }
+    return output
 
 
 def read_pf(pff):
@@ -122,7 +140,7 @@ def read_trans(transf):
     return dat
 
 
-def read_states(statesf):
+def read_states(statesf, dic_def):
     """Exomol IO for a state file
     Note:
         i=state counting number
@@ -133,49 +151,81 @@ def read_states(statesf):
 
     Args:
         statesf: state file
+        dic_def: Info from def file to read extra quantum numbers
     Returns:
         states data in pandas DataFrame
 
     """
-    try:
+    #we read first 4 columns for ("i", "E", "g", "J"), 
+    #skip lifetime, skip Landé g-factor, 
+    #read quantum numbers
+    N = np.size(dic_def["quantum_labels"])
+    quantum_labels = dic_def["quantum_labels"]
+    
+    if dic_def['Landé'] and dic_def['lifetime']:
+        usecol = np.concatenate((np.arange(4), 5+2+np.arange(N)))
+        names = ("i", "E", "g", "J", "Lande", "lifetime") + tuple(quantum_labels)
+    elif dic_def['Landé']:
+        usecol = np.concatenate((np.arange(4), 5+1+np.arange(N)))
+        names = ("i", "E", "g", "J", "Lande") + tuple(quantum_labels)
+    elif dic_def['lifetime']:
+        usecol = np.concatenate((np.arange(4), 5+1+np.arange(N)))
+        names = ("i", "E", "g", "J", "lifetime") + tuple(quantum_labels)
+    else: #no lifetime, nor landé according to the def file
+        usecol = np.concatenate((np.arange(4), 5+np.arange(N)))
+        names = ("i", "E", "g", "J") + tuple(quantum_labels)
+        
+    #This is an ad-hoc correction
+    #!!!Todo: when ExoMol error is corrected and we do not pull the original file from http://cdsarc.u-strasbg.fr/viz-bin/cat/J/MNRAS/448/1704
+    if "H2CO" in str(statesf):
+        usecol = np.arange(22)
+        quantum_labels.remove('Ja')
+        quantum_labels.remove('N(B1)')
+        names = ("i", "E", "g", "J") + tuple(quantum_labels)
+        
+    try: 
         dat = pd.read_csv(
             statesf,
             compression="bz2",
             sep="\s+",
-            usecols=range(4),
-            names=("i", "E", "g", "J"),
+            usecols=usecol,
+            names=names
         )
-    except:
+    except: #!!!TODO What was the expected error?
         dat = pd.read_csv(
-            statesf, sep="\s+", usecols=range(4), names=("i", "E", "g", "J")
+            statesf, sep="\s+", 
+            usecols=usecol,
+            names=names
         )
 
     return dat
 
 
-def pickup_gE(states, trans, trans_lines=False):
+def pickup_gE(states, trans, dic_def, trans_lines=False):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states DataFrame and insert them to transition DataFrame.
 
     Args:
        states: states pandas DataFrame
        trans: transition pandas DataFrame
        trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
+       dic_def: Informations about additional quantum labels
 
 
     Returns:
-       A, nu_lines, elower, gup, jlower, jupper
+       A, nu_lines, elower, gup, jlower, jupper, **quantum_labels
 
     Note:
        We first convert pandas DataFrame to ndarray. The state counting numbers in states DataFrame is used as indices of the new array for states (newstates). We remove the state count numbers as the column of newstate, i.e. newstates[:,k] k=0: E, 1: g, 2: J. Then, we can directly use the state counting numbers as mask.
 
 
     """
-    ndstates = states.to_numpy()
+    ### Step 1. Essential quantum number for spectra
+    ndstates = states.to_numpy()[:,:4] #the i, E, g, J are in the 4 first columns
     ndtrans = trans.to_numpy()
 
     iorig = np.array(ndstates[:, 0], dtype=int)
     maxii = int(np.max(iorig) + 1)
-    newstates = np.zeros((maxii, np.shape(states)[1] - 1), dtype=float)
+    newstates = np.zeros((maxii, np.shape(ndstates)[1] - 1), dtype=float)
     newstates[iorig, :] = ndstates[:, 1:]
 
     i_upper = np.array(ndtrans[:, 0], dtype=int)
@@ -187,6 +237,17 @@ def pickup_gE(states, trans, trans_lines=False):
     gup = newstates[i_upper, 1]
     jlower = np.array(newstates[i_lower, 2], dtype=int)
     jupper = np.array(newstates[i_upper, 2], dtype=int)
+    
+    ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
+    #!!! Todo: Awfull management of memory, i know! @minou
+    n0 = 4 + dic_def['Landé'] + dic_def['lifetime'] #we need to shift if these quantities exist
+    ndstates_extra = states.to_numpy()[:,n0:] #the i, E, g, J are in the 4 first columns
+    dico_quantumNumbers = {}
+    for index, label in enumerate(dic_def['quantum_labels']):
+        dico_quantumNumbers['{}_l'.format(label)] = ndstates_extra[i_lower, index]
+        # dico_quantumNumbers['{}_u'.format(label)] = ndstates_extra[index][i_upper]
+        
+    
 
     A = ndtrans[:, 2]
 
@@ -204,7 +265,7 @@ def pickup_gE(states, trans, trans_lines=False):
     # plt.savefig("nudiff.png", bbox_inches="tight", pad_inches=0.0)
     # plt.show()
 
-    return A, nu_lines, elower, gup, jlower, jupper
+    return A, nu_lines, elower, gup, jlower, jupper, dico_quantumNumbers
 
 
 def pickup_gEslow(states, trans):
