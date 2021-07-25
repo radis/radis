@@ -67,6 +67,7 @@ from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
+from scipy.signal import oaconvolve
 
 from radis.db.classes import get_molecule_identifier
 from radis.db.molparam import MolParams
@@ -1929,7 +1930,8 @@ class BroadenFactory(BaseFactory):
             for l in range(len(wG)):
                 for m in range(len(wL)):
                     lineshape = line_profile_DLM[l][m]
-                    sumoflines_calc += np.convolve(DLM[:, l, m], lineshape, "same")
+                    # sumoflines_calc += np.convolve(DLM[:, l, m], lineshape, "same")
+                    sumoflines_calc += oaconvolve(DLM[:, l, m], lineshape, "same")
 
         elif broadening_method == "fft":
             # ... Initialize array in FT space
