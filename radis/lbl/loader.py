@@ -809,19 +809,19 @@ class DatabankLoader(object):
         .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
         .. [2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
-        #ExoMol has been e-mailed about this issue @minou
+        # ExoMol has been e-mailed about this issue @minou
         if self.input.molecule == "H2CO" and source == "exomol":
             warnings.warn(
                 Warning(
                     """
-                    The current ExoMol file of CH2O is incomplete. 
-                    Download manually the .states.bz2 file of Al-Refaie et al. 
-                    (https://doi.org/10.1016/j.jqsrt.2021.107563) from 
+                    The current ExoMol file of CH2O is incomplete.
+                    Download manually the .states.bz2 file of Al-Refaie et al.
+                    (https://doi.org/10.1016/j.jqsrt.2021.107563) from
                     http://cdsarc.u-strasbg.fr/viz-bin/cat/J/MNRAS/448/1704
                     """
                 )
             )
-        
+
         # @dev TODO: also add cache file to fetch_databank, similar to load_databank
         # | Should store the waverange, molecule and isotopes in the cache file
         # | metadata to ensures that it is redownloaded if necessary.
@@ -1031,9 +1031,7 @@ class DatabankLoader(object):
                 predefined_partition_functions=partition_function_exomol,
             )
         else:
-            self._init_equilibrium_partition_functions(
-                parfunc, parfuncfmt, partition_function_exomol
-            )
+            self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
 
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
@@ -1053,27 +1051,7 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        # Check that molecule and isotope information are present, drop columns if needed
-        if "id" in df.columns:
-            id_set = df.id.unique()
-            if len(id_set) != 1:  # only 1 molecule supported ftm
-                raise NotImplementedError(
-                    "Only 1 molecule at a time is currently supported "
-                    + "in SpectrumFactory. Use radis.calc_spectrum, which "
-                    + "calculates them independently then use MergeSlabs"
-                )
-        else:
-            assert "id" in df.attrs or "molecule" in df.attrs
-
-        if "iso" in df.columns:
-            isotope_set = df.iso.unique()
-            if len(isotope_set) == 1:
-                # save memory : drop isotope column (all unique); keep it as attribute
-                df.drop("iso", axis=1, inplace=True)
-                df_metadata.append("iso")
-                df.attrs["iso"] = isotope_set[0]
-        else:
-            assert "iso" in df.attrs
+        self._remove_unecessary_columns(df)
 
         return
 
@@ -1960,27 +1938,43 @@ class DatabankLoader(object):
                 )
             )
 
-        id_set = df.id.unique()
-
-        if len(id_set) != 1:  # only 1 molecule supported ftm
-            raise NotImplementedError(
-                "Only 1 molecule at a time is currently supported "
-                + "in SpectrumFactory. Use radis.calc_spectrum, which "
-                + "calculates them independently then use MergeSlabs"
-            )
-
-        df.drop("id", axis=1, inplace=True)
-        df_metadata.append("id")
-        df.attrs["id"] = id_set[0]
-
-        isotope_set = df.iso.unique()
-
-        if len(isotope_set) == 1:
-            df.drop("iso", axis=1, inplace=True)
-            df_metadata.append("iso")
-            df.attrs["iso"] = isotope_set[0]
+        self._remove_unecessary_columns(df)
 
         return df
+
+    def _remove_unecessary_columns(self, df):
+        """Remove unecessary columns and add values as attributes
+
+        Returns
+        -------
+        None: DataFrame updated inplace
+        """
+
+        # Discard molecule column if unique
+        if "id" in df.columns:
+            id_set = df.id.unique()
+            if len(id_set) != 1:  # only 1 molecule supported ftm
+                raise NotImplementedError(
+                    "Only 1 molecule at a time is currently supported "
+                    + "in SpectrumFactory. Use radis.calc_spectrum, which "
+                    + "calculates them independently then use MergeSlabs"
+                )
+
+            df.drop("id", axis=1, inplace=True)
+            df_metadata.append("id")
+            df.attrs["id"] = id_set[0]
+        else:
+            assert "id" in df.attrs or "molecule" in df.attrs
+
+        if "iso" in df.columns:
+            isotope_set = df.iso.unique()
+
+            if len(isotope_set) == 1:
+                df.drop("iso", axis=1, inplace=True)
+                df_metadata.append("iso")
+                df.attrs["iso"] = isotope_set[0]
+        else:
+            assert "iso" in df.attrs
 
     def _get_isotope_list(self, molecule=None, df=None):
         """Returns list of isotopes for given molecule Parse the Input

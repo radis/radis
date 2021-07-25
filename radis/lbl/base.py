@@ -2018,9 +2018,11 @@ class BaseFactory(DatabankLoader):
             if len(id_set) > 1:
                 raise NotImplementedError(">1 molecule.")
             else:
-                raise AttributeError(
-                    "Performance : there shouldn't be a Column 'id' with a unique value"
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
                 )
+                df1.attrs["id"] = int(id_set)
 
         Qref_Qgas_ratio = {}
 
@@ -3259,8 +3261,7 @@ class BaseFactory(DatabankLoader):
         # Ensures abundance, molar mass and partition functions are transfered
         # (needed if they are attributes and not isotopes)
         transfer_metadata(df, self.df1, [k for k in df_metadata if k in df.attrs])
-
-        assert len(self.df1.attrs) > 0
+        # assert len(self.df1.attrs) > 0
 
         # Store number of lines cut (for information)
         self._Nlines_cutoff = Nlines_cutoff

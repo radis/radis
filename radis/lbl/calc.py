@@ -671,7 +671,7 @@ def _calc_spectrum(
                 path_length=path_length,
                 name=name,
             )
-        else:
+        elif mode == "gpu":
             s = sf.eq_spectrum_gpu(
                 Tgas=Tgas,
                 mole_fraction=mole_fraction,
@@ -679,7 +679,11 @@ def _calc_spectrum(
                 path_length=path_length,
                 name=name,
             )
+        else:
+            raise ValueError(mode)
     else:
+        if mode != "cpu":
+            raise NotImplementedError(mode)
         s = sf.non_eq_spectrum(
             Tvib=Tvib,
             Trot=Trot,
