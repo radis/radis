@@ -809,19 +809,6 @@ class DatabankLoader(object):
         .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
         .. [2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
-        # ExoMol has been e-mailed about this issue @minou
-        if self.input.molecule == "H2CO" and source == "exomol":
-            warnings.warn(
-                Warning(
-                    """
-                    The current ExoMol file of CH2O is incomplete.
-                    Download manually the .states.bz2 file of Al-Refaie et al.
-                    (https://doi.org/10.1016/j.jqsrt.2021.107563) from
-                    http://cdsarc.u-strasbg.fr/viz-bin/cat/J/MNRAS/448/1704
-                    """
-                )
-            )
-
         # @dev TODO: also add cache file to fetch_databank, similar to load_databank
         # | Should store the waverange, molecule and isotopes in the cache file
         # | metadata to ensures that it is redownloaded if necessary.

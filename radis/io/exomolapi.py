@@ -174,15 +174,7 @@ def read_states(statesf, dic_def):
     else: #no lifetime, nor landé according to the def file
         usecol = np.concatenate((np.arange(4), 5+np.arange(N)))
         names = ("i", "E", "g", "J") + tuple(quantum_labels)
-        
-    #This is an ad-hoc correction
-    #!!!Todo: when ExoMol error is corrected and we do not pull the original file from http://cdsarc.u-strasbg.fr/viz-bin/cat/J/MNRAS/448/1704
-    if "H2CO" in str(statesf):
-        usecol = np.arange(22)
-        quantum_labels.remove('Ja')
-        quantum_labels.remove('N(B1)')
-        names = ("i", "E", "g", "J") + tuple(quantum_labels)
-        
+                
     try: 
         dat = pd.read_csv(
             statesf,
