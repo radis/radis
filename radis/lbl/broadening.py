@@ -2226,7 +2226,7 @@ class BroadenFactory(BaseFactory):
             )
 
         (wavenumber, abscoeff) = self._broaden_lines(df)
-        self.profiler.stop("calc_line_broadening", "Calculated line broadening")
+        self.profiler.stop("calc_line_broadening", "Calculated line broadening", False)
 
         return wavenumber, abscoeff
 
@@ -2278,7 +2278,7 @@ class BroadenFactory(BaseFactory):
 
         (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
 
-        self.profiler.stop("calc_line_broadening", "Calculated line broadening")
+        self.profiler.stop("calc_line_broadening", "Calculated line broadening", False)
         return wavenumber, abscoeff, emisscoeff
 
     # %% Functions to calculate semi-continuum

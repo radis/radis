@@ -79,22 +79,19 @@ class Profiler(object):
         if len(optional) != 0 and self.verbose >= verbose_level:
             print(optional)
 
-    def stop(self, key, details, end=False):
+    def stop(self, key, details, end=True):
         if __debug__:
             items = self.initial.pop(key)
             # Storing time with verbose level
             self.dict_time[key] = [time() - items["start_time"], items["verbose_level"]]
             if items["verbose_level"] == 1:
                 # print("HIIIIIIIIIIIIIIIIIIII",items)
-                self.final[key]["value"] = self.dict_time[key]
+                self.final[key]["value"] = self.dict_time[key][0]
                 pass
             else:
-                """value_key = self.stack[items["verbose_level"] - 1][
-                    -1
-                ]"""  # Last verbose -1 entry
-                new_dict = {"value": self.dict_time[key]}
-                if end:
+                if end == False:
                     if items["verbose_level"] == 2:
+                        new_dict = {"value": self.dict_time[key][0]}
                         self.final[self.stack[1][-1]][key].update(new_dict)
                     else:
                         self.final[self.stack[1][-1]][self.stack[2][-1]][key].update(
@@ -102,9 +99,11 @@ class Profiler(object):
                         )
                 else:
                     if items["verbose_level"] == 2:
-                        self.final[self.stack[1][-1]][key] = new_dict
+                        self.final[self.stack[1][-1]][key] = self.dict_time[key][0]
                     else:
-                        self.final[self.stack[1][-1]][self.stack[2][-1]][key] = new_dict
+                        self.final[self.stack[1][-1]][self.stack[2][-1]][
+                            key
+                        ] = self.dict_time[key][0]
 
             if self.verbose >= items["verbose_level"]:
                 self._print(items["verbose_level"], details, key)

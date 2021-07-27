@@ -3231,7 +3231,11 @@ class BaseFactory(DatabankLoader):
         if __debug__:
             printdbg("called ._clean_factory()")
 
+        self.profiler.start("reinitialize", 2)
+
         keep_initial_database = not self.save_memory
+
+        self.profiler.start("copy_database", 3)
 
         if keep_initial_database:
 
@@ -3251,7 +3255,9 @@ class BaseFactory(DatabankLoader):
         else:
             self.df1 = self.df0  # self.df0 will be deleted
             del self.df0  # delete attribute name
+        self.profiler.stop("copy_database", "Copying database")
 
+        self.profiler.start("memory_usage_warning", 3)
         # Check memory size
         try:
             # Retrieving total user RAM
@@ -3283,6 +3289,9 @@ class BaseFactory(DatabankLoader):
         except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
             pass
 
+        self.profiler.stop("memory_usage_warning", "Check Memory usage of database")
+
+        self.profiler.start("reset_population", 3)
         # Reset populations from RovibrationalPartitionFunctions objects
         molecule = self.input.molecule
         state = self.input.state
@@ -3303,6 +3312,9 @@ class BaseFactory(DatabankLoader):
             else:
                 # ... Reset it
                 parsum.reset_populations()
+        self.profiler.stop("reset_population", "Reset populations")
+
+        self.profiler.stop("reinitialize", "Reinitialize database", False)
 
     def _check_inputs(self, mole_fraction, Tmax):
         """Check spectrum inputs, add warnings if suspicious values.
