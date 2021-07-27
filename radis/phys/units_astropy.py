@@ -47,9 +47,11 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
     import astropy.units as u
 
     if isinstance(quantity, u.Quantity):
+        from astropy.units.imperial import deg_F
+
         # TODO : make it possible to test if not adimensionned, before loading.
         # This would allow not to have to load Astropy.units on start-up?
-        if output_unit in (u.deg_C, u.imperial.deg_F, u.K):
+        if output_unit in (u.deg_C, deg_F, u.K):
             quantity = quantity.to_value(output_unit, equivalencies=u.temperature())
         elif isinstance(output_unit, (u.UnitBase, u.Quantity)):
             quantity = quantity.to_value(output_unit, equivalencies=u.spectral())
