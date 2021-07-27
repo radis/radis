@@ -659,8 +659,9 @@ class SpectrumFactory(BandFactory):
         # %% Start
         # --------------------------------------------------------------------
 
-        self.profiler.start("spectrum_calc_before_obj", 2)
         self.profiler.start("spectrum_calculation", 1)
+        self.profiler.start("spectrum_calc_before_obj", 2)
+
         if verbose:
             self.print_conditions("Calculating Equilibrium Spectrum")
 
@@ -947,8 +948,8 @@ class SpectrumFactory(BandFactory):
         Ia_arr[np.isnan(Ia_arr)] = 0
         molarmass_arr[np.isnan(molarmass_arr)] = 0
 
-        self.profiler.start("spectrum_calc_before_obj", 2)
         self.profiler.start("spectrum_calculation", 1)
+        self.profiler.start("spectrum_calc_before_obj", 2)
 
         # generate the v_arr
         v_arr = np.arange(

@@ -42,6 +42,8 @@ class Profiler(object):
         self.initial = {}
         self.dict_time = {}
         self.verbose = verbose
+        self.stack = {1: [], 2: [], 3: []}
+        self.final = {}
         self.relative_time_percentage = {}
 
     def start(self, key, verbose_level, optional=""):
@@ -50,14 +52,60 @@ class Profiler(object):
                 "start_time": time(),
                 "verbose_level": verbose_level,
             }
+            self.stack[verbose_level].append(key)
+            print(self.final)
+            print("    ")
+        if verbose_level == 1:
+            self.final[key] = {"value": None}
+        else:
+            if verbose_level == 2:
+                self.final[self.stack[verbose_level - 1][-1]].update({key: {}})
+            else:
+                # print(self.stack[verbose_level-2])
+                # print(self.final[self.stack[verbose_level-2][-1]][self.stack[2][-1]])
+                self.final[self.stack[verbose_level - 2][-1]][self.stack[2][-1]].update(
+                    {key: {}}
+                )
+            """
+            if len(index_key) == 1:
+                pass
+                #index_key.update({key:None})
+            else:
+                pass
+                #index_key.update({key:None})
+            #print("INDEX KEY ", index_key)
+            #self.final[self.stack[verbose_level-1][-1]]['subtasks'].update({key:None})
+            """
         if len(optional) != 0 and self.verbose >= verbose_level:
             print(optional)
 
-    def stop(self, key, details=""):
+    def stop(self, key, details, end=False):
         if __debug__:
             items = self.initial.pop(key)
             # Storing time with verbose level
             self.dict_time[key] = [time() - items["start_time"], items["verbose_level"]]
+            if items["verbose_level"] == 1:
+                # print("HIIIIIIIIIIIIIIIIIIII",items)
+                self.final[key]["value"] = self.dict_time[key]
+                pass
+            else:
+                """value_key = self.stack[items["verbose_level"] - 1][
+                    -1
+                ]"""  # Last verbose -1 entry
+                new_dict = {"value": self.dict_time[key]}
+                if end:
+                    if items["verbose_level"] == 2:
+                        self.final[self.stack[1][-1]][key].update(new_dict)
+                    else:
+                        self.final[self.stack[1][-1]][self.stack[2][-1]][key].update(
+                            new_dict
+                        )
+                else:
+                    if items["verbose_level"] == 2:
+                        self.final[self.stack[1][-1]][key] = new_dict
+                    else:
+                        self.final[self.stack[1][-1]][self.stack[2][-1]][key] = new_dict
+
             if self.verbose >= items["verbose_level"]:
                 self._print(items["verbose_level"], details, key)
 
