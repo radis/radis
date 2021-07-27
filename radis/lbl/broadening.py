@@ -2879,18 +2879,15 @@ def get_molar_mass(df):
 
     if "iso" in df.columns:
         iso_set = df.iso.unique()
-        molar_mass = {}
+        molar_mass_dict = {}
         for iso in iso_set:
-            molar_mass[iso] = molpar.get(id, iso, "mol_mass")
-
-        req = df["iso"].map(molar_mass)
+            molar_mass_dict[iso] = molpar.get(id, iso, "mol_mass")
+        molar_mass = df["iso"].map(molar_mass_dict)
     else:
         iso = df.attrs["iso"]
         molar_mass = molpar.get(id, iso, "mol_mass")
 
-        req = molar_mass
-
-    return req
+    return molar_mass
 
     #
 

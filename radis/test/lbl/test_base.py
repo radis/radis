@@ -71,8 +71,8 @@ def test_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
         plt.close()  # no need to keep it open, we just tested the function
 
     # Test calculated quantities are there
-    assert hasattr(sf.df1, "Qref")
-    assert hasattr(sf.df1, "Qvib")
+    assert "Qref" in sf.df1.attrs
+    assert "Qvib" in sf.df1.attrs
     assert hasattr(sf.df1, "Qrotu")
     assert hasattr(sf.df1, "Qrotl")
 
