@@ -7,9 +7,10 @@ code (which you should also have a look at !), by @HajimeKawahara, under MIT Lic
 
 """
 import pathlib
+import warnings
 from ntpath import join
 from os.path import expanduser
-import warnings
+
 import numpy as np
 
 # from exojax.spec import hapi, exomolapi, exomol
@@ -19,7 +20,7 @@ import pandas as pd
 try:
     from . import exomolapi
     from .exomol_utils import e2s
-except:  # if local import
+except ImportError:  # if local import
     from radis.io import exomolapi
     from radis.io.exomol_utils import e2s
 
@@ -312,12 +313,12 @@ class MdbExomol(object):
         self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
 
         # load def
-        # @minou: I feel this next line should just update the self.stuff 
-        dic_def = exomolapi.read_def(self.def_file)  #approx. 3 ms
-        self.n_Texp_def = dic_def['n_Texp']
-        self.alpha_ref_def = dic_def['alpha_ref']
-        self.molmass = dic_def['molmass']
-        
+        # @minou: I feel this next line should just update the self.stuff
+        dic_def = exomolapi.read_def(self.def_file)  # approx. 3 ms
+        self.n_Texp_def = dic_def["n_Texp"]
+        self.alpha_ref_def = dic_def["alpha_ref"]
+        self.molmass = dic_def["molmass"]
+
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
             warnings.warn(
@@ -353,7 +354,7 @@ class MdbExomol(object):
 
         # trans file(s)
         print("Reading transition file")
-        if dic_def['numinf'] is None:
+        if dic_def["numinf"] is None:
             self.trans_file = self.path / pathlib.Path(molec + ".trans.bz2")
             if not self.trans_file.exists():
                 self.download(molec, [".trans.bz2"])
@@ -364,7 +365,7 @@ class MdbExomol(object):
                 print(explanation)
                 trans = exomolapi.read_trans(self.trans_file)
                 trans.to_feather(self.trans_file.with_suffix(".feather"))
-                
+
             #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
             # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
             # compute gup and elower
@@ -375,18 +376,24 @@ class MdbExomol(object):
                 self._gpp,
                 self._jlower,
                 self._jupper,
-                self._quantumNumbers
+                self._quantumNumbers,
             ) = exomolapi.pickup_gE(states, trans, dic_def)
         else:
-            imin = np.searchsorted(dic_def['numinf'], nurange[0], side="right") - 1  # left side
-            imax = np.searchsorted(dic_def['numinf'], nurange[1], side="right") - 1  # left side
+            imin = (
+                np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
+            )  # left side
+            imax = (
+                np.searchsorted(dic_def["numinf"], nurange[1], side="right") - 1
+            )  # left side
             self.trans_file = []
             for k, i in enumerate(range(imin, imax + 1)):
                 trans_file = self.path / pathlib.Path(
-                    molec + "__" + dic_def['numtag'][i] + ".trans.bz2"
+                    molec + "__" + dic_def["numtag"][i] + ".trans.bz2"
                 )
                 if not trans_file.exists():
-                    self.download(molec, extension=[".trans.bz2"], numtag=dic_def['numtag'][i])
+                    self.download(
+                        molec, extension=[".trans.bz2"], numtag=dic_def["numtag"][i]
+                    )
                 if trans_file.with_suffix(".feather").exists():
                     trans = pd.read_feather(trans_file.with_suffix(".feather"))
                 else:
@@ -395,9 +402,9 @@ class MdbExomol(object):
                     trans.to_feather(trans_file.with_suffix(".feather"))
                     #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
                     # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
-            
+
                 self.trans_file.append(trans_file)
-                
+
                 # compute gup and elower
                 if k == 0:
                     (
@@ -407,22 +414,28 @@ class MdbExomol(object):
                         self._gpp,
                         self._jlower,
                         self._jupper,
-                        self._quantumNumbers
-                    ) = exomolapi.pickup_gE(states, trans, 
-                                            dic_def
-                                            )
+                        self._quantumNumbers,
+                    ) = exomolapi.pickup_gE(states, trans, dic_def)
                 else:
-                    Ax, nulx, elowerx, gppx, jlowerx, jupperx, _quantumNumbersx = exomolapi.pickup_gE(
-                        states, trans, dic_def
-                    )
+                    (
+                        Ax,
+                        nulx,
+                        elowerx,
+                        gppx,
+                        jlowerx,
+                        jupperx,
+                        _quantumNumbersx,
+                    ) = exomolapi.pickup_gE(states, trans, dic_def)
                     self._A = np.hstack([self._A, Ax])
                     self.nu_lines = np.hstack([self.nu_lines, nulx])
                     self._elower = np.hstack([self._elower, elowerx])
                     self._gpp = np.hstack([self._gpp, gppx])
                     self._jlower = np.hstack([self._jlower, jlowerx])
                     self._jupper = np.hstack([self._jupper, jupperx])
-                    self._quantumNumbers = np.hstack([self._quantumNumbers, _quantumNumbersx])
-                
+                    self._quantumNumbers = np.hstack(
+                        [self._quantumNumbers, _quantumNumbersx]
+                    )
+
         self.Tref = 296.0
         self.QTref = np.array(self.QT_interp(self.Tref))
 
@@ -481,8 +494,7 @@ class MdbExomol(object):
 
         for key, array in self._quantumNumbers.items():
             self._quantumNumbers[key] = array[mask]
-            
-            
+
     def set_broadening(self, alpha_ref_def=None, n_Texp_def=None):
         """setting broadening parameters
 
@@ -633,16 +645,15 @@ class MdbExomol(object):
                 "Tdpair": self.n_Texp,  # temperature dependance exponent. Here we use Tdair; no Tdpsel. TODO
             }
         )
-        for key, array in self._quantumNumbers.items():            
+        for key, array in self._quantumNumbers.items():
             try:
                 df[key] = pd.to_numeric(array, errors="raise")
             except:
                 df[key] = array
-                df[key] = df[key].astype('str') 
-                
-                
+                df[key] = df[key].astype("str")
+
         from radis.db.classes import HITRAN_MOLECULES
-        
+
         if self.molecule in HITRAN_MOLECULES:
             df.attrs["id"] = get_molecule_identifier(self.molecule)
         df.attrs["molecule"] = self.molecule

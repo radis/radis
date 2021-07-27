@@ -203,7 +203,7 @@ class MolParams:
         """
         try:
             float(M)
-        except:
+        except ValueError:
             # not a number
             from radis.db.classes import get_molecule_identifier
 

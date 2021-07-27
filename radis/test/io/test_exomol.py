@@ -5,6 +5,8 @@ Created on Mon Jul 19 22:44:39 2021
 @author: erwan
 """
 
+import pytest
+
 from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
 
 
@@ -42,5 +44,31 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
                 assert dat in known_databases
 
 
+@pytest.mark.needs_connection
+def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
+    """Auto-fetch and calculate a SiO spectrum from the ExoMol database
+
+    https://github.com/radis/radis/pull/320#issuecomment-884508206
+    """
+    from radis import calc_spectrum
+
+    s = calc_spectrum(
+        1080,
+        1320,  # cm-1
+        molecule="SiO",
+        isotope="1",
+        pressure=1.01325,  # bar
+        Tgas=1000,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="exomol",  # or use ('exomol', "EBJT") for a specific database ("EBJT")
+        verbose=verbose,
+    )
+    s.apply_slit(1, "cm-1")  # simulate an experimental slit
+    if plot:
+        s.plot("radiance")
+
+
 if __name__ == "__main__":
     test_exomol_parsing_functions()
+    test_calc_exomol_spectrum()
