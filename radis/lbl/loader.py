@@ -1461,7 +1461,7 @@ class DatabankLoader(object):
         Databank has been initialized by
         :meth:`~radis.lbl.loader.DatabankLoader._init_databank`
         """
-
+        self.profiler.start("check_line_databank", 2)
         # Make sure database is loaded
         if self.df0 is None:
             # Either we're in a save memory mode, i.e, database has been
@@ -1530,6 +1530,8 @@ class DatabankLoader(object):
                     )
                 )
                 self.df0[k] = self.df0[k].astype(np.int64)
+
+        self.profiler.stop("check_line_databank", "Check line databank")
 
     def _load_databank(
         self,

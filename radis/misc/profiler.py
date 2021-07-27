@@ -53,29 +53,16 @@ class Profiler(object):
                 "verbose_level": verbose_level,
             }
             self.stack[verbose_level].append(key)
-            print(self.final)
-            print("    ")
+
         if verbose_level == 1:
             self.final[key] = {"value": None}
         else:
             if verbose_level == 2:
                 self.final[self.stack[verbose_level - 1][-1]].update({key: {}})
             else:
-                # print(self.stack[verbose_level-2])
-                # print(self.final[self.stack[verbose_level-2][-1]][self.stack[2][-1]])
                 self.final[self.stack[verbose_level - 2][-1]][self.stack[2][-1]].update(
                     {key: {}}
                 )
-            """
-            if len(index_key) == 1:
-                pass
-                #index_key.update({key:None})
-            else:
-                pass
-                #index_key.update({key:None})
-            #print("INDEX KEY ", index_key)
-            #self.final[self.stack[verbose_level-1][-1]]['subtasks'].update({key:None})
-            """
         if len(optional) != 0 and self.verbose >= verbose_level:
             print(optional)
 
@@ -85,9 +72,7 @@ class Profiler(object):
             # Storing time with verbose level
             self.dict_time[key] = [time() - items["start_time"], items["verbose_level"]]
             if items["verbose_level"] == 1:
-                # print("HIIIIIIIIIIIIIIIIIIII",items)
                 self.final[key]["value"] = self.dict_time[key][0]
-                pass
             else:
                 if end == False:
                     if items["verbose_level"] == 2:

@@ -62,6 +62,7 @@ from radis.lbl.labels import (
 )
 from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 from radis.misc.basics import all_in, is_float
+from radis.misc.profiler import Profiler
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
 from radis.phys.constants import k_b
@@ -185,6 +186,9 @@ class BandFactory(BroadenFactory):
         path_length = self.input.path_length
         verbose = self.verbose
 
+        # New Profiler object
+        self.profiler = Profiler(verbose)
+
         # %% Retrieve from database if exists
         if self.autoretrievedatabase:
             s = self._retrieve_bands_from_database()
@@ -197,8 +201,6 @@ class BandFactory(BroadenFactory):
             self.print_conditions()
 
         # Start
-        t0 = time()
-
         # %% Make sure database is loaded
         if self.df0 is None:
             raise AttributeError("Load databank first (.load_databank())")
@@ -208,8 +210,8 @@ class BandFactory(BroadenFactory):
 
         # %% Calculate the spectrum
         # ---------------------------------------------------
-        t0 = time()
 
+        self.profiler.start("band_calculation", 1)
         self._reinitialize()
 
         # --------------------------------------------------------------------
@@ -382,8 +384,7 @@ class BandFactory(BroadenFactory):
             pb.update(i)  # progress bar
         pb.done()
 
-        if verbose:
-            print(("... process done in {0:.1f}s".format(time() - t0)))
+        self.profiler.stop("band_calculation", "Bands calculated")
 
         return s_bands
 
@@ -503,6 +504,9 @@ class BandFactory(BroadenFactory):
         pressure_mbar = self.input.pressure_mbar
         verbose = self.verbose
 
+        # New Profiler object
+        self.profiler = Profiler(verbose)
+
         # %% Retrieve from database if exists
         if self.autoretrievedatabase:
             s = self._retrieve_bands_from_database()
@@ -514,6 +518,7 @@ class BandFactory(BroadenFactory):
             print("Calculating Non-Equilibrium bands")
             self.print_conditions()
 
+        self.profiler.start("band_calculation", 1)
         # %% Make sure database is loaded
         self._check_line_databank()
         self._calc_noneq_parameters(vib_distribution, singleTvibmode)
@@ -526,7 +531,6 @@ class BandFactory(BroadenFactory):
 
         # %% Calculate the spectrum
         # ---------------------------------------------------
-        t0 = time()
 
         self._reinitialize()
 
@@ -734,8 +738,7 @@ class BandFactory(BroadenFactory):
             pb.update(i)  # progress bar
         pb.done()
 
-        if verbose:
-            print(("... process done in {0:.1f}s".format(time() - t0)))
+        self.profiler.stop("band_calculation", "Bands calculated")
 
         return s_bands
 

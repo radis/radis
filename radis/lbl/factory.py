@@ -1254,8 +1254,8 @@ class SpectrumFactory(BandFactory):
         # %% Start
         # --------------------------------------------------------------------
 
-        self.profiler.start("spectrum_calc_before_obj", 2)
         self.profiler.start("spectrum_calculation", 1)
+        self.profiler.start("spectrum_calc_before_obj", 2)
         if verbose:
             self.print_conditions("Calculating Non-Equilibrium Spectrum")
 
@@ -1468,6 +1468,8 @@ class SpectrumFactory(BandFactory):
         `SpectrumFactory.wavenumber` is the output spectral range and
         ``SpectrumFactory.wavenumber_calc`` the spectral range used for calculation, that
         includes neighbour lines within ``broadening_max_width`` distance."""
+
+        self.profiler.start("generate_wavenumber_arrays", 2)
         # calculates minimum FWHM of lines
         self._calc_min_width(self.df1)
 
@@ -1497,6 +1499,8 @@ class SpectrumFactory(BandFactory):
 
         # AccuracyWarning. Check there are enough gridpoints per line.
         self._check_accuracy(self.params.wstep)
+
+        self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
         return
 
