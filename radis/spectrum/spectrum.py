@@ -3597,6 +3597,28 @@ class Spectrum(object):
             print("Normalization factor : {0}".format(norm))
         return out
 
+    def generate_perf_profile(self):
+        """Generate a visual/interactive performance profile diagram using ``tuna``
+
+        .. note:
+            requires a `profiler` key with in Spectrum.conditions
+
+        Examples
+        --------
+        ::
+            s = calc_spectrum(...)
+            s.generate_perf_profile()
+
+        See typical output in https://github.com/radis/radis/pull/324
+
+        See Also
+        --------
+        :py:func:`~radis.spectrum.utils.generate_perf_profile`
+        """
+        from radis.spectrum.utils import generate_perf_profile
+
+        generate_perf_profile(self)
+
     # %% Define Spectrum Algebra
     # +, -, *, ^  operators
 
