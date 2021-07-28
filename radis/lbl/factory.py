@@ -740,21 +740,15 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
-                    0
+                "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+                    "spectrum_calc_before_obj"
                 ],
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
                 "radis_version": version,
-            }
-        )
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
+                "profiler": self.profiler.final,
             }
         )
 
@@ -809,7 +803,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         # For calculating time distribution and storing it
-        self.profiler.percentage_distribution()
+        # self.profiler.percentage_distribution()
 
         return s
 
@@ -1060,19 +1054,13 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
-                    0
+                "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+                    "spectrum_calc_before_obj"
                 ],
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
                 "radis_version": version,
-            }
-        )
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
+                "profiler": self.profiler.final,
             }
         )
 
@@ -1114,7 +1102,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         # For calculating time distribution and storing it
-        self.profiler.percentage_distribution()
+        # self.profiler.percentage_distribution()
 
         return s
 
@@ -1385,21 +1373,15 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
-                    0
+                "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+                    "spectrum_calc_before_obj"
                 ],
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
                 "radis_version": version,
-            }
-        )
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
+                "profiler": self.profiler.final,
             }
         )
 
@@ -1458,7 +1440,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         # For calculating time distribution and storing it
-        self.profiler.percentage_distribution()
+        # self.profiler.percentage_distribution()
 
         return s
 

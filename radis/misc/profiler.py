@@ -40,12 +40,10 @@ class Profiler(object):
 
         # Dev: Init here to be found by autocomplete
         self.initial = {}
-        self.dict_time = {}
         self.verbose = verbose
-        self.stack = {1: "", 2: "", 3: ""}
-        self.current_started_counter = []
+        self.current_verbose2_counter = ""  # Holds current Verbose level 2 key
         self.final = {}
-        self.flag = False
+        self.flag = False  # For checking transit between verbose level 3 to 2
         self.relative_time_percentage = {}
 
     def start(self, key, verbose_level, optional=""):
@@ -54,86 +52,59 @@ class Profiler(object):
                 "start_time": time(),
                 "verbose_level": verbose_level,
             }
-            # self.stack[verbose_level].append(key)
 
         if verbose_level == 1:
             self.final[key] = {"value": None}
         else:
             if verbose_level == 2:
-                self.current_started_counter = [verbose_level, key]
+                self.current_verbose2_counter = key
                 self.final[list(self.final)[-1]].update({key: {}})
             else:
-                self.final[list(self.final)[-1]][
-                    self.current_started_counter[1]
-                ].update({key: {}})
-
-            """
-            if verbose_level == 2:
-                self.final[self.stack[verbose_level - 1][-1]].update({key: {}})
-            else:
-                print(self.stack[verbose_level - 2][-1])
-                print(self.stack[2][-1])
-                print(self.final[self.stack[verbose_level - 2][-1]][self.stack[2][-1]])
-                self.final[self.stack[verbose_level - 2][-1]][self.stack[2][-1]].update(
+                self.final[list(self.final)[-1]][self.current_verbose2_counter].update(
                     {key: {}}
                 )
-            """
+
         if len(optional) != 0 and self.verbose >= verbose_level:
             print(optional)
 
     def stop(self, key, details):
         if __debug__:
             items = self.initial.pop(key)
-            # Storing time with verbose level
-            self.dict_time[key] = [time() - items["start_time"], items["verbose_level"]]
+            time_calculated = time() - items["start_time"]
             if items["verbose_level"] == 1:
-                self.final[key]["value"] = self.dict_time[key][0]
+                self.final[key]["value"] = time_calculated
             else:
 
                 if items["verbose_level"] == 2:
                     if self.flag:
                         self.final[list(self.final)[-1]][key].update(
-                            {"value": self.dict_time[key][0]}
+                            {"value": time_calculated}
                         )
                     else:
-                        if self.current_started_counter[0] == 2:
-                            self.final[list(self.final)[-1]][key] = self.dict_time[key][
-                                0
-                            ]
+                        self.final[list(self.final)[-1]][key] = time_calculated
                     self.flag = False
                 else:
-                    self.final[list(self.final)[-1]][self.current_started_counter[1]][
+                    self.final[list(self.final)[-1]][self.current_verbose2_counter][
                         key
-                    ] = self.dict_time[key][0]
+                    ] = time_calculated
                     self.flag = True
-                """
-                if end == False:
-                    if items["verbose_level"] == 2:
-                        new_dict = {"value": self.dict_time[key][0]}
-                        self.final[self.stack[1][-1]][key].update(new_dict)
-                    else:
-                        self.final[self.stack[1][-1]][self.stack[2][-1]][key].update(
-                            new_dict
-                        )
-                else:
-                    if items["verbose_level"] == 2:
-                        self.final[self.stack[1][-1]][key] = self.dict_time[key][0]
-                    else:
-                        self.final[self.stack[1][-1]][self.stack[2][-1]][
-                            key
-                        ] = self.dict_time[key][0]
-                """
 
             if self.verbose >= items["verbose_level"]:
-                self._print(items["verbose_level"], details, key)
+                self._print(
+                    items["verbose_level"],
+                    details,
+                    key,
+                    time_calculated=time_calculated,
+                )
 
-    def _print(self, verbose_level, details, key):
+    def _print(self, verbose_level, details, key, time_calculated):
+
         if verbose_level == 1:
-            print("{0:.2f}s -".format(self.dict_time[key][0]), details)
+            print("{0:.2f}s -".format(time_calculated), details)
         elif verbose_level >= 2:
             printg(
                 "..." * (verbose_level - 1),
-                "{0:.2f}s -".format(self.dict_time[key][0]),
+                "{0:.2f}s -".format(time_calculated),
                 details,
             )
 
