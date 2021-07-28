@@ -24,8 +24,10 @@ from io import BytesIO
 from os.path import abspath, exists, expanduser, join, splitext
 from zipfile import ZipFile
 
+import h5py
 import numpy as np
 import pandas as pd
+import vaex
 from numpy import DataSource
 
 import radis
@@ -355,7 +357,12 @@ def fetch_hitemp(
                 )
 
             with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
-                # TODO: add H5PY / Vaex building of database HERE
+
+                pandas_df = pd.DataFrame(np.array(h5py.File(urlname)))
+
+                vaex_df = vaex.from_pandas(pandas_df, copy_index=False)
+
+                vaex_df.export(f)
 
                 for nbytes in iter(lambda: gfile.readinto(b), 0):
 
@@ -404,7 +411,12 @@ def fetch_hitemp(
 
     url_store = urlnames[0] if len(urlnames) == 1 else urlnames
     with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
-        # TODO: add H5PY / Vaex building of database HERE
+
+        pandas_df = pd.DataFrame(np.array(h5py.File(urlname)))
+
+        vaex_df = vaex.from_pandas(pandas_df, copy_index=False)
+
+        vaex_df.export(f)
 
         f.get_storer("df").attrs.metadata = {
             "wavenumber_min": wmin,
@@ -417,7 +429,13 @@ def fetch_hitemp(
     # Done: add final checks
     # ... check on the created file that all lines are there :
     with pd.HDFStore(local_file, "r") as store:
-        # TODO: add H5PY / Vaex building of database  HERE
+
+        pandas_df = pd.DataFrame(np.array(h5py.File(urlname)))
+
+        vaex_df = vaex.from_pandas(pandas_df, copy_index=False)
+
+        vaex_df.export(f)
+
         nrows = store.get_storer("df").nrows
         assert nrows == Nlines
         if nrows != Ntotal_lines_expected:
