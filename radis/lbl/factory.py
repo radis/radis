@@ -1674,6 +1674,8 @@ class SpectrumFactory(BandFactory):
         # New Profiler object
         self.profiler = Profiler(verbose)
 
+        self.profiler.start("optically_thin_power_calculation", 1)
+
         # Make sure database is loaded
         if self.df0 is None:
             if not self.save_memory:
@@ -1737,6 +1739,10 @@ class SpectrumFactory(BandFactory):
 
         # Optically thin case (no self absorption):
         Ptot = Pv * path_length  # (mW/sr/cm2)
+
+        self.profiler.stop(
+            "optically_thin_power_calculation", "Optically thin power calculation"
+        )
 
         return conv2(Ptot, "mW/cm2/sr", unit)
 

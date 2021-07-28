@@ -990,6 +990,7 @@ class BandFactory(BroadenFactory):
         if self.verbose:
             print(("Now processing lines ({0})".format(len(df))))
 
+        self.profiler.start("calc_broadening_eq_bands", 2)
         # Just some tests
         try:
             assert len(df.shape) == 2
@@ -1001,6 +1002,8 @@ class BandFactory(BroadenFactory):
             )
 
         (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
+
+        self.profiler.start("calc_broadening_eq_bands", "Calc Broadening Eq Bands")
 
         return wavenumber, abscoeff_bands
 
@@ -1035,6 +1038,7 @@ class BandFactory(BroadenFactory):
         if self.verbose:
             print(("Now processing lines ({0})".format(len(df))))
 
+        self.profiler.start("calc_broadening_noneq_bands", 2)
         # Just some tests
         try:
             assert len(df.shape) == 2
@@ -1050,6 +1054,10 @@ class BandFactory(BroadenFactory):
             abscoeff_bands,
             emisscoeff_bands,
         ) = self._broaden_lines_noneq_bands(df)
+
+        self.profiler.stop(
+            "calc_broadening_noneq_bands", "Calculate broadening noneq bands"
+        )
 
         return wavenumber, abscoeff_bands, emisscoeff_bands
 

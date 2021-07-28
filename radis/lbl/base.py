@@ -2512,7 +2512,7 @@ class BaseFactory(DatabankLoader):
 
         self.profiler.stop("population", "populations")
         self.profiler.stop(
-            "calc_noneq_population", "Calculated nonequilibrium populations", False
+            "calc_noneq_population", "Calculated nonequilibrium populations"
         )
 
         return
@@ -2774,7 +2774,6 @@ class BaseFactory(DatabankLoader):
         self.profiler.stop(
             "calc_noneq_population_multiTvib",
             "Calculated nonequilibrium populations (multiTvib)",
-            False,
         )
 
         return
@@ -3028,7 +3027,7 @@ class BaseFactory(DatabankLoader):
             "corrected for populations and stimulated emission",
         )
         self.profiler.stop(
-            "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength", False
+            "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength"
         )
 
         return  # df1 automatically updated
