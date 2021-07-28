@@ -2226,7 +2226,7 @@ class BroadenFactory(BaseFactory):
             )
 
         (wavenumber, abscoeff) = self._broaden_lines(df)
-        self.profiler.stop("calc_line_broadening", "Calculated line broadening", False)
+        self.profiler.stop("calc_line_broadening", "Calculated line broadening")
 
         return wavenumber, abscoeff
 

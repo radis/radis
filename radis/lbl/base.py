@@ -3315,7 +3315,7 @@ class BaseFactory(DatabankLoader):
                 parsum.reset_populations()
         self.profiler.stop("reset_population", "Reset populations")
 
-        self.profiler.stop("reinitialize", "Reinitialize database", False)
+        self.profiler.stop("reinitialize", "Reinitialize database")
 
     def _check_inputs(self, mole_fraction, Tmax):
         """Check spectrum inputs, add warnings if suspicious values.
