@@ -3,7 +3,7 @@
 calculation under :py:class:`~radis.lbl.factory.SpectrumFactory` based on verbose level.
 
 Also stores Spectrum calculation time dependent parameters, under the attribute
-    :py:attr:`~radis.misc.profiler.Profiler.dict_time`
+    :py:attr:`~radis.misc.profiler.Profiler.final`
 
 Routine Listing
 ---------------
@@ -22,7 +22,7 @@ from radis.misc.printer import printg
 
 class Profiler(object):
     """A class to store Spectrum calculation time dependent parameters, under the attribute
-    :py:attr:`~radis.misc.profiler.Profiler.dict_time` of
+    :py:attr:`~radis.misc.profiler.Profiler.final` of
     :py:class:`~radis.lbl.factory.SpectrumFactory`.
 
     It also hold functions to print all the entities based on verbose value.
@@ -130,13 +130,13 @@ class Profiler(object):
             for i in range(1, upper_limit):
                 temp_sum = 0
                 first = 1
-                for j in self.dict_time:
-                    if i in self.dict_time[j]:
+                for j in self.final:
+                    if i in self.final[j]:
                         if first == 1:
                             verbose_distribution[i] = {}
                             first = 0
-                        verbose_distribution[i][j] = [self.dict_time[j][0]]
-                        temp_sum += self.dict_time[j][0]
+                        verbose_distribution[i][j] = [self.final[j][0]]
+                        temp_sum += self.final[j][0]
                 total_sum_verbose_wise[i] = temp_sum
 
             # Adding percentage of time taken by each key

@@ -2500,7 +2500,9 @@ class BroadenFactory(BaseFactory):
                     ),
                 )
 
-            time_spent = self.profiler.dict_time["calc_pseudo_continuum"][0]
+            time_spent = self.profiler.final[list(self.profiler.final)[-1]][
+                "calc_pseudo_continuum"
+            ]
             # Add a warning if it looks like it wasnt worth it
             if time_spent > 3 * expected_broadening_time_gain:
                 self.warn(
