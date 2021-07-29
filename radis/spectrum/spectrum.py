@@ -3036,9 +3036,11 @@ class Spectrum(object):
                 + "value manually with s.conditions['self_absorption']=..."
             )
 
-    def print_struct(self):
+    def print_perf_profile(self):
         """Prints Profiler output dictionary in a structured manner.
         example:
+        Spectrum.print_perf_profile()
+        ----------------------------
         spectrum_calculation:
             calc_hwhm: 0.007350444793701172
             calc_line_broadening:

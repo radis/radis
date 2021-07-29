@@ -80,6 +80,7 @@ from warnings import warn
 
 import astropy.units as u
 import numpy as np
+import yaml
 from numpy import arange, exp
 from scipy.constants import N_A, c, k, pi
 
@@ -1736,6 +1737,27 @@ class SpectrumFactory(BandFactory):
         )
 
         return conv2(Ptot, "mW/cm2/sr", unit)
+
+    def print_perf_profile(self):
+        """Prints Profiler output dictionary in a structured manner.
+        example:
+        SpectrumFactory.print_perf_profile()
+        ----------------------------
+        spectrum_calculation:
+            calc_hwhm: 0.007350444793701172
+            calc_line_broadening:
+                DLM_Distribute_lines: 0.005137443542480469
+                DLM_Initialized_vectors: 8.106231689453125e-06
+                DLM_closest_matching_line: 0.0010995864868164062
+                DLM_convolve: 0.6121664047241211
+                precompute_DLM_lineshapes: 0.027348995208740234
+                value: 0.6468849182128906
+            calc_lineshift: 0.0005822181701660156
+            calc_other_spectral_quan: 0.005536317825317383
+            value: 0.6814641952514648
+        """
+        profiler = self.profiler.final
+        print(yaml.dump(profiler, allow_unicode=True, default_flow_style=False))
 
 
 # %% ======================================================================
