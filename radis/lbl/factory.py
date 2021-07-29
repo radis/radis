@@ -748,9 +748,12 @@ class SpectrumFactory(BandFactory):
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
                 "radis_version": version,
-                "profiler": self.profiler.final,
+                "profiler": dict(self.profiler.final),
             }
         )
+        del self.profiler.final[list(self.profiler.final)[-1]][
+            "spectrum_calc_before_obj"
+        ]
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -1060,9 +1063,12 @@ class SpectrumFactory(BandFactory):
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
                 "radis_version": version,
-                "profiler": self.profiler.final,
+                "profiler": dict(self.profiler.final),
             }
         )
+        del self.profiler.final[list(self.profiler.final)[-1]][
+            "spectrum_calc_before_obj"
+        ]
 
         # Spectral quantities
         quantities = {
@@ -1381,9 +1387,12 @@ class SpectrumFactory(BandFactory):
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
                 "radis_version": version,
-                "profiler": self.profiler.final,
+                "profiler": dict(self.profiler.final),
             }
         )
+        del self.profiler.final[list(self.profiler.final)[-1]][
+            "spectrum_calc_before_obj"
+        ]
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         populations = self.get_populations(self.misc.export_populations)

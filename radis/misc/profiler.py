@@ -15,6 +15,7 @@ Routine Listing
 -------------------------------------------------------------------------------
 """
 
+from collections import OrderedDict
 from time import time
 
 from radis.misc.printer import printg
@@ -42,7 +43,7 @@ class Profiler(object):
         self.initial = {}
         self.verbose = verbose
         self.current_verbose2_counter = ""  # Holds current Verbose level 2 key
-        self.final = {}
+        self.final = OrderedDict()
         self.flag = False  # For checking transit between verbose level 3 to 2
         self.relative_time_percentage = {}
 
@@ -73,6 +74,8 @@ class Profiler(object):
             time_calculated = time() - items["start_time"]
             if items["verbose_level"] == 1:
                 self.final[key]["value"] = time_calculated
+                # Profiler ends; Deserializing to Dictionary format
+                self.final = dict(self.final)
             else:
 
                 if items["verbose_level"] == 2:
