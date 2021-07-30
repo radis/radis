@@ -418,7 +418,7 @@ def dict_to_tree(pro, name):
 def generate_perf_profile(s):
     """Visual/interactive performance profile
 
-    See typical output in https://github.com/radis/radis/pull/324
+    See typical output in https://github.com/radis/radis/pull/325
 
     Parameters
     ----------
@@ -505,7 +505,7 @@ def generate_perf_profile(s):
         # Store value
         st.stats[func_name] = (1, 0, tt, ct, {parent: parent_time} if parent else {})
 
-    profiler = s.conditions["profiler"].copy()
+    profiler = s.conditions["profiler"]["spectrum_calculation"].copy()
     # Add total calculation time:
     profiler.update({"value": s.conditions["calculation_time"]})
 
@@ -522,3 +522,9 @@ def generate_perf_profile(s):
     st.dump_stats("spectrum.prof")
 
     subprocess.Popen(["tuna", "spectrum.prof"])
+
+
+if __name__ == "__main__":
+    from radis.test.spectrum.test_utils import test_perf_profile
+
+    test_perf_profile()

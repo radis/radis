@@ -23,7 +23,6 @@ dependencies:
 - joblib  # for parallel loading of SpecDatabase
 - numba  # just-in-time compiler
 - psutil # for getting user RAM
-- pyyaml # for printing profiler dictionary
 - pip
 - pip:
   - publib>=0.3.2  # Plotting styles for Matplotlib

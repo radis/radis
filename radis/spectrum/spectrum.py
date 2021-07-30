@@ -54,7 +54,6 @@ from warnings import warn
 
 import astropy.units as u
 import numpy as np
-import yaml
 from numpy import abs, diff
 
 # from radis.lbl.base import print_conditions
@@ -1973,7 +1972,7 @@ class Spectrum(object):
             :meth:`~radis.spectrum.spectrum.Spectrum.get_slit` and plot with
             :meth:`~radis.spectrum.spectrum.Spectrum.plot_slit`. Default ``True``
         slit_dispersion: func of (lambda, in ``'nm'``), or ``None``
-            spectrometer reciprocal function : dλ/dx(λ)   (in ``nm``)
+            spectrometer reciprocal function : dÎ»/dx(Î»)   (in ``nm``)
             If not ``None``, then the slit_dispersion function is used to correct the
             slit function for the whole range. Can be important if slit function
             was measured far from the measured spectrum  (e.g: a slit function
@@ -1993,16 +1992,16 @@ class Spectrum(object):
             A Python implementation of the slit dispersion:
 
             >>> def f(lbd):
-            >>>    return  w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w*1e-9)*cos(Φ))^2-1))
+            >>>    return  w/(2*f)*(tan(Î¦)+sqrt((2*d/m/(w*1e-9)*cos(Î¦))^2-1))
 
             Theoretical / References:
 
-            >>> dλ/dx ~ d/mf    # at first order
-            >>> dλ/dx = w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w)*cos(Φ))^2-1))  # cf
+            >>> dÎ»/dx ~ d/mf    # at first order
+            >>> dÎ»/dx = w/(2*f)*(tan(Î¦)+sqrt((2*d/m/(w)*cos(Î¦))^2-1))  # cf
 
             with:
 
-            - Φ: spectrometer angle (°)
+            - Î¦: spectrometer angle (Â°)
             - f: focal length (mm)
             - m: order of dispersion
             - d: grooves spacing (mm)   = 1/gr  with gr in (gr/mm)
@@ -3036,27 +3035,6 @@ class Spectrum(object):
                 + "value manually with s.conditions['self_absorption']=..."
             )
 
-    def print_perf_profile(self):
-        """Prints Profiler output dictionary in a structured manner.
-        example:
-        Spectrum.print_perf_profile()
-        ----------------------------
-        spectrum_calculation:
-            calc_hwhm: 0.007350444793701172
-            calc_line_broadening:
-                DLM_Distribute_lines: 0.005137443542480469
-                DLM_Initialized_vectors: 8.106231689453125e-06
-                DLM_closest_matching_line: 0.0010995864868164062
-                DLM_convolve: 0.6121664047241211
-                precompute_DLM_lineshapes: 0.027348995208740234
-                value: 0.6468849182128906
-            calc_lineshift: 0.0005822181701660156
-            calc_other_spectral_quan: 0.005536317825317383
-            value: 0.6814641952514648
-        """
-        profiler = self.get_conditions()["profiler"]
-        print(yaml.dump(profiler, allow_unicode=True, default_flow_style=False))
-
     def copy(self, copy_lines=True, quantity="all"):
         """Returns a copy of this Spectrum object (performs a smart deepcopy)
 
@@ -3099,7 +3077,7 @@ class Spectrum(object):
             ... asymptote: without evenly spaced check, without copies: 1.84 ms
         """
 
-        # quantities = {s:(v[0].copy(), v[1].copy()) for (s,v) in self.items()}  #╪ 1.8 ms
+        # quantities = {s:(v[0].copy(), v[1].copy()) for (s,v) in self.items()}  #â•ª 1.8 ms
         #        quantities = dict(self.items())   # 912 ns, not a copy but no need as
         #                                        # Spectrum() recreates a copy anyway
         if quantity == "all":
@@ -3597,6 +3575,95 @@ class Spectrum(object):
             print("Normalization factor : {0}".format(norm))
         return out
 
+    # %% Performance / profilers
+
+    def print_perf_profile(self, number_format="{:.3f}"):
+        """Prints Profiler output dictionary in a structured manner.
+
+        Example
+        -------
+        ::
+            Spectrum.print_perf_profile()
+
+            # output >>
+                        spectrum_calculation  2.163s ████████████████
+                        check_line_databank          0.000s
+                        check_non_eq_param           0.306s ██
+                        fetch_energy_5               0.112s
+                        calc_weight_trans            0.063s
+                            reinitialize                 0.009s
+                            copy_database                0.000s
+                            memory_usage_warning         0.008s
+                            reset_population             0.000s
+                            calc_noneq_population        0.195s █
+                            part_function                0.165s █
+                            population                   0.031s
+                            scaled_non_eq_linestrength   0.021s
+                            map_part_func                0.005s
+                            corrected_population_se      0.011s
+                        calc_emission_integral       0.028s
+                        applied_linestrength_cutoff  0.005s
+                        calc_lineshift               0.002s
+                        calc_hwhm                    0.029s
+                        generate_wavenumber_arrays   0.005s
+                            calc_line_broadening         1.499s ███████████
+                            precompute_DLM_lineshapes    0.032s
+                            DLM_Initialized_vectors      0.000s
+                            DLM_closest_matching_line    0.000s
+                            DLM_Distribute_lines         0.006s
+                            DLM_convolve                 0.822s ██████
+                        calc_other_spectral_quan     0.024s
+                        generate_spectrum_obj        0.001s
+
+        See Also
+        --------
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.generate_perf_profile`
+        """
+        PRECISION = 16  #  number of blocks â–ˆ
+        TAB = 4  # number of spaces for indentation
+        profiler = self.conditions["profiler"]
+        total_time = profiler["spectrum_calculation"]["value"]
+
+        def scale(time):
+            # return '|'*int(time/total_time*10)
+            return "â–ˆ" * int(time / total_time * PRECISION)
+
+        def walk_print_tree(prof, name, level, write_number_column):
+            if "value" in prof:
+                text = " " * TAB * (level + 1) + name
+                fill_spaces = " " * (write_number_column - len(text))
+                print(
+                    text,
+                    fill_spaces,
+                    "" + number_format.format(prof["value"]) + "s",
+                    scale(prof["value"]),
+                )
+            max_name_length = max(len(k) for k in prof.keys() if k != "value")
+            write_number_column = max(
+                write_number_column, len(" " * TAB * (level + 1)) + max_name_length
+            )
+            for k, v in prof.items():
+                if k == "value":
+                    pass
+                elif isinstance(v, dict):
+                    walk_print_tree(
+                        v,
+                        name=k,
+                        level=level + 1,
+                        write_number_column=write_number_column + TAB,
+                    )
+                elif isinstance(v, float):
+                    text = " " * TAB * (level + 1) + k
+                    fill_spaces = " " * (write_number_column - len(text))
+                    print(
+                        text, fill_spaces, "" + number_format.format(v) + "s", scale(v)
+                    )
+                else:
+                    raise ValueError(type(v))
+
+        print(self.get_name(), " profiler :")
+        walk_print_tree(profiler, name="", level=0, write_number_column=0)
+
     def generate_perf_profile(self):
         """Generate a visual/interactive performance profile diagram using ``tuna``
 
@@ -3609,11 +3676,11 @@ class Spectrum(object):
             s = calc_spectrum(...)
             s.generate_perf_profile()
 
-        See typical output in https://github.com/radis/radis/pull/324
+        See typical output in https://github.com/radis/radis/pull/325
 
         See Also
         --------
-        :py:func:`~radis.spectrum.utils.generate_perf_profile`
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
         """
         from radis.spectrum.utils import generate_perf_profile
 

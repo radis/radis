@@ -15,7 +15,10 @@ def test_perf_profile(*args, **kwargs):
         s = calc_spectrum(...)
         s.generate_perf_profile()
 
-    See output in https://github.com/radis/radis/pull/324
+    See output in https://github.com/radis/radis/pull/325
+
+    See Also
+    --------
 
     """
     from radis.lbl.calc import calc_spectrum
@@ -27,10 +30,12 @@ def test_perf_profile(*args, **kwargs):
         2000,
         2300,
         molecule="CO",
-        Tgas=3000,
+        Tvib=3000,
+        Trot=2000,
         databank="HITRAN-CO-TEST",
         verbose=3,
     )
+    s.print_perf_profile()
     s.generate_perf_profile()
 
 
