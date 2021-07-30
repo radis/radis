@@ -80,6 +80,7 @@ from warnings import warn
 
 import astropy.units as u
 import numpy as np
+import yaml
 from numpy import arange, exp
 from scipy.constants import N_A, c, k, pi
 
@@ -659,8 +660,9 @@ class SpectrumFactory(BandFactory):
         # %% Start
         # --------------------------------------------------------------------
 
-        self.profiler.start("spectrum_calc_before_obj", 2)
         self.profiler.start("spectrum_calculation", 1)
+        self.profiler.start("spectrum_calc_before_obj", 2)
+
         if verbose:
             self.print_conditions("Calculating Equilibrium Spectrum")
 
@@ -739,23 +741,20 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
-                    0
+                "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+                    "spectrum_calc_before_obj"
                 ],
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
                 "radis_version": version,
+                "profiler": dict(self.profiler.final),
             }
         )
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
-            }
-        )
+        del self.profiler.final[list(self.profiler.final)[-1]][
+            "spectrum_calc_before_obj"
+        ]
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         # ... Populations cannot be calculated at equilibrium (needs energies).
@@ -808,7 +807,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         # For calculating time distribution and storing it
-        self.profiler.percentage_distribution()
+        # self.profiler.percentage_distribution()
 
         return s
 
@@ -947,8 +946,8 @@ class SpectrumFactory(BandFactory):
         Ia_arr[np.isnan(Ia_arr)] = 0
         molarmass_arr[np.isnan(molarmass_arr)] = 0
 
-        self.profiler.start("spectrum_calc_before_obj", 2)
         self.profiler.start("spectrum_calculation", 1)
+        self.profiler.start("spectrum_calc_before_obj", 2)
 
         # generate the v_arr
         v_arr = np.arange(
@@ -1059,21 +1058,18 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
-                    0
+                "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+                    "spectrum_calc_before_obj"
                 ],
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
                 "radis_version": version,
+                "profiler": dict(self.profiler.final),
             }
         )
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
-            }
-        )
+        del self.profiler.final[list(self.profiler.final)[-1]][
+            "spectrum_calc_before_obj"
+        ]
 
         # Spectral quantities
         quantities = {
@@ -1113,7 +1109,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         # For calculating time distribution and storing it
-        self.profiler.percentage_distribution()
+        # self.profiler.percentage_distribution()
 
         return s
 
@@ -1253,8 +1249,8 @@ class SpectrumFactory(BandFactory):
         # %% Start
         # --------------------------------------------------------------------
 
-        self.profiler.start("spectrum_calc_before_obj", 2)
         self.profiler.start("spectrum_calculation", 1)
+        self.profiler.start("spectrum_calc_before_obj", 2)
         if verbose:
             self.print_conditions("Calculating Non-Equilibrium Spectrum")
 
@@ -1384,23 +1380,20 @@ class SpectrumFactory(BandFactory):
         conditions = self.get_conditions()
         conditions.update(
             {
-                "calculation_time": self.profiler.dict_time["spectrum_calc_before_obj"][
-                    0
+                "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+                    "spectrum_calc_before_obj"
                 ],
                 "lines_calculated": self._Nlines_calculated,
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
                 "radis_version": version,
+                "profiler": dict(self.profiler.final),
             }
         )
-        conditions.update(
-            {
-                "profiler": {
-                    i: self.profiler.dict_time[i][0] for i in self.profiler.dict_time
-                }
-            }
-        )
+        del self.profiler.final[list(self.profiler.final)[-1]][
+            "spectrum_calc_before_obj"
+        ]
 
         # Get populations of levels as calculated in RovibrationalPartitionFunctions
         populations = self.get_populations(self.misc.export_populations)
@@ -1457,7 +1450,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         # For calculating time distribution and storing it
-        self.profiler.percentage_distribution()
+        # self.profiler.percentage_distribution()
 
         return s
 
@@ -1467,6 +1460,8 @@ class SpectrumFactory(BandFactory):
         `SpectrumFactory.wavenumber` is the output spectral range and
         ``SpectrumFactory.wavenumber_calc`` the spectral range used for calculation, that
         includes neighbour lines within ``broadening_max_width`` distance."""
+
+        self.profiler.start("generate_wavenumber_arrays", 2)
         # calculates minimum FWHM of lines
         self._calc_min_width(self.df1)
 
@@ -1496,6 +1491,8 @@ class SpectrumFactory(BandFactory):
 
         # AccuracyWarning. Check there are enough gridpoints per line.
         self._check_accuracy(self.params.wstep)
+
+        self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
         return
 
@@ -1669,6 +1666,8 @@ class SpectrumFactory(BandFactory):
         # New Profiler object
         self.profiler = Profiler(verbose)
 
+        self.profiler.start("optically_thin_power_calculation", 1)
+
         # Make sure database is loaded
         if self.df0 is None:
             if not self.save_memory:
@@ -1733,7 +1732,32 @@ class SpectrumFactory(BandFactory):
         # Optically thin case (no self absorption):
         Ptot = Pv * path_length  # (mW/sr/cm2)
 
+        self.profiler.stop(
+            "optically_thin_power_calculation", "Optically thin power calculation"
+        )
+
         return conv2(Ptot, "mW/cm2/sr", unit)
+
+    def print_perf_profile(self):
+        """Prints Profiler output dictionary in a structured manner.
+        example:
+        SpectrumFactory.print_perf_profile()
+        ----------------------------
+        spectrum_calculation:
+            calc_hwhm: 0.007350444793701172
+            calc_line_broadening:
+                DLM_Distribute_lines: 0.005137443542480469
+                DLM_Initialized_vectors: 8.106231689453125e-06
+                DLM_closest_matching_line: 0.0010995864868164062
+                DLM_convolve: 0.6121664047241211
+                precompute_DLM_lineshapes: 0.027348995208740234
+                value: 0.6468849182128906
+            calc_lineshift: 0.0005822181701660156
+            calc_other_spectral_quan: 0.005536317825317383
+            value: 0.6814641952514648
+        """
+        profiler = self.profiler.final
+        print(yaml.dump(profiler, allow_unicode=True, default_flow_style=False))
 
 
 # %% ======================================================================

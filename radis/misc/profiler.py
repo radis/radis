@@ -3,7 +3,7 @@
 calculation under :py:class:`~radis.lbl.factory.SpectrumFactory` based on verbose level.
 
 Also stores Spectrum calculation time dependent parameters, under the attribute
-    :py:attr:`~radis.misc.profiler.Profiler.dict_time`
+    :py:attr:`~radis.misc.profiler.Profiler.final`
 
 Routine Listing
 ---------------
@@ -15,6 +15,7 @@ Routine Listing
 -------------------------------------------------------------------------------
 """
 
+from collections import OrderedDict
 from time import time
 
 from radis.misc.printer import printg
@@ -22,7 +23,7 @@ from radis.misc.printer import printg
 
 class Profiler(object):
     """A class to store Spectrum calculation time dependent parameters, under the attribute
-    :py:attr:`~radis.misc.profiler.Profiler.dict_time` of
+    :py:attr:`~radis.misc.profiler.Profiler.final` of
     :py:class:`~radis.lbl.factory.SpectrumFactory`.
 
     It also hold functions to print all the entities based on verbose value.
@@ -40,8 +41,10 @@ class Profiler(object):
 
         # Dev: Init here to be found by autocomplete
         self.initial = {}
-        self.dict_time = {}
         self.verbose = verbose
+        self.current_verbose2_counter = ""  # Holds current Verbose level 2 key
+        self.final = OrderedDict()
+        self.flag = False  # For checking transit between verbose level 3 to 2
         self.relative_time_percentage = {}
 
     def start(self, key, verbose_level, optional=""):
@@ -50,24 +53,61 @@ class Profiler(object):
                 "start_time": time(),
                 "verbose_level": verbose_level,
             }
+
+        if verbose_level == 1:
+            self.final[key] = {"value": None}
+        else:
+            if verbose_level == 2:
+                self.current_verbose2_counter = key
+                self.final[list(self.final)[-1]].update({key: {}})
+            else:
+                self.final[list(self.final)[-1]][self.current_verbose2_counter].update(
+                    {key: {}}
+                )
+
         if len(optional) != 0 and self.verbose >= verbose_level:
             print(optional)
 
-    def stop(self, key, details=""):
+    def stop(self, key, details):
         if __debug__:
             items = self.initial.pop(key)
-            # Storing time with verbose level
-            self.dict_time[key] = [time() - items["start_time"], items["verbose_level"]]
-            if self.verbose >= items["verbose_level"]:
-                self._print(items["verbose_level"], details, key)
+            time_calculated = time() - items["start_time"]
+            if items["verbose_level"] == 1:
+                self.final[key]["value"] = time_calculated
+                # Profiler ends; Deserializing to Dictionary format
+                self.final = dict(self.final)
+            else:
 
-    def _print(self, verbose_level, details, key):
+                if items["verbose_level"] == 2:
+                    if self.flag:
+                        self.final[list(self.final)[-1]][key].update(
+                            {"value": time_calculated}
+                        )
+                    else:
+                        self.final[list(self.final)[-1]][key] = time_calculated
+                    self.flag = False
+                else:
+                    self.final[list(self.final)[-1]][self.current_verbose2_counter][
+                        key
+                    ] = time_calculated
+                    self.flag = True
+
+            if self.verbose >= items["verbose_level"]:
+                self._print(
+                    items["verbose_level"],
+                    details,
+                    key,
+                    time_calculated=time_calculated,
+                )
+
+    def _print(self, verbose_level, details, key, time_calculated):
+
         if verbose_level == 1:
-            print("{0:.2f}s -".format(self.dict_time[key][0]), details)
+            print("{0:.2f}s -".format(time_calculated), details)
         elif verbose_level >= 2:
             printg(
                 "..." * (verbose_level - 1),
-                "{0:.2f}s -".format(self.dict_time[key][0]),
+                "{0:.2f}s -".format(time_calculated),
                 details,
             )
 
@@ -93,13 +133,13 @@ class Profiler(object):
             for i in range(1, upper_limit):
                 temp_sum = 0
                 first = 1
-                for j in self.dict_time:
-                    if i in self.dict_time[j]:
+                for j in self.final:
+                    if i in self.final[j]:
                         if first == 1:
                             verbose_distribution[i] = {}
                             first = 0
-                        verbose_distribution[i][j] = [self.dict_time[j][0]]
-                        temp_sum += self.dict_time[j][0]
+                        verbose_distribution[i][j] = [self.final[j][0]]
+                        temp_sum += self.final[j][0]
                 total_sum_verbose_wise[i] = temp_sum
 
             # Adding percentage of time taken by each key
