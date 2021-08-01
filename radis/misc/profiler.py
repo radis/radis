@@ -42,10 +42,16 @@ class Profiler(object):
         # Dev: Init here to be found by autocomplete
         self.initial = {}
         self.verbose = verbose
-        self.current_verbose2_counter = ""  # Holds current Verbose level 2 key
         self.final = OrderedDict()
-        self.flag = False  # For checking transit between verbose level 3 to 2
         self.relative_time_percentage = {}
+
+    # Creates profiler dictionary structure
+    def add_entry(self, dictionary, key, verbose, count):
+        if count == verbose:
+            dictionary[key] = {}
+            return
+
+        self.add_entry(dictionary[list(dictionary)[-1]], key, verbose, count + 1)
 
     def start(self, key, verbose_level, optional=""):
         if __debug__:
@@ -57,16 +63,23 @@ class Profiler(object):
         if verbose_level == 1:
             self.final[key] = {"value": None}
         else:
-            if verbose_level == 2:
-                self.current_verbose2_counter = key
-                self.final[list(self.final)[-1]].update({key: {}})
-            else:
-                self.final[list(self.final)[-1]][self.current_verbose2_counter].update(
-                    {key: {}}
-                )
+            self.add_entry(self.final, key, verbose_level, 1)
 
         if len(optional) != 0 and self.verbose >= verbose_level:
             print(optional)
+
+    # Adds time calculated for each key in profiler
+    def add_time(self, dictionary, key, verbose, count, time_calculated):
+        if count == verbose:
+            if len(dictionary[key]) != 0:
+                dictionary[key].update({"value": time_calculated})
+            else:
+                dictionary[key] = time_calculated
+            return
+
+        self.add_time(
+            dictionary[list(dictionary)[-1]], key, verbose, count + 1, time_calculated
+        )
 
     def stop(self, key, details):
         if __debug__:
@@ -77,30 +90,18 @@ class Profiler(object):
                 # Profiler ends; Deserializing to Dictionary format
                 self.final = dict(self.final)
             else:
-
-                if items["verbose_level"] == 2:
-                    if self.flag:
-                        self.final[list(self.final)[-1]][key].update(
-                            {"value": time_calculated}
-                        )
-                    else:
-                        self.final[list(self.final)[-1]][key] = time_calculated
-                    self.flag = False
-                else:
-                    self.final[list(self.final)[-1]][self.current_verbose2_counter][
-                        key
-                    ] = time_calculated
-                    self.flag = True
+                self.add_time(
+                    self.final, key, items["verbose_level"], 1, time_calculated
+                )
 
             if self.verbose >= items["verbose_level"]:
                 self._print(
                     items["verbose_level"],
                     details,
-                    key,
                     time_calculated=time_calculated,
                 )
 
-    def _print(self, verbose_level, details, key, time_calculated):
+    def _print(self, verbose_level, details, time_calculated):
 
         if verbose_level == 1:
             print("{0:.2f}s -".format(time_calculated), details)

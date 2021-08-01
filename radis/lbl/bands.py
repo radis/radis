@@ -1003,7 +1003,7 @@ class BandFactory(BroadenFactory):
 
         (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
 
-        self.profiler.start("calc_broadening_eq_bands", "Calc Broadening Eq Bands")
+        self.profiler.stop("calc_broadening_eq_bands", "Calc Broadening Eq Bands")
 
         return wavenumber, abscoeff_bands
 
