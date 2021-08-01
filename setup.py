@@ -236,6 +236,9 @@ def run_setup(with_binary):
             "spectroscopy",
             "molecules",
             "HITRAN",
+            "hitemp",
+            "exomol",
+            "line-by-line",
         ],
         packages=find_packages(),
         install_requires=[
