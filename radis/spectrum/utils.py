@@ -428,8 +428,6 @@ def dict_to_tree(pro, name):
     else:
         return {"value": pro, "name": name}
 
-    return new_dict
-
 
 #%%
 
@@ -466,34 +464,34 @@ def print_perf_profile(
         Spectrum.print_perf_profile()
 
         # output >>
-                    spectrum_calculation  2.163s ████████████████
-                    check_line_databank          0.000s
-                    check_non_eq_param           0.306s ██
-                    fetch_energy_5               0.112s
-                    calc_weight_trans            0.063s
-                        reinitialize                 0.009s
-                        copy_database                0.000s
-                        memory_usage_warning         0.008s
-                        reset_population             0.000s
-                        calc_noneq_population        0.195s █
-                        part_function                0.165s █
-                        population                   0.031s
-                        scaled_non_eq_linestrength   0.021s
-                        map_part_func                0.005s
-                        corrected_population_se      0.011s
-                    calc_emission_integral       0.028s
-                    applied_linestrength_cutoff  0.005s
-                    calc_lineshift               0.002s
-                    calc_hwhm                    0.029s
-                    generate_wavenumber_arrays   0.005s
-                        calc_line_broadening         1.499s ███████████
-                        precompute_DLM_lineshapes    0.032s
-                        DLM_Initialized_vectors      0.000s
-                        DLM_closest_matching_line    0.000s
-                        DLM_Distribute_lines         0.006s
-                        DLM_convolve                 0.822s ██████
-                    calc_other_spectral_quan     0.024s
-                    generate_spectrum_obj        0.001s
+            spectrum_calculation      0.844s ████████████████
+                check_line_databank              0.001s
+                check_non_eq_param               0.070s █
+                fetch_energy_5                   0.027s
+                calc_weight_trans                0.016s
+                reinitialize                     0.003s
+                    copy_database                    0.000s
+                    memory_usage_warning             0.003s
+                    reset_population                 0.000s
+                calc_noneq_population            0.066s █
+                    part_function                    0.056s █
+                    population                       0.010s
+                scaled_non_eq_linestrength       0.004s
+                    map_part_func                    0.001s
+                    corrected_population_se          0.003s
+                calc_emission_integral           0.008s
+                applied_linestrength_cutoff      0.003s
+                calc_lineshift                   0.001s
+                calc_hwhm                        0.008s
+                generate_wavenumber_arrays       0.002s
+                calc_line_broadening             0.668s ████████████
+                    precompute_DLM_lineshapes        0.020s
+                    DLM_Initialized_vectors          0.000s
+                    DLM_closest_matching_line        0.001s
+                    DLM_Distribute_lines             0.002s
+                    DLM_convolve                     0.304s █████
+                calc_other_spectral_quan         0.005s
+                generate_spectrum_obj            0.000s
 
     See Also
     --------
@@ -513,7 +511,7 @@ def print_perf_profile(
 
     def walk_print_tree(prof, name, level, write_number_column):
         if "value" in prof:
-            text = " " * TAB * (level + 1) + name
+            text = " " * TAB * level + name
             fill_spaces = " " * (write_number_column - len(text))
             print(
                 text,
@@ -525,6 +523,7 @@ def print_perf_profile(
         write_number_column = max(
             write_number_column, len(" " * TAB * (level + 1)) + max_name_length
         )
+        write_number_column += TAB
         for k, v in prof.items():
             if k == "value":
                 pass
@@ -533,7 +532,7 @@ def print_perf_profile(
                     v,
                     name=k,
                     level=level + 1,
-                    write_number_column=write_number_column + TAB,
+                    write_number_column=write_number_column,
                 )
             elif isinstance(v, float):
                 text = " " * TAB * (level + 1) + k
