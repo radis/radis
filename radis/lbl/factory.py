@@ -805,9 +805,6 @@ class SpectrumFactory(BandFactory):
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
-        # For calculating time distribution and storing it
-        # self.profiler.percentage_distribution()
-
         return s
 
     def eq_spectrum_gpu(
@@ -1106,9 +1103,6 @@ class SpectrumFactory(BandFactory):
 
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
-
-        # For calculating time distribution and storing it
-        # self.profiler.percentage_distribution()
 
         return s
 
@@ -1447,9 +1441,6 @@ class SpectrumFactory(BandFactory):
 
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
-
-        # For calculating time distribution and storing it
-        # self.profiler.percentage_distribution()
 
         return s
 
