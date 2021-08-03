@@ -1220,7 +1220,7 @@ class SpecList(object):
                 query = []
                 for (k, v) in kwconditions.items():
                     if isinstance(v, str):
-                        query.append("{0} == '{1}'".format(k, v))
+                        query.append("{0} == r'{1}'".format(k, v))
                     else:
                         #                    query.append('{0} == {1}'.format(k,v))
                         query.append("{0} == {1}".format(k, v.__repr__()))
@@ -1633,7 +1633,6 @@ class SpecList(object):
 
         See Also
         --------
-
         Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method
         """
 
@@ -1668,7 +1667,7 @@ class SpecList(object):
 
             >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
                                                   # procedure...
-        -------
+
         .. minigallery:: radis.tools.database.SpecList.plot_cond
         """
         # %%

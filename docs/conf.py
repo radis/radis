@@ -131,6 +131,7 @@ def run_apidoc(_):
 
 def setup(app):
     app.connect("builder-inited", run_apidoc)
+    app.add_css_file("custom.css")  #  for scrollable sidebar
 
 
 # %%
@@ -252,8 +253,8 @@ html_theme_options = {
     "github_banner": False,
     "travis_button": False,
     "codecov_button": False,
-    "sidebar_includehidden": False,
-    "fixed_sidebar": False,
+    "sidebar_includehidden": True,
+    "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
 }
 
