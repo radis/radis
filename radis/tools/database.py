@@ -1220,7 +1220,7 @@ class SpecList(object):
                 query = []
                 for (k, v) in kwconditions.items():
                     if isinstance(v, str):
-                        query.append("{0} == '{1}'".format(k, v))
+                        query.append("{0} == r'{1}'".format(k, v))
                     else:
                         #                    query.append('{0} == {1}'.format(k,v))
                         query.append("{0} == {1}".format(k, v.__repr__()))
