@@ -524,11 +524,13 @@ def print_perf_profile(
             write_number_column, len(" " * TAB * (level + 1)) + max_name_length
         )
         write_number_column += TAB
+
+        total_time = 0
         for k, v in prof.items():
             if k == "value":
                 pass
             elif isinstance(v, dict):
-                walk_print_tree(
+                total_time += walk_print_tree(
                     v,
                     name=k,
                     level=level + 1,
@@ -538,8 +540,25 @@ def print_perf_profile(
                 text = " " * TAB * (level + 1) + k
                 fill_spaces = " " * (write_number_column - len(text))
                 print(text, fill_spaces, "" + number_format.format(v) + "s", scale(v))
+                total_time += v
             else:
                 raise ValueError(type(v))
+
+        # print missing time / self-time
+        if "value" in prof:
+            missing_time = prof["value"] - total_time
+            if float(number_format.format(missing_time)) != 0:
+                # we dont add 0 numbers
+                text = " " * TAB * (level + 1) + "others"
+                fill_spaces = " " * (write_number_column - len(text))
+                print(
+                    text,
+                    fill_spaces,
+                    "" + number_format.format(missing_time) + "s",
+                    scale(missing_time),
+                )
+
+        return total_time
 
     print(first_line)
     walk_print_tree(profiler, name="", level=0, write_number_column=0)
