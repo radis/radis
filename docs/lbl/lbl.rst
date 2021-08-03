@@ -781,7 +781,8 @@ Profiler
 --------
 
 You may want to track where the calculation is taking some time.
-You can set ``verbose=3`` or lower to print the time spent on different operations. Example::
+You can set ``verbose=1`` or higher to print the time spent on the different
+calculation steps at runtime. Example with ``verbose=3``::
 
     s = calc_spectrum(1900, 2300,         # cm-1
                       molecule='CO',
@@ -793,94 +794,56 @@ You can set ``verbose=3`` or lower to print the time spent on different operatio
                       verbose=3,
                       )
 
-::
-
-    >>> 0.00s - Check line databank
-    >>> Fetching Evib & Erot.
-    >>> If using this code several times you should consider updating the database directly. See functions in factory.py
-    >>> 0.01s - Fetched energies for all 749 transitions
-    >>> 0.01s - calculated weighted transition moment
-    >>> 0.04s - Checked nonequilibrium parameters
-    >>> ...... 0.00s - Copying database
-    >>> ...... 0.00s - Check Memory usage of database
-    >>> ...... 0.00s - Reset populations
-    >>> 0.00s - Reinitialize database
-    >>> sorting lines by vibrational bands
-    >>> lines sorted in 0.0s
-    >>> ...... 0.03s - partition functions
-    >>> ...... 0.01s - populations
-    >>> 0.04s - Calculated nonequilibrium populations
-    >>> ...... 0.00s - map partition functions
-    >>> ...... 0.00s - corrected for populations and stimulated emission
-    >>> 0.00s - scaled nonequilibrium linestrength
-    >>> 0.01s - calculated emission integral
-    >>> Discarded 7.21% of lines (linestrength<1e-27cm-1/(#.cm-2)) Estimated error: 0.00%
-    >>> 0.00s - Applied linestrength cutoff
-    >>> 0.00s - Calculated lineshift
-    >>> 0.01s - Calculate broadening HWHM
-    >>> 0.00s - Generated Wavenumber Arrays
-    >>> Calculating line broadening (695 lines: expect ~ 0.07s on 1 CPU)
-    >>> ...... 0.01s - Precomputed DLM lineshapes (15)
-    >>> ...... 0.00s - Initialized vectors
-    >>> ...... 0.00s - Get closest matching line & fraction
-    >>> ...... 0.00s - Distribute lines over DLM
-    >>> ...... 0.03s - Convolve and sum on spectral range
-    >>> ...... 0.00s - Initialized vectors
-    >>> ...... 0.00s - Get closest matching line & fraction
-    >>> ...... 0.00s - Distribute lines over DLM
-    >>> ...... 0.03s - Convolve and sum on spectral range
-    >>> 0.08s - Calculated line broadening
-    >>> 0.00s - Calculated other spectral quantities
-    >>> 0.19s - Spectrum calculated (before object generation)
-    >>> 0.00s - Generated Spectrum object
-    >>> 0.19s - Spectrum calculated
-
-.. _label_lbl_precompute_spectra:
-
-You can print the the time distribution Spectrum at various levels in a presentable hierarchy using the
-:py:meth:`~radis.lbl.factory.SpectrumFactory.print_perf_profile` method in SpectrumFactory object or
-:py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile` method in the Spectrum object.
+Performance profiles are kept in the output spectrum ``conditions['profiler']`` dictionary.
+You can also use the :py:meth:`~radis.lbl.factory.SpectrumFactory.print_perf_profile`
+method in the SpectrumFactory object or the :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
+method in the Spectrum object to print them in the console :
 
 For the above example::
 
     s.print_perf_profile()
 
 ::
+    # Output:
+        spectrum_calculation      0.844s ████████████████
+            check_line_databank              0.001s
+            check_non_eq_param               0.070s █
+            fetch_energy_5                   0.027s
+            calc_weight_trans                0.016s
+            reinitialize                     0.003s
+                copy_database                    0.000s
+                memory_usage_warning             0.003s
+                reset_population                 0.000s
+            calc_noneq_population            0.066s █
+                part_function                    0.056s █
+                population                       0.010s
+            scaled_non_eq_linestrength       0.004s
+                map_part_func                    0.001s
+                corrected_population_se          0.003s
+            calc_emission_integral           0.008s
+            applied_linestrength_cutoff      0.003s
+            calc_lineshift                   0.001s
+            calc_hwhm                        0.008s
+            generate_wavenumber_arrays       0.002s
+            calc_line_broadening             0.668s ████████████
+                precompute_DLM_lineshapes        0.020s
+                DLM_Initialized_vectors          0.000s
+                DLM_closest_matching_line        0.001s
+                DLM_Distribute_lines             0.002s
+                DLM_convolve                     0.304s █████
+            calc_other_spectral_quan         0.005s
+            generate_spectrum_obj            0.000s
 
-    >>> spectrum_calculation:
-    >>>   applied_linestrength_cutoff: 0.0024361610412597656
-    >>>   calc_emission_integral: 0.006468772888183594
-    >>>   calc_hwhm: 0.006415128707885742
-    >>>   calc_line_broadening:
-    >>>     DLM_Distribute_lines: 0.0003898143768310547
-    >>>     DLM_Initialized_vectors: 9.775161743164062e-06
-    >>>     DLM_closest_matching_line: 0.0005028247833251953
-    >>>     DLM_convolve: 0.029767990112304688
-    >>>     precompute_DLM_lineshapes: 0.013132810592651367
-    >>>     value: 0.07619166374206543
-    >>>   calc_lineshift: 0.00074005126953125
-    >>>   calc_noneq_population:
-    >>>     part_function: 0.03405046463012695
-    >>>     population: 0.005669832229614258
-    >>>     value: 0.03983640670776367
-    >>>   calc_other_spectral_quan: 0.002928495407104492
-    >>>   calc_weight_trans: 0.008247852325439453
-    >>>   check_line_databank: 0.0002810955047607422
-    >>>   check_non_eq_param: 0.04109525680541992
-    >>>   fetch_energy_5: 0.014983654022216797
-    >>>   generate_spectrum_obj: 0.00032138824462890625
-    >>>   generate_wavenumber_arrays: 0.0010433197021484375
-    >>>   reinitialize:
-    >>>     copy_database: 2.1457672119140625e-06
-    >>>     memory_usage_warning: 0.0018389225006103516
-    >>>     reset_population: 2.6226043701171875e-05
-    >>>     value: 0.001964569091796875
-    >>>   scaled_non_eq_linestrength:
-    >>>     corrected_population_se: 0.002747774124145508
-    >>>     map_part_func: 0.0010590553283691406
-    >>>     value: 0.0038983821868896484
-    >>>   value: 0.1904621124267578
+Finally, you can also use the SpectrumFactory :py:meth:`~radis.lbl.factory.SpectrumFactory.generate_perf_profile`
+Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.generate_perf_profile`
+methods to generate an interactive profiler in the browser.
 
+.. image:: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+    :alt: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+    :target: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+
+
+.. _label_lbl_precompute_spectra:
 
 Precompute Spectra
 ------------------

@@ -8,6 +8,8 @@ object
 
 """
 
+import subprocess
+
 import numpy as np
 
 from radis.misc.basics import partition
@@ -383,3 +385,301 @@ def split_and_plot_by_parts(w, I, *args, **kwargs):
         )
     )
     return split_and_plot_by_parts(w, I, *args, **kwargs)
+
+
+# %% Profiler
+
+#%%
+def dict_to_tree(pro, name):
+    """
+    Parameters
+    ----------
+    pro: dict
+        of the form::
+            {"value":float,    # keyword 'value' is expected
+             "some_key":float
+             "some_key2":float,
+             "some_key3":dict  # nested dict of the same form
+             "some_key4":dict}
+    name: str
+
+    Returns
+    -------
+    dict: of the form ::
+        Tree =
+        {"name": str,
+         "value":float,
+         "children":[list of Tree]}
+
+    See Also
+    --------
+    Used in :py:func:`~radis.spectrum.utils.print_perf_profile` and
+    :py:func:`~radis.spectrum.utils.generate_perf_profile`
+
+    """
+    if isinstance(pro, dict):
+        new_dict = {"value": pro["value"], "name": name}
+        children = {k: v for k, v in pro.items() if k != "value"}
+        if len(children) > 0:
+            new_dict["children"] = [
+                dict_to_tree(v, name=k) for k, v in children.items()
+            ]
+        return new_dict
+    else:
+        return {"value": pro, "name": name}
+
+
+#%%
+
+
+def print_perf_profile(
+    profiler,
+    total_time=None,
+    number_format="{:.3f}",
+    precision=16,
+    first_line="profiler :",
+):
+    r"""Prints Profiler output dictionary in a structured manner.
+
+    Parameters
+    ----------
+    profiler: dict
+        of the form::
+            {"value":float,    # keyword 'value' is expected
+             "some_key":float
+             "some_key2":float,
+             "some_key3":dict  # nested dict of the same form
+             "some_key4":dict}
+
+    Other Parameters
+    ----------------
+    total_time: float
+        total calculation time. If ``None``, take the key ``"value"`` of ``profiler``
+    precision: int, optional
+        total number of blocks. Default 16.
+
+    Example
+    -------
+    ::
+        Spectrum.print_perf_profile()
+
+        # output >>
+            spectrum_calculation      0.844s ████████████████
+                check_line_databank              0.001s
+                check_non_eq_param               0.070s █
+                fetch_energy_5                   0.027s
+                calc_weight_trans                0.016s
+                reinitialize                     0.003s
+                    copy_database                    0.000s
+                    memory_usage_warning             0.003s
+                    reset_population                 0.000s
+                calc_noneq_population            0.066s █
+                    part_function                    0.056s █
+                    population                       0.010s
+                scaled_non_eq_linestrength       0.004s
+                    map_part_func                    0.001s
+                    corrected_population_se          0.003s
+                calc_emission_integral           0.008s
+                applied_linestrength_cutoff      0.003s
+                calc_lineshift                   0.001s
+                calc_hwhm                        0.008s
+                generate_wavenumber_arrays       0.002s
+                calc_line_broadening             0.668s ████████████
+                    precompute_DLM_lineshapes        0.020s
+                    DLM_Initialized_vectors          0.000s
+                    DLM_closest_matching_line        0.001s
+                    DLM_Distribute_lines             0.002s
+                    DLM_convolve                     0.304s █████
+                calc_other_spectral_quan         0.005s
+                generate_spectrum_obj            0.000s
+
+    See Also
+    --------
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`,
+    :py:meth:`~radis.lbl.factory.SpectrumFactory.print_perf_profile`
+    """
+    PRECISION = precision  #  number of blocks █
+    TAB = 4  # number of spaces for indentation
+
+    if total_time is None:
+        total_time = profiler["value"]
+
+    def scale(time):
+        # return '|'*int(time/total_time*10)
+        return "\u2588" * int(time / total_time * PRECISION)
+        # '\u2588'  is  █
+
+    def walk_print_tree(prof, name, level, write_number_column):
+        if "value" in prof:
+            text = " " * TAB * level + name
+            fill_spaces = " " * (write_number_column - len(text))
+            print(
+                text,
+                fill_spaces,
+                "" + number_format.format(prof["value"]) + "s",
+                scale(prof["value"]),
+            )
+        max_name_length = max(len(k) for k in prof.keys() if k != "value")
+        write_number_column = max(
+            write_number_column, len(" " * TAB * (level + 1)) + max_name_length
+        )
+        write_number_column += TAB
+
+        total_time = 0
+        for k, v in prof.items():
+            if k == "value":
+                pass
+            elif isinstance(v, dict):
+                total_time += walk_print_tree(
+                    v,
+                    name=k,
+                    level=level + 1,
+                    write_number_column=write_number_column,
+                )
+            elif isinstance(v, float):
+                text = " " * TAB * (level + 1) + k
+                fill_spaces = " " * (write_number_column - len(text))
+                print(text, fill_spaces, "" + number_format.format(v) + "s", scale(v))
+                total_time += v
+            else:
+                raise ValueError(type(v))
+
+        # print missing time / self-time
+        if "value" in prof:
+            missing_time = prof["value"] - total_time
+            if float(number_format.format(missing_time)) != 0:
+                # we dont add 0 numbers
+                text = " " * TAB * (level + 1) + "others"
+                fill_spaces = " " * (write_number_column - len(text))
+                print(
+                    text,
+                    fill_spaces,
+                    "" + number_format.format(missing_time) + "s",
+                    scale(missing_time),
+                )
+
+        return total_time
+
+    print(first_line)
+    walk_print_tree(profiler, name="", level=0, write_number_column=0)
+
+
+def generate_perf_profile(profiler):
+    """Visual/interactive performance profile
+
+    See typical output in https://github.com/radis/radis/pull/325
+
+    .. image:: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+        :alt: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+        :target: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+
+
+    .. note::
+        You can also profile with `tuna` directly::
+
+            python -m cProfile -o program.prof your_radis_script.py
+            tuna your_radis_script.py
+
+    Parameters
+    ----------
+    profiler: dict
+        of the form::
+            {"value":float,    # keyword 'value' is expected
+             "some_key":float
+             "some_key2":float,
+             "some_key3":dict  # nested dict of the same form
+             "some_key4":dict}
+
+    See Also
+    --------
+    :py:meth:`~radis.spectrum.generate_perf_profile`
+    """
+    from pstats import Stats
+
+    st = Stats()
+
+    """
+    From Lib/profile.py:Profile
+
+        Timing data for each function is stored as a 5-tuple in the dictionary
+        self.timings[].  The index is always the name stored in self.cur[-3].
+        The following are the definitions of the members:
+
+        [0] = The number of times this function was called, not counting direct
+              or indirect recursion,
+        [1] = Number of times this function appears on the stack, minus one
+        [2] = Total time spent internal to this function
+        [3] = Cumulative time that this function was present on the stack.  In
+              non-recursive functions, this is the total execution time from start
+              to finish of each invocation of a function, including time spent in
+              all subfunctions.
+        [4] = A dictionary indicating for each function name, the number of times
+              it was called by us.
+    """
+
+    def parse_profiler(tree, parent=None, parent_time=None):
+        """
+
+        Parameters
+        ----------
+        tree : dict
+            ::
+            {"name": str,
+             "value":float,
+             "children":[list of Tree]}
+        parent : tuple (str, int, str)
+            filename(str), line_number(int), parent function name(str)
+        parent_time : int, int,
+            ``cc, nc, tt, ct`` of parent function.
+            - The number of times this function was called, not counting direct
+              or indirect recursion,
+            - Number of times this function appears on the stack, minus one
+            - Total time spent internal to this function
+            - Cumulative time that this function was present on the stack.
+
+        """
+        func_name = (
+            "",
+            1,
+            tree["name"],
+        )  # normally : filename(str), line_number(int), function name (str)
+
+        # Parse children
+        if "children" in tree:
+            children_cumtime = sum([child["value"] for child in tree["children"]])
+            for child in tree["children"]:
+                # child_name = "", 1, child["name"]
+                child_time = child["value"]
+                parse_profiler(
+                    child, parent=func_name, parent_time=(1, 0, child_time, child_time)
+                )
+
+            if parent:
+                parent_time = (
+                    parent_time[0],
+                    parent_time[1],
+                    parent_time[2] - children_cumtime,
+                    parent_time[3],
+                )
+            tt = tree["value"] - children_cumtime
+            ct = tree["value"]
+
+        else:
+            tt = tree["value"]
+            ct = tree["value"]
+
+        # Store value
+        st.stats[func_name] = (1, 0, tt, ct, {parent: parent_time} if parent else {})
+
+    perf_tree = dict_to_tree(profiler, name="calculation_time")
+
+    parse_profiler(perf_tree)
+    st.dump_stats("spectrum.prof")
+
+    return subprocess.Popen(["tuna", "spectrum.prof"])
+
+
+if __name__ == "__main__":
+    from radis.test.spectrum.test_utils import test_perf_profile
+
+    test_perf_profile()

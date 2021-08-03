@@ -263,7 +263,7 @@ def run_setup(with_binary):
             "joblib",  # for parallel loading of SpecDatabase
             "numba",  # just-in-time compiler
             "psutil",  # for getting user RAM
-            "pyyaml",  # for printing profiler dictionary
+            "tuna",  # to generate visual/interactive performance profiles
         ],
         extras_require={
             "dev": [

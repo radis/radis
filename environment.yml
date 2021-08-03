@@ -23,10 +23,10 @@ dependencies:
 - joblib  # for parallel loading of SpecDatabase
 - numba  # just-in-time compiler
 - psutil # for getting user RAM
-- pyyaml # for printing profiler dictionary
 - pip
 - pip:
   - publib>=0.3.2  # Plotting styles for Matplotlib
   - hitran-api     # HAPI, used to access TIPS partition functions
   - json-tricks>=3.15.0  # to deal with non jsonable formats
   - mpldatacursor
+  - tuna           # to generate visual/interactive performance profiles
