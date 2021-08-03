@@ -80,7 +80,6 @@ from warnings import warn
 
 import astropy.units as u
 import numpy as np
-import yaml
 from numpy import arange, exp
 from scipy.constants import N_A, c, k, pi
 
@@ -1738,26 +1737,107 @@ class SpectrumFactory(BandFactory):
 
         return conv2(Ptot, "mW/cm2/sr", unit)
 
-    def print_perf_profile(self):
-        """Prints Profiler output dictionary in a structured manner.
-        example:
-        SpectrumFactory.print_perf_profile()
-        ----------------------------
-        spectrum_calculation:
-            calc_hwhm: 0.007350444793701172
-            calc_line_broadening:
-                DLM_Distribute_lines: 0.005137443542480469
-                DLM_Initialized_vectors: 8.106231689453125e-06
-                DLM_closest_matching_line: 0.0010995864868164062
-                DLM_convolve: 0.6121664047241211
-                precompute_DLM_lineshapes: 0.027348995208740234
-                value: 0.6468849182128906
-            calc_lineshift: 0.0005822181701660156
-            calc_other_spectral_quan: 0.005536317825317383
-            value: 0.6814641952514648
+    def print_perf_profile(self, number_format="{:.3f}", precision=16):
+        """Prints Profiler output dictionary in a structured manner for
+        the last calculated spectrum
+
+        Examples
+        --------
+
+        ::
+            sf.print_perf_profile()
+
+            # output >>
+                        spectrum_calculation  2.163s ████████████████
+                        check_line_databank          0.000s
+                        check_non_eq_param           0.306s ██
+                        fetch_energy_5               0.112s
+                        calc_weight_trans            0.063s
+                            reinitialize                 0.009s
+                            copy_database                0.000s
+                            memory_usage_warning         0.008s
+                            reset_population             0.000s
+                            calc_noneq_population        0.195s █
+                            part_function                0.165s █
+                            population                   0.031s
+                            scaled_non_eq_linestrength   0.021s
+                            map_part_func                0.005s
+                            corrected_population_se      0.011s
+                        calc_emission_integral       0.028s
+                        applied_linestrength_cutoff  0.005s
+                        calc_lineshift               0.002s
+                        calc_hwhm                    0.029s
+                        generate_wavenumber_arrays   0.005s
+                            calc_line_broadening         1.499s ███████████
+                            precompute_DLM_lineshapes    0.032s
+                            DLM_Initialized_vectors      0.000s
+                            DLM_closest_matching_line    0.000s
+                            DLM_Distribute_lines         0.006s
+                            DLM_convolve                 0.822s ██████
+                        calc_other_spectral_quan     0.024s
+                        generate_spectrum_obj        0.001s
+
+        Other Parameters
+        ----------------
+        precision: int, optional
+            total number of blocks. Default 16.
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
         """
+        from radis.spectrum.utils import print_perf_profile
+
         profiler = self.profiler.final
-        print(yaml.dump(profiler, allow_unicode=True, default_flow_style=False))
+        total_time = profiler["spectrum_calculation"]["value"]
+
+        return print_perf_profile(
+            profiler, total_time, number_format=number_format, precision=precision
+        )
+
+    def generate_perf_profile(self):
+        """Generate a visual/interactive performance profile diagram for
+        the last calculated spectrum
+
+        .. note:
+            requires a `profiler` key with in Spectrum.conditions
+
+        Examples
+        --------
+        ::
+            sf = SpectrumFactory(...)
+            sf.eq_spectrum(...)
+            sf.generate_perf_profile()
+
+        See typical output in https://github.com/radis/radis/pull/325
+
+        .. image:: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+            :alt: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+            :target: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+
+
+        .. note::
+            You can also profile with `tuna` directly::
+
+                python -m cProfile -o program.prof your_radis_script.py
+                tuna your_radis_script.py
+
+
+        See Also
+        --------
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
+        """
+        from radis.spectrum.utils import generate_perf_profile
+
+        profiler = self.profiler.final.copy().copy()
+        # Add total calculation time:
+        profiler.update({"value": profiler["spectrum_calculation"]["value"]})
+        # note: in Spectrum.generate_perf_profile the total time is taken as
+        # 'self.conditions["calculation_time"]' which also includes database
+        # loading times.
+
+        return generate_perf_profile(profiler)
 
 
 # %% ======================================================================

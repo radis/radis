@@ -391,11 +391,30 @@ def split_and_plot_by_parts(w, I, *args, **kwargs):
 
 #%%
 def dict_to_tree(pro, name):
-    """Convert to ::
-    Tree =
-    {"name": str,
-     "value":float,
-     "children":[list of Tree]}
+    """
+    Parameters
+    ----------
+    pro: dict
+        of the form::
+            {"value":float,    # keyword 'value' is expected
+             "some_key":float
+             "some_key2":float,
+             "some_key3":dict  # nested dict of the same form
+             "some_key4":dict}
+    name: str
+
+    Returns
+    -------
+    dict: of the form ::
+        Tree =
+        {"name": str,
+         "value":float,
+         "children":[list of Tree]}
+
+    See Also
+    --------
+    Used in :py:func:`~radis.spectrum.utils.print_perf_profile` and
+    :py:func:`~radis.spectrum.utils.generate_perf_profile`
 
     """
     if isinstance(pro, dict):
@@ -415,14 +434,143 @@ def dict_to_tree(pro, name):
 #%%
 
 
-def generate_perf_profile(s):
+def print_perf_profile(
+    profiler,
+    total_time=None,
+    number_format="{:.3f}",
+    precision=16,
+    first_line="profiler :",
+):
+    r"""Prints Profiler output dictionary in a structured manner.
+
+    Parameters
+    ----------
+    profiler: dict
+        of the form::
+            {"value":float,    # keyword 'value' is expected
+             "some_key":float
+             "some_key2":float,
+             "some_key3":dict  # nested dict of the same form
+             "some_key4":dict}
+
+    Other Parameters
+    ----------------
+    total_time: float
+        total calculation time. If ``None``, take the key ``"value"`` of ``profiler``
+    precision: int, optional
+        total number of blocks. Default 16.
+
+    Example
+    -------
+    ::
+        Spectrum.print_perf_profile()
+
+        # output >>
+                    spectrum_calculation  2.163s ████████████████
+                    check_line_databank          0.000s
+                    check_non_eq_param           0.306s ██
+                    fetch_energy_5               0.112s
+                    calc_weight_trans            0.063s
+                        reinitialize                 0.009s
+                        copy_database                0.000s
+                        memory_usage_warning         0.008s
+                        reset_population             0.000s
+                        calc_noneq_population        0.195s █
+                        part_function                0.165s █
+                        population                   0.031s
+                        scaled_non_eq_linestrength   0.021s
+                        map_part_func                0.005s
+                        corrected_population_se      0.011s
+                    calc_emission_integral       0.028s
+                    applied_linestrength_cutoff  0.005s
+                    calc_lineshift               0.002s
+                    calc_hwhm                    0.029s
+                    generate_wavenumber_arrays   0.005s
+                        calc_line_broadening         1.499s ███████████
+                        precompute_DLM_lineshapes    0.032s
+                        DLM_Initialized_vectors      0.000s
+                        DLM_closest_matching_line    0.000s
+                        DLM_Distribute_lines         0.006s
+                        DLM_convolve                 0.822s ██████
+                    calc_other_spectral_quan     0.024s
+                    generate_spectrum_obj        0.001s
+
+    See Also
+    --------
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`,
+    :py:meth:`~radis.lbl.factory.SpectrumFactory.print_perf_profile`
+    """
+    PRECISION = precision  #  number of blocks █
+    TAB = 4  # number of spaces for indentation
+
+    if total_time is None:
+        total_time = profiler["value"]
+
+    def scale(time):
+        # return '|'*int(time/total_time*10)
+        return "\u2588" * int(time / total_time * PRECISION)
+        # '\u2588'  is  █
+
+    def walk_print_tree(prof, name, level, write_number_column):
+        if "value" in prof:
+            text = " " * TAB * (level + 1) + name
+            fill_spaces = " " * (write_number_column - len(text))
+            print(
+                text,
+                fill_spaces,
+                "" + number_format.format(prof["value"]) + "s",
+                scale(prof["value"]),
+            )
+        max_name_length = max(len(k) for k in prof.keys() if k != "value")
+        write_number_column = max(
+            write_number_column, len(" " * TAB * (level + 1)) + max_name_length
+        )
+        for k, v in prof.items():
+            if k == "value":
+                pass
+            elif isinstance(v, dict):
+                walk_print_tree(
+                    v,
+                    name=k,
+                    level=level + 1,
+                    write_number_column=write_number_column + TAB,
+                )
+            elif isinstance(v, float):
+                text = " " * TAB * (level + 1) + k
+                fill_spaces = " " * (write_number_column - len(text))
+                print(text, fill_spaces, "" + number_format.format(v) + "s", scale(v))
+            else:
+                raise ValueError(type(v))
+
+    print(first_line)
+    walk_print_tree(profiler, name="", level=0, write_number_column=0)
+
+
+def generate_perf_profile(profiler):
     """Visual/interactive performance profile
 
     See typical output in https://github.com/radis/radis/pull/325
 
+    .. image:: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+        :alt: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+        :target: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+
+
+    .. note::
+        You can also profile with `tuna` directly::
+
+            python -m cProfile -o program.prof your_radis_script.py
+            tuna your_radis_script.py
+
     Parameters
     ----------
-    s: Spectrum
+    profiler: dict
+        of the form::
+            {"value":float,    # keyword 'value' is expected
+             "some_key":float
+             "some_key2":float,
+             "some_key3":dict  # nested dict of the same form
+             "some_key4":dict}
 
     See Also
     --------
@@ -505,23 +653,12 @@ def generate_perf_profile(s):
         # Store value
         st.stats[func_name] = (1, 0, tt, ct, {parent: parent_time} if parent else {})
 
-    profiler = s.conditions["profiler"]["spectrum_calculation"].copy()
-    # Add total calculation time:
-    profiler.update({"value": s.conditions["calculation_time"]})
-
-    # Fix
-    if "spectrum_calc_before_obj" in profiler:
-        from warnings import warn
-
-        warn("`spectrum_calc_before_obj` still in profiler keys")
-        del profiler["spectrum_calc_before_obj"]
-
     perf_tree = dict_to_tree(profiler, name="calculation_time")
 
     parse_profiler(perf_tree)
     st.dump_stats("spectrum.prof")
 
-    subprocess.Popen(["tuna", "spectrum.prof"])
+    return subprocess.Popen(["tuna", "spectrum.prof"])
 
 
 if __name__ == "__main__":

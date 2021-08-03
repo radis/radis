@@ -3577,8 +3577,8 @@ class Spectrum(object):
 
     # %% Performance / profilers
 
-    def print_perf_profile(self, number_format="{:.3f}"):
-        """Prints Profiler output dictionary in a structured manner.
+    def print_perf_profile(self, number_format="{:.3f}", precision=16):
+        r"""Prints Profiler output dictionary in a structured manner.
 
         Example
         -------
@@ -3615,54 +3615,28 @@ class Spectrum(object):
                         calc_other_spectral_quan     0.024s
                         generate_spectrum_obj        0.001s
 
+        Other Parameters
+        ----------------
+        precision: int, optional
+            total number of blocks. Default 16.
+
         See Also
         --------
         :py:meth:`~radis.spectrum.spectrum.Spectrum.generate_perf_profile`
         """
-        PRECISION = 16  #  number of blocks â–ˆ
-        TAB = 4  # number of spaces for indentation
+
+        from radis.spectrum.utils import print_perf_profile
+
         profiler = self.conditions["profiler"]
         total_time = profiler["spectrum_calculation"]["value"]
 
-        def scale(time):
-            # return '|'*int(time/total_time*10)
-            return "â–ˆ" * int(time / total_time * PRECISION)
-
-        def walk_print_tree(prof, name, level, write_number_column):
-            if "value" in prof:
-                text = " " * TAB * (level + 1) + name
-                fill_spaces = " " * (write_number_column - len(text))
-                print(
-                    text,
-                    fill_spaces,
-                    "" + number_format.format(prof["value"]) + "s",
-                    scale(prof["value"]),
-                )
-            max_name_length = max(len(k) for k in prof.keys() if k != "value")
-            write_number_column = max(
-                write_number_column, len(" " * TAB * (level + 1)) + max_name_length
-            )
-            for k, v in prof.items():
-                if k == "value":
-                    pass
-                elif isinstance(v, dict):
-                    walk_print_tree(
-                        v,
-                        name=k,
-                        level=level + 1,
-                        write_number_column=write_number_column + TAB,
-                    )
-                elif isinstance(v, float):
-                    text = " " * TAB * (level + 1) + k
-                    fill_spaces = " " * (write_number_column - len(text))
-                    print(
-                        text, fill_spaces, "" + number_format.format(v) + "s", scale(v)
-                    )
-                else:
-                    raise ValueError(type(v))
-
-        print(self.get_name(), " profiler :")
-        walk_print_tree(profiler, name="", level=0, write_number_column=0)
+        return print_perf_profile(
+            profiler,
+            total_time,
+            number_format=number_format,
+            precision=precision,
+            first_line=self.get_name() + " profiler :",
+        )
 
     def generate_perf_profile(self):
         """Generate a visual/interactive performance profile diagram using ``tuna``
@@ -3678,13 +3652,29 @@ class Spectrum(object):
 
         See typical output in https://github.com/radis/radis/pull/325
 
+        .. image:: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+            :alt: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+            :target: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+
+
+        .. note::
+            You can also profile with `tuna` directly::
+
+                python -m cProfile -o program.prof your_radis_script.py
+                tuna your_radis_script.py
+
+
         See Also
         --------
         :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
         """
         from radis.spectrum.utils import generate_perf_profile
 
-        generate_perf_profile(self)
+        profiler = self.conditions["profiler"]["spectrum_calculation"].copy()
+        # Add total calculation time:
+        profiler.update({"value": self.conditions["calculation_time"]})
+
+        return generate_perf_profile(profiler)
 
     # %% Define Spectrum Algebra
     # +, -, *, ^  operators
