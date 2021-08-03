@@ -253,7 +253,7 @@ html_theme_options = {
     "github_banner": False,
     "travis_button": False,
     "codecov_button": False,
-    "sidebar_includehidden": False,
+    "sidebar_includehidden": True,
     "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
 }

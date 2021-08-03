@@ -124,28 +124,33 @@ and comparison with experimental data :
 More examples
 =============
 
-The Quick Start examples above automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K.
+
+.. minigallery:: radis.Spectrum
+
+
+The Quick Start examples automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K.
 For *high temperature* cases, you may need to use :ref:`other line databases <label_line_databases>` such as
 [HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/radis.json``
 :ref:`Configuration file <label_lbl_config_file>`.
 
 .. note::
 
-  📣 starting from radis==0.9.28 you can also download HITEMP directly. Just use ``databank='hitemp'`` in the
-  initial example. This will automatically download, unzip and setup the database files in a ~/.radisdb folder.
+  📣 starting from radis==0.9.30 you can also download HITEMP and ExoMol directly. Just use ``databank='hitemp'``
+  or ``databank='exomol'`` in the initial example. This will automatically download, unzip and setup the database
+  files in a ~/.radisdb folder.
 
 More complex :ref:`examples <label_examples>` will require to use the :py:class:`~radis.lbl.factory.SpectrumFactory`
 class, which is the core of RADIS line-by-line calculations.
-:py:func:`~radis.lbl.calc.calc_spectrum` is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory`
-for the simple cases.
 
-Refer to the :ref:`Examples <label_examples>` section for more examples, and to the
+Refer to the :ref:`Examples <label_examples>` and :ref:`Example Gallery <sphx_glr_auto_examples>` sections for more examples, and to the
 :ref:`User Documentation <label_line_by_line>` for more details on the code.
 You can also ask questions on the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 or on the community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or
 `Slack <https://radis.github.io/slack-invite/>`__
 
 |badge_gitter| |badge_slack|
+
+
 
 
 Cite
@@ -195,6 +200,7 @@ Content
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    features/features
    lbl/lbl
