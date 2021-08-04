@@ -48,10 +48,9 @@ class Profiler(object):
     # Creates profiler dictionary structure
     def add_entry(self, dictionary, key, verbose, count):
         if count == verbose:
-            try:
-                if dictionary[key]:
-                    return
-            except:
+            if key in dictionary:
+                return
+            else:
                 dictionary[key] = {}
 
             return
@@ -73,25 +72,27 @@ class Profiler(object):
     # Adds time calculated for each key in profiler
     def add_time(self, dictionary, key, verbose, count, time_calculated):
         if count == verbose:
-            executed_more_than_once = False  # Checks if input key was executed before
+            executed_more_than_once = 0  # Checks if input key was executed before
 
+            # Checking if value of key is empty or float
             if isinstance(dictionary[key], float):
                 time_calculated = dictionary[key] + time_calculated
-                executed_more_than_once = True
-            try:
-                if "value" in dictionary[key] and isinstance(
-                    dictionary[key]["value"], float
-                ):
-                    time_calculated = dictionary[key]["value"] + time_calculated
-                    executed_more_than_once = True
-            except:
-                pass
-
-            if executed_more_than_once:
+                executed_more_than_once = 1
+            else:
                 try:
-                    dictionary[key]["value"] = time_calculated
-                except:
-                    dictionary[key] = time_calculated
+                    if "value" in dictionary[key] and isinstance(
+                        dictionary[key]["value"], float
+                    ):
+                        time_calculated = dictionary[key]["value"] + time_calculated
+                        executed_more_than_once = 2
+                except KeyError:
+                    pass
+
+            # Adding values
+            if executed_more_than_once == 2:
+                dictionary[key]["value"] = time_calculated
+            elif executed_more_than_once == 1:
+                dictionary[key] = time_calculated
             else:
                 if len(dictionary[key]) != 0:
                     dictionary[key].update({"value": time_calculated})
