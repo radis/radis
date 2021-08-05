@@ -290,7 +290,7 @@ class SpectrumFactory(BandFactory):
 
     Refer to the online :ref:`Examples <label_examples>` for more cases.
 
-    .. inheritance-diagram:: radis.lbl.parallel.SpectrumFactory
+    .. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
        :parts: 1
 
     See Also

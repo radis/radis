@@ -2146,6 +2146,8 @@ class SpecDatabase(SpecList):
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
         of the website.
 
+        .. minigallery:: radis.SpecList.add
+
         See Also
         --------
 

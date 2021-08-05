@@ -284,9 +284,9 @@ def calc_spectrum(
     .. minigallery:: radis.calc_spectrum
         :add-heading:
 
-    Cite
-    ----
-    RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
+    References
+    ----------
+    **cite**: RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
     to compute spectra, make sure you cite all of them, for proper reproducibility and acknowledgement of
     the work ! See :ref:`How to cite? <label_cite>`
 

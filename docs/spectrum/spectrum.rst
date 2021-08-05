@@ -157,7 +157,7 @@ Spectrum conditions and get Spectrum that suits specific parameters
 .. minigallery:: radis.load_spec
 
 
-.. _label_spectral _arrays:
+.. _label_spectral_arrays:
 
 Spectral Arrays
 ===============
@@ -811,7 +811,7 @@ folder as an argument, and converts it in a list of
 See more information about databases below.
 
 
-.. include:: database.rst
+.. include:: _database.rst
 
 
 

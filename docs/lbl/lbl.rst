@@ -24,7 +24,7 @@ community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or
 `Slack <https://radis.github.io/slack-invite/>`__ . |badge_gitter| |badge_slack|
 
 
-.. include:: databases.rst
+.. include:: _databases.rst
 
 Calculating spectra
 ===================

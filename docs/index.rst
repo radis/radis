@@ -125,7 +125,7 @@ More examples
 =============
 
 
-.. minigallery:: radis.Spectrum
+.. minigallery:: radis.Spectrum radis.calc_spectrum radis.load_spec radis.MergeSlabs radis.SpectrumFactory
 
 
 The Quick Start examples automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K.

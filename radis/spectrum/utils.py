@@ -43,12 +43,12 @@ NON_CONVOLUTED_QUANTITIES = [
 ]
 """list: name of spectral quantities not convolved with slit function
 
-See :ref:`the description of spectral quantities <label_spectral_quantities>`"""
+See :ref:`the description of spectral arrays <label_spectral_arrays>`"""
 SPECTRAL_QUANTITIES = CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
 """list: all spectral quantities defined in a :class:`~radis.spectrum.spectrum.Spectrum`
 object.
 
-See :ref:`the description of spectral quantities <label_spectral_quantities>`"""
+See :ref:`the description of spectral arrays <label_spectral_arrays>`"""
 
 # note: it is hardcoded (and needed) that quantities that are convoluted are
 # generated from a non convoluted quantity with the same name + _noslit

@@ -82,6 +82,7 @@ def SerialSlabs(*slabs, **kwargs):
           absorption
 
         Default ``'never'``
+
     out: ``'transparent'``, ``'nan'``, ``'error'``
         what to do if resampling is out of bounds:
 
@@ -100,20 +101,22 @@ def SerialSlabs(*slabs, **kwargs):
         they are resampled. This avoids making a copy so it is slightly faster.
         Default ``False``.
 
-        ..note::
+        .. note::
             for large number of slabs (in radiative transfer calculations) you
             surely want to use this option !
 
     Returns
     -------
-    Spectrum object representing total emission and total transmittance as
-    observed at the output (slab[n+1]). Conditions and units are transported too,
-    unless there is a mismatch then conditions are dropped (and units mismatch
-    raises an error because it doesnt make sense)
+    Spectrum:
+        object representing total emission and total transmittance as
+        observed at the output (slab[n+1]). Conditions and units are transported too,
+        unless there is a mismatch then conditions are dropped (and units mismatch
+        raises an error because it doesnt make sense)
 
     Examples
     --------
-    Add s1 and s2 along the line of sight: s1 --> s2 ::
+    Add s1 and s2 along the line of sight: s1 --> s2::
+
         s1 = calc_spectrum(...)
         s2 = calc_spectrum(...)
         s3 = SerialSlabs(s1, s2)
@@ -121,9 +124,13 @@ def SerialSlabs(*slabs, **kwargs):
     The last line is equivalent to::
 
         s3 = s1>s2
+
+    .. minigallery:: radis.SerialSlabs
+
     See Also
     --------
-    :func:`~radis.los.slabs.MergeSlabs`
+    :func:`~radis.los.slabs.MergeSlabs`,
+
     See more examples in the :ref:`Line-of-Sight module <label_los_index>`
 
     """
@@ -354,6 +361,7 @@ def resample_slabs(
     """Resample slabs on the same wavespace: if the range are differents,
     depending on the mode we may fill with optically thin media, or raise an
     error
+
     Parameters
     ----------
     waveunit: ``'nm'``, ``'cm-1'``
@@ -378,11 +386,13 @@ def resample_slabs(
 
         Default ``'nan'``
     *slabs: list of Spectrum objects
+
     Other Parameters
     ----------------
     modify_inputs: False
         if ``True``, slabs are modified directly when they are resampled. This
         avoids making a copy so is slightly faster. Default ``False``.
+
     Returns
     -------
     slabs: list of Spectrum objects
@@ -539,10 +549,11 @@ def MergeSlabs(*slabs, **kwargs):
 
     Returns
     -------
-    Spectrum object representing total emission and total transmittance as
-    observed at the output. Conditions and units are transported too,
-    unless there is a mismatch then conditions are dropped (and units mismatch
-    raises an error because it doesnt make sense)
+    Spectrum
+        object representing total emission and total transmittance as
+        observed at the output. Conditions and units are transported too,
+        unless there is a mismatch then conditions are dropped (and units mismatch
+        raises an error because it doesnt make sense)
 
     Examples
     --------
@@ -555,6 +566,7 @@ def MergeSlabs(*slabs, **kwargs):
     The last line is equivalent to::
 
         s3 = s1//s2
+
     Load a spectrum precalculated on several partial spectral ranges, for a same
     molecule (i.e, partial spectra are optically thin on the rest of the spectral
     range)::
@@ -571,7 +583,6 @@ def MergeSlabs(*slabs, **kwargs):
     See Also
     --------
     :func:`~radis.los.slabs.SerialSlabs`
-
     See more examples in :ref:`Line-of-Sight module <label_los_index>`
 
     """
