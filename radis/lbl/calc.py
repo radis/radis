@@ -24,6 +24,7 @@ from radis.lbl.factory import SpectrumFactory
 from radis.misc.basics import all_in
 from radis.phys.air import air2vacuum
 from radis.phys.convert import nm2cm
+from radis.spectrum.spectrum import Spectrum
 
 
 # %%
@@ -54,7 +55,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     **kwargs
-):
+) -> Spectrum:
     r"""Multipurpose function to calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
     Can automatically download databases (HITRAN/HITEMP) or use manually downloaded
@@ -281,7 +282,7 @@ def calc_spectrum(
     For more details on how to use the GPU method and process the database, refer to the examples
     linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
-    .. minigallery:: radis.calc_spectrum
+    .. minigallery:: radis.lbl.calc.calc_spectrum
         :add-heading:
 
     References

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Spectrum-class module."""
+"""Spectrum-class module for post-processing."""
 
 from .compare import (
     get_diff,

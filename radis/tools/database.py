@@ -421,7 +421,7 @@ def _compress(s, sjson):
 # %% Load functions
 
 
-def load_spec(file, binary=True):  # , return_binary_status=False):
+def load_spec(file, binary=True) -> Spectrum:  # , return_binary_status=False):
     """Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum`
     object. Adds ``file`` in the Spectrum
     :attr:`~radis.spectrum.spectrum.Spectrum.file` attribute.
@@ -436,8 +436,7 @@ def load_spec(file, binary=True):  # , return_binary_status=False):
 
     Returns
     -------
-    s: Spectrum
-        a :class:`~radis.spectrum.spectrum.Spectrum` object
+    Spectrum : a :class:`~radis.spectrum.spectrum.Spectrum` object
 
     Examples
     --------
@@ -506,8 +505,7 @@ def _json_to_spec(sload, file=""):
 
     Returns
     -------
-    s: Spectrum
-        a :class:`~radis.spectrum.spectrum.Spectrum` object
+    Spectrum: a :class:`~radis.spectrum.spectrum.Spectrum` object
     """
 
     conditions = sload["conditions"]

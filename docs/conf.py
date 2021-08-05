@@ -113,7 +113,7 @@ def run_apidoc(_):
         "-f",
         "-e",
         "-o",
-        "source",
+        "gen_modules",
         "--separate",
         "../radis",
     ]

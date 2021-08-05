@@ -135,6 +135,22 @@ def fetch_hitemp(
     local_path: str
         path of local database file if ``return_local_path``
 
+    Examples
+    --------
+    ::
+
+        from radis import fetch_hitemp
+        df = fetch_hitemp("CO")
+        print(df.columns)
+        >>> Index(['id', 'iso', 'wav', 'int', 'A', 'airbrd', 'selbrd', 'El', 'Tdpair',
+            'Pshft', 'ierr', 'iref', 'lmix', 'gp', 'gpp', 'Fu', 'branch', 'jl',
+            'syml', 'Fl', 'vu', 'vl'],
+            dtype='object')
+
+    .. minigallery:: radis.io.hitemp.fetch_hitemp
+
+    .. minigallery:: radis.fetch_hitemp
+
     Notes
     -----
     if using ``load_only_wavenum_above/below`` or ``isotope``, the whole
