@@ -116,7 +116,7 @@ def get_exomol_database_list(molecule, isotope_full_name):
 def fetch_exomol(
     molecule,
     database=None,
-    local_databases="~/.radisdb/exomol/",
+    local_databases=r"~/.radisdb/exomol/",
     databank_name="EXOMOL-{molecule}",
     isotope=None,
     load_wavenum_min=None,
