@@ -8,8 +8,6 @@ code (which you should also have a look at !), by @HajimeKawahara, under MIT Lic
 """
 import pathlib
 import warnings
-from ntpath import join
-from os.path import abspath, expanduser
 
 import numpy as np
 
@@ -214,8 +212,11 @@ def fetch_exomol(
                 f"{database} is not of the known available ExoMol databases for {full_molecule_name}. Choose one of : {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). {_exomol_use_hint}"
             )
 
-    local_path = join(
-        expanduser(local_databases), molecule, full_molecule_name, database
+    local_path = (
+        pathlib.Path(local_databases).expanduser()
+        / molecule
+        / full_molecule_name
+        / database
     )
 
     mdb = MdbExomol(local_path, [load_wavenum_min, load_wavenum_max])
@@ -225,7 +226,7 @@ def fetch_exomol(
     out = [df]
 
     if return_local_path:
-        out.append(mdb.path)
+        out.append(str(mdb.path))
     if return_partition_function:
         assert return_local_path
         out.append(mdb.to_partition_function_tabulator())
@@ -280,7 +281,7 @@ class MdbExomol(object):
         """
         explanation = "Note: Couldn't find the feather format. We convert data to the feather format. After the second time, it will become much faster."
 
-        self.path = pathlib.Path(abspath(path))
+        self.path = pathlib.Path(path)
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
         self.bkgdatm = bkgdatm
