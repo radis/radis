@@ -78,6 +78,8 @@ sphinx_gallery_conf = {
     "backreferences_dir": "gen_modules/backreferences",
     # Modules for which function/class level galleries are created.
     "doc_module": ("radis"),
+    "inspect_global_variables": True,
+    "show_signature": False,
 }
 
 
@@ -139,14 +141,14 @@ def setup(app):
 # Reference other packages
 intersphinx_mapping = {
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
-    "astroquery": ("http://astroquery.readthedocs.io/en/latest/", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
     "matplotlib": ("https://matplotlib.org/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
-    "scipy": ("http://docs.scipy.org/doc/scipy/reference", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "cantera": ("https://www.cantera.org/documentation/docs-2.4/sphinx/html/", None),
     "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
-    "astropy": ("http://docs.astropy.org/en/stable/", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
 }
 
 napoleon_google_docstring = False
@@ -202,7 +204,7 @@ language = None
 
 # List of patterns, relative to the source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "dev/_*", "lbl/_*", "spectrum/_*", "references/_*"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

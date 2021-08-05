@@ -125,7 +125,7 @@ More examples
 =============
 
 
-.. minigallery:: radis.Spectrum
+.. minigallery:: radis.Spectrum radis.calc_spectrum radis.load_spec radis.MergeSlabs radis.SpectrumFactory
 
 
 The Quick Start examples automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K.
@@ -173,6 +173,8 @@ Content
   This is the core of RADIS: it calculates the spectral densities for a homogeneous
   slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
   are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class.
+  :py:func:`~radis.lbl.calc.calc_spectrum` is a high-level wrapper to
+  :class:`~radis.lbl.factory.SpectrumFactory` for most simple cases.
 
 
 - :ref:`Line-of-sight (LOS) module<label_los_index>`

@@ -2,9 +2,9 @@
 References
 ==========
 
-.. include:: constants.rst
+.. include:: _constants.rst
 
-.. include:: bibliography.rst
+.. include:: _bibliography.rst
 
 Licence
 =======
@@ -14,7 +14,7 @@ under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/
 i.e. modifications must remain public and under LGPLv3.
 
 
-.. _label_db_cite:
+.. _label_cite:
 
 
 Cite
@@ -74,7 +74,7 @@ RADIS:
 
 - Try online : :ref:`🌱 RADIS Lab <label_radis_online>`
 
-.. include:: similar_tools.rst
+.. include:: _similar_tools.rst
 
 
 .. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/

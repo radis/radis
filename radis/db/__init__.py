@@ -115,3 +115,11 @@ See Also
 :py:data:`~radis.db.molecules.Molecules`,
 :py:func:`~radis.db.molecules.getMolecule`
 """
+
+
+__all__ = [
+    "MOLECULES_LIST_EQUILIBRIUM",
+    "MOLECULES_LIST_NONEQUILIBRIUM",
+    "Molecules",
+    "getMolecule",
+]
