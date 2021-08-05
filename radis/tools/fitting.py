@@ -12,7 +12,7 @@ Originally in radis-examples : https://github.com/radis/radis-examples
 
 """
 
-
+import sys
 from os.path import join
 
 import matplotlib.pyplot as plt
@@ -65,7 +65,7 @@ def Tvib12Tvib3TrotModel(factory, model_input):
         Trot,
         Ttrans=Trot,
         vib_distribution="treanor",
-        name="treanor. fit",
+        name="fit",
     )
 
     # <<<
@@ -125,14 +125,19 @@ def fit_spectrum(
     compute_los_model = lambda model_input: model(factory, model_input)
 
     # Calculate initial Spectrum, by showing all steps.
-    # old_verbose = factory.verbose
-    factory.verbose = 0  # reduce verbose during calculation.
-    s0 = compute_los_model(model_input)  # Load enrgies; initialize all caches, etc.
-    factory.verbose = 3  # increase verbose level for more details.
-    s0 = compute_los_model(
+    # factory.verbose = 0  # reduce verbose during calculation.
+    compute_los_model(
         model_input
-    )  # .plot('transmittance_noslit', nfig='Initial spectrum')
+    )  # Blank run to load energies; initialize all caches, etc.
+    default_verbose = factory.verbose
     factory.verbose = 0  # reduce verbose during calculation.
+    s0 = compute_los_model(model_input)  # New run to get performance profile of fit
+    sys.stderr.flush()
+    s0.name = "Initial Conditions"
+    print("-" * 30)
+    print("TYPICAL FIT CALCULATION TIME:")
+    s0.print_perf_profile()
+    print("-" * 30)
 
     # %% Leastsq version
 
@@ -365,7 +370,7 @@ def fit_spectrum(
 
         return res
 
-    # >>> This is where the fitting loop happens
+    # %%>>> This is where the fitting loop happens
     print("\nNow starting the fitting process:")
     print("---------------------------------\n")
     best = minimize(
@@ -383,7 +388,7 @@ def fit_spectrum(
             "disp": True,
         },
     )
-    # <<<
+    # %% Get best :
 
     s_best = generate_spectrum(best.x)
 
@@ -406,6 +411,9 @@ def fit_spectrum(
     # ... note that there are more function evaluations (best.nfev) that actual solver
     # ... iterations (best.nit) because the Jacobian is calculated numerically with
     # ... internal function calls
+
+    # Close
+    factory.verbose = default_verbose
 
     return s_best, best
 
@@ -458,7 +466,9 @@ if __name__ == "__main__":
             "Trot": 491,
         },
         bounds={"T12": [300, 2000], "T3": [300, 5000], "Trot": [300, 2000]},
-        plot=False,
+        plot=True,
         maxiter=200,
     )
     plot_diff(s_exp, s_best)
+
+    # s_best.print_perf_profile()
