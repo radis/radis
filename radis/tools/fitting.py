@@ -26,7 +26,7 @@ from radis.test.utils import getValidationCase, setup_test_line_databases
 
 
 # Calculate a new spectrum for given parameters:
-def Tvib12TrotModel(factory, model_input):
+def Tvib12Tvib3TrotModel(factory, model_input):
     """A model returning a single-slab non-LTE spectrum with Tvib=(T12, T12, T3), Trot
 
     Parameters
@@ -213,10 +213,11 @@ def fit_spectrum(
         for var in [k for k in s._q.keys() if k not in [fit_variable, "wavespace"]]:
             del s._q[var]
 
-        if plot:
+        if plot:  #  plot difference
             s_diff = get_diff(s_exp, s, var=fit_variable)
             lineSpec.set_data(s.get(fit_variable))
             lineDiff.set_data(s_diff)
+            axSpec[0].set_title(print_fit_values(fit_values))
             figSpec.canvas.draw()
             # plt.pause(0.001)
             plt.pause(0.05)
@@ -242,8 +243,6 @@ def fit_spectrum(
         plt.close("residual")
         figRes, axRes = plt.subplots(num="residual", figsize=(13.25, 6))
         axValues = axRes.twinx()
-        # ax = fig.gca()
-        # ax.set_ylim((bounds[0]))
 
     fit_values_min, fit_values_max = bounds_arr.T
     res0 = log_cost_function(fit_values_min, plot=plot)
@@ -295,7 +294,6 @@ def fit_spectrum(
                 lineValues[k].set_data((np.hstack((x, ite)), np.hstack((y, v))))
             # Plot last
             lineLast.set_data((ite, res))
-
             figRes.canvas.draw()
 
         print(
@@ -395,7 +393,7 @@ if __name__ == "__main__":
 
     s_best = sf.fit_spectrum(
         s_exp.take("transmittance_noslit"),
-        model=Tvib12TrotModel,
+        model=Tvib12Tvib3TrotModel,
         fit_parameters={
             "T12": 517,
             "T3": 2641,
@@ -403,6 +401,6 @@ if __name__ == "__main__":
         },
         bounds={"T12": [300, 2000], "T3": [300, 5000], "Trot": [300, 2000]},
         plot=True,
-        maxiter=120,
+        maxiter=150,
     )
     plot_diff(s_exp, s_best)
