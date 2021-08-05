@@ -112,52 +112,48 @@ class SpectrumFactory(BandFactory):
 
     Parameters
     ----------
-
-    wmin, wmax : float or `~astropy.units.quantity.Quantity`
+    wmin, wmax : ``float`` or `~astropy.units.quantity.Quantity`
         a hybrid parameter which can stand for minimum (maximum) wavenumber or minimum
         (maximum) wavelength depending upon the unit accompanying it. If dimensionless,
         ``wunit`` is considered as the accompanying unit.
-    wunit: string
+    wunit: ``'nm'``, ``'cm-1'``
         the unit accompanying wmin and wmax. Can only be passed with wmin
-        and wmax. Default is `cm-1`.
-    wavenum_min, wavenum_max: float(cm^-1) or `~astropy.units.quantity.Quantity`
+        and wmax. Default is ``"cm-1"``.
+    wavenum_min, wavenum_max: ``float(cm^-1)`` or `~astropy.units.quantity.Quantity`
         minimum (maximum) wavenumber to be processed in :math:`cm^{-1}`.
         use astropy.units to specify arbitrary inverse-length units.
-    wavelength_min, wavelength_max : float(nm) or `~astropy.units.quantity.Quantity`
+    wavelength_min, wavelength_max : ``float(nm)`` or `~astropy.units.quantity.Quantity`
         minimum (maximum) wavelength to be processed in :math:`nm`. This wavelength
         can be in ``'air'`` or ``'vacuum'`` depending on the value of the parameter
         ``medium=``.
         use astropy.units to specify arbitrary length units.
-    pressure: float(bar) or `~astropy.units.quantity.Quantity`
-        partial pressure of gas in bar. Default 1.01325 (1 atm).
+    pressure: ``float(bar)`` or `~astropy.units.quantity.Quantity`
+        partial pressure of gas in bar. Default ``1.01325`` (1 atm).
         use astropy.units to specify arbitrary pressure units.
         For example, ``1013.25 * u.mbar``.
-    mole_fraction: N/D
-        species mole fraction. Default 1. Note that the rest of the gas
+    mole_fraction: ``float``  [ 0 - 1]
+        species mole fraction. Default ``1``. Note that the rest of the gas
         is considered to be air for collisional broadening.
-    path_length: float(cm) or `~astropy.units.quantity.Quantity`
-        path length in cm. Default 1.
+    path_length: ``float(cm)`` or `~astropy.units.quantity.Quantity`
+        path length in cm. Default ``1``.
         use astropy.units to specify arbitrary length units.
-    molecule: int, str, or ``None``
+    molecule: ``int``, ``str``, or ``None``
         molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
         from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
         Default ``None``.
-    isotope: int, list, str of the form '1,2', or 'all'
+    isotope: ``int``, ``list``, ``str`` of the form ``'1,2'``, or ``'all'``
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
         See HITRAN documentation for isotope list for all species. If 'all',
         all isotopes in database are used (this may result in larger computation
-        times!). Default 'all'
+        times!). Default ``'all'``
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
 
     Other Parameters
     ----------------
-
-    *Computation parameters (see :py:attr:`~radis.lbl.loader.DatabankLoader.params`)*
-
     Tref: K
         Reference temperature for calculations (linestrength temperature
         correction). HITRAN database uses 296 Kelvin. Default 296 K
@@ -290,35 +286,42 @@ class SpectrumFactory(BandFactory):
 
     Refer to the online :ref:`Examples <label_examples>` for more cases.
 
+    .. minigallery:: radis.SpectrumFactory
+        :add-heading:
+
+    Notes
+    -----
+
     .. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
        :parts: 1
 
-    See Also
-    --------
+    High-level wrapper to SpectrumFactory:
 
-    Alternative:
-
-    :func:`~radis.lbl.calc.calc_spectrum`
+    - :func:`~radis.lbl.calc.calc_spectrum`
 
     Main Methods:
 
-    :meth:`~radis.lbl.loader.DatabankLoader.load_databank`,
-    :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
-    :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
+    - :meth:`~radis.lbl.loader.DatabankLoader.load_databank`,
+    - :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
+    - :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
 
     For advanced use:
 
-    :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`,
-    :meth:`~radis.lbl.loader.DatabankLoader.init_databank`,
-    :meth:`~radis.lbl.loader.DatabankLoader.init_database`,
-    :meth:`~radis.lbl.bands.BandFactory.eq_bands`,
-    :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
+    - :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`,
+    - :meth:`~radis.lbl.loader.DatabankLoader.init_databank`,
+    - :meth:`~radis.lbl.loader.DatabankLoader.init_database`,
+    - :meth:`~radis.lbl.bands.BandFactory.eq_bands`,
+    - :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
 
     Inputs and parameters can be accessed a posteriori with :
 
-    :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
-    :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
-    :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscallenous parameters (don't change output)
+    - :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
+    - :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
+    - :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscallenous parameters (don't change output)
+
+    See Also
+    --------
+    :func:`~radis.lbl.calc.calc_spectrum`
     """
 
     # TODO: make it possible to export both 'vib' and 'rovib'
@@ -593,6 +596,24 @@ class SpectrumFactory(BandFactory):
 
                 Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
                 to plot it. See [1]_ to get an overview of all Spectrum methods
+
+        Examples
+        --------
+        ::
+            from radis import SpectrumFactory
+            sf = SpectrumFactory(
+            wavenum_min=2900,
+            wavenum_max=3200,
+            molecule="OH",
+            wstep=0.1,
+            )
+            sf.fetch_databank("hitemp")
+
+            s1 = sf.eq_spectrum(Tgas=300, path_length=1, pressure=0.1)
+            s2 = sf.eq_spectrum(Tgas=500, path_length=1, pressure=0.1)
+
+        .. minigallery:: radis.lbl.SpectrumFactory.eq_spectrum
+            :add-heading:
 
         References
         ----------
@@ -1167,6 +1188,24 @@ class SpectrumFactory(BandFactory):
 
                 Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
                 to plot it. See [1]_ to get an overview of all Spectrum methods
+
+        Examples
+        --------
+        ::
+            from radis import SpectrumFactory
+            sf = SpectrumFactory(
+            wavenum_min=2000,
+            wavenum_max=3000,
+            molecule="CO",
+            wstep=0.1,
+            )
+            sf.fetch_databank("hitemp")
+
+            s1 = sf.non_eq_spectrum(Tvib=2000, Trot=600, path_length=1, pressure=0.1)
+            s2 = sf.non_eq_spectrum(Tvib=2000, Trot=600, path_length=1, pressure=0.1)
+
+        .. minigallery:: radis.lbl.SpectrumFactory.non_eq_spectrum
+            :add-heading:
 
         References
         ----------

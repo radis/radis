@@ -4,7 +4,8 @@
 Blackbody radiation
 ===================
 
-Compute Planck's blackbody emission under RADIS format
+Compute Planck's blackbody emission and return a RADIS
+:py:class:`~radis.spectrum.spectrum.Spectrum` object
 for easier post-processing.
 
 Uses :py:class:`~radis.phys.blackbody.sPlanck`.

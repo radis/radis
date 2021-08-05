@@ -7,6 +7,10 @@ Line-by-line (LBL) module
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+Calculations are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class.
+:py:func:`~radis.lbl.calc.calc_spectrum` is a high-level wrapper to
+:class:`~radis.lbl.factory.SpectrumFactory` for most simple cases.
+
 
 .. minigallery:: radis.calc_spectrum
 
@@ -49,6 +53,7 @@ from the latest HITRAN database, and plot the transmittance: ::
     		  	)
 	s.plot('transmittance_noslit')
 
+.. _label_multiple_molecule_spectrum:
 
 Calculate multiple molecules spectrum
 -------------------------------------

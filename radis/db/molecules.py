@@ -169,6 +169,9 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
     ElectronicState
         an :py:class:`~radis.db.classes.ElectronicState` object.
 
+    .. minigallery:: radis.db.molecules.getMolecule
+        :add-heading:
+
     See Also
     --------
     :py:data:`~radis.db.molecules.Molecules`

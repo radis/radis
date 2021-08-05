@@ -130,8 +130,7 @@ def SerialSlabs(*slabs, **kwargs):
     See Also
     --------
     :func:`~radis.los.slabs.MergeSlabs`,
-
-    See more examples in the :ref:`Line-of-Sight module <label_los_index>`
+    :ref:`See more examples in Line-of-Sight module <label_los_index>`
 
     """
     # TODO: rewrite with 'recompute' list like in MergeSlabs ?
@@ -583,7 +582,7 @@ def MergeSlabs(*slabs, **kwargs):
     See Also
     --------
     :func:`~radis.los.slabs.SerialSlabs`
-    See more examples in :ref:`Line-of-Sight module <label_los_index>`
+    :ref:`See more examples in Line-of-Sight module <label_los_index>`
 
     """
 

@@ -871,6 +871,26 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         depending on which levels are supposed to interact the most
 
+    Examples
+    --------
+    Calculate partition function of CO using default spectroscopic constants::
+        from radis.db.molecules import Molecules
+        from radis.levels.partfunc import PartFunc_Dunham
+
+        isotope = 1
+        electronic_state = "X"
+        S = Molecules["CO"][isotope][electronic_state]
+
+        # Equilibrium partition functions :
+        Qf = PartFunc_Dunham(S)
+        print(Qf.at(T=3000))  # K
+
+        # Nonequilibrium partition functions :
+        print(Qf.at_noneq(Tvib=2000, Trot=1000))  # K
+
+    .. minigallery:: radis.levels.partfunc.PartFunc_Dunham
+        :add-heading:
+
     Notes
     -----
     Validity:

@@ -173,6 +173,8 @@ Content
   This is the core of RADIS: it calculates the spectral densities for a homogeneous
   slab of gas, and returns a :class:`~radis.spectrum.spectrum.Spectrum` object. Calculations
   are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class.
+  :py:func:`~radis.lbl.calc.calc_spectrum` is a high-level wrapper to
+  :class:`~radis.lbl.factory.SpectrumFactory` for most simple cases.
 
 
 - :ref:`Line-of-sight (LOS) module<label_los_index>`
