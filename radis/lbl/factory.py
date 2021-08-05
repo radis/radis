@@ -1774,8 +1774,8 @@ class SpectrumFactory(BandFactory):
 
         Examples
         --------
-
         ::
+
             sf.print_perf_profile()
 
             # output >>
@@ -1839,6 +1839,7 @@ class SpectrumFactory(BandFactory):
         Examples
         --------
         ::
+
             sf = SpectrumFactory(...)
             sf.eq_spectrum(...)
             sf.generate_perf_profile()

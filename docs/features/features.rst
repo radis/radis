@@ -92,6 +92,7 @@ List of supported line databases formats: :py:data:`~radis.lbl.loader.KNOWN_DBFO
 - [HITRAN-2016]_
 - [HITEMP-2010]_
 - [CDSD-4000]_
+- [ExoMol-2020]_
 
 For download and configuration of line databases, see the :ref:`Line Databases section <label_line_databases>`
 

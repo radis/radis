@@ -99,12 +99,14 @@ KNOWN_DBFORMAT = [
     "hdf5-radisdb",
 ]
 """list: Known formats for Line Databases:
+
 - ``'hitran'`` : [HITRAN-2016]_ original .par format
 - ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran')
 - ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010)
 - ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only)
 - ``'hitemp-radisdb'`` : HITEMP under RADISDB format (pytables-HDF5 with RADIS column names).
 - ``'hdf5-radisdb'`` : arbitrary HDF5 file with RADIS column names.
+
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
 and the :ref:`list of databases <label_line_databases>` .
 
@@ -115,6 +117,7 @@ See Also
 
 KNOWN_LVLFORMAT = ["radis", "cdsd-pc", "cdsd-pcN", "cdsd-hamil", None]
 """list: Known formats for Energy Level Databases (used in non-equilibrium calculations):
+
 - ``'radis'``: energies calculated with Dunham expansions by
     :class:`~radis.levels.partfunc.PartFunc_Dunham`
 - ``'cdsd-pc'``: energies read from precomputed CDSD energies for CO2, with

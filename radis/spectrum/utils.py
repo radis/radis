@@ -461,6 +461,7 @@ def print_perf_profile(
     Example
     -------
     ::
+
         Spectrum.print_perf_profile()
 
         # output >>

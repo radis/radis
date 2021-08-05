@@ -9,7 +9,7 @@ code (which you should also have a look at !), by @HajimeKawahara, under MIT Lic
 import pathlib
 import warnings
 from ntpath import join
-from os.path import expanduser
+from os.path import abspath, expanduser
 
 import numpy as np
 
@@ -292,10 +292,10 @@ class MdbExomol(object):
         self.nurange = [np.min(nurange), np.max(nurange)]
         self.broadf = broadf
         # Where exomol files are
-        self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
-        self.pf_file = self.path / pathlib.Path(molec + ".pf")
-        self.def_file = self.path / pathlib.Path(molec + ".def")
-        self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
+        self.states_file = abspath(self.path / pathlib.Path(molec + ".states.bz2"))
+        self.pf_file = abspath(self.path / pathlib.Path(molec + ".pf"))
+        self.def_file = abspath(self.path / pathlib.Path(molec + ".def"))
+        self.broad_file = abspath(self.path / pathlib.Path(molecbroad + ".broad"))
 
         if not self.def_file.exists():
             self.download(molec, extension=[".def"])

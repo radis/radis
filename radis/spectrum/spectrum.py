@@ -3583,6 +3583,7 @@ class Spectrum(object):
         Example
         -------
         ::
+
             Spectrum.print_perf_profile()
 
             # output >>
@@ -3649,6 +3650,7 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             s = calc_spectrum(...)
             s.generate_perf_profile()
 
