@@ -4,7 +4,7 @@
 Calculate a spectrum from ExoMol
 ================================
 
-Auto-download and compute a SiO spectrum from the ExoMol database ([ExoMol-2020])
+Auto-download and compute a SiO spectrum from the ExoMol database ([ExoMol-2020]_)
 
 """
 

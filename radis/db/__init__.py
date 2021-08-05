@@ -33,9 +33,10 @@ MOLECULES_LIST_EQUILIBRIUM = (
     __supported_molecules_equilibrium__
 ) = _get_supported_molecules_equilibrium()
 """ list: molecules that can be calculated in RADIS at equilibrium.
-All [HITRAN-2016]_ species are available.
+All [HITRAN-2016]_ and [ExoMol-2020]_ species are available.
+
 Absorption coefficient calculated with RADIS at 300 K, 1 atm are shown for all
-these molecules in the :ref:`Examples page <label_examples_hitran_spectra>` (HITRAN spectra).
+[HITRAN-2016]_ molecules in the :ref:`HITRAN spectra page <label_examples_hitran_spectra>` .
 
 - 1 	``'H2O'`` : 	Water 	(`spectrum <https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png>`__)
 - 2 	``'CO2'`` : 	Carbon Dioxide    (`spectrum <https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png>`__)

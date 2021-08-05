@@ -4,7 +4,7 @@
 Calculate a spectrum from HITEMP
 ================================
 
-Auto-download and compute a CO spectrum from HITEMP ([HITEMP-2010]).
+Auto-download and compute a CO spectrum from HITEMP ([HITEMP-2010]_).
 
 Compare with HITRAN-2016.
 
