@@ -40,3 +40,5 @@ from .units import (
     is_homogeneous,
 )
 from .units_astropy import convert_and_strip_units
+
+__all__ = ["sPlanck"]

@@ -2,3 +2,5 @@
 """Line-of-sight (multislabs) solver module."""
 
 from .slabs import MergeSlabs, SerialSlabs
+
+__all__ = ["MergeSlabs", "SerialSlabs"]

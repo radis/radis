@@ -20,3 +20,21 @@ from .operations import (
     sub_baseline,
 )
 from .spectrum import Spectrum, is_spectrum
+
+__all__ = [
+    "get_diff",
+    "get_distance",
+    "get_ratio",
+    "get_residual",
+    "get_residual_integral",
+    "plot_diff",
+    "calculated_spectrum",
+    "experimental_spectrum",
+    "transmittance_spectrum",
+    "PerfectAbsorber",
+    "Radiance",
+    "Radiance_noslit",
+    "Transmittance",
+    "Transmittance_noslit",
+    "Spectrum",
+]

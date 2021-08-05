@@ -155,6 +155,21 @@ __version__ = get_version(add_git_number=False)
 version = get_version()  # complete version including commit number
 
 
+# %% Global namespace
+
+__all__ = [
+    "AUTO_UPDATE_SPEC",
+    "DEBUG_MODE",
+    "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD",
+    "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD",
+    "OLDEST_COMPATIBLE_VERSION",
+    "USE_CYTHON",
+    "version",
+    "__version__",
+]
+
+
+from . import db, lbl, los, phys, spectrum, tools
 from .db import *  # database of molecules
 from .io import *  # input / output
 from .lbl import *  # line-by-line module
@@ -164,3 +179,48 @@ from .phys import *  # conversion functions, blackbody objects
 from .spectrum import *  # Spectrum object
 from .test import *  # test
 from .tools import *  # slit, database, line survey, etc.
+
+__all__.extend(db.__all__)
+__all__.extend(lbl.__all__)
+__all__.extend(los.__all__)
+__all__.extend(phys.__all__)
+__all__.extend(spectrum.__all__)
+__all__.extend(tools.__all__)
+
+# from .db import (  # database of molecules
+#     MOLECULES_LIST_EQUILIBRIUM,
+#     MOLECULES_LIST_NONEQUILIBRIUM,
+#     Molecules,
+#     getMolecule,
+# )
+# from .io import cdsd2df, hit2df  # input / output
+# from .lbl import LevelsList, SpectrumFactory, calc_spectrum  # line-by-line module
+
+# # from .levels import *  # rovibrational energies and partition functions
+# from .los import MergeSlabs, SerialSlabs  # line-of-sight module
+# from .phys import planck, planck_wn, sPlanck  # conversion functions, blackbody objects
+# from .spectrum import Spectrum  # Spectrum object
+# from .spectrum import (
+#     Radiance,
+#     Radiance_noslit,
+#     Transmittance,
+#     Transmittance_noslit,
+#     calculated_spectrum,
+#     experimental_spectrum,
+#     get_baseline,
+#     get_diff,
+#     plot_diff,
+#     sub_baseline,
+#     transmittance_spectrum,
+# )
+
+# # from .test import *  # test
+# from .tools import (  # get_FWHW, get_effective_FWHW,        # doesnt work for some reason? retry. TODO; slit, database, line survey, etc.
+#     SpecDatabase,
+#     crop_slit,
+#     get_eq_mole_fraction,
+#     load_spec,
+#     plot_slit,
+#     plot_spec,
+#     recenter_slit,
+# )
