@@ -17,7 +17,7 @@ from os.path import join
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import OptimizeResult, minimize
 
 from radis import Spectrum, SpectrumFactory
 from radis.spectrum import plot_diff
@@ -79,7 +79,7 @@ ite = 2
 
 def fit_spectrum(
     factory, s_exp, model, fit_parameters, bounds={}, plot=True, maxiter=300
-):
+) -> (Spectrum, OptimizeResult):
     """Fit an experimental spectrum with an arbitrary model and an arbitrary
     number of fit parameters.
 
@@ -108,7 +108,10 @@ def fit_spectrum(
 
     Returns
     -------
-    s_best
+    s_best: Spectrum
+        best spectrum
+    res: OptimizeResults
+        output of `~scipy.optimize.minimize`
 
     See Also
     --------
@@ -197,12 +200,31 @@ def fit_spectrum(
 
         return s
 
+    blit = True
+
     if plot:
         # Graph with plot diff
         # figSpec, axSpec = plt.subplots(num='diffspectra')
         figSpec, axSpec = plot_diff(s_exp, s0, fit_variable, nfig="diffspectra")
         lineSpec = axSpec[0].get_lines()[1]
         lineDiff = axSpec[1].get_lines()[0]
+        figSpec.canvas.draw()
+
+        if blit:
+            # cache the background
+            # ... rmeove data first:
+            s_diff = get_diff(s_exp, s0, var=fit_variable)
+            lineSpec.set_data(s0.get(fit_variable)[0], s0.get(fit_variable)[1] * np.nan)
+            lineDiff.set_data(s_diff[0], s_diff[1] * np.nan)
+            figSpec.canvas.draw()
+            # ... save:
+            axSpec0background = figSpec.canvas.copy_from_bbox(axSpec[0].bbox)
+            axSpec1background = figSpec.canvas.copy_from_bbox(axSpec[1].bbox)
+            # ... re-add :
+            lineSpec.set_data(s0.get(fit_variable))
+            lineDiff.set_data(s_diff)
+
+        plt.show(block=False)
 
     def cost_function(fit_values, plot=None):
         """ Return error on Spectrum s vs experimental spectrum"""
@@ -217,10 +239,29 @@ def fit_spectrum(
             s_diff = get_diff(s_exp, s, var=fit_variable)
             lineSpec.set_data(s.get(fit_variable))
             lineDiff.set_data(s_diff)
-            axSpec[0].set_title(print_fit_values(fit_values))
-            figSpec.canvas.draw()
-            # plt.pause(0.001)
-            plt.pause(0.05)
+            # axSpec[0].set_title(print_fit_values(fit_values))
+            plt.show(block=False)
+
+            if blit:
+                # ... from https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot
+                # restore background
+                figSpec.canvas.restore_region(axSpec0background)
+                figSpec.canvas.restore_region(axSpec1background)
+
+                # redraw just the points
+                axSpec[0].draw_artist(lineSpec)
+                axSpec[1].draw_artist(lineDiff)
+                # ax2.draw_artist(text) # TODO
+
+                # fill in the axes rectangle
+                figSpec.canvas.blit(axSpec[0].bbox)
+                figSpec.canvas.blit(axSpec[1].bbox)
+
+            else:
+                # redraw everything
+                figSpec.canvas.draw()
+
+            figSpec.canvas.flush_events()
 
         s.resample(s_exp, energy_threshold=2e-2)
 
@@ -249,18 +290,25 @@ def fit_spectrum(
     res1 = log_cost_function(fit_values_max, plot=plot)
 
     if plot:
-        (lineRes,) = axRes.plot((1, 2), (res0, res1), "-ko")
-        (lineLast,) = axRes.plot(2, res0, "or")  # last iteration in red
+        # we need to plot lineValues alreazdy to get the legend right:
         lineValues = {}
         for i, k in enumerate(fit_params):
             lineValues[k] = axValues.plot(
                 (1, 2), (fit_values_min[i], fit_values_max[i]), "-", label=k
             )[0]
+
         axRes.set_xlim((0, maxiter))
-        axRes.set_ylim(ymin=0)
+        axRes.set_ylim(ymin=0, ymax=1.5 * max(res0, res1))
+        axValues.set_ylim(ymin=0, ymax=max(fit_values_max) * 1.1)
         axRes.set_xlabel("Iteration")
         axRes.set_ylabel("Residual")
-        figRes.legend()
+        figRes.legend(loc="upper right")
+        figRes.canvas.draw()
+        axResbackground = figRes.canvas.copy_from_bbox(axRes.bbox)
+        plt.show(block=False)
+
+        (lineRes,) = axRes.plot((1, 2), (res0, res1), "-ko")
+        (lineLast,) = axRes.plot(2, res0, "or")  # last iteration in red
 
     factory.verbose = False
     factory.warnings["NegativeEnergiesWarning"] = "ignore"
@@ -294,7 +342,17 @@ def fit_spectrum(
                 lineValues[k].set_data((np.hstack((x, ite)), np.hstack((y, v))))
             # Plot last
             lineLast.set_data((ite, res))
-            figRes.canvas.draw()
+
+            if blit:
+                figRes.canvas.restore_region(axResbackground)
+                for k in fit_params:
+                    axRes.draw_artist(lineValues[k])
+                axRes.draw_artist(lineLast)
+                axRes.draw_artist(lineRes)
+            else:
+                figRes.canvas.draw()
+            figRes.canvas.flush_events()
+            # plt.show(block=False)
 
         print(
             "{0}, Residual: {1:.4f} {2}".format(
@@ -349,7 +407,7 @@ def fit_spectrum(
     # ... iterations (best.nit) because the Jacobian is calculated numerically with
     # ... internal function calls
 
-    return s_best
+    return s_best, best
 
 
 if __name__ == "__main__":
@@ -391,7 +449,7 @@ if __name__ == "__main__":
     setup_test_line_databases()
     sf.load_databank("HITEMP-CO2-TEST")
 
-    s_best = sf.fit_spectrum(
+    s_best, best = sf.fit_spectrum(
         s_exp.take("transmittance_noslit"),
         model=Tvib12Tvib3TrotModel,
         fit_parameters={
@@ -400,7 +458,7 @@ if __name__ == "__main__":
             "Trot": 491,
         },
         bounds={"T12": [300, 2000], "T3": [300, 5000], "Trot": [300, 2000]},
-        plot=True,
-        maxiter=150,
+        plot=False,
+        maxiter=200,
     )
     plot_diff(s_exp, s_best)
