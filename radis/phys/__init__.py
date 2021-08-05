@@ -41,4 +41,4 @@ from .units import (
 )
 from .units_astropy import convert_and_strip_units
 
-__all__ = ["sPlanck"]
+__all__ = ["sPlanck", "planck", "planck_wn"]
