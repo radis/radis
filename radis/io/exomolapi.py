@@ -234,11 +234,13 @@ def pickup_gE(states, trans, dic_def, trans_lines=False):
     a, b = np.shape(ndstates_extra)
     dico_quantumNumbers = {}
     if b != 0:
-        for index, label in enumerate(dic_def['quantum_labels']):
-            if label == 'K': #!!!TODO: allow users to have other quantum numbers
-                dico_quantumNumbers['{}_l'.format(label)] = ndstates_extra[i_lower, index]
+        for index, label in enumerate(dic_def["quantum_labels"]):
+            if label == "K":  #!!!TODO: allow users to have other quantum numbers
+                dico_quantumNumbers["{}_l".format(label)] = ndstates_extra[
+                    i_lower, index
+                ]
                 # dico_quantumNumbers['{}_u'.format(label)] = ndstates_extra[index][i_upper]
-            
+
     A = ndtrans[:, 2]
 
     if trans_lines:
