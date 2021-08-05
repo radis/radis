@@ -23,7 +23,6 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 import os
 from os.path import basename, exists, getmtime
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import exp
@@ -232,7 +231,11 @@ def test_calculatedQ_match_HAPI_CO(
         us.append(db.at(Ti))
         hap.append(hapi.at(Ti))
 
-    if plot:
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+
         plt.figure(fig_prefix + "Partition function Dunham vs Precomputed")
         plt.plot(T, us, "ok", label="NeQ")
         plt.plot(T, hap, "or", label="HAPI")
@@ -785,7 +788,11 @@ def test_tabulated_partition_functions(verbose=True, plot=True, *args, **kwargs)
     )
 
     # ... change Grid :
-    if plot:
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+
         Tvib = 3000
         Trot_arr = np.linspace(300, 3000, 10)
         plt.figure()

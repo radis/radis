@@ -270,14 +270,14 @@ class ConditionDict(dict):
             return dict.__getattr__(attr)
         if not attr in self.__slots__:
             raise KeyError(
-                f"Undefined attribute `{attr}` for {self.__class__}. Did you mean : {self.__slots__}"
+                f"Undefined attribute `{attr}` for {self.__class__}. Allowed attributes: {self.__slots__}"
             )
         return self[attr]
 
     def __setattr__(self, attr, value):
         if not attr in self.__slots__:
             raise KeyError(
-                f"Undefined attribute `{attr}` for {self.__class__}. Did you mean : {self.__slots__}"
+                f"Undefined attribute `{attr}` for {self.__class__}. Allowed attributes: {self.__slots__}"
             )
         self[attr] = value
 

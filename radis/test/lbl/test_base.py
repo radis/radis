@@ -326,9 +326,6 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         radis.DEBUG_MODE = DEBUG_MODE
 
 
-# @pytest.mark.needs_connection
-# @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
-# @pytest.mark.needs_connection
 def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
     """Test that we find Planck in the optically thick limit
 
