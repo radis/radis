@@ -564,20 +564,34 @@ def _calc_spectrum(
         export_lines=export_lines,
         **kwargs
     )
-    if databank in [
-        "fetch",
-        "hitran",
-        "hitemp",
-    ]:  # mode to get databank without relying on  Line databases
+    if databank in ["fetch", "hitran", "hitemp", "exomol",] or (
+        isinstance(databank, tuple) and databank[0] == "exomol"
+    ):  # mode to get databank without relying on  Line databases
         # Line database :
         if databank in ["fetch", "hitran"]:
-            conditions = {"source": "hitran"}
+            conditions = {
+                "source": "hitran",
+                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
+            }
         elif databank in ["hitemp"]:
-            conditions = {"source": "hitemp"}
+            conditions = {
+                "source": "hitemp",
+                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium}
+            }
+        elif databank in ["exomol"]:
+            conditions = {
+                "source": "exomol",
+                "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
+        elif isinstance(databank, tuple) and databank[0] == "exomol":
+            conditions = {
+                "source": "exomol",
+                "exomol_database": databank[1],
+                "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
         # Partition functions :
         conditions.update(
             **{
-                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
                 "levelsfmt": None,  # no need to load energies by default
                 "db_use_cached": use_cached,
             }
@@ -657,7 +671,7 @@ def _calc_spectrum(
                 path_length=path_length,
                 name=name,
             )
-        else:
+        elif mode == "gpu":
             s = sf.eq_spectrum_gpu(
                 Tgas=Tgas,
                 mole_fraction=mole_fraction,
@@ -665,7 +679,11 @@ def _calc_spectrum(
                 path_length=path_length,
                 name=name,
             )
+        else:
+            raise ValueError(mode)
     else:
+        if mode != "cpu":
+            raise NotImplementedError(mode)
         s = sf.non_eq_spectrum(
             Tvib=Tvib,
             Trot=Trot,

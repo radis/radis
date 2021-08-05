@@ -212,25 +212,21 @@ HITRAN_MOLECULES = list(trans.values())
 
 def get_molecule_identifier(molecule_name):
     r"""
-    For a given input molecular formula, return the corresponding HITRAN molecule
-    identifier number [1]_.
-
+    For a given input molecular formula, return the corresponding
+    :py:data:`~radis.db.classes.HITRAN_MOLECULES` identifier number [1]_.
 
     Parameters
     ----------
     molecular_formula : str
         The string describing the molecule.
 
-
     Returns
     -------
     M: int
         The HITRAN molecular identified number.
 
-
     References
     ----------
-
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
     Function is from from https://github.com/nzhagen/hitran/blob/master/hitran.py
@@ -252,20 +248,17 @@ def get_molecule_identifier(molecule_name):
 
 def get_molecule(molecule_id):
     r"""
-    For a given input molecular identifier, return the corresponding HITRAN
-    molecule name [1]_.
-
+    For a given input molecular identifier, return the corresponding
+    :py:data:`~radis.db.classes.HITRAN_MOLECULES` name [1]_.
 
     Parameters
     ----------
-
     molecular_id: str
         Hitran identifier of the molecule.
 
 
     References
     ----------
-
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
     """
@@ -281,6 +274,19 @@ def get_molecule(molecule_id):
         )
 
 
+# %% ExoMol molecules
+
+
+KNOWN_EXOMOL_ISOTOPES_NAMES = {
+    ("FeH", 1): "56Fe-1H",
+    ("SiO", 1): "28Si-16O",  # Placeholder until all molecules parsed from website TODO
+}
+"""All :py:data:`~radis.db.classes.HITRAN_MOLECULES` are also converted to their ExoMol full-name format
+in :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
+"""
+EXOMOL_MOLECULES = list(set([M for M, iso in KNOWN_EXOMOL_ISOTOPES_NAMES.keys()]))
+
+
 # %% Molecule class
 
 
@@ -289,19 +295,16 @@ class Molecule(object):
 
     Parameters
     ----------
-
     name: str, int
         molecule name, or HITRAN identifier
 
     Other Parameters
     ----------------
-
     verbose: boolean
         more blabla
 
     See Also
     --------
-
     :py:class:`~radis.db.classes.Isotope`, :py:class:`~radis.db.classes.ElectronicState`,
     :py:func:`~radis.db.molecules.getMolecule`
 

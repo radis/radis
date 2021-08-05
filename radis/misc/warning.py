@@ -119,12 +119,30 @@ class NegativeEnergiesWarning(UserWarning):
     pass
 
 
-class MissingSelfBroadeningWarning(UserWarning):
-    """Self broadening is missing in Line Database.
+class MissingSelfBroadeningTdepWarning(UserWarning):
+    """Self broadening temperature dependance coefficient is missing in Line Database.
 
-    Usually, use Air broadening instead
+    Usually, use Air broadening temperature dependance coefficient instead. See
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
     """
 
+    pass
+
+
+class MissingSelfBroadeningWarning(UserWarning):
+    """Self broadening tabulated width is missing in Line Database.
+
+    Usually, use Air broadening tabulated width instead. See
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    """
+
+    pass
+
+
+class MissingPressureShiftWarning(UserWarning):
+    """Pressure-shift coefficient is missing in Line Database."""
+
+    # TODO : add docstring link to references of line database columns.
     pass
 
 
@@ -183,7 +201,9 @@ WarningClasses = {
     "OutOfRangeLinesWarning": OutOfRangeLinesWarning,
     "HighTemperatureWarning": HighTemperatureWarning,
     "NegativeEnergiesWarning": NegativeEnergiesWarning,
+    "MissingSelfBroadeningTdepWarning": MissingSelfBroadeningTdepWarning,
     "MissingSelfBroadeningWarning": MissingSelfBroadeningWarning,
+    "MissingPressureShiftWarning": MissingPressureShiftWarning,
     "LinestrengthCutoffWarning": LinestrengthCutoffWarning,
     "InputConditionsWarning": InputConditionsWarning,
     "DeprecatedFileWarning": DeprecatedFileWarning,
@@ -227,7 +247,9 @@ default_warning_status = {
     "HighTemperatureWarning": "warn",
     "NegativeEnergiesWarning": "warn",  # warning if negative energies in database
     # warning if self-broadening abs coefficnet missing (Air is used instead)
+    "MissingSelfBroadeningTdepWarning": "warn",
     "MissingSelfBroadeningWarning": "warn",
+    "MissingPressureShiftWarning": "warn",
     "InputConditionsWarning": "warn",
     "DeprecatedFileWarning": "warn",
     "IrrelevantFileWarning": "warn",

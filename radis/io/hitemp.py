@@ -114,7 +114,8 @@ def fetch_hitemp(
     Other Parameters
     ----------------
     cache: bool, or ``'regen'``
-        if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
+        if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it..
+        Default ``True``.
     verbose: bool
     chunksize: int
         number of lines to process at a same time. Higher is usually faster

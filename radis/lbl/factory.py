@@ -449,6 +449,7 @@ class SpectrumFactory(BandFactory):
                     + "\n- under nonequilibrium: {0}".format(
                         MOLECULES_LIST_NONEQUILIBRIUM
                     )
+                    + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
                 )
 
         # Store isotope identifier in str format (list wont work in database queries)
@@ -1773,8 +1774,8 @@ class SpectrumFactory(BandFactory):
 
         Examples
         --------
-
         ::
+
             sf.print_perf_profile()
 
             # output >>
@@ -1838,6 +1839,7 @@ class SpectrumFactory(BandFactory):
         Examples
         --------
         ::
+
             sf = SpectrumFactory(...)
             sf.eq_spectrum(...)
             sf.generate_perf_profile()

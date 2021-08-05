@@ -40,7 +40,7 @@ def intersect(a, b):
     return c
 
 
-def SerialSlabs(*slabs, **kwargs):
+def SerialSlabs(*slabs, **kwargs) -> Spectrum:
     # type: (*Spectrum, **dict) -> Spectrum
     r"""Adds several slabs along the line-of-sight.
     If adding two slabs only, you can also use::
@@ -478,7 +478,7 @@ def resample_slabs(
     return slabs
 
 
-def MergeSlabs(*slabs, **kwargs):
+def MergeSlabs(*slabs, **kwargs) -> Spectrum:
     # type: (*Spectrum, **dict) -> Spectrum
     r"""Combines several slabs into one. Useful to calculate multi-gas slabs.
     Linear absorption coefficient is calculated as the sum of all linear absorption

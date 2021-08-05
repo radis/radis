@@ -52,4 +52,8 @@ The latest HITEMP database version is automatically downloaded if using ``databa
                spectroscopic databank, Journal of Quantitative Spectroscopy and Radiative Transfer 112 (9) (2011)
                1403–1410, ISSN 00224073, `doi:10.1016/j.jqsrt.2011.03.005 <https://www.sciencedirect.com/science/article/pii/S0022407311001154>`__
 
+.. [ExoMol-2020] Tennyson et al., The 2020 release of the ExoMol database: Molecular line lists for
+                exoplanet and other hot atmospheres, Journal of Quantitative Spectroscopy and Radiative Transfer 255,
+                (2020), 107228,  `doi:https://doi.org/10.1016/j.jqsrt.2020.107228 <https://www.sciencedirect.com/science/article/abs/pii/S002240732030491X>`__
+
 For download and configuration of line databases, see the :ref:`Line Databases section <label_line_databases>`

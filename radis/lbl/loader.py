@@ -61,6 +61,7 @@ from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
+from radis.io.exomol import fetch_exomol
 from radis.io.hdf5 import hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import hit2df, parse_global_quanta, parse_local_quanta
@@ -98,12 +99,14 @@ KNOWN_DBFORMAT = [
     "hdf5-radisdb",
 ]
 """list: Known formats for Line Databases:
+
 - ``'hitran'`` : [HITRAN-2016]_ original .par format
 - ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran')
 - ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010)
 - ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only)
 - ``'hitemp-radisdb'`` : HITEMP under RADISDB format (pytables-HDF5 with RADIS column names).
 - ``'hdf5-radisdb'`` : arbitrary HDF5 file with RADIS column names.
+
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
 and the :ref:`list of databases <label_line_databases>` .
 
@@ -114,6 +117,7 @@ See Also
 
 KNOWN_LVLFORMAT = ["radis", "cdsd-pc", "cdsd-pcN", "cdsd-hamil", None]
 """list: Known formats for Energy Level Databases (used in non-equilibrium calculations):
+
 - ``'radis'``: energies calculated with Dunham expansions by
     :class:`~radis.levels.partfunc.PartFunc_Dunham`
 - ``'cdsd-pc'``: energies read from precomputed CDSD energies for CO2, with
@@ -456,7 +460,7 @@ def format_paths(s):
     return s
 
 
-df_metadata = ["Ia", "molar_mass", "Qref", "Qvib", "Q"]
+df_metadata = ["molecule", "iso", "id", "Ia", "molar_mass", "Qref", "Qvib", "Q"]
 """ list: metadata of line DataFrames :py:attr:`~radis.lbl.loader.DatabankLoader.df0`,
 :py:attr:`~radis.lbl.loader.DatabankLoader.df1`.
 @dev: when having only 1 molecule, 1 isotope, these parameters are
@@ -603,8 +607,8 @@ class DatabankLoader(object):
 
     def init_databank(self, *args, **kwargs):
         """Method to init databank parameters but only load them when needed.
-        Databank is reloaded by
-        :meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
+
+        Databank is reloaded by :py:meth:`~radis.lbl.loader.DatabankLoader._check_line_databank`
         Same inputs Parameters as :meth:`~radis.lbl.loader.DatabankLoader.load_databank`:
 
         Parameters
@@ -726,6 +730,7 @@ class DatabankLoader(object):
     def fetch_databank(
         self,
         source="hitran",
+        exomol_database=None,
         parfunc=None,
         parfuncfmt="hapi",
         levels=None,
@@ -742,17 +747,23 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``
-            [Download database lines from the latest HITRAN (see [HITRAN-2016]_)
-            or HITEMP version (see [HITEMP-2010]_  )]
+        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``
+            [Download database lines from the latest HITRAN (see [HITRAN-2016]_),
+            HITEMP (see [HITEMP-2010]_  )] or EXOMOL see [ExoMol-2020]_  ) databases.
+        exomol_database: None
+            if fetching from ''`exomol`'', choose which database to use. Keep
+            ``None`` to use the recommended one. See all available databases
+            with :py:func:`radis.io.exomol.get_exomol_database_list`
+
 
         Other Parameters
         ----------------
-        parfuncfmt: ``'cdsd'``, ``'hapi'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+        parfuncfmt: ``'cdsd'``, ``'hapi'``, ``'exomol'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
+            version. If partfuncfmt is None then ``hapi`` is used. If ``'exomol'``
+            then partition functions are downloaded from ExoMol. Default ``hapi``.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
@@ -814,13 +825,21 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp"]:
+        if source not in ["hitran", "hitemp", "exomol"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
         elif source == "hitemp":
             dbformat = (
                 "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
+            )
+        elif source == "exomol":
+            dbformat = "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb  # Note @EP : still WIP.
+        if exomol_database != None:
+            assert source == "exomol"
+        if [parfuncfmt, source].count("exomol") == 1:
+            raise NotImplementedError(
+                "ExoMol partition functions must be used with ExoMol database - and vice-versa"
             )
 
         # Get inputs
@@ -858,7 +877,7 @@ class DatabankLoader(object):
             # Query one isotope at a time
             if isotope == "all":
                 raise ValueError(
-                    "Please define isotope explicitely (cannot use 'all' with fetch_databank)"
+                    "Please define isotope explicitely (cannot use 'all' with fetch_databank('hitran'))"
                 )
             isotope_list = self._get_isotope_list()
 
@@ -882,10 +901,15 @@ class DatabankLoader(object):
                     f"{molecule} has no lines on range "
                     + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
                 )
-            else:
+            if len(frames) > 1:
+                # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
+                for df in frames:
+                    assert "iso" in df.columns
                 df = pd.concat(frames, ignore_index=True)  # reindex
-
+            else:
+                df = frames[0]
             self.params.dbpath = "fetched from hitran"
+
         elif source == "hitemp":
             # Download, setup local databases, and fetch (use existing if possible)
 
@@ -910,6 +934,57 @@ class DatabankLoader(object):
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
+
+        elif source == "exomol":
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                raise ValueError(
+                    "Please define isotope explicitely (cannot use 'all' with fetch_databank('exomol'))"
+                )
+            isotope_list = self._get_isotope_list()
+
+            local_paths = []
+            frames = []  # lines for all isotopes
+            partition_function_exomol = {
+                molecule: {}
+            }  # partition function tabulators for all isotpes
+            for iso in isotope_list:
+                df, local_path, Z_exomol = fetch_exomol(
+                    molecule,
+                    database=exomol_database,
+                    isotope=iso,
+                    load_wavenum_min=wavenum_min,
+                    load_wavenum_max=wavenum_max,
+                    cache=db_use_cached,
+                    verbose=self.verbose,
+                    return_local_path=True,
+                    return_partition_function=True,
+                )
+                # @dev refactor : have a DatabaseClass from which we load lines and partition functions
+                if len(df) > 0:
+                    frames.append(df)
+                local_paths.append(local_path)
+                partition_function_exomol[molecule][iso] = Z_exomol
+
+            # Merge
+            if frames == []:
+                raise EmptyDatabaseError(
+                    f"{molecule} has no lines on range "
+                    + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                )
+            if len(frames) > 1:
+                # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
+                for df in frames:
+                    assert "iso" in df.columns
+                df = pd.concat(frames, ignore_index=True)  # reindex
+                self.params.dbpath = local_paths
+            else:
+                df = frames[0]
+                self.params.dbpath = local_paths[0]
+
+        else:
+            raise NotImplementedError("source: {0}".format(source))
 
         if len(df) == 0:
             raise EmptyDatabaseError(
@@ -939,7 +1014,14 @@ class DatabankLoader(object):
         # %% Init Partition functions (with energies)
         # ------------
 
-        self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
+        if parfuncfmt == "exomol":
+            self._init_equilibrium_partition_functions(
+                parfunc,
+                parfuncfmt,
+                predefined_partition_functions=partition_function_exomol,
+            )
+        else:
+            self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
 
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
@@ -959,21 +1041,7 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        id_set = df.id.unique()
-
-        if len(id_set) != 1:  # only 1 molecule supported ftm
-            raise NotImplementedError(
-                "Only 1 molecule at a time is currently supported "
-                + "in SpectrumFactory. Use radis.calc_spectrum, which "
-                + "calculates them independently then use MergeSlabs"
-            )
-
-        isotope_set = df.iso.unique()
-
-        if len(isotope_set) == 1:
-            df.drop("iso", axis=1, inplace=True)
-            df_metadata.append("iso")
-            df.attrs["iso"] = isotope_set[0]
+        self._remove_unecessary_columns(df)
 
         return
 
@@ -1427,12 +1495,14 @@ class DatabankLoader(object):
     # _reload_databank
     # _check_line_databank
     # _retrieve_from_database
-    # _get_partition_function_interpolator
-    # _get_partition_function_calculator
+    # get_partition_function_interpolator
+    # get_partition_function_calculator
     #
     # =========================================================================
 
-    def _init_equilibrium_partition_functions(self, parfunc, parfuncfmt):
+    def _init_equilibrium_partition_functions(
+        self, parfunc, parfuncfmt, predefined_partition_functions={}
+    ):
         """Initializes equilibrium partition functions in ``self.parsum_tab``
 
         Parameters
@@ -1446,6 +1516,12 @@ class DatabankLoader(object):
             path to tabulated partition function to use.
             If ``parfuncfmt`` is ``hapi`` then ``parfunc`` should be the link to the
             hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
+
+        Other Parameters
+        ----------------
+        predefined_partition_functions: dict
+            ::
+                {molecule: {isotope: PartitionFunctionTabulator object}}
         """
 
         # Let's get the tabulated partition function (to calculate eq spectra)
@@ -1455,7 +1531,11 @@ class DatabankLoader(object):
         for iso in self._get_isotope_list():
             self.parsum_tab[molecule][iso] = {}
             ParsumTab = self._build_partition_function_interpolator(
-                parfunc, parfuncfmt, self.input.molecule, isotope=iso
+                parfunc,
+                parfuncfmt,
+                self.input.molecule,
+                isotope=iso,
+                predefined_partition_functions=predefined_partition_functions,
             )
             self.parsum_tab[molecule][iso][state] = ParsumTab
 
@@ -1848,27 +1928,43 @@ class DatabankLoader(object):
                 )
             )
 
-        id_set = df.id.unique()
-
-        if len(id_set) != 1:  # only 1 molecule supported ftm
-            raise NotImplementedError(
-                "Only 1 molecule at a time is currently supported "
-                + "in SpectrumFactory. Use radis.calc_spectrum, which "
-                + "calculates them independently then use MergeSlabs"
-            )
-
-        df.drop("id", axis=1, inplace=True)
-        df_metadata.append("id")
-        df.attrs["id"] = id_set[0]
-
-        isotope_set = df.iso.unique()
-
-        if len(isotope_set) == 1:
-            df.drop("iso", axis=1, inplace=True)
-            df_metadata.append("iso")
-            df.attrs["iso"] = isotope_set[0]
+        self._remove_unecessary_columns(df)
 
         return df
+
+    def _remove_unecessary_columns(self, df):
+        """Remove unecessary columns and add values as attributes
+
+        Returns
+        -------
+        None: DataFrame updated inplace
+        """
+
+        # Discard molecule column if unique
+        if "id" in df.columns:
+            id_set = df.id.unique()
+            if len(id_set) != 1:  # only 1 molecule supported ftm
+                raise NotImplementedError(
+                    "Only 1 molecule at a time is currently supported "
+                    + "in SpectrumFactory. Use radis.calc_spectrum, which "
+                    + "calculates them independently then use MergeSlabs"
+                )
+
+            df.drop("id", axis=1, inplace=True)
+            df_metadata.append("id")
+            df.attrs["id"] = id_set[0]
+        else:
+            assert "id" in df.attrs or "molecule" in df.attrs
+
+        if "iso" in df.columns:
+            isotope_set = df.iso.unique()
+
+            if len(isotope_set) == 1:
+                df.drop("iso", axis=1, inplace=True)
+                df_metadata.append("iso")
+                df.attrs["iso"] = isotope_set[0]
+        else:
+            assert "iso" in df.attrs
 
     def _get_isotope_list(self, molecule=None, df=None):
         """Returns list of isotopes for given molecule Parse the Input
@@ -1979,13 +2075,19 @@ class DatabankLoader(object):
                 return None
 
     def _build_partition_function_interpolator(
-        self, parfunc, parfuncfmt, molecule, isotope
+        self, parfunc, parfuncfmt, molecule, isotope, predefined_partition_functions={}
     ):
         """Returns an universal partition function object ``parsum`` with the
         following methods defined::
             parsum.at(T)
 
         Partition functions are interpolated from tabulated values
+
+        Other Parameters
+        ----------------
+        predefined_partition_functions: dict
+            ::
+                {molecule: {isotope: PartitionFunctionTabulator object}}
         """
 
         if __debug__:
@@ -1996,16 +2098,22 @@ class DatabankLoader(object):
 
         isotope = int(isotope)
 
-        # Use HAPI (HITRAN Python interface, integrated in RADIS)
-        # no tabulated partition functions defined. Only non-eq spectra can
-        # be calculated if energies are also given
         if parfuncfmt == "hapi" or parfuncfmt is None:
+            assert len(predefined_partition_functions) == 0
+            # Use TIPS-2017 through HAPI (HITRAN Python interface, integrated in RADIS)
+            # no tabulated partition functions defined. Only non-eq spectra can
+            # be calculated if energies are also given
             parsum = PartFuncHAPI(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
+            assert len(predefined_partition_functions) == 0
             assert molecule == "CO2"
             parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
+        elif parfuncfmt == "exomol":
+            # Just read dictionary of predefined partition function
+            assert len(predefined_partition_functions) > 0
+            parsum = predefined_partition_functions[molecule][isotope]
         else:
             raise ValueError(
                 "Unknown format for partition function: {0}".format(parfuncfmt)

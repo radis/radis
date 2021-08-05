@@ -146,7 +146,9 @@ See Also
 """
 
 
-def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
+def getMolecule(
+    molecule, isotope=None, electronic_state=None, verbose=True
+) -> ElectronicState:
     """Get an :py:class:`~radis.db.classes.ElectronicState` object in the
     RADIS :py:data:`~radis.db.molecules.Molecules` list, which use the defaults
     :ref:`spectroscopic constants <label_db_spectroscopic_constants>`.
@@ -166,8 +168,7 @@ def getMolecule(molecule, isotope=None, electronic_state=None, verbose=True):
 
     Returns
     -------
-    ElectronicState
-        an :py:class:`~radis.db.classes.ElectronicState` object.
+    ElectronicState: an :py:class:`~radis.db.classes.ElectronicState` object.
 
     .. minigallery:: radis.db.molecules.getMolecule
         :add-heading:

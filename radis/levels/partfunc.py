@@ -110,39 +110,8 @@ class RovibPartitionFunction(object):
     :class:`~radis.levels.partfunc.RovibParFuncCalculator`
     """
 
-    def __init__(self, electronic_state):
-
-        #        # Check inputs
-        #        if type(molecule) is int:
-        #            molecule = get_molecule(molecule)
-        #
-        #        # Get molecule from radis.db
-        #        mol_list = import_from_module('radis.db.molecules', molecule)
-        #        try:
-        #            mol = mol_list[isotope]
-        #        except KeyError:
-        #            raise KeyError('Isotope {0} not defined for molecule {1}'.format(int(isotope), molecule))
-
-        ElecState = electronic_state
-
-        try:
-            ElecState.Erovib
-        except AttributeError:
-            raise AttributeError(
-                "{0} has no energy function defined in RADIS".format(
-                    ElecState.get_fullname()
-                )
-            )
-
-        # Store
-        self.ElecState = ElecState  # electronic state object
-        self.molecule = ElecState.name  # molecule name
-        self.isotope = ElecState.iso
-
-        # Line database
-        # pandas Dataframe that holds all the lines
-        self.df = pd.DataFrame({})
-        # updated on inherited classes initialization
+    def __init__(self):
+        pass
 
 
 # %% Subclasses :
@@ -151,6 +120,9 @@ class RovibPartitionFunction(object):
 
 
 class RovibParFuncTabulator(RovibPartitionFunction):
+    def __init__(self):
+        super(RovibParFuncTabulator, self).__init__()
+
     def at(self, T, **kwargs):
         """Get partition function at temperature T under equilibrium
         conditions, from tabulated data.
@@ -220,7 +192,28 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
     def __init__(self, electronic_state):
 
-        super(RovibParFuncCalculator, self).__init__(electronic_state=electronic_state)
+        super(RovibParFuncCalculator, self).__init__()
+
+        ElecState = electronic_state
+
+        try:
+            ElecState.Erovib
+        except AttributeError:
+            raise AttributeError(
+                "{0} has no energy function defined in RADIS".format(
+                    ElecState.get_fullname()
+                )
+            )
+
+        # Store
+        self.ElecState = ElecState  # electronic state object
+        self.molecule = ElecState.name  # molecule name
+        self.isotope = ElecState.iso
+
+        # Line database
+        # pandas Dataframe that holds all the lines
+        self.df = pd.DataFrame({})
+        # updated on inherited classes initialization
 
     def at(self, T, update_populations=False):
         """Get partition function at temperature T under equilibrium
@@ -690,6 +683,31 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 # %% Variants of Tabulated partition functions (interpolate)
 
 
+class PartFuncExoMol(RovibParFuncTabulator):
+    """Return partition function using interpolation of tabulated values.
+
+    Parameters
+    ----------
+    name: str
+        exomol isotope full name
+
+    See Also
+    --------
+    :py:func:`~radis.io.exomol.fetch_exomol`
+    """
+
+    def __init__(self, name, T_range, Q_range):
+
+        super(PartFuncExoMol, self).__init__()
+
+        self.name = name
+        self.T_range = T_range
+        self.Q_range = Q_range
+
+    def _at(self, T):
+        return np.interp(T, self.T_range, self.Q_range)
+
+
 class PartFuncHAPI(RovibParFuncTabulator):
     """Return partition function using interpolation of tabulated values.
 
@@ -726,6 +744,8 @@ class PartFuncHAPI(RovibParFuncTabulator):
     """
 
     def __init__(self, M, I, path=None, verbose=True):
+
+        super(PartFuncHAPI, self).__init__()
 
         self.verbose = verbose
 

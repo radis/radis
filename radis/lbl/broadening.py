@@ -69,7 +69,6 @@ from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
 from scipy.signal import oaconvolve
 
-from radis.db.classes import get_molecule_identifier
 from radis.db.molparam import MolParams
 from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
@@ -262,8 +261,9 @@ def pressure_broadening_HWHM(
         half-width half max coefficient (HWHM ) for resonant (self) broadening with air
     Tdpair: array like     [length N]
         temperature dependance coefficient for collisional broadening with air
-    Tdpsel: array like     [length N]
-        temperature dependance coefficient for resonant (self) broadening
+    Tdpsel: array like, optional    [length N]
+        temperature dependance coefficient for resonant (self) broadening.
+        If ``None``, use ``Tdpair``.
     pressure_atm: float  [atm]
         pressure in atmosphere (warning, not bar!)
     mole_fraction: float    [0-1]
@@ -276,11 +276,20 @@ def pressure_broadening_HWHM(
 
     Returns
     -------
-    lineshape: pandas Series        [shape N x W]
-        Lorentzian half-width at half-maximum (FWHM) for each line profile
+    pandas Series        [shape N]
+        Lorentzian half-width at half-maximum (HWHM) for each line profile
 
     References
     ----------
+
+    ..math::
+
+        \\gamma_{lb}={\\left(\\frac{T_{ref}}{T_{gas}}\\right)}^{n_{air}} \\gamma_{air} P \\left(1-x\\right)+{\\left(\\frac{T_{ref}}{T_{gas}}\\right)}^{n_{self}} \\gamma_{self} P x
+
+    With :math:`n_{air}, n_{self}` the temperature dependance coefficients
+    ``Tdpair, Tdpsel`` ; :math:`\\gamma_{air}, \\gamma_{self}` the air and resonant
+    broadening ``airbrd, selbrd``, :math:`x` the ``mole_fraction``.
+
     .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
     See Also
@@ -802,14 +811,6 @@ class BroadenFactory(BaseFactory):
         # Init variables
         df = self.df1
 
-        isotope_set = list(self.input.isotope)
-        if len(isotope_set) == 1:
-            df.attrs["iso"] = int(isotope_set[0])
-        else:
-            df.attrs["iso"] = isotope_set
-        M = get_molecule_identifier(self.input.molecule)
-        df.attrs["id"] = M
-
         if len(df) == 0:
             return  # no lines
 
@@ -1003,21 +1004,31 @@ class BroadenFactory(BaseFactory):
         .. [1] `Rothman 1998 (HITRAN 1996) eq (A.12) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
         """
 
-        # Check self broadening is here
+        # Check self broadening temperature-dependance coefficient is here
         if not "Tdpsel" in list(df.keys()):
             self.warn(
-                "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
-                "MissingSelfBroadeningWarning",
+                "Self-broadening temperature coefficient `Tdpsel` not given in database: used `Tdpair` instead",
+                "MissingSelfBroadeningTdepWarning",
                 level=2,  # only appear if verbose>=2
             )
-            Tdpsel = None
+            Tdpsel = None  # will be corrected in pressure_broadening_HWHM()
         else:
             Tdpsel = df.Tdpsel
+
+        # Check self broadening is here
+        if not "selbrd" in list(df.keys()):
+            self.warn(
+                "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
+                "MissingSelfBroadeningWarning",
+            )
+            selbrd = df.airbrd
+        else:
+            selbrd = df.selbrd
 
         # Calculate broadening HWHM
         wl = pressure_broadening_HWHM(
             df.airbrd,
-            df.selbrd,
+            selbrd,
             df.Tdpair,
             Tdpsel,
             pressure_atm,
@@ -2840,43 +2851,43 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
 
 
 def get_molar_mass(df):
-
-    """Returns molar mass
+    """Returns molar mass.
 
     Parameters
     ----------
-
     df: dataframe
 
     Returns
     -------
-
     The molar mass of all the isotopes in the dataframe
     """
-
     molpar = MolParams()
 
     if "id" in df.columns:
-        id = df.id.unique()
-        id = id[0]
-
-    else:
+        raise NotImplementedError(">1 molecule")
+    elif "id" in df.attrs:
         id = df.attrs["id"]
+    else:
+        # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
+        # is an attribute and can be updated with definitions from ExoMol.
+        # https://github.com/radis/radis/issues/321
+        HARCODED_MOLAR_MASS = {"SiO": {1: 43.971842}}
+        try:
+            return HARCODED_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
+        except KeyError:
+            raise NotImplementedError
 
     if "iso" in df.columns:
         iso_set = df.iso.unique()
-        molar_mass = {}
+        molar_mass_dict = {}
         for iso in iso_set:
-            molar_mass[iso] = molpar.get(id, iso, "mol_mass")
-
-        req = df["iso"].map(molar_mass)
+            molar_mass_dict[iso] = molpar.get(id, iso, "mol_mass")
+        molar_mass = df["iso"].map(molar_mass_dict)
     else:
         iso = df.attrs["iso"]
         molar_mass = molpar.get(id, iso, "mol_mass")
 
-        req = molar_mass
-
-    return req
+    return molar_mass
 
     #
 
