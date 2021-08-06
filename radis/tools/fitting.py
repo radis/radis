@@ -22,11 +22,10 @@ from scipy.optimize import OptimizeResult, minimize
 from radis import Spectrum, SpectrumFactory
 from radis.spectrum import plot_diff
 from radis.spectrum.compare import get_diff, get_residual
-from radis.test.utils import getValidationCase, setup_test_line_databases
 
 
 # Calculate a new spectrum for given parameters:
-def Tvib12Tvib3TrotModel(factory, model_input):
+def Tvib12Tvib3TrotModel(factory, model_input) -> Spectrum:
     """A model returning a single-slab non-LTE spectrum with Tvib=(T12, T12, T3), Trot
 
     Parameters
@@ -39,14 +38,12 @@ def Tvib12Tvib3TrotModel(factory, model_input):
 
     Returns
     -------
-
-    s: :class:`~radis.spectrum.spectrum.Spectrum`
-        calculated Spectrum
+    Spectrum: calculated spectrum
 
     Examples
     --------
 
-    .. minigallery:: radis.tools.fitting.Tvib12TrotModel
+    .. minigallery:: radis.tools.fitting.Tvib12Tvib3TrotModel
 
     """
 
@@ -133,7 +130,7 @@ def fit_spectrum(
     factory.verbose = 0  # reduce verbose during calculation.
     s0 = compute_los_model(model_input)  # New run to get performance profile of fit
     sys.stderr.flush()
-    s0.name = "Initial Conditions"
+    s0.name = "Fit (in progress)"
     print("-" * 30)
     print("TYPICAL FIT CALCULATION TIME:")
     s0.print_perf_profile()
@@ -208,6 +205,7 @@ def fit_spectrum(
     blit = True
 
     if plot:
+        plt.ion()
         # Graph with plot diff
         # figSpec, axSpec = plt.subplots(num='diffspectra')
         figSpec, axSpec = plot_diff(s_exp, s0, fit_variable, nfig="diffspectra")
@@ -421,6 +419,9 @@ def fit_spectrum(
 if __name__ == "__main__":
 
     # %% Get Fitted Data
+    from radis.test.utils import getValidationCase, setup_test_line_databases
+
+    setup_test_line_databases()
 
     # Data from Dang, adapted by Klarenaar, digitized by us
     s_exp = Spectrum.from_txt(
@@ -452,9 +453,9 @@ if __name__ == "__main__":
         broadening_max_width=1,  # cm-1
         medium="vacuum",
         export_populations=None,  # 'vib',
+        # parsum_mode="tabulation"
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    setup_test_line_databases()
     sf.load_databank("HITEMP-CO2-TEST")
 
     s_best, best = sf.fit_spectrum(
