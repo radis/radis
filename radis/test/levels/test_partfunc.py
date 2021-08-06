@@ -787,6 +787,20 @@ def test_tabulated_partition_functions(verbose=True, plot=True, *args, **kwargs)
         Z_sum.at_noneq(1000, 3000), Z_tab.at_noneq(1000, 3000), rtol=0.3e-3
     )
 
+    # Nonequilibrium 3 Tvib (same << 0.1%)
+
+    #  ... Compare with Partition function computed from PartFunc_Dunham
+    assert np.isclose(
+        Z_sum.at_noneq_3Tvib((1000, 1000, 2000), 300),
+        Z_tab.at_noneq_3Tvib((1000, 1000, 2000), 300),
+        rtol=1e-3,
+    )
+    assert np.isclose(
+        Z_sum.at_noneq_3Tvib((1000, 1000, 3500), 3000),
+        Z_tab.at_noneq_3Tvib((1000, 1000, 3500), 3000),
+        rtol=0.5e-3,
+    )
+
     # ... change Grid :
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         import matplotlib.pyplot as plt
@@ -926,9 +940,9 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    printm("Testing parfunc: {0}".format(_run_testcases()))
+    # printm("Testing parfunc: {0}".format(_run_testcases()))
 
-    # test_tabulated_partition_functions()
+    test_tabulated_partition_functions()
 #    test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)
