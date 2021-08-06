@@ -579,6 +579,7 @@ class SpectrumFactory(BandFactory):
     # eq_bands                >>> returns bands as a list of spectra
     # non_eq_bands            >>> same, with overpopulation factors
     # power                   >>> get total power (equilibrium or non eq)
+    # fit_spectrum            >>> fit experimental spectrum
     #
     # XXX =====================================================================
 
@@ -1782,6 +1783,57 @@ class SpectrumFactory(BandFactory):
         )
 
         return conv2(Ptot, "mW/cm2/sr", unit)
+
+    def fit_spectrum(
+        self, s_exp, model, fit_parameters, bounds={}, plot=True, maxiter=300
+    ):
+        """Fit an experimental spectrum with an arbitrary model and an arbitrary
+        number of fit parameters.
+
+        Parameters
+        ----------
+        s_exp : Spectrum
+            experimental spectrum. Should have only spectral array only. Use
+            :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g::
+                sf.fit_spectrum(s_exp.take('transmittance'))
+        model : func -> Spectrum
+            a line-of-sight model returning a Spectrum. Example : :py:func:`~radis.tools.fitting.Tvib12TrotModel`
+        fit_parameters : dict
+            ::
+                {fit_parameter:initial_value}
+        bounds : dict, optional
+            ::
+                {fit_parameter:[min, max]}
+
+        Other Parameters
+        ----------------
+        plot: bool
+            if True, plot spectra as they are computed; and plot the convergence of
+            the residual.
+        maxiter: int
+            max number of iteration, default 300
+
+        Returns
+        -------
+        s_best
+
+        See Also
+        --------
+        :py:func:`~radis.tools.fitting.SpectrumFactory.fit_spectrum`
+        For more advanced cases, use Fitroom : https://github.com/radis/fitroom
+
+        """
+        from radis.tools.fitting import fit_spectrum
+
+        return fit_spectrum(
+            self,
+            s_exp,
+            model,
+            fit_parameters,
+            bounds=bounds,
+            plot=plot,
+            maxiter=maxiter,
+        )
 
     def print_perf_profile(self, number_format="{:.3f}", precision=16):
         """Prints Profiler output dictionary in a structured manner for
