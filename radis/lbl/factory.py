@@ -1786,7 +1786,13 @@ class SpectrumFactory(BandFactory):
         return conv2(Ptot, "mW/cm2/sr", unit)
 
     def fit_spectrum(
-        self, s_exp, model, fit_parameters, bounds={}, plot=True, maxiter=300
+        self,
+        s_exp,
+        model,
+        fit_parameters,
+        bounds={},
+        plot=True,
+        solver_options={"maxiter": 300},
     ) -> (Spectrum, OptimizeResult):
         """Fit an experimental spectrum with an arbitrary model and an arbitrary
         number of fit parameters.
@@ -1811,8 +1817,12 @@ class SpectrumFactory(BandFactory):
         plot: bool
             if True, plot spectra as they are computed; and plot the convergence of
             the residual.
-        maxiter: int
-            max number of iteration, default 300
+        solver_options: dict
+            parameters forwarded to the solver.
+            Example::
+
+                {"maxiter": (int)  max number of iteration default ``300``,
+                 }
 
         Returns
         -------
@@ -1829,8 +1839,9 @@ class SpectrumFactory(BandFactory):
 
         See Also
         --------
-        :py:func:`~radis.tools.fitting.Tvib12Tvib3TrotModel`
-        For more advanced cases, use Fitroom : https://github.com/radis/fitroom
+        :py:func:`~radis.tools.fitting.fit_spectrum`,
+        :py:func:`~radis.tools.fitting.Tvib12Tvib3TrotModel`,
+        `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`
 
         """
         from radis.tools.fitting import fit_spectrum
@@ -1842,7 +1853,7 @@ class SpectrumFactory(BandFactory):
             fit_parameters,
             bounds=bounds,
             plot=plot,
-            maxiter=maxiter,
+            solver_options=solver_options,
         )
 
     def print_perf_profile(self, number_format="{:.3f}", precision=16):
