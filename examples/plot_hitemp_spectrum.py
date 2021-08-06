@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
+.. _example_calculate_hitemp:
+
 ================================
 Calculate a spectrum from HITEMP
 ================================
 
 Auto-download and compute a CO spectrum from HITEMP ([HITEMP-2010]_).
 
-Compare with HITRAN-2016.
+Compare with HITRAN-2016 ([HITRAN-2016]_).
 
 """
 

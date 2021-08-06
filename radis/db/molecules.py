@@ -170,6 +170,9 @@ def getMolecule(
     -------
     ElectronicState: an :py:class:`~radis.db.classes.ElectronicState` object.
 
+    Examples
+    --------
+
     .. minigallery:: radis.db.molecules.getMolecule
         :add-heading:
 

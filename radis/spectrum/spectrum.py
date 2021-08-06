@@ -74,7 +74,6 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
-from radis.tools.plot_tools import add_ruler
 
 # %% Spectrum class to hold results )
 
@@ -1574,6 +1573,8 @@ class Spectrum(object):
 
         # ... Add Ruler
         if show_ruler:
+            from radis.tools.plot_tools import add_ruler
+
             add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
         plt.show()
@@ -1602,7 +1603,7 @@ class Spectrum(object):
 
         Notes
         -----
-        Structure:
+        Structure::
 
             {molecule: {isotope: {electronic_state: {'vib': pandas Dataframe,    # (copy of) vib levels
                                                      'rovib': pandas Dataframe,  # (copy of) rovib levels

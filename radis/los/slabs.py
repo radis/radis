@@ -107,8 +107,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
 
     Returns
     -------
-    Spectrum:
-        object representing total emission and total transmittance as
+    Spectrum: object representing total emission and total transmittance as
         observed at the output (slab[n+1]). Conditions and units are transported too,
         unless there is a mismatch then conditions are dropped (and units mismatch
         raises an error because it doesnt make sense)
@@ -548,8 +547,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
 
     Returns
     -------
-    Spectrum
-        object representing total emission and total transmittance as
+    Spectrum: object representing total emission and total transmittance as
         observed at the output. Conditions and units are transported too,
         unless there is a mismatch then conditions are dropped (and units mismatch
         raises an error because it doesnt make sense)
@@ -558,10 +556,12 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
     --------
     Merge two spectra calculated with different species (physically correct
     only if broadening coefficients dont change much)::
+
         from radis import calc_spectrum, MergeSlabs
         s1 = calc_spectrum(...)
         s2 = calc_spectrum(...)
         s3 = MergeSlabs(s1, s2)
+
     The last line is equivalent to::
 
         s3 = s1//s2
@@ -569,6 +569,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
     Load a spectrum precalculated on several partial spectral ranges, for a same
     molecule (i.e, partial spectra are optically thin on the rest of the spectral
     range)::
+
         from radis import load_spec, MergeSlabs
         spectra = []
         for f in ['spec1.spec', 'spec2.spec', ...]:

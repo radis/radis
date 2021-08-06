@@ -585,7 +585,7 @@ class SpectrumFactory(BandFactory):
 
     def eq_spectrum(
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
-    ):
+    ) -> Spectrum:
         """Generate a spectrum at equilibrium.
 
         Parameters
@@ -847,7 +847,7 @@ class SpectrumFactory(BandFactory):
 
     def eq_spectrum_gpu(
         self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
-    ):
+    ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
 
@@ -1156,7 +1156,7 @@ class SpectrumFactory(BandFactory):
         rot_distribution="boltzmann",
         overpopulation=None,
         name=None,
-    ):
+    ) -> Spectrum:
         """Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
         Einstein coefficient.

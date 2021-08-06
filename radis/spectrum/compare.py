@@ -33,7 +33,6 @@ from radis.misc.basics import compare_dict, compare_lists
 from radis.misc.curve import curve_distance, curve_divide, curve_substract
 from radis.spectrum.spectrum import Spectrum, is_spectrum
 from radis.spectrum.utils import cast_waveunit, format_xlabel, make_up, make_up_unit
-from radis.tools.plot_tools import add_ruler
 
 # %% ======================================================================
 # External functions
@@ -986,6 +985,8 @@ def plot_diff(
 
     # ... Add
     if show_ruler:
+        from radis.tools.plot_tools import add_ruler
+
         add_ruler(fig, wunit=wunit, Iunit=Iunit, ax=axes[0])
 
     if show:

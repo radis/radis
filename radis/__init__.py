@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Summary
--------
-
-RADIS
-
-A code to simulate infrared spectra of molecules::
+::
 
                 *(((((((
                  ((((((((((((              ,(((((
@@ -32,40 +27,6 @@ A code to simulate infrared spectra of molecules::
                                .**.
                                 &&&,
                                  &&
-
-See Source code [1]_, Documentation [2]_, Package [3]_
-
-Notes
------
-
-RADIS is nonequilibrium emission and absorption line-by-line code, for use by
-infrared spectroscopic that want to compare line databases, or experimentalist
-that want to fit their experimental line-of-sight spectra.
-
-Written as a general purpose radiative solver, the code is built around the HITRAN,
-HITEMP and CDSD databases for molecules in their electronic ground state. Energy
-levels are read from tabulated databases or calculated from Dunham developments.
-Boltzmann, Treanor, and state specific vibrational distributions can be
-generated. A modular architecture makes it possible to add new species without
-modifications to the core code. Thus far, CO2, CO are featured for non-equilibrium
-calculations, and all species present in the HITRAN database are featured for
-equilibrium calculations. To fit experimental spectra, RADIS includes a line
-survey tool, an interface with a look-up database to improve fitting convergence
-times, and a multi-slab module with a radiative transfer equation solver to
-reproduce line-of-sight experiments. Validation cases against existing spectral
-codes and experimental results from various plasma sources are presented.
-
-The code will soon be available under under GNU General Public
-License v3.0
-
-References
-----------
-
-.. [1] Source code: `GitHub repository <https://github.com/radis/radis>`__
-
-.. [2] Online Documentation: `Readthedocs.io <https://radis.readthedocs.io/en/latest/?badge=latest>`__
-
-.. [3] Install as a package: `PyPi project <https://pypi.python.org/pypi/radis>`__
 
 """
 
@@ -169,7 +130,7 @@ __all__ = [
 ]
 
 
-from . import db, lbl, los, phys, spectrum, tools
+from . import db, io, lbl, los, phys, spectrum, tools
 from .db import *  # database of molecules
 from .io import *  # input / output
 from .lbl import *  # line-by-line module
@@ -181,6 +142,7 @@ from .test import *  # test
 from .tools import *  # slit, database, line survey, etc.
 
 __all__.extend(db.__all__)
+__all__.extend(io.__all__)
 __all__.extend(lbl.__all__)
 __all__.extend(los.__all__)
 __all__.extend(phys.__all__)

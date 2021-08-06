@@ -18,6 +18,10 @@ Examples
     fig = plt.figure()
     add_ruler(fig)
 
+.. image:: https://user-images.githubusercontent.com/16088743/122615292-95a9e080-d088-11eb-9927-bf1187d5a94a.png
+
+
+
 """
 import warnings
 
@@ -39,33 +43,28 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
         Parameters
         ----------
         ax  : the  :class:`matplotlib.axes.Axes` instance
-
         active : bool, default is True
             Whether the ruler is active or not.
-
         wunit, Iunit: str
             unit of spectra
-
         print_text  : bool, default is False
             Whether the length measure string is printed to the console
-
         useblit : bool, default is False
             If True, use the backend-dependent blitting features for faster
             canvas updates.
-
         lineprops : dict, default is None
           Dictionary of :class:`matplotlib.lines.Line2D` properties
-
         markerprops : dict, default is None
           Dictionary of :class:`matplotlib.markers.MarkerStyle` properties
-
         textprops: dict, default is None
             Dictionary of :class:`matplotlib.text.Text` properties. To reposition the
             textbox you can overide the defaults which position the box in the top left
             corner of the axes.
 
+        Notes
+        -----
+
         Usage:
-        ----------
 
         1. Hold left click drag and release to draw the ruler in the axes.
           - Hold shift while dragging to lock the ruler to the horizontal axis.
@@ -81,7 +80,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
         'ctl+m' : Toggles the visibility of the ruler and text.
 
         Example
-        ----------
+        -------
 
         >>> xCoord = np.arange(0, 5, 1)
         >>> yCoord = [0, 1, -3, 5, -3]
@@ -100,6 +99,10 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
                       lineprops=lineprops)
 
         >>> plt.show()
+
+        Typical output :
+
+        .. image:: https://user-images.githubusercontent.com/16088743/122615292-95a9e080-d088-11eb-9927-bf1187d5a94a.png
 
         """
 
