@@ -798,7 +798,7 @@ def test_tabulated_partition_functions(verbose=True, plot=True, *args, **kwargs)
     assert np.isclose(
         Z_sum.at_noneq_3Tvib((1000, 1000, 3500), 3000),
         Z_tab.at_noneq_3Tvib((1000, 1000, 3500), 3000),
-        rtol=0.5e-3,
+        rtol=0.6e-3,
     )
 
     # ... change Grid :

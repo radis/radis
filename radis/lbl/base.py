@@ -2001,6 +2001,7 @@ class BaseFactory(DatabankLoader):
                         + "({0}). Using calculated one instead".format(err.args[0]),
                         "OutOfBoundWarning",
                     )
+            df1.attrs["Qgas"] = Qgas
             return Qref, Qgas
 
         if "id" in df1.columns:
@@ -2152,7 +2153,9 @@ class BaseFactory(DatabankLoader):
                         molecule, iso, state
                     )
                     # TODO : use _calc_Q instead ? (which switches to partition function calculator if possible?)
-                    return parsum.at(Tgas)
+                    Q = parsum.at(Tgas)
+                    df1.attrs["Q"] = Q
+                    return Q
                 else:
                     Qgas_dict = {}
                     for iso in iso_set:
@@ -2160,12 +2163,14 @@ class BaseFactory(DatabankLoader):
                             molecule, iso, state
                         )
                         Qgas_dict[iso] = parsum.at(Tgas)
-                return df1["iso"].map(Qgas_dict)
+                    return df1["iso"].map(Qgas_dict)
 
             else:  # "iso" not in df:
                 iso = df1.attrs["iso"]
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
-                return parsum.at(Tgas)
+                Q = parsum.at(Tgas)
+                df1.attrs["Q"] = Q
+                return Q
 
         # Calculate degeneracies
         # ----------------------------------------------------------------------
@@ -2349,7 +2354,7 @@ class BaseFactory(DatabankLoader):
             else:  # "iso" not in df:
                 iso = df.attrs["iso"]
                 parsum = self.get_partition_function_calculator(molecule, iso, state)
-                return parsum.at_noneq(
+                Q = parsum.at_noneq(
                     Tvib,
                     Trot,
                     vib_distribution=vib_distribution,
@@ -2357,6 +2362,8 @@ class BaseFactory(DatabankLoader):
                     overpopulation=overpopulation,
                     update_populations=self.misc.export_populations,
                 )
+                df.attrs["Q"] = Q
+                return Q
 
         def Q_Qvib_Qrotu_Qrotl(Tvib, Trot):
             """Nonequilibrium partition function; with the detail of
