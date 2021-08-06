@@ -135,14 +135,11 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
     Parameters
     ----------
-
     energy_levels: filename
         path to energy levels (to calculate Partition Function) for ``isotope``
-
     isotope: int
         which isotope we're dealing with. Default ``1``. In the current implementation
         only isotope 1 and 2 are defined.
-
     levelsfmt: ``'cdsd-p'``, ``'cdsd-pc'``, ``'cdsd-pcN'``, ``'cdsd-hamil'``, or ``None``
         the format of the Energy Database, and in particular how ``Evib`` and ``Erot``
         have been calculated. A vibrational level in the CDSD (p,c,J,N) nomenclature
@@ -156,12 +153,13 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
     Other Parameters
     ----------------
-
     use_cached: ``True``, ``False``, or ``'regen'``, ``'force'``
         if ``True``, use (and generate if doesnt exist) a ``.h5`` file.
         If ``'regen'``, regenerate cache file. If ``'force'``, raise an error
         if file doesnt exist. Default ``True``
-
+    mode: 'full summation', 'tabulation'
+        calculation mode. ``'tabulation'`` is much faster but not all possible
+        distributions are implemented. Default ``'full-summation'``
     use_json: boolean
         deprecated. Better use h5 now.
 
@@ -218,15 +216,16 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         isotope,
         levelsfmt,  # ='cdsd-pc',
         use_cached=True,
-        use_json=None,
+        use_json=None,  # TODO: Deprecated, remove
         verbose=True,
+        mode="full summation",
     ):
 
         # %% Init
 
         # Initialize PartitionFunctionCalculator for this electronic state
         ElecState = ElectronicState("CO2", isotope, "X", "1Σu+")
-        super(PartFuncCO2_CDSDcalc, self).__init__(ElecState)
+        super(PartFuncCO2_CDSDcalc, self).__init__(ElecState, mode=mode)
 
         # Check inputs ('return' is not mentionned in signature. it will just return
         # after cache name is given)

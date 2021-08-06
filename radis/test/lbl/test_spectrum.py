@@ -36,6 +36,7 @@ def test_populations(verbose=True, *args, **kwargs):
     from radis.misc.basics import all_in
 
     export = ["vib", "rovib"]
+
     sf = SpectrumFactory(
         2000,
         2300,
@@ -47,7 +48,17 @@ def test_populations(verbose=True, *args, **kwargs):
         {"MissingSelfBroadeningWarning": "ignore", "VoigtBroadeningWarning": "ignore"}
     )
     sf.load_databank("HITRAN-CO-TEST")
+    sf.misc.export_rovib_fraction = True
+    # we test that "tabulation" and "export_population" are incompatible
+    sf.params.parsum_mode = "tabulation"
+    with pytest.raises(ValueError) as err:
+        s = sf.non_eq_spectrum(2000, 2000)
+        assert (
+            err.args[0]
+            == "Cannot update populations of individual levels with `tabulation` mode. Choose `update_populations=False` or `mode='full summation'`"
+        )
 
+    sf.params.parsum_mode = "full summation"  # won't be default at some point
     s = sf.non_eq_spectrum(2000, 2000)
 
     pops = sf.get_populations(export)

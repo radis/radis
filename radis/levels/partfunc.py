@@ -60,6 +60,7 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
+import vaex
 from numpy import exp
 
 import radis
@@ -176,21 +177,25 @@ class RovibParFuncCalculator(RovibPartitionFunction):
     """
     Parameters
     ----------
-
     electronic_state: :class:`~radis.db.classes.ElectronicState`
         an :class:`~radis.db.classes.ElectronicState` object, which is
         defined in RADIS molecule database and contains spectroscopic data.
         Energies are calculated with the :py:meth:`~radis.db.classes.ElectronicState.Erovib`
         method.
 
+    Other Parameters
+    ----------------
+    mode: 'full summation', 'tabulation'
+        calculation mode. ``'tabulation'`` is much faster but not all possible
+        distributions are implemented. Default ``'full-summation'``
+
     See Also
     --------
-
     :py:class:`~radis.levels.partfunc.PartFunc_Dunham`,
     :py:meth:`~radis.db.classes.ElectronicState.Erovib`
     """
 
-    def __init__(self, electronic_state):
+    def __init__(self, electronic_state, mode="full summation"):
 
         super(RovibParFuncCalculator, self).__init__()
 
@@ -214,6 +219,16 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         # pandas Dataframe that holds all the lines
         self.df = pd.DataFrame({})
         # updated on inherited classes initialization
+
+        if not mode in ["full summation", "tabulation"]:
+            raise ValueError("Choose mode = one of 'full summation', 'tabulation'")
+        self.mode = mode
+        self._tab_at = None  # tabulated function
+        self._tab_at_noneq = None  # tabulated function
+        self._tab_at_noneq_3Tvib = None  # tabulated function
+        self.N_bins = (
+            300  # int: number of bins in tabulated mode. Change with `Z.N_bins = `
+        )
 
     def at(self, T, update_populations=False):
         """Get partition function at temperature T under equilibrium
@@ -250,8 +265,68 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 + "update_populations={0})".format(update_populations)
             )
 
-        # Check inputs, initialize
+        # Check inputs
         assert isinstance(update_populations, bool)
+
+        if self.mode == "full summation":
+            return self._eq_full_summation(T=T, update_populations=update_populations)
+        elif self.mode == "tabulation":
+            if update_populations:
+                raise ValueError(
+                    "Cannot update populations of individual levels with `tabulation` mode. Choose `update_populations=False` or `mode='full summation'`"
+                )
+            return self._eq_tabulation_eval(T=T)
+
+    def _eq_tabulation_setup(self, N_bins):
+        """Bins all levels into an ``E`` grid
+
+        Parameters
+        ----------
+        N_bins: int
+            reset it by editing the class attribute `Z.N_bins = `
+
+        See Also
+        --------
+        :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
+        """
+
+        # Get variables
+        df = vaex.from_pandas(self.df)
+
+        epsilon = 1e-4  # prevent log(0)
+        df["logE"] = np.log(df["E"] + epsilon)  # to bin on a log grid
+        df["gtot"] = (
+            df["grot"] * df["gvib"]
+        )  # note that this column is "lazy" and only evaluated at runtime
+        E_bins = df.mean("E", binby="logE", shape=N_bins)
+        g_bins = df.sum("gtot", binby="logE", shape=N_bins)
+
+        # drop empty
+        E_bins = E_bins[g_bins > 0]
+        g_bins = g_bins[g_bins > 0]
+
+        self._tab_at = lambda T: (g_bins * exp(-hc_k * E_bins / T)).sum(axis=0)
+        # Also save parameters to trigger a re-tabulation if they change:
+        self._tab_N_bins = N_bins
+
+    def _eq_tabulation_eval(self, T):
+        """Computes partition function using tabulated grid
+
+        See Also
+        --------
+        :py:func:`~radis.levels.partfunc._noneq_tabulation_setup`"""
+
+        N_bins = self.N_bins  # reset it by editing the class attribute `Z.N_bins = `
+
+        if self._tab_at is None or N_bins != self._tab_N_bins:
+            # Tabulate or re-tabulate:
+            self._eq_tabulation_setup(N_bins=N_bins)
+
+        return self._tab_at(T)
+
+    def _eq_full_summation(self, T, update_populations=False):
+
+        # Initialize
         df = self.df
         if "g" in df.columns:
             g = df.g
@@ -334,17 +409,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 + "(Tvib={0}K, Trot={1}K, ... )".format(Tvib, Trot)
                 + "update_populations={0})".format(update_populations)
             )
-        #                               'overpopulation={0}, vib_distribution={1}'.format(overpopulation, vib_distribution)+\
-        #                               'rot_distribution={0}'.format(rot_distribution)
 
         # Check inputs, initialize
         if overpopulation is None:
             overpopulation = {}
-        else:
+        if overpopulation != {}:
             if not returnQvibQrot:
                 raise ValueError(
                     "When using overpopulation, partition function "
-                    + "must be calculated with returnQvibQrot=True"
+                    + "must be calculated with returnQvibQrot=True. Set ``PartitionFunctionCalculator.at_noneq(..., returnQvibQrot=True)``, or ``SpectrumFactory.misc.export_rovib_fraction = True``"
                 )
         assert vib_distribution in ["boltzmann", "treanor"]
         assert rot_distribution in ["boltzmann"]
@@ -366,6 +439,133 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                     "Evib and Erot must be defined to calculate non-equilibrium "
                     + "partition functions"
                 )
+
+        if self.mode == "full summation":
+            return self._noneq_full_summation(
+                Tvib=Tvib,
+                Trot=Trot,
+                overpopulation=overpopulation,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+                returnQvibQrot=returnQvibQrot,
+                update_populations=update_populations,
+            )
+        elif self.mode == "tabulation":
+            if update_populations:
+                raise ValueError(
+                    "Cannot update populations of individual levels with `tabulation` mode. Choose `update_populations=False` or `mode='full summation'`"
+                )
+            return self._noneq_tabulation_eval(
+                Tvib=Tvib,
+                Trot=Trot,
+                overpopulation=overpopulation,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+                returnQvibQrot=returnQvibQrot,
+            )
+
+    def _noneq_tabulation_setup(self, N_bins, vib_distribution, rot_distribution):
+        """Bins all levels into an Evib and Erot grid
+
+        Parameters
+        ----------
+        N_bins: int
+            reset it by editing the class attribute `Z.N_bins = `
+
+        See Also
+        --------
+        :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
+        """
+
+        # Get variables
+        df = vaex.from_pandas(self.df)
+
+        epsilon = 1e-4  # prevent log(0)
+        df["logEvib"] = np.log(df["Evib"] + epsilon)  # to bin on a log grid
+        df["logErot"] = np.log(df["Erot"] + epsilon)  # to bin on a log grid
+        df["gtot"] = df["grot"] * (
+            df["gvib"]
+        )  # note that this column is "lazy" and only evaluated at runtime
+        # Evib_bins_neq = df.mean(
+        #     "Evib", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
+        # )
+        # Erot_bins_neq = df.mean(
+        #     "Erot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
+        # )
+        Evib_bins_neq, Erot_bins_neq = df.mean(
+            ["Evib", "Erot"], binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
+        )
+        g_bins_neq = df.sum(
+            "gtot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
+        )
+
+        # drop empty
+        Evib_bins_neq = Evib_bins_neq[g_bins_neq > 0]
+        Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
+        g_bins_neq = g_bins_neq[g_bins_neq > 0]
+
+        self._tab_at_noneq = lambda Tvib, Trot: (
+            g_bins_neq
+            * exp(-hc_k * Evib_bins_neq / Tvib)
+            * exp(-hc_k * Erot_bins_neq / Trot)
+        ).sum(axis=0)
+        # Also save parameters to trigger a re-tabulation if they change:
+        self._tab_N_bins = N_bins
+        self._tab_vib_distribution = vib_distribution
+        self._tab_rot_distribution = rot_distribution
+
+    def _noneq_tabulation_eval(
+        self,
+        Tvib,
+        Trot,
+        overpopulation=None,
+        vib_distribution="boltzmann",
+        rot_distribution="boltzmann",
+        returnQvibQrot=False,
+    ):
+        """Computes partition function using tabulated grid
+
+        See Also
+        --------
+        :py:func:`~radis.levels.partfunc._noneq_tabulation_setup`"""
+
+        if len(overpopulation) > 0:
+            raise NotImplementedError
+        if vib_distribution != "boltzmann":
+            raise NotImplementedError
+        if rot_distribution != "boltzmann":
+            raise NotImplementedError
+        if returnQvibQrot != False:
+            raise NotImplementedError
+
+        N_bins = self.N_bins  # reset it by editing the class attribute `Z.N_bins = `
+
+        if (
+            self._tab_at_noneq is None
+            or N_bins != self._tab_N_bins
+            or self._tab_vib_distribution != vib_distribution
+            or self._tab_rot_distribution != rot_distribution
+        ):
+            # Tabulate or re-tabulate:
+            self._noneq_tabulation_setup(
+                N_bins=N_bins,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+            )
+
+        return self._tab_at_noneq(Tvib, Trot)
+
+    def _noneq_full_summation(
+        self,
+        Tvib,
+        Trot,
+        overpopulation=None,
+        vib_distribution="boltzmann",
+        rot_distribution="boltzmann",
+        returnQvibQrot=False,
+        update_populations=False,
+    ):
+        """Computes partition function by summing over all levels"""
 
         # Get variables
         df = self.df
@@ -589,6 +789,151 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                     "Evib and Erot must be defined to calculate non-equilibrium "
                     + "partition functions"
                 )
+
+        # Calculate
+        if self.mode == "full summation":
+            return self._noneq_3Tvib_full_summation(
+                Tvib=Tvib,
+                Trot=Trot,
+                overpopulation=overpopulation,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+                returnQvibQrot=returnQvibQrot,
+                update_populations=update_populations,
+            )
+        elif self.mode == "tabulation":
+            if update_populations:
+                raise ValueError(
+                    "Cannot update populations of individual levels with `tabulation` mode. Choose `update_populations=False` or `mode='full summation'`"
+                )
+            return self._noneq_3Tvib_tabulation_eval(
+                Tvib=Tvib,
+                Trot=Trot,
+                overpopulation=overpopulation,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+                returnQvibQrot=returnQvibQrot,
+            )
+
+    def _noneq_3Tvib_tabulation_setup(self, N_bins, vib_distribution, rot_distribution):
+        """Bins all levels into an Evib and Erot grid
+
+        Parameters
+        ----------
+        N_bins: int
+            reset it by editing the class attribute `Z.N_bins = `
+
+        See Also
+        --------
+        :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
+        """
+        # Get variables
+        df = vaex.from_pandas(self.df)
+
+        epsilon = 1e-4  # prevent log(0)
+        if "Evib12" not in df:
+            df["Evib12"] = df["Evib1"] + df["Evib2"]
+        df["logEvib12"] = np.log(df["Evib12"] + epsilon)  # to bin on a log grid
+        df["logEvib3"] = np.log(df["Evib3"] + epsilon)  # to bin on a log grid
+        df["logErot"] = np.log(df["Erot"] + epsilon)  # to bin on a log grid
+        df["gtot"] = df["grot"] * (
+            df["gvib"]
+        )  # note that this column is "lazy" and only evaluated at runtime
+
+        # Evib12_bins_neq = df.mean(
+        #     "Evib12", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
+        # )
+        # Evib3_bins_neq = df.mean(
+        #     "Evib3", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
+        # )
+        # Erot_bins_neq = df.mean(
+        #     "Erot", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
+        # )
+        Evib12_bins_neq, Evib3_bins_neq, Erot_bins_neq = df.mean(
+            ["Evib12", "Evib3", "Erot"],
+            binby=["logEvib12", "logEvib3", "logErot"],
+            shape=(N_bins, N_bins, N_bins),
+        )
+        g_bins_neq = df.sum(
+            "gtot",
+            binby=["logEvib12", "logEvib3", "logErot"],
+            shape=(N_bins, N_bins, N_bins),
+        )
+
+        # drop empty
+        Evib12_bins_neq = Evib12_bins_neq[g_bins_neq > 0]
+        Evib3_bins_neq = Evib3_bins_neq[g_bins_neq > 0]
+        Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
+        g_bins_neq = g_bins_neq[g_bins_neq > 0]
+
+        self._tab_at_noneq_3Tvib = lambda Tvib, Trot: (
+            g_bins_neq
+            * exp(-hc_k * Evib12_bins_neq / Tvib[0])
+            * exp(-hc_k * Evib3_bins_neq / Tvib[2])
+            * exp(-hc_k * Erot_bins_neq / Trot)
+        ).sum(axis=0)
+        # Also save parameters to trigger a re-tabulation if they change:
+        self._tab_N_bins = N_bins
+        self._tab_vib_distribution = vib_distribution
+        self._tab_rot_distribution = rot_distribution
+
+    def _noneq_3Tvib_tabulation_eval(
+        self,
+        Tvib,
+        Trot,
+        overpopulation=None,
+        vib_distribution="boltzmann",
+        rot_distribution="boltzmann",
+        returnQvibQrot=False,
+    ):
+        """Computes partition function using tabulated grid
+
+        See Also
+        --------
+        :py:func:`~radis.levels.partfunc._noneq_tabulation_setup`"""
+
+        Tvib1, Tvib2, Tvib3 = Tvib
+        if Tvib1 != Tvib2:
+            raise NotImplementedError(
+                "Tabulated mode only implemented for Tvib1 = Tvib2. Use mode='full summation'"
+            )
+        if len(overpopulation) > 0:
+            raise NotImplementedError
+        if vib_distribution != "boltzmann":
+            raise NotImplementedError
+        if rot_distribution != "boltzmann":
+            raise NotImplementedError
+        if returnQvibQrot != False:
+            raise NotImplementedError
+
+        N_bins = self.N_bins  # reset it by editing the class attribute `Z.N_bins = `
+
+        if (
+            self._tab_at_noneq_3Tvib is None
+            or N_bins != self._tab_N_bins
+            or self._tab_vib_distribution != vib_distribution
+            or self._tab_rot_distribution != rot_distribution
+        ):
+            # Tabulate or re-tabulate:
+            self._noneq_3Tvib_tabulation_setup(
+                N_bins=N_bins,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+            )
+
+        return self._tab_at_noneq_3Tvib(Tvib, Trot)
+
+    def _noneq_3Tvib_full_summation(
+        self,
+        Tvib,
+        Trot,
+        overpopulation=None,
+        vib_distribution="boltzmann",
+        rot_distribution="boltzmann",
+        returnQvibQrot=False,
+        update_populations=False,
+    ):
+        """Computes partition function by summing over all levels"""
 
         # Get variables
         Tvib1, Tvib2, Tvib3 = Tvib
@@ -890,6 +1235,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             ['Evib3'],['Evib1', 'Evib2', 'Erot']
 
         depending on which levels are supposed to interact the most
+    mode: 'full summation', 'tabulation'
+        calculation mode. ``'tabulation'`` is much faster but not all possible
+        distributions are implemented. Default ``'full-summation'``
 
     Examples
     --------
@@ -940,6 +1288,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         calc_Evib_per_mode=True,
         calc_Evib_harmonic_anharmonic=True,
         group_energy_modes_in_2T_model={"CO2": (["Evib1", "Evib2", "Evib3"], ["Erot"])},
+        mode="full summation",
     ):  # , ZPE=None):
         # TODO: find a way to initialize calc_Evib_per_mode or calc_Evib_harmonic_anharmonic from
         # the SpectrumFactory on Spectrum generation time...
@@ -953,7 +1302,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # be to adjust the constants in electronic_state directly.
 
         # %% Init
-        super(PartFunc_Dunham, self).__init__(electronic_state=electronic_state)
+        super(PartFunc_Dunham, self).__init__(
+            electronic_state=electronic_state, mode=mode
+        )
 
         # Check inputs ('return' is not mentionned in signature. it will just return
         # after cache name is given)

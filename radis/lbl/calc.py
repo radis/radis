@@ -45,6 +45,7 @@ def calc_spectrum(
     wstep=0.01,
     broadening_max_width=10,
     cutoff=1e-27,
+    parsum_mode="full summation",
     optimization="min-RMS",
     overpopulation=None,
     name=None,
@@ -168,7 +169,18 @@ def calc_spectrum(
     cutoff: float (~ unit of Linestrength: :math:`cm^{-1}/(molec.cm^{-2})`)
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate line databases such as
-        CDSD. If ``0``, no cutoff. Default ``1e-27``.
+        CDSD. If ``0``, no cutoff. Default ``1e-27``..
+    parsum_mode: 'full summation', 'tabulation'
+        how to compute partition functions, at nonequilibrium or when partition
+        function are not already tabulated. ``'full summation'`` : sums over all
+        (potentially millions) of rovibrational levels. ``'tabulation'`` :
+        builds an on-the-fly tabulation of rovibrational levels (500 - 4000x faster
+        and usually accurate within 0.1%). Default ``full summation'``
+
+        .. note::
+            parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
+            calculations of small spectra extremelly fast. Will become the default
+            after 0.9.31.
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
 
@@ -435,6 +447,7 @@ def calc_spectrum(
                 wstep=wstep,
                 broadening_max_width=broadening_max_width,
                 cutoff=cutoff,
+                parsum_mode=parsum_mode,
                 optimization=optimization,
                 name=name,
                 use_cached=use_cached,
@@ -473,6 +486,7 @@ def _calc_spectrum(
     wstep,
     broadening_max_width,
     cutoff,
+    parsum_mode,
     optimization,
     name,
     use_cached,
@@ -559,6 +573,7 @@ def _calc_spectrum(
         wstep=wstep,
         broadening_max_width=broadening_max_width,
         cutoff=cutoff,
+        parsum_mode=parsum_mode,
         verbose=verbose,
         optimization=optimization,
         export_lines=export_lines,
@@ -661,6 +676,9 @@ def _calc_spectrum(
     #        else:
     #            lineshape_optimization = None
     #        sf.params['chunksize'] = lineshape_optimization
+
+    if overpopulation is not None or overpopulation != {}:
+        sf.misc.export_rovib_fraction = True  # required to compute Partition fucntions with overpopulation being taken into account
 
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:

@@ -268,9 +268,17 @@ class ConditionDict(dict):
     def __getattr__(self, attr):
         if attr == "__getstate__":
             return dict.__getattr__(attr)
+        if not attr in self.__slots__:
+            raise KeyError(
+                f"Undefined attribute `{attr}` for {self.__class__}. Allowed attributes: {self.__slots__}"
+            )
         return self[attr]
 
     def __setattr__(self, attr, value):
+        if not attr in self.__slots__:
+            raise KeyError(
+                f"Undefined attribute `{attr}` for {self.__class__}. Allowed attributes: {self.__slots__}"
+            )
         self[attr] = value
 
     # Methods needed for Multiprocessing
@@ -313,12 +321,28 @@ class Input(ConditionDict):
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
     """
 
-    #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
-    #    __slots__ = [
-    #         'Tgas', 'Tref', 'Tvib', 'Trot', 'isotope', 'medium', 'mole_fraction',
-    #         'molecule', 'overpopulation', 'path_length', 'pressure_mbar', 'rot_distribution',
-    #         'self_absorption', 'state', 'vib_distribution', 'wavelength_max',
-    #         'wavelength_min', 'wavenum_max', 'wavenum_min']
+    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
+    __slots__ = [
+        "Tgas",
+        "Tref",
+        "Tvib",
+        "Trot",
+        "isotope",
+        "medium",
+        "mole_fraction",
+        "molecule",
+        "overpopulation",
+        "path_length",
+        "pressure_mbar",
+        "rot_distribution",
+        "self_absorption",
+        "state",
+        "vib_distribution",
+        "wavelength_max",
+        "wavelength_min",
+        "wavenum_max",
+        "wavenum_min",
+    ]
 
     def __init__(self):
         super(Input, self).__init__()
@@ -372,15 +396,36 @@ class Parameters(ConditionDict):
     :py:attr:`~radis.lbl.loader.DatabankLoader.misc`
     """
 
-    #    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
-    #    __slots__ = [
-    #                 'broadening_max_width', 'chunksize', 'cutoff',
-    #                 'db_use_cached', 'dbformat', 'dbpath',
-    #                 'export_lines', 'export_populations', 'levelsfmt', 'lvl_use_cached',
-    #                 'parfuncfmt', 'parfuncpath',
-    #                 'pseudo_continuum_threshold', 'warning_broadening_threshold',
-    #                 'warning_linestrength_cutoff', 'wavenum_max_calc', 'wavenum_min_calc',
-    #                 'waveunit', 'wstep']
+    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
+    __slots__ = [
+        "add_at_used",
+        "broadening_method",
+        "broadening_max_width",
+        "chunksize",
+        "cutoff",
+        "db_use_cached",
+        "dbformat",
+        "dbpath",
+        "dlm_log_pL",
+        "dlm_log_pG",
+        "export_lines",
+        "export_populations",
+        "folding_thresh",
+        "include_neighbouring_lines",
+        "levelsfmt",
+        "lvl_use_cached",
+        "optimization",
+        "parfuncfmt",
+        "parfuncpath",
+        "parsum_mode",
+        "pseudo_continuum_threshold",
+        "warning_broadening_threshold",
+        "warning_linestrength_cutoff",
+        "wavenum_max_calc",
+        "wavenum_min_calc",
+        "waveunit",
+        "wstep",
+    ]
 
     def __init__(self):
         super(Parameters, self).__init__()
@@ -416,6 +461,7 @@ class Parameters(ConditionDict):
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
+        self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
 
 
 class MiscParams(ConditionDict):
@@ -435,6 +481,19 @@ class MiscParams(ConditionDict):
     :py:attr:`~radis.lbl.loader.DatabankLoader.params`,
     """
 
+    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
+    __slots__ = [
+        "chunksize",
+        "export_lines",
+        "export_populations",
+        "export_rovib_fraction",
+        "load_energies",
+        "warning_broadening_threshold",
+        "warning_linestrength_cutoff",
+        "total_lines",
+        "zero_padding",
+    ]
+
     def __init__(self):
         super(MiscParams, self).__init__()
 
@@ -446,6 +505,7 @@ class MiscParams(ConditionDict):
         self.export_populations = (
             None  #: bool: export populations in output Spectrum (takes memory!)
         )
+        self.export_rovib_fraction = False  #: bool: calculate nu_vib, nu_rot in lines
         self.warning_broadening_threshold = (
             None  #: float: [0-1] raise a warning if the lineshape area is different
         )
@@ -1565,7 +1625,10 @@ class DatabankLoader(object):
             for iso, lvl in levels.items():
                 self.parsum_calc[molecule][iso] = {}
                 ParsumCalc = self._build_partition_function_calculator(
-                    lvl, levelsfmt, isotope=iso
+                    lvl,
+                    levelsfmt,
+                    isotope=iso,
+                    parsum_mode=self.params.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
         # energy levels arent specified in a tabulated file, but we can still
@@ -1574,7 +1637,10 @@ class DatabankLoader(object):
             for iso in self._get_isotope_list():
                 self.parsum_calc[molecule][iso] = {}
                 ParsumCalc = self._build_partition_function_calculator(
-                    None, levelsfmt, isotope=iso
+                    None,
+                    levelsfmt,
+                    isotope=iso,
+                    parsum_mode=self.params.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
 
@@ -2122,7 +2188,9 @@ class DatabankLoader(object):
 
         return parsum
 
-    def _build_partition_function_calculator(self, levels, levelsfmt, isotope):
+    def _build_partition_function_calculator(
+        self, levels, levelsfmt, isotope, parsum_mode="full summation"
+    ):
         """Return an universal partition function  object ``parsum`` so that
         the following methods are defined::
             parsum.at(T)
@@ -2141,6 +2209,13 @@ class DatabankLoader(object):
             energy levels format
         isotope: int
             isotope identifier
+
+        Other Parameters
+        ----------------
+        parsum_mode: 'full summation', 'tabulation'
+            calculation mode. ``'tabulation'`` is much faster but not all possible
+            distributions are implemented. See ``mode`` in
+            :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
         """
         if __debug__:
             printdbg(
@@ -2160,6 +2235,7 @@ class DatabankLoader(object):
                 use_cached=self.params.lvl_use_cached,
                 verbose=self.verbose,
                 levelsfmt=levelsfmt,
+                mode=parsum_mode,
             )
 
         # calculate energy levels from RADIS Dunham parameters
@@ -2168,7 +2244,10 @@ class DatabankLoader(object):
                 self.input.molecule, isotope, self.input.state, verbose=self.verbose
             )
             parsum = PartFunc_Dunham(
-                state, use_cached=self.params.lvl_use_cached, verbose=self.verbose
+                state,
+                use_cached=self.params.lvl_use_cached,
+                verbose=self.verbose,
+                mode=parsum_mode,
             )
             # note: use 'levels' (useless here) to specify calculations options
             # for the abinitio calculation ? Like Jmax, etc.
@@ -2210,6 +2289,10 @@ class DatabankLoader(object):
 
         # helps IDE find methods
         assert isinstance(parsum, RovibParFuncCalculator)
+
+        # Update partition sum calculation mode (if has been reset by user)
+        if parsum.mode != self.params.parsum_mode:
+            parsum.mode = self.params.parsum_mode
 
         return parsum
 

@@ -23,7 +23,6 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 import os
 from os.path import basename, exists, getmtime
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import exp
@@ -232,7 +231,11 @@ def test_calculatedQ_match_HAPI_CO(
         us.append(db.at(Ti))
         hap.append(hapi.at(Ti))
 
-    if plot:
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+
         plt.figure(fig_prefix + "Partition function Dunham vs Precomputed")
         plt.plot(T, us, "ok", label="NeQ")
         plt.plot(T, hap, "or", label="HAPI")
@@ -762,6 +765,135 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     assert cache_last_modification_again > cache_last_modification
 
 
+def test_tabulated_partition_functions(verbose=True, plot=True, *args, **kwargs):
+    """Test on-the-fly tabulated partition return the same results as
+    full summation within 0.2%"""
+
+    from radis.db.molecules import CO2_X_626
+    from radis.levels.partfunc import PartFunc_Dunham
+
+    Z_sum = PartFunc_Dunham(CO2_X_626, mode="full summation")
+    Z_tab = PartFunc_Dunham(CO2_X_626, mode="tabulation")
+
+    # Equilibrium (same < 0.2%)
+    assert np.isclose(Z_sum.at(300), Z_tab.at(300), rtol=2e-3)
+    assert np.isclose(Z_sum.at(3000), Z_tab.at(3000), rtol=2e-3)
+
+    # Nonequilibrium (same << 0.1%)
+
+    #  ... Compare with Partition function computed from PartFunc_Dunham
+    assert np.isclose(Z_sum.at_noneq(1000, 300), Z_tab.at_noneq(1000, 300), rtol=0.5e-3)
+    assert np.isclose(
+        Z_sum.at_noneq(1000, 3000), Z_tab.at_noneq(1000, 3000), rtol=0.3e-3
+    )
+
+    # Nonequilibrium 3 Tvib (same << 0.1%)
+
+    #  ... Compare with Partition function computed from PartFunc_Dunham
+    assert np.isclose(
+        Z_sum.at_noneq_3Tvib((1000, 1000, 2000), 300),
+        Z_tab.at_noneq_3Tvib((1000, 1000, 2000), 300),
+        rtol=1e-3,
+    )
+    assert np.isclose(
+        Z_sum.at_noneq_3Tvib((1000, 1000, 3500), 3000),
+        Z_tab.at_noneq_3Tvib((1000, 1000, 3500), 3000),
+        rtol=0.6e-3,
+    )
+
+    # ... change Grid :
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+
+        Tvib = 3000
+        Trot_arr = np.linspace(300, 3000, 10)
+        plt.figure()
+        plt.plot(Trot_arr, [Z_sum.at_noneq(Tvib, T) for T in Trot_arr])
+        for N_bins in [10, 100, 1000]:
+            Z_tab.N_bins == N_bins
+            plt.plot(
+                Trot_arr,
+                [Z_tab.at_noneq(Tvib, T) for T in Trot_arr],
+                "--",
+                label=N_bins,
+            )
+        plt.legend()
+
+
+def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
+    """Test Partition function modes in SpectrumFactory
+
+    ::
+        # sf.params.parsum_mode = 'full summation'   # default
+        0.00s - Checked nonequilibrium parameters
+        sorting lines by vibrational bands
+        lines sorted in 0.0s
+        ...... 0.06s - partition functions
+        ...... 0.01s - populations
+
+    ::
+        # sf.params.parsum_mode = 'tabulation'
+        lines sorted in 0.0s
+        ...... 0.02s - partition functions
+        ...... 0.01s - populations
+    """
+    from radis import SpectrumFactory
+
+    wmin, wmax = 2284, 2285
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        molecule="CO2",
+        isotope="1",
+        broadening_max_width=5,  # cm-1
+        medium="air",
+        path_length=10.32,  # cm
+        wstep=0.001,
+    )
+    conditions = {
+        "mole_fraction": 0.2,
+        "pressure": 1,
+        "Ttrans": 2000,
+        "Trot": 2100,
+        "Tvib": 1500,
+    }
+
+    # ... initialize tests :
+    sf.verbose = 0
+    sf.params.parsum_mode = "full summation"  # default
+    sf.load_databank("HITEMP-CO2-TEST")
+    sf._add_bands()
+    _ = sf.non_eq_spectrum(**conditions)  # initialize energies, etc.
+    # ... compare:
+    sf.verbose = 3
+    s_HITEMP = sf.non_eq_spectrum(**conditions, name=sf.params.parsum_mode)
+
+    # Now, again with tabulation:
+    # ... init :
+    sf.params.parsum_mode = "tabulation"
+    sf.verbose = 0
+    sf.load_databank("HITEMP-CO2-TEST")
+    sf._add_bands()
+    _ = sf.non_eq_spectrum(**conditions)  # initialize energies, first tabulation
+    # ... compare:
+    sf.verbose = 3
+    s_HITEMP2 = sf.non_eq_spectrum(**conditions, name=sf.params.parsum_mode)
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.ion()
+        from radis import plot_diff
+
+        plot_diff(s_HITEMP2, s_HITEMP, method="ratio")
+
+    from radis import get_residual
+
+    assert get_residual(s_HITEMP, s_HITEMP2, "abscoeff") < 1e-5
+
+
 def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
     # Test 0: delete all cached energies
@@ -799,16 +931,18 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
 
     # Test 8: Regenerates levels file if it's manually changed
-    test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs)
+    test_levels_regeneration(verbose=verbose, warnings=True, *args, **kwargs)
+
+    # Test 9 : tabulation
+    test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
+
     return True
 
 
 if __name__ == "__main__":
-    printm("Testing parfunc: {0}".format(_run_testcases()))
+    # printm("Testing parfunc: {0}".format(_run_testcases()))
 
-    verbose = True
-    warnings = True
-
+    test_tabulated_partition_functions()
 #    test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)

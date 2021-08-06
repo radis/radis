@@ -204,7 +204,12 @@ def fetch_astroquery(
     }
 
     if not empty_range:
-        tbl = Hitran._parse_result(response)
+        try:
+            tbl = Hitran._parse_result(response)
+        except ValueError as err:
+            raise ValueError(
+                "Error while parsing HITRAN output : {}".format(response.text)
+            ) from err
         df = tbl.to_pandas()
         df = df.rename(columns=rename_columns)
     else:
