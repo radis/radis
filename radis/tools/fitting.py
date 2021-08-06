@@ -181,7 +181,6 @@ def fit_spectrum(
 
     history_x = []
     history_res = []
-    maxiter = maxiter
 
     def print_fit_values(fit_values):
         return ",".join(
