@@ -412,6 +412,21 @@ def test_normalization(*args, **kwargs):
     )
 
 
+@pytest.mark.fast
+def test_sort(*args, **kwargs):
+    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.sort` """
+
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    s_exp = load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True)
+
+    from radis.misc.arrays import is_sorted
+
+    assert not is_sorted(s_exp.get("radiance")[0])
+    assert is_sorted(s_exp.sort().get("radiance")[0])
+
+
 # %%
 
 
@@ -473,6 +488,7 @@ def _run_testcases(
 
     # Test plot by parts
     test_plot_by_parts(plot=plot, *args, **kwargs)
+    test_sort()
 
     return True
 

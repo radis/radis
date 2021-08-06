@@ -1062,7 +1062,7 @@ class Spectrum(object):
         -------
         s: Spectrum
             Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
-            directly anyway.
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`
 
         Examples
         --------
@@ -1125,7 +1125,7 @@ class Spectrum(object):
         -------
         s: Spectrum
             Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
-            directly anyway.
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`
 
         Examples
         --------
@@ -1182,7 +1182,7 @@ class Spectrum(object):
         -------
         s: Spectrum
             Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
-            directly anyway.
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`
 
 
         Examples
@@ -1213,6 +1213,34 @@ class Spectrum(object):
 
         return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, inplace=inplace)
 
+    def sort(self, inplace=True):
+        """Sort the Spectrum by wavelength / wavenumber.
+
+        Parameters
+        ----------
+        inplace : bool, optional
+            if ``True``, modifies the Spectrum object directly. The default is ``True``.
+
+        Returns
+        -------
+        s: Spectrum
+            sorted Spectrum. If ``inplace=True``, Spectrum has been updated
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`.
+
+        """
+
+        if len(self._q) > 0:
+            b = np.argsort(self._q["wavespace"])
+            for k, v in self._q.items():
+                self._q[k] = v[b]
+
+        if len(self._q_conv) > 0:
+            b = np.argsort(self._q_conv["wavespace"])
+            for k, v in self._q_conv.items():
+                self._q_conv[k] = v[b]
+
+        return self
+
     def offset(self, offset, unit, inplace=True):
         # type: (Spectrum, float, str) -> Spectrum
         """Offset the spectrum by a wavelength or wavenumber  (inplace)
@@ -1234,7 +1262,7 @@ class Spectrum(object):
         -------
         s: Spectrum
             Offset Spectrum. If ``inplace=True``, Spectrum has been updated
-            directly anyway.
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`.
 
         Examples
         --------
@@ -2051,7 +2079,7 @@ class Spectrum(object):
             on the calculated range. Default 0.01 (1%). See :func:`~radis.tools.slit.offset_dilate_slit_function`
         *args, **kwargs
             are forwarded to slit generation or import function
-        verbose: boolean
+        verbose: bool
             print stuff
         energy_threshold: float
              tolerance fraction when resampling. Default ``1e-3`` (0.1%)
@@ -2765,7 +2793,10 @@ class Spectrum(object):
             oversampling and spline interpolation. These parameters can be adjusted,
             and energy conservation ensured with the appropriate parameters.
 
-        Uses the :func:`radis.misc.signal.resample` function.
+        To minimize information loss, always resample the high-resolution spectrum
+        over the low-resolution spectrum, i.e. ::
+
+            s_highres.resample(s_lowres)
 
 
         Parameters
@@ -2784,17 +2815,17 @@ class Spectrum(object):
             unit after resampling (i.e: a spectrum calculated and stored in `cm-1`
             but resampled in `nm` will be stored in `nm` from now on).
             If ``'nm'``, wavelength in air. If ``'nm_vac'``, wavelength in vacuum.
-        out_of_bounds: 'transparent', 'nan', 'error'
+        out_of_bounds: ``'transparent'``, ``'nan'``, ``'error'``
             what to do if resampling is out of bounds. 'transparent': fills with
             transparent medium. 'nan': fill with nan. 'error': raises an error.
-            Default 'nan'
-        if_conflict_drop: 'error', 'convoluted', 'non_convoluted'
+            Default ``'nan'``
+        if_conflict_drop: ``'error'``, ``'convoluted'``, ``'non_convoluted'``
             There is a problem if both convoluted and non convoluted (*no_slit)
             quantities coexists, as they aren't scaled on the same wavespace
             grid. If 'error' an error is raised. If 'convoluted', convoluted
             quantities will be dropped. If 'non_convoluted' non convoluted quantities
-            are dropped. Default 'error'
-        medium: 'air', 'vacuum', or 'default'
+            are dropped. Default ``'error'``
+        medium: ``'air'``, ``'vacuum'``, or ``'default'``
             in which medium is the new waverange is calculated if it is given
             in 'nm'. Ignored if unit='cm-1'
 
@@ -2812,7 +2843,7 @@ class Spectrum(object):
             if ``True``, modifies the Spectrum object directly. Else, returns
             a copy. Default ``True``.
         **kwargs: **dict
-            all other arguments are sent to :func:`~radis.misc.signal.resample`
+            all other arguments are sent to :func:`radis.misc.signal.resample`
 
         Returns
         -------
@@ -2822,7 +2853,7 @@ class Spectrum(object):
 
         See Also
         --------
-        :func:`~radis.misc.signal.resample`
+        :func:`radis.misc.signal.resample`
         """
         # TODO (but dangerous): reapply_slit at the end of the process if slit
         # is in conditions?
