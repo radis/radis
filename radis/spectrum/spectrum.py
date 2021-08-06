@@ -184,6 +184,7 @@ class Spectrum(object):
         s.resample(w_new)               # resample on new wavespace
         s.store('co_calculation2.spec')
 
+    .. minigallery:: radis.spectrum.spectrum.Spectrum
 
     Notes
     -----
@@ -408,6 +409,7 @@ class Spectrum(object):
                          units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
                          waveunit='nm')
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.from_array
 
         See Also
         --------
@@ -513,6 +515,8 @@ class Spectrum(object):
             s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
                          units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
                          waveunit='nm')
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.from_txt
 
         Notes
         -----
@@ -1060,6 +1064,14 @@ class Spectrum(object):
             Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
             directly anyway.
 
+        Examples
+        --------
+        ::
+            for path in [0.1, 10, 100]:
+                s.rescale_path_length(10, inplace=False).plot(nfig='same')
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_path_length
+
         Notes
         -----
         Implementation:
@@ -1114,6 +1126,13 @@ class Spectrum(object):
         s: Spectrum
             Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
             directly anyway.
+
+        Examples
+        --------
+        ::
+            s.rescale_mole_fraction(0.2)
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_mole_fraction
 
         Notes
         -----
@@ -1176,6 +1195,8 @@ class Spectrum(object):
             s.crop(s_exp.get_wavelength.min(), s_exp.get_wavelength.max(), 'nm')
             plot_diff(s_exp, s)
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.crop
+
 
         See Also
         --------
@@ -1214,6 +1235,14 @@ class Spectrum(object):
         s: Spectrum
             Offset Spectrum. If ``inplace=True``, Spectrum has been updated
             directly anyway.
+
+        Examples
+        --------
+        ::
+            s.offset(5, 'nm')
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.offset
+
 
         See Also
         --------
@@ -1274,6 +1303,13 @@ class Spectrum(object):
         -------
         P: float
             radiated power in ``unit``
+
+        Examples
+        --------
+        ::
+            s.get_power('W/cm2/sr')
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.offset
 
         See Also
         --------
@@ -2315,6 +2351,7 @@ class Spectrum(object):
 
         fix, ax: matplotlib objects
             figure and ax
+
 
         See Also
         --------
@@ -3516,8 +3553,11 @@ class Spectrum(object):
 
         Examples
         --------
+        ::
+            s.normalize("max", (4200, 4800), inplace=True).plot()
 
-            s.normalize("max", (4200, 4800), inplace=True)
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.normalize
+
         """
 
         from radis.spectrum.operations import multiply

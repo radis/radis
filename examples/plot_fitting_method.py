@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-==============
-Fit a spectrum
-==============
+=====================
+Multi-temperature Fit
+=====================
 
 A method to fit an experimental spectrum directly from :py:class:`~radis.lbl.factory.SpectrumFactory`,
 with :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
@@ -23,7 +23,7 @@ Typical output is similar to the
 
 from os.path import join
 
-from radis import Spectrum, SpectrumFactory, plot_diff
+from radis import Spectrum, SpectrumFactory
 
 # %% Get Fitted Data
 from radis.test.utils import getValidationCase, setup_test_line_databases
@@ -74,4 +74,3 @@ s_best, best = sf.fit_spectrum(
     plot=True,
     maxiter=30,  # 👈 increase to let the fit converge
 )
-plot_diff(s_exp, s_best)

@@ -82,6 +82,7 @@ import astropy.units as u
 import numpy as np
 from numpy import arange, exp
 from scipy.constants import N_A, c, k, pi
+from scipy.optimize import OptimizeResult
 
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
@@ -1786,7 +1787,7 @@ class SpectrumFactory(BandFactory):
 
     def fit_spectrum(
         self, s_exp, model, fit_parameters, bounds={}, plot=True, maxiter=300
-    ):
+    ) -> (Spectrum, OptimizeResult):
         """Fit an experimental spectrum with an arbitrary model and an arbitrary
         number of fit parameters.
 
@@ -1815,11 +1816,20 @@ class SpectrumFactory(BandFactory):
 
         Returns
         -------
-        s_best
+        s_best: Spectrum
+            best spectrum
+        res: OptimizeResults
+            output of `~scipy.optimize.minimize`
+
+        Examples
+        --------
+
+        .. minigallery:: radis.lbl.factory.fit_spectrum
+
 
         See Also
         --------
-        :py:func:`~radis.tools.fitting.SpectrumFactory.fit_spectrum`
+        :py:func:`~radis.tools.fitting.Tvib12Tvib3TrotModel`
         For more advanced cases, use Fitroom : https://github.com/radis/fitroom
 
         """

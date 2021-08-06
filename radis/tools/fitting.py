@@ -31,7 +31,8 @@ def Tvib12Tvib3TrotModel(factory, model_input) -> Spectrum:
     Parameters
     ----------
     model_input: dict
-        input dictionary (typically: temperatures). Example::
+        input dictionary (typically: temperatures). Example
+        ::
             {'T12':value,
              'T3':value,
              'Trot':value}
@@ -89,10 +90,12 @@ def fit_spectrum(
     model : func -> Spectrum
         a line-of-sight model returning a Spectrum. Example : :py:func:`~radis.tools.fitting.Tvib12TrotModel`
     fit_parameters : dict
-        ::
+        example::
+
             {fit_parameter:initial_value}
     bounds : dict, optional
-        ::
+        example::
+
             {fit_parameter:[min, max]}
 
     Other Parameters
@@ -101,7 +104,7 @@ def fit_spectrum(
         if True, plot spectra as they are computed; and plot the convergence of
         the residual.
     maxiter: int
-        max number of iteration, default 300
+        max number of iteration, default ``300``
 
     Returns
     -------
@@ -113,7 +116,7 @@ def fit_spectrum(
     See Also
     --------
     :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
-    For more advanced cases, use Fitroom : https://github.com/radis/fitroom
+    `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`__
     """
 
     # Get initial values of fitted parameters
