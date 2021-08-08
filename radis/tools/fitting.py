@@ -20,8 +20,9 @@ import numpy as np
 from scipy.optimize import OptimizeResult, minimize
 
 from radis import Spectrum, SpectrumFactory
+from radis.phys.units import Unit
 from radis.spectrum import plot_diff
-from radis.spectrum.compare import get_diff, get_residual
+from radis.spectrum.compare import get_default_units, get_diff, get_residual
 
 
 # Calculate a new spectrum for given parameters:
@@ -208,7 +209,7 @@ def fit_spectrum(
         if isinstance(fit_parameters[k], u.Quantity) or isinstance(
             fit_parameters[k], u.Unit
         ):
-            fit_units.append(u.Unit(fit_parameters[k]))
+            fit_units.append(Unit(fit_parameters[k]))
         else:
             fit_units.append("")
 
@@ -227,6 +228,8 @@ def fit_spectrum(
     #                  ... the fitting procedure
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
+
+    fit_variable, wunit, Iunit = get_default_units(s_exp, s0, var=fit_variable)
 
     # %%
     # Algorithm Params
@@ -263,7 +266,9 @@ def fit_spectrum(
         plt.ion()
         # Graph with plot diff
         # figSpec, axSpec = plt.subplots(num='diffspectra')
-        figSpec, axSpec = plot_diff(s_exp, s0, fit_variable, nfig="diffspectra")
+        figSpec, axSpec = plot_diff(
+            s_exp, s0, fit_variable, nfig="diffspectra", wunit=wunit, Iunit=Iunit
+        )
         lineSpec = axSpec[0].get_lines()[1]
         lineDiff = axSpec[1].get_lines()[0]
         figSpec.canvas.draw()
@@ -271,7 +276,7 @@ def fit_spectrum(
         if blit:
             # cache the background
             # ... rmeove data first:
-            s_diff = get_diff(s_exp, s0, var=fit_variable)
+            s_diff = get_diff(s_exp, s0, var=fit_variable, wunit=wunit, Iunit=Iunit)
             lineSpec.set_data(s0.get(fit_variable)[0], s0.get(fit_variable)[1] * np.nan)
             lineDiff.set_data(s_diff[0], s_diff[1] * np.nan)
             figSpec.canvas.draw()
@@ -281,6 +286,7 @@ def fit_spectrum(
             # ... re-add :
             lineSpec.set_data(s0.get(fit_variable))
             lineDiff.set_data(s_diff)
+            figSpec.canvas.draw()
 
         plt.show(block=False)
 
@@ -294,11 +300,11 @@ def fit_spectrum(
             del s._q[var]
 
         if plot:  #  plot difference
-            s_diff = get_diff(s_exp, s, var=fit_variable)
-            lineSpec.set_data(s.get(fit_variable))
+            s_diff = get_diff(s_exp, s, var=fit_variable, wunit=wunit, Iunit=Iunit)
+            lineSpec.set_data(s.get(fit_variable, wunit=wunit, Iunit=Iunit))
             lineDiff.set_data(s_diff)
             # axSpec[0].set_title(print_fit_values(fit_values))
-            plt.show(block=False)
+            # plt.show(block=False)
 
             if blit:
                 # ... from https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot

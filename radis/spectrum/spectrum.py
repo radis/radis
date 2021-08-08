@@ -3557,7 +3557,7 @@ class Spectrum(object):
         wunit=None,
         inplace=False,
         force=False,
-        verbose=True,
+        verbose=False,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 
@@ -3617,13 +3617,13 @@ class Spectrum(object):
                 norm_unit = s.units[var]
             elif normalize_how == "area":
                 norm = np.abs(nantrapz(I[b], w[b]))
-                norm_unit = u.Unit(s.units[var]) * u.Unit(wunit)
+                norm_unit = Unit(s.units[var]) * Unit(wunit)
             else:
                 raise ValueError(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
 
-            out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
+            out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
         else:
             if normalize_how == "max":
@@ -3635,14 +3635,14 @@ class Spectrum(object):
             elif normalize_how == "area":
                 w, I = s.get(var, wunit=wunit, copy=False)
                 norm = nantrapz(I, w)
-                norm_unit = u.Unit(s.units[var]) * u.Unit(wunit)
+                norm_unit = Unit(s.units[var]) * Unit(wunit)
 
             else:
                 raise ValueError(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
             # Ensure we use the same unit system!
-            out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
+            out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
         if verbose:
             print("Normalization factor : {0}".format(norm))
         return out
