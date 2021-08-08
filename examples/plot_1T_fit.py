@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+.. _example_one_temperature_fit:
+
 =================
 1 temperature fit
 =================
@@ -9,7 +11,8 @@ directly from :py:class:`~radis.lbl.factory.SpectrumFactory`,
 with :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
 
 The method requires a fitting model. An example model is provided in :py:mod:`radis.tools.fitting` :
-:py:func:`~radis.tools.fitting.TrotModel`. Other models can be shown.
+:py:func:`~radis.tools.fitting.TrotModel`. Other models can be used; such as
+the :ref:`multi-temperature fit <example_multi_temperature_fit>`
 
 More advanced tools for interactive fitting of multi-dimensional, multi-slabs
 spectra can be found in `Fitroom <https://github.com/radis/fitroom>`__
@@ -17,7 +20,7 @@ spectra can be found in `Fitroom <https://github.com/radis/fitroom>`__
 
 """
 
-from radis import SpectrumFactory, load_spec, plot_diff
+from radis import SpectrumFactory, load_spec
 
 # %% Get Fitted Data
 from radis.test.utils import getTestFile, setup_test_line_databases
@@ -34,13 +37,21 @@ s_exp = (
     .crop(wlmin, wlmax, "nm")
     .normalize()
     .sort()
-    .offset(-0.5, "nm")
+    .offset(-0.2, "nm")
 )
 
+""" Improve the :py:func:`~radis.tools.fitting.TrotModel` : we add a slit
+(non fittable parameter)
+"""
 
-def TrotModel_norm(*args, **kwargs):
-    s = TrotModel(*args, **kwargs)
-    s.apply_slit(1.5, "nm")
+
+def TrotModel_norm(factory, model_input):
+    s = TrotModel(factory, model_input)
+    # we could also have added a fittable parameter, such as an offset,
+    # or made the slit width a fittable parameter.
+    # ... any paramter in model_input will be fitted.
+    # s.offset(model_input["offset"], 'nm')
+    s.apply_slit(1.4, "nm")
     return s.take("radiance").normalize()
 
 
@@ -60,6 +71,7 @@ sf = SpectrumFactory(
     broadening_max_width=1,  # cm-1
 )
 sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+sf.warnings["HighTemperatureWarning"] = "ignore"
 sf.load_databank("HITRAN-CO2-TEST")
 
 s_best, best = sf.fit_spectrum(
@@ -67,12 +79,16 @@ s_best, best = sf.fit_spectrum(
     model=TrotModel_norm,
     fit_parameters={
         "Trot": 300,
+        # "offset": 0
     },
-    bounds={"Trot": [300, 2000]},
+    bounds={
+        "Trot": [300, 2000],
+        # "offset": [-1, 1],
+    },
     plot=True,
     solver_options={
-        "maxiter": 100,  # 👈 increase to let the fit converge
+        "maxiter": 50,  # 👈 increase to let the fit converge
         "ftol": 1e-15,
     },
 )
-plot_diff(s_exp, s_best)  # , show_ruler=True)
+# plot_diff(s_exp, s_best)  # , show_ruler=True)

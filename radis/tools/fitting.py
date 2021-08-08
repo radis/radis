@@ -166,10 +166,15 @@ def fit_spectrum(
     res: OptimizeResults
         output of `~scipy.optimize.minimize`
 
+    Examples
+    --------
+    See a :ref:`one-temperature fit example <example_multi_temperature_fit>` or
+    a :ref:`multi-temperature fit example <example_multi_temperature_fit>`.
+    `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`__
+
     See Also
     --------
     :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
-    `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`__
     """
 
     # Get initial values of fitted parameters

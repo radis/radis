@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+.. _example_multi_temperature_fit:
+
 =====================
 Multi-temperature Fit
 =====================
@@ -8,7 +10,8 @@ A method to fit an experimental spectrum directly from :py:class:`~radis.lbl.fac
 with :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
 
 The method requires a fitting model. An example model is provided in :py:mod:`radis.tools.fitting` :
-:py:func:`~radis.tools.fitting.Tvib12Tvib3TrotModel`. Other models can be shown.
+:py:func:`~radis.tools.fitting.Tvib12Tvib3TrotModel`. Other models can be used, such
+as in the :ref:`one-temperature fit example <example_one_temperature_fit>`
 
 More advanced tools for interactive fitting of multi-dimensional, multi-slabs
 spectra can be found in `Fitroom <https://github.com/radis/fitroom>`__
@@ -72,5 +75,8 @@ s_best, best = sf.fit_spectrum(
     },
     bounds={"T12": [300, 2000], "T3": [300, 5000], "Trot": [300, 2000]},
     plot=True,
-    maxiter=30,  # 👈 increase to let the fit converge
+    solver_options={
+        "method": "TNC",
+        "maxiter": 30,  # 👈 increase to let the fit converge
+    },
 )
