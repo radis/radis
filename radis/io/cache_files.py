@@ -353,14 +353,14 @@ def check_not_deprecated(
         except AttributeError as err:
             if "Attribute 'metadata' does not exist in node: '/df'" in str(err):
                 raise DeprecatedFileWarning(
-                    "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file {0}".format(
+                    "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file `{0}`. If you want to do so, use cache=`regen`".format(
                         file
                     )
                 ) from err
         except TypeError as err:
             if "cannot properly create the storer" in str(err):
                 raise DeprecatedFileWarning(
-                    "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file {0}".format(
+                    "Cache files metadata is read/written with pytables instead of h5py starting from radis>=0.9.28. You should regenerate your file `{0}`. If you want to do so, use cache=`regen`".format(
                         file
                     )
                 ) from err

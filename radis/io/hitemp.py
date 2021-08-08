@@ -20,6 +20,7 @@ from zipfile import ZipFile
 
 import numpy as np
 import pandas as pd
+from dateutil.parser import parse as parse_date
 from numpy import DataSource
 
 import radis
@@ -33,10 +34,13 @@ from radis.io.tools import (
     _ndarray2df,
     replace_PQR_with_m101,
 )
-from radis.misc.config import addDatabankEntries, getDatabankList
+from radis.misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
 from radis.misc.progress_bar import ProgressBar
-from radis.misc.warning import DatabaseAlreadyExists
+from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
 
+LAST_VALID_DATE = (
+    "01 Jan 2010"  # set to a later date to force re-download of all HITEMP databases
+)
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
 DATA_COLUMNS = ["iso", "wav"]
 """
@@ -81,6 +85,30 @@ def get_url_and_Nlines(molecule, hitemp_url="https://hitran.org/hitemp/"):
     url = "https://hitran.org" + re.findall(r'href="(.+?)"', lines[7])[0]
 
     return url, Nlines
+
+
+def keep_only_relevant(
+    inputfiles, wavenum_min=None, wavenum_max=None, wavenum_format=r"\d{5}"
+):
+    """Parser file names for ``wavenum_format`` (min and max) and only keep
+    relevant files if the requested range is ``[wavenum_min, wavenum_max]``"""
+    relevant = []
+    for file in inputfiles:
+        fname_wmin, fname_wmax = re.findall(wavenum_format, file)
+        if wavenum_min is not None and wavenum_max is not None:
+            if (float(fname_wmax) >= wavenum_min) and (
+                float(fname_wmin) <= wavenum_max
+            ):
+                relevant.append(file)
+        elif wavenum_min is not None:
+            if float(fname_wmax) >= wavenum_min:
+                relevant.append(file)
+        elif wavenum_max is not None:
+            if float(fname_wmin) <= wavenum_max:
+                relevant.append(file)
+        else:
+            relevant.append(file)
+    return relevant
 
 
 def fetch_hitemp(
@@ -173,50 +201,77 @@ def fetch_hitemp(
 
     if databank_name == "HITEMP-{molecule}":
         databank_name = databank_name.format(**{"molecule": molecule})
+
+    Ntotal_lines_expected = None
+
+    # First; checking if the database is registered in radis.json
+    def fetch_urlnames(molecule):
+
+        if molecule in ["H2O", "CO2"]:
+
+            base_url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
+            response = urllib.request.urlopen(base_url)
+            response_string = response.read().decode()
+            inputfiles = re.findall('href="(\S+.zip)"', response_string)
+
+            inputfiles = keep_only_relevant(
+                inputfiles, load_wavenum_min, load_wavenum_max, wavenum_format=r"\d{5}"
+            )
+            if verbose:
+                print("relevant files:", inputfiles)
+
+            urlnames = [base_url + f for f in inputfiles]
+
+            # harcoded local name; regroups all 0X_[wmin]_[wmax]_HITEMP2010* files :
+            assert "HITEMP2010" in inputfiles[0]
+            local_fname = inputfiles[0][:3] + "HITEMP2010.h5"
+
+        elif molecule in HITEMP_MOLECULES:
+            url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
+            urlnames = [url]
+            local_fname = (
+                splitext(splitext(url.split("/")[-1])[0])[0]  # twice to remove .par.bz2
+                + ".h5"
+            )
+        else:
+            raise KeyError(
+                f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
+            )
+
+        try:
+            os.mkdir(local_databases)
+        except OSError:
+            pass
+        else:
+            if verbose:
+                print("Created folder :", local_databases)
+
+        local_file = abspath(
+            join(
+                local_databases,
+                molecule + "-" + local_fname,
+            )
+        )
+        return local_file, urlnames
+
+    if databank_name in getDatabankList():
+        entries = getDatabankEntries(databank_name)
+        try:
+            assert "download_url" in entries
+            assert "download_date" in entries
+            assert parse_date(entries["download_date"]) > parse_date(LAST_VALID_DATE)
+        except AssertionError as err:
+            raise DeprecatedFileWarning("Database file {0} not valid anymore") from err
+        else:
+            local_file = entries["path"]
+            assert len(local_file) == 1
+            local_file = local_file[0]
+    else:
+        local_file, urlnames = fetch_urlnames(molecule)
+
+    # Now, check if the local file (as registered in radis.json, or fetched from the website)
+    # exists
     local_databases = abspath(local_databases.replace("~", expanduser("~")))
-
-    if molecule in ["H2O", "CO2"]:
-
-        base_url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
-        print(base_url)
-        response = urllib.request.urlopen(base_url)
-        response_string = response.read().decode()
-        inputfiles = re.findall('href="(\S+.zip)"', response_string)
-        urlnames = [base_url + f for f in inputfiles]
-
-        fname_wmin = re.findall(r"\d{5}", inputfiles[0])[0]
-        fname_wmax = re.findall(r"\d{5}", inputfiles[-1])[-1]
-        local_fname = (
-            splitext(
-                re.sub(r"(\d{5})", r"{:s}", inputfiles[0]).format(
-                    fname_wmin, fname_wmax
-                )
-            )[0]
-            + ".h5"
-        )
-    elif molecule in HITEMP_MOLECULES:
-        url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
-        urlnames = [url]
-        local_fname = splitext(url.split("/")[-1])[0] + ".h5"
-    else:
-        raise KeyError(
-            f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
-        )
-
-    try:
-        os.mkdir(local_databases)
-    except OSError:
-        pass
-    else:
-        if verbose:
-            print("Created folder :", local_databases)
-
-    local_file = abspath(
-        join(
-            local_databases,
-            molecule + "-" + local_fname,
-        )
-    )
 
     if not cache or cache == "regen":
         # Delete existing HDF5 file
@@ -237,10 +292,14 @@ def fetch_hitemp(
         )
         # check database is registered in ~/radis.json
         if not databank_name in getDatabankList():
-            # if not, check number of rows is correct :
+            # if not, register it.
+            # ... First check number of lines is correct :
+            if Ntotal_lines_expected is None:
+                _, Ntotal_lines_expected = get_url_and_Nlines(molecule)
             error_msg = ""
             with pd.HDFStore(local_file, "r") as store:
                 nrows = store.get_storer("df").nrows
+                # TODO: replace with Database.get_rows()  # which would work for any backend (pytables / h5py)
                 if nrows != Ntotal_lines_expected:
                     error_msg += (
                         f"\nNumber of lines in local database ({nrows:,}) "
@@ -248,6 +307,7 @@ def fetch_hitemp(
                         + f"HITEMP {molecule}: {Ntotal_lines_expected}"
                     )
                 file_metadata = store.get_storer("df").attrs.metadata
+                # TODO: replace with Database.get_metadata()  # which would work for any backend (pytables / h5py)
                 for k in [
                     "wavenumber_min",
                     "wavenumber_max",
@@ -264,7 +324,7 @@ def fetch_hitemp(
                 raise ValueError(
                     f"{databank_name} not declared in your RADIS ~/.config file although "
                     + f"{local_file} exists. {error_msg}\n"
-                    + "If you know this file, add it to ~/.radisdb manually. "
+                    + "If you know this file, add it to ~/radis.json manually. "
                     + "Else regenerate the database with:\n\t"
                     + ">>> radis.SpectrumFactory().fetch_databank(..., use_cached='regen')"
                     + "\nor\n\t"
@@ -274,7 +334,7 @@ def fetch_hitemp(
                     + f"{local_file} metadata: {file_metadata}"
                 )
 
-            # Else database looks ok : register it
+            # ... Database looks ok : register it
             if verbose:
                 print(
                     f"{databank_name} not declared in your RADIS ~/.config file although "
@@ -292,19 +352,72 @@ def fetch_hitemp(
                 verbose=verbose,
             )
 
-        if verbose:
-            print(f"Using existing database {databank_name}")
-        df = hdf2df(
-            local_file,
-            isotope=isotope,
-            load_wavenum_min=load_wavenum_min,
-            load_wavenum_max=load_wavenum_max,
-            verbose=verbose,
-        )
-        return (df, local_file) if return_local_path else df
+        # Database exists, and is registered : we can return it directly
+        # ... unless it's CO2 / H2O : there are many files and maybe it's not complete.
+
+        full_range_downloaded = True
+
+        if molecule in ["CO2", "H2O"]:
+            # ... Check database is complete
+            entries = getDatabankEntries(databank_name)
+            if load_wavenum_min is not None and load_wavenum_max is not None:
+                if (float(entries["wavenum_max"]) < load_wavenum_min) or (
+                    float(entries["wavenum_min"]) > load_wavenum_max
+                ):
+                    # downloaded range is enough
+                    full_range_downloaded = False
+                    # TODO / Unless we're asking for a range beyond the maximum range given...
+                    # That's relevant for all databases... What to do ? BeyondTheRangeWarning (checking if also complete)
+            # if only one of the two extrema is given > NotImplemented > we
+            # ... require to download the full database.
+            # elif load_wavenum_min is not None:
+            #     if float(fname_wmax) >= wavenum_min:
+            #         relevant.append(file)
+            # elif load_wavenum_max is not None:
+            #     if float(fname_wmin) <= wavenum_max:
+            #         relevant.append(file)
+            else:
+                # check number of lines is complete
+                with pd.HDFStore(local_file, "r") as store:
+                    nrows = store.get_storer("df").nrows
+                    # TODO: replace with Database.get_rows()  # which would work for any backend (pytables / h5py)
+                    if nrows < Ntotal_lines_expected:
+                        raise DeprecatedFileWarning(
+                            f"\nNumber of lines in local database ({nrows:,}) "
+                            + "differ from the expected number of lines for "
+                            + f"HITEMP {molecule}: {Ntotal_lines_expected}"
+                        )
+        if full_range_downloaded:
+            if verbose:
+                print(f"Using existing database {databank_name}")
+            df = hdf2df(
+                local_file,
+                isotope=isotope,
+                load_wavenum_min=load_wavenum_min,
+                load_wavenum_max=load_wavenum_max,
+                verbose=verbose,
+            )
+            return (df, local_file) if return_local_path else df
+
+        else:
+            # keep a continuous database (i.e. : all lines from [wmin] to [wmax] even if we only need two separate sections)
+
+            # Note : with Vaex it's very easy to open many different files with
+            # only a minimal overhead. Why put everything in a large file then ?
+            raise NotImplementedError
+            # ... TODO
+
+            # use is_relevant function of Corentin ?
+
+            # therefore, only download relevant_files...
+
+    # TODO here: for CO2; H2O : if exists : re-check if valid ; compare with relevant range ;
+    # download only missing!
 
     ###################################################
     # Doesnt exist : download
+    if Ntotal_lines_expected is None:
+        _, Ntotal_lines_expected = get_url_and_Nlines(molecule)
     ds = DataSource(join(local_databases, "downloads"))
     Ndownload = 1
     Ntotal_downloads = len(urlnames)

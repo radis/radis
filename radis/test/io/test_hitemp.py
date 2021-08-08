@@ -12,6 +12,47 @@ from radis.io.hitemp import HITEMP_MOLECULES, fetch_hitemp, get_url_and_Nlines
 from radis.misc.config import getDatabankList
 
 
+@pytest.mark.fast
+def test_relevant_files_filter():
+    from radis.io.hitemp import keep_only_relevant
+
+    files = [
+        "02_00000-00500_HITEMP2010.zip",
+        "02_00500-00625_HITEMP2010.zip",
+        "02_00625-00750_HITEMP2010.zip",
+        "02_00750-01000_HITEMP2010.zip",
+        "02_01000-01500_HITEMP2010.zip",
+        "02_01500-02000_HITEMP2010.zip",
+        "02_02000-02125_HITEMP2010.zip",
+        "02_02125-02250_HITEMP2010.zip",
+        "02_02250-02500_HITEMP2010.zip",
+        "02_02500-03000_HITEMP2010.zip",
+        "02_03000-03250_HITEMP2010.zip",
+        "02_03250-03500_HITEMP2010.zip",
+        "02_03500-03750_HITEMP2010.zip",
+        "02_03750-04000_HITEMP2010.zip",
+        "02_04000-04500_HITEMP2010.zip",
+        "02_04500-05000_HITEMP2010.zip",
+        "02_05000-05500_HITEMP2010.zip",
+        "02_05500-06000_HITEMP2010.zip",
+        "02_06000-06500_HITEMP2010.zip",
+        "02_06500-12785_HITEMP2010.zip",
+    ]
+
+    assert keep_only_relevant(files) == files
+    assert keep_only_relevant(files, wavenum_max=300) == [
+        "02_00000-00500_HITEMP2010.zip"
+    ]
+    assert keep_only_relevant(files, wavenum_min=7000) == [
+        "02_06500-12785_HITEMP2010.zip"
+    ]
+    assert keep_only_relevant(files, wavenum_min=600, wavenum_max=800) == [
+        "02_00500-00625_HITEMP2010.zip",
+        "02_00625-00750_HITEMP2010.zip",
+        "02_00750-01000_HITEMP2010.zip",
+    ]
+
+
 @pytest.mark.needs_connection
 def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP OH database.
@@ -93,18 +134,23 @@ def test_partial_loading(*args, **kwargs):
     assert df.wav.max() <= wmax
 
     # Test with isotope:
+    wmin = 0
+    wmax = 300
     df = fetch_hitemp("OH", load_wavenum_min=wmin, load_wavenum_max=wmax, isotope="2")
     assert df.iso.unique() == 2
+    df = fetch_hitemp("OH", load_wavenum_min=wmin, load_wavenum_max=wmax, isotope="1,2")
+    assert set(df.iso.unique()) == {1, 2}
 
-    # multiple isotope selection not implemetned with vaex
-    with pytest.raises(NotImplementedError):
-        fetch_hitemp(
-            "OH",
-            load_wavenum_min=wmin,
-            load_wavenum_max=wmax,
-            isotope="1,2,3",
-            engine="vaex",
-        )
+    # TODO : active with vaex engine implementation
+    # # multiple isotope selection not implemetned with vaex
+    # with pytest.raises(NotImplementedError):
+    #     fetch_hitemp(
+    #         "OH",
+    #         load_wavenum_min=wmin,
+    #         load_wavenum_max=wmax,
+    #         isotope="1,2,3",
+    #         engine="vaex",
+    #     )
 
 
 @pytest.mark.needs_connection
@@ -181,12 +227,14 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    test_fetch_hitemp_OH()
-    test_partial_loading()
-    test_calc_hitemp_spectrum()
-    test_fetch_hitemp_all_molecules("OH")
-    test_fetch_hitemp_all_molecules("CO")
-    test_fetch_hitemp_all_molecules("N2O", verbose=3)
-    test_fetch_hitemp_all_molecules("NO", verbose=3)
+    test_relevant_files_filter()
     test_fetch_hitemp_all_molecules("CO2", verbose=3)
-    test_calc_hitemp_CO_noneq()
+    # test_fetch_hitemp_OH()
+    # test_partial_loading()
+    # test_calc_hitemp_spectrum()
+    # test_fetch_hitemp_all_molecules("OH")
+    # test_fetch_hitemp_all_molecules("CO")
+    # test_fetch_hitemp_all_molecules("N2O", verbose=3)
+    # test_fetch_hitemp_all_molecules("NO", verbose=3)
+    # test_fetch_hitemp_all_molecules("CO2", verbose=3)
+    # test_calc_hitemp_CO_noneq()
