@@ -8,7 +8,7 @@ Created on Tue Feb  2 13:51:40 2021
 
 import pytest
 
-from radis.io.hitemp import fetch_hitemp, HITEMP_MOLECULES, get_url_and_Nlines
+from radis.io.hitemp import HITEMP_MOLECULES, fetch_hitemp, get_url_and_Nlines
 from radis.misc.config import getDatabankList
 
 
@@ -39,9 +39,7 @@ def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
 
 @pytest.mark.needs_connection
 @pytest.mark.download_large_databases
-@pytest.mark.parametrize(
-    "molecule", [mol for mol in HITEMP_MOLECULES]
-)
+@pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
 def test_fetch_hitemp_all_molecules(molecule, verbose=False, *args, **kwargs):
     """Test fetch HITEMP for all molecules whose download URL is available.
 
@@ -72,7 +70,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=False, *args, **kwargs):
     df = fetch_hitemp(molecule, verbose=verbose)
 
     assert f"HITEMP-{molecule}" in getDatabankList()
-    
+
     url, Nlines = get_url_and_Nlines(molecule)
 
     assert len(df) == Nlines
@@ -93,6 +91,20 @@ def test_partial_loading(*args, **kwargs):
     df = fetch_hitemp("OH", load_wavenum_min=wmin, load_wavenum_max=wmax)
     assert df.wav.min() >= wmin
     assert df.wav.max() <= wmax
+
+    # Test with isotope:
+    df = fetch_hitemp("OH", load_wavenum_min=wmin, load_wavenum_max=wmax, isotope="2")
+    assert df.iso.unique() == 2
+
+    # multiple isotope selection not implemetned with vaex
+    with pytest.raises(NotImplementedError):
+        fetch_hitemp(
+            "OH",
+            load_wavenum_min=wmin,
+            load_wavenum_max=wmax,
+            isotope="1,2,3",
+            engine="vaex",
+        )
 
 
 @pytest.mark.needs_connection
@@ -176,4 +188,5 @@ if __name__ == "__main__":
     test_fetch_hitemp_all_molecules("CO")
     test_fetch_hitemp_all_molecules("N2O", verbose=3)
     test_fetch_hitemp_all_molecules("NO", verbose=3)
+    test_fetch_hitemp_all_molecules("CO2", verbose=3)
     test_calc_hitemp_CO_noneq()

@@ -60,17 +60,25 @@ def open_zip(zipname, mode="r", encoding=None, newline=None):
 np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
 
 
-def get_url_and_Nlines(molecule, hitemp_url='https://hitran.org/hitemp/'):
+def get_url_and_Nlines(molecule, hitemp_url="https://hitran.org/hitemp/"):
     response = urllib.request.urlopen(hitemp_url)
     text = response.read().decode()
-    text = text[text.find('<table id="hitemp-molecules-table" class="selectable-table list-table">'):text.find('</table>')]
-    text = re.sub(r'<!--.+?-->\s*\n','',text) #remove commented lines
-    html_molecule = re.sub(r'(\d{1})',r'(<sub>\1</sub>)',molecule)
-    text = text[re.search('<td>(?:<strong>)?'+html_molecule+'(?:</strong>)?</td>',text).start():]
+    text = text[
+        text.find(
+            '<table id="hitemp-molecules-table" class="selectable-table list-table">'
+        ) : text.find("</table>")
+    ]
+    text = re.sub(r"<!--.+?-->\s*\n", "", text)  # remove commented lines
+    html_molecule = re.sub(r"(\d{1})", r"(<sub>\1</sub>)", molecule)
+    text = text[
+        re.search(
+            "<td>(?:<strong>)?" + html_molecule + "(?:</strong>)?</td>", text
+        ).start() :
+    ]
     lines = text.splitlines()
 
-    Nlines = int(re.findall(r'(\d+)',lines[3].replace('&nbsp;',''))[0])
-    url = 'https://hitran.org' + re.findall(r'href="(.+?)"',lines[7])[0]
+    Nlines = int(re.findall(r"(\d+)", lines[3].replace("&nbsp;", ""))[0])
+    url = "https://hitran.org" + re.findall(r'href="(.+?)"', lines[7])[0]
 
     return url, Nlines
 
@@ -167,15 +175,6 @@ def fetch_hitemp(
         databank_name = databank_name.format(**{"molecule": molecule})
     local_databases = abspath(local_databases.replace("~", expanduser("~")))
 
-    if databank_name in getDatabankList():
-        raise DatabaseAlreadyExists(
-                  f"{databank_name} already exists in your ~/radis.json config file, "
-                + "remove it from your config file, or choose a different name "
-                + "for the downloaded database with `fetch_hitemp(databank_name=...)`, "
-                + "and restart.")
-        return
-
-
     if molecule in ["H2O", "CO2"]:
 
         base_url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
@@ -185,22 +184,24 @@ def fetch_hitemp(
         inputfiles = re.findall('href="(\S+.zip)"', response_string)
         urlnames = [base_url + f for f in inputfiles]
 
-        fname_wmin = re.findall(r'\d{5}',inputfiles[0])[0]
-        fname_wmax = re.findall(r'\d{5}',inputfiles[-1])[-1]
-        local_fname = splitext(re.sub(r'(\d{5})',r'{:s}',inputfiles[0]).format(fname_wmin,fname_wmax))[0]+'.h5'
-
+        fname_wmin = re.findall(r"\d{5}", inputfiles[0])[0]
+        fname_wmax = re.findall(r"\d{5}", inputfiles[-1])[-1]
+        local_fname = (
+            splitext(
+                re.sub(r"(\d{5})", r"{:s}", inputfiles[0]).format(
+                    fname_wmin, fname_wmax
+                )
+            )[0]
+            + ".h5"
+        )
+    elif molecule in HITEMP_MOLECULES:
+        url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
+        urlnames = [url]
+        local_fname = splitext(url.split("/")[-1])[0] + ".h5"
     else:
-
-        try:
-            url, Ntotal_lines_expected = get_url_and_Nlines(molecule)
-            urlnames = [url]
-            local_fname = splitext(url.split('/')[-1])[0] + '.h5'
-        except KeyError as err:
-            raise KeyError(
-                f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
-            ) from err
-
-    
+        raise KeyError(
+            f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
+        )
 
     try:
         os.mkdir(local_databases)
@@ -303,7 +304,6 @@ def fetch_hitemp(
         return (df, local_file) if return_local_path else df
 
     ###################################################
-
     # Doesnt exist : download
     ds = DataSource(join(local_databases, "downloads"))
     Ndownload = 1
@@ -318,7 +318,7 @@ def fetch_hitemp(
     for urlname in urlnames:
 
         if verbose:
-            inputf = urlname.split('/')[-1]
+            inputf = urlname.split("/")[-1]
             print(
                 f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
             )
@@ -333,7 +333,12 @@ def fetch_hitemp(
                 columns, "a2"
             )  # 'a2' allocates space to get \n or \n\r for linereturn character
             b = np.zeros(1, dtype=dt)
-            gfile.readinto(b)
+            try:
+                gfile.readinto(b)
+            except EOFError as err:
+                raise ValueError(
+                    f"End of file while parsing file {ds.abspath(urlname)}. May be due to download error. Delete file ?"
+                ) from err
             linereturnformat = _get_linereturnformat(b, columns)
 
         with ds.open(urlname) as gfile:  # locally downloaded file
@@ -368,9 +373,6 @@ def fetch_hitemp(
                     if "branch" in df:
                         replace_PQR_with_m101(df)
 
-                    # df.to_hdf(
-                    #     local_file, "df", format="table", append=True, complib="blosc", complevel=9
-                    # )
                     f.put(
                         key="df",
                         value=df,
@@ -496,8 +498,34 @@ def register_database(
         ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
         dict_entries["levelsfmt"] = "radis"
 
-    addDatabankEntries(databank_name, dict_entries)
-    
+    # Register database in ~/radis.json to be able to use it with load_databank()
+    try:
+        addDatabankEntries(databank_name, dict_entries)
+    except DatabaseAlreadyExists as err:
+        # Check that the existing database had the same entries
+        try:
+            from radis.misc.config import getDatabankEntries
+
+            for k, v in getDatabankEntries(databank_name).items():
+                if k == "download_date":
+                    continue
+                assert dict_entries[k] == v
+            # TODO @dev : replace once we have configfile as JSON (https://github.com/radis/radis/issues/167)
+        except AssertionError:
+            raise DatabaseAlreadyExists(
+                f"{databank_name} already exists in your ~/radis.json config file, "
+                + f"with different key `{k}` : `{v}` (~/radis.json) ≠ `{dict_entries[k]}` (new). "
+                + "If you're sure of what you're doing, fix the registered database in ~/radis.json. "
+                + "Else, remove it from your config file, or choose a different name "
+                + "for the downloaded database with `fetch_hitemp(databank_name=...)`, "
+                + "and restart."
+            ) from err
+        else:  # no other error raised
+            if verbose:
+                print(
+                    f"{databank_name} already registered in ~/radis.json config file, with the same parameters."
+                )
+
 
 #%%
 def get_last(b):
