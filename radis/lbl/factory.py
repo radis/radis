@@ -383,7 +383,7 @@ class SpectrumFactory(BandFactory):
         save_memory=False,
         export_populations=None,
         export_lines=False,
-        **kwargs
+        **kwargs,
     ):
 
         # Initialize BandFactory object
@@ -1793,6 +1793,7 @@ class SpectrumFactory(BandFactory):
         bounds={},
         plot=True,
         solver_options={"maxiter": 300},
+        **kwargs,
     ) -> (Spectrum, OptimizeResult):
         """Fit an experimental spectrum with an arbitrary model and an arbitrary
         number of fit parameters.
@@ -1818,11 +1819,13 @@ class SpectrumFactory(BandFactory):
             if True, plot spectra as they are computed; and plot the convergence of
             the residual.
         solver_options: dict
-            parameters forwarded to the solver.
+            parameters forwarded to the solver. More info in `~scipy.optimize.minimize`
             Example::
 
                 {"maxiter": (int)  max number of iteration default ``300``,
                  }
+        kwargs: dict
+            forwarded to :py:func:`~radis.tools.fitting.fit_spectrum`
 
         Returns
         -------
@@ -1854,6 +1857,7 @@ class SpectrumFactory(BandFactory):
             bounds=bounds,
             plot=plot,
             solver_options=solver_options,
+            **kwargs,
         )
 
     def print_perf_profile(self, number_format="{:.3f}", precision=16):

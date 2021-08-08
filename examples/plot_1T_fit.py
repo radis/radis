@@ -90,5 +90,6 @@ s_best, best = sf.fit_spectrum(
         "maxiter": 50,  # 👈 increase to let the fit converge
         "ftol": 1e-15,
     },
+    verbose=2,
 )
 # plot_diff(s_exp, s_best)  # , show_ruler=True)

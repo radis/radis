@@ -125,6 +125,7 @@ def fit_spectrum(
     fit_parameters,
     bounds={},
     plot=True,
+    verbose=True,
     solver_options={"maxiter": 300},
 ) -> (Spectrum, OptimizeResult):
     """Fit an experimental spectrum with an arbitrary model and an arbitrary
@@ -152,8 +153,10 @@ def fit_spectrum(
     plot: bool
         if True, plot spectra as they are computed; and plot the convergence of
         the residual.
+    verbose: bool, or ``2``
+        use ``2`` for high verbose level.
     solver_options: dict
-        parameters forwarded to the solver.
+        parameters forwarded to the solver. More info in `~scipy.optimize.minimize`
         Example::
 
             {"maxiter": (int)  max number of iteration default ``300``,
@@ -425,20 +428,23 @@ def fit_spectrum(
             figRes.canvas.flush_events()
             # plt.show(block=False)
 
-        print(
-            "{0}, Residual: {1:.4f} {2}".format(
-                print_fit_values(fit_values),
-                res,
-                " 🏆" if res == min(history_res) else "",
-            ),
-            flush=True,
-        )
+        if verbose:
+            print(
+                "{0}, Residual: {1:.4f} {2}".format(
+                    print_fit_values(fit_values),
+                    res,
+                    " 🏆" if res == min(history_res) else "",
+                ),
+                flush=True,
+            )
 
         return res
 
     # %%>>> This is where the fitting loop happens
-    print("\nNow starting the fitting process:")
-    print("---------------------------------\n")
+    if verbose:
+        print("\nNow starting the fitting process:")
+    if verbose:
+        print("---------------------------------\n")
     solver_options = solver_options.copy()
     best = minimize(
         cost_and_plot_function,
@@ -462,21 +468,25 @@ def fit_spectrum(
 
     s_best = generate_spectrum(best.x)
 
-    if best.success:
+    if verbose and best.success:
         print("Final {0}: {1}{2}".format(fit_params, np.round(best.x), fit_units))
+
+    if verbose >= 2:
+        print(best)
 
     # Res history
 
     # ... what does history say:
-    print(
-        "Best: {0}: {1}{2} reached at iteration {3}/{4}".format(
-            fit_params,
-            history_x[np.argmin(history_res)],
-            fit_units,
-            np.argmin(history_res),
-            best.nfev,
+    if verbose:
+        print(
+            "Best: {0}: {1}{2} reached at iteration {3}/{4}".format(
+                fit_params,
+                history_x[np.argmin(history_res)],
+                fit_units,
+                np.argmin(history_res),
+                best.nfev,
+            )
         )
-    )
 
     # ... note that there are more function evaluations (best.nfev) that actual solver
     # ... iterations (best.nit) because the Jacobian is calculated numerically with
