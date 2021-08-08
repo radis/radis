@@ -1229,17 +1229,22 @@ class Spectrum(object):
 
         """
 
+        if inplace:
+            s = self
+        else:
+            s = self.copy()
+
         if len(self._q) > 0:
-            b = np.argsort(self._q["wavespace"])
-            for k, v in self._q.items():
-                self._q[k] = v[b]
+            b = np.argsort(s._q["wavespace"])
+            for k, v in s._q.items():
+                s._q[k] = v[b]
 
-        if len(self._q_conv) > 0:
-            b = np.argsort(self._q_conv["wavespace"])
-            for k, v in self._q_conv.items():
-                self._q_conv[k] = v[b]
+        if len(s._q_conv) > 0:
+            b = np.argsort(s._q_conv["wavespace"])
+            for k, v in s._q_conv.items():
+                s._q_conv[k] = v[b]
 
-        return self
+        return s
 
     def offset(self, offset, unit, inplace=True):
         # type: (Spectrum, float, str) -> Spectrum
