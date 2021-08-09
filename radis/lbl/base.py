@@ -75,7 +75,11 @@ import radis
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+
+try:  # Proper import
+    from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+except ImportError:  # if ran from here
+    from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
