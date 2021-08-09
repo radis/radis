@@ -765,40 +765,94 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     assert cache_last_modification_again > cache_last_modification
 
 
-def test_tabulated_partition_functions(verbose=True, plot=True, *args, **kwargs):
-    """Test on-the-fly tabulated partition return the same results as
-    full summation within 0.2%"""
+def test_tabulated_partition_functions(
+    verbose=True, plot=True, rtol=1e-2, *args, **kwargs
+):
+    """Test just-in-time tabulated partition return the same results as
+    full summation within 0.5%  (adjust value with ``rtol``)
+
+    We compute up to 10,000 K (beyond the validity range of most spectroscopic
+    parameters)
+
+    Run with verbose=True to check the accuracy and calibrate the
+    :py:attr:`radis.levels.partfunc.RovibParFuncCalculator.N_bins_scaling` function"""
 
     from radis.db.molecules import CO2_X_626
-    from radis.levels.partfunc import PartFunc_Dunham
+    from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
 
     Z_sum = PartFunc_Dunham(CO2_X_626, mode="full summation")
-    Z_tab = PartFunc_Dunham(CO2_X_626, mode="tabulation")
+    Z_tab = PartFunc_Dunham(
+        CO2_X_626, mode="tabulation", verbose=3 if verbose else False
+    )
+
+    # For reference, start by comparing full-summation partition functions with TIPS tabulated partition functions
+    Z_tips = PartFuncHAPI(M=2, I=1)  # CO  # isotope
+    for T in [296, 3000, 5000]:
+        z1 = Z_sum.at(T)
+        z2 = Z_tips.at(T)
+        accuracy = max(z1, z2) / min(z1, z2) - 1
+        # accuracy_dict[
+        if verbose:
+            print(
+                "full-sum & TIPS tabulated partition function of CO2 at {0}K close within {1:.2%}".format(
+                    T, accuracy
+                )
+            )
+        assert (
+            accuracy < 4 * rtol
+        )  # doesnt make sense to be extremely accurate in our tabulation if the full-summation doesnt match TIPS anyway
+
+    # accuracy_dict = {1:[], 2:[], 3:[]}  # accuracy as a function of number of temperatures (helps how to scale N_bins)
+
+    def compare_partition_functions(Z1, Z2, *T):
+        z1 = Z1(*T)
+        z2 = Z2(*T)
+        # accuracy_dict[
+        if verbose:
+            accuracy = max(z1, z2) / min(z1, z2) - 1
+            print(
+                "full-sum & jit-tabulated partition function of CO2 at {0}K close within {1:.2%}".format(
+                    T, accuracy
+                )
+            )
+        assert np.isclose(z1, z2, rtol=rtol)
 
     # Equilibrium (same < 0.2%)
-    assert np.isclose(Z_sum.at(300), Z_tab.at(300), rtol=2e-3)
-    assert np.isclose(Z_sum.at(3000), Z_tab.at(3000), rtol=2e-3)
+    compare_partition_functions(Z_sum.at, Z_tab.at, 296)
+    compare_partition_functions(Z_sum.at, Z_tab.at, 3000)
+    compare_partition_functions(Z_sum.at, Z_tab.at, 5000)
+    compare_partition_functions(Z_sum.at, Z_tab.at, 10000)
 
     # Nonequilibrium (same << 0.1%)
 
     #  ... Compare with Partition function computed from PartFunc_Dunham
-    assert np.isclose(Z_sum.at_noneq(1000, 300), Z_tab.at_noneq(1000, 300), rtol=0.5e-3)
-    assert np.isclose(
-        Z_sum.at_noneq(1000, 3000), Z_tab.at_noneq(1000, 3000), rtol=0.3e-3
-    )
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 296, 296)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 1000, 300)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 1000, 3000)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 3000, 3000)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 5000, 5000)
+    compare_partition_functions(Z_sum.at_noneq, Z_tab.at_noneq, 10000, 10000)
 
     # Nonequilibrium 3 Tvib (same << 0.1%)
 
     #  ... Compare with Partition function computed from PartFunc_Dunham
-    assert np.isclose(
-        Z_sum.at_noneq_3Tvib((1000, 1000, 2000), 300),
-        Z_tab.at_noneq_3Tvib((1000, 1000, 2000), 300),
-        rtol=1e-3,
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (296, 296, 296), 296
     )
-    assert np.isclose(
-        Z_sum.at_noneq_3Tvib((1000, 1000, 3500), 3000),
-        Z_tab.at_noneq_3Tvib((1000, 1000, 3500), 3000),
-        rtol=0.6e-3,
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (1000, 1000, 2000), 300
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (1000, 1000, 3500), 3000
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (3000, 3000, 3000), 3000
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (5000, 5000, 5000), 5000
+    )
+    compare_partition_functions(
+        Z_sum.at_noneq_3Tvib, Z_tab.at_noneq_3Tvib, (10000, 10000, 10000), 10000
     )
 
     # ... change Grid :
