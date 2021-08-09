@@ -10,7 +10,7 @@ A method to fit an experimental spectrum directly from :py:class:`~radis.lbl.fac
 with :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
 
 The method requires a fitting model. An example model is provided in :py:mod:`radis.tools.fitting` :
-:py:func:`~radis.tools.fitting.Tvib12Tvib3TrotModel`. Other models can be used, such
+:py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`. Other models can be used, such
 as in the :ref:`one-temperature fit example <example_one_temperature_fit>`
 
 More advanced tools for interactive fitting of multi-dimensional, multi-slabs

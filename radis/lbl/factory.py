@@ -76,6 +76,7 @@ for Developers:
 
 ----------
 """
+from typing import Union
 from warnings import warn
 
 import astropy.units as u
@@ -1794,7 +1795,7 @@ class SpectrumFactory(BandFactory):
         plot=False,
         solver_options={"maxiter": 300},
         **kwargs,
-    ) -> (Spectrum, OptimizeResult):
+    ) -> Union[Spectrum, OptimizeResult]:
         """Fit an experimental spectrum with an arbitrary model and an arbitrary
         number of fit parameters.
 
@@ -1805,13 +1806,20 @@ class SpectrumFactory(BandFactory):
             :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g::
                 sf.fit_spectrum(s_exp.take('transmittance'))
         model : func -> Spectrum
-            a line-of-sight model returning a Spectrum. Example : :py:func:`~radis.tools.fitting.Tvib12TrotModel`
+            a line-of-sight model returning a Spectrum. Example :
+            :py:func:`~radis.tools.fitting.LTEModel, `:py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
         fit_parameters : dict
-            ::
+            example::
+
                 {fit_parameter:initial_value}
         bounds : dict, optional
-            ::
+            example::
+
                 {fit_parameter:[min, max]}
+        fixed_parameters : dict
+            fixed parameters given to the model. Example::
+
+                fit_spectrum(fixed_parameters={"vib_distribution":"treanor"})
 
         Other Parameters
         ----------------
@@ -1843,7 +1851,7 @@ class SpectrumFactory(BandFactory):
         See Also
         --------
         :py:func:`~radis.tools.fitting.fit_spectrum`,
-        :py:func:`~radis.tools.fitting.Tvib12Tvib3TrotModel`,
+        :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`,
         `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`
 
         """

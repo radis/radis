@@ -11,8 +11,8 @@ directly from :py:class:`~radis.lbl.factory.SpectrumFactory`,
 with :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
 
 The method requires a fitting model. An example model is provided in :py:mod:`radis.tools.fitting` :
-:py:func:`~radis.tools.fitting.TrotModel`. Other models can be used; such as
-the :ref:`multi-temperature fit <example_multi_temperature_fit>`
+:py:func:`~radis.tools.fitting.LTEModel`. Other models can be used; such as in
+the :ref:`multi-temperature fit example<example_multi_temperature_fit>`
 
 More advanced tools for interactive fitting of multi-dimensional, multi-slabs
 spectra can be found in `Fitroom <https://github.com/radis/fitroom>`__

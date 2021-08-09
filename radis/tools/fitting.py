@@ -14,6 +14,7 @@ Originally in radis-examples : https://github.com/radis/radis-examples
 
 import sys
 from os.path import join
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -148,7 +149,7 @@ def fit_spectrum(
     plot=False,
     verbose=True,
     solver_options={"maxiter": 300},
-) -> (Spectrum, OptimizeResult):
+) -> Union[Spectrum, OptimizeResult]:
     """Fit an experimental spectrum with an arbitrary model and an arbitrary
     number of fit parameters.
 
@@ -159,11 +160,12 @@ def fit_spectrum(
         :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g::
             sf.fit_spectrum(s_exp.take('transmittance'))
     model : func -> Spectrum
-        a line-of-sight model returning a Spectrum. Example : :py:func:`~radis.tools.fitting.Tvib12Tvib3TrotModel`
+        a line-of-sight model returning a Spectrum. Example :
+        :py:func:`~radis.tools.fitting.LTEModel, `:py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
     fit_parameters : dict
         example::
 
-            {fit_parameter:initial_value}
+            {fit_parameter:initial_value}s
     bounds : dict, optional
         example::
 
