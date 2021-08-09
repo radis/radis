@@ -831,47 +831,93 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)
-        if "Evib12" not in df:
-            df["Evib12"] = df["Evib1"] + df["Evib2"]
-        df["logEvib12"] = np.log(df["Evib12"] + epsilon)  # to bin on a log grid
-        df["logEvib3"] = np.log(df["Evib3"] + epsilon)  # to bin on a log grid
-        df["logErot"] = np.log(df["Erot"] + epsilon)  # to bin on a log grid
-        df["gtot"] = df["grot"] * (
-            df["gvib"]
-        )  # note that this column is "lazy" and only evaluated at runtime
 
-        # Evib12_bins_neq = df.mean(
-        #     "Evib12", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
-        # )
-        # Evib3_bins_neq = df.mean(
-        #     "Evib3", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
-        # )
-        # Erot_bins_neq = df.mean(
-        #     "Erot", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
-        # )
-        Evib12_bins_neq, Evib3_bins_neq, Erot_bins_neq = df.mean(
-            ["Evib12", "Evib3", "Erot"],
-            binby=["logEvib12", "logEvib3", "logErot"],
-            shape=(N_bins, N_bins, N_bins),
-        )
-        g_bins_neq = df.sum(
-            "gtot",
-            binby=["logEvib12", "logEvib3", "logErot"],
-            shape=(N_bins, N_bins, N_bins),
-        )
+        if vib_distribution == "boltzmann" and rot_distribution == "boltzmann":
 
-        # drop empty
-        Evib12_bins_neq = Evib12_bins_neq[g_bins_neq > 0]
-        Evib3_bins_neq = Evib3_bins_neq[g_bins_neq > 0]
-        Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
-        g_bins_neq = g_bins_neq[g_bins_neq > 0]
+            if "Evib12" not in df:
+                df["Evib12"] = df["Evib1"] + df["Evib2"]
+            df["logEvib12"] = np.log(df["Evib12"] + epsilon)  # to bin on a log grid
+            df["logEvib3"] = np.log(df["Evib3"] + epsilon)  # to bin on a log grid
+            df["logErot"] = np.log(df["Erot"] + epsilon)  # to bin on a log grid
+            df["gtot"] = df["grot"] * (
+                df["gvib"]
+            )  # note that this column is "lazy" and only evaluated at runtime
 
-        self._tab_at_noneq_3Tvib = lambda Tvib, Trot: (
-            g_bins_neq
-            * exp(-hc_k * Evib12_bins_neq / Tvib[0])
-            * exp(-hc_k * Evib3_bins_neq / Tvib[2])
-            * exp(-hc_k * Erot_bins_neq / Trot)
-        ).sum(axis=0)
+            # Evib12_bins_neq = df.mean(
+            #     "Evib12", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
+            # )
+            # Evib3_bins_neq = df.mean(
+            #     "Evib3", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
+            # )
+            # Erot_bins_neq = df.mean(
+            #     "Erot", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
+            # )
+            Evib12_bins_neq, Evib3_bins_neq, Erot_bins_neq = df.mean(
+                ["Evib12", "Evib3", "Erot"],
+                binby=["logEvib12", "logEvib3", "logErot"],
+                shape=(N_bins, N_bins, N_bins),
+            )
+            g_bins_neq = df.sum(
+                "gtot",
+                binby=["logEvib12", "logEvib3", "logErot"],
+                shape=(N_bins, N_bins, N_bins),
+            )
+
+            # drop empty
+            Evib12_bins_neq = Evib12_bins_neq[g_bins_neq > 0]
+            Evib3_bins_neq = Evib3_bins_neq[g_bins_neq > 0]
+            Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
+            g_bins_neq = g_bins_neq[g_bins_neq > 0]
+
+            self._tab_at_noneq_3Tvib = lambda Tvib, Trot: (
+                g_bins_neq
+                * exp(-hc_k * Evib12_bins_neq / Tvib[0])
+                * exp(-hc_k * Evib3_bins_neq / Tvib[2])
+                * exp(-hc_k * Erot_bins_neq / Trot)
+            ).sum(axis=0)
+
+        elif vib_distribution == "treanor" and rot_distribution == "boltzmann":
+
+            if "Evib12_h" not in df:
+                df["Evib12_h"] = df["Evib1_h"] + df["Evib2_h"]
+            if "E_anharmonic" not in df:
+                df["E_anharmonic"] = df["Evib1_a"] + df["Evib2_a"] + df["Erot"]
+            df["logEvib12_h"] = np.log(df["Evib12_h"] + epsilon)  # to bin on a log grid
+            df["logEvib3_h"] = np.log(df["Evib3_h"] + epsilon)  # to bin on a log grid
+            df["E_anharmonic"] = np.log(
+                df["E_anharmonic"] + epsilon
+            )  # to bin on a log grid
+            df["gtot"] = df["grot"] * df["gvib"]
+
+            Evib12_h_bins_neq, Evib3_h_bins_neq, E_anharmonic_bins_neq = df.mean(
+                ["Evib12_h", "Evib3_h", "E_anharmonic"],
+                binby=["Evib12_h", "Evib3_h", "E_anharmonic"],
+                shape=(N_bins, N_bins, N_bins),
+            )
+            g_bins_neq = df.sum(
+                "gtot",
+                binby=["Evib12_h", "Evib3_h", "E_anharmonic"],
+                shape=(N_bins, N_bins, N_bins),
+            )
+
+            # drop empty
+            Evib12_h_bins_neq = Evib12_h_bins_neq[g_bins_neq > 0]
+            Evib3_h_bins_neq = Evib3_h_bins_neq[g_bins_neq > 0]
+            E_anharmonic_bins_neq = E_anharmonic_bins_neq[g_bins_neq > 0]
+            g_bins_neq = g_bins_neq[g_bins_neq > 0]
+
+            self._tab_at_noneq_3Tvib = lambda Tvib, Trot: (
+                g_bins_neq
+                * exp(-hc_k * Evib12_h_bins_neq / Tvib[0])
+                * exp(-hc_k * Evib3_h_bins_neq / Tvib[2])
+                * exp(-hc_k * E_anharmonic_bins_neq / Trot)
+            ).sum(axis=0)
+
+        else:
+            raise NotImplementedError(
+                f"vib_distribution: {vib_distribution}, rot_distribution: {rot_distribution}"
+            )
+
         # Also save parameters to trigger a re-tabulation if they change:
         self._tab_N_bins = N_bins
         self._tab_vib_distribution = vib_distribution
@@ -898,8 +944,6 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 "Tabulated mode only implemented for Tvib1 = Tvib2. Use mode='full summation'"
             )
         if len(overpopulation) > 0:
-            raise NotImplementedError
-        if vib_distribution != "boltzmann":
             raise NotImplementedError
         if rot_distribution != "boltzmann":
             raise NotImplementedError
