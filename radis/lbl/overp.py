@@ -25,7 +25,10 @@ import numpy as np
 import pandas as pd
 from numpy import exp
 
-from radis.lbl.labels import vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN
+try:  # Proper import
+    from .labels import vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN
+except ImportError:  # if ran from here
+    from radis.lbl.labels import vib_lvl_name_cdsd_pc, vib_lvl_name_cdsd_pcN
 from radis.misc.basics import is_float
 from radis.phys.constants import hc_k
 from radis.spectrum.rescale import (

@@ -22,9 +22,9 @@ spectra can be found in `Fitroom <https://github.com/radis/fitroom>`__
 
 from radis import SpectrumFactory, load_spec
 
-# %% Get Fitted Data
+#%% Get Fitted Data
+# Here we get an experimental spectrum from RADIS test cases. Use your own instead.
 from radis.test.utils import getTestFile, setup_test_line_databases
-from radis.tools.fitting import LTEModel
 
 setup_test_line_databases()
 
@@ -40,9 +40,11 @@ s_exp = (
     .offset(-0.2, "nm")
 )
 
-""" Customize the :py:func:`~radis.tools.fitting.LTEModel` for our case: we add a slit
-(non fittable parameter) and normalize it
-"""
+#%%
+# Customize the :py:func:`~radis.tools.fitting.LTEModel` for our case: we add a slit
+# (non fittable parameter) and normalize it
+
+from radis.tools.fitting import LTEModel
 
 
 def LTEModel_withslitnorm(factory, fit_parameters, fixed_parameters):
@@ -55,7 +57,8 @@ def LTEModel_withslitnorm(factory, fit_parameters, fixed_parameters):
     return s.take("radiance").normalize()
 
 
-# %% Calculate
+#%% Calculate
+# using :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
 
 import astropy.units as u
 
@@ -87,7 +90,7 @@ s_best, best = sf.fit_spectrum(
     },
     plot=True,
     solver_options={
-        "maxiter": 50,  # 👈 increase to let the fit converge
+        "maxiter": 15,  # 👈 increase to let the fit converge
         "ftol": 1e-15,
     },
     verbose=2,

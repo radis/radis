@@ -89,8 +89,13 @@ from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.db.molparam import MolParams
-from radis.lbl.bands import BandFactory
-from radis.lbl.base import get_waverange
+
+try:  # Proper import
+    from .bands import BandFactory
+    from .base import get_waverange
+except ImportError:  # if ran from here
+    from radis.lbl.bands import BandFactory
+    from radis.lbl.base import get_waverange
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
 from radis.misc.profiler import Profiler

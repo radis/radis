@@ -60,7 +60,6 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
-import vaex
 from numpy import exp
 
 import radis
@@ -263,6 +262,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             printdbg(
                 "called RovibPartitionFunction.at(T={0}K, ".format(T)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
 
         # Check inputs
@@ -291,6 +291,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         """
 
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)
@@ -408,6 +410,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 "called RovibPartitionFunction.atnoneq"
                 + "(Tvib={0}K, Trot={1}K, ... )".format(Tvib, Trot)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
 
         # Check inputs, initialize
@@ -478,6 +481,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         """
 
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)
@@ -498,7 +503,6 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         g_bins_neq = df.sum(
             "gtot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
         )
-
         # drop empty
         Evib_bins_neq = Evib_bins_neq[g_bins_neq > 0]
         Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
@@ -751,6 +755,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 "called RovibPartitionFunction.at_noneq_3Tvib"
                 + "(Tvib={0}K, Trot={1}K)".format(Tvib, Trot)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
         #                               'overpopulation={0}, vib_distribution={1}'.format(overpopulation, vib_distribution)+\
         #                               'rot_distribution={0})'.format(rot_distribution)
@@ -828,6 +833,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
         """
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)

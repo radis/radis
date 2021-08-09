@@ -20,7 +20,10 @@ Routine Listing
 from copy import deepcopy
 from os.path import exists
 
-from radis.lbl.factory import SpectrumFactory
+try:  # Proper import
+    from .labels import SpectrumFactory
+except ImportError:  # if ran from here
+    from radis.lbl.factory import SpectrumFactory
 from radis.misc.basics import all_in
 from radis.phys.air import air2vacuum
 from radis.phys.convert import nm2cm

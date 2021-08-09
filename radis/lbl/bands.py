@@ -60,7 +60,11 @@ from radis.lbl.labels import (
     vib_lvl_name_hitran_class1,
     vib_lvl_name_hitran_class5,
 )
-from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+
+try:  # Proper import
+    from .loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+except ImportError:  # if ran from here
+    from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 from radis.misc.basics import all_in, is_float
 from radis.misc.profiler import Profiler
 from radis.misc.progress_bar import ProgressBar
