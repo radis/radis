@@ -24,7 +24,7 @@ from radis import SpectrumFactory, load_spec
 
 # %% Get Fitted Data
 from radis.test.utils import getTestFile, setup_test_line_databases
-from radis.tools.fitting import TrotModel  # Tvib12Tvib3TrotModel
+from radis.tools.fitting import LTEModel
 
 setup_test_line_databases()
 
@@ -40,13 +40,13 @@ s_exp = (
     .offset(-0.2, "nm")
 )
 
-""" Improve the :py:func:`~radis.tools.fitting.TrotModel` : we add a slit
-(non fittable parameter)
+""" Customize the :py:func:`~radis.tools.fitting.LTEModel` for our case: we add a slit
+(non fittable parameter) and normalize it
 """
 
 
-def TrotModel_norm(factory, model_input):
-    s = TrotModel(factory, model_input)
+def LTEModel_withslitnorm(factory, fit_parameters, fixed_parameters):
+    s = LTEModel(factory, fit_parameters, fixed_parameters)
     # we could also have added a fittable parameter, such as an offset,
     # or made the slit width a fittable parameter.
     # ... any paramter in model_input will be fitted.
@@ -76,13 +76,13 @@ sf.load_databank("HITRAN-CO2-TEST")
 
 s_best, best = sf.fit_spectrum(
     s_exp.take("radiance"),
-    model=TrotModel_norm,
+    model=LTEModel_withslitnorm,
     fit_parameters={
-        "Trot": 300,
+        "Tgas": 300,
         # "offset": 0
     },
     bounds={
-        "Trot": [300, 2000],
+        "Tgas": [300, 2000],
         # "offset": [-1, 1],
     },
     plot=True,

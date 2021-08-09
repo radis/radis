@@ -30,7 +30,7 @@ from radis import Spectrum, SpectrumFactory
 
 # %% Get Fitted Data
 from radis.test.utils import getValidationCase, setup_test_line_databases
-from radis.tools.fitting import Tvib12Tvib3TrotModel
+from radis.tools.fitting import Tvib12Tvib3Trot_NonLTEModel
 
 setup_test_line_databases()
 # Data from Dang, adapted by Klarenaar, digitized by us
@@ -61,22 +61,25 @@ sf = SpectrumFactory(
     broadening_max_width=1,  # cm-1
     medium="vacuum",
     export_populations=None,  # 'vib',
+    # parsum_mode="tabulation"
 )
 sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+sf.warnings["PerformanceWarning"] = "ignore"
 sf.load_databank("HITEMP-CO2-TEST")
 
 s_best, best = sf.fit_spectrum(
     s_exp.take("transmittance_noslit"),
-    model=Tvib12Tvib3TrotModel,
+    model=Tvib12Tvib3Trot_NonLTEModel,
     fit_parameters={
         "T12": 517,
         "T3": 2641,
         "Trot": 491,
     },
     bounds={"T12": [300, 2000], "T3": [300, 5000], "Trot": [300, 2000]},
+    fixed_parameters={"vib_distribution": "treanor"},
     plot=True,
     solver_options={
         "method": "TNC",
-        "maxiter": 30,  # 👈 increase to let the fit converge
+        "maxiter": 80,  # 👈 increase to let the fit converge
     },
 )

@@ -1791,7 +1791,7 @@ class SpectrumFactory(BandFactory):
         model,
         fit_parameters,
         bounds={},
-        plot=True,
+        plot=False,
         solver_options={"maxiter": 300},
         **kwargs,
     ) -> (Spectrum, OptimizeResult):
@@ -1816,8 +1816,8 @@ class SpectrumFactory(BandFactory):
         Other Parameters
         ----------------
         plot: bool
-            if True, plot spectra as they are computed; and plot the convergence of
-            the residual.
+            if ``True``, plot spectra as they are computed; and plot the convergence of
+            the residual. Default ``False``
         solver_options: dict
             parameters forwarded to the solver. More info in `~scipy.optimize.minimize`
             Example::

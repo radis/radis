@@ -26,8 +26,8 @@ from radis.spectrum.compare import get_default_units, get_diff, get_residual
 
 
 # Calculate a new spectrum for given parameters:
-def TrotModel(factory, model_input) -> Spectrum:
-    """A model returning a single-slab LTE spectrum with Trot
+def LTEModel(factory, fittable_parameters, fixed_parameters={}) -> Spectrum:
+    """A model returning a single-slab LTE spectrum
 
     Parameters
     ----------
@@ -43,23 +43,26 @@ def TrotModel(factory, model_input) -> Spectrum:
     Examples
     --------
 
-    .. minigallery:: radis.tools.fitting.TrotModel
+    .. minigallery:: radis.tools.fitting.LTEModel
+
+    See Also
+    --------
+    :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
 
     """
 
-    # ... input should remain a dict
-    Trot = model_input["Trot"]
+    kwargs = {"name": "fit"}
 
     # ... create whatever model below (can have several slabs with SerialSlabs
     # ... or MergeSlabs, etc.)
 
+    # update with remaining fittable and fixed parameters
+    kwargs = {**kwargs, **fittable_parameters}
+    kwargs = {**kwargs, **fixed_parameters}
+
     # >>> This is where the RADIS calculation is done!
 
-    s = factory.eq_spectrum(
-        Trot,
-        # vib_distribution="bo",
-        name="fit",
-    )
+    s = factory.eq_spectrum(**kwargs)
 
     # <<<
 
@@ -68,17 +71,24 @@ def TrotModel(factory, model_input) -> Spectrum:
 
 
 # Calculate a new spectrum for given parameters:
-def Tvib12Tvib3TrotModel(factory, model_input) -> Spectrum:
+def Tvib12Tvib3Trot_NonLTEModel(
+    factory, fittable_parameters, fixed_parameters={}
+) -> Spectrum:
     """A model returning a single-slab non-LTE spectrum with Tvib=(T12, T12, T3), Trot
+
+    Used for non-LTE CO2 modeling. See the :ref:`multi-temperature fit example<example_multi_temperature_fit>`
 
     Parameters
     ----------
-    model_input: dict
-        input dictionary (typically: temperatures). Example
+    fittable_parameters: dict
+        input dictionary of fittable parameters (typically: temperatures). Example
         ::
             {'T12':value,
              'T3':value,
              'Trot':value}
+    fixed_parameters: dict
+        input dictionary of non-fittable parameters. Will override input
+        conditions given to :py:meth:`~radis.lbl.factory.non_eq_spectrum`
 
     Returns
     -------
@@ -87,27 +97,37 @@ def Tvib12Tvib3TrotModel(factory, model_input) -> Spectrum:
     Examples
     --------
 
-    .. minigallery:: radis.tools.fitting.Tvib12Tvib3TrotModel
+    .. minigallery:: radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel
 
+    See Also
+    --------
+    :py:func:`~radis.tools.fitting.LTEModel`
     """
 
+    fittable_parameters = fittable_parameters.copy()
+
     # ... input should remain a dict
-    T12 = model_input["T12"]
-    T3 = model_input["T3"]
-    Trot = model_input["Trot"]
+    T12 = fittable_parameters.pop("T12")
+    T3 = fittable_parameters.pop("T3")
+    Trot = fittable_parameters.pop("Trot")
 
     # ... create whatever model below (can have several slabs with SerialSlabs
     # ... or MergeSlabs, etc.)
 
     # >>> This is where the RADIS calculation is done!
 
-    s = factory.non_eq_spectrum(
-        (T12, T12, T3),
-        Trot,
-        Ttrans=Trot,
-        vib_distribution="treanor",
-        name="fit",
-    )
+    kwargs = {
+        "Tvib": (T12, T12, T3),
+        "Trot": Trot,
+        "Ttrans": Trot,
+        # "vib_distribution":"treanor",
+        "name": "fit",
+    }
+    # update with remaining fittable and fixed parameters
+    kwargs = {**kwargs, **fittable_parameters}
+    kwargs = {**kwargs, **fixed_parameters}
+
+    s = factory.non_eq_spectrum(**kwargs)
 
     # <<<
 
@@ -124,7 +144,8 @@ def fit_spectrum(
     model,
     fit_parameters,
     bounds={},
-    plot=True,
+    fixed_parameters={},
+    plot=False,
     verbose=True,
     solver_options={"maxiter": 300},
 ) -> (Spectrum, OptimizeResult):
@@ -147,12 +168,16 @@ def fit_spectrum(
         example::
 
             {fit_parameter:[min, max]}
+    fixed_parameters : dict
+        fixed parameters given to the model. Example::
+
+            fit_spectrum(fixed_parameters={"vib_distribution":"treanor"})
 
     Other Parameters
     ----------------
     plot: bool
-        if True, plot spectra as they are computed; and plot the convergence of
-        the residual.
+        if ``True``, plot spectra as they are computed; and plot the convergence of
+        the residual. Defaut ``False``
     verbose: bool, or ``2``
         use ``2`` for high verbose level.
     solver_options: dict
@@ -180,19 +205,19 @@ def fit_spectrum(
     :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
     """
 
-    # Get initial values of fitted parameters
-    model_input = fit_parameters
-
-    compute_los_model = lambda model_input: model(factory, model_input)
+    # Get model being fitted:
+    compute_los_model = lambda fit_parameters: model(
+        factory, fit_parameters, fixed_parameters=fixed_parameters
+    )
 
     # Calculate initial Spectrum, by showing all steps.
     # factory.verbose = 0  # reduce verbose during calculation.
     compute_los_model(
-        model_input
+        fit_parameters
     )  # Blank run to load energies; initialize all caches, etc.
     default_verbose = factory.verbose
     factory.verbose = 0  # reduce verbose during calculation.
-    s0 = compute_los_model(model_input)  # New run to get performance profile of fit
+    s0 = compute_los_model(fit_parameters)  # New run to get performance profile of fit
     sys.stderr.flush()
     s0.name = "Fit (in progress)"
     if "profiler" in s0.conditions:
@@ -259,7 +284,7 @@ def fit_spectrum(
     def generate_spectrum(fit_values):
 
         # Generate dictionary
-        inputs = model_input.copy()
+        inputs = fit_parameters.copy()
         for k, v in zip(fit_params, fit_values):
             inputs[k] = v
 
@@ -271,7 +296,7 @@ def fit_spectrum(
     blit = True
 
     if plot:
-        plt.ion()
+        # plt.ion()
         # Graph with plot diff
         # figSpec, axSpec = plt.subplots(num='diffspectra')
         figSpec, axSpec = plot_diff(
@@ -378,7 +403,8 @@ def fit_spectrum(
         axRes.set_ylabel("Residual")
         figRes.legend(loc="upper right")
         figRes.canvas.draw()
-        axResbackground = figRes.canvas.copy_from_bbox(axRes.bbox)
+        if blit:
+            axResbackground = figRes.canvas.copy_from_bbox(axRes.bbox)
         plt.show(block=False)
 
         (lineRes,) = axRes.plot((1, 2), (res0, res1), "-ko")
@@ -418,11 +444,14 @@ def fit_spectrum(
             lineLast.set_data((ite, res))
 
             if blit:
+                # ... from https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot
                 figRes.canvas.restore_region(axResbackground)
                 for k in fit_params:
                     axRes.draw_artist(lineValues[k])
                 axRes.draw_artist(lineLast)
                 axRes.draw_artist(lineRes)
+                # fill in the axes rectangle
+                figRes.canvas.blit(axRes.bbox)
             else:
                 figRes.canvas.draw()
             figRes.canvas.flush_events()
@@ -469,7 +498,11 @@ def fit_spectrum(
     s_best = generate_spectrum(best.x)
 
     if verbose and best.success:
-        print("Init {0} = {1}{2}".format(fit_params, (fit_values_max + fit_values_min) / 2, fit_units))
+        print(
+            "Init {0} = {1}{2}".format(
+                fit_params, (fit_values_max + fit_values_min) / 2, fit_units
+            )
+        )
         print("Final {0} = {1}{2}".format(fit_params, np.round(best.x), fit_units))
 
     if verbose >= 2:
@@ -540,13 +573,14 @@ if __name__ == "__main__":
 
     s_best, best = sf.fit_spectrum(
         s_exp.take("transmittance_noslit"),
-        model=Tvib12Tvib3TrotModel,
+        model=Tvib12Tvib3Trot_NonLTEModel,
         fit_parameters={
             "T12": 517,
             "T3": 2641,
             "Trot": 491,
         },
         bounds={"T12": [300, 2000], "T3": [300, 5000], "Trot": [300, 2000]},
+        fixed_parameters={"vib_distribution": "treanor"},
         plot=True,
         solver_options={"method": "TNC", "maxiter": 200},
     )
