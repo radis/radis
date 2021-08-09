@@ -262,6 +262,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             printdbg(
                 "called RovibPartitionFunction.at(T={0}K, ".format(T)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
 
         # Check inputs
@@ -299,11 +300,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         df["gtot"] = (
             df["grot"] * df["gvib"]
         )  # note that this column is "lazy" and only evaluated at runtime
-        print("before EQ mean")
         E_bins = df.mean("E", binby="logE", shape=N_bins)
-        print("before EQ sum")
         g_bins = df.sum("gtot", binby="logE", shape=N_bins)
-        print("after EQ sum")
 
         # drop empty
         E_bins = E_bins[g_bins > 0]
@@ -412,6 +410,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 "called RovibPartitionFunction.atnoneq"
                 + "(Tvib={0}K, Trot={1}K, ... )".format(Tvib, Trot)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
 
         # Check inputs, initialize
@@ -484,9 +483,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         # Get variables
         import vaex  # import delayed until now (takes ~2s to import)
 
-        print("before from_pandas")
         df = vaex.from_pandas(self.df)
-        print("after from_pandas")
 
         epsilon = 1e-4  # prevent log(0)
         df["logEvib"] = np.log(df["Evib"] + epsilon)  # to bin on a log grid
@@ -500,16 +497,12 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         # Erot_bins_neq = df.mean(
         #     "Erot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
         # )
-        print("before mean")
         Evib_bins_neq, Erot_bins_neq = df.mean(
             ["Evib", "Erot"], binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
         )
-        print("before sum")
         g_bins_neq = df.sum(
             "gtot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
         )
-        print("after sum")
-
         # drop empty
         Evib_bins_neq = Evib_bins_neq[g_bins_neq > 0]
         Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
@@ -762,6 +755,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 "called RovibPartitionFunction.at_noneq_3Tvib"
                 + "(Tvib={0}K, Trot={1}K)".format(Tvib, Trot)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
         #                               'overpopulation={0}, vib_distribution={1}'.format(overpopulation, vib_distribution)+\
         #                               'rot_distribution={0})'.format(rot_distribution)
