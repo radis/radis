@@ -60,7 +60,6 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
-import vaex
 from numpy import exp
 
 import radis
@@ -291,6 +290,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         """
 
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)
@@ -298,8 +299,11 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         df["gtot"] = (
             df["grot"] * df["gvib"]
         )  # note that this column is "lazy" and only evaluated at runtime
+        print("before EQ mean")
         E_bins = df.mean("E", binby="logE", shape=N_bins)
+        print("before EQ sum")
         g_bins = df.sum("gtot", binby="logE", shape=N_bins)
+        print("after EQ sum")
 
         # drop empty
         E_bins = E_bins[g_bins > 0]
@@ -478,7 +482,11 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         """
 
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
+        print("before from_pandas")
         df = vaex.from_pandas(self.df)
+        print("after from_pandas")
 
         epsilon = 1e-4  # prevent log(0)
         df["logEvib"] = np.log(df["Evib"] + epsilon)  # to bin on a log grid
@@ -492,12 +500,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         # Erot_bins_neq = df.mean(
         #     "Erot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
         # )
+        print("before mean")
         Evib_bins_neq, Erot_bins_neq = df.mean(
             ["Evib", "Erot"], binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
         )
+        print("before sum")
         g_bins_neq = df.sum(
             "gtot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
         )
+        print("after sum")
 
         # drop empty
         Evib_bins_neq = Evib_bins_neq[g_bins_neq > 0]
@@ -828,6 +839,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
         """
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)
