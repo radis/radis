@@ -28,7 +28,7 @@ from os.path import join
 
 from radis import Spectrum, SpectrumFactory
 
-# %% Get Fitted Data
+#%% Get Fitted Data
 from radis.test.utils import getValidationCase, setup_test_line_databases
 from radis.tools.fitting import Tvib12Tvib3Trot_NonLTEModel
 
