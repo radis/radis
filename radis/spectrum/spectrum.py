@@ -184,6 +184,7 @@ class Spectrum(object):
         s.resample(w_new)               # resample on new wavespace
         s.store('co_calculation2.spec')
 
+    .. minigallery:: radis.spectrum.spectrum.Spectrum
 
     Notes
     -----
@@ -408,6 +409,7 @@ class Spectrum(object):
                          units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
                          waveunit='nm')
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.from_array
 
         See Also
         --------
@@ -513,6 +515,8 @@ class Spectrum(object):
             s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
                          units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
                          waveunit='nm')
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.from_txt
 
         Notes
         -----
@@ -1058,7 +1062,15 @@ class Spectrum(object):
         -------
         s: Spectrum
             Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
-            directly anyway.
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`
+
+        Examples
+        --------
+        ::
+            for path in [0.1, 10, 100]:
+                s.rescale_path_length(10, inplace=False).plot(nfig='same')
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_path_length
 
         Notes
         -----
@@ -1113,7 +1125,14 @@ class Spectrum(object):
         -------
         s: Spectrum
             Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
-            directly anyway.
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`
+
+        Examples
+        --------
+        ::
+            s.rescale_mole_fraction(0.2)
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_mole_fraction
 
         Notes
         -----
@@ -1163,7 +1182,7 @@ class Spectrum(object):
         -------
         s: Spectrum
             Cropped Spectrum. If ``inplace=True``, Spectrum has been updated
-            directly anyway.
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`
 
 
         Examples
@@ -1175,6 +1194,8 @@ class Spectrum(object):
             s_exp = load_spec('typical_result.spec')
             s.crop(s_exp.get_wavelength.min(), s_exp.get_wavelength.max(), 'nm')
             plot_diff(s_exp, s)
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.crop
 
 
         See Also
@@ -1191,6 +1212,39 @@ class Spectrum(object):
             wunit = self.get_waveunit()
 
         return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, inplace=inplace)
+
+    def sort(self, inplace=True):
+        """Sort the Spectrum by wavelength / wavenumber.
+
+        Parameters
+        ----------
+        inplace : bool, optional
+            if ``True``, modifies the Spectrum object directly. The default is ``True``.
+
+        Returns
+        -------
+        s: Spectrum
+            sorted Spectrum. If ``inplace=True``, Spectrum has been updated
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`.
+
+        """
+
+        if inplace:
+            s = self
+        else:
+            s = self.copy()
+
+        if len(self._q) > 0:
+            b = np.argsort(s._q["wavespace"])
+            for k, v in s._q.items():
+                s._q[k] = v[b]
+
+        if len(s._q_conv) > 0:
+            b = np.argsort(s._q_conv["wavespace"])
+            for k, v in s._q_conv.items():
+                s._q_conv[k] = v[b]
+
+        return s
 
     def offset(self, offset, unit, inplace=True):
         # type: (Spectrum, float, str) -> Spectrum
@@ -1213,7 +1267,15 @@ class Spectrum(object):
         -------
         s: Spectrum
             Offset Spectrum. If ``inplace=True``, Spectrum has been updated
-            directly anyway.
+            directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`.
+
+        Examples
+        --------
+        ::
+            s.offset(5, 'nm')
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.offset
+
 
         See Also
         --------
@@ -1274,6 +1336,13 @@ class Spectrum(object):
         -------
         P: float
             radiated power in ``unit``
+
+        Examples
+        --------
+        ::
+            s.get_power('W/cm2/sr')
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.offset
 
         See Also
         --------
@@ -2015,7 +2084,7 @@ class Spectrum(object):
             on the calculated range. Default 0.01 (1%). See :func:`~radis.tools.slit.offset_dilate_slit_function`
         *args, **kwargs
             are forwarded to slit generation or import function
-        verbose: boolean
+        verbose: bool
             print stuff
         energy_threshold: float
              tolerance fraction when resampling. Default ``1e-3`` (0.1%)
@@ -2315,6 +2384,7 @@ class Spectrum(object):
 
         fix, ax: matplotlib objects
             figure and ax
+
 
         See Also
         --------
@@ -2728,7 +2798,10 @@ class Spectrum(object):
             oversampling and spline interpolation. These parameters can be adjusted,
             and energy conservation ensured with the appropriate parameters.
 
-        Uses the :func:`radis.misc.signal.resample` function.
+        To minimize information loss, always resample the high-resolution spectrum
+        over the low-resolution spectrum, i.e. ::
+
+            s_highres.resample(s_lowres)
 
 
         Parameters
@@ -2747,17 +2820,17 @@ class Spectrum(object):
             unit after resampling (i.e: a spectrum calculated and stored in `cm-1`
             but resampled in `nm` will be stored in `nm` from now on).
             If ``'nm'``, wavelength in air. If ``'nm_vac'``, wavelength in vacuum.
-        out_of_bounds: 'transparent', 'nan', 'error'
+        out_of_bounds: ``'transparent'``, ``'nan'``, ``'error'``
             what to do if resampling is out of bounds. 'transparent': fills with
             transparent medium. 'nan': fill with nan. 'error': raises an error.
-            Default 'nan'
-        if_conflict_drop: 'error', 'convoluted', 'non_convoluted'
+            Default ``'nan'``
+        if_conflict_drop: ``'error'``, ``'convoluted'``, ``'non_convoluted'``
             There is a problem if both convoluted and non convoluted (*no_slit)
             quantities coexists, as they aren't scaled on the same wavespace
             grid. If 'error' an error is raised. If 'convoluted', convoluted
             quantities will be dropped. If 'non_convoluted' non convoluted quantities
-            are dropped. Default 'error'
-        medium: 'air', 'vacuum', or 'default'
+            are dropped. Default ``'error'``
+        medium: ``'air'``, ``'vacuum'``, or ``'default'``
             in which medium is the new waverange is calculated if it is given
             in 'nm'. Ignored if unit='cm-1'
 
@@ -2775,7 +2848,7 @@ class Spectrum(object):
             if ``True``, modifies the Spectrum object directly. Else, returns
             a copy. Default ``True``.
         **kwargs: **dict
-            all other arguments are sent to :func:`~radis.misc.signal.resample`
+            all other arguments are sent to :func:`radis.misc.signal.resample`
 
         Returns
         -------
@@ -2785,7 +2858,7 @@ class Spectrum(object):
 
         See Also
         --------
-        :func:`~radis.misc.signal.resample`
+        :func:`radis.misc.signal.resample`
         """
         # TODO (but dangerous): reapply_slit at the end of the process if slit
         # is in conditions?
@@ -3489,7 +3562,7 @@ class Spectrum(object):
         wunit=None,
         inplace=False,
         force=False,
-        verbose=True,
+        verbose=False,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 
@@ -3516,8 +3589,11 @@ class Spectrum(object):
 
         Examples
         --------
+        ::
+            s.normalize("max", (4200, 4800), inplace=True).plot()
 
-            s.normalize("max", (4200, 4800), inplace=True)
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.normalize
+
         """
 
         from radis.spectrum.operations import multiply
@@ -3546,13 +3622,13 @@ class Spectrum(object):
                 norm_unit = s.units[var]
             elif normalize_how == "area":
                 norm = np.abs(nantrapz(I[b], w[b]))
-                norm_unit = u.Unit(s.units[var]) * u.Unit(wunit)
+                norm_unit = Unit(s.units[var]) * Unit(wunit)
             else:
                 raise ValueError(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
 
-            out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
+            out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
         else:
             if normalize_how == "max":
@@ -3564,14 +3640,14 @@ class Spectrum(object):
             elif normalize_how == "area":
                 w, I = s.get(var, wunit=wunit, copy=False)
                 norm = nantrapz(I, w)
-                norm_unit = u.Unit(s.units[var]) * u.Unit(wunit)
+                norm_unit = Unit(s.units[var]) * Unit(wunit)
 
             else:
                 raise ValueError(
                     "Unexpected `normalize_how`: {0}".format(normalize_how)
                 )
             # Ensure we use the same unit system!
-            out = multiply(s, 1 / (norm * u.Unit(norm_unit)), inplace=inplace)
+            out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
         if verbose:
             print("Normalization factor : {0}".format(norm))
         return out

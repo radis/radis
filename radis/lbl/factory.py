@@ -76,12 +76,14 @@ for Developers:
 
 ----------
 """
+from typing import Union
 from warnings import warn
 
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp
 from scipy.constants import N_A, c, k, pi
+from scipy.optimize import OptimizeResult
 
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
@@ -382,7 +384,7 @@ class SpectrumFactory(BandFactory):
         save_memory=False,
         export_populations=None,
         export_lines=False,
-        **kwargs
+        **kwargs,
     ):
 
         # Initialize BandFactory object
@@ -1785,8 +1787,15 @@ class SpectrumFactory(BandFactory):
         return conv2(Ptot, "mW/cm2/sr", unit)
 
     def fit_spectrum(
-        self, s_exp, model, fit_parameters, bounds={}, plot=True, maxiter=300
-    ):
+        self,
+        s_exp,
+        model,
+        fit_parameters,
+        bounds={},
+        plot=False,
+        solver_options={"maxiter": 300},
+        **kwargs,
+    ) -> Union[Spectrum, OptimizeResult]:
         """Fit an experimental spectrum with an arbitrary model and an arbitrary
         number of fit parameters.
 
@@ -1797,30 +1806,53 @@ class SpectrumFactory(BandFactory):
             :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g::
                 sf.fit_spectrum(s_exp.take('transmittance'))
         model : func -> Spectrum
-            a line-of-sight model returning a Spectrum. Example : :py:func:`~radis.tools.fitting.Tvib12TrotModel`
+            a line-of-sight model returning a Spectrum. Example :
+            :py:func:`~radis.tools.fitting.LTEModel, `:py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
         fit_parameters : dict
-            ::
+            example::
+
                 {fit_parameter:initial_value}
         bounds : dict, optional
-            ::
+            example::
+
                 {fit_parameter:[min, max]}
+        fixed_parameters : dict
+            fixed parameters given to the model. Example::
+
+                fit_spectrum(fixed_parameters={"vib_distribution":"treanor"})
 
         Other Parameters
         ----------------
         plot: bool
-            if True, plot spectra as they are computed; and plot the convergence of
-            the residual.
-        maxiter: int
-            max number of iteration, default 300
+            if ``True``, plot spectra as they are computed; and plot the convergence of
+            the residual. Default ``False``
+        solver_options: dict
+            parameters forwarded to the solver. More info in `~scipy.optimize.minimize`
+            Example::
+
+                {"maxiter": (int)  max number of iteration default ``300``,
+                 }
+        kwargs: dict
+            forwarded to :py:func:`~radis.tools.fitting.fit_spectrum`
 
         Returns
         -------
-        s_best
+        s_best: Spectrum
+            best spectrum
+        res: OptimizeResults
+            output of `~scipy.optimize.minimize`
+
+        Examples
+        --------
+
+        .. minigallery:: radis.lbl.factory.fit_spectrum
+
 
         See Also
         --------
-        :py:func:`~radis.tools.fitting.SpectrumFactory.fit_spectrum`
-        For more advanced cases, use Fitroom : https://github.com/radis/fitroom
+        :py:func:`~radis.tools.fitting.fit_spectrum`,
+        :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`,
+        `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`
 
         """
         from radis.tools.fitting import fit_spectrum
@@ -1832,7 +1864,8 @@ class SpectrumFactory(BandFactory):
             fit_parameters,
             bounds=bounds,
             plot=plot,
-            maxiter=maxiter,
+            solver_options=solver_options,
+            **kwargs,
         )
 
     def print_perf_profile(self, number_format="{:.3f}", precision=16):

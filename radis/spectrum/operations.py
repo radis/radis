@@ -71,6 +71,7 @@ from radis.phys.convert import (
     nm_air2cm,
     vacuum2air,
 )
+from radis.phys.units import Unit
 from radis.spectrum.spectrum import Spectrum
 
 # %% Filter Spectra
@@ -519,7 +520,7 @@ def multiply(s, coef, unit=None, var=None, inplace=False):
     # Convert Spectrum unit
     if unit is not None:
         Iunit = s.units[var]
-        s.units[var] = (u.Unit(Iunit) * u.Unit(unit)).to_string()
+        s.units[var] = (Unit(Iunit) * Unit(unit)).to_string()
 
     return s
 

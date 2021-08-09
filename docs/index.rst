@@ -85,13 +85,6 @@ and compared with the :py:func:`~radis.spectrum.compare.plot_diff` function. For
     sexp = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')
     plot_diff(sexp, s)    # comparing with a spectrum 's' calculated previously
 
-Typical output of :py:func:`~radis.spectrum.compare.plot_diff` (below: a CO2 spectrum
-at 3400 K calculated with the [HITEMP-2010]_ and [CDSD-4000]_ line databases):
-
-.. image:: spectrum/cdsd4000_vs_hitemp_3409K.*
-    :scale: 60 %
-    :target: https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#compare-two-spectra
-    :alt: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
 
 Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-processing functions
 (:ref:`rescale <label_spectrum_rescale>` , :ref:`crop<label_spectrum_offset_crop>`,
@@ -100,25 +93,6 @@ Refer to the :ref:`Spectrum object guide <label_spectrum>` for more post-process
 :ref:`identify each line <label_spectrum_linesurvey>`,
 :ref:`manipulate multiple spectra at once <label_spectrum_database>`, etc.)
 
-
-
-In the browser (no installation needed!)
-========================================
-
-Alternatively, you can also run RADIS directly in the browser with the
-`RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project.
-For instance, run the Quick Start example on the link below:
-
-.. image:: https://mybinder.org/badge.svg
-    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
-    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
-
-Or use :ref:`🌱 RADIS-lab <label_radis_lab>` to start a full online environment for advanced spectrum processing
-and comparison with experimental data :
-
-.. image:: https://mybinder.org/badge.svg
-    :target: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
-    :alt: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
 
 
 More examples
@@ -149,6 +123,26 @@ or on the community chats on `Gitter <https://gitter.im/radis-radiation/communit
 `Slack <https://radis.github.io/slack-invite/>`__
 
 |badge_gitter| |badge_slack|
+
+
+
+In the browser (no installation needed!)
+========================================
+
+Alternatively, you can also run RADIS directly in the browser with the
+`RADIS Interactive Examples <https://github.com/radis/radis-examples#interactive-examples>`_ project.
+For instance, run the Quick Start example on the link below:
+
+.. image:: https://mybinder.org/badge.svg
+    :target: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-examples/master?filepath=first_example.ipynb
+
+Or use :ref:`🌱 RADIS-lab <label_radis_lab>` to start a full online environment for advanced spectrum processing
+and comparison with experimental data :
+
+.. image:: https://mybinder.org/badge.svg
+    :target: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
+    :alt: https://mybinder.org/v2/gh/radis/radis-lab/main?urlpath=lab/tree/compare_with_experiment.ipynb
 
 
 
