@@ -469,7 +469,8 @@ def fit_spectrum(
     s_best = generate_spectrum(best.x)
 
     if verbose and best.success:
-        print("Final {0}: {1}{2}".format(fit_params, np.round(best.x), fit_units))
+        print("Init {0} = {1}{2}".format(fit_params, (fit_values_max + fit_values_min) / 2, fit_units))
+        print("Final {0} = {1}{2}".format(fit_params, np.round(best.x), fit_units))
 
     if verbose >= 2:
         print(best)
@@ -479,7 +480,7 @@ def fit_spectrum(
     # ... what does history say:
     if verbose:
         print(
-            "Best: {0}: {1}{2} reached at iteration {3}/{4}".format(
+            "Best {0} = {1}{2} reached at iteration {3}/{4}".format(
                 fit_params,
                 history_x[np.argmin(history_res)],
                 fit_units,
