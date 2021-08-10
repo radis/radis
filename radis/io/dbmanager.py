@@ -5,6 +5,7 @@ Created on Mon Aug  9 19:42:51 2021
 @author: erwan
 """
 import os
+import shutil
 from io import BytesIO
 from os.path import abspath, exists, splitext
 from zipfile import ZipFile
@@ -281,7 +282,7 @@ class DatabaseManager(object):
         they may be downloaded but not fully parsed / registered."""
         if exists(self.tempdir):
             try:
-                os.remove(self.tempdir)
+                shutil.rmtree(self.tempdir)
             except PermissionError as err:
                 if self.verbose >= 3:
                     from radis.misc.printer import printr
