@@ -24,6 +24,11 @@ class ProgressBar:
     active: bool
         if ``False``, do not show anything (tip : feed it a ``verbose`` argument)
 
+    Other Parameters
+    ----------------
+    t0: float
+        initializes starting time at ``t0`` (useful for successive loops)
+
     Example
     -------
     add a progress bar in a loop::
@@ -40,9 +45,11 @@ class ProgressBar:
     # Todo: One day extend for multiprocss with several progress values?
     # https://stackoverflow.com/questions/7392779/is-it-possible-to-print-a-string-at-a-certain-screen-position-inside-idle
 
-    def __init__(self, N, active=True):
+    def __init__(self, N, active=True, t0=None):
 
         self.t0 = time()
+        if t0 is not None:
+            self.t0 -= t0
         self.N = N
         self.active = active
 

@@ -8,7 +8,7 @@ Created on Tue Feb  2 13:51:40 2021
 
 import pytest
 
-from radis.io.hitemp import HITEMP_MOLECULES, fetch_hitemp, get_url_and_Nlines
+from radis.io.hitemp import HITEMP_MOLECULES, HITEMPDatabaseManager, fetch_hitemp
 from radis.misc.config import getDatabankList
 
 
@@ -39,14 +39,14 @@ def test_relevant_files_filter():
         "02_06500-12785_HITEMP2010.zip",
     ]
 
-    assert keep_only_relevant(files) == files
-    assert keep_only_relevant(files, wavenum_max=300) == [
+    assert keep_only_relevant(files)[0] == files
+    assert keep_only_relevant(files, wavenum_max=300)[0] == [
         "02_00000-00500_HITEMP2010.zip"
     ]
-    assert keep_only_relevant(files, wavenum_min=7000) == [
+    assert keep_only_relevant(files, wavenum_min=7000)[0] == [
         "02_06500-12785_HITEMP2010.zip"
     ]
-    assert keep_only_relevant(files, wavenum_min=600, wavenum_max=800) == [
+    assert keep_only_relevant(files, wavenum_min=600, wavenum_max=800)[0] == [
         "02_00500-00625_HITEMP2010.zip",
         "02_00625-00750_HITEMP2010.zip",
         "02_00750-01000_HITEMP2010.zip",
@@ -81,7 +81,7 @@ def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
 @pytest.mark.needs_connection
 @pytest.mark.download_large_databases
 @pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
-def test_fetch_hitemp_all_molecules(molecule, verbose=False, *args, **kwargs):
+def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     """Test fetch HITEMP for all molecules whose download URL is available.
 
     ..warning::
@@ -112,7 +112,8 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=False, *args, **kwargs):
 
     assert f"HITEMP-{molecule}" in getDatabankList()
 
-    url, Nlines = get_url_and_Nlines(molecule)
+    ldb = HITEMPDatabaseManager(name=f"HITEMP-{molecule}", molecule=molecule)
+    url, Nlines = ldb.fetch_url_and_Nlines()
 
     assert len(df) == Nlines
 
@@ -228,13 +229,13 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
 
 if __name__ == "__main__":
     test_relevant_files_filter()
-    test_fetch_hitemp_all_molecules("CO2", verbose=3)
-    # test_fetch_hitemp_OH()
-    # test_partial_loading()
+    # test_fetch_hitemp_all_molecules("CO2", verbose=3)
+    test_fetch_hitemp_OH()
+    test_partial_loading()
     # test_calc_hitemp_spectrum()
-    # test_fetch_hitemp_all_molecules("OH")
-    # test_fetch_hitemp_all_molecules("CO")
-    # test_fetch_hitemp_all_molecules("N2O", verbose=3)
+    test_fetch_hitemp_all_molecules("OH")
+    test_fetch_hitemp_all_molecules("CO")
+    test_fetch_hitemp_all_molecules("N2O", verbose=3)
     # test_fetch_hitemp_all_molecules("NO", verbose=3)
     # test_fetch_hitemp_all_molecules("CO2", verbose=3)
     # test_calc_hitemp_CO_noneq()
