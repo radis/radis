@@ -157,13 +157,14 @@ def hdf2df(
     df = manager.load(fname, columns=columns, where=where, **store_kwargs)
     metadata = manager.read_metadata(fname)
 
-    # Sanity Checks
-    if "total_lines" in metadata:
-        assert len(df) == metadata["total_lines"]
-    if "wavenumber_min" in metadata:
-        assert df["wav"].min() == metadata["wavenumber_min"]
-    if "wavenumber_max" in metadata:
-        assert df["wav"].max() == metadata["wavenumber_max"]
+    # Sanity Checks if loading the full file
+    if len(where) == 0:
+        if "total_lines" in metadata:
+            assert len(df) == metadata["total_lines"]
+        if "wavenumber_min" in metadata:
+            assert df["wav"].min() == metadata["wavenumber_min"]
+        if "wavenumber_max" in metadata:
+            assert df["wav"].max() == metadata["wavenumber_max"]
 
     df.attrs.update(metadata)
 
