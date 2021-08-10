@@ -11,6 +11,43 @@ from time import time
 import pandas as pd
 
 
+class HDF5Manager(object):
+    def __init__(self, engine="pytables"):
+        self.engine = engine
+
+    def open(self, file, mode="w"):
+        if self.engine == "pytables":
+            return pd.HDFStore(file, mode=mode, complib="blosc", complevel=9)
+        else:
+            raise NotImplementedError(self.engine)
+
+    def write(self, handler, df, append=True):
+        if self.engine == "pytables":
+            DATA_COLUMNS = ["iso", "wav"]
+            """
+            list : only these column names will be searchable directly on disk to
+            only load certain lines. See :py:func:`~radis.io.hdf5.hdf2df`
+            """
+            handler.put(
+                key="df",
+                value=df,
+                append=append,
+                format="table",
+                data_columns=DATA_COLUMNS,
+            )
+        else:
+            raise NotImplementedError(self.engine)
+
+    def add_metadata(self, local_file, metadata):
+
+        if self.engine == "pytables":
+            with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
+
+                f.get_storer("df").attrs.metadata = metadata
+        else:
+            raise NotImplementedError(self.engine)
+
+
 def hdf2df(
     fname,
     columns=None,

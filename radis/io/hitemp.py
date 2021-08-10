@@ -10,21 +10,18 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
 
-import os
 import re
 import urllib.request
-from os.path import abspath, exists, expanduser
+from os.path import abspath, basename, expanduser, join
+from typing import Union
 
 import numpy as np
-import pandas as pd
 
 import radis
-from radis.misc.printer import printr
 
 try:
-    from .cache_files import check_not_deprecated
+    from .dbmanager import DatabaseManager
     from .hitran import columns_2004, parse_global_quanta, parse_local_quanta
-    from .linedb import DatabaseManager
     from .tools import (
         _create_dtype,
         _get_linereturnformat,
@@ -32,8 +29,7 @@ try:
         replace_PQR_with_m101,
     )
 except ImportError:  # ran from here
-    from radis.io.linedb import DatabaseManager
-    from radis.io.cache_files import check_not_deprecated
+    from radis.io.dbmanager import DatabaseManager
     from radis.io.hitran import columns_2004, parse_global_quanta, parse_local_quanta
     from radis.io.tools import (
         _create_dtype,
@@ -43,22 +39,15 @@ except ImportError:  # ran from here
     )
 
 from radis.misc.progress_bar import ProgressBar
-from radis.misc.warning import DeprecatedFileWarning
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
-DATA_COLUMNS = ["iso", "wav"]
-"""
-list : only these column names will be searchable directly on disk to
-only load certain lines. See :py:func:`~radis.io.hdf5.hdf2df`
-"""
-# TODO: WIP. Maybe move somewhere else to be also used by HITRAN queries
 
 
 def keep_only_relevant(
     inputfiles,
     wavenum_min=None,
     wavenum_max=None,
-):
+) -> Union[list, float, float]:
     """Parser file names for ``wavenum_format`` (min and max) and only keep
     relevant files if the requested range is ``[wavenum_min, wavenum_max]``
 
@@ -71,24 +60,27 @@ def keep_only_relevant(
     relevantfiles = []
     files_wmin = np.inf
     files_wmax = 0
-    for file in inputfiles:
+    for filepath in inputfiles:
+        file = basename(filepath)
         fname_wmin, fname_wmax = re.findall(wavenum_format, file)
         relevant = False
         if wavenum_min is not None and wavenum_max is not None:
-            if (float(fname_wmax) >= wavenum_min) and (
-                float(fname_wmin) <= wavenum_max
-            ):
+            if (float(fname_wmax) > wavenum_min) and (float(fname_wmin) < wavenum_max):
+                # strict '>' :  we exclude "CO2-02_02250-02500_HITEMP2010.h5'" if calculating 2500 - 3000 cm-1
+                # strict '<' :  we exclude "CO2-02_03000-03250_HITEMP2010.h5" if calculating 2500 - 3000 cm-1
                 relevant = True
         elif wavenum_min is not None:
-            if float(fname_wmax) >= wavenum_min:
+            if float(fname_wmax) > wavenum_min:
+                # strict '>' :  we exclude "CO2-02_02250-02500_HITEMP2010.h5'" if calculating 2500 - 3000 cm-1
                 relevant = True
         elif wavenum_max is not None:
-            if float(fname_wmin) <= wavenum_max:
+            if float(fname_wmin) < wavenum_max:
+                # strict '<' :  we exclude "CO2-02_03000-03250_HITEMP2010.h5" if calculating 2500 - 3000 cm-1
                 relevant = True
         else:
             relevant = True
         if relevant:
-            relevantfiles.append(file)
+            relevantfiles.append(filepath)
             files_wmin = min(float(fname_wmin), files_wmin)
             files_wmax = max(float(fname_wmax), files_wmax)
     # small checks
@@ -125,18 +117,64 @@ class HITEMPDatabaseManager(DatabaseManager):
         self.downloadable = True
         self.base_url = None
         self.Nlines = None
+        self.wmin = None  # available on HITEMP website. See HITEMPDatabaseManager.fetch_url_Nlines_wmin_wmax
+        self.wmax = None  # available on HITEMP website. See HITEMPDatabaseManager.fetch_url_Nlines_wmin_wmax
+        self.urlnames = None
 
-    def fetch_url_and_Nlines(self, hitemp_url="https://hitran.org/hitemp/"):
+    def fetch_url_Nlines_wmin_wmax(self, hitemp_url="https://hitran.org/hitemp/"):
         """requires connexion"""
 
         molecule = self.molecule
 
-        if self.base_url is not None and self.Nlines is not None:
-            return self.base_url, self.Nlines
+        if (
+            self.base_url is not None
+            and self.Nlines is not None
+            and self.wmin is not None
+            and self.wmax is not None
+        ):
+            return self.base_url, self.Nlines, self.wmin, self.wmax
 
         else:
 
             response = urllib.request.urlopen(hitemp_url)
+
+            # Alternative to return a Pandas Dataframe :
+            # ... Doesnt work because missing <tr> in HITEMP website table for N2O
+
+            # soup = BeautifulSoup(
+            #         response, features="lxml"
+            #     )
+            # table = soup.find(lambda tag: tag.name=='table' and tag.has_attr('id') and tag['id']=="hitemp-molecules-table")
+
+            # def tableDataText(table):
+            #     """Parses a html segment started with tag <table> followed
+            #     by multiple <tr> (table rows) and inner <td> (table data) tags.
+            #     It returns a list of rows with inner columns.
+            #     Accepts only one <th> (table header/data) in the first row.
+
+            #     From https://stackoverflow.com/a/58274853/5622825
+            #     """
+
+            #
+
+            #     def rowgetDataText(tr, coltag='td'): # td (data) or th (header)
+            #         return [td.get_text(strip=True) for td in tr.find_all(coltag)]
+            #     rows = []
+            #     trs = table.find_all('tr')
+            #     headerow = rowgetDataText(trs[0], 'th')
+            #     if headerow: # if there is a header row include first
+            #         rows.append(headerow)
+            #         trs = trs[1:]
+            #     for tr in trs: # for every table row
+            #         rows.append(rowgetDataText(tr, 'td') ) # data row
+
+            #     df = pd.DataFrame(rows[1:], columns=rows[0])
+            #     df.index = df.Formula
+
+            #     return df
+
+            # df = tableDataText(table)
+
             text = response.read().decode()
             text = text[
                 text.find(
@@ -153,63 +191,58 @@ class HITEMPDatabaseManager(DatabaseManager):
             lines = text.splitlines()
 
             Nlines = int(re.findall(r"(\d+)", lines[3].replace("&nbsp;", ""))[0])
+            wmin = int(re.findall(r"(\d+)", lines[4].replace("&nbsp;", ""))[0])
+            wmax = int(re.findall(r"(\d+)", lines[5].replace("&nbsp;", ""))[0])
             url = "https://hitran.org" + re.findall(r'href="(.+?)"', lines[7])[0]
 
-            self.base_url, self.Nlines = url, Nlines
+            self.base_url, self.Nlines, self.wmin, self.wmax = url, Nlines, wmin, wmax
 
-        return url, Nlines
+        return url, Nlines, wmin, wmax
 
     def fetch_urlnames(self):
         """requires connexion"""
+
+        if self.urlnames is not None:
+            return self.urlnames
 
         molecule = self.molecule
 
         if molecule in ["H2O", "CO2"]:
 
-            base_url, Ntotal_lines_expected = self.fetch_url_and_Nlines()
+            base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
             response = urllib.request.urlopen(base_url)
             response_string = response.read().decode()
             inputfiles = re.findall('href="(\S+.zip)"', response_string)
 
-            # inputfiles = keep_only_relevant(
-            #     inputfiles, load_wavenum_min, load_wavenum_max, wavenum_format=r"\d{5}"
-            # )
-            # if verbose:
-            #     print("relevant files:", inputfiles)
-
-            urlnames = [base_url + f for f in inputfiles]
+            urlnames = [join(base_url, f) for f in inputfiles]
 
         elif molecule in HITEMP_MOLECULES:
-            url, Ntotal_lines_expected = self.fetch_url_and_Nlines()
+            url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
             urlnames = [url]
         else:
             raise KeyError(
                 f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
             )
 
+        self.urlnames = urlnames
+
         return urlnames
 
-    def parse_to_local_file(
+    def keep_only_relevant(
         self,
-        opener,
-        urlname,
-        local_file,
-        pbar_t0=0,
-        pbar_Ntot_estimate_factor=None,
-        pbar_Nlines_already=0,
-    ):
-        """
-        Parameters
-        ----------
-        opener: an opener with an .open() command
-        gfile : file handler. Filename: for info"""
+        inputfiles,
+        wavenum_min=None,
+        wavenum_max=None,
+    ) -> list:
+        """For CO2 and H2O, return only relevant files for given wavenumber range.
 
-        # Get linereturn (depends on OS, but file may also have been generated
-        # on a different OS. Here we simply read the file to find out)
-        columns = columns_2004
-        chunksize = self.chunksize
-        verbose = self.verbose
-        molecule = self.molecule
+        If other molecule, return the file anyway.
+        see :py:func:`radis.io.hitemp.keep_only_relevant`"""
+        if self.molecule in ["CO2", "H2O"]:
+            inputfiles, _, _ = keep_only_relevant(inputfiles, wavenum_min, wavenum_max)
+        return inputfiles
+
+    def get_linereturn_format(self, opener, urlname, columns):
 
         with opener.open(urlname) as gfile:  # locally downloaded file
             dt = _create_dtype(
@@ -223,31 +256,66 @@ class HITEMPDatabaseManager(DatabaseManager):
                     f"End of file while parsing file {opener.abspath(urlname)}. May be due to download error. Delete file ?"
                 ) from err
             linereturnformat = _get_linereturnformat(b, columns)
+        return linereturnformat
 
-        Nlines = pbar_Nlines_already
-        if verbose:
-            _, Ntotal_lines_expected = self.fetch_url_and_Nlines()
-            if pbar_Ntot_estimate_factor:
-                # multiply Ntotal_lines_expected by pbar_Ntot_estimate_factor
-                # (accounts for total lines divided in number of files, and
-                # not all files downloaded)
-                Ntotal_lines_expected = int(
-                    Ntotal_lines_expected * pbar_Ntot_estimate_factor
-                )
+    def parse_to_local_file(
+        self,
+        opener,
+        urlname,
+        local_file,
+        pbar_t0=0,
+        pbar_Ntot_estimate_factor=None,
+        pbar_Nlines_already=0,
+        pbar_last=True,
+        engine="pytables",
+    ):
+        """Uncompress ``urlname`` into ``local_file``.
+        Also add metadata
+
+        Parameters
+        ----------
+        opener: an opener with an .open() command
+        gfile : file handler. Filename: for info"""
+
+        # Get linereturn (depends on OS, but file may also have been generated
+        # on a different OS. Here we simply read the file to find out)
+        columns = columns_2004
+        chunksize = self.chunksize
+        verbose = self.verbose
+        molecule = self.molecule
+
+        linereturnformat = self.get_linereturn_format(opener, urlname, columns)
+
+        Nlines = 0
+        Nlines_raw = 0
+        Nlines_tot = Nlines + pbar_Nlines_already
+        _, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
+        if pbar_Ntot_estimate_factor:
+            # multiply Ntotal_lines_expected by pbar_Ntot_estimate_factor
+            # (accounts for total lines divided in number of files, and
+            # not all files downloaded)
+            Ntotal_lines_expected = int(
+                Ntotal_lines_expected * pbar_Ntot_estimate_factor
+            )
         pb = ProgressBar(N=Ntotal_lines_expected, active=verbose, t0=pbar_t0)
         wmin = np.inf
         wmax = 0
 
+        writer = self.get_hdf5_manager(engine)
+
         with opener.open(urlname) as gfile:  # locally downloaded file
 
             dt = _create_dtype(columns, linereturnformat)
-            b = np.zeros(chunksize, dtype=dt)  # receives the HITRAN 160-character data.
 
             if verbose:
                 print(f"Download complete. Parsing {molecule} database to {local_file}")
 
-            with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
-                # TODO : implement with engines = 'h5py' too
+            # assert not(exists(local_file))
+
+            with writer.open(local_file) as f:
+                b = np.zeros(
+                    chunksize, dtype=dt
+                )  # receives the HITRAN 160-character data.
 
                 for nbytes in iter(lambda: gfile.readinto(b), 0):
 
@@ -269,17 +337,14 @@ class HITEMPDatabaseManager(DatabaseManager):
                     if "branch" in df:
                         replace_PQR_with_m101(df)
 
-                    f.put(
-                        key="df",
-                        value=df,
-                        append=True,
-                        format="table",
-                        data_columns=DATA_COLUMNS,
-                    )
+                    writer.write(f, df, append=True)
+
                     wmin = np.min((wmin, df.wav.min()))
                     wmax = np.max((wmax, df.wav.max()))
 
                     Nlines += len(df)
+                    Nlines_tot += len(df)
+                    Nlines_raw += len(b)
                     if pbar_Ntot_estimate_factor is None:
                         pbar_Ntot_message = f"{Ntotal_lines_expected:,} lines"
                     else:
@@ -288,25 +353,38 @@ class HITEMPDatabaseManager(DatabaseManager):
                         )
                     pb.update(
                         Nlines,
-                        message=f"Parsed {Nlines:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+                        message=f"  Parsed {Nlines_tot:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
                     )
                     # Reinitialize for next read
                     b = np.zeros(
                         chunksize, dtype=dt
                     )  # receives the HITRAN 160-character data.
+        if pbar_last:
+            pb.update(
+                Nlines + pbar_Nlines_already,
+                message=f"  Parsed {Nlines_tot:,} / {Nlines_tot:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+            )
+            pb.done()
+        else:
+            print("")
+
+        # Check number of lines is consistent
+        assert Nlines == Nlines_raw
 
         # Add metadata
-        with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
-
-            f.get_storer("df").attrs.metadata = {
+        writer.add_metadata(
+            local_file,
+            {
                 "wavenumber_min": wmin,
                 "wavenumber_max": wmax,
                 "download_date": self.get_today(),
                 "download_url": urlname,
+                "total_lines": Nlines_raw,
                 "version": radis.__version__,
-            }
+            },
+        )
 
-        return Nlines
+        return Nlines - pbar_Nlines_already
 
 
 def fetch_hitemp(
@@ -316,6 +394,7 @@ def fetch_hitemp(
     isotope=None,
     load_wavenum_min=None,
     load_wavenum_max=None,
+    columns=None,
     cache=True,
     verbose=True,
     chunksize=100000,
@@ -340,6 +419,8 @@ def fetch_hitemp(
         everything. Default ``None``.
     load_wavenum_min, load_wavenum_max: float (cm-1)
         load only specific wavenumbers.
+    columns: list of str
+        list of columns to load. If ``None``, returns all columns in the file.
 
     Other Parameters
     ----------------
@@ -412,38 +493,25 @@ def fetch_hitemp(
     local_files, urlnames = ldb.get_filenames()
 
     # Delete files if needed:
+    relevant_files = ldb.keep_only_relevant(
+        local_files, load_wavenum_min, load_wavenum_max
+    )
     if cache == "regen":
-        ldb.remove_local_files(local_files)
+        ldb.remove_local_files(relevant_files)
+    ldb.check_deprecated_files(
+        ldb.get_existing_files(relevant_files),
+        remove=True if cache != "force" else False,
+    )
 
-    # Get number of lines to download
-    download_files = []
-    for local_file in local_files:
-        if exists(local_file):
-            try:
-                check_not_deprecated(
-                    local_file,
-                    metadata_is={},
-                    metadata_keys_contain=["wavenumber_min", "wavenumber_max"],
-                )
-            except DeprecatedFileWarning as err:
-                if cache == "force":
-                    raise err
-                else:  # delete file to regenerate it in the end of the script
-                    if verbose:
-                        printr(
-                            "File {0} deprecated:\n{1}\nDeleting it!".format(
-                                local_file, str(err)
-                            )
-                        )
-                    os.remove(local_file)
-                    download_files.append(local_file)
-        else:
-            download_files.append(local_file)
+    # Get lines to download
+    download_files = ldb.get_missing_files(local_files)
+    download_files = ldb.keep_only_relevant(
+        download_files, load_wavenum_min, load_wavenum_max
+    )
 
     # Download files
     # url_to_download =
     if len(download_files) > 0:
-        _, Ntotal_lines_expected = ldb.fetch_url_and_Nlines()
         if urlnames is None:
             urlnames = ldb.fetch_urlnames()
         filesmap = dict(zip(local_files, urlnames))
@@ -452,9 +520,11 @@ def fetch_hitemp(
 
         # Done: add final checks
         if molecule not in ["CO2", "H2O"]:
-            # ... check on the created file that all lines are there :
+            # check on the created file that all lines are there
+            # ... (for CO2, H2O, database is split in many files so it's not possible)
             nrows = ldb.get_nrows(local_files[0])
             # assert nrows == Nlines
+            _, Ntotal_lines_expected, _, _ = ldb.fetch_url_Nlines_wmin_wmax()
             if nrows != Ntotal_lines_expected:
                 raise AssertionError(
                     f"Number of lines in local database ({nrows:,}) "
@@ -462,163 +532,21 @@ def fetch_hitemp(
                     + f"HITEMP {molecule}: {Ntotal_lines_expected}"
                 )
 
-    # # Open and run
-
-    # if local_files_exist:
-
-    # check that the database is correctly registered in ~/radis.json
-    # if not databank_name in getDatabankList():
-    #     # if not, register it.
-    #     if len(local_files) == 1:
-    #         local_file = local_files[0]
-    #         # ... First check number of lines is correct :
-    #         if Ntotal_lines_expected is None:
-    #             _, Ntotal_lines_expected = get_url_and_Nlines(molecule)
-    #         error_msg = ""
-    #         with pd.HDFStore(local_file, "r") as store:
-    #             nrows = store.get_storer("df").nrows
-    #             # TODO: replace with Database.get_rows()  # which would work for any backend (pytables / h5py)
-    #             if nrows != Ntotal_lines_expected:
-    #                 error_msg += (
-    #                     f"\nNumber of lines in local database ({nrows:,}) "
-    #                     + "differ from the expected number of lines for "
-    #                     + f"HITEMP {molecule}: {Ntotal_lines_expected}"
-    #                 )
-    #             file_metadata = store.get_storer("df").attrs.metadata
-    #             # TODO: replace with Database.get_metadata()  # which would work for any backend (pytables / h5py)
-    #             for k in [
-    #                 "wavenumber_min",
-    #                 "wavenumber_max",
-    #                 "download_url",
-    #                 "download_date",
-    #             ]:
-    #                 if k not in file_metadata:
-    #                     error_msg += (
-    #                         "\nMissing key in file metadata to register the database "
-    #                         + f"automatically : {k}"
-    #                     )
-
-    #         if error_msg:
-    #             raise ValueError(
-    #                 f"{databank_name} not declared in your RADIS ~/.config file although "
-    #                 + f"{local_file} exists. {error_msg}\n"
-    #                 + "If you know this file, add it to ~/radis.json manually. "
-    #                 + "Else regenerate the database with:\n\t"
-    #                 + ">>> radis.SpectrumFactory().fetch_databank(..., use_cached='regen')"
-    #                 + "\nor\n\t"
-    #                 + ">>> radis.io.hitemp.fetch_hitemp({molecule}, cache='regen')"
-    #                 + "\n\n⚠️ It will re-download & uncompress the whole database "
-    #                 + "from HITEMP.\n\nList of declared databanks: {getDatabankList()}.\n"
-    #                 + f"{local_file} metadata: {file_metadata}"
-    #             )
-
-    #         # ... Database looks ok : register it
-    #         if verbose:
-    #             print(
-    #                 f"{databank_name} not declared in your RADIS ~/.config file although "
-    #                 + f"{local_file} exists. Registering the database automatically."
-    #             )
-
-    #         register_database(
-    #             databank_name,
-    #             [local_file],
-    #             molecule=molecule,
-    #             wmin=file_metadata["wavenumber_min"],
-    #             wmax=file_metadata["wavenumber_max"],
-    #             download_date=file_metadata["download_date"],
-    #             urlname=file_metadata["download_url"],
-    #             verbose=verbose,
-    #         )
-    #     else:    # case of CO2, H2O
-
-    #         _, files_wmin, files_wmax = keep_only_relevant(inputfiles)
-
-    #         # just register the full database
-    #         register_database(
-    #             databank_name,
-    #             local_files,  # write all filenames in the database
-    #             molecule=molecule,
-    #             wmin=files_wmin,
-    #             wmax=files_wmax,
-    #             download_date=file_metadata["download_date"],
-    #             urlname=file_metadata["download_url"],
-    #             verbose=verbose,
-    #         )
-
-    # Database exists, and is registered : we can return it directly
-    # ... unless it's CO2 / H2O : there are many files and we don't need all of them
-
-    # if molecule in ["CO2", "H2O"]:
-    #     # ... Check database is complete
-    #     entries = getDatabankEntries(databank_name)
-    #     if load_wavenum_min is not None and load_wavenum_max is not None:
-    #         if (float(entries["wavenum_max"]) < load_wavenum_min) or (
-    #             float(entries["wavenum_min"]) > load_wavenum_max
-    #         ):
-    #             # downloaded range is enough
-    #             full_range_downloaded = False
-    #             # TODO / Unless we're asking for a range beyond the maximum range given...
-    #             # That's relevant for all databases... What to do ? BeyondTheRangeWarning (checking if also complete)
-    #     # if only one of the two extrema is given > NotImplemented > we
-    #     # ... require to download the full database.
-    #     # elif load_wavenum_min is not None:
-    #     #     if float(fname_wmax) >= wavenum_min:
-    #     #         relevant.append(file)
-    #     # elif load_wavenum_max is not None:
-    #     #     if float(fname_wmin) <= wavenum_max:
-    #     #         relevant.append(file)
-    #     else:
-    #         # check number of lines is complete
-    #         with pd.HDFStore(local_file, "r") as store:
-    #             nrows = store.get_storer("df").nrows
-    #             # TODO: replace with Database.get_rows()  # which would work for any backend (pytables / h5py)
-    #             if nrows < Ntotal_lines_expected:
-    #                 raise DeprecatedFileWarning(
-    #                     f"\nNumber of lines in local database ({nrows:,}) "
-    #                     + "differ from the expected number of lines for "
-    #                     + f"HITEMP {molecule}: {Ntotal_lines_expected}"
-    #                 )
-    # if full_range_downloaded:
-    #     if verbose:
-    #         print(f"Using existing database {databank_name}")
-    #     df = hdf2df(
-    #         local_file,
-    #         isotope=isotope,
-    #         load_wavenum_min=load_wavenum_min,
-    #         load_wavenum_max=load_wavenum_max,
-    #         verbose=verbose,
-    #     )
-    #     return (df, local_file) if return_local_path else df
-
-    # else:
-    #     # keep a continuous database (i.e. : all lines from [wmin] to [wmax] even if we only need two separate sections)
-
-    #     # Note : with Vaex it's very easy to open many different files with
-    #     # only a minimal overhead. Why put everything in a large file then ?
-    #     raise NotImplementedError
-    #     # ... TODO
-
-    #     # use is_relevant function of Corentin ?
-
-    #     # therefore, only download relevant_files...
-
-    # TODO here: for CO2; H2O : if exists : re-check if valid ; compare with relevant range ;
-    # download only missing!
-
-    ###################################################
-    # Doesnt exist : download    missing files
-
+    # Register
     if not ldb.is_registered():
-        ldb.register(local_files, urlnames)
+        ldb.register(local_files, urlnames, ldb.wmin, ldb.wmax)
 
-    if len(download_files) > 0 and clean_cache_files:
-        ldb.clean_download_files(urlnames)
+    if clean_cache_files:
+        ldb.clean_download_files()
 
     # Load and return
     df = ldb.load(
-        local_files,
+        ldb.keep_only_relevant(
+            local_files, load_wavenum_min, load_wavenum_max
+        ),  # filter other files,
+        columns=columns,
         isotope=isotope,
-        load_wavenum_min=load_wavenum_min,
+        load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
         load_wavenum_max=load_wavenum_max,
     )
 

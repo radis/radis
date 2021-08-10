@@ -11,12 +11,15 @@ from zipfile import ZipFile
 
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
+from radis.misc.printer import printr
 from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
 
 try:
-    from .hdf5 import hdf2df
+    from .cache_files import check_not_deprecated
+    from .hdf5 import HDF5Manager, hdf2df
 except ImportError:
-    from radis.io.hdf5 import hdf2df
+    from radis.io.hdf5 import hdf2df, HDF5Manager
+    from radis.io.cache_files import check_not_deprecated
 
 from datetime import date
 from os.path import join
@@ -27,7 +30,7 @@ from dateutil.parser import parse as parse_date
 from numpy import DataSource
 
 LAST_VALID_DATE = (
-    "01 Jan 2010"  # set to a later date to force re-download of all HITEMP databases
+    "01 Jan 2010"  # set to a later date to force re-download of all databases
 )
 
 # Add a zip opener to the datasource _file_openers
@@ -66,11 +69,17 @@ class DatabaseManager(object):
         self.local_databases = local_databases
         self.downloadable = False  # by default
 
-        self.ds = DataSource(join(self.local_databases, "downloads"))
+        self.tempdir = join(self.local_databases, "downloads(can_be_deleted)")
+        self.ds = DataSource(self.tempdir)
 
         self.verbose = verbose
 
     def get_filenames(self):
+        """Get names of all files in the database (even if not downloaded yet)
+
+        See Also
+        --------
+        :py:meth:`~radis.io.linedb.get_files_to_download`"""
         verbose = self.verbose
         local_databases = self.local_databases
 
@@ -127,6 +136,59 @@ class DatabaseManager(object):
 
         return local_files, urlnames
 
+    def fetch_urlnames(self) -> list:
+        """ "This function should be overwritten by the DatabaseManager subclass
+
+        Returns
+        -------
+        list: list of urlnames
+
+        See for instance :py:meth:`radis.io.hitemp.HITEMPDatabaseManager"""
+
+        raise NotImplementedError(
+            "This function should be overwritten by the DatabaseManager subclass"
+        )
+
+    def check_deprecated_files(self, local_files, remove=True):
+        """Check metadata of files and remove the deprecated ones
+
+        Unless remove=False: Then raise an error"""
+        verbose = self.verbose
+        for local_file in local_files:
+            try:
+                check_not_deprecated(
+                    local_file,
+                    metadata_is={},
+                    metadata_keys_contain=["wavenumber_min", "wavenumber_max"],
+                )
+            except DeprecatedFileWarning as err:
+                if not remove:
+                    raise err
+                else:  # delete file to regenerate it in the end of the script
+                    if verbose:
+                        printr(
+                            "File {0} deprecated:\n{1}\nDeleting it!".format(
+                                local_file, str(err)
+                            )
+                        )
+                    os.remove(local_file)
+
+    def get_existing_files(self, files):
+        """Return files that exist among ``files``
+
+        See Also
+        --------
+        :py:meth:`~radis.io.linedb.get_filenames`"""
+        return [k for k in files if exists(k)]
+
+    def get_missing_files(self, files):
+        """Return files that do not exist among ``files``
+
+        See Also
+        --------
+        :py:meth:`~radis.io.linedb.get_filenames`"""
+        return [k for k in files if not exists(k)]
+
     def remove_local_files(self, local_files):
         # Delete existing HDF5 file
         for local_file in local_files:
@@ -148,7 +210,7 @@ class DatabaseManager(object):
     def get_today(self):
         return date.today().strftime("%d %b %Y")
 
-    def register(self, local_files, urlname):
+    def register(self, local_files, urlname, wmin, wmax):
         download_date = self.get_today()
         verbose = self.verbose
 
@@ -157,20 +219,21 @@ class DatabaseManager(object):
             self.name,
             local_files,
             self.molecule,
-            self.wmin,
-            self.wmax,
+            wmin,
+            wmax,
             download_date,
             urlname,
             verbose,
         )
 
-    def download_and_parse(self, urlnames, local_files):
+    def get_hdf5_manager(self, engine):
+        return HDF5Manager(engine=engine)
+
+    def download_and_parse(self, urlnames, local_files, engine="pytables"):
         all_local_files, _ = self.get_filenames()
 
         verbose = self.verbose
         molecule = self.molecule
-
-        # self.parse_to_local_file(ds, urlname, local_file, molecule)
 
         from time import time
 
@@ -194,6 +257,7 @@ class DatabaseManager(object):
                     f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
                 )
 
+            # try:
             Nlines = self.parse_to_local_file(
                 self.ds,
                 urlname,
@@ -201,35 +265,58 @@ class DatabaseManager(object):
                 pbar_t0=time() - t0,
                 pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
                 pbar_Nlines_already=Nlines_total,
+                pbar_last=(Ndownload == Ntotal_downloads),
+                engine=engine,
             )
+            # except Exception as err:
+            #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
+
             Ndownload += 1
             Nlines_total += Nlines
 
-    def clean_download_files(self, urlnames):
-        # Fully unzipped (and working, as it was reloaded): clean
-        if not isinstance(urlnames, list):
-            urlnames = [urlnames]
-        for urlname in urlnames:
-            os.remove(self.ds._findfile(urlname))
-            if self.verbose >= 3:
-                from radis.misc.printer import printg
+    def clean_download_files(self):
+        """Fully unzipped (and working, as it was reloaded): clean files
 
-                printg(f"... removed downloaded cache file for {urlname}")
+        Note : we do not let np.DataSource clean its own tempfiles; as
+        they may be downloaded but not fully parsed / registered."""
+        if exists(self.tempdir):
+            try:
+                os.remove(self.tempdir)
+            except PermissionError as err:
+                if self.verbose >= 3:
+                    from radis.misc.printer import printr
+
+                    printr(
+                        f"... couldnt delete downloaded cache files {self.tempdir}: {str(err)}"
+                    )
+            else:
+                if self.verbose >= 3:
+                    from radis.misc.printer import printg
+
+                    printg(f"... removed downloaded cache files for {self.tempdir}")
 
     def load(
         self,
         local_files,
         isotope,
+        columns,
         load_wavenum_min,
         load_wavenum_max,
         engine="pytables",
     ):
+        """
+        Other Parameters
+        ----------------
+        columns: list of str
+            list of columns to load. If ``None``, returns all columns in the file.
+        """
         if engine == "pytables":
             df_all = []
             for local_file in local_files:
                 df_all.append(
                     hdf2df(
                         local_file,
+                        columns=columns,
                         isotope=isotope,
                         load_wavenum_min=load_wavenum_min,
                         load_wavenum_max=load_wavenum_max,
@@ -242,6 +329,14 @@ class DatabaseManager(object):
             raise NotImplementedError
         else:
             raise ValueError(engine)
+
+    def plot(self, local_files, isotope, wavenum_min, wavenum_max):
+        """Convenience function to plot linestrengths of the database"""
+
+        df = self.load(
+            local_files, isotope, wavenum_min, wavenum_max, columns=["wav", "int"]
+        )
+        df.plot("wav", "int")
 
     def get_nrows(self, local_file, engine="pytables"):
         if engine == "pytables":
