@@ -98,7 +98,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     # ... This is done at the HITEMPDatabaseManager level
     # ... unitest for this part:
     ldb = HITEMPDatabaseManager(name=f"HITEMP-CO2", molecule="CO2")
-    local_files, _ = ldb.get_filenames()
+    local_files, _ = ldb.get_filenames(engine="auto")
     relevant_file, file_wmin, file_wmax = keep_only_relevant(
         local_files, wavenum_min=wmin, wavenum_max=wmax
     )
@@ -192,16 +192,15 @@ def test_partial_loading(*args, **kwargs):
     df = fetch_hitemp("OH", load_wavenum_min=wmin, load_wavenum_max=wmax, isotope="1,2")
     assert set(df.iso.unique()) == {1, 2}
 
-    # TODO : active with vaex engine implementation
-    # # multiple isotope selection not implemetned with vaex
-    # with pytest.raises(NotImplementedError):
-    #     fetch_hitemp(
-    #         "OH",
-    #         load_wavenum_min=wmin,
-    #         load_wavenum_max=wmax,
-    #         isotope="1,2,3",
-    #         engine="vaex",
-    #     )
+    # multiple isotope selection not implemetned with vaex
+    with pytest.raises(NotImplementedError):
+        fetch_hitemp(
+            "OH",
+            load_wavenum_min=wmin,
+            load_wavenum_max=wmax,
+            isotope="1,2,3",
+            engine="vaex",
+        )
 
 
 @pytest.mark.needs_connection

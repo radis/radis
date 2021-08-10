@@ -75,7 +75,7 @@ class DatabaseManager(object):
 
         self.verbose = verbose
 
-    def get_filenames(self):
+    def get_filenames(self, engine):
         """Get names of all files in the database (even if not downloaded yet)
 
         See Also
@@ -135,6 +135,9 @@ class DatabaseManager(object):
         else:
             raise NotImplementedError
 
+        if engine == "vaex":
+            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+
         return local_files, urlnames
 
     def fetch_urlnames(self) -> list:
@@ -185,6 +188,11 @@ class DatabaseManager(object):
     def get_missing_files(self, files):
         """Return files that do not exist among ``files``
 
+        Note : in 'vaex' mode; if "FILE.hdf5" does not exist
+        but "FILE.h5" does (a likely 'pytables' file), does
+        not consider it missing so it can be converted
+        automatically
+
         See Also
         --------
         :py:meth:`~radis.io.linedb.get_filenames`"""
@@ -226,7 +234,7 @@ class DatabaseManager(object):
         return HDF5Manager(engine=engine)
 
     def download_and_parse(self, urlnames, local_files, engine="pytables"):
-        all_local_files, _ = self.get_filenames()
+        all_local_files, _ = self.get_filenames(engine)
 
         verbose = self.verbose
         molecule = self.molecule

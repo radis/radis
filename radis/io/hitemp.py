@@ -12,7 +12,7 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 import re
 import urllib.request
-from os.path import abspath, basename, expanduser, join
+from os.path import abspath, basename, exists, expanduser, join
 from typing import Union
 
 import numpy as np
@@ -424,6 +424,7 @@ def fetch_hitemp(
     chunksize=100000,
     clean_cache_files=True,
     return_local_path=False,
+    engine="pytables",
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -459,6 +460,8 @@ def fetch_hitemp(
         if ``True`` clean downloaded cache files after HDF5 are created.
     return_local_path: bool
         if ``True``, also returns the path of the local database file.
+    engine: 'pytables', 'vaex'
+        which HDF5 library to use.
 
     Returns
     -------
@@ -483,8 +486,6 @@ def fetch_hitemp(
             dtype='object')
 
     .. minigallery:: radis.io.hitemp.fetch_hitemp
-
-    .. minigallery:: radis.fetch_hitemp
 
     Notes
     -----
@@ -514,7 +515,7 @@ def fetch_hitemp(
     )
 
     # Get list of all expected local files for this database:
-    local_files, urlnames = ldb.get_filenames()
+    local_files, urlnames = ldb.get_filenames(engine=engine)
 
     # Delete files if needed:
     relevant_files = ldb.keep_only_relevant(
@@ -527,14 +528,18 @@ def fetch_hitemp(
         remove=True if cache != "force" else False,
     )
 
-    # Get lines to download
+    # Get missing files
     download_files = ldb.get_missing_files(local_files)
     download_files = ldb.keep_only_relevant(
         download_files, load_wavenum_min, load_wavenum_max
     )
+    # do not re-download files if they exist in another format :
+    if engine in ["vaex", "auto"]:
+        download_files = [
+            k for k in download_files if not exists(k.replace(".hdf5", ".h5"))
+        ]
 
     # Download files
-    # url_to_download =
     if len(download_files) > 0:
         if urlnames is None:
             urlnames = ldb.fetch_urlnames()
@@ -573,6 +578,7 @@ def fetch_hitemp(
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
         load_wavenum_max=load_wavenum_max,
+        engine=engine,
     )
 
     return (df, files_loaded) if return_local_path else df
