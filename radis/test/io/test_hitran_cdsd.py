@@ -303,5 +303,5 @@ def _run_testcases(verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # print("Testing io.py: ", _run_testcases(verbose=True))
+    print("Testing test_hitran_cdsd.py: ", _run_testcases(verbose=True))
     test_cache_regeneration(verbose=3)
