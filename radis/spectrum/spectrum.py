@@ -2091,6 +2091,11 @@ class Spectrum(object):
              If areas before and after resampling differ by
              more than that an error is raised.
 
+        Returns
+        -------
+        Spectrum : same Spectrum, with new spectral arrays.
+            Allows :ref:`chaining <label_spectrum_chaining>`
+
 
         Notes
         -----
@@ -2636,6 +2641,10 @@ class Spectrum(object):
     def get_conditions(self):
         """Get all physical / computational parameters.
 
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.get_conditions
+            :add-heading:
+
         See Also
         --------
         :py:meth:`~radis.spectrum.Spectrum.print_conditions`,
@@ -2645,19 +2654,28 @@ class Spectrum(object):
         return self.conditions
 
     def print_conditions(self, **kwargs):
-        """Prints all physical / computational parameters. You can also simply
-        print the Spectrum object directly::
-
-            print(s)
+        """Prints all physical / computational parameters.
 
         Parameters
         ----------
         kwargs: dict
             refer to :py:func:`~radis.spectrum.utils.print_conditions`
 
+        Examples
+        --------
+        ::
+            s.print_conditions()
+
+        You can also simply print the Spectrum object directly::
+
+            print(s)
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.print_conditions
+            :add-heading:
+
+
         See Also
         --------
-
         :py:meth:`~radis.spectrum.spectrum.Spectrum.get_conditions`,
         :py:func:`~radis.spectrum.utils.print_conditions`,
         :ref:`the Spectrum page <label_spectrum>`
@@ -2740,6 +2758,8 @@ class Spectrum(object):
             s2 = load_spec('test.spec')
             s2.update()                           # regenerate missing quantities
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.store
+            :add-heading:
 
         See Also
         --------
@@ -2852,9 +2872,13 @@ class Spectrum(object):
 
         Returns
         -------
-        s: Spectrum
-            resampled Spectrum object. If using ``inplace=True``, the Spectrum
+        Spectrum : resampled Spectrum object. If using ``inplace=True``, the Spectrum
             object has been modified anyway.
+
+        Examples
+        --------
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.resample
 
         See Also
         --------
@@ -3118,6 +3142,10 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.copy
+            :add-heading:
+
         """
         try:
             return self.__copy__(copy_lines=copy_lines, quantity=quantity)
@@ -3287,6 +3315,9 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.compare_with` internally::
 
             s1 == s2       # will return True or False
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.compare_with
+            :add-heading:
 
 
         See Also
@@ -3491,6 +3522,9 @@ class Spectrum(object):
         Use it to chain other commands ::
 
             s.take('radiance').normalize().plot()
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.take
+            :add-heading:
 
         """
 
