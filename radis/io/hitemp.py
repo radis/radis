@@ -347,7 +347,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                             f"~{Ntotal_lines_expected:,} lines (estimate)"
                         )
                     pb.update(
-                        Nlines,
+                        Nlines_tot,
                         message=f"  Parsed {Nlines_tot:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
                     )
                     # Reinitialize for next read
@@ -356,7 +356,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                     )  # receives the HITRAN 160-character data.
         if pbar_last:
             pb.update(
-                Nlines + pbar_Nlines_already,
+                Nlines_tot,
                 message=f"  Parsed {Nlines_tot:,} / {Nlines_tot:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
             )
             pb.done()
@@ -379,7 +379,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             },
         )
 
-        return Nlines - pbar_Nlines_already
+        return Nlines
 
 
 def fetch_hitemp(
@@ -535,17 +535,18 @@ def fetch_hitemp(
         ldb.clean_download_files()
 
     # Load and return
+    files_loaded = ldb.keep_only_relevant(
+        local_files, load_wavenum_min, load_wavenum_max
+    )
     df = ldb.load(
-        ldb.keep_only_relevant(
-            local_files, load_wavenum_min, load_wavenum_max
-        ),  # filter other files,
+        files_loaded,  # filter other files,
         columns=columns,
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
         load_wavenum_max=load_wavenum_max,
     )
 
-    return (df, local_files) if return_local_path else df
+    return (df, files_loaded) if return_local_path else df
 
 
 #%%
