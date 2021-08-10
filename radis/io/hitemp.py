@@ -83,12 +83,7 @@ def keep_only_relevant(
             relevantfiles.append(filepath)
             files_wmin = min(float(fname_wmin), files_wmin)
             files_wmax = max(float(fname_wmax), files_wmax)
-    # small checks
-    if relevantfiles:
-        if wavenum_min:
-            assert files_wmin <= wavenum_min
-        if wavenum_max:
-            assert files_wmax >= wavenum_max
+
     return relevantfiles, files_wmin, files_wmax
 
 
