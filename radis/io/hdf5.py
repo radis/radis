@@ -142,6 +142,19 @@ class HDF5Manager(object):
 
             return df
 
+        elif self.engine == "h5py":
+            import h5py
+
+            with h5py.File(fname, "r") as f:
+                if key:
+                    load_from = f[key]
+                else:
+                    load_from = f
+                out = {}
+                for k in load_from.keys():
+                    out[k] = f[k][()]
+            return pd.DataFrame(out)
+
         else:
             raise NotImplementedError(self.engine)
 
@@ -152,7 +165,23 @@ class HDF5Manager(object):
         if self.engine == "pytables":
             with pd.HDFStore(fname, mode="a", complib="blosc", complevel=9) as f:
 
+                # f.get_storer("df").attrs.update(metadata)
                 f.get_storer("df").attrs.metadata = metadata
+
+        elif self.engine == "h5py":
+            with h5py.File(fname, "a") as hf:
+                hf.attrs.update(metadata)
+
+        elif self.engine == "vaex":
+            if isinstance(fname, list):
+                assert isinstance(metadata, list)
+                for f, m in zip(fname, metadata):
+                    with h5py.File(f, "a") as hf:
+                        hf.attrs.update(m)
+            else:
+                with h5py.File(fname, "a") as hf:
+                    hf.attrs.update(metadata)
+
         else:
             raise NotImplementedError(self.engine)
 
@@ -168,7 +197,11 @@ class HDF5Manager(object):
 
                 metadata = f.get_storer("df").attrs.metadata
 
-        elif self.engine in ["vaex", "h5py"]:
+        elif self.engine == "h5py":
+            with h5py.File(fname, "r") as hf:
+                metadata = dict(hf.attrs)
+
+        elif self.engine == "vaex":
             if isinstance(fname, list):
                 metadata = []
                 for f in fname:
