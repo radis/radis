@@ -1760,7 +1760,7 @@ class SpectrumFactory(BandFactory):
         else:
             self.calc_populations_eq(Tgas)
             self.df1["Aul"] = self.df1.A  # update einstein coefficients
-        self._calc_emission_integral()
+        self.calc_emission_integral()
 
         #        # ----------------------------------------------------------------------
         #        # Cutoff linestrength  (note that cuting linestrength doesnt make this

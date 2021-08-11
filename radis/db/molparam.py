@@ -145,7 +145,10 @@ isotope_name_dict = {
 # even if HITRAN eventually changes the conventions and labels.
 
 
-class MolParams:
+class MolParams(object):
+
+    __slots__ = ["df", "terrestrial_abundances"]
+
     def __init__(self, file=None, terrestrial_abundances=True):
         """Easy access to molecular parameters taken from HITRAN molparam.txt.
 

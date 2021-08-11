@@ -3444,7 +3444,7 @@ class Spectrum(object):
 
     def __eq__(self, other):
         """Override the default Equals behavior."""
-        return self.compare_with(other, verbose=False, plot=False)
+        return self.compare_with(other, spectra_only=True, verbose=False, plot=False)
 
     def __ne__(self, other):
         """Define a non-equality test."""

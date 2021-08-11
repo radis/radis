@@ -2172,9 +2172,14 @@ class BaseFactory(DatabankLoader):
             # An alternative strategy is to calculate the linestrength from the
             # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
 
+            if not "gu" in df1:
+                if not "ju" in df1:
+                    self._add_ju(df1)
+                self._calc_degeneracies(df1)
+
             Ia = self.get_lines_abundance(df1)
             df1["S"] = linestrength_from_Einstein(
-                df1.A, df1.gp, df1.El, Ia, df1.wav, Qgas(Tgas), Tgas
+                df1.A, df1.gu, df1.El, Ia, df1.wav, Qgas(Tgas), Tgas
             )
 
         assert "S" in self.df1

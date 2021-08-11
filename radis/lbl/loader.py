@@ -2288,7 +2288,9 @@ class DatabankLoader(object):
         if isinstance(isotope, int):
             return self.molparam.df.loc[(molecule, isotope)].abundance
         elif isinstance(isotope, list):
-            return [self.molparam.df.loc[(molecule, iso)].abundance for iso in isotope]
+            return np.array(
+                [self.molparam.df.loc[(molecule, iso)].abundance for iso in isotope]
+            )
         else:
             raise ValueError(isotope)
 
