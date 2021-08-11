@@ -98,7 +98,6 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_waverange
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
-from radis.misc.profiler import Profiler
 from radis.misc.utils import Default
 from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
 from radis.phys.constants import k_b
@@ -690,7 +689,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas)))
@@ -929,7 +928,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         # Init variables
         pressure_mbar = self.input.pressure_mbar
@@ -1291,7 +1290,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
@@ -1717,7 +1716,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         self.profiler.start("optically_thin_power_calculation", 1)
 
