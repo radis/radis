@@ -106,7 +106,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         self,
         name,
         molecule,
-        local_databases="~/.radisdb/",
+        local_databases,
         verbose=True,
         chunksize=100000,
     ):
@@ -415,7 +415,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
 def fetch_hitemp(
     molecule,
-    local_databases="~/.radisdb/",
+    local_databases="~/.radisdb/hitemp/",
     databank_name="HITEMP-{molecule}",
     isotope=None,
     load_wavenum_min=None,
