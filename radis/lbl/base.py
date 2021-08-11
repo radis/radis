@@ -2076,6 +2076,51 @@ class BaseFactory(DatabankLoader):
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state
 
+        # Partition functions
+        def Qgas(Tgas):
+            """Aggregate the values of Qgas
+
+            Parameters
+            ----------
+            Tgas: float (K)
+                gas temperature
+
+            Returns
+            -------
+            float or dict: Returns Qgas as a dictionary with isotope values as its keys
+
+            """
+            if "iso" in df1:
+                iso_set = df1.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+                    iso = int(iso_set)
+                    parsum = self.get_partition_function_interpolator(
+                        molecule, iso, state
+                    )
+                    # TODO : use _calc_Q instead ? (which switches to partition function calculator if possible?)
+                    Q = parsum.at(Tgas)
+                    df1.attrs["Q"] = Q
+                    return Q
+                else:
+                    Qgas_dict = {}
+                    for iso in iso_set:
+                        parsum = self.get_partition_function_interpolator(
+                            molecule, iso, state
+                        )
+                        Qgas_dict[iso] = parsum.at(Tgas)
+                    return df1["iso"].map(Qgas_dict)
+
+            else:  # "iso" not in df:
+                iso = df1.attrs["iso"]
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Q = parsum.at(Tgas)
+                df1.attrs["Q"] = Q
+                return Q
+
         def Qref_Qgas_ratio():
 
             if "iso" in df1:
@@ -2105,28 +2150,32 @@ class BaseFactory(DatabankLoader):
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
 
-        if not self.molparam.terrestrial_abundances:
-            raise NotImplementedError(
-                "Formula not corrected for non-terrestrial isotopic abundances"
+        if self.molparam.terrestrial_abundances:
+
+            # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
+            # 60, No. 5, pp. 665-710"
+
+            # correct for Partition Function
+            df1["S"] = (
+                df1.int
+                * Qref_Qgas_ratio()
+                *
+                # ratio of Boltzman populations
+                exp(-hc_k * df1.El * (1 / Tgas - 1 / Tref))
+                *
+                # effect of stimulated emission
+                (1 - exp(-hc_k * df1.wav / Tgas))
+                / (1 - exp(-hc_k * df1.wav / Tref))
+            )  # [cm-1/(molecules/cm-2)]
+
+        else:
+            # An alternative strategy is to calculate the linestrength from the
+            # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
+
+            Ia = self.get_lines_abundance(df1)
+            df1["S"] = linestrength_from_Einstein(
+                df1.A, df1.gp, df1.El, Ia, df1.wav, Qgas(Tgas), Tgas
             )
-
-        # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
-        # 60, No. 5, pp. 665-710"
-        # An alternative strategy would be to calculate the linestrength from the
-        # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
-
-        # correct for Partition Function
-        df1["S"] = (
-            df1.int
-            * Qref_Qgas_ratio()
-            *
-            # ratio of Boltzman populations
-            exp(-hc_k * df1.El * (1 / Tgas - 1 / Tref))
-            *
-            # effect of stimulated emission
-            (1 - exp(-hc_k * df1.wav / Tgas))
-            / (1 - exp(-hc_k * df1.wav / Tref))
-        )  # [cm-1/(molecules/cm-2)]
 
         assert "S" in self.df1
 

@@ -180,11 +180,13 @@ if __name__ == "__main__":
         isotope="1",
         medium="vacuum",
         broadening_max_width=10,
-        verbose=0,
+        verbose=3,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITEMP-CO2-TEST")
-    s = sf.non_eq_spectrum(2000, 2000)
+    # sf.load_databank("HITEMP-CO2-TEST")
+    sf.fetch_databank("hitemp")
+    # s = sf.non_eq_spectrum(2000, 2000)
+    s = sf.eq_spectrum(2000)
     #%%
     # abundance_new = 0.87
     # from radis.db.classes import get_molecule_identifier
@@ -194,17 +196,19 @@ if __name__ == "__main__":
     print(sf.get_abundance("CO2", 1))
 
     sf.set_abundance("CO2", 1, sf.get_abundance("CO2", 1) / 2)
-    s2 = sf.non_eq_spectrum(2000, 2000)
+    # sf.set_abundance("CO2", 1, sf.get_abundance("CO2", 1))  # same abundance
+    # sf.molparam.terrestrial_abundance = False
+    s2 = sf.eq_spectrum(2000)
 
     import numpy as np
 
-    print(
-        "emisscoeff\n",
-        2 * s2.get("emisscoeff")[1][::130],
-        "\n",
-        s.get("emisscoeff")[1][::130],
-    )
-    assert np.allclose(2 * s2.get("emisscoeff")[1], s.get("emisscoeff")[1])
+    # print(
+    #     "emisscoeff\n",
+    #     2 * s2.get("emisscoeff")[1][::130],
+    #     "\n",
+    #     s.get("emisscoeff")[1][::130],
+    # )
+    # assert np.allclose(2 * s2.get("emisscoeff")[1], s.get("emisscoeff")[1])
 
     print(
         "abscoeff\n",
