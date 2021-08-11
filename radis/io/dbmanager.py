@@ -153,7 +153,7 @@ class DatabaseManager(object):
             "This function should be overwritten by the DatabaseManager subclass"
         )
 
-    def check_deprecated_files(self, local_files, remove=True):
+    def check_deprecated_files(self, local_files, engine, remove=True):
         """Check metadata of files and remove the deprecated ones
 
         Unless remove=False: Then raise an error"""
@@ -164,6 +164,7 @@ class DatabaseManager(object):
                     local_file,
                     metadata_is={},
                     metadata_keys_contain=["wavenumber_min", "wavenumber_max"],
+                    engine=engine,
                 )
             except DeprecatedFileWarning as err:
                 if not remove:

@@ -527,6 +527,7 @@ def fetch_hitemp(
         ldb.remove_local_files(relevant_files)
     ldb.check_deprecated_files(
         ldb.get_existing_files(relevant_files),
+        engine=engine,
         remove=True if cache != "force" else False,
     )
 
@@ -559,7 +560,7 @@ def fetch_hitemp(
             urlnames = ldb.fetch_urlnames()
         filesmap = dict(zip(local_files, urlnames))
         download_urls = [filesmap[k] for k in download_files]
-        ldb.download_and_parse(download_urls, download_files)
+        ldb.download_and_parse(download_urls, download_files, engine=engine)
 
         # Done: add final checks
         if molecule not in ["CO2", "H2O"]:
