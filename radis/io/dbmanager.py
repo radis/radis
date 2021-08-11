@@ -262,6 +262,14 @@ class DatabaseManager(object):
                     f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
                 )
 
+            # Check we can open the file, give the path if there is an error
+            try:
+                self.ds.open(urlname)
+            except Exception as err:
+                raise OSError(
+                    f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
+                ) from err
+
             # try:
             Nlines = self.parse_to_local_file(
                 self.ds,
