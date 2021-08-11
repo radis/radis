@@ -943,7 +943,7 @@ class DatabankLoader(object):
                 "AccuracyWarning",
             )
         if hdf5_engine == "default":
-            hdf5_engine = (self.misc.hdf5_engine,)
+            hdf5_engine = self.misc.hdf5_engine
 
         # Get inputs
         molecule = self.input.molecule
