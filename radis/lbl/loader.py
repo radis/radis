@@ -80,6 +80,7 @@ from radis.misc.config import getDatabankEntries, getDatabankList, printDatabank
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg
+from radis.misc.profiler import Profiler
 from radis.misc.utils import get_files_from_regex
 from radis.misc.warning import (
     EmptyDatabaseError,
@@ -655,6 +656,15 @@ class DatabankLoader(object):
         self._databank_kwargs = {}
 
         self._autoretrieveignoreconditions = []  # HACK. See _retrieve_from_database
+
+    def _reset_profiler(self, verbose):
+        """Reset :py:class:`~radis.misc.profiler.Profiler`
+
+        See Also
+        --------
+        :py:func:`radis.lbl.factory.SpectrumFactory.print_perf_profile"""
+
+        self.profiler = Profiler(verbose)
 
     # %% ======================================================================
     # PUBLIC METHODS

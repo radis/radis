@@ -1666,7 +1666,7 @@ class BaseFactory(DatabankLoader):
 
         if "id" in df:
             id_set = df.id.unique()
-            if len(id_set) > 0:
+            if len(id_set) > 1:
                 raise NotImplementedError("> 1 molecules in same DataFrame")
             else:
                 self.warn(
@@ -2036,19 +2036,20 @@ class BaseFactory(DatabankLoader):
                     )
                     iso = int(iso_set)
                     Qref, Qgas = _calc_Q(molecule, iso, state)
-                    return Qref / Qgas
+                    Qref_Qgas = Qref / Qgas
 
                 else:
                     Qref_Qgas_ratio = {}
                     for iso in iso_set:
                         Qref, Qgas = _calc_Q(molecule, iso, state)
                         Qref_Qgas_ratio[iso] = Qref / Qgas
-                    return df1["iso"].map(Qref_Qgas_ratio)
+                    Qref_Qgas = df1["iso"].map(Qref_Qgas_ratio)
 
             else:
                 iso = df1.attrs["iso"]
                 Qref, Qgas = _calc_Q(molecule, iso, state)
-                return Qref / Qgas
+                Qref_Qgas = Qref / Qgas
+            return Qref_Qgas
 
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
@@ -2159,7 +2160,6 @@ class BaseFactory(DatabankLoader):
                     # TODO : use _calc_Q instead ? (which switches to partition function calculator if possible?)
                     Q = parsum.at(Tgas)
                     df1.attrs["Q"] = Q
-                    return Q
                 else:
                     Qgas_dict = {}
                     for iso in iso_set:
@@ -2167,14 +2167,14 @@ class BaseFactory(DatabankLoader):
                             molecule, iso, state
                         )
                         Qgas_dict[iso] = parsum.at(Tgas)
-                    return df1["iso"].map(Qgas_dict)
+                    Q = df1["iso"].map(Qgas_dict)
 
             else:  # "iso" not in df:
                 iso = df1.attrs["iso"]
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
                 Q = parsum.at(Tgas)
                 df1.attrs["Q"] = Q
-                return Q
+            return Q
 
         # Calculate degeneracies
         # ----------------------------------------------------------------------
@@ -2290,7 +2290,6 @@ class BaseFactory(DatabankLoader):
         df = self.df1
 
         self.profiler.start("calc_noneq_population", 2)
-        self.profiler.start("part_function", 3)
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -2315,7 +2314,7 @@ class BaseFactory(DatabankLoader):
 
         if "id" in df:
             id_set = df.id.unique()
-            if len(id_set) > 0:
+            if len(id_set) > 1:
                 raise NotImplementedError("> 1 molecules in same DataFrame")
             else:
                 self.warn(
@@ -2332,11 +2331,11 @@ class BaseFactory(DatabankLoader):
             Returns
             -------
             column or float: depending if there are many isotopes or one"""
-
+            self.profiler.start("part_function", 3)
             if "iso" in df:
                 Q_dict = {}
                 iso_set = df.iso.unique()  #  self._get_isotope_list()
-                if len(iso_set) > 1:
+                if len(iso_set) == 1:
                     self.warn(
                         "There shouldn't be a Column 'iso' with a unique value",
                         "PerformanceWarning",
@@ -2353,7 +2352,7 @@ class BaseFactory(DatabankLoader):
                         overpopulation=overpopulation,
                         update_populations=self.misc.export_populations,
                     )
-                return df["iso"].map(Q_dict)
+                Q = df["iso"].map(Q_dict)
 
             else:  # "iso" not in df:
                 iso = df.attrs["iso"]
@@ -2367,14 +2366,22 @@ class BaseFactory(DatabankLoader):
                     update_populations=self.misc.export_populations,
                 )
                 df.attrs["Q"] = Q
-                return Q
+            self.profiler.stop("part_function", "partition functions")
+            return Q
 
         def Q_Qvib_Qrotu_Qrotl(Tvib, Trot):
             """Nonequilibrium partition function; with the detail of
             vibrational partition function and rotational partition functions"""
             # TODO @ dev : implement the map(dict) approach to fill Q Qvib Qrotu Qrotl
             # note : Qrot already use a map(dict) so we need a map with 2 keys. Is it worth it?
+            self.profiler.start("part_function", 3)
             if "iso" in df:  #  multiple isotopes
+                iso_set = df.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
 
                 dgb = df.groupby(by=["iso"])
                 for (iso), idx in dgb.indices.items():
@@ -2417,52 +2424,50 @@ class BaseFactory(DatabankLoader):
                     if radis.DEBUG_MODE:
                         assert (df.loc[idx, "iso"] == iso).all()
 
-                return df.Q, df.Qvib, df.Qrotu, df.Qrotl
+                Q, Qvib, Qrotu, Qrotl = df.Q, df.Qvib, df.Qrotu, df.Qrotl
 
             else:
                 iso_set = self._get_isotope_list()  # df1.iso.unique()
-                if len(iso_set) == 1:
-                    iso = iso_set[0]
+                assert len(iso_set) == 1
+                iso = iso_set[0]
 
-                    parsum = self.get_partition_function_calculator(
-                        molecule, iso, state
-                    )
+                parsum = self.get_partition_function_calculator(molecule, iso, state)
 
-                    Q, Qvib, dfQrot = parsum.at_noneq(
-                        Tvib,
-                        Trot,
-                        vib_distribution=vib_distribution,
-                        rot_distribution=rot_distribution,
-                        overpopulation=overpopulation,
-                        returnQvibQrot=True,
-                        update_populations=self.misc.export_populations,
-                    )
-                    # ... make sure PartitionFunction above is calculated with the same
-                    # ... temperatures, rovibrational distributions and overpopulations
-                    # ... as the populations of active levels (somewhere below)
-                    df.attrs["Qvib"] = Qvib
-                    df.attrs["Q"] = Q
-                    assert "Qvib" not in df.columns
-                    assert "Q" not in df.columns
+                Q, Qvib, dfQrot = parsum.at_noneq(
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
+                    returnQvibQrot=True,
+                    update_populations=self.misc.export_populations,
+                )
+                # ... make sure PartitionFunction above is calculated with the same
+                # ... temperatures, rovibrational distributions and overpopulations
+                # ... as the populations of active levels (somewhere below)
+                df.attrs["Qvib"] = Qvib
+                df.attrs["Q"] = Q
+                assert "Qvib" not in df.columns
+                assert "Q" not in df.columns
 
-                    # reindexing to get a direct access to Qrot database
-                    # create the lookup dictionary
-                    # dfQrot index is already 'viblvl'
-                    dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
+                # reindexing to get a direct access to Qrot database
+                # create the lookup dictionary
+                # dfQrot index is already 'viblvl'
+                dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
 
-                    dg = df.loc[:]
+                dg = df.loc[:]
 
-                    # Add lower state Qrot
-                    dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-                    df.loc[:, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
-                    # Add upper state energy
-                    dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-                    df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+                # Add lower state Qrot
+                dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+                df.loc[:, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                # Add upper state energy
+                dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+                df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
 
-                    return Q, Qvib, df.Qrotu, df.Qrotl
+                Q, Qvib, Qrotu, Qrotl = Q, Qvib, df.Qrotu, df.Qrotl
 
-        self.profiler.stop("part_function", "partition functions")
-        self.profiler.start("population", 3)
+            self.profiler.stop("part_function", "partition functions")
+            return Q, Qvib, Qrotu, Qrotl
 
         # %%
 
@@ -2547,7 +2552,6 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(self.df1, "nu")
             self.assert_no_nan(self.df1, "nl")
 
-        self.profiler.stop("population", "populations")
         self.profiler.stop(
             "calc_noneq_population", "Calculated nonequilibrium populations"
         )
@@ -2616,7 +2620,6 @@ class BaseFactory(DatabankLoader):
         df = self.df1
 
         self.profiler.start("calc_noneq_population_multiTvib", 2)
-        self.profiler.start("part_function", 3)
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -2627,7 +2630,7 @@ class BaseFactory(DatabankLoader):
 
         if "id" in df:
             id_set = df.id.unique()
-            if len(id_set) > 0:
+            if len(id_set) > 1:
                 raise NotImplementedError("> 1 molecules in same DataFrame")
             else:
                 self.warn(
@@ -2644,10 +2647,11 @@ class BaseFactory(DatabankLoader):
             Returns
             -------
             column or float: depending if there are many isotopes or one"""
+            self.profiler.start("part_function", 3)
             if "iso" in df:
                 Q_dict = {}
                 iso_set = df.iso.unique()
-                if len(iso_set) > 1:
+                if len(iso_set) == 1:
                     self.warn(
                         "There shouldn't be a Column 'iso' with a unique value",
                         "PerformanceWarning",
@@ -2664,12 +2668,12 @@ class BaseFactory(DatabankLoader):
                         overpopulation=overpopulation,
                         update_populations=self.misc.export_populations,
                     )
-                return df["iso"].map(Q_dict)
+                Q_Tvib_Trot = df["iso"].map(Q_dict)
 
             else:  # "iso" not in df:
                 iso = df.attrs["iso"]
                 parsum = self.get_partition_function_calculator(molecule, iso, state)
-                return parsum.at_noneq_3Tvib(
+                Q_Tvib_Trot = parsum.at_noneq_3Tvib(
                     Tvib,
                     Trot,
                     vib_distribution=vib_distribution,
@@ -2678,8 +2682,8 @@ class BaseFactory(DatabankLoader):
                     update_populations=self.misc.export_populations,
                 )
 
-        self.profiler.stop("part_function", "partition functions")
-        self.profiler.start("populations", 3)
+            self.profiler.stop("part_function", "partition functions")
+            return Q_Tvib_Trot
 
         #  Derive populations
         # ... vibrational distribution
@@ -2762,7 +2766,6 @@ class BaseFactory(DatabankLoader):
         assert "nu" in self.df1
         assert "nl" in self.df1
 
-        self.profiler.stop("populations", "populations")
         self.profiler.stop(
             "calc_noneq_population_multiTvib",
             "Calculated nonequilibrium populations (multiTvib)",
