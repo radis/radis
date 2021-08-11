@@ -2991,63 +2991,62 @@ class BaseFactory(DatabankLoader):
 
         if "id" in df:
             id_set = df.id.unique()
-            id = id_set[0]
-
-        else:
-            id = df.attrs["id"]
-
-        iso_set = self._get_isotope_list()  # df1.iso.unique()
-
-        Qref_dict = {}
-
-        # TODO for multi-molecule code: add above line in the loop
-        if (("id" in df and len(id_set) == 1) or ("id" not in df and id)) and len(
-            iso_set
-        ) == 1:
-
-            # Shortcut if only 1 isotope. We attribute molar_mass & abundance
-            # as attributes of the line database, instead of columns. Much
-            # faster!
-
-            molecule = get_molecule(id)
-            state = self.input.state
-            parsum = self._get_parsum(molecule, iso_set[0], state)  # partition function
-            Qref_dict[iso_set[0]] = parsum.at(Tref, update_populations=False)
-
-        else:
-
-            #            # normal method
-            #            # still much faster than the groupby().apply() method (see radis<=0.9.19)
-            #            # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
-            #
-            # partition function
-            if "id" in df:
-                dgb = df.groupby(by=["id", "iso"])
-                for (id, iso), idx in dgb.indices.items():
-                    molecule = get_molecule(id)
-                    state = self.input.state
-                    parsum = self._get_parsum(molecule, iso, state)
-                    Qref_dict[iso] = parsum.at(Tref, update_populations=False)
-
-                    if radis.DEBUG_MODE:
-                        assert (df.loc[idx, "id"] == id).all()
-                        assert (df.loc[idx, "iso"] == iso).all()
-
+            if len(id_set) > 0:
+                raise NotImplementedError("> 1 molecules in same DataFrame")
             else:
-                dgb = df.groupby(by=["iso"])
-                id = df.attrs["id"]
-                molecule = get_molecule(id)
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+                df.attrs["id"] = int(id_set)
+        molecule = get_molecule(df.attrs["id"])
+        state = self.input.state
 
-                for (iso), idx in dgb.indices.items():
-                    state = self.input.state
-                    parsum = self._get_parsum(molecule, iso, state)
-                    Qref_dict[iso] = parsum.at(Tref, update_populations=False)
+        # Partition functions
+        def Qgas(Tref):
+            """Aggregate the values of Qgas
 
-                    if radis.DEBUG_MODE:
-                        assert (df.loc[idx, "iso"] == iso).all()
+            Parameters
+            ----------
+            Tref: float (K)
+                reference gas temperature of database
 
-        self.profiler.stop("map_part_func", "map partition functions")
-        self.profiler.start("corrected_population_se", 3)
+            Returns
+            -------
+            float or dict: Returns Qgas as a dictionary with isotope values as its keys
+
+            """
+            self.profiler.start("corrected_population_se", 3)
+            if "iso" in df:
+                iso_set = df.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
+                    iso = int(iso_set)
+                    parsum = self.get_partition_function_interpolator(
+                        molecule, iso, state
+                    )
+                    Q = parsum.at(Tref, update_populations=False)
+                    df.attrs["Q"] = Q
+                else:
+                    Qref_dict = {}
+                    for iso in iso_set:
+                        parsum = self.get_partition_function_interpolator(
+                            molecule, iso, state
+                        )
+                        Qref_dict[iso] = parsum.at(Tref, update_populations=False)
+                    Q = df["iso"].map(Qref_dict)
+
+            else:  # "iso" not in df:
+                iso = df.attrs["iso"]
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Q = parsum.at(Tref, update_populations=False)
+                df.attrs["Q"] = Q
+            self.profiler.stop("map_part_func", "map partition functions")
+            return Q
+
         # Correct linestrength
 
         # ... populations without abundance dependance (already in linestrength)
@@ -3062,14 +3061,7 @@ class BaseFactory(DatabankLoader):
             )
 
         # ... correct for lower state population
-        if "iso" in df:
-            line_strength /= (
-                df.gl * exp(-hc_k * df.El / Tref) / df["iso"].map(Qref_dict)
-            )
-        else:
-            assert len(Qref_dict) == 1
-            Qref = list(Qref_dict.values())[0]
-            line_strength /= df.gl * exp(-hc_k * df.El / Tref) / Qref
+        line_strength /= df.gl * exp(-hc_k * df.El / Tref) / Qgas(Tref)
         line_strength *= nl
 
         # ... correct effect of stimulated emission
