@@ -74,7 +74,6 @@ import radis
 
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.db.molparam import MolParams
 
 try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
@@ -1610,7 +1609,7 @@ class BaseFactory(DatabankLoader):
         float or dict: The abundance of all the isotopes in the dataframe
         """
 
-        molpar = MolParams()
+        molpar = self.molparam
 
         if "id" in df.columns:
             id_set = df.id.unique()
@@ -1640,6 +1639,47 @@ class BaseFactory(DatabankLoader):
         else:
             iso = df.attrs["iso"]
             return molpar.get(df.attrs["id"], iso, "abundance")
+
+    def get_molar_mass(self, df):
+        """Returns molar mass.
+
+        Parameters
+        ----------
+        df: dataframe
+
+        Returns
+        -------
+        The molar mass of all the isotopes in the dataframe
+        """
+        molpar = self.molparam
+
+        if "id" in df.columns:
+            raise NotImplementedError(">1 molecule")
+        elif "id" in df.attrs:
+            id = df.attrs["id"]
+        else:
+            # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
+            # is an attribute and can be updated with definitions from ExoMol.
+            # https://github.com/radis/radis/issues/321
+            HARCODED_MOLAR_MASS = {"SiO": {1: 43.971842}}
+            try:
+                return HARCODED_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
+            except KeyError:
+                raise NotImplementedError
+
+        if "iso" in df.columns:
+            iso_set = df.iso.unique()
+            molar_mass_dict = {}
+            for iso in iso_set:
+                molar_mass_dict[iso] = molpar.get(id, iso, "mol_mass")
+            molar_mass = df["iso"].map(molar_mass_dict)
+        else:
+            iso = df.attrs["iso"]
+            molar_mass = molpar.get(id, iso, "mol_mass")
+
+        return molar_mass
+
+        #
 
     def calc_weighted_trans_moment(self):
         """Calculate weighted transition-moment squared :math:`R_s^2` (in ``Debye^2``)
@@ -2826,7 +2866,7 @@ class BaseFactory(DatabankLoader):
 
         # To get isotopic abundance
         # placeholder # TODO: replace with attributes of Isotope>ElectronicState objects
-        molpar = MolParams()
+        molpar = self.molparam
 
         pops = {}
         # Loop over molecules, isotopes, electronic states

@@ -59,6 +59,7 @@ import pandas as pd
 
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
+from radis.db.molparam import MolParams
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
@@ -657,6 +658,12 @@ class DatabankLoader(object):
 
         self._autoretrieveignoreconditions = []  # HACK. See _retrieve_from_database
 
+        # Molecular parameters
+        self.molparam = MolParams()
+        """MolParam: contains information about molar mass; isotopic abundance.
+
+        See :py:class:`~radis.db.molparam.MolParams`"""
+
     def _reset_profiler(self, verbose):
         """Reset :py:class:`~radis.misc.profiler.Profiler`
 
@@ -908,8 +915,10 @@ class DatabankLoader(object):
         if exomol_database != None:
             assert source == "exomol"
         if [parfuncfmt, source].count("exomol") == 1:
-            raise NotImplementedError(
-                "ExoMol partition functions must be used with ExoMol database - and vice-versa"
+            self.warn(
+                f"Using lines from {source} but partition functions from {parfuncfmt}"
+                + "for consistency we recommend using lines and partition functions from the same database",
+                "AccuracyWarning",
             )
 
         # Get inputs

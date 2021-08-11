@@ -88,7 +88,6 @@ from scipy.optimize import OptimizeResult
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.db.molparam import MolParams
 
 try:  # Proper import
     from .bands import BandFactory
@@ -946,7 +945,7 @@ class SpectrumFactory(BandFactory):
 
         ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
 
-        molpar = MolParams()
+        molpar = self.molparam
 
         try:
             if "id" in self.df0:

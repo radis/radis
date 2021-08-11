@@ -69,7 +69,6 @@ from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
 from scipy.signal import oaconvolve
 
-from radis.db.molparam import MolParams
 from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
 from radis.misc.basics import is_float
@@ -956,7 +955,7 @@ class BroadenFactory(BaseFactory):
         else:
             Tdpsel = df.Tdpsel
 
-        molar_mass = get_molar_mass(df)
+        molar_mass = self.get_molar_mass(df)
 
         # Calculate broadening FWHM
         wv, wl, wg = voigt_broadening_HWHM(
@@ -1053,7 +1052,7 @@ class BroadenFactory(BaseFactory):
             - ``hwhm_gauss``
         """
 
-        molar_mass = get_molar_mass(df)
+        molar_mass = self.get_molar_mass(df)
 
         # Calculate broadening HWHM
         wg = doppler_broadening_HWHM(df.wav, molar_mass, Tgas)
@@ -2848,48 +2847,6 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
         Ei_density_on_grid,
         line2grid_projection_left,
     )
-
-
-def get_molar_mass(df):
-    """Returns molar mass.
-
-    Parameters
-    ----------
-    df: dataframe
-
-    Returns
-    -------
-    The molar mass of all the isotopes in the dataframe
-    """
-    molpar = MolParams()
-
-    if "id" in df.columns:
-        raise NotImplementedError(">1 molecule")
-    elif "id" in df.attrs:
-        id = df.attrs["id"]
-    else:
-        # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
-        # is an attribute and can be updated with definitions from ExoMol.
-        # https://github.com/radis/radis/issues/321
-        HARCODED_MOLAR_MASS = {"SiO": {1: 43.971842}}
-        try:
-            return HARCODED_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
-        except KeyError:
-            raise NotImplementedError
-
-    if "iso" in df.columns:
-        iso_set = df.iso.unique()
-        molar_mass_dict = {}
-        for iso in iso_set:
-            molar_mass_dict[iso] = molpar.get(id, iso, "mol_mass")
-        molar_mass = df["iso"].map(molar_mass_dict)
-    else:
-        iso = df.attrs["iso"]
-        molar_mass = molpar.get(id, iso, "mol_mass")
-
-    return molar_mass
-
-    #
 
 
 if __name__ == "__main__":
