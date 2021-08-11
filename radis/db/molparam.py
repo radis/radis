@@ -146,35 +146,37 @@ isotope_name_dict = {
 
 
 class MolParams(object):
+    """Easy access to molecular parameters taken from HITRAN molparam.txt.
+
+    Parameters
+    ----------
+    file: str
+        if None the one in RADIS is taken
+
+    Examples
+    --------
+    Get earth abundance of CO2, isotope 1::
+
+        molpar = Molparams()
+        molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
+
+    .. minigallery:: radis.db.molparam.MolParams
+    :add-heading
+
+    Note
+    ----
+    Isotope number was derived manually assuming the isonames were ordered in the database
+    The isotope name (ex: CO2 626) is kept for comparison if ever needed
+
+    References
+    ----------
+
+    http://hitran.org/media/molparam.txt
+    """
 
     __slots__ = ["df", "terrestrial_abundances"]
 
     def __init__(self, file=None, terrestrial_abundances=True):
-        """Easy access to molecular parameters taken from HITRAN molparam.txt.
-
-        Parameters
-        ----------
-        file: str
-            if None the one in RADIS is taken
-
-        Examples
-        --------
-        Get earth abundance of CO2, isotope 1::
-
-            molpar = Molparams()
-            molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
-
-        Note
-        ----
-        Isotope number was derived manually assuming the isonames were ordered in the database
-        The isotope name (ex: CO2 626) is kept for comparison if ever needed
-
-        References
-        ----------
-
-        http://hitran.org/media/molparam.txt
-        """
-
         if file is None:
             file = getFile("molparam.txt")
 
@@ -201,8 +203,21 @@ class MolParams(object):
             molecule id
         I: int
             molecule isotope #
-        key: ``'abundance'``, ``'mol_mass'``, ``'isotope_name_exomol'``,
+        key: ``'abundance'``, ``'mol_mass'``, ``'isotope_name'``, ``'isotope_name_exomol'``
             parameter
+
+        Examples
+        --------
+        Get explicit name of an isotope::
+
+            from radis.db.molparam import MolParams
+            mp = MolParams()
+            print(mp.get("CO2", 1, "isotope_name"))   # >> (12C)(16O)2
+            print(mp.get("CO2", 2, "isotope_name"))   # >> (13C)(16O)2
+
+
+        .. minigallery:: radis.db.molparam.MolParams.get
+            :add-heading
 
         """
         try:

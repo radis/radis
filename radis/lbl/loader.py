@@ -2278,7 +2278,28 @@ class DatabankLoader(object):
         return parsum
 
     def get_abundance(self, molecule, isotope):
-        """Get isotopic abundance"""
+        """Get isotopic abundance
+
+        Parameters
+        ----------
+        molecule: str
+        isotope: int, or list
+            isotope number, sorted in terrestrial abundance
+
+        Examples
+        --------
+        Use it from SpectrumFactory::
+
+            sf.get_abundance("H2O", 1)
+            sf.get_abundance("CH4", [1,2,3])
+
+        .. minigallery:: radis.lbl.loader.DatabankLoader.get_abundance
+            :add-heading:
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.loader.DatabankLoader.set_abundance`
+        """
 
         if isinstance(molecule, str):
             from radis.db.classes import get_molecule_identifier
@@ -2295,7 +2316,48 @@ class DatabankLoader(object):
             raise ValueError(isotope)
 
     def set_abundance(self, molecule, isotope, abundance):
-        """Set isotopic abundance"""
+        """Set isotopic abundance
+
+        Parameters
+        ----------
+        molecule: str
+        isotope: int, or list
+            isotope number, sorted in terrestrial abundance
+        abundance: float, or list
+
+        Examples
+        --------
+
+            from radis import SpectrumFactory
+
+            sf = SpectrumFactory(
+                2284.2,
+                2284.6,
+                wstep=0.001,  # cm-1
+                pressure=20 * 1e-3,  # bar
+                mole_fraction=400e-6,
+                molecule="CO2",
+                isotope="1,2",
+                verbose=False
+            )
+            sf.load_databank("HITEMP-CO2-TEST")
+            print("Abundance of CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
+            sf.eq_spectrum(2000).plot("abscoeff")
+
+            #%% Set the abundance of CO2(626) to 0.8; and the abundance of CO2(636) to 0.2 (arbitrary):
+            sf.set_abundance("CO2", [1, 2], [0.8, 0.2])
+            print("New abundance of CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
+
+            sf.eq_spectrum(2000).plot("abscoeff", nfig="same")
+
+        .. minigallery:: radis.lbl.loader.DatabankLoader.set_abundance
+            :add-heading
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.loader.DatabankLoader.get_abundance`
+
+        """
 
         if isinstance(molecule, str):
             from radis.db.classes import get_molecule_identifier
