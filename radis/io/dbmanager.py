@@ -325,14 +325,24 @@ class DatabaseManager(object):
                         load_wavenum_min=load_wavenum_min,
                         load_wavenum_max=load_wavenum_max,
                         verbose=self.verbose,
+                        engine="pytables",
                     )
                 )
             return pd.concat(df_all)
 
-        elif engine in ["vaex", "h5py"]:
-            raise NotImplementedError
+        elif engine == "vaex":
+            # vaex can open several files at the same time:
+            return hdf2df(
+                local_files,
+                columns=columns,
+                isotope=isotope,
+                load_wavenum_min=load_wavenum_min,
+                load_wavenum_max=load_wavenum_max,
+                verbose=self.verbose,
+                engine="vaex",
+            )
         else:
-            raise ValueError(engine)
+            raise NotImplementedError(engine)
 
     def plot(self, local_files, isotope, wavenum_min, wavenum_max):
         """Convenience function to plot linestrengths of the database"""

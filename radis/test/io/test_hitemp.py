@@ -127,7 +127,9 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 @pytest.mark.needs_connection
 @pytest.mark.download_large_databases
 @pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
-def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
+def test_fetch_hitemp_all_molecules(
+    molecule, verbose=True, engine="auto", *args, **kwargs
+):
     """Test fetch HITEMP for all molecules whose download URL is available.
 
     ..warning::
@@ -155,7 +157,11 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     """
 
     df, local_files = fetch_hitemp(
-        molecule, columns=["int", "wav"], verbose=verbose, return_local_path=True
+        molecule,
+        columns=["int", "wav"],
+        verbose=verbose,
+        return_local_path=True,
+        engine=engine,
     )
 
     assert f"HITEMP-{molecule}" in getDatabankList()

@@ -21,6 +21,7 @@ import radis
 
 try:
     from .dbmanager import DatabaseManager
+    from .hdf5 import update_pytables_to_vaex
     from .hitran import columns_2004, parse_global_quanta, parse_local_quanta
     from .tools import (
         _create_dtype,
@@ -31,6 +32,7 @@ try:
 except ImportError:  # ran from here
     from radis.io.dbmanager import DatabaseManager
     from radis.io.hitran import columns_2004, parse_global_quanta, parse_local_quanta
+    from radis.io.hdf5 import update_pytables_to_vaex
     from radis.io.tools import (
         _create_dtype,
         _get_linereturnformat,
@@ -535,8 +537,20 @@ def fetch_hitemp(
     )
     # do not re-download files if they exist in another format :
     if engine in ["vaex", "auto"]:
+        # ... convert files if asked:
+        import radis
+
+        if radis.AUTO_UPDATE_DATABASE:
+            converted = []
+            for f in download_files:
+                if exists(f.replace(".hdf5", ".h5")):
+                    update_pytables_to_vaex(f.replace(".hdf5", ".h5"))
+                    converted.append(f)
+            download_files = [f for f in download_files if f not in converted]
+        # do not re-download remaining files that exist. Let user decide what to do.
+        # (download & re-parsing is a long solution!)
         download_files = [
-            k for k in download_files if not exists(k.replace(".hdf5", ".h5"))
+            f for f in download_files if not exists(f.replace(".hdf5", ".h5"))
         ]
 
     # Download files
