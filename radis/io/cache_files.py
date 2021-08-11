@@ -62,6 +62,7 @@ def load_h5_cache_file(
     current_version="",
     last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
     verbose=True,
+    engine="pytables",
 ):
     """Function to load a h5 cache file.
 
@@ -136,6 +137,7 @@ def load_h5_cache_file(
             + list(relevant_if_metadata_below.keys()),
             current_version=current_version,
             last_compatible_version=last_compatible_version,
+            engine=engine,
         )
     # ... if deprecated, raise an error only if 'force'
     except DeprecatedFileWarning as err:
@@ -158,6 +160,8 @@ def load_h5_cache_file(
                 cachefile,
                 relevant_if_metadata_above,
                 relevant_if_metadata_below,
+                engine=engine,
+                verbose=verbose,
             )
         # ... if irrelevant, raise an error only if 'force'
         except IrrelevantFileWarning as err:
@@ -172,7 +176,10 @@ def load_h5_cache_file(
     if verbose >= 2:
         printm("Reading cache file ({0})".format(cachefile))
     try:
-        df = pd.read_hdf(cachefile, "df")
+        # Load file :
+        manager = HDF5Manager(engine)
+        df = manager.load(cachefile, key="df")
+
     except KeyError as err:  # An error happened during file reading.
         # Fail safe by deleting cache file (unless we explicitely wanted it
         # with 'force')
@@ -191,7 +198,7 @@ def load_h5_cache_file(
     return df
 
 
-def get_cache_file(fcache, verbose=True):
+def get_cache_file(fcache, engine="pytables", verbose=True):
     """Load HDF5 cache file.
 
     Parameters
@@ -210,13 +217,13 @@ def get_cache_file(fcache, verbose=True):
 
     we could start using FEATHER format instead. See notes in cache_files.py
     """
+    # TODO @dev: refactor : we probably don't need this function (only used in astroquery)
 
     # Load file
-
-    df = pd.read_hdf(fcache, "df")
+    manager = HDF5Manager(engine)
+    df = manager.load(fcache, key="df")
 
     # Check file
-
     # ... 'object' columns slow everything down (not fixed format strings!)
     if verbose >= 2:
         _warn_if_object_columns(df, fcache)

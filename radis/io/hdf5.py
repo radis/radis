@@ -86,17 +86,25 @@ class HDF5Manager(object):
         else:
             raise NotImplementedError(self.engine)
 
-    def load(self, fname, columns, where=None, **store_kwargs) -> pd.DataFrame:
+    def load(
+        self, fname, columns=None, where=None, key="df", **store_kwargs
+    ) -> pd.DataFrame:
         """
         Parameters
         ----------
         columns: list of str
             list of columns to load. If ``None``, returns all columns in the file.
+
+        Other Parameters
+        ----------------
+        key: store key in  ``'pytables'`` mode.
         """
 
         if self.engine == "pytables":
             try:
-                df = pd.read_hdf(fname, columns=columns, where=where, **store_kwargs)
+                df = pd.read_hdf(
+                    fname, columns=columns, where=where, key=key, **store_kwargs
+                )
             except TypeError as err:
                 if "reading from a Fixed format store" in str(err):
                     raise TypeError(
