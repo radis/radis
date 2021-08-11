@@ -70,7 +70,7 @@ from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.levels.partfunc import (
     PartFunc_Dunham,
-    PartFuncHAPI,
+    PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
 )
@@ -2188,7 +2188,7 @@ class DatabankLoader(object):
             # Use TIPS-2017 through HAPI (HITRAN Python interface, integrated in RADIS)
             # no tabulated partition functions defined. Only non-eq spectra can
             # be calculated if energies are also given
-            parsum = PartFuncHAPI(
+            parsum = PartFuncTIPS(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
@@ -2276,6 +2276,39 @@ class DatabankLoader(object):
             # other formats ?
 
         return parsum
+
+    def get_abundance(self, molecule, isotope):
+        """Get isotopic abundance"""
+
+        if isinstance(molecule, str):
+            from radis.db.classes import get_molecule_identifier
+
+            molecule = get_molecule_identifier(molecule)
+
+        if isinstance(isotope, int):
+            return self.molparam.df.loc[(molecule, isotope)].abundance
+        elif isinstance(isotope, list):
+            return [self.molparam.df.loc[(molecule, iso)].abundance for iso in isotope]
+        else:
+            raise ValueError(isotope)
+
+    def set_abundance(self, molecule, isotope, abundance):
+        """Set isotopic abundance"""
+
+        if isinstance(molecule, str):
+            from radis.db.classes import get_molecule_identifier
+
+            molecule = get_molecule_identifier(molecule)
+
+        self.molparam.terrestrial_abundances = False
+
+        if isinstance(isotope, int):
+            self.molparam.df.loc[(molecule, isotope), "abundance"] = abundance
+        elif isinstance(isotope, list):
+            assert len(isotope) == len(abundance)
+            self.molparam.df.loc[(molecule, isotope), "abundance"] = abundance
+        else:
+            raise ValueError(isotope)
 
     def get_partition_function_interpolator(self, molecule, isotope, elec_state):
         """Retrieve Partition Function Interpolator.

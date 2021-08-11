@@ -1336,8 +1336,8 @@ class SpectrumFactory(BandFactory):
                 overpopulation=overpopulation,
             )
 
-        self._calc_linestrength_noneq()
-        self._calc_emission_integral()
+        self.calc_linestrength_noneq()
+        self.calc_emission_integral()
 
         # ----------------------------------------------------------------------
         # Cutoff linestrength

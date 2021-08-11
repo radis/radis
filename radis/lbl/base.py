@@ -44,8 +44,8 @@ PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 - :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_eq`
 - :py:meth:`radis.lbl.base.BaseFactory.calc_populations_eq`
 - :py:meth:`radis.lbl.base.BaseFactory.calc_populations_noneq`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_noneq`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_emission_integral`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_noneq`
+- :py:meth:`radis.lbl.base.BaseFactory.calc_emission_integral`
 - :py:meth:`radis.lbl.base.BaseFactory._cutoff_linestrength`
 
 Most methods are written in inherited class with the following inheritance scheme:
@@ -1597,8 +1597,8 @@ class BaseFactory(DatabankLoader):
 
         return None  # dataframe updated directly
 
-    def get_abundance(self, df):
-        """Returns the isotopic abundance
+    def get_lines_abundance(self, df):
+        """Returns the isotopic abundance of each line in `df`
 
         Parameters
         ----------
@@ -1765,7 +1765,11 @@ class BaseFactory(DatabankLoader):
         # Get moment
 
         # get abundance
-        abundance = self.get_abundance(df)
+        abundance = self.get_lines_abundance(df)
+        if not self.molparam.terrestrial_abundances:
+            raise NotImplementedError(
+                "Formula not corrected for non-terrestrial isotopic abundances"
+            )
 
         gl = df.gl
         El = df.El
@@ -1773,7 +1777,9 @@ class BaseFactory(DatabankLoader):
         Ia = abundance
         h = h_CGS  # erg.s
         c = c_CGS
-        S = df.int  # reference linestrength
+        S = (
+            df.int
+        )  # reference linestrength   ( computed with terrestrial isotopic abundances)
 
         weighted_trans_moment_sq = (
             (3 * h * c / 8 / pi ** 3)
@@ -1926,8 +1932,8 @@ class BaseFactory(DatabankLoader):
     # calc_linestrength_eq
     # calc_populations_eq
     # calc_populations_noneq
-    # _calc_linestrength_noneq
-    # _calc_emission_integral
+    # calc_linestrength_noneq
+    # calc_emission_integral
     # _cutoff_linestrength
 
     # XXX =====================================================================
@@ -2001,6 +2007,11 @@ class BaseFactory(DatabankLoader):
         Updates linestrength in df1. Cutoff criteria is applied afterwards.
 
         .. minigallery:: radis.lbl.base.BaseFactory.calc_linestrength_eq
+            :add-heading:
+
+        See Also
+        --------
+        :py:func:`~radis.lbl.base.linestrength_from_Einstein`
         """
 
         Tref = self.input.Tref
@@ -2093,6 +2104,11 @@ class BaseFactory(DatabankLoader):
 
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
+
+        if not self.molparam.terrestrial_abundances:
+            raise NotImplementedError(
+                "Formula not corrected for non-terrestrial isotopic abundances"
+            )
 
         # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
         # 60, No. 5, pp. 665-710"
@@ -2920,11 +2936,11 @@ class BaseFactory(DatabankLoader):
         # exported in a Spectrum but still connected to the Factory
         return pops
 
-    def _calc_linestrength_noneq(self):
-        """
+    def calc_linestrength_noneq(self):
+        """Calculate linestrengths at non-LTE
+
         Parameters
         ----------
-
         Pre-requisite:
 
             lower state population `nl` has already been calculated by
@@ -2933,7 +2949,6 @@ class BaseFactory(DatabankLoader):
 
         Returns
         -------
-
         None
             Linestrength `S` added in self.df
 
@@ -2952,7 +2967,9 @@ class BaseFactory(DatabankLoader):
         See Also
         --------
 
-        :meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`
+        :py:meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`,
+        :py:meth:`~radis.lbl.base.BaseFactory.calc_emission_integral`,
+        :py:func:`~radis.lbl.base.linestrength_from_Einstein`
 
         """
 
@@ -3038,7 +3055,11 @@ class BaseFactory(DatabankLoader):
         nl = df.nl
         # ... remove Qref, nref, etc.
         # start from for tabulated linestrength
-        line_strength = df.int.copy()
+        line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
+        if not self.molparam.terrestrial_abundances:
+            raise NotImplementedError(
+                "Formula not corrected for non-terrestrial isotopic abundances"
+            )
 
         # ... correct for lower state population
         if "iso" in df:
@@ -3067,21 +3088,26 @@ class BaseFactory(DatabankLoader):
         return  # df1 automatically updated
 
     # %%
-    def _calc_emission_integral(self):
-        """Calculate Emission Integral.
+    def calc_emission_integral(self):
+        r"""Calculate Emission Integral.
+
+        .. math::
+            Ei=\frac{n_u A_{ul}}{4} \pi \Delta E_{ul}
 
         Emission Integral is a non usual quantity introduced here to have an
         equivalent of Linestrength in emission calculation
 
         Returns
         -------
-
         None
             Emission integral `Ei` added in self.df
 
+        Notes
+        -----
 
         emission_integral: (mW/sr)
-            emission integral is defined as
+            emission integral is defined as::
+
             Ei = n_u * A_ul / 4π * DeltaE_ul
                   :      :     :      :
                 (#/#)  (s-1) (sr)    (mJ)
@@ -3091,6 +3117,10 @@ class BaseFactory(DatabankLoader):
                 ϵ(λ)   =      Ei  *   Phi(λ)  * ntot   * path_length
                  :             :         :       :          :
             mW/cm2/sr/nm    (mW/sr)   (1/nm)   (cm-3)      (cm)
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.base.BaseFactory.calc_linestrength_noneq`
         """
 
         df = self.df1
@@ -3110,7 +3140,7 @@ class BaseFactory(DatabankLoader):
         # adim. (#/#) (multiplied by n_tot later)
         n_u = df["nu"]
         # correct for abundance
-        n_ua = n_u * self.get_abundance(df)
+        n_ua = n_u * self.get_lines_abundance(df)
 
         A_ul = df["Aul"]  # (s-1)
 
@@ -3604,7 +3634,7 @@ def get_waverange(
 
 
 def linestrength_from_Einstein(A, gu, El, Ia, nu, Q, T):
-    """Calculate linestrength at temperature ``T`` from Einstein coefficients.
+    r"""Calculate linestrength at temperature ``T`` from Einstein coefficients.
 
     Parameters
     ----------
@@ -3632,19 +3662,21 @@ def linestrength_from_Einstein(A, gu, El, Ia, nu, Q, T):
     ----------
 
     .. math::
-        S=\frac{A gu \operatorname{exp}\left(\frac{-hc_k El}{T}\right) \left(1-\operatorname{exp}\left(\frac{-hc_k \nu}{T}\right)\right)}{8\pi c_{CGS} {\nu}^2 Q}
+        S(T) =\frac{1}{8\pi c_{CGS} {n_u}^2} A \frac{I_a g_u \operatorname{exp}\left(\frac{-c_2 E_l}{T}\right)}{Q(T)} \left(1-\operatorname{exp}\left(\frac{-c_2 n_u}{T}\right)\right)
 
-    Combine Eq.(A.5), (A.8) in [Rothman-1998]_
+    Combine Eq.(A.5), (A.9) in [Rothman-1998]_
 
+    See Also
+    --------
+    :py:meth:`~radis.lbl.base.BaseFactory.calc_linestrength_eq`
 
     """
 
     return (
-        A
-        * gu
-        * np.exp(-hc_k * El / T)
+        (1 / (8 * np.pi * c_CGS * nu ** 2))
+        * A
+        * ((Ia * gu * np.exp(-hc_k * El / T)) / Q)
         * (1 - np.exp(-hc_k * nu / T))
-        / (8 * np.pi * c_CGS * nu ** 2 * Q)
     )
 
 

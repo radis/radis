@@ -146,7 +146,7 @@ isotope_name_dict = {
 
 
 class MolParams:
-    def __init__(self, file=None):
+    def __init__(self, file=None, terrestrial_abundances=True):
         """Easy access to molecular parameters taken from HITRAN molparam.txt.
 
         Parameters
@@ -181,6 +181,7 @@ class MolParams:
         df["isotope_name_exomol"] = _add_exomol_name(df)
 
         self.df = df
+        self.terrestrial_abundances = terrestrial_abundances
 
         # ------
         try:  # Add hints (Python >3.6 only)

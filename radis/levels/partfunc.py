@@ -10,7 +10,7 @@ Calculators all derive from the same RovibPartitionFunction object,
 and require a list of energies
 
 Tabulators are more specific, and require a list of precalculated
-partition functions at different temperature. PartFuncHAPI
+partition functions at different temperature. PartFuncTIPS
 uses the HITRAN hapi.py [1]_ module to interpolate Q for HITRAN species
 
 
@@ -19,7 +19,7 @@ Routine Listing
 
 Partition functions:
 
-- :class:`~radis.levels.partfunc.PartFuncHAPI`
+- :class:`~radis.levels.partfunc.PartFuncTIPS`
 - :class:`~radis.levels.partfunc.PartFunc_Dunham`
 
 Which inherit from:
@@ -143,8 +143,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
 
         See Also
         --------
-
-        :py:class:`~radis.levels.partfunc.PartFuncHAPI`
+        :py:class:`~radis.levels.partfunc.PartFuncTIPS`
         """
 
         # For compatibility with the syntax of RovibParFuncCalculator.at()
@@ -1104,8 +1103,9 @@ class PartFuncExoMol(RovibParFuncTabulator):
         return np.interp(T, self.T_range, self.Q_range)
 
 
-class PartFuncHAPI(RovibParFuncTabulator):
-    """Return partition function using interpolation of tabulated values.
+class PartFuncTIPS(RovibParFuncTabulator):
+    """Return partition function using interpolation of tabulated values
+    using the TIPS program [TIPS-2020]_
 
     Parameters
     ----------
@@ -1120,28 +1120,26 @@ class PartFuncHAPI(RovibParFuncTabulator):
     --------
     ::
 
-        from radis.levels.partfunc import PartFuncHAPI
+        from radis.levels.partfunc import PartFuncTIPS
         from radis.db.classes import get_molecule_identifier
 
         M = get_molecule_identifier('N2O')
         iso=1
 
-        Q = PartFuncHAPI(M, iso)
+        Q = PartFuncTIPS(M, iso)
         print(Q.at(T=1500))
 
     See :ref:`online examples <label_examples_partition_functions>` for more.
 
     References
     ----------
-    Partition function are calculated with HAPI [1]_ (Hitran Python Interface) using
+    Partition function are retrieved from [TIPS-2020]_ through [HAPI]_  (Hitran Python Interface) using
     partitionSum(M,I,T)
-
-    .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
     """
 
     def __init__(self, M, I, path=None, verbose=True):
 
-        super(PartFuncHAPI, self).__init__()
+        super(PartFuncTIPS, self).__init__()
 
         self.verbose = verbose
 
@@ -1166,7 +1164,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
             M = get_molecule_identifier(M)
         if type(M) is not int:
             raise TypeError("Molecule id must be int: got {0} ({1})".format(M, type(M)))
-        if type(I) is not int:
+        if type(I) not in [int, np.int64]:
             raise TypeError(
                 "Isotope number must be int: got {0} ({1})".format(I, type(I))
             )
@@ -1199,7 +1197,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
         try:
             return self.partitionSum(self.M, self.I, T)
         except Exception as err:
-            if "TIPS2017" in str(err):
+            if "TIPS2017" in str(err) or "TIPS2020" in str(err):
                 # TIPS 2017 OutOfBoundError
                 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 
@@ -1233,6 +1231,9 @@ def _get_cachefile_name(ElecState):
         jsonfile.replace(".json", ""), molecule, isotope, state
     )
     return filename
+
+
+PartFuncHAPI = PartFuncTIPS  # old name; for compatibility
 
 
 class PartFunc_Dunham(RovibParFuncCalculator):

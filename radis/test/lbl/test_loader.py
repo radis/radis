@@ -50,7 +50,6 @@ def test_retrieve_from_database(
             mole_fraction=400e-6,
             molecule="CO2",
             isotope=[1],
-            db_use_cached=True,
             medium="vacuum",
             broadening_max_width=10,
             export_populations="rovib",
@@ -154,6 +153,10 @@ def test_ignore_irrelevant_files(*args, **kwargs):
         sf3.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
 
 
+def test_custom_molparams(verbose=True, *args, **kwargs):
+    pass
+
+
 def _run_testcases(verbose=True, plot=False):
 
     test_ignore_cached_files()
@@ -162,4 +165,51 @@ def _run_testcases(verbose=True, plot=False):
 
 
 if __name__ == "__main__":
-    _run_testcases()
+    # _run_testcases()
+    test_custom_molparams()
+
+    sf = SpectrumFactory(
+        2284.2,
+        2284.6,
+        wstep=0.001,  # cm-1
+        pressure=20 * 1e-3,  # bar
+        cutoff=0,
+        path_length=0.1,
+        mole_fraction=400e-6,
+        molecule="CO2",
+        isotope="1",
+        medium="vacuum",
+        broadening_max_width=10,
+        verbose=0,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.load_databank("HITEMP-CO2-TEST")
+    s = sf.non_eq_spectrum(2000, 2000)
+    #%%
+    # abundance_new = 0.87
+    # from radis.db.classes import get_molecule_identifier
+    # print(sf.molparam.df.loc[get_molecule_identifier("CO2"), 1].abundance)
+    # sf.molparam.df.loc[(get_molecule_identifier("CO2"), 1), "abundance"] /= 2
+    # print(sf.molparam.df.loc[get_molecule_identifier("CO2"), 1].abundance)
+    print(sf.get_abundance("CO2", 1))
+
+    sf.set_abundance("CO2", 1, sf.get_abundance("CO2", 1) / 2)
+    s2 = sf.non_eq_spectrum(2000, 2000)
+
+    import numpy as np
+
+    print(
+        "emisscoeff\n",
+        2 * s2.get("emisscoeff")[1][::130],
+        "\n",
+        s.get("emisscoeff")[1][::130],
+    )
+    assert np.allclose(2 * s2.get("emisscoeff")[1], s.get("emisscoeff")[1])
+
+    print(
+        "abscoeff\n",
+        2 * s2.get("abscoeff")[1][::130],
+        "\n",
+        s.get("abscoeff")[1][::130],
+    )
+    assert np.allclose(2 * s2.get("abscoeff")[1], s.get("abscoeff")[1])
