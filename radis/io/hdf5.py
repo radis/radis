@@ -11,6 +11,74 @@ from time import time
 import pandas as pd
 
 
+class HDF5Manager(object):
+    def __init__(self, engine="pytables"):
+        self.engine = engine
+
+    def open(self, file, mode="w"):
+        if self.engine == "pytables":
+            return pd.HDFStore(file, mode=mode, complib="blosc", complevel=9)
+        else:
+            raise NotImplementedError(self.engine)
+
+    def write(self, handler, df, append=True):
+        if self.engine == "pytables":
+            DATA_COLUMNS = ["iso", "wav"]
+            """
+            list : only these column names will be searchable directly on disk to
+            only load certain lines. See :py:func:`~radis.io.hdf5.hdf2df`
+            """
+            handler.put(
+                key="df",
+                value=df,
+                append=append,
+                format="table",
+                data_columns=DATA_COLUMNS,
+            )
+        else:
+            raise NotImplementedError(self.engine)
+
+    def load(self, fname, columns, where=None, **store_kwargs) -> pd.DataFrame:
+        """
+        Parameters
+        ----------
+        columns: list of str
+            list of columns to load. If ``None``, returns all columns in the file.
+        """
+        if self.engine == "pytables":
+            try:
+                df = pd.read_hdf(fname, columns=columns, where=where, **store_kwargs)
+            except TypeError as err:
+                if "reading from a Fixed format store" in str(err):
+                    raise TypeError(
+                        f"radis.io.hdf5.hdf2df can only be used to load specific HDF5 files generated in a 'Table' which allows to select only certain columns or rows. Here the file {fname} is in 'Fixed' format. Regenerate it ? If it's a cache file of a .par file, load the .par file directly ?"
+                    )
+        else:
+            raise NotImplementedError(self.engine)
+
+        return df
+
+    def add_metadata(self, local_file: str, metadata: dict):
+
+        if self.engine == "pytables":
+            with pd.HDFStore(local_file, mode="a", complib="blosc", complevel=9) as f:
+
+                f.get_storer("df").attrs.metadata = metadata
+        else:
+            raise NotImplementedError(self.engine)
+
+    def read_metadata(self, local_file: str) -> dict:
+
+        if self.engine == "pytables":
+            with pd.HDFStore(local_file, mode="r", complib="blosc", complevel=9) as f:
+
+                metadata = f.get_storer("df").attrs.metadata
+        else:
+            raise NotImplementedError(self.engine)
+
+        return metadata
+
+
 def hdf2df(
     fname,
     columns=None,
@@ -19,6 +87,7 @@ def hdf2df(
     load_wavenum_max=None,
     verbose=True,
     store_kwargs={},
+    engine="pytables",
 ):
     """Load a HDF5 line databank into a Pandas DataFrame.
 
@@ -83,15 +152,21 @@ def hdf2df(
 
     # Load :
     t0 = time()
-    try:
-        df = pd.read_hdf(fname, columns=columns, where=where, **store_kwargs)
-    except TypeError as err:
-        if "reading from a Fixed format store" in str(err):
-            raise TypeError(
-                f"radis.io.hdf5.hdf2df can only be used to load specific HDF5 files generated in a 'Table' which allows to select only certain columns or rows. Here the file {fname} is in 'Fixed' format. Regenerate it ? If it's a cache file of a .par file, load the .par file directly ?"
-            )
-    with pd.HDFStore(fname, mode="r") as store:
-        df.attrs.update(store.get_storer("df").attrs.metadata)
+
+    manager = HDF5Manager(engine)
+    df = manager.load(fname, columns=columns, where=where, **store_kwargs)
+    metadata = manager.read_metadata(fname)
+
+    # Sanity Checks if loading the full file
+    if len(where) == 0:
+        if "total_lines" in metadata:
+            assert len(df) == metadata["total_lines"]
+        if "wavenumber_min" in metadata:
+            assert df["wav"].min() == metadata["wavenumber_min"]
+        if "wavenumber_max" in metadata:
+            assert df["wav"].max() == metadata["wavenumber_max"]
+
+    df.attrs.update(metadata)
 
     if verbose >= 3:
         from radis.misc.printer import printg

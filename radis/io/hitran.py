@@ -28,6 +28,7 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import pandas as pd
+from numpy import int64
 
 import radis
 from radis import OLDEST_COMPATIBLE_VERSION
@@ -87,6 +88,13 @@ columns_2004 = OrderedDict(
 )
 """ OrderedDict: parsing order of HITRAN 2004 format """
 # fmt: on
+
+
+def cast_to_int64_with_missing_values(dg, keys):
+    """replace missing values of int64 columns with -1"""
+    for c in keys:
+        if dg.dtypes[c] != int64:
+            dg[c] = dg[c].fillna(-1).astype(int64)
 
 
 def hit2df(
@@ -316,12 +324,12 @@ def _parse_HITRAN_class1(df):
     """
 
     # 1. Parse
-    dgu = df["globu"].str.extract(r"[ ]{13}(?P<vu>[\d ]{2})", expand=True)
-    dgl = df["globl"].str.extract(r"[ ]{13}(?P<vl>[\d ]{2})", expand=True)
+    dgu = df["globu"].astype(str).str.extract(r"[ ]{13}(?P<vu>[\d ]{2})", expand=True)
+    dgl = df["globl"].astype(str).str.extract(r"[ ]{13}(?P<vl>[\d ]{2})", expand=True)
 
     # 2. Convert to numeric
-    dgu = dgu.apply(pd.to_numeric)
-    dgl = dgl.apply(pd.to_numeric)
+    cast_to_int64_with_missing_values(dgu, ["vu"])
+    cast_to_int64_with_missing_values(dgl, ["vl"])
 
     # 3. Clean
     del df["globu"]
@@ -415,18 +423,26 @@ def _parse_HITRAN_class4(df):
     """
 
     # 1. Parse
-    dgu = df["globu"].str.extract(
-        r"[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})",
-        expand=True,
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})",
+            expand=True,
+        )
     )
-    dgl = df["globl"].str.extract(
-        r"[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})",
-        expand=True,
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})",
+            expand=True,
+        )
     )
 
     # 2. Convert to numeric
-    dgu = dgu.apply(pd.to_numeric)
-    dgl = dgl.apply(pd.to_numeric)
+    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "l2u", "v3u"])
+    cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "l2l", "v3l"])
 
     # 3. Clean
     del df["globu"]
@@ -462,18 +478,26 @@ def _parse_HITRAN_class5(df):
     """
 
     # 1. Parse
-    dgu = df["globu"].str.extract(
-        r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)",
-        expand=True,
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)",
+            expand=True,
+        )
     )
-    dgl = df["globl"].str.extract(
-        r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)",
-        expand=True,
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)",
+            expand=True,
+        )
     )
 
     # 2. Convert to numeric
-    dgu = dgu.apply(pd.to_numeric)
-    dgl = dgl.apply(pd.to_numeric)
+    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "l2u", "v3u", "ru"])
+    cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "l2l", "v3l", "rl"])
 
     # 3. Clean
     del df["globu"]
@@ -509,22 +533,37 @@ def _parse_HITRAN_class6(df):
     """
 
     # 1. Parse
-    dgu = df["globu"].str.extract(
-        #        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
-        r"[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})",
-        expand=True,
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            #        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
+            r"[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})",
+            expand=True,
+        )
     )
-    dgl = df["globl"].str.extract(
-        #        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
-        r"[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})",
-        expand=True,
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            #        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
+            r"[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})",
+            expand=True,
+        )
     )
     # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are
     # ... somehow negative. The regex above is adapted to catch negation signs with \-
 
     # 2. Convert to numeric
-    dgu = dgu.apply(pd.to_numeric)
-    dgl = dgl.apply(pd.to_numeric)
+    cast_to_int64_with_missing_values(
+        dgu,
+        [
+            "v1u",
+            "v2u",
+            "v3u",
+        ],
+    )
+    cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "v3l"])
 
     # 3. Clean
     del df["globu"]
@@ -647,7 +686,8 @@ def _parse_HITRAN_class10(df):
 
 
 def _parse_HITRAN_group1(df):
-    r"""
+    r"""Parse asymmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP1` ):
+    H2O, O3, SO2, NO2, HNO3, H2CO, HOCl, H2O2, COF2, H2S, HO2, HCOOH, ClONO2, HOBr, C2H4
 
     Parameters
     ----------
@@ -676,26 +716,32 @@ def _parse_HITRAN_group1(df):
     # --------------
     # J'  | Ka' | Kc' | F'  | Sym'
     # I3  | I3  | I3  | A5  | A1
-    dgu = df["locu"].str.extract(
-        r"(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)",
-        expand=True,
+    dgu = (
+        df["locu"]
+        .astype(str)
+        .str.extract(
+            r"(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)",
+            expand=True,
+        )
     )
     # Ref [1] : locl
     # --------------
     # J'' | Ka''| Kc''| F'' | Sym''
     # I3  | I3  | I3  | A5  | A1
-    dgl = df["locl"].str.extract(
-        r"(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)",
-        expand=True,
+    dgl = (
+        df["locl"]
+        .astype(str)
+        .str.extract(
+            r"(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)",
+            expand=True,
+        )
     )
     # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
     # ... be negative. The regex above is adapted to catch negation signs with \-
 
     # 2. Convert to numeric
-    for k in ["ju", "Kau", "Kcu"]:
-        dgu[k] = pd.to_numeric(dgu[k])
-    for k in ["jl", "Kal", "Kcl"]:
-        dgl[k] = pd.to_numeric(dgl[k])
+    cast_to_int64_with_missing_values(dgu, ["ju", "Kau", "Kcu"])
+    cast_to_int64_with_missing_values(dgl, ["jl", "Kal", "Kcl"])
 
     # 3. Clean
     del df["locu"]
@@ -705,7 +751,8 @@ def _parse_HITRAN_group1(df):
 
 
 def _parse_HITRAN_group2(df):
-    r"""
+    r"""Parse diatomic and linear molecules (:py:attr:`~radis.db.classes.HITRAN_GROUP2` ):
+    CO2, N2O, CO, HF, HCl, HBr, HI, OCS, N2, HCN, C2H2, NO+
 
     Parameters
     ----------
@@ -734,19 +781,24 @@ def _parse_HITRAN_group2(df):
     # --------------
     #     | F'  |
     # 10X | A5  |
-    dgu = df["locu"].str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
+    dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
     # Ref [1] : locl
     # --------------
     #     | Br  | J'' | Sym''| F'' |
     # 5X  | A1  | I3  | A1   | A5  |
-    dgl = df["locl"].str.extract(
-        r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})", expand=True
+    dgl = (
+        df["locl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})",
+            expand=True,
+        )
     )
 
     # 2. Convert to numeric
 
     # dgl['jl'] = dgl.jl.apply(pd.to_numeric)
-    dgl["jl"] = pd.to_numeric(dgl.jl)
+    cast_to_int64_with_missing_values(dgl, ["jl"])
 
     # 3. Clean
     del df["locu"]
@@ -765,7 +817,8 @@ def _parse_HITRAN_group2(df):
 
 
 def _parse_HITRAN_group3(df):
-    r"""
+    r"""Parse Spherical rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP3` ) :
+    SF6, CH4
 
     Parameters
     ----------
@@ -792,7 +845,8 @@ def _parse_HITRAN_group3(df):
 
 
 def _parse_HITRAN_group4(df):
-    r"""
+    r"""Parse symmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP4` ):
+    CH3D, CH3Cl, C2H6, NH3, PH3, CH3OH
 
     Parameters
     ----------
@@ -819,7 +873,8 @@ def _parse_HITRAN_group4(df):
 
 
 def _parse_HITRAN_group5(df):
-    r"""
+    r"""Parse Triplet-Sigma ground electronic states (:py:attr:`~radis.db.classes.HITRAN_GROUP5` ) :
+    O2
 
     Parameters
     ----------
@@ -846,7 +901,8 @@ def _parse_HITRAN_group5(df):
 
 
 def _parse_HITRAN_group6(df):
-    r"""
+    r"""Parse Doublet-Pi ground electronic states (:py:attr:`~radis.db.classes.HITRAN_GROUP6` ) :
+    NO, OH, ClO
 
     Parameters
     ----------
@@ -886,10 +942,6 @@ def parse_local_quanta(df, mol):
         molecule name
     """
 
-    # had some problems with bytes types
-    df["locu"] = df.locu.astype(str)
-    df["locl"] = df.locl.astype(str)
-
     if mol in HITRAN_GROUP1:
         df = _parse_HITRAN_group1(df)
     elif mol in HITRAN_GROUP2:
@@ -921,10 +973,6 @@ def parse_global_quanta(df, mol):
     mol: str
         molecule name
     """
-
-    # had some problems with bytes types
-    df["globu"] = df.globu.astype(str)
-    df["globl"] = df.globl.astype(str)
 
     if mol in HITRAN_CLASS1:
         df = _parse_HITRAN_class1(df)
