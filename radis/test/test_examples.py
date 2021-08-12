@@ -24,6 +24,7 @@ def test_script_execution(script):
     plt.ion()
     # run:
     runpy.run_path(script, init_globals=locals())
+    plt.close("all")
 
 
 if __name__ == "__main__":

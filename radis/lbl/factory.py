@@ -1582,11 +1582,12 @@ class SpectrumFactory(BandFactory):
         spectral_points = (
             self.params.wavenum_max_calc - self.params.wavenum_min_calc
         ) / self.params.wstep
-        print("Spectral points: ", spectral_points)
+
         df = self.df0.copy()
 
         from radis.lbl.broadening import get_molar_mass, voigt_broadening_HWHM
 
+        # Defining parameters
         Tgas = 300
         pressure_mbar = self.input.pressure_mbar
         mole_fraction = self.input.mole_fraction
@@ -1596,11 +1597,6 @@ class SpectrumFactory(BandFactory):
         Tref = self.input.Tref
         # Check self broadening is here
         if not "Tdpsel" in list(df.keys()):
-            self.warn(
-                "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
-                "MissingSelfBroadeningWarning",
-                level=2,  # only appear if verbose>=2
-            )
             Tdpsel = None  # if None, voigt_broadening_HWHM uses df.Tdpair
         else:
             Tdpsel = df.Tdpsel
@@ -1608,7 +1604,7 @@ class SpectrumFactory(BandFactory):
         molar_mass = get_molar_mass(df)
 
         # Calculate broadening FWHM
-        wv, wl, wg = voigt_broadening_HWHM(
+        _, wl, wg = voigt_broadening_HWHM(
             df.airbrd,
             df.selbrd,
             df.Tdpair,
@@ -1620,9 +1616,6 @@ class SpectrumFactory(BandFactory):
             Tgas,
             Tref,
         )
-        # print("wv: ",wv)
-        # print("wl: ",wl)
-        # print("wg: ",wg)
 
         def _init_w_axis(w_dat, log_p):
             w_min = w_dat.min()
@@ -1642,8 +1635,6 @@ class SpectrumFactory(BandFactory):
         wL = len(wL)
         wG = _init_w_axis(wG_dat, log_pG)  # FWHM
         wG = len(wG)
-        print("wL: ", (wL))
-        print("wG: ", (wG))
 
         legacy_time = 6.6487e-08 * n_lines * broadening_max_width / wstep
         ldm_fft_time = (
@@ -1652,9 +1643,8 @@ class SpectrumFactory(BandFactory):
         ldm_voigt_time = 2.096e-07 * n_lines + 7.185e-09 * (
             1 + wL * wG
         ) * spectral_points * np.log(spectral_points)
-        print("FFT time: ", ldm_fft_time)
-        print("Voigt time: ", ldm_voigt_time)
-        print("legacy time: ", legacy_time)
+
+        return [legacy_time, ldm_fft_time, ldm_voigt_time]
 
     def _get_log_2gs(self):
         """Returns log_2gs if it already exists in the dataframe, otherwise

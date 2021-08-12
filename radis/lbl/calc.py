@@ -22,6 +22,7 @@ from os.path import exists
 
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.basics import all_in
+from radis.misc.utils import Default
 from radis.phys.air import air2vacuum
 from radis.phys.convert import nm2cm
 from radis.spectrum.spectrum import Spectrum
@@ -48,6 +49,7 @@ def calc_spectrum(
     cutoff=1e-27,
     parsum_mode="full summation",
     optimization="min-RMS",
+    broadening_method=Default("fft"),
     overpopulation=None,
     name=None,
     save_to="",
@@ -418,6 +420,15 @@ def calc_spectrum(
             for mol in molecule_reference_set:
                 molecule_dict[mol][argument_name] = argument_dict[mol]
 
+    # Checking if `auto` mode
+    if optimization == "auto":
+        optimization = "min-RMS"
+        broadening_max_width = 300
+        if (wavenum_max - wavenum_min) < 300:
+            broadening_method = "fft"
+        else:
+            broadening_method = "voigt"
+
     # Stage 3: Now let's calculate all the spectra
     s_list = []
     for molecule, dict_arguments in molecule_dict.items():
@@ -450,6 +461,7 @@ def calc_spectrum(
                 cutoff=cutoff,
                 parsum_mode=parsum_mode,
                 optimization=optimization,
+                broadening_method=broadening_method,
                 name=name,
                 use_cached=use_cached,
                 verbose=verbose,
@@ -489,6 +501,7 @@ def _calc_spectrum(
     cutoff,
     parsum_mode,
     optimization,
+    broadening_method,
     name,
     use_cached,
     verbose,
@@ -577,6 +590,7 @@ def _calc_spectrum(
         parsum_mode=parsum_mode,
         verbose=verbose,
         optimization=optimization,
+        broadening_method=broadening_method,
         export_lines=export_lines,
         **kwargs
     )
