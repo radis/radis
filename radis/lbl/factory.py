@@ -786,9 +786,20 @@ class SpectrumFactory(BandFactory):
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
                 "radis_version": version,
+                "spectral_points": (
+                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
+                )
+                / self.params.wstep,
                 "profiler": dict(self.profiler.final),
             }
         )
+        if self.params.optimization != None:
+            conditions.update(
+                {
+                    "wL": self.wL,
+                    "wG": self.wG,
+                }
+            )
         del self.profiler.final[list(self.profiler.final)[-1]][
             "spectrum_calc_before_obj"
         ]
@@ -1098,9 +1109,20 @@ class SpectrumFactory(BandFactory):
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
                 "radis_version": version,
+                "spectral_points": (
+                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
+                )
+                / self.params.wstep,
                 "profiler": dict(self.profiler.final),
             }
         )
+        if self.params.optimization != None:
+            conditions.update(
+                {
+                    "wL": self.wL,
+                    "wG": self.wG,
+                }
+            )
         del self.profiler.final[list(self.profiler.final)[-1]][
             "spectrum_calc_before_obj"
         ]
@@ -1437,9 +1459,20 @@ class SpectrumFactory(BandFactory):
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
                 "radis_version": version,
+                "spectral_points": (
+                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
+                )
+                / self.params.wstep,
                 "profiler": dict(self.profiler.final),
             }
         )
+        if self.params.optimization != None:
+            conditions.update(
+                {
+                    "wL": self.wL,
+                    "wG": self.wG,
+                }
+            )
         del self.profiler.final[list(self.profiler.final)[-1]][
             "spectrum_calc_before_obj"
         ]
@@ -1541,6 +1574,87 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
         return
+
+    def predict_time(self):
+        wstep = self.params.wstep
+        broadening_max_width = self.params.broadening_max_width
+        n_lines = self.misc.total_lines
+        spectral_points = (
+            self.params.wavenum_max_calc - self.params.wavenum_min_calc
+        ) / self.params.wstep
+        print("Spectral points: ", spectral_points)
+        df = self.df0.copy()
+
+        from radis.lbl.broadening import get_molar_mass, voigt_broadening_HWHM
+
+        Tgas = 300
+        pressure_mbar = self.input.pressure_mbar
+        mole_fraction = self.input.mole_fraction
+        # convert from mbar to atm for linebroadening calculation
+        pressure_atm = pressure_mbar / 1013.25
+        # coefficients tabulation temperature
+        Tref = self.input.Tref
+        # Check self broadening is here
+        if not "Tdpsel" in list(df.keys()):
+            self.warn(
+                "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
+                "MissingSelfBroadeningWarning",
+                level=2,  # only appear if verbose>=2
+            )
+            Tdpsel = None  # if None, voigt_broadening_HWHM uses df.Tdpair
+        else:
+            Tdpsel = df.Tdpsel
+
+        molar_mass = get_molar_mass(df)
+
+        # Calculate broadening FWHM
+        wv, wl, wg = voigt_broadening_HWHM(
+            df.airbrd,
+            df.selbrd,
+            df.Tdpair,
+            Tdpsel,
+            df.wav,
+            molar_mass,
+            pressure_atm,
+            mole_fraction,
+            Tgas,
+            Tref,
+        )
+        # print("wv: ",wv)
+        # print("wl: ",wl)
+        # print("wg: ",wg)
+
+        def _init_w_axis(w_dat, log_p):
+            w_min = w_dat.min()
+            w_max = (
+                w_dat.max() + 1e-4
+            )  # Add small number to prevent w_max falling outside of the grid
+            N = np.ceil((np.log(w_max) - np.log(w_min)) / log_p) + 1
+            return w_min * np.exp(log_p * np.arange(N))
+
+        log_pL = self.params.dlm_log_pL  # DLM user params
+        log_pG = self.params.dlm_log_pG  # DLM user params
+
+        wL_dat = wl.values * 2  # FWHM
+        wG_dat = wg.values * 2  # FWHM
+
+        wL = _init_w_axis(wL_dat, log_pL)  # FWHM
+        wL = len(wL)
+        wG = _init_w_axis(wG_dat, log_pG)  # FWHM
+        wG = len(wG)
+        print("wL: ", (wL))
+        print("wG: ", (wG))
+
+        legacy_time = 6.6487e-08 * n_lines * broadening_max_width / wstep
+        ldm_fft_time = (
+            4.675e-08 * (1 + wL * wG) * spectral_points * np.log(spectral_points)
+        )
+        ldm_voigt_time = 2.096e-07 * n_lines + 7.185e-09 * (
+            1 + wL * wG
+        ) * spectral_points * np.log(spectral_points)
+        print("FFT time: ", ldm_fft_time)
+        print("Voigt time: ", ldm_voigt_time)
+        print("legacy time: ", legacy_time)
 
     def _get_log_2gs(self):
         """Returns log_2gs if it already exists in the dataframe, otherwise
