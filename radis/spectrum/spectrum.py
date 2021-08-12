@@ -59,7 +59,13 @@ from numpy import abs, diff
 from radis.db.references import doi
 
 # from radis.lbl.base import print_conditions
-from radis.misc.arrays import count_nans, evenly_distributed, nantrapz
+from radis.misc.arrays import (
+    count_nans,
+    evenly_distributed,
+    first_nonnan_index,
+    last_nonnan_index,
+    nantrapz,
+)
 from radis.misc.debug import printdbg
 from radis.misc.plot import split_and_plot_by_parts
 from radis.misc.signal import resample
@@ -1328,6 +1334,52 @@ class Spectrum(object):
             wunit = self.get_waveunit()
 
         return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, inplace=inplace)
+
+    def trim(self, inplace=True):
+        """Remove :py:attr:`~numpy.nan` common to all arrays on each side of the Spectrum.
+
+        Returns a smaller Spectrum (inplace or not).
+
+        Returns
+        -------
+        s: Spectrum : trimmed Spectrum. If ``inplace=True``, Spectrum has been updated
+              directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`.
+        """
+        if inplace:
+            s = self
+        else:
+            s = self.copy()
+
+        if len(s.get_vars()) > 1:
+            raise NotImplementedError(
+                "trim() not implemented for spectra with multiple arrays. Use Spectrum.take()"
+            )
+
+        trim_left = []
+        trim_right = []
+        for k in s.get_vars():
+            m = first_nonnan_index(s._q[k])
+            M = last_nonnan_index(s._q[k])
+            if m is None:
+                raise ValueError(
+                    f"All values are nan in {k}: Spectrum would be trimmed entirely. Are you sure?"
+                )
+            trim_left.append(m)
+            trim_right.append(M)
+        m = np.max(trim_left)
+        M = np.min(trim_right)
+
+        if m > 0 and M < len(s) - 1:
+            for k, v in s._q.items():
+                s._q[k] = v[m : M + 1]
+        elif m > 0:
+            for k, v in s._q.items():
+                s._q[k] = v[m:]
+        elif M < len(s) - 1:
+            for k, v in s._q.items():
+                s._q[k] = v[: M + 1]
+
+        return s
 
     def sort(self, inplace=True):
         """Sort the Spectrum by wavelength / wavenumber.
@@ -3098,19 +3150,28 @@ class Spectrum(object):
         # ... using the (safer) .get() function because it's much faster (the
         # ... air2vacuum conversion in particular is quite slow, but has been
         # ... done once for all with get_wavelength() above )
+
         for (k, I) in s._q.items():
             if k == "wavespace":
                 continue
             fill_with = get_filling(k)
-            Inew = resample(
-                w,
-                I,
-                w_new,
-                ext=fill_with,
-                energy_threshold=energy_threshold,
-                print_conservation=False,
-                **kwargs,
-            )
+            try:
+                Inew = resample(
+                    w,
+                    I,
+                    w_new,
+                    ext=fill_with,
+                    energy_threshold=energy_threshold,
+                    print_conservation=False,
+                    **kwargs,
+                )
+            except ValueError as err:
+                if "Interpolation will fail" in str(err):
+                    raise ValueError(
+                        "Spectrum has nan. Cannot resample. Try `s.trim()`"
+                    ) from err
+                raise
+
             s._q[k] = Inew
         # update wavespace
         s._q["wavespace"] = w_new

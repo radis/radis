@@ -278,7 +278,7 @@ def evenly_distributed(w, tolerance=1e-5):
 def first_nonnan_index(a):
     """Returns index of first non-nan value in ``a``
 
-    Returns None is not found
+    Returns None is all values are :py:attr:`~numpy.nan`
 
     See Also
     --------
@@ -294,14 +294,14 @@ def first_nonnan_index(a):
 def last_nonnan_index(a):
     """Returns index of first non-nan value in ``a``
 
-    Returns None is not found
+    Returns None is all values are :py:attr:`~numpy.nan`
 
     See Also
     --------
 
     :func:`~radis.misc.arrays.first_nonnan_index`
     """
-    for i in range(a.size, 0):
+    for i in range(a.size - 1, 0, -1):
         if not np.isnan(a[i]):
             return i
     return None

@@ -144,6 +144,24 @@ def test_spectrum_get_methods(
 
 
 @pytest.mark.fast
+def test_trimming(verbose=True, *args, **kwargs):
+    """Test :py:meth:`radis.spectrum.spectrum.Spectrum.trim`"""
+
+    from radis.misc.arrays import count_nans
+
+    w = np.linspace(300, 600)
+    T = np.ones_like(w)
+    T[:15] = np.nan
+    T[-10:] = np.nan
+    s = Spectrum.from_array(w, T, "transmittance_noslit", waveunit="nm", unit="")
+
+    Nnans = count_nans(T)
+    assert len(s) == 50  # before trimming
+    s.trim()
+    assert len(s) == 50 - Nnans
+
+
+@pytest.mark.fast
 def test_copy(verbose=True, *args, **kwargs):
     """Test that a Spectrum is correctly copied
 
@@ -514,6 +532,7 @@ def _run_testcases(
         **kwargs
     )
     test_copy(verbose=verbose, *args, **kwargs)
+    test_trimming(*args, **kwargs)
     test_populations(
         verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs
     )
@@ -566,3 +585,5 @@ if __name__ == "__main__":
     s2 = s.apply_slit(3, "nm", inplace=False)
     s.plot("transmittance")
     s.plot("transmittance_noslit", nfig="same")
+
+    s2.resample(w_exp)

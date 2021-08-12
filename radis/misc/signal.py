@@ -15,7 +15,7 @@ Signal processing functions
 
 from warnings import warn
 
-from numpy import abs, linspace, nan, trapz
+from numpy import abs, isnan, linspace, nan, trapz
 from scipy.interpolate import splev, splrep
 
 from radis.misc.arrays import is_sorted, is_sorted_backward
@@ -119,12 +119,12 @@ def resample(
     else:
         raise ValueError("Unexpected value for `ext`: {0}".format(ext))
 
-    # if isnan(vector).sum() > 0:
-    #     raise ValueError(
-    #         "Resampled vector has {0} nans. Interpolation will fail".format(
-    #             isnan(vector).sum()
-    #         )
-    #     )
+    if isnan(vector).sum() > 0:
+        raise ValueError(
+            "Resampled vector has {0} nans. Interpolation will fail".format(
+                isnan(vector).sum()
+            )
+        )
 
     # Resample the slit function on the spectrum grid
     try:
