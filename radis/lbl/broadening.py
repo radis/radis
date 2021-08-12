@@ -69,7 +69,6 @@ from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
 from scipy.signal import oaconvolve
 
-from radis.db.molparam import MolParams
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
