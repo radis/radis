@@ -301,7 +301,6 @@ class Spectrum(object):
     # hardcode attribute names, but can save a lot of memory if hundreds of spectra
     __slots__ = [
         "_q",
-        "_q_conv",
         "units",
         "conditions",
         "cond_units",

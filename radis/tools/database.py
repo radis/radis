@@ -133,7 +133,7 @@ def is_jsonable(x):
 
 
 def save(
-    s,
+    s: Spectrum,
     path,
     discard=[],
     compress=True,
@@ -232,7 +232,7 @@ def save(
     return fout  # return final name
 
 
-def _format_to_jsondict(s, discard, compress, verbose=True):
+def _format_to_jsondict(s: Spectrum, discard, compress, verbose=True):
     """Format to JSON writable dictionary.
 
     Notes
@@ -275,7 +275,6 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     # from the rest)
     if compress >= 2:
         sjson["_q"] = sjson["_q"].copy()
-        sjson["_q_conv"] = sjson["_q_conv"].copy()
         sjson = _compress(s, sjson)
 
     return sjson
@@ -375,7 +374,7 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
     return fout
 
 
-def _compress(s, sjson):
+def _compress(s: Spectrum, sjson):
     """removes all quantities that can be regenerated with s.update(), e.g,
     transmittance if abscoeff and path length are given, radiance if emisscoeff
     and abscoeff are given in non-optically thin case, etc.
@@ -397,12 +396,6 @@ def _compress(s, sjson):
             continue
         if redundant[key]:
             del sjson["_q"][key]
-            discarded.append(key)
-    for key in list(sjson["_q_conv"].keys()):
-        if key == "wavespace":
-            continue
-        if redundant[key]:
-            del sjson["_q_conv"][key]
             discarded.append(key)
 
     if len(discarded) > 0:
@@ -494,9 +487,11 @@ def load_spec(file, binary=True) -> Spectrum:  # , return_binary_status=False):
     return s
 
 
-def _json_to_spec(sload, file=""):
+def _json_to_spec(sload, file="") -> Spectrum:
     """Builds a Spectrum object from a JSON dictionary. Called by
     :func:`~radis.tools.database.load_spec`.
+
+    Json has been fixed from deprecating changes by _fix_format
 
     Parameters
     ----------
@@ -529,13 +524,6 @@ def _json_to_spec(sload, file=""):
             for k, v in sload["_q"].items()
             if k != "wavespace"
         }
-        quantities.update(
-            {
-                k: (sload["_q_conv"]["wavespace"], v)
-                for k, v in sload["_q_conv"].items()
-                if k != "wavespace"
-            }
-        )
 
     # Generate spectrum:
     waveunit = sload["conditions"]["waveunit"]
@@ -609,6 +597,10 @@ def _fix_format(file, sload):
     load old format precomputed spectra, and fix their attribute names.
 
     Save them again to fix the warnigns definitly.
+
+    Returns
+    -------
+    json, fixed:  fixed is True if a change was made.
     """
 
     fixed = False
@@ -627,6 +619,30 @@ def _fix_format(file, sload):
         )  # , DeprecationWarning)
         sload["_q"] = sload.pop("q")
         sload["_q_conv"] = sload.pop("q_conv")
+        fixed = True
+
+    # Fix _q_conv removal (0.9.30)
+    if "_q_conv" in sload:
+        if len(sload["_q_conv"]) == 0:
+            del sload["_q_conv"]
+        else:
+            printr(
+                "File {0}".format(basename(file))
+                + " has a deprecrated structure (key "
+                + "_q_conv removed in 0.9.30). Fixed this time, but regenerate "
+                + "database for faster loading."
+            )
+            if not "_q" in sload or len(sload["_q"]) == 0:
+                # only convolved quantities; just replace the dict
+                sload["_q"] = sload.pop("_q_conv")
+            else:
+                # here wavespaces arent necessarily the same
+                if sload["_q"]["wavespace"] == sload["_q_conv"]["wavespace"]:
+                    sload["_q"].update(sload.pop("_q_conv"))
+                else:
+                    # we need to interpolate
+                    raise NotImplementedError
+
         fixed = True
 
     try:
