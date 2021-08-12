@@ -371,7 +371,7 @@ class BandFactory(BroadenFactory):
                 waveunit=self.params.waveunit,  # cm-1
                 name=band,
                 # dont check input (much faster, and Spectrum
-                warnings=False,
+                check_wavespace=False,
                 # is freshly baken so probably in a good format
             )
 
@@ -728,7 +728,7 @@ class BandFactory(BroadenFactory):
                 waveunit=self.params.waveunit,  # cm-1
                 name=band,
                 # dont check input (much faster, and Spectrum
-                warnings=False,
+                check_wavespace=False,
                 # is freshly baken so probably in a good format
             )
 

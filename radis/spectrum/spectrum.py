@@ -69,6 +69,9 @@ from radis.phys.units import Unit, convert_universal
 from radis.spectrum.rescale import rescale_mole_fraction, rescale_path_length, update
 from radis.spectrum.utils import (
     CONVOLUTED_QUANTITIES,
+    WAVELEN_UNITS,
+    WAVELENVAC_UNITS,
+    WAVENUM_UNITS,
     cast_waveunit,
     format_xlabel,
     make_up,
@@ -95,11 +98,20 @@ class Spectrum(object):
     ----------
     quantities: dict of tuples   {'quantity':(wavenum, quantity)}
         where quantities are spectral quantities (absorbance, radiance, etc.)
-        and wavenum is in :math:`cm^{-1}`
+        and wavenum is in :math:`cm^{-1}` or :math:`nm` (see ``waveunit``)
         example::
 
-        {'radiance_noslit':(wavenum, radiance_noslit),
-        'absorbance':(wavenum, absorbance)}
+            s = Spectrum({'radiance_noslit':(wavenum, radiance_noslit),
+                          'absorbance':(wavenum, absorbance)})
+
+        Or::
+
+            s = Spectrum({'wavenumber':wavenum,
+                          'radiance_noslit':radiance_noslit,
+                          'absorbance':absorbance})
+
+        See also: :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+        and :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
 
     units: dict
         units for quantities
@@ -108,6 +120,12 @@ class Spectrum(object):
     ----------------
     conditions: dict
         physical conditions and calculation parameters
+    waveunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
+        wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
+        If ``None``, ``'wavespace'`` must be defined in ``conditions``.
+        Quantities should be evenly distributed along this space for fast
+        convolution with the slit function
+        (non-uniform slit function is not implemented anyway... )
     cond_units: dict
         units for conditions
     wavespace: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
@@ -277,6 +295,12 @@ class Spectrum(object):
     ----------
     conditions : dict
         Stores computation / measurement conditions
+    c: dict
+        convenience wrapper to ``conditions``::
+
+            s.c["calculation_time"] is s.conditions["calculation_time"]
+            >> True
+
     populations: dict
         Stores molecules, isotopes, electronic states and vibrational or
         rovibrational populations
@@ -302,6 +326,7 @@ class Spectrum(object):
     __slots__ = [
         "_q",
         "units",
+        "c",
         "conditions",
         "cond_units",
         "populations",
@@ -323,14 +348,13 @@ class Spectrum(object):
         waveunit=None,
         name=None,
         references={},
-        warnings=True,
+        check_wavespace=True,
+        **kwargs,
     ):
-        # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I,
-        # 'transmittance':T, etc.} directly too (instead of {'radiance':(w,I), etc.})
-
         # TODO: add help on creating a Spectrum from a dictionary
 
         # Check inputs
+        # ---------------
         # ... Replace None attributes with dictionaries
         if conditions is None:
             conditions = {}
@@ -344,26 +368,41 @@ class Spectrum(object):
             references = {}
         self._init_annotations()  # typing hints for get() and plot()
 
+        if "warnings" in kwargs:
+            check_wavespace = kwargs.pop("warnings")
+            warn(
+                "Spectrum(warning=) renamed Spectrum(check_wavespace=) in 0.9.30",
+                DeprecationWarning,
+            )
+        if len(kwargs) > 0:
+            raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
+
         # Deal with deprecated inputs
         # ... wavespace renamed waveunit
         if "wavespace" in conditions:
             warn(
-                DeprecationWarning("wavespace key in conditions is now named waveunit")
+                "wavespace key in conditions is now named waveunit", DeprecationWarning
             )
             conditions["waveunit"] = conditions["wavespace"]
             del conditions["wavespace"]
 
-        # Waveunit
-        # ... Cast in standard waveunit format
-        if waveunit is None and not "waveunit" in conditions:
+        # ... make sure waveunit is given. Either implicitely, or explicitely:
+        if (
+            waveunit is None
+            and not "waveunit" in conditions
+            and "wavelength" not in quantities
+            and "wavenumber" not in quantities
+        ):
             raise AssertionError(
                 "waveunit ('nm', 'cm-1'?) has to be defined in `conditions`"
-                + "or with waveunit="
+                + "or with `waveunit=`, or by giving a `wavelength` or `wavenumber` key in quantities"
             )
+        # ... Cast in standard waveunit format
         if waveunit is not None:
             waveunit = cast_waveunit(waveunit)
         if "waveunit" in conditions:
             conditions["waveunit"] = cast_waveunit(conditions["waveunit"])
+
         # ... Make sure unit match
         if "waveunit" in conditions:
             if waveunit is not None and conditions["waveunit"] != waveunit:
@@ -372,37 +411,85 @@ class Spectrum(object):
                         conditions["waveunit"], waveunit
                     )
                 )
-        else:  # ... or define them in dictionary
+        elif waveunit is not None:  # ... or define them in dictionary
             conditions["waveunit"] = waveunit
+        if "wavelength" in quantities:
+            assert "wavenumber" not in quantities and "wavespace" not in quantities
+            if not "waveunit" in conditions:
+                conditions["waveunit"] = "nm"
+            assert conditions["waveunit"] in WAVELEN_UNITS + WAVELENVAC_UNITS
+        if "wavenumber" in quantities:
+            assert "wavelength" not in quantities and "wavespace" not in quantities
+            if not "waveunit" in conditions:
+                conditions["waveunit"] = "cm-1"
+            assert conditions["waveunit"] in WAVENUM_UNITS
+        if "wavespace" in quantities:
+            assert "wavenumber" not in quantities and "wavelength" not in quantities
 
         # Check quantities format
         if len(quantities) == 0:
             raise AssertionError(
                 "Spectrum is created with no quantities. Add "
                 + "`radiance`, `transmittance` etc... with dict "
-                + "format. e.g: {`radiance`: (w,I)}"
+                + "format. e.g: {`wavenumber`:w, `radiance`: I}"
             )
+
+        # Create the arrays
+        # -----------------
 
         self._q = {}  #: dict: stores spectral arrays
 
         self._slit = {}  #: dict: hold slit function
 
+        # infer format:
+        tuple_format = (
+            "wavelength" not in quantities
+            and "wavenumber" not in quantities
+            and "wavespace" not in quantities
+        )
+        k0 = list(quantities.keys())[0]
+        v0 = list(quantities.values())[0]
         for k, v in quantities.items():
-            try:
-                assert len(v) == 2
-            except AssertionError:
+            if len(v) != len(v0):
                 raise AssertionError(
-                    "Attributes should have format (wavenumber, "
-                    + "quantity) . Error with `{0}`".format(k)
+                    f"Input arrays should have the same length. Got : {k} : len {len(v)}, {k0} : len {len(v0)}"
+                )
+            if tuple_format and len(v) != 2:
+                raise AssertionError(
+                    "Input arrays should have format `{'quantity':(wavespace, array)} or {'wavelength/wavenumber':wavespace, 'quantity':array}` but not both. Got :"
+                    + "{0}".format(quantities),
                 )
 
-            w, I = v
+        if tuple_format:
+            for k, (w, I) in quantities.items():
 
-            # creates a copy of w,I
-            self._add_quantity(k, w, I, warnings=warnings)
+                # creates and stores a copy of w,I
+                self._add_quantity(k, w, I, check_wavespace=check_wavespace)
+        else:
+            for k, I in quantities.items():
+                if k in ["wavelength", "wavenumber", "wavespace"]:
+                    continue
+                # add:
+                if not "wavespace" in self._q:
+                    # adding wavenumber space
+                    if "wavespace" in quantities.keys():
+                        w = quantities["wavespace"]
+                    elif "wavelength" in quantities.keys():
+                        w = quantities["wavelength"]
+                    elif "wavenumber" in quantities.keys():
+                        w = quantities["wavenumber"]
+
+                    # creates and stores a copy of w,I :
+                    self._add_quantity(k, w, I, check_wavespace=True)
+                else:
+                    # this also checks that all arrays have same length
+                    self._add_quantity(k, w, I, check_wavespace=False)
 
         # Finally, add our attributes
-        self.conditions = conditions
+        self.conditions = self.c = conditions
+        """ dict: computation conditions, or experimetnal parameters, or
+        any metadata you need to store with the Spectrum object.
+        """
         self.populations = populations
         self.lines = lines
         self.units = units
@@ -1437,7 +1524,7 @@ class Spectrum(object):
         force=False,
         plot_by_parts=False,
         show_ruler=False,
-        **kwargs
+        **kwargs,
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
@@ -1989,8 +2076,9 @@ class Spectrum(object):
         slit_dispersion_threshold=0.01,
         auto_recenter_crop=True,
         verbose=True,
+        inplace=True,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Apply an instrumental slit function to all quantities in Spectrum.
         Slit function can be generated with usual shapes (see ``shape=``) or
@@ -2096,6 +2184,14 @@ class Spectrum(object):
         slit_dispersion_warning_threshold: float
             if not ``None``, check that slit dispersion is about constant (< ``threshold`` change)
             on the calculated range. Default 0.01 (1%). See :func:`~radis.tools.slit.offset_dilate_slit_function`
+        inplace: bool
+            if ``True``, adds convolved arrays directly in the Spectrum. If
+            ``False``, returns a new Spectrum with only the convolved arrays.
+            Note: if you want a new Spectrum with both the convolved and
+            non convolved quantities, use ::
+
+                s.copy().apply_slit()
+
         *args, **kwargs
             are forwarded to slit generation or import function
         verbose: bool
@@ -2108,7 +2204,9 @@ class Spectrum(object):
         Returns
         -------
         Spectrum : same Spectrum, with new spectral arrays.
-            Allows :ref:`chaining <label_spectrum_chaining>`
+            Allows :ref:`chaining <label_spectrum_chaining>`.
+            If ``inplace=False``, return a new Spectrum with the
+            new spectral arrays only.
 
 
         Notes
@@ -2186,8 +2284,9 @@ class Spectrum(object):
 
         if len(varlist) == 0:
             raise AssertionError(
-                "No variables to apply slit on. Variable names "
-                + "to be convolved should end with _noslit"
+                "No spectral arrays to apply slit on. Spectral arrays "
+                + "to be convolved should end with _noslit. "
+                + f"Available arrays in Spectrum : {self.get_vars()}"
             )
 
         # Forward relevant inputs to convolution instead of slit function generation
@@ -2234,7 +2333,7 @@ class Spectrum(object):
             verbose=verbose,
             plot=plot_slit,
             *args,
-            **kwargs
+            **kwargs,
         )
 
         # Check if dispersion is specified
@@ -2306,55 +2405,92 @@ class Spectrum(object):
                     verbose=verbose,
                     assert_evenly_spaced=False,
                     # assumes Spectrum is correct by construction
-                    **kwargsconvolve
+                    **kwargsconvolve,
                 )
 
                 if i == 0:
                     w_conv_slices.append(w_conv_window)
                 I_conv_slices[q].append(I_conv_window)
 
-        # Merge and store all variables
-        # ---------
+        # Get units
+        new_units = {}
         for q in I_conv_slices.keys():
             qns = q + "_noslit"
 
-            # Merge all slices
-            w_conv = np.hstack(w_conv_slices)
-            I_conv = np.hstack(I_conv_slices[q])
-
-            # Store
-            assert np.allclose(self._q["wavespace"], w_conv)
-            self._q[q] = I_conv
-
             # Get units
             if norm_by == "area":
-                self.units[q] = self.units[qns]
+                new_units[q] = self.units[qns]
             elif norm_by == "max":
                 new_unit = (Unit(unit) * Unit(self.units[qns])).to_string()
                 # because it's like if we multiplied by slit FWHM in the wavespace
                 # it was generated
-                self.units[q] = new_unit
+                new_units[q] = new_unit
             # Note: there was another mode called 'max2' where, unlike 'max',
             # unit was multiplied by [unit] not [return_unit]
             # Removed for simplification. You should stay with norm_by='area' anyway
             else:
                 raise ValueError("Unknown normalization type: {0}".format(norm_by))
 
+        # Merge and store all variables
+        # ---------
+        if inplace:
+            w_conv = np.hstack(w_conv_slices)
+            if len(self._q["wavespace"]) != len(w_conv) or not np.allclose(
+                self._q["wavespace"], w_conv
+            ):
+                raise AssertionError(
+                    "Wavespace of convolved arrays is different, cannot store it in the same Spectrum. You can use Spectrum.apply_slit(inplace=False) to return a new spectrum with only the convolved arrays"
+                )
+            for q in I_conv_slices.keys():
+                qns = q + "_noslit"
+
+                # Merge all slices
+                I_conv = np.hstack(I_conv_slices[q])
+
+                # Store
+                self._q[q] = I_conv
+
+                # Get units
+                self.units[q] = new_units[q]
+            s_out = self
+        else:
+            w_conv = np.hstack(w_conv_slices)
+            # make new spectrum
+            quantities = I_conv_slices.items()
+            quantities = {
+                "wavespace": w_conv
+            }  # a copy will be created in Spectrum creation
+
+            for q in I_conv_slices.keys():
+
+                # Merge all slices
+                quantities[q] = np.hstack(I_conv_slices[q])
+
+            s_out = Spectrum(
+                quantities,
+                units=new_units,
+                conditions=self.conditions.copy(),
+                cond_units=self.cond_units.copy(),
+                waveunit=waveunit,
+                name=self.name,
+                check_wavespace=False,
+            )
+
         # Store slit in Spectrum, in the Spectrum unit
         if store:
-            self._slit["wavespace"] = wslit0  # in 'waveunit'
-            self._slit["intensity"] = Islit0
+            s_out._slit["wavespace"] = wslit0  # in 'waveunit'
+            s_out._slit["intensity"] = Islit0
 
         # Update conditions
-        self.conditions["slit_function"] = slit_function
-        self.conditions["slit_unit"] = unit  # input slit unit
-        self.conditions["slit_dispersion"] = slit_dispersion
-        self.conditions["slit_dispersion_threshold"] = slit_dispersion_threshold
-        self.conditions["slit_shape"] = shape
+        s_out.conditions["slit_function"] = slit_function
+        s_out.conditions["slit_unit"] = unit  # input slit unit
+        s_out.conditions["slit_dispersion"] = slit_dispersion
+        s_out.conditions["slit_dispersion_threshold"] = slit_dispersion_threshold
+        s_out.conditions["slit_shape"] = shape
         # TODO: probably removed after Spectrum is stored.
-        self.conditions["norm_by"] = norm_by
+        s_out.conditions["norm_by"] = norm_by
 
-        return self  # to be able to chain: s.apply_slit().plot()
+        return s_out  # to be able to chain: s.apply_slit().plot()
 
     def get_slit(self, unit="same"):
         """Get slit function that was applied to the Spectrum.
@@ -2462,7 +2598,7 @@ class Spectrum(object):
                     wslit0_nm = vacuum2air(wslit0)
                 else:
                     wslit0_nm = cm2nm(wslit0)
-                w_nm = self.get_wavelength(medium="air", which="non_convoluted")
+                w_nm = self.get_wavelength(medium="air")
                 slice_windows = _cut_slices(
                     w_nm, wslit0, slit_dispersion, slit_dispersion_threshold
                 )
@@ -2512,7 +2648,7 @@ class Spectrum(object):
         writefile=None,
         cutoff=None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Plot Line Survey (all linestrengths used for calculation) Output in
         Plotly (html)
@@ -2644,7 +2780,7 @@ class Spectrum(object):
                 writefile=writefile,
                 cutoff=cutoff,
                 *args,
-                **kwargs
+                **kwargs,
             )
 
         else:
@@ -2822,7 +2958,7 @@ class Spectrum(object):
         print_conservation=False,
         inplace=True,
         if_conflict_drop=None,
-        **kwargs
+        **kwargs,
     ):
         """Resample spectrum over a new wavelength. Fills with transparent
         medium when out of bound (transmittance 1, radiance 0)
@@ -2973,7 +3109,7 @@ class Spectrum(object):
                 ext=fill_with,
                 energy_threshold=energy_threshold,
                 print_conservation=False,
-                **kwargs
+                **kwargs,
             )
             s._q[k] = Inew
         # update wavespace
@@ -3220,7 +3356,7 @@ class Spectrum(object):
         ignore_nan=False,
         ignore_outliers=False,
         normalize=False,
-        **kwargs
+        **kwargs,
     ):
         """Compare Spectrum with another Spectrum object.
 
@@ -3298,7 +3434,7 @@ class Spectrum(object):
             ignore_nan=ignore_nan,
             ignore_outliers=ignore_outliers,
             normalize=normalize,
-            **kwargs
+            **kwargs,
         )
 
     def cite(self, format="bibentry"):
@@ -3483,37 +3619,21 @@ class Spectrum(object):
         except AttributeError:
             pass  # old Python version
 
-    def _add_quantity(self, name, w, I, warnings=True):
+    def _add_quantity(self, name, w, I, check_wavespace=True):
         """Add quantity.
 
         Note: creates a copy of the input array
 
-        If warnings, check that array is evenly spaced
+        If check_wavespace, check that array matches existing wavespace, and
+        that new wavespace is evenly spaced (required for the slit)
+        Note: this check takes a lot of time!  (few ms)
         """
 
         assert len(w) == len(I)
 
-        def check_wavespace(w):
-            """If warnings, check that array is evenly spaced. Returns a copy
-            of input array.
-
-            Note: this check takes a lot of time!  (few ms)
-            Is is not performed if warnings is False
-            """
-            if warnings:
-                # Check Wavelength/wavenumber is evently spaced
-                if not evenly_distributed(w, tolerance=1e-5):
-                    warn(
-                        "Wavespace is not evenly spaced ({0:.3f}%) for {1}.".format(
-                            np.abs(np.diff(w)).max() / w.mean() * 100, name
-                        )
-                        + " This may create problems when convolving with slit function"
-                    )
-            return np.array(w)  # copy
-
         # Add wavespace
         if "wavespace" in self._q:
-            if warnings:
+            if check_wavespace:
                 # Check new wavespace match the existing one
                 if not np.allclose(w, self._q["wavespace"]):
                     raise ValueError(
@@ -3522,13 +3642,24 @@ class Spectrum(object):
                         )
                         + " for non convoluted quantities"
                     )
+            else:
+                pass  # nothing to be done
         else:
             if name in CONVOLUTED_QUANTITIES:
                 self._q["wavespace"] = np.array(w)  # copy
                 # no need to check if wavespace is evenly spaced: we won't
                 # apply the slit function again
             else:
-                self._q["wavespace"] = check_wavespace(w)  # copy
+                # Check Wavelength/wavenumber is evently spaced
+                if check_wavespace:
+                    if not evenly_distributed(w, tolerance=1e-5):
+                        warn(
+                            "Wavespace is not evenly spaced ({0:.3f}%) for {1}.".format(
+                                np.abs(np.diff(w)).max() / w.mean() * 100, name
+                            )
+                            + " This may create problems when convolving with slit function"
+                        )
+                self._q["wavespace"] = np.array(w)  # copy
 
         # Add quantity itself
         self._q[name] = np.array(I)  # copy

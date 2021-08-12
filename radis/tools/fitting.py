@@ -283,7 +283,7 @@ def fit_spectrum(
             ]
         )
 
-    def generate_spectrum(fit_values):
+    def generate_spectrum(fit_values) -> Spectrum:
 
         # Generate dictionary
         inputs = fit_parameters.copy()

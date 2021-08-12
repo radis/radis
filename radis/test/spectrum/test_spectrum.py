@@ -32,6 +32,53 @@ fig_prefix = basename(__file__) + ": "
 # %% Test routines
 
 
+def test_spectrum_creation_method(*args, **kwargs):
+    import pytest
+
+    w = np.linspace(300, 700, 1000)
+    k = (np.random.rand(1000) + 0.3) ** 10
+    T = np.exp(-k * 1)
+
+    # Good inputs:
+    # ... format of quantities :
+    Spectrum({"wavelength": w, "abscoeff": k, "transmittance_noslit": T})
+    Spectrum({"abscoeff": (w, k), "transmittance_noslit": (w, T)}, waveunit="nm")
+
+    Spectrum({"wavelength": w, "abscoeff": k, "transmittance_noslit": T}, waveunit="nm")
+
+    # ... units:
+    Spectrum({"wavespace": w, "abscoeff": k}, waveunit="nm")
+    Spectrum({"wavelength": w, "abscoeff": k}, waveunit="nm")
+
+    # Bad inputs:
+
+    # ... wavespace defined multiple times
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"wavelength": w, "wavenumber": 1e7 / w, "abscoeff": k}, waveunit="nm")
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"wavelength": w, "wavespace": 1e7 / w, "abscoeff": k}, waveunit="nm")
+
+    # ... format of quantities :
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"wavenumber": w, "abscoeff": np.hstack((k, k))})
+        assert "Input arrays should have the same length" in str(err)
+
+    # ... units badly defeined :
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"wavespace": w, "abscoeff": k})
+        assert "waveunit ('nm', 'cm-1'?) has to be defined" in str(err)
+
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"abscoeff": (w, k)})
+        assert "waveunit ('nm', 'cm-1'?) has to be defined" in str(err)
+
+    with pytest.raises(AssertionError):
+        Spectrum({"wavenumber": w, "abscoeff": k}, waveunit="nm")
+
+    with pytest.raises(AssertionError):
+        Spectrum({"wavelength": w, "abscoeff": k}, waveunit="cm-1")
+
+
 def test_spectrum_get_methods(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
@@ -337,6 +384,15 @@ def test_resampling_function(
     assert get_residual_integral(s, s3, "abscoeff", ignore_nan=True) < 1e-5
 
 
+def test_resampling_nan_function(verbose=True, *args, **kwargs):
+    """Test resampling functions, for Spectra with nans"""
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.name = "original"
+
+
 @pytest.mark.fast
 def test_noplot_different_quantities(*args, **kwargs):
     """Prevents User Errors: Ensures an error is raised if plotting different
@@ -448,6 +504,7 @@ def _run_testcases(
 
     # Test all Spectrum methods
     # -------------------------
+    test_spectrum_creation_method(*args, **kwargs)
     test_spectrum_get_methods(
         debug=debug,
         verbose=verbose,
@@ -477,6 +534,7 @@ def _run_testcases(
     test_resampling_function(
         debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs
     )
+    test_resampling_nan_function(verbose=verbose, *args, **kwargs)
 
     test_normalization(*args, **kwargs)
 
@@ -491,4 +549,20 @@ def _run_testcases(
 
 
 if __name__ == "__main__":
-    print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
+    # print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
+
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.rescale_path_length(10)  # cm
+    s.name = "original"
+
+    # We want to resample on a small range:
+    w_exp = s.get_wavenumber()[300:-300][::10]
+
+    s.update("transmittance_noslit")
+    s.apply_slit(3, "nm")
+    s2 = s.apply_slit(3, "nm", inplace=False)
+    s.plot("transmittance")
+    s.plot("transmittance_noslit", nfig="same")

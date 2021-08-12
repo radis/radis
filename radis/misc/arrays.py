@@ -275,7 +275,39 @@ def evenly_distributed(w, tolerance=1e-5):
     return (np.abs((np.diff(w) - mean_step)) > tolerance).sum() == 0
 
 
-@numba.jit
+def first_nonnan_index(a):
+    """Returns index of first non-nan value in ``a``
+
+    Returns None is not found
+
+    See Also
+    --------
+
+    :func:`~radis.misc.arrays.last_nonnan_index`
+    """
+    for i in range(a.size):
+        if not np.isnan(a[i]):
+            return i
+    return None
+
+
+def last_nonnan_index(a):
+    """Returns index of first non-nan value in ``a``
+
+    Returns None is not found
+
+    See Also
+    --------
+
+    :func:`~radis.misc.arrays.first_nonnan_index`
+    """
+    for i in range(a.size, 0):
+        if not np.isnan(a[i]):
+            return i
+    return None
+
+
+@numba.njit
 def is_sorted(a):
     """Returns whether ``a`` is sorted in ascending order.
 
@@ -292,7 +324,7 @@ def is_sorted(a):
     return True
 
 
-@numba.jit
+@numba.njit
 def is_sorted_backward(a):
     """Returns whether ``a`` is sorted in descending order.
 

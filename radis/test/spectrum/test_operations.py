@@ -174,19 +174,15 @@ def test_offset(verbose=True, plot=False, *args, **kwargs):
     s2 = offset(s, 10, "nm", name="offset_10nm")
     if plot:
         plot_diff(s, s2)
+    assert np.allclose(s2.get_wavelength(), s.get_wavelength() + 10)
     assert np.allclose(
-        s2.get_wavelength(which="convoluted"), s.get_wavelength(which="convoluted") + 10
-    )
-    assert np.allclose(
-        s2.get_wavelength(which="non_convoluted"),
-        s.get_wavelength(which="non_convoluted") + 10,
+        s2.get_wavelength(),
+        s.get_wavelength() + 10,
     )
 
     # Test inplace version
     s.offset(10, "nm")
-    assert np.allclose(
-        s2.get_wavelength(which="convoluted"), s.get_wavelength(which="convoluted")
-    )
+    assert np.allclose(s2.get_wavelength(), s.get_wavelength())
 
 
 @pytest.mark.fast
