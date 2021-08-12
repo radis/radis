@@ -31,7 +31,7 @@ import numpy as np
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
 from radis.misc.curve import curve_distance, curve_divide, curve_substract
-from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.spectrum import Spectrum
 from radis.spectrum.utils import cast_waveunit, format_xlabel, make_up, make_up_unit
 
 # %% ======================================================================
@@ -1056,8 +1056,8 @@ def averageDistance(s1, s2, var="radiance"):
 
 
 def compare_spectra(
-    first,
-    other,
+    first: Spectrum,
+    other: Spectrum,
     spectra_only=False,
     plot=True,
     wunit="default",
@@ -1068,7 +1068,7 @@ def compare_spectra(
     ignore_conditions=["calculation_time"],
     normalize=False,
     **kwargs
-):
+) -> bool:
     """Compare Spectrum with another Spectrum object.
 
     Parameters
@@ -1131,7 +1131,7 @@ def compare_spectra(
     # Check inputs
     if not 0 <= ignore_outliers < 1:
         raise ValueError("ignore_outliers should be < 1, or False")
-    if not is_spectrum(other):
+    if not isinstance(other, Spectrum):
         raise TypeError(
             "2nd object is not a Spectrum: got class {0}".format(other.__class__)
         )
@@ -1175,21 +1175,6 @@ def compare_spectra(
             for error message
         """
 
-        #            if compare_lists(df1.keys(), df2.keys(), verbose=False) != 1:
-        #                if verbose: print('... keys in {0} dont match:'.format(name))
-        #                compare_lists(list(df1.keys()), list(df2.keys()),
-        #                              verbose=True)
-        #                out = False
-        #            elif compare_lists(df1.index, df2.index, verbose=False) != 1:
-        #                if verbose: print('... index in {0} dont match:'.format(name))
-        #                compare_lists(list(df1.index), list(df2.index),
-        #                              verbose=True)
-        #                out = False
-        #            else:
-        #                out = (df1 == df2).all().all()
-        #
-        #            return out
-
         from pandas.util.testing import assert_frame_equal
 
         try:
@@ -1217,10 +1202,9 @@ def compare_spectra(
             I = I[b]
             Ie = Ie[b]
 
-        equal_nan = (
-            True  # in all cases, we ignore if there are nans at the same positions
-        )
-        # on both spectra (happens with convolved values in 'valid' mode)
+        # in all cases, we ignore if there are nans at the same
+        # on both arrays (happens with convolved values in 'valid' mode)
+        equal_nan = True
 
         if ignore_outliers:
             out = (

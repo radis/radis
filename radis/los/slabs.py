@@ -26,7 +26,7 @@ from numpy import abs, allclose, arange, diff
 
 from radis.misc.basics import in_all, merge_lists
 from radis.misc.debug import printdbg
-from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.spectrum import Spectrum
 
 # %% Slabs / Multi-layers / Radiative Transfer Equation (RTE)
 # ----------------------------------------------------------------------
@@ -159,7 +159,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
         raise ValueError("Empty list of slabs")
 
     elif len(slabs) == 1:
-        if not is_spectrum(slabs[0]):
+        if not isinstance(slabs[0], Spectrum):
             raise TypeError(
                 "SerialSlabs takes an unfolded list of Spectrum as "
                 + "argument: *list (got {0})".format(type(slabs[0]))
@@ -331,7 +331,7 @@ def _check_valid(s):
     - quantities used for solving the LOS have nan
     """
 
-    if not is_spectrum(s):
+    if not isinstance(s, Spectrum):
         raise TypeError(
             "All inputs must be Spectrum objects (got: {0})".format(type(s))
         )
@@ -624,7 +624,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         raise ValueError("Empty list of slabs")
 
     elif len(slabs) == 1:
-        if not is_spectrum(slabs[0]):
+        if not isinstance(slabs[0], Spectrum):
             raise TypeError(
                 "MergeSlabs takes an unfolded list of Spectrum as "
                 + "argument: (got {0})".format(type(slabs[0]))

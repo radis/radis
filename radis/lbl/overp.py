@@ -38,7 +38,7 @@ from radis.spectrum.rescale import (
     rescale_radiance_noslit,
     rescale_transmittance_noslit,
 )
-from radis.spectrum.spectrum import is_spectrum
+from radis.spectrum.spectrum import Spectrum
 
 # keys that may not be equals for different bands
 _IGNORE_KEYS = ["band", "band_htrn", "viblvl_u", "viblvl_l"]
@@ -92,7 +92,7 @@ class LevelsList(object):
 
         # Check inputs
         for br, s in bands.items():
-            if not is_spectrum(s):
+            if not isinstance(s, Spectrum):
                 raise ValueError(
                     "`bands` must be a list of Spectrum objects. "
                     + "Got {0}".format(type(s))

@@ -73,7 +73,7 @@ from scipy.interpolate import griddata
 from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printr
-from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.spectrum import Spectrum
 
 _scalable_inputs = ["mole_fraction", "path_length"]
 
@@ -2087,7 +2087,9 @@ class SpecDatabase(SpecList):
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
 
-    def add(self, spectrum, store_name=None, if_exists_then="increment", **kwargs):
+    def add(
+        self, spectrum: Spectrum, store_name=None, if_exists_then="increment", **kwargs
+    ):
         """Add Spectrum to database, whether it's a
         :py:class:`~radis.spectrum.spectrum.Spectrum` object or a file that
         stores one. Check it's not in database already.
@@ -2179,7 +2181,7 @@ class SpecDatabase(SpecList):
 
         # First, store the spectrum in a file
         # ... input is a Spectrum. Store it in database and load it from there
-        if is_spectrum(spectrum):
+        if isinstance(spectrum, Spectrum):
             # add defaults
             if store_name == None:
                 if not "add_info" in kwargs:

@@ -19,7 +19,7 @@ from .operations import (
     get_baseline,
     sub_baseline,
 )
-from .spectrum import Spectrum, is_spectrum
+from .spectrum import Spectrum
 
 __all__ = [
     "get_diff",
