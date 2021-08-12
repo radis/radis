@@ -949,12 +949,20 @@ def remove_boundary(
 
     crop_left, crop_right: int
         number of points to discard on each side if ``mode='crop'``
+        Values are replaced with ``nan``
 
     Returns
     -------
 
     w_conv, I_conv: numpy arrays
         cropped waverange and quantity
+
+    Notes
+    -----
+
+    .. note::
+        new in 0.9.30 : remove_boundary replaces off-range values with ``nan``
+        but keeps the same array size.
 
     See Also
     --------
@@ -969,25 +977,30 @@ def remove_boundary(
 
     """
 
-    # Remove boundary effects with the x-axis changed accordingly
+    # Remove boundary effects by adding nans; keep the same x-axis
     if mode == "valid":
         la = min(len_I, len_I_slit_interp)
         a = int((la - 1) / 2)
         b = int((la) / 2)
-        I_conv = I_conv[a:-b]
-        w_conv = w[a:-b]
+        # I_conv = I[a:-b]    # former version : we would change the array size
+        # w_conv = w[a:-b]
+        I_conv[:a] = np.nan
+        I_conv[-b:] = np.nan
+        w_conv = w
     elif mode == "same":
         I_conv = I_conv
         w_conv = w
     elif mode == "crop":
-        l = len(I_conv)
         if crop_right == 0:
             _crop_right = None
         else:
             _crop_right = -crop_right
-        I_conv = I_conv[crop_left:_crop_right]
-        w_conv = w[crop_left:_crop_right]
-        assert len(I_conv) == l - crop_left - crop_right
+        # l = len(I_conv)
+        # I_conv = I_conv[crop_left:_crop_right]
+        # w_conv = w[crop_left:_crop_right]
+        # assert len(I_conv) == l - crop_left - crop_right
+        I_conv[:crop_left] = np.nan
+        I_conv[_crop_right:] = np.nan
     else:
         raise ValueError("Unexpected mode: {0}".format(mode))
 

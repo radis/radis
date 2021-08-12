@@ -69,7 +69,6 @@ from radis.phys.units import Unit, convert_universal
 from radis.spectrum.rescale import rescale_mole_fraction, rescale_path_length, update
 from radis.spectrum.utils import (
     CONVOLUTED_QUANTITIES,
-    NON_CONVOLUTED_QUANTITIES,
     cast_waveunit,
     format_xlabel,
     make_up,
@@ -262,7 +261,7 @@ class Spectrum(object):
     -----
     Implementation:
 
-        quantities are stored in ``self._q`` and ``self._q_conv`` dictionaries.
+        quantities are stored in the ``self._q`` dictionary.
         They are better accessed with the :meth:`~radis.spectrum.spectrum.Spectrum.get`
         method that deals with units and wavespace
 
@@ -385,8 +384,7 @@ class Spectrum(object):
                 + "format. e.g: {`radiance`: (w,I)}"
             )
 
-        self._q = {}  #: dict: stores non convoluted quantities
-        self._q_conv = {}  #: dict: stores convoluted (slit) quantities
+        self._q = {}  #: dict: stores spectral arrays
 
         self._slit = {}  #: dict: hold slit function
 
@@ -720,17 +718,7 @@ class Spectrum(object):
                 )
 
         # Get quantity
-        if var in CONVOLUTED_QUANTITIES:
-            vartype = "convoluted"
-            I = self._q_conv[var]
-        elif var in NON_CONVOLUTED_QUANTITIES:  # non convoluted
-            vartype = "non_convoluted"
-            I = self._q[var]
-        elif var in self._q:  # not declared, but exists. Assumes it's non_convoluted?
-            vartype = "non_convoluted"
-            I = self._q[var]
-        else:
-            raise ValueError("Unexpected quantity: {0}".format(var))
+        I = self._q[var]
 
         # Copy
         if copy:
@@ -742,11 +730,11 @@ class Spectrum(object):
         else:
             wunit = cast_waveunit(wunit)
         if wunit == "cm-1":
-            w = self.get_wavenumber(vartype, copy=copy)
+            w = self.get_wavenumber(copy=copy)
         elif wunit == "nm":
-            w = self.get_wavelength(medium="air", which=vartype, copy=copy)
+            w = self.get_wavelength(medium="air", copy=copy)
         elif wunit == "nm_vac":
-            w = self.get_wavelength(medium="vacuum", which=vartype, copy=copy)
+            w = self.get_wavelength(medium="vacuum", copy=copy)
         else:
             raise ValueError(wunit)
 
@@ -788,15 +776,8 @@ class Spectrum(object):
 
         return w, I
 
-    def _get_wavespace(self, which="any", copy=True):
+    def _get_wavespace(self, copy=True):
         """Return wavespace (if the same for all quantities)
-
-        Parameters
-        ----------
-        which: 'convoluted', 'non_convoluted', ``'any'``
-            return wavelength for convoluted quantities, non convoluted quantities,
-            or any. If ``any`` and both are defined, they have to be the same else
-            an error is raised. Default ``any``.
 
         Other Parameters
         ----------------
@@ -807,60 +788,23 @@ class Spectrum(object):
 
         Returns
         -------
-
         w: array_like
             (a copy of) spectrum wavespace for convoluted or non convoluted
             quantities
         """
 
-        if which == "any":
-            q_defined = "wavespace" in self._q
-            q_conv_defined = "wavespace" in self._q_conv
-            if q_defined and q_conv_defined:
-                if not len(self._q["wavespace"]) == len(self._q_conv["wavespace"]):
-                    raise ValueError(
-                        "All wavespace not equal for calculated "
-                        + "quantities. Can't use get_wavespace(). "
-                        + "Specify which=`convoluted` or `non_convoluted`"
-                    )
-                if not np.allclose(self._q["wavespace"], self._q_conv["wavespace"]):
-                    raise ValueError(
-                        "All wavespace not equal for calculated "
-                        + "quantities. Can't use get_wavespace(). "
-                        + "Specify which=`convoluted` or `non_convoluted`"
-                    )
-                w = self._q["wavespace"]
-            elif q_defined:
-                w = self._q["wavespace"]
-            else:
-                w = self._q_conv["wavespace"]
-
-        elif which == "convoluted":
-            w = self._q_conv["wavespace"]
-
-        elif which == "non_convoluted":
-            w = self._q["wavespace"]
-
-        else:
-            raise ValueError(
-                "which has to be one of 'convoluted', 'non_convoluted', "
-                + "'any'. Got {0}".format(which)
-            )
+        w = self._q["wavespace"]
 
         if copy:
             w = w.copy()
 
         return w
 
-    def get_wavelength(self, medium="air", which="any", copy=True):
+    def get_wavelength(self, medium="air", which=None, copy=True):
         """Return wavelength in defined medium.
 
         Parameters
         ----------
-        which: 'convoluted', 'non_convoluted', 'any'
-            return wavelength for convoluted quantities, non convoluted quantities,
-            or any. If any and both are defined, they have to be the same else
-            an error is raised. Default any.
         medium: ``'air'``, ``'vacuum'``
             returns wavelength as seen in air, or vacuum. Default ``'air'``.
             See :func:`~radis.phys.air.vacuum2air`, :func:`~radis.phys.air.air2vacuum`
@@ -881,13 +825,18 @@ class Spectrum(object):
         --------
         :ref:`the Spectrum page <label_spectrum>`
         """
+        if which is not None:
+            raise DeprecationWarning(
+                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavelength()"
+            )
+            # TODO: remove after 0.9.31
 
         # Check input
         if not medium in ["air", "vacuum"]:
             raise NotImplementedError("Unknown propagating medium: {0}".format(medium))
 
         # Now convert stored wavespace to the output unit
-        w = self._get_wavespace(which=which, copy=copy)
+        w = self._get_wavespace(copy=copy)
         if self.get_waveunit() == "cm-1":
             w = cm2nm(w)  # vacuum wavelength
 
@@ -914,16 +863,8 @@ class Spectrum(object):
 
         return w
 
-    def get_wavenumber(self, which="any", copy=True):
+    def get_wavenumber(self, which=None, copy=True):
         """Return wavenumber (if the same for all quantities)
-
-        Parameters
-        ----------
-        which: 'convoluted', 'non_convoluted', 'any'
-            return wavenumber for convoluted quantities, non convoluted quantities,
-            or any. If any and both are defined, they have to be the same else
-            an error is raised. Default any.
-
 
         Other Parameters
         ----------------
@@ -937,7 +878,13 @@ class Spectrum(object):
             (a copy of) spectrum wavenumber for convoluted or non convoluted
             quantities
         """
-        w = self._get_wavespace(which=which, copy=copy)
+        if which is not None:
+            raise DeprecationWarning(
+                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavenumber()"
+            )
+            # TODO: remove after 0.9.31
+
+        w = self._get_wavespace(copy=copy)
 
         if self.get_waveunit() == "cm-1":  #
             pass
@@ -1317,15 +1264,9 @@ class Spectrum(object):
         else:
             s = self.copy()
 
-        if len(self._q) > 0:
-            b = np.argsort(s._q["wavespace"])
-            for k, v in s._q.items():
-                s._q[k] = v[b]
-
-        if len(s._q_conv) > 0:
-            b = np.argsort(s._q_conv["wavespace"])
-            for k, v in s._q_conv.items():
-                s._q_conv[k] = v[b]
+        b = np.argsort(s._q["wavespace"])
+        for k, v in s._q.items():
+            s._q[k] = v[b]
 
         return s
 
@@ -1405,7 +1346,7 @@ class Spectrum(object):
         """
 
         w, I = self.get(var, wunit=wunit, Iunit=Iunit, **kwargs)
-        return abs(np.trapz(I, x=w))
+        return abs(nantrapz(I, w))
 
     def get_power(self, unit="mW/cm2/sr"):
         """Returns integrated radiance (no slit) power density.
@@ -1439,38 +1380,34 @@ class Spectrum(object):
 
     # %% Plotting routines
 
-    def get_vars(self, which="any"):
+    def get_vars(self, which=None):
         """Returns all spectral quantities stored in this object (convoluted or
         non convoluted)
 
-        Parameters
-        ----------
-        which: 'any', 'convoluted', 'non convoluted'
         """
-        if which == "any":
-            varlist = list(self._q.keys()) + list(self._q_conv.keys())
-        elif which == "convoluted":
-            varlist = list(self._q_conv.keys())
-        elif which == "non convoluted":
-            varlist = list(self._q.keys())
-        else:
-            raise ValueError("Unexpected value: {0}".format(which))
+        if which is not None:
+            raise DeprecationWarning(
+                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_vars()"
+            )
+            # TODO: remove after 0.9.31
 
         # remove wavespace
-        varlist = [k for k in varlist if k != "wavespace"]
+        varlist = [k for k in self._q.keys() if k != "wavespace"]
         return varlist
 
-    def get_quantities(self, which="any"):
+    def get_quantities(self, which=None):
         """Returns all spectral quantities stored in this object (convoluted or
         non convoluted). Wrapper to
         :py:meth:`~radis.spectrum.spectrum.get_vars`
 
-        Parameters
-        ----------
-        which: 'any', 'convoluted', 'non convoluted'
         """
+        if which is not None:
+            raise DeprecationWarning(
+                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_quantities()"
+            )
+            # TODO: remove after 0.9.31
 
-        return self.get_vars(which=which)
+        return self.get_vars()
 
     def _get_items(self):
         """Return a dictionary of tuples, e.g::
@@ -1486,13 +1423,6 @@ class Spectrum(object):
         items = {
             k: (self._q["wavespace"], v) for k, v in self._q.items() if k != "wavespace"
         }
-        items.update(
-            {
-                k: (self._q_conv["wavespace"], v)
-                for k, v in self._q_conv.items()
-                if k != "wavespace"
-            }
-        )
         return items
 
     def plot(
@@ -2394,8 +2324,8 @@ class Spectrum(object):
             I_conv = np.hstack(I_conv_slices[q])
 
             # Store
-            self._q_conv["wavespace"] = w_conv
-            self._q_conv[q] = I_conv
+            assert np.allclose(self._q["wavespace"], w_conv)
+            self._q[q] = I_conv
 
             # Get units
             if norm_by == "area":
@@ -2889,10 +2819,10 @@ class Spectrum(object):
         w_new,
         unit="same",
         out_of_bounds="nan",
-        if_conflict_drop="error",
         energy_threshold=1e-3,
         print_conservation=False,
         inplace=True,
+        if_conflict_drop=None,
         **kwargs
     ):
         """Resample spectrum over a new wavelength. Fills with transparent
@@ -2929,12 +2859,6 @@ class Spectrum(object):
             what to do if resampling is out of bounds. 'transparent': fills with
             transparent medium. 'nan': fill with nan. 'error': raises an error.
             Default ``'nan'``
-        if_conflict_drop: ``'error'``, ``'convoluted'``, ``'non_convoluted'``
-            There is a problem if both convoluted and non convoluted (*no_slit)
-            quantities coexists, as they aren't scaled on the same wavespace
-            grid. If 'error' an error is raised. If 'convoluted', convoluted
-            quantities will be dropped. If 'non_convoluted' non convoluted quantities
-            are dropped. Default ``'error'``
         medium: ``'air'``, ``'vacuum'``, or ``'default'``
             in which medium is the new waverange is calculated if it is given
             in 'nm'. Ignored if unit='cm-1'
@@ -2969,41 +2893,17 @@ class Spectrum(object):
         --------
         :func:`radis.misc.signal.resample`
         """
-        # TODO (but dangerous): reapply_slit at the end of the process if slit
-        # is in conditions?
+        # Check inputs (check for deprecated)
+        if if_conflict_drop is not None:
+            raise DeprecationWarning(
+                "`if_conflict_drop` parameter was deleted in Radis 0.9.30"
+            )
+            # TODO: remove after 0.9.31
 
         if inplace:
             s = self
         else:
             s = self.copy()
-
-        # Check inputs (check for deprecated)
-
-        # ... see if convoluted / non convoluted values co-exist
-        if "wavespace" in s._q and "wavespace" in s._q_conv:
-            try:
-                assert len(s._q["wavespace"]) == len(s._q_conv["wavespace"])
-                assert np.allclose(s._q["wavespace"], s._q_conv["wavespace"])
-            except AssertionError:  # wavespaces are not the same.
-                if if_conflict_drop == "convoluted":
-                    for q in list(s._q_conv.keys()):
-                        del s._q_conv[q]
-                elif if_conflict_drop == "non_convoluted":
-                    for q in list(s._q.keys()):
-                        del s._q[q]
-                elif if_conflict_drop == "error":
-                    raise ValueError(
-                        "Cant resample as there are convoluted and non "
-                        + "convoluted quantities in the Spectrum object (and "
-                        + "wavespace are not the same). Use "
-                        + "`if_conflict_drop='convoluted' or 'non_convoluted'`"
-                    )
-                else:
-                    raise ValueError(
-                        "Unknown value for if_conflict_drop: {0}".format(
-                            if_conflict_drop
-                        )
-                    )
 
         # Get wavespace units
         stored_waveunit = s.get_waveunit()  # spectrum unit
@@ -3039,10 +2939,6 @@ class Spectrum(object):
         if unit != stored_waveunit:
             s.conditions["waveunit"] = unit
 
-        # Get wavespace
-        update_q = "wavespace" in s._q
-        update_q_conv = "wavespace" in s._q_conv
-
         # Now let's resample
         def get_filling(variable):
             """Get out of bounds values for spectral quantity `variable`"""
@@ -3067,41 +2963,22 @@ class Spectrum(object):
         # ... using the (safer) .get() function because it's much faster (the
         # ... air2vacuum conversion in particular is quite slow, but has been
         # ... done once for all with get_wavelength() above )
-        if update_q:
-            for (k, I) in s._q.items():
-                if k == "wavespace":
-                    continue
-                fill_with = get_filling(k)
-                Inew = resample(
-                    w,
-                    I,
-                    w_new,
-                    ext=fill_with,
-                    energy_threshold=energy_threshold,
-                    print_conservation=False,
-                    **kwargs
-                )
-                s._q[k] = Inew
-            # update wavespace
-            s._q["wavespace"] = w_new
-
-        if update_q_conv:
-            for (k, I) in s._q_conv.items():
-                if k == "wavespace":
-                    continue
-                fill_with = get_filling(k)
-                Inew = resample(
-                    w,
-                    I,
-                    w_new,
-                    ext=fill_with,
-                    energy_threshold=energy_threshold,
-                    print_conservation=False,
-                    **kwargs
-                )
-                s._q_conv[k] = Inew
-            # update wavespace
-            s._q_conv["wavespace"] = w_new
+        for (k, I) in s._q.items():
+            if k == "wavespace":
+                continue
+            fill_with = get_filling(k)
+            Inew = resample(
+                w,
+                I,
+                w_new,
+                ext=fill_with,
+                energy_threshold=energy_threshold,
+                print_conservation=False,
+                **kwargs
+            )
+            s._q[k] = Inew
+        # update wavespace
+        s._q["wavespace"] = w_new
 
         return s
 
@@ -3270,10 +3147,6 @@ class Spectrum(object):
         if quantity == "all":
             quantities = dict(self._get_items())
         else:
-            #            assert quantity in CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES
-            #            if not quantity in self.get_vars():
-            #                raise ValueError("Spectrum {0} has no quantity '{1}'. Got: {2}".format(
-            #                        self.get_name(), quantity, self.get_vars()))
             quantities = {
                 quantity: self.get(quantity, wunit=self.get_waveunit())
             }  # dict(self._get_items())
@@ -3615,6 +3488,8 @@ class Spectrum(object):
         """Add quantity.
 
         Note: creates a copy of the input array
+
+        If warnings, check that array is evenly spaced
         """
 
         assert len(w) == len(I)
@@ -3637,50 +3512,27 @@ class Spectrum(object):
                     )
             return np.array(w)  # copy
 
-        if name in CONVOLUTED_QUANTITIES:
-            # Add wavespace
-            if "wavespace" in self._q_conv:
-                if warnings:
-                    # Check new wavespace match the existing one
-                    if not np.allclose(w, self._q_conv["wavespace"]):
-                        raise ValueError(
-                            "wavespace for {0} doesnt correspond to existing wavespace".format(
-                                name
-                            )
-                            + " for convoluted quantities"
+        # Add wavespace
+        if "wavespace" in self._q:
+            if warnings:
+                # Check new wavespace match the existing one
+                if not np.allclose(w, self._q["wavespace"]):
+                    raise ValueError(
+                        "wavespace for {0} doesnt correspond to existing wavespace".format(
+                            name
                         )
-            else:
-                self._q_conv["wavespace"] = np.array(w)  # copy
+                        + " for non convoluted quantities"
+                    )
+        else:
+            if name in CONVOLUTED_QUANTITIES:
+                self._q["wavespace"] = np.array(w)  # copy
                 # no need to check if wavespace is evenly spaced: we won't
                 # apply the slit function again
-
-            # Add quantity itself
-            self._q_conv[name] = np.array(I)  # copy
-
-        elif name in NON_CONVOLUTED_QUANTITIES:
-            # Add wavespace
-            if "wavespace" in self._q:
-                if warnings:
-                    # Check new wavespace match the existing one
-                    if not np.allclose(w, self._q["wavespace"]):
-                        raise ValueError(
-                            "wavespace for {0} doesnt correspond to existing wavespace".format(
-                                name
-                            )
-                            + " for non convoluted quantities"
-                        )
             else:
                 self._q["wavespace"] = check_wavespace(w)  # copy
 
-            # Add quantity itself
-            self._q[name] = np.array(I)  # copy
-
-        else:
-            raise ValueError(
-                "Unknown quantity: {0}. Expected one of: {1}".format(
-                    name, CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES
-                )
-            )
+        # Add quantity itself
+        self._q[name] = np.array(I)  # copy
 
         # also make the quantity accessible with s.[name] like Pandas dataframes (removed eventually)
         # setattr(self, name, quantity)   # Warning this makes another copy of it (it's a tuple!)
@@ -3819,7 +3671,7 @@ class Spectrum(object):
 
         var = self._get_unique_var(operation_name="max")
         w, I = self.get(var, wunit=self.get_waveunit(), copy=False)
-        return I.max()
+        return I[~np.isnan(I)].max()
 
     def min(self):
         """Minimum of the Spectrum, if only one spectral quantity is available
@@ -3837,7 +3689,7 @@ class Spectrum(object):
 
         var = self._get_unique_var(operation_name="min")
         w, I = self.get(var, wunit=self.get_waveunit(), copy=False)
-        return I.min()
+        return I[~np.isnan(I)].min()
 
     def normalize(
         self,
@@ -4384,15 +4236,7 @@ class Spectrum(object):
         """Length of a Spectrum object = length of the wavespace if unique,
         else raises an error"""
 
-        # raises ValueError if both convolved and non convolved are defined
-        try:
-            return len(self._get_wavespace("any", copy=False))
-        except ValueError:
-            raise ValueError(
-                "All quantities do not have the same length in the Spectrum : {0}".format(
-                    {k: len(self.get(k)[0]) for k in self.get_vars()}
-                )
-            )
+        return len(self._get_wavespace(copy=False))
 
 
 # %% Private functions

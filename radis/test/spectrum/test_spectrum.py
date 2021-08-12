@@ -123,11 +123,8 @@ def test_copy(verbose=True, *args, **kwargs):
 
     # Test all quantities in detail
     for var in s._q.keys():
-        assert np.allclose(s._q[var], s2._q[var])
+        assert np.allclose(s._q[var], s2._q[var], equal_nan=True)
         assert not (s._q[var] is s2._q[var])
-    for var in s._q_conv.keys():
-        assert np.allclose(s._q_conv[var], s2._q_conv[var])
-        assert not (s._q_conv[var] is s2._q_conv[var])
 
     if verbose:
         print("Tested that s2 == s (but s2 is not s) after Spectrum copy")

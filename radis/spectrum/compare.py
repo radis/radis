@@ -1089,7 +1089,8 @@ def compare_spectra(
         in which wavespace to compare (and plot). If default, natural wavespace
         of first Spectrum is taken
     rtol: float
-        relative difference to use for spectral quantities comparison
+        relative difference to use for spectral quantities comparison.
+        absolute difference ``atol`` is set to 0.
     ignore_nan: boolean
         if ``True``, nans are ignored when comparing spectral quantities
     ignore_outliers: boolean, or float
@@ -1208,7 +1209,7 @@ def compare_spectra(
 
         return out
 
-    def _compare_variables(I, Ie):
+    def _compare_arrays(I, Ie):
         """Compare spectral quantities I and Ie."""
 
         if ignore_nan:
@@ -1216,12 +1217,17 @@ def compare_spectra(
             I = I[b]
             Ie = Ie[b]
 
+        equal_nan = (
+            True  # in all cases, we ignore if there are nans at the same positions
+        )
+        # on both spectra (happens with convolved values in 'valid' mode)
+
         if ignore_outliers:
-            out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum() / len(
-                I
-            ) < ignore_outliers
+            out = (
+                ~np.isclose(I, Ie, rtol=rtol, atol=0, equal_nan=equal_nan)
+            ).sum() / len(I) < ignore_outliers
         else:
-            out = np.allclose(I, Ie, rtol=rtol, atol=0)
+            out = np.allclose(I, Ie, rtol=rtol, atol=0, equal_nan=equal_nan)
 
         return bool(out)
 
@@ -1249,7 +1255,7 @@ def compare_spectra(
         vars = [k for k in first.get_vars() if k in other.get_vars()]
 
     if spectra_only:
-        # Compare spectral variables
+        # Compare spectral arrays
         # -----------
         for k in vars:
             w, q = first.get(k, wunit=wunit)
@@ -1267,19 +1273,19 @@ def compare_spectra(
                 if len(q) > len(q0):
                     f = interp1d(w, q, kind="cubic")
                     new_q = f(w0)
-                    b1 = _compare_variables(new_q, q0)
+                    b1 = _compare_arrays(new_q, q0)
                     if not b1 and verbose:
                         _display_difference(new_q, q0)
                 else:
                     f = interp1d(w0, q0, kind="cubic")
                     new_q0 = f(w)
-                    b1 = _compare_variables(q, new_q0)
+                    b1 = _compare_arrays(q, new_q0)
                     if not b1 and verbose:
                         _display_difference(q, new_q0)
 
             else:  # no need to interpolate
                 b1 = np.allclose(w, w0, rtol=rtol, atol=0)
-                b1 *= _compare_variables(q, q0)
+                b1 *= _compare_arrays(q, q0)
 
                 if not b1 and verbose:
                     _display_difference(q, q0)
@@ -1314,7 +1320,7 @@ def compare_spectra(
                 b1 = False
             else:
                 b1 = np.allclose(w, w0, rtol=rtol, atol=0)
-                b1 *= _compare_variables(q, q0)
+                b1 *= _compare_arrays(q, q0)
                 if not b1 and verbose:
                     error = np.nanmax(abs(q / q0 - 1))
                     avgerr = np.nanmean(abs(q / q0 - 1))
@@ -1476,7 +1482,7 @@ def compare_spectra(
                 b6 = False
             else:
                 b6 = np.allclose(ws, ws0, rtol=rtol, atol=0)
-                b6 *= _compare_variables(Is, Is0)
+                b6 *= _compare_arrays(Is, Is0)
                 if not b6 and verbose:
                     print("Slit functions dont match")
         b *= b6

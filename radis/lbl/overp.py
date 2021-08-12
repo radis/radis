@@ -39,7 +39,6 @@ from radis.spectrum.rescale import (
     rescale_transmittance_noslit,
 )
 from radis.spectrum.spectrum import is_spectrum
-from radis.spectrum.utils import NON_CONVOLUTED_QUANTITIES
 
 # keys that may not be equals for different bands
 _IGNORE_KEYS = ["band", "band_htrn", "viblvl_u", "viblvl_l"]
@@ -845,10 +844,7 @@ def rescale_updown_levels(
     # Save (only) the ones that were in the spectrum initially
     for q in rescaled:
         if q in initial:
-            if q in NON_CONVOLUTED_QUANTITIES:
-                spec._q[q] = rescaled[q]
-            else:
-                spec._q_conv[q] = rescaled[q]
+            spec._q[q] = rescaled[q]
 
     # Update units
     for k, u in units.items():
@@ -856,8 +852,8 @@ def rescale_updown_levels(
 
     # Drop convoluted values
     for q in ["transmittance", "radiance"]:
-        if q in list(spec._q_conv.keys()):
-            del spec._q_conv[q]
+        if q in list(spec._q.keys()):
+            del spec._q[q]
 
     # Reapply slit if possible
     if (

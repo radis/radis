@@ -1559,7 +1559,7 @@ def _recalculate(
                     + "not look at equilibrium. Check spectrum conditions"
                 )
             )
-        wavenumber = spec.get_wavenumber("non_convoluted")
+        wavenumber = spec.get_wavenumber()
         Tgas = spec.conditions["Tgas"]
         rescaled, units = _recompute_all_at_equilibrium(
             spec, rescaled, wavenumber, Tgas, new_path_length, true_path_length, units
@@ -1669,18 +1669,15 @@ def _recalculate(
     # delete former convoluted value if apply_slit will be used (just to be sure
     # we arent keeping a non rescaled value if something goes wrong)
     if apply_slit:
-        for k in list(spec._q_conv.keys()):
-            if k != "wavespace":
-                del spec._q_conv[k]
+        for k in list(spec._q.keys()):
+            if k != "wavespace" and k in CONVOLUTED_QUANTITIES:
+                del spec._q[k]
                 del spec.units[k]
 
     # Save (only) the ones that we want, unless we want everything ('greedy')
     for q in rescaled:
         if q in wanted:  # or greedy:
-            if q in NON_CONVOLUTED_QUANTITIES:
-                spec._q[q] = rescaled[q]
-            else:
-                spec._q_conv[q] = rescaled[q]
+            spec._q[q] = rescaled[q]
 
     # Update units
     for k, u in units.items():
@@ -1732,7 +1729,9 @@ def _recalculate(
     # ... "everyone is here": check we didnt miss anyone
     rescaled_list = list(rescaled)
     # add the new quantities added by apply_slit
-    rescaled_list = rescaled_list + spec.get_vars("convoluted")
+    rescaled_list = rescaled_list + [
+        k for k in spec.get_vars() if k in CONVOLUTED_QUANTITIES
+    ]
     for q in wanted:
         if not q in rescaled_list:
             raise AssertionError(

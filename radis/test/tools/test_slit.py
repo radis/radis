@@ -154,7 +154,7 @@ def test_slit_unit_conversions_spectrum_in_cm(
 
         # Apply slit in nm this time
         s_nm = s_cm.copy()
-        w_cm = s_nm.get_wavenumber(which="non_convoluted")
+        w_cm = s_nm.get_wavenumber()
         slit_nm = dcm2dnm(slit_cm, w_cm[len(w_cm) // 2])
         s_nm.name = "Spec in cm-1, slit {0:.2f} nm".format(slit_nm)
         s_nm.apply_slit(slit_nm, unit="nm", shape=shape, mode="same")
