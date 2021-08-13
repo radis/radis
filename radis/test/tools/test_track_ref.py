@@ -5,10 +5,13 @@ Created on Fri Aug 13 14:27:22 2021
 @author: erwan
 """
 
+import pytest
+
 from radis.db.references import doi
 from radis.tools.track_ref import RefTracker
 
 
+@pytest.mark.fast
 def test_reftracker(verbose=True, *args, **kwargs):
 
     rt = RefTracker()
@@ -30,6 +33,7 @@ def test_reftracker(verbose=True, *args, **kwargs):
     assert dict(rt) == dict(rt2)
 
 
+@pytest.mark.needs_connection
 def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
 
     from radis import calc_spectrum
@@ -44,7 +48,7 @@ def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
         mole_fraction=0.1,
         path_length=1,  # cm
         databank="hitran",
-    )
+    )  # TODO: replace with `s = radis.test_spectrum()`
 
     if verbose:
         s.cite()
@@ -55,6 +59,7 @@ def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
     assert doi["TIPS-2020"] in s.references
 
 
+@pytest.mark.needs_connection
 def test_citations_in_noneq_spectrum(verbose=False, *args, **kwargs):
 
     from radis import calc_spectrum
@@ -83,6 +88,7 @@ def test_citations_in_noneq_spectrum(verbose=False, *args, **kwargs):
     assert doi["Guelachvili-1983"] in s.references
 
 
+@pytest.mark.needs_connection
 def test_citations_serialized(verbose=False, *args, **kwargs):
 
     import os
@@ -101,7 +107,7 @@ def test_citations_serialized(verbose=False, *args, **kwargs):
         mole_fraction=0.1,
         path_length=1,  # cm
         databank="hitran",
-    )  # TODO: replace with radis.test_spectrum()
+    )  # TODO: replace with `s = radis.test_spectrum()`
     s.store("test_refs.spec", if_exists_then="replace")
     from radis import load_spec
 
@@ -115,10 +121,34 @@ def test_citations_serialized(verbose=False, *args, **kwargs):
         s2.cite()
 
 
+@pytest.mark.needs_connection
+def test_citations_multislabs(*args, **kwargs):
+
+    from radis import MergeSlabs, calc_spectrum
+
+    s = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tvib=2000,  #
+        Trot=300,
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="hitran",
+    )  # TODO: replace with `s = radis.test_spectrum()`
+    s2 = s > s
+    assert s2.references == s.references
+
+    s3 = MergeSlabs(s, s, s)
+    assert s3.references == s.references
+
+
 if __name__ == "__main__":
-    verbose = True
 
     test_reftracker()
     test_citations_in_eq_spectrum(verbose=True)
     test_citations_in_noneq_spectrum(verbose=True)
     test_citations_serialized(verbose=True)
+    test_citations_multislabs()

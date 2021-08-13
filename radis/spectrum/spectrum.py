@@ -3300,6 +3300,8 @@ class Spectrum(object):
         except AttributeError:
             populations = None
 
+        references = self.references.copy()
+
         waveunit = self.get_waveunit()  # 163 ns
         name = self.name
 
@@ -3312,6 +3314,7 @@ class Spectrum(object):
             lines=lines,
             units=units,
             waveunit=waveunit,
+            references=references,
             name=name,
             warnings=False,  # saves about 3.5 ms on the Performance test object
         )
