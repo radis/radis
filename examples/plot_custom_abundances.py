@@ -20,6 +20,10 @@ See Also
 
 """
 
+from radis.test.utils import setup_test_line_databases
+
+setup_test_line_databases()  # creates "HITEMP-CO2-TEST" for this example
+
 from radis import SpectrumFactory
 
 sf = SpectrumFactory(
