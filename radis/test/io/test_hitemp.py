@@ -97,7 +97,9 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     # Check that we won't download all databae for a reduced range:
     # ... This is done at the HITEMPDatabaseManager level
     # ... unitest for this part:
-    ldb = HITEMPDatabaseManager(name="HITEMP-CO2", molecule="CO2")
+    ldb = HITEMPDatabaseManager(
+        name="HITEMP-CO2", molecule="CO2", local_databases="~/.radisdb/hitemp/"
+    )
     local_files, _ = ldb.get_filenames(engine="auto")
     relevant_file, file_wmin, file_wmax = keep_only_relevant(
         local_files, wavenum_min=wmin, wavenum_max=wmax
@@ -165,7 +167,10 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     assert f"HITEMP-{molecule}" in getDatabankList()
 
     ldb = HITEMPDatabaseManager(
-        name=f"HITEMP-{molecule}", molecule=molecule, verbose=verbose
+        name=f"HITEMP-{molecule}",
+        molecule=molecule,
+        verbose=verbose,
+        local_databases="~/.radisdb/hitemp/",
     )
     url, Nlines, _, _ = ldb.fetch_url_Nlines_wmin_wmax()
 
@@ -322,23 +327,14 @@ def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    # test_relevant_files_filter()
-    # test_fetch_hitemp_OH()
-    # test_partial_loading()
-    # test_calc_hitemp_CO_noneq()
-    # test_fetch_hitemp_partial_download_CO2()
-    # test_calc_hitemp_spectrum()
-    # test_fetch_hitemp_all_molecules("OH")
-    # test_fetch_hitemp_all_molecules("CO")
+    test_relevant_files_filter()
+    test_fetch_hitemp_OH()
+    test_partial_loading()
+    test_calc_hitemp_CO_noneq()
+    test_fetch_hitemp_partial_download_CO2()
+    test_calc_hitemp_spectrum()
+    test_fetch_hitemp_all_molecules("OH")
+    test_fetch_hitemp_all_molecules("CO")
     test_fetch_hitemp_all_molecules("CO2", verbose=3)
-    # test_fetch_hitemp_all_molecules("N2O", verbose=3)
-    # test_fetch_hitemp_all_molecules("NO", verbose=3)
-
-    # df = fetch_hitemp("OH", cache="regen", chunksize=20000, verbose=3, engine='vaex')
-
-    # assert "HITEMP-OH" in getDatabankList()
-
-    # assert len(df) == 57019
-
-    # # Load again and make sure it works (ex: metadata properly loaded etc.):
-    # fetch_hitemp("OH")
+    test_fetch_hitemp_all_molecules("N2O", verbose=3)
+    test_fetch_hitemp_all_molecules("NO", verbose=3)
