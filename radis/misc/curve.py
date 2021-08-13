@@ -58,13 +58,10 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
 
     Parameters
     ----------
-
     w1, I1: array
         range and values for first curve
-
     w2, I2: array
         range and values for 2nd curve
-
     discard_out_of_bounds: boolean
         if True, distance for out of bound values is set to nan. Else, it
         will be the distance from the last point.
@@ -101,19 +98,19 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
+    .. note::
+        for higher accuracy, choose (w2, I2) has the curve with the highest
+        resolution
+
 
     Parameters
     ----------
-
     w1, I1: array
         range and values for first curve
-
     w2, I2: array
         range and values for 2nd curve
-
     is_sorted: boolean
         (optional) if True, doesnt sort input arrays
-
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
 
@@ -136,19 +133,19 @@ def curve_substract(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
+    .. note::
+        for higher accuracy, choose (w2, I2) has the curve with the highest
+        resolution
+
 
     Parameters
     ----------
-
     w1, I1: array
         range and values for first curve
-
     w2, I2: array
         range and values for 2nd curve
-
     is_sorted: boolean
         (optional) if True, doesnt sort input arrays
-
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
 
@@ -171,26 +168,25 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
+    .. note::
+        for higher accuracy, choose (w2, I2) has the curve with the highest
+        resolution
+
 
     Parameters
     ----------
-
     w1, I1: array
         range and values for first curve
-
     w2, I2: array
         range and values for 2nd curve
-
     is_sorted: boolean
         (optional) if True, doesnt sort input arrays
-
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
 
 
     Returns
     -------
-
     w1, Iproduct: array
         product ``I1 * I2`` interpolated on the first range ``w1``
     """
@@ -206,33 +202,31 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind="linear", interpolation=1
 
     Similar to OriginPro's "Simple Curve Math Substract"
 
+    .. note::
+        for higher accuracy, choose (w2, I2) has the curve with the highest
+        resolution
+
 
     Parameters
     ----------
-
     w1, I1: array
         range and values for first curve
-
     w2, I2: array
         range and values for 2nd curve
 
     Other Parameters
     ----------------
-
     is_sorted: boolean
         (optional) if ``True``, assumes that both input arrays are sorted already.
         Default ``False``.
-
     kind: str
         interpolation kind. Default 'linear'. See scipy.interpolate.interp1d
-
     interpolation: int, optional
         If 1, interpolate on w1, I1. Else, on w2, I2.
         Default 1
 
     Returns
     -------
-
     w1, Idiv: array
         Division ``I1 / I2`` interpolated on the first or second range according to reverseInterpolation
     """
@@ -257,12 +251,21 @@ def _curve_interpolate(w1, I1, w2, I2, is_sorted=False, kind="linear"):
     For the interpolation to work, this requires to first sort ``w1`` and ``w2``,
     interpolate, then revert to the initial ``w1``
 
+    .. note::
+        for higher accuracy, choose (w2, I2) has the curve with the highest
+        resolution
+
     Returns
     -------
 
     I2_inter: np.array
         ``I2`` interpolated on ``w1``.
     """
+    if (abs((w1[1] - w1[0])) < 2 * abs((w2[1] - w2[0]))) and (
+        abs((w1[-1] - w1[-2])) < 2 * abs((w2[-1] - w2[-2]))
+    ):
+        # w1 looks like the spectra with highest accuracy
+        warnings.warn("Reverse your spectra in interpolation for a better accuracy")
 
     # First sort both
     if not is_sorted:  # TODO : add first check with `radis.misc.is_sorted(a) `

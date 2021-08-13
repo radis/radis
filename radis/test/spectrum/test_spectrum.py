@@ -416,11 +416,38 @@ def test_resampling_function(
 
 def test_resampling_nan_function(verbose=True, *args, **kwargs):
     """Test resampling functions, for Spectra with nans"""
+    from radis import get_residual
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
 
-    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    plot = True
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True).crop(
+        2170, 2180, "cm-1"
+    )
+    s.rescale_path_length(10)  # cm
     s.name = "original"
+
+    # We want to resample on a small range:
+    w_exp = s.get_wavenumber()[700:-700][::5]
+    # ... add a shift:
+    w_exp += np.diff(s.get_wavenumber())[0] * 2 / 3
+
+    s.update("transmittance_noslit")
+    s.apply_slit(3, "nm")
+
+    assert s.has_nan()
+
+    # s2.resample(w_exp)
+    s2 = s.resample(w_exp, inplace=False)
+    s2.name = "resampled"
+
+    assert get_residual(s2, s, "transmittance") < 1e-6
+
+    if plot:
+        from radis import plot_diff
+
+        plot_diff(s, s2, show_points=True)
 
 
 @pytest.mark.fast
@@ -580,41 +607,4 @@ def _run_testcases(
 
 
 if __name__ == "__main__":
-    # print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
-
-    from radis import get_residual
-    from radis.test.utils import getTestFile
-    from radis.tools.database import load_spec
-
-    plot = True
-
-    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True).crop(
-        2170, 2180, "cm-1"
-    )
-    s.rescale_path_length(10)  # cm
-    s.name = "original"
-
-    # We want to resample on a small range:
-    w_exp = s.get_wavenumber()[700:-700][::5]
-    # ... add a shift:
-    w_exp += np.diff(s.get_wavenumber())[0] * 2 / 3
-
-    s.update("transmittance_noslit")
-    s.apply_slit(3, "nm")
-
-    # if plot:
-    #     s.plot("transmittance", ls="-", marker="o")
-
-    assert s.has_nan()
-
-    # s2.resample(w_exp)
-    s2 = s.resample(w_exp, inplace=False)
-    s2.name = "resampled"
-
-    get_residual(s, s2, "transmittance")
-    get_residual(s2, s, "transmittance")
-
-    if plot:
-        from radis import plot_diff
-
-        plot_diff(s, s2, show_points=True)
+    print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
