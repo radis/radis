@@ -34,3 +34,4 @@ dependencies:
   - mpldatacursor
   - tuna           # to generate visual/interactive performance profiles
   - vaex    # load HDF5 files
+  - habanero  # CrossRef API to retrieve data from doi

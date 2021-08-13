@@ -8,7 +8,9 @@ To be made an independant package in the future
 
 
 class RefTracker(dict):
-    """Track References
+    """Track bibliographic references by storing the DOIs in a dictionary.
+
+    Prints them nicely using the :py:mod:`habanero` CrossRef API package.
 
     Examples
     --------
@@ -97,6 +99,7 @@ class RefTracker(dict):
                 self[doi].append(why)
 
     def cite(self, format="bibentry"):
+        """ See more in :py:func:`habanero.content_negotiation`"""
 
         # Grouping dictionary by value :
         by_use = {}

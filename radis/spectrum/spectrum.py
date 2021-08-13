@@ -3424,10 +3424,14 @@ class Spectrum(object):
             **kwargs
         )
 
-    def cite(self):
+    def cite(self, format="bibentry"):
         """Prints bibliographic references used to compute this spectrum, as
         stored in the :py:attr:`~radis.spectrum.spectrum.Spectrum.references`
         dictionary.
+
+        Parameters
+        ----------
+        format: default ``'bibentry'``. See more in :py:func:`habanero.content_negotiation`
 
         Examples
         --------
@@ -3580,7 +3584,7 @@ class Spectrum(object):
         if not isinstance(self.references, RefTracker):
             self.references = RefTracker(**self.references)
 
-        return self.references.cite()
+        return self.references.cite(format=format)
 
     # %% ======================================================================
     # Private functions
