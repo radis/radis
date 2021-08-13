@@ -30,7 +30,7 @@ def test_reftracker(verbose=True, *args, **kwargs):
     assert dict(rt) == dict(rt2)
 
 
-def test_citations_in_eq_spectrum(verbose=True, *args, **kwargs):
+def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
 
     from radis import calc_spectrum
 
@@ -43,7 +43,7 @@ def test_citations_in_eq_spectrum(verbose=True, *args, **kwargs):
         Tgas=700,  # K
         mole_fraction=0.1,
         path_length=1,  # cm
-        databank="hitran",  # or use 'hitemp'
+        databank="hitran",
     )
 
     if verbose:
@@ -55,7 +55,7 @@ def test_citations_in_eq_spectrum(verbose=True, *args, **kwargs):
     assert doi["TIPS-2020"] in s.references
 
 
-def test_citations_in_noneq_spectrum(verbose=True, *args, **kwargs):
+def test_citations_in_noneq_spectrum(verbose=False, *args, **kwargs):
 
     from radis import calc_spectrum
 
@@ -69,7 +69,7 @@ def test_citations_in_noneq_spectrum(verbose=True, *args, **kwargs):
         Trot=300,
         mole_fraction=0.1,
         path_length=1,  # cm
-        databank="hitran",  # or use 'hitemp'
+        databank="hitran",
     )
 
     if verbose:
@@ -83,9 +83,42 @@ def test_citations_in_noneq_spectrum(verbose=True, *args, **kwargs):
     assert doi["Guelachvili-1983"] in s.references
 
 
+def test_citations_serialized(verbose=False, *args, **kwargs):
+
+    import os
+    from os.path import exists
+
+    from radis import calc_spectrum
+
+    s = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tvib=2000,  #
+        Trot=300,
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="hitran",
+    )  # TODO: replace with radis.test_spectrum()
+    s.store("test_refs.spec", if_exists_then="replace")
+    from radis import load_spec
+
+    s2 = load_spec("test_refs.spec")
+
+    if exists("test_refs.spec"):
+        os.remove("test_refs.spec")
+
+    assert s.references == s2.references
+    if verbose:
+        s2.cite()
+
+
 if __name__ == "__main__":
     verbose = True
 
     test_reftracker()
-    test_citations_in_eq_spectrum()
-    test_citations_in_noneq_spectrum()
+    test_citations_in_eq_spectrum(verbose=True)
+    test_citations_in_noneq_spectrum(verbose=True)
+    test_citations_serialized(verbose=True)

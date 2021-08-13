@@ -3564,6 +3564,8 @@ class Spectrum(object):
 
         </details>
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.cite
+
         See Also
         --------
         :py:class:`~radis.tools.track_ref.RefTracker`

@@ -70,6 +70,12 @@ class RefTracker(dict):
                 title = PLACEHOLDER FOR 10.1016/a.test.2021.111213 in bibentry format }
 
 
+    .. minigallery:: radis.tools.track_ref.RefTracker
+
+    See Also
+    --------
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.cite`
+
 
     """
 
@@ -123,19 +129,6 @@ class RefTracker(dict):
 
 if __name__ == "__main__":
 
-    rt = RefTracker()
+    import pytest
 
-    # in your code:
-    rt.add("10.1016/a.test.2021.012345", "algorithm")
-    rt.add("10.1016/a.test.2021.012345", "post-processing")
-    rt.add("10.1016/a.test.2021.678910", "data retrieval")
-    rt.add("10.1016/a.test.2021.111213", "data retrieval")
-
-    # user part:
-    rt.cite()
-
-    # Init from a dict directly
-    ref_dict = dict(rt)
-    rt2 = RefTracker(**ref_dict)
-
-    assert dict(rt) == dict(rt2)
+    print("Testing track_ref:", pytest.main(["../test/tools/test_track_ref.py"]))
