@@ -59,6 +59,7 @@ import pandas as pd
 
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
+from radis.db.references import doi
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
@@ -90,6 +91,7 @@ from radis.misc.warning import (
 )
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
+from radis.tools.track_ref import RefTracker
 
 KNOWN_DBFORMAT = [
     "hitran",
@@ -666,6 +668,14 @@ class DatabankLoader(object):
 
         self.profiler = Profiler(verbose)
 
+    def _reset_references(self):
+        """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
+
+        # Track bibliography references
+        self.reftracker = RefTracker()
+        # ... init with RADIS itself:
+        self.reftracker.add(doi["RADIS-2018"], "calculation")
+
     # %% ======================================================================
     # PUBLIC METHODS
     # ------------------------
@@ -796,6 +806,7 @@ class DatabankLoader(object):
 
         # Delete database
         self.df0 = None
+        self._reset_references()  # bibliographic references
 
     def fetch_databank(
         self,
@@ -942,8 +953,12 @@ class DatabankLoader(object):
 
         # %% Init Line database
         # ---------------------
+        self._reset_references()  # bibliographic references
 
         if source == "hitran":
+            self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
+            self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
+
             # Query one isotope at a time
             if isotope == "all":
                 raise ValueError(
@@ -981,6 +996,8 @@ class DatabankLoader(object):
             self.params.dbpath = "fetched from hitran"
 
         elif source == "hitemp":
+            self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
+
             # Download, setup local databases, and fetch (use existing if possible)
 
             if isotope == "all":
@@ -1006,6 +1023,8 @@ class DatabankLoader(object):
                 )
 
         elif source == "exomol":
+            self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
+
             # Download, setup local databases, and fetch (use existing if possible)
 
             if isotope == "all":
@@ -1271,6 +1290,8 @@ class DatabankLoader(object):
 
         # %% Line database
         # ------------
+        self._reset_references()  # bibliographic references
+
         self.df0 = self._load_databank(
             path,
             dbformat,
@@ -1658,7 +1679,7 @@ class DatabankLoader(object):
         """Make sure database is loaded, loads if it isnt and we have all the
         information needed.
         Databank has been initialized by
-        :meth:`~radis.lbl.loader.DatabankLoader._init_databank`
+        :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
         """
         self.profiler.start("check_line_databank", 2)
         # Make sure database is loaded
@@ -1822,6 +1843,15 @@ class DatabankLoader(object):
                 # ... this is where the cache files are read/generated.
                 try:
                     if dbformat in ["cdsd-hitemp", "cdsd-4000"]:
+                        if dbformat == "cdsd-4000":
+                            self.reftracker.add(
+                                doi["CDSD-4000"], "line database"
+                            )  # [CDSD-4000]_
+                        if dbformat == "cdsd-hitemp":
+                            self.warn(
+                                "Missing doi for CDSD-HITEMP. Use HITEMP-2010?",
+                                "MissingReferenceWarning",
+                            )
                         df = cdsd2df(
                             filename,
                             version="hitemp" if dbformat == "cdsd-hitemp" else "4000",
@@ -1832,6 +1862,14 @@ class DatabankLoader(object):
                             load_wavenum_max=wavenum_max,
                         )
                     elif dbformat in ["hitran", "hitemp"]:
+                        if dbformat == "hitran":
+                            self.reftracker.add(
+                                doi["HITRAN-2016"], "line database"
+                            )  # [HITRAN-2016]_
+                        if dbformat == "hitemp":
+                            self.reftracker.add(
+                                doi["HITEMP-2010"], "line database"
+                            )  # [HITEMP-2010]_
                         df = hit2df(
                             filename,
                             cache=db_use_cached,
@@ -1841,6 +1879,15 @@ class DatabankLoader(object):
                             load_wavenum_max=wavenum_max,
                         )
                     elif dbformat in ["hdf5-radisdb", "hitemp-radisdb"]:
+                        if dbformat == "hitemp-radisdb":
+                            self.reftracker.add(
+                                doi["HITEMP-2010"], "line database"
+                            )  # [HITEMP-2010]_
+                        if dbformat == "hdf5-radisdb":
+                            self.warn(
+                                f"Missing doi reference for database used {filename}",
+                                "MissingReferenceWarning",
+                            )
                         df = hdf2df(
                             filename,
                             # cache=db_use_cached,
@@ -1852,6 +1899,10 @@ class DatabankLoader(object):
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
                         )
+                    elif dbformat in ["exomol"]:
+                        # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
+                        raise NotImplementedError("use fetch_databank('exomol')")
+
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
                 except IrrelevantFileWarning as err:
@@ -2174,8 +2225,10 @@ class DatabankLoader(object):
 
         isotope = int(isotope)
 
-        if parfuncfmt == "hapi" or parfuncfmt is None:
+        if parfuncfmt in ["hapi", "tips"] or parfuncfmt is None:
             assert len(predefined_partition_functions) == 0
+            self.reftracker.add(doi["TIPS-2020"], "partition function")
+            self.reftracker.add(doi["HAPI"], "partition function")
             # Use TIPS-2017 through HAPI (HITRAN Python interface, integrated in RADIS)
             # no tabulated partition functions defined. Only non-eq spectra can
             # be calculated if energies are also given
@@ -2183,10 +2236,12 @@ class DatabankLoader(object):
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
+            self.reftracker.add(doi["CDSD-4000"], "partition function")
             assert len(predefined_partition_functions) == 0
             assert molecule == "CO2"
             parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
         elif parfuncfmt == "exomol":
+            self.reftracker.add(doi["ExoMol-2020"], "partition function")
             # Just read dictionary of predefined partition function
             assert len(predefined_partition_functions) > 0
             parsum = predefined_partition_functions[molecule][isotope]
@@ -2239,6 +2294,7 @@ class DatabankLoader(object):
 
         # ... sum over CDSD levels given by Tashkun / calculated from its Hamiltonian
         if levelsfmt in ["cdsd-pc", "cdsd-pcN", "cdsd-hamil"]:
+            self.reftracker.add(doi["CDSD-4000"], "rovibrational energies")
             parsum = PartFuncCO2_CDSDcalc(
                 levels,
                 isotope=isotope,
@@ -2250,6 +2306,7 @@ class DatabankLoader(object):
 
         # calculate energy levels from RADIS Dunham parameters
         elif levelsfmt == "radis":
+            self.reftracker.add(doi["RADIS-2018"], "rovibrational energies")
             state = getMolecule(
                 self.input.molecule, isotope, self.input.state, verbose=self.verbose
             )

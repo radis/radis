@@ -1,3 +1,6 @@
+.. _label_bibliography:
+
+
 Bibliography
 ------------
 
@@ -6,12 +9,6 @@ List of bibliographic references used in this project:
 .. [CANTERA] D. G. Goodwin, H. K. Moffat, R. L. Speth, "Cantera: An Object-oriented Software
              Toolkit for Chemical Kinetics"", Thermodynamics, and Transport Processes,
              http://www.cantera.org, `doi:10.5281/zenodo.170284 <https://zenodo.org/record/170284#.XRIOno-xVEY>`__, 2017.
-
-.. [HAPI] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
-          R. Kochanov, I. Gordon, L. Rothman, P. Wcisło, C. Hill, J. Wilzewski,
-          "HITRAN Application Programming Interface (HAPI):
-          A comprehensive approach to working with spectroscopic data", Journal of Quantitative Spectroscopy
-          and Radiative Transfer 177 (2016) 15–30, ISSN 00224073, `doi:10.1016/j.jqsrt.2016.03.005 <https://www.researchgate.net/publication/297682202_HITRAN_Application_Programming_Interface_HAPI_A_comprehensive_approach_to_working_with_spectroscopic_data>`__.
 
 .. [RADIS-2018] E. Pannier, C. O. Laux, "RADIS: A Nonequilibrium Line-by-Line Radiative Code for CO2 and
                 HITRAN-like database species", Journal of Quantitative Spectroscopy and Radiative Transfer
@@ -54,6 +51,20 @@ The latest HITEMP database version is automatically downloaded if using ``databa
 
 .. [ExoMol-2020] Tennyson et al., The 2020 release of the ExoMol database: Molecular line lists for
                 exoplanet and other hot atmospheres, Journal of Quantitative Spectroscopy and Radiative Transfer 255,
-                (2020), 107228,  `doi:https://doi.org/10.1016/j.jqsrt.2020.107228 <https://www.sciencedirect.com/science/article/abs/pii/S002240732030491X>`__
+                (2020), 107228,  `doi:10.1016/j.jqsrt.2020.107228 <https://www.sciencedirect.com/science/article/abs/pii/S002240732030491X>`__
 
 For download and configuration of line databases, see the :ref:`Line Databases section <label_line_databases>`
+
+
+Tools Used Within RADIS
+-----------------------
+
+For data retrieval :
+
+.. [HAPI] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
+          R. Kochanov, I. Gordon, L. Rothman, P. Wcisło, C. Hill, J. Wilzewski,
+          "HITRAN Application Programming Interface (HAPI):
+          A comprehensive approach to working with spectroscopic data", Journal of Quantitative Spectroscopy
+          and Radiative Transfer 177 (2016) 15–30, ISSN 00224073, `doi:10.1016/j.jqsrt.2016.03.005 <https://www.researchgate.net/publication/297682202_HITRAN_Application_Programming_Interface_HAPI_A_comprehensive_approach_to_working_with_spectroscopic_data>`__.
+
+.. [Astroquery] astroquery: An Astronomical Web-querying Package in Python 10.3847/1538-3881/aafc33

@@ -70,6 +70,7 @@ from numpy import pi, sin, sqrt, trapz, zeros_like
 from scipy.signal import oaconvolve
 
 from radis.db.molparam import MolParams
+from radis.db.references import doi
 from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
 from radis.misc.basics import is_float
@@ -1998,6 +1999,7 @@ class BroadenFactory(BaseFactory):
 
         try:
             if optimization in ("simple", "min-RMS"):
+                self.reftracker.add(doi["DIT-2020"], "algorithm")
                 # Use DLM
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
@@ -2085,6 +2087,7 @@ class BroadenFactory(BaseFactory):
 
         try:
             if optimization in ("simple", "min-RMS"):
+                self.reftracker.add(doi["DIT-2020"], "algorithm")
                 # Use DLM
 
                 if self.misc.zero_padding < 0 or self.misc.zero_padding > len(

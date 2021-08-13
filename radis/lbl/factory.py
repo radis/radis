@@ -834,6 +834,7 @@ class SpectrumFactory(BandFactory):
             warnings=False,
             # is freshly baken so probably in a good format
             name=name,
+            references=dict(self.reftracker),
         )
 
         # update database if asked so
@@ -1133,6 +1134,7 @@ class SpectrumFactory(BandFactory):
             warnings=False,
             # is freshly baken so probably in a good format
             name=name,
+            references=dict(self.reftracker),
         )
 
         # update database if asked so
@@ -1487,6 +1489,7 @@ class SpectrumFactory(BandFactory):
             warnings=False,
             # is freshly baken so probably in a good format
             name=name,
+            references=dict(self.reftracker),
         )
 
         # update database if asked so
