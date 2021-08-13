@@ -93,7 +93,7 @@ def check_molecule_data_structure(fname, verbose=True):
                     # ... + 1 because Python index start at 0 and FORTRAN at 1 unless allocated with 0:N
                     raise ValueError(
                         "In molecule {0}, isotope {1}: index of electronic ".format(
-                            molecule, isotope, db_state["index"]
+                            molecule, isotope
                         )
                         + "state {0} ({1}): {2} does not match the list of states: {3}. ".format(
                             state,
@@ -105,6 +105,17 @@ def check_molecule_data_structure(fname, verbose=True):
 
     if verbose:
         print("Structure of {0} looks correct".format(fname))
+
+
+def parse_doi(rovib_coeffs):
+    if "#doi" in rovib_coeffs:
+        doi = rovib_coeffs["#doi"]
+    elif "#DOI" in rovib_coeffs:
+        doi = rovib_coeffs["#DOI"]
+    else:
+        doi = None
+
+    return doi
 
 
 def _get_rovib_coefficients(
@@ -209,7 +220,9 @@ def get_default_jsonfile(molecule):
     return abspath(getFile("{0}/{1}".format(molecule, name)))
 
 
-def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile="default"):
+def get_dunham_coefficients(
+    molecule, isotope, electronic_state, jsonfile="default", return_doi=False
+):
     r"""Returns Dunham coefficients ``Yij`` for ``molecule``, ``isotope``, ``electronic_state``
     by parsing a JSON file of molecule data.
 
@@ -218,19 +231,26 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile="defau
 
     Parameters
     ----------
-
     molecule: str
         molecule name
-
     isotope: int
         isotope number
-
     electronic_state: str
         electronic state name
-
     jsonfile: str, or ``default``
         path to json file. If ``default``, the default JSON file
         defined in radis/config.json is used. See :py:func:`~radis.db.utils.get_default_jsonfile`
+
+    Other Parameters
+    ----------------
+    return_doi: bool
+        if True, returns the value of key ``"#doi"`` or ``"#DOI"`` if it exists,
+        and None if it doesn't.
+
+    Returns
+    -------
+    dict: coeffs
+    str: doi, if ``return_doi``
 
     See Also
     --------
@@ -257,10 +277,15 @@ def get_dunham_coefficients(molecule, isotope, electronic_state, jsonfile="defau
             + "\n\nGot: {0}".format(rovib_coeffs.keys())
         )
 
-    return dunham_coeffs
+    if return_doi:
+        return dunham_coeffs, parse_doi(rovib_coeffs)
+    else:
+        return dunham_coeffs
 
 
-def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile="default"):
+def get_herzberg_coefficients(
+    molecule, isotope, electronic_state, jsonfile="default", return_doi=False
+):
     r"""Returns spectroscopic coefficients with Herzberg conventions for
     ``molecule``, ``isotope``, ``electronic_state``  by parsing a JSON file of molecule data.
 
@@ -275,23 +300,29 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile="def
 
     Parameters
     ----------
-
     molecule: str
         molecule name
-
     isotope: int
         isotope number
-
     electronic_state: str
         electronic state name
-
     jsonfile: str, or ``default``
         path to json file. If ``default``, the ``molecules_data`` JSON file
         in the ``radis.db`` database is used. See :py:func:`~radis.db.utils.get_default_jsonfile`
 
+    Other Parameters
+    ----------------
+    return_doi: bool
+    if True, returns the value of key ``"#doi"`` or ``"#DOI"`` if it exists,
+    and None if it doesn't.
+
+    Returns
+    -------
+    dict: coeffs
+    str: doi, if ``return_doi``
+
     See Also
     --------
-
     :py:data:`~radis.db.conventions.herzberg_coefficients`,
     :py:func:`~radis.db.utils.get_dunham_coefficients`
 
@@ -322,7 +353,10 @@ def get_herzberg_coefficients(molecule, isotope, electronic_state, jsonfile="def
             + "\n\nGot: {0}".format(rovib_coeffs.keys())
         )
 
-    return herzberg_coeffs
+    if return_doi:
+        return herzberg_coeffs, parse_doi(rovib_coeffs)
+    else:
+        return herzberg_coeffs
 
 
 def ignore_trailing_number(coef):

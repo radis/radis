@@ -2310,6 +2310,8 @@ class DatabankLoader(object):
             state = getMolecule(
                 self.input.molecule, isotope, self.input.state, verbose=self.verbose
             )
+            if state.doi is not None:
+                self.reftracker.add(state.doi, "spectroscopic constants")
             parsum = PartFunc_Dunham(
                 state,
                 use_cached=self.params.lvl_use_cached,

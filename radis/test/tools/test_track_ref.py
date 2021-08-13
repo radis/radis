@@ -55,11 +55,7 @@ def test_citations_in_eq_spectrum(verbose=True, *args, **kwargs):
     assert doi["TIPS-2020"] in s.references
 
 
-if __name__ == "__main__":
-    verbose = True
-
-    # test_reftracker()
-    # test_citations_in_eq_spectrum()
+def test_citations_in_noneq_spectrum(verbose=True, *args, **kwargs):
 
     from radis import calc_spectrum
 
@@ -76,8 +72,8 @@ if __name__ == "__main__":
         databank="hitran",  # or use 'hitemp'
     )
 
-    # if verbose:
-    #     s.cite()
+    if verbose:
+        s.cite()
 
     assert doi["RADIS-2018"] in s.references
     assert doi["DIT-2020"] in s.references
@@ -85,3 +81,11 @@ if __name__ == "__main__":
     assert doi["TIPS-2020"] in s.references
 
     assert doi["Guelachvili-1983"] in s.references
+
+
+if __name__ == "__main__":
+    verbose = True
+
+    test_reftracker()
+    test_citations_in_eq_spectrum()
+    test_citations_in_noneq_spectrum()
