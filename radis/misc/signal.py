@@ -13,12 +13,16 @@ Signal processing functions
 """
 
 
-from warnings import warn
-
-from numpy import abs, isnan, linspace, nan, trapz
+from numpy import abs, isnan, linspace, nan, trapz, zeros_like
 from scipy.interpolate import splev, splrep
 
-from radis.misc.arrays import is_sorted, is_sorted_backward
+from radis.misc.arrays import (
+    anynan,
+    first_nonnan_index,
+    is_sorted,
+    is_sorted_backward,
+    last_nonnan_index,
+)
 from radis.misc.debug import printdbg
 
 
@@ -28,7 +32,7 @@ def resample(
     xspace_new,
     k=1,
     ext="error",
-    energy_threshold=1e-3,
+    energy_threshold=5e-3,
     print_conservation=True,
 ):
     """Resample (xspace, vector) on a new space (xspace_new) of evenly
@@ -62,7 +66,7 @@ def resample(
     energy_threshold: float or ``None``
         if energy conservation (integrals on the intersecting range) is above
         this threshold, raise an error. If ``None``, dont check for energy conservation
-        Default 1e-3 (0.1%)
+        Default 5e-3 (0.5%)
     print_conservation: boolean
         if True, prints energy conservation
 
@@ -73,7 +77,6 @@ def resample(
 
     Notes
     -----
-
     Note that depending upon the from_space > to_space operation, sorting may
     be reversed.
 
@@ -119,9 +122,22 @@ def resample(
     else:
         raise ValueError("Unexpected value for `ext`: {0}".format(ext))
 
-    if isnan(vector).sum() > 0:
+    # Handle nans in vector :
+    # FITPACK will fail if there are nans in the vector being interpolated.
+    # here we trim the sides; and raise an error if there are nans in the middle
+    m = first_nonnan_index(vector)
+    M = last_nonnan_index(vector)
+    if m is None:
+        raise ValueError("Vector being resample has only nans. Check your data")
+    nanmask = False
+    if m > 0 or M < len(vector) - 1:  # else, no change has to be made
+        nanmask = zeros_like(vector, dtype=bool)
+        nanmask[m : M + 1] = True
+        xspace = xspace[nanmask]
+        vector = vector[nanmask]
+    if anynan(vector):
         raise ValueError(
-            "Resampled vector has {0} nans. Interpolation will fail".format(
+            "Vector being resample has {0} nans. Interpolation will fail".format(
                 isnan(vector).sum()
             )
         )
@@ -295,65 +311,11 @@ def resample_even(
     return xspace_new, vector_new
 
 
-# %% Test routines
-
-
-def _test(verbose=True, debug=False, plot=True, warnings=True, *args, **kwargs):
-    """Test procedures.
-
-    Parameters
-    ----------
-
-    debug: boolean
-        swamps the console namespace with local variables. Default ``False``
-    """
-
-    import matplotlib.pyplot as plt
-    from numpy import linspace, loadtxt
-
-    from radis.phys.convert import cm2nm, nm2cm
-    from radis.test.utils import getTestFile
-
-    # Test even resampling
-
-    w_nm, I_nm = loadtxt(getTestFile("spectrum.txt")).T
-    w_cm, I_cm = resample_even(
-        nm2cm(w_nm),
-        I_nm,
-        resfactor=2,
-        energy_threshold=1e-3,
-        print_conservation=verbose,
+if __name__ == "__main__":
+    from radis.test.spectrum.test_spectrum import (
+        test_resampling_function,
+        test_resampling_nan_function,
     )
 
-    if plot:
-        plt.figure()
-        plt.xlabel("Wavelength (nm)")
-        plt.ylabel("Intensity")
-        plt.plot(w_nm, I_nm, "-ok", label="original")
-        plt.plot(cm2nm(w_cm), I_cm, "-or", label="resampled")
-        plt.legend()
-
-    # Test resampling
-
-    w_crop = linspace(376, 381, 100)
-    I_crop = resample(w_nm, I_nm, w_crop, energy_threshold=0.01)
-
-    if plot:
-        plt.figure()
-        plt.xlabel("Wavelength (nm)")
-        plt.ylabel("Intensity")
-        plt.plot(w_nm, I_nm, "-ok", label="original")
-        plt.plot(w_crop, I_crop, "-or", label="resampled")
-        plt.legend()
-
-    if debug:
-        globals().update(locals())
-
-    if warnings:
-        warn("Testing resampling: no quantitative tests defined yet")
-
-    return True  # no standard tests yet
-
-
-if __name__ == "__main__":
-    _test(debug=False)
+    test_resampling_function()
+    test_resampling_nan_function()

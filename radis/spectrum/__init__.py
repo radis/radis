@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Spectrum-class module for post-processing."""
 
+from . import rescale, spectrum, utils
 from .compare import (
     get_diff,
     get_distance,

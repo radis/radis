@@ -587,7 +587,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     # Normalize
     lineshape /= integral
 
-    assert not np.isnan(lineshape).any()
+    # assert not anynan(lineshape).any()
 
     return lineshape
 

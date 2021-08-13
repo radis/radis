@@ -265,7 +265,7 @@ def _curve_interpolate(w1, I1, w2, I2, is_sorted=False, kind="linear"):
     """
 
     # First sort both
-    if not is_sorted:
+    if not is_sorted:  # TODO : add first check with `radis.misc.is_sorted(a) `
         b = np.argsort(w1)
         w1, I1 = w1[b], I1[b]
         # Get reverse sorting array:

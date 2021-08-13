@@ -60,6 +60,7 @@ from radis.db.references import doi
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import (
+    anynan,
     count_nans,
     evenly_distributed,
     first_nonnan_index,
@@ -102,19 +103,20 @@ class Spectrum(object):
 
     Parameters
     ----------
-    quantities: dict of tuples   {'quantity':(wavenum, quantity)}
+    quantities: dict of tuples   ``{'quantity':(w, a)}``  or dict  ``{'wavelength/wavenumber': w, quantity': a}``
         where quantities are spectral quantities (absorbance, radiance, etc.)
         and wavenum is in :math:`cm^{-1}` or :math:`nm` (see ``waveunit``)
-        example::
+        Example::
 
-            s = Spectrum({'radiance_noslit':(wavenum, radiance_noslit),
-                          'absorbance':(wavenum, absorbance)})
-
+            # w, k, I are numpy arrays for wavenumbers, absorption coefficient, and radiance.
+            from radis import Spectrum
+            s = Spectrum({"wavenumber":w, "abscoeff":k, "radiance_noslit":I},
+                         units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
         Or::
 
-            s = Spectrum({'wavenumber':wavenum,
-                          'radiance_noslit':radiance_noslit,
-                          'absorbance':absorbance})
+            s = Spectrum({"abscoeff":(w,k), "radiance_noslit":(w,I)},
+                         waveunit="cm-1"
+                         units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
 
         See also: :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array`
         and :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt`
@@ -742,7 +744,7 @@ class Spectrum(object):
     # ----------------
     # XXX =====================================================================
 
-    def get(self, var, wunit="default", Iunit="default", copy=True):
+    def get(self, var, wunit="default", Iunit="default", copy=True, trim_nan=False):
         """Retrieve a spectral quantity from a Spectrum object. You can select
         wavespace unit, intensity unit, or propagation medium.
 
@@ -766,9 +768,12 @@ class Spectrum(object):
 
         Other Parameters
         ----------------
-        copy: boolean
+        copy: bool
             if ``True``, returns a copy of the stored quantity (modifying it wont
             change the Spectrum object). Default ``True``.
+        trim_nan: bool
+            if ``True``, removes ``nan`` on the sides of the spectral array
+            (and corresponding wavespace). Default ``False``.
 
         Returns
         -------
@@ -829,6 +834,16 @@ class Spectrum(object):
             w = self.get_wavelength(medium="vacuum", copy=copy)
         else:
             raise ValueError(wunit)
+
+        # Trim nan if needed
+        if trim_nan:
+            m = first_nonnan_index(I)
+            M = last_nonnan_index(I)
+            if m is None:
+                raise ValueError(f"All values are nan. Check your data?")
+            if m > 0 or M < len(I) - 1:  # else, no change to be made
+                w = w[m : M + 1]
+                I = I[m : M + 1]
 
         # Convert y unit if necessary
         Iunit0 = self.units[var]
@@ -1350,11 +1365,6 @@ class Spectrum(object):
         else:
             s = self.copy()
 
-        if len(s.get_vars()) > 1:
-            raise NotImplementedError(
-                "trim() not implemented for spectra with multiple arrays. Use Spectrum.take()"
-            )
-
         trim_left = []
         trim_right = []
         for k in s.get_vars():
@@ -1369,15 +1379,9 @@ class Spectrum(object):
         m = np.max(trim_left)
         M = np.min(trim_right)
 
-        if m > 0 and M < len(s) - 1:
+        if m > 0 or M < len(s) - 1:  # else, no change to be made
             for k, v in s._q.items():
                 s._q[k] = v[m : M + 1]
-        elif m > 0:
-            for k, v in s._q.items():
-                s._q[k] = v[m:]
-        elif M < len(s) - 1:
-            for k, v in s._q.items():
-                s._q[k] = v[: M + 1]
 
         return s
 
@@ -1516,6 +1520,33 @@ class Spectrum(object):
         # P is in mW/cm2/sr/nm * nm
         return conv2(P, "mW/cm2/sr", unit)
 
+    def has_nan(self, ignore_wavespace=True) -> bool:
+        """
+
+        Parameters
+        ----------
+        s : Spectrum
+            radis Spectrum.
+
+        Returns
+        -------
+        b : bool
+            returns whether Spectrum has ``nan``
+
+        Note
+        ----
+
+        ``print(s)`` will also show which spectral quantities have ````nan.
+
+        """
+
+        for k, v in self._q.items():
+            if k == "wavespace" and ignore_wavespace:
+                continue
+            if anynan(v):
+                return True
+        return False
+
     # %% Plotting routines
 
     def get_vars(self, which=None):
@@ -1547,7 +1578,7 @@ class Spectrum(object):
 
         return self.get_vars()
 
-    def _get_items(self):
+    def _get_items(self) -> dict:
         """Return a dictionary of tuples, e.g::
 
             {'radiance':(w,I), 'transmittance_noslit':(w_ns,T)}
@@ -3006,14 +3037,13 @@ class Spectrum(object):
         w_new,
         unit="same",
         out_of_bounds="nan",
-        energy_threshold=1e-3,
+        energy_threshold=5e-3,
         print_conservation=False,
         inplace=True,
         if_conflict_drop=None,
         **kwargs,
     ):
-        """Resample spectrum over a new wavelength. Fills with transparent
-        medium when out of bound (transmittance 1, radiance 0)
+        """Resample spectrum over a new wavelength/wavenumber range.
 
         .. warning::
             This may result in information loss. Resampling is done with
@@ -3024,6 +3054,9 @@ class Spectrum(object):
         over the low-resolution spectrum, i.e. ::
 
             s_highres.resample(s_lowres)
+
+        Fills with ``'nan'`` or transparent medium (transmittance 1, radiance 0)
+        when out of bound  (see ``out_of_bounds``)
 
 
         Parameters
@@ -3043,8 +3076,8 @@ class Spectrum(object):
             but resampled in `nm` will be stored in `nm` from now on).
             If ``'nm'``, wavelength in air. If ``'nm_vac'``, wavelength in vacuum.
         out_of_bounds: ``'transparent'``, ``'nan'``, ``'error'``
-            what to do if resampling is out of bounds. 'transparent': fills with
-            transparent medium. 'nan': fill with nan. 'error': raises an error.
+            what to do if resampling is out of bounds. ``'transparent'``: fills with
+            transparent medium. 'nan': fill with nan. ``'error'``: raises an error.
             Default ``'nan'``
         medium: ``'air'``, ``'vacuum'``, or ``'default'``
             in which medium is the new waverange is calculated if it is given
@@ -3053,11 +3086,10 @@ class Spectrum(object):
 
         Other Parameters
         ----------------
-        *Inputs forwarded to :func:`radis.misc.signal.resample`*
-
-        energy_threshold: float
-            if energy conservation (integrals) is above this threshold, raise an
-            error.
+        energy_threshold: float or ``None``
+            if energy conservation (integrals on the intersecting range) is above
+            this threshold, raise an error. If ``None``, dont check for energy conservation
+            Default 5e-3 (0.5%)
         print_conservation: boolean
             if ``True``, prints energy conservation. Default ``False``.
         inplace: boolean
@@ -3155,22 +3187,15 @@ class Spectrum(object):
             if k == "wavespace":
                 continue
             fill_with = get_filling(k)
-            try:
-                Inew = resample(
-                    w,
-                    I,
-                    w_new,
-                    ext=fill_with,
-                    energy_threshold=energy_threshold,
-                    print_conservation=False,
-                    **kwargs,
-                )
-            except ValueError as err:
-                if "Interpolation will fail" in str(err):
-                    raise ValueError(
-                        "Spectrum has nan. Cannot resample. Try `s.trim()`"
-                    ) from err
-                raise
+            Inew = resample(
+                w,
+                I,
+                w_new,
+                ext=fill_with,
+                energy_threshold=energy_threshold,
+                print_conservation=False,
+                **kwargs,
+            )
 
             s._q[k] = Inew
         # update wavespace
@@ -3770,30 +3795,32 @@ class Spectrum(object):
         # Print spectral quantities
         print("Spectral Quantities")
         print("-" * 40)
-        for k, v in self._get_items().items():
+        for k, v in self._q.items():
+            if k == "wavespace":
+                continue
             # print number of points with a comma separator
             print(
                 " " * 2,
                 k,
                 "\t({0:,d} points{1})".format(
-                    len(v[0]),
-                    ", {0} nans".format(count_nans(v[1]))
-                    if count_nans(v[1]) > 0
-                    else "",
+                    len(v),
+                    ", {0} nans".format(count_nans(v)) if anynan(v) else "",
                 ),
             )
 
         # Print populations
-        print("Populations Stored")
-        print("-" * 40)
-        try:
-            for k, v in self.populations.items():
-                print(" " * 2, k, "\t\t", list(v.keys()))
-        except:
-            pass
+        if self.populations:
+            print("Populations Stored")
+            print("-" * 40)
+            try:
+                for k, v in self.populations.items():
+                    print(" " * 2, k, "\t\t", list(v.keys()))
+            except:
+                pass
 
         # Print conditions
-        self.print_conditions()
+        if self.conditions:
+            self.print_conditions()
 
         return ""  # self.print_conditions()
 

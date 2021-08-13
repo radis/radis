@@ -24,6 +24,7 @@ from warnings import warn
 import numpy as np
 from numpy import abs, allclose, arange, diff
 
+from radis.misc.arrays import anynan
 from radis.misc.basics import in_all, merge_lists
 from radis.misc.debug import printdbg
 from radis.spectrum.spectrum import Spectrum
@@ -335,12 +336,10 @@ def _check_valid(s):
         raise TypeError(
             "All inputs must be Spectrum objects (got: {0})".format(type(s))
         )
-    sdict = s._get_items()
-    for k in sdict.keys():
+    for k, v in s._q.items():
         if (
             k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
-            and np.isnan(sdict.get(k)[1]).any()
-        ):
+        ) and anynan(v):
             warn(
                 "Nans detected in Spectrum object for multi-slab operation. "
                 + "Results may be wrong!"
@@ -454,7 +453,6 @@ def resample_slabs(
                     s.resample(
                         wnew,
                         unit=waveunit,
-                        if_conflict_drop="convoluted",
                         out_of_bounds=out_of_bounds,
                         inplace=True,  # we already copied 'if not modify_inputs'
                     )
@@ -473,7 +471,6 @@ def resample_slabs(
                     s.resample(
                         wnew,
                         unit=waveunit,
-                        if_conflict_drop="convoluted",
                         out_of_bounds=out_of_bounds,
                         inplace=True,  # we already copied 'if not modify_inputs'
                     )

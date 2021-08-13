@@ -50,7 +50,7 @@ from numpy import sqrt, trapz
 from scipy.interpolate import splev, splrep
 from scipy.signal import oaconvolve
 
-from radis.misc.arrays import evenly_distributed
+from radis.misc.arrays import anynan, evenly_distributed
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample_even
@@ -640,7 +640,7 @@ def convolve_with_slit(
     # -------------
 
     # Check no nan
-    if np.isnan(I_slit).sum() > 0:
+    if anynan(I_slit):
         raise ValueError("Slit has nan value")
 
     # check slit is positive
@@ -1076,7 +1076,7 @@ def plot_slit(
     if isinstance(w, str) and I is None:
         w, I = np.loadtxt(w).T
     assert len(w) == len(I)
-    if np.isnan(I).sum() > 0:
+    if anynan(I):
         warn("Slit function has nans")
         w = w[~np.isnan(I)]
         I = I[~np.isnan(I)]

@@ -149,10 +149,22 @@ def test_trimming(verbose=True, *args, **kwargs):
 
     from radis.misc.arrays import count_nans
 
+    # trim both sides
     w = np.linspace(300, 600)
     T = np.ones_like(w)
     T[:15] = np.nan
     T[-10:] = np.nan
+    s = Spectrum.from_array(w, T, "transmittance_noslit", waveunit="nm", unit="")
+
+    Nnans = count_nans(T)
+    assert len(s) == 50  # before trimming
+    s.trim()
+    assert len(s) == 50 - Nnans
+
+    # trim one side
+    w = np.linspace(300, 600)
+    T = np.ones_like(w)
+    T[:15] = np.nan
     s = Spectrum.from_array(w, T, "transmittance_noslit", waveunit="nm", unit="")
 
     Nnans = count_nans(T)
@@ -570,20 +582,39 @@ def _run_testcases(
 if __name__ == "__main__":
     # print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
 
+    from radis import get_residual
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
 
-    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    plot = True
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True).crop(
+        2170, 2180, "cm-1"
+    )
     s.rescale_path_length(10)  # cm
     s.name = "original"
 
     # We want to resample on a small range:
-    w_exp = s.get_wavenumber()[300:-300][::10]
+    w_exp = s.get_wavenumber()[700:-700][::5]
+    # ... add a shift:
+    w_exp += np.diff(s.get_wavenumber())[0] * 2 / 3
 
     s.update("transmittance_noslit")
     s.apply_slit(3, "nm")
-    s2 = s.apply_slit(3, "nm", inplace=False)
-    s.plot("transmittance")
-    s.plot("transmittance_noslit", nfig="same")
 
-    s2.resample(w_exp)
+    # if plot:
+    #     s.plot("transmittance", ls="-", marker="o")
+
+    assert s.has_nan()
+
+    # s2.resample(w_exp)
+    s2 = s.resample(w_exp, inplace=False)
+    s2.name = "resampled"
+
+    get_residual(s, s2, "transmittance")
+    get_residual(s2, s, "transmittance")
+
+    if plot:
+        from radis import plot_diff
+
+        plot_diff(s, s2, show_points=True)

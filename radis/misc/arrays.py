@@ -275,6 +275,16 @@ def evenly_distributed(w, tolerance=1e-5):
     return (np.abs((np.diff(w) - mean_step)) > tolerance).sum() == 0
 
 
+def anynan(a):
+    """Returns whether ``a`` has at least one :py:attr:`~numpy.nan`
+
+    Fastest implementation for arrays with >10^4 elements
+    https://stackoverflow.com/a/45011547/5622825
+    """
+    return np.isnan(np.dot(a, a))
+
+
+@numba.njit
 def first_nonnan_index(a):
     """Returns index of first non-nan value in ``a``
 
@@ -291,6 +301,7 @@ def first_nonnan_index(a):
     return None
 
 
+@numba.njit
 def last_nonnan_index(a):
     """Returns index of first non-nan value in ``a``
 

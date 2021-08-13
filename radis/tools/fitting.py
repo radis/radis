@@ -362,7 +362,7 @@ def fit_spectrum(
 
             figSpec.canvas.flush_events()
 
-        s.trim().resample(s_exp, energy_threshold=2e-2)
+        s.resample(s_exp, energy_threshold=2e-2)
 
         return get_residual(s, s_exp, fit_variable, ignore_nan=True, norm="L2")
 
