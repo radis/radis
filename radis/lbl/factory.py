@@ -1589,75 +1589,80 @@ class SpectrumFactory(BandFactory):
         return
 
     def predict_time(self):
+        def _is_at_equilibrium():
+            try:
+                assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
+                assert self.input.Trot is None or self.input.Trot == self.input.Tgas
+                assert self.input.overpopulation is None
+                try:
+                    if self.input.self_absorption:
+                        assert self.input.self_absorption  # == True
+                except KeyError:
+                    pass
+                return True
+            except AssertionError:
+                return False
+
+        if _is_at_equilibrium() or self.params.optimization is None:
+            factor = 1
+        else:
+            factor = 2  #  _apply_broadening_DLM() is called twice
+
         wstep = self.params.wstep
-        broadening_max_width = self.params.broadening_max_width
         n_lines = self.misc.total_lines
+        broadening_max_width = self.params.broadening_max_width
         spectral_points = (
             self.params.wavenum_max_calc - self.params.wavenum_min_calc
         ) / self.params.wstep
 
-        df = self.df0.copy()
+        optimization = self.params.optimization
+        broadening_method = self.params.broadening_method
 
-        from radis.lbl.broadening import get_molar_mass, voigt_broadening_HWHM
-
-        # Defining parameters
-        Tgas = 300
-        pressure_mbar = self.input.pressure_mbar
-        mole_fraction = self.input.mole_fraction
-        # convert from mbar to atm for linebroadening calculation
-        pressure_atm = pressure_mbar / 1013.25
-        # coefficients tabulation temperature
-        Tref = self.input.Tref
-        # Check self broadening is here
-        if not "Tdpsel" in list(df.keys()):
-            Tdpsel = None  # if None, voigt_broadening_HWHM uses df.Tdpair
+        if optimization in ("simple", "min-RMS"):
+            wL = self.wL
+            wG = self.wG
+            if broadening_method == "voigt":
+                estimated_time = (
+                    2.096e-07 * n_lines
+                    + 7.185e-09
+                    * (1 + wL * wG)
+                    * spectral_points
+                    * np.log(spectral_points)
+                    * factor
+                )
+            elif broadening_method == "fft":
+                estimated_time = (
+                    4.675e-08
+                    * (1 + wL * wG)
+                    * spectral_points
+                    * np.log(spectral_points)
+                    * factor
+                )
+            elif broadening_method == "convolve":  # Not benchmarked
+                estimated_time = (
+                    self._broadening_time_ruleofthumb
+                    * len(self.df0)
+                    * len(self.wbroad_centered)
+                )
+            else:
+                raise NotImplementedError("broadening_method not implemented")
+        elif optimization is None:
+            if broadening_method == "voigt":
+                estimated_time = (
+                    6.6487e-08 * n_lines * broadening_max_width / wstep * factor
+                )
+            elif broadening_method == "convolve":  # Not benchmarked
+                estimated_time = (
+                    self._broadening_time_ruleofthumb
+                    * len(self.df0)
+                    * len(self.wbroad_centered)
+                )
+            else:
+                raise NotImplementedError("broadening_method not implemented")
         else:
-            Tdpsel = df.Tdpsel
+            raise NotImplementedError("optimization not implemented")
 
-        molar_mass = get_molar_mass(df)
-
-        # Calculate broadening FWHM
-        _, wl, wg = voigt_broadening_HWHM(
-            df.airbrd,
-            df.selbrd,
-            df.Tdpair,
-            Tdpsel,
-            df.wav,
-            molar_mass,
-            pressure_atm,
-            mole_fraction,
-            Tgas,
-            Tref,
-        )
-
-        def _init_w_axis(w_dat, log_p):
-            w_min = w_dat.min()
-            w_max = (
-                w_dat.max() + 1e-4
-            )  # Add small number to prevent w_max falling outside of the grid
-            N = np.ceil((np.log(w_max) - np.log(w_min)) / log_p) + 1
-            return w_min * np.exp(log_p * np.arange(N))
-
-        log_pL = self.params.dlm_log_pL  # DLM user params
-        log_pG = self.params.dlm_log_pG  # DLM user params
-
-        wL_dat = wl.values * 2  # FWHM
-        wG_dat = wg.values * 2  # FWHM
-
-        wL = _init_w_axis(wL_dat, log_pL)  # FWHM
-        wL = len(wL)
-        wG = _init_w_axis(wG_dat, log_pG)  # FWHM
-        wG = len(wG)
-
-        lbl_voigt_time = 6.6487e-08 * n_lines * broadening_max_width / wstep
-        dit_fft_time = (
-            4.675e-08 * (1 + wL * wG) * spectral_points * np.log(spectral_points)
-        )
-        dit_voigt_time = 2.096e-07 * n_lines + 7.185e-09 * (
-            1 + wL * wG
-        ) * spectral_points * np.log(spectral_points)
-
-        return [lbl_voigt_time, dit_fft_time, dit_voigt_time]
+        return estimated_time
 
     def _get_log_2gs(self):
         """Returns log_2gs if it already exists in the dataframe, otherwise

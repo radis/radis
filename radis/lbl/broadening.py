@@ -1295,6 +1295,15 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.start(key="init_vectors", verbose_level=3)
 
+        # printing estimated time
+        if self.verbose >= 2:
+            estimated_time = self.predict_time()
+            print(
+                "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                    estimated_time
+                )
+            )
+
         # Init variables
         if self.input.Tgas is None:
             raise AttributeError(
@@ -1422,6 +1431,15 @@ class BroadenFactory(BaseFactory):
         self.wL = len(wL)
         wG = _init_w_axis(wG_dat, log_pG)  # FWHM
         self.wG = len(wG)
+
+        # printing estimated time
+        if self.verbose >= 2:
+            estimated_time = self.predict_time()
+            print(
+                "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                    estimated_time
+                )
+            )
 
         # Calculate the Lineshape
         # -----------------------
@@ -2224,9 +2242,8 @@ class BroadenFactory(BaseFactory):
         self.profiler.start(
             "calc_line_broadening",
             2,
-            "... Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
+            "... Calculating line broadening ({0} lines)".format(
                 len(df),
-                self._broadening_time_ruleofthumb * len(df) * len(self.wbroad_centered),
             ),
         )
 
@@ -2275,9 +2292,8 @@ class BroadenFactory(BaseFactory):
         self.profiler.start(
             "calc_line_broadening",
             2,
-            "... Calculating line broadening ({0} lines: expect ~ {1:.2f}s on 1 CPU)".format(
+            "... Calculating line broadening ({0} lines)".format(
                 len(df),
-                self._broadening_time_ruleofthumb * len(df) * len(self.wbroad_centered),
             ),
         )
 
