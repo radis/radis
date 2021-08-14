@@ -19,6 +19,7 @@ s = calc_spectrum(
     Tgas=1000,  # K
     mole_fraction=0.1,
     path_length=1,  # cm
+    broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
     databank="exomol",  # uses the recommended database. Use ('exomol', "EBJT") for a specific database ("EBJT")
 )
 s.apply_slit(1, "cm-1")  # simulate an experimental slit

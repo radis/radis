@@ -116,6 +116,8 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         medium="vacuum",
         verbose=verbose,
         optimization="simple",
+        broadening_method="fft",
+        broadening_max_width=10,
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -272,6 +274,8 @@ def test_calc_spectrum_overpopulations(
         medium="vacuum",
         verbose=verbose,
         optimization="simple",
+        broadening_method="fft",  # For this particular test case
+        broadening_max_width=10,  # For this particular test case
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",

@@ -367,14 +367,14 @@ class SpectrumFactory(BandFactory):
         molecule=None,
         isotope="all",
         medium="air",
-        broadening_max_width=10,
+        broadening_max_width=Default(300),
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
         optimization="simple",
         folding_thresh=1e-6,
         zero_padding=-1,
-        broadening_method=Default("fft"),
+        broadening_method=Default("voigt"),
         cutoff=0,
         parsum_mode="full summation",
         verbose=True,
@@ -438,9 +438,6 @@ class SpectrumFactory(BandFactory):
             medium,
         )
 
-        # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
-        self._broadening_max_width = broadening_max_width
-
         # Storing inital value of wstep if wstep != "auto"
         self.wstep = wstep
 
@@ -501,23 +498,17 @@ class SpectrumFactory(BandFactory):
         # Time Based variables
         self.verbose = verbose
 
-        self.params.broadening_max_width = broadening_max_width  # line broadening
-        self.misc.export_lines = export_lines
-        self.misc.export_populations = export_populations
-        self.params.wavenum_min_calc = wavenum_min - broadening_max_width / 2
-        self.params.wavenum_max_calc = wavenum_max + broadening_max_width / 2
-
         # if optimization is ``'simple'`` or ``'min-RMS'``, or None :
         # Adjust default values of broadening method :
         if isinstance(broadening_method, Default):
-            if optimization in ("simple", "min-RMS") and broadening_method != "fft":
+            if optimization in ("simple", "min-RMS") and broadening_method != "voigt":
                 if self.verbose >= 3:
                     printg(
-                        "LDM algorithm used. Defaulting broadening method from {0} to FFT".format(
+                        "LDM algorithm used. Defaulting broadening method from {0} to Voigt".format(
                             broadening_method
                         )
                     )
-                broadening_method = "fft"
+                broadening_method = "voigt"
             elif optimization is None and broadening_method != "voigt":
                 if self.verbose >= 3:
                     printg(
@@ -528,6 +519,28 @@ class SpectrumFactory(BandFactory):
                 broadening_method = "voigt"
             else:  # keep default
                 broadening_method = broadening_method.value
+
+        if isinstance(broadening_max_width, Default):
+            if optimization is None:
+                if self.verbose >= 3:
+                    printg(
+                        "LDM algorithm not used. Defaulting broadening_max_width from {0} to 10".format(
+                            broadening_max_width
+                        )
+                    )
+                broadening_max_width = 10
+            else:  # keep default
+                broadening_max_width = broadening_max_width.value
+
+        # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
+        self._broadening_max_width = broadening_max_width
+
+        self.params.broadening_max_width = broadening_max_width  # line broadening
+        self.misc.export_lines = export_lines
+        self.misc.export_populations = export_populations
+        self.params.wavenum_min_calc = wavenum_min - broadening_max_width / 2
+        self.params.wavenum_max_calc = wavenum_max + broadening_max_width / 2
+
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
         self.params.folding_thresh = folding_thresh
@@ -1636,15 +1649,15 @@ class SpectrumFactory(BandFactory):
         wG = _init_w_axis(wG_dat, log_pG)  # FWHM
         wG = len(wG)
 
-        legacy_time = 6.6487e-08 * n_lines * broadening_max_width / wstep
-        ldm_fft_time = (
+        lbl_voigt_time = 6.6487e-08 * n_lines * broadening_max_width / wstep
+        dit_fft_time = (
             4.675e-08 * (1 + wL * wG) * spectral_points * np.log(spectral_points)
         )
-        ldm_voigt_time = 2.096e-07 * n_lines + 7.185e-09 * (
+        dit_voigt_time = 2.096e-07 * n_lines + 7.185e-09 * (
             1 + wL * wG
         ) * spectral_points * np.log(spectral_points)
 
-        return [legacy_time, ldm_fft_time, ldm_voigt_time]
+        return [lbl_voigt_time, dit_fft_time, dit_voigt_time]
 
     def _get_log_2gs(self):
         """Returns log_2gs if it already exists in the dataframe, otherwise

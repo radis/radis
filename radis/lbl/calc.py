@@ -45,11 +45,11 @@ def calc_spectrum(
     databank="hitran",
     medium="air",
     wstep=0.01,
-    broadening_max_width=10,
+    broadening_max_width=Default(300),
     cutoff=1e-27,
     parsum_mode="full summation",
     optimization="min-RMS",
-    broadening_method=Default("fft"),
+    broadening_method=Default("voigt"),
     overpopulation=None,
     name=None,
     save_to="",
@@ -419,15 +419,6 @@ def calc_spectrum(
         else:  # argument_dict keys are the molecules:
             for mol in molecule_reference_set:
                 molecule_dict[mol][argument_name] = argument_dict[mol]
-
-    # Checking if `auto` mode
-    if optimization == "auto":
-        optimization = "min-RMS"
-        broadening_max_width = 300
-        if (wavenum_max - wavenum_min) < 300:
-            broadening_method = "fft"
-        else:
-            broadening_method = "voigt"
 
     # Stage 3: Now let's calculate all the spectra
     s_list = []
