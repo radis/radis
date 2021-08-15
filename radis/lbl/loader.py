@@ -59,6 +59,7 @@ import pandas as pd
 
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
+from radis.db.molparam import MolParams
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
@@ -69,7 +70,7 @@ from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.levels.partfunc import (
     PartFunc_Dunham,
-    PartFuncHAPI,
+    PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
 )
@@ -657,6 +658,12 @@ class DatabankLoader(object):
 
         self._autoretrieveignoreconditions = []  # HACK. See _retrieve_from_database
 
+        # Molecular parameters
+        self.molparam = MolParams()
+        """MolParam: contains information about molar mass; isotopic abundance.
+
+        See :py:class:`~radis.db.molparam.MolParams`"""
+
     def _reset_profiler(self, verbose):
         """Reset :py:class:`~radis.misc.profiler.Profiler`
 
@@ -908,8 +915,10 @@ class DatabankLoader(object):
         if exomol_database != None:
             assert source == "exomol"
         if [parfuncfmt, source].count("exomol") == 1:
-            raise NotImplementedError(
-                "ExoMol partition functions must be used with ExoMol database - and vice-versa"
+            self.warn(
+                f"Using lines from {source} but partition functions from {parfuncfmt}"
+                + "for consistency we recommend using lines and partition functions from the same database",
+                "AccuracyWarning",
             )
 
         # Get inputs
@@ -2179,7 +2188,7 @@ class DatabankLoader(object):
             # Use TIPS-2017 through HAPI (HITRAN Python interface, integrated in RADIS)
             # no tabulated partition functions defined. Only non-eq spectra can
             # be calculated if energies are also given
-            parsum = PartFuncHAPI(
+            parsum = PartFuncTIPS(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
@@ -2267,6 +2276,103 @@ class DatabankLoader(object):
             # other formats ?
 
         return parsum
+
+    def get_abundance(self, molecule, isotope):
+        """Get isotopic abundance
+
+        Parameters
+        ----------
+        molecule: str
+        isotope: int, or list
+            isotope number, sorted in terrestrial abundance
+
+        Examples
+        --------
+        Use it from SpectrumFactory::
+
+            sf.get_abundance("H2O", 1)
+            sf.get_abundance("CH4", [1,2,3])
+
+        .. minigallery:: radis.lbl.loader.DatabankLoader.get_abundance
+            :add-heading:
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.loader.DatabankLoader.set_abundance`
+        """
+
+        if isinstance(molecule, str):
+            from radis.db.classes import get_molecule_identifier
+
+            molecule = get_molecule_identifier(molecule)
+
+        if isinstance(isotope, int):
+            return self.molparam.df.loc[(molecule, isotope)].abundance
+        elif isinstance(isotope, list):
+            return np.array(
+                [self.molparam.df.loc[(molecule, iso)].abundance for iso in isotope]
+            )
+        else:
+            raise ValueError(isotope)
+
+    def set_abundance(self, molecule, isotope, abundance):
+        """Set isotopic abundance
+
+        Parameters
+        ----------
+        molecule: str
+        isotope: int, or list
+            isotope number, sorted in terrestrial abundance
+        abundance: float, or list
+
+        Examples
+        --------
+
+            from radis import SpectrumFactory
+
+            sf = SpectrumFactory(
+                2284.2,
+                2284.6,
+                wstep=0.001,  # cm-1
+                pressure=20 * 1e-3,  # bar
+                mole_fraction=400e-6,
+                molecule="CO2",
+                isotope="1,2",
+                verbose=False
+            )
+            sf.load_databank("HITEMP-CO2-TEST")
+            print("Abundance of CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
+            sf.eq_spectrum(2000).plot("abscoeff")
+
+            #%% Set the abundance of CO2(626) to 0.8; and the abundance of CO2(636) to 0.2 (arbitrary):
+            sf.set_abundance("CO2", [1, 2], [0.8, 0.2])
+            print("New abundance of CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
+
+            sf.eq_spectrum(2000).plot("abscoeff", nfig="same")
+
+        .. minigallery:: radis.lbl.loader.DatabankLoader.set_abundance
+            :add-heading
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.loader.DatabankLoader.get_abundance`
+
+        """
+
+        if isinstance(molecule, str):
+            from radis.db.classes import get_molecule_identifier
+
+            molecule = get_molecule_identifier(molecule)
+
+        self.molparam.terrestrial_abundances = False
+
+        if isinstance(isotope, int):
+            self.molparam.df.loc[(molecule, isotope), "abundance"] = abundance
+        elif isinstance(isotope, list):
+            assert len(isotope) == len(abundance)
+            self.molparam.df.loc[(molecule, isotope), "abundance"] = abundance
+        else:
+            raise ValueError(isotope)
 
     def get_partition_function_interpolator(self, molecule, isotope, elec_state):
         """Retrieve Partition Function Interpolator.

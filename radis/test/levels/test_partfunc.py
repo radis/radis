@@ -29,7 +29,7 @@ from numpy import exp
 
 from radis import SpectrumFactory
 from radis.db.molecules import Molecules
-from radis.levels.partfunc import PartFunc_Dunham, PartFuncHAPI
+from radis.levels.partfunc import PartFunc_Dunham, PartFuncTIPS
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.printer import printm
 from radis.misc.warning import DeprecatedFileWarning
@@ -222,7 +222,7 @@ def test_calculatedQ_match_HAPI_CO(
 
     #    if plot: db.plot_states()
 
-    hapi = PartFuncHAPI(M=5, I=1)  # CO  # isotope
+    hapi = PartFuncTIPS(M=5, I=1)  # CO  # isotope
 
     us = []
     hap = []
@@ -288,7 +288,7 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 
         from radis.db.classes import get_molecule_identifier
 
-        hapi = PartFuncHAPI(M=get_molecule_identifier(molecule), I=iso)
+        hapi = PartFuncTIPS(M=get_molecule_identifier(molecule), I=iso)
 
         Q_radis = db.at(T)
         Q_hapi = hapi.at(T)

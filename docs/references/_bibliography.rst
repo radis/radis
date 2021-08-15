@@ -19,7 +19,8 @@ List of bibliographic references used in this project:
 
 .. [Spectral-Synthesis-Algorithm] D.C.M. van den Bekerom, E. Pannier,
                 "A Discrete Integral Transform for Rapid Spectral Synthesis",
-                Journal of Quantitative Spectroscopy and Radiative Transfer (2021) `doi:10.1016/j.jqsrt.2020.107476 <https://www.sciencedirect.com/science/article/abs/pii/S0022407320310049>`__
+                Journal of Quantitative Spectroscopy and Radiative Transfer (2021)
+                `doi:10.1016/j.jqsrt.2020.107476 <https://www.sciencedirect.com/science/article/abs/pii/S0022407320310049>`__
 
 .. [Rothman-1998] L.S. Rothman, C.P. Rinsland, A. Goldman, S.T. Massie D.P. Edwards, J-M. Flaud,
                  A. Perrin, C. Camy-Peyret, V. Dana, J.-Y. Mandin, J. Schroeder, A. McCann,
@@ -28,6 +29,11 @@ List of bibliographic references used in this project:
                  and Hawks (Hitran Atmospheric Workstation): 1996 Edition",
                  Journal of Quantitative Spectroscopy and Radiative Transfer 60 (1998)
                  665 - 710, `doi:10.1016/S0022-4073(98)00078-8 <https://www.sciencedirect.com/science/article/abs/pii/S0022407398000788?via%3Dihub>`__
+
+.. [TIPS-2020] R.R Gamache, B. Vispoel, M. Rey, A. Nikitin, V. Tyuterev, O. Egorov, I.E Gordon, V. Boudon,
+                "Total internal partition sums for the HITRAN2020 database",
+                Journal of Quantitative Spectroscopy and Radiative Transfer 271 (2021)
+                `doi:10.1016/j.jqsrt.2021.107713 <https://www.sciencedirect.com/science/article/abs/pii/S0022407321002065?via%3Dihub>`__
 
 Line Databases
 --------------
