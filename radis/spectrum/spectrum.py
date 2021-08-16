@@ -56,6 +56,8 @@ import astropy.units as u
 import numpy as np
 from numpy import abs, diff
 
+from radis.db.references import doi
+
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import count_nans, evenly_distributed, nantrapz
 from radis.misc.debug import printdbg
@@ -74,6 +76,7 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
+from radis.tools.track_ref import RefTracker
 
 # %% Spectrum class to hold results )
 
@@ -108,6 +111,21 @@ class Spectrum(object):
         physical conditions and calculation parameters
     cond_units: dict
         units for conditions
+    wavespace: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
+        wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
+        Quantities should be evenly distributed along this space for fast
+        convolution with the slit function
+        If ``None``, ``'wavespace'`` must be defined in ``conditions``.
+        (non-uniform slit function is not implemented anyway... )
+        Defaults None (but raises an error if wavespace is not defined in
+        conditions neither)
+
+
+    Other Parameters
+    ----------------
+    name: str, or None
+        Give a name to this Spectrum object (automatically used in plots; useful for multislab
+        configurations). Default ``None``
     populations: dict
         a dictionary of all species, and levels. Should be compatible with other
         radiative codes such as Specair output. Suggested format:
@@ -124,21 +142,75 @@ class Spectrum(object):
         added by the calculation (e.g: `Ei` and `S` for emission integral and
         linestrength in SpectrumFactory). Refer to the code to know what they mean
         (and their units)
-    wavespace: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
-        wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
-        Quantities should be evenly distributed along this space for fast
-        convolution with the slit function
-        If ``None``, ``'wavespace'`` must be defined in ``conditions``.
-        (non-uniform slit function is not implemented anyway... )
-        Defaults None (but raises an error if wavespace is not defined in
-        conditions neither)
+    references: dict
+        a dict of ``doi`` of references used to compute this object. Automatically
+        returned with the full bibtex entry by :py:meth:`~radis.spectrum.spectrum.Spectrum.cite()`
+        It can also be set a posteriori. Example ::
 
+            s = Spectrum()
+            s.references = {"10.1016/j.jqsrt.2010.05.001": "HITEMP-2010 database",
+                          "10.1016/j.jqsrt.2018.09.027":["calculation", "post-processing"],  # RADIS main paper. Automatically added
+                          "10.1016/j.jqsrt.2020.107476":"DIT algorithm"}
+                          )
+            s.cite()
 
-    Other Parameters
-    ----------------
-    name: str, or None
-        Give a name to this Spectrum object (helps debugging in multislab
-        configurations). Default ``None``
+        .. raw:: html
+
+            <details>
+            <summary><a>Returns :</a></summary>
+
+        .. code-block:: python
+
+            Used for DIT algorithm
+            ----------------------
+            @article{van_den_Bekerom_2021,
+                doi = {10.1016/j.jqsrt.2020.107476},
+                url = {https://doi.org/10.1016%2Fj.jqsrt.2020.107476},
+                year = 2021,
+                month = {mar},
+                publisher = {Elsevier {BV}},
+                volume = {261},
+                pages = {107476},
+                author = {D.C.M. van den Bekerom and E. Pannier},
+                title = {A discrete integral transform for rapid spectral synthesis},
+                journal = {Journal of Quantitative Spectroscopy and Radiative Transfer}
+            }
+
+            Used for HITEMP-2010 database
+            -----------------------------
+            @article{Rothman_2010,
+                doi = {10.1016/j.jqsrt.2010.05.001},
+                url = {https://doi.org/10.1016%2Fj.jqsrt.2010.05.001},
+                year = 2010,
+                month = {oct},
+                publisher = {Elsevier {BV}},
+                volume = {111},
+                number = {15},
+                pages = {2139--2150},
+                author = {L.S. Rothman and I.E. Gordon and R.J. Barber and H. Dothe and R.R. Gamache and A. Goldman and V.I. Perevalov and S.A. Tashkun and J. Tennyson},
+                title = {{HITEMP}, the high-temperature molecular spectroscopic database},
+                journal = {Journal of Quantitative Spectroscopy and Radiative Transfer}
+            }
+
+            Used for calculation, post-processing
+            -------------------------------------
+            @article{Pannier_2019,
+                doi = {10.1016/j.jqsrt.2018.09.027},
+                url = {https://doi.org/10.1016%2Fj.jqsrt.2018.09.027},
+                year = 2019,
+                month = {jan},
+                publisher = {Elsevier {BV}},
+                volume = {222-223},
+                pages = {12--25},
+                author = {Erwan Pannier and Christophe O. Laux},
+                title = {{RADIS}: A nonequilibrium line-by-line radiative code for {CO}2 and {HITRAN}-like database species},
+                journal = {Journal of Quantitative Spectroscopy and Radiative Transfer}
+            }
+
+        .. raw:: html
+
+        </details>
+
     warnings: boolean
         if ``True``, test if inputs are valid, e.g, spectra are evenly distributed in
         wavelength, and raise a warning if not. Note that this take ~ 3.5 ms for
@@ -235,6 +307,7 @@ class Spectrum(object):
         "conditions",
         "cond_units",
         "populations",
+        "references",  # doi entries
         "lines",
         "name",
         "_slit",
@@ -251,6 +324,7 @@ class Spectrum(object):
         lines=None,
         waveunit=None,
         name=None,
+        references={},
         warnings=True,
     ):
         # TODO: make it possible to give quantities={'wavespace':w, 'radiance':I,
@@ -268,6 +342,8 @@ class Spectrum(object):
             cond_units = {}
         if populations is None:
             populations = {}
+        if references is None:
+            references = {}
         self._init_annotations()  # typing hints for get() and plot()
 
         # Deal with deprecated inputs
@@ -338,6 +414,13 @@ class Spectrum(object):
         self.cond_units = cond_units
         self.name = name
         self.file = None  # used to store filename when loaded from a file
+
+        # Add references
+        self.references = RefTracker(**references)
+        if not doi["RADIS-2018"] in self.references:
+            self.references.add(
+                doi["RADIS-2018"], "post-processing"
+            )  # Radis main paper (TODO: replace with Community paper when published )
 
     # %% Constructors
 
@@ -3217,6 +3300,8 @@ class Spectrum(object):
         except AttributeError:
             populations = None
 
+        references = self.references.copy()
+
         waveunit = self.get_waveunit()  # 163 ns
         name = self.name
 
@@ -3229,6 +3314,7 @@ class Spectrum(object):
             lines=lines,
             units=units,
             waveunit=waveunit,
+            references=references,
             name=name,
             warnings=False,  # saves about 3.5 ms on the Performance test object
         )
@@ -3340,6 +3426,168 @@ class Spectrum(object):
             normalize=normalize,
             **kwargs
         )
+
+    def cite(self, format="bibentry"):
+        """Prints bibliographic references used to compute this spectrum, as
+        stored in the :py:attr:`~radis.spectrum.spectrum.Spectrum.references`
+        dictionary.
+
+        Parameters
+        ----------
+        format: default ``'bibentry'``. See more in :py:func:`habanero.content_negotiation`
+
+        Examples
+        --------
+        ::
+
+            from radis import calc_spectrum
+            s = calc_spectrum(
+                1900,
+                2300,  # cm-1
+                molecule="CO",
+                isotope="1,2,3",
+                pressure=1.01325,  # bar
+                Tvib=2000,  #
+                Trot=300,
+                mole_fraction=0.1,
+                path_length=1,  # cm
+                databank="hitran",
+            )
+            s.cite()
+
+
+        .. raw:: html
+
+            <details>
+            <summary><a>Returns :</a></summary>
+
+        .. code-block:: python
+
+            Used for algorithm
+            ------------------
+            @article{van_den_Bekerom_2021,
+                doi = {10.1016/j.jqsrt.2020.107476},
+                url = {https://doi.org/10.1016%2Fj.jqsrt.2020.107476},
+                year = 2021,
+                month = {mar},
+                publisher = {Elsevier {BV}},
+                volume = {261},
+                pages = {107476},
+                author = {D.C.M. van den Bekerom and E. Pannier},
+                title = {A discrete integral transform for rapid spectral synthesis},
+                journal = {Journal of Quantitative Spectroscopy and Radiative Transfer}
+            }
+
+            Used for calculation, rovibrational energies
+            --------------------------------------------
+            @article{Pannier_2019,
+                doi = {10.1016/j.jqsrt.2018.09.027},
+                url = {https://doi.org/10.1016%2Fj.jqsrt.2018.09.027},
+                year = 2019,
+                month = {jan},
+                publisher = {Elsevier {BV}},
+                volume = {222-223},
+                pages = {12--25},
+                author = {Erwan Pannier and Christophe O. Laux},
+                title = {{RADIS}: A nonequilibrium line-by-line radiative code for {CO}2 and {HITRAN}-like database species},
+                journal = {Journal of Quantitative Spectroscopy and Radiative Transfer}
+            }
+
+            Used for data retrieval
+            -----------------------
+            @article{Ginsburg_2019,
+                doi = {10.3847/1538-3881/aafc33},
+                url = {https://doi.org/10.3847%2F1538-3881%2Faafc33},
+                year = 2019,
+                month = {feb},
+                publisher = {American Astronomical Society},
+                volume = {157},
+                number = {3},
+                pages = {98},
+                author = {Adam Ginsburg and Brigitta M. Sip{\H{o}}cz and C. E. Brasseur and Philip S. Cowperthwaite and Matthew W. Craig and Christoph Deil and James Guillochon and Giannina Guzman and Simon Liedtke and Pey Lian Lim and Kelly E. Lockhart and Michael Mommert and Brett M. Morris and Henrik Norman and Madhura Parikh and Magnus V. Persson and Thomas P. Robitaille and Juan-Carlos Segovia and Leo P. Singer and Erik J. Tollerud and Miguel de Val-Borro and Ivan Valtchanov and Julien Woillez and},
+                title = {astroquery: An Astronomical Web-querying Package in Python},
+                journal = {The Astronomical Journal}
+            }
+
+            Used for line database
+            ----------------------
+            @article{Gordon_2017,
+                doi = {10.1016/j.jqsrt.2017.06.038},
+                url = {https://doi.org/10.1016%2Fj.jqsrt.2017.06.038},
+                year = 2017,
+                month = {dec},
+                publisher = {Elsevier {BV}},
+                volume = {203},
+                pages = {3--69},
+                author = {I.E. Gordon and L.S. Rothman and C. Hill and R.V. Kochanov and Y. Tan and P.F. Bernath and M. Birk and V. Boudon and A. Campargue and K.V. Chance and B.J. Drouin and J.-M. Flaud and R.R. Gamache and J.T. Hodges and D. Jacquemart and V.I. Perevalov and A. Perrin and K.P. Shine and M.-A.H. Smith and J. Tennyson and G.C. Toon and H. Tran and V.G. Tyuterev and A. Barbe and A.G. Cs{\'{a}}sz{\'{a}}r and V.M. Devi and T. Furtenbacher and J.J. Harrison and J.-M. Hartmann and A. Jolly and T.J. Johnson and T. Karman and I. Kleiner and A.A. Kyuberis and J. Loos and O.M. Lyulin and S.T. Massie and S.N. Mikhailenko and N. Moazzen-Ahmadi and H.S.P. Müller and O.V. Naumenko and A.V. Nikitin and O.L. Polyansky and M. Rey and M. Rotger and S.W. Sharpe and K. Sung and E. Starikova and S.A. Tashkun and J. Vander Auwera and G. Wagner and J. Wilzewski and P. Wcis{\l}o and S. Yu and E.J. Zak},
+                title = {The {HITRAN}2016 molecular spectroscopic database},
+                journal = {Journal of Quantitative Spectroscopy and Radiative Transfer}
+            }
+
+            Used for partition function
+            ---------------------------
+            @article{Gamache_2021,
+                doi = {10.1016/j.jqsrt.2021.107713},
+                url = {https://doi.org/10.1016%2Fj.jqsrt.2021.107713},
+                year = 2021,
+                month = {sep},
+                publisher = {Elsevier {BV}},
+                volume = {271},
+                pages = {107713},
+                author = {Robert R. Gamache and Bastien Vispoel and Michaël Rey and Andrei Nikitin and Vladimir Tyuterev and Oleg Egorov and Iouli E. Gordon and Vincent Boudon},
+                title = {Total internal partition sums for the {HITRAN}2020 database},
+                journal = {Journal of Quantitative Spectroscopy and Radiative Transfer}
+            }
+            @article{Kochanov_2016,
+                doi = {10.1016/j.jqsrt.2016.03.005},
+                url = {https://doi.org/10.1016%2Fj.jqsrt.2016.03.005},
+                year = 2016,
+                month = {jul},
+                publisher = {Elsevier {BV}},
+                volume = {177},
+                pages = {15--30},
+                author = {R.V. Kochanov and I.E. Gordon and L.S. Rothman and P. Wcis{\l}o and C. Hill and J.S. Wilzewski},
+                title = {{HITRAN} Application Programming Interface ({HAPI}): A comprehensive approach to working with spectroscopic data},
+                journal = {Journal of Quantitative Spectroscopy and Radiative Transfer}
+            }
+
+            Used for spectroscopic constants
+            --------------------------------
+            @article{Guelachvili_1983,
+                doi = {10.1016/0022-2852(83)90203-5},
+                url = {https://doi.org/10.1016%2F0022-2852%2883%2990203-5},
+                year = 1983,
+                month = {mar},
+                publisher = {Elsevier {BV}},
+                volume = {98},
+                number = {1},
+                pages = {64--79},
+                author = {G. Guelachvili and D. de Villeneuve and R. Farrenq and W. Urban and J. Verges},
+                title = {Dunham coefficients for seven isotopic species of {CO}},
+                journal = {Journal of Molecular Spectroscopy}
+            }
+
+        .. raw:: html
+
+        </details>
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.cite
+
+        See Also
+        --------
+        :py:class:`~radis.tools.track_ref.RefTracker`
+
+        """
+
+        if self.references is None:
+            raise ValueError(
+                "You first need to register the dictionary of bibliographic references. Set `s.references= {'doi':'use in the calculation'}` "
+            )
+
+        if not isinstance(self.references, RefTracker):
+            self.references = RefTracker(**self.references)
+
+        return self.references.cite(format=format)
 
     # %% ======================================================================
     # Private functions

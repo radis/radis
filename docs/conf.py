@@ -149,6 +149,7 @@ intersphinx_mapping = {
     "cantera": ("https://www.cantera.org/documentation/docs-2.4/sphinx/html/", None),
     "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
     "astropy": ("https://docs.astropy.org/en/stable/", None),
+    "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
 }
 
 napoleon_google_docstring = False

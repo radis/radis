@@ -267,7 +267,8 @@ def run_setup(with_binary):
             "numba",  # just-in-time compiler
             "psutil",  # for getting user RAM
             "tuna",  # to generate visual/interactive performance profiles
-            "vaex",  # HDF5
+            "vaex",  # HDF5,
+            "habanero",  # CrossRef API to retrieve data from doi
         ],
         extras_require={
             "dev": [

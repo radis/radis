@@ -171,6 +171,13 @@ class IrrelevantFileWarning(PerformanceWarning):
     pass
 
 
+class MissingReferenceWarning(UserWarning):
+    """Warning triggered when some algorithm / database is missing the bibliographic
+    data used by :py:meth:`~radis.spectrum.spectrum.Spectrum.cite`"""
+
+    pass
+
+
 # %% Config file warnings & errors
 
 
@@ -209,6 +216,7 @@ WarningClasses = {
     "DeprecatedFileWarning": DeprecatedFileWarning,
     "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
+    "MissingReferenceWarning": MissingReferenceWarning,
 }
 """ dict: warnings used in RADIS Spectrum calculations.
 
@@ -254,6 +262,7 @@ default_warning_status = {
     "DeprecatedFileWarning": "warn",
     "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
+    "MissingReferenceWarning": "warn",
 }
 """ dict: default status of warnings used in RADIS Spectrum calculations.
 
