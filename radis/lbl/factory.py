@@ -88,7 +88,6 @@ from scipy.optimize import OptimizeResult
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.db.molparam import MolParams
 
 try:  # Proper import
     from .bands import BandFactory
@@ -947,7 +946,7 @@ class SpectrumFactory(BandFactory):
 
         ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
 
-        molpar = MolParams()
+        molpar = self.molparam
 
         try:
             if "id" in self.df0:
@@ -1339,8 +1338,8 @@ class SpectrumFactory(BandFactory):
                 overpopulation=overpopulation,
             )
 
-        self._calc_linestrength_noneq()
-        self._calc_emission_integral()
+        self.calc_linestrength_noneq()
+        self.calc_emission_integral()
 
         # ----------------------------------------------------------------------
         # Cutoff linestrength
@@ -1764,7 +1763,7 @@ class SpectrumFactory(BandFactory):
         else:
             self.calc_populations_eq(Tgas)
             self.df1["Aul"] = self.df1.A  # update einstein coefficients
-        self._calc_emission_integral()
+        self.calc_emission_integral()
 
         #        # ----------------------------------------------------------------------
         #        # Cutoff linestrength  (note that cuting linestrength doesnt make this

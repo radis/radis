@@ -20,6 +20,70 @@ from radis.misc.utils import Default
 from radis.test.utils import setup_test_line_databases
 
 
+def test_linestrength_calculations(*args, **kwargs):
+    """Compare and validate linestrength calculations from
+    :py:func:`radis.lbl.base.linestrength_from_Einstein`,
+    :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_eq`,
+    :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_non_eq`,
+
+    """
+
+    # Test linestrength calculations
+    from radis.io.hitran import hit2df
+    from radis.test.utils import getTestFile
+
+    df = hit2df(getTestFile("hitran_co_3iso_2000_2300cm.par"))
+
+    from radis.db.classes import get_molecule_identifier
+    from radis.db.molparam import MolParams
+    from radis.lbl.base import linestrength_from_Einstein
+    from radis.levels.partfunc import PartFuncTIPS
+
+    molpar = MolParams()
+    M = get_molecule_identifier("CO")
+
+    Q_arr = df.iso.map({iso: PartFuncTIPS(M, iso).at(296) for iso in df.iso.unique()})
+    Ia_arr = df.iso.map(
+        {iso: molpar.get(M, iso, "abundance") for iso in df.iso.unique()}
+    )
+
+    # Reference linestrengths recomputed from Einstein coefficients match
+    # within 0.1%
+    S = linestrength_from_Einstein(df.A, df.gp, df.El, Ia_arr, df.wav, Q_arr, 296)
+    assert np.allclose(df.int, S, rtol=1e-3, atol=0)
+
+    #%% Now, at 1000 K
+    Q_arr = df.iso.map({iso: PartFuncTIPS(M, iso).at(1000) for iso in df.iso.unique()})
+    S_1000 = linestrength_from_Einstein(df.A, df.gp, df.El, Ia_arr, df.wav, Q_arr, 1000)
+
+    from radis.lbl.factory import SpectrumFactory
+
+    sf = SpectrumFactory(2000, 3000)
+    sf.load_databank(
+        path=getTestFile("hitran_co_3iso_2000_2300cm.par"),
+        format="hitran",
+        parfuncfmt="hapi",
+    )
+
+    # TODO : write an example of all the calculation steps in SpectrumFactory
+    # sf._reinitialize()  # creates scaled dataframe df1 from df0  # TODO: make a public function.
+    # sf.calc_linestrength_eq(1000)
+
+    sf.eq_spectrum(1000)
+    # Linestrengths computed from Einstein coefficients by linestrength_from_Einstein
+    # match the one from the SpectrumFactory within 0.1%
+    assert np.allclose(sf.df1.S, S_1000, rtol=1e-3, atol=0)
+
+    #%% Using non-eq calculations
+    S_eq = sf.df1.S.copy()
+
+    sf.non_eq_spectrum(1000, 1000)
+    # Linestrengths computed with equilibrium routine (scaling reference) match
+    # the ones from the nonequilibrium routine (from Einstein coefficients)
+    # within 0.1%
+    assert np.allclose(sf.df1.S, S_eq, rtol=1e-3, atol=0)
+
+
 @pytest.mark.fast
 def test_export_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
     """Check populations calculated in the nonequilibrium module are exported in Spectrum.
@@ -655,6 +719,7 @@ def test_get_waverange(*args, **kwargs):
 
 def _run_testcases(verbose=True, plot=True):
 
+    test_linestrength_calculations()
     test_export_populations(plot=plot, verbose=verbose)
     test_export_rovib_fractions(plot=plot, verbose=verbose)
     test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
