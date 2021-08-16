@@ -1593,7 +1593,9 @@ class SpectrumFactory(BandFactory):
             try:
                 assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
                 assert self.input.Trot is None or self.input.Trot == self.input.Tgas
-                assert self.input.overpopulation is None
+                assert (
+                    self.input.overpopulation is None or self.input.overpopulation == {}
+                )
                 try:
                     if self.input.self_absorption:
                         assert self.input.self_absorption  # == True

@@ -1293,8 +1293,6 @@ class BroadenFactory(BaseFactory):
         """
         # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
-        self.profiler.start(key="init_vectors", verbose_level=3)
-
         # printing estimated time
         if self.verbose >= 2:
             estimated_time = self.predict_time()
@@ -1303,6 +1301,8 @@ class BroadenFactory(BaseFactory):
                     estimated_time
                 )
             )
+
+        self.profiler.start(key="init_vectors", verbose_level=3)
 
         # Init variables
         if self.input.Tgas is None:

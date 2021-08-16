@@ -8,7 +8,9 @@ Also stores Spectrum calculation time dependent parameters, under the attribute
 Routine Listing
 ---------------
 
+- :meth:`~radis.misc.profiler.Profiler.add_entry`
 - :meth:`~radis.misc.profiler.Profiler.start`
+- :meth:`~radis.misc.profiler.Profiler.add_time`
 - :meth:`~radis.misc.profiler.Profiler.stop`
 - :meth:`~radis.misc.profiler.Profiler._print`
 
