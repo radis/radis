@@ -2087,7 +2087,7 @@ class DatabankLoader(object):
                 )
 
             df.drop("id", axis=1, inplace=True)
-            df_metadata.append("id")
+            df.attrs.append("id")
             df.attrs["id"] = id_set[0]
         else:
             assert "id" in df.attrs or "molecule" in df.attrs
@@ -2097,7 +2097,7 @@ class DatabankLoader(object):
 
             if len(isotope_set) == 1:
                 df.drop("iso", axis=1, inplace=True)
-                df_metadata.append("iso")
+                df.attrs.append("iso")
                 df.attrs["iso"] = isotope_set[0]
         else:
             assert "iso" in df.attrs
