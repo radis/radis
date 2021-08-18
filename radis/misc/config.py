@@ -54,8 +54,14 @@ CONFIG_PATH_JSON = join(expanduser("~"), "radis.json")
 CONFIG_PATH_DEFAULT = join(getProjectRoot(), "config.json")
 
 
-def get_config():
-    """Read the config.json file."""
+def get_config(configpath=CONFIG_PATH_JSON):
+    """Read the default RADIS config.json file `configpath` (default
+    :py:attr:`~radis.misc.config.CONFIG_PATH_JSON` and override it with the
+    entries of the user config file ``~/.radis``
+    (:py:attr:`~radis.misc.config.CONFIG_PATH_DEFAULT`"""
+
+    defaut_config = getConfig(configpath)
+
     jsonfile = CONFIG_PATH_DEFAULT
     with open(jsonfile) as f:
         try:
@@ -68,7 +74,10 @@ def get_config():
                 err.doc,
                 err.pos,
             ) from err
-    return config
+
+    defaut_config.update(config)
+
+    return defaut_config
 
 
 # %% Functions to parse ~/.radis file
@@ -987,6 +996,10 @@ def printDatabankList(configpath=CONFIG_PATH_JSON):
 
 if __name__ == "__main__":
 
-    from radis.test.misc.test_config import _run_testcases
+    # from radis.test.misc.test_config import _run_testcases
 
-    _run_testcases(verbose=True)
+    # _run_testcases(verbose=True)
+
+    a = get_config()
+
+    print(a.keys())

@@ -7,6 +7,40 @@ Created on Sat May  1 13:50:36 2021
 
 import numpy as np
 
+import radis
+
+
+def set_style(style):
+
+    plotlib = radis.config["plot"]["plotlib"]
+
+    if plotlib == "publib":
+        from publib import set_style
+
+        set_style(style)
+    elif plotlib == "seaborn":
+        import seaborn as sns
+
+        sns.set_theme()
+    else:
+        raise ValueError(f"plot style: {style}")
+
+
+def fix_style(style, *args):
+
+    plotlib = radis.config["plot"]["plotlib"]
+
+    if plotlib == "publib":
+        from publib import fix_style
+
+        fix_style(style, *args)
+    elif plotlib == "seaborn":
+        # import seaborn as sns
+
+        pass
+    else:
+        raise ValueError(f"plot style: {style}")
+
 
 def split_and_plot_by_parts(w, I, *args, **kwargs):
     """Plot two discontinued arrays (typically a spectrum) without showing

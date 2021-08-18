@@ -79,9 +79,11 @@ try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 except ImportError:  # if ran from here
     from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
+from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printg
 from radis.misc.utils import Default
 from radis.misc.warning import OutOfBoundError
@@ -3502,7 +3504,6 @@ class BaseFactory(DatabankLoader):
         """
 
         import matplotlib.pyplot as plt
-        from publib import fix_style, set_style
 
         # Check inputs
         assert what in ["vib", "rovib"]

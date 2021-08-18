@@ -1048,7 +1048,8 @@ def plot_slit(
     """
 
     import matplotlib.pyplot as plt
-    from publib import set_style
+
+    from radis.misc.plot import set_style
 
     set_style("origin")
 

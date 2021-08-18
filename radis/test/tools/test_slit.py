@@ -26,9 +26,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import abs, cos, linspace, pi, sqrt, tan, trapz
-from publib import fix_style, set_style
 
 from radis.lbl.factory import SpectrumFactory
+from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printm
 from radis.phys.convert import dcm2dnm, dnm2dcm
 from radis.phys.units import is_homogeneous

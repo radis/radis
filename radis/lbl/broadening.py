@@ -74,6 +74,7 @@ from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
+from radis.misc.plot import fix_style, set_style
 from radis.misc.progress_bar import ProgressBar
 
 # from radis.misc.warning import AccuracyError, AccuracyWarning
@@ -1530,7 +1531,6 @@ class BroadenFactory(BaseFactory):
         # TODO #clean: make it a standalone function.
 
         import matplotlib.pyplot as plt
-        from publib import fix_style, set_style
 
         if pressure_atm is None:
             pressure_atm = self.input.pressure_mbar / 1013.25

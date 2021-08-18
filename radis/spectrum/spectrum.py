@@ -1590,7 +1590,8 @@ class Spectrum(object):
         """
 
         import matplotlib.pyplot as plt
-        from publib import fix_style, set_style
+
+        from radis.misc.plot import fix_style, set_style
 
         # Deprecated
         if "plot_medium" in kwargs:
@@ -1939,7 +1940,8 @@ class Spectrum(object):
             are forwarded to the plot
         """
         import matplotlib.pyplot as plt
-        from publib import fix_style, set_style
+
+        from radis.misc.plot import fix_style, set_style
 
         # Check input, get defaults
         pops = self.populations

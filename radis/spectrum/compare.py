@@ -796,7 +796,8 @@ def plot_diff(
     import matplotlib.pyplot as plt
     from matplotlib import gridspec
     from matplotlib.widgets import MultiCursor
-    from publib import fix_style, set_style
+
+    from radis.misc.plot import fix_style, set_style
 
     if (not show) and (
         not save
