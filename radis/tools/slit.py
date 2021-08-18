@@ -1069,6 +1069,14 @@ def plot_slit(
 
     """
 
+    # Deprecated input:
+    if waveunit is not None:
+        warn(
+            "`waveunit=` parameter in convolve_with_slit is now named `wunit=`",
+            DeprecationWarning,
+        )
+        wunit = waveunit
+
     import matplotlib.pyplot as plt
 
     from radis.misc.plot import set_style
@@ -1076,7 +1084,7 @@ def plot_slit(
     set_style()
 
     try:
-        from radis.plot.toolbar import add_tools  # TODO: move in publib
+        from radis.plot.toolbar import add_tools
 
         add_tools()  # includes a Ruler to measure slit
     except:
@@ -1093,19 +1101,19 @@ def plot_slit(
     assert len(I) > 0
 
     # cast units
-    waveunit = cast_waveunit(waveunit, force_match=False)
+    wunit = cast_waveunit(wunit, force_match=False)
     plot_unit = cast_waveunit(plot_unit, force_match=False)
     if plot_unit == "same":
-        plot_unit = waveunit
+        plot_unit = wunit
 
     # Convert wavespace unit if needed
-    elif waveunit == "cm-1" and plot_unit == "nm":  # wavelength > wavenumber
+    elif wunit == "cm-1" and plot_unit == "nm":  # wavelength > wavenumber
         w = cm2nm(w)
-        waveunit = "nm"
-    elif waveunit == "nm" and plot_unit == "cm-1":  # wavenumber > wavelength
+        wunit = "nm"
+    elif wunit == "nm" and plot_unit == "cm-1":  # wavenumber > wavelength
         w = nm2cm(w)
-        waveunit = "cm-1"
-    elif waveunit == plot_unit:  # same units
+        wunit = "cm-1"
+    elif wunit == plot_unit:  # same units
         pass
     elif plot_unit == "":  # ???
         pass
@@ -1167,7 +1175,7 @@ def plot_slit(
             warn(
                 "Slit function doesnt seem centered: center measured with FWHM"
                 + " is not the array center (shift: {0:.3f}{1}): This can induce offsets!".format(
-                    abs(w[(xmin + xmax) // 2] - w[len(w) // 2]), waveunit
+                    abs(w[(xmin + xmax) // 2] - w[len(w) // 2]), wunit
                 )
             )
 
