@@ -519,7 +519,7 @@ class Spectrum(object):
     # %% Constructors
 
     @classmethod
-    def from_array(self, w, I, quantity, wunit, unit, *args, **kwargs):
+    def from_array(self, w, I, quantity, wunit, unit, waveunit=None, *args, **kwargs):
         """Construct Spectrum from 2 arrays.
 
         Parameters
@@ -598,12 +598,12 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
         """
         # Deprecated inputs
-        if "waveunit" in kwargs:
+        if waveunit is not None:
             warn(
                 "`waveunit=` parameter in from_array is now named `wunit=`",
                 DeprecationWarning,
             )
-            wunit = kwargs.pop("waveunit")
+            wunit = waveunit
 
         quantities = {quantity: (w, I)}
         units = {quantity: unit}
@@ -619,7 +619,7 @@ class Spectrum(object):
         )
 
     @classmethod
-    def from_txt(self, file, quantity, wunit, unit, *args, **kwargs):
+    def from_txt(self, file, quantity, wunit, unit, waveunit=None, *args, **kwargs):
         """Construct Spectrum from txt file.
 
         Parameters
@@ -718,12 +718,12 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
         """
         # Deprecated inputs
-        if "waveunit" in kwargs:
+        if waveunit is not None:
             warn(
                 "`waveunit=` parameter in from_array is now named `wunit=`",
                 DeprecationWarning,
             )
-            wunit = kwargs.pop("waveunit")
+            wunit = waveunit
 
         # Get input for loadtxt
         kwloadtxt = {}
@@ -2496,7 +2496,7 @@ class Spectrum(object):
                     wslit,
                     Islit,
                     mode=mode,
-                    waveunit=waveunit,
+                    wunit=waveunit,
                     verbose=verbose,
                     assert_evenly_spaced=False,
                     # assumes Spectrum is correct by construction
@@ -2583,7 +2583,7 @@ class Spectrum(object):
 
         return s_out  # to be able to chain: s.apply_slit().plot()
 
-    def get_slit(self, unit="same"):
+    def get_slit(self, wunit="same"):
         """Get slit function that was applied to the Spectrum.
 
         Returns
@@ -2594,7 +2594,7 @@ class Spectrum(object):
             :meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`
         """
 
-        if not unit in ["same", self.get_waveunit()]:
+        if not wunit in ["same", self.get_waveunit()]:
             raise NotImplementedError(
                 "Unit must be Spectrum waveunit: {0}".format(self.get_waveunit())
             )
@@ -2612,7 +2612,7 @@ class Spectrum(object):
 
         return wslit, Islit
 
-    def plot_slit(self, wunit=None):
+    def plot_slit(self, wunit=None, waveunit=None):
         """Plot slit function that was applied to the Spectrum.
 
         If dispersion was used (see :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`)
@@ -2637,6 +2637,13 @@ class Spectrum(object):
 
         :ref:`the Spectrum page <label_spectrum>`
         """
+        # Deprecated inputs
+        if waveunit is not None:
+            warn(
+                "`waveunit=` parameter in from_array is now named `wunit=`",
+                DeprecationWarning,
+            )
+            wunit = waveunit
 
         from radis.tools.slit import (
             normalize_slit,
@@ -2670,7 +2677,7 @@ class Spectrum(object):
 
         # Plot in correct unit  (plot_slit deals with the conversion if needed)
         fig, ax = plot_slit(
-            wslit0, Islit0, waveunit=waveunit, plot_unit=wunit, Iunit=Iunit
+            wslit0, Islit0, wunit=waveunit, plot_unit=wunit, Iunit=Iunit
         )
 
         # Plot other slit functions if dispersion was applied:
@@ -2721,7 +2728,7 @@ class Spectrum(object):
                     plot_slit(
                         wslit,
                         Islit,
-                        waveunit=waveunit,
+                        wunit=waveunit,
                         plot_unit=wunit,
                         Iunit=Iunit,
                         ls="--",

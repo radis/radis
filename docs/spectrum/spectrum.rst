@@ -92,7 +92,7 @@ The standard way to build a Radis Spectrum is from a dictionary of
 Or::
 
     s = Spectrum({"abscoeff":(w,k), "radiance_noslit":(w,I)},
-                 waveunit="cm-1"
+                 wunit="cm-1"
                  units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
 
 You can also use the :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array`
@@ -101,7 +101,7 @@ convenience function::
     # w, T are two numpy arrays
     from radis import Spectrum
     s = Spectrum.from_array(w, T, 'transmittance_noslit',
-                               waveunit='nm', unit='') # adimensioned
+                               wunit='nm', unit='') # adimensioned
 
 
 Convenience functions have been added to handle the usual cases:
@@ -126,7 +126,7 @@ From a file, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
     # 'exp_spectrum.txt' contains a spectrum
     from radis import Spectrum
     s = Spectrum.from_txt('exp_spectrum.txt', 'radiance',
-                               waveunit='nm', unit='mW/cm2/sr/nm')
+                               wunit='nm', unit='mW/cm2/sr/nm')
 
 It is, however, recommended to use the RADIS ``.spec`` json format to store
 and load arrays :
@@ -247,7 +247,7 @@ Custom spectral arrays with arbitrary units can be defined when creating a Spect
 
     # w, I are two numpy arrays
     s = Spectrum.from_array(w, I, 'irradiance',
-                               waveunit='nm', unit='w/cm2/nm')
+                               wunit='nm', unit='w/cm2/nm')
 
 Although not recommended, it is also possible to directly edit the dictionary containing the objects.
 For instance, this is done in

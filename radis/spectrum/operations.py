@@ -797,7 +797,7 @@ def add_spectra(s1, s2, var=None, force=False):
 
     name = s1.get_name() + "+" + s2.get_name()
 
-    sub = Spectrum.from_array(w1, I1 + I2, var, waveunit=wunit1, unit=Iunit1, name=name)
+    sub = Spectrum.from_array(w1, I1 + I2, var, wunit=wunit1, unit=Iunit1, name=name)
     #    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
@@ -861,7 +861,7 @@ def substract_spectra(s1, s2, var=None):
 
     name = s1.get_name() + "-" + s2.get_name()
 
-    sub = Spectrum.from_array(w1, I1 - I2, var, waveunit=wunit1, unit=Iunit1, name=name)
+    sub = Spectrum.from_array(w1, I1 - I2, var, wunit=wunit1, unit=Iunit1, name=name)
     #    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
@@ -956,7 +956,7 @@ def concat_spectra(s1, s2, var=None):
     name = s1.get_name() + "&" + s2.get_name()  # use "&" instead of "+"
 
     concat = Spectrum.from_array(
-        w_tot, I_tot, var, waveunit=wunit1, unit=Iunit1, name=name
+        w_tot, I_tot, var, wunit=wunit1, unit=Iunit1, name=name
     )
 
     return concat
