@@ -3752,7 +3752,7 @@ class Spectrum(object):
 
         return ""  # self.print_conditions()
 
-    def take(self, var):
+    def take(self, var, copy_lines=False):
         """
         Parameters
         ----------
@@ -3776,7 +3776,7 @@ class Spectrum(object):
 
         """
 
-        return self.copy(quantity=var, copy_lines=True)
+        return self.copy(quantity=var, copy_lines=copy_lines)
 
     # %% Add min, max, normalize operations
 

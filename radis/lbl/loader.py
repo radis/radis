@@ -616,8 +616,8 @@ class DatabankLoader(object):
             pass
 
         # Variables that will hold the dataframes.
-        self.df0 = None
-        """pandas DataFrame : initial line database after loading.
+        self.df0 = None  # type : pd.DataFrame
+        """pd.DataFrame : initial line database after loading.
         If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting
         by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of
         :py:class:`~radis.lbl.factory.SpectrumFactory`.
@@ -645,8 +645,8 @@ class DatabankLoader(object):
         --------
         :py:attr:`~self.radis.lbl.loader.DatabankLoader.df1`
         """
-        self.df1 = None
-        """DataFrame : line database, scaled with populations + linestrength cutoff
+        self.df1 = None  # type : pd.DataFrame
+        """pd.DataFrame : line database, scaled with populations + linestrength cutoff
         Never edit manually. See all comments about :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
 
         See Also
@@ -812,7 +812,7 @@ class DatabankLoader(object):
         )
 
         # Delete database
-        self.df0 = None
+        self.df0 = None  # type : pd.DataFrame
         self._reset_references()  # bibliographic references
 
     def fetch_databank(
@@ -1106,7 +1106,7 @@ class DatabankLoader(object):
                 replace_PQR_with_m101(df)
             df = drop_object_format_columns(df, verbose=self.verbose)
 
-        self.df0 = df
+        self.df0 = df  # type : pd.DataFrame
         self.misc.total_lines = len(df)  # will be stored in Spectrum metadata
 
         # %% Init Partition functions (with energies)
@@ -1770,7 +1770,7 @@ class DatabankLoader(object):
         db_use_cached,
         drop_columns="auto",
         include_neighbouring_lines=True,
-    ):
+    ) -> pd.DataFrame:
         """Loads all available database files and keep the relevant one.
         Returns a Pandas dataframe.
 
@@ -1907,6 +1907,7 @@ class DatabankLoader(object):
                             else None,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
+                            engine="pytables",
                         )
                     elif dbformat in ["exomol"]:
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]

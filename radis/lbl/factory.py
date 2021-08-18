@@ -1850,8 +1850,10 @@ class SpectrumFactory(BandFactory):
 
         Examples
         --------
+        See a :ref:`one-temperature fit example <example_one_temperature_fit>`
+        and a :ref:`non-LTE fit example <example_multi_temperature_fit>`
 
-        .. minigallery:: radis.lbl.factory.fit_spectrum
+        .. minigallery:: radis.lbl.factory.SpectrumFactory.fit_spectrum
 
 
         See Also
