@@ -110,12 +110,12 @@ class Spectrum(object):
 
             # w, k, I are numpy arrays for wavenumbers, absorption coefficient, and radiance.
             from radis import Spectrum
-            s = Spectrum({"wavenumber":w, "abscoeff":k, "radiance_noslit":I},
+            s = Spectrum({"wavenumber":w, "abscoeff":k, "radiance_noslit":I}, wunit='cm-1',
                          units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
         Or::
 
             s = Spectrum({"abscoeff":(w,k), "radiance_noslit":(w,I)},
-                         waveunit="cm-1"
+                         wunit="cm-1"
                          units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
 
         See also: :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array`
@@ -128,22 +128,13 @@ class Spectrum(object):
     ----------------
     conditions: dict
         physical conditions and calculation parameters
-    waveunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
         wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
         If ``None``, ``'wavespace'`` must be defined in ``conditions``.
         Quantities should be evenly distributed along this space for fast
         convolution with the slit function
-        (non-uniform slit function is not implemented anyway... )
     cond_units: dict
         units for conditions
-    wavespace: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
-        wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
-        Quantities should be evenly distributed along this space for fast
-        convolution with the slit function
-        If ``None``, ``'wavespace'`` must be defined in ``conditions``.
-        (non-uniform slit function is not implemented anyway... )
-        Defaults None (but raises an error if wavespace is not defined in
-        conditions neither)
 
 
     Other Parameters
@@ -265,10 +256,10 @@ class Spectrum(object):
         from radis import Spectrum, calculated_spectrum
         s1 = calculated_spectrum(w, I, wunit='nm', Iunit='mW/cm2/sr/nm')
         s2 = Spectrum.from_array(w, I, 'radiance_noslit',
-                               waveunit='nm', unit='mW/cm2/sr/nm')
+                               wunit='nm', unit='mW/cm2/sr/nm')
         s3 = Spectrum({'radiance_noslit': (w, I)},
                       units={'radiance_noslit':'mW/cm2/sr/nm'},
-                      waveunit='nm')
+                      wunit='nm')
 
     See more examples in the [Spectrum]_ page.
 
@@ -353,7 +344,7 @@ class Spectrum(object):
         cond_units=None,
         populations=None,
         lines=None,
-        waveunit=None,
+        wunit=None,
         name=None,
         references={},
         check_wavespace=True,
@@ -382,6 +373,15 @@ class Spectrum(object):
                 "Spectrum(warning=) renamed Spectrum(check_wavespace=) in 0.9.30",
                 DeprecationWarning,
             )
+        # ... waveunit in Spectrum renamed wunit
+        if "waveunit" in kwargs:
+            assert wunit is None  # not given twice
+            warn(
+                "waveunit parameter in Spectrum(waveunit=) is now named `wunit`",
+                DeprecationWarning,
+            )
+            wunit = kwargs.pop("waveunit")
+        waveunit = wunit  # (but not renamed within the code or conditions yet)
         if len(kwargs) > 0:
             raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
 
@@ -395,16 +395,22 @@ class Spectrum(object):
             del conditions["wavespace"]
 
         # ... make sure waveunit is given. Either implicitely, or explicitely:
-        if (
-            waveunit is None
-            and not "waveunit" in conditions
-            and "wavelength" not in quantities
-            and "wavenumber" not in quantities
-        ):
-            raise AssertionError(
-                "waveunit ('nm', 'cm-1'?) has to be defined in `conditions`"
-                + "or with `waveunit=`, or by giving a `wavelength` or `wavenumber` key in quantities"
-            )
+        if waveunit is None and not "waveunit" in conditions:
+            if "wavelength" in quantities:
+                raise AssertionError(
+                    "waveunit ('nm', 'nm_vac' ?) has to be defined in `conditions`"
+                    + "or with `wunit='nm'` or `wunit='nm_vac'`"
+                )
+            elif "wavenumber" in quantities:
+                raise AssertionError(
+                    "waveunit ('cm-1'?) has to be defined in `conditions`"
+                    + "or with `wunit='cm-1'`"
+                )
+            else:
+                raise AssertionError(
+                    "waveunit ('nm', 'cm-1'?) has to be defined in `conditions`"
+                    + "or with `wunit=`"
+                )
         # ... Cast in standard waveunit format
         if waveunit is not None:
             waveunit = cast_waveunit(waveunit)
@@ -423,13 +429,9 @@ class Spectrum(object):
             conditions["waveunit"] = waveunit
         if "wavelength" in quantities:
             assert "wavenumber" not in quantities and "wavespace" not in quantities
-            if not "waveunit" in conditions:
-                conditions["waveunit"] = "nm"
             assert conditions["waveunit"] in WAVELEN_UNITS + WAVELENVAC_UNITS
         if "wavenumber" in quantities:
             assert "wavelength" not in quantities and "wavespace" not in quantities
-            if not "waveunit" in conditions:
-                conditions["waveunit"] = "cm-1"
             assert conditions["waveunit"] in WAVENUM_UNITS
         if "wavespace" in quantities:
             assert "wavenumber" not in quantities and "wavelength" not in quantities
@@ -517,17 +519,16 @@ class Spectrum(object):
     # %% Constructors
 
     @classmethod
-    def from_array(self, w, I, quantity, waveunit, unit, *args, **kwargs):
+    def from_array(self, w, I, quantity, wunit, unit, *args, **kwargs):
         """Construct Spectrum from 2 arrays.
 
         Parameters
         ----------
-
         w, I: array
             waverange and vector
         quantity: str
             spectral quantity name
-        waveunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             unit of waverange:         wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
         unit: str
@@ -537,7 +538,6 @@ class Spectrum(object):
 
         Other Parameters
         ----------------
-
         conditions: dict
             physical conditions and calculation parameters
         cond_units: dict
@@ -572,7 +572,7 @@ class Spectrum(object):
 
             from radis import Spectrum
             s = Spectrum.from_array(w, I, 'radiance_noslit',
-                                   waveunit='nm', unit='mW/cm2/sr/nm')
+                                   wunit='nm', unit='mW/cm2/sr/nm')
 
         To create a spectrum with absorption and emission components
         (e.g: ``radiance_noslit`` and ``transmittance_noslit``, or ``emisscoeff``
@@ -582,7 +582,7 @@ class Spectrum(object):
             from radis import Spectrum
             s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
                          units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
-                         waveunit='nm')
+                         wunit='nm')
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.from_array
 
@@ -597,6 +597,13 @@ class Spectrum(object):
         :func:`~radis.tools.database.load_spec`,
         :ref:`the Spectrum page <label_spectrum>`
         """
+        # Deprecated inputs
+        if "waveunit" in kwargs:
+            warn(
+                "`waveunit=` parameter in from_array is now named `wunit=`",
+                DeprecationWarning,
+            )
+            wunit = kwargs.pop("waveunit")
 
         quantities = {quantity: (w, I)}
         units = {quantity: unit}
@@ -608,11 +615,11 @@ class Spectrum(object):
                 conditions[k] = kwargs.pop(k)
 
         return self(
-            quantities, units, waveunit=waveunit, conditions=conditions, *args, **kwargs
+            quantities, units, wunit=wunit, conditions=conditions, *args, **kwargs
         )
 
     @classmethod
-    def from_txt(self, file, quantity, waveunit, unit, *args, **kwargs):
+    def from_txt(self, file, quantity, wunit, unit, *args, **kwargs):
         """Construct Spectrum from txt file.
 
         Parameters
@@ -621,7 +628,7 @@ class Spectrum(object):
             file name
         quantity: str
             spectral quantity name
-        waveunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             unit of waverange: wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
         unit: str
@@ -677,7 +684,7 @@ class Spectrum(object):
         ``delimiter`` key is forwarded to :py:func:`~numpy.loadtxt`::
 
             from radis import Spectrum
-            s = Spectrum.from_txt('spectrum.csv', 'radiance', waveunit='nm',
+            s = Spectrum.from_txt('spectrum.csv', 'radiance', wunit='nm',
                                       unit='W/cm2/sr/nm', delimiter=',')
 
 
@@ -689,7 +696,7 @@ class Spectrum(object):
             from radis import Spectrum
             s = Spectrum({'abscoeff': (w, A), 'emisscoeff': (w, E)},
                          units={'abscoeff': 'cm-1', 'emisscoeff':'W/cm2/sr/nm'},
-                         waveunit='nm')
+                         wunit='nm')
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.from_txt
 
@@ -710,6 +717,13 @@ class Spectrum(object):
         :func:`~radis.tools.database.load_spec`,
         :ref:`the Spectrum page <label_spectrum>`
         """
+        # Deprecated inputs
+        if "waveunit" in kwargs:
+            warn(
+                "`waveunit=` parameter in from_array is now named `wunit=`",
+                DeprecationWarning,
+            )
+            wunit = kwargs.pop("waveunit")
 
         # Get input for loadtxt
         kwloadtxt = {}
@@ -731,9 +745,7 @@ class Spectrum(object):
             if k in kwargs:
                 conditions[k] = kwargs.pop(k)
 
-        s = self(
-            quantities, units, waveunit=waveunit, conditions=conditions, *args, **kwargs
-        )
+        s = self(quantities, units, wunit=wunit, conditions=conditions, *args, **kwargs)
 
         # Store filename
         s.file = file
@@ -840,7 +852,7 @@ class Spectrum(object):
             m = first_nonnan_index(I)
             M = last_nonnan_index(I)
             if m is None:
-                raise ValueError(f"All values are nan. Check your data?")
+                raise ValueError("All values are nan. Check your data?")
             if m > 0 or M < len(I) - 1:  # else, no change to be made
                 w = w[m : M + 1]
                 I = I[m : M + 1]
@@ -2550,7 +2562,7 @@ class Spectrum(object):
                 units=new_units,
                 conditions=self.conditions.copy(),
                 cond_units=self.cond_units.copy(),
-                waveunit=waveunit,
+                wunit=waveunit,
                 name=self.name,
                 check_wavespace=False,
             )
@@ -3405,7 +3417,7 @@ class Spectrum(object):
             populations=populations,
             lines=lines,
             units=units,
-            waveunit=waveunit,
+            wunit=waveunit,
             references=references,
             name=name,
             warnings=False,  # saves about 3.5 ms on the Performance test object

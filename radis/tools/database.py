@@ -578,7 +578,7 @@ def _json_to_spec(sload, file="") -> Spectrum:
     s = Spectrum(
         quantities=quantities,
         conditions=conditions,
-        waveunit=waveunit,
+        wunit=waveunit,
         references=references,
         **kwargs,
     )

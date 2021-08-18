@@ -594,7 +594,7 @@ def rescale_abscoeff(
     old_mole_fraction,
     new_mole_fraction,
     old_path_length,
-    waveunit,
+    wunit,
     units,
     extra,
     true_path_length,
@@ -623,18 +623,18 @@ def rescale_abscoeff(
     # First get initial abscoeff
     # ---------------------
     if "abscoeff" in initial:
-        _, abscoeff_init = spec.get("abscoeff", wunit=waveunit)
+        _, abscoeff_init = spec.get("abscoeff", wunit=wunit)
     elif "absorbance" in initial and true_path_length:  # aka: true path_lengths given
         if __debug__:
             printdbg("... rescale: abscoeff k1 = A/L1")
-        _, A = spec.get("absorbance", wunit=waveunit)
+        _, A = spec.get("absorbance", wunit=wunit)
         abscoeff_init = A / old_path_length  # recalculate initial
         unit = "cm-1"
     elif "transmittance_noslit" in initial and true_path_length:
         if __debug__:
             printdbg("... rescale: abscoeff k1 = -ln(T1)/L1")
         # Get abscoeff from transmittance
-        _, T1 = spec.get("transmittance_noslit", wunit=waveunit)
+        _, T1 = spec.get("transmittance_noslit", wunit=wunit)
 
         # We'll have a problem if the spectrum is optically thick
         b = T1 == 0  # no transmittance: optically thick mask
@@ -748,7 +748,7 @@ def rescale_emisscoeff(
     new_mole_fraction,
     old_path_length,
     optically_thin,
-    waveunit,
+    wunit,
     units,
     extra,
     true_path_length,
@@ -783,15 +783,13 @@ def rescale_emisscoeff(
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = j1")
         _, emisscoeff_init = spec.get(
-            "emisscoeff", wunit=waveunit, Iunit=units["emisscoeff"]
+            "emisscoeff", wunit=wunit, Iunit=units["emisscoeff"]
         )
 
     elif "radiance_noslit" in initial and true_path_length and optically_thin:
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = I1/L1")
-        _, I = spec.get(
-            "radiance_noslit", wunit=waveunit, Iunit=units["radiance_noslit"]
-        )
+        _, I = spec.get("radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"])
         emisscoeff_init = I / old_path_length  # recalculate initial
         unit = get_unit(units["radiance_noslit"])
 
@@ -799,10 +797,8 @@ def rescale_emisscoeff(
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = k1*I1/(1-exp(-k1*L1))")
         # get emisscoeff from (initial) abscoeff and (initial) radiance
-        _, I = spec.get(
-            "radiance_noslit", wunit=waveunit, Iunit=units["radiance_noslit"]
-        )
-        _, k = spec.get("abscoeff", wunit=waveunit, Iunit=units["abscoeff"])
+        _, I = spec.get("radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"])
+        _, k = spec.get("abscoeff", wunit=wunit, Iunit=units["abscoeff"])
 
         # Recalculate in the optically thin range (T=1) and elsewhere
         b = k == 0  # optically thin mask
@@ -827,11 +823,9 @@ def rescale_emisscoeff(
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = k1*I1/(1-T1)")
         # get emisscoeff from (initial) transmittance and (initial) radiance
-        _, I = spec.get(
-            "radiance_noslit", wunit=waveunit, Iunit=units["radiance_noslit"]
-        )
+        _, I = spec.get("radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"])
         _, T = spec.get(
-            "transmittance_noslit", wunit=waveunit, Iunit=units["transmittance_noslit"]
+            "transmittance_noslit", wunit=wunit, Iunit=units["transmittance_noslit"]
         )
 
         # Recalculate in the optically thin range (T=1) and elsewhere

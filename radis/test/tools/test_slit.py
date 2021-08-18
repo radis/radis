@@ -76,7 +76,7 @@ def test_all_slit_shapes(
     s = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
         quantity="radiance_noslit",
-        waveunit="nm",
+        wunit="nm",
         unit="mW/cm2/sr/µm",
     )
     wstep = np.diff(s.get_wavelength())[0]
@@ -197,7 +197,7 @@ def test_slit_unit_conversions_spectrum_in_nm(
     s_nm = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
         quantity="radiance_noslit",
-        waveunit="nm",
+        wunit="nm",
         unit="mW/cm2/sr/µm",
         conditions={"self_absorption": False},
     )

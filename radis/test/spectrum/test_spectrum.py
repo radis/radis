@@ -41,22 +41,30 @@ def test_spectrum_creation_method(*args, **kwargs):
 
     # Good inputs:
     # ... format of quantities :
-    Spectrum({"wavelength": w, "abscoeff": k, "transmittance_noslit": T})
-    Spectrum({"abscoeff": (w, k), "transmittance_noslit": (w, T)}, waveunit="nm")
+    Spectrum({"wavelength": w, "abscoeff": k, "transmittance_noslit": T}, wunit="nm")
+    Spectrum({"abscoeff": (w, k), "transmittance_noslit": (w, T)}, wunit="nm")
 
-    Spectrum({"wavelength": w, "abscoeff": k, "transmittance_noslit": T}, waveunit="nm")
+    Spectrum({"wavelength": w, "abscoeff": k, "transmittance_noslit": T}, wunit="nm")
 
     # ... units:
-    Spectrum({"wavespace": w, "abscoeff": k}, waveunit="nm")
-    Spectrum({"wavelength": w, "abscoeff": k}, waveunit="nm")
+    Spectrum({"wavespace": w, "abscoeff": k}, wunit="nm")
+    Spectrum({"wavelength": w, "abscoeff": k}, wunit="nm")
 
     # Bad inputs:
+    with pytest.raises(AssertionError) as err:
+        Spectrum(
+            {"wavelength": w, "abscoeff": k, "transmittance_noslit": T}
+        )  # wunit not defined
+    with pytest.raises(AssertionError) as err:
+        Spectrum(
+            {"wavenumber": w, "abscoeff": k, "transmittance_noslit": T}
+        )  # wunit not defined
 
     # ... wavespace defined multiple times
     with pytest.raises(AssertionError) as err:
-        Spectrum({"wavelength": w, "wavenumber": 1e7 / w, "abscoeff": k}, waveunit="nm")
+        Spectrum({"wavelength": w, "wavenumber": 1e7 / w, "abscoeff": k}, wunit="nm")
     with pytest.raises(AssertionError) as err:
-        Spectrum({"wavelength": w, "wavespace": 1e7 / w, "abscoeff": k}, waveunit="nm")
+        Spectrum({"wavelength": w, "wavespace": 1e7 / w, "abscoeff": k}, wunit="nm")
 
     # ... format of quantities :
     with pytest.raises(AssertionError) as err:
@@ -73,10 +81,10 @@ def test_spectrum_creation_method(*args, **kwargs):
         assert "waveunit ('nm', 'cm-1'?) has to be defined" in str(err)
 
     with pytest.raises(AssertionError):
-        Spectrum({"wavenumber": w, "abscoeff": k}, waveunit="nm")
+        Spectrum({"wavenumber": w, "abscoeff": k}, wunit="nm")
 
     with pytest.raises(AssertionError):
-        Spectrum({"wavelength": w, "abscoeff": k}, waveunit="cm-1")
+        Spectrum({"wavelength": w, "abscoeff": k}, wunit="cm-1")
 
 
 def test_spectrum_get_methods(
@@ -154,7 +162,7 @@ def test_trimming(verbose=True, *args, **kwargs):
     T = np.ones_like(w)
     T[:15] = np.nan
     T[-10:] = np.nan
-    s = Spectrum.from_array(w, T, "transmittance_noslit", waveunit="nm", unit="")
+    s = Spectrum.from_array(w, T, "transmittance_noslit", wunit="nm", unit="")
 
     Nnans = count_nans(T)
     assert len(s) == 50  # before trimming
@@ -165,7 +173,7 @@ def test_trimming(verbose=True, *args, **kwargs):
     w = np.linspace(300, 600)
     T = np.ones_like(w)
     T[:15] = np.nan
-    s = Spectrum.from_array(w, T, "transmittance_noslit", waveunit="nm", unit="")
+    s = Spectrum.from_array(w, T, "transmittance_noslit", wunit="nm", unit="")
 
     Nnans = count_nans(T)
     assert len(s) == 50  # before trimming
@@ -332,7 +340,7 @@ def test_rescaling_function(verbose=True, *args, **kwargs):
     s = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
         quantity="radiance_noslit",
-        waveunit="nm",
+        wunit="nm",
         unit="mW/cm2/sr/µm",  # Specair units: mW/cm2/sr/µm
         conditions={
             "Tvib": 3000,
