@@ -1972,9 +1972,9 @@ class DatabankLoader(object):
 
         # ... error in Pandas? Sometimes _metadata is preserved over several runs.
         # ... Clean it here.
-        if __debug__ and len(df._metadata) > 0:
-            printdbg("df._metadata was not []. Cleaning")
-        df._metadata = []
+        if __debug__ and len(df.attrs) > 0:
+            printdbg("df.attrs was not []. Cleaning")
+        df.attrs = []
 
         # ... check database is not empty
 
