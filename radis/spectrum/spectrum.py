@@ -2516,8 +2516,8 @@ class Spectrum(object):
 
         # Merge and store all variables
         # ---------
+        w_conv = np.hstack(w_conv_slices)
         if inplace:
-            w_conv = np.hstack(w_conv_slices)
             if len(self._q["wavespace"]) != len(w_conv) or not np.allclose(
                 self._q["wavespace"], w_conv
             ):
@@ -2525,8 +2525,6 @@ class Spectrum(object):
                     "Wavespace of convolved arrays is different, cannot store it in the same Spectrum. You can use Spectrum.apply_slit(inplace=False) to return a new spectrum with only the convolved arrays"
                 )
             for q in I_conv_slices.keys():
-                qns = q + "_noslit"
-
                 # Merge all slices
                 I_conv = np.hstack(I_conv_slices[q])
 
@@ -2537,9 +2535,7 @@ class Spectrum(object):
                 self.units[q] = new_units[q]
             s_out = self
         else:
-            w_conv = np.hstack(w_conv_slices)
             # make new spectrum
-            quantities = I_conv_slices.items()
             quantities = {
                 "wavespace": w_conv
             }  # a copy will be created in Spectrum creation

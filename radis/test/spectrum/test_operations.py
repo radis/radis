@@ -175,10 +175,6 @@ def test_offset(verbose=True, plot=False, *args, **kwargs):
     if plot:
         plot_diff(s, s2)
     assert np.allclose(s2.get_wavelength(), s.get_wavelength() + 10)
-    assert np.allclose(
-        s2.get_wavelength(),
-        s.get_wavelength() + 10,
-    )
 
     # Test inplace version
     s.offset(10, "nm")
