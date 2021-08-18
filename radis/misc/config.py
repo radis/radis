@@ -284,7 +284,7 @@ def getConfig_configformat():
     return config
 
 
-def convertRadisToJSON():
+def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH):
     """Converts the ~/.radis file into json formatted file ~/radis.json
 
     Example
@@ -315,7 +315,7 @@ def convertRadisToJSON():
     """
 
     # Loads configuration file ~/.radis
-    config = getConfig_configformat()
+    config = getConfig_configformat(config_path_old)
 
     # Variable to store data in JSON format
     config_json = {}
@@ -349,7 +349,7 @@ def convertRadisToJSON():
     config_final["database"] = config_json
 
     # Creating json file
-    config_json_dir = CONFIG_PATH_JSON
+    config_json_dir = config_path_json
     with open(config_json_dir, "w") as outfile:
         json.dump(config_final, outfile, indent=3)
     outfile.close()
@@ -357,24 +357,27 @@ def convertRadisToJSON():
     return
 
 
-def check_and_convert():
-    """Checks whether `~/radis.json` exists.
+def init_radis_json(config_path_json, config_path_old=CONFIG_PATH):
+    """Checks whether ``config_path_json`` (usually `~/radis.json`) exists.
+
     If not then we use
     :func:`~radis.misc.config.convertRadisToJSON`
     to convert `~/.radis` into `~/radis.json`
     """
     # If `~/.radis` and `~/radis.json` both found, raises DeprecationWarning
-    if exists(CONFIG_PATH_JSON) and exists(CONFIG_PATH):
+    if exists(config_path_json) and exists(config_path_old):
         warnings.warn(
-            "`~/.radis` config file was replaced by `~/radis.json` in version '0.9.29'."
-            + " Remove `~/.radis` to remove this warning (make a copy to be sure).",
-            UserWarning,
+            DeprecationWarning(
+                f"{config_path_old} and {config_path_json} both found. "
+                + "`~/.radis` config file was replaced by `~/radis.json` in version '0.9.29'."
+                + f" Remove {config_path_old} to remove this warning.",
+            )
         )
         # TODO : replace with error if version>=0.9.31
-    elif exists(CONFIG_PATH_JSON):
+    elif exists(config_path_json):
         pass
-    elif exists(CONFIG_PATH):
-        convertRadisToJSON()
+    elif exists(config_path_old):
+        convertRadisToJSON(config_path_json, config_path_old)
     else:
         pass
 
@@ -382,13 +385,10 @@ def check_and_convert():
 
 
 def getConfig(configpath=CONFIG_PATH_JSON):
-    """Read config file and returns it.
-
-    Config file name is harcoded: :ref:`~/radis.json`
-    """
+    """Read config file and returns it."""
 
     # First checking `~radis.json` exist or not, if not then converting `~.radis` into `~/radis.json`
-    check_and_convert()
+    init_radis_json(configpath)
 
     # Test ~/radis.json exists
     if not exists(configpath):
@@ -419,6 +419,20 @@ def getConfig(configpath=CONFIG_PATH_JSON):
             ) from err
 
     return config
+
+
+def createConfigFile(config_path, verbose=True):
+
+    # Safety check : file shouldnt exist
+    if exists(config_path):
+        raise FileExistsError(
+            f"Config file already exist: {config_path}. You shouldnt be re-creating it. If sure, check it and delete it manually"
+        )
+
+    # generate ~/radis.json:
+    open(config_path, "w").close()
+    if verbose:
+        print("Created ~/radis.json in {0}".format(dirname(config_path)))
 
 
 def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
@@ -866,14 +880,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
     """
 
     # Get ~/radis.json if exists, else create it
-    try:
-        dbnames = getDatabankList(configpath=configpath)
-    except FileNotFoundError:
-        # generate ~/radis.json:
-        dbnames = []
-        open(configpath, "w").close()
-        if verbose:
-            print("Created ~/radis.json in {0}".format(dirname(configpath)))
+    dbnames = getDatabankList(configpath)
 
     # Check database doesnt exist
     if dbname in dbnames:
