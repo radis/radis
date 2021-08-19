@@ -1632,9 +1632,9 @@ class BroadenFactory(BaseFactory):
         S = broadened_param.reshape((1, -1))
         shifted_wavenum = shifted_wavenum.reshape((1, -1))  # make it a row vector
 
-        # Get broadening array
+        # Get truncation array
         wbroad_centered = self.wbroad_centered  # size (B,)
-        # index of broadening half width
+        # index of truncation half width
         iwbroad_half = len(wbroad_centered) // 2
 
         # Calculate matrix of broadened parameter (for all lines)
@@ -1672,9 +1672,11 @@ class BroadenFactory(BaseFactory):
         # to avoid an If / Else condition in the loop, we do a vectorized
         # comparison beforehand and run 3 different loops
 
-        # reminder: wavenumber_calc has size [iwbroad_half+vec_length+iwbroad_half]
+        # reminder: wavenumber_calc has size [neighbour_lines/wstep+vec_length+neighbour_lines/wstep]
         vec_length = len(wavenumber)
-        assert len(wavenumber_calc) == vec_length + 2 * iwbroad_half
+        assert (
+            len(wavenumber_calc) == vec_length + 2 * iwbroad_half
+        )  # self.params.neighbour_lines/self.params.wstep
         boffrangeleft = idcenter_left <= iwbroad_half
         boffrangeright = idcenter_right >= vec_length + iwbroad_half
         binrange = np.ones_like(idcenter_left, dtype=bool) ^ (

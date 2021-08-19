@@ -367,8 +367,8 @@ class SpectrumFactory(BandFactory):
         molecule=None,
         isotope="all",
         medium="air",
-        truncation=Default(10),
-        neighbour_lines=10,
+        truncation=Default(300),
+        neighbour_lines=0,
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
@@ -555,8 +555,8 @@ class SpectrumFactory(BandFactory):
         self.params.neighbour_lines = neighbour_lines  # including neighbour lines
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
-        self.params.wavenum_min_calc = wavenum_min - truncation / 2
-        self.params.wavenum_max_calc = wavenum_max + truncation / 2
+        self.params.wavenum_min_calc = wavenum_min - neighbour_lines / 2
+        self.params.wavenum_max_calc = wavenum_max + neighbour_lines / 2
 
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization

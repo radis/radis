@@ -45,6 +45,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
     truncation = 10  # cm-1
+    neighbour_lines = 10  # cm-1
 
     # %% HITRAN calculation
     # -----------
@@ -82,6 +83,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
         wstep=wstep,
         pressure=p,
         truncation=truncation,
+        neighbour_lines=neighbour_lines,
         isotope=[1],
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
@@ -230,6 +232,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
     truncation = 10  # cm-1
+    neighbour_lines = 10  # cm-1
 
     for i, wstep in enumerate([0.01, 0.1, 0.5]):
 
@@ -243,6 +246,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
             wstep=wstep,
             pressure=p,
             truncation=truncation,
+            neighbour_lines=neighbour_lines,
             isotope="1",
             optimization=None,
             verbose=False,
@@ -301,6 +305,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
     truncation = 10  # cm-1
+    neighbour_lines = 10  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -312,6 +317,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
         wstep=wstep,
         pressure=p,
         truncation=truncation,
+        neighbour_lines=neighbour_lines,
         isotope="1",
         verbose=False,
         warnings={
@@ -377,6 +383,7 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     wmin = 2000  # cm-1
     wmax = 2300  # cm-1
     truncation = 10  # cm-1
+    neighbour_lines = 10  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -388,6 +395,7 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
         wstep=wstep,
         pressure=p,
         truncation=truncation,
+        neighbour_lines=neighbour_lines,
         isotope="1",
         verbose=verbose,
         chunksize="DLM",
@@ -449,6 +457,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     wmin = 2380  # cm-1
     wmax = 2400  # cm-1
     truncation = 10  # cm-1
+    neighbour_lines = 10  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -460,6 +469,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
         wstep=wstep,
         pressure=p,
         truncation=truncation,
+        neighbour_lines=neighbour_lines,
         isotope="1",
         verbose=3,
         warnings={
@@ -685,6 +695,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         molecule="CO2",
         isotope="1,2",
         truncation=10,
+        neighbour_lines=10,
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",

@@ -1969,7 +1969,7 @@ class DatabankLoader(object):
         # ... (i.e, there are some lines on each side of the requested range:
         # ... else, maybe User forgot to add all requested lines in the database '''
         if include_neighbouring_lines:
-            broadening = self.params.truncation
+            broadening = self.params.neighbour_lines
             if minwavdb > wavenum_min + broadening:
                 # no lines on left side
                 self.warn(

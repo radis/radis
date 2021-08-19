@@ -52,6 +52,8 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
         path_length=0.3,
         cutoff=1e-23,
         molecule="CO2",
+        truncation=10,
+        neighbour_lines=10,
         isotope=1,
         optimization=None,
         verbose=verbose,
