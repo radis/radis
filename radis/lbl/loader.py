@@ -401,6 +401,8 @@ class Parameters(ConditionDict):
         "add_at_used",
         "broadening_method",
         "broadening_max_width",
+        "truncation",
+        "neighbour_lines",
         "chunksize",
         "cutoff",
         "db_use_cached",
@@ -432,6 +434,8 @@ class Parameters(ConditionDict):
 
         # Dev: Init here to be found by autocomplete
         self.broadening_max_width = None  #: float: cutoff for lineshape calculation (cm-1). Overwritten by SpectrumFactory
+        self.truncation = None
+        self.neighbour_lines = None
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
         self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
         self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``

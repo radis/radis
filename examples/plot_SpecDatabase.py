@@ -14,6 +14,7 @@ You can use :py:meth:`~radis.tools.database.SpecList.plot_cond` to make a 2D plo
 """
 
 import os
+import shutil
 
 import numpy as np
 
@@ -38,6 +39,10 @@ s1 = sf.eq_spectrum(Tgas=300, path_length=1)
 
 # Creating SpecDatabase
 my_folder = os.getcwd() + "/SpecDatabase_Test"
+
+if os.path.exists(my_folder):
+    shutil.rmtree(my_folder)
+
 db = SpecDatabase(my_folder)
 
 # Method 1: Creating .spec file and adding manually to SpecDatabase
@@ -64,3 +69,5 @@ db_new = SpecDatabase(my_folder)
 
 # Plot Tgas vs wstep for all Spectrums, heatmap based on calculation_time
 db_new.plot_cond("Tgas", "wstep", "calculation_time")
+
+shutil.rmtree(my_folder)

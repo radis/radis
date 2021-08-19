@@ -367,7 +367,9 @@ class SpectrumFactory(BandFactory):
         molecule=None,
         isotope="all",
         medium="air",
-        broadening_max_width=Default(300),
+        broadening_max_width=Default(10),
+        truncation=Default(10),
+        neighbour_lines=10,
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
@@ -520,6 +522,18 @@ class SpectrumFactory(BandFactory):
             else:  # keep default
                 broadening_method = broadening_method.value
 
+        if isinstance(truncation, Default):
+            if optimization is None:
+                if self.verbose >= 3:
+                    printg(
+                        "LDM algorithm not used. Defaulting truncation from {0} to 10".format(
+                            truncation
+                        )
+                    )
+                truncation = 10
+            else:  # keep default
+                truncation = truncation.value
+
         if isinstance(broadening_max_width, Default):
             if optimization is None:
                 if self.verbose >= 3:
@@ -535,11 +549,15 @@ class SpectrumFactory(BandFactory):
         # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
         self._broadening_max_width = broadening_max_width
 
-        self.params.broadening_max_width = broadening_max_width  # line broadening
+        self.params.broadening_max_width = (
+            broadening_max_width  # line broadening and neighbour lines
+        )
+        self.params.truncation = truncation  # line truncation
+        self.params.neighbour_lines = neighbour_lines  # including neighbour lines
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
-        self.params.wavenum_min_calc = wavenum_min - broadening_max_width / 2
-        self.params.wavenum_max_calc = wavenum_max + broadening_max_width / 2
+        self.params.wavenum_min_calc = wavenum_min - truncation / 2
+        self.params.wavenum_max_calc = wavenum_max + truncation / 2
 
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
@@ -1551,7 +1569,7 @@ class SpectrumFactory(BandFactory):
 
         `SpectrumFactory.wavenumber` is the output spectral range and
         ``SpectrumFactory.wavenumber_calc`` the spectral range used for calculation, that
-        includes neighbour lines within ``broadening_max_width`` distance."""
+        includes neighbour lines within ``neighbour_lines`` distance."""
 
         self.profiler.start("generate_wavenumber_arrays", 2)
         # calculates minimum FWHM of lines
@@ -1568,10 +1586,10 @@ class SpectrumFactory(BandFactory):
             self.input.wavenum_min,
             self.input.wavenum_max,
             self.params.wstep,
-            self.params.broadening_max_width,
+            self.params.neighbour_lines,
         )
         wbroad_centered = _generate_broadening_range(
-            self.params.wstep, self.params.broadening_max_width
+            self.params.wstep, self.params.truncation
         )
 
         # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
@@ -2075,10 +2093,10 @@ class SpectrumFactory(BandFactory):
 # XXX =====================================================================
 
 
-def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_width):
+def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines):
     """define waverange vectors, with ``wavenumber`` the output spectral range
     and ``wavenumber_calc`` the spectral range used for calculation, that
-    includes neighbour lines within ``broadening_max_width`` distance.
+    includes neighbour lines within ``neighbour_lines`` distance.
 
     Parameters
     ----------
@@ -2086,7 +2104,7 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
         wavenumber range limits (cm-1)
     wstep: float
         wavenumber step (cm-1)
-    broadening_max_width: float
+    neighbour_lines: float
         wavenumber full width of broadening calculation: used to define which
         neighbour lines shall be included in the calculation
 
@@ -2096,8 +2114,8 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
         an evenly spaced array between ``wavenum_min`` and ``wavenum_max`` with
         a spacing of ``wstep``
     wavenumber_calc: numpy array
-        an evenly spaced array between ``wavenum_min-broadening_max_width/2`` and
-        ``wavenum_max+broadening_max_width/2`` with a spacing of ``wstep``
+        an evenly spaced array between ``wavenum_min-neighbour_lines/2`` and
+        ``wavenum_max+neighbour_lines/2`` with a spacing of ``wstep``
     """
     assert wavenum_min < wavenum_max
 
@@ -2107,8 +2125,8 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
 
     # generate the calculation vector of wavenumbers (shape M + space on the side)
     # ... Calculation range
-    wavenum_min_calc = wavenumber[0] - broadening_max_width / 2  # cm-1
-    wavenum_max_calc = wavenumber[-1] + broadening_max_width / 2  # cm-1
+    wavenum_min_calc = wavenumber[0] - neighbour_lines / 2  # cm-1
+    wavenum_max_calc = wavenumber[-1] + neighbour_lines / 2  # cm-1
     w_out_of_range_left = arange(
         wavenumber[0] - wstep, wavenum_min_calc - wstep, -wstep
     )[::-1]
@@ -2130,14 +2148,14 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
     return wavenumber, wavenumber_calc
 
 
-def _generate_broadening_range(wstep, broadening_max_width):
+def _generate_broadening_range(wstep, truncation):
     """Generate array on which to compute line broadening.
 
     Parameters
     ----------
     wstep: float
         wavenumber step (cm-1)
-    broadening_max_width: float
+    truncation: float
         wavenumber full width of broadening calculation: used to define which
         neighbour lines shall be included in the calculation
 
@@ -2145,16 +2163,16 @@ def _generate_broadening_range(wstep, broadening_max_width):
     -------
     wbroad_centered: numpy array
         an evenly spaced array, of odd-parity length, centered on 0, and of width
-        ``broadening_max_width``
+        ``truncation``
     """
 
     # create a broadening array, on which lineshape will be calculated.
     # Odd number is important
     wbroad_centered = np.hstack(
         (
-            -arange(wstep, 0.5 * broadening_max_width + wstep, wstep)[::-1],
+            -arange(wstep, 0.5 * truncation + wstep, wstep)[::-1],
             [0],
-            arange(wstep, 0.5 * broadening_max_width + wstep, wstep),
+            arange(wstep, 0.5 * truncation + wstep, wstep),
         )
     )
 

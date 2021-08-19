@@ -128,6 +128,8 @@ class BaseFactory(DatabankLoader):
         #        'slit_function_FWHM':   'nm',
         "cutoff": "cm-1/(#.cm-2)",
         "broadening_max_width": "cm-1",
+        "truncation": "cm-1",
+        "neighbour_lines": "cm-1",
         # The later is never stored in Factory, but exported in Spectrum at the end of the calculation
         "calculation_time": "s",
     }
