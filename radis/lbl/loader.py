@@ -39,7 +39,8 @@ Most methods are written in inherited class with the following inheritance schem
 Notes
 -----
 RADIS includes automatic rebuilding of Deprecated cache files + a global variable
-to force regenerating them after a given version. See :py:data:`radis.OLDEST_COMPATIBLE_VERSION`
+to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSION"``
+key in :py:attr:`radis.config`
 -------------------------------------------------------------------------------
 """
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate

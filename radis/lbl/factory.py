@@ -98,7 +98,6 @@ except ImportError:  # if ran from here
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
 from radis.misc.utils import Default
-from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
 from radis.phys.constants import k_b
 from radis.phys.convert import conv2
 from radis.phys.units import convert_emi2nm, convert_rad2nm
@@ -173,8 +172,8 @@ class SpectrumFactory(BandFactory):
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
-        are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
-        points for each linewidth.
+        are slightly more points for each linewidth than the value of ``"GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"``
+        in :py:attr:`radis.config`  (``~/radis.json``)
 
         .. note::
             wstep = 'auto' is optimized for performances while ensuring accuracy,
@@ -1521,8 +1520,10 @@ class SpectrumFactory(BandFactory):
 
         # Setting wstep to optimal value and rounding it to a degree 3
         if self.wstep == "auto":
+            import radis
+
             self.params.wstep = round_off(
-                self.min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
+                self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
             )
             self.warnings["AccuracyWarning"] = "ignore"
 

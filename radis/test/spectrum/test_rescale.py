@@ -60,8 +60,8 @@ def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
     w1, T1 = s.get("transmittance_noslit")  # our reference
 
     if verbose:
-        debug_mode = radis.DEBUG_MODE  # shows all the rescale steps taken
-        radis.DEBUG_MODE = True
+        debug_mode = radis.config["DEBUG_MODE"]  # shows all the rescale steps taken
+        radis.config["DEBUG_MODE"] = True
 
     # Now let's apply some update() steps
 
@@ -81,7 +81,7 @@ def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
     w2, T4 = s.get("transmittance_noslit")
 
     if verbose:
-        radis.DEBUG_MODE = debug_mode
+        radis.config["DEBUG_MODE"] = debug_mode
 
     # Compare
     assert np.allclose(T1, T2)
@@ -184,8 +184,8 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
     if verbose >= 2:
         import radis
 
-        DEBUG_MODE = radis.DEBUG_MODE
-        radis.DEBUG_MODE = True
+        DEBUG_MODE = radis.config["DEBUG_MODE"]
+        radis.config["DEBUG_MODE"] = True
     from radis.spectrum.rescale import _build_update_graph, get_reachable, ordered_keys
 
     # ordered_keys: all spectral quantities that can be rescaled
@@ -229,7 +229,7 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
             assert s.compare_with(sscaled, spectra_only=quantity, plot=False)
 
     if verbose >= 2:
-        radis.DEBUG_MODE = DEBUG_MODE
+        radis.config["DEBUG_MODE"] = DEBUG_MODE
 
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):

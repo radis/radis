@@ -47,27 +47,88 @@ from .misc.utils import getProjectRoot
 config = get_config()
 """dict: RADIS configuration parameters
 
+Parameters
+----------
+"DEBUG_MODE":False
+
+    bool: change this at runtime with::
+
+        import radis
+        radis.config["DEBUG_MODE"] = True
+
+    Use the :py:func:`~radis.misc.debug.printdbg` function in ``radis.misc``, typically with::
+
+        if __debug__: printdbg(...)
+
+    so that printdbg are removed by the Python preprocessor when running in
+    optimize mode::
+
+        python -O *.py
+
+"AUTO_UPDATE_SPEC": False
+
+    bool: experimental feature
+    used to autoupdate .spec files to the latest format, by simply saving
+    them again once they're loaded and fixed.
+    Warning! Better have a copy of your files before that, or a way to regenerate
+    them.
+
+    Example : Add to the top of your script (once is enough!)::
+
+        import radis
+        radis.config["AUTO_UPDATE_SPEC"] = True
+
+    See Also
+    --------
+    :py:func:`~radis.tools.database._update_to_latest_format`
+
+
+"OLDEST_COMPATIBLE_VERSION": "0.9.1"
+    str: forces to regenerate cache files that were created in a previous version
+
+    See Also
+    --------
+    :py:func:`~radis.io.cache_files.load_h5_cache_file`
+
+
+"USE_CYTHON": True
+    bool: try to use Cython functions when possible
+
+    See Also
+    --------
+    :py:func:`~radis.misc.arrays.add_at`
+
+
+"GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3
+    float: to determine the optimal value
+    of wstep using minimum FWHM value of spectrum.
+    Makes sure there are enough gridpoints per line.
+
+    See Also
+    --------
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
+
+
+"GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1
+    float: to determine the minimum feasible value
+    of wstep using minimum FWHM value of spectrum.
+    Makes sure there are enough gridpoints per line.
+
+    See Also
+    --------
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
+
+
 Notes
 -----
 
-refactor in progress.
-So far there are config files in ~/radis.json (for databanks), global variables
-here, and a radis/config.json file.
+Default values are read from the ``radis/config.json`` file.
 
-Everything should be merged in a user JSON file ~/radis.json (json) overriding
-the default ``radis/config.json`` file.
+All values are overriden at runtime by the keys in the user JSON file ``~/radis.json (json)``
+(in particular, the list of databases)
 """
+# TODO : Refactor in progress.
 
-
-# %% Global constants
-from .params import (
-    AUTO_UPDATE_SPEC,
-    DEBUG_MODE,
-    GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD,
-    GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD,
-    OLDEST_COMPATIBLE_VERSION,
-    USE_CYTHON,
-)
 
 # %% Version
 
@@ -120,12 +181,7 @@ version = get_version(add_git_number=False)
 # %% Global namespace
 
 __all__ = [
-    "AUTO_UPDATE_SPEC",
-    "DEBUG_MODE",
-    "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD",
-    "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD",
-    "OLDEST_COMPATIBLE_VERSION",
-    "USE_CYTHON",
+    "config",
     "version",
     "__version__",
 ]

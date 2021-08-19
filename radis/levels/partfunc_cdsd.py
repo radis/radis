@@ -28,7 +28,6 @@ import pandas as pd
 from scipy.interpolate import splev, splrep
 
 import radis
-from radis import OLDEST_COMPATIBLE_VERSION
 from radis.db.molecules import ElectronicState
 from radis.io.cache_files import filter_metadata, load_h5_cache_file, save_to_hdf
 from radis.lbl.labels import (
@@ -315,7 +314,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             relevant_if_metadata_above={},
             relevant_if_metadata_below={},
             current_version=radis.__version__,
-            last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+            last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
             verbose=verbose,
         )
 

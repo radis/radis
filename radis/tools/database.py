@@ -870,12 +870,12 @@ def _update_to_latest_format(s, file, binary):
     add to the start of your script::
 
         import radis
-        radis.AUTO_UPDATE_SPEC = True
+        radis.config["AUTO_UPDATE_SPEC"] = True
     """
 
     import radis
 
-    if radis.AUTO_UPDATE_SPEC:
+    if radis.config["AUTO_UPDATE_SPEC"]:
 
         assert exists(file)
 

@@ -559,7 +559,7 @@ class BaseFactory(DatabankLoader):
         for iso, idx in df.groupby("iso").indices.items():
             df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pc_1iso(df.loc[idx], iso)
 
-            if radis.DEBUG_MODE:
+            if radis.config["DEBUG_MODE"]:
                 assert (df.loc[idx, "iso"] == iso).all()
 
         # Get rotational energy: better recalculate than look up the database
@@ -665,7 +665,7 @@ class BaseFactory(DatabankLoader):
                     df.loc[idx], iso
                 )
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     assert (df.loc[idx, "iso"] == iso).all()
 
         else:
@@ -786,7 +786,7 @@ class BaseFactory(DatabankLoader):
                     df.loc[idx], iso
                 )
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     assert (df.loc[idx, "iso"] == iso).all()
 
         else:
@@ -1549,7 +1549,7 @@ class BaseFactory(DatabankLoader):
                 df.loc[idx, "grotu"] = dg.gju * _gs * _gi
                 df.loc[idx, "grotl"] = dg.gjl * _gs * _gi
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     assert (df.loc[idx, "iso"] == iso).all()
 
         else:
@@ -1757,7 +1757,7 @@ class BaseFactory(DatabankLoader):
                 # ... note: do not update the populations here, so populations in the
                 # ... energy level list correspond to the one calculated for T and not Tref
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     if "id" in df:
                         assert (df.loc[idx, "id"] == id).all()
                     assert (df.loc[idx, "iso"] == iso).all()
@@ -1853,7 +1853,7 @@ class BaseFactory(DatabankLoader):
                 # ... note: do not update the populations here, so populations in the
                 # ... energy level list correspond to the one calculated for T and not Tref
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     if "id" in df:
                         assert (df.loc[idx, "id"] == id).all()
                     assert (df.loc[idx, "iso"] == iso).all()
@@ -2533,7 +2533,7 @@ class BaseFactory(DatabankLoader):
                     dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
                     df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
 
-                    if radis.DEBUG_MODE:
+                    if radis.config["DEBUG_MODE"]:
                         assert (df.loc[idx, "iso"] == iso).all()
 
                 Q, Qvib, Qrotu, Qrotl = df.Q, df.Qvib, df.Qrotu, df.Qrotl
