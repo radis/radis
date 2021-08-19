@@ -21,7 +21,15 @@ Cite
 ====
 
 RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
-for your work, **cite all of them that made it possible** :
+for your work, **cite all of them that made it possible**.
+
+Starting from 0.9.30, you can retrieve the bibtex entries of all papers and
+references that contribute to the calculation of a Spectrum, with
+:py:meth:`~radis.spectrum.spectrum.Spectrum.cite` ::
+
+    s.cite()
+
+See the :ref:`citation example <example_cite>`. The references usually include :
 
 Line-by-line algorithm :
 

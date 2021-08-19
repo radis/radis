@@ -14,27 +14,28 @@ Originally in radis-examples : https://github.com/radis/radis-examples
 
 import sys
 from os.path import join
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import OptimizeResult, minimize
 
 from radis import Spectrum, SpectrumFactory
+from radis.phys.units import Unit
 from radis.spectrum import plot_diff
-from radis.spectrum.compare import get_diff, get_residual
+from radis.spectrum.compare import get_default_units, get_diff, get_residual
 
 
 # Calculate a new spectrum for given parameters:
-def Tvib12Tvib3TrotModel(factory, model_input) -> Spectrum:
-    """A model returning a single-slab non-LTE spectrum with Tvib=(T12, T12, T3), Trot
+def LTEModel(factory, fittable_parameters, fixed_parameters={}) -> Spectrum:
+    """A model returning a single-slab LTE spectrum
 
     Parameters
     ----------
     model_input: dict
-        input dictionary (typically: temperatures). Example::
-            {'T12':value,
-             'T3':value,
-             'Trot':value}
+        input dictionary (typically: temperatures). Example
+        ::
+            {'Trot':value}
 
     Returns
     -------
@@ -43,27 +44,91 @@ def Tvib12Tvib3TrotModel(factory, model_input) -> Spectrum:
     Examples
     --------
 
-    .. minigallery:: radis.tools.fitting.Tvib12Tvib3TrotModel
+    .. minigallery:: radis.tools.fitting.LTEModel
+
+    See Also
+    --------
+    :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
 
     """
 
+    kwargs = {"name": "fit"}
+
+    # ... create whatever model below (can have several slabs with SerialSlabs
+    # ... or MergeSlabs, etc.)
+
+    # update with remaining fittable and fixed parameters
+    kwargs = {**kwargs, **fittable_parameters}
+    kwargs = {**kwargs, **fixed_parameters}
+
+    # >>> This is where the RADIS calculation is done!
+
+    s = factory.eq_spectrum(**kwargs)
+
+    # <<<
+
+    # ... output should be a Spectrum object
+    return s
+
+
+# Calculate a new spectrum for given parameters:
+def Tvib12Tvib3Trot_NonLTEModel(
+    factory, fittable_parameters, fixed_parameters={}
+) -> Spectrum:
+    """A model returning a single-slab non-LTE spectrum with Tvib=(T12, T12, T3), Trot
+
+    Used for non-LTE CO2 modeling. See the :ref:`multi-temperature fit example<example_multi_temperature_fit>`
+
+    Parameters
+    ----------
+    fittable_parameters: dict
+        input dictionary of fittable parameters (typically: temperatures). Example
+        ::
+            {'T12':value,
+             'T3':value,
+             'Trot':value}
+    fixed_parameters: dict
+        input dictionary of non-fittable parameters. Will override input
+        conditions given to :py:meth:`~radis.lbl.factory.non_eq_spectrum`
+
+    Returns
+    -------
+    Spectrum: calculated spectrum
+
+    Examples
+    --------
+
+    .. minigallery:: radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel
+
+    See Also
+    --------
+    :py:func:`~radis.tools.fitting.LTEModel`
+    """
+
+    fittable_parameters = fittable_parameters.copy()
+
     # ... input should remain a dict
-    T12 = model_input["T12"]
-    T3 = model_input["T3"]
-    Trot = model_input["Trot"]
+    T12 = fittable_parameters.pop("T12")
+    T3 = fittable_parameters.pop("T3")
+    Trot = fittable_parameters.pop("Trot")
 
     # ... create whatever model below (can have several slabs with SerialSlabs
     # ... or MergeSlabs, etc.)
 
     # >>> This is where the RADIS calculation is done!
 
-    s = factory.non_eq_spectrum(
-        (T12, T12, T3),
-        Trot,
-        Ttrans=Trot,
-        vib_distribution="treanor",
-        name="fit",
-    )
+    kwargs = {
+        "Tvib": (T12, T12, T3),
+        "Trot": Trot,
+        "Ttrans": Trot,
+        # "vib_distribution":"treanor",
+        "name": "fit",
+    }
+    # update with remaining fittable and fixed parameters
+    kwargs = {**kwargs, **fittable_parameters}
+    kwargs = {**kwargs, **fixed_parameters}
+
+    s = factory.non_eq_spectrum(**kwargs)
 
     # <<<
 
@@ -75,8 +140,16 @@ ite = 2
 
 
 def fit_spectrum(
-    factory, s_exp, model, fit_parameters, bounds={}, plot=True, maxiter=300
-) -> (Spectrum, OptimizeResult):
+    factory,
+    s_exp,
+    model,
+    fit_parameters,
+    bounds={},
+    fixed_parameters={},
+    plot=False,
+    verbose=True,
+    solver_options={"maxiter": 300},
+) -> Union[Spectrum, OptimizeResult]:
     """Fit an experimental spectrum with an arbitrary model and an arbitrary
     number of fit parameters.
 
@@ -87,21 +160,34 @@ def fit_spectrum(
         :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g::
             sf.fit_spectrum(s_exp.take('transmittance'))
     model : func -> Spectrum
-        a line-of-sight model returning a Spectrum. Example : :py:func:`~radis.tools.fitting.Tvib12TrotModel`
+        a line-of-sight model returning a Spectrum. Example :
+        :py:func:`~radis.tools.fitting.LTEModel, `:py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
     fit_parameters : dict
-        ::
-            {fit_parameter:initial_value}
+        example::
+
+            {fit_parameter:initial_value}s
     bounds : dict, optional
-        ::
+        example::
+
             {fit_parameter:[min, max]}
+    fixed_parameters : dict
+        fixed parameters given to the model. Example::
+
+            fit_spectrum(fixed_parameters={"vib_distribution":"treanor"})
 
     Other Parameters
     ----------------
     plot: bool
-        if True, plot spectra as they are computed; and plot the convergence of
-        the residual.
-    maxiter: int
-        max number of iteration, default 300
+        if ``True``, plot spectra as they are computed; and plot the convergence of
+        the residual. Defaut ``False``
+    verbose: bool, or ``2``
+        use ``2`` for high verbose level.
+    solver_options: dict
+        parameters forwarded to the solver. More info in `~scipy.optimize.minimize`
+        Example::
+
+            {"maxiter": (int)  max number of iteration default ``300``,
+             }
 
     Returns
     -------
@@ -110,31 +196,37 @@ def fit_spectrum(
     res: OptimizeResults
         output of `~scipy.optimize.minimize`
 
+    Examples
+    --------
+    See a :ref:`one-temperature fit example <example_multi_temperature_fit>` or
+    a :ref:`multi-temperature fit example <example_multi_temperature_fit>`.
+    `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`__
+
     See Also
     --------
     :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
-    For more advanced cases, use Fitroom : https://github.com/radis/fitroom
     """
 
-    # Get initial values of fitted parameters
-    model_input = fit_parameters
-
-    compute_los_model = lambda model_input: model(factory, model_input)
+    # Get model being fitted:
+    compute_los_model = lambda fit_parameters: model(
+        factory, fit_parameters, fixed_parameters=fixed_parameters
+    )
 
     # Calculate initial Spectrum, by showing all steps.
     # factory.verbose = 0  # reduce verbose during calculation.
     compute_los_model(
-        model_input
+        fit_parameters
     )  # Blank run to load energies; initialize all caches, etc.
     default_verbose = factory.verbose
     factory.verbose = 0  # reduce verbose during calculation.
-    s0 = compute_los_model(model_input)  # New run to get performance profile of fit
+    s0 = compute_los_model(fit_parameters)  # New run to get performance profile of fit
     sys.stderr.flush()
     s0.name = "Fit (in progress)"
-    print("-" * 30)
-    print("TYPICAL FIT CALCULATION TIME:")
-    s0.print_perf_profile()
-    print("-" * 30)
+    if "profiler" in s0.conditions:
+        print("-" * 30)
+        print("TYPICAL FIT CALCULATION TIME:")
+        s0.print_perf_profile()
+        print("-" * 30)
 
     # %% Leastsq version
 
@@ -152,7 +244,7 @@ def fit_spectrum(
         if isinstance(fit_parameters[k], u.Quantity) or isinstance(
             fit_parameters[k], u.Unit
         ):
-            fit_units.append(u.Unit(fit_parameters[k]))
+            fit_units.append(Unit(fit_parameters[k]))
         else:
             fit_units.append("")
 
@@ -160,7 +252,7 @@ def fit_spectrum(
         raise ValueError(
             "More than one spectral array in experimental spectrum"
             + f"({len(s_exp.get_vars())}) : {s_exp.get_vars()}. "
-            + "Choose one only with `s_exp.take()`"
+            + "Choose one only with `s_exp.take('your_variable')`"
         )
     fit_variable = s_exp.get_vars()[0]
 
@@ -172,13 +264,14 @@ def fit_spectrum(
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
 
+    fit_variable, wunit, Iunit = get_default_units(s_exp, s0, var=fit_variable)
+
     # %%
     # Algorithm Params
     # ----------------
 
     history_x = []
     history_res = []
-    maxiter = maxiter
 
     def print_fit_values(fit_values):
         return ",".join(
@@ -193,7 +286,7 @@ def fit_spectrum(
     def generate_spectrum(fit_values):
 
         # Generate dictionary
-        inputs = model_input.copy()
+        inputs = fit_parameters.copy()
         for k, v in zip(fit_params, fit_values):
             inputs[k] = v
 
@@ -205,10 +298,12 @@ def fit_spectrum(
     blit = True
 
     if plot:
-        plt.ion()
+        # plt.ion()
         # Graph with plot diff
         # figSpec, axSpec = plt.subplots(num='diffspectra')
-        figSpec, axSpec = plot_diff(s_exp, s0, fit_variable, nfig="diffspectra")
+        figSpec, axSpec = plot_diff(
+            s_exp, s0, fit_variable, nfig="diffspectra", wunit=wunit, Iunit=Iunit
+        )
         lineSpec = axSpec[0].get_lines()[1]
         lineDiff = axSpec[1].get_lines()[0]
         figSpec.canvas.draw()
@@ -216,7 +311,7 @@ def fit_spectrum(
         if blit:
             # cache the background
             # ... rmeove data first:
-            s_diff = get_diff(s_exp, s0, var=fit_variable)
+            s_diff = get_diff(s_exp, s0, var=fit_variable, wunit=wunit, Iunit=Iunit)
             lineSpec.set_data(s0.get(fit_variable)[0], s0.get(fit_variable)[1] * np.nan)
             lineDiff.set_data(s_diff[0], s_diff[1] * np.nan)
             figSpec.canvas.draw()
@@ -226,11 +321,12 @@ def fit_spectrum(
             # ... re-add :
             lineSpec.set_data(s0.get(fit_variable))
             lineDiff.set_data(s_diff)
+            figSpec.canvas.draw()
 
         plt.show(block=False)
 
     def cost_function(fit_values, plot=None):
-        """ Return error on Spectrum s vs experimental spectrum"""
+        """Return error on Spectrum s vs experimental spectrum"""
 
         s = generate_spectrum(fit_values)
 
@@ -239,11 +335,11 @@ def fit_spectrum(
             del s._q[var]
 
         if plot:  #  plot difference
-            s_diff = get_diff(s_exp, s, var=fit_variable)
-            lineSpec.set_data(s.get(fit_variable))
+            s_diff = get_diff(s_exp, s, var=fit_variable, wunit=wunit, Iunit=Iunit)
+            lineSpec.set_data(s.get(fit_variable, wunit=wunit, Iunit=Iunit))
             lineDiff.set_data(s_diff)
             # axSpec[0].set_title(print_fit_values(fit_values))
-            plt.show(block=False)
+            # plt.show(block=False)
 
             if blit:
                 # ... from https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot
@@ -271,7 +367,7 @@ def fit_spectrum(
         return get_residual(s, s_exp, fit_variable, ignore_nan=True, norm="L2")
 
     def log_cost_function(fit_values, plot=None):
-        """ Calls the cost_function, and write the values to the Log history  """
+        """Calls the cost_function, and write the values to the Log history"""
 
         res = cost_function(fit_values, plot=plot)
 
@@ -292,6 +388,8 @@ def fit_spectrum(
     res0 = log_cost_function(fit_values_min, plot=plot)
     res1 = log_cost_function(fit_values_max, plot=plot)
 
+    maxiter = solver_options.get("maxiter", 300)
+
     if plot:
         # we need to plot lineValues alreazdy to get the legend right:
         lineValues = {}
@@ -300,14 +398,15 @@ def fit_spectrum(
                 (1, 2), (fit_values_min[i], fit_values_max[i]), "-", label=k
             )[0]
 
-        axRes.set_xlim((0, maxiter))
+        axRes.set_xlim((0, int(max(1, maxiter * 4))))
         axRes.set_ylim(ymin=0, ymax=1.5 * max(res0, res1))
         axValues.set_ylim(ymin=0, ymax=max(fit_values_max) * 1.1)
         axRes.set_xlabel("Iteration")
         axRes.set_ylabel("Residual")
         figRes.legend(loc="upper right")
         figRes.canvas.draw()
-        axResbackground = figRes.canvas.copy_from_bbox(axRes.bbox)
+        if blit:
+            axResbackground = figRes.canvas.copy_from_bbox(axRes.bbox)
         plt.show(block=False)
 
         (lineRes,) = axRes.plot((1, 2), (res0, res1), "-ko")
@@ -347,64 +446,83 @@ def fit_spectrum(
             lineLast.set_data((ite, res))
 
             if blit:
+                # ... from https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot
                 figRes.canvas.restore_region(axResbackground)
                 for k in fit_params:
                     axRes.draw_artist(lineValues[k])
                 axRes.draw_artist(lineLast)
                 axRes.draw_artist(lineRes)
+                # fill in the axes rectangle
+                figRes.canvas.blit(axRes.bbox)
             else:
                 figRes.canvas.draw()
             figRes.canvas.flush_events()
             # plt.show(block=False)
 
-        print(
-            "{0}, Residual: {1:.4f} {2}".format(
-                print_fit_values(fit_values),
-                res,
-                " 🏆" if res == min(history_res) else "",
-            ),
-            flush=True,
-        )
+        if verbose:
+            print(
+                "{0}, Residual: {1:.4f} {2}".format(
+                    print_fit_values(fit_values),
+                    res,
+                    " 🏆" if res == min(history_res) else "",
+                ),
+                flush=True,
+            )
 
         return res
 
     # %%>>> This is where the fitting loop happens
-    print("\nNow starting the fitting process:")
-    print("---------------------------------\n")
+    if verbose:
+        print("\nNow starting the fitting process:")
+    if verbose:
+        print("---------------------------------\n")
+    solver_options = solver_options.copy()
     best = minimize(
         cost_and_plot_function,
         (fit_values_max + fit_values_min) / 2,
-        # method='L-BFGS-B',
-        method="TNC",
+        method=solver_options.pop("method", None),
         jac=None,
         bounds=bounds_arr,
         options={
-            "maxiter": int(max(1, maxiter / 4)),  # somehow.
-            "eps": 20,
-            #                         'ftol':1e-10,
-            # 'gtol':1e-10,
-            "disp": True,
+            **{
+                "maxiter": maxiter,  # somehow.
+                "eps": 20,
+                #                         'ftol':1e-10,
+                # 'gtol':1e-10,
+                "disp": True,
+            },
+            **solver_options,
         },
     )
+
     # %% Get best :
 
     s_best = generate_spectrum(best.x)
 
-    if best.success:
-        print("Final {0}: {1}{2}".format(fit_params, np.round(best.x), fit_units))
+    if verbose and best.success:
+        print(
+            "Init {0} = {1}{2}".format(
+                fit_params, (fit_values_max + fit_values_min) / 2, fit_units
+            )
+        )
+        print("Final {0} = {1}{2}".format(fit_params, np.round(best.x), fit_units))
+
+    if verbose >= 2:
+        print(best)
 
     # Res history
 
     # ... what does history say:
-    print(
-        "Best: {0}: {1}{2} reached at iteration {3}/{4}".format(
-            fit_params,
-            history_x[np.argmin(history_res)],
-            fit_units,
-            np.argmin(history_res),
-            best.nfev,
+    if verbose:
+        print(
+            "Best {0} = {1}{2} reached at iteration {3}/{4}".format(
+                fit_params,
+                history_x[np.argmin(history_res)],
+                fit_units,
+                np.argmin(history_res),
+                best.nfev,
+            )
         )
-    )
 
     # ... note that there are more function evaluations (best.nfev) that actual solver
     # ... iterations (best.nit) because the Jacobian is calculated numerically with
@@ -444,15 +562,12 @@ if __name__ == "__main__":
         2284.6,
         wstep=0.001,  # cm-1
         pressure=20 * 1e-3,  # bar
-        db_use_cached=True,
-        lvl_use_cached=True,
         cutoff=1e-25,
         isotope="1,2",
         path_length=10,  # cm-1
         mole_fraction=0.1 * 28.97 / 44.07,
         truncation=1,  # cm-1
         medium="vacuum",
-        export_populations=None,  # 'vib',
         # parsum_mode="tabulation"
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
@@ -460,16 +575,17 @@ if __name__ == "__main__":
 
     s_best, best = sf.fit_spectrum(
         s_exp.take("transmittance_noslit"),
-        model=Tvib12Tvib3TrotModel,
+        model=Tvib12Tvib3Trot_NonLTEModel,
         fit_parameters={
             "T12": 517,
             "T3": 2641,
             "Trot": 491,
         },
         bounds={"T12": [300, 2000], "T3": [300, 5000], "Trot": [300, 2000]},
+        fixed_parameters={"vib_distribution": "treanor"},
         plot=True,
-        maxiter=200,
+        solver_options={"method": "TNC", "maxiter": 200},
     )
     plot_diff(s_exp, s_best)
 
-    # s_best.print_perf_profile()
+    s_best.print_perf_profile()

@@ -17,7 +17,7 @@ scripts = [
 
 @pytest.mark.parametrize("script", scripts)
 def test_script_execution(script):
-    """ Run all examples in `radis/examples <https://github.com/radis/radis/tree/develop/examples>`__ """
+    """Run all examples in `radis/examples <https://github.com/radis/radis/tree/develop/examples>`__"""
     # ensure Matplotlib is interactive (figures won't block the rest of the execution)
     import matplotlib.pyplot as plt
 

@@ -50,7 +50,6 @@ def test_retrieve_from_database(
             mole_fraction=400e-6,
             molecule="CO2",
             isotope=[1],
-            db_use_cached=True,
             medium="vacuum",
             truncation=10,
             export_populations="rovib",
@@ -154,11 +153,80 @@ def test_ignore_irrelevant_files(*args, **kwargs):
         sf3.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
 
 
+@pytest.mark.fast
+def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
+    """Test calculatinos with custom abundances
+
+    set the terrestrial abundance to False to
+    force computation of linestrength from Einstein coefficients instead
+    of rescaling parameters
+
+    :py:meth:`~radis.lbl.base.DatabankLoader.get_abundance`,
+    :py:meth:`~radis.lbl.base.DatabankLoader.set_abundance`
+    """
+
+    sf = SpectrumFactory(
+        2284.2,
+        2284.6,
+        wstep=0.001,  # cm-1
+        pressure=20 * 1e-3,  # bar
+        cutoff=0,
+        path_length=0.1,
+        mole_fraction=400e-6,
+        molecule="CO2",
+        isotope="1,2",
+        medium="vacuum",
+        broadening_max_width=10,
+        verbose=0,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.load_databank("HITEMP-CO2-TEST")
+
+    #%% Compute a spectrum ; set the terrestrial abundance to False to
+    # force computation of linestrength from Einstein coefficients instead
+    # of rescaling parameters
+    s = sf.eq_spectrum(2000)
+    sf.molparam.terrestrial_abundances = False
+    s2 = sf.eq_spectrum(2000)
+    assert (
+        s != s2
+    )  # compare spectra; we should see small differences due to different methods
+    assert s.compare_with(s2, "abscoeff", rtol=0.5e-2, plot=False)
+    # assert np.allclose(2 * s2.get("abscoeff")[1], s.get("abscoeff")[1])
+
+    if plot:
+        from radis import plot_diff
+
+        plot_diff(s, s2)
+
+    #%% Now restart by changing the abundance itself ; as a user would do
+
+    # ... check abundance get/set functions work well
+    abundance12_0 = sf.get_abundance("CO2", [1, 2])
+
+    if verbose:
+        print("Abundance: CO2[1]", sf.get_abundance("CO2", 1))
+        print("Abundance: CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
+
+    sf.set_abundance("CO2", [1, 2], abundance12_0 / 3)
+    assert all(sf.get_abundance("CO2", [1, 2]) == abundance12_0 / 3)
+    sf.set_abundance("CO2", 1, abundance12_0[0] / 3)
+    sf.set_abundance("CO2", 2, abundance12_0[1] / 3)
+    assert all(sf.get_abundance("CO2", [1, 2]) == abundance12_0 / 3)
+
+    # Below we compute a spectrum with the abundance divided by 3; and then
+    # check that the resulting absorption coefficient is 3x smaller
+
+    s3 = sf.eq_spectrum(2000)
+    assert s.compare_with((3 * s3.take("abscoeff")), "abscoeff", rtol=0.5e-2, plot=True)
+
+
 def _run_testcases(verbose=True, plot=False):
 
     test_ignore_cached_files()
     test_retrieve_from_database(plot=plot, verbose=verbose)
     test_ignore_irrelevant_files(verbose=verbose)
+    test_custom_abundance()
 
 
 if __name__ == "__main__":

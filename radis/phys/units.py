@@ -73,10 +73,14 @@ def conv2(quantity, fromunit, tounit):
         a = quantity * Unit(fromunit)
         a = a.to(Unit(tounit))
 
-    except u.UnitConversionError:
+    except u.UnitConversionError as err:
+        suggestion = ""
+        if fromunit == "" or tounit == "":
+            suggestion += " Is one of the two arrays normalized ?"
         raise TypeError(
             f"Cannot convert quantity `{fromunit}` to the specified unit `{tounit}`. Please check the dimensions."
-        )
+            + suggestion
+        ) from err
 
     return a.value
 

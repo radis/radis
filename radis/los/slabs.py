@@ -288,6 +288,11 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                     assert s.cond_units == sn.cond_units
         cond_units = intersect(s.cond_units, sn.cond_units)
 
+        # Update references
+        # -----------------
+        # (just add everything)
+        references = {**s.references, **sn.references}
+
         # name
         name = _serial_slab_names(s, sn)
 
@@ -297,6 +302,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
             cond_units=cond_units,
             units=unitsn,
             name=name,
+            references=references,
             warnings=False,  # we already know waveranges are properly spaced, etc.
         )
 
@@ -694,6 +700,13 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         #  "mole_fractions":{'MergeSlabs':dict},  # make a dict, same for mole fractions?
         #  }
 
+        # Update references
+        # -----------------
+        # (just add everything)
+        references = slabs[0].references
+        for s in slabs[1:]:
+            references.update(s.references)
+
         # %% Get quantities that should be calculated
         # Try to keep all the quantities of the initial slabs:
         requested = merge_lists([s.get_vars() for s in slabs])
@@ -759,6 +772,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             cond_units=cond_units,
             units=units0,
             name=name,
+            references=references,
         )
 
         # %% Calculate all quantities from emisscoeff and abscoeff

@@ -113,7 +113,7 @@ def get_version(verbose=False, add_git_number=True):
 
 
 __version__ = get_version(add_git_number=False)
-version = get_version()  # complete version including commit number
+version = get_version(add_git_number=False)
 
 
 # %% Global namespace
@@ -129,8 +129,8 @@ __all__ = [
     "__version__",
 ]
 
-
-from . import db, io, lbl, los, phys, spectrum, tools
+# prevent cyclic importants:
+from . import db, io, lbl, los, misc, phys, spectrum, tools
 from .db import *  # database of molecules
 from .io import *  # input / output
 from .lbl import *  # line-by-line module

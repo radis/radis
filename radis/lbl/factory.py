@@ -76,22 +76,27 @@ for Developers:
 
 ----------
 """
+from typing import Union
 from warnings import warn
 
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp
 from scipy.constants import N_A, c, k, pi
+from scipy.optimize import OptimizeResult
 
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.db.molparam import MolParams
-from radis.lbl.bands import BandFactory
-from radis.lbl.base import get_waverange
+
+try:  # Proper import
+    from .bands import BandFactory
+    from .base import get_waverange
+except ImportError:  # if ran from here
+    from radis.lbl.bands import BandFactory
+    from radis.lbl.base import get_waverange
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
-from radis.misc.profiler import Profiler
 from radis.misc.utils import Default
 from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
 from radis.phys.constants import k_b
@@ -383,7 +388,7 @@ class SpectrumFactory(BandFactory):
         save_memory=False,
         export_populations=None,
         export_lines=False,
-        **kwargs
+        **kwargs,
     ):
 
         # Initialize BandFactory object
@@ -713,7 +718,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas)))
@@ -869,6 +874,7 @@ class SpectrumFactory(BandFactory):
             warnings=False,
             # is freshly baken so probably in a good format
             name=name,
+            references=dict(self.reftracker),
         )
 
         # update database if asked so
@@ -963,7 +969,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         # Init variables
         pressure_mbar = self.input.pressure_mbar
@@ -981,7 +987,7 @@ class SpectrumFactory(BandFactory):
 
         ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
 
-        molpar = MolParams()
+        molpar = self.molparam
 
         try:
             if "id" in self.df0:
@@ -1179,6 +1185,7 @@ class SpectrumFactory(BandFactory):
             warnings=False,
             # is freshly baken so probably in a good format
             name=name,
+            references=dict(self.reftracker),
         )
 
         # update database if asked so
@@ -1336,7 +1343,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
@@ -1383,8 +1390,8 @@ class SpectrumFactory(BandFactory):
                 overpopulation=overpopulation,
             )
 
-        self._calc_linestrength_noneq()
-        self._calc_emission_integral()
+        self.calc_linestrength_noneq()
+        self.calc_emission_integral()
 
         # ----------------------------------------------------------------------
         # Cutoff linestrength
@@ -1544,6 +1551,7 @@ class SpectrumFactory(BandFactory):
             warnings=False,
             # is freshly baken so probably in a good format
             name=name,
+            references=dict(self.reftracker),
         )
 
         # update database if asked so
@@ -1850,7 +1858,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         self.profiler.start("optically_thin_power_calculation", 1)
 
@@ -1895,7 +1903,7 @@ class SpectrumFactory(BandFactory):
         else:
             self.calc_populations_eq(Tgas)
             self.df1["Aul"] = self.df1.A  # update einstein coefficients
-        self._calc_emission_integral()
+        self.calc_emission_integral()
 
         #        # ----------------------------------------------------------------------
         #        # Cutoff linestrength  (note that cuting linestrength doesnt make this
@@ -1925,8 +1933,15 @@ class SpectrumFactory(BandFactory):
         return conv2(Ptot, "mW/cm2/sr", unit)
 
     def fit_spectrum(
-        self, s_exp, model, fit_parameters, bounds={}, plot=True, maxiter=300
-    ):
+        self,
+        s_exp,
+        model,
+        fit_parameters,
+        bounds={},
+        plot=False,
+        solver_options={"maxiter": 300},
+        **kwargs,
+    ) -> Union[Spectrum, OptimizeResult]:
         """Fit an experimental spectrum with an arbitrary model and an arbitrary
         number of fit parameters.
 
@@ -1937,30 +1952,55 @@ class SpectrumFactory(BandFactory):
             :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g::
                 sf.fit_spectrum(s_exp.take('transmittance'))
         model : func -> Spectrum
-            a line-of-sight model returning a Spectrum. Example : :py:func:`~radis.tools.fitting.Tvib12TrotModel`
+            a line-of-sight model returning a Spectrum. Example :
+            :py:func:`~radis.tools.fitting.LTEModel, `:py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
         fit_parameters : dict
-            ::
+            example::
+
                 {fit_parameter:initial_value}
         bounds : dict, optional
-            ::
+            example::
+
                 {fit_parameter:[min, max]}
+        fixed_parameters : dict
+            fixed parameters given to the model. Example::
+
+                fit_spectrum(fixed_parameters={"vib_distribution":"treanor"})
 
         Other Parameters
         ----------------
         plot: bool
-            if True, plot spectra as they are computed; and plot the convergence of
-            the residual.
-        maxiter: int
-            max number of iteration, default 300
+            if ``True``, plot spectra as they are computed; and plot the convergence of
+            the residual. Default ``False``
+        solver_options: dict
+            parameters forwarded to the solver. More info in `~scipy.optimize.minimize`
+            Example::
+
+                {"maxiter": (int)  max number of iteration default ``300``,
+                 }
+        kwargs: dict
+            forwarded to :py:func:`~radis.tools.fitting.fit_spectrum`
 
         Returns
         -------
-        s_best
+        s_best: Spectrum
+            best spectrum
+        res: OptimizeResults
+            output of `~scipy.optimize.minimize`
+
+        Examples
+        --------
+        See a :ref:`one-temperature fit example <example_one_temperature_fit>`
+        and a :ref:`non-LTE fit example <example_multi_temperature_fit>`
+
+        .. minigallery:: radis.lbl.factory.SpectrumFactory.fit_spectrum
+
 
         See Also
         --------
-        :py:func:`~radis.tools.fitting.SpectrumFactory.fit_spectrum`
-        For more advanced cases, use Fitroom : https://github.com/radis/fitroom
+        :py:func:`~radis.tools.fitting.fit_spectrum`,
+        :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`,
+        `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`
 
         """
         from radis.tools.fitting import fit_spectrum
@@ -1972,7 +2012,8 @@ class SpectrumFactory(BandFactory):
             fit_parameters,
             bounds=bounds,
             plot=plot,
-            maxiter=maxiter,
+            solver_options=solver_options,
+            **kwargs,
         )
 
     def print_perf_profile(self, number_format="{:.3f}", precision=16):

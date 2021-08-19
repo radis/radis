@@ -141,24 +141,6 @@ Be careful to be consistent and not to give partial or contradictory inputs. ::
         )
 
 
-Flow Chart
-----------
-
-Under the hood, RADIS will calculate populations by scaling tabulated data (equilibrium)
-or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients
-from :ref:`Line Databases <label_line_databases>`, calculate the line broadening using
-various strategies to improve :ref:`Performances <label_lbl_performance>`,
-and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
-the flow chart below:
-
-.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :scale: 100 %
-
-The detail of the functions that perform each step of the RADIS calculation flow chart
-is given in :ref:`Architecture <label_dev_architecture>`.
-
-
 Equilibrium Conditions
 ----------------------
 
@@ -184,6 +166,7 @@ provides an interace to [CANTERA]_ directly from RADIS ::
                   mole_fraction=gas['H2O']
                   )
 
+.. minigallery:: radis.tools.gascomp.get_eq_mole_fraction
 
 
 Nonequilibrium Calculations
@@ -197,6 +180,15 @@ You can either let RADIS calculate rovibrational energies
 with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`,
 or supply an energy level database. In the latter case, you need to edit the
 :ref:`Configuration file <label_lbl_config_file>` .
+
+
+Fit a Spectrum
+--------------
+
+
+.. minigallery:: radis.lbl.factory.fit_spectrum
+
+
 
 Calculating spectrum using GPU
 ------------------------------
@@ -313,6 +305,30 @@ where each file contains all the information for multiple lines.
 `reshape_arrays.py` extracts and separates the different fields for each line, and saves the values of
 a specific field for all the lines in a separate file as explained above, e.g. `v0.npy`, 'da.npy`, etc.
 
+
+Under the hood
+==============
+
+
+Flow Chart
+----------
+
+RADIS can calculate populations of emitting/absorbing levels by scaling tabulated data (equilibrium)
+or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients
+from :ref:`Line Databases <label_line_databases>`, calculate the line broadening using
+various strategies to improve :ref:`Performances <label_lbl_performance>`,
+and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
+the flow chart below:
+
+.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+    :scale: 100 %
+
+The detail of the functions that perform each step of the RADIS calculation flow chart
+is given in :ref:`Architecture <label_dev_architecture>`.
+
+
+
 The Spectrum Factory
 --------------------
 
@@ -352,6 +368,7 @@ and :py:mod:`~astropy.units` ::
     s1 = sf.eq_spectrum(Tgas=300 * u.K)
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
+
 
 .. _label_lbl_config_file:
 
@@ -579,6 +596,8 @@ An example of how to use your own spectroscopic constants::
     s = calc_spectrum(...)
 
 
+.. minigallery:: radis.db.molecules.getMolecule
+
 
 Vibrational bands
 -----------------
@@ -781,6 +800,17 @@ function with parameter `mode` set to `gpu`, or :py:meth:`~radis.lbl.factory.Spe
 ensure that your system has an Nvidia GPU with compute capability of atleast 3.0 and CUDA Toolkit 8.0 or above. Refer to
 :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` to see how to setup your system to run GPU accelerated spectrum
 calculation methods, examples and performance tests.
+
+
+Tabulated Partition Functions
+-----------------------------
+
+At nonequilibrium, calculating partition functions by full summation
+of all rovibrational levels can become costly. Radis offers to tabulate
+them just-in-time, using the ``parsum_mode='tabulation'`` of
+:py:func:`~radis.lbl.calc.calc_spectrum` or :py:class:`~radis.lbl.factory.SpectrumFactory`.
+See :py:attr:`~radis.lbl.loader.Conditions.parsum_mode`.
+
 
 Profiler
 --------

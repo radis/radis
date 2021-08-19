@@ -346,7 +346,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwargs):
-    """ See wavelength difference in air and vacuum """
+    """See wavelength difference in air and vacuum"""
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()

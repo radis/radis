@@ -32,7 +32,7 @@ from radis.io.tools import (
 )
 
 # fmt: off
-columns_hitemp = OrderedDict(
+columns_cdsdhitemp = OrderedDict(
     [
         # name    # format # type  # description                                 # unit
         ("id", ("a2", int, "Molecular number", "")),
@@ -225,7 +225,7 @@ def cdsd2df(
         print("Last Modification time: {0}".format(metadata["last_modification"]))
 
     if version == "hitemp":
-        columns = columns_hitemp
+        columns = columns_cdsdhitemp
     elif version == "4000":
         columns = columns_4000
     else:

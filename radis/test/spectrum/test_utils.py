@@ -93,7 +93,7 @@ def test_perf_profile(*args, **kwargs):
 
 
 def test_perf_profile_from_factory(*args, **kwargs):
-    """ See :py:func:`radis.test.spectrum.test_utils.test_perf_profile`"""
+    """See :py:func:`radis.test.spectrum.test_utils.test_perf_profile`"""
 
     from radis import SpectrumFactory
     from radis.test.utils import setup_test_line_databases

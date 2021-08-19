@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-==========================
-Load experimental spectrum
-==========================
+=============================
+Load an experimental spectrum
+=============================
 
 Load an experimental spectrum stored as ``.spec`` (with units and metadata)
 using :py:func:`~radis.tools.database.load_spec` (we could also have used

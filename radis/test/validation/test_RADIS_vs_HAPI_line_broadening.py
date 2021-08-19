@@ -73,7 +73,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     HAPIdb = join(dirname(__file__), __file__.replace(".py", "_HAPIdata"))
 
     def calc_hapi():
-        """ Calc spectrum under HAPI """
+        """Calc spectrum under HAPI"""
 
         clean_after_run = not exists(HAPIdb) and False
 

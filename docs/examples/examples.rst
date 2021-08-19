@@ -94,16 +94,16 @@ Calculate Partition Functions
 =============================
 
 By default and for equilibrium calculations, RADIS calculates Partition Functions
-using the TIPS program through [HAPI]_. These partition functions can be retrieved
+using the TIPS program ([TIPS-2020]_) through [HAPI]_. These partition functions can be retrieved
 with the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class::
 
-    from radis.levels.partfunc import PartFuncHAPI
+    from radis.levels.partfunc import PartFuncTIPS
     from radis.db.classes import get_molecule_identifier
 
     M = get_molecule_identifier('N2O')
     iso=1
 
-    Q = PartFuncHAPI(M, iso)
+    Q = PartFuncTIPS(M, iso)
     print(Q.at(T=1500))
 
 

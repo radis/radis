@@ -41,52 +41,53 @@ def resample(
 
     Parameters
     ----------
-
     xspace: array
         space on which vector was generated
-
     vector: array
         quantity to resample
+    xspace_new: array
+        space on which to resample
 
+    Other Parameters
+    ----------------
     resfactor: array
         xspace vector to resample on
-
     k: int
         order of spline interpolation. 3: cubic, 1: linear. Default 1.
-
     ext: 'error', 'extrapolate', 0, 1
         Controls the value returned for elements of xspace_new not in the interval
         defined by xspace. If 'error', raise a ValueError. If 'extrapolate', well,
         extrapolate. If '0' or 0, then fill with 0. If 1, fills with 1.
         Default 'error'.
-
-    energy_threshold: float
+    energy_threshold: float or ``None``
         if energy conservation (integrals on the intersecting range) is above
-        this threshold, raise an error. If None, dont check for energy conservation
+        this threshold, raise an error. If ``None``, dont check for energy conservation
         Default 1e-3 (0.1%)
-
     print_conservation: boolean
         if True, prints energy conservation
 
 
     Returns
     -------
+    array: resampled vector on evenly spaced array. Number of element is conserved.
 
-    vector_new: array
-        resampled vector on evenly spaced array. Number of element is conserved.
+    Notes
+    -----
 
     Note that depending upon the from_space > to_space operation, sorting may
     be reversed.
 
-
     Examples
     --------
-
     Resample a :class:`~radis.spectrum.spectrum.Spectrum` radiance
     on an evenly spaced wavenumber space::
 
         w_nm, I_nm = s.get('radiance')
         w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
+
+    See Also
+    --------
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
     """
 
     if len(xspace) != len(vector):

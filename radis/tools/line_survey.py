@@ -15,7 +15,7 @@ import numpy as np
 
 from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.io.cdsd import columns_4000 as cdsd4000columns
-from radis.io.cdsd import columns_hitemp as cdsdcolumns
+from radis.io.cdsd import columns_cdsdhitemp as cdsdhitempcolumns
 from radis.io.hitran import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,; HITRAN_CLASS7,; HITRAN_CLASS8,; HITRAN_CLASS9,; HITRAN_CLASS10,
     HITRAN_CLASS1,
     HITRAN_CLASS4,
@@ -187,7 +187,7 @@ def LineSurvey(
     if dbformat in ["hitran", "hitemp"]:
         columndescriptor = hitrancolumns
     elif dbformat == "cdsd-hitemp":
-        columndescriptor = cdsdcolumns
+        columndescriptor = cdsdhitempcolumns
     elif dbformat == "cdsd-4000":
         columndescriptor = cdsd4000columns
     else:

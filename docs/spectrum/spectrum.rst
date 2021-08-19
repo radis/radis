@@ -614,9 +614,23 @@ This returns a new spectrum and does not modify the Spectrum itself. To do so us
 
     s.normalize(inplace=True)
 
-You can chain the commands::
+.. _label_spectrum_chaining:
+
+Chaining
+--------
+
+You can chain the various methods of Spectrum. For instance::
 
     s.normalize().plot()
+
+Or::
+
+    s.crop(4120, 4220, 'nm').apply_slit(3, 'nm').take('radiance')
+
+If you want to create a new spectrum, don't forget to set ``inplace=False``
+for the first command that allows it. i.e ::
+
+    s2 = s.crop(4120, 4220, 'nm', inplace=False).apply_slit(3, 'nm').take('radiance')
 
 
 .. _label_spectrum_remove_baseline:

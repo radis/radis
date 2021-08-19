@@ -574,6 +574,12 @@ def _json_to_spec(sload, file=""):
     else:
         kwargs["populations"] = None
 
+    # ... load references if exist
+    if "references" in sload:
+        references = sload["references"]
+    else:
+        references = {}
+
     # ... load other properties if exist
     for attr in ["units", "cond_units", "name"]:
         try:
@@ -582,7 +588,11 @@ def _json_to_spec(sload, file=""):
             kwargs[attr] = None
 
     s = Spectrum(
-        quantities=quantities, conditions=conditions, waveunit=waveunit, **kwargs
+        quantities=quantities,
+        conditions=conditions,
+        waveunit=waveunit,
+        references=references,
+        **kwargs,
     )
 
     # ... add file

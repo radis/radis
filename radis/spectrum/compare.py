@@ -56,29 +56,22 @@ def get_diff(
 
     Parameters
     ----------
-
     s1, s2: Spectrum objects
         2 spectra to compare.
-
     var: str
         spectral quantity (ex: ``'radiance'``, ``'transmittance'``...)
-
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
-
     Iunit: str
         if ``'default'`` use s1 unit for variable var
-
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
 
     Other Parameters
     ----------------
-
     resample: bool
         if not ``True``, wavelength must be equals. Else, resample ``s2`` on
         ``s1`` if needed.
-
     diff_window: int
         If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
         units on either side, and returns the minimum. Compensates for experimental
@@ -86,7 +79,6 @@ def get_diff(
 
     Returns
     -------
-
     w1, Idiff: array
         difference interpolated on the wavespace range of the first Spectrum
 
@@ -106,11 +98,18 @@ def get_diff(
     :meth:`~radis.spectrum.spectrum.compare_with`
     """
 
-    w1, I1, w2, I2 = _get_defaults(
-        s1, s2, var=var, wunit=wunit, Iunit=Iunit, assert_same_wavelength=not resample
-    )
+    var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
 
-    # basically w1, I1 - I2 (on same range)
+    # Get data
+    # ----
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
+
+    if not resample:
+        if not array_allclose(w1, w2):
+            raise AssertionError("Wavespace are not the same: use Spectrum.resample()")
+
+    # Compute : I1 - I2 (on same range)
     w1, Idiff = curve_substract(w1, I1, w2, I2)
     if diff_window:
         # allow fluctuation from diff_window units. Kinda compensates
@@ -139,22 +138,17 @@ def get_ratio(s1, s2, var, wunit="default", Iunit="default", resample=True):
 
     Parameters
     ----------
-
     s1, s2: Spectrum objects
         :py:class:`~radis.spectrum.spectrum.Spectrum`
-
     var: str
         spectral quantity
-
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
-
     Iunit: str
         if ``'default'`` use s1 unit for variable var
 
     Notes
     -----
-
     Uses :func:`~radis.misc.curve.curve_divide` internally
 
     See Also
@@ -168,11 +162,18 @@ def get_ratio(s1, s2, var, wunit="default", Iunit="default", resample=True):
     :meth:`~radis.spectrum.spectrum.compare_with`
     """
 
-    w1, I1, w2, I2 = _get_defaults(
-        s1, s2, var=var, wunit=wunit, Iunit=Iunit, assert_same_wavelength=not resample
-    )
+    var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
 
-    # basically w1, I1 - I2 (on same range)
+    # Get data
+    # ----
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
+
+    if not resample:
+        if not array_allclose(w1, w2):
+            raise AssertionError("Wavespace are not the same: use Spectrum.resample()")
+
+    # Compute: I1 / I2 (on same range)
     return curve_divide(w1, I1, w2, I2)
 
 
@@ -207,30 +208,23 @@ def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
 
     Parameters
     ----------
-
     s1, s2: Spectrum objects
         :py:class:`~radis.spectrum.spectrum.Spectrum`
-
     var: str
         spectral quantity
-
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         waveunit to compare in: wavelength air, wavenumber, wavelength vacuum
-
     Iunit: str
         if ``'default'`` use s1 unit for variable var
-
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
 
     Notes
     -----
-
     Uses :func:`~radis.misc.curve.curve_distance` internally
 
     See Also
     --------
-
     :func:`~radis.spectrum.compare.get_diff`,
     :func:`~radis.spectrum.compare.get_ratio`,
     :func:`~radis.spectrum.compare.get_residual`,
@@ -240,11 +234,18 @@ def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
     """
     # TODO: normalize with Imax, wmax
 
-    w1, I1, w2, I2 = _get_defaults(
-        s1, s2, var=var, wunit=wunit, Iunit=Iunit, assert_same_wavelength=not resample
-    )
+    var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
 
-    # euclidian distance from w1, I1
+    # Get data
+    # ----
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
+
+    if not resample:
+        if not array_allclose(w1, w2):
+            raise AssertionError("Wavespace are not the same: use Spectrum.resample()")
+
+    # Compute: euclidian distance from w1, I1
     return curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True)
 
 
@@ -257,7 +258,8 @@ def get_residual(
     diff_window=0,
     normalize=False,
     normalize_how="max",
-):
+    wunit="default",
+) -> float:
     # type: (Spectrum, Spectrum, str, bool, int) -> np.array, np.array
     """Returns L2 norm of ``s1`` and ``s2``
 
@@ -279,28 +281,23 @@ def get_residual(
 
     Parameters
     ----------
-
     s1, s2: :class:`~radis.spectrum.spectrum.Spectrum` objects
         if not on the same range, ``s2`` is resampled on ``s1``.
-
     var: str
         spectral quantity
-
     norm: 'L2', 'L1'
         which norm to use
 
     Other Parameters
     ----------------
-
     ignore_nan: boolean
         if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
         when calculating residual. Default ``False``. Note: ``get_residual`` will still
         fail if there are nan in initial Spectrum.
-
     normalize: bool, or tuple
         if ``True``, normalize the two spectra before calculating the residual.
         If a tuple (ex: ``(4168, 4180)``), normalize on this range only. The unit
-        is that of the first Spectrum. Ex::
+        is that of the first Spectrum by default (use ``wunit`` to change). Ex::
 
             s_exp   # in 'nm'
             s_calc  # in 'cm-1'
@@ -310,6 +307,8 @@ def get_residual(
         how to normalize. ``'max'`` is the default but may not be suited for very
         noisy experimental spectra. ``'area'`` will normalize the integral to 1.
         ``'mean'`` will normalize by the mean amplitude value
+    wunit: str
+        used if normalized is a range
 
     Notes
     -----
@@ -329,7 +328,6 @@ def get_residual(
 
     See Also
     --------
-
     :func:`~radis.spectrum.compare.get_diff`,
     :func:`~radis.spectrum.compare.get_ratio`,
     :func:`~radis.spectrum.compare.get_distance`,
@@ -343,15 +341,24 @@ def get_residual(
             wrange = normalize
         else:
             wrange = ()
-        wdiff, dI = get_diff(
-            s1.take(var).normalize(wrange=wrange, normalize_how=normalize_how),
-            s2.take(var).normalize(wrange=wrange, normalize_how=normalize_how),
-            var,
-            resample=True,
-            diff_window=diff_window,
+        var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit)
+        s1 = s1.take(var).normalize(
+            wrange=wrange, normalize_how=normalize_how, wunit=wunit
         )
-    else:
-        wdiff, dI = get_diff(s1, s2, var, resample=True, diff_window=diff_window)
+        s2 = s2.take(var).normalize(
+            wrange=wrange, normalize_how=normalize_how, wunit=wunit
+        )
+
+    var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit)
+    wdiff, dI = get_diff(
+        s1,
+        s2,
+        var,
+        resample=True,
+        diff_window=diff_window,
+        wunit=wunit,
+        Iunit=Iunit,
+    )
 
     if ignore_nan:
         b = np.isnan(dI)
@@ -373,7 +380,7 @@ def get_residual(
         raise ValueError("unexpected value for norm")
 
 
-def get_residual_integral(s1, s2, var, ignore_nan=False):
+def get_residual_integral(s1, s2, var, ignore_nan=False) -> float:
     # type: (Spectrum, Spectrum, str, bool) -> float
     """Returns integral of the difference between two spectra s1 and s2,
     relatively to the integral of spectrum s1.
@@ -394,16 +401,13 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
 
     Parameters
     ----------
-
     s1, s2: Spectrum objects
         :py:class:`~radis.spectrum.spectrum.Spectrum`
-
     var: str
         spectral quantity
 
     Other Parameters
     ----------------
-
     ignore_nan: boolean
         if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
         when calculating residual. Default ``False``. Note: ``get_residual_integral``
@@ -411,7 +415,6 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
 
     Notes
     -----
-
     For I1, I2, the values of 'var' in s1 and s2, respectively, residual
     is calculated as::
 
@@ -425,7 +428,6 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
 
     See Also
     --------
-
     :func:`~radis.spectrum.compare.get_diff`,
     :func:`~radis.spectrum.compare.get_ratio`,
     :func:`~radis.spectrum.compare.get_distance`,
@@ -433,11 +435,14 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
     :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with`
     """
+    var, wunit, Iunit = get_default_units(s1, s2, var=var)
 
-    w1, I1, _, _ = _get_defaults(s1, s2, var)
+    # Get data
+    # ----
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
+    wdiff, dI = get_diff(s1, s2, var, wunit=wunit, Iunit=Iunit, resample=True)
+
     # mask for 0
-    wdiff, dI = get_diff(s1, s2, var, resample=True)
-
     if ignore_nan:
         b = np.isnan(dI)
         wdiff, dI = wdiff[~b], dI[~b]
@@ -452,251 +457,30 @@ def get_residual_integral(s1, s2, var, ignore_nan=False):
     return np.abs(np.trapz(dI, wdiff)) / norm
 
 
-#    b1 = (I_avg == 0)
-#    b2 = (dI == 0)
-
-#    with catch_warnings():
-#        filterwarnings('ignore', 'invalid value encountered in true_divide')
-#        res = dI/I_avg
-
-#    res[b1*b2] = 0             # if both I_avg and dI = 0, solve nan as 0
-
-#    return np.sqrt((res**2).sum())/len(res)
-#    return res.mean()
-
-
-def _get_defaults(
-    s1, s2, var, wunit="default", Iunit="default", assert_same_wavelength=False
-):
-    # type: (Spectrum, Spectrum, str, str, str, bool) -> (np.array, np.array, np.array, np.array)
-    """Returns w1, I1, w2, I2  in the same waveunit, unit and medium.
-
-    See get_distance, get_diff for more information
-    """
-
-    # Check inputs, get defaults
-    # ----
-    if Iunit == "default":
-        try:
-            Iunit = s1.units[var]
-        except KeyError:  # unit not defined in dictionary
-            raise KeyError("Iunit not defined in spectrum for variable {0}".format(var))
-    # Format units
-    if wunit == "default":
-        wunit = s1.get_waveunit()
-    wunit = cast_waveunit(wunit)
-
-    # Get data
-    # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
-
-    if assert_same_wavelength:
-        if not array_allclose(w1, w2):
-            raise AssertionError("Wavespace are not the same: use Spectrum.resample()")
-
-    return w1, I1, w2, I2
-
-
-def plot_diff(
-    s1,
-    s2,
-    var=None,
-    wunit="default",
-    Iunit="default",
-    resample=True,
-    method="diff",
-    diff_window=0,
-    show_points=False,
-    label1=None,
-    label2=None,
-    figsize=None,
-    title=None,
-    nfig=None,
-    normalize=False,
-    verbose=True,
-    save=False,
-    show=True,
-    show_residual=False,
-    lw_multiplier=1,
-    diff_scale_multiplier=1,
-    discard_centile=0,
-    plot_medium="vacuum_only",
-    legendargs={"loc": "best"},
-    show_ruler=False,
-):
-    """Plot two spectra, and the difference between them. ``method=`` allows
-    you to plot the absolute difference, ratio, or both.
-
-    If waveranges dont match, ``s2`` is interpolated over ``s1``.
-
+def get_default_units(s1, s2, var=None, wunit="default", Iunit="default"):
+    """Get ``wunit``, Iunit for var; compatible with both spectra s1 and s2
 
     Parameters
     ----------
-
     s1, s2: Spectrum objects
-
     var: str, or None
         spectral quantity to plot (ex: ``'abscoeff'``). If None,
         plot the first one in the Spectrum from ``'radiance'``,
         ``'radiance_noslit'``, ``'transmittance'``, etc.
-
     wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         wavespace unit:  wavelength air, wavenumber, wavelength vacuum.
         If ``'default'``, use first spectrum wunit
-
     Iunit: str
         if ``'default'``, use first spectrum unit
 
-    method: ``'distance'``, ``'diff'``, ``'ratio'``, or list of them.
-        If ``'diff'``, plot difference of the two spectra.
-        If ``'distance'``, plot Euclidian distance (note that units are meaningless then)
-        If ``'ratio'``, plot ratio of two spectra
-        Default ``'diff'``.
-
-        .. warning::
-            with ``'distance'``, calculation scales as ~N^2 with N the number
-            of points in a spectrum (against ~N with ``'diff'``). This can quickly
-            override all memory.
-
-        Can also be a list::
-
-            method=['diff', 'ratio']
-
-    normalize: bool
-        Normalize the spectra to be ploted
-
-    Other Parameters
-    ----------------
-
-    diff_window: int
-        If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
-        units on either side, and returns the minimum. Kinda compensates for experimental
-        errors on the w axis. Default 0. (look up code to understand...)
-
-    show_points: boolean
-        if ``True``, make all points appear with 'o'
-
-    label1, label2: str
-        curve names
-
-    figsize
-        figure size
-
-    nfig: int, str
-        figure number of name
-
-    title: str
-        title
-
-    verbose: boolean
-        if ``True``, plot stuff such as rescale ratio in normalize mode. Default ``True``
-
-    save: str
-        Default is ``False``. By default won't save anything, type the path of the
-        destination if you want to save it (format in the name).
-
-    show: Bool
-        Default is ``True``. Will show the plots : bad if there are more than 20.
-
-    show_residual: bool
-        if ``True``, calculates and shows on the graph the residual in L2 norm.
-        See :func:`~radis.spectrum.compare.get_residual`. ``diff_window`` is
-        used in the residual calculation too. ``normalize`` has no effect.
-
-    diff_scale_multiplier: float
-        dilate the diff plot scale. Default ``1``
-
-    discard_centile: int
-        if not ``0``, discard the firsts and lasts centile when setting the limits
-        of the diff window. Example::
-
-            discard_centile=1     #  --> discards the smallest 1% and largest 1%
-            discard_centile=10    #  --> discards the smallest 10% and largest 10%
-
-        Useful to remove spikes in a ratio, for instance.
-        Note that this does not change the values of the residual. It's just
-        a plot feature.
-        Default ``0``
-
-    plot_medium: bool, ``'vacuum_only'``
-        if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
-        in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``,
-        plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
-        (prevents from inadvertently plotting spectra with different propagation
-        medium on the same graph).
-
-    legendargs: dict
-        format arguments forwarded to the legend
-
-    show_ruler: bool
-        if `True`, add a ruler tool to the Matplotlib toolbar.
-
-        .. warning::
-            still experimental in 0.9.30 ! Try it, feedback welcome !
-
     Returns
     -------
-
-    fig: figure
-        fig
-
-    [ax0, ax1]: axes
-        spectra and difference axis
-
-
-    Examples
-    --------
-
-    Simple use::
-
-        from radis import plot_diff
-        plot_diff(s10, s50)                # s10, s50 are two spectra
-
-    Advanced use, plotting the total power in the label, and getting the figure
-    and axes handle to edit them afterwards::
-
-        Punit = 'mW/cm2/sr'
-        fig, axes = plot_diff(s10, s50, 'radiance_noslit', figsize=(18,6),
-              label1='brd 10 cm-1, P={0:.2f} {1}'.format(s10.get_power(unit=Punit),Punit),
-              label2='brd 50 cm-1, P={0:.2f} {1}'.format(s50.get_power(unit=Punit),Punit)
-              )
-        # modify fig, axes..
-
-    See an example in :ref:`label_spectrum_howto_compare`, which produces the output below:
-
-    .. image:: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
-
-    If you wish to plot in a logscale, it can be done in the following way::
-
-        fig, [ax0, ax1] = plot_diff(s0, s1, normalize=False, verbose=False)
-        ylim0 = ax0.get_ybound()
-        ax0.set_yscale("log")
-        ax0.set_ybound(ylim0)
-
-    See Also
-    --------
-
-    :func:`~radis.spectrum.compare.get_diff`,
-    :func:`~radis.spectrum.compare.get_ratio`,
-    :func:`~radis.spectrum.compare.get_distance`,
-    :func:`~radis.spectrum.compare.get_residual`,
-    :meth:`~radis.spectrum.spectrum.compare_with`
+    var: str
+        variable (evaluated if input was ``None``)
+    wunit, Iunit: str
+        units (evaluated if input was ``'default'``)
     """
 
-    import matplotlib.pyplot as plt
-    from matplotlib import gridspec
-    from matplotlib.widgets import MultiCursor
-    from publib import fix_style, set_style
-
-    if (not show) and (
-        not save
-    ):  # I added this line to avoid calculus in the case there is nothing to do (Minou)
-        if verbose:
-            print("plot_diff : Nothing to do")
-        return None, None
-
-    # Normal behaviour (Minou)
     # Get defaults
     # ---
     if var is None:  # if nothing is defined, try these first:
@@ -737,7 +521,47 @@ def plot_diff(
             )
     if wunit == "default":
         wunit = s1.get_waveunit()
+    wunit = cast_waveunit(wunit)
 
+    return var, wunit, Iunit
+
+
+def _get_wdiff_Idiff(
+    s1,
+    s2,
+    var=None,
+    wunit="default",
+    Iunit="default",
+    resample=True,
+    method="diff",
+    diff_window=0,
+    normalize=False,
+    verbose=False,
+):
+    """Get difference/ratio between two spectra.
+
+    Properly make sure all units are the same.
+
+    Calls :py:func:`radis.spectrum.compare.get_diff`,  :py:func:`radis.spectrum.compare.get_ratio`
+    or  :py:func:`radis.spectrum.compare.get_distance`
+
+    Called by :py:func:`radis.spectrum.compare.plot_diff`
+
+    Parameters
+    ----------
+    all:
+        see :py:func:`radis.spectrum.compare.plot_diff`
+
+    Returns
+    -------
+    wdiff, Iunit: list of arrays
+        difference or ratio (depending on ``method``)
+    methods: list of str
+        methods
+    """
+
+    # Get all comparison methods:
+    # ------------------------
     if isinstance(method, list):
         methods = method
     else:
@@ -751,8 +575,8 @@ def plot_diff(
     # ----
     if normalize:
         # copy before modifying directly in spectrum
-        s1 = s1.copy()
-        s2 = s2.copy()
+        s1 = s1.copy(copy_lines=False)
+        s2 = s2.copy(copy_lines=False)
         w1, I1 = s1.get(var, wunit=wunit, copy=False)
         w2, I2 = s2.get(var, wunit=wunit, copy=False)
         ratio = np.nanmax(I1) / np.nanmax(I2)
@@ -762,47 +586,239 @@ def plot_diff(
         if verbose:
             print(("Rescale factor: " + str(ratio)))
 
-    def get_wdiff_Idiff():
-        wdiffs, Idiffs = [], []
-        for method in methods:
-            if not normalize:
-                if method == "distance":
-                    wdiff, Idiff = get_distance(
-                        s1, s2, var=var, wunit=wunit, Iunit=Iunit
-                    )
-                elif method == "diff":
-                    wdiff, Idiff = get_diff(
-                        s1,
-                        s2,
-                        var=var,
-                        wunit=wunit,
-                        Iunit=Iunit,
-                        diff_window=diff_window,
-                    )
-                elif method == "ratio":
-                    wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
-                else:
-                    raise ValueError("Unknown comparison method: {0}".format(method))
-                wdiffs.append(wdiff)
-                Idiffs.append(Idiff)
+    wdiffs, Idiffs = [], []
+    for method in methods:
+        if not normalize:
+            if method == "distance":
+                wdiff, Idiff = get_distance(
+                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, resample=resample
+                )
+            elif method == "diff":
+                wdiff, Idiff = get_diff(
+                    s1,
+                    s2,
+                    var=var,
+                    wunit=wunit,
+                    Iunit=Iunit,
+                    diff_window=diff_window,
+                    resample=resample,
+                )
+            elif method == "ratio":
+                wdiff, Idiff = get_ratio(
+                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, resample=resample
+                )
             else:
-                if method == "distance":
-                    raise ValueError(
-                        "{0} was not implemented yet for normalized spectra".format(
-                            method
-                        )
-                    )
-                elif method == "diff":
-                    wdiff, Idiff = curve_substract(w1, I1, w2, I2)
-                elif method == "ratio":
-                    wdiff, Idiff = get_ratio(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
-                else:
-                    raise ValueError("Unknown comparison method: {0}".format(method))
-                wdiffs.append(wdiff)
-                Idiffs.append(Idiff)
-        return wdiffs, Idiffs
+                raise ValueError("Unknown comparison method: {0}".format(method))
+            wdiffs.append(wdiff)
+            Idiffs.append(Idiff)
+        else:
+            if method == "distance":
+                raise NotImplementedError(
+                    "{0} was not implemented yet for normalized spectra".format(method)
+                )
+            elif method == "diff":
+                if not resample:
+                    raise NotImplementedError()
+                wdiff, Idiff = curve_substract(w1, I1, w2, I2)
+            elif method == "ratio":
+                wdiff, Idiff = get_ratio(
+                    s1, s2, var=var, wunit=wunit, Iunit=Iunit, resample=resample
+                )
+            else:
+                raise ValueError("Unknown comparison method: {0}".format(method))
+            wdiffs.append(wdiff)
+            Idiffs.append(Idiff)
+    return s1, s2, wdiffs, Idiffs, methods
 
-    wdiffs, Idiffs = get_wdiff_Idiff()
+
+def plot_diff(
+    s1,
+    s2,
+    var=None,
+    wunit="default",
+    Iunit="default",
+    resample=True,
+    method="diff",
+    diff_window=0,
+    show_points=False,
+    label1=None,
+    label2=None,
+    figsize=None,
+    title=None,
+    nfig=None,
+    normalize=False,
+    verbose=True,
+    save=False,
+    show=True,
+    show_residual=False,
+    lw_multiplier=1,
+    diff_scale_multiplier=1,
+    discard_centile=0,
+    plot_medium="vacuum_only",
+    legendargs={"loc": "best"},
+    show_ruler=False,
+):
+    """Plot two spectra, and the difference between them. ``method=`` allows
+    you to plot the absolute difference, ratio, or both.
+
+    If waveranges dont match, ``s2`` is interpolated over ``s1``.
+
+
+    Parameters
+    ----------
+    s1, s2: Spectrum objects
+    var: str, or None
+        spectral quantity to plot (ex: ``'abscoeff'``). If None,
+        plot the first one in the Spectrum from ``'radiance'``,
+        ``'radiance_noslit'``, ``'transmittance'``, etc.
+    wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+        wavespace unit:  wavelength air, wavenumber, wavelength vacuum.
+        If ``'default'``, use first spectrum wunit
+    Iunit: str
+        if ``'default'``, use first spectrum unit
+    method: ``'distance'``, ``'diff'``, ``'ratio'``, or list of them.
+        If ``'diff'``, plot difference of the two spectra.
+        If ``'distance'``, plot Euclidian distance (note that units are meaningless then)
+        If ``'ratio'``, plot ratio of two spectra
+        Default ``'diff'``.
+
+        .. warning::
+            with ``'distance'``, calculation scales as ~N^2 with N the number
+            of points in a spectrum (against ~N with ``'diff'``). This can quickly
+            override all memory.
+
+        Can also be a list::
+
+            method=['diff', 'ratio']
+
+    normalize: bool
+        Normalize the spectra to be ploted
+
+    Other Parameters
+    ----------------
+    diff_window: int
+        If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
+        units on either side, and returns the minimum. Kinda compensates for experimental
+        errors on the w axis. Default 0. (look up code to understand...)
+    show_points: boolean
+        if ``True``, make all points appear with 'o'
+    label1, label2: str
+        curve names
+    figsize
+        figure size
+    nfig: int, str
+        figure number of name
+    title: str
+        title
+    verbose: boolean
+        if ``True``, plot stuff such as rescale ratio in normalize mode. Default ``True``
+    save: str
+        Default is ``False``. By default won't save anything, type the path of the
+        destination if you want to save it (format in the name).
+    show: Bool
+        Default is ``True``. Will show the plots : bad if there are more than 20.
+    show_residual: bool
+        if ``True``, calculates and shows on the graph the residual in L2 norm.
+        See :func:`~radis.spectrum.compare.get_residual`. ``diff_window`` is
+        used in the residual calculation too. ``normalize`` has no effect.
+    diff_scale_multiplier: float
+        dilate the diff plot scale. Default ``1``
+    discard_centile: int
+        if not ``0``, discard the firsts and lasts centile when setting the limits
+        of the diff window. Example::
+
+            discard_centile=1     #  --> discards the smallest 1% and largest 1%
+            discard_centile=10    #  --> discards the smallest 10% and largest 10%
+
+        Useful to remove spikes in a ratio, for instance.
+        Note that this does not change the values of the residual. It's just
+        a plot feature.
+        Default ``0``
+
+    plot_medium: bool, ``'vacuum_only'``
+        if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
+        in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``,
+        plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
+        (prevents from inadvertently plotting spectra with different propagation
+        medium on the same graph).
+    legendargs: dict
+        format arguments forwarded to the legend
+    show_ruler: bool
+        if `True`, add a ruler tool to the Matplotlib toolbar.
+
+        .. warning::
+            still experimental in 0.9.30 ! Try it, feedback welcome !
+
+    Returns
+    -------
+    fig: figure
+        fig
+    [ax0, ax1]: axes
+        spectra and difference axis
+
+
+    Examples
+    --------
+    Simple use::
+
+        from radis import plot_diff
+        plot_diff(s10, s50)                # s10, s50 are two spectra
+
+    Advanced use, plotting the total power in the label, and getting the figure
+    and axes handle to edit them afterwards::
+
+        Punit = 'mW/cm2/sr'
+        fig, axes = plot_diff(s10, s50, 'radiance_noslit', figsize=(18,6),
+              label1='brd 10 cm-1, P={0:.2f} {1}'.format(s10.get_power(unit=Punit),Punit),
+              label2='brd 50 cm-1, P={0:.2f} {1}'.format(s50.get_power(unit=Punit),Punit)
+              )
+        # modify fig, axes..
+
+    See an example in :ref:`label_spectrum_howto_compare`, which produces the output below:
+
+    .. image:: https://radis.readthedocs.io/en/latest/_images/cdsd4000_vs_hitemp_3409K.svg
+
+    If you wish to plot in a logscale, it can be done in the following way::
+
+        fig, [ax0, ax1] = plot_diff(s0, s1, normalize=False, verbose=False)
+        ylim0 = ax0.get_ybound()
+        ax0.set_yscale("log")
+        ax0.set_ybound(ylim0)
+
+    See Also
+    --------
+    :func:`~radis.spectrum.compare.get_diff`,
+    :func:`~radis.spectrum.compare.get_ratio`,
+    :func:`~radis.spectrum.compare.get_distance`,
+    :func:`~radis.spectrum.compare.get_residual`,
+    :meth:`~radis.spectrum.spectrum.compare_with`
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib import gridspec
+    from matplotlib.widgets import MultiCursor
+    from publib import fix_style, set_style
+
+    if (not show) and (
+        not save
+    ):  # I added this line to avoid calculus in the case there is nothing to do (Minou)
+        if verbose:
+            print("plot_diff : Nothing to do")
+        return None, None
+
+    var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
+
+    s1, s2, wdiffs, Idiffs, methods = _get_wdiff_Idiff(
+        s1,
+        s2,
+        var=var,
+        method=method,
+        wunit=wunit,
+        Iunit=Iunit,
+        resample=resample,
+        diff_window=diff_window,
+        normalize=normalize,
+        verbose=verbose,
+    )
 
     # Plot
     # ----
@@ -814,11 +830,11 @@ def plot_diff(
     set_style("origin")
     fig = plt.figure(num=nfig, figsize=figsize)
     gs = gridspec.GridSpec(1 + len(methods), 1, height_ratios=[3] + [1] * len(methods))
-    ax0 = plt.subplot(gs[0])
+    ax0 = fig.add_subplot(gs[0])
     ax0.ticklabel_format(useOffset=False)
     ax1 = []
     for i in range(len(methods)):
-        ax1i = plt.subplot(gs[i + 1])
+        ax1i = fig.add_subplot(gs[i + 1])
         ax1i.get_shared_x_axes().join(ax0, ax1i)
         ax1i.ticklabel_format(useOffset=False)
         ax1.append(ax1i)
@@ -841,25 +857,21 @@ def plot_diff(
         label2 = label2[:58] + "..."
 
     # Plot compared spectra
-    if normalize:
-        # TODO: add option to norm_on
-        ax0.plot(w1, I1, style, color="k", lw=3 * lw_multiplier, label=label1)
-        ax0.plot(w2, I2, style, color="r", lw=1 * lw_multiplier, label=label2)
-    else:
-        ax0.plot(
-            *s1.get(var, wunit=wunit, Iunit=Iunit),
-            style,
-            color="k",
-            lw=3 * lw_multiplier,
-            label=label1
-        )
-        ax0.plot(
-            *s2.get(var, wunit=wunit, Iunit=Iunit),
-            style,
-            color="r",
-            lw=1 * lw_multiplier,
-            label=label2
-        )
+    # ... note: if 'normalize', s1 & s2 have been edited by _get_wdiff_Idiff
+    ax0.plot(
+        *s1.get(var, wunit=wunit, Iunit=Iunit),
+        style,
+        color="k",
+        lw=3 * lw_multiplier,
+        label=label1
+    )
+    ax0.plot(
+        *s2.get(var, wunit=wunit, Iunit=Iunit),
+        style,
+        color="r",
+        lw=1 * lw_multiplier,
+        label=label2
+    )
 
     # cosmetic changes
     Iunit = make_up_unit(Iunit, var)

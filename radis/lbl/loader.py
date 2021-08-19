@@ -59,6 +59,8 @@ import pandas as pd
 
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
+from radis.db.molparam import MolParams
+from radis.db.references import doi
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
@@ -69,7 +71,7 @@ from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.levels.partfunc import (
     PartFunc_Dunham,
-    PartFuncHAPI,
+    PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
 )
@@ -80,6 +82,7 @@ from radis.misc.config import getDatabankEntries, getDatabankList, printDatabank
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg
+from radis.misc.profiler import Profiler
 from radis.misc.utils import get_files_from_regex
 from radis.misc.warning import (
     EmptyDatabaseError,
@@ -89,6 +92,7 @@ from radis.misc.warning import (
 )
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
+from radis.tools.track_ref import RefTracker
 
 KNOWN_DBFORMAT = [
     "hitran",
@@ -616,8 +620,8 @@ class DatabankLoader(object):
             pass
 
         # Variables that will hold the dataframes.
-        self.df0 = None
-        """pandas DataFrame : initial line database after loading.
+        self.df0 = None  # type : pd.DataFrame
+        """pd.DataFrame : initial line database after loading.
         If for any reason, you want to manipulate the line database manually (for instance, keeping only lines emitting
         by a particular level), you need to access the :py:attr:`~radis.lbl.loader.DatabankLoader.df0` attribute of
         :py:class:`~radis.lbl.factory.SpectrumFactory`.
@@ -645,8 +649,8 @@ class DatabankLoader(object):
         --------
         :py:attr:`~self.radis.lbl.loader.DatabankLoader.df1`
         """
-        self.df1 = None
-        """DataFrame : line database, scaled with populations + linestrength cutoff
+        self.df1 = None  # type : pd.DataFrame
+        """pd.DataFrame : line database, scaled with populations + linestrength cutoff
         Never edit manually. See all comments about :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
 
         See Also
@@ -659,6 +663,29 @@ class DatabankLoader(object):
         self._databank_kwargs = {}
 
         self._autoretrieveignoreconditions = []  # HACK. See _retrieve_from_database
+
+        # Molecular parameters
+        self.molparam = MolParams()
+        """MolParam: contains information about molar mass; isotopic abundance.
+
+        See :py:class:`~radis.db.molparam.MolParams`"""
+
+    def _reset_profiler(self, verbose):
+        """Reset :py:class:`~radis.misc.profiler.Profiler`
+
+        See Also
+        --------
+        :py:func:`radis.lbl.factory.SpectrumFactory.print_perf_profile"""
+
+        self.profiler = Profiler(verbose)
+
+    def _reset_references(self):
+        """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
+
+        # Track bibliography references
+        self.reftracker = RefTracker()
+        # ... init with RADIS itself:
+        self.reftracker.add(doi["RADIS-2018"], "calculation")
 
     # %% ======================================================================
     # PUBLIC METHODS
@@ -789,7 +816,8 @@ class DatabankLoader(object):
         )
 
         # Delete database
-        self.df0 = None
+        self.df0 = None  # type : pd.DataFrame
+        self._reset_references()  # bibliographic references
 
     def fetch_databank(
         self,
@@ -902,8 +930,10 @@ class DatabankLoader(object):
         if exomol_database != None:
             assert source == "exomol"
         if [parfuncfmt, source].count("exomol") == 1:
-            raise NotImplementedError(
-                "ExoMol partition functions must be used with ExoMol database - and vice-versa"
+            self.warn(
+                f"Using lines from {source} but partition functions from {parfuncfmt}"
+                + "for consistency we recommend using lines and partition functions from the same database",
+                "AccuracyWarning",
             )
 
         # Get inputs
@@ -936,8 +966,12 @@ class DatabankLoader(object):
 
         # %% Init Line database
         # ---------------------
+        self._reset_references()  # bibliographic references
 
         if source == "hitran":
+            self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
+            self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
+
             # Query one isotope at a time
             if isotope == "all":
                 raise ValueError(
@@ -975,6 +1009,8 @@ class DatabankLoader(object):
             self.params.dbpath = "fetched from hitran"
 
         elif source == "hitemp":
+            self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
+
             # Download, setup local databases, and fetch (use existing if possible)
 
             if isotope == "all":
@@ -1000,6 +1036,8 @@ class DatabankLoader(object):
                 )
 
         elif source == "exomol":
+            self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
+
             # Download, setup local databases, and fetch (use existing if possible)
 
             if isotope == "all":
@@ -1072,7 +1110,7 @@ class DatabankLoader(object):
                 replace_PQR_with_m101(df)
             df = drop_object_format_columns(df, verbose=self.verbose)
 
-        self.df0 = df
+        self.df0 = df  # type : pd.DataFrame
         self.misc.total_lines = len(df)  # will be stored in Spectrum metadata
 
         # %% Init Partition functions (with energies)
@@ -1265,6 +1303,8 @@ class DatabankLoader(object):
 
         # %% Line database
         # ------------
+        self._reset_references()  # bibliographic references
+
         self.df0 = self._load_databank(
             path,
             dbformat,
@@ -1652,7 +1692,7 @@ class DatabankLoader(object):
         """Make sure database is loaded, loads if it isnt and we have all the
         information needed.
         Databank has been initialized by
-        :meth:`~radis.lbl.loader.DatabankLoader._init_databank`
+        :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
         """
         self.profiler.start("check_line_databank", 2)
         # Make sure database is loaded
@@ -1734,7 +1774,7 @@ class DatabankLoader(object):
         db_use_cached,
         drop_columns="auto",
         include_neighbouring_lines=True,
-    ):
+    ) -> pd.DataFrame:
         """Loads all available database files and keep the relevant one.
         Returns a Pandas dataframe.
 
@@ -1816,6 +1856,15 @@ class DatabankLoader(object):
                 # ... this is where the cache files are read/generated.
                 try:
                     if dbformat in ["cdsd-hitemp", "cdsd-4000"]:
+                        if dbformat == "cdsd-4000":
+                            self.reftracker.add(
+                                doi["CDSD-4000"], "line database"
+                            )  # [CDSD-4000]_
+                        if dbformat == "cdsd-hitemp":
+                            self.warn(
+                                "Missing doi for CDSD-HITEMP. Use HITEMP-2010?",
+                                "MissingReferenceWarning",
+                            )
                         df = cdsd2df(
                             filename,
                             version="hitemp" if dbformat == "cdsd-hitemp" else "4000",
@@ -1826,6 +1875,14 @@ class DatabankLoader(object):
                             load_wavenum_max=wavenum_max,
                         )
                     elif dbformat in ["hitran", "hitemp"]:
+                        if dbformat == "hitran":
+                            self.reftracker.add(
+                                doi["HITRAN-2016"], "line database"
+                            )  # [HITRAN-2016]_
+                        if dbformat == "hitemp":
+                            self.reftracker.add(
+                                doi["HITEMP-2010"], "line database"
+                            )  # [HITEMP-2010]_
                         df = hit2df(
                             filename,
                             cache=db_use_cached,
@@ -1835,6 +1892,15 @@ class DatabankLoader(object):
                             load_wavenum_max=wavenum_max,
                         )
                     elif dbformat in ["hdf5-radisdb", "hitemp-radisdb"]:
+                        if dbformat == "hitemp-radisdb":
+                            self.reftracker.add(
+                                doi["HITEMP-2010"], "line database"
+                            )  # [HITEMP-2010]_
+                        if dbformat == "hdf5-radisdb":
+                            self.warn(
+                                f"Missing doi reference for database used {filename}",
+                                "MissingReferenceWarning",
+                            )
                         df = hdf2df(
                             filename,
                             # cache=db_use_cached,
@@ -1845,7 +1911,12 @@ class DatabankLoader(object):
                             else None,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
+                            engine="pytables",
                         )
+                    elif dbformat in ["exomol"]:
+                        # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
+                        raise NotImplementedError("use fetch_databank('exomol')")
+
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
                 except IrrelevantFileWarning as err:
@@ -1906,9 +1977,9 @@ class DatabankLoader(object):
 
         # ... error in Pandas? Sometimes _metadata is preserved over several runs.
         # ... Clean it here.
-        if __debug__ and len(df._metadata) > 0:
-            printdbg("df._metadata was not []. Cleaning")
-        df._metadata = []
+        if __debug__ and len(df.attrs) > 0:
+            printdbg("df.attrs was not []. Cleaning")
+        df.attrs = []
 
         # ... check database is not empty
 
@@ -2168,19 +2239,23 @@ class DatabankLoader(object):
 
         isotope = int(isotope)
 
-        if parfuncfmt == "hapi" or parfuncfmt is None:
+        if parfuncfmt in ["hapi", "tips"] or parfuncfmt is None:
             assert len(predefined_partition_functions) == 0
+            self.reftracker.add(doi["TIPS-2020"], "partition function")
+            self.reftracker.add(doi["HAPI"], "partition function")
             # Use TIPS-2017 through HAPI (HITRAN Python interface, integrated in RADIS)
             # no tabulated partition functions defined. Only non-eq spectra can
             # be calculated if energies are also given
-            parsum = PartFuncHAPI(
+            parsum = PartFuncTIPS(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
+            self.reftracker.add(doi["CDSD-4000"], "partition function")
             assert len(predefined_partition_functions) == 0
             assert molecule == "CO2"
             parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
         elif parfuncfmt == "exomol":
+            self.reftracker.add(doi["ExoMol-2020"], "partition function")
             # Just read dictionary of predefined partition function
             assert len(predefined_partition_functions) > 0
             parsum = predefined_partition_functions[molecule][isotope]
@@ -2233,6 +2308,7 @@ class DatabankLoader(object):
 
         # ... sum over CDSD levels given by Tashkun / calculated from its Hamiltonian
         if levelsfmt in ["cdsd-pc", "cdsd-pcN", "cdsd-hamil"]:
+            self.reftracker.add(doi["CDSD-4000"], "rovibrational energies")
             parsum = PartFuncCO2_CDSDcalc(
                 levels,
                 isotope=isotope,
@@ -2244,9 +2320,12 @@ class DatabankLoader(object):
 
         # calculate energy levels from RADIS Dunham parameters
         elif levelsfmt == "radis":
+            self.reftracker.add(doi["RADIS-2018"], "rovibrational energies")
             state = getMolecule(
                 self.input.molecule, isotope, self.input.state, verbose=self.verbose
             )
+            if state.doi is not None:
+                self.reftracker.add(state.doi, "spectroscopic constants")
             parsum = PartFunc_Dunham(
                 state,
                 use_cached=self.params.lvl_use_cached,
@@ -2261,6 +2340,103 @@ class DatabankLoader(object):
             # other formats ?
 
         return parsum
+
+    def get_abundance(self, molecule, isotope):
+        """Get isotopic abundance
+
+        Parameters
+        ----------
+        molecule: str
+        isotope: int, or list
+            isotope number, sorted in terrestrial abundance
+
+        Examples
+        --------
+        Use it from SpectrumFactory::
+
+            sf.get_abundance("H2O", 1)
+            sf.get_abundance("CH4", [1,2,3])
+
+        .. minigallery:: radis.lbl.loader.DatabankLoader.get_abundance
+            :add-heading:
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.loader.DatabankLoader.set_abundance`
+        """
+
+        if isinstance(molecule, str):
+            from radis.db.classes import get_molecule_identifier
+
+            molecule = get_molecule_identifier(molecule)
+
+        if isinstance(isotope, int):
+            return self.molparam.df.loc[(molecule, isotope)].abundance
+        elif isinstance(isotope, list):
+            return np.array(
+                [self.molparam.df.loc[(molecule, iso)].abundance for iso in isotope]
+            )
+        else:
+            raise ValueError(isotope)
+
+    def set_abundance(self, molecule, isotope, abundance):
+        """Set isotopic abundance
+
+        Parameters
+        ----------
+        molecule: str
+        isotope: int, or list
+            isotope number, sorted in terrestrial abundance
+        abundance: float, or list
+
+        Examples
+        --------
+
+            from radis import SpectrumFactory
+
+            sf = SpectrumFactory(
+                2284.2,
+                2284.6,
+                wstep=0.001,  # cm-1
+                pressure=20 * 1e-3,  # bar
+                mole_fraction=400e-6,
+                molecule="CO2",
+                isotope="1,2",
+                verbose=False
+            )
+            sf.load_databank("HITEMP-CO2-TEST")
+            print("Abundance of CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
+            sf.eq_spectrum(2000).plot("abscoeff")
+
+            #%% Set the abundance of CO2(626) to 0.8; and the abundance of CO2(636) to 0.2 (arbitrary):
+            sf.set_abundance("CO2", [1, 2], [0.8, 0.2])
+            print("New abundance of CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
+
+            sf.eq_spectrum(2000).plot("abscoeff", nfig="same")
+
+        .. minigallery:: radis.lbl.loader.DatabankLoader.set_abundance
+            :add-heading
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.loader.DatabankLoader.get_abundance`
+
+        """
+
+        if isinstance(molecule, str):
+            from radis.db.classes import get_molecule_identifier
+
+            molecule = get_molecule_identifier(molecule)
+
+        self.molparam.terrestrial_abundances = False
+
+        if isinstance(isotope, int):
+            self.molparam.df.loc[(molecule, isotope), "abundance"] = abundance
+        elif isinstance(isotope, list):
+            assert len(isotope) == len(abundance)
+            self.molparam.df.loc[(molecule, isotope), "abundance"] = abundance
+        else:
+            raise ValueError(isotope)
 
     def get_partition_function_interpolator(self, molecule, isotope, elec_state):
         """Retrieve Partition Function Interpolator.

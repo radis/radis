@@ -37,7 +37,7 @@ class SlitDispersionWarning(UserWarning):
 
 
 class AccuracyError(ValueError):
-    """ Output spectrum is not valid """
+    """Output spectrum is not valid"""
 
     pass
 
@@ -160,13 +160,20 @@ class InputConditionsWarning(UserWarning):
 
 
 class DeprecatedFileWarning(DeprecationWarning):
-    """ Warning triggered when the cached file was generated in a previous version of radis """
+    """Warning triggered when the cached file was generated in a previous version of radis"""
 
     pass
 
 
 class IrrelevantFileWarning(PerformanceWarning):
-    """ Warning triggered when the cached file is irrelevant for the current calcul """
+    """Warning triggered when the cached file is irrelevant for the current calcul"""
+
+    pass
+
+
+class MissingReferenceWarning(UserWarning):
+    """Warning triggered when some algorithm / database is missing the bibliographic
+    data used by :py:meth:`~radis.spectrum.spectrum.Spectrum.cite`"""
 
     pass
 
@@ -209,6 +216,7 @@ WarningClasses = {
     "DeprecatedFileWarning": DeprecatedFileWarning,
     "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
+    "MissingReferenceWarning": MissingReferenceWarning,
 }
 """ dict: warnings used in RADIS Spectrum calculations.
 
@@ -254,6 +262,7 @@ default_warning_status = {
     "DeprecatedFileWarning": "warn",
     "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
+    "MissingReferenceWarning": "warn",
 }
 """ dict: default status of warnings used in RADIS Spectrum calculations.
 

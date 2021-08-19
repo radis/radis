@@ -60,9 +60,12 @@ from radis.lbl.labels import (
     vib_lvl_name_hitran_class1,
     vib_lvl_name_hitran_class5,
 )
-from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+
+try:  # Proper import
+    from .loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+except ImportError:  # if ran from here
+    from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 from radis.misc.basics import all_in, is_float
-from radis.misc.profiler import Profiler
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
 from radis.phys.constants import k_b
@@ -187,7 +190,7 @@ class BandFactory(BroadenFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         # %% Retrieve from database if exists
         if self.autoretrievedatabase:
@@ -505,7 +508,7 @@ class BandFactory(BroadenFactory):
         verbose = self.verbose
 
         # New Profiler object
-        self.profiler = Profiler(verbose)
+        self._reset_profiler(verbose)
 
         # %% Retrieve from database if exists
         if self.autoretrievedatabase:
@@ -539,8 +542,8 @@ class BandFactory(BroadenFactory):
         # (Note: Emission Integral is non canonical quantity, equivalent to
         #  Linestrength for absorption)
         self.calc_populations_noneq(Tvib, Trot)
-        self._calc_linestrength_noneq()
-        self._calc_emission_integral()
+        self.calc_linestrength_noneq()
+        self.calc_emission_integral()
 
         # ----------------------------------------------------------------------
         # Cutoff linestrength

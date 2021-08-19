@@ -48,10 +48,14 @@ from radis.misc.warning import DatabaseAlreadyExists
 
 # %% Functions to parse radis/config.json
 
+CONFIG_PATH = join(expanduser("~"), ".radis")
+CONFIG_PATH_JSON = join(expanduser("~"), "radis.json")
+CONFIG_PATH_DEFAULT = join(getProjectRoot(), "config.json")
+
 
 def get_config():
     """Read the config.json file."""
-    jsonfile = join(getProjectRoot(), "config.json")
+    jsonfile = CONFIG_PATH_DEFAULT
     with open(jsonfile) as f:
         try:
             config = json.load(f)
@@ -255,9 +259,6 @@ See Also
 :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
 """
 
-CONFIG_PATH = join(expanduser("~"), ".radis")
-CONFIG_PATH_JSON = join(expanduser("~"), "radis.json")
-
 
 def getConfig_configformat():
     """Read config file and returns it.
@@ -355,28 +356,24 @@ def convertRadisToJSON():
     return
 
 
-def automatic_conversion():
+def check_and_convert():
     """Checks whether `~/radis.json` exists.
     If not then we use
     :func:`~radis.misc.config.convertRadisToJSON`
     to convert `~/.radis` into `~/radis.json`
     """
-
     # If `~/.radis` and `~/radis.json` both found, raises DeprecationWarning
     if exists(CONFIG_PATH_JSON) and exists(CONFIG_PATH):
         warnings.warn(
-            DeprecationWarning(
-                "`~/.radis` and `~/radis.json` both found. "
-                + "`~/.radis` config file was replaced by `~/radis.json` in version '0.9.29'."
-                + " Remove `~/.radis` to remove this warning.",
-            )
+            "`~/.radis` config file was replaced by `~/radis.json` in version '0.9.29'."
+            + " Remove `~/.radis` to remove this warning (make a copy to be sure).",
+            UserWarning,
         )
-    elif exists(CONFIG_PATH_JSON):
-        pass
     elif exists(CONFIG_PATH):
-        convertRadisToJSON()
-    else:
-        pass
+        try:
+            convertRadisToJSON()
+        except Exception as err:
+            raise ValueError("Couldn't Convert `.radis` to `radis.json`") from err
 
     return
 
@@ -387,10 +384,7 @@ def getConfig():
     Config file name is harcoded: :ref:`~/radis.json`
     """
     # First checking `~radis.json` exist or not, if not then converting `~.radis` into `~/radis.json`
-    try:
-        automatic_conversion()
-    except Exception as err:
-        raise ValueError("Couldn't Convert `.radis` to `radis.json`") from err
+    check_and_convert()
 
     configpath = CONFIG_PATH_JSON
     # Test ~/radis.json exists

@@ -378,7 +378,7 @@ def expand_metadata(df, metadata):
     """Turn metadata from a float to a column.
 
     For some reason metadata are sometimes not copied when a DataFrame is
-    sliced or copied, even if they explicitely figure in the df._metadata
+    sliced or copied, even if they explicitely figure in the df.attrs
     attribute. Here we add them as column before such operations.
 
     Parameters
@@ -395,10 +395,10 @@ def expand_metadata(df, metadata):
     """
 
     for k in metadata:
-        if __debug__ and k not in df._metadata:
+        if __debug__ and k not in df.attrs:
             from radis.misc.debug import printdbg
 
-            printdbg("WARNING. {0} not in _metadata: {1}".format(k, df._metadata))
+            printdbg("WARNING. {0} not in metadata: {1}".format(k, df.attrs))
         df[k] = getattr(df, k)
 
 

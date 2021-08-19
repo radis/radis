@@ -52,6 +52,7 @@ from radis.db.utils import (
     get_default_jsonfile,
     get_dunham_coefficients,
     get_herzberg_coefficients,
+    parse_doi,
 )
 from radis.levels.dunham import EvJ, Fv, Gv
 
@@ -512,6 +513,9 @@ class ElectronicState(Isotope):
         self.term_symbol = term_symbol
         self.g_e = g_e
 
+        self.doi = (
+            None  #: str: stores DOI of spectroscopic constants if given in database
+        )
         self._parse_rovib_constants(
             spectroscopic_constants, spectroscopic_constants_type
         )
@@ -576,6 +580,8 @@ class ElectronicState(Isotope):
             rovib_constants = spectroscopic_constants
             jsonfile = None
 
+            doi = parse_doi(rovib_constants)
+
         else:  # file
 
             # Get file name
@@ -590,12 +596,20 @@ class ElectronicState(Isotope):
 
             # Parse file
             if spectroscopic_constants_type == "dunham":
-                rovib_constants = get_dunham_coefficients(
-                    self.name, self.iso, self.get_statename_utf(), jsonfile=jsonfile
+                rovib_constants, doi = get_dunham_coefficients(
+                    self.name,
+                    self.iso,
+                    self.get_statename_utf(),
+                    jsonfile=jsonfile,
+                    return_doi=True,
                 )
             elif spectroscopic_constants_type == "herzberg":
-                rovib_constants = get_herzberg_coefficients(
-                    self.name, self.iso, self.get_statename_utf(), jsonfile=jsonfile
+                rovib_constants, doi = get_herzberg_coefficients(
+                    self.name,
+                    self.iso,
+                    self.get_statename_utf(),
+                    jsonfile=jsonfile,
+                    return_doi=True,
                 )
             else:
                 raise ValueError(
@@ -619,6 +633,7 @@ class ElectronicState(Isotope):
         # Store
         self.rovib_constants = rovib_constants
         self.jsonfile = jsonfile
+        self.doi = doi
 
     # Default method to calculate energy
 

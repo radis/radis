@@ -10,7 +10,7 @@ Calculators all derive from the same RovibPartitionFunction object,
 and require a list of energies
 
 Tabulators are more specific, and require a list of precalculated
-partition functions at different temperature. PartFuncHAPI
+partition functions at different temperature. PartFuncTIPS
 uses the HITRAN hapi.py [1]_ module to interpolate Q for HITRAN species
 
 
@@ -19,7 +19,7 @@ Routine Listing
 
 Partition functions:
 
-- :class:`~radis.levels.partfunc.PartFuncHAPI`
+- :class:`~radis.levels.partfunc.PartFuncTIPS`
 - :class:`~radis.levels.partfunc.PartFunc_Dunham`
 
 Which inherit from:
@@ -60,7 +60,6 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
-import vaex
 from numpy import exp
 
 import radis
@@ -144,8 +143,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
 
         See Also
         --------
-
-        :py:class:`~radis.levels.partfunc.PartFuncHAPI`
+        :py:class:`~radis.levels.partfunc.PartFuncTIPS`
         """
 
         # For compatibility with the syntax of RovibParFuncCalculator.at()
@@ -195,7 +193,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
     :py:meth:`~radis.db.classes.ElectronicState.Erovib`
     """
 
-    def __init__(self, electronic_state, mode="full summation"):
+    def __init__(self, electronic_state, mode="full summation", verbose=False):
 
         super(RovibParFuncCalculator, self).__init__()
 
@@ -214,6 +212,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         self.ElecState = ElecState  # electronic state object
         self.molecule = ElecState.name  # molecule name
         self.isotope = ElecState.iso
+        self.verbose = verbose
 
         # Line database
         # pandas Dataframe that holds all the lines
@@ -227,8 +226,13 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         self._tab_at_noneq = None  # tabulated function
         self._tab_at_noneq_3Tvib = None  # tabulated function
         self.N_bins = (
-            300  # int: number of bins in tabulated mode. Change with `Z.N_bins = `
+            200  # int: number of bins in tabulated mode. Change with `Z.N_bins = `
         )
+        self.N_bins_scaling = lambda N_bins, Ndim: int(N_bins * (0.8 ** (Ndim - 1)))
+        """ func int, int -> int
+        Reduce number of Bins in each dimension ; in high dimensional spaces.
+        This is justified by accuracy tests in :py:func:`radis.test.levels.test_partfunc.test_tabulated_partition_functions`
+        """
 
     def at(self, T, update_populations=False):
         """Get partition function at temperature T under equilibrium
@@ -263,6 +267,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             printdbg(
                 "called RovibPartitionFunction.at(T={0}K, ".format(T)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
 
         # Check inputs
@@ -289,8 +294,13 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         --------
         :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
         """
+        shape = N_bins
+        if self.verbose >= 3:
+            print(f"Tabulation eq partition functions with : shape = {shape}")
 
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)
@@ -298,8 +308,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         df["gtot"] = (
             df["grot"] * df["gvib"]
         )  # note that this column is "lazy" and only evaluated at runtime
-        E_bins = df.mean("E", binby="logE", shape=N_bins)
-        g_bins = df.sum("gtot", binby="logE", shape=N_bins)
+        E_bins = df.mean("E", binby="logE", shape=shape)
+        g_bins = df.sum("gtot", binby="logE", shape=shape)
 
         # drop empty
         E_bins = E_bins[g_bins > 0]
@@ -317,6 +327,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         :py:func:`~radis.levels.partfunc._noneq_tabulation_setup`"""
 
         N_bins = self.N_bins  # reset it by editing the class attribute `Z.N_bins = `
+        N_bins = self.N_bins_scaling(N_bins, 1)
 
         if self._tab_at is None or N_bins != self._tab_N_bins:
             # Tabulate or re-tabulate:
@@ -408,6 +419,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 "called RovibPartitionFunction.atnoneq"
                 + "(Tvib={0}K, Trot={1}K, ... )".format(Tvib, Trot)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
 
         # Check inputs, initialize
@@ -476,8 +488,13 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         --------
         :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
         """
+        shape = N_bins, N_bins
+        if self.verbose >= 3:
+            print(f"Tabulation noneq partition functions with : shape = {shape}")
 
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)
@@ -493,12 +510,9 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         #     "Erot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
         # )
         Evib_bins_neq, Erot_bins_neq = df.mean(
-            ["Evib", "Erot"], binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
+            ["Evib", "Erot"], binby=["logEvib", "logErot"], shape=shape
         )
-        g_bins_neq = df.sum(
-            "gtot", binby=["logEvib", "logErot"], shape=(N_bins, N_bins)
-        )
-
+        g_bins_neq = df.sum("gtot", binby=["logEvib", "logErot"], shape=shape)
         # drop empty
         Evib_bins_neq = Evib_bins_neq[g_bins_neq > 0]
         Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
@@ -539,6 +553,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             raise NotImplementedError
 
         N_bins = self.N_bins  # reset it by editing the class attribute `Z.N_bins = `
+        N_bins = self.N_bins_scaling(N_bins, 2)
 
         if (
             self._tab_at_noneq is None
@@ -751,6 +766,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 "called RovibPartitionFunction.at_noneq_3Tvib"
                 + "(Tvib={0}K, Trot={1}K)".format(Tvib, Trot)
                 + "update_populations={0})".format(update_populations)
+                + f". mode = {self.mode}"
             )
         #                               'overpopulation={0}, vib_distribution={1}'.format(overpopulation, vib_distribution)+\
         #                               'rot_distribution={0})'.format(rot_distribution)
@@ -827,51 +843,94 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         --------
         :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
         """
+        shape = N_bins, N_bins, N_bins
+        if self.verbose >= 3:
+            print(f"Tabulation noneq 3Tvib partition functions with : shape = {shape}")
+
         # Get variables
+        import vaex  # import delayed until now (takes ~2s to import)
+
         df = vaex.from_pandas(self.df)
 
         epsilon = 1e-4  # prevent log(0)
-        if "Evib12" not in df:
-            df["Evib12"] = df["Evib1"] + df["Evib2"]
-        df["logEvib12"] = np.log(df["Evib12"] + epsilon)  # to bin on a log grid
-        df["logEvib3"] = np.log(df["Evib3"] + epsilon)  # to bin on a log grid
-        df["logErot"] = np.log(df["Erot"] + epsilon)  # to bin on a log grid
-        df["gtot"] = df["grot"] * (
-            df["gvib"]
-        )  # note that this column is "lazy" and only evaluated at runtime
 
-        # Evib12_bins_neq = df.mean(
-        #     "Evib12", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
-        # )
-        # Evib3_bins_neq = df.mean(
-        #     "Evib3", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
-        # )
-        # Erot_bins_neq = df.mean(
-        #     "Erot", binby=["logEvib12", "logEvib3", "logErot"], shape=(N_bins, N_bins, N_bins)
-        # )
-        Evib12_bins_neq, Evib3_bins_neq, Erot_bins_neq = df.mean(
-            ["Evib12", "Evib3", "Erot"],
-            binby=["logEvib12", "logEvib3", "logErot"],
-            shape=(N_bins, N_bins, N_bins),
-        )
-        g_bins_neq = df.sum(
-            "gtot",
-            binby=["logEvib12", "logEvib3", "logErot"],
-            shape=(N_bins, N_bins, N_bins),
-        )
+        if vib_distribution == "boltzmann" and rot_distribution == "boltzmann":
 
-        # drop empty
-        Evib12_bins_neq = Evib12_bins_neq[g_bins_neq > 0]
-        Evib3_bins_neq = Evib3_bins_neq[g_bins_neq > 0]
-        Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
-        g_bins_neq = g_bins_neq[g_bins_neq > 0]
+            if "Evib12" not in df:
+                df["Evib12"] = df["Evib1"] + df["Evib2"]
+            df["logEvib12"] = np.log(df["Evib12"] + epsilon)  # to bin on a log grid
+            df["logEvib3"] = np.log(df["Evib3"] + epsilon)  # to bin on a log grid
+            df["logErot"] = np.log(df["Erot"] + epsilon)  # to bin on a log grid
+            df["gtot"] = df["grot"] * (
+                df["gvib"]
+            )  # note that this column is "lazy" and only evaluated at runtime
 
-        self._tab_at_noneq_3Tvib = lambda Tvib, Trot: (
-            g_bins_neq
-            * exp(-hc_k * Evib12_bins_neq / Tvib[0])
-            * exp(-hc_k * Evib3_bins_neq / Tvib[2])
-            * exp(-hc_k * Erot_bins_neq / Trot)
-        ).sum(axis=0)
+            Evib12_bins_neq, Evib3_bins_neq, Erot_bins_neq = df.mean(
+                ["Evib12", "Evib3", "Erot"],
+                binby=["logEvib12", "logEvib3", "logErot"],
+                shape=shape,
+            )
+            g_bins_neq = df.sum(
+                "gtot",
+                binby=["logEvib12", "logEvib3", "logErot"],
+                shape=shape,
+            )
+
+            # drop empty
+            Evib12_bins_neq = Evib12_bins_neq[g_bins_neq > 0]
+            Evib3_bins_neq = Evib3_bins_neq[g_bins_neq > 0]
+            Erot_bins_neq = Erot_bins_neq[g_bins_neq > 0]
+            g_bins_neq = g_bins_neq[g_bins_neq > 0]
+
+            self._tab_at_noneq_3Tvib = lambda Tvib, Trot: (
+                g_bins_neq
+                * exp(-hc_k * Evib12_bins_neq / Tvib[0])
+                * exp(-hc_k * Evib3_bins_neq / Tvib[2])
+                * exp(-hc_k * Erot_bins_neq / Trot)
+            ).sum(axis=0)
+
+        elif vib_distribution == "treanor" and rot_distribution == "boltzmann":
+
+            if "Evib12_h" not in df:
+                df["Evib12_h"] = df["Evib1_h"] + df["Evib2_h"]
+            if "E_anharmonic" not in df:
+                df["E_anharmonic"] = df["Evib1_a"] + df["Evib2_a"] + df["Erot"]
+            df["logEvib12_h"] = np.log(df["Evib12_h"] + epsilon)  # to bin on a log grid
+            df["logEvib3_h"] = np.log(df["Evib3_h"] + epsilon)  # to bin on a log grid
+            df["E_anharmonic"] = np.log(
+                df["E_anharmonic"] + epsilon
+            )  # to bin on a log grid
+            df["gtot"] = df["grot"] * df["gvib"]
+
+            Evib12_h_bins_neq, Evib3_h_bins_neq, E_anharmonic_bins_neq = df.mean(
+                ["Evib12_h", "Evib3_h", "E_anharmonic"],
+                binby=["Evib12_h", "Evib3_h", "E_anharmonic"],
+                shape=shape,
+            )
+            g_bins_neq = df.sum(
+                "gtot",
+                binby=["Evib12_h", "Evib3_h", "E_anharmonic"],
+                shape=shape,
+            )
+
+            # drop empty
+            Evib12_h_bins_neq = Evib12_h_bins_neq[g_bins_neq > 0]
+            Evib3_h_bins_neq = Evib3_h_bins_neq[g_bins_neq > 0]
+            E_anharmonic_bins_neq = E_anharmonic_bins_neq[g_bins_neq > 0]
+            g_bins_neq = g_bins_neq[g_bins_neq > 0]
+
+            self._tab_at_noneq_3Tvib = lambda Tvib, Trot: (
+                g_bins_neq
+                * exp(-hc_k * Evib12_h_bins_neq / Tvib[0])
+                * exp(-hc_k * Evib3_h_bins_neq / Tvib[2])
+                * exp(-hc_k * E_anharmonic_bins_neq / Trot)
+            ).sum(axis=0)
+
+        else:
+            raise NotImplementedError(
+                f"vib_distribution: {vib_distribution}, rot_distribution: {rot_distribution}"
+            )
+
         # Also save parameters to trigger a re-tabulation if they change:
         self._tab_N_bins = N_bins
         self._tab_vib_distribution = vib_distribution
@@ -899,14 +958,13 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             )
         if len(overpopulation) > 0:
             raise NotImplementedError
-        if vib_distribution != "boltzmann":
-            raise NotImplementedError
         if rot_distribution != "boltzmann":
             raise NotImplementedError
         if returnQvibQrot != False:
             raise NotImplementedError
 
         N_bins = self.N_bins  # reset it by editing the class attribute `Z.N_bins = `
+        N_bins = self.N_bins_scaling(N_bins, 3)  # 3 temperatures only (T12, T3, Trot)
 
         if (
             self._tab_at_noneq_3Tvib is None
@@ -1053,8 +1111,9 @@ class PartFuncExoMol(RovibParFuncTabulator):
         return np.interp(T, self.T_range, self.Q_range)
 
 
-class PartFuncHAPI(RovibParFuncTabulator):
-    """Return partition function using interpolation of tabulated values.
+class PartFuncTIPS(RovibParFuncTabulator):
+    """Return partition function using interpolation of tabulated values
+    using the TIPS program [TIPS-2020]_
 
     Parameters
     ----------
@@ -1069,28 +1128,26 @@ class PartFuncHAPI(RovibParFuncTabulator):
     --------
     ::
 
-        from radis.levels.partfunc import PartFuncHAPI
+        from radis.levels.partfunc import PartFuncTIPS
         from radis.db.classes import get_molecule_identifier
 
         M = get_molecule_identifier('N2O')
         iso=1
 
-        Q = PartFuncHAPI(M, iso)
+        Q = PartFuncTIPS(M, iso)
         print(Q.at(T=1500))
 
     See :ref:`online examples <label_examples_partition_functions>` for more.
 
     References
     ----------
-    Partition function are calculated with HAPI [1]_ (Hitran Python Interface) using
+    Partition function are retrieved from [TIPS-2020]_ through [HAPI]_  (Hitran Python Interface) using
     partitionSum(M,I,T)
-
-    .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
     """
 
     def __init__(self, M, I, path=None, verbose=True):
 
-        super(PartFuncHAPI, self).__init__()
+        super(PartFuncTIPS, self).__init__()
 
         self.verbose = verbose
 
@@ -1115,7 +1172,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
             M = get_molecule_identifier(M)
         if type(M) is not int:
             raise TypeError("Molecule id must be int: got {0} ({1})".format(M, type(M)))
-        if type(I) is not int:
+        if type(I) not in [int, np.int64]:
             raise TypeError(
                 "Isotope number must be int: got {0} ({1})".format(I, type(I))
             )
@@ -1148,7 +1205,7 @@ class PartFuncHAPI(RovibParFuncTabulator):
         try:
             return self.partitionSum(self.M, self.I, T)
         except Exception as err:
-            if "TIPS2017" in str(err):
+            if "TIPS2017" in str(err) or "TIPS2020" in str(err):
                 # TIPS 2017 OutOfBoundError
                 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 
@@ -1182,6 +1239,9 @@ def _get_cachefile_name(ElecState):
         jsonfile.replace(".json", ""), molecule, isotope, state
     )
     return filename
+
+
+PartFuncHAPI = PartFuncTIPS  # old name; for compatibility
 
 
 class PartFunc_Dunham(RovibParFuncCalculator):
@@ -1303,7 +1363,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         # %% Init
         super(PartFunc_Dunham, self).__init__(
-            electronic_state=electronic_state, mode=mode
+            electronic_state=electronic_state, mode=mode, verbose=verbose
         )
 
         # Check inputs ('return' is not mentionned in signature. it will just return
@@ -1328,7 +1388,6 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         self.vmax = vmax
         self.vmax_morse = vmax_morse
         self.Jmax = Jmax
-        self.verbose = verbose
         self.use_cached = use_cached
         self.group_energy_modes_in_2T_model = group_energy_modes_in_2T_model
 
