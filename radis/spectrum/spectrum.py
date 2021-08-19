@@ -1650,7 +1650,7 @@ class Spectrum(object):
                 y /= np.nanmax(y)
             Iunit = "norm"
 
-        set_style("origin")
+        set_style()
         if nfig == "same":
             nfig = plt.gcf().number
         fig = plt.figure(nfig)
@@ -1712,7 +1712,7 @@ class Spectrum(object):
 
         if "label" in kwargs:
             plt.legend()
-        fix_style(str("origin"))
+        fix_style()
 
         # Add plotting tools
         # ... Add cursor
@@ -1997,7 +1997,7 @@ class Spectrum(object):
         # Initialize figures, styles
         fig_vib = None
         fig_rovib = None
-        set_style("origin")
+        set_style()
 
         # Loop over all molecules, all isotopes, all electronic states
         # Note that the below works for both dict and pandas dataframe
@@ -2042,7 +2042,7 @@ class Spectrum(object):
             if fig is not None:
                 ax = fig.gca()
                 ax.legend()
-                fix_style("origin", ax)
+                fix_style(ax=ax)
 
     # %% ------------------ Instrumental Slit Function ---------------------
 

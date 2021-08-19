@@ -4,6 +4,8 @@
     "CO": "molecules_data.json"
     },
 "plot":{
-    "plotlib":"publib"
+    "plotlib":"publib",
+    "context":"paper",
+    "style":"origin"
     }
 }

@@ -1555,7 +1555,7 @@ class BroadenFactory(BaseFactory):
         line_profile /= trapz(line_profile.T, x=wbroad.T)  # normalize
 
         # Plot!
-        set_style("origin")
+        set_style()
         plt.figure()
         plt.plot(wbroad, pressure_profile, label="Pressure")
         plt.plot(wbroad, gaussian_profile, label="Doppler")
@@ -1566,7 +1566,7 @@ class BroadenFactory(BaseFactory):
         plt.ylabel("Broadening coefficient")
         plt.title("Line {0}, T={1:.1f}K, P={2:.2f}atm".format(i, Tgas, pressure_atm))
         plt.legend()
-        fix_style("origin")
+        fix_style()
 
         return
 

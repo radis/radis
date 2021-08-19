@@ -53,8 +53,9 @@ Notes
 refactor in progress.
 So far there are config files in ~/radis.json (for databanks), global variables
 here, and a radis/config.json file.
+
 Everything should be merged in a user JSON file ~/radis.json (json) overriding
-the default one.
+the default ``radis/config.json`` file.
 """
 
 

@@ -9,37 +9,151 @@ import numpy as np
 
 import radis
 
+KNOWN_CONTEXT = ["paper", "notebook", "talk", "poster"]
 
-def set_style(style):
 
-    plotlib = radis.config["plot"]["plotlib"]
+def _get_defaults(plotlib, context, style):
+
+    # Get defaults
+    if plotlib == "config-default":
+        try:
+            plotlib = radis.config["plot"]["plotlib"]
+        except KeyError:
+            raise KeyError(
+                'Define a `"plot":{"plotlib":"publib"/"seaborn"/"none"}` entry in your ~/radis.json config file'
+            )
+
+    if context == "config-default":
+        try:
+            context = radis.config["plot"]["context"]
+        except KeyError:
+            raise KeyError(
+                r'Define a `"plot":{{"context":[any of {0}]}}` entry in your ~/radis.json config file'.format(
+                    ", ".join(KNOWN_CONTEXT)
+                )
+            )
+
+    if style == "config-default":
+        try:
+            style = radis.config["plot"]["style"]
+        except KeyError:
+            raise KeyError(
+                'Define a `"plot":{"style":[any of publib / seaborn / matplotlib themes]}` entry in your ~/radis.json config file'
+            )
+
+    if context and context not in KNOWN_CONTEXT:
+        raise ValueError(f"context must be in {KNOWN_CONTEXT}. Got {context}")
 
     if plotlib == "publib":
-        from publib import set_style
+        if not isinstance(style, list):
+            style = [style]
+        if context == "paper":
+            style = style + ["article"]
+        elif context in ["poster", "notebook", "talk"]:
+            style = style + [context]
 
-        set_style(style)
+    return plotlib, context, style
+
+
+def set_style(
+    plotlib="config-default", context="config-default", style="config-default"
+):
+    """Set styles used by Radis plot functions (:py:func:`~radis.spectrum.spectrum.Spectrum.plot`,
+    :py:func:`~radis.spectrum.compare.plot_diff`, :py:func:`~radis.tools.slit.plot_slit`, etc.)
+
+    Parameters
+    ----------
+    plotlib: ``"publib"``, ``"seaborn"``, ``"matplotlib"``
+        `publib <https://github.com/erwanp/publib>`__ , :py:mod:`seaborn`, :py:mod:`matplotlib`
+    context: ``"poster"``, ``"talk"``, ``"paper"``, ``"notebook"``
+        See :py:func:`seaborn.set_theme`
+    style: a ``publib`` or ``matplotlib`` style, or a ``seaborn`` theme
+        if ``"oring"``, use your current defaults.
+        if ``"none"``, use your current defaults.
+
+    Examples
+    --------
+
+    .. minigallery:: radis.misc.plot.set_style
+
+    See also
+    --------
+    :py:func:`seaborn.set_theme`,
+    :py:func:`publib.main.set_style`
+    """
+
+    plotlib, context, style = _get_defaults(plotlib, context, style)
+
+    if plotlib != "none":
+        import matplotlib
+
+        matplotlib.rc_file_defaults()
+
+    # Apply style
+    if plotlib == "publib":
+        import publib
+
+        publib.set_style(style)
     elif plotlib == "seaborn":
         import seaborn as sns
 
-        sns.set_theme()
-    else:
-        raise ValueError(f"plot style: {style}")
+        sns.set_theme(context=context, style=style)
+    elif plotlib == "matplotlib":
+        import matplotlib.pyplot as plt
 
-
-def fix_style(style, *args):
-
-    plotlib = radis.config["plot"]["plotlib"]
-
-    if plotlib == "publib":
-        from publib import fix_style
-
-        fix_style(style, *args)
-    elif plotlib == "seaborn":
-        # import seaborn as sns
-
+        plt.style.use(style)
+    elif plotlib == "none":
         pass
     else:
-        raise ValueError(f"plot style: {style}")
+        raise ValueError(f"plot library: {plotlib}")
+
+
+def fix_style(
+    plotlib="config-default",
+    context="config-default",
+    style="config-default",
+    *args,
+    **kwargs,
+):
+    """A posteriori improvement of the last figure generated
+
+    Effective when ``plotlib`` is `publib <https://github.com/erwanp/publib>`__
+
+    Parameters
+    ----------
+    plotlib: ``"publib"``, ``"seaborn"``, ``"matplotlib"``
+        `publib <https://github.com/erwanp/publib>`__ , :py:mod:`seaborn`, :py:mod:`matplotlib`
+    context: ``"poster"``, ``"talk"``, ``"paper"``, ``"notebook"``
+        See :py:func:`seaborn.set_theme`
+    style: a ``publib`` or ``matplotlib`` style, or a ``seaborn`` theme
+        if ``"oring"``, use your current defaults.
+        if ``"none"``, use your current defaults.
+
+    Examples
+    --------
+
+    .. minigallery:: radis.misc.plot.fix_style
+
+    See also
+    --------
+    :py:func:`publib.main.fix_style`
+    """
+
+    plotlib, context, style = _get_defaults(plotlib, context, style)
+
+    # Apply style
+    if plotlib == "publib":
+        import publib
+
+        publib.fix_style(style, *args, **kwargs)
+    elif plotlib == "seaborn":
+        pass
+    elif plotlib == "matplotlib":
+        pass
+    elif plotlib == "none":
+        pass
+    else:
+        raise ValueError(f"plot library: {plotlib}")
 
 
 def split_and_plot_by_parts(w, I, *args, **kwargs):

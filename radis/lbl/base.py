@@ -3532,13 +3532,13 @@ class BaseFactory(DatabankLoader):
                 )
 
         # Plot
-        set_style("origin")
+        set_style()
         plt.figure(num=nfig)
         plt.plot(E, n / g, "ok")
         plt.xlabel("Energy (cm-1)")
         plt.ylabel("Population (n / g)")
         plt.yscale("log")
-        fix_style("origin")
+        fix_style()
 
 
 def get_waverange(
