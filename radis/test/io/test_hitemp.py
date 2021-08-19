@@ -170,7 +170,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
 
 @pytest.mark.needs_connection
 def test_partial_loading(*args, **kwargs):
-    """ Assert that using partial loading of the database works """
+    """Assert that using partial loading of the database works"""
 
     wmin, wmax = 2500, 4500
 

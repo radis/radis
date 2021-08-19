@@ -187,7 +187,7 @@ def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
 
 
 def test_irrelevant_file_loading(*args, **kwargs):
-    """ check that irrelevant files (irrelevant wavenumber) are not loaded """
+    """check that irrelevant files (irrelevant wavenumber) are not loaded"""
 
     # For cdsd-hitemp files :
 

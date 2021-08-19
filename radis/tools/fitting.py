@@ -326,7 +326,7 @@ def fit_spectrum(
         plt.show(block=False)
 
     def cost_function(fit_values, plot=None):
-        """ Return error on Spectrum s vs experimental spectrum"""
+        """Return error on Spectrum s vs experimental spectrum"""
 
         s = generate_spectrum(fit_values)
 
@@ -367,7 +367,7 @@ def fit_spectrum(
         return get_residual(s, s_exp, fit_variable, ignore_nan=True, norm="L2")
 
     def log_cost_function(fit_values, plot=None):
-        """ Calls the cost_function, and write the values to the Log history  """
+        """Calls the cost_function, and write the values to the Log history"""
 
         res = cost_function(fit_values, plot=plot)
 

@@ -16,7 +16,7 @@ from radis.misc.warning import DeprecatedFileWarning
 # ignored by pytest with argument -m "not needs_connection"
 @pytest.mark.needs_connection
 def test_fetch_astroquery(verbose=True, *args, **kwargs):
-    """ Test astroquery """
+    """Test astroquery"""
     from radis.io.query import fetch_astroquery
 
     df = fetch_astroquery("CO2", 1, 2200, 2400, verbose=verbose, cache=False)
@@ -30,7 +30,7 @@ def test_fetch_astroquery(verbose=True, *args, **kwargs):
 # ignored by pytest with argument -m "not needs_connection"
 @pytest.mark.needs_connection
 def test_fetch_astroquery_empty(verbose=True, *args, **kwargs):
-    """ Test astroquery: get a spectral range where there are no lines"""
+    """Test astroquery: get a spectral range where there are no lines"""
     from radis.io.query import fetch_astroquery
 
     df = fetch_astroquery(
