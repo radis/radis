@@ -176,7 +176,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
         molecule="CO2",
         isotope="1,2",
         medium="vacuum",
-        broadening_max_width=10,
+        truncation=10,
         verbose=0,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
