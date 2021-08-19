@@ -13,7 +13,7 @@ You can use :py:meth:`~radis.tools.database.SpecList.plot_cond` to make a 2D plo
 
 """
 
-import os
+from pathlib import Path
 
 import numpy as np
 
@@ -37,7 +37,7 @@ sf.fetch_databank("hitemp")
 s1 = sf.eq_spectrum(Tgas=300, path_length=1)
 
 # Creating SpecDatabase
-my_folder = os.getcwd() + "/SpecDatabase_Test"
+my_folder = Path.cwd() / "SpecDatabase_Test"
 db = SpecDatabase(my_folder)
 
 # Method 1: Creating .spec file and adding manually to SpecDatabase

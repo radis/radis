@@ -1861,7 +1861,7 @@ class SpecDatabase(SpecList):
         # use the key of the dict insted of the file.
 
         # Assert name looks like a directory
-        name, ext = splitext(path)
+        name, ext = splitext(str(path))
 
         if ext != "":
             raise ValueError("Database should be a directory: {0}".format(path))
@@ -1942,7 +1942,7 @@ class SpecDatabase(SpecList):
                             ],
                             2,
                         ) != round(
-                            os.path.getmtime(self.path + "/" + f), 2
+                            os.path.getmtime(join(self.path, f)), 2
                         ):  # take rounded numbers to prevent errors
                             raise ValueError(
                                 "Spectrum {} last modification don't match the date stored in the csv. Update the database first with `SpecDatabase(..., lazy_loading=False)`".format(
