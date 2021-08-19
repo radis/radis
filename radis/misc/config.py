@@ -54,14 +54,16 @@ CONFIG_PATH_DEFAULT = join(getProjectRoot(), "default_radis.json")
 CONFIG_PATH_JSON = join(expanduser("~"), "radis.json")
 CONFIG_PATH_OLD = join(expanduser("~"), ".radis")
 
+assert exists(CONFIG_PATH_DEFAULT)
 
-def get_config(configpath=CONFIG_PATH_JSON, create_if_missing=False):
+
+def get_config(configpath=CONFIG_PATH_JSON):
     """Read the default RADIS config.json file `configpath` (default
     :py:attr:`~radis.misc.config.CONFIG_PATH_JSON` and override it with the
     entries of the user config file ``~/.radis``
     (:py:attr:`~radis.misc.config.CONFIG_PATH_DEFAULT`"""
 
-    defaut_config = get_user_config(configpath, create_if_missing=create_if_missing)
+    defaut_config = get_user_config(configpath)
 
     jsonfile = CONFIG_PATH_DEFAULT
     with open(jsonfile) as f:
@@ -388,34 +390,34 @@ def init_radis_json(config_path_json, config_path_old=CONFIG_PATH_OLD):
     elif exists(config_path_old):
         convertRadisToJSON(config_path_json, config_path_old)
     else:
-        pass
+        # Create it from the default config path
+        try:
+            shutil.copy2(CONFIG_PATH_DEFAULT, config_path_json)
+        except Exception as err:
+            print(
+                f"Couldn't create RADIS configuration in {config_path_json} ({str(err)})"
+            )
+        else:
+            print(f"RADIS configuration file created in {config_path_json}")
 
-    return
-
-
-def get_user_config(configpath=CONFIG_PATH_JSON, create_if_missing=False):
-    """Read config file and returns it."""
-
-    # First checking `~radis.json` exist or not, if not then converting `~.radis` into `~/radis.json`
-    init_radis_json(configpath)
-
-    # Test ~/radis.json exists
-    if not exists(configpath):
-        if create_if_missing:
-            try:
-                shutil.copy2(CONFIG_PATH_DEFAULT, configpath)
-            except:
-                print(f"Couldn't create RADIS configuration in {configpath}")
-            else:
-                print(f"RADIS configuration file created in {configpath}")
-    if not exists(configpath):
+    # Check it user file exists
+    if not exists(config_path_json):
         raise FileNotFoundError(
             "Create a `radis.json file in {0} to store links to ".format(
-                dirname(configpath)
+                dirname(config_path_json)
             )
             + "your local databanks. Format must be:\n {0}".format(DBFORMATJSON)
             + "\n(it can be empty too)"
         )
+
+    return
+
+
+def get_user_config(configpath=CONFIG_PATH_JSON):
+    """Read config file and returns it."""
+
+    # First checking `~radis.json` exist or not, if not create it
+    init_radis_json(configpath)
 
     # Checking file is empty
     if os.stat(configpath).st_size == 0:
