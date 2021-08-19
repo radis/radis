@@ -15,14 +15,14 @@ format
 Routine Listing
 ---------------
 
-- :func:`~radis.misc.config.getConfig_configformat`
+- :func:`~radis.misc.config.get_user_config_configformat`
 - :func:`~radis.misc.config.getDatabankEntries_configformat`
 - :func:`~radis.misc.config.getDatabankList_configformat`
 - :func:`~radis.misc.config.addDatabankEntries_configformat`
 - :func:`~radis.misc.config.diffDatabankEntries`
 - :func:`~radis.misc.config.printDatabankEntries_configformat`
 - :func:`~radis.misc.config.printDatabankList_configformat`
-- :func:`~radis.misc.config.getConfig`
+- :func:`~radis.misc.config.get_user_config`
 - :func:`~radis.misc.config.convertRadisToJSON`
 - :func:`~radis.misc.config.getDatabankEntries`
 - :func:`~radis.misc.config.getDatabankList`
@@ -39,6 +39,7 @@ Routine Listing
 import configparser
 import json
 import os
+import shutil
 import warnings
 from json import JSONDecodeError
 from os.path import dirname, exists, expanduser, join
@@ -49,18 +50,18 @@ from radis.misc.warning import DatabaseAlreadyExists
 
 # %% Functions to parse radis/config.json
 
-CONFIG_PATH = join(expanduser("~"), ".radis")
+CONFIG_PATH_DEFAULT = join(getProjectRoot(), "default_radis.json")
 CONFIG_PATH_JSON = join(expanduser("~"), "radis.json")
-CONFIG_PATH_DEFAULT = join(getProjectRoot(), "config.json")
+CONFIG_PATH_OLD = join(expanduser("~"), ".radis")
 
 
-def get_config(configpath=CONFIG_PATH_JSON):
+def get_config(configpath=CONFIG_PATH_JSON, create_if_missing=False):
     """Read the default RADIS config.json file `configpath` (default
     :py:attr:`~radis.misc.config.CONFIG_PATH_JSON` and override it with the
     entries of the user config file ``~/.radis``
     (:py:attr:`~radis.misc.config.CONFIG_PATH_DEFAULT`"""
 
-    defaut_config = getConfig(configpath)
+    defaut_config = get_user_config(configpath, create_if_missing=create_if_missing)
 
     jsonfile = CONFIG_PATH_DEFAULT
     with open(jsonfile) as f:
@@ -169,7 +170,7 @@ See Also
 --------
 
 :ref:`Configuration file <label_lbl_config_file>`,
-:py:func:`~radis.misc.config.getConfig`,
+:py:func:`~radis.misc.config.get_user_config`,
 :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
 """
 
@@ -265,19 +266,19 @@ See Also
 --------
 
 :ref:`Configuration file <label_lbl_config_file>`,
-:py:func:`~radis.misc.config.getConfig`,
+:py:func:`~radis.misc.config.get_user_config`,
 :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
 """
 
 
-def getConfig_configformat():
+def get_user_config_configformat():
     """Read config file and returns it.
 
     Config file name is harcoded: :ref:`~/.radis <label_lbl_config_file>`
     """
 
     config = configparser.ConfigParser()
-    configpath = CONFIG_PATH
+    configpath = CONFIG_PATH_OLD
 
     # Test ~/.radis exists
     if not exists(configpath):
@@ -293,7 +294,7 @@ def getConfig_configformat():
     return config
 
 
-def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH):
+def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH_OLD):
     """Converts the ~/.radis file into json formatted file ~/radis.json
 
     Example
@@ -324,7 +325,7 @@ def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH):
     """
 
     # Loads configuration file ~/.radis
-    config = getConfig_configformat(config_path_old)
+    config = get_user_config_configformat(config_path_old)
 
     # Variable to store data in JSON format
     config_json = {}
@@ -366,7 +367,7 @@ def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH):
     return
 
 
-def init_radis_json(config_path_json, config_path_old=CONFIG_PATH):
+def init_radis_json(config_path_json, config_path_old=CONFIG_PATH_OLD):
     """Checks whether ``config_path_json`` (usually `~/radis.json`) exists.
 
     If not then we use
@@ -375,14 +376,13 @@ def init_radis_json(config_path_json, config_path_old=CONFIG_PATH):
     """
     # If `~/.radis` and `~/radis.json` both found, raises DeprecationWarning
     if exists(config_path_json) and exists(config_path_old):
-        warnings.warn(
+        raise (
             DeprecationWarning(
                 f"{config_path_old} and {config_path_json} both found. "
                 + "`~/.radis` config file was replaced by `~/radis.json` in version '0.9.29'."
-                + f" Remove {config_path_old} to remove this warning.",
+                + f" Make sure all file content is in {config_path_json} then remove {config_path_old}.",
             )
         )
-        # TODO : replace with error if version>=0.9.31
     elif exists(config_path_json):
         pass
     elif exists(config_path_old):
@@ -393,7 +393,7 @@ def init_radis_json(config_path_json, config_path_old=CONFIG_PATH):
     return
 
 
-def getConfig(configpath=CONFIG_PATH_JSON):
+def get_user_config(configpath=CONFIG_PATH_JSON, create_if_missing=False):
     """Read config file and returns it."""
 
     # First checking `~radis.json` exist or not, if not then converting `~.radis` into `~/radis.json`
@@ -401,7 +401,14 @@ def getConfig(configpath=CONFIG_PATH_JSON):
 
     # Test ~/radis.json exists
     if not exists(configpath):
-
+        if create_if_missing:
+            try:
+                shutil.copy2(CONFIG_PATH_DEFAULT, configpath)
+            except:
+                print(f"Couldn't create RADIS configuration in {configpath}")
+            else:
+                print(f"RADIS configuration file created in {configpath}")
+    if not exists(configpath):
         raise FileNotFoundError(
             "Create a `radis.json file in {0} to store links to ".format(
                 dirname(configpath)
@@ -497,7 +504,8 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
 
 
     """
-    config = getConfig_configformat()
+    warnings.warn(DeprecationWarning("config format changed to JSON in radis 0.9.29"))
+    config = get_user_config_configformat()
 
     # Make sure it looks like a databank (path and format are given)
     try:
@@ -506,7 +514,7 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
     except configparser.NoSectionError:
         msg = (
             "{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)
-            + "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH)
+            + "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH_OLD)
             + "Available databanks: {0}. ".format(getDatabankList_configformat())
             + "See databank format above. More information in "
             + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
@@ -529,7 +537,7 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
     else:
         if "levels" in entries:
             raise SyntaxError(
-                "in {0}: `levels` replaced with ".format(CONFIG_PATH)
+                "in {0}: `levels` replaced with ".format(CONFIG_PATH_OLD)
                 + "`levels_iso#` where # is the isotope number"
             )
 
@@ -538,8 +546,9 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
 
 def getDatabankList_configformat():
     """Get all databanks available in :ref:`~/.radis <label_lbl_config_file>`."""
+    warnings.warn(DeprecationWarning("config format changed to JSON in radis 0.9.29"))
 
-    config = getConfig_configformat()
+    config = get_user_config_configformat()
 
     # Get databank path and format
     validdb = []
@@ -577,6 +586,7 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
                 "levelsfmt": "radis",
             })
     """
+    warnings.warn(DeprecationWarning("config format changed to JSON in radis 0.9.29"))
 
     # Get ~/.radis if exists, else create it
     try:
@@ -584,9 +594,9 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
     except FileNotFoundError:
         # generate ~/.radis:
         dbnames = []
-        open(CONFIG_PATH, "a").close()
+        open(CONFIG_PATH_OLD, "a").close()
         if verbose:
-            print("Created ~/.radis in {0}".format(dirname(CONFIG_PATH)))
+            print("Created ~/.radis in {0}".format(dirname(CONFIG_PATH_OLD)))
 
     # Check database doesnt exist
     if dbname in dbnames:
@@ -635,11 +645,11 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
 
     # Write to ~/.radis
     # ... Note: what if there is a PermissionError here? Try/except pass?
-    with open(CONFIG_PATH, "a") as configfile:
+    with open(CONFIG_PATH_OLD, "a") as configfile:
         configfile.write("\n")
         config.write(configfile)
     if verbose:
-        print("Added {0} database in {1}".format(dbname, CONFIG_PATH))
+        print("Added {0} database in {1}".format(dbname, CONFIG_PATH_OLD))
 
     return
 
@@ -709,6 +719,7 @@ def printDatabankEntries_configformat(dbname, crop=200):
     crop: int
         if > 0, cutoff entries larger than that
     """
+    warnings.warn(DeprecationWarning("config format changed to JSON in radis 0.9.29"))
     entries = getDatabankEntries_configformat(dbname)
     print(dbname, "\n-------")
     for k, v in entries.items():
@@ -725,16 +736,17 @@ def printDatabankEntries_configformat(dbname, crop=200):
 
 def printDatabankList_configformat():
     """Print all databanks available in ~/.radis"""
+    warnings.warn(DeprecationWarning("config format changed to JSON in radis 0.9.29"))
     try:
         print(
-            "Databanks in {0}: ".format(CONFIG_PATH),
+            "Databanks in {0}: ".format(CONFIG_PATH_OLD),
             ",".join(getDatabankList_configformat()),
         )
         for dbname in getDatabankList_configformat():
             print("\n")
             printDatabankEntries_configformat(dbname)
     except FileNotFoundError:
-        print("No config file {0}".format(CONFIG_PATH))
+        print("No config file {0}".format(CONFIG_PATH_OLD))
         # it's okay
 
 
@@ -795,7 +807,7 @@ def getDatabankEntries(dbname, get_extra_keys=[], configpath=CONFIG_PATH_JSON):
 
     """
     # Loading `~/radis.json` file
-    _config = getConfig(configpath)
+    _config = get_user_config(configpath)
 
     # Make sure it looks like a databank (path and format are given)
     try:
@@ -842,7 +854,7 @@ def getDatabankEntries(dbname, get_extra_keys=[], configpath=CONFIG_PATH_JSON):
 def getDatabankList(configpath=CONFIG_PATH_JSON):
     """Get all databanks available in :ref:`~/radis.json"""
 
-    _config = getConfig(configpath)
+    _config = get_user_config(configpath)
 
     # If `_config` is empty dictionary then return empty list
     if len(_config) == 0:

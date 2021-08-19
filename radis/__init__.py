@@ -44,7 +44,7 @@ from .misc.utils import getProjectRoot
 # Everything should be merged in a user JSON file ~/radis.json (json) overriding
 # the default one.
 
-config = get_config()
+config = get_config(create_if_missing=True)
 """dict: RADIS configuration parameters
 
 Parameters
