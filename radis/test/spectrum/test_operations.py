@@ -26,7 +26,7 @@ from radis.tools.database import load_spec
 
 @pytest.mark.fast
 def test_crop(verbose=True, *args, **kwargs):
-    """ Test that update can correctly recompute missing quantities """
+    """Test that update can correctly recompute missing quantities"""
 
     # 1) A crop example in the same unit as the one stored
 
@@ -77,7 +77,7 @@ def test_cut_recombine(verbose=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_invariants(*args, **kwargs):
-    """ Ensures adding 0 or multiplying by 1 does not change the spectra """
+    """Ensures adding 0 or multiplying by 1 does not change the spectra"""
     from radis import load_spec
     from radis.test.utils import getTestFile
 

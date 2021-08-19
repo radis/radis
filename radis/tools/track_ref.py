@@ -99,7 +99,7 @@ class RefTracker(dict):
                 self[doi].append(why)
 
     def cite(self, format="bibentry"):
-        """ See more in :py:func:`habanero.content_negotiation`"""
+        """See more in :py:func:`habanero.content_negotiation`"""
 
         # Grouping dictionary by value :
         by_use = {}

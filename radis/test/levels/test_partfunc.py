@@ -43,7 +43,7 @@ fig_prefix = basename(__file__) + ": "
 
 # never add @pytest.mark.fast so we don't delete cached files for 'fast' tests
 def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs):
-    """ Doesnt really test anything, but cleans all cached energy levels """
+    """Doesnt really test anything, but cleans all cached energy levels"""
 
     for molecule, isotopes in Molecules.items():
         for isotope, states in isotopes.items():
@@ -131,7 +131,7 @@ def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
 @pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
-    """ Test 1: compare calculated PartFunc to the tabulated one """
+    """Test 1: compare calculated PartFunc to the tabulated one"""
 
     from radis.misc.config import getDatabankEntries
 
@@ -205,7 +205,7 @@ def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
 def test_calculatedQ_match_HAPI_CO(
     vmax=11, jmax=300, plot=False, verbose=True, *args, **kwargs
 ):
-    """ Tested that Q ab_initio (Dunham) match HAPI for CO at different temperatures"""
+    """Tested that Q ab_initio (Dunham) match HAPI for CO at different temperatures"""
 
     vmax = 11
     vmax_morse = 48

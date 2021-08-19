@@ -37,7 +37,7 @@ class SlitDispersionWarning(UserWarning):
 
 
 class AccuracyError(ValueError):
-    """ Output spectrum is not valid """
+    """Output spectrum is not valid"""
 
     pass
 
@@ -160,13 +160,13 @@ class InputConditionsWarning(UserWarning):
 
 
 class DeprecatedFileWarning(DeprecationWarning):
-    """ Warning triggered when the cached file was generated in a previous version of radis """
+    """Warning triggered when the cached file was generated in a previous version of radis"""
 
     pass
 
 
 class IrrelevantFileWarning(PerformanceWarning):
-    """ Warning triggered when the cached file is irrelevant for the current calcul """
+    """Warning triggered when the cached file is irrelevant for the current calcul"""
 
     pass
 

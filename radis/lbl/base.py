@@ -1796,7 +1796,7 @@ class BaseFactory(DatabankLoader):
         return
 
     def calc_reference_linestrength(self):
-        """ Calculate reference linestrength from Einstein coefficients"""
+        """Calculate reference linestrength from Einstein coefficients"""
 
         df = self.df0
         Tref = self.input.Tref

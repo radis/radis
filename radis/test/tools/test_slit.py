@@ -64,7 +64,7 @@ def _clean(plot, close_plots):
 def test_all_slit_shapes(
     FWHM=0.4, verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Test all slit generation functions and make sure we get the expected FWHM"""
+    """Test all slit generation functions and make sure we get the expected FWHM"""
 
     _clean(plot, close_plots)
 
@@ -248,7 +248,7 @@ def test_slit_unit_conversions_spectrum_in_nm(
 
 
 def test_convoluted_quantities_units(*args, **kwargs):
-    """ Test that units are correctly convoluted after convolution """
+    """Test that units are correctly convoluted after convolution"""
 
     from radis.test.utils import getTestFile
 
@@ -360,7 +360,7 @@ def test_against_specair_convolution(
 
 @pytest.mark.fast
 def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **kwargs):
-    """ Test norm_by = 'area' vs norm_by = 'max' """
+    """Test norm_by = 'area' vs norm_by = 'max'"""
 
     from radis.test.utils import getTestFile
 
@@ -474,7 +474,7 @@ def test_slit_energy_conservation(
 
 
 def dirac(w0, width=20, wstep=0.009):
-    """ Return a Dirac in w0. Plus some space on the side """
+    """Return a Dirac in w0. Plus some space on the side"""
 
     w_side_p = np.arange(w0, w0 + width, wstep)
     w_side_n = np.arange(w0, w0 - width, -wstep)

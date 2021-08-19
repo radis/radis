@@ -541,7 +541,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
             pass
 
         def trigger(self, *args, **kwargs):
-            """ When toolbar button clicked"""
+            """When toolbar button clicked"""
             super().trigger(*args, **kwargs)
             if self.ruler is None:
                 self.ruler = Ruler(

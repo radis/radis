@@ -35,7 +35,7 @@ fig_prefix = basename(__file__) + ": "
 def test_spectrum_get_methods(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Test all spectrum methods on a Spectrum generated in Specair """
+    """Test all spectrum methods on a Spectrum generated in Specair"""
 
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
@@ -174,7 +174,7 @@ def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs)
 
 
 def test_store_functions(verbose=True, *args, **kwargs):
-    """ Test some store / retrieve functions """
+    """Test some store / retrieve functions"""
 
     from radis.spectrum.models import transmittance_spectrum
     from radis.test.utils import getTestFile
@@ -251,7 +251,7 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
 
 
 def test_rescaling_function(verbose=True, *args, **kwargs):
-    """ Test rescaling functions """
+    """Test rescaling functions"""
 
     from radis.test.utils import getTestFile
 
@@ -414,7 +414,7 @@ def test_normalization(*args, **kwargs):
 
 @pytest.mark.fast
 def test_sort(*args, **kwargs):
-    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.sort` """
+    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.sort`"""
 
     from radis import load_spec
     from radis.test.utils import getTestFile
