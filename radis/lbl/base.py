@@ -3339,7 +3339,7 @@ class BaseFactory(DatabankLoader):
         # Checks there if there is change in wstep value if initial wstep != "auto"
         if self.wstep != "auto":
             assert self.wstep == self.params.wstep
-        assert self._broadening_max_width == self.params.broadening_max_width
+        # assert self._broadening_max_width == self.params.broadening_max_width
 
     def _get_parsum(self, molecule, iso, state):
         """Get function that calculates the partition function.

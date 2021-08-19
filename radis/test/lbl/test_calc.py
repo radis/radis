@@ -117,7 +117,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         verbose=verbose,
         optimization="simple",
         broadening_method="fft",
-        broadening_max_width=10,
+        truncation=10,
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -275,7 +275,7 @@ def test_calc_spectrum_overpopulations(
         verbose=verbose,
         optimization="simple",
         broadening_method="fft",  # For this particular test case
-        broadening_max_width=10,  # For this particular test case
+        truncation=10,  # For this particular test case
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -471,7 +471,7 @@ def test_all_calc_methods_CO2pcN(
     sf = SpectrumFactory(
         wavenum_min=2284,
         wavenum_max=2285,
-        broadening_max_width=5,  # TODO @EP: crashes with 0.3?
+        truncation=5,  # TODO @EP: crashes with 0.3?
         mole_fraction=1,
         path_length=0.025,
         cutoff=1e-25,

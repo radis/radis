@@ -847,7 +847,7 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
         wavenum_max=wmax,
         molecule="CO2",
         isotope="1",
-        broadening_max_width=5,  # cm-1
+        truncation=5,  # cm-1
         medium="air",
         path_length=10.32,  # cm
         wstep=0.001,

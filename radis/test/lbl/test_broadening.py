@@ -44,7 +44,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     wstep = 0.001
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 10  # cm-1
 
     # %% HITRAN calculation
     # -----------
@@ -54,9 +54,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
 
     db_begin(hapi_data_path)
     if not "CO" in tableList():  # only if data not downloaded already
-        fetch(
-            "CO", 5, 1, wmin - broadening_max_width / 2, wmax + broadening_max_width / 2
-        )
+        fetch("CO", 5, 1, wmin - truncation / 2, wmax + truncation / 2)
         # HAPI doesnt correct for side effects
 
     # Calculate with HAPI
@@ -83,7 +81,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
         isotope=[1],
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
@@ -141,7 +139,7 @@ def test_broadening_methods_different_conditions(
     wstep = 0.005
     wmin = 2150.4  # cm-1
     wmax = 2151.4  # cm-1
-    broadening_max_width = 2  # cm-1
+    truncation = 2  # cm-1
 
     for (T, p, fwhm_lorentz, fwhm_gauss) in [
         # K, bar, expected FWHM for Lotentz, gauss (cm-1)
@@ -159,7 +157,7 @@ def test_broadening_methods_different_conditions(
             path_length=1,  # doesnt change anything
             wstep=wstep,
             pressure=p,
-            broadening_max_width=broadening_max_width,
+            truncation=truncation,
             isotope="1",
             verbose=False,
             warnings={
@@ -231,7 +229,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
     p = 1
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 10  # cm-1
 
     for i, wstep in enumerate([0.01, 0.1, 0.5]):
 
@@ -244,7 +242,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
             path_length=1,  # doesnt change anything
             wstep=wstep,
             pressure=p,
-            broadening_max_width=broadening_max_width,
+            truncation=truncation,
             isotope="1",
             optimization=None,
             verbose=False,
@@ -302,7 +300,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     wstep = 0.002
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 10  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -313,7 +311,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
         isotope="1",
         verbose=False,
         warnings={
@@ -378,7 +376,7 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     wstep = 0.002
     wmin = 2000  # cm-1
     wmax = 2300  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 10  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -389,7 +387,7 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
         isotope="1",
         verbose=verbose,
         chunksize="DLM",
@@ -450,7 +448,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     wstep = 0.002
     wmin = 2380  # cm-1
     wmax = 2400  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 10  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -461,7 +459,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
         isotope="1",
         verbose=3,
         warnings={
@@ -522,7 +520,7 @@ def test_broadening_warnings(*args, **kwargs):
         "wavenum_max": 667.61 / u.cm,
         "molecule": "CO2",
         "isotope": "1",
-        "broadening_max_width": 0,  # no neighbour lines in LDM method (note : with LDM method we still resolve the full lineshape!)
+        "truncation": 0,  # no neighbour lines in LDM method (note : with LDM method we still resolve the full lineshape!)
         "verbose": False,
     }
 
@@ -581,7 +579,7 @@ def test_abscoeff_continuum(
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
-        broadening_max_width=10,
+        truncation=10,
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",
@@ -686,7 +684,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
-        broadening_max_width=10,
+        truncation=10,
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",

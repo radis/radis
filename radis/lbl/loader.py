@@ -433,7 +433,7 @@ class Parameters(ConditionDict):
         super(Parameters, self).__init__()
 
         # Dev: Init here to be found by autocomplete
-        self.broadening_max_width = None  #: float: cutoff for lineshape calculation (cm-1). Overwritten by SpectrumFactory
+        # self.broadening_max_width = None  #: float: cutoff for lineshape calculation (cm-1). Overwritten by SpectrumFactory
         self.truncation = None
         self.neighbour_lines = None
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
@@ -1969,7 +1969,7 @@ class DatabankLoader(object):
         # ... (i.e, there are some lines on each side of the requested range:
         # ... else, maybe User forgot to add all requested lines in the database '''
         if include_neighbouring_lines:
-            broadening = self.params.broadening_max_width
+            broadening = self.params.truncation
             if minwavdb > wavenum_min + broadening:
                 # no lines on left side
                 self.warn(

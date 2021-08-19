@@ -367,7 +367,6 @@ class SpectrumFactory(BandFactory):
         molecule=None,
         isotope="all",
         medium="air",
-        broadening_max_width=Default(10),
         truncation=Default(10),
         neighbour_lines=10,
         pseudo_continuum_threshold=0,
@@ -533,7 +532,7 @@ class SpectrumFactory(BandFactory):
                 truncation = 10
             else:  # keep default
                 truncation = truncation.value
-
+        """
         if isinstance(broadening_max_width, Default):
             if optimization is None:
                 if self.verbose >= 3:
@@ -545,13 +544,13 @@ class SpectrumFactory(BandFactory):
                 broadening_max_width = 10
             else:  # keep default
                 broadening_max_width = broadening_max_width.value
-
+        """
         # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
-        self._broadening_max_width = broadening_max_width
+        # self._broadening_max_width = broadening_max_width
 
-        self.params.broadening_max_width = (
+        """self.params.broadening_max_width = (
             broadening_max_width  # line broadening and neighbour lines
-        )
+        )"""
         self.params.truncation = truncation  # line truncation
         self.params.neighbour_lines = neighbour_lines  # including neighbour lines
         self.misc.export_lines = export_lines
@@ -1630,7 +1629,8 @@ class SpectrumFactory(BandFactory):
 
         wstep = self.params.wstep
         n_lines = self.misc.total_lines
-        broadening_max_width = self.params.broadening_max_width
+        # broadening_max_width = self.params.broadening_max_width
+        truncation = self.params.truncation
         spectral_points = (
             self.params.wavenum_max_calc - self.params.wavenum_min_calc
         ) / self.params.wstep
@@ -1668,9 +1668,7 @@ class SpectrumFactory(BandFactory):
                 raise NotImplementedError("broadening_method not implemented")
         elif optimization is None:
             if broadening_method == "voigt":
-                estimated_time = (
-                    6.6487e-08 * n_lines * broadening_max_width / wstep * factor
-                )
+                estimated_time = 6.6487e-08 * n_lines * truncation / wstep * factor
             elif broadening_method == "convolve":  # Not benchmarked
                 estimated_time = (
                     self._broadening_time_ruleofthumb

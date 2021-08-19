@@ -52,7 +52,7 @@ def test_retrieve_from_database(
             isotope=[1],
             db_use_cached=True,
             medium="vacuum",
-            broadening_max_width=10,
+            truncation=10,
             export_populations="rovib",
             verbose=verbose,
         )

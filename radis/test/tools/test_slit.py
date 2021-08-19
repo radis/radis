@@ -697,7 +697,7 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
         wavenum_max=2260,
         mole_fraction=0.02,
         path_length=100,  # cm
-        broadening_max_width=20,  # cm^-1
+        truncation=20,  # cm^-1
         wstep=0.02,
         isotope=[1, 2, 3],
         verbose=verbose,
