@@ -1,3 +1,4 @@
+# isort:skip_file
 import ctypes
 from os.path import join
 

@@ -1,4 +1,5 @@
 #cython: language_level=3
+# isort:skip_file
 import numpy as np
 cimport numpy as np
 
