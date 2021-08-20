@@ -1854,8 +1854,8 @@ class Spectrum(object):
             add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
         # Add Sliders
-        n_sliders = 0
         if sliders:
+            n_sliders = 0
 	        for key in sliders:
 	            slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
 	            slider = Slider(

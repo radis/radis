@@ -61,7 +61,7 @@ def calc_spectrum(
     mode="cpu",
     export_lines=False,
     verbose=True,
-    **kwargs
+    **kwargs,
 ) -> Spectrum:
     r"""Multipurpose function to calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
@@ -474,7 +474,7 @@ def calc_spectrum(
                 verbose=verbose,
                 mode=mode,
                 export_lines=export_lines,
-                **kwargs_molecule
+                **kwargs_molecule,
             )
         )
 
@@ -515,7 +515,7 @@ def _calc_spectrum(
     verbose,
     mode,
     export_lines,
-    **kwargs
+    **kwargs,
 ):
     """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
 
@@ -601,7 +601,7 @@ def _calc_spectrum(
         optimization=optimization,
         broadening_method=broadening_method,
         export_lines=export_lines,
-        **kwargs
+        **kwargs,
     )
     if databank in ["fetch", "hitran", "hitemp", "exomol",] or (
         isinstance(databank, tuple) and databank[0] == "exomol"
