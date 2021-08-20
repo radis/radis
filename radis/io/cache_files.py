@@ -36,7 +36,6 @@ import pandas as pd
 from packaging.version import parse
 
 import radis
-from radis import OLDEST_COMPATIBLE_VERSION
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printm, printr
 from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning
@@ -44,7 +43,7 @@ from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning
 """str: forces to regenerate cache files that were created in a previous version"""
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
-assert radis.__version__ >= OLDEST_COMPATIBLE_VERSION
+assert radis.__version__ >= radis.config["OLDEST_COMPATIBLE_VERSION"]
 
 # Utils
 
@@ -56,7 +55,7 @@ def load_h5_cache_file(
     relevant_if_metadata_above={},
     relevant_if_metadata_below={},
     current_version="",
-    last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+    last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
     verbose=True,
 ):
     """Function to load a h5 cache file.
@@ -88,7 +87,6 @@ def load_h5_cache_file(
     last_compatible_version: str
         if file version is inferior to this, file is considered deprecated.
         See ``use_cached`` to know how to handle deprecated files.
-        Default :data:`~radis.OLDEST_COMPATIBLE_VERSION`.
     relevant_if_metadata_above, relevant_if_metadata_below : dict
         values are compared to cache file attributes. If they don't match,
         the function returns a :py:class:`~radis.misc.warning.IrrelevantFileWarning`.
@@ -106,14 +104,7 @@ def load_h5_cache_file(
     -------
     df: pandas DataFrame, or None
         None if no cache file was found, or if it was deleted
-
-
-    See Also
-    --------
-
-    :data:`~radis.OLDEST_COMPATIBLE_VERSION`
     """
-
     # 1. know if we have to load the file
     if not use_cached:
         return None
@@ -293,7 +284,7 @@ def check_cache_file(fcache, use_cached=True, expected_metadata={}, verbose=True
                 fcache,
                 metadata_is=expected_metadata,
                 current_version=radis.__version__,
-                last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+                last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
             )
         except DeprecatedFileWarning as err:
             if use_cached == "force":
@@ -315,7 +306,7 @@ def check_not_deprecated(
     metadata_is={},
     metadata_keys_contain=[],
     current_version=None,
-    last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+    last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
 ):
     """Make sure cache file is not deprecated: checks that ``metadata`` is the
     same, and that the version under which the file was generated is valid.
@@ -340,7 +331,6 @@ def check_not_deprecated(
         :data:`radis.__version__`.
     last_backward_compatible_version: str
         If the file was generated in a non-compatible version, an error is raised.
-        Default :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
         (useful parameter to force regeneration of certain cache files after a
          breaking change in a new version)
     """
@@ -556,7 +546,6 @@ def save_to_hdf(
         file version. If ``None``, the current :data:`radis.__version__` is used.
         On file loading, a warning will be raised if the current version is
         posterior, or an error if the file version is set to be uncompatible.
-        See :py:data:`~radis.OLDEST_COMPATIBLE_VERSION`
     key: str
         dataset name. Default ``'df'``
     overwrite: boolean

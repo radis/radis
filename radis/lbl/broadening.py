@@ -69,20 +69,17 @@ from numpy import log as ln
 from numpy import pi, sin, sqrt, trapz, zeros_like
 from scipy.signal import oaconvolve
 
+import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
 from radis.misc.arrays import add_at, numpy_add_at
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
+from radis.misc.plot import fix_style, set_style
 from radis.misc.progress_bar import ProgressBar
 
 # from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
-from radis.params import (
-    GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD,
-    GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD,
-    USE_CYTHON,
-)
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
 # %% Broadening functions
@@ -590,7 +587,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     # Normalize
     lineshape /= integral
 
-    assert not np.isnan(lineshape).any()
+    # assert not anynan(lineshape).any()
 
     return lineshape
 
@@ -756,7 +753,9 @@ class BroadenFactory(BaseFactory):
         """
 
         # Try to use Cython ?
-        self.use_cython = USE_CYTHON  # default value (to be read from config file)
+        self.use_cython = radis.config[
+            "USE_CYTHON"
+        ]  # default value (read from config file)
         # ... Note: whether Cython will be used eventually depends whether it was installed,
         # ... else it default to the non-cython version. What was used eventually
         # ... is stored in self.params.use_cython
@@ -904,24 +903,33 @@ class BroadenFactory(BaseFactory):
 
         min_width = self.min_width
 
-        if wstep > min_width / GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD:
+        gridpoints_per_linewidth_error_threshold = radis.config[
+            "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD"
+        ]
+        gridpoints_per_linewidth_warn_threshold = radis.config[
+            "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"
+        ]
+
+        if wstep > min_width / gridpoints_per_linewidth_error_threshold:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
-                + f"wstep to (at least) below {min_width/GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD:.2g} cm⁻¹ "
-                + f"or (suggested) {min_width/GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:.2g} cm⁻¹. "
+                + f"wstep to (at least) below {min_width/gridpoints_per_linewidth_error_threshold:.2g} cm⁻¹ "
+                + f"or (suggested) {min_width/gridpoints_per_linewidth_error_threshold:.2g} cm⁻¹. "
                 + "You can use wstep='auto' to get the optimal spectral grid value. "
                 + "You can also ignore by setting `warnings={'AccuracyError':'ignore'}` "
+                + "or change the 'GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD' key of radis.config / your ~/radis.json "
                 + "(if you know what you're doing!)",
                 "AccuracyError",
             )
-        elif wstep > min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:
+        elif wstep > min_width / gridpoints_per_linewidth_warn_threshold:
             self.warn(
                 f"Some lines are too narrow (FWHM ~ {min_width:.2g} cm⁻¹) for "
                 + f"the current spectral grid (wstep={wstep}). Please reduce "
-                + f"wstep to below {min_width/GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD:.2g} cm⁻¹. "
+                + f"wstep to below {min_width/gridpoints_per_linewidth_warn_threshold:.2g} cm⁻¹. "
                 + "You can use wstep='auto' to get the optimal spectral grid value. "
                 + "You can also ignore by setting `warnings={'AccuracyWarning':'ignore'}` "
+                + "or change the 'GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD' key of radis.config / your ~/radis.json "
                 + "(if you know what you're doing!)",
                 "AccuracyWarning",
             )
@@ -1550,7 +1558,6 @@ class BroadenFactory(BaseFactory):
         # TODO #clean: make it a standalone function.
 
         import matplotlib.pyplot as plt
-        from publib import fix_style, set_style
 
         if pressure_atm is None:
             pressure_atm = self.input.pressure_mbar / 1013.25
@@ -1575,7 +1582,7 @@ class BroadenFactory(BaseFactory):
         line_profile /= trapz(line_profile.T, x=wbroad.T)  # normalize
 
         # Plot!
-        set_style("origin")
+        set_style()
         plt.figure()
         plt.plot(wbroad, pressure_profile, label="Pressure")
         plt.plot(wbroad, gaussian_profile, label="Doppler")
@@ -1586,7 +1593,7 @@ class BroadenFactory(BaseFactory):
         plt.ylabel("Broadening coefficient")
         plt.title("Line {0}, T={1:.1f}K, P={2:.2f}atm".format(i, Tgas, pressure_atm))
         plt.legend()
-        fix_style("origin")
+        fix_style()
 
         return
 

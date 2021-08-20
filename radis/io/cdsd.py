@@ -23,7 +23,6 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import radis
-from radis import OLDEST_COMPATIBLE_VERSION
 from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 from radis.io.tools import (
     drop_object_format_columns,
@@ -247,7 +246,7 @@ def cdsd2df(
             relevant_if_metadata_above=relevant_if_metadata_above,
             relevant_if_metadata_below=relevant_if_metadata_below,
             current_version=radis.__version__,
-            last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+            last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
             verbose=verbose,
         )
         if df is not None:

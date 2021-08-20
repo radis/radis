@@ -19,8 +19,10 @@ from radis.misc.arrays import (
     centered_diff,
     find_first,
     find_nearest,
+    first_nonnan_index,
     is_sorted,
     is_sorted_backward,
+    last_nonnan_index,
     logspace,
 )
 from radis.test.utils import setup_test_line_databases
@@ -35,6 +37,25 @@ def test_is_sorted(*args, **kwargs):
 
     assert not is_sorted_backward(a)
     assert not is_sorted(a[::-1])
+
+
+def test_nonnan_index(*args, **kwargs):
+
+    a = np.arange(1000) * 0.2
+
+    assert first_nonnan_index(a) == 0  # is None
+    assert last_nonnan_index(a) == 999  # is None
+
+    a[:10] = np.nan
+    a[-60:] = np.nan
+
+    assert first_nonnan_index(a) == 10
+    assert last_nonnan_index(a) == 939
+
+    a[:] = np.nan
+
+    assert first_nonnan_index(a) == None
+    assert last_nonnan_index(a) == None  # len(a)-1
 
 
 def test_find_first(*args, **kwargs):
@@ -243,6 +264,7 @@ def test_cython_add_at_spectra(*args, **kwargs):
 
 
 if __name__ == "__main__":
+    test_nonnan_index()
     import pytest
 
     pytest.main(["test_arrays.py", "-s"])  # -s for showing console output

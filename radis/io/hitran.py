@@ -31,7 +31,6 @@ import pandas as pd
 from numpy import int64
 
 import radis
-from radis import OLDEST_COMPATIBLE_VERSION
 from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_CLASS1,
     HITRAN_CLASS2,
@@ -181,7 +180,7 @@ def hit2df(
             relevant_if_metadata_above=relevant_if_metadata_above,
             relevant_if_metadata_below=relevant_if_metadata_below,
             current_version=radis.__version__,
-            last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+            last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
             verbose=verbose,
         )
         if df is not None:

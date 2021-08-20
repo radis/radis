@@ -39,7 +39,7 @@ s_exp = Spectrum.from_txt(
         join("test_CO2_3Tvib_vs_klarenaar_data", "klarenaar_2017_digitized_data.csv")
     ),
     "transmittance_noslit",
-    waveunit="cm-1",
+    wunit="cm-1",
     unit="",
     delimiter=",",
     name="Klarenaar 2017",

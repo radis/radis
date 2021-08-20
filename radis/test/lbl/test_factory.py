@@ -560,8 +560,8 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
     """Test to check that on computing several spectrum from the same Spectrum
     Factory object we get the different wstep for each case using auto method"""
 
+    import radis
     from radis.misc.basics import round_off
-    from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
 
     setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
@@ -590,7 +590,7 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
 
     # Checking computed wstep and expected wstep are equal
     assert wstep_calculated == round_off(
-        sf.min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
+        sf.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
     )
 
     s2 = sf.eq_spectrum(300, pressure=0.2)

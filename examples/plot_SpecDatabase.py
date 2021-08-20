@@ -13,8 +13,7 @@ You can use :py:meth:`~radis.tools.database.SpecList.plot_cond` to make a 2D plo
 
 """
 
-import os
-import shutil
+from pathlib import Path
 
 import numpy as np
 
@@ -25,7 +24,7 @@ sf = SpectrumFactory(
     wavenum_min=2900,
     wavenum_max=3200,
     molecule="OH",
-    truncation=10,  # cm-1
+    truncation=5,  # cm-1
     medium="vacuum",
     verbose=0,  # more for more details
     pressure=10,
@@ -38,11 +37,7 @@ sf.fetch_databank("hitemp")
 s1 = sf.eq_spectrum(Tgas=300, path_length=1)
 
 # Creating SpecDatabase
-my_folder = os.path.dirname(os.path.realpath(__file__)) + "/SpecDatabase_Test"
-
-if os.path.exists(my_folder):
-    shutil.rmtree(my_folder)
-
+my_folder = Path.cwd() / "SpecDatabase_Test"
 db = SpecDatabase(my_folder)
 
 # Method 1: Creating .spec file and adding manually to SpecDatabase
@@ -69,6 +64,3 @@ db_new = SpecDatabase(my_folder)
 
 # Plot Tgas vs wstep for all Spectrums, heatmap based on calculation_time
 db_new.plot_cond("Tgas", "wstep", "calculation_time")
-
-# Deletes folder
-shutil.rmtree(my_folder)

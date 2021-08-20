@@ -24,9 +24,10 @@ from warnings import warn
 import numpy as np
 from numpy import abs, allclose, arange, diff
 
+from radis.misc.arrays import anynan
 from radis.misc.basics import in_all, merge_lists
 from radis.misc.debug import printdbg
-from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.spectrum import Spectrum
 
 # %% Slabs / Multi-layers / Radiative Transfer Equation (RTE)
 # ----------------------------------------------------------------------
@@ -159,7 +160,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
         raise ValueError("Empty list of slabs")
 
     elif len(slabs) == 1:
-        if not is_spectrum(slabs[0]):
+        if not isinstance(slabs[0], Spectrum):
             raise TypeError(
                 "SerialSlabs takes an unfolded list of Spectrum as "
                 + "argument: *list (got {0})".format(type(slabs[0]))
@@ -331,16 +332,14 @@ def _check_valid(s):
     - quantities used for solving the LOS have nan
     """
 
-    if not is_spectrum(s):
+    if not isinstance(s, Spectrum):
         raise TypeError(
             "All inputs must be Spectrum objects (got: {0})".format(type(s))
         )
-    sdict = s._get_items()
-    for k in sdict.keys():
+    for k, v in s._q.items():
         if (
             k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
-            and np.isnan(sdict.get(k)[1]).any()
-        ):
+        ) and anynan(v):
             warn(
                 "Nans detected in Spectrum object for multi-slab operation. "
                 + "Results may be wrong!"
@@ -454,7 +453,6 @@ def resample_slabs(
                     s.resample(
                         wnew,
                         unit=waveunit,
-                        if_conflict_drop="convoluted",
                         out_of_bounds=out_of_bounds,
                         inplace=True,  # we already copied 'if not modify_inputs'
                     )
@@ -473,7 +471,6 @@ def resample_slabs(
                     s.resample(
                         wnew,
                         unit=waveunit,
-                        if_conflict_drop="convoluted",
                         out_of_bounds=out_of_bounds,
                         inplace=True,  # we already copied 'if not modify_inputs'
                     )
@@ -624,7 +621,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         raise ValueError("Empty list of slabs")
 
     elif len(slabs) == 1:
-        if not is_spectrum(slabs[0]):
+        if not isinstance(slabs[0], Spectrum):
             raise TypeError(
                 "MergeSlabs takes an unfolded list of Spectrum as "
                 + "argument: (got {0})".format(type(slabs[0]))

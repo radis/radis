@@ -104,7 +104,7 @@ if __name__ == "__main__":
     t0 = time() - t0
     print(("Calculated with HAPI in {0:.2f}s".format(t0)))
 
-    s_hapi = Spectrum.from_array(nu, coef, "abscoeff", waveunit="cm-1", unit="cm-1")
+    s_hapi = Spectrum.from_array(nu, coef, "abscoeff", wunit="cm-1", unit="cm-1")
     s_hapi.name = "HAPI ({0:.1f}s)".format(t0)
 
     plot_diff(s_hapi, s, "abscoeff")

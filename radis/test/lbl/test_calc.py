@@ -218,8 +218,10 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
 
-    assert np.allclose(w[::100], w_ref, atol=1e-6)
-    assert np.allclose(I[::100], I_ref, atol=1e-6)
+    # [71:-71] because of the shift introduced in 0.9.30 where convolved
+    # arrays are not cropped; but np.nan values are added
+    assert np.allclose(w[71:-71][::100], w_ref, atol=1e-6)
+    assert np.allclose(I[71:-71][::100], I_ref, atol=1e-6)
 
     return True
 
@@ -288,7 +290,9 @@ def test_calc_spectrum_overpopulations(
         s.plot(wunit="nm")
 
     w, I = s.get("radiance", wunit="nm")
-    w_ref = w[::100]
+    # [71:-71] because of the shift introduced in 0.9.30 where convolved
+    # arrays are not cropped; but np.nan values are added
+    w_ref = w[71:-71][::100]
     # Compare against hardcoded results (neq 0.9.22, 28/06/18)
     #        I_ref = np.array([0.61826008, 0.65598262, 0.79760003, 0.7958013 , 0.5792486 ,
     #                          0.56727691, 0.60361258, 0.51549598, 0.51012651, 0.47133131,
@@ -359,7 +363,9 @@ def test_calc_spectrum_overpopulations(
         plt.legend()
         s.plot_populations()
 
-    assert np.allclose(I[::100], I_ref, atol=1e-6)
+    # [71:-71] because of the shift introduced in 0.9.30 where convolved
+    # arrays are not cropped; but np.nan values are added
+    assert np.allclose(I[71:-71][::100], I_ref, atol=1e-6)
 
     if verbose:
         printm("Test overpopulations: OK")
