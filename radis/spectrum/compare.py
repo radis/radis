@@ -796,7 +796,8 @@ def plot_diff(
     import matplotlib.pyplot as plt
     from matplotlib import gridspec
     from matplotlib.widgets import MultiCursor
-    from publib import fix_style, set_style
+
+    from radis.misc.plot import fix_style, set_style
 
     if (not show) and (
         not save
@@ -827,7 +828,7 @@ def plot_diff(
     xlabel = format_xlabel(wunit, plot_medium)
 
     # Init figure
-    set_style("origin")
+    set_style()
     fig = plt.figure(num=nfig, figsize=figsize)
     gs = gridspec.GridSpec(1 + len(methods), 1, height_ratios=[3] + [1] * len(methods))
     ax0 = fig.add_subplot(gs[0])
@@ -951,9 +952,9 @@ def plot_diff(
     if title:
         fig.suptitle(title)
     # Fix format
-    fix_style("origin", ax=ax0)
+    fix_style(ax=ax0)
     for ax1i in ax1:
-        fix_style("origin", ax=ax1i)
+        fix_style(ax=ax1i)
     plt.tight_layout()
     if title:
         plt.subplots_adjust(left=0.15, top=0.92)

@@ -79,9 +79,11 @@ try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 except ImportError:  # if ran from here
     from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
+from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printg
 from radis.misc.utils import Default
 from radis.misc.warning import OutOfBoundError
@@ -559,7 +561,7 @@ class BaseFactory(DatabankLoader):
         for iso, idx in df.groupby("iso").indices.items():
             df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pc_1iso(df.loc[idx], iso)
 
-            if radis.DEBUG_MODE:
+            if radis.config["DEBUG_MODE"]:
                 assert (df.loc[idx, "iso"] == iso).all()
 
         # Get rotational energy: better recalculate than look up the database
@@ -665,7 +667,7 @@ class BaseFactory(DatabankLoader):
                     df.loc[idx], iso
                 )
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     assert (df.loc[idx, "iso"] == iso).all()
 
         else:
@@ -786,7 +788,7 @@ class BaseFactory(DatabankLoader):
                     df.loc[idx], iso
                 )
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     assert (df.loc[idx, "iso"] == iso).all()
 
         else:
@@ -1549,7 +1551,7 @@ class BaseFactory(DatabankLoader):
                 df.loc[idx, "grotu"] = dg.gju * _gs * _gi
                 df.loc[idx, "grotl"] = dg.gjl * _gs * _gi
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     assert (df.loc[idx, "iso"] == iso).all()
 
         else:
@@ -1757,7 +1759,7 @@ class BaseFactory(DatabankLoader):
                 # ... note: do not update the populations here, so populations in the
                 # ... energy level list correspond to the one calculated for T and not Tref
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     if "id" in df:
                         assert (df.loc[idx, "id"] == id).all()
                     assert (df.loc[idx, "iso"] == iso).all()
@@ -1853,7 +1855,7 @@ class BaseFactory(DatabankLoader):
                 # ... note: do not update the populations here, so populations in the
                 # ... energy level list correspond to the one calculated for T and not Tref
 
-                if radis.DEBUG_MODE:
+                if radis.config["DEBUG_MODE"]:
                     if "id" in df:
                         assert (df.loc[idx, "id"] == id).all()
                     assert (df.loc[idx, "iso"] == iso).all()
@@ -2533,7 +2535,7 @@ class BaseFactory(DatabankLoader):
                     dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
                     df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
 
-                    if radis.DEBUG_MODE:
+                    if radis.config["DEBUG_MODE"]:
                         assert (df.loc[idx, "iso"] == iso).all()
 
                 Q, Qvib, Qrotu, Qrotl = df.Q, df.Qvib, df.Qrotu, df.Qrotl
@@ -3504,7 +3506,6 @@ class BaseFactory(DatabankLoader):
         """
 
         import matplotlib.pyplot as plt
-        from publib import fix_style, set_style
 
         # Check inputs
         assert what in ["vib", "rovib"]
@@ -3533,13 +3534,13 @@ class BaseFactory(DatabankLoader):
                 )
 
         # Plot
-        set_style("origin")
+        set_style()
         plt.figure(num=nfig)
         plt.plot(E, n / g, "ok")
         plt.xlabel("Energy (cm-1)")
         plt.ylabel("Population (n / g)")
         plt.yscale("log")
-        fix_style("origin")
+        fix_style()
 
 
 def get_waverange(

@@ -95,10 +95,10 @@ try:  # Proper import
 except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
     from radis.lbl.base import get_waverange
+
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
 from radis.misc.utils import Default
-from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
 from radis.phys.constants import k_b
 from radis.phys.convert import conv2
 from radis.phys.units import convert_emi2nm, convert_rad2nm
@@ -173,8 +173,8 @@ class SpectrumFactory(BandFactory):
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
-        are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
-        points for each linewidth.
+        are slightly more points for each linewidth than the value of ``"GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"``
+        in :py:attr:`radis.config`  (``~/radis.json``)
 
         .. note::
             wstep = 'auto' is optimized for performances while ensuring accuracy,
@@ -530,38 +530,29 @@ class SpectrumFactory(BandFactory):
             if optimization is None:
                 if self.verbose >= 3:
                     printg(
-                        "LDM algorithm not used. Defaulting truncation from {0} to 10".format(
+                        "LDM algorithm not used. Defaulting truncation from {0} to 0".format(
                             truncation
                         )
                     )
-                truncation = 10
+                truncation = 0
             else:  # keep default
                 truncation = truncation.value
-        """
-        if isinstance(broadening_max_width, Default):
-            if optimization is None:
-                if self.verbose >= 3:
-                    printg(
-                        "LDM algorithm not used. Defaulting broadening_max_width from {0} to 10".format(
-                            broadening_max_width
-                        )
-                    )
-                broadening_max_width = 10
-            else:  # keep default
-                broadening_max_width = broadening_max_width.value
-        """
+
         # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
         # self._broadening_max_width = broadening_max_width
 
-        """self.params.broadening_max_width = (
-            broadening_max_width  # line broadening and neighbour lines
-        )"""
         self.params.truncation = truncation  # line truncation
         self.params.neighbour_lines = neighbour_lines  # including neighbour lines
+
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
-        self.params.wavenum_min_calc = wavenum_min - neighbour_lines / 2
-        self.params.wavenum_max_calc = wavenum_max + neighbour_lines / 2
+
+        self.params.wavenum_min_calc = (
+            wavenum_min - min(truncation, neighbour_lines) / 2
+        )
+        self.params.wavenum_max_calc = (
+            wavenum_max + min(truncation, neighbour_lines) / 2
+        )
 
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
@@ -1584,16 +1575,24 @@ class SpectrumFactory(BandFactory):
 
         # Setting wstep to optimal value and rounding it to a degree 3
         if self.wstep == "auto":
+            import radis
+
             self.params.wstep = round_off(
-                self.min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
+                self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
             )
             self.warnings["AccuracyWarning"] = "ignore"
+
+        if self.params.neighbour_lines > self.params.truncation:
+            self.warn(
+                "neighbour_lines greater than truncation. wavnumber_calc is greater than required.",
+                "PerformanceWarning",
+            )
 
         wavenumber, wavenumber_calc = _generate_wavenumber_range(
             self.input.wavenum_min,
             self.input.wavenum_max,
             self.params.wstep,
-            self.params.neighbour_lines,
+            min(self.params.neighbour_lines, self.params.truncation),
         )
         wbroad_centered = _generate_broadening_range(
             self.params.wstep, self.params.truncation

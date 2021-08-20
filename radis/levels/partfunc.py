@@ -63,7 +63,6 @@ import pandas as pd
 from numpy import exp
 
 import radis
-from radis import OLDEST_COMPATIBLE_VERSION
 from radis.db.classes import (
     HITRAN_CLASS1,
     HITRAN_CLASS2,
@@ -1430,7 +1429,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             relevant_if_metadata_above={},
             relevant_if_metadata_below={},
             current_version=radis.__version__,
-            last_compatible_version=OLDEST_COMPATIBLE_VERSION,
+            last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
             verbose=verbose,
         )
 

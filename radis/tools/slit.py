@@ -1032,7 +1032,6 @@ def plot_slit(
     --------
 
     .. minigallery:: radis.plot_slit
-        :add-heading:
 
     See Also
     --------
@@ -1048,9 +1047,10 @@ def plot_slit(
     """
 
     import matplotlib.pyplot as plt
-    from publib import set_style
 
-    set_style("origin")
+    from radis.misc.plot import set_style
+
+    set_style()
 
     try:
         from radis.plot.toolbar import add_tools  # TODO: move in publib

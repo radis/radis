@@ -32,15 +32,12 @@ def printdbg(*args, **kwargs):
 
         python -O *.py
 
-    See Also
-    --------
-
-    :py:data:`~radis.DEBUG_MODE`
+    See the ``"DEBUG_MODE"`` key in :py:attr:`radis.config`
     """
 
-    from radis import DEBUG_MODE
+    import radis
 
-    if DEBUG_MODE:
+    if radis.config["DEBUG_MODE"]:
         print("DEBUG:", *args, **kwargs)
 
 
