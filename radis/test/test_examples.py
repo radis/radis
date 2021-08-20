@@ -4,7 +4,9 @@ Run all examples in `radis/examples <https://github.com/radis/radis/tree/develop
 
 import os
 import runpy
-from os.path import abspath, dirname, join
+import shutil
+from os.path import abspath, dirname, exists, join
+from pathlib import Path
 
 import pytest
 
@@ -24,6 +26,10 @@ def test_script_execution(script):
     plt.ion()
     # run:
     runpy.run_path(script, init_globals=locals())
+
+    # Clean
+    if exists(Path.cwd() / "SpecDatabase_Test"):
+        shutil.rmtree(Path.cwd() / "SpecDatabase_Test")
 
 
 if __name__ == "__main__":

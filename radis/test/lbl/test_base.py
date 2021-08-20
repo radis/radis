@@ -306,8 +306,8 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         plt.ion()
 
     # Force DEBUG_MODE
-    DEBUG_MODE = radis.DEBUG_MODE
-    radis.DEBUG_MODE = True
+    DEBUG_MODE = radis.config["DEBUG_MODE"]
+    radis.config["DEBUG_MODE"] = True
 
     try:
 
@@ -387,7 +387,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
 
     finally:
         # Reset DEBUG_MODE
-        radis.DEBUG_MODE = DEBUG_MODE
+        radis.config["DEBUG_MODE"] = DEBUG_MODE
 
 
 def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
@@ -419,8 +419,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
         plt.ion()
 
     # Force DEBUG_MODE
-    DEBUG_MODE = radis.DEBUG_MODE
-    radis.DEBUG_MODE = True
+    DEBUG_MODE = radis.config["DEBUG_MODE"]
+    radis.config["DEBUG_MODE"] = True
 
     try:
 
@@ -502,7 +502,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
     finally:
         # Reset DEBUG_MODE
-        radis.DEBUG_MODE = DEBUG_MODE
+        radis.config["DEBUG_MODE"] = DEBUG_MODE
 
 
 def test_get_waverange(*args, **kwargs):

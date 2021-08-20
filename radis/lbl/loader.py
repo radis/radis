@@ -39,7 +39,8 @@ Most methods are written in inherited class with the following inheritance schem
 Notes
 -----
 RADIS includes automatic rebuilding of Deprecated cache files + a global variable
-to force regenerating them after a given version. See :py:data:`radis.OLDEST_COMPATIBLE_VERSION`
+to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSION"``
+key in :py:attr:`radis.config`
 -------------------------------------------------------------------------------
 """
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
@@ -443,7 +444,7 @@ class Parameters(ConditionDict):
             None  #: bool: use (and generate) cache files for Line Database
         )
         self.dbformat = None  #: str: format of Line Database. See :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
-        self.dbpath = None  #: list: list of filepaths to Line Database
+        self.dbpath = None  #: str: joined list of filepaths to Line Database
         self.levelsfmt = None  #: str: format of Energy Database. See :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
         self.lvl_use_cached = (
             None  #: bool: use (and generate) cache files for Energy Database
@@ -520,7 +521,7 @@ class MiscParams(ConditionDict):
 def format_paths(s):
     """escape all special characters."""
     if s is not None:
-        s = s.replace("\\", "/")
+        s = str(s).replace("\\", "/")
     return s
 
 
@@ -1014,7 +1015,7 @@ class DatabankLoader(object):
             else:
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
 
-            df, local_path = fetch_hitemp(
+            df, local_paths = fetch_hitemp(
                 molecule,
                 isotope=isotope_list,
                 load_wavenum_min=wavenum_min,
@@ -1023,7 +1024,7 @@ class DatabankLoader(object):
                 verbose=self.verbose,
                 return_local_path=True,
             )
-            self.params.dbpath = local_path
+            self.params.dbpath = ",".join(local_paths)
 
             # ... explicitely write all isotopes based on isotopes found in the database
             if isotope == "all":
@@ -1076,7 +1077,7 @@ class DatabankLoader(object):
                 for df in frames:
                     assert "iso" in df.columns
                 df = pd.concat(frames, ignore_index=True)  # reindex
-                self.params.dbpath = local_paths
+                self.params.dbpath = ",".join(local_paths)
             else:
                 df = frames[0]
                 self.params.dbpath = local_paths[0]

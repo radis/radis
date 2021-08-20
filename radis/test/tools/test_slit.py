@@ -26,9 +26,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import abs, cos, linspace, pi, sqrt, tan, trapz
-from publib import fix_style, set_style
 
 from radis.lbl.factory import SpectrumFactory
+from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printm
 from radis.phys.convert import dcm2dnm, dnm2dcm
 from radis.phys.units import is_homogeneous
@@ -55,7 +55,7 @@ fig_prefix = basename(__file__) + ": "
 def _clean(plot, close_plots):
     if plot:
         plt.ion()  # dont get stuck with Matplotlib if executing through pytest
-        set_style("origin")
+        set_style()
         if close_plots:
             plt.close("all")
 
@@ -571,7 +571,7 @@ def test_linear_dispersion_effect(
         plt.xlabel("Wavelength (nm)")
         plt.ylabel("Dirac $x$ slit function")
         plt.legend(loc="best", prop={"size": 15})
-        fix_style("article")
+        fix_style()
 
     return True
 

@@ -150,6 +150,7 @@ intersphinx_mapping = {
     "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
+    "seaborn": ("https://seaborn.pydata.org/", None),
 }
 
 napoleon_google_docstring = False

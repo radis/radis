@@ -141,13 +141,39 @@ def getValidationCase(file, force=False):
     return path
 
 
-try:  # Python 3.6 only
-    getTestFile.__annotations__["file"] = os.listdir(join(TEST_FOLDER_PATH, "files"))
-    getValidationCase.__annotations__["file"] = os.listdir(
-        join(TEST_FOLDER_PATH, "validation")
+# Python 3.6+ only
+getTestFile.__annotations__["file"] = os.listdir(join(TEST_FOLDER_PATH, "files"))
+getValidationCase.__annotations__["file"] = os.listdir(
+    join(TEST_FOLDER_PATH, "validation")
+)
+
+
+# %% Convenience function
+
+
+def test_spectrum():
+    """Generates a spectrum with ::
+
+    import radis
+    s = radis.test_spectrum()
+    s.plot()
+
+    """
+    from radis import calc_spectrum
+
+    s = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="hitran",  # or use 'hitemp'
     )
-except:
-    pass
+    return s
+
 
 # %% Comparison functions
 
