@@ -63,8 +63,6 @@ def get_config(configpath=CONFIG_PATH_JSON):
     entries of the user config file ``~/.radis``
     (:py:attr:`~radis.misc.config.CONFIG_PATH_DEFAULT`"""
 
-    defaut_config = get_user_config(configpath)
-
     jsonfile = CONFIG_PATH_DEFAULT
     with open(jsonfile) as f:
         try:
@@ -78,9 +76,11 @@ def get_config(configpath=CONFIG_PATH_JSON):
                 err.pos,
             ) from err
 
-    defaut_config.update(config)
+    user_config = get_user_config(configpath)
 
-    return defaut_config
+    config.update(user_config)
+
+    return config
 
 
 # %% Functions to parse ~/.radis file

@@ -9,6 +9,7 @@ dependencies:
 - numpy
 - scipy>=1.4.0
 - matplotlib
+- seaborn   # other matplotlib themes
 - cantera   # for chemical equilibrium computations
 - cython
 - pandas>=1.0.5

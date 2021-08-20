@@ -14,22 +14,33 @@ KNOWN_CONTEXT = ["paper", "notebook", "talk", "poster"]
 
 def _get_defaults(plotlib, context, style):
 
+    expected_format = {
+        "plot": {
+            "plotlib": "ANY OF "
+            + "/".join(['"publib"', '"seaborn"', '"matplotlib"', '"none"']),
+            "context": "ANY OF " + "/".join(f'"{c}"' for c in KNOWN_CONTEXT),
+            "style": "ANY OF the publib / seaborn / matplotlib themes",
+        }
+    }
+
     # Get defaults
     if plotlib == "config-default":
         try:
             plotlib = radis.config["plot"]["plotlib"]
         except KeyError:
-            raise KeyError(
-                'Define a `"plot":{"plotlib":"publib"/"seaborn"/"none"}` entry in your ~/radis.json config file'
+            raise ValueError(
+                "Missing key in your ~/radis.json user config file. Expected format :\n\n {0}".format(
+                    expected_format
+                )
             )
 
     if context == "config-default":
         try:
             context = radis.config["plot"]["context"]
         except KeyError:
-            raise KeyError(
-                r'Define a `"plot":{{"context":[any of {0}]}}` entry in your ~/radis.json config file'.format(
-                    ", ".join(KNOWN_CONTEXT)
+            raise ValueError(
+                "Missing key `context` in your ~/radis.json user config file. Expected format :\n\n {0}".format(
+                    expected_format
                 )
             )
 
@@ -37,8 +48,10 @@ def _get_defaults(plotlib, context, style):
         try:
             style = radis.config["plot"]["style"]
         except KeyError:
-            raise KeyError(
-                'Define a `"plot":{"style":[any of publib / seaborn / matplotlib themes]}` entry in your ~/radis.json config file'
+            raise ValueError(
+                "Missing key `style` in your ~/radis.json user config file. Expected format :\n\n {0}".format(
+                    expected_format
+                )
             )
 
     if context and context not in KNOWN_CONTEXT:
