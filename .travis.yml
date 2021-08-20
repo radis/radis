@@ -58,7 +58,7 @@ jobs:
       install:
         - pip install pre-commit
       script:
-        - pre-commit run --all-files
+        - pre-commit run --all-files --verbose
 
     - stage: deploy
       name: Deploy to PyPI
