@@ -612,8 +612,8 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     Tgas = 1000
 
     sf = SpectrumFactory(
-        wavelength_min=4160,
-        wavelength_max=4220,
+        wavelength_min=4165,
+        wavelength_max=4200,
         mole_fraction=1,
         path_length=0.3,
         cutoff=1e-23,
@@ -626,7 +626,7 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.fetch_databank("hitran")
+    sf.load_databank("HITRAN-CO2-TEST")
 
     sf.eq_spectrum(Tgas)
     wstep_1 = sf.params.wstep
