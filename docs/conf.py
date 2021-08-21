@@ -260,6 +260,7 @@ html_theme_options = {
     "sidebar_includehidden": True,
     "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
+    "link": "#7A306C",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
