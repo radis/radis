@@ -1722,9 +1722,7 @@ class BaseFactory(DatabankLoader):
                 del df["id"]
         molecule = get_molecule(df.attrs["id"])
 
-        iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
-
-        if len(iso_set) == 1:
+        if not "iso" in df:
 
             # Shortcut if only 1 isotope. We attribute molar_mass & abundance
             # as attributes of the line database, instead of columns. Much
@@ -1732,7 +1730,7 @@ class BaseFactory(DatabankLoader):
 
             state = self.input.state
             parsum = self.get_partition_function_calculator(
-                molecule, iso_set[0], state
+                molecule, df.attrs["iso"], state
             )  # partition function
             df.attrs["Qref"] = parsum.at(
                 Tref, update_populations=False
@@ -1742,6 +1740,12 @@ class BaseFactory(DatabankLoader):
             Qref = df.attrs["Qref"]
 
         else:
+            iso_set = df.iso.unique()
+            if len(iso_set) == 1:
+                self.warn(
+                    "There shouldn't be a Column 'iso' with a unique value",
+                    "PerformanceWarning",
+                )
 
             # normal method
             # still much faster than the groupby().apply() method (see radis<=0.9.19)
@@ -1819,9 +1823,7 @@ class BaseFactory(DatabankLoader):
             df.attrs["id"] = int(id_set)
         molecule = get_molecule(df.attrs["id"])
 
-        iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
-
-        if len(iso_set) == 1:
+        if not "iso" in df:
 
             # Shortcut if only 1 isotope. We attribute molar_mass & abundance
             # as attributes of the line database, instead of columns. Much
@@ -1829,7 +1831,7 @@ class BaseFactory(DatabankLoader):
 
             state = self.input.state
             parsum = self.get_partition_function_calculator(
-                molecule, iso_set[0], state
+                molecule, df.attrs["iso"], state
             )  # partition function
             df.attrs["Qref"] = parsum.at(
                 Tref, update_populations=False
@@ -1838,6 +1840,12 @@ class BaseFactory(DatabankLoader):
             Qref = df.attrs["Qref"]
 
         else:
+            iso_set = df.iso.unique()
+            if len(iso_set) == 1:
+                self.warn(
+                    "There shouldn't be a Column 'iso' with a unique value",
+                    "PerformanceWarning",
+                )
 
             # normal method
             # still much faster than the groupby().apply() method (see radis<=0.9.19)
@@ -2128,7 +2136,7 @@ class BaseFactory(DatabankLoader):
         def Qref_Qgas_ratio():
 
             if "iso" in df1:
-                iso_set = df1.iso.unique()  # self._get_isotope_list(molecule)
+                iso_set = df1.iso.unique()
                 if len(iso_set) == 1:
                     self.warn(
                         "There shouldn't be a Column 'iso' with a unique value",
@@ -2448,7 +2456,7 @@ class BaseFactory(DatabankLoader):
             self.profiler.start("part_function", 3)
             if "iso" in df:
                 Q_dict = {}
-                iso_set = df.iso.unique()  #  self._get_isotope_list()
+                iso_set = df.iso.unique()
                 if len(iso_set) == 1:
                     self.warn(
                         "There shouldn't be a Column 'iso' with a unique value",
@@ -2541,9 +2549,7 @@ class BaseFactory(DatabankLoader):
                 Q, Qvib, Qrotu, Qrotl = df.Q, df.Qvib, df.Qrotu, df.Qrotl
 
             else:
-                iso_set = self._get_isotope_list()  # df1.iso.unique()
-                assert len(iso_set) == 1
-                iso = iso_set[0]
+                iso = df.attrs["iso"]
 
                 parsum = self.get_partition_function_calculator(molecule, iso, state)
 

@@ -1931,7 +1931,6 @@ class BroadenFactory(BaseFactory):
             for l in range(len(wG)):
                 for m in range(len(wL)):
                     lineshape = line_profile_DLM[l][m]
-                    # sumoflines_calc += np.convolve(DLM[:, l, m], lineshape, "same")
                     sumoflines_calc += oaconvolve(DLM[:, l, m], lineshape, "same")
 
         elif broadening_method == "fft":

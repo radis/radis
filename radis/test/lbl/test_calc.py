@@ -103,6 +103,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         wavelength_max=4200,
         #                          databank='CDSD-HITEMP-JMIN',
         databank="hitran",  # not appropriate for these temperatures, but convenient for automatic testing
+        # databank="HITRAN-CO2-TEST",  # to use, but only has 1 isotope. TODO add new test file with 2 isotopes
         Tgas=300,
         Tvib=1700,
         Trot=1550,
@@ -114,7 +115,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         cutoff=1e-25,
         use_cached=True,
         medium="vacuum",
-        verbose=verbose,
+        verbose=3,
         optimization="simple",
         broadening_method="fft",
         neighbour_lines=5,  # previously: broadening_max_width [FWHM] = 10

@@ -504,7 +504,6 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     assert res <= 1e-4
 
 
-@pytest.mark.needs_connection
 @pytest.mark.fast
 def test_broadening_warnings(*args, **kwargs):
     """Test AccuracyWarning and AccuracyErrors are properly triggered.
@@ -526,18 +525,21 @@ def test_broadening_warnings(*args, **kwargs):
     from radis.misc.warning import AccuracyError, AccuracyWarning
 
     conditions = {
-        "wavenum_min": 667.58 / u.cm,
-        "wavenum_max": 667.61 / u.cm,
+        # "wavenum_min": 667.58 / u.cm,
+        # "wavenum_max": 667.61 / u.cm,
+        "wavelength_min": 4170 * u.nm,
+        "wavelength_max": 4180 * u.nm,
         "molecule": "CO2",
         "isotope": "1",
-        "truncation": 0,  # no neighbour lines in LDM method (note : with LDM method we still resolve the full lineshape!)
+        "neighbour_lines": 0,
         "verbose": False,
     }
 
     # Try with low resolution, expect error :
     with pytest.raises(AccuracyError):
         sf = SpectrumFactory(**conditions, wstep=0.02)
-        sf.fetch_databank("hitran")
+        # sf.fetch_databank("hitran")
+        sf.load_databank("HITRAN-CO2-TEST")
 
         sf.eq_spectrum(
             Tgas=234.5,
@@ -546,8 +548,9 @@ def test_broadening_warnings(*args, **kwargs):
         )
 
     with pytest.warns(AccuracyWarning):
-        sf = SpectrumFactory(**conditions, wstep=0.0009)
-        sf.fetch_databank("hitran")
+        sf = SpectrumFactory(**conditions, wstep=0.002)
+        # sf.fetch_databank("hitran")
+        sf.load_databank("HITRAN-CO2-TEST")
 
         sf.eq_spectrum(
             Tgas=234.5,
