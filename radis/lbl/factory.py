@@ -534,6 +534,11 @@ class SpectrumFactory(BandFactory):
             else:  # keep default
                 broadening_method = broadening_method.value
 
+        if truncation == 0:
+            raise ValueError(
+                "Lineshape truncation must be >0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`"
+            )
+
         self.params.truncation = self.truncation = truncation  # line truncation
         # self.params.truncation is the input, self.truncation will be the value (different from input if input was None)
         self.params.neighbour_lines = neighbour_lines  # including neighbour lines

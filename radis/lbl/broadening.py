@@ -1689,14 +1689,9 @@ class BroadenFactory(BaseFactory):
         assert (
             len(wavenumber_calc) == vec_length + 2 * ineighbour
         )  # self.params.neighbour_lines/self.params.wstep
-        boffrangeleft = idcenter_left <= ineighbour
-        boffrangeright = idcenter_right >= vec_length + ineighbour
-        binrange = np.ones_like(idcenter_left, dtype=bool) ^ (
-            boffrangeleft + boffrangeright
-        )
 
         self.profiler.stop("get_matching_line", "Get closest matching line & fraction")
-        self.profiler.start("aggregate__center_lines", 3)
+        self.profiler.start("aggregate__lines", 3)
 
         #        # Performance for lines below
         #        # ----------
@@ -1705,81 +1700,35 @@ class BroadenFactory(BaseFactory):
         #        # normal: ~ 36 ms  called 9 times
         #        # with @jit : ~ 200 ms called 9 times (worse!)
 
-        # In range: aggregate both wings
-        lines_in = profile_S.T[binrange]
-        if len(lines_in) > 0:
-            # I_low_in_left: lower wavenumber limit of the line, left grid point
-            # I_low_in_right: lower wavenumber limit of the line, right grid point
-            # I_high_in_left: higher wavenumber limit of the line, left grid point
-            # I_high_in_right: higher wavenumber limit of the line, right grid point
-            I_low_in_left = idcenter_left[binrange] - iwbroad_half + ioffset
-            I_low_in_right = idcenter_right[binrange] - iwbroad_half + ioffset
-            I_high_in_left = I_low_in_left + 2 * iwbroad_half
-            I_high_in_right = I_low_in_right + 2 * iwbroad_half
-            for i, (fr_left, fr_right, profS) in enumerate(
-                zip(frac_left[binrange], frac_right[binrange], lines_in)
-            ):
-                sumoflines_calc[I_low_in_left[i] : I_high_in_left[i] + 1] += (
-                    fr_left * profS
-                )
-                sumoflines_calc[I_low_in_right[i] : I_high_in_right[i] + 1] += (
-                    fr_right * profS
-                )
+        # summ all lines :
+
+        # I_low_in_left: lower wavenumber limit of the line, left grid point
+        # I_low_in_right: lower wavenumber limit of the line, right grid point
+        # I_high_in_left: higher wavenumber limit of the line, left grid point
+        # I_high_in_right: higher wavenumber limit of the line, right grid point
+        I_low_in_left = idcenter_left - iwbroad_half + ioffset
+        I_low_in_right = idcenter_right - iwbroad_half + ioffset
+        I_high_in_left = I_low_in_left + 2 * iwbroad_half
+        I_high_in_right = I_low_in_right + 2 * iwbroad_half
+        for i, (fr_left, fr_right, profS) in enumerate(
+            zip(frac_left, frac_right, profile_S.T)
+        ):
+            sumoflines_calc[I_low_in_left[i] : I_high_in_left[i] + 1] += fr_left * profS
+            sumoflines_calc[I_low_in_right[i] : I_high_in_right[i] + 1] += (
+                fr_right * profS
+            )
 
         # Nomenclature for lines above:
         # - low/high: start/end of a lineshape
         # - left/right: closest spectral grid point on the left/right
 
-        self.profiler.stop("aggregate__center_lines", "Aggregate center lines")
-        self.profiler.start("aggregate_wing_lines", 3)
-
-        # Off Range, left : only aggregate the Right wing
-        # @dev: the only difference with In range is the extra mask to cut the left wing.
-        lines_l = profile_S.T[boffrangeleft]
-        if len(lines_l) > 0:
-            I_low_l_left = idcenter_left[boffrangeleft] + 1 + ioffset
-            I_low_l_right = idcenter_right[boffrangeleft] + 1 + ioffset
-            I_high_l_left = I_low_l_left + iwbroad_half - 1
-            I_high_l_right = I_low_l_right + iwbroad_half - 1
-            for i, (fr_left, fr_right, profS) in enumerate(
-                zip(frac_left[boffrangeleft], frac_right[boffrangeleft], lines_l)
-            ):
-                # cut left wing & peak  with the [iwbroad_half+1:] mask
-                sumoflines_calc[I_low_l_left[i] : I_high_l_left[i] + 1] += (
-                    fr_left * profS[iwbroad_half + 1 :]
-                )
-                sumoflines_calc[I_low_l_right[i] : I_high_l_right[i] + 1] += (
-                    fr_right * profS[iwbroad_half + 1 :]
-                )
-
-        # Off Range, Right : only aggregate the left wing
-        lines_r = profile_S.T[boffrangeright]
-        if len(lines_r) > 0:
-            I_low_r_left = idcenter_left[boffrangeright] - iwbroad_half + ioffset
-            I_low_r_right = idcenter_right[boffrangeright] - iwbroad_half + ioffset
-            I_high_r_left = (
-                I_low_r_left + iwbroad_half - 1
-            )  # idcenter[boffrangeright]-1
-            I_high_r_right = (
-                I_low_r_right + iwbroad_half - 1
-            )  # idcenter[boffrangeright]-1
-            for i, (fr_left, fr_right, profS) in enumerate(
-                zip(frac_left[boffrangeright], frac_right[boffrangeright], lines_r)
-            ):
-                # cut right wing & peak  with the [:iwbroad_half] mask
-                sumoflines_calc[I_low_r_left[i] : I_high_r_left[i] + 1] += (
-                    fr_left * profS[:iwbroad_half]
-                )
-                sumoflines_calc[I_low_r_right[i] : I_high_r_right[i] + 1] += (
-                    fr_right * profS[:iwbroad_half]
-                )
+        self.profiler.stop("aggregate__lines", "Aggregate lines")
 
         # Get valid range (discard wings of line profiles)
         sumoflines_calc = sumoflines_calc[ioffset:-ioffset]
         assert len(sumoflines_calc) == len(wavenumber_calc)
         # Get valid range (discard neighbour lines)
         sumoflines = sumoflines_calc[self.woutrange]
-        self.profiler.stop("aggregate_wing_lines", "Aggregate wing lines")
 
         return wavenumber, sumoflines
 
