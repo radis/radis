@@ -163,12 +163,21 @@ class SpectrumFactory(BandFactory):
         correction). HITRAN database uses 296 Kelvin. Default 296 K
     self_absorption: boolean
         Compute self absorption. If ``False``, spectra are optically thin. Default ``True``.
-    broadening_max_width: float (cm-1)
-        Full width over which to compute the broadening. Large values will create
-        a huge performance drop (scales as ~broadening_width^2 without DLM)
-        The calculated spectral range is increased (by broadening_max_width/2
+    truncation: float (:math:`cm^{-1}`)
+        Half-width over which to compute the lineshape, i.e. lines are truncated
+        on each side after ``truncation`` (:math:`cm^{-1}`) from the line center.
+        If ``None``, use no truncation (lineshapes spread on the full spectral range).
+        Default is ``300`` :math:`cm^{-1}`
+
+        .. note::
+         Large values (> ``50``) can induce a performance drop (computation of lineshape
+         typically scale as :math:`~truncation ^2` ). The default ``300`` was
+         chosen to maintain a good accuracy, and still exhibit the sub-Lorentzian
+         behavior of most lines far (few hundreds :math:`cm^{-1}`) from the line center.
+    neighbour_lines: float (:math:`cm^{-1}`)
+        The calculated spectral range is increased (by ``neighbour_lines`` cm-1
         on each side) to take into account overlaps from out-of-range lines.
-        Default ``10`` cm-1.
+        Default is ``0`` :math:`cm^{-1}`.​
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
@@ -526,41 +535,17 @@ class SpectrumFactory(BandFactory):
                 broadening_method = broadening_method.value
 
         if isinstance(truncation, Default):
-            if optimization is None:
-                if self.verbose >= 3:
-                    printg(
-                        "LDM algorithm not used. Defaulting truncation from {0} to 10".format(
-                            truncation
-                        )
-                    )
-                truncation = 10
-            else:  # keep default
-                truncation = truncation.value
-        """
-        if isinstance(broadening_max_width, Default):
-            if optimization is None:
-                if self.verbose >= 3:
-                    printg(
-                        "LDM algorithm not used. Defaulting broadening_max_width from {0} to 10".format(
-                            broadening_max_width
-                        )
-                    )
-                broadening_max_width = 10
-            else:  # keep default
-                broadening_max_width = broadening_max_width.value
-        """
+            truncation = truncation.value
+
         # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
         # self._broadening_max_width = broadening_max_width
 
-        """self.params.broadening_max_width = (
-            broadening_max_width  # line broadening and neighbour lines
-        )"""
         self.params.truncation = truncation  # line truncation
         self.params.neighbour_lines = neighbour_lines  # including neighbour lines
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
-        self.params.wavenum_min_calc = wavenum_min - neighbour_lines / 2
-        self.params.wavenum_max_calc = wavenum_max + neighbour_lines / 2
+        self.params.wavenum_min_calc = wavenum_min - neighbour_lines
+        self.params.wavenum_max_calc = wavenum_max + neighbour_lines
 
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
@@ -2154,8 +2139,8 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines)
         an evenly spaced array between ``wavenum_min`` and ``wavenum_max`` with
         a spacing of ``wstep``
     wavenumber_calc: numpy array
-        an evenly spaced array between ``wavenum_min-neighbour_lines/2`` and
-        ``wavenum_max+neighbour_lines/2`` with a spacing of ``wstep``
+        an evenly spaced array between ``wavenum_min-neighbour_lines`` and
+        ``wavenum_max+neighbour_lines`` with a spacing of ``wstep``
     """
     assert wavenum_min < wavenum_max
 
@@ -2165,8 +2150,8 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines)
 
     # generate the calculation vector of wavenumbers (shape M + space on the side)
     # ... Calculation range
-    wavenum_min_calc = wavenumber[0] - neighbour_lines / 2  # cm-1
-    wavenum_max_calc = wavenumber[-1] + neighbour_lines / 2  # cm-1
+    wavenum_min_calc = wavenumber[0] - neighbour_lines  # cm-1
+    wavenum_max_calc = wavenumber[-1] + neighbour_lines  # cm-1
     w_out_of_range_left = arange(
         wavenumber[0] - wstep, wavenum_min_calc - wstep, -wstep
     )[::-1]

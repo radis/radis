@@ -167,16 +167,25 @@ def calc_spectrum(
         .. note::
             wstep = 'auto' is optimized for performances while ensuring accuracy,
             but is still experimental in 0.9.30. Feedback welcome!
-    broadening_max_width: float (cm-1)
-        Full width over which to compute the broadening. Large values will create
-        a huge performance drop (scales as :math:`~{w_{width}}^2` without LDM)
-        The calculated spectral range is increased (by broadening_max_width/2
+    truncation: float (:math:`cm^{-1}`)
+        Half-width over which to compute the lineshape, i.e. lines are truncated
+        on each side after ``truncation`` (:math:`cm^{-1}`) from the line center.
+        If ``None``, use no truncation (lineshapes spread on the full spectral range).
+        Default is ``300`` :math:`cm^{-1}`
+
+        .. note::
+                Large values (> ``50``) can induce a performance drop (computation of lineshape
+                typically scale as :math:`~truncation ^2` ). The default ``300`` was
+                chosen to maintain a good accuracy, and still exhibit the sub-Lorentzian
+                behavior of most lines far (few hundreds :math:`cm^{-1}`) from the line center.
+    neighbour_lines: float (:math:`cm^{-1}`)
+        The calculated spectral range is increased (by ``neighbour_lines`` cm-1
         on each side) to take into account overlaps from out-of-range lines.
-        Default ``10`` cm-1.​
+        Default is ``0`` :math:`cm^{-1}`.​
     cutoff: float (~ unit of Linestrength: :math:`cm^{-1}/(molec.cm^{-2})`)
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate line databases such as
-        CDSD. If ``0``, no cutoff. Default ``1e-27``..
+        CDSD. If ``0``, no cutoff. Default ``1e-27`` .
     parsum_mode: 'full summation', 'tabulation'
         how to compute partition functions, at nonequilibrium or when partition
         function are not already tabulated. ``'full summation'`` : sums over all
