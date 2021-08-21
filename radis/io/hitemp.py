@@ -38,6 +38,7 @@ except ImportError:  # ran from here
         replace_PQR_with_m101,
     )
 
+from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.misc.progress_bar import ProgressBar
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
@@ -381,6 +382,34 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         return Nlines
 
+    def register(self):
+
+        local_files, urlnames = self.get_filenames()
+        info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
+
+        if self.molecule in ["CO2", "H2O"]:
+            info = "(registered files will be downloaded only when required) " + info
+
+        dict_entries = {
+            "info": info,
+            "path": local_files,
+            "format": "hitemp-radisdb",
+            "parfuncfmt": "hapi",
+            "wavenumber_min": self.wmin,
+            "wavenumber_max": self.wmax,
+            "download_date": self.get_today(),
+            "download_url": urlnames,
+        }
+
+        # Add energy level calculation
+        if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
+            dict_entries[
+                "info"
+            ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
+            dict_entries["levelsfmt"] = "radis"
+
+        super().register(dict_entries)
+
 
 def fetch_hitemp(
     molecule,
@@ -529,7 +558,7 @@ def fetch_hitemp(
 
     # Register
     if not ldb.is_registered():
-        ldb.register(local_files, urlnames, ldb.wmin, ldb.wmax)
+        ldb.register()
 
     if clean_cache_files:
         ldb.clean_download_files()
