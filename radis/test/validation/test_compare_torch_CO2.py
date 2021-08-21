@@ -51,7 +51,7 @@ def test_compare_torch_CO2(
 
     Thresholds parameters are reduced for a faster calculation time. For instance:
 
-    - broadening_max_width should be 50 rather than 20
+    - truncation should be 25 rather than 10
     - cutoff should be 1e-27 rather than 1e-25
     - wstep should be 0.01 or even 0.008 rather than 0.1
 
@@ -116,7 +116,7 @@ def test_compare_torch_CO2(
         export_lines=False,  # saves some memory
         export_populations=False,  # saves some memory
         cutoff=1e-25,
-        truncation=20,
+        truncation=10,
         # pseudo_continuum_threshold=0.01, # use pseudo-continuum, no DLM. Note : 56s on 20/08.
         # optimization=None,
         pseudo_continuum_threshold=0,  # use DLM, no pseudo-continuum. Note : 84s on 20/08
@@ -148,7 +148,7 @@ def test_compare_torch_CO2(
         export_lines=False,  # saves some memory
         export_populations=False,  # saves some memory
         cutoff=1e-25,
-        truncation=20,
+        truncation=10,
         optimization=None,
         verbose=False,
     )

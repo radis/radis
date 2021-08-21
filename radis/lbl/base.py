@@ -132,7 +132,6 @@ class BaseFactory(DatabankLoader):
         "path_length": "cm",
         #        'slit_function_FWHM':   'nm',
         "cutoff": "cm-1/(#.cm-2)",
-        "broadening_max_width": "cm-1",
         "truncation": "cm-1",
         "neighbour_lines": "cm-1",
         # The later is never stored in Factory, but exported in Spectrum at the end of the calculation
@@ -3469,7 +3468,7 @@ class BaseFactory(DatabankLoader):
 
         # Checks there if there is change in truncation value
         # (except in the case where truncation is None, where we set it to be the full range)
-        if self.truncation is not None:
+        if self.params.truncation is not None:
             assert self.truncation == self.params.truncation
 
         # Check neighbour lines wasn't changed since first initialisation

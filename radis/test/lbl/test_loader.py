@@ -51,7 +51,7 @@ def test_retrieve_from_database(
             molecule="CO2",
             isotope=[1],
             medium="vacuum",
-            truncation=10,
+            truncation=5,
             export_populations="rovib",
             verbose=verbose,
         )
@@ -176,7 +176,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
         molecule="CO2",
         isotope="1,2",
         medium="vacuum",
-        truncation=10,
+        truncation=5,
         verbose=0,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"

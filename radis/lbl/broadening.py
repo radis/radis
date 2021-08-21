@@ -1318,7 +1318,7 @@ class BroadenFactory(BaseFactory):
                 "Tgas not defined. Make sure the parent function creates it"
             )
 
-        # Generate broadening array (so that it is as large as `broadening_max_width`
+        # Generate broadening array (so that it is as large as `truncation`
         # in cm-1, and keeps the same spacing as the final output wavelength vector)
         wbroad_centered_oneline = self.wbroad_centered  # size (B,)
 

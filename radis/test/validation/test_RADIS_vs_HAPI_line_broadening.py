@@ -61,8 +61,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     dnu = 0.0001
     wmin = nm2cm(4372.69 + 0.2)  # cm-1
     wmax = nm2cm(4372.69 - 0.2)  # cm-1
-    #    broadening_max_width = 6  # cm-1
-    truncation = 0.5  # cm-1
+    truncation = 0.25  # cm-1
     neighbour_lines = 0.5  # cm-1
 
     # %% HITRAN calculation
@@ -84,8 +83,8 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
                     molecule,
                     mol_id,
                     iso,
-                    wmin - neighbour_lines / 2,
-                    wmax + neighbour_lines / 2,
+                    wmin - neighbour_lines,
+                    wmax + neighbour_lines,
                 )
                 # HAPI doesnt correct for side effects
 

@@ -478,7 +478,7 @@ def test_all_calc_methods_CO2pcN(
     sf = SpectrumFactory(
         wavenum_min=2284,
         wavenum_max=2285,
-        truncation=5,  # TODO @EP: crashes with 0.3?
+        truncation=2.5,  # TODO @EP: crashes with 0.15?
         mole_fraction=1,
         path_length=0.025,
         cutoff=1e-25,

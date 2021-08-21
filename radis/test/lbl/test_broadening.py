@@ -44,8 +44,8 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     wstep = 0.001
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    truncation = 10  # cm-1
-    neighbour_lines = 10  # cm-1
+    truncation = 5  # cm-1
+    neighbour_lines = 5  # cm-1
 
     # %% HITRAN calculation
     # -----------
@@ -141,7 +141,7 @@ def test_broadening_methods_different_conditions(
     wstep = 0.005
     wmin = 2150.4  # cm-1
     wmax = 2151.4  # cm-1
-    truncation = 2  # cm-1
+    truncation = 1  # cm-1
 
     for (T, p, fwhm_lorentz, fwhm_gauss) in [
         # K, bar, expected FWHM for Lotentz, gauss (cm-1)
@@ -231,8 +231,8 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
     p = 1
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    truncation = 10  # cm-1
-    neighbour_lines = 10  # cm-1
+    truncation = 5  # cm-1
+    neighbour_lines = 5  # cm-1
 
     for i, wstep in enumerate([0.01, 0.1, 0.5]):
 
@@ -304,8 +304,8 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     wstep = 0.002
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    truncation = 10  # cm-1
-    neighbour_lines = 10  # cm-1
+    truncation = 5  # cm-1
+    neighbour_lines = 5  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -456,8 +456,8 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     wstep = 0.002
     wmin = 2380  # cm-1
     wmax = 2400  # cm-1
-    truncation = 10  # cm-1
-    neighbour_lines = 10  # cm-1
+    truncation = 5  # cm-1
+    neighbour_lines = 5  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -592,7 +592,7 @@ def test_abscoeff_continuum(
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
-        truncation=10,
+        truncation=5,
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",
@@ -697,7 +697,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
-        truncation=10,
+        truncation=5,
         neighbour_lines=10,
         path_length=0.1,
         mole_fraction=1e-3,

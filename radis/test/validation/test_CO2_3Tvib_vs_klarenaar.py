@@ -81,7 +81,7 @@ def test_klarenaar_validation_case(
         path_length=10,  # cm-1
         # warning! 10% in mass fraction -> less in mole fraction
         mole_fraction=0.1 * 28.97 / 44.07,
-        truncation=1,  # cm-1
+        truncation=0.5,  # cm-1
         medium="vacuum",
         export_populations="vib",
     )

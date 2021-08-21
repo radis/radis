@@ -299,7 +299,8 @@ class SpectrumFactory(BandFactory):
         sf = SpectrumFactory(wavelength_min=4165 * u.nm,
                              wavelength_max=4200 * u.nm,
                              isotope='1,2',
-                             broadening_max_width=10,  # cm-1
+                             truncation=10,  # cm-1
+                             optimization=None,
                              medium='vacuum',
                              verbose=1,    # more for more details
                              )
@@ -1662,7 +1663,6 @@ class SpectrumFactory(BandFactory):
 
         wstep = self.params.wstep
         n_lines = self.misc.total_lines
-        # broadening_max_width = self.params.broadening_max_width
         truncation = self.params.truncation
         spectral_points = (
             self.params.wavenum_max_calc - self.params.wavenum_min_calc

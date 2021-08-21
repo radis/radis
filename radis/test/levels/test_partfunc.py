@@ -955,7 +955,7 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
         wavenum_max=wmax,
         molecule="CO2",
         isotope="1",
-        truncation=5,  # cm-1
+        truncation=2.5,  # cm-1
         medium="air",
         path_length=10.32,  # cm
         wstep=0.001,
@@ -1048,10 +1048,10 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # printm("Testing parfunc: {0}".format(_run_testcases()))
+    printm("Testing parfunc: {0}".format(_run_testcases()))
 
     # test_tabulated_partition_functions()
-    test_parsum_mode_in_factory()
+    # test_parsum_mode_in_factory()
 #    test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
 #    test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)

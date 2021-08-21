@@ -54,7 +54,7 @@ if __name__ == "__main__":
         verbose=2,
         wstep=dnu,  # depends on HAPI benchmark.
         cutoff=1e-23,
-        truncation=5.73,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
+        truncation=2.865,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
         molecule=molecule,
         optimization=None,
     )

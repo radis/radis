@@ -166,7 +166,7 @@ def test_spec_generation(
         wavelength_max=4400,
         cutoff=1e-27,
         isotope="1,2",
-        truncation=50,
+        truncation=25,
         optimization=None,
         # optimization="min-RMS",
         # pseudo_continuum_threshold=0.01,
@@ -304,7 +304,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
         path_length=10,
         mole_fraction=400e-6,
         isotope=[1],
-        truncation=10,
+        truncation=5,
         verbose=verbose,
     )
     sf.warnings.update(
@@ -365,7 +365,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         mole_fraction=400e-6,
         isotope=[1],
         medium="vacuum",
-        truncation=10,
+        truncation=5,
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
