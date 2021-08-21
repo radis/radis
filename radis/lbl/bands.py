@@ -368,10 +368,10 @@ class BandFactory(BroadenFactory):
                 lines=lines,
                 units=self.units,
                 cond_units=self.cond_units,
-                waveunit=self.params.waveunit,  # cm-1
+                wunit=self.params.waveunit,  # cm-1
                 name=band,
                 # dont check input (much faster, and Spectrum
-                warnings=False,
+                check_wavespace=False,
                 # is freshly baken so probably in a good format
             )
 
@@ -725,10 +725,10 @@ class BandFactory(BroadenFactory):
                 lines=lines,
                 units=self.units,
                 cond_units=self.cond_units,
-                waveunit=self.params.waveunit,  # cm-1
+                wunit=self.params.waveunit,  # cm-1
                 name=band,
                 # dont check input (much faster, and Spectrum
-                warnings=False,
+                check_wavespace=False,
                 # is freshly baken so probably in a good format
             )
 

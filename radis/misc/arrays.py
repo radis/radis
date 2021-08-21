@@ -106,7 +106,7 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
 
 
 def nantrapz(I, w, dx=1.0, axis=-1):
-    """Returns np.trapz(I, w) discarding nan."""
+    """Returns :py:func:`~numpy.trapz` (I, w) discarding nan."""
     b = ~np.isnan(I)
     return np.trapz(I[b], w[b], dx=dx, axis=axis)
 
@@ -275,7 +275,50 @@ def evenly_distributed(w, tolerance=1e-5):
     return (np.abs((np.diff(w) - mean_step)) > tolerance).sum() == 0
 
 
-@numba.jit
+def anynan(a):
+    """Returns whether ``a`` has at least one :py:attr:`~numpy.nan`
+
+    Fastest implementation for arrays with >10^4 elements
+    https://stackoverflow.com/a/45011547/5622825
+    """
+    return np.isnan(np.dot(a, a))
+
+
+@numba.njit
+def first_nonnan_index(a):
+    """Returns index of first non-nan value in ``a``
+
+    Returns None is all values are :py:attr:`~numpy.nan`
+
+    See Also
+    --------
+
+    :func:`~radis.misc.arrays.last_nonnan_index`
+    """
+    for i in range(a.size):
+        if not np.isnan(a[i]):
+            return i
+    return None
+
+
+@numba.njit
+def last_nonnan_index(a):
+    """Returns index of first non-nan value in ``a``
+
+    Returns None is all values are :py:attr:`~numpy.nan`
+
+    See Also
+    --------
+
+    :func:`~radis.misc.arrays.first_nonnan_index`
+    """
+    for i in range(a.size - 1, 0, -1):
+        if not np.isnan(a[i]):
+            return i
+    return None
+
+
+@numba.njit
 def is_sorted(a):
     """Returns whether ``a`` is sorted in ascending order.
 
@@ -292,7 +335,7 @@ def is_sorted(a):
     return True
 
 
-@numba.jit
+@numba.njit
 def is_sorted_backward(a):
     """Returns whether ``a`` is sorted in descending order.
 

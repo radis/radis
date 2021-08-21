@@ -174,19 +174,11 @@ def test_offset(verbose=True, plot=False, *args, **kwargs):
     s2 = offset(s, 10, "nm", name="offset_10nm")
     if plot:
         plot_diff(s, s2)
-    assert np.allclose(
-        s2.get_wavelength(which="convoluted"), s.get_wavelength(which="convoluted") + 10
-    )
-    assert np.allclose(
-        s2.get_wavelength(which="non_convoluted"),
-        s.get_wavelength(which="non_convoluted") + 10,
-    )
+    assert np.allclose(s2.get_wavelength(), s.get_wavelength() + 10)
 
     # Test inplace version
     s.offset(10, "nm")
-    assert np.allclose(
-        s2.get_wavelength(which="convoluted"), s.get_wavelength(which="convoluted")
-    )
+    assert np.allclose(s2.get_wavelength(), s.get_wavelength())
 
 
 @pytest.mark.fast
@@ -269,17 +261,17 @@ def test_dimensioned_operations(*args, **kwargs):
 
     # Test
     assert s.units["radiance"] == "mW/cm2/sr/nm"
-    Imax = s.get("radiance")[1].max()
+    Imax = s.get("radiance", trim_nan=True)[1].max()
 
     # add a baseline
     s += 0.1 * u.Unit("W/cm2/sr/nm")
 
-    assert np.isclose(s.get("radiance")[1].max(), Imax + 100)
+    assert np.isclose(s.get("radiance", trim_nan=True)[1].max(), Imax + 100)
 
     # remove a baseline (we could also have used s=-0.1, but we're testing another function here)
     s = sub_baseline(s, 0.1 * u.Unit("W/cm2/sr/nm"), 0.1 * u.Unit("W/cm2/sr/nm"))
 
-    assert np.isclose(s.get("radiance")[1].max(), Imax)
+    assert np.isclose(s.get("radiance", trim_nan=True)[1].max(), Imax)
 
     # Test division
     # Example : a manual normalization

@@ -827,9 +827,9 @@ class SpectrumFactory(BandFactory):
             lines=lines,
             units=self.units,
             cond_units=self.cond_units,
-            waveunit=self.params.waveunit,  # cm-1
+            wunit=self.params.waveunit,  # cm-1
             # dont check input (much faster, and Spectrum
-            warnings=False,
+            check_wavespace=False,
             # is freshly baken so probably in a good format
             name=name,
             references=dict(self.reftracker),
@@ -1127,9 +1127,9 @@ class SpectrumFactory(BandFactory):
             conditions=conditions,
             lines=lines,
             cond_units=self.cond_units,
-            waveunit=self.params.waveunit,  # cm-1
+            wunit=self.params.waveunit,  # cm-1
             # dont check input (much faster, and Spectrum
-            warnings=False,
+            check_wavespace=False,
             # is freshly baken so probably in a good format
             name=name,
             references=dict(self.reftracker),
@@ -1482,9 +1482,9 @@ class SpectrumFactory(BandFactory):
             lines=lines,
             units=self.units,
             cond_units=self.cond_units,
-            waveunit=self.params.waveunit,  # cm-1
+            wunit=self.params.waveunit,  # cm-1
             # dont check input (much faster, and Spectrum
-            warnings=False,
+            check_wavespace=False,
             # is freshly baken so probably in a good format
             name=name,
             references=dict(self.reftracker),

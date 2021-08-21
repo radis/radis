@@ -283,7 +283,7 @@ def fit_spectrum(
             ]
         )
 
-    def generate_spectrum(fit_values):
+    def generate_spectrum(fit_values) -> Spectrum:
 
         # Generate dictionary
         inputs = fit_parameters.copy()
@@ -549,7 +549,7 @@ if __name__ == "__main__":
             )
         ),
         "transmittance_noslit",
-        waveunit="cm-1",
+        wunit="cm-1",
         unit="",
         delimiter=",",
         name="Klarenaar 2017",

@@ -10,8 +10,6 @@ object
 
 import subprocess
 
-import numpy as np
-
 from radis.misc.basics import partition
 
 # %% Definitions
@@ -153,9 +151,16 @@ def make_up(label):
     label: str
     """
 
+    # Hardfix for missing characters
+    SUPERSCRIPT_MINUS = "⁻"
+    from matplotlib.font_manager import FontProperties, findfont
+
+    if "arial" in findfont(FontProperties(family=["sans-serif"])):
+        SUPERSCRIPT_MINUS = "$^{-}$"
+
     # Improve units
-    label = label.replace(r"cm-1", r"cm⁻¹")
-    label = label.replace(r"m^-1", r"m⁻¹")
+    label = label.replace(r"cm-1", r"cm" + f"{SUPERSCRIPT_MINUS}" + r"¹")
+    label = label.replace(r"m^-1", r"m" + f"{SUPERSCRIPT_MINUS}" + r"¹")
     label = label.replace(r"m2", r"m²")
     label = label.replace(r"m3", r"m³")
     label = label.replace(r"I/I0", r"I/I₀")  # transmittance unit
@@ -343,32 +348,6 @@ def print_conditions(
             pass
 
     return None
-
-
-def has_nan(s):
-    """
-
-    Parameters
-    ----------
-    s : Spectrum
-        radis Spectrum.
-
-    Returns
-    -------
-    b : bool
-        returns whether Spectrum has ``nan``
-
-    Note
-    ----
-
-    ``print(s)`` will also show which spectral quantities have ````nan.
-
-    """
-
-    for k, v in s._get_items().items():
-        if np.isnan(v[1]).any():
-            return True
-    return False
 
 
 # %% Plot helper

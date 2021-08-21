@@ -79,7 +79,7 @@ try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 except ImportError:  # if ran from here
     from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
-
+from radis.misc.arrays import anynan
 from radis.misc.basics import all_in, transfer_metadata
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
@@ -291,7 +291,7 @@ class BaseFactory(DatabankLoader):
         from radis.misc.printer import get_print_full
 
         try:
-            assert np.isnan(df[column]).sum() == 0
+            assert not anynan(df[column])
         except AssertionError as err:
             index = np.isnan(df[column]).idxmax()
             if self.input.molecule == "CO2":
