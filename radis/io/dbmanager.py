@@ -95,7 +95,7 @@ class DatabaseManager(object):
                 )
             except AssertionError as err:
                 raise DeprecatedFileWarning(
-                    "Database file {0} not valid anymore"
+                    "Database entry {self.name} not valid anymore. See above."
                 ) from err
             else:
                 local_files = entries["path"]

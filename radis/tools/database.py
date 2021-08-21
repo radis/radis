@@ -743,6 +743,13 @@ def _fix_format(file, sload):
         del sload["conditions"]["selfabsorption"]
         fixed = True
 
+    if "broadening_max_width" in sload["conditions"]:
+        broadening_max_width = sload["conditions"]["broadening_max_width"]
+        sload["conditions"]["truncation"] = broadening_max_width / 2
+        sload["conditions"]["neighbour_lines"] = broadening_max_width / 2
+        del sload["conditions"]["broadening_max_width"]
+        fixed = True
+
     # Fix all path names (if / are stored it screws up the JSON loading)
     # -----------------
     def fix_path(key):
