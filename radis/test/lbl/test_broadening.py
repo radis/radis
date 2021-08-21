@@ -504,6 +504,98 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     assert res <= 1e-4
 
 
+def test_truncations(*args, **kwargs):
+    """Test new truncations introduced in https://github.com/radis/radis/issues/340
+
+    So far: test that all functions work
+    More assertion could be added.
+    """
+    # TODO  . Check on databases with one line that truncatino is achieved, etc.
+
+    #%% Test truncation > lines
+
+    conditions = {
+        "wavenum_min": 2100,
+        "wavenum_max": 2300,
+        "molecule": "CO",
+        "isotope": "1,2,3",
+        "pressure": 20,  # bar
+        "Tgas": 700,
+        "mole_fraction": 0.1,
+        "path_length": 1,
+        "databank": "HITRAN-CO-TEST",
+    }
+
+    # No Neighbourling lines, only truncation
+    from radis import calc_spectrum
+
+    s_lbl_voigt_trunc10 = calc_spectrum(
+        **conditions,
+        optimization=None,
+        truncation=10,
+        neighbour_lines=0,
+    )
+    assert s_lbl_voigt_trunc10.conditions["truncation"] == 10
+
+    #%% Test no truncation
+
+    from radis import calc_spectrum
+
+    s_lbl_voigt_notrunc = calc_spectrum(
+        **conditions,
+        optimization=None,
+        truncation=None,
+    )
+    assert s_lbl_voigt_notrunc.conditions["truncation"] is None
+
+    # Effect of neighbour lines on both edges of the spectrum:
+    assert (
+        s_lbl_voigt_notrunc.get("abscoeff")[1][0]
+        > s_lbl_voigt_trunc10.get("abscoeff")[1][0]
+    )
+    assert (
+        s_lbl_voigt_notrunc.get("abscoeff")[1][-1]
+        > s_lbl_voigt_trunc10.get("abscoeff")[1][-1]
+    )
+
+    #%%
+
+    # Check incompatibilities correctly raise errors:
+
+    import pytest
+
+    with pytest.raises(NotImplementedError) as err:
+
+        calc_spectrum(
+            **conditions,
+            optimization=None,
+            broadening_method="fft",  # = "fft"
+            truncation=10,  # truncation != 0
+        )
+        assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err)
+
+    #%% same with optimization=simple (DIT)
+    with pytest.raises(NotImplementedError) as err:
+        calc_spectrum(
+            **conditions,
+            optimization="simple",
+            broadening_method="fft",  # = "fft"
+            truncation=10,  # truncation != 0
+        )
+        assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err)
+
+    #%%
+    s_dit_voigt_trunc10 = calc_spectrum(
+        **conditions,
+        optimization="simple",
+        broadening_method="voigt",  # = "fft"
+        truncation=10,  # truncation != 0
+        neighbour_lines=0,
+    )
+
+    assert get_residual(s_lbl_voigt_trunc10, s_dit_voigt_trunc10, "abscoeff") < 2e-5
+
+
 @pytest.mark.fast
 def test_broadening_warnings(*args, **kwargs):
     """Test AccuracyWarning and AccuracyErrors are properly triggered.
@@ -779,6 +871,7 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
     test_broadening_DLM_FT(plot=plot, verbose=3, *args, **kwargs)
     test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
+    test_truncations(*args, **kwargs)
 
     # Test warnings
     test_broadening_warnings(*args, **kwargs)
