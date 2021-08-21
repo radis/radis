@@ -2042,22 +2042,22 @@ class DatabankLoader(object):
         # ... (i.e, there are some lines on each side of the requested range:
         # ... else, maybe User forgot to add all requested lines in the database '''
         if include_neighbouring_lines:
-            broadening = self.params.neighbour_lines
-            if minwavdb > wavenum_min + broadening:
+            neighbour_lines = self.params.neighbour_lines
+            if neighbour_lines > 0 and minwavdb > wavenum_min + neighbour_lines:
                 # no lines on left side
                 self.warn(
                     "There are no lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
-                        wavenum_min, wavenum_min + broadening
+                        wavenum_min, wavenum_min + neighbour_lines
                     )
                     + "to calculate the effect "
                     + "of neighboring lines. Did you add all lines in the database?",
                     "OutOfRangeLinesWarning",
                 )
-            if maxwavdb < wavenum_max - broadening:
+            if neighbour_lines > 0 and maxwavdb < wavenum_max - neighbour_lines:
                 # no lines on right side
                 self.warn(
                     "There are no lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
-                        maxwavdb - broadening, maxwavdb
+                        maxwavdb - neighbour_lines, maxwavdb
                     )
                     + "to calculate the effect "
                     + "of neighboring lines. Did you add all lines in the database?",
