@@ -539,10 +539,6 @@ class SpectrumFactory(BandFactory):
                 "Lineshape truncation must be >0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`"
             )
 
-        self.params.truncation = self.truncation = truncation  # line truncation
-        # self.params.truncation is the input, self.truncation will be the value (different from input if input was None)
-        self.params.neighbour_lines = neighbour_lines  # including neighbour lines
-
         self.misc.export_lines = export_lines
         self.misc.export_populations = export_populations
 
@@ -556,6 +552,10 @@ class SpectrumFactory(BandFactory):
                     )
         if isinstance(truncation, Default):
             truncation = truncation.value
+
+        self.params.truncation = self.truncation = truncation  # line truncation
+        # self.params.truncation is the input, self.truncation will be the value (different from input if input was None)
+        self.params.neighbour_lines = neighbour_lines  # including neighbour lines
 
         # # reduce neighbour_lines if unnecessary
         # if truncation and truncation < neighbour_lines:
