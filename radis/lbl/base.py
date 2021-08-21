@@ -3457,14 +3457,24 @@ class BaseFactory(DatabankLoader):
 
         # Also check some computation parameters:
 
-        # ... that wstep and broadening_max_width were not inadvertanly changed
-        # ... (would have no effect as the waverange is calculated on SpectrumFactory
-        # ... initialization)
-
         # Checks there if there is change in wstep value if initial wstep != "auto"
         if self.wstep != "auto":
             assert self.wstep == self.params.wstep
-        # assert self._broadening_max_width == self.params.broadening_max_width
+
+        # Checks there if there is change in truncation value
+        # (except in the case where truncation is None, where we set it to be the full range)
+        if self.truncation is not None:
+            assert self.truncation == self.params.truncation
+
+        # Check neighbour lines wasn't changed since first initialisation
+        # (can create problems if database is not reloaded
+        if self._neighbour_lines != self.params.neighbour_lines:
+            raise AssertionError(
+                f"neighbour_lines value changed from {self._neighbour_lines} to "
+                + f"{self.params.neighbour_lines}. Did you reset it manually ? This is currently forbidden as new "
+                + "lines won't be retrieved from the database"
+            )
+            # note @dev:  could be implemented; i.e. send `neighbour_lines` to load_databank instead of SpectrumFactory initialisation
 
     def _get_parsum(self, molecule, iso, state):
         """Get function that calculates the partition function.

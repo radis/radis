@@ -1643,8 +1643,8 @@ class BroadenFactory(BaseFactory):
         wbroad_centered = self.wbroad_centered  # size (B,)
         # index of truncation half width
         iwbroad_half = len(wbroad_centered) // 2
-        ineighbour = int(self.params.neighbour_lines // self.params.wstep)
-        itruncation = int(self.params.truncation // self.params.wstep)
+        ineighbour = int(self.params.neighbour_lines / self.params.wstep)
+        itruncation = int(self.truncation / self.params.wstep)
 
         # Calculate matrix of broadened parameter (for all lines)
         # ... Note @dev : this is the memory bottleneck !
