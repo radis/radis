@@ -2201,7 +2201,7 @@ class DatabankLoader(object):
                     )
                 else:
                     # Print comparison with best
-                    print("Differences in best case :")
+                    print("Differences between us (left) and best case (right):")
                     compare_dict(conditions, best.conditions)
 
                     raise ValueError(

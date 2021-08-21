@@ -223,8 +223,8 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
 
 def _run_testcases(verbose=True, plot=False):
 
-    test_ignore_cached_files()
     test_retrieve_from_database(plot=plot, verbose=verbose)
+    test_ignore_cached_files()
     test_ignore_irrelevant_files(verbose=verbose)
     test_custom_abundance()
 

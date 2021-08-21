@@ -749,7 +749,7 @@ def _fix_format(file, sload):
         fixed = False
         if key in sload["conditions"]:
             path = sload["conditions"][key]
-            if not isinstance(path, str):
+            if path is not None and not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
                     + " has a deprecrated structure (key "
@@ -1245,6 +1245,11 @@ class SpecList(object):
                 for (k, v) in kwconditions.items():
                     if isinstance(v, str):
                         query.append("{0} == r'{1}'".format(k, v))
+                    elif v is None:
+                        # query "k == None" doesn't work. We use a workaround,
+                        # checking if the column is different from itself (i.e. : is None):
+                        # https://stackoverflow.com/a/32207819/5622825
+                        query.append(f"{k} != {k}")
                     else:
                         #                    query.append('{0} == {1}'.format(k,v))
                         query.append("{0} == {1}".format(k, v.__repr__()))
