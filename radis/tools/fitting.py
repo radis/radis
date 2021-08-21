@@ -283,7 +283,7 @@ def fit_spectrum(
             ]
         )
 
-    def generate_spectrum(fit_values):
+    def generate_spectrum(fit_values) -> Spectrum:
 
         # Generate dictionary
         inputs = fit_parameters.copy()
@@ -549,7 +549,7 @@ if __name__ == "__main__":
             )
         ),
         "transmittance_noslit",
-        waveunit="cm-1",
+        wunit="cm-1",
         unit="",
         delimiter=",",
         name="Klarenaar 2017",
@@ -566,7 +566,8 @@ if __name__ == "__main__":
         isotope="1,2",
         path_length=10,  # cm-1
         mole_fraction=0.1 * 28.97 / 44.07,
-        truncation=1,  # cm-1
+        truncation=0.5,  # cm-1
+        neighbour_lines=0,
         medium="vacuum",
         # parsum_mode="tabulation"
     )

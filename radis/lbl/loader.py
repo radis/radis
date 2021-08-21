@@ -244,7 +244,8 @@ class ConditionDict(dict):
     def get_params(self):
         """Returns the variables (and their values) contained in the
         dictionary, minus some based on their type. Numpy array, dictionaries
-        and pandas DataFrame are removed.
+        and pandas DataFrame are removed. None is removed in general, except
+        for some keys ('cutoff', 'truncation')
         Tuples are converted to string
         """
 
@@ -253,7 +254,9 @@ class ConditionDict(dict):
             filt_params = {}
             for k, v in params.items():
                 # Ignore some
-                if type(v) in [np.ndarray, dict, pd.DataFrame] or v is None:
+                if type(v) in [np.ndarray, dict, pd.DataFrame]:
+                    continue
+                if type(v) is None and k not in ["cutoff", "truncation"]:
                     continue
                 if isinstance(k, str):
                     # Also discard all starting with '_'
@@ -405,7 +408,6 @@ class Parameters(ConditionDict):
     __slots__ = [
         "add_at_used",
         "broadening_method",
-        "broadening_max_width",
         "truncation",
         "neighbour_lines",
         "chunksize",
@@ -438,9 +440,8 @@ class Parameters(ConditionDict):
         super(Parameters, self).__init__()
 
         # Dev: Init here to be found by autocomplete
-        # self.broadening_max_width = None  #: float: cutoff for lineshape calculation (cm-1). Overwritten by SpectrumFactory
-        self.truncation = None
-        self.neighbour_lines = None
+        self.truncation = None  #: float: cutoff for half-width lineshape calculation (cm-1). Overwritten by SpectrumFactory
+        self.neighbour_lines = None  #: float: extra range (cm-1) on each side of the spectrum to account for neighbouring lines. Overwritten by SpectrumFactory
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
         self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
         self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``
@@ -753,7 +754,7 @@ class DatabankLoader(object):
             spectra cannot be calculated, but it saves some memory. Default ``True``
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
-            because of lineshape broadening. The ``broadening_max_width``
+            because of lineshape broadening. The ``neighbour_lines``
             parameter is used to determine the limit. Default ``True``.
         *Other arguments are related to how to open the files*
         drop_columns: list
@@ -874,7 +875,7 @@ class DatabankLoader(object):
             spectra cannot be calculated, but it saves some memory. Default ``True``
         include_neighbouring_lines: bool
             if ``True``, includes off-range, neighbouring lines that contribute
-            because of lineshape broadening. The ``broadening_max_width``
+            because of lineshape broadening. The ``neighbour_lines``
             parameter is used to determine the limit. Default ``True``.
         parse_local_global_quanta: bool, or ``'auto'``
             if ``True``, parses the HITRAN/HITEMP 'glob' and 'loc' columns to extract
@@ -1222,7 +1223,7 @@ class DatabankLoader(object):
             spectra cannot be calculated, but it saves some memory. Default ``True``
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
-            because of lineshape broadening. The ``broadening_max_width``
+            because of lineshape broadening. The ``neighbour_lines``
             parameter is used to determine the limit. Default ``True``.
         *Other arguments are related to how to open the files:*
         drop_columns: list
@@ -1806,7 +1807,7 @@ class DatabankLoader(object):
         ----------------
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
-            because of lineshape broadening. The ``broadening_max_width``
+            because of lineshape broadening. The ``neighbour_lines``
             parameter is used to determine the limit. Default ``True``.
         """
 
@@ -2200,7 +2201,7 @@ class DatabankLoader(object):
                     )
                 else:
                     # Print comparison with best
-                    print("Differences in best case :")
+                    print("Differences between us (left) and best case (right):")
                     compare_dict(conditions, best.conditions)
 
                     raise ValueError(

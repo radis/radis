@@ -39,6 +39,7 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     """
 
     # Note: only with iso1 at the moment
+    # ('hitran_co2_626_bandhead_4165_4200nm' has only iso=1)
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
@@ -46,22 +47,22 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     Tgas = 1000
 
     sf = SpectrumFactory(
-        wavelength_min=4160,
-        wavelength_max=4220,
+        wavelength_min=4165,
+        wavelength_max=4200,
         mole_fraction=1,
         path_length=0.3,
         cutoff=1e-23,
         molecule="CO2",
-        truncation=10,
-        neighbour_lines=10,
-        isotope=1,
+        truncation=5,
+        neighbour_lines=5,
+        isotope="1",
         optimization=None,
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.fetch_databank("hitran")
+    sf.load_databank("HITRAN-CO2-TEST")
 
     s_tot = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas)
     s_bands = sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
@@ -69,7 +70,7 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     if verbose:
         printm("{0} bands in spectrum".format(len(s_bands)))
 
-    assert len(s_bands) == 6
+    assert len(s_bands) == 3
 
     # Ensure that recombining gives the same
     s_merged = MergeSlabs(*list(s_bands.values()))

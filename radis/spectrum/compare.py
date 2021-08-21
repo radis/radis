@@ -31,7 +31,7 @@ import numpy as np
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
 from radis.misc.curve import curve_distance, curve_divide, curve_substract
-from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.spectrum import Spectrum
 from radis.spectrum.utils import cast_waveunit, format_xlabel, make_up, make_up_unit
 
 # %% ======================================================================
@@ -41,7 +41,13 @@ from radis.spectrum.utils import cast_waveunit, format_xlabel, make_up, make_up_
 
 
 def get_diff(
-    s1, s2, var, wunit="default", Iunit="default", resample=True, diff_window=0
+    s1: Spectrum,
+    s2: Spectrum,
+    var,
+    wunit="default",
+    Iunit="default",
+    resample=True,
+    diff_window=0,
 ):
     # type: (Spectrum, Spectrum, str, str, str, str, bool, int) -> np.array, np.array
     """Get the difference between 2 spectra.
@@ -97,13 +103,14 @@ def get_diff(
     :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with`
     """
+    # TODO : ensure objects are sorted and if so; forward to curve_substract()
 
     var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, trim_nan=True)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, trim_nan=True)
 
     if not resample:
         if not array_allclose(w1, w2):
@@ -125,7 +132,9 @@ def get_diff(
     return w1, Idiff
 
 
-def get_ratio(s1, s2, var, wunit="default", Iunit="default", resample=True):
+def get_ratio(
+    s1: Spectrum, s2: Spectrum, var, wunit="default", Iunit="default", resample=True
+):
     # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
     """Get the ratio between two spectra Basically returns w1, I1 / I2 where
     (w1, I1) and (w2, I2) are the values of s1 and s2 for variable var. (w2,
@@ -177,7 +186,9 @@ def get_ratio(s1, s2, var, wunit="default", Iunit="default", resample=True):
     return curve_divide(w1, I1, w2, I2)
 
 
-def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
+def get_distance(
+    s1: Spectrum, s2: Spectrum, var, wunit="default", Iunit="default", resample=True
+):
     # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
     """Get a regularized Euclidian distance between two spectra ``s1`` and
     ``s2``
@@ -250,8 +261,8 @@ def get_distance(s1, s2, var, wunit="default", Iunit="default", resample=True):
 
 
 def get_residual(
-    s1,
-    s2,
+    s1: Spectrum,
+    s2: Spectrum,
     var,
     norm="L2",
     ignore_nan=False,
@@ -291,9 +302,9 @@ def get_residual(
     Other Parameters
     ----------------
     ignore_nan: boolean
-        if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
+        if ``True``, ignore ``nan`` in the difference between s1 and s2 (ex: out of bound)
         when calculating residual. Default ``False``. Note: ``get_residual`` will still
-        fail if there are nan in initial Spectrum.
+        fail if there are ``nan`` in initial Spectrum.
     normalize: bool, or tuple
         if ``True``, normalize the two spectra before calculating the residual.
         If a tuple (ex: ``(4168, 4180)``), normalize on this range only. The unit
@@ -363,24 +374,24 @@ def get_residual(
     if ignore_nan:
         b = np.isnan(dI)
         wdiff, dI = wdiff[~b], dI[~b]
-    warningText = (
-        'NaN output in residual. You should use "ignore_nan=True". Read the help.'
-    )
+
     if norm == "L2":
         output = np.sqrt((dI ** 2).sum()) / len(dI)
-        if np.isnan(output):
-            warn(warningText, UserWarning)
-        return output
     elif norm == "L1":
         output = (np.abs(dI)).sum() / len(dI)
-        if np.isnan(output):
-            warn.warning(warningText, UserWarning)
-        return output
     else:
         raise ValueError("unexpected value for norm")
 
+    if np.isnan(output):
+        warn(
+            'NaN output in residual. You should use "ignore_nan=True". Read the help of get_residual.',
+            UserWarning,
+        )
 
-def get_residual_integral(s1, s2, var, ignore_nan=False) -> float:
+    return output
+
+
+def get_residual_integral(s1: Spectrum, s2: Spectrum, var, ignore_nan=False) -> float:
     # type: (Spectrum, Spectrum, str, bool) -> float
     """Returns integral of the difference between two spectra s1 and s2,
     relatively to the integral of spectrum s1.
@@ -457,7 +468,9 @@ def get_residual_integral(s1, s2, var, ignore_nan=False) -> float:
     return np.abs(np.trapz(dI, wdiff)) / norm
 
 
-def get_default_units(s1, s2, var=None, wunit="default", Iunit="default"):
+def get_default_units(
+    s1: Spectrum, s2: Spectrum, var=None, wunit="default", Iunit="default"
+):
     """Get ``wunit``, Iunit for var; compatible with both spectra s1 and s2
 
     Parameters
@@ -527,8 +540,8 @@ def get_default_units(s1, s2, var=None, wunit="default", Iunit="default"):
 
 
 def _get_wdiff_Idiff(
-    s1,
-    s2,
+    s1: Spectrum,
+    s2: Spectrum,
     var=None,
     wunit="default",
     Iunit="default",
@@ -632,8 +645,8 @@ def _get_wdiff_Idiff(
 
 
 def plot_diff(
-    s1,
-    s2,
+    s1: Spectrum,
+    s2: Spectrum,
     var=None,
     wunit="default",
     Iunit="default",
@@ -1013,7 +1026,7 @@ def plot_diff(
     return fig, axes
 
 
-def averageDistance(s1, s2, var="radiance"):
+def averageDistance(s1: Spectrum, s2: Spectrum, var="radiance"):
     """Return the average distance between two spectra.
     It's important to note for fitting that if averageDistance(s1, s2)==0
     then s1 = s2
@@ -1056,8 +1069,8 @@ def averageDistance(s1, s2, var="radiance"):
 
 
 def compare_spectra(
-    first,
-    other,
+    first: Spectrum,
+    other: Spectrum,
     spectra_only=False,
     plot=True,
     wunit="default",
@@ -1068,7 +1081,7 @@ def compare_spectra(
     ignore_conditions=["calculation_time"],
     normalize=False,
     **kwargs
-):
+) -> bool:
     """Compare Spectrum with another Spectrum object.
 
     Parameters
@@ -1089,7 +1102,8 @@ def compare_spectra(
         in which wavespace to compare (and plot). If default, natural wavespace
         of first Spectrum is taken
     rtol: float
-        relative difference to use for spectral quantities comparison
+        relative difference to use for spectral quantities comparison.
+        absolute difference ``atol`` is set to 0.
     ignore_nan: boolean
         if ``True``, nans are ignored when comparing spectral quantities
     ignore_outliers: boolean, or float
@@ -1130,7 +1144,7 @@ def compare_spectra(
     # Check inputs
     if not 0 <= ignore_outliers < 1:
         raise ValueError("ignore_outliers should be < 1, or False")
-    if not is_spectrum(other):
+    if not isinstance(other, Spectrum):
         raise TypeError(
             "2nd object is not a Spectrum: got class {0}".format(other.__class__)
         )
@@ -1174,21 +1188,6 @@ def compare_spectra(
             for error message
         """
 
-        #            if compare_lists(df1.keys(), df2.keys(), verbose=False) != 1:
-        #                if verbose: print('... keys in {0} dont match:'.format(name))
-        #                compare_lists(list(df1.keys()), list(df2.keys()),
-        #                              verbose=True)
-        #                out = False
-        #            elif compare_lists(df1.index, df2.index, verbose=False) != 1:
-        #                if verbose: print('... index in {0} dont match:'.format(name))
-        #                compare_lists(list(df1.index), list(df2.index),
-        #                              verbose=True)
-        #                out = False
-        #            else:
-        #                out = (df1 == df2).all().all()
-        #
-        #            return out
-
         from pandas.util.testing import assert_frame_equal
 
         try:
@@ -1208,7 +1207,7 @@ def compare_spectra(
 
         return out
 
-    def _compare_variables(I, Ie):
+    def _compare_arrays(I, Ie):
         """Compare spectral quantities I and Ie."""
 
         if ignore_nan:
@@ -1216,12 +1215,16 @@ def compare_spectra(
             I = I[b]
             Ie = Ie[b]
 
+        # in all cases, we ignore if there are nans at the same
+        # on both arrays (happens with convolved values in 'valid' mode)
+        equal_nan = True
+
         if ignore_outliers:
-            out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum() / len(
-                I
-            ) < ignore_outliers
+            out = (
+                ~np.isclose(I, Ie, rtol=rtol, atol=0, equal_nan=equal_nan)
+            ).sum() / len(I) < ignore_outliers
         else:
-            out = np.allclose(I, Ie, rtol=rtol, atol=0)
+            out = np.allclose(I, Ie, rtol=rtol, atol=0, equal_nan=equal_nan)
 
         return bool(out)
 
@@ -1249,7 +1252,7 @@ def compare_spectra(
         vars = [k for k in first.get_vars() if k in other.get_vars()]
 
     if spectra_only:
-        # Compare spectral variables
+        # Compare spectral arrays
         # -----------
         for k in vars:
             w, q = first.get(k, wunit=wunit)
@@ -1267,19 +1270,19 @@ def compare_spectra(
                 if len(q) > len(q0):
                     f = interp1d(w, q, kind="cubic")
                     new_q = f(w0)
-                    b1 = _compare_variables(new_q, q0)
+                    b1 = _compare_arrays(new_q, q0)
                     if not b1 and verbose:
                         _display_difference(new_q, q0)
                 else:
                     f = interp1d(w0, q0, kind="cubic")
                     new_q0 = f(w)
-                    b1 = _compare_variables(q, new_q0)
+                    b1 = _compare_arrays(q, new_q0)
                     if not b1 and verbose:
                         _display_difference(q, new_q0)
 
             else:  # no need to interpolate
                 b1 = np.allclose(w, w0, rtol=rtol, atol=0)
-                b1 *= _compare_variables(q, q0)
+                b1 *= _compare_arrays(q, q0)
 
                 if not b1 and verbose:
                     _display_difference(q, q0)
@@ -1314,7 +1317,7 @@ def compare_spectra(
                 b1 = False
             else:
                 b1 = np.allclose(w, w0, rtol=rtol, atol=0)
-                b1 *= _compare_variables(q, q0)
+                b1 *= _compare_arrays(q, q0)
                 if not b1 and verbose:
                     error = np.nanmax(abs(q / q0 - 1))
                     avgerr = np.nanmean(abs(q / q0 - 1))
@@ -1476,7 +1479,7 @@ def compare_spectra(
                 b6 = False
             else:
                 b6 = np.allclose(ws, ws0, rtol=rtol, atol=0)
-                b6 *= _compare_variables(Is, Is0)
+                b6 *= _compare_arrays(Is, Is0)
                 if not b6 and verbose:
                     print("Slit functions dont match")
         b *= b6

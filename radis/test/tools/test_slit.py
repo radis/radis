@@ -25,9 +25,10 @@ from warnings import catch_warnings, filterwarnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from numpy import abs, cos, linspace, pi, sqrt, tan, trapz
+from numpy import abs, cos, linspace, pi, sqrt, tan
 
 from radis.lbl.factory import SpectrumFactory
+from radis.misc.arrays import nantrapz
 from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printm
 from radis.phys.convert import dcm2dnm, dnm2dcm
@@ -75,7 +76,7 @@ def test_all_slit_shapes(
     s = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
         quantity="radiance_noslit",
-        waveunit="nm",
+        wunit="nm",
         unit="mW/cm2/sr/µm",
     )
     wstep = np.diff(s.get_wavelength())[0]
@@ -154,7 +155,7 @@ def test_slit_unit_conversions_spectrum_in_cm(
 
         # Apply slit in nm this time
         s_nm = s_cm.copy()
-        w_cm = s_nm.get_wavenumber(which="non_convoluted")
+        w_cm = s_nm.get_wavenumber()
         slit_nm = dcm2dnm(slit_cm, w_cm[len(w_cm) // 2])
         s_nm.name = "Spec in cm-1, slit {0:.2f} nm".format(slit_nm)
         s_nm.apply_slit(slit_nm, unit="nm", shape=shape, mode="same")
@@ -196,7 +197,7 @@ def test_slit_unit_conversions_spectrum_in_nm(
     s_nm = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
         quantity="radiance_noslit",
-        waveunit="nm",
+        wunit="nm",
         unit="mW/cm2/sr/µm",
         conditions={"self_absorption": False},
     )
@@ -225,7 +226,7 @@ def test_slit_unit_conversions_spectrum_in_nm(
 
         # Apply slit in nm this time
         s_cm = s_nm.copy()
-        w_nm = s_nm.get_wavelength(which="non_convoluted")
+        w_nm = s_nm.get_wavelength()
         slit_cm = dnm2dcm(slit_nm, w_nm[len(w_nm) // 2])
         s_cm.name = "Spec in nm, slit {0:.2f} cm-1".format(slit_cm)
         s_cm.apply_slit(slit_cm, unit="cm-1", shape=shape, mode="same")
@@ -325,8 +326,8 @@ def test_against_specair_convolution(
     # ... Test output is the same
     wu, Iu = s.get("radiance", Iunit="mW/cm2/sr")
 
-    As = np.trapz(Is, ws)  # Todo one day: replace with get_power() function
-    Au = np.trapz(Iu, wu)
+    As = nantrapz(Is, ws)  # Todo one day: replace with get_power() function
+    Au = nantrapz(Iu, wu)
     if verbose:
         print(
             (
@@ -338,7 +339,7 @@ def test_against_specair_convolution(
     assert np.isclose(As, Au, rtol=1e-2)
 
     # Test resampling
-    s.resample(linspace(376, 380.6, 3000), unit="nm", if_conflict_drop="convoluted")
+    s.resample(linspace(376, 380.6, 3000), unit="nm")
     s.apply_slit(slit_nm, norm_by="max")
     if plot:
         s.plot(
@@ -389,7 +390,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     if plot:
         ax.plot(w_max, I_max / FWHM, "r", label="(norm_by:max)/FWHM")
         ax.legend(loc="best")
-    assert np.allclose(I_area, I_max / FWHM)
+    assert np.allclose(I_area, I_max / FWHM, equal_nan=True)
     if verbose:
         print("equivalence of normalisation mode for spectrum in 'nm': OK")
 
@@ -413,7 +414,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     if plot:
         ax.plot(w_max, I_max / FWHM, "r", label="(norm_by:max)/FWHM")
         ax.legend(loc="best")
-    assert np.allclose(I_area, I_max / FWHM)
+    assert np.allclose(I_area, I_max / FWHM, equal_nan=True)
     if verbose:
         print("equivalence of normalisation mode for spectrum in 'cm-1': {0}: OK")
     assert is_homogeneous(s.units["radiance"], "mW/cm2/sr")
@@ -453,7 +454,7 @@ def test_slit_energy_conservation(
     P = s.get_power(unit="mW/cm2/sr")
     s.apply_slit(0.5, norm_by="area")
     w, I = s.get("radiance", wunit="nm", Iunit="mW/cm2/sr/nm")
-    Pc = abs(np.trapz(I, x=w))  # mW/cm2/sr
+    Pc = abs(np.trapz(I[~np.isnan(I)], x=w[~np.isnan(I)]))  # mW/cm2/sr
 
     b = np.isclose(P, Pc, 3e-2)
 
@@ -665,7 +666,9 @@ def test_auto_correct_dispersion(
         # Compare 2 spectra
         s.plot(nfig="Linear dispersion effect", color="r", label="not corrected")
 
-    s2.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
+    s2 = s2.apply_slit(
+        slit_measured_632nm, slit_dispersion=slit_dispersion, inplace=False
+    )
 
     if plot:
         s2.plot(nfig="same", color="k", label="corrected")
@@ -697,7 +700,7 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
         wavenum_max=2260,
         mole_fraction=0.02,
         path_length=100,  # cm
-        truncation=20,  # cm^-1
+        truncation=10,  # cm^-1
         wstep=0.02,
         isotope=[1, 2, 3],
         verbose=verbose,
@@ -773,8 +776,8 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
     w_nm_conv, T_nm_conv = sCO_nm.get("transmittance", wunit="cm-1")
 
     error = abs(
-        (trapz(1 - T_conv, w_conv) - trapz(1 - T_nm_conv, w_nm_conv))
-        / trapz(1 - T_nm_conv, w_nm_conv)
+        (nantrapz(1 - T_conv, w_conv) - nantrapz(1 - T_nm_conv, w_nm_conv))
+        / nantrapz(1 - T_nm_conv, w_nm_conv)
     )
 
     if verbose:

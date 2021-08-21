@@ -77,8 +77,7 @@ from radis.spectrum.spectrum import Spectrum
 # %% Filter Spectra
 
 
-def Transmittance(s):
-    # type: (Spectrum) -> Spectrum
+def Transmittance(s: Spectrum) -> Spectrum:
     """Returns a new Spectrum with only the ``transmittance`` component of ``s``
 
     Parameters
@@ -118,7 +117,7 @@ def Transmittance(s):
     return s.copy(copy_lines=True, quantity="transmittance")
 
 
-def Transmittance_noslit(s):
+def Transmittance_noslit(s: Spectrum) -> Spectrum:
     """Returns a new Spectrum with only the ``transmittance_noslit`` component of ``s``
 
     Parameters
@@ -157,7 +156,7 @@ def Transmittance_noslit(s):
     return s.copy(copy_lines=True, quantity="transmittance_noslit")
 
 
-def Radiance(s):
+def Radiance(s: Spectrum) -> Spectrum:
     """Returns a new Spectrum with only the ``radiance`` component of ``s``
 
     Parameters
@@ -196,7 +195,7 @@ def Radiance(s):
     return s.copy(copy_lines=True, quantity="radiance")
 
 
-def Radiance_noslit(s):
+def Radiance_noslit(s: Spectrum) -> Spectrum:
     """Returns a new Spectrum with only the ``radiance_noslit`` component of ``s``
 
     Parameters
@@ -238,7 +237,7 @@ def Radiance_noslit(s):
 # Useful for determining line-of-sight contributions:
 
 
-def PerfectAbsorber(s):
+def PerfectAbsorber(s: Spectrum) -> Spectrum:
     """Makes a new Spectrum with the same transmittance/absorbance as Spectrum
     ``s``, but with radiance set to 0.
     Useful to get contribution of different slabs in line-of-sight
@@ -289,8 +288,8 @@ def PerfectAbsorber(s):
             s_tr._q[k] *= 0
 
     for k in ["radiance", "emissivity"]:
-        if k in s_tr._q_conv:
-            s_tr._q_conv[k] *= 0
+        if k in s_tr._q:
+            s_tr._q[k] *= 0
 
     # Deactivate equilibrium conditions (so Kirchoff's law cannot be used anymore)
     s_tr.conditions["thermal_equilibrium"] = False
@@ -303,7 +302,7 @@ def PerfectAbsorber(s):
 # %% Change wavelength
 
 
-def crop(s, wmin=None, wmax=None, wunit=None, inplace=False):
+def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectrum:
     # type: (Spectrum, float, float, str, str, bool) -> Spectrum
     """Crop spectrum to ``wmin-wmax`` range in ``wunit``
 
@@ -357,17 +356,6 @@ def crop(s, wmin=None, wmax=None, wunit=None, inplace=False):
         raise ValueError(
             "wmin should be < wmax (Got: {0:.2f}, {1:.2f})".format(wmin, wmax)
         )
-
-    if len(s._q) > 0 and len(s._q_conv) > 0:
-        raise NotImplementedError(
-            "Cant crop this Spectrum as there are both convoluted "
-            + "and not convoluted quantities stored"
-        )
-        # Could bring unexpected errors... For instance, if cropping both
-        # with slit and without slit  quantities to the same waverange,
-        # reapplying the slit in 'valid' mode would reduce the wavelength range
-        # of the convoluted quantities
-        # Implementation: better ask User to drop some of the quantities themselves
 
     if not inplace:
         s = s.copy()
@@ -428,7 +416,7 @@ def crop(s, wmin=None, wmax=None, wunit=None, inplace=False):
     else:
         raise ValueError(stored_waveunit)
 
-    # Crop non convoluted
+    # Crop
     if len(s._q) > 0:
         b = ones_like(s._q["wavespace"], dtype=bool)
         if wmin:
@@ -437,16 +425,6 @@ def crop(s, wmin=None, wmax=None, wunit=None, inplace=False):
             b *= s._q["wavespace"] <= wmax
         for k, v in s._q.items():
             s._q[k] = v[b]
-
-    # Crop convoluted
-    if len(s._q_conv) > 0:
-        b = ones_like(s._q_conv["wavespace"], dtype=bool)
-        if wmin:
-            b *= wmin <= s._q_conv["wavespace"]
-        if wmax:
-            b *= s._q_conv["wavespace"] <= wmax
-        for k, v in s._q_conv.items():
-            s._q_conv[k] = v[b]
 
     return s
 
@@ -819,7 +797,7 @@ def add_spectra(s1, s2, var=None, force=False):
 
     name = s1.get_name() + "+" + s2.get_name()
 
-    sub = Spectrum.from_array(w1, I1 + I2, var, waveunit=wunit1, unit=Iunit1, name=name)
+    sub = Spectrum.from_array(w1, I1 + I2, var, wunit=wunit1, unit=Iunit1, name=name)
     #    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
@@ -883,7 +861,7 @@ def substract_spectra(s1, s2, var=None):
 
     name = s1.get_name() + "-" + s2.get_name()
 
-    sub = Spectrum.from_array(w1, I1 - I2, var, waveunit=wunit1, unit=Iunit1, name=name)
+    sub = Spectrum.from_array(w1, I1 - I2, var, wunit=wunit1, unit=Iunit1, name=name)
     #    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
@@ -978,7 +956,7 @@ def concat_spectra(s1, s2, var=None):
     name = s1.get_name() + "&" + s2.get_name()  # use "&" instead of "+"
 
     concat = Spectrum.from_array(
-        w_tot, I_tot, var, waveunit=wunit1, unit=Iunit1, name=name
+        w_tot, I_tot, var, wunit=wunit1, unit=Iunit1, name=name
     )
 
     return concat
@@ -996,6 +974,9 @@ def offset(s, offset, unit, name=None, inplace=False):
         Constant to add to all quantities in the Spectrum.
     unit: 'nm' or 'cm-1'
         unit for ``offset``.
+
+    Other Parameters
+    ----------------
     name: str
         name of output spectrum
     inplace: bool
@@ -1010,12 +991,8 @@ def offset(s, offset, unit, name=None, inplace=False):
 
     See Also
     --------
-
     call as a Spectrum method directly: :py:meth:`~radis.spectrum.spectrum.Spectrum.offset`
     """
-
-    has_var = len(s._q) > 0
-    has_conv_var = len(s._q_conv) > 0
 
     stored_waveunit = s.get_waveunit()
 
@@ -1024,76 +1001,33 @@ def offset(s, offset, unit, name=None, inplace=False):
         if unit == "nm":
             # Note @EP: here we're offsetting by a constant value in 'nm', which is
             # not a constant value in 'cm-1'. The offset is an array
-            if has_var:
-                offset_q = -dnm_air2dcm(
-                    offset, s.get_wavelength(which="non_convoluted")
-                )  # this is an array
-            if has_conv_var:
-                offset_qconv = -dnm_air2dcm(
-                    offset, s.get_wavelength(which="convoluted")
-                )  # this is an array
+            offset_q = -dnm_air2dcm(offset, s.get_wavelength())  # this is an array
         elif unit == "nm_vac":
-            if has_var:
-                offset_q = -dnm2dcm(
-                    offset, s.get_wavelength(which="non_convoluted")
-                )  # this is an array
-            if has_conv_var:
-                offset_qconv = -dnm2dcm(
-                    offset, s.get_wavelength(which="convoluted")
-                )  # this is an array
+            offset_q = -dnm2dcm(offset, s.get_wavelength())  # this is an array
         elif unit == "cm-1":
-            if has_var:
-                offset_q = offset
-            if has_conv_var:
-                offset_qconv = offset
+            offset_q = offset
         else:
             raise ValueError(unit)
     elif stored_waveunit == "nm":  # wavelength air
         if unit == "nm":
-            if has_var:
-                offset_q = offset
-            if has_conv_var:
-                offset_qconv = offset
+            offset_q = offset
         elif unit == "nm_vac":
             # Note @EP: strictly speaking, the offset should change a little bit
             # as nm_vac > nm depends on the wavelength. Neglected here. # TODO ?
-            if has_var:
-                offset_q = offset
-            if has_conv_var:
-                offset_qconv = offset
+            offset_q = offset
         elif unit == "cm-1":
-            if has_var:
-                offset_q = -dcm2dnm_air(
-                    offset, s.get_wavenumber(which="non_convoluted")
-                )  # this is an array
-            if has_conv_var:
-                offset_qconv = -dcm2dnm_air(
-                    offset, s.get_wavenumber(which="convoluted")
-                )  # this is an array
+            offset_q = -dcm2dnm_air(offset, s.get_wavenumber())  # this is an array
         else:
             raise ValueError(unit)
     elif stored_waveunit == "nm_vac":  # wavelength vacuum
         if unit == "nm":
             # Note @EP: strictly speaking, the offset should change a little bit
             # as nm > nm_vac depends on the wavelength. Neglected here. # TODO ?
-            if has_var:
-                offset_q = offset
-            if has_conv_var:
-                offset_qconv = offset
+            offset_q = offset
         elif unit == "nm_vac":
-            if has_var:
-                offset_q = offset
-            if has_conv_var:
-                offset_qconv = offset
+            offset_q = offset
         elif unit == "cm-1":
-            if has_var:
-                offset_q = -dcm2dnm(
-                    offset, s.get_wavenumber(which="non_convoluted")
-                )  # this is an array
-            if has_conv_var:
-                offset_qconv = -dcm2dnm(
-                    offset, s.get_wavenumber(which="convoluted")
-                )  # this is an array
+            offset_q = -dcm2dnm(offset, s.get_wavenumber())  # this is an array
         else:
             raise ValueError(unit)
     else:
@@ -1103,11 +1037,8 @@ def offset(s, offset, unit, name=None, inplace=False):
         s = s.copy()
 
     # Update all variables
-    if has_var:
-        s._q["wavespace"] += offset_q
-        # @dev: updates the Spectrum directly because of copy=False
-    if has_conv_var:
-        s._q_conv["wavespace"] += offset_qconv
+    s._q["wavespace"] += offset_q
+    # @dev: updates the Spectrum directly because of copy=False
 
     if name:
         s.name = name

@@ -73,7 +73,7 @@ from scipy.interpolate import griddata
 from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printr
-from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.spectrum import Spectrum
 
 _scalable_inputs = ["mole_fraction", "path_length"]
 
@@ -133,7 +133,7 @@ def is_jsonable(x):
 
 
 def save(
-    s,
+    s: Spectrum,
     path,
     discard=[],
     compress=True,
@@ -232,7 +232,7 @@ def save(
     return fout  # return final name
 
 
-def _format_to_jsondict(s, discard, compress, verbose=True):
+def _format_to_jsondict(s: Spectrum, discard, compress, verbose=True):
     """Format to JSON writable dictionary.
 
     Notes
@@ -275,7 +275,6 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     # from the rest)
     if compress >= 2:
         sjson["_q"] = sjson["_q"].copy()
-        sjson["_q_conv"] = sjson["_q_conv"].copy()
         sjson = _compress(s, sjson)
 
     return sjson
@@ -375,7 +374,7 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
     return fout
 
 
-def _compress(s, sjson):
+def _compress(s: Spectrum, sjson):
     """removes all quantities that can be regenerated with s.update(), e.g,
     transmittance if abscoeff and path length are given, radiance if emisscoeff
     and abscoeff are given in non-optically thin case, etc.
@@ -397,12 +396,6 @@ def _compress(s, sjson):
             continue
         if redundant[key]:
             del sjson["_q"][key]
-            discarded.append(key)
-    for key in list(sjson["_q_conv"].keys()):
-        if key == "wavespace":
-            continue
-        if redundant[key]:
-            del sjson["_q_conv"][key]
             discarded.append(key)
 
     if len(discarded) > 0:
@@ -494,9 +487,11 @@ def load_spec(file, binary=True) -> Spectrum:  # , return_binary_status=False):
     return s
 
 
-def _json_to_spec(sload, file=""):
+def _json_to_spec(sload, file="") -> Spectrum:
     """Builds a Spectrum object from a JSON dictionary. Called by
     :func:`~radis.tools.database.load_spec`.
+
+    Json has been fixed from deprecating changes by _fix_format
 
     Parameters
     ----------
@@ -529,13 +524,6 @@ def _json_to_spec(sload, file=""):
             for k, v in sload["_q"].items()
             if k != "wavespace"
         }
-        quantities.update(
-            {
-                k: (sload["_q_conv"]["wavespace"], v)
-                for k, v in sload["_q_conv"].items()
-                if k != "wavespace"
-            }
-        )
 
     # Generate spectrum:
     waveunit = sload["conditions"]["waveunit"]
@@ -590,7 +578,7 @@ def _json_to_spec(sload, file=""):
     s = Spectrum(
         quantities=quantities,
         conditions=conditions,
-        waveunit=waveunit,
+        wunit=waveunit,
         references=references,
         **kwargs,
     )
@@ -609,6 +597,10 @@ def _fix_format(file, sload):
     load old format precomputed spectra, and fix their attribute names.
 
     Save them again to fix the warnigns definitly.
+
+    Returns
+    -------
+    json, fixed:  fixed is True if a change was made.
     """
 
     fixed = False
@@ -627,6 +619,30 @@ def _fix_format(file, sload):
         )  # , DeprecationWarning)
         sload["_q"] = sload.pop("q")
         sload["_q_conv"] = sload.pop("q_conv")
+        fixed = True
+
+    # Fix _q_conv removal (0.9.30)
+    if "_q_conv" in sload:
+        if len(sload["_q_conv"]) == 0:
+            del sload["_q_conv"]
+        else:
+            printr(
+                "File {0}".format(basename(file))
+                + " has a deprecrated structure (key "
+                + "_q_conv removed in 0.9.30). Fixed this time, but regenerate "
+                + "database for faster loading."
+            )
+            if not "_q" in sload or len(sload["_q"]) == 0:
+                # only convolved quantities; just replace the dict
+                sload["_q"] = sload.pop("_q_conv")
+            else:
+                # here wavespaces arent necessarily the same
+                if sload["_q"]["wavespace"] == sload["_q_conv"]["wavespace"]:
+                    sload["_q"].update(sload.pop("_q_conv"))
+                else:
+                    # we need to interpolate
+                    raise NotImplementedError
+
         fixed = True
 
     try:
@@ -733,7 +749,7 @@ def _fix_format(file, sload):
         fixed = False
         if key in sload["conditions"]:
             path = sload["conditions"][key]
-            if not isinstance(path, str):
+            if path is not None and not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
                     + " has a deprecrated structure (key "
@@ -1229,6 +1245,11 @@ class SpecList(object):
                 for (k, v) in kwconditions.items():
                     if isinstance(v, str):
                         query.append("{0} == r'{1}'".format(k, v))
+                    elif v is None:
+                        # query "k == None" doesn't work. We use a workaround,
+                        # checking if the column is different from itself (i.e. : is None):
+                        # https://stackoverflow.com/a/32207819/5622825
+                        query.append(f"{k} != {k}")
                     else:
                         #                    query.append('{0} == {1}'.format(k,v))
                         query.append("{0} == {1}".format(k, v.__repr__()))
@@ -2087,7 +2108,9 @@ class SpecDatabase(SpecList):
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
 
-    def add(self, spectrum, store_name=None, if_exists_then="increment", **kwargs):
+    def add(
+        self, spectrum: Spectrum, store_name=None, if_exists_then="increment", **kwargs
+    ):
         """Add Spectrum to database, whether it's a
         :py:class:`~radis.spectrum.spectrum.Spectrum` object or a file that
         stores one. Check it's not in database already.
@@ -2179,7 +2202,7 @@ class SpecDatabase(SpecList):
 
         # First, store the spectrum in a file
         # ... input is a Spectrum. Store it in database and load it from there
-        if is_spectrum(spectrum):
+        if isinstance(spectrum, Spectrum):
             # add defaults
             if store_name == None:
                 if not "add_info" in kwargs:

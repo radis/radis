@@ -117,7 +117,7 @@ def getValidationCase(file, force=False):
                 )
             ),
             "transmittance_noslit",
-            waveunit="cm-1",
+            wunit="cm-1",
             unit="",
             delimiter=",",
             name="Klarenaar 2017",
