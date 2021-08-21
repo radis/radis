@@ -261,11 +261,13 @@ def _curve_interpolate(w1, I1, w2, I2, is_sorted=False, kind="linear"):
     I2_inter: np.array
         ``I2`` interpolated on ``w1``.
     """
-    if (abs((w1[1] - w1[0])) < 2 * abs((w2[1] - w2[0]))) and (
-        abs((w1[-1] - w1[-2])) < 2 * abs((w2[-1] - w2[-2]))
+    if (abs((w1[1] - w1[0])) < 0.5 * abs((w2[1] - w2[0]))) and (
+        abs((w1[-1] - w1[-2])) < 0.5 * abs((w2[-1] - w2[-2]))
     ):
         # w1 looks like the spectra with highest accuracy
-        warnings.warn("Reverse your spectra in interpolation for a better accuracy")
+        warnings.warn(
+            "First spectrum has more resolution than 2nd. Reverse your spectra in interpolation/comparison for a better accuracy"
+        )
 
     # First sort both
     if not is_sorted:  # TODO : add first check with `radis.misc.is_sorted(a) `
