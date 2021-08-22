@@ -572,7 +572,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
             broadening_method="fft",  # = "fft"
             truncation=10,  # truncation != 0
         )
-        assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err)
+    assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err.value)
 
     #%% same with optimization=simple (DIT)
     with pytest.raises(NotImplementedError) as err:
@@ -582,7 +582,18 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
             broadening_method="fft",  # = "fft"
             truncation=10,  # truncation != 0
         )
-        assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err)
+    assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err.value)
+
+    #%% Test there is DeprecationError raised
+    with pytest.raises(DeprecationWarning) as err:
+        calc_spectrum(
+            **conditions,
+            broadening_max_width=20,  # = "fft"
+        )
+    assert (
+        "To keep the current behavior, replace `broadening_max_width=20` with `truncation=10.0"
+        in str(err.value)
+    )
 
     #%% Truncation, no neighbour lines : should be ~ same result that without DIT Optimization
     s_dit_voigt_trunc10 = calc_spectrum(

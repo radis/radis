@@ -421,6 +421,17 @@ class SpectrumFactory(BandFactory):
                 )
             )
             kwargs0.pop("lvl_use_cached")
+        if "broadening_max_width" in kwargs:  # changed in 0.9.30
+            broadening_max_width = kwargs["broadening_max_width"]
+            raise (
+                DeprecationWarning(
+                    "`broadening_max_width`` (lineshape full-width, also used to compute the effect of neighbour lines) was replaced by `truncation` (lineshape half-width) and `neighbour_lines` (wavenumber range extension on each side). "
+                    + f"To keep the current behavior, replace `broadening_max_width={broadening_max_width}` with "
+                    + f"`truncation={broadening_max_width/2}, neighbour_lines={broadening_max_width/2}`. "
+                    + "We recommended, for most cases: `truncation=300, neighbour_lines=0}`"
+                )
+            )
+
         if kwargs0 != {}:
             raise TypeError(
                 "__init__() got an unexpected keyword argument '{0}'".format(
