@@ -68,7 +68,7 @@ def test_spectrum_creation_method(*args, **kwargs):
 
     # ... format of quantities :
     with pytest.raises(AssertionError) as err:
-        Spectrum({"wavenumber": w, "abscoeff": np.hstack((k, k))})
+        Spectrum({"wavenumber": w, "abscoeff": np.hstack((k, k))}, wunit="cm-1")
     assert "Input arrays should have the same length" in str(err.value)
 
     # ... units badly defeined :

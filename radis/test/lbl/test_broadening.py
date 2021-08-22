@@ -908,6 +908,4 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
-
-    test_truncations_and_neighbour_lines()
+    printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
