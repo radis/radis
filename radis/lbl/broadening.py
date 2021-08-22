@@ -72,7 +72,7 @@ from scipy.signal import oaconvolve
 import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import add_at, numpy_add_at
+from radis.misc.arrays import add_at, arange_len, numpy_add_at
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.plot import fix_style, set_style
@@ -746,7 +746,7 @@ class BroadenFactory(BaseFactory):
 
         self.wavenumber = None
         self.wavenumber_calc = None
-        self.woutrange = None
+        self.woutrange = (None, None)
 
         self.params.broadening_method = ""
         """ See :py:meth:`~radis.lbl.factory.SpectrumFactory`
@@ -1643,8 +1643,8 @@ class BroadenFactory(BaseFactory):
         wbroad_centered = self.wbroad_centered  # size (B,)
         # index of truncation half width
         iwbroad_half = len(wbroad_centered) // 2
-        ineighbour = int(self.params.neighbour_lines / self.params.wstep)
-        itruncation = int(self.truncation / self.params.wstep)
+        ineighbour = arange_len(0, self.params.neighbour_lines, self.params.wstep)
+        itruncation = arange_len(0, self.truncation, self.params.wstep)
 
         # Calculate matrix of broadened parameter (for all lines)
         # ... Note @dev : this is the memory bottleneck !
@@ -1665,11 +1665,12 @@ class BroadenFactory(BaseFactory):
         # ... Get the fraction of each line distributed to the left and to the right.
         frac_left = (
             shifted_wavenum - wavenumber_calc[idcenter_left]
-        ).flatten()  # distance to left
+        ).flatten()  # distance to left grid point
         frac_right = (
             wavenumber_calc[idcenter_right] - shifted_wavenum
-        ).flatten()  # distance to right
+        ).flatten()  # distance to right grid point
         dv = frac_left + frac_right
+        # fraction of intensity on each side:
         frac_left, frac_right = frac_right / dv, frac_left / dv
 
         # offset to account for out-of-bound truncation
@@ -1728,7 +1729,7 @@ class BroadenFactory(BaseFactory):
         sumoflines_calc = sumoflines_calc[ioffset:-ioffset]
         assert len(sumoflines_calc) == len(wavenumber_calc)
         # Get valid range (discard neighbour lines)
-        sumoflines = sumoflines_calc[self.woutrange]
+        sumoflines = sumoflines_calc[self.woutrange[0] : self.woutrange[1]]
 
         return wavenumber, sumoflines
 
@@ -1949,7 +1950,7 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.stop("DLM_convolve", "Convolve and sum on spectral range")
         # Get valid range (discard wings)
-        sumoflines = sumoflines_calc[self.woutrange]
+        sumoflines = sumoflines_calc[self.woutrange[0] : self.woutrange[1]]
 
         return wavenumber, sumoflines
 
@@ -2472,11 +2473,15 @@ class BroadenFactory(BaseFactory):
                     )
 
             # Get valid range (discard wings)
-            k_continuum = k_continuum[self.woutrange]  # 1/(#.cm-2)
+            k_continuum = k_continuum[
+                self.woutrange[0] : self.woutrange[1]
+            ]  # 1/(#.cm-2)
             #            self.continuum_k = k_continuum
 
             if noneq:
-                j_continuum = j_continuum[self.woutrange]  # 1/(#.cm-2)
+                j_continuum = j_continuum[
+                    self.woutrange[0] : self.woutrange[1]
+                ]  # 1/(#.cm-2)
 
             # Reduce line dataset to strong lines only
             self.df1 = df_strong_lines

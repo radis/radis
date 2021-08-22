@@ -8,11 +8,13 @@ Created on Wed Aug 29 10:35:24 2018
 from time import perf_counter
 
 import numpy as np
+import pytest
 
 from radis import get_residual
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.arrays import (
     add_at,
+    arange_len,
     autoturn,
     bining,
     calc_diff,
@@ -28,6 +30,34 @@ from radis.misc.arrays import (
 from radis.test.utils import setup_test_line_databases
 
 
+@pytest.mark.fast
+def test_arange_len(*args, **kwargs):
+
+    # Positive arrays
+    wmin, wmax, wstep = (380, 700, 0.1)
+    assert arange_len(wmin, wmax, wstep) == len(np.arange(wmin, wmax, wstep))
+    wmin, wmax, wstep = (380, 700, 0.31)
+    assert arange_len(wmin, wmax, wstep) == len(np.arange(wmin, wmax, wstep))
+
+    # Negative arrays
+    wmin, wmax, wstep = (-100, 0, 0.1)
+    assert arange_len(wmin, wmax, wstep) == len(np.arange(wmin, wmax, wstep))
+
+    wmin, wmax, wstep = (-100, 0, 0.31)
+    assert arange_len(wmin, wmax, wstep) == len(np.arange(wmin, wmax, wstep))
+
+    # Centered arrays
+    wmin, wmax, wstep = (-100, 100, 0.1)
+    assert arange_len(wmin, wmax, wstep) == len(np.arange(wmin, wmax, wstep))
+    wmin, wmax, wstep = (-100, 100, 0.31)
+    assert arange_len(wmin, wmax, wstep) == len(np.arange(wmin, wmax, wstep))
+
+    wmin, wmax = (-100, 100)
+    for wstep in np.random.rand(100):
+        assert arange_len(wmin, wmax, wstep) == len(np.arange(wmin, wmax, wstep))
+
+
+@pytest.mark.fast
 def test_is_sorted(*args, **kwargs):
 
     a = np.arange(10)
@@ -39,6 +69,7 @@ def test_is_sorted(*args, **kwargs):
     assert not is_sorted(a[::-1])
 
 
+@pytest.mark.fast
 def test_nonnan_index(*args, **kwargs):
 
     a = np.arange(1000) * 0.2
@@ -58,6 +89,7 @@ def test_nonnan_index(*args, **kwargs):
     assert last_nonnan_index(a) == None  # len(a)-1
 
 
+@pytest.mark.fast
 def test_find_first(*args, **kwargs):
 
     a = np.arange(10)
@@ -74,6 +106,7 @@ def test_find_first(*args, **kwargs):
     assert not find_first(a, 10) == 10
 
 
+@pytest.mark.fast
 def test_bining(*args, **kwargs):
 
     a = np.arange(20).reshape(4, 5)
@@ -83,6 +116,7 @@ def test_bining(*args, **kwargs):
     assert (bining(a, ymin=1, ymax=3) == np.array([1.5, 6.5, 11.5, 16.5])).all()
 
 
+@pytest.mark.fast
 def test_calc_diff(*args, **kwargs):
     t1 = np.arange(5)
     t2 = np.arange(5)
@@ -104,6 +138,7 @@ def test_calc_diff(*args, **kwargs):
     assert (v_res3 == np.array([4, 0, -4])).all()
 
 
+@pytest.mark.fast
 def test_autoturn(*args, **kwargs):
     dat = np.arange(20)
     dat.resize(2, 10)
@@ -114,6 +149,7 @@ def test_autoturn(*args, **kwargs):
     assert (autoturn(dat) == dat).all()
 
 
+@pytest.mark.fast
 def test_centered_diff(*args, **kwargs):
     a = np.arange(10)
     ones = np.ones_like(a)
@@ -125,6 +161,7 @@ def test_centered_diff(*args, **kwargs):
     assert len(centered_diff(a)) == len(a)
 
 
+@pytest.mark.fast
 def test_logspace(*args, **kwargs):
     dat1 = logspace(1, 100, 10)
     dat2 = logspace(17, 250, 37)
@@ -141,6 +178,7 @@ def test_logspace(*args, **kwargs):
             assert (dat[i] / dat[i - 1] - dat[i - 1] / dat[i - 2]) <= 1e-6
 
 
+@pytest.mark.fast
 def test_find_nearest(*args, **kwargs):
     a = np.arange(10)
     b = np.ones(5)
@@ -176,6 +214,7 @@ def test_find_nearest(*args, **kwargs):
     assert (find_nearest(np.array([3, 1]), np.array([2])) == np.array([3])).all()
 
 
+@pytest.mark.fast
 def test_cython_add_at(*args, **kwargs):
     """
     Compare the workings of the Cython compiled add_at() function
@@ -264,7 +303,5 @@ def test_cython_add_at_spectra(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    test_nonnan_index()
-    import pytest
 
     pytest.main(["test_arrays.py", "-s"])  # -s for showing console output

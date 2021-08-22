@@ -422,6 +422,17 @@ class SpectrumFactory(BandFactory):
                 )
             )
             kwargs0.pop("lvl_use_cached")
+        if "broadening_max_width" in kwargs:  # changed in 0.9.30
+            broadening_max_width = kwargs["broadening_max_width"]
+            raise (
+                DeprecationWarning(
+                    "`broadening_max_width`` (lineshape full-width, also used to compute the effect of neighbour lines) was replaced by `truncation` (lineshape half-width) and `neighbour_lines` (wavenumber range extension on each side). "
+                    + f"To keep the current behavior, replace `broadening_max_width={broadening_max_width}` with "
+                    + f"`truncation={broadening_max_width/2}, neighbour_lines={broadening_max_width/2}`. "
+                    + "We recommended, for most cases: `truncation=300, neighbour_lines=0}`"
+                )
+            )
+
         if kwargs0 != {}:
             raise TypeError(
                 "__init__() got an unexpected keyword argument '{0}'".format(
@@ -1608,7 +1619,7 @@ class SpectrumFactory(BandFactory):
                 "PerformanceWarning",
             )
 
-        wavenumber, wavenumber_calc = _generate_wavenumber_range(
+        wavenumber, wavenumber_calc, woutrange = _generate_wavenumber_range(
             self.input.wavenum_min,
             self.input.wavenum_max,
             self.params.wstep,
@@ -1626,8 +1637,6 @@ class SpectrumFactory(BandFactory):
         # store value for use in lineshape broadening.
         # Note : may be different from self.params.truncation if None was given.
 
-        # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
-        woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
         self.wbroad_centered = wbroad_centered
         self.wavenumber = wavenumber
         self.wavenumber_calc = wavenumber_calc
@@ -1637,6 +1646,11 @@ class SpectrumFactory(BandFactory):
         self._check_accuracy(self.params.wstep)
 
         self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
+
+        import radis
+
+        if radis.config["DEBUG_MODE"]:
+            assert (wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber).all()
 
         return
 
@@ -2181,6 +2195,9 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines)
     wavenumber_calc: numpy array
         an evenly spaced array between ``wavenum_min-neighbour_lines`` and
         ``wavenum_max+neighbour_lines`` with a spacing of ``wstep``
+    woutrange: (wmin, wmax)
+        index to project the full range including neighbour lines `wavenumber_calc`
+        on the final range `wavenumber`, i.e. : wavenumber_calc[woutrange[0]:woutrange[1]] = wavenumber
     """
     assert wavenum_min < wavenum_max
 
@@ -2206,11 +2223,12 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines)
         w_out_of_range_right = w_out_of_range_right[:-1]
 
     wavenumber_calc = np.hstack((w_out_of_range_left, wavenumber, w_out_of_range_right))
+    woutrange = len(w_out_of_range_left), len(w_out_of_range_left) + len(wavenumber)
 
     assert len(w_out_of_range_left) == len(w_out_of_range_right)
     assert len(wavenumber_calc) == len(wavenumber) + 2 * len(w_out_of_range_left)
 
-    return wavenumber, wavenumber_calc
+    return wavenumber, wavenumber_calc, woutrange
 
 
 def _generate_broadening_range(wstep, truncation):
