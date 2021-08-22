@@ -504,7 +504,7 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     assert res <= 1e-4
 
 
-def test_truncations(*args, **kwargs):
+def test_truncations_and_neighbour_lines(*args, **kwargs):
     """Test new truncations introduced in https://github.com/radis/radis/issues/340
 
     So far: test that all functions work
@@ -584,7 +584,7 @@ def test_truncations(*args, **kwargs):
         )
         assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err)
 
-    #%%
+    #%% Truncation, no neighbour lines : should be ~ same result that without DIT Optimization
     s_dit_voigt_trunc10 = calc_spectrum(
         **conditions,
         optimization="simple",
@@ -594,6 +594,19 @@ def test_truncations(*args, **kwargs):
     )
 
     assert get_residual(s_lbl_voigt_trunc10, s_dit_voigt_trunc10, "abscoeff") < 2e-5
+
+    # %% LBL Optimization; with neighbour lines
+    # Also check it works with floating point division
+
+    s_lbl_voigt_trunc10 = calc_spectrum(
+        **conditions,
+        optimization=None,
+        broadening_method="voigt",
+        wstep=0.31,  # floating point division can create issues. We test here.
+        truncation=300,
+        neighbour_lines=15,
+    )
+    assert s_lbl_voigt_trunc10.conditions["truncation"] == 300
 
 
 @pytest.mark.fast
@@ -871,7 +884,7 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
     test_broadening_DLM_FT(plot=plot, verbose=3, *args, **kwargs)
     test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
-    test_truncations(*args, **kwargs)
+    test_truncations_and_neighbour_lines(*args, **kwargs)
 
     # Test warnings
     test_broadening_warnings(*args, **kwargs)
@@ -884,4 +897,6 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+    # printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+
+    test_truncations_and_neighbour_lines()
