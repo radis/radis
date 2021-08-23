@@ -382,7 +382,7 @@ class SpectrumFactory(BandFactory):
         molecule=None,
         isotope="all",
         medium="air",
-        truncation=Default(300),
+        truncation=Default(50),
         neighbour_lines=0,
         pseudo_continuum_threshold=0,
         self_absorption=True,
