@@ -132,7 +132,8 @@ class BaseFactory(DatabankLoader):
         "path_length": "cm",
         #        'slit_function_FWHM':   'nm',
         "cutoff": "cm-1/(#.cm-2)",
-        "broadening_max_width": "cm-1",
+        "truncation": "cm-1",
+        "neighbour_lines": "cm-1",
         # The later is never stored in Factory, but exported in Spectrum at the end of the calculation
         "calculation_time": "s",
     }
@@ -1720,9 +1721,7 @@ class BaseFactory(DatabankLoader):
                 del df["id"]
         molecule = get_molecule(df.attrs["id"])
 
-        iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
-
-        if len(iso_set) == 1:
+        if not "iso" in df:
 
             # Shortcut if only 1 isotope. We attribute molar_mass & abundance
             # as attributes of the line database, instead of columns. Much
@@ -1730,7 +1729,7 @@ class BaseFactory(DatabankLoader):
 
             state = self.input.state
             parsum = self.get_partition_function_calculator(
-                molecule, iso_set[0], state
+                molecule, df.attrs["iso"], state
             )  # partition function
             df.attrs["Qref"] = parsum.at(
                 Tref, update_populations=False
@@ -1740,6 +1739,12 @@ class BaseFactory(DatabankLoader):
             Qref = df.attrs["Qref"]
 
         else:
+            iso_set = df.iso.unique()
+            if len(iso_set) == 1:
+                self.warn(
+                    "There shouldn't be a Column 'iso' with a unique value",
+                    "PerformanceWarning",
+                )
 
             # normal method
             # still much faster than the groupby().apply() method (see radis<=0.9.19)
@@ -1817,9 +1822,7 @@ class BaseFactory(DatabankLoader):
             df.attrs["id"] = int(id_set)
         molecule = get_molecule(df.attrs["id"])
 
-        iso_set = self._get_isotope_list(self.input.molecule)  # df1.iso.unique()
-
-        if len(iso_set) == 1:
+        if not "iso" in df:
 
             # Shortcut if only 1 isotope. We attribute molar_mass & abundance
             # as attributes of the line database, instead of columns. Much
@@ -1827,7 +1830,7 @@ class BaseFactory(DatabankLoader):
 
             state = self.input.state
             parsum = self.get_partition_function_calculator(
-                molecule, iso_set[0], state
+                molecule, df.attrs["iso"], state
             )  # partition function
             df.attrs["Qref"] = parsum.at(
                 Tref, update_populations=False
@@ -1836,6 +1839,12 @@ class BaseFactory(DatabankLoader):
             Qref = df.attrs["Qref"]
 
         else:
+            iso_set = df.iso.unique()
+            if len(iso_set) == 1:
+                self.warn(
+                    "There shouldn't be a Column 'iso' with a unique value",
+                    "PerformanceWarning",
+                )
 
             # normal method
             # still much faster than the groupby().apply() method (see radis<=0.9.19)
@@ -2126,7 +2135,7 @@ class BaseFactory(DatabankLoader):
         def Qref_Qgas_ratio():
 
             if "iso" in df1:
-                iso_set = df1.iso.unique()  # self._get_isotope_list(molecule)
+                iso_set = df1.iso.unique()
                 if len(iso_set) == 1:
                     self.warn(
                         "There shouldn't be a Column 'iso' with a unique value",
@@ -2446,7 +2455,7 @@ class BaseFactory(DatabankLoader):
             self.profiler.start("part_function", 3)
             if "iso" in df:
                 Q_dict = {}
-                iso_set = df.iso.unique()  #  self._get_isotope_list()
+                iso_set = df.iso.unique()
                 if len(iso_set) == 1:
                     self.warn(
                         "There shouldn't be a Column 'iso' with a unique value",
@@ -2539,9 +2548,7 @@ class BaseFactory(DatabankLoader):
                 Q, Qvib, Qrotu, Qrotl = df.Q, df.Qvib, df.Qrotu, df.Qrotl
 
             else:
-                iso_set = self._get_isotope_list()  # df1.iso.unique()
-                assert len(iso_set) == 1
-                iso = iso_set[0]
+                iso = df.attrs["iso"]
 
                 parsum = self.get_partition_function_calculator(molecule, iso, state)
 
@@ -3455,14 +3462,24 @@ class BaseFactory(DatabankLoader):
 
         # Also check some computation parameters:
 
-        # ... that wstep and broadening_max_width were not inadvertanly changed
-        # ... (would have no effect as the waverange is calculated on SpectrumFactory
-        # ... initialization)
-
         # Checks there if there is change in wstep value if initial wstep != "auto"
         if self.wstep != "auto":
             assert self.wstep == self.params.wstep
-        assert self._broadening_max_width == self.params.broadening_max_width
+
+        # Checks there if there is change in truncation value
+        # (except in the case where truncation is None, where we set it to be the full range)
+        if self.params.truncation is not None:
+            assert self.truncation == self.params.truncation
+
+        # Check neighbour lines wasn't changed since first initialisation
+        # (can create problems if database is not reloaded
+        if self._neighbour_lines != self.params.neighbour_lines:
+            raise AssertionError(
+                f"neighbour_lines value changed from {self._neighbour_lines} to "
+                + f"{self.params.neighbour_lines}. Did you reset it manually ? This is currently forbidden as new "
+                + "lines won't be retrieved from the database"
+            )
+            # note @dev:  could be implemented; i.e. send `neighbour_lines` to load_databank instead of SpectrumFactory initialisation
 
     def _get_parsum(self, molecule, iso, state):
         """Get function that calculates the partition function.

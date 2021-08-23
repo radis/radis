@@ -95,6 +95,7 @@ try:  # Proper import
 except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
     from radis.lbl.base import get_waverange
+
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
 from radis.misc.printer import printg
 from radis.misc.utils import Default
@@ -163,12 +164,21 @@ class SpectrumFactory(BandFactory):
         correction). HITRAN database uses 296 Kelvin. Default 296 K
     self_absorption: boolean
         Compute self absorption. If ``False``, spectra are optically thin. Default ``True``.
-    broadening_max_width: float (cm-1)
-        Full width over which to compute the broadening. Large values will create
-        a huge performance drop (scales as ~broadening_width^2 without DLM)
-        The calculated spectral range is increased (by broadening_max_width/2
+    truncation: float (:math:`cm^{-1}`)
+        Half-width over which to compute the lineshape, i.e. lines are truncated
+        on each side after ``truncation`` (:math:`cm^{-1}`) from the line center.
+        If ``None``, use no truncation (lineshapes spread on the full spectral range).
+        Default is ``300`` :math:`cm^{-1}`
+
+        .. note::
+         Large values (> ``50``) can induce a performance drop (computation of lineshape
+         typically scale as :math:`~truncation ^2` ). The default ``300`` was
+         chosen to maintain a good accuracy, and still exhibit the sub-Lorentzian
+         behavior of most lines far (few hundreds :math:`cm^{-1}`) from the line center.
+    neighbour_lines: float (:math:`cm^{-1}`)
+        The calculated spectral range is increased (by ``neighbour_lines`` cm-1
         on each side) to take into account overlaps from out-of-range lines.
-        Default ``10`` cm-1.
+        Default is ``0`` :math:`cm^{-1}`.​
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
@@ -290,7 +300,8 @@ class SpectrumFactory(BandFactory):
         sf = SpectrumFactory(wavelength_min=4165 * u.nm,
                              wavelength_max=4200 * u.nm,
                              isotope='1,2',
-                             broadening_max_width=10,  # cm-1
+                             truncation=10,  # cm-1
+                             optimization=None,
                              medium='vacuum',
                              verbose=1,    # more for more details
                              )
@@ -371,14 +382,15 @@ class SpectrumFactory(BandFactory):
         molecule=None,
         isotope="all",
         medium="air",
-        broadening_max_width=10,
+        truncation=Default(50),
+        neighbour_lines=0,
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
         optimization="simple",
         folding_thresh=1e-6,
         zero_padding=-1,
-        broadening_method=Default("fft"),
+        broadening_method=Default("voigt"),
         cutoff=0,
         parsum_mode="full summation",
         verbose=True,
@@ -410,6 +422,17 @@ class SpectrumFactory(BandFactory):
                 )
             )
             kwargs0.pop("lvl_use_cached")
+        if "broadening_max_width" in kwargs:  # changed in 0.9.30
+            broadening_max_width = kwargs["broadening_max_width"]
+            raise (
+                DeprecationWarning(
+                    "`broadening_max_width`` (lineshape full-width, also used to compute the effect of neighbour lines) was replaced by `truncation` (lineshape half-width) and `neighbour_lines` (wavenumber range extension on each side). "
+                    + f"To keep the current behavior, replace `broadening_max_width={broadening_max_width}` with "
+                    + f"`truncation={broadening_max_width/2}, neighbour_lines={broadening_max_width/2}`. "
+                    + "We recommended, for most cases: `truncation=300, neighbour_lines=0}`"
+                )
+            )
+
         if kwargs0 != {}:
             raise TypeError(
                 "__init__() got an unexpected keyword argument '{0}'".format(
@@ -441,9 +464,6 @@ class SpectrumFactory(BandFactory):
             wavelength_max,
             medium,
         )
-
-        # Store broadening max width and wstep as hidden variable (to ensure they are not changed afterwards)
-        self._broadening_max_width = broadening_max_width
 
         # Storing inital value of wstep if wstep != "auto"
         self.wstep = wstep
@@ -505,23 +525,17 @@ class SpectrumFactory(BandFactory):
         # Time Based variables
         self.verbose = verbose
 
-        self.params.broadening_max_width = broadening_max_width  # line broadening
-        self.misc.export_lines = export_lines
-        self.misc.export_populations = export_populations
-        self.params.wavenum_min_calc = wavenum_min - broadening_max_width / 2
-        self.params.wavenum_max_calc = wavenum_max + broadening_max_width / 2
-
         # if optimization is ``'simple'`` or ``'min-RMS'``, or None :
         # Adjust default values of broadening method :
         if isinstance(broadening_method, Default):
-            if optimization in ("simple", "min-RMS") and broadening_method != "fft":
+            if optimization in ("simple", "min-RMS") and broadening_method != "voigt":
                 if self.verbose >= 3:
                     printg(
-                        "LDM algorithm used. Defaulting broadening method from {0} to FFT".format(
+                        "LDM algorithm used. Defaulting broadening method from {0} to Voigt".format(
                             broadening_method
                         )
                     )
-                broadening_method = "fft"
+                broadening_method = "voigt"
             elif optimization is None and broadening_method != "voigt":
                 if self.verbose >= 3:
                     printg(
@@ -532,6 +546,40 @@ class SpectrumFactory(BandFactory):
                 broadening_method = "voigt"
             else:  # keep default
                 broadening_method = broadening_method.value
+
+        if truncation == 0:
+            raise ValueError(
+                "Lineshape truncation must be >0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`"
+            )
+
+        self.misc.export_lines = export_lines
+        self.misc.export_populations = export_populations
+
+        if broadening_method == "fft":
+            if isinstance(truncation, Default):
+                truncation = None
+            else:
+                if broadening_method == "fft":
+                    raise NotImplementedError(
+                        "Lines cannot be truncated with `broadening_method='fft'`. Use `broadening_method='voigt'`"
+                    )
+        if isinstance(truncation, Default):
+            truncation = truncation.value
+
+        self.params.truncation = self.truncation = truncation  # line truncation
+        # self.params.truncation is the input, self.truncation will be the value (different from input if input was None)
+        self.params.neighbour_lines = neighbour_lines  # including neighbour lines
+
+        # # reduce neighbour_lines if unnecessary
+        # if truncation and truncation < neighbour_lines:
+        #     self.warn
+        # Define max range on which to load lines (required for fetch_databank / load_databank)
+        self.params.wavenum_min_calc = wavenum_min - neighbour_lines
+        self.params.wavenum_max_calc = wavenum_max + neighbour_lines
+        #  note @dev : if neighbour_lines changes during the SpectrumFactory loop (e.g:  user sets sf.params.neighbour_lines= ;  the database wont be updated.
+        # (databank should be reloaded). We store and check later to ensure it is not changed afterwards
+        self._neighbour_lines = neighbour_lines
+
         self.params.broadening_method = broadening_method
         self.params.optimization = optimization
         self.params.folding_thresh = folding_thresh
@@ -790,9 +838,20 @@ class SpectrumFactory(BandFactory):
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
                 "radis_version": version,
+                "spectral_points": (
+                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
+                )
+                / self.params.wstep,
                 "profiler": dict(self.profiler.final),
             }
         )
+        if self.params.optimization != None:
+            conditions.update(
+                {
+                    "wL": self.wL,
+                    "wG": self.wG,
+                }
+            )
         del self.profiler.final[list(self.profiler.final)[-1]][
             "spectrum_calc_before_obj"
         ]
@@ -1103,9 +1162,20 @@ class SpectrumFactory(BandFactory):
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
                 "radis_version": version,
+                "spectral_points": (
+                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
+                )
+                / self.params.wstep,
                 "profiler": dict(self.profiler.final),
             }
         )
+        if self.params.optimization != None:
+            conditions.update(
+                {
+                    "wL": self.wL,
+                    "wG": self.wG,
+                }
+            )
         del self.profiler.final[list(self.profiler.final)[-1]][
             "spectrum_calc_before_obj"
         ]
@@ -1443,9 +1513,20 @@ class SpectrumFactory(BandFactory):
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
                 "radis_version": version,
+                "spectral_points": (
+                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
+                )
+                / self.params.wstep,
                 "profiler": dict(self.profiler.final),
             }
         )
+        if self.params.optimization != None:
+            conditions.update(
+                {
+                    "wL": self.wL,
+                    "wG": self.wG,
+                }
+            )
         del self.profiler.final[list(self.profiler.final)[-1]][
             "spectrum_calc_before_obj"
         ]
@@ -1512,7 +1593,7 @@ class SpectrumFactory(BandFactory):
 
         `SpectrumFactory.wavenumber` is the output spectral range and
         ``SpectrumFactory.wavenumber_calc`` the spectral range used for calculation, that
-        includes neighbour lines within ``broadening_max_width`` distance."""
+        includes neighbour lines within ``neighbour_lines`` distance."""
 
         self.profiler.start("generate_wavenumber_arrays", 2)
         # calculates minimum FWHM of lines
@@ -1527,18 +1608,35 @@ class SpectrumFactory(BandFactory):
             )
             self.warnings["AccuracyWarning"] = "ignore"
 
-        wavenumber, wavenumber_calc = _generate_wavenumber_range(
+        truncation = self.params.truncation
+        neighbour_lines = self.params.neighbour_lines
+
+        if truncation and neighbour_lines > truncation:
+            self.warn(
+                f"Neighbour lines resolved up to {neighbour_lines} cm-1 away from the spectrum. "
+                + f"But lines are anyway truncated at {truncation:.2f} cm-1. "
+                + f"Choose 'neighbour_lines={truncation:.2f}' to avoid resolving useless lines",
+                "PerformanceWarning",
+            )
+
+        wavenumber, wavenumber_calc, woutrange = _generate_wavenumber_range(
             self.input.wavenum_min,
             self.input.wavenum_max,
             self.params.wstep,
-            self.params.broadening_max_width,
-        )
-        wbroad_centered = _generate_broadening_range(
-            self.params.wstep, self.params.broadening_max_width
+            neighbour_lines,
         )
 
-        # Get boolean array that extracts the reduced range `wavenumber` from `wavenumber_calc`
-        woutrange = np.in1d(wavenumber_calc, wavenumber, assume_unique=True)
+        # Generate lineshape array
+        if truncation is None:
+            # compute lineshape on full range :
+            # (note that this means 3x wavenumber_calc will be required when applying lineshapes)
+            truncation = wavenumber_calc[-1] - wavenumber_calc[0]
+
+        wbroad_centered = _generate_broadening_range(self.params.wstep, truncation)
+        self.truncation = truncation
+        # store value for use in lineshape broadening.
+        # Note : may be different from self.params.truncation if None was given.
+
         self.wbroad_centered = wbroad_centered
         self.wavenumber = wavenumber
         self.wavenumber_calc = wavenumber_calc
@@ -1549,7 +1647,88 @@ class SpectrumFactory(BandFactory):
 
         self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
+        import radis
+
+        if radis.config["DEBUG_MODE"]:
+            assert (wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber).all()
+
         return
+
+    def predict_time(self):
+        def _is_at_equilibrium():
+            try:
+                assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
+                assert self.input.Trot is None or self.input.Trot == self.input.Tgas
+                assert (
+                    self.input.overpopulation is None or self.input.overpopulation == {}
+                )
+                try:
+                    if self.input.self_absorption:
+                        assert self.input.self_absorption  # == True
+                except KeyError:
+                    pass
+                return True
+            except AssertionError:
+                return False
+
+        if _is_at_equilibrium() or self.params.optimization is None:
+            factor = 1
+        else:
+            factor = 2  #  _apply_broadening_DLM() is called twice
+
+        wstep = self.params.wstep
+        n_lines = self.misc.total_lines
+        truncation = self.params.truncation
+        spectral_points = (
+            self.params.wavenum_max_calc - self.params.wavenum_min_calc
+        ) / self.params.wstep
+
+        optimization = self.params.optimization
+        broadening_method = self.params.broadening_method
+
+        if optimization in ("simple", "min-RMS"):
+            wL = self.wL
+            wG = self.wG
+            if broadening_method == "voigt":
+                estimated_time = (
+                    2.096e-07 * n_lines
+                    + 7.185e-09
+                    * (1 + wL * wG)
+                    * spectral_points
+                    * np.log(spectral_points)
+                    * factor
+                )
+            elif broadening_method == "fft":
+                estimated_time = (
+                    4.675e-08
+                    * (1 + wL * wG)
+                    * spectral_points
+                    * np.log(spectral_points)
+                    * factor
+                )
+            elif broadening_method == "convolve":  # Not benchmarked
+                estimated_time = (
+                    self._broadening_time_ruleofthumb
+                    * len(self.df0)
+                    * len(self.wbroad_centered)
+                )
+            else:
+                raise NotImplementedError("broadening_method not implemented")
+        elif optimization is None:
+            if broadening_method == "voigt":
+                estimated_time = 6.6487e-08 * n_lines * truncation / wstep * factor
+            elif broadening_method == "convolve":  # Not benchmarked
+                estimated_time = (
+                    self._broadening_time_ruleofthumb
+                    * len(self.df0)
+                    * len(self.wbroad_centered)
+                )
+            else:
+                raise NotImplementedError("broadening_method not implemented")
+        else:
+            raise NotImplementedError("optimization not implemented")
+
+        return estimated_time
 
     def _get_log_2gs(self):
         """Returns log_2gs if it already exists in the dataframe, otherwise
@@ -1993,10 +2172,10 @@ class SpectrumFactory(BandFactory):
 # XXX =====================================================================
 
 
-def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_width):
+def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines):
     """define waverange vectors, with ``wavenumber`` the output spectral range
     and ``wavenumber_calc`` the spectral range used for calculation, that
-    includes neighbour lines within ``broadening_max_width`` distance.
+    includes neighbour lines within ``neighbour_lines`` distance.
 
     Parameters
     ----------
@@ -2004,7 +2183,7 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
         wavenumber range limits (cm-1)
     wstep: float
         wavenumber step (cm-1)
-    broadening_max_width: float
+    neighbour_lines: float
         wavenumber full width of broadening calculation: used to define which
         neighbour lines shall be included in the calculation
 
@@ -2014,8 +2193,11 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
         an evenly spaced array between ``wavenum_min`` and ``wavenum_max`` with
         a spacing of ``wstep``
     wavenumber_calc: numpy array
-        an evenly spaced array between ``wavenum_min-broadening_max_width/2`` and
-        ``wavenum_max+broadening_max_width/2`` with a spacing of ``wstep``
+        an evenly spaced array between ``wavenum_min-neighbour_lines`` and
+        ``wavenum_max+neighbour_lines`` with a spacing of ``wstep``
+    woutrange: (wmin, wmax)
+        index to project the full range including neighbour lines `wavenumber_calc`
+        on the final range `wavenumber`, i.e. : wavenumber_calc[woutrange[0]:woutrange[1]] = wavenumber
     """
     assert wavenum_min < wavenum_max
 
@@ -2025,8 +2207,8 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
 
     # generate the calculation vector of wavenumbers (shape M + space on the side)
     # ... Calculation range
-    wavenum_min_calc = wavenumber[0] - broadening_max_width / 2  # cm-1
-    wavenum_max_calc = wavenumber[-1] + broadening_max_width / 2  # cm-1
+    wavenum_min_calc = wavenumber[0] - neighbour_lines  # cm-1
+    wavenum_max_calc = wavenumber[-1] + neighbour_lines  # cm-1
     w_out_of_range_left = arange(
         wavenumber[0] - wstep, wavenum_min_calc - wstep, -wstep
     )[::-1]
@@ -2041,38 +2223,39 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, broadening_max_w
         w_out_of_range_right = w_out_of_range_right[:-1]
 
     wavenumber_calc = np.hstack((w_out_of_range_left, wavenumber, w_out_of_range_right))
+    woutrange = len(w_out_of_range_left), len(w_out_of_range_left) + len(wavenumber)
 
     assert len(w_out_of_range_left) == len(w_out_of_range_right)
     assert len(wavenumber_calc) == len(wavenumber) + 2 * len(w_out_of_range_left)
 
-    return wavenumber, wavenumber_calc
+    return wavenumber, wavenumber_calc, woutrange
 
 
-def _generate_broadening_range(wstep, broadening_max_width):
+def _generate_broadening_range(wstep, truncation):
     """Generate array on which to compute line broadening.
 
     Parameters
     ----------
     wstep: float
         wavenumber step (cm-1)
-    broadening_max_width: float
-        wavenumber full width of broadening calculation: used to define which
+    truncation: float
+        wavenumber half-width of broadening calculation: used to define which
         neighbour lines shall be included in the calculation
 
     Returns
     -------
     wbroad_centered: numpy array
         an evenly spaced array, of odd-parity length, centered on 0, and of width
-        ``broadening_max_width``
+        ``truncation``
     """
 
     # create a broadening array, on which lineshape will be calculated.
     # Odd number is important
     wbroad_centered = np.hstack(
         (
-            -arange(wstep, 0.5 * broadening_max_width + wstep, wstep)[::-1],
+            -arange(wstep, truncation + wstep, wstep)[::-1],
             [0],
-            arange(wstep, 0.5 * broadening_max_width + wstep, wstep),
+            arange(wstep, truncation + wstep, wstep),
         )
     )
 

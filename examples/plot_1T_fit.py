@@ -71,7 +71,7 @@ sf = SpectrumFactory(
     isotope="1,2",
     path_length=10,  # cm-1
     mole_fraction=1,
-    broadening_max_width=1,  # cm-1
+    truncation=1,  # cm-1
 )
 sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
 sf.warnings["HighTemperatureWarning"] = "ignore"

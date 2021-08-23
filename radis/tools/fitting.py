@@ -566,7 +566,8 @@ if __name__ == "__main__":
         isotope="1,2",
         path_length=10,  # cm-1
         mole_fraction=0.1 * 28.97 / 44.07,
-        broadening_max_width=1,  # cm-1
+        truncation=0.5,  # cm-1
+        neighbour_lines=0,
         medium="vacuum",
         # parsum_mode="tabulation"
     )

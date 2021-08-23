@@ -232,7 +232,7 @@ def _run_example(verbose=False):
         molecule="CO2",
         isotope="1",
         cutoff=1e-25,  # cm/molecule
-        broadening_max_width=10,  # cm-1
+        truncation=5,  # cm-1
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"

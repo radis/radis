@@ -26,6 +26,7 @@ def test_script_execution(script):
     plt.ion()
     # run:
     runpy.run_path(script, init_globals=locals())
+    plt.close("all")
 
     # Clean
     if exists(Path.cwd() / "SpecDatabase_Test"):

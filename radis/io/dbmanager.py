@@ -10,7 +10,6 @@ from io import BytesIO
 from os.path import abspath, exists, splitext
 from zipfile import ZipFile
 
-from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
 from radis.misc.printer import printr
 from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
@@ -69,6 +68,7 @@ class DatabaseManager(object):
         self.molecule = molecule
         self.local_databases = local_databases
         self.downloadable = False  # by default
+        self.format = ""
 
         self.tempdir = join(self.local_databases, "downloads(can_be_deleted)")
         self.ds = DataSource(self.tempdir)
@@ -95,7 +95,7 @@ class DatabaseManager(object):
                 )
             except AssertionError as err:
                 raise DeprecatedFileWarning(
-                    "Database file {0} not valid anymore"
+                    "Database entry {self.name} not valid anymore. See above."
                 ) from err
             else:
                 local_files = entries["path"]
@@ -209,22 +209,17 @@ class DatabaseManager(object):
         raise NotImplementedError
 
     def get_today(self):
-        return date.today().strftime("%d %b %Y")
+        return date.today().strftime(
+            "%Y-%m-%d"
+        )  # only numbers avoids locale problems. Old : ("%d %b %Y")
 
-    def register(self, local_files, urlname, wmin, wmax):
-        download_date = self.get_today()
-        verbose = self.verbose
+    def register(self, dict_entries):
 
         # Add database to  ~/radis.json
         return register_database(
             self.name,
-            local_files,
-            self.molecule,
-            wmin,
-            wmax,
-            download_date,
-            urlname,
-            verbose,
+            dict_entries,
+            self.verbose,
         )
 
     def get_hdf5_manager(self, engine):
@@ -351,9 +346,7 @@ class DatabaseManager(object):
         return nrows
 
 
-def register_database(
-    databank_name, path_list, molecule, wmin, wmax, download_date, urlname, verbose
-):
+def register_database(databank_name, dict_entries, verbose):
     """Add to registered databases in RADIS config file.
 
     If database exists, assert it has the same entries.
@@ -381,22 +374,6 @@ def register_database(
             levelsfmt : "radis"   # use RADIS spectroscopic constants for rovibrational energies (nonequilibrium)
 
     """
-    dict_entries = {
-        "info": f"HITEMP {molecule} lines ({wmin:.1f}-{wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions",
-        "path": path_list,
-        "format": "hitemp-radisdb",
-        "parfuncfmt": "hapi",
-        "wavenumber_min": f"{wmin}",
-        "wavenumber_max": f"{wmax}",
-        "download_date": download_date,
-        "download_url": urlname,
-    }
-
-    if molecule in MOLECULES_LIST_NONEQUILIBRIUM:
-        dict_entries[
-            "info"
-        ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
-        dict_entries["levelsfmt"] = "radis"
 
     # Register database in ~/radis.json to be able to use it with load_databank()
     try:

@@ -3,13 +3,40 @@
 Description
 ------------
 
-Functions to deal with numpy arrays
+Functions to deal with numpy arrays:
+
+- :py:func:`~radis.misc.arrays.norm`
+- :py:func:`~radis.misc.arrays.norm_on`
+- :py:func:`~radis.misc.arrays.scale_to`
+- :py:func:`~radis.misc.arrays.array_allclose`
+- :py:func:`~radis.misc.arrays.nantrapz`
+- :py:func:`~radis.misc.arrays.arange_len`
+- :py:func:`~radis.misc.arrays.calc_diff`
+- :py:func:`~radis.misc.arrays.find_nearest`
+- :py:func:`~radis.misc.arrays.find_first`
+- :py:func:`~radis.misc.arrays.autoturn`
+- :py:func:`~radis.misc.arrays.centered_diff`
+- :py:func:`~radis.misc.arrays.evenly_distributed`
+- :py:func:`~radis.misc.arrays.anynan`
+- :py:func:`~radis.misc.arrays.first_nonnan_index`
+- :py:func:`~radis.misc.arrays.last_nonan_index`
+- :py:func:`~radis.misc.arrays.is_sorted`
+- :py:func:`~radis.misc.arrays.is_sorted_backward`
+- :py:func:`~radis.misc.arrays.bining`
+- :py:func:`~radis.misc.arrays.count_nans`
+- :py:func:`~radis.misc.arrays.logspace`
+- :py:func:`~radis.misc.arrays.numpy_add_at`
+
+
+
 
 
 -------------------------------------------------------------------------------
 
 """
 
+
+from math import ceil
 
 import numba
 import numpy as np
@@ -115,6 +142,17 @@ def nantrapz(I, w, dx=1.0, axis=-1):
 # ==============================================================================
 # Numpy Function
 # ==============================================================================
+
+
+def arange_len(wmin, wmax, wstep) -> int:
+    """Returns len of a :py:func:`numpy.arange` ``(wmin, max, wstep)`` array,
+    accounting for floating point errors
+
+    Note: :py:func:`numpy.arange` is useful to maintain the input ``wstep``.
+    If you don't have this requirement, you better use :py:func:`numpy.linspace`
+    directly.
+    """
+    return ceil((wmax - wmin) / wstep)
 
 
 def calc_diff(t1, v1, t2, v2):
@@ -393,7 +431,7 @@ def logspace(xmin, xmax, npoints):
     """Returns points from xmin to xmax regularly distributed on a logarithm
     space.
 
-    Numpy's logspace does the same from 10**xmin to 10**xmax
+    Numpy's :py:func:`numpy.logspace` does the same from 10**xmin to 10**xmax
     """
 
     return np.logspace(np.log10(xmin), np.log10(xmax), npoints)
@@ -440,3 +478,9 @@ except (ModuleNotFoundError):
     #  or use radis.misc.utils.NotInstalled() ?
 else:
     add_at = rcx.add_at
+
+
+if __name__ == "__main__":
+    import pytest
+
+    pytest.main(["../test/misc/test_arrays.py", "-s"])  # -s for showing console output

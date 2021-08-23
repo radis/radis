@@ -743,13 +743,20 @@ def _fix_format(file, sload):
         del sload["conditions"]["selfabsorption"]
         fixed = True
 
+    if "broadening_max_width" in sload["conditions"]:
+        broadening_max_width = sload["conditions"]["broadening_max_width"]
+        sload["conditions"]["truncation"] = broadening_max_width / 2
+        sload["conditions"]["neighbour_lines"] = broadening_max_width / 2
+        del sload["conditions"]["broadening_max_width"]
+        fixed = True
+
     # Fix all path names (if / are stored it screws up the JSON loading)
     # -----------------
     def fix_path(key):
         fixed = False
         if key in sload["conditions"]:
             path = sload["conditions"][key]
-            if not isinstance(path, str):
+            if path is not None and not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
                     + " has a deprecrated structure (key "
@@ -1245,6 +1252,11 @@ class SpecList(object):
                 for (k, v) in kwconditions.items():
                     if isinstance(v, str):
                         query.append("{0} == r'{1}'".format(k, v))
+                    elif v is None:
+                        # query "k == None" doesn't work. We use a workaround,
+                        # checking if the column is different from itself (i.e. : is None):
+                        # https://stackoverflow.com/a/32207819/5622825
+                        query.append(f"{k} != {k}")
                     else:
                         #                    query.append('{0} == {1}'.format(k,v))
                         query.append("{0} == {1}".format(k, v.__repr__()))
