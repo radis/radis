@@ -220,12 +220,12 @@ def test_partial_loading(*args, **kwargs):
     # Check vaex engine :
     import radis
 
-    old_config=radis.config["AUTO_UPDATE_DATABASE"]
+    old_config = radis.config["AUTO_UPDATE_DATABASE"]
     try:
-	    radis.config["AUTO_UPDATE_DATABASE"] = True
-	    df = fetch_hitemp("OH", engine="vaex")
-	finally:
-		radis.config["AUTO_UPDATE_DATABASE"] = old_config
+        radis.config["AUTO_UPDATE_DATABASE"] = True
+        df = fetch_hitemp("OH", engine="vaex")
+    finally:
+        radis.config["AUTO_UPDATE_DATABASE"] = old_config
     assert df.wav.min() < wmin
     assert df.wav.max() > wmax
 
