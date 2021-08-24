@@ -12,7 +12,7 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 import re
 import urllib.request
-from os.path import abspath, basename, expanduser, join
+from os.path import abspath, basename, exists, expanduser, join
 from typing import Union
 
 import numpy as np
@@ -21,6 +21,7 @@ import radis
 
 try:
     from .dbmanager import DatabaseManager
+    from .hdf5 import update_pytables_to_vaex
     from .hitran import columns_2004, parse_global_quanta, parse_local_quanta
     from .tools import (
         _create_dtype,
@@ -31,6 +32,7 @@ try:
 except ImportError:  # ran from here
     from radis.io.dbmanager import DatabaseManager
     from radis.io.hitran import columns_2004, parse_global_quanta, parse_local_quanta
+    from radis.io.hdf5 import update_pytables_to_vaex
     from radis.io.tools import (
         _create_dtype,
         _get_linereturnformat,
@@ -104,7 +106,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         self,
         name,
         molecule,
-        local_databases="~/.radisdb/",
+        local_databases,
         verbose=True,
         chunksize=100000,
     ):
@@ -382,9 +384,12 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         return Nlines
 
-    def register(self):
+    def register(self, engine):
+        """register in ~/radis.json
 
-        local_files, urlnames = self.get_filenames()
+        engine required to differentiate '.h5', '.hdf5'"""
+
+        local_files, urlnames = self.get_filenames(engine=engine)
         info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
 
         if self.molecule in ["CO2", "H2O"]:
@@ -413,7 +418,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
 def fetch_hitemp(
     molecule,
-    local_databases="~/.radisdb/",
+    local_databases="~/.radisdb/hitemp/",
     databank_name="HITEMP-{molecule}",
     isotope=None,
     load_wavenum_min=None,
@@ -424,6 +429,7 @@ def fetch_hitemp(
     chunksize=100000,
     clean_cache_files=True,
     return_local_path=False,
+    engine="pytables",
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -459,6 +465,8 @@ def fetch_hitemp(
         if ``True`` clean downloaded cache files after HDF5 are created.
     return_local_path: bool
         if ``True``, also returns the path of the local database file.
+    engine: 'pytables', 'vaex'
+        which HDF5 library to use.
 
     Returns
     -------
@@ -483,8 +491,6 @@ def fetch_hitemp(
             dtype='object')
 
     .. minigallery:: radis.io.hitemp.fetch_hitemp
-
-    .. minigallery:: radis.fetch_hitemp
 
     Notes
     -----
@@ -514,7 +520,7 @@ def fetch_hitemp(
     )
 
     # Get list of all expected local files for this database:
-    local_files, urlnames = ldb.get_filenames()
+    local_files, urlnames = ldb.get_filenames(engine=engine)
 
     # Delete files if needed:
     relevant_files = ldb.keep_only_relevant(
@@ -524,23 +530,40 @@ def fetch_hitemp(
         ldb.remove_local_files(relevant_files)
     ldb.check_deprecated_files(
         ldb.get_existing_files(relevant_files),
+        engine=engine,
         remove=True if cache != "force" else False,
     )
 
-    # Get lines to download
+    # Get missing files
     download_files = ldb.get_missing_files(local_files)
     download_files = ldb.keep_only_relevant(
         download_files, load_wavenum_min, load_wavenum_max
     )
+    # do not re-download files if they exist in another format :
+    if engine in ["vaex", "auto"]:
+        # ... convert files if asked:
+        import radis
+
+        if radis.config["AUTO_UPDATE_DATABASE"]:
+            converted = []
+            for f in download_files:
+                if exists(f.replace(".hdf5", ".h5")):
+                    update_pytables_to_vaex(f.replace(".hdf5", ".h5"))
+                    converted.append(f)
+            download_files = [f for f in download_files if f not in converted]
+        # do not re-download remaining files that exist. Let user decide what to do.
+        # (download & re-parsing is a long solution!)
+        download_files = [
+            f for f in download_files if not exists(f.replace(".hdf5", ".h5"))
+        ]
 
     # Download files
-    # url_to_download =
     if len(download_files) > 0:
         if urlnames is None:
             urlnames = ldb.fetch_urlnames()
         filesmap = dict(zip(local_files, urlnames))
         download_urls = [filesmap[k] for k in download_files]
-        ldb.download_and_parse(download_urls, download_files)
+        ldb.download_and_parse(download_urls, download_files, engine=engine)
 
         # Done: add final checks
         if molecule not in ["CO2", "H2O"]:
@@ -558,7 +581,7 @@ def fetch_hitemp(
 
     # Register
     if not ldb.is_registered():
-        ldb.register()
+        ldb.register(engine=engine)  # engine required to differentiate '.h5', '.hdf5'
 
     if clean_cache_files:
         ldb.clean_download_files()
@@ -573,6 +596,7 @@ def fetch_hitemp(
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
         load_wavenum_max=load_wavenum_max,
+        engine=engine,
     )
 
     return (df, files_loaded) if return_local_path else df

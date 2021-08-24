@@ -502,6 +502,7 @@ class MiscParams(ConditionDict):
         "warning_linestrength_cutoff",
         "total_lines",
         "zero_padding",
+        "hdf5_engine",
     ]
 
     def __init__(self):
@@ -521,6 +522,7 @@ class MiscParams(ConditionDict):
         )
         self.warning_linestrength_cutoff = None  #: float [0-1]: raise a warning if the sum of linestrength cut is above that
         self.total_lines = 0  #: int : number of lines in database.
+        self.hdf5_engine = "pytables"  # 'pytables', 'vaex' (/!\ experimental in 0.9.30)
 
 
 def format_paths(s):
@@ -835,6 +837,7 @@ class DatabankLoader(object):
         drop_non_numeric=True,
         db_use_cached=True,
         lvl_use_cached=True,
+        hdf5_engine="default",
     ):
         """Fetch the latest databank files from HITRAN or HITEMP with the
         https://hitran.org/ API.
@@ -889,6 +892,8 @@ class DatabankLoader(object):
             will be left untouched.
         db_use_cached: bool, or ``'regen'``
             use cached
+        hdf5_engine: ``'pytables'``, ``'vaex'``
+            which library to use to read HDF5 files (they are incompatible)
 
         Notes
         -----
@@ -937,6 +942,8 @@ class DatabankLoader(object):
                 + "for consistency we recommend using lines and partition functions from the same database",
                 "AccuracyWarning",
             )
+        if hdf5_engine == "default":
+            hdf5_engine = self.misc.hdf5_engine
 
         # Get inputs
         molecule = self.input.molecule
@@ -973,6 +980,9 @@ class DatabankLoader(object):
         if source == "hitran":
             self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
             self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
+
+            if hdf5_engine != "pytables":
+                raise NotImplementedError(f"{hdf5_engine} with ExoMol files")
 
             # Query one isotope at a time
             if isotope == "all":
@@ -1028,6 +1038,7 @@ class DatabankLoader(object):
                 cache=db_use_cached,
                 verbose=self.verbose,
                 return_local_path=True,
+                engine=hdf5_engine,
             )
             self.params.dbpath = ",".join(local_paths)
 
@@ -1041,6 +1052,8 @@ class DatabankLoader(object):
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             # Download, setup local databases, and fetch (use existing if possible)
+            if hdf5_engine != "pytables":
+                raise NotImplementedError(f"{hdf5_engine} with ExoMol files")
 
             if isotope == "all":
                 raise ValueError(

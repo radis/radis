@@ -269,6 +269,7 @@ def run_setup(with_binary):
             "psutil",  # for getting user RAM
             "tuna",  # to generate visual/interactive performance profiles
             "vaex",  # HDF5,
+            "h5py",  # HDF5
             "habanero",  # CrossRef API to retrieve data from doi
         ],
         extras_require={

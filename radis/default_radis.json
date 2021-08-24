@@ -10,6 +10,7 @@
     "style":"origin"
     },
 "DEBUG_MODE":false,
+"AUTO_UPDATE_DATABASE":false,
 "AUTO_UPDATE_SPEC":false,
 "OLDEST_COMPATIBLE_VERSION":"0.9.1",
 "USE_CYTHON":true,
