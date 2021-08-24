@@ -384,9 +384,12 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         return Nlines
 
-    def register(self):
+    def register(self, engine):
+        """register in ~/radis.json
 
-        local_files, urlnames = self.get_filenames(engine=self.engine)
+        engine required to differentiate '.h5', '.hdf5'"""
+
+        local_files, urlnames = self.get_filenames(engine=engine)
         info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
 
         if self.molecule in ["CO2", "H2O"]:
