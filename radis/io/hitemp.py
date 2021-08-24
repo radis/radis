@@ -386,7 +386,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
     def register(self):
 
-        local_files, urlnames = self.get_filenames()
+        local_files, urlnames = self.get_filenames(engine=self.engine)
         info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
 
         if self.molecule in ["CO2", "H2O"]:
@@ -541,7 +541,7 @@ def fetch_hitemp(
         # ... convert files if asked:
         import radis
 
-        if radis.AUTO_UPDATE_DATABASE:
+        if radis.config["AUTO_UPDATE_DATABASE"]:
             converted = []
             for f in download_files:
                 if exists(f.replace(".hdf5", ".h5")):
@@ -578,7 +578,7 @@ def fetch_hitemp(
 
     # Register
     if not ldb.is_registered():
-        ldb.register()
+        ldb.register(engine=engine)  # engine required to differentiate '.h5', '.hdf5'
 
     if clean_cache_files:
         ldb.clean_download_files()
