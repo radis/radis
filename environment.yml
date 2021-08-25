@@ -24,6 +24,7 @@ dependencies:
 - joblib  # for parallel loading of SpecDatabase
 - numba  # just-in-time compiler
 - psutil # for getting user RAM
+- h5py   # load HDF5
 - pip
 - pip:
   - beautifulsoup4 # parse ExoMol website
@@ -34,5 +35,6 @@ dependencies:
   - json-tricks>=3.15.0  # to deal with non jsonable formats
   - mpldatacursor
   - tuna           # to generate visual/interactive performance profiles
+  - tables  # for pandas to HDF5 export
   - vaex    # load HDF5 files
   - habanero  # CrossRef API to retrieve data from doi

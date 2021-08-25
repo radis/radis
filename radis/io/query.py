@@ -115,6 +115,7 @@ def fetch_astroquery(
                 use_cached=cache,
                 expected_metadata=expected_metadata,
                 verbose=verbose,
+                engine="pytables",
             )
             if exists(fcache):
                 try:

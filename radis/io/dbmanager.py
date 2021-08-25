@@ -75,7 +75,7 @@ class DatabaseManager(object):
 
         self.verbose = verbose
 
-    def get_filenames(self):
+    def get_filenames(self, engine):
         """Get names of all files in the database (even if not downloaded yet)
 
         See Also
@@ -135,6 +135,9 @@ class DatabaseManager(object):
         else:
             raise NotImplementedError
 
+        if engine == "vaex":
+            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+
         return local_files, urlnames
 
     def fetch_urlnames(self) -> list:
@@ -150,7 +153,7 @@ class DatabaseManager(object):
             "This function should be overwritten by the DatabaseManager subclass"
         )
 
-    def check_deprecated_files(self, local_files, remove=True):
+    def check_deprecated_files(self, local_files, engine, remove=True):
         """Check metadata of files and remove the deprecated ones
 
         Unless remove=False: Then raise an error"""
@@ -161,6 +164,7 @@ class DatabaseManager(object):
                     local_file,
                     metadata_is={},
                     metadata_keys_contain=["wavenumber_min", "wavenumber_max"],
+                    engine=engine,
                 )
             except DeprecatedFileWarning as err:
                 if not remove:
@@ -184,6 +188,11 @@ class DatabaseManager(object):
 
     def get_missing_files(self, files):
         """Return files that do not exist among ``files``
+
+        Note : in 'vaex' mode; if "FILE.hdf5" does not exist
+        but "FILE.h5" does (a likely 'pytables' file), does
+        not consider it missing so it can be converted
+        automatically
 
         See Also
         --------
@@ -226,7 +235,7 @@ class DatabaseManager(object):
         return HDF5Manager(engine=engine)
 
     def download_and_parse(self, urlnames, local_files, engine="pytables"):
-        all_local_files, _ = self.get_filenames()
+        all_local_files, _ = self.get_filenames(engine)
 
         verbose = self.verbose
         molecule = self.molecule
@@ -252,6 +261,14 @@ class DatabaseManager(object):
                 print(
                     f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
                 )
+
+            # Check we can open the file, give the path if there is an error
+            try:
+                self.ds.open(urlname)
+            except Exception as err:
+                raise OSError(
+                    f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
+                ) from err
 
             # try:
             Nlines = self.parse_to_local_file(
@@ -317,14 +334,24 @@ class DatabaseManager(object):
                         load_wavenum_min=load_wavenum_min,
                         load_wavenum_max=load_wavenum_max,
                         verbose=self.verbose,
+                        engine="pytables",
                     )
                 )
             return pd.concat(df_all)
 
-        elif engine in ["vaex", "h5py"]:
-            raise NotImplementedError
+        elif engine == "vaex":
+            # vaex can open several files at the same time:
+            return hdf2df(
+                local_files,
+                columns=columns,
+                isotope=isotope,
+                load_wavenum_min=load_wavenum_min,
+                load_wavenum_max=load_wavenum_max,
+                verbose=self.verbose,
+                engine="vaex",
+            )
         else:
-            raise ValueError(engine)
+            raise NotImplementedError(engine)
 
     def plot(self, local_files, isotope, wavenum_min, wavenum_max):
         """Convenience function to plot linestrengths of the database"""

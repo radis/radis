@@ -97,8 +97,10 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     # Check that we won't download all databae for a reduced range:
     # ... This is done at the HITEMPDatabaseManager level
     # ... unitest for this part:
-    ldb = HITEMPDatabaseManager(name=f"HITEMP-CO2", molecule="CO2")
-    local_files, _ = ldb.get_filenames()
+    ldb = HITEMPDatabaseManager(
+        name="HITEMP-CO2", molecule="CO2", local_databases="~/.radisdb/hitemp/"
+    )
+    local_files, _ = ldb.get_filenames(engine="auto")
     relevant_file, file_wmin, file_wmax = keep_only_relevant(
         local_files, wavenum_min=wmin, wavenum_max=wmax
     )
@@ -155,13 +157,20 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     """
 
     df, local_files = fetch_hitemp(
-        molecule, columns=["int", "wav"], verbose=verbose, return_local_path=True
+        molecule,
+        columns=["int", "wav"],
+        verbose=verbose,
+        return_local_path=True,
+        engine="pytables",
     )
 
     assert f"HITEMP-{molecule}" in getDatabankList()
 
     ldb = HITEMPDatabaseManager(
-        name=f"HITEMP-{molecule}", molecule=molecule, verbose=verbose
+        name=f"HITEMP-{molecule}",
+        molecule=molecule,
+        verbose=verbose,
+        local_databases="~/.radisdb/hitemp/",
     )
     url, Nlines, _, _ = ldb.fetch_url_Nlines_wmin_wmax()
 
@@ -170,38 +179,65 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
 
 @pytest.mark.needs_connection
 def test_partial_loading(*args, **kwargs):
-    """Assert that using partial loading of the database works"""
+    """Assert that using partial loading of the database works
+
+    Also check 'vaex' engine and ``radis.config["AUTO_UPDATE_DATABASE"]``"""
 
     wmin, wmax = 2500, 4500
 
     # First ensures that the database is wider than this (else test is irrelevant) :
-    df = fetch_hitemp("OH")
+    df = fetch_hitemp("OH", engine="pytables")
     assert df.wav.min() < wmin
     assert df.wav.max() > wmax
 
     # Now fetch with partial loading
-    df = fetch_hitemp("OH", load_wavenum_min=wmin, load_wavenum_max=wmax)
+    df = fetch_hitemp(
+        "OH", load_wavenum_min=wmin, load_wavenum_max=wmax, engine="pytables"
+    )
     assert df.wav.min() >= wmin
     assert df.wav.max() <= wmax
 
     # Test with isotope:
-    wmin = 0
-    wmax = 300
-    df = fetch_hitemp("OH", load_wavenum_min=wmin, load_wavenum_max=wmax, isotope="2")
+    wmin2 = 0
+    wmax2 = 300
+    df = fetch_hitemp(
+        "OH",
+        load_wavenum_min=wmin2,
+        load_wavenum_max=wmax2,
+        isotope="2",
+        engine="pytables",
+    )
     assert df.iso.unique() == 2
-    df = fetch_hitemp("OH", load_wavenum_min=wmin, load_wavenum_max=wmax, isotope="1,2")
+    df = fetch_hitemp(
+        "OH",
+        load_wavenum_min=wmin2,
+        load_wavenum_max=wmax2,
+        isotope="1,2",
+        engine="pytables",
+    )
     assert set(df.iso.unique()) == {1, 2}
 
-    # TODO : active with vaex engine implementation
-    # # multiple isotope selection not implemetned with vaex
-    # with pytest.raises(NotImplementedError):
-    #     fetch_hitemp(
-    #         "OH",
-    #         load_wavenum_min=wmin,
-    #         load_wavenum_max=wmax,
-    #         isotope="1,2,3",
-    #         engine="vaex",
-    #     )
+    # Check vaex engine :
+    import radis
+
+    old_config = radis.config["AUTO_UPDATE_DATABASE"]
+    try:
+        radis.config["AUTO_UPDATE_DATABASE"] = True
+        df = fetch_hitemp("OH", engine="vaex")
+    finally:
+        radis.config["AUTO_UPDATE_DATABASE"] = old_config
+    assert df.wav.min() < wmin
+    assert df.wav.max() > wmax
+
+    # multiple isotope selection not implemetned with vaex
+    with pytest.raises(NotImplementedError):
+        fetch_hitemp(
+            "OH",
+            load_wavenum_min=wmin,
+            load_wavenum_max=wmax,
+            isotope="1,2,3",
+            engine="vaex",
+        )
 
 
 @pytest.mark.needs_connection
