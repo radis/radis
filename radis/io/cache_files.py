@@ -48,7 +48,7 @@ from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning
 """str: forces to regenerate cache files that were created in a previous version"""
 
 # Just make sure LAST_BACKWARD_COMPATIBLE_VERSION is valid
-assert radis.__version__ >= radis.config["OLDEST_COMPATIBLE_VERSION"]
+assert parse(radis.__version__) >= parse(radis.config["OLDEST_COMPATIBLE_VERSION"])
 
 # Utils
 
