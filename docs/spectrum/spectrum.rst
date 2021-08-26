@@ -21,7 +21,7 @@ which features methods to:
 - :ref:`compare different spectra<label_spectrum_howto_compare>`.
 - combine multiple spectra along the :ref:`line-of-sight<label_spectrum_line_of_sight>`.
 - manipulate a folder of spectra easily with :ref:`spectrum Databases<label_spectrum_database>`.
-- compute transmittance from absorbance, or whatever :ref:`missing spectral quantity<label_spectrum_missing_quantities>`.
+- compute transmittance from absorbance, or whatever :ref:`missing spectral arrays<label_spectrum_missing_quantities>`.
 - use the :ref:`line survey<label_spectrum_linesurvey>` tool to identify each line.
 
 
@@ -53,7 +53,6 @@ community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or
 How to generate a Spectrum?
 ===========================
 
-
 Calculate a Spectrum
 --------------------
 
@@ -77,28 +76,33 @@ Note that the :class:`~radis.lbl.factory.SpectrumFactory` class has the
 automatically retrieves a spectrum from a
 :class:`~radis.tools.database.SpecDatabase` if you calculated it already,
 or calculates it and stores it if you didn't. Very useful for spectra that
-requires long computational times!
+require long computational times!
 
 
-Initialize from text file or arrays
------------------------------------
+Initialize from Python arrays
+-----------------------------
 
-Spectrum objects can also be generated from numpy arrays, or files.
+The standard way to build a Radis Spectrum is from a dictionary of
+:py:mod:`numpy` arrays::
 
-From numpy arrays, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array` ::
+    # w, k, I are numpy arrays for wavenumbers, absorption coefficient, and radiance.
+    from radis import Spectrum
+    s = Spectrum({"wavenumber":w, "abscoeff":k, "radiance_noslit":I},
+                 units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
+Or::
+
+    s = Spectrum({"abscoeff":(w,k), "radiance_noslit":(w,I)},
+                 wunit="cm-1"
+                 units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
+
+You can also use the :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+convenience function::
 
     # w, T are two numpy arrays
     from radis import Spectrum
     s = Spectrum.from_array(w, T, 'transmittance_noslit',
-                               waveunit='nm', unit='') # adimensioned
+                               wunit='nm', unit='') # adimensioned
 
-
-From a file, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
-
-    # 'exp_spectrum.txt' contains a spectrum
-    from radis import Spectrum
-    s = Spectrum.from_txt('exp_spectrum.txt', 'radiance',
-                               waveunit='nm', unit='mW/cm2/sr/nm')
 
 Convenience functions have been added to handle the usual cases:
 :func:`~radis.spectrum.models.calculated_spectrum`,
@@ -110,6 +114,61 @@ Convenience functions have been added to handle the usual cases:
     s1 = calculated_spectrum(w, I, wunit='nm', Iunit='W/cm2/sr/nm')     # creates 'radiance_noslit'
     s2 = transmittance_spectrum(w, T, wunit='nm')                       # creates 'transmittance_noslit'
     s3 = experimental_spectrum(w, I, wunit='nm', Iunit='W/cm2/sr/nm')   # creates 'radiance'
+
+
+Initialize from a text file
+---------------------------
+
+Spectrum objects can also be generated directly from a text file.
+
+From a file, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
+
+    # 'exp_spectrum.txt' contains a spectrum
+    from radis import Spectrum
+    s = Spectrum.from_txt('exp_spectrum.txt', 'radiance',
+                               wunit='nm', unit='mW/cm2/sr/nm')
+
+It is, however, recommended to use the RADIS ``.spec`` json format to store
+and load arrays :
+
+
+Load from a .spec file
+----------------------
+
+A ``.spec`` file contains all the Spectrum spectral arrays as well as the input
+conditions used to generate it. To retrieve it use the
+:func:`~radis.tools.database.load_spec` function::
+
+    s = load_spec('my_spectrum.spec')
+
+Sometimes the ``.spec`` file may have been generated under a compressed format
+where redundant spectral arrays have been removed (for instance, transmittance
+if you already know absorbance). Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.update`
+method to regenerate missing spectral arrays::
+
+    s = load_spec('my_spectrum.spec', binary=True)
+    s.update()
+
+If many spectra are stored in a folder, it may be time to set up a
+:class:`~radis.tools.database.SpecDatabase` structure to easily see all
+Spectrum conditions and get Spectrum that suits specific parameters
+
+.. minigallery:: radis.load_spec
+
+
+Want a quick spectrum
+---------------------
+
+You need a spectrum immediatly, to run some tests ? Use :py:func:`~radis.test.utils.test_spectrum` ::
+
+    s = radis.test_spectrum()
+    s.apply_slit(0.5, 'nm')
+    s.plot('radiance')
+
+This returns the CO spectrum from the :ref:`first documentation example <label_first_example>`
+
+.. figure:: examples/co_spectrum_700K.png
+:scale: 60 %
 
 
 Generate a Blackbody (Planck) function object
@@ -129,39 +188,17 @@ Example::
                 T=288, eps=1)
     s.plot()
 
-
 .. minigallery:: radis.sPlanck
 
 
-Load from a .spec file
-----------------------
-
-A ``.spec`` file contains all the Spectrum spectral quantities as well as the input
-conditions used to generate it. To retrieve it use the
-:func:`~radis.tools.database.load_spec` function::
-
-    s = load_spec('my_spectrum.spec')
-
-Sometimes the ``.spec`` file may have been generated under a compressed format
-where redundant spectral quantities have been removed (for instance, transmittance
-if you already know absorbance). Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.update`
-method to regenerate missing spectral quantities::
-
-    s = load_spec('my_spectrum.spec', binary=True)
-    s.update()
-
-If many spectra are stored in a folder, it may be time to set up a
-:class:`~radis.tools.database.SpecDatabase` structure to easily see all
-Spectrum conditions and get Spectrum that suits specific parameters
 
 
+.. _label_spectral_arrays:
 
-.. _label_spectral_quantities:
+Spectral Arrays
+===============
 
-Spectral quantities
-===================
-
-A :class:`~radis.spectrum.spectrum.Spectrum` object can contain one spectral quantity, such as
+A :class:`~radis.spectrum.spectrum.Spectrum` object can contain one spectral arrays, such as
 ``'radiance'`` for emission spectra, or ``'transmittance'`` for absorption spectra.
 It can also contain both emission and absorption quantities to be later combined
 with other spectra by solving the :ref:`radiative transfer equation <label_los_index>`.
@@ -169,8 +206,7 @@ with other spectra by solving the :ref:`radiative transfer equation <label_los_i
 Some variables represent quantities that have been convolved with an instrumental slit function,
 as measured in experimental spectra:
 
-- ``'radiance'``: the spectral radiance, convolved by the instrument function (typically in :math:``'mW/cm^2/sr/nm'``). This
-  is sometimes confusingly called *spectral intensity*.
+- ``'radiance'``: the spectral radiance, convolved by the instrument function (typically in :math:``'mW/cm^2/sr/nm'``). This is sometimes confusingly called *spectral intensity*.
 - ``'transmittance'``: the directional spectral transmittance (:math:``0`` to :math:``1``), convolved by the instrument function.
 - ``'emissivity'``: the directional spectral emissivity (:math:``0`` to :math:``1``), convolved by the instrument function.
   The spectral emissivity is the radiance emitted by a surface
@@ -201,17 +237,17 @@ Additionally, RADIS may calculate extra quantities such as:
 See the latest list in the :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES` and
 :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`.
 
-Custom spectral quantities
---------------------------
+Custom spectral arrays
+----------------------
 
 A :class:`~radis.spectrum.spectrum.Spectrum` object is built on top of a dictionary structure, and can handle
-spectral quantities with any name.
+spectral arrays with any name.
 
-Custom spectral quantities with arbitrary units can be defined when creating a Spectrum object, for instance::
+Custom spectral arrays with arbitrary units can be defined when creating a Spectrum object, for instance::
 
     # w, I are two numpy arrays
     s = Spectrum.from_array(w, I, 'irradiance',
-                               waveunit='nm', unit='w/cm2/nm')
+                               wunit='nm', unit='w/cm2/nm')
 
 Although not recommended, it is also possible to directly edit the dictionary containing the objects.
 For instance, this is done in
@@ -230,7 +266,7 @@ The unit conversion methods will properly work with custom units.
 Relations between quantities
 ----------------------------
 
-Most of the quantities above can be recomputed from one another. In an homogeneous
+Most of the quantities above can be recomputed from one another. In a homogeneous
 slab, one requires an emission spectral density, and an absorption spectral density,
 to be able to recompute the other quantities (provided that conditions such as path length
 are given). Under equilibrium, only one quantity is needed. Missing quantities
@@ -242,27 +278,27 @@ Units
 
 Default units are stored in the :attr:`~radis.spectrum.spectrum.Spectrum.units` dictionary
 
-It is strongly advised not to modify the dictionary above. However, spectral quantities
+It is strongly advised not to modify the dictionary above. However, spectral arrays
 can be retrieved in arbitrary units with the :meth:`~radis.spectrum.spectrum.Spectrum.get`
 method.
 
 When a spectral unit is convolved with :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`,
-a new convolved spectral quantities is created. The unit of the convolved quantity may be different,
-depending on how the slit function was normalised. Several options are available in RADIS.
+a new convolved spectral array is created. The unit of the convolved spectral array may be different,
+depending on how the slit function was normalized. Several options are available in RADIS.
 Please refer to the documentation of the :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` method.
 
 
 
 
 
-How to access a Spectrum properties?
-====================================
+How to access Spectrum properties?
+==================================
 
 
-Get spectral quantities
------------------------
+Get spectral arrays
+-------------------
 
-Spectral quantities of a Spectrum object can be stored in arbitrary
+Spectral Arrays of a Spectrum object can be stored in arbitrary
 wavespace (wavenumbers, wavelengths in air, or wavelengths in vacuum) and arbitrary units.
 
 Therefore, it is recommendeded to use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get`
@@ -272,11 +308,11 @@ method to retrieve the quantity un the units you want::
     _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
                  medium='air')
 
-See :ref:`spectral quantities <label_spectral_quantities>` for the list
-of spectral quantities.
+See :ref:`spectral arrays <label_spectral _arrays>` for the list
+of spectral arrays.
 
-Get wavelength / wavenumber
----------------------------
+Get wavelength/wavenumber
+-------------------------
 
 Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get_wavelength` and
 :py:meth:`~radis.spectrum.spectrum.Spectrum.get_wavenumber` methods::
@@ -293,7 +329,7 @@ Just print it::
 
     print(s)
 
-(that shows all spectral quantities stored in the object, all keys and
+(that shows all spectral arrays stored in the object, all keys and
 values in the :attr:`~radis.spectrum.spectrum.Spectrum.conditions` dictionary,
 and all atoms/molecules stored in the :attr:`~radis.spectrum.spectrum.Spectrum.populations`
 dictionary)
@@ -306,8 +342,8 @@ You can also show the conditions only with
 
 .. _label_spectrum_plot:
 
-Plot spectral quantities
-------------------------
+Plot spectral arrays
+--------------------
 
 Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`::
 
@@ -362,11 +398,11 @@ Example of output::
 Know if a spectrum has nan
 --------------------------
 
-:py:func:`~radis.spectrum.utils.has_nan` looks over all spectral
+:py:meth:`~radis.spectrum.spectrum.Spectrum.has_nan` looks over all spectral
 quantities. ``print(s)`` will also show the number of nans per quantity ::
 
-    from radis.spectrum.utils import has_nan
-    has_nan(s)
+    s = radis.test_spectrum()
+    s.has_nan()
 
 
 How to export ?
@@ -387,7 +423,7 @@ To store use the :py:meth:`~radis.spectrum.spectrum.Spectrum.store` method::
 
 The generated ``.spec`` file can be read (and edited) with any text editor. However,
 it may take a lot of space. If memory is important, you may use the ``compress=True``
-argument which will remove redundant spectral quantities (for instance, transmittance
+argument which will remove redundant spectral arrays (for instance, transmittance
 if you already know absorbance), and store the .spec file under binary format. Use
 the :py:meth:`~radis.spectrum.spectrum.Spectrum.update` method to regenerate missing
 quantities::
@@ -418,9 +454,9 @@ Saving to ``.txt`` in general isn't recommended as you will loose some informati
 the conditions). You better use :py:meth:`~radis.spectrum.spectrum.Spectrum.store` and export
 to ``.spec`` [a hidden ``.json``] format.
 
-If you really need to export a given spectral quantity to txt file (for use in another software,
+If you really need to export a given spectral arrays to txt file (for use in another software,
 for instance), you can use the :py:meth:`~radis.spectrum.spectrum.Spectrum.savetxt` method that
-will export a given spectral quantity::
+will export a given spectral arrays::
 
     s.savetxt('radiance_W_cm2_sr_um.csv', 'radiance_noslit', wunit='nm', Iunit='W/cm2/sr/µm')
 
@@ -433,7 +469,7 @@ How to modify a Spectrum object?
 Calculate missing quantities
 ----------------------------
 
-Some spectral quantities can be infered from quantities stored in the Spectrum
+Some spectral arrays can be infered from quantities stored in the Spectrum
 if enough conditions are given. For instance, transmittance can be recomputed
 from the spectral absorption coefficient if the path length is stored in the
 conditions.
@@ -465,18 +501,18 @@ Conditions can be updated *a posteriori* by modifying the dictionary::
 Rescale Spectrum with new path length
 -------------------------------------
 
-Path length can be changed after the spectra was calculated with the
+Path length can be changed after the spectra were calculated with the
 :py:meth:`~radis.spectrum.spectrum.Spectrum.rescale_path_length` method.
-If the spectrum is not optically thin, this requires to solve the radiative
+If the spectrum is not optically thin, this requires solving the radiative
 transfer equation again, so the ``emisscoeff`` and ``abscoeff`` (opacity) quantities
 will have to be stored in the Spectrum, or any equivalent combination
 (radiance_noslit and absorbance, for instance).
 
-Example:
+Example::
 
-    >>> from radis import load_spec
-    >>> s = load_spec('co_calculation.spec')
-    >>> s.rescale_path_length(0.5)      # calculate for new path_length
+    from radis import load_spec
+    s = load_spec('co_calculation.spec')
+    s.rescale_path_length(0.5)      # calculate for new path_length
 
 
 Rescale Spectrum with new mole fraction
@@ -505,8 +541,8 @@ Use :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`::
 
     s.apply_slit(1.5)    # nm
 
-By default, convoluted spectra are thinner than non convoluted spectra, to remove
-side effects. Use the ``mode=`` argument to change this behaviour.
+By default, convoluted spectra are thinner than non-convoluted spectra, to remove
+side effects. Use the ``mode=`` argument to change this behavior.
 
 .. minigallery:: radis.Spectrum.apply_slit
 
@@ -524,8 +560,8 @@ change the unit::
 
 .. _label_spectrum_algebra:
 
-Multiply, substract
--------------------
+Multiply, subtract
+------------------
 
 Sometimes you need to manipulate an experimental spectrum, to account
 for calibration or remove a baseline. Spectrum operations are done
@@ -545,9 +581,9 @@ of the line-of-sight functions, i.e, :py:func:`~radis.los.slabs.SerialSlabs` (``
 and :py:func:`~radis.los.slabs.MergeSlabs` (``//``)
 
 Most of these functions will only work if there is only one
-`spectral quantity <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#spectral-quantities>`__
+`spectral arrays <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#spectral-quantities>`__
 defined in the Spectrum. If there is any ambiguity, the following
-functions can be used to discard all but one spectral quantity:
+functions can be used to discard all but one spectral arrays:
 
 - :py:func:`~radis.spectrum.operations.Transmittance`
 - :py:func:`~radis.spectrum.operations.Transmittance_noslit`
@@ -560,7 +596,7 @@ the spectral radiance of a spectrum with a low resolution::
     (10*Radiance(s.apply_slit(10, 'nm'))).plot()
 
 The same can be achieved with the :py:meth:`~radis.spectrum.spectrum.Spectrum.take`
-method, which returns the spectrum with only one spectral quantity::
+method, which returns the spectrum with only one spectral arrays::
 
     (10*(s.apply_slit(10, 'nm')).take('radiance')).plot()
 
@@ -593,14 +629,14 @@ so they can be used directly with::
     s.offset(3, 'nm')
     s.crop(370, 380, 'nm')
 
-By default, using methods will modify the object inplace, using the functions will
+By default, using methods that will modify the object in place, using the functions will
 generate a new Spectrum.
 
 Normalize
 ---------
 
 Use :py:meth:`~radis.spectrum.spectrum.Spectrum.normalize` directly, if your spectrum
-only has one spectral quantity ::
+only has one spectral arrays ::
 
     s.normalize()
     s.normalize(normalize_how="max")
@@ -614,9 +650,23 @@ This returns a new spectrum and does not modify the Spectrum itself. To do so us
 
     s.normalize(inplace=True)
 
-You can chain the commands::
+.. _label_spectrum_chaining:
+
+Chaining
+--------
+
+You can chain the various methods of Spectrum. For instance::
 
     s.normalize().plot()
+
+Or::
+
+    s.crop(4120, 4220, 'nm').apply_slit(3, 'nm').take('radiance')
+
+If you want to create a new spectrum, don't forget to set ``inplace=False``
+for the first command that allows it. i.e ::
+
+    s2 = s.crop(4120, 4220, 'nm', inplace=False).apply_slit(3, 'nm').take('radiance')
 
 
 .. _label_spectrum_remove_baseline:
@@ -638,7 +688,7 @@ Or remove a linear baseline with:
 Calculate transmittance from radiance with Kirchoff's law
 ---------------------------------------------------------
 
-RADIS can be used to infer spectral quantities from others if they can
+RADIS can be used to infer spectral arrays from others if they can
 be derived. If on top that, equilibrium is assumed, then Kirchoff's law
 is used. See ``How to ... calculate missing quantities?`` and the
 :py:meth:`~radis.spectrum.rescale.update` method with argument ``assume_equilibrium=True``.
@@ -684,11 +734,11 @@ method, or simply the ``==`` statement (which is essentially the same thing)::
 However, :py:meth:`~radis.spectrum.spectrum.Spectrum.compare_with` allows more freedom
 regarding what quantities to compare. ``==`` will compare everything of two spectra,
 including input conditions, units under which spectral quantities are stored,
-populations of species if they were saved, etc. In many situations we may want
+populations of species if they were saved, etc. In many situations, we may want
 to simply compare the spectra themselves, or even a particular quantity like
 *transmittance_noslit*. Use::
 
-    s1.compare_with(s2, spectra_only=True)                    # compares all spectral quantities
+    s1.compare_with(s2, spectra_only=True)                    # compares all spectral arrays
     s1.compare_with(s2, spectra_only='transmittance_noslit')  # compares transmittance only
 
 The aforementionned methods will return a boolean array (True/False). If you
@@ -760,13 +810,13 @@ A simple fitting procedure could be::
     T_best = best.x
 
 Note however that the performances of a fitting procedure can be
-vastly improved by not reloading the line database everytime. In that
+vastly improved by not reloading the line database every time. In that
 case, it becomes interesting to use the :class:`~radis.lbl.factory.SpectrumFactory`
 class.
 
-An example of script that uses the :class:`~radis.lbl.factory.SpectrumFactory`,
+An example of a script that uses the :class:`~radis.lbl.factory.SpectrumFactory`,
 multiple fitting parameters, and plots the residual and the calculated spectrum
-in real time, can be found :ref:`in the Examples page <label_examples_multitemperature_fit>`
+in real-time, can be found :ref:`in the Examples page <label_examples_multitemperature_fit>`
 
 
 .. _label_spectrum_howto_interpolate:
@@ -811,7 +861,7 @@ folder as an argument, and converts it in a list of
 See more information about databases below.
 
 
-.. include:: database.rst
+.. include:: _database.rst
 
 
 
@@ -823,5 +873,3 @@ See more information about databases below.
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-
-

@@ -2,9 +2,9 @@
 References
 ==========
 
-.. include:: constants.rst
+.. include:: _constants.rst
 
-.. include:: bibliography.rst
+.. include:: _bibliography.rst
 
 Licence
 =======
@@ -14,14 +14,22 @@ under a `GNU LESSER GENERAL PUBLIC LICENSE (v3) <https://github.com/radis/radis/
 i.e. modifications must remain public and under LGPLv3.
 
 
-.. _label_db_cite:
+.. _label_cite:
 
 
 Cite
 ====
 
 RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
-for your work, **cite all of them that made it possible** :
+for your work, **cite all of them that made it possible**.
+
+Starting from 0.9.30, you can retrieve the bibtex entries of all papers and
+references that contribute to the calculation of a Spectrum, with
+:py:meth:`~radis.spectrum.spectrum.Spectrum.cite` ::
+
+    s.cite()
+
+See the :ref:`citation example <example_cite>`. The references usually include :
 
 Line-by-line algorithm :
 
@@ -74,7 +82,7 @@ RADIS:
 
 - Try online : :ref:`🌱 RADIS Lab <label_radis_online>`
 
-.. include:: similar_tools.rst
+.. include:: _similar_tools.rst
 
 
 .. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/

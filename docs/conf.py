@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.abspath("."))
 # %% ------------------------------------
 # Added EP 2018:
 # Auto-generate files with sphinx.apidoc
-# (else it requires /docs/source files to be generated manually and commited
+# (else it requires /docs/source files to be generated manually and committed
 # to the git directory)
 #
 # Reference:
@@ -59,9 +59,11 @@ extensions = [
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
+    "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     "sphinxcontrib.apidoc",
+    "sphinx.ext.linkcode",
 ]
 
 sphinx_gallery_conf = {
@@ -76,7 +78,20 @@ sphinx_gallery_conf = {
     "backreferences_dir": "gen_modules/backreferences",
     # Modules for which function/class level galleries are created.
     "doc_module": ("radis"),
+    "inspect_global_variables": True,
+    "show_signature": False,
 }
+
+
+def linkcode_resolve(domain, info):
+    """ for sphinx.ext.linkcode"""
+    if domain != "py":
+        return None
+    if not info["module"]:
+        return None
+    filename = info["module"].replace(".", "/")
+    return "https://github.com/radis/radis/tree/develop/%s.py" % filename
+
 
 # used to mini-galleries : https://sphinx-gallery.github.io/stable/configuration.html#add-mini-galleries-for-api-documentation
 autosummary_generate = True
@@ -84,7 +99,7 @@ autosummary_generate = True
 # %% ------------------------------------
 # Added EP 2018:
 # Auto-generate files with sphinx.apidoc
-# (else it requires /docs/source files to be generated manually and commited
+# (else it requires /docs/source files to be generated manually and committed
 # to the git directory)
 #
 # Reference:
@@ -98,7 +113,7 @@ def run_apidoc(_):
         "-f",
         "-e",
         "-o",
-        "source",
+        "gen_modules",
         "--separate",
         "../radis",
     ]
@@ -118,6 +133,7 @@ def run_apidoc(_):
 
 def setup(app):
     app.connect("builder-inited", run_apidoc)
+    app.add_css_file("custom.css")  #  for scrollable sidebar
 
 
 # %%
@@ -125,14 +141,16 @@ def setup(app):
 # Reference other packages
 intersphinx_mapping = {
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
-    "astroquery": ("http://astroquery.readthedocs.io/en/latest/", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
     "matplotlib": ("https://matplotlib.org/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
-    "scipy": ("http://docs.scipy.org/doc/scipy/reference", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "cantera": ("https://www.cantera.org/documentation/docs-2.4/sphinx/html/", None),
     "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
-    "astropy": ("http://docs.astropy.org/en/stable/", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
+    "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
+    "seaborn": ("https://seaborn.pydata.org/", None),
 }
 
 napoleon_google_docstring = False
@@ -160,7 +178,7 @@ author = (
     + "et al. (https://github.com/radis/radis/graphs/contributors)"
 )
 
-# The version info for the project you're documenting, acts as replacement for
+# The version info for the project you're documenting, acts as a replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
@@ -186,9 +204,9 @@ language = None
 # Else, today_fmt is used as the format for a strftime call.
 # today_fmt = '%B %d, %Y'
 
-# List of patterns, relative to source directory, that match files and
+# List of patterns, relative to the source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "dev/_*", "lbl/_*", "spectrum/_*", "references/_*"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -239,8 +257,8 @@ html_theme_options = {
     "github_banner": False,
     "travis_button": False,
     "codecov_button": False,
-    "sidebar_includehidden": False,
-    "fixed_sidebar": False,
+    "sidebar_includehidden": True,
+    "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
 }
 
@@ -258,14 +276,14 @@ html_theme_options = {
 # of the sidebar.
 html_logo = "radis_ico.png"
 
-# The name of an image file (within the static path) to use as favicon of the
+# The name of an image file (within the static path) to use as the favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 # html_favicon = None
 
 # Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
+# relative to this directory. They are copied after the built-in static files,
+# so a file named "default.css" will overwrite the built-in "default.css".
 html_static_path = ["_static"]
 
 # Add any extra paths that contain custom files (such as robots.txt or
@@ -292,6 +310,18 @@ html_sidebars = {
         "searchbox.html",
     ]
 }
+
+
+# The default values of all documented arguments, and undocumented arguments if enabled, are automatically detected and added to the docstring.
+# It also detects existing documentation of default arguments with the text unchanged.
+
+rst_prolog = (
+    """
+.. |default| raw:: html
+
+    <div class="default-value-section">"""
+    + ' <span class="default-value-label">Default:</span>'
+)
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 # html_additional_pages = {}

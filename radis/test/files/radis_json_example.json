@@ -1,0 +1,35 @@
+{
+"database": {                       # database key, stores all databases
+    "MY-HITEMP-CO2": {              # your databank name: use this in calc_spectrum()
+                                    # or SpectrumFactory.load_databank()
+    "info": "HITEMP 2010 databank", # whatever you want
+    "path": [
+        "D:\\Databases\\HITEMP-CO2\\hitemp_07",
+        "D:\\Databases\\HITEMP-CO2\\hitemp_08",
+        "D:\\Databases\\HITEMP-CO2\\hitemp_09"],
+    "format": "hitran",             # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                    # databank text file format. More info in
+                                    # SpectrumFactory.load_databank function.
+    "parfuncfmt": "hapi",           # 'cdsd', 'hapi', etc.
+                                    # format to read tabulated partition function
+                                    # file. If `hapi`, then HAPI (HITRAN Python
+                                    # interface) is used to retrieve them (valid if
+                                    # your databank is HITRAN data). HAPI is embedded
+                                    # into RADIS. Check the version.
+    # Optional
+    # ----------
+    "parfunc": "",                  # path to tabulated partition function to use.
+                                    # If `parfuncfmt` is `hapi` then `parfunc`
+                                    # should be the link to the hapi.py file. If
+                                    # not given, then the hapi.py embedded in RADIS
+                                    # is used (check version)
+    "levels_iso1": "",              # path to energy levels (needed for non-eq
+                                    # calculations). Default None
+    "levels_iso2": "",              # etc
+    "levels_iso4": "",              # etc
+    "levelsfmt": "",                # 'cdsd', etc.
+                                    # how to read the previous file. Default None.
+    "levelsZPE": 0                  # zero-point-energy (cm-1): offset for all level
+    }                               # energies. Default 0 (if not given)
+  }
+}

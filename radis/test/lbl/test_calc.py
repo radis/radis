@@ -103,6 +103,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         wavelength_max=4200,
         #                          databank='CDSD-HITEMP-JMIN',
         databank="hitran",  # not appropriate for these temperatures, but convenient for automatic testing
+        # databank="HITRAN-CO2-TEST",  # to use, but only has 1 isotope. TODO add new test file with 2 isotopes
         Tgas=300,
         Tvib=1700,
         Trot=1550,
@@ -114,8 +115,10 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         cutoff=1e-25,
         use_cached=True,
         medium="vacuum",
-        verbose=verbose,
+        verbose=3,
         optimization="simple",
+        broadening_method="fft",
+        neighbour_lines=5,  # previously: broadening_max_width [FWHM] = 10
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -159,6 +162,11 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     # Updated with RADIS 0.9.26+ (13/12/20) and switch to latest HAPI version
     # therefore TIPS 2017 (instead of TIPS 2011) which changed CO2 partition functions
     # Q(Tref=300) 291.9025 --> 291.0405
+    # I_ref = np.array([0.29057002, 0.29755271, 0.32971832, 0.32062057, 0.20689238,
+    #       0.19213799, 0.20150788, 0.17328113, 0.17212415, 0.15883971,
+    #       0.17112437, 0.15403756, 0.13375255, 0.1193155 , 0.10882585,
+    #       0.11113302, 0.04581781, 0.00247155, 0.00143631])
+    # Update on 17/06/20 (Radis 0.9.30) with the new HITRAN-2020 lines for CO2:
     w_ref = np.array(
         [
             4197.60321744,
@@ -185,25 +193,25 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     I_ref = np.array(
         [
-            0.29057002,
-            0.29755271,
-            0.32971832,
-            0.32062057,
-            0.20689238,
-            0.19213799,
-            0.20150788,
-            0.17328113,
-            0.17212415,
-            0.15883971,
-            0.17112437,
-            0.15403756,
-            0.13375255,
-            0.1193155,
-            0.10882585,
-            0.11113302,
-            0.04581781,
-            0.00247155,
-            0.00143631,
+            0.29009315,
+            0.29732781,
+            0.32959567,
+            0.32061864,
+            0.20588816,
+            0.19179586,
+            0.20101157,
+            0.17255937,
+            0.17163118,
+            0.15821026,
+            0.17120068,
+            0.15403946,
+            0.13356296,
+            0.11907705,
+            0.10890721,
+            0.11158052,
+            0.04583138,
+            0.00232573,
+            0.00136583,
         ]
     )
 
@@ -211,8 +219,10 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
 
-    assert np.allclose(w[::100], w_ref, atol=1e-6)
-    assert np.allclose(I[::100], I_ref, atol=1e-6)
+    # [71:-71] because of the shift introduced in 0.9.30 where convolved
+    # arrays are not cropped; but np.nan values are added
+    assert np.allclose(w[71:-71][::100], w_ref, atol=1e-6)
+    assert np.allclose(I[71:-71][::100], I_ref, atol=1e-6)
 
     return True
 
@@ -267,6 +277,8 @@ def test_calc_spectrum_overpopulations(
         medium="vacuum",
         verbose=verbose,
         optimization="simple",
+        broadening_method="fft",  # For this particular test case
+        neighbour_lines=5,  # previously: broadening_max_width [FWHM] = 10
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -279,7 +291,9 @@ def test_calc_spectrum_overpopulations(
         s.plot(wunit="nm")
 
     w, I = s.get("radiance", wunit="nm")
-    w_ref = w[::100]
+    # [71:-71] because of the shift introduced in 0.9.30 where convolved
+    # arrays are not cropped; but np.nan values are added
+    w_ref = w[71:-71][::100]
     # Compare against hardcoded results (neq 0.9.22, 28/06/18)
     #        I_ref = np.array([0.61826008, 0.65598262, 0.79760003, 0.7958013 , 0.5792486 ,
     #                          0.56727691, 0.60361258, 0.51549598, 0.51012651, 0.47133131,
@@ -306,44 +320,53 @@ def test_calc_spectrum_overpopulations(
     #                           0.32783797,0.13514737,0.00688769,0.00387544])
     # Updated again on (05/08/20) with implementation of optimized weights:
 
-    # Updated with RADIS 0.9.26+ (13/12/20) and switch to latest HAPI version
-    # therefore TIPS 2017 (instead of TIPS 2011) which changed CO2 partition functions
-    # Q(Tref=300) 291.9025 --> 291.0405
     #        I_ref = np.array([0.62097252, 0.66685971, 0.80982863, 0.7935332 , 0.56939115,
     #                       0.58255747, 0.61175655, 0.52287059, 0.51905438, 0.47659305,
     #                       0.51375266, 0.46019418, 0.39782806, 0.35340763, 0.32128853,
     #                       0.32785594, 0.13511584, 0.00686547, 0.00386199])
 
+    # Updated with RADIS 0.9.26+ (13/12/20) and switch to latest HAPI version
+    # therefore TIPS 2017 (instead of TIPS 2011) which changed CO2 partition functions
+    # Q(Tref=300) 291.9025 --> 291.0405
+
+    # I_ref = np.array([0.62123487, 0.667141  , 0.81018478, 0.79386946, 0.56957012,
+    #    0.58272738, 0.61192736, 0.52299488, 0.51917337, 0.4766868 ,
+    #    0.51385405, 0.46027087, 0.39788325, 0.35344755, 0.32131818,
+    #    0.32788457, 0.13512857, 0.00686548, 0.00386199])
+
+    # Update on 17/06/20 (Radis 0.9.30) with the new HITRAN-2020 lines for CO2
+
     I_ref = np.array(
         [
-            0.62123487,
-            0.667141,
-            0.81018478,
-            0.79386946,
-            0.56957012,
-            0.58272738,
-            0.61192736,
-            0.52299488,
-            0.51917337,
-            0.4766868,
-            0.51385405,
-            0.46027087,
-            0.39788325,
-            0.35344755,
-            0.32131818,
-            0.32788457,
-            0.13512857,
-            0.00686548,
-            0.00386199,
+            0.62009366,
+            0.66644973,
+            0.81033866,
+            0.79357758,
+            0.56690276,
+            0.58248594,
+            0.61106305,
+            0.52129611,
+            0.51819065,
+            0.47520791,
+            0.51455743,
+            0.46064655,
+            0.39761512,
+            0.35293948,
+            0.32169967,
+            0.3293075,
+            0.13525292,
+            0.00645308,
+            0.00366828,
         ]
     )
-
     if plot:
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
         s.plot_populations()
 
-    assert np.allclose(I[::100], I_ref, atol=1e-6)
+    # [71:-71] because of the shift introduced in 0.9.30 where convolved
+    # arrays are not cropped; but np.nan values are added
+    assert np.allclose(I[71:-71][::100], I_ref, atol=1e-6)
 
     if verbose:
         printm("Test overpopulations: OK")
@@ -455,7 +478,7 @@ def test_all_calc_methods_CO2pcN(
     sf = SpectrumFactory(
         wavenum_min=2284,
         wavenum_max=2285,
-        broadening_max_width=5,  # TODO @EP: crashes with 0.3?
+        truncation=2.5,  # TODO @EP: crashes with 0.15?
         mole_fraction=1,
         path_length=0.025,
         cutoff=1e-25,
@@ -479,7 +502,7 @@ def test_all_calc_methods_CO2pcN(
     del database_kwargs["info"]
     database_kwargs["levelsfmt"] = "cdsd-pcN"
     # ... load the new database
-    sf.load_databank(**database_kwargs)
+    sf.load_databank(**database_kwargs, load_energies=True)
 
     # Now, define Evib:
     Q_calc = sf.parsum_calc["CO2"][1]["X"]

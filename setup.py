@@ -33,9 +33,11 @@ to register it on Pypi see register.py::
 """
 import io
 import re
+import sys
 from os.path import abspath, dirname, exists, join
 
-from setuptools import find_packages, setup
+from numpy import get_include
+from setuptools import Extension, find_packages, setup
 
 # Build description from README (PyPi compatible)
 # -----------------------------------------------
@@ -122,71 +124,197 @@ else:
 with open(join(dirname(__file__), "radis", "__version__.txt")) as version_file:
     __version__ = version_file.read().strip()
 
-# Main install routine
-setup(
-    name="radis",
-    version=__version__,
-    description=description,
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/radis/radis",
-    author="Erwan Pannier",
-    author_email="erwan.pannier@gmail.com",
-    license="GNU Lesser General Public License v3 (LGPLv3)",
-    keywords=[
-        "spectrum",
-        "infrared",
-        "spectra",
-        "radiation",
-        "nonequilibrium",
-        "spectroscopy",
-        "molecules",
-        "HITRAN",
-    ],
-    packages=find_packages(),
-    install_requires=[
-        "hitran-api",
-        "numpy",
-        "scipy",
-        "matplotlib",
-        "pandas>=1.0.5",
-        "plotly",
-        "numba",
-        "mpldatacursor",
-        "astropy",  # Unit aware calculations
-        "publib>=0.3.2",  # Plotting styles for Matplotlib
-        "plotly>=2.5.1",  # for line survey HTML output
-        "termcolor",  # terminal colors
-        "configparser",
-        "astroquery>=0.3.9",  # to fetch HITRAN databases
-        "json-tricks>=3.15.0",  # to deal with non jsonable formats
-        "tables",  # for pandas to HDF5 export
-        "pytest",  # to run test suite
-        "joblib",  # for parallel loading of SpecDatabase
-        "numba",  # just-in-time compiler
-    ],
-    extras_require={
-        "dev": [
-            "numpydoc",  # for Jedi (autocompletion) to recognize
-            "black>=20.8b1",  # for code-linting in accordance to PEP8
-            "isort",  # for sorting imports
-            "pre-commit",  # to enforce Black before each commit
-        ]
-    },
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
-        "Topic :: Scientific/Engineering",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Operating System :: OS Independent",
-    ],
-    include_package_data=True,  # add non .py data files in MANIFEST.in
-    # package_data={'radis': ['radis/phys/units.txt']},
-    zip_safe=False,  # impossible as long as we have external files read with __file__ syntax
-    platforms="any",
-)
+
+# %% Cython extensions:
+# Ensures RADIS still builds if without Cython
+
+
+class BuildFailed(Exception):
+    pass
+
+
+from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+
+
+def show_message(*lines):
+    """ Note : will only happen if user installs with `pip install -v` """
+    print("=" * 74, file=sys.stderr)
+    for line in lines:
+        print(line, file=sys.stderr)
+    print("=" * 74, file=sys.stderr)
+
+
+def get_ext_modules(with_binaries):
+    """
+    Parameter
+    ---------
+    with_binaries: bool
+        if False, do not try to build Cython extensions
+    """
+    # Based on code from https://github.com/pallets/markupsafe/blob/main/setup.py
+
+    print(sys.version)
+    ext_modules = []
+    cmdclass = {}
+
+    if not with_binaries:
+        # skip building extensions
+        return {"cmdclass": cmdclass, "ext_modules": ext_modules}
+
+    # TO-DO: set language level
+
+    try:
+        import cython
+    except (ModuleNotFoundError) as err:
+        raise BuildFailed(
+            "Cython not found : Skipping all Cython extensions...!"
+        ) from err
+
+    print("Cython " + cython.__version__)
+
+    from Cython.Distutils import build_ext
+
+    class build_ext_subclass(build_ext):
+        def build_extensions(self):
+            c = self.compiler.compiler_type
+            copt = {
+                "msvc": ["/openmp", "/Ox", "/fp:fast", "/favor:INTEL64"],
+                "mingw32": ["-fopenmp", "-O3", "-ffast-math", "-march=native"],
+            }
+
+            lopt = {"mingw32": ["-fopenmp"]}
+
+            print("Compiling with " + c + "...")
+            try:
+                for e in self.extensions:
+                    e.extra_compile_args = copt[c]
+            except (KeyError):
+                pass
+            try:
+                for e in self.extensions:
+                    e.extra_link_args = lopt[c]
+            except (KeyError):
+                pass
+            try:
+                build_ext.build_extensions(self)
+            except (CCompilerError, DistutilsExecError, DistutilsPlatformError) as err:
+                raise BuildFailed() from err
+
+    ext_modules.append(
+        Extension(
+            "radis_cython_extensions",
+            sources=["./radis/cython/radis_cython_extensions.pyx"],
+            include_dirs=[get_include()],
+            language="c++",
+            extra_link_args=[],
+        )
+    )
+
+    cmdclass["build_ext"] = build_ext_subclass
+
+    return {"cmdclass": cmdclass, "ext_modules": ext_modules}
+
+
+#%% Main install routine
+def run_setup(with_binary):
+    setup(
+        name="radis",
+        version=__version__,
+        description=description,
+        long_description=long_description,
+        long_description_content_type="text/markdown",
+        url="https://github.com/radis/radis",
+        author="Erwan Pannier",
+        author_email="erwan.pannier@gmail.com",
+        license="GNU Lesser General Public License v3 (LGPLv3)",
+        keywords=[
+            "spectrum",
+            "infrared",
+            "spectra",
+            "radiation",
+            "nonequilibrium",
+            "spectroscopy",
+            "molecules",
+            "HITRAN",
+            "hitemp",
+            "exomol",
+            "line-by-line",
+        ],
+        packages=find_packages(),
+        install_requires=[
+            "hitran-api",
+            "beautifulsoup4",  # parse ExoMol website
+            "lxml",  # parser used for ExoMol website
+            "pyarrow",  # for the feather format (temporarily needed for ExoMol)
+            "numpy",
+            "scipy>=1.4.0",
+            "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
+            "seaborn",  # other matplotlib themes
+            "cython",
+            "pandas>=1.0.5",
+            "plotly>=2.5.1",
+            "numba",
+            "mpldatacursor",
+            "astropy",  # Unit aware calculations
+            "publib>=0.3.2",  # Plotting styles for Matplotlib
+            "plotly>=2.5.1",  # for line survey HTML output
+            "termcolor",  # terminal colors
+            "configparser",
+            "astroquery>=0.3.9",  # to fetch HITRAN databases
+            "json-tricks>=3.15.0",  # to deal with non jsonable formats
+            "tables",  # for pandas to HDF5 export
+            "pytest",  # to run test suite
+            "joblib",  # for parallel loading of SpecDatabase
+            "numba",  # just-in-time compiler
+            "psutil",  # for getting user RAM
+            "tuna",  # to generate visual/interactive performance profiles
+            "vaex",  # HDF5,
+            "h5py",  # HDF5
+            "habanero",  # CrossRef API to retrieve data from doi
+        ],
+        extras_require={
+            "dev": [
+                "numpydoc",  # for Jedi (autocompletion) to recognize
+                "black>=20.8b1",  # for code-linting in accordance to PEP8
+                "isort",  # for sorting imports
+                "pre-commit",  # to enforce Black before each commit
+            ]
+        },
+        classifiers=[
+            "Development Status :: 4 - Beta",
+            "Intended Audience :: Science/Research",
+            "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+            "Topic :: Scientific/Engineering",
+            "Programming Language :: Python",
+            "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.8",
+            "Programming Language :: Python :: 3.9",
+            "Operating System :: OS Independent",
+        ],
+        **get_ext_modules(with_binary),
+        include_package_data=True,  # add non .py data files in MANIFEST.in
+        # package_data={'radis': ['radis/phys/units.txt']},
+        zip_safe=False,  # impossible as long as we have external files read with __file__ syntax
+        platforms="any",
+    )
+
+
+# %% Run Main install routine
+try:
+    run_setup(with_binary=True)
+except BuildFailed:
+    import traceback
+
+    traceback.print_exc()
+    show_message(
+        "WARNING: RADIS C-extension could not be compiled, speedups",
+        " are not enabled.",
+        "Failure information, if any, is above.",
+        "Retrying the build without the C extension now.",
+    )
+    run_setup(with_binary=False)
+    show_message(
+        "WARNING: RADIS C-extension could not be compiled, speedups"
+        " are not enabled.",
+        "Plain-Python build succeeded.",
+    )

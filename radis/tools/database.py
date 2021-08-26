@@ -12,7 +12,7 @@ Examples
 
 See and get objects from database::
 
-    from radis.lbl import SpecDatabase
+    from radis.tools import SpecDatabase
     db = SpecDatabase(r"path/to/database")     # create or loads database
 
     db.update()  # in case something changed (like a file was added manually)
@@ -64,7 +64,6 @@ from time import strftime
 from warnings import warn
 
 import json_tricks
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
@@ -74,7 +73,7 @@ from scipy.interpolate import griddata
 from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
 from radis.misc.printer import printr
-from radis.spectrum.spectrum import Spectrum, is_spectrum
+from radis.spectrum.spectrum import Spectrum
 
 _scalable_inputs = ["mole_fraction", "path_length"]
 
@@ -134,7 +133,7 @@ def is_jsonable(x):
 
 
 def save(
-    s,
+    s: Spectrum,
     path,
     discard=[],
     compress=True,
@@ -233,7 +232,7 @@ def save(
     return fout  # return final name
 
 
-def _format_to_jsondict(s, discard, compress, verbose=True):
+def _format_to_jsondict(s: Spectrum, discard, compress, verbose=True):
     """Format to JSON writable dictionary.
 
     Notes
@@ -276,7 +275,6 @@ def _format_to_jsondict(s, discard, compress, verbose=True):
     # from the rest)
     if compress >= 2:
         sjson["_q"] = sjson["_q"].copy()
-        sjson["_q_conv"] = sjson["_q_conv"].copy()
         sjson = _compress(s, sjson)
 
     return sjson
@@ -376,7 +374,7 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
     return fout
 
 
-def _compress(s, sjson):
+def _compress(s: Spectrum, sjson):
     """removes all quantities that can be regenerated with s.update(), e.g,
     transmittance if abscoeff and path length are given, radiance if emisscoeff
     and abscoeff are given in non-optically thin case, etc.
@@ -399,12 +397,6 @@ def _compress(s, sjson):
         if redundant[key]:
             del sjson["_q"][key]
             discarded.append(key)
-    for key in list(sjson["_q_conv"].keys()):
-        if key == "wavespace":
-            continue
-        if redundant[key]:
-            del sjson["_q_conv"][key]
-            discarded.append(key)
 
     if len(discarded) > 0:
         print(
@@ -422,7 +414,7 @@ def _compress(s, sjson):
 # %% Load functions
 
 
-def load_spec(file, binary=True):  # , return_binary_status=False):
+def load_spec(file, binary=True) -> Spectrum:  # , return_binary_status=False):
     """Loads a .spec file into a :class:`~radis.spectrum.spectrum.Spectrum`
     object. Adds ``file`` in the Spectrum
     :attr:`~radis.spectrum.spectrum.Spectrum.file` attribute.
@@ -437,24 +429,26 @@ def load_spec(file, binary=True):  # , return_binary_status=False):
 
     Returns
     -------
-    s: Spectrum
-        a :class:`~radis.spectrum.spectrum.Spectrum` object
+    Spectrum : a :class:`~radis.spectrum.spectrum.Spectrum` object
 
+    Examples
+    --------
+    .. minigallery:: radis.load_spec
 
     See Also
     --------
 
-    :class:`~radis.tools.database.SpecDatabase`,
-    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+    :py:class:`~radis.tools.database.SpecDatabase`,
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
     """
 
     def _load(binary):
         if not binary:
             with open(file, "r") as f:
-                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=False)
         else:
             with open(file, "rb") as f:
-                sload = json_tricks.load(f, preserve_order=False, ignore_comments=True)
+                sload = json_tricks.load(f, preserve_order=False, ignore_comments=False)
         return sload
 
     # first try to open with given binary info
@@ -493,9 +487,11 @@ def load_spec(file, binary=True):  # , return_binary_status=False):
     return s
 
 
-def _json_to_spec(sload, file=""):
+def _json_to_spec(sload, file="") -> Spectrum:
     """Builds a Spectrum object from a JSON dictionary. Called by
     :func:`~radis.tools.database.load_spec`.
+
+    Json has been fixed from deprecating changes by _fix_format
 
     Parameters
     ----------
@@ -504,8 +500,7 @@ def _json_to_spec(sload, file=""):
 
     Returns
     -------
-    s: Spectrum
-        a :class:`~radis.spectrum.spectrum.Spectrum` object
+    Spectrum: a :class:`~radis.spectrum.spectrum.Spectrum` object
     """
 
     conditions = sload["conditions"]
@@ -529,13 +524,6 @@ def _json_to_spec(sload, file=""):
             for k, v in sload["_q"].items()
             if k != "wavespace"
         }
-        quantities.update(
-            {
-                k: (sload["_q_conv"]["wavespace"], v)
-                for k, v in sload["_q_conv"].items()
-                if k != "wavespace"
-            }
-        )
 
     # Generate spectrum:
     waveunit = sload["conditions"]["waveunit"]
@@ -574,6 +562,12 @@ def _json_to_spec(sload, file=""):
     else:
         kwargs["populations"] = None
 
+    # ... load references if exist
+    if "references" in sload:
+        references = sload["references"]
+    else:
+        references = {}
+
     # ... load other properties if exist
     for attr in ["units", "cond_units", "name"]:
         try:
@@ -582,7 +576,11 @@ def _json_to_spec(sload, file=""):
             kwargs[attr] = None
 
     s = Spectrum(
-        quantities=quantities, conditions=conditions, waveunit=waveunit, **kwargs
+        quantities=quantities,
+        conditions=conditions,
+        wunit=waveunit,
+        references=references,
+        **kwargs,
     )
 
     # ... add file
@@ -599,6 +597,10 @@ def _fix_format(file, sload):
     load old format precomputed spectra, and fix their attribute names.
 
     Save them again to fix the warnigns definitly.
+
+    Returns
+    -------
+    json, fixed:  fixed is True if a change was made.
     """
 
     fixed = False
@@ -617,6 +619,30 @@ def _fix_format(file, sload):
         )  # , DeprecationWarning)
         sload["_q"] = sload.pop("q")
         sload["_q_conv"] = sload.pop("q_conv")
+        fixed = True
+
+    # Fix _q_conv removal (0.9.30)
+    if "_q_conv" in sload:
+        if len(sload["_q_conv"]) == 0:
+            del sload["_q_conv"]
+        else:
+            printr(
+                "File {0}".format(basename(file))
+                + " has a deprecrated structure (key "
+                + "_q_conv removed in 0.9.30). Fixed this time, but regenerate "
+                + "database for faster loading."
+            )
+            if not "_q" in sload or len(sload["_q"]) == 0:
+                # only convolved quantities; just replace the dict
+                sload["_q"] = sload.pop("_q_conv")
+            else:
+                # here wavespaces arent necessarily the same
+                if sload["_q"]["wavespace"] == sload["_q_conv"]["wavespace"]:
+                    sload["_q"].update(sload.pop("_q_conv"))
+                else:
+                    # we need to interpolate
+                    raise NotImplementedError
+
         fixed = True
 
     try:
@@ -717,13 +743,20 @@ def _fix_format(file, sload):
         del sload["conditions"]["selfabsorption"]
         fixed = True
 
+    if "broadening_max_width" in sload["conditions"]:
+        broadening_max_width = sload["conditions"]["broadening_max_width"]
+        sload["conditions"]["truncation"] = broadening_max_width / 2
+        sload["conditions"]["neighbour_lines"] = broadening_max_width / 2
+        del sload["conditions"]["broadening_max_width"]
+        fixed = True
+
     # Fix all path names (if / are stored it screws up the JSON loading)
     # -----------------
     def fix_path(key):
         fixed = False
         if key in sload["conditions"]:
             path = sload["conditions"][key]
-            if not isinstance(path, str):
+            if path is not None and not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
                     + " has a deprecrated structure (key "
@@ -860,12 +893,12 @@ def _update_to_latest_format(s, file, binary):
     add to the start of your script::
 
         import radis
-        radis.AUTO_UPDATE_SPEC = True
+        radis.config["AUTO_UPDATE_SPEC"] = True
     """
 
     import radis
 
-    if radis.AUTO_UPDATE_SPEC:
+    if radis.config["AUTO_UPDATE_SPEC"]:
 
         assert exists(file)
 
@@ -901,6 +934,8 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
 
     :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
     """
+
+    import matplotlib.pyplot as plt
 
     if isinstance(file, str):
         s = load_spec(file)
@@ -1216,7 +1251,12 @@ class SpecList(object):
                 query = []
                 for (k, v) in kwconditions.items():
                     if isinstance(v, str):
-                        query.append("{0} == '{1}'".format(k, v))
+                        query.append("{0} == r'{1}'".format(k, v))
+                    elif v is None:
+                        # query "k == None" doesn't work. We use a workaround,
+                        # checking if the column is different from itself (i.e. : is None):
+                        # https://stackoverflow.com/a/32207819/5622825
+                        query.append(f"{k} != {k}")
                     else:
                         #                    query.append('{0} == {1}'.format(k,v))
                         query.append("{0} == {1}".format(k, v.__repr__()))
@@ -1417,8 +1457,8 @@ class SpecList(object):
                         print(sys.exc_info())
                         raise TypeError(
                             "An error occured (see above) when calculating "
-                            + "(dg[{0}]-{1}). Example: ".format(k, v)
-                            + "({0} - {1}). ".format(dg[k].iloc[0], v)
+                            + f"(dg[{k}] - {v}). Example: "
+                            + f"({dg[k].iloc[0]} - {v}). "
                             + "Check that your requested conditions match "
                             + "the database format"
                         ) from err2
@@ -1450,10 +1490,10 @@ class SpecList(object):
             if "mole_fraction" in kwconditions:
                 sout.rescale_mole_fraction(kwconditions["mole_fraction"])
 
-        if verbose:
+        if verbose > 1:
             print(
                 (
-                    "------- \t"
+                    "{:^7} \t".format(self.df.molecule[0])
                     + "\t".join(["{0}".format(k) for k in kwconditions.keys()])
                 )
             )
@@ -1629,9 +1669,10 @@ class SpecList(object):
 
         See Also
         --------
-
         Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method
         """
+
+        import matplotlib.pyplot as plt
 
         fig = plt.figure(num=nfig)
         ax = fig.gca()
@@ -1662,8 +1703,12 @@ class SpecList(object):
 
             >>> db.plot(Tvib, Trot, residual)     # where residual is calculated by a fitting
                                                   # procedure...
+
+        .. minigallery:: radis.tools.database.SpecList.plot_cond
         """
         # %%
+
+        import matplotlib.pyplot as plt
 
         x = self.df[cond_x]
         y = self.df[cond_y]
@@ -1678,17 +1723,21 @@ class SpecList(object):
 
         # Overlay color
         if z_value is not None:
-            assert (len(z_value)) == len(self.df)
+            if type(z_value) is str:
+                z = self.df[z_value]
+            else:
+                z = z_value
 
-            z = np.array(z_value) ** 0.5  # because the lower the better
+            assert len(z) == len(self.df)
 
+            z = np.array(z) ** 0.5  # because the lower the better
             #            norm = cm.colors.Normalize(vmax=z.max(), vmin=z.min())
             #            cmap = cm.PRGn
 
             xarr = np.linspace(min(x), max(x))
             yarr = np.linspace(min(y), max(y))
             mx, my = np.meshgrid(xarr, yarr)
-            zgrid = griddata((x, y), z, (mx, my), method="linear")
+            zgrid = griddata((x, y), z, (mx, my), method="linear", fill_value=np.nan)
             levels = np.linspace(min(z), max(z), 20)
             ax.contourf(
                 mx,
@@ -1727,6 +1776,103 @@ class SpecList(object):
 
 
 class SpecDatabase(SpecList):
+    """A Spectrum Database class to manage them all.
+
+    It basically manages a list of Spectrum JSON files, adding a Pandas
+    dataframe structure on top to serve as an efficient index to visualize
+    the spectra input conditions, and slice through the Dataframe with
+    easy queries
+
+    Similar to :class:`~radis.tools.database.SpecList`, but associated and
+    synchronized with a folder
+
+    Parameters
+    ----------
+    path: str
+        a folder to initialize the database
+    filt: str
+        only consider files ending with ``filt``. Default ``.spec``
+    binary: boolean
+        if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
+        try as binary file anyway. Default ``False``.
+    lazy_loading: bool``
+        If ``True``, load only the data from the summary csv file and the spectra will
+        be loaded when accessed by the get functions. If ``False``, load all
+        the spectrum files. If ``True`` and the summary .csv file does not exist,
+        load all spectra
+
+    Other Parameters
+    ----------------
+    *input for :class:`~joblib.parallel.Parallel` loading of database*
+
+    nJobs: int
+        Number of processors to use to load a database (usefull for big
+        databases). BE CAREFULL, no check is done on processor use prior
+        to the execution ! Default ``-2``: use all but 1 processors.
+        Use ``1`` for single processor.
+    batch_size: int or ``'auto'``
+        The number of atomic tasks to dispatch at once to each
+        worker. When individual evaluations are very fast, dispatching
+        calls to workers can be slower than sequential computation because
+        of the overhead. Batching fast computations together can mitigate
+        this. Default: ``'auto'``
+
+    More information in :class:`joblib.parallel.Parallel`
+
+    Examples
+    --------
+
+    ::
+
+        >>> db = SpecDatabase(r"path/to/database")     # create or loads database
+
+        >>> db.update()  # in case something changed
+        >>> db.see(['Tvib', 'Trot'])   # nice print in console
+
+        >>> s = db.get('Tvib==3000')[0]  # get a Spectrum back
+        >>> db.add(s)  # update database (and raise error because duplicate!)
+
+    Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to
+    automatically look-up and update a database when spectra are calculated.
+
+    The function to auto retrieve a Spectrum from database on calculation
+    time is a method of DatabankLoader class
+
+    You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
+    of the website.
+
+    .. notes:
+        Database interaction is based on Pandas query functions. As such, it
+        requires all conditions to be either float, string, or boolean. List
+        won't work!
+
+    See Also
+    --------
+    :func:`~radis.tools.database.load_spec`,
+    :meth:`~radis.spectrum.spectrum.Spectrum.store`
+
+    Methods to retrieve objects:
+
+    :meth:`~radis.tools.database.SpecList.get`,
+    :meth:`~radis.tools.database.SpecList.get_closest`,
+    :meth:`~radis.tools.database.SpecList.get_unique`,
+
+    Methods to manipulate the SpecDatabase:
+
+    :meth:`~radis.tools.database.SpecList.see`,
+    :meth:`~radis.tools.database.SpecDatabase.update`,
+    :meth:`~radis.tools.database.SpecDatabase.add`,
+    :meth:`~radis.tools.database.SpecDatabase.compress_to`,
+    :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
+
+    Compare another Spectrum to all spectra in the database:
+
+    :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`
+
+
+    .. minigallery:: radis.SpecDatabase
+    """
+
     def __init__(
         self,
         path=".",
@@ -1739,105 +1885,11 @@ class SpecDatabase(SpecList):
         batch_size="auto",
         lazy_loading=True,
     ):
-        """A Spectrum Database class to manage them all.
-
-        It basically manages a list of Spectrum JSON files, adding a Pandas
-        dataframe structure on top to serve as an efficient index to visualize
-        the spectra input conditions, and slice through the Dataframe with
-        easy queries
-
-        Similar to :class:`~radis.tools.database.SpecList`, but associated and
-        synchronized with a folder
-
-        Parameters
-        ----------
-        path: str
-            a folder to initialize the database
-        filt: str
-            only consider files ending with ``filt``. Default ``.spec``
-        binary: boolean
-            if ``True``, open Spectrum files as binary files. If ``False`` and it fails,
-            try as binary file anyway. Default ``False``
-        lazy_loading: bool``
-            If ``True``, load only the data from the summary csv file and the spectra will
-            be loaded when accessed by the get functions. If ``False``, load all
-            the spectrum files. If ``True`` and the summary .csv file does not exist,
-            load all spectra
-
-        Other Parameters
-        ----------------
-        *input for :class:`~joblib.parallel.Parallel` loading of database*
-
-        nJobs: int
-            Number of processors to use to load a database (usefull for big
-            databases). BE CAREFULL, no check is done on processor use prior
-            to the execution ! Default ``-2``: use all but 1 processors.
-            Use ``1`` for single processor.
-        batch_size: int or ``'auto'``
-            The number of atomic tasks to dispatch at once to each
-            worker. When individual evaluations are very fast, dispatching
-            calls to workers can be slower than sequential computation because
-            of the overhead. Batching fast computations together can mitigate
-            this. Default: ``'auto'``
-
-        More information in :class:`joblib.parallel.Parallel`
-
-        Examples
-        --------
-
-        ::
-
-            >>> db = SpecDatabase(r"path/to/database")     # create or loads database
-
-            >>> db.update()  # in case something changed
-            >>> db.see(['Tvib', 'Trot'])   # nice print in console
-
-            >>> s = db.get('Tvib==3000')[0]  # get a Spectrum back
-            >>> db.add(s)  # update database (and raise error because duplicate!)
-
-        Note that :py:class:`~radis.lbl.factory.SpectrumFactory` can be configured to
-        automatically look-up and update a database when spectra are calculated.
-
-        The function to auto retrieve a Spectrum from database on calculation
-        time is a method of DatabankLoader class
-
-        You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
-        of the website.
-
-        .. notes:
-            Database interaction is based on Pandas query functions. As such, it
-            requires all conditions to be either float, string, or boolean. List
-            won't work!
-
-
-        See Also
-        --------
-        :func:`~radis.tools.database.load_spec`,
-        :meth:`~radis.spectrum.spectrum.Spectrum.store`
-
-        Methods to retrieve objects:
-
-        :meth:`~radis.tools.database.SpecList.get`,
-        :meth:`~radis.tools.database.SpecList.get_closest`,
-        :meth:`~radis.tools.database.SpecList.get_unique`,
-
-        Methods to manipulate the SpecDatabase:
-
-        :meth:`~radis.tools.database.SpecList.see`,
-        :meth:`~radis.tools.database.SpecDatabase.update`,
-        :meth:`~radis.tools.database.SpecDatabase.add`,
-        :meth:`~radis.tools.database.SpecDatabase.compress_to`,
-        :meth:`~radis.tools.database.SpecDatabase.find_duplicates`
-
-        Compare another Spectrum to all spectra in the database:
-
-        :meth:`~radis.tools.database.SpecDatabase.fit_spectrum`,
-        """
         # TODO @devs: generate a SpecDatabase from a dict.
         # use the key of the dict insted of the file.
 
         # Assert name looks like a directory
-        name, ext = splitext(path)
+        name, ext = splitext(str(path))
 
         if ext != "":
             raise ValueError("Database should be a directory: {0}".format(path))
@@ -1918,7 +1970,7 @@ class SpecDatabase(SpecList):
                             ],
                             2,
                         ) != round(
-                            os.path.getmtime(self.path + "/" + f), 2
+                            os.path.getmtime(join(self.path, f)), 2
                         ):  # take rounded numbers to prevent errors
                             raise ValueError(
                                 "Spectrum {} last modification don't match the date stored in the csv. Update the database first with `SpecDatabase(..., lazy_loading=False)`".format(
@@ -2063,7 +2115,9 @@ class SpecDatabase(SpecList):
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
 
-    def add(self, spectrum, store_name=None, if_exists_then="increment", **kwargs):
+    def add(
+        self, spectrum: Spectrum, store_name=None, if_exists_then="increment", **kwargs
+    ):
         """Add Spectrum to database, whether it's a
         :py:class:`~radis.spectrum.spectrum.Spectrum` object or a file that
         stores one. Check it's not in database already.
@@ -2123,12 +2177,14 @@ class SpecDatabase(SpecList):
         --------
         ::
 
-            from radis.lbl import SpecDatabase
+            from radis.tools import SpecDatabase
             db = SpecDatabase(r"path/to/database")     # create or loads database
             db.add(s, discard=['populations'])
 
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
         of the website.
+
+        .. minigallery:: radis.SpecList.add
 
         See Also
         --------
@@ -2153,7 +2209,7 @@ class SpecDatabase(SpecList):
 
         # First, store the spectrum in a file
         # ... input is a Spectrum. Store it in database and load it from there
-        if is_spectrum(spectrum):
+        if isinstance(spectrum, Spectrum):
             # add defaults
             if store_name == None:
                 if not "add_info" in kwargs:
@@ -2286,14 +2342,16 @@ class SpecDatabase(SpecList):
                     + "define which residual to use with, for instance: "
                     + "`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)"
                 )
-            residual = lambda s_exp, s, normalize: get_residual(
-                s_exp,
-                s,
-                var=s_exp.get_vars()[0],
-                ignore_nan=True,
-                normalize=normalize,
-                normalize_how=normalize_how,
-            )
+
+            def residual(s_exp, s, normalize):
+                return get_residual(
+                    s_exp,
+                    s,
+                    var=s_exp.get_vars()[0],
+                    ignore_nan=True,
+                    normalize=normalize,
+                    normalize_how=normalize_how,
+                )
 
         kwconditions.update({"inplace": True})  # dont copy Spectrum to be faster
         spectra = self.get(conditions=conditions, **kwconditions)
@@ -2366,7 +2424,11 @@ class SpecDatabase(SpecList):
 
         out = s.get_conditions().copy()
 
-        # Add filename, and a link to the Spectrum object itself
+        # Add filename, name and a link to the Spectrum object itself
+        if s.name == None:
+            out["name"] = s.get_name()
+        else:
+            out["name"] = s.name
         out.update({"file": basename(file), "Spectrum": s})
         out["last_modified"] = os.path.getmtime(file)
 
@@ -2434,7 +2496,7 @@ def read_conditions_file(path):
 
     # if only "1" in isotopes they are read as numbers and later get() function fails.
     if "isotope" in df:
-        df["isotope"] = df["isotope"].astype(str).str.replace(".0", "")
+        df["isotope"] = df["isotope"].astype(str).str.replace(".0", "", regex=True)
 
     df["Spectrum"] = [None] * len(df["file"])
 

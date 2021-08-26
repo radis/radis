@@ -20,10 +20,15 @@ Routine Listing
 from copy import deepcopy
 from os.path import exists
 
-from radis.lbl.factory import SpectrumFactory
+try:  # Proper import
+    from .labels import SpectrumFactory
+except ImportError:  # if ran from here
+    from radis.lbl.factory import SpectrumFactory
 from radis.misc.basics import all_in
+from radis.misc.utils import Default
 from radis.phys.air import air2vacuum
 from radis.phys.convert import nm2cm
+from radis.spectrum.spectrum import Spectrum
 
 
 # %%
@@ -43,9 +48,12 @@ def calc_spectrum(
     databank="hitran",
     medium="air",
     wstep=0.01,
-    broadening_max_width=10,
+    truncation=Default(50),
+    neighbour_lines=0,
     cutoff=1e-27,
+    parsum_mode="full summation",
     optimization="min-RMS",
+    broadening_method=Default("voigt"),
     overpopulation=None,
     name=None,
     save_to="",
@@ -54,7 +62,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     **kwargs
-):
+) -> Spectrum:
     r"""Multipurpose function to calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
     Can automatically download databases (HITRAN/HITEMP) or use manually downloaded
@@ -129,13 +137,13 @@ def calc_spectrum(
         - the name of a a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
           Accepts wildcards ``'*'`` to select multiple files.
-        - the name of a spectral database registered in your ``~/.radis``
+        - the name of a spectral database registered in your ``~/radis.json``
           :ref:`configuration file <label_lbl_config_file>`.
           This allows to use multiple database files.
 
         Default ``'hitran'``. See :class:`~radis.lbl.loader.DatabankLoader` for more
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for
-        your ``~/.radis`` file format.
+        your ``~/radis.json`` file format.
 
         For multiple molecules, use a dictionary with molecule names as keys::
 
@@ -149,19 +157,46 @@ def calc_spectrum(
     ----------------
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
-        Does not change anything when giving inputs in wavenumber. Default ``'air'``​.
-    wstep: float (:math:`cm^{-1}`)
-        Spacing of calculated spectrum. Default ``0.01 cm-1``.
-    broadening_max_width: float (cm-1)
-        Full width over which to compute the broadening. Large values will create
-        a huge performance drop (scales as :math:`~broadening_max_width^2` without LDM)
-        The calculated spectral range is increased (by broadening_max_width/2
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``​ .
+    wstep: float (:math:`cm^{-1}`)  or `'auto'`
+        Resolution of wavenumber grid. Default ``0.01`` cm-1.
+        If `'auto'`, it is ensured that there
+        are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+        points for each linewidth.
+
+        .. note::
+            wstep = 'auto' is optimized for performances while ensuring accuracy,
+            but is still experimental in 0.9.30. Feedback welcome!
+    truncation: float (:math:`cm^{-1}`)
+        Half-width over which to compute the lineshape, i.e. lines are truncated
+        on each side after ``truncation`` (:math:`cm^{-1}`) from the line center.
+        If ``None``, use no truncation (lineshapes spread on the full spectral range).
+        Default is ``300`` :math:`cm^{-1}`
+
+        .. note::
+                Large values (> ``50``) can induce a performance drop (computation of lineshape
+                typically scale as :math:`~truncation ^2` ). The default ``300`` was
+                chosen to maintain a good accuracy, and still exhibit the sub-Lorentzian
+                behavior of most lines far (few hundreds :math:`cm^{-1}`) from the line center.
+    neighbour_lines: float (:math:`cm^{-1}`)
+        The calculated spectral range is increased (by ``neighbour_lines`` cm-1
         on each side) to take into account overlaps from out-of-range lines.
-        Default ``10`` cm-1.​
-    cutoff: float (~ unit of Linestrength: :math:`cm^{-1}/(#.cm^{-2})`)
+        Default is ``0`` :math:`cm^{-1}`.​
+    cutoff: float (~ unit of Linestrength: :math:`cm^{-1}/(molec.cm^{-2})`)
         discard linestrengths that are lower that this, to reduce calculation
-        times. ``1e-27`` is what is generally used to generate databases such as
-        CDSD. If ``0``, no cutoff. Default ``1e-27``.
+        times. ``1e-27`` is what is generally used to generate line databases such as
+        CDSD. If ``0``, no cutoff. Default ``1e-27`` .
+    parsum_mode: 'full summation', 'tabulation'
+        how to compute partition functions, at nonequilibrium or when partition
+        function are not already tabulated. ``'full summation'`` : sums over all
+        (potentially millions) of rovibrational levels. ``'tabulation'`` :
+        builds an on-the-fly tabulation of rovibrational levels (500 - 4000x faster
+        and usually accurate within 0.1%). Default ``full summation'``
+
+        .. note::
+            parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
+            calculations of small spectra extremelly fast. Will become the default
+            after 0.9.31.
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
 
@@ -213,12 +248,13 @@ def calc_spectrum(
 
     Returns
     -------
-    s: :class:`~radis.spectrum.spectrum.Spectrum`
+    :class:`~radis.spectrum.spectrum.Spectrum`
         Output spectrum:
+
         - Use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get` method to retrieve a
           spectral quantity (``'radiance'``, ``'radiance_noslit'``, ``'absorbance'``, etc...)
         - Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
-        directly.
+          directly.
         - See [1]_ to get an overview of all Spectrum methods
 
     References
@@ -273,15 +309,12 @@ def calc_spectrum(
     For more details on how to use the GPU method and process the database, refer to the examples
     linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
-    Examples using calc_spectrum :
-
     .. minigallery:: radis.lbl.calc.calc_spectrum
         :add-heading:
 
-    Cite
-    ----
-
-    RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
+    References
+    ----------
+    **cite**: RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
     to compute spectra, make sure you cite all of them, for proper reproducibility and acknowledgement of
     the work ! See :ref:`How to cite? <label_cite>`
 
@@ -428,9 +461,12 @@ def calc_spectrum(
                 # databank=databank,              # now in dict_arguments
                 medium=medium,
                 wstep=wstep,
-                broadening_max_width=broadening_max_width,
+                truncation=truncation,
+                neighbour_lines=neighbour_lines,
                 cutoff=cutoff,
+                parsum_mode=parsum_mode,
                 optimization=optimization,
+                broadening_method=broadening_method,
                 name=name,
                 use_cached=use_cached,
                 verbose=verbose,
@@ -466,9 +502,12 @@ def _calc_spectrum(
     databank,
     medium,
     wstep,
-    broadening_max_width,
+    truncation,
+    neighbour_lines,
     cutoff,
+    parsum_mode,
     optimization,
+    broadening_method,
     name,
     use_cached,
     verbose,
@@ -552,27 +591,44 @@ def _calc_spectrum(
         isotope=isotope,
         pressure=pressure,
         wstep=wstep,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
+        neighbour_lines=neighbour_lines,
         cutoff=cutoff,
+        parsum_mode=parsum_mode,
         verbose=verbose,
         optimization=optimization,
+        broadening_method=broadening_method,
         export_lines=export_lines,
         **kwargs
     )
-    if databank in [
-        "fetch",
-        "hitran",
-        "hitemp",
-    ]:  # mode to get databank without relying on  Line databases
+    if databank in ["fetch", "hitran", "hitemp", "exomol",] or (
+        isinstance(databank, tuple) and databank[0] == "exomol"
+    ):  # mode to get databank without relying on  Line databases
         # Line database :
         if databank in ["fetch", "hitran"]:
-            conditions = {"source": "hitran"}
+            conditions = {
+                "source": "hitran",
+                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
+            }
         elif databank in ["hitemp"]:
-            conditions = {"source": "hitemp"}
+            conditions = {
+                "source": "hitemp",
+                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium}
+            }
+        elif databank in ["exomol"]:
+            conditions = {
+                "source": "exomol",
+                "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
+        elif isinstance(databank, tuple) and databank[0] == "exomol":
+            conditions = {
+                "source": "exomol",
+                "exomol_database": databank[1],
+                "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
         # Partition functions :
         conditions.update(
             **{
-                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
                 "levelsfmt": None,  # no need to load energies by default
                 "db_use_cached": use_cached,
             }
@@ -583,6 +639,7 @@ def _calc_spectrum(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
+        conditions["load_energies"] = not _equilibrium
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
         sf.fetch_databank(**conditions)
@@ -620,14 +677,14 @@ def _calc_spectrum(
                 "Couldnt infer the format of the line database file: {0}. ".format(
                     databank
                 )
-                + "Create a user-defined database in your ~/.radis file "
+                + "Create a user-defined database in your ~/radis.json file "
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
             )
-
+        conditions["load_energies"] = not _equilibrium
         sf.load_databank(**conditions)
 
-    else:  # manual mode: get from user-defined line databases defined in ~/.radis
+    else:  # manual mode: get from user-defined line databases defined in ~/radis.json
         sf.load_databank(
             databank,
             load_energies=not _equilibrium,  # no need to load/calculate energies at eq.
@@ -642,6 +699,9 @@ def _calc_spectrum(
     #            lineshape_optimization = None
     #        sf.params['chunksize'] = lineshape_optimization
 
+    if overpopulation is not None or overpopulation != {}:
+        sf.misc.export_rovib_fraction = True  # required to compute Partition fucntions with overpopulation being taken into account
+
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
         if mode == "cpu":
@@ -651,7 +711,7 @@ def _calc_spectrum(
                 path_length=path_length,
                 name=name,
             )
-        else:
+        elif mode == "gpu":
             s = sf.eq_spectrum_gpu(
                 Tgas=Tgas,
                 mole_fraction=mole_fraction,
@@ -659,7 +719,11 @@ def _calc_spectrum(
                 path_length=path_length,
                 name=name,
             )
+        else:
+            raise ValueError(mode)
     else:
+        if mode != "cpu":
+            raise NotImplementedError(mode)
         s = sf.non_eq_spectrum(
             Tvib=Tvib,
             Trot=Trot,

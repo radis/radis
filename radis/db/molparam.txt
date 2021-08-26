@@ -10,7 +10,7 @@
 # Note
 # ---------
 # Isotope number was derived manually assuming the isonames were ordered in the database
-# The isotope name (ex: CO2 626) is kept for comparison if ever needed
+# The isotope AFGL code (ex: CO2 626) is kept for comparison if ever needed
 #
 # -----------------------------------------------------
 id iso isoname abundance     Q_296K      gj    mol_mass
@@ -21,6 +21,7 @@ id iso isoname abundance     Q_296K      gj    mol_mass
 1  4  162  3.10693E-04    8.5901E+02    6     19.016740
 1  5  182  6.23003E-07    8.7519E+02    6     21.020985
 1  6  172  1.15853E-07    5.2204E+03   36     20.020956
+1  7  262  2.41970E-08    1.0278E+03    1     20.022915
 #   CO2 (2)
 2  1  626  .984204E+00    2.8694E+02    1     43.989830
 2  2  636  1.10574E-02    5.7841E+02    2     44.993185
@@ -33,6 +34,7 @@ id iso isoname abundance     Q_296K      gj    mol_mass
 2  9  727  1.36847E-07    1.1002E+04    1     45.998262
 2  10 838  4.44600E-08    6.5350E+02    2     49.001675
 2  11 837  1.65354E-08    7.6152E+03   12     48.001646
+2  12 737  1.53750E-09    2.2120E+04    2     47.001618
 #    O3 (3)
 3  1  666  .992901E+00    3.4838E+03    1     47.984745
 3  2  668  3.98194E-03    7.4657E+03    1     49.988991
@@ -181,4 +183,4 @@ id iso isoname abundance     Q_296K      gj    mol_mass
 46 3  32  .105565E-01    5.3750E+02    2     44.974368
 46 4  23  .741668E-02    1.0230E+03    4     44.970399
 #   SO3 (47)
-47 5  26  .943400E+00    7.9638E+03    1     79.956820
+47 1  26  .943400E+00    7.9638E+03    1     79.956820

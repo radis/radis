@@ -47,11 +47,11 @@ For a First Time contribution, you can tackle one of the Issues displayed as
 Learn more in the :ref:`Contribute <label_developer_contribute>` section.
 
 
-.. include:: install.rst
+.. include:: _install.rst
 
 
-.. include:: architecture.rst
+.. include:: _architecture.rst
 
 
-.. include:: test.rst
+.. include:: _test.rst
 

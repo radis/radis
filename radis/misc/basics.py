@@ -127,6 +127,7 @@ def compare_dict(
     return_string=False,
     df1_str="Left",
     df2_str="Right",
+    ignore_keys=[],
 ):
     """Returns ratio of equal keys [0-1]
     If verbose, also print all keys and values on 2 columns
@@ -134,6 +135,7 @@ def compare_dict(
     ----------
     d1, d2: dict
         two dictionaries to compare
+
     Other Parameters
     ----------------
     compare_as_paths: list of keys
@@ -144,6 +146,9 @@ def compare_dict(
     return_string: boolean
         if ``True``, returns message instead of just printing it (useful in error messages)
         Default ``False``
+    ignore_keys: list
+        do not compare these keys
+
     Returns
     -------
     out: float [0-1]
@@ -161,6 +166,7 @@ def compare_dict(
         print("{0:15}{1}\t{2}".format("Key", df1_str, df2_str))
         print("-" * 40)
         all_keys = set(list(d1.keys()) + list(d2.keys()))
+        all_keys = [k for k in all_keys if k not in ignore_keys]
         s = 0  # counter of all matching keys
         for k in all_keys:
             if k in d1 and k in d2:  # key in both dicts. Let's compare values
@@ -340,34 +346,39 @@ def transfer_metadata(df1, df2, metadata):
     """Transfer metadata between a DataFrame df1 and df2.
 
     For some reason metadata are sometimes not copied when a DataFrame is
-    sliced or copied, even if they explicitely figure in the df._metadata
-    attribute. Here we copy them back
+    sliced or copied, even if they explicitely appear in the ``df.attrs``
+    attribute. See https://github.com/pandas-dev/pandas/issues/28283
+
+    Here we copy them back. Attributes can be :
+        - keys of the ``df1.attrs`` dictionary
+        - simple attributes of ``df1``, i.e., ``df1.X``
 
     Parameters
     ----------
-
     df1: pandas DataFrame
         copy from df1
-
     df2: pandas DataFrame
         copy to df2
     """
 
     for k in metadata:
-        if __debug__ and k not in df1._metadata:
-            from radis.misc.debug import printdbg
-
-            printdbg("WARNING. {0} not in _metadata: {1}".format(k, df1._metadata))
         if not hasattr(df2, k):
             assert k not in df1.columns  # point is not to copy columns!
-            setattr(df2, k, getattr(df1, k))
+            if k in df1.attrs:  # Keys of attribute dictionary
+                df2.attrs[k] = df1.attrs[k]
+            else:  # Direct attributes of df1
+                setattr(df2, k, getattr(df1, k))
+
+    # @dev: refactor : we're updating the database to properly store values
+    # either in columns either in the .attrs dict, but so they can always
+    # be accessed with df.X
 
 
 def expand_metadata(df, metadata):
     """Turn metadata from a float to a column.
 
     For some reason metadata are sometimes not copied when a DataFrame is
-    sliced or copied, even if they explicitely figure in the df._metadata
+    sliced or copied, even if they explicitely figure in the df.attrs
     attribute. Here we add them as column before such operations.
 
     Parameters
@@ -384,10 +395,10 @@ def expand_metadata(df, metadata):
     """
 
     for k in metadata:
-        if __debug__ and k not in df._metadata:
+        if __debug__ and k not in df.attrs:
             from radis.misc.debug import printdbg
 
-            printdbg("WARNING. {0} not in _metadata: {1}".format(k, df._metadata))
+            printdbg("WARNING. {0} not in metadata: {1}".format(k, df.attrs))
         df[k] = getattr(df, k)
 
 
@@ -445,3 +456,13 @@ def to_str(a):
         return a.decode("utf-8")
     else:
         return a
+
+
+def round_off(n):
+    # Getting rounded off value (atleast order 3)
+    for i in range(0, 10):
+        val = round(n, 3 + i)
+        if val == 0:
+            continue
+        return val
+    return 0

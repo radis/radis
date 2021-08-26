@@ -30,12 +30,13 @@ fig_prefix = basename(__file__) + ": "
 
 @pytest.mark.fast
 def test_populations(verbose=True, *args, **kwargs):
-    """ Test that vib and rovib populations are calculated correctly """
+    """Test that vib and rovib populations are calculated correctly"""
 
     from radis.lbl import SpectrumFactory
     from radis.misc.basics import all_in
 
     export = ["vib", "rovib"]
+
     sf = SpectrumFactory(
         2000,
         2300,
@@ -47,7 +48,17 @@ def test_populations(verbose=True, *args, **kwargs):
         {"MissingSelfBroadeningWarning": "ignore", "VoigtBroadeningWarning": "ignore"}
     )
     sf.load_databank("HITRAN-CO-TEST")
+    sf.misc.export_rovib_fraction = True
+    # we test that "tabulation" and "export_population" are incompatible
+    sf.params.parsum_mode = "tabulation"
+    with pytest.raises(ValueError) as err:
+        s = sf.non_eq_spectrum(2000, 2000)
+    assert (
+        str(err.value)
+        == "Cannot update populations of individual levels with `tabulation` mode. Choose `update_populations=False` or `mode='full summation'`"
+    )
 
+    sf.params.parsum_mode = "full summation"  # won't be default at some point
     s = sf.non_eq_spectrum(2000, 2000)
 
     pops = sf.get_populations(export)
@@ -84,14 +95,14 @@ def test_populations(verbose=True, *args, **kwargs):
 def test_rescaling_path_length(
     debug=False, plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
-    """ Test rescaling functions """
+    """Test rescaling functions"""
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck
         plt.ion()
 
     from radis.lbl import SpectrumFactory
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     Tgas = 1500
     sf = SpectrumFactory(
@@ -140,14 +151,14 @@ def test_rescaling_path_length(
 def test_rescaling_mole_fraction(
     debug=False, plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
-    """ Test rescaling functions """
+    """Test rescaling functions"""
 
     from radis.lbl import SpectrumFactory
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     Tgas = 1500
     sf = SpectrumFactory(
@@ -197,7 +208,7 @@ def test_rescaling_mole_fraction(
 
 @pytest.mark.fast
 def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **kwargs):
-    """ Test effect of propagating medium """
+    """Test effect of propagating medium"""
 
     from radis.lbl.factory import SpectrumFactory
 
@@ -206,7 +217,7 @@ def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **k
 
     T = 300
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     pl = SpectrumFactory(
         wavenum_min=2171.5,

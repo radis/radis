@@ -77,7 +77,7 @@ def test_direct_overpopulation_vs_recombined_bands(
         molecule="CO2",
         isotope=iso,
         wstep=0.01,
-        broadening_max_width=5,
+        truncation=2.5,
         medium="air",
         verbose=verbose,
     )
@@ -175,7 +175,7 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
         isotope=iso,  # ,2',
         path_length=10,
         mole_fraction=0.1,
-        broadening_max_width=1,
+        truncation=0.5,
         medium="vacuum",
         wstep=0.001,
         verbose=verbose,
@@ -187,7 +187,7 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.load_databank("HITRAN-CO2-TEST")
+    sf.load_databank("HITRAN-CO2-TEST", load_energies=True)
 
     # Compare energies
     for I in iso:

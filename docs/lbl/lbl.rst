@@ -7,6 +7,10 @@ Line-by-line (LBL) module
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+Calculations are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class.
+:py:func:`~radis.lbl.calc.calc_spectrum` is a high-level wrapper to
+:class:`~radis.lbl.factory.SpectrumFactory` for most simple cases.
+
 
 .. minigallery:: radis.calc_spectrum
 
@@ -24,7 +28,7 @@ community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or
 `Slack <https://radis.github.io/slack-invite/>`__ . |badge_gitter| |badge_slack|
 
 
-.. include:: databases.rst
+.. include:: _databases.rst
 
 Calculating spectra
 ===================
@@ -44,10 +48,12 @@ from the latest HITRAN database, and plot the transmittance: ::
         		molecule='CO',
         		mole_fraction=0.5,
         		isotope=1,
+            wstep=0.01,
             databank='hitran'   # or 'hitemp'
     		  	)
 	s.plot('transmittance_noslit')
 
+.. _label_multiple_molecule_spectrum:
 
 Calculate multiple molecules spectrum
 -------------------------------------
@@ -62,7 +68,8 @@ transmittance: ::
         	Tgas=700,
         	path_length=0.1,
         	mole_fraction={'CO2':0.5, 'CO':0.5},
-        	isotope=1,
+        	wstep=0.01,
+          isotope=1,
     		)
 	s.plot('transmittance_noslit')
 
@@ -81,6 +88,7 @@ following commands give the same result: ::
             molecule=["CO2", "CO"],
             mole_fraction=1,
             isotope={"CO2": "1,2", "CO": "1,2,3"},
+            wstep=0.01,
             verbose=verbose,
       )
 
@@ -133,25 +141,6 @@ Be careful to be consistent and not to give partial or contradictory inputs. ::
         )
 
 
-
-Flow Chart
-----------
-
-Under the hood, RADIS will calculate populations by scaling tabulated data (equilibrium)
-or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients
-from :ref:`Line Databases <label_line_databases>`, calculate the line broadening using
-various strategies to improve :ref:`Performances <label_lbl_performance>`,
-and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
-the flow chart below:
-
-.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :scale: 100 %
-
-The detail of the functions that perform each step of the RADIS calculation flow chart
-is given in :ref:`Architecture <label_dev_architecture>`.
-
-
 Equilibrium Conditions
 ----------------------
 
@@ -177,6 +166,7 @@ provides an interace to [CANTERA]_ directly from RADIS ::
                   mole_fraction=gas['H2O']
                   )
 
+.. minigallery:: radis.tools.gascomp.get_eq_mole_fraction
 
 
 Nonequilibrium Calculations
@@ -190,6 +180,15 @@ You can either let RADIS calculate rovibrational energies
 with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`,
 or supply an energy level database. In the latter case, you need to edit the
 :ref:`Configuration file <label_lbl_config_file>` .
+
+
+Fit a Spectrum
+--------------
+
+
+.. minigallery:: radis.lbl.factory.fit_spectrum
+
+
 
 Calculating spectrum using GPU
 ------------------------------
@@ -207,10 +206,10 @@ before the spectrum calculation begins.
 # TODO: perform timing test to see how much time calculating log_2gs separately takes
 
 Currently, GPU-powered spectra calculations are supported only at thermal equilibrium
-and therefore, the method to calculate the spectra has been named :py:func:`~radis.lbl.calc.eq_spectrum_gpu`.
+and therefore, the method to calculate the spectra has been named :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`.
 In order to use this method to calculate the spectra, follow the same steps as in the
 case of a normal equilibrium spectra, and if using :py:func:`~radis.lbl.calc.calc_spectrum`
-function set the parameter `mode` to `gpu`, or use :py:func:`~radis.lbl.calc.eq_spectrum_gpu`
+function set the parameter `mode` to `gpu`, or use :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
 
 Consider the following example which demonstrates the above information::
 
@@ -306,6 +305,30 @@ where each file contains all the information for multiple lines.
 `reshape_arrays.py` extracts and separates the different fields for each line, and saves the values of
 a specific field for all the lines in a separate file as explained above, e.g. `v0.npy`, 'da.npy`, etc.
 
+
+Under the hood
+==============
+
+
+Flow Chart
+----------
+
+RADIS can calculate populations of emitting/absorbing levels by scaling tabulated data (equilibrium)
+or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients
+from :ref:`Line Databases <label_line_databases>`, calculate the line broadening using
+various strategies to improve :ref:`Performances <label_lbl_performance>`,
+and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
+the flow chart below:
+
+.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+    :scale: 100 %
+
+The detail of the functions that perform each step of the RADIS calculation flow chart
+is given in :ref:`Architecture <label_dev_architecture>`.
+
+
+
 The Spectrum Factory
 --------------------
 
@@ -336,21 +359,23 @@ and :py:mod:`~astropy.units` ::
                          path_length=0.1 * u.m,
                          pressure=20 * u.mbar,
                          molecule='CO2',
+                         wstep = 0.01,
                          isotope='1,2',
                          cutoff=1e-25,              # cm/molecule
                          broadening_max_width=10,   # cm-1
                          )
-    sf.load_databank('HITRAN-CO2-TEST')        # this database must be defined in ~/.radis
+    sf.load_databank('HITRAN-CO2-TEST')        # this database must be defined in ~/radis.json
     s1 = sf.eq_spectrum(Tgas=300 * u.K)
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
+
 
 .. _label_lbl_config_file:
 
 Configuration file
 ------------------
 
-The ``~/.radis`` configuration file is used to store the list and attributes of the Line databases
+The ``~/radis.json`` configuration file is used to store the list and attributes of the Line databases
 available on your computer.
 
 Without a configuration file, you can still:
@@ -373,83 +398,106 @@ A configuration file will help to:
     format, and partition function format directly, but this is not recommended and should only be used if for some
     reason you cannot create a configuration file.
 
-A ``~/.radis`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which
+A ``~/radis.json`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which
 is specific to a given molecule. It typically looks like::
 
-str: Typical expected format of a ~/.radis entry::
+str: Typical expected format of a ~/radis.json entry::
 
-    [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-                                     #  or SpectrumFactory.load_databank()
-    path =                           #  no "", multipath allowed
-           D:\Databases\HITEMP-CO2\hitemp_07
-           D:\Databases\HITEMP-CO2\hitemp_08
-           D:\Databases\HITEMP-CO2\hitemp_09
-    format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                     # databank text file format. More info in
-                                     # SpectrumFactory.load_databank function.
-    parfuncfmt = hapi                # calculate partition functions
+    {
+      "database": {                                     # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                            # your databank name: use this in calc_spectrum()
+                                                        # or SpectrumFactory.load_databank()
+            "path": [                                   # no "", multipath allowed
+                "D:\\Databases\\HITEMP-CO2\\hitemp_07",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_08",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_09"
+            ],
+            "format": "hitran",                         # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                        # databank text file format. More info in
+                                                        # SpectrumFactory.load_databank function.
+            "parfuncfmt": "hapi"                        # calculate partition functions
+          }
+      }
+    }
 
 Following is an example where the path variable uses a wildcard ``*`` to find all the files that have ``hitemp_*`` in their names::
 
-	[MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-	                                 #  or SpectrumFactory.load_databank()
-	path =  D:\Databases\HITEMP-CO2\hitemp_*    # To load all hitemp files directly
-	format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-	                                 # databank text file format. More info in
-	                                 # SpectrumFactory.load_databank function.
-	parfuncfmt = hapi                # calculate partition functions
+    {
+      "database": {                                     # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                            # your databank name: use this in calc_spectrum()
+                                                        # or SpectrumFactory.load_databank()
+            "path": "D:\\Databases\\HITEMP-CO2\\hitemp_*",   # To load all hitemp files directly
+            "format": "hitran",                         # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                        # databank text file format. More info in
+                                                        # SpectrumFactory.load_databank function.
+            "parfuncfmt": "hapi"                        # calculate partition functions
+          }
+      }
+    }
 
 
 In the former example, for equilibrium calculations, RADIS uses [HAPI]_ to retrieve
 partition functions tabulated with TIPS-2017. It is also possible to use your own
 partition functions, for instance::
 
-    [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-                                     #  or SpectrumFactory.load_databank()
-    path =                           #  no "", multipath allowed
-           D:\Databases\HITEMP-CO2\hitemp_07
-           D:\Databases\HITEMP-CO2\hitemp_08
-           D:\Databases\HITEMP-CO2\hitemp_09
-    format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                     # databank text file format. More info in
-                                     # SpectrumFactory.load_databank function.
-    parfuncfmt: cdsd                 #  'cdsd', 'hapi', etc.
-                                     # format to read tabulated partition function
-                                     # file. If `hapi`, then HAPI (HITRAN Python
-                                     # interface) is used to retrieve them (valid if
-                                     # your databank is HITRAN data). HAPI is embedded
-                                     # into RADIS. Check the version. If not specified then 'hapi'
-                                     # is used as default
-    parfunc = PATH/TO/cdsd_partition_functions.txt
-                                     #  path to tabulated partition function to use.
-                                     # If `parfuncfmt` is `hapi` then `parfunc`
-                                     # should be the link to the hapi.py file. If
-                                     # not given, then the hapi.py embedded in RADIS
-                                     # is used (check version)
+    {
+      "database": {                                       # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                              # your databank name: use this in calc_spectrum()
+                                                          # or SpectrumFactory.load_databank()
+            "path": [                                     # no "", multipath allowed
+                "D:\\Databases\\HITEMP-CO2\\hitemp_07",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_08",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_09"
+            ],
+            "format": "hitran",                           # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                          # databank text file format. More info in
+                                                          # SpectrumFactory.load_databank function.
+            "parfuncfmt": "cdsd",                         # 'cdsd', 'hapi', etc.
+                                                          # format to read tabulated partition function
+                                                          # file. If `hapi`, then HAPI (HITRAN Python
+                                                          # interface) is used to retrieve them (valid if
+                                                          # your databank is HITRAN data). HAPI is embedded
+                                                          # into RADIS. Check the version. If not specified then 'hapi'
+                                                          # is used as default
+            "parfunc": "PATH/TO/cdsd_partition_functions.txt"
+                                                          # path to tabulated partition function to use.
+                                                          # If `parfuncfmt` is `hapi` then `parfunc`
+                                                          # should be the link to the hapi.py file. If
+                                                          # not given, then the hapi.py embedded in RADIS
+                                                          # is used (check version)
+          }
+      }
+    }
 
 By default, for nonequilibrium calculations, RADIS built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`
 are used to calculate the energy levels for CO2.
 It is also possible to use your own Energy level database. For instance::
 
 
-    [MY-HITEMP-CO2]                  #  your databank name: use this in calc_spectrum()
-                                     #  or SpectrumFactory.load_databank()
-    path =                           #  no "", multipath allowed
-           D:\Databases\HITEMP-CO2\hitemp_07
-           D:\Databases\HITEMP-CO2\hitemp_08
-           D:\Databases\HITEMP-CO2\hitemp_09
-    format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
-                                     # databank text file format. More info in
-                                     # SpectrumFactory.load_databank function.
-                                     # is used (check version)
-    levels_iso1 = D:\PATH_TO\energies_of_626_isotope.levels
-    levels_iso2 = D:\PATH_TO\energies_of_636_isotope.levels
-    levelsfmt = cdsd                 #  'cdsd', etc.
-                                     # how to read the previous file. Default None.
-    levelsZPE = 2531.828             #  zero-point-energy (cm-1): offset for all level
-                                     # energies. Default 0 (if not given)
+    {
+      "database": {                                        # database key: all databanks information are stored in this key
+          "MY-HITEMP-CO2": {                               # your databank name: use this in calc_spectrum()
+                                                           # or SpectrumFactory.load_databank()
+            "path": [                                      # no "", multipath allowed
+                "D:\\Databases\\HITEMP-CO2\\hitemp_07",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_08",
+                "D:\\Databases\\HITEMP-CO2\\hitemp_09"
+            ],
+            "format": "hitran",                             # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
+                                                            # databank text file format. More info in
+                                                            # SpectrumFactory.load_databank function.
+                                                            # is used (check version)
+            "levels_iso1": "D:\\PATH_TO\\energies_of_626_isotope.levels",
+            "levels_iso2": "D:\\PATH_TO\\energies_of_636_isotope.levels",
+            "levelsfmt": "cdsd",                            # 'cdsd', etc.
+                                                            # how to read the previous file. Default None.
+            "levelszpe": "2531.828"                         # zero-point-energy (cm-1): offset for all level
+                                                            # energies. Default 0 (if not given)
+          }
+      }
+    }
 
-The full description of a `~/.radis` entry is given in :py:data:`~radis.misc.config.DBFORMAT`:
+The full description of a `~/radis.json` entry is given in :py:data:`~radis.misc.config.DBFORMAT`:
 
 - ``path`` corresponds to Line databases (here: downloaded from [HITEMP-2010]_) and the ``levels_iso``
   are user generated Energy databases (here: calculated from the [CDSD-4000]_ Hamiltonian on non-distributed code,
@@ -477,37 +525,40 @@ The full description of a `~/.radis` entry is given in :py:data:`~radis.misc.con
 
 *How to create the configuration file?*
 
-A default ``~/.radis`` configuration file can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which
+A default ``~/radis.json`` configuration file can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which
 creates two test databases from fragments of [HITRAN-2016]_ line databases::
 
     from radis.test.utils import setup_test_line_databases
     setup_test_line_databases()
 
-which will create a ``~/.radis`` file with the following content ::
+which will create a ``~/radis.json`` file with the following content ::
 
 
-    [HITRAN-CO2-TEST]
-    info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
-    path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
-    format = hitran
-    parfuncfmt = hapi
-    levelsfmt = radis
-
-
-    [HITRAN-CO-TEST]
-    info = HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), 2000-2300 cm-1
-    path = PATH_TO\radis\radis\test\files\hitran_co_3iso_2000_2300cm.par
-    format = hitran
-    parfuncfmt = hapi
-    levelsfmt = radis
-
-
-    [HITEMP-CO2-TEST]
-    info = HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1
-    path = PATH_TO\radis\radis\test\files\cdsd_hitemp_09_fragment.txt
-    format = cdsd-hitemp
-    parfuncfmt = hapi
-    levelsfmt = radis
+    {
+      "database": {
+          "HITRAN-CO2-TEST": {
+            "info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
+            "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
+            "format": "hitran",
+            "parfuncfmt": "hapi",
+            "levelsfmt": "radis"
+          },
+          "HITRAN-CO-TEST": {
+            "info": "HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), 2000-2300 cm-1",
+            "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co_3iso_2000_2300cm.par",
+            "format": "hitran",
+            "parfuncfmt": "hapi",
+            "levelsfmt": "radis"
+          },
+          "HITEMP-CO2-TEST": {
+            "info": "HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1",
+            "path": "PATH_TO\\radis\\radis\\test\\files\\cdsd_hitemp_09_fragment.txt",
+            "format": "cdsd-hitemp",
+            "parfuncfmt": "hapi",
+            "levelsfmt": "radis"
+          }
+      }
+    }
 
 
 If you configuration file exists already, the test databases will simply be appended.
@@ -545,6 +596,8 @@ An example of how to use your own spectroscopic constants::
     s = calc_spectrum(...)
 
 
+.. minigallery:: radis.db.molecules.getMolecule
+
 
 Vibrational bands
 -----------------
@@ -560,6 +613,9 @@ Connect to a Spectrum Database
 
 In RADIS, the same code can be used to retrieve precomputed spectra if they exist,
 or calculate them and store them if they don't. See :ref:`Precompute Spectra <label_lbl_precompute_spectra>`
+
+
+.. minigallery:: radis.SpecDatabase
 
 
 
@@ -659,6 +715,27 @@ for an example, which can be run with (you will need the CDSD-HITEMP database in
 
     pytest radis/test/lbl/test_broadening.py -m "test_abscoeff_continuum"
 
+Choose the right wavenumber grid
+--------------------------------
+
+``wstep`` determines the wavenumber grid's resolution. Smaller the value, higher the resolution and
+vice-versa. By default **radis** uses ``wstep=0.01``. You can manually set the ``wstep`` value
+in :py:func:`~radis.lbl.calc.calc_spectrum` and :py:class:`~radis.lbl.factory.SpectrumFactory`.
+To get more accurate result you can further reduce the value, and to increase the performance you can increase the value.
+
+Based on ``wstep``, it will determine the number of gridpoints per linewidth.
+To make sure that there are enough gridpoints, Radis will raise an Accuracy Warning :py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
+if number of gridpoints are less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD` and raises an Accuracy Error
+if number of gridpoints are less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD`.
+
+From ``0.9.30`` a new mode ``wstep='auto'`` has been added which directly computes the optimum value of ``wstep``
+ensuring both performance and accuracy. It is ensured that there are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+points for each linewidth.
+
+.. note::
+    wstep = 'auto' is optimized for performances while ensuring accuracy,
+    but is still experimental in 0.9.30. Feedback welcome!
+
 
 Database loading
 ----------------
@@ -719,16 +796,28 @@ GPU accelerated spectrum calculation
 
 Apart from the parallelization method mentioned above, RADIS also supports CUDA-native parallel computation, specifically
 for lineshape calculation and broadening. To use these GPU-accelerated methods to compute the spectra, use either :py:func:`~radis.lbl.calc.calc_spectrum`
-function with parameter `mode` set to `gpu`, or :py:func:`~radis.lbl.calc.eq_spectrum_gpu`. In order to use these methods,
+function with parameter `mode` set to `gpu`, or :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`. In order to use these methods,
 ensure that your system has an Nvidia GPU with compute capability of atleast 3.0 and CUDA Toolkit 8.0 or above. Refer to
 :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` to see how to setup your system to run GPU accelerated spectrum
 calculation methods, examples and performance tests.
+
+
+Tabulated Partition Functions
+-----------------------------
+
+At nonequilibrium, calculating partition functions by full summation
+of all rovibrational levels can become costly. Radis offers to tabulate
+them just-in-time, using the ``parsum_mode='tabulation'`` of
+:py:func:`~radis.lbl.calc.calc_spectrum` or :py:class:`~radis.lbl.factory.SpectrumFactory`.
+See :py:attr:`~radis.lbl.loader.Conditions.parsum_mode`.
+
 
 Profiler
 --------
 
 You may want to track where the calculation is taking some time.
-You can set ``verbose=2`` to print the time spent on different operations. Example::
+You can set ``verbose=1`` or higher to print the time spent on the different
+calculation steps at runtime. Example with ``verbose=3``::
 
     s = calc_spectrum(1900, 2300,         # cm-1
                       molecule='CO',
@@ -737,34 +826,59 @@ You can set ``verbose=2`` to print the time spent on different operations. Examp
                       Tvib=1000,          # K
                       Trot=300,           # K
                       mole_fraction=0.1,
-                      verbose=2,
+                      verbose=3,
                       )
 
-::
+Performance profiles are kept in the output spectrum ``conditions['profiler']`` dictionary.
+You can also use the :py:meth:`~radis.lbl.factory.SpectrumFactory.print_perf_profile`
+method in the SpectrumFactory object or the :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
+method in the Spectrum object to print them in the console :
 
-    >>> ...
-    >>> Fetching vib / rot energies for all 749 transitions
-    >>> Fetched energies in 0s
-    >>> Calculate weighted transition moment
-    >>> Calculated weighted transition moment in 0.0
-    >>> Calculating nonequilibrium populations
-    >>> sorting lines by vibrational bands
-    >>> lines sorted in 0.0s
-    >>> Calculated nonequilibrium populations in 0.1s
-    >>> scale nonequilibrium linestrength
-    >>> scaled nonequilibrium linestrength in 0.0s
-    >>> calculated emission integral
-    >>> calculated emission integral in 0.0s
-    >>> Applying linestrength cutoff
-    >>> Applied linestrength cutoff in 0.0s (expected time saved ~ 0.0s)
-    >>> Calculating lineshift
-    >>> Calculated lineshift in 0.0s
-    >>> Calculate broadening FWHM
-    >>> Calculated broadening FWHM in 0.0s
-    >>> Calculating line broadening (695 lines: expect ~ 0.1s on 1 CPU)
-    >>> Calculated line broadening in 0.1s
-    >>> process done in 0.4s
-    >>> ...
+For the above example::
+
+    s.print_perf_profile()
+
+::
+    # Output:
+        spectrum_calculation      0.189s ████████████████
+            check_line_databank              0.000s
+            check_non_eq_param               0.042s ███
+            fetch_energy_5                   0.015s █
+            calc_weight_trans                0.008s
+            reinitialize                     0.002s
+                copy_database                    0.000s
+                memory_usage_warning             0.002s
+                reset_population                 0.000s
+            calc_noneq_population            0.041s ███
+                part_function                    0.035s ██
+                population                       0.006s
+            scaled_non_eq_linestrength       0.005s
+                map_part_func                    0.001s
+                corrected_population_se          0.003s
+            calc_emission_integral           0.006s
+            applied_linestrength_cutoff      0.002s
+            calc_lineshift                   0.001s
+            calc_hwhm                        0.007s
+            generate_wavenumber_arrays       0.001s
+            calc_line_broadening             0.074s ██████
+                precompute_DLM_lineshapes        0.012s
+                DLM_Initialized_vectors          0.000s
+                DLM_closest_matching_line        0.001s
+                DLM_Distribute_lines             0.001s
+                DLM_convolve                     0.060s █████
+                others                           0.001s
+            calc_other_spectral_quan         0.003s
+            generate_spectrum_obj            0.000s
+            others                           -0.016s
+
+Finally, you can also use the SpectrumFactory :py:meth:`~radis.lbl.factory.SpectrumFactory.generate_perf_profile`
+Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.generate_perf_profile`
+methods to generate an interactive profiler in the browser.
+
+.. image:: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+    :alt: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+    :target: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+
 
 .. _label_lbl_precompute_spectra:
 
@@ -783,4 +897,3 @@ of :py:class:`~radis.tools.database.SpecDatabase` in a :py:class:`~radis.lbl.fac
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-

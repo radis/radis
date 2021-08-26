@@ -43,7 +43,6 @@ recenter_slit, crop_slit):
 
 from warnings import warn
 
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy import exp
 from numpy import log as ln
@@ -51,7 +50,7 @@ from numpy import sqrt, trapz
 from scipy.interpolate import splev, splrep
 from scipy.signal import oaconvolve
 
-from radis.misc.arrays import evenly_distributed
+from radis.misc.arrays import anynan, evenly_distributed
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample_even
@@ -276,7 +275,7 @@ def get_slit_function(
                 center=center_wavespace,
                 bplot=plot,
                 norm_by=norm_by,
-                waveunit=return_unit,
+                wunit=return_unit,
                 scale=scale_slit,
                 *args,
                 **kwargs
@@ -292,7 +291,7 @@ def get_slit_function(
                 center=center_wavespace,
                 bplot=plot,
                 norm_by=norm_by,
-                waveunit=return_unit,
+                wunit=return_unit,
                 scale=scale_slit,
                 *args,
                 **kwargs
@@ -359,7 +358,7 @@ def get_slit_function(
             center=center_wavespace,
             bplot=plot,
             norm_by=norm_by,
-            waveunit=return_unit,
+            wunit=return_unit,
             scale=scale_slit,
             *args,
             **kwargs
@@ -380,7 +379,7 @@ def get_slit_function(
         wslit, Islit = import_experimental_slit(
             slit_function,
             norm_by=norm_by,  # norm is done later anyway
-            waveunit=unit,
+            wunit=unit,
             verbose=verbose,
             auto_crop=auto_recenter_crop,
             auto_recenter=auto_recenter_crop,
@@ -462,7 +461,7 @@ def get_slit_function(
 
         if plot:  # (plot after resampling / renormalizing)
             # Plot slit
-            plot_slit(wslit, Islit, waveunit=return_unit, Iunit=Iunit)
+            plot_slit(wslit, Islit, wunit=return_unit, Iunit=Iunit)
 
     else:
         raise TypeError(
@@ -492,14 +491,13 @@ def convolve_with_slit(
     I,
     w_slit,
     I_slit,
-    norm_by="area",
     mode="valid",
-    slit_dispersion=None,
     k=1,
     bplot=False,
     verbose=True,
     assert_evenly_spaced=True,
-    waveunit="",
+    wunit="",
+    waveunit=None,
 ):
     """Convolves spectrum (w,I) with instrumental slit function (w_slit, I_slit)
     Returns a convolved spectrum on a valid range.
@@ -527,17 +525,6 @@ def convolve_with_slit(
 
             Both wavespaces have to be the same!
 
-    norm_by: ``'area'``, ``'max'``, or ``None``
-        how to normalize. ``'area'`` conserves energy. With ``'max'`` the slit is normalized
-        at peak so that the maximum is one.
-
-        .. note::
-
-            ``'max'`` changes the unit of the spectral array, e.g. from
-            ``'mW/cm2/sr/µm'`` to ``'mW/cm2/sr')``
-
-        ``None`` doesnt normalize. Default ``'area'``
-
     mode: ``'valid'``, ``'same'``
         ``'same'`` returns output of same length as initial spectra,
         but boundary effects are still visible. ``'valid'`` returns
@@ -547,47 +534,6 @@ def convolve_with_slit(
 
     Other Parameters
     ----------------
-
-    slit_dispersion: func of (lambda), or ``None``
-        spectrometer reciprocal function : dλ/dx(λ)
-        If not None, then the slit_dispersion function is used to correct the
-        slit function for the whole range. Can be important if slit function
-        was measured far from the measured spectrum  (e.g: a slit function
-        measured at 632.8 nm will look broader at 350 nm because the spectrometer
-        dispersion is higher at 350 nm. Therefore it should be corrected)
-        Default ``None``
-
-        .. warning::
-            slit dispersion is not unit aware: if your spectrum is stored
-            in cm-1 the slit function is converted in cm-1 but the slit dispersion
-            is not changed, so that may result in errors
-            # TODO. If slit dispersion first force slit function to be given in nm ?
-            # Else it's not relevant
-
-        a Python implementation:
-
-        >>> def f(lbd):
-        >>>    return  w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w*1e-9)*cos(Φ))^2-1))
-
-        Theoretical / References:
-
-        >>> dλ/dx ~ d/mf    # at first order
-        >>> dλ/dx = w/(2*f)*(tan(Φ)+sqrt((2*d/m/(w)*cos(Φ))^2-1))  # cf
-
-        with:
-
-        - Φ: spectrometer angle (°)
-        - f: focal length (mm)
-        - m: order of dispersion
-        - d: grooves spacing (mm)   = 1/gr  with gr in (gr/mm)
-
-        See Laux 1999 "Experimental study and modeling of infrared air plasma
-        radiation" for more information
-
-        slit_dispersion is assumed to be constant on the whole measured range,
-        and corrected for the center wavelength. If there is an error >1% on
-        the whole range a warning is raised.
-
     k: int
         order of spline interpolation. 3: cubic, 1: linear. Default 1.
 
@@ -602,7 +548,7 @@ def convolve_with_slit(
         ``assert_evenly_spaced=True``, then we check this is the case, and resample
         ``w`` and ``I`` if needed. Recommended, but it takes some time.
 
-    waveunit: ``'nm'``, ``'cm-1'``
+    wunit: ``'nm'``, ``'cm-1'``
         just for printing messages. However, ``w`` and ``w_slit`` should be in the
         same wavespace.
 
@@ -616,13 +562,11 @@ def convolve_with_slit(
     Notes
     -----
 
-    Implementation is done in 7 steps:
+    Implementation is done in 5 steps:
 
     - Check input
-    - Correct for Slit dispersion
     - Interpolate the slit function on the spectrum grid, resample it if not
       evenly spaced
-    - Normalize
     - Check slit aspect, plot slit if asked for
     - Convolve!
     - Remove boundary effects
@@ -638,6 +582,14 @@ def convolve_with_slit(
     # 1. Check input
     # --------------
 
+    # Deprecated input:
+    if waveunit is not None:
+        warn(
+            "`waveunit=` parameter in convolve_with_slit is now named `wunit=`",
+            DeprecationWarning,
+        )
+        wunit = waveunit
+
     # Assert slit function is thin enough
     try:
         assert abs(w[-1] - w[0]) > abs(w_slit[-1] - w_slit[0])
@@ -649,15 +601,7 @@ def convolve_with_slit(
             + " ({0:.1f}nm). No valid range.".format(abs(w[-1] - w[0]))
         )
 
-    # 2. Correct for Slit dispersion
-    # --------------
-
-    if slit_dispersion is not None:
-        w_slit, I_slit = offset_dilate_slit_function(
-            w_slit, I_slit, w, slit_dispersion, threshold=0.01, verbose=verbose
-        )
-
-    # 3. Interpolate the slit function on the spectrum grid, resample it if not
+    # 2. Interpolate the slit function on the spectrum grid, resample it if not
     #    evenly spaced
     # --------------
 
@@ -690,7 +634,7 @@ def convolve_with_slit(
             print(w_slit)
             print(I_slit)
             print("Check figure")
-            plot_slit(w_slit, I_slit, waveunit=waveunit)
+            plot_slit(w_slit, I_slit, wunit=wunit)
             raise
 
         # can be a bug here if wstep has the wrong sign.
@@ -701,37 +645,30 @@ def convolve_with_slit(
         w_slit_interp = w_slit
         I_slit_interp = I_slit
 
-    # 4. Normalize
-    # --------------
-
-    w_slit_interp, I_slit_interp = normalize_slit(
-        w_slit_interp, I_slit_interp, norm_by=norm_by
-    )
-
-    # 5. Check aspect
+    # 3. Check aspect
     # -------------
 
     # Check no nan
-    if np.isnan(I_slit).sum() > 0:
+    if anynan(I_slit):
         raise ValueError("Slit has nan value")
 
     # check slit is positive
     if not (I_slit >= 0).all():
-        plot_slit(w_slit, I_slit, waveunit="")
+        plot_slit(w_slit, I_slit, wunit="")
         raise ValueError("Slit is partially negative. Check Figure")
 
     # Plot slit if asked for
     if bplot:
-        plot_slit(w_slit, I_slit, waveunit="")
+        plot_slit(w_slit, I_slit, wunit="")
 
-    # 6. Convolve!
+    # 4. Convolve!
     # --------------
 
     # We actually do not use mode valid in np.convolve,
     # instead we use mode=same and remove the same boundaries from I and W in remove_boundary()
     I_conv = oaconvolve(I, I_slit_interp, mode="same") * wstep
 
-    # 7. Remove boundary effects
+    # 5. Remove boundary effects
     # --------------
 
     w_conv, I_conv = remove_boundary(
@@ -835,7 +772,7 @@ def get_effective_FWHM(w, I):
 def offset_dilate_slit_function(
     w_slit_nm, I_slit, w_nm, slit_dispersion, threshold=0.01, verbose=True
 ):
-    """Offset the slit wavelengths ``w_slit`` to the center of range ``w``, and
+    """Offset the slit wavelengths ``w_slit_nm`` to the center of range ``w_nm``, and
     dilate them with ``slit_dispersion(w0)``
 
     Parameters
@@ -891,14 +828,21 @@ def offset_dilate_slit_function(
     """
     w0 = w_nm[len(w_nm) // 2]
     wslit0 = w_slit_nm[len(w_slit_nm) // 2]
+    slit_disp_0 = slit_dispersion(wslit0)
+    range_nm = abs(w_slit_nm[-1] - w_slit_nm[0]) / 2
     w_slit_init = w_slit_nm
 
     # Check that slit dispersion is about constant (<1% change) on the calculated range
     if threshold:
         if (
             not 1 - threshold
-            < slit_dispersion(w_nm.max()) / slit_dispersion(w_nm.min())
-            < 1 + threshold
+            <= slit_dispersion(
+                w_nm.max() - range_nm / slit_disp_0 * slit_dispersion(w_nm.max())
+            )
+            / slit_dispersion(
+                w_nm.min() + range_nm / slit_disp_0 * slit_dispersion(w_nm.min())
+            )
+            <= 1 + threshold
         ):
             warn(
                 "Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}nm".format(
@@ -916,7 +860,7 @@ def offset_dilate_slit_function(
         w_slit_nm - wslit0
     )
 
-    if verbose:
+    if verbose > 2:
         print(
             "{0:.2f} to {1:.2f}nm: slit function FWHM changed from {2:.2f} to {3:.2f}".format(
                 wslit0,
@@ -1014,12 +958,20 @@ def remove_boundary(
 
     crop_left, crop_right: int
         number of points to discard on each side if ``mode='crop'``
+        Values are replaced with ``nan``
 
     Returns
     -------
 
     w_conv, I_conv: numpy arrays
         cropped waverange and quantity
+
+    Notes
+    -----
+
+    .. note::
+        new in 0.9.30 : remove_boundary replaces off-range values with ``nan``
+        but keeps the same array size.
 
     See Also
     --------
@@ -1034,25 +986,30 @@ def remove_boundary(
 
     """
 
-    # Remove boundary effects with the x-axis changed accordingly
+    # Remove boundary effects by adding nans; keep the same x-axis
     if mode == "valid":
         la = min(len_I, len_I_slit_interp)
         a = int((la - 1) / 2)
         b = int((la) / 2)
-        I_conv = I_conv[a:-b]
-        w_conv = w[a:-b]
+        # I_conv = I[a:-b]    # former version : we would change the array size
+        # w_conv = w[a:-b]
+        I_conv[:a] = np.nan
+        I_conv[-b:] = np.nan
+        w_conv = w
     elif mode == "same":
         I_conv = I_conv
         w_conv = w
     elif mode == "crop":
-        l = len(I_conv)
         if crop_right == 0:
             _crop_right = None
         else:
             _crop_right = -crop_right
-        I_conv = I_conv[crop_left:_crop_right]
-        w_conv = w[crop_left:_crop_right]
-        assert len(I_conv) == l - crop_left - crop_right
+        # l = len(I_conv)
+        # I_conv = I_conv[crop_left:_crop_right]
+        # w_conv = w[crop_left:_crop_right]
+        # assert len(I_conv) == l - crop_left - crop_right
+        I_conv[:crop_left] = np.nan
+        I_conv[_crop_right:] = np.nan
     else:
         raise ValueError("Unexpected mode: {0}".format(mode))
 
@@ -1062,12 +1019,13 @@ def remove_boundary(
 def plot_slit(
     w,
     I=None,
-    waveunit="",
+    wunit="",
     plot_unit="same",
     Iunit=None,
     warnings=True,
     ls="-",
     title=None,
+    waveunit=None,
 ):
     """Plot slit, calculate and display FWHM, and calculate effective FWHM.
     FWHM is calculated from the limits of the range above the half width,
@@ -1076,28 +1034,27 @@ def plot_slit(
 
     Parameters
     ----------
-
     w, I: arrays    or   (str, None)
         if str, open file directly
-
     waveunit: ``'nm'``, ``'cm-1'`` or ``''``
         unit of input w
-
     plot_unit: ``'nm'``, ``'cm-1'`` or ``'same'``
         change plot unit (and FWHM units)
-
     Iunit: str, or None
         give Iunit
-
     warnings: boolean
         if True, test if slit is correctly centered and output a warning if it
         is not. Default ``True``
 
     Returns
     -------
-
     fix, ax: matplotlib objects
         figure and ax
+
+    Examples
+    --------
+
+    .. minigallery:: radis.plot_slit
 
     See Also
     --------
@@ -1112,12 +1069,22 @@ def plot_slit(
 
     """
 
-    from publib import set_style
+    # Deprecated input:
+    if waveunit is not None:
+        warn(
+            "`waveunit=` parameter in convolve_with_slit is now named `wunit=`",
+            DeprecationWarning,
+        )
+        wunit = waveunit
 
-    set_style("origin")
+    import matplotlib.pyplot as plt
+
+    from radis.misc.plot import set_style
+
+    set_style()
 
     try:
-        from radis.plot.toolbar import add_tools  # TODO: move in publib
+        from radis.plot.toolbar import add_tools
 
         add_tools()  # includes a Ruler to measure slit
     except:
@@ -1127,28 +1094,31 @@ def plot_slit(
     if isinstance(w, str) and I is None:
         w, I = np.loadtxt(w).T
     assert len(w) == len(I)
-    if np.isnan(I).sum() > 0:
+    if anynan(I):
         warn("Slit function has nans")
         w = w[~np.isnan(I)]
         I = I[~np.isnan(I)]
     assert len(I) > 0
 
     # cast units
-    waveunit = cast_waveunit(waveunit, force_match=False)
+    wunit = cast_waveunit(wunit, force_match=False)
     plot_unit = cast_waveunit(plot_unit, force_match=False)
     if plot_unit == "same":
-        plot_unit = waveunit
+        plot_unit = wunit
 
     # Convert wavespace unit if needed
-    elif waveunit == "cm-1" and plot_unit == "nm":  # wavelength > wavenumber
+    elif wunit == "cm-1" and plot_unit == "nm":  # wavelength > wavenumber
         w = cm2nm(w)
-        waveunit = "nm"
-    elif waveunit == "nm" and plot_unit == "cm-1":  # wavenumber > wavelength
+        wunit = "nm"
+    elif wunit == "nm" and plot_unit == "cm-1":  # wavenumber > wavelength
         w = nm2cm(w)
-        waveunit = "cm-1"
-    else:  # same units
+        wunit = "cm-1"
+    elif wunit == plot_unit:  # same units
         pass
-    #        raise ValueError('Unknown plot unit: {0}'.format(plot_unit))
+    elif plot_unit == "":  # ???
+        pass
+    else:
+        raise ValueError("Unknown plot unit: {0}".format(plot_unit))
 
     # Recalculate FWHM
     FWHM, xmin, xmax = get_FWHM(w, I, return_index=True)
@@ -1205,7 +1175,7 @@ def plot_slit(
             warn(
                 "Slit function doesnt seem centered: center measured with FWHM"
                 + " is not the array center (shift: {0:.3f}{1}): This can induce offsets!".format(
-                    abs(w[(xmin + xmax) // 2] - w[len(w) // 2]), waveunit
+                    abs(w[(xmin + xmax) // 2] - w[len(w) // 2]), wunit
                 )
             )
 
@@ -1304,12 +1274,13 @@ def import_experimental_slit(
     slit,
     norm_by="area",
     bplot=False,
-    waveunit="nm",
+    wunit="nm",
     auto_recenter=True,
     auto_crop=True,
     center=None,
     scale=1,
     verbose=True,
+    waveunit=None,
 ):
     """Import instrumental slit function and normalize it
 
@@ -1332,7 +1303,7 @@ def import_experimental_slit(
     bplot: boolean
         plot normalized slit function (for debugging). Default ``False``
 
-    waveunit: ``'nm'``, ``'cm-1'``
+    wunit: ``'nm'``, ``'cm-1'``
         used for plot only. Slit function is generated assuming you use the
         correct wavespace. No conversions are made here. Default ``'nm'``
 
@@ -1374,6 +1345,14 @@ def import_experimental_slit(
 
 
     """
+
+    # Deprecated input:
+    if waveunit is not None:
+        warn(
+            "`waveunit=` parameter in convolve_with_slit is now named `wunit=`",
+            DeprecationWarning,
+        )
+        wunit = waveunit
 
     # import
     if isinstance(slit, str):
@@ -1433,7 +1412,7 @@ def import_experimental_slit(
 
     # Plot slit
     if bplot:
-        plot_slit(w_slit, I_slit, waveunit=waveunit, Iunit=Iunit)
+        plot_slit(w_slit, I_slit, wunit=wunit, Iunit=Iunit)
 
     return w_slit, I_slit
 
@@ -1444,9 +1423,10 @@ def triangular_slit(
     center=0,
     norm_by="area",
     bplot=False,
-    waveunit="",
+    wunit="",
     scale=1,
     footerspacing=0,
+    waveunit=None,  # Deprecated
 ):
     r""" Generate normalized slit function
 
@@ -1470,7 +1450,7 @@ def triangular_slit(
     bplot: boolean
         plot normalized slit function (for debugging). Default ``False``
 
-    wavespace: '', 'nm', 'cm-1'
+    wunit: '', 'nm', 'cm-1'
         used for plot only. Slit function is generated assuming you use the
         correct wavespace. No conversions are made here.
 
@@ -1513,6 +1493,14 @@ def triangular_slit(
 
     """
 
+    # Deprecated input:
+    if waveunit is not None:
+        warn(
+            "`waveunit=` parameter in convolve_with_slit is now named `wunit=`",
+            DeprecationWarning,
+        )
+        wunit = waveunit
+
     # Build first half
     slope = 1 / (FWHM - wstep)
     a = int(FWHM / wstep)
@@ -1532,7 +1520,7 @@ def triangular_slit(
     # Normalize
     if norm_by == "area":  # normalize by the area
         I /= np.trapz(I, x=w)
-        Iunit = "1/{0}".format(waveunit)
+        Iunit = "1/{0}".format(wunit)
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
         Iunit = ""
@@ -1548,7 +1536,7 @@ def triangular_slit(
 
     # Plot slit
     if bplot:
-        plot_slit(w, I, waveunit=waveunit, Iunit=Iunit)
+        plot_slit(w, I, wunit=wunit, Iunit=Iunit)
 
     return w, I
 
@@ -1563,42 +1551,37 @@ def trapezoidal_slit(
     center=0,
     norm_by="area",
     bplot=False,
-    waveunit="",
+    wunit="",
     scale=1,
     footerspacing=0,
+    waveunit=None,
 ):
     r""" Build a trapezoidal slit. Remember that FWHM = (top + base) / 2
 
 
     Parameters
     ----------
-
     top: (nm)
         top of the trapeze
-
     base: (nm)
         base of the trapeze
-
     wstep: (nm)
         wavelength step
 
+    Other Parameters
+    ----------------
     center: (nm)
         center wavelength for the wavelength axs of the slit function
-
     norm_by: ``'area'``, ``'max'``
         normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
         done in Specair and changes units. Default ``'area'``
-
     bplot: boolean
         plot normalized slit function (for debugging). Default ``False``
-
-    wavespace: '', 'nm', 'cm-1'
+    waveunit: '', 'nm', 'cm-1'
         used for plot only. Slit function is generated assuming you use the
         correct wavespace. No conversions are made here.
-
     scale: float
         multiply slit by an arbitrary factor. Default 1.
-
     footerspacing: int
         spacing (footer) on left and right. Default 10.
 
@@ -1673,7 +1656,7 @@ def trapezoidal_slit(
     # Normalize
     if norm_by == "area":  # normalize by the area
         I /= np.trapz(I, x=w)
-        Iunit = "1/{0}".format(waveunit)
+        Iunit = "1/{0}".format(wunit)
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
         Iunit = ""
@@ -1689,7 +1672,7 @@ def trapezoidal_slit(
 
     # Plot slit
     if bplot:
-        plot_slit(w, I, waveunit=waveunit, Iunit=Iunit)
+        plot_slit(w, I, wunit=wunit, Iunit=Iunit)
 
     return w, I
 
@@ -1700,50 +1683,44 @@ def gaussian_slit(
     center=0,
     norm_by="area",
     bplot=False,
-    waveunit="",
+    wunit="",
     calc_range=4,
     scale=1,
     footerspacing=0,
+    waveunit=None,  # Deprecated
 ):
     r""" Generate normalized slit function
 
 
     Parameters
     ----------
-
     FWHM: (nm)
         full-width at half maximum
-
     wstep: (nm)
         wavelength step
 
+    Other Parameters
+    ----------------
     center: (nm)
         center wavelength for the wavelength axs of the slit function
-
     norm_by: ``'area'``, ``'max'``
         normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
         done in Specair and changes units. Default ``'area'``
-
     bplot: boolean
         plot normalized slit function (for debugging). Default ``False``
-
-    wavespace: '', 'nm', 'cm-1'
+    wunit: '', 'nm', 'cm-1'
         used for plot only. Slit function is generated assuming you use the
         correct wavespace. No conversions are made here.
-
     calc_range: float   (number of sigma)
         function broadening range expressed in number of standard deviation
-
     scale: float
         multiply slit by an arbitrary factor. Default 1.
-
     footerspacing: int
         spacing (footer) on left and right. Default 10
 
 
     Returns
     -------
-
     w, I: numpy arrays
         Slit function of shape::
 
@@ -1793,7 +1770,7 @@ def gaussian_slit(
     # Normalize
     if norm_by == "area":  # normalize by the area
         I /= np.trapz(I, x=w)
-        Iunit = "1/{0}".format(waveunit)
+        Iunit = "1/{0}".format(wunit)
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
         Iunit = ""
@@ -1809,7 +1786,7 @@ def gaussian_slit(
 
     # Plot slit
     if bplot:
-        plot_slit(w, I, waveunit=waveunit, Iunit=Iunit)
+        plot_slit(w, I, wunit=wunit, Iunit=Iunit)
 
     return w, I
 

@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Summary
--------
-
-RADIS
-
-A code to simulate infrared spectra of molecules::
+::
 
                 *(((((((
                  ((((((((((((              ,(((((
@@ -33,40 +28,6 @@ A code to simulate infrared spectra of molecules::
                                 &&&,
                                  &&
 
-See Source code [1]_, Documentation [2]_, Package [3]_
-
-Notes
------
-
-RADIS is nonequilibrium emission and absorption line-by-line code, for use by
-infrared spectroscopic that want to compare line databases, or experimentalist
-that want to fit their experimental line-of-sight spectra.
-
-Written as a general purpose radiative solver, the code is built around the HITRAN,
-HITEMP and CDSD databases for molecules in their electronic ground state. Energy
-levels are read from tabulated databases or calculated from Dunham developments.
-Boltzmann, Treanor, and state specific vibrational distributions can be
-generated. A modular architecture makes it possible to add new species without
-modifications to the core code. Thus far, CO2, CO are featured for non-equilibrium
-calculations, and all species present in the HITRAN database are featured for
-equilibrium calculations. To fit experimental spectra, RADIS includes a line
-survey tool, an interface with a look-up database to improve fitting convergence
-times, and a multi-slab module with a radiative transfer equation solver to
-reproduce line-of-sight experiments. Validation cases against existing spectral
-codes and experimental results from various plasma sources are presented.
-
-The code will soon be available under under GNU General Public
-License v3.0
-
-References
-----------
-
-.. [1] Source code: `GitHub repository <https://github.com/radis/radis>`__
-
-.. [2] Online Documentation: `Readthedocs.io <https://radis.readthedocs.io/en/latest/?badge=latest>`__
-
-.. [3] Install as a package: `PyPi project <https://pypi.python.org/pypi/radis>`__
-
 """
 
 import os
@@ -78,71 +39,116 @@ from .misc.utils import getProjectRoot
 # %% Config files
 
 # @dev: refactor in progress.
-# So far there are config files in ~/.radis (for databanks), global variables
+# So far there are config files in ~/radis.json (for databanks), global variables
 # here, and a radis/config.json file.
-# Everything should be merged in a user JSON file ~/.radis (json) overriding
+# Everything should be merged in a user JSON file ~/radis.json (json) overriding
 # the default one.
 
 config = get_config()
 """dict: RADIS configuration parameters
 
+Parameters
+----------
+"DEBUG_MODE":False
+
+    bool: change this at runtime with::
+
+        import radis
+        radis.config["DEBUG_MODE"] = True
+
+    Use the :py:func:`~radis.misc.debug.printdbg` function in ``radis.misc``, typically with::
+
+        if __debug__: printdbg(...)
+
+    so that printdbg are removed by the Python preprocessor when running in
+    optimize mode::
+
+        python -O *.py
+
+"AUTO_UPDATE_SPEC": False
+
+    bool: experimental feature
+    used to autoupdate .spec files to the latest format, by simply saving
+    them again once they're loaded and fixed.
+    Warning! Better have a copy of your files before that, or a way to regenerate
+    them.
+
+    Example : Add to the top of your script (once is enough!)::
+
+        import radis
+        radis.config["AUTO_UPDATE_SPEC"] = True
+
+    See Also
+    --------
+    :py:func:`~radis.tools.database._update_to_latest_format`
+
+
+"AUTO_UPDATE_DATABASE": False
+	bool: experimental feature
+	used to autoupdate .h5 files to the latest format, by simply saving
+	them again once they're loaded and fixed.
+	Warning! Better have a copy of your files before that, or a way to regenerate
+	them.
+
+	Examples
+	--------
+
+	Add to the top of your script (once is enough!)::
+
+	    import radis
+	    radis.AUTO_UPDATE_DATABASE = True
+
+	See Also
+	--------
+	:py:func:`~radis.io.hdf5.hdf2df`
+
+
+"OLDEST_COMPATIBLE_VERSION": "0.9.1"
+    str: forces to regenerate cache files that were created in a previous version
+
+    See Also
+    --------
+    :py:func:`~radis.io.cache_files.load_h5_cache_file`
+
+
+"USE_CYTHON": True
+    bool: try to use Cython functions when possible
+
+    See Also
+    --------
+    :py:func:`~radis.misc.arrays.add_at`
+
+
+"GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3
+    float: to determine the optimal value
+    of wstep using minimum FWHM value of spectrum.
+    Makes sure there are enough gridpoints per line.
+
+    See Also
+    --------
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
+
+
+"GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1
+    float: to determine the minimum feasible value
+    of wstep using minimum FWHM value of spectrum.
+    Makes sure there are enough gridpoints per line.
+
+    See Also
+    --------
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
+
+
 Notes
 -----
 
-refactor in progress.
-So far there are config files in ~/.radis (for databanks), global variables
-here, and a radis/config.json file.
-Everything should be merged in a user JSON file ~/.radis (json) overriding
-the default one.
+Default values are read from the ``radis/config.json`` file.
+
+All values are overriden at runtime by the keys in the user JSON file ``~/radis.json (json)``
+(in particular, the list of databases)
 """
+# TODO : Refactor in progress.
 
-
-# %% Global constants
-
-DEBUG_MODE = False
-"""bool: change this at runtime with::
-
-    import radis
-    radis.DEBUG_MODE = True
-
-Use the :py:func:`~radis.misc.debug.printdbg` function in ``radis.misc``, typically with::
-
-    if __debug__: printdbg(...)
-
-so that printdbg are removed by the Python preprocessor when running in
-optimize mode::
-
-    python -O *.py
-"""
-
-AUTO_UPDATE_SPEC = False
-"""bool: experimental feature
-used to autoupdate .spec files to the latest format, by simply saving
-them again once they're loaded and fixed.
-Warning! Better have a copy of your files before that, or a way to regenerate
-them.
-
-Examples
---------
-
-Add to the top of your script (once is enough!)::
-
-    import radis
-    radis.AUTO_UPDATE_SPEC = True
-
-See Also
---------
-:func:`~radis.tools.database._update_to_latest_format`
-"""
-
-OLDEST_COMPATIBLE_VERSION = "0.9.1"
-"""str: forces to regenerate cache files that were created in a previous version
-
-See Also
---------
-
-:py:func:`~radis.io.cache_files.load_h5_cache_file`
-"""
 
 # %% Version
 
@@ -189,8 +195,19 @@ def get_version(verbose=False, add_git_number=True):
 
 
 __version__ = get_version(add_git_number=False)
+version = get_version(add_git_number=False)
 
 
+# %% Global namespace
+
+__all__ = [
+    "config",
+    "version",
+    "__version__",
+]
+
+# prevent cyclic importants:
+from . import db, io, lbl, los, misc, phys, spectrum, tools
 from .db import *  # database of molecules
 from .io import *  # input / output
 from .lbl import *  # line-by-line module
@@ -200,3 +217,11 @@ from .phys import *  # conversion functions, blackbody objects
 from .spectrum import *  # Spectrum object
 from .test import *  # test
 from .tools import *  # slit, database, line survey, etc.
+
+__all__.extend(db.__all__)
+__all__.extend(io.__all__)
+__all__.extend(lbl.__all__)
+__all__.extend(los.__all__)
+__all__.extend(phys.__all__)
+__all__.extend(spectrum.__all__)
+__all__.extend(tools.__all__)

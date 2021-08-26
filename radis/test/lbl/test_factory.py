@@ -166,7 +166,7 @@ def test_spec_generation(
         wavelength_max=4400,
         cutoff=1e-27,
         isotope="1,2",
-        broadening_max_width=50,
+        truncation=25,
         optimization=None,
         # optimization="min-RMS",
         # pseudo_continuum_threshold=0.01,
@@ -175,10 +175,7 @@ def test_spec_generation(
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
-    sf.load_databank(
-        "HITEMP-CO2-DUNHAM",
-        load_energies=False,  # no need to load energies at equilibrium
-    )
+    sf.load_databank("HITEMP-CO2-DUNHAM")
     s = sf.eq_spectrum(Tgas=300, name="test_spec_generation")
     if verbose:
         printm(
@@ -297,7 +294,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
     if verbose:
         printm(">>> _test_power_integral")
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4300,
@@ -307,7 +304,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
         path_length=10,
         mole_fraction=400e-6,
         isotope=[1],
-        broadening_max_width=10,
+        truncation=5,
         verbose=verbose,
     )
     sf.warnings.update(
@@ -349,7 +346,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwargs):
-    """ See wavelength difference in air and vacuum """
+    """See wavelength difference in air and vacuum"""
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
@@ -357,7 +354,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
     if verbose:
         printm(">>> _test_media_line_shift")
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4500,
@@ -368,7 +365,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         mole_fraction=400e-6,
         isotope=[1],
         medium="vacuum",
-        broadening_max_width=10,
+        truncation=5,
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
@@ -411,7 +408,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
 def test_wavelength_units_conversion(
     input_wavelengths, expected_wavelengths_nm, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     wlmin, wlmax = input_wavelengths
     expected_wlmin, expected_wlmax = expected_wavelengths_nm
@@ -442,7 +439,7 @@ def test_wavelength_units_conversion(
 def test_wavenumber_units_conversion(
     input_wavenumbers, expected_wavenumbers_cm1, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     wmin, wmax = input_wavenumbers
     expected_wmin, expected_wmax = expected_wavenumbers_cm1
@@ -475,7 +472,7 @@ def test_wavenumber_units_conversion(
 def test_pressure_units_conversion(
     input_pressure, expected_pressure_bar, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4300,
@@ -506,7 +503,7 @@ def test_pressure_units_conversion(
 def test_pathlength_units_conversion(
     input_pathlength, expected_pathlength_cm, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4300,
@@ -536,7 +533,7 @@ def test_pathlength_units_conversion(
 def test_temperature_units_conversion(
     input_temperature, expected_temperature_K, verbose=True, *args, **kwargs
 ):
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     sf = SpectrumFactory(
         wavelength_min=4300,
@@ -556,6 +553,95 @@ def test_temperature_units_conversion(
     assert np.isclose(s.conditions["Tgas"], expected_temperature_K)
     assert np.isclose(s.conditions["path_length"], 0.1)  # cm
     assert np.isclose(s.conditions["pressure_mbar"], 20)
+
+
+@pytest.mark.fast
+def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
+    """Test to check that on computing several spectrum from the same Spectrum
+    Factory object we get the different wstep for each case using auto method"""
+
+    import radis
+    from radis.misc.basics import round_off
+
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
+
+    sf = SpectrumFactory(
+        wavelength_min=4400,
+        wavelength_max=4800,
+        mole_fraction=0.01,
+        cutoff=1e-25,
+        wstep="auto",
+        isotope=[1],
+        db_use_cached=True,
+        self_absorption=True,
+        verbose=verbose,
+    )
+
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.warnings["NegativeEnergiesWarning"] = "ignore"
+    sf.warnings["HighTemperatureWarning"] = "ignore"
+
+    sf.load_databank("HITRAN-CO-TEST")
+
+    s1 = sf.eq_spectrum(300, pressure=1)
+    assert sf.wstep == "auto"
+
+    wstep_calculated = s1.get_conditions()["wstep"]
+
+    # Checking computed wstep and expected wstep are equal
+    assert wstep_calculated == round_off(
+        sf.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
+    )
+
+    s2 = sf.eq_spectrum(300, pressure=0.2)
+    assert sf.wstep == "auto"
+
+    s3 = sf.eq_spectrum(300, pressure=0.001)
+    assert sf.wstep == "auto"
+
+    assert (
+        s1.get_conditions()["wstep"]
+        != s2.get_conditions()["wstep"]
+        != s3.get_conditions()["wstep"]
+    )
+
+
+@pytest.mark.fast
+def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs):
+    """Checks all methods to calculate Spectrum works with "auto" mode"""
+    Tgas = 1000
+
+    sf = SpectrumFactory(
+        wavelength_min=4165,
+        wavelength_max=4200,
+        mole_fraction=1,
+        path_length=0.3,
+        cutoff=1e-23,
+        molecule="CO2",
+        isotope=1,
+        wstep="auto",
+        optimization=None,
+        verbose=verbose,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.warnings["NegativeEnergiesWarning"] = "ignore"
+    sf.warnings["HighTemperatureWarning"] = "ignore"
+    sf.load_databank("HITRAN-CO2-TEST")
+
+    sf.eq_spectrum(Tgas)
+    wstep_1 = sf.params.wstep
+
+    sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas)
+    wstep_2 = sf.params.wstep
+
+    sf.eq_bands(Tgas)
+    wstep_3 = sf.params.wstep
+
+    sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
+    wstep_4 = sf.params.wstep
+
+    assert wstep_1 == wstep_2 == wstep_3 == wstep_4
+    assert sf.wstep == "auto"
 
 
 # --------------------------

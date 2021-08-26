@@ -187,7 +187,7 @@ def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
 
 
 def test_irrelevant_file_loading(*args, **kwargs):
-    """ check that irrelevant files (irrelevant wavenumber) are not loaded """
+    """check that irrelevant files (irrelevant wavenumber) are not loaded"""
 
     # For cdsd-hitemp files :
 
@@ -223,7 +223,7 @@ def _run_example(verbose=False):
 
     setup_test_line_databases(
         verbose=verbose
-    )  # add HITEMP-CO2-TEST in ~/.radis if not there
+    )  # add HITEMP-CO2-TEST in ~/radis.json if not there
     sf = SpectrumFactory(
         wavelength_min=4165,
         wavelength_max=4200,
@@ -232,11 +232,11 @@ def _run_example(verbose=False):
         molecule="CO2",
         isotope="1",
         cutoff=1e-25,  # cm/molecule
-        broadening_max_width=10,  # cm-1
+        truncation=5,  # cm-1
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/.radis
+    sf.load_databank("HITRAN-CO2-TEST")  # this database must be defined in ~/radis.json
 
 
 def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
@@ -303,5 +303,5 @@ def _run_testcases(verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # print("Testing io.py: ", _run_testcases(verbose=True))
+    print("Testing test_hitran_cdsd.py: ", _run_testcases(verbose=True))
     test_cache_regeneration(verbose=3)

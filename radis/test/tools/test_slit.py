@@ -25,22 +25,25 @@ from warnings import catch_warnings, filterwarnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from numpy import abs, linspace, sqrt, trapz
+from numpy import abs, cos, linspace, pi, sqrt, tan
 
 from radis.lbl.factory import SpectrumFactory
+from radis.misc.arrays import nantrapz
+from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printm
 from radis.phys.convert import dcm2dnm, dnm2dcm
 from radis.phys.units import is_homogeneous
 
 # from radis.lbl import SpectrumFactory
 from radis.spectrum.models import calculated_spectrum, transmittance_spectrum
+from radis.spectrum.spectrum import _cut_slices
 from radis.test.utils import setup_test_line_databases
 from radis.tools.database import load_spec
 from radis.tools.slit import (
-    convolve_with_slit,
     get_effective_FWHM,
     get_FWHM,
     import_experimental_slit,
+    offset_dilate_slit_function,
 )
 
 fig_prefix = basename(__file__) + ": "
@@ -50,16 +53,21 @@ fig_prefix = basename(__file__) + ": "
 # -----------------------------------------------------------------------------
 
 
+def _clean(plot, close_plots):
+    if plot:
+        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
+        set_style()
+        if close_plots:
+            plt.close("all")
+
+
 @pytest.mark.fast
 def test_all_slit_shapes(
     FWHM=0.4, verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Test all slit generation functions and make sure we get the expected FWHM"""
+    """Test all slit generation functions and make sure we get the expected FWHM"""
 
-    if plot:
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
-        if close_plots:
-            plt.close("all")
+    _clean(plot, close_plots)
 
     # get spectrum
     from radis.spectrum.spectrum import Spectrum
@@ -68,7 +76,7 @@ def test_all_slit_shapes(
     s = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
         quantity="radiance_noslit",
-        waveunit="nm",
+        wunit="nm",
         unit="mW/cm2/sr/µm",
     )
     wstep = np.diff(s.get_wavelength())[0]
@@ -123,10 +131,7 @@ def test_slit_unit_conversions_spectrum_in_cm(
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
 
-    if plot:  # dont get stuck with Matplotlib if executing through pytest
-        plt.ion()
-        if close_plots:
-            plt.close("all")
+    _clean(plot, close_plots)
 
     # %% Get a Spectrum (stored in cm-1)
     s_cm = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
@@ -150,7 +155,7 @@ def test_slit_unit_conversions_spectrum_in_cm(
 
         # Apply slit in nm this time
         s_nm = s_cm.copy()
-        w_cm = s_nm.get_wavenumber(which="non_convoluted")
+        w_cm = s_nm.get_wavenumber()
         slit_nm = dcm2dnm(slit_cm, w_cm[len(w_cm) // 2])
         s_nm.name = "Spec in cm-1, slit {0:.2f} nm".format(slit_nm)
         s_nm.apply_slit(slit_nm, unit="nm", shape=shape, mode="same")
@@ -185,17 +190,14 @@ def test_slit_unit_conversions_spectrum_in_nm(
     from radis.spectrum.spectrum import Spectrum
     from radis.test.utils import getTestFile
 
-    if plot:  # dont get stuck with Matplotlib if executing through pytest
-        plt.ion()
-        if close_plots:
-            plt.close("all")
+    _clean(plot, close_plots)
 
     # %% Get a Spectrum (stored in nm)
 
     s_nm = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
         quantity="radiance_noslit",
-        waveunit="nm",
+        wunit="nm",
         unit="mW/cm2/sr/µm",
         conditions={"self_absorption": False},
     )
@@ -224,7 +226,7 @@ def test_slit_unit_conversions_spectrum_in_nm(
 
         # Apply slit in nm this time
         s_cm = s_nm.copy()
-        w_nm = s_nm.get_wavelength(which="non_convoluted")
+        w_nm = s_nm.get_wavelength()
         slit_cm = dnm2dcm(slit_nm, w_nm[len(w_nm) // 2])
         s_cm.name = "Spec in nm, slit {0:.2f} cm-1".format(slit_cm)
         s_cm.apply_slit(slit_cm, unit="cm-1", shape=shape, mode="same")
@@ -247,7 +249,7 @@ def test_slit_unit_conversions_spectrum_in_nm(
 
 
 def test_convoluted_quantities_units(*args, **kwargs):
-    """ Test that units are correctly convoluted after convolution """
+    """Test that units are correctly convoluted after convolution"""
 
     from radis.test.utils import getTestFile
 
@@ -274,10 +276,7 @@ def test_against_specair_convolution(
     plot=True, close_plots=True, verbose=True, debug=False, *args, **kwargs
 ):
 
-    if plot:
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
-        if close_plots:
-            plt.close("all")
+    _clean(plot, close_plots)
 
     # Test
     from radis.test.utils import getTestFile
@@ -327,8 +326,8 @@ def test_against_specair_convolution(
     # ... Test output is the same
     wu, Iu = s.get("radiance", Iunit="mW/cm2/sr")
 
-    As = np.trapz(Is, ws)  # Todo one day: replace with get_power() function
-    Au = np.trapz(Iu, wu)
+    As = nantrapz(Is, ws)  # Todo one day: replace with get_power() function
+    Au = nantrapz(Iu, wu)
     if verbose:
         print(
             (
@@ -340,7 +339,7 @@ def test_against_specair_convolution(
     assert np.isclose(As, Au, rtol=1e-2)
 
     # Test resampling
-    s.resample(linspace(376, 380.6, 3000), unit="nm", if_conflict_drop="convoluted")
+    s.resample(linspace(376, 380.6, 3000), unit="nm")
     s.apply_slit(slit_nm, norm_by="max")
     if plot:
         s.plot(
@@ -362,18 +361,11 @@ def test_against_specair_convolution(
 
 @pytest.mark.fast
 def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **kwargs):
-    """ Test norm_by = 'area' vs norm_by = 'max' """
+    """Test norm_by = 'area' vs norm_by = 'max'"""
 
     from radis.test.utils import getTestFile
 
-    if plot:
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
-        if close_plots:
-            plt.close("all")
-
-        from publib import set_style
-
-        set_style("origin")
+    _clean(plot, close_plots)
 
     # %% Compare spectra convolved with area=1 and max=1
     # Slit in nm
@@ -398,7 +390,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     if plot:
         ax.plot(w_max, I_max / FWHM, "r", label="(norm_by:max)/FWHM")
         ax.legend(loc="best")
-    assert np.allclose(I_area, I_max / FWHM)
+    assert np.allclose(I_area, I_max / FWHM, equal_nan=True)
     if verbose:
         print("equivalence of normalisation mode for spectrum in 'nm': OK")
 
@@ -422,7 +414,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     if plot:
         ax.plot(w_max, I_max / FWHM, "r", label="(norm_by:max)/FWHM")
         ax.legend(loc="best")
-    assert np.allclose(I_area, I_max / FWHM)
+    assert np.allclose(I_area, I_max / FWHM, equal_nan=True)
     if verbose:
         print("equivalence of normalisation mode for spectrum in 'cm-1': {0}: OK")
     assert is_homogeneous(s.units["radiance"], "mW/cm2/sr")
@@ -448,12 +440,7 @@ def test_slit_energy_conservation(
 
     from radis.test.utils import getTestFile
 
-    if plot:
-        import matplotlib.pyplot as plt
-
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
-    if close_plots:
-        plt.close("all")
+    _clean(plot, close_plots)
 
     if verbose:
         print("\n>>> _test_slit_energy_conservation\n")
@@ -467,7 +454,7 @@ def test_slit_energy_conservation(
     P = s.get_power(unit="mW/cm2/sr")
     s.apply_slit(0.5, norm_by="area")
     w, I = s.get("radiance", wunit="nm", Iunit="mW/cm2/sr/nm")
-    Pc = abs(np.trapz(I, x=w))  # mW/cm2/sr
+    Pc = abs(np.trapz(I[~np.isnan(I)], x=w[~np.isnan(I)]))  # mW/cm2/sr
 
     b = np.isclose(P, Pc, 3e-2)
 
@@ -485,13 +472,14 @@ def test_slit_energy_conservation(
 
 
 # Function used to test Slit dispersion
-from numpy import cos, pi, tan
 
 
 def dirac(w0, width=20, wstep=0.009):
-    """ Return a Dirac in w0. Plus some space on the side """
+    """Return a Dirac in w0. Plus some space on the side"""
 
-    w = np.arange(w0 - width, w0 + width + wstep, wstep)
+    w_side_p = np.arange(w0, w0 + width, wstep)
+    w_side_n = np.arange(w0, w0 - width, -wstep)
+    w = np.hstack((w_side_n[:0:-1], w_side_p))
     I = np.zeros_like(w)
     I[len(I) // 2] = 1 / wstep
 
@@ -532,18 +520,12 @@ def test_linear_dispersion_effect(
     reciprocal function) on the slit function
 
     Test succeeds if a :py:data:`~radis.misc.warning.SlitDispersionWarning`
-    is correctly triggered
+    is correctly triggered and if the FWHM is properly dilated.
     """
-
-    from publib import fix_style, set_style
 
     from radis.test.utils import getTestFile
 
-    if plot:
-        set_style("origin")
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
-        if close_plots:
-            plt.close("all")
+    _clean(plot, close_plots)
 
     w_slit, I_slit = import_experimental_slit(getTestFile("slitfunction.txt"))
 
@@ -554,7 +536,7 @@ def test_linear_dispersion_effect(
             I_slit,
             "--k",
             label="Exp: FWHM @{0}nm: {1:.3f} nm".format(
-                632.8, get_effective_FWHM(w_slit, I_slit)
+                632.6, get_effective_FWHM(w_slit, I_slit)
             ),
         )
 
@@ -565,20 +547,18 @@ def test_linear_dispersion_effect(
     ):  # expect a "large slit dispersion" warning
 
         # Test how slit function FWHM scales with linear_dispersion
-        for w0, FWHM in zip([380, 1000, 4200, 5500], [0.396, 0.388, 0.282, 0.188]):
+        for w0, FWHM in zip([380, 1000, 4200, 5500], [0.393, 0.385, 0.280, 0.187]):
             w, I = dirac(w0)
 
-            wc, Ic = convolve_with_slit(
-                w,
-                I,
+            wc, Ic = offset_dilate_slit_function(
                 w_slit,
                 I_slit,
-                norm_by="area",
+                w,
                 slit_dispersion=linear_dispersion,
+                threshold=0.01,
                 verbose=False,
             )
             assert np.isclose(FWHM, get_effective_FWHM(wc, Ic), atol=0.001)
-
             if plot:
                 plt.plot(
                     wc,
@@ -592,58 +572,92 @@ def test_linear_dispersion_effect(
         plt.xlabel("Wavelength (nm)")
         plt.ylabel("Dirac $x$ slit function")
         plt.legend(loc="best", prop={"size": 15})
-        fix_style("article")
+        fix_style()
+
+    return True
+
+
+@pytest.mark.fast
+def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+    """A test case to verify that _cut_slices does cut the spectrum into slices
+
+    Test fails if a :py:data:`~radis.misc.warning.SlitDispersionWarning`
+    is  triggered and succeeds if the spectrum is sliced into 8 segments.
+    """
+    from radis.misc.warning import SlitDispersionWarning
+
+    _clean(plot, close_plots)
+
+    threshold = 0.01
+    w = np.arange(4000, 4400, 0.01)
+    w_slit = np.arange(4198, 4202, 0.1)
+
+    slices = _cut_slices(w, w_slit, linear_dispersion, threshold)
+
+    for sl in slices:
+        try:
+            offset_dilate_slit_function(
+                w_slit, np.ones_like(w_slit), w[sl], linear_dispersion, threshold, True
+            )
+        except SlitDispersionWarning:
+            return False
+        if plot:
+            plt.plot(
+                w,
+                sl,
+                label="Slice {0:.2f}-{1:.2f} nm , slit dispersion ratio: {2:.3f}".format(
+                    w[sl][0],
+                    w[sl][-1],
+                    linear_dispersion(w[sl][-1]) / linear_dispersion(w[sl][0]),
+                ),
+            )
+    if plot:
+        plt.title("Cut slices, threshold (boundaries removed) = {0}".format(threshold))
+        plt.xlabel("Wavelength (nm)")
+        plt.ylabel("Slices (Boolean)")
+        plt.legend(loc="best", prop={"size": 15})
+
+    assert len(slices) == 8
+    slices = _cut_slices(w[::-1], w_slit, linear_dispersion, threshold)
+    assert len(slices) == 8
 
     return True
 
 
 @pytest.mark.fast
 def test_auto_correct_dispersion(
-    f=750, phi=-6, gr=2400, verbose=True, plot=True, close_plots=True, *args, **kwargs
+    verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
     """A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function
 
-    Parameters
-    ----------
-
-    f: focal length (mm)
-         default 750 (SpectraPro 2750i)
-
-    phi: angle in degrees (°)
-        default -6
-
-    gr: grooves spacing (gr/mm)
-        default 2400
-
+    Test succeeds if there is a difference between convoluted spectra (with and without slit dispersion)
     """
 
-    from publib import set_style
-
-    from radis.misc.warning import SlitDispersionWarning
     from radis.test.utils import getTestFile
 
-    if plot:
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
-        if close_plots:
-            plt.close("all")
+    _clean(plot, close_plots)
 
-    w_slit_632, I_slit_632 = import_experimental_slit(getTestFile("slitfunction.txt"))
     slit_measured_632nm = getTestFile("slitfunction.txt")
 
     w, I = np.loadtxt(getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt")).T
     s = calculated_spectrum(
         w, I, conditions={"Tvib": 3000, "Trot": 1200}, Iunit="mW/cm2/sr/µm"
     )
+    s2 = s.copy()
 
-    slit_dispersion = lambda w: linear_dispersion(w, f=f, phi=phi, m=1, gr=gr)
+    def slit_dispersion(w):
+        return linear_dispersion(w, f=750, phi=-6, m=1, gr=2400)
 
     s.apply_slit(slit_measured_632nm)
+
     if plot:
+        w_slit_632, I_slit_632 = import_experimental_slit(
+            getTestFile("slitfunction.txt")
+        )
         w_full_range = np.linspace(w.min(), w_slit_632.max())
-        set_style("origin")
         plt.figure(
-            "Spectrometer Dispersion (f={0}mm, phi={1}°, gr={2}".format(f, phi, gr)
+            "Spectrometer Dispersion (f={0}mm, phi={1}°, gr={2}".format(750, -0.6, 2400)
         )
         plt.plot(w_full_range, slit_dispersion(w_full_range))
         plt.xlabel("Wavelength (nm)")
@@ -651,19 +665,20 @@ def test_auto_correct_dispersion(
 
         # Compare 2 spectra
         s.plot(nfig="Linear dispersion effect", color="r", label="not corrected")
-    with pytest.warns(
-        SlitDispersionWarning
-    ):  # expect a "large slit dispersion" warning
-        s.apply_slit(slit_measured_632nm, slit_dispersion=slit_dispersion)
+
+    s2 = s2.apply_slit(
+        slit_measured_632nm, slit_dispersion=slit_dispersion, inplace=False
+    )
+
     if plot:
-        s.plot(nfig="same", color="k", label="corrected")
+        s2.plot(nfig="same", color="k", label="corrected")
         plt.legend()
         # Plot different slits:
-        s.plot_slit()
-    #    plt.plot(w_slit_632, I_slit_632, color='r', label='Not corrected')
-    #    plt.legend()
-
-    return True  # nothing defined yet
+        s2.plot_slit()
+    assert np.isclose(
+        s.take("radiance").max() / (s2.take("radiance").max()), 1.183, atol=0.001
+    )
+    return True
 
 
 @pytest.mark.fast
@@ -678,14 +693,14 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     plCO = SpectrumFactory(
         wavenum_min=2230,
         wavenum_max=2260,
         mole_fraction=0.02,
         path_length=100,  # cm
-        broadening_max_width=20,  # cm^-1
+        truncation=10,  # cm^-1
         wstep=0.02,
         isotope=[1, 2, 3],
         verbose=verbose,
@@ -761,8 +776,8 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
     w_nm_conv, T_nm_conv = sCO_nm.get("transmittance", wunit="cm-1")
 
     error = abs(
-        (trapz(1 - T_conv, w_conv) - trapz(1 - T_nm_conv, w_nm_conv))
-        / trapz(1 - T_nm_conv, w_nm_conv)
+        (nantrapz(1 - T_conv, w_conv) - nantrapz(1 - T_nm_conv, w_nm_conv))
+        / nantrapz(1 - T_nm_conv, w_nm_conv)
     )
 
     if verbose:
@@ -793,8 +808,11 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
         plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs
     )
 
-    # Linear dispersion
+    # Slit dispersion
     test_linear_dispersion_effect(
+        plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs
+    )
+    test_cut_slices(
         plot=plot, close_plots=close_plots, verbose=verbose, *args, **kwargs
     )
     test_auto_correct_dispersion(

@@ -32,7 +32,7 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwa
 
     """
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # %% Specair calculation
     # -----------
@@ -122,8 +122,8 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwa
     )
 
     # Compare partition functions to hardcoded values
-    b2 = np.isclose(s_2000_300.lines.Q, 139, atol=1)  # Specair: 139
-    b2 *= np.isclose(s_300_2000.lines.Q, 727, atol=1)  # Specair: 727
+    b2 = np.isclose(s_2000_300.lines.attrs["Q"], 139, atol=1)  # Specair: 139
+    b2 *= np.isclose(s_300_2000.lines.attrs["Q"], 727, atol=1)  # Specair: 727
 
     if verbose:
         printm(

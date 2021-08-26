@@ -94,16 +94,16 @@ Calculate Partition Functions
 =============================
 
 By default and for equilibrium calculations, RADIS calculates Partition Functions
-using the TIPS program through [HAPI]_. These partition functions can be retrieved
+using the TIPS program ([TIPS-2020]_) through [HAPI]_. These partition functions can be retrieved
 with the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class::
 
-    from radis.levels.partfunc import PartFuncHAPI
+    from radis.levels.partfunc import PartFuncTIPS
     from radis.db.classes import get_molecule_identifier
 
     M = get_molecule_identifier('N2O')
     iso=1
 
-    Q = PartFuncHAPI(M, iso)
+    Q = PartFuncTIPS(M, iso)
     print(Q.at(T=1500))
 
 
@@ -127,7 +127,7 @@ A minimal working example is::
 Nonequilibrium partition functions can also be computed with
 :py:meth:`~radis.levels.partfunc.RovibParFuncCalculator.at_noneq` ::
 
-    print(Qt.at_noneq(Tvib=2000, Trot=1000))   # K
+    print(Qf.at_noneq(Tvib=2000, Trot=1000))   # K
 
 :py:meth:`~radis.levels.partfunc.RovibParFuncCalculator.at_noneq`
 can also return the vibrational partition function
@@ -197,7 +197,7 @@ also featured in the [RADIS-2018]_ article ::
                          molecule=molecule,
                          optimization=None,
                          )
-    sf.fetch_databank('astroquery', load_energies=False)
+    sf.fetch_databank('astroquery')
 
     s = sf.eq_spectrum(Tgas=T, pressure=pressure_bar)
     s.plot()

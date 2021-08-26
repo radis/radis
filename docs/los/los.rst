@@ -9,7 +9,6 @@ and combines then along the line-of-sight (:func:`~radis.los.slabs.SerialSlabs`)
 or at the same spatial position (:func:`~radis.los.slabs.MergeSlabs`), to reproduce
 line-of-sight experiments
 
-
 How to combine slabs?
 =====================
 
@@ -27,6 +26,8 @@ You can also use the ``>`` operator. The previous line
 is equivalent to::
 
     s3 = s1 > s2
+
+.. minigallery:: radis.SerialSlabs
 
 
 At the same spatial position
@@ -46,6 +47,8 @@ You can also use the ``//`` operator. The previous line
 is equivalent to::
 
     s3 = s1 // s2
+
+.. minigallery:: radis.MergeSlabs
 
 -----------------------------------------------------------------------
 
@@ -91,6 +94,3 @@ function, which returns a new Spectrum with all the emission features set to 0::
 And the contribution of ``s1`` would be::
 
     (s1 > PerfectAbsorber(s2>s3)).plot('radiance_noslit')
-
-
-

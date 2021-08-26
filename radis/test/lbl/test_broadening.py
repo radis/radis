@@ -36,7 +36,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     T = 3000
@@ -44,7 +44,8 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
     wstep = 0.001
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 5  # cm-1
+    neighbour_lines = 5  # cm-1
 
     # %% HITRAN calculation
     # -----------
@@ -54,9 +55,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
 
     db_begin(hapi_data_path)
     if not "CO" in tableList():  # only if data not downloaded already
-        fetch(
-            "CO", 5, 1, wmin - broadening_max_width / 2, wmax + broadening_max_width / 2
-        )
+        fetch("CO", 5, 1, wmin - truncation / 2, wmax + truncation / 2)
         # HAPI doesnt correct for side effects
 
     # Calculate with HAPI
@@ -83,7 +82,8 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
+        neighbour_lines=neighbour_lines,
         isotope=[1],
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
@@ -135,13 +135,13 @@ def test_broadening_methods_different_conditions(
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     wstep = 0.005
     wmin = 2150.4  # cm-1
     wmax = 2151.4  # cm-1
-    broadening_max_width = 2  # cm-1
+    truncation = 1  # cm-1
 
     for (T, p, fwhm_lorentz, fwhm_gauss) in [
         # K, bar, expected FWHM for Lotentz, gauss (cm-1)
@@ -159,7 +159,7 @@ def test_broadening_methods_different_conditions(
             path_length=1,  # doesnt change anything
             wstep=wstep,
             pressure=p,
-            broadening_max_width=broadening_max_width,
+            truncation=truncation,
             isotope="1",
             verbose=False,
             warnings={
@@ -224,14 +224,15 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     T = 3000
     p = 1
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 5  # cm-1
+    neighbour_lines = 5  # cm-1
 
     for i, wstep in enumerate([0.01, 0.1, 0.5]):
 
@@ -244,7 +245,8 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
             path_length=1,  # doesnt change anything
             wstep=wstep,
             pressure=p,
-            broadening_max_width=broadening_max_width,
+            truncation=truncation,
+            neighbour_lines=neighbour_lines,
             isotope="1",
             optimization=None,
             verbose=False,
@@ -294,7 +296,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     T = 3000
@@ -302,7 +304,8 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
     wstep = 0.002
     wmin = 2150  # cm-1
     wmax = 2152  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 5  # cm-1
+    neighbour_lines = 5  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -313,7 +316,8 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
+        neighbour_lines=neighbour_lines,
         isotope="1",
         verbose=False,
         warnings={
@@ -370,7 +374,7 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
     # Conditions
     T = 3000
@@ -378,7 +382,8 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
     wstep = 0.002
     wmin = 2000  # cm-1
     wmax = 2300  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 10  # cm-1
+    neighbour_lines = 10  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -389,7 +394,8 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
+        neighbour_lines=neighbour_lines,
         isotope="1",
         verbose=verbose,
         chunksize="DLM",
@@ -443,14 +449,15 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
 
-    setup_test_line_databases()  # add HITRAN-CO2-TEST in ~/.radis if not there
+    setup_test_line_databases()  # add HITRAN-CO2-TEST in ~/radis.json if not there
 
     # Conditions
     p = 1
     wstep = 0.002
     wmin = 2380  # cm-1
     wmax = 2400  # cm-1
-    broadening_max_width = 10  # cm-1
+    truncation = 5  # cm-1
+    neighbour_lines = 5  # cm-1
 
     # %% Calculate with RADIS
     # ----------
@@ -461,7 +468,8 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        broadening_max_width=broadening_max_width,
+        truncation=truncation,
+        neighbour_lines=neighbour_lines,
         isotope="1",
         verbose=3,
         warnings={
@@ -496,7 +504,122 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
     assert res <= 1e-4
 
 
-@pytest.mark.needs_connection
+def test_truncations_and_neighbour_lines(*args, **kwargs):
+    """Test new truncations introduced in https://github.com/radis/radis/issues/340
+
+    So far: test that all functions work
+    More assertion could be added.
+    """
+    # TODO  . Check on databases with one line that truncatino is achieved, etc.
+
+    #%% Test truncation > lines
+
+    conditions = {
+        "wavenum_min": 2100,
+        "wavenum_max": 2300,
+        "molecule": "CO",
+        "isotope": "1,2,3",
+        "pressure": 20,  # bar
+        "Tgas": 700,
+        "mole_fraction": 0.1,
+        "path_length": 1,
+        "databank": "HITRAN-CO-TEST",
+    }
+
+    # No Neighbourling lines, only truncation
+    from radis import calc_spectrum
+
+    s_lbl_voigt_trunc10 = calc_spectrum(
+        **conditions,
+        optimization=None,
+        truncation=10,
+        neighbour_lines=0,
+    )
+    assert s_lbl_voigt_trunc10.conditions["truncation"] == 10
+
+    #%% Test no truncation
+
+    from radis import calc_spectrum
+
+    s_lbl_voigt_notrunc = calc_spectrum(
+        **conditions,
+        optimization=None,
+        truncation=None,
+    )
+    assert s_lbl_voigt_notrunc.conditions["truncation"] is None
+
+    # Effect of neighbour lines on both edges of the spectrum:
+    assert (
+        s_lbl_voigt_notrunc.get("abscoeff")[1][0]
+        > s_lbl_voigt_trunc10.get("abscoeff")[1][0]
+    )
+    assert (
+        s_lbl_voigt_notrunc.get("abscoeff")[1][-1]
+        > s_lbl_voigt_trunc10.get("abscoeff")[1][-1]
+    )
+
+    #%%
+
+    # Check incompatibilities correctly raise errors:
+
+    import pytest
+
+    with pytest.raises(NotImplementedError) as err:
+
+        calc_spectrum(
+            **conditions,
+            optimization=None,
+            broadening_method="fft",  # = "fft"
+            truncation=10,  # truncation != 0
+        )
+    assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err.value)
+
+    #%% same with optimization=simple (DIT)
+    with pytest.raises(NotImplementedError) as err:
+        calc_spectrum(
+            **conditions,
+            optimization="simple",
+            broadening_method="fft",  # = "fft"
+            truncation=10,  # truncation != 0
+        )
+    assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err.value)
+
+    #%% Test there is DeprecationError raised
+    with pytest.raises(DeprecationWarning) as err:
+        calc_spectrum(
+            **conditions,
+            broadening_max_width=20,  # = "fft"
+        )
+    assert (
+        "To keep the current behavior, replace `broadening_max_width=20` with `truncation=10.0"
+        in str(err.value)
+    )
+
+    #%% Truncation, no neighbour lines : should be ~ same result that without DIT Optimization
+    s_dit_voigt_trunc10 = calc_spectrum(
+        **conditions,
+        optimization="simple",
+        broadening_method="voigt",  # = "fft"
+        truncation=10,  # truncation != 0
+        neighbour_lines=0,
+    )
+
+    assert get_residual(s_lbl_voigt_trunc10, s_dit_voigt_trunc10, "abscoeff") < 2e-5
+
+    # %% LBL Optimization; with neighbour lines
+    # Also check it works with floating point division
+
+    s_lbl_voigt_trunc10 = calc_spectrum(
+        **conditions,
+        optimization=None,
+        broadening_method="voigt",
+        wstep=0.31,  # floating point division can create issues. We test here.
+        truncation=300,
+        neighbour_lines=15,
+    )
+    assert s_lbl_voigt_trunc10.conditions["truncation"] == 300
+
+
 @pytest.mark.fast
 def test_broadening_warnings(*args, **kwargs):
     """Test AccuracyWarning and AccuracyErrors are properly triggered.
@@ -518,18 +641,21 @@ def test_broadening_warnings(*args, **kwargs):
     from radis.misc.warning import AccuracyError, AccuracyWarning
 
     conditions = {
-        "wavenum_min": 667.58 / u.cm,
-        "wavenum_max": 667.61 / u.cm,
+        # "wavenum_min": 667.58 / u.cm,
+        # "wavenum_max": 667.61 / u.cm,
+        "wavelength_min": 4170 * u.nm,
+        "wavelength_max": 4180 * u.nm,
         "molecule": "CO2",
         "isotope": "1",
-        "broadening_max_width": 0,  # no neighbour lines in LDM method (note : with LDM method we still resolve the full lineshape!)
+        "neighbour_lines": 0,
         "verbose": False,
     }
 
     # Try with low resolution, expect error :
     with pytest.raises(AccuracyError):
         sf = SpectrumFactory(**conditions, wstep=0.02)
-        sf.fetch_databank("hitran")
+        # sf.fetch_databank("hitran")
+        sf.load_databank("HITRAN-CO2-TEST")
 
         sf.eq_spectrum(
             Tgas=234.5,
@@ -538,8 +664,9 @@ def test_broadening_warnings(*args, **kwargs):
         )
 
     with pytest.warns(AccuracyWarning):
-        sf = SpectrumFactory(**conditions, wstep=0.0009)
-        sf.fetch_databank("hitran")
+        sf = SpectrumFactory(**conditions, wstep=0.002)
+        # sf.fetch_databank("hitran")
+        sf.load_databank("HITRAN-CO2-TEST")
 
         sf.eq_spectrum(
             Tgas=234.5,
@@ -581,7 +708,7 @@ def test_abscoeff_continuum(
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
-        broadening_max_width=10,
+        truncation=5,
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",
@@ -686,7 +813,8 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         cutoff=1e-23,
         molecule="CO2",
         isotope="1,2",
-        broadening_max_width=10,
+        truncation=5,
+        neighbour_lines=10,
         path_length=0.1,
         mole_fraction=1e-3,
         medium="vacuum",
@@ -767,6 +895,7 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_broadening_DLM(plot=plot, verbose=verbose, *args, **kwargs)
     test_broadening_DLM_FT(plot=plot, verbose=3, *args, **kwargs)
     test_broadening_DLM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
+    test_truncations_and_neighbour_lines(*args, **kwargs)
 
     # Test warnings
     test_broadening_warnings(*args, **kwargs)

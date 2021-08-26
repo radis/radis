@@ -54,11 +54,11 @@ if __name__ == "__main__":
         verbose=2,
         wstep=dnu,  # depends on HAPI benchmark.
         cutoff=1e-23,
-        broadening_max_width=5.73,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
+        truncation=2.865,  # Corresponds to WavenumberWingHW/HWHM=50 in HAPI
         molecule=molecule,
         optimization=None,
     )
-    sf.fetch_databank("hitran", load_energies=False)
+    sf.fetch_databank("hitran")
 
     s = sf.eq_spectrum(Tgas=T, pressure=pressure_bar)
     s.name = "RADIS ({0:.1f}s)".format(s.conditions["calculation_time"])
@@ -68,11 +68,11 @@ if __name__ == "__main__":
     print(
         (
             "WavenumberWingHW/HWHM",
-            int(sf.params.broadening_max_width / (sf.df1.hwhm_voigt.max())),
+            int(sf.params.truncation / (sf.df1.hwhm_voigt.max())),
         )
     )
     assert (
-        int(sf.params.broadening_max_width / (sf.df1.hwhm_voigt.max()))
+        int(sf.params.truncation / (sf.df1.hwhm_voigt.max()))
     ) == benchmark_line_brd_ratio
 
     # %% Run HAPI
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     t0 = time() - t0
     print(("Calculated with HAPI in {0:.2f}s".format(t0)))
 
-    s_hapi = Spectrum.from_array(nu, coef, "abscoeff", waveunit="cm-1", unit="cm-1")
+    s_hapi = Spectrum.from_array(nu, coef, "abscoeff", wunit="cm-1", unit="cm-1")
     s_hapi.name = "HAPI ({0:.1f}s)".format(t0)
 
     plot_diff(s_hapi, s, "abscoeff")

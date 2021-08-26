@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Created on Tue May 26 11:52:15 2015.
-
-Erwan Pannier EM2C, CentraleSupélec, 2015 CNRS UPR 288
+"""Physical constants and conversion.
 """
 
 from .blackbody import planck, planck_wn, sPlanck
@@ -40,3 +38,5 @@ from .units import (
     is_homogeneous,
 )
 from .units_astropy import convert_and_strip_units
+
+__all__ = ["sPlanck", "planck", "planck_wn"]

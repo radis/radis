@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Created on Tue May 26 11:52:15 2015.
-
-Erwan Pannier EM2C, CentraleSupélec, 2015 CNRS UPR 288
+"""Tools : database of spectra, line survey, interface with Cantera.
 """
 
 
@@ -15,3 +13,14 @@ from .slit import (
     plot_slit,
     recenter_slit,
 )
+
+__all__ = [
+    "SpecDatabase",
+    "load_spec",
+    "plot_spec",
+    "save",
+    "get_eq_mole_fraction",
+    "plot_slit",
+    "get_effective_FWHM",
+    "get_FWHM",
+]
