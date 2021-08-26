@@ -1674,7 +1674,7 @@ class BroadenFactory(BaseFactory):
         frac_left, frac_right = frac_right / dv, frac_left / dv
 
         # offset to account for out-of-bound truncation
-        ioffset = itruncation
+        ioffset = itruncation + 1
 
         # ... Initialize array on which to distribute the lineshapes
         sumoflines_calc = zeros(len(wavenumber_calc) + 2 * ioffset)
