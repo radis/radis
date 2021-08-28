@@ -1674,7 +1674,7 @@ class SpectrumFactory(BandFactory):
             except AssertionError:
                 return False
 
-        if _is_at_equilibrium() or self.params.optimization is None:
+        if _is_at_equilibrium():
             factor = 1
         else:
             factor = 2  #  _apply_broadening_DLM() is called twice
@@ -1719,7 +1719,7 @@ class SpectrumFactory(BandFactory):
                 raise NotImplementedError("broadening_method not implemented")
         elif optimization is None:
             if broadening_method == "voigt":
-                estimated_time = 6.6487e-08 * n_lines * truncation / wstep * factor
+                estimated_time = 6.6487e-08 * n_lines * truncation / wstep
             elif broadening_method == "convolve":  # Not benchmarked
                 estimated_time = (
                     self._broadening_time_ruleofthumb

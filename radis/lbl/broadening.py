@@ -1431,15 +1431,6 @@ class BroadenFactory(BaseFactory):
         wG = _init_w_axis(wG_dat, log_pG)  # FWHM
         self.wG = len(wG)
 
-        # printing estimated time
-        if self.verbose >= 2:
-            estimated_time = self.predict_time()
-            print(
-                "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                    estimated_time
-                )
-            )
-
         # Calculate the Lineshape
         # -----------------------
 
@@ -1983,6 +1974,14 @@ class BroadenFactory(BaseFactory):
                 # Use DLM
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(
                     df.S.values,
                     line_profile_DLM,
@@ -2084,6 +2083,14 @@ class BroadenFactory(BaseFactory):
                     self.misc.zero_padding = len(self.wavenumber_calc)
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(
                     df.S.values,
                     line_profile_DLM,
@@ -2123,6 +2130,14 @@ class BroadenFactory(BaseFactory):
                 # of the line over the DLM, which has to be done for both abscoeff & emisscoeff.
 
             elif optimization is None:
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
                 if chunksize is None:
                     # Deal with all lines directly (usually faster)
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck
