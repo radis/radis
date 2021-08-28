@@ -502,7 +502,7 @@ def fetch_hitemp(
 
     See Also
     --------
-    :py:func:`~radis.io.hdf5.hdf2df`
+    :py:func:`~radis.io.hdf5.hdf2df`, :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """
 

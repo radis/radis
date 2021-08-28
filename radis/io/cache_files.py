@@ -7,9 +7,9 @@ Routine Listing
 ---------------
 
 
-- :func:`~radis.misc.cache_files.check_cache_file`
-- :func:`~radis.misc.cache_files.check_not_deprecated`
-- :func:`~radis.misc.cache_files.save_to_hdf`
+- :func:`~radis.io.cache_files.check_cache_file`
+- :func:`~radis.io.cache_files.check_not_deprecated`
+- :func:`~radis.io.cache_files.save_to_hdf`
 
 See Also
 --------
@@ -359,7 +359,16 @@ def check_not_deprecated(
 
     # Get metadata :
     manager = HDF5Manager(engine)
-    file_metadata = manager.read_metadata(file)
+
+    try:
+        file_metadata = manager.read_metadata(file)
+    except AttributeError as err:
+        if "Attribute 'metadata' does not exist" in str(err):
+            raise DeprecatedFileWarning(
+                "File {0} is deprecated : ".format(file)
+                + "Metadata is missing. Delete it to regenerate it on next run"
+            )
+        raise
 
     # Raise an error if version is not found
     try:
