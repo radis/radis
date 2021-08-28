@@ -219,6 +219,7 @@ Links
 
 - Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
 
+- `Fitroom <https://github.com/radis/fitroom>`__ (for advanced multidimensional fitting).
 
 
 

@@ -2035,12 +2035,14 @@ class SpectrumFactory(BandFactory):
 
         .. minigallery:: radis.lbl.factory.SpectrumFactory.fit_spectrum
 
+        More advanced tools for interactive fitting of multi-dimensional, multi-slabs
+        spectra can be found in :py:mod:`fitroom`.
 
         See Also
         --------
         :py:func:`~radis.tools.fitting.fit_spectrum`,
         :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`,
-        `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`
+        :py:mod:`fitroom`
 
         """
         from radis.tools.fitting import fit_spectrum

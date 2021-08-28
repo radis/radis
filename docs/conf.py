@@ -151,6 +151,7 @@ intersphinx_mapping = {
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
     "seaborn": ("https://seaborn.pydata.org/", None),
+    "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
 }
 
 napoleon_google_docstring = False
