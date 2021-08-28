@@ -528,15 +528,18 @@ class SpectrumFactory(BandFactory):
         # if optimization is ``'simple'`` or ``'min-RMS'``, or None :
         # Adjust default values of broadening method :
         if isinstance(broadening_method, Default):
-            if optimization in ("simple", "min-RMS") and broadening_method != "voigt":
+            if (
+                optimization in ("simple", "min-RMS")
+                and broadening_method.value != "voigt"
+            ):
                 if self.verbose >= 3:
                     printg(
-                        "LDM algorithm used. Defaulting broadening method from {0} to Voigt".format(
+                        "LDM algorithm used. Defaulting broadening method from {0} to 'voigt'".format(
                             broadening_method
                         )
                     )
                 broadening_method = "voigt"
-            elif optimization is None and broadening_method != "voigt":
+            elif optimization is None and broadening_method.value != "voigt":
                 if self.verbose >= 3:
                     printg(
                         "LDM algorithm not used. Defaulting broadening method from {0} to 'voigt'".format(

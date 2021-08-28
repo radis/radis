@@ -1301,15 +1301,6 @@ class BroadenFactory(BaseFactory):
         """
         # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
-        # printing estimated time
-        if self.verbose >= 2:
-            estimated_time = self.predict_time()
-            print(
-                "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                    estimated_time
-                )
-            )
-
         self.profiler.start(key="init_vectors", verbose_level=3)
 
         # Init variables
@@ -2004,6 +1995,14 @@ class BroadenFactory(BaseFactory):
                 )
 
             elif optimization is None:
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
                 if chunksize is None:
 
                     # Deal with all lines directly (usually faster)
