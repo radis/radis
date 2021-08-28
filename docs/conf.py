@@ -75,7 +75,7 @@ sphinx_gallery_conf = {
         "radis": None,
     },
     # directory where function/class granular galleries are stored
-    "backreferences_dir": "gen_modules/backreferences",
+    "backreferences_dir": "source/backreferences",
     # Modules for which function/class level galleries are created.
     "doc_module": ("radis"),
     "inspect_global_variables": True,
@@ -113,7 +113,7 @@ def run_apidoc(_):
         "-f",
         "-e",
         "-o",
-        "gen_modules",
+        "source",
         "--separate",
         "../radis",
     ]
