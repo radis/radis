@@ -97,7 +97,6 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_waverange
 
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
-from radis.misc.printer import printg
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
 from radis.phys.convert import conv2
@@ -390,7 +389,7 @@ class SpectrumFactory(BandFactory):
         optimization="simple",
         folding_thresh=1e-6,
         zero_padding=-1,
-        broadening_method=Default("voigt"),
+        broadening_method="voigt",
         cutoff=0,
         parsum_mode="full summation",
         verbose=True,
@@ -524,31 +523,6 @@ class SpectrumFactory(BandFactory):
 
         # Time Based variables
         self.verbose = verbose
-
-        # if optimization is ``'simple'`` or ``'min-RMS'``, or None :
-        # Adjust default values of broadening method :
-        if isinstance(broadening_method, Default):
-            if (
-                optimization in ("simple", "min-RMS")
-                and broadening_method.value != "voigt"
-            ):
-                if self.verbose >= 3:
-                    printg(
-                        "LDM algorithm used. Defaulting broadening method from {0} to 'voigt'".format(
-                            broadening_method
-                        )
-                    )
-                broadening_method = "voigt"
-            elif optimization is None and broadening_method.value != "voigt":
-                if self.verbose >= 3:
-                    printg(
-                        "LDM algorithm not used. Defaulting broadening method from {0} to 'voigt'".format(
-                            broadening_method
-                        )
-                    )
-                broadening_method = "voigt"
-            else:  # keep default
-                broadening_method = broadening_method.value
 
         if truncation == 0:
             raise ValueError(
@@ -1674,9 +1648,9 @@ class SpectrumFactory(BandFactory):
             except AssertionError:
                 return False
 
-        if _is_at_equilibrium():
-            factor = 1
-        else:
+        factor = 1
+
+        if not _is_at_equilibrium():
             factor = 2  #  _apply_broadening_DLM() is called twice
 
         wstep = self.params.wstep
