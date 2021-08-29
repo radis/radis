@@ -1632,6 +1632,24 @@ class SpectrumFactory(BandFactory):
         return
 
     def predict_time(self):
+        """predict_time(self) uses the input parameters like Spectral Range, Number of lines, wstep,
+        truncation to predict the estimated calculation time for the Spectrum
+        broadening step(bottleneck step) for the current optimization and broadening_method. The formula
+        for predicting time is based on benchmarks performed on various parameters for different optimization,
+        broadening_method and deriving its time complexity.
+
+        Benchmarks: https://anandxkumar.github.io/Benchmark_Visualization_GSoC_2021/
+
+        Complexity vs Calculation Time Visualizations
+        LBL>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LegacyComplexityvsCalculationTime/Sheet1>`_,
+        DIT>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/2_096e-07lines_calculated7_185e-091wLwGSpectral_PointslogSpectral_Points/Sheet1>`_,
+        DIT>FFT: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LDMLatestLDMFFTComplexity4_675e-081wLwGSpectralPointslogSpectralPoints/Sheet1>`_
+
+        Returns
+        -------
+        float: Predicted time in seconds.
+        """
+
         def _is_at_equilibrium():
             try:
                 assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
