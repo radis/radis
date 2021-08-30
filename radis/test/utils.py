@@ -151,27 +151,36 @@ getValidationCase.__annotations__["file"] = os.listdir(
 # %% Convenience function
 
 
-def test_spectrum():
-    """Generates a spectrum with ::
+def test_spectrum(**kwargs):
+    """Generate the :ref:`first example spectrum <label_first_example>` with ::
 
-    import radis
-    s = radis.test_spectrum()
-    s.plot()
+        import radis
+        s = radis.test_spectrum()
+        s.plot()
+
+    Other Parameters
+    ----------------
+    kwargs: sent to :py:func:`~radis.lbl.calc.calc_spectrum`
+
 
     """
     from radis import calc_spectrum
 
-    s = calc_spectrum(
-        1900,
-        2300,  # cm-1
-        molecule="CO",
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
-        Tgas=700,  # K
-        mole_fraction=0.1,
-        path_length=1,  # cm
-        databank="hitran",  # or use 'hitemp'
-    )
+    conditions = {
+        "wavenum_min": 1900,
+        "wavenum_max": 2300,
+        "molecule": "CO",
+        "isotope": "1,2,3",
+        "pressure": 1.01325,  # bar
+        "Tgas": 700,  # K
+        "mole_fraction": 0.1,
+        "path_length": 1,  # cm
+        "databank": "hitran",
+    }
+
+    conditions.update(kwargs)
+
+    s = calc_spectrum(**conditions)
     return s
 
 

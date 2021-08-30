@@ -1618,6 +1618,7 @@ class Spectrum(object):
         normalize=False,
         force=False,
         plot_by_parts=False,
+        show=False,
         show_ruler=False,
         **kwargs,
     ):
@@ -1667,6 +1668,9 @@ class Spectrum(object):
         force: bool
             plotting on an existing figure is forbidden if labels are not the
             same. Use ``force=True`` to ignore that.
+        show: bool
+            show figure. Default ``False``. Will still show the figure in
+            interactive mode, e.g, `%matplotlib inline` in a Notebook.
         show_ruler: bool
             if `True`, add a ruler tool to the Matplotlib toolbar.
 
@@ -1841,7 +1845,8 @@ class Spectrum(object):
 
             add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
-        plt.show()
+        if show:
+            plt.show()
         return line
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
