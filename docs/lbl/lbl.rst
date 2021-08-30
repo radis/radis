@@ -882,6 +882,26 @@ methods to generate an interactive profiler in the browser.
 
 .. _label_lbl_precompute_spectra:
 
+Predict Time
+------------
+
+:py:meth:`~radis.lbl.factory.SpectrumFactory.predict_time` function uses the input parameters like `Spectral Range`, `Number of lines`, `wstep`,
+`truncation` to predict the estimated calculation time for the Spectrum
+broadening step(bottleneck step) for the current optimization and broadening_method. The formula
+for predicting time is based on benchmarks performed on various parameters for different optimization,
+broadening_method and deriving its time complexity.
+
+The following Benchmarks were used to derive the time complexity:
+
+  https://anandxkumar.github.io/Benchmark_Visualization_GSoC_2021/
+
+Complexity vs Calculation Time Visualizations for different optimizations and broadening_method:
+
+
+|    LBL>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LegacyComplexityvsCalculationTime/Sheet1>`_
+|    DIT>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/2_096e-07lines_calculated7_185e-091wLwGSpectral_PointslogSpectral_Points/Sheet1>`_
+|    DIT>FFT: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LDMLatestLDMFFTComplexity4_675e-081wLwGSpectralPointslogSpectralPoints/Sheet1>`_
+
 Precompute Spectra
 ------------------
 

@@ -53,7 +53,7 @@ def calc_spectrum(
     cutoff=1e-27,
     parsum_mode="full summation",
     optimization="min-RMS",
-    broadening_method=Default("voigt"),
+    broadening_method="voigt",
     overpopulation=None,
     name=None,
     save_to="",
