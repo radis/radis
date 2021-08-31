@@ -200,11 +200,14 @@ def fit_spectrum(
     --------
     See a :ref:`one-temperature fit example <example_multi_temperature_fit>` or
     a :ref:`multi-temperature fit example <example_multi_temperature_fit>`.
-    `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`__
+
+    More advanced tools for interactive fitting of multi-dimensional, multi-slabs
+    spectra can be found in :py:mod:`fitroom`.
 
     See Also
     --------
-    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
+    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`,
+    :py:mod:`fitroom`
     """
 
     # Get model being fitted:

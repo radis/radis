@@ -75,7 +75,7 @@ sphinx_gallery_conf = {
         "radis": None,
     },
     # directory where function/class granular galleries are stored
-    "backreferences_dir": "gen_modules/backreferences",
+    "backreferences_dir": "source/backreferences",
     # Modules for which function/class level galleries are created.
     "doc_module": ("radis"),
     "inspect_global_variables": True,
@@ -113,7 +113,7 @@ def run_apidoc(_):
         "-f",
         "-e",
         "-o",
-        "gen_modules",
+        "source",
         "--separate",
         "../radis",
     ]
@@ -151,6 +151,7 @@ intersphinx_mapping = {
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
     "seaborn": ("https://seaborn.pydata.org/", None),
+    "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
 }
 
 napoleon_google_docstring = False
@@ -260,6 +261,7 @@ html_theme_options = {
     "sidebar_includehidden": True,
     "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
+    "link": "#7A306C",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

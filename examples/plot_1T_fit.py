@@ -15,8 +15,7 @@ The method requires a fitting model. An example model is provided in :py:mod:`ra
 the :ref:`multi-temperature fit example<example_multi_temperature_fit>`
 
 More advanced tools for interactive fitting of multi-dimensional, multi-slabs
-spectra can be found in `Fitroom <https://github.com/radis/fitroom>`__
-(access on request by asking on Slack)
+spectra can be found in :py:mod:`fitroom`.
 
 """
 

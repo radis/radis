@@ -2330,7 +2330,13 @@ class SpecDatabase(SpecList):
             db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
 
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
-        of the website.
+        of the website. More advanced tools for interactive fitting of multi-dimensional, multi-slabs
+        spectra can be found in :py:mod:`fitroom`.
+
+        See Also
+        --------
+
+        :py:mod:`fitroom`
         """
 
         if residual is None:
