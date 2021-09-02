@@ -1876,7 +1876,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.start("DLM_Distribute_lines", 3)
         # ... Initialize array on which to distribute the lineshapes
         if broadening_method in ["voigt", "convolve"]:
-            DLM = np.zeros((len(wavenumber_calc)+2, len(wG), len(wL)))
+            DLM = np.zeros((len(wavenumber_calc) + 2, len(wG), len(wL)))
             # +2 to allocate one empty grid point on each side : case where a line is on the boundary
             ki0 += 1
             ki1 += 1
@@ -1900,7 +1900,7 @@ class BroadenFactory(BaseFactory):
         _add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
         _add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
         _add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
-        
+
         if broadening_method in ["voigt", "convolve"]:
             DLM = DLM[1:-1, :, :]
             # 1:-1 to remove the empty grid point on each side
