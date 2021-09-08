@@ -1046,7 +1046,7 @@ def offset(s, offset, unit, name=None, inplace=False):
     return s
 
 
-def get_baseline(s, var="radiance", Iunit=None):
+def get_baseline(s, var="radiance", wunit="nm", Iunit=None):
     """Calculate and returns a baseline
 
     Parameters
@@ -1073,7 +1073,7 @@ def get_baseline(s, var="radiance", Iunit=None):
     w1, I1 = s.get(var=var, Iunit=Iunit)
     baseline = peakutils.baseline(I1, deg=1, max_it=500)
     baselineSpectrum = Spectrum.from_array(
-        w1, baseline, var, unit=Iunit, name=s.get_name() + "_baseline"
+        w1, baseline, var, wunit=wunit, unit=Iunit, name=s.get_name() + "_baseline"
     )
     return baselineSpectrum
 
