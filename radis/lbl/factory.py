@@ -82,7 +82,7 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp
-from scipy.constants import c, pi
+from scipy.constants import N_A, c, k, pi
 from scipy.optimize import OptimizeResult
 
 from radis import version
@@ -398,7 +398,7 @@ class SpectrumFactory(BandFactory):
         export_populations=None,
         export_lines=False,
         emulate_gpu=False,
-        **kwargs
+        **kwargs,
     ):
 
         # Initialize BandFactory object

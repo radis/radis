@@ -1856,20 +1856,20 @@ class Spectrum(object):
         # Add Sliders
         if sliders:
             n_sliders = 0
-	        for key in sliders:
-	            slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
-	            slider = Slider(
-	                ax=slider_axis,
-	                label=key,
-	                valmin=sliders[key][0],
-	                valmax=sliders[key][1],
-	                valinit=self.conditions[key],
-	            )
-	            slider.on_changed(lambda val: self.update_plot(val, fig, line))
-	            self.plot_sliders[key] = slider
-	            n_sliders += 1
+            for key in sliders:
+                slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
+                slider = Slider(
+                    ax=slider_axis,
+                    label=key,
+                    valmin=sliders[key][0],
+                    valmax=sliders[key][1],
+                    valinit=self.conditions[key],
+                )
+                slider.on_changed(lambda val: self.update_plot(val, fig, line))
+                self.plot_sliders[key] = slider
+                n_sliders += 1
 
-	        plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
+            plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
 
         if show:
             plt.show()
