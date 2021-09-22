@@ -85,8 +85,35 @@ def test_merge_slabs(
 
     return True
 
+@pytest.mark.fast
+def test_equilibrium_condition():
+    """ See #  
+    
+    'thermal_equilibrium' is used to reocmpute some spectral arrays from others,
+    it is important to make sure a line-of-sight doesn't assume thermal equilibrium wrongly
+    """
+    
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+    s1 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s2 = s1.copy()
+    
+    s2.conditions["thermal_equilibrium"] = False
+    assert s1.conditions["thermal_equilibrium"] == True
+    assert s2.conditions["thermal_equilibrium"] == False
 
-#
+    # Test MergeSlabs
+    assert (s1//s1).is_at_equilibrium() == True
+    assert (s2//s2).is_at_equilibrium() == False
+    assert (s1//s2).is_at_equilibrium() == False
+    assert (s2//s1).is_at_equilibrium() == False
+
+    # Test SerialSlabs
+    assert (s1<s1).is_at_equilibrium() == False
+    assert (s2<s2).is_at_equilibrium() == False
+    assert (s1<s2).is_at_equilibrium() == False
+    assert (s2<s1).is_at_equilibrium() == False
+
 
 
 @pytest.mark.fast
@@ -208,6 +235,8 @@ def _run_testcases(
     test_serial_slabs_radiance(
         verbose=verbose, plot=plot, debug=debug, warnings=warnings, *args, **kwargs
     )
+    
+    test_equilibrium_condition()
 
     return True
 
