@@ -26,6 +26,7 @@ from os.path import join
 
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from dateutil.parser import parse as parse_date
 from numpy import DataSource
 
@@ -57,12 +58,29 @@ class DatabaseManager(object):
     molecule: str
     local_databases: str
         path to local database
+
+    Other Parameters
+    ----------------
+    *input for :class:`~joblib.parallel.Parallel` loading of database*
+    nJobs: int
+        Number of processors to use to load a database (useful for big
+        databases). BE CAREFUL, no check is done on processor use prior
+        to the execution ! Default ``-2``: use all but 1 processors.
+        Use ``1`` for single processor.
+    batch_size: int or ``'auto'``
+        The number of atomic tasks to dispatch at once to each
+        worker. When individual evaluations are very fast, dispatching
+        calls to workers can be slower than sequential computation because
+        of the overhead. Batching fast computations together can mitigate
+        this. Default: ``'auto'``
+    More information in :class:`joblib.parallel.Parallel`
+    
     """
 
     # Should be as a close as possible to the content of the corresponding ~/radis.json entry
     # Essentially a FileManager
 
-    def __init__(self, name, molecule, local_databases, verbose=False):
+    def __init__(self, name, molecule, local_databases, verbose=False, nJobs=-2, batch_size="auto"):
 
         self.name = name
         self.molecule = molecule
@@ -74,6 +92,12 @@ class DatabaseManager(object):
         self.ds = DataSource(self.tempdir)
 
         self.verbose = verbose
+        
+        self.nJobs = nJobs
+        self.batch_size = batch_size
+        self.minimum_nfiles = (
+            10  #: type: int. If there are less files, don't use parallel mode.
+        )
 
     def get_filenames(self, engine):
         """Get names of all files in the database (even if not downloaded yet)
@@ -254,8 +278,7 @@ class DatabaseManager(object):
         Nlines_total = 0
         Ndownload = 1
         Ntotal_downloads = len(local_files)
-        for urlname, local_file in zip(urlnames, local_files):
-
+        def download_and_parse_one_file(urlname, local_file, Ndownload):
             if verbose:
                 inputf = urlname.split("/")[-1]
                 print(
@@ -270,6 +293,9 @@ class DatabaseManager(object):
                     f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
                 ) from err
 
+            if not pbar_enabled:
+                # if multiprocess, disable progress bar by turning verbose off until parsing completes
+                self.verbose = False
             # try:
             Nlines = self.parse_to_local_file(
                 self.ds,
@@ -281,11 +307,26 @@ class DatabaseManager(object):
                 pbar_last=(Ndownload == Ntotal_downloads),
                 engine=engine,
             )
+            if not pbar_enabled:
+                self.verbose = verbose
             # except Exception as err:
             #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
 
-            Ndownload += 1
-            Nlines_total += Nlines
+            return Nlines
+        if len(local_files) > self.minimum_nfiles:
+            pbar_enabled = False
+            nJobs = self.nJobs
+            batch_size = self.batch_size
+            Nlines_total = sum(Parallel(
+                n_jobs=nJobs, batch_size=batch_size,verbose=5 * self.verbose
+                )(delayed(download_and_parse_one_file)(urlname, local_file, Ndownload)\
+                  for urlname, local_file, Ndownload in \
+                  zip(urlnames,local_files, range(1,len(local_files)+1))))
+        else:
+            pbar_enabled = True
+            for urlname, local_file, Ndownload in zip(urlnames, local_files,
+                                                      range(1,len(local_files)+1)):
+                download_and_parse_one_file(urlname, local_file, Ndownload)
 
     def clean_download_files(self):
         """Fully unzipped (and working, as it was reloaded): clean files
