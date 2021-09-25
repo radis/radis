@@ -281,6 +281,7 @@ def get_molecule(molecule_id):
 KNOWN_EXOMOL_ISOTOPES_NAMES = {
     ("FeH", 1): "56Fe-1H",
     ("SiO", 1): "28Si-16O",  # Placeholder until all molecules parsed from website TODO
+    ("CN", 1): "12C-14N",  # Placeholder until all molecules parsed from website TODO
 }
 """All :py:data:`~radis.db.classes.HITRAN_MOLECULES` are also converted to their ExoMol full-name format
 in :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
