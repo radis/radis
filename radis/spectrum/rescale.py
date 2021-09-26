@@ -136,7 +136,6 @@ def _build_update_graph(
                       ['transmittance_noslit']],
          etc. }
     """
-
     # Get defaults
     if path_length is None:
         path_length = "path_length" in spec.conditions
@@ -228,8 +227,7 @@ def _build_update_graph(
         derives_from("radiance", ["radiance_noslit"])
         derives_from("transmittance", ["transmittance_noslit"])
         derives_from("emissivity", ["emissivity_noslit"])
-
-    if equilibrium:
+    if equilibrium == True:
         if __debug__:
             printdbg("... build_graph: equilibrium > all keys derive from one")
         # Anything can be recomputed from anything
@@ -533,6 +531,7 @@ def update(
         raise ValueError("assume_equilibrium must be one of True, False, 'default'")
     if assume_equilibrium == "default":
         assume_equilibrium = spec.conditions.get("thermal_equilibrium", False)
+        assert assume_equilibrium in [True, False]  # prevent 'N/A' for instance
 
     # Update optically thin
     if optically_thin not in [True, False, "default"]:
@@ -542,6 +541,7 @@ def update(
             optically_thin = not spec.conditions["self_absorption"]
         else:
             optically_thin = False
+    assert optically_thin in [True, False]
     old_self_absorption = spec.conditions.get("self_absorption")
     if old_self_absorption != (not optically_thin):
         spec.conditions["self_absorption"] = not optically_thin
@@ -1506,7 +1506,7 @@ def _recalculate(
             )
             + ". Check how your equivalence tree is built: see rescale._build_update_graph()"
         )
-    if assume_equilibrium:
+    if assume_equilibrium == True:
         recompute.append("abscoeff")
     recompute = set(recompute)  # remove duplicates
 
