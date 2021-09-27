@@ -62,6 +62,9 @@ class DatabaseManager(object):
     Other Parameters
     ----------------
     *input for :class:`~joblib.parallel.Parallel` loading of database*
+    parallel: bool
+        if ``True``, use parallel loading.
+        Default ``True``.
     nJobs: int
         Number of processors to use to load a database (useful for big
         databases). BE CAREFUL, no check is done on processor use prior
@@ -80,7 +83,7 @@ class DatabaseManager(object):
     # Should be as a close as possible to the content of the corresponding ~/radis.json entry
     # Essentially a FileManager
 
-    def __init__(self, name, molecule, local_databases, verbose=False, nJobs=-2, batch_size="auto"):
+    def __init__(self, name, molecule, local_databases, verbose=False, parallel=True, nJobs=-2, batch_size="auto"):
 
         self.name = name
         self.molecule = molecule
@@ -93,10 +96,11 @@ class DatabaseManager(object):
 
         self.verbose = verbose
         
+        self.parallel = parallel
         self.nJobs = nJobs
         self.batch_size = batch_size
         self.minimum_nfiles = (
-            10  #: type: int. If there are less files, don't use parallel mode.
+            4  #: type: int. If there are less files, don't use parallel mode.
         )
 
     def get_filenames(self, engine):
@@ -263,6 +267,7 @@ class DatabaseManager(object):
 
         verbose = self.verbose
         molecule = self.molecule
+        parallel = self.parallel
 
         from time import time
 
@@ -276,7 +281,6 @@ class DatabaseManager(object):
         else:
             pbar_Ntot_estimate_factor = None
         Nlines_total = 0
-        Ndownload = 1
         Ntotal_downloads = len(local_files)
         def download_and_parse_one_file(urlname, local_file, Ndownload):
             if verbose:
@@ -293,32 +297,28 @@ class DatabaseManager(object):
                     f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
                 ) from err
 
-            if not pbar_enabled:
-                # if multiprocess, disable progress bar by turning verbose off until parsing completes
-                self.verbose = False
             # try:
             Nlines = self.parse_to_local_file(
                 self.ds,
                 urlname,
                 local_file,
+                pbar_active=(not parallel),
                 pbar_t0=time() - t0,
                 pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
                 pbar_Nlines_already=Nlines_total,
                 pbar_last=(Ndownload == Ntotal_downloads),
                 engine=engine,
             )
-            if not pbar_enabled:
-                self.verbose = verbose
             # except Exception as err:
             #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
 
             return Nlines
-        if len(local_files) > self.minimum_nfiles:
+        if parallel and len(local_files) > self.minimum_nfiles:
             pbar_enabled = False
             nJobs = self.nJobs
             batch_size = self.batch_size
             Nlines_total = sum(Parallel(
-                n_jobs=nJobs, batch_size=batch_size,verbose=5 * self.verbose
+                n_jobs=nJobs, batch_size=batch_size,verbose=self.verbose
                 )(delayed(download_and_parse_one_file)(urlname, local_file, Ndownload)\
                   for urlname, local_file, Ndownload in \
                   zip(urlnames,local_files, range(1,len(local_files)+1))))
