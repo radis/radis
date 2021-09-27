@@ -314,7 +314,6 @@ class DatabaseManager(object):
 
             return Nlines
         if parallel and len(local_files) > self.minimum_nfiles:
-            pbar_enabled = False
             nJobs = self.nJobs
             batch_size = self.batch_size
             Nlines_total = sum(Parallel(
@@ -323,7 +322,6 @@ class DatabaseManager(object):
                   for urlname, local_file, Ndownload in \
                   zip(urlnames,local_files, range(1,len(local_files)+1))))
         else:
-            pbar_enabled = True
             for urlname, local_file, Ndownload in zip(urlnames, local_files,
                                                       range(1,len(local_files)+1)):
                 download_and_parse_one_file(urlname, local_file, Ndownload)
