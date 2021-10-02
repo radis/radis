@@ -97,7 +97,6 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_waverange
 
 from radis.misc.basics import flatten, is_float, list_if_float, round_off
-from radis.misc.printer import printg
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
 from radis.phys.convert import conv2
@@ -390,7 +389,7 @@ class SpectrumFactory(BandFactory):
         optimization="simple",
         folding_thresh=1e-6,
         zero_padding=-1,
-        broadening_method=Default("voigt"),
+        broadening_method="voigt",
         cutoff=0,
         parsum_mode="full summation",
         verbose=True,
@@ -524,28 +523,6 @@ class SpectrumFactory(BandFactory):
 
         # Time Based variables
         self.verbose = verbose
-
-        # if optimization is ``'simple'`` or ``'min-RMS'``, or None :
-        # Adjust default values of broadening method :
-        if isinstance(broadening_method, Default):
-            if optimization in ("simple", "min-RMS") and broadening_method != "voigt":
-                if self.verbose >= 3:
-                    printg(
-                        "LDM algorithm used. Defaulting broadening method from {0} to Voigt".format(
-                            broadening_method
-                        )
-                    )
-                broadening_method = "voigt"
-            elif optimization is None and broadening_method != "voigt":
-                if self.verbose >= 3:
-                    printg(
-                        "LDM algorithm not used. Defaulting broadening method from {0} to 'voigt'".format(
-                            broadening_method
-                        )
-                    )
-                broadening_method = "voigt"
-            else:  # keep default
-                broadening_method = broadening_method.value
 
         if truncation == 0:
             raise ValueError(
@@ -1655,6 +1632,24 @@ class SpectrumFactory(BandFactory):
         return
 
     def predict_time(self):
+        """predict_time(self) uses the input parameters like Spectral Range, Number of lines, wstep,
+        truncation to predict the estimated calculation time for the Spectrum
+        broadening step(bottleneck step) for the current optimization and broadening_method. The formula
+        for predicting time is based on benchmarks performed on various parameters for different optimization,
+        broadening_method and deriving its time complexity.
+
+        Benchmarks: https://anandxkumar.github.io/Benchmark_Visualization_GSoC_2021/
+
+        Complexity vs Calculation Time Visualizations
+        LBL>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LegacyComplexityvsCalculationTime/Sheet1>`_,
+        DIT>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/2_096e-07lines_calculated7_185e-091wLwGSpectral_PointslogSpectral_Points/Sheet1>`_,
+        DIT>FFT: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LDMLatestLDMFFTComplexity4_675e-081wLwGSpectralPointslogSpectralPoints/Sheet1>`_
+
+        Returns
+        -------
+        float: Predicted time in seconds.
+        """
+
         def _is_at_equilibrium():
             try:
                 assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
@@ -1671,9 +1666,9 @@ class SpectrumFactory(BandFactory):
             except AssertionError:
                 return False
 
-        if _is_at_equilibrium() or self.params.optimization is None:
-            factor = 1
-        else:
+        factor = 1
+
+        if not _is_at_equilibrium():
             factor = 2  #  _apply_broadening_DLM() is called twice
 
         wstep = self.params.wstep
@@ -1716,7 +1711,7 @@ class SpectrumFactory(BandFactory):
                 raise NotImplementedError("broadening_method not implemented")
         elif optimization is None:
             if broadening_method == "voigt":
-                estimated_time = 6.6487e-08 * n_lines * truncation / wstep * factor
+                estimated_time = 6.6487e-08 * n_lines * truncation / wstep
             elif broadening_method == "convolve":  # Not benchmarked
                 estimated_time = (
                     self._broadening_time_ruleofthumb
@@ -2035,12 +2030,14 @@ class SpectrumFactory(BandFactory):
 
         .. minigallery:: radis.lbl.factory.SpectrumFactory.fit_spectrum
 
+        More advanced tools for interactive fitting of multi-dimensional, multi-slabs
+        spectra can be found in :py:mod:`fitroom`.
 
         See Also
         --------
         :py:func:`~radis.tools.fitting.fit_spectrum`,
         :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`,
-        `For more advanced cases, use Fitroom <https://github.com/radis/fitroom>`
+        :py:mod:`fitroom`
 
         """
         from radis.tools.fitting import fit_spectrum

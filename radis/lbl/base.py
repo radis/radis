@@ -268,6 +268,7 @@ class BaseFactory(DatabankLoader):
         plt.hist(np.round(a[~np.isnan(a)]))
         plt.xlabel("log10({0})".format(what))
         plt.ylabel("Count")
+        plt.show()
 
     # %% ======================================================================
     # PRIVATE METHODS - CALCULATE SPECTROSCOPIC PARAMETERS
@@ -1664,7 +1665,12 @@ class BaseFactory(DatabankLoader):
             # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
             # is an attribute and can be updated with definitions from ExoMol.
             # https://github.com/radis/radis/issues/321
-            HARCODED_MOLAR_MASS = {"SiO": {1: 43.971842}}
+            HARCODED_MOLAR_MASS = {
+                "SiO": {1: 43.971842},
+                "CN": {
+                    1: 26.0179
+                },  # https://www.chemicalaid.com/tools/molarmass.php?formula=CN%7B-%7D
+            }
             try:
                 return HARCODED_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
             except KeyError:

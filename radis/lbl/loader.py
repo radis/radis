@@ -838,6 +838,7 @@ class DatabankLoader(object):
         db_use_cached=True,
         lvl_use_cached=True,
         hdf5_engine="default",
+        parallel=True,
     ):
         """Fetch the latest databank files from HITRAN or HITEMP with the
         https://hitran.org/ API.
@@ -856,19 +857,20 @@ class DatabankLoader(object):
         Other Parameters
         ----------------
         parfuncfmt: ``'cdsd'``, ``'hapi'``, ``'exomol'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
-            format to read tabulated partition function file. If ``hapi``, then
-            HAPI (HITRAN Python interface) [2]_ is used to retrieve them (valid if
-            your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version. If partfuncfmt is None then ``hapi`` is used. If ``'exomol'``
-            then partition functions are downloaded from ExoMol. Default ``hapi``.
+            format to read tabulated partition function file. If ``'hapi'``, then
+            [HAPI]_ (HITRAN Python interface) is used to retrieve [TIPS-2020]_
+            tabulated partition functions.
+            If ``'exomol'`` then partition functions are downloaded from ExoMol.
+            Default ``'hapi'``.
         parfunc: filename or None
-            path to tabulated partition function to use.
-            If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
-            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
+            path to a tabulated partition function file to use.
         levels: dict of str or None
-            path to energy levels (needed for non-eq calculations). Format:
-            {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
-        levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
+            path to energy levels (needed for non-eq calculations). Format::
+
+                {1:path_to_levels_iso_1, 3:path_to_levels_iso3}.
+
+            Default ``None``
+        levelsfmt: ``'cdsd-pc'``, ``'radis'`` (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
@@ -893,7 +895,11 @@ class DatabankLoader(object):
         db_use_cached: bool, or ``'regen'``
             use cached
         hdf5_engine: ``'pytables'``, ``'vaex'``
-            which library to use to read HDF5 files (they are incompatible)
+            which library to use to read HDF5 files (they are incompatible: ``'pytables'`` is
+            row-major while ``'vaex'`` is column-major)
+        parallel: bool
+            if ``True``, uses joblib.parallel to load database with multiple processes
+            (works only for HITEMP files)
 
         Notes
         -----
@@ -909,7 +915,6 @@ class DatabankLoader(object):
         References
         ----------
         .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
-        .. [2] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
         # @dev TODO: also add cache file to fetch_databank, similar to load_databank
         # | Should store the waverange, molecule and isotopes in the cache file
@@ -1039,6 +1044,7 @@ class DatabankLoader(object):
                 verbose=self.verbose,
                 return_local_path=True,
                 engine=hdf5_engine,
+                parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
 

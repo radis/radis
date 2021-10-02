@@ -1301,15 +1301,6 @@ class BroadenFactory(BaseFactory):
         """
         # TODO automatic wavenumber spacing: ~10 wsteps / FWHM
 
-        # printing estimated time
-        if self.verbose >= 2:
-            estimated_time = self.predict_time()
-            print(
-                "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                    estimated_time
-                )
-            )
-
         self.profiler.start(key="init_vectors", verbose_level=3)
 
         # Init variables
@@ -1439,15 +1430,6 @@ class BroadenFactory(BaseFactory):
         self.wL = len(wL)
         wG = _init_w_axis(wG_dat, log_pG)  # FWHM
         self.wG = len(wG)
-
-        # printing estimated time
-        if self.verbose >= 2:
-            estimated_time = self.predict_time()
-            print(
-                "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                    estimated_time
-                )
-            )
 
         # Calculate the Lineshape
         # -----------------------
@@ -1894,7 +1876,10 @@ class BroadenFactory(BaseFactory):
         self.profiler.start("DLM_Distribute_lines", 3)
         # ... Initialize array on which to distribute the lineshapes
         if broadening_method in ["voigt", "convolve"]:
-            DLM = np.zeros((len(wavenumber_calc), len(wG), len(wL)))
+            DLM = np.zeros((len(wavenumber_calc) + 2, len(wG), len(wL)))
+            # +2 to allocate one empty grid point on each side : case where a line is on the boundary
+            ki0 += 1
+            ki1 += 1
         elif broadening_method == "fft":
             DLM = np.zeros(
                 (
@@ -1915,6 +1900,10 @@ class BroadenFactory(BaseFactory):
         _add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
         _add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
         _add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
+
+        if broadening_method in ["voigt", "convolve"]:
+            DLM = DLM[1:-1, :, :]
+            # 1:-1 to remove the empty grid point on each side
 
         # All lines within each bins are convolved with the same lineshape.
         # Let's do it:
@@ -1992,6 +1981,14 @@ class BroadenFactory(BaseFactory):
                 # Use DLM
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(
                     df.S.values,
                     line_profile_DLM,
@@ -2004,6 +2001,14 @@ class BroadenFactory(BaseFactory):
                 )
 
             elif optimization is None:
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
                 if chunksize is None:
 
                     # Deal with all lines directly (usually faster)
@@ -2085,6 +2090,14 @@ class BroadenFactory(BaseFactory):
                     self.misc.zero_padding = len(self.wavenumber_calc)
 
                 line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(df)
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
                 (wavenumber, abscoeff) = self._apply_lineshape_DLM(
                     df.S.values,
                     line_profile_DLM,
@@ -2124,6 +2137,14 @@ class BroadenFactory(BaseFactory):
                 # of the line over the DLM, which has to be done for both abscoeff & emisscoeff.
 
             elif optimization is None:
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
                 if chunksize is None:
                     # Deal with all lines directly (usually faster)
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck

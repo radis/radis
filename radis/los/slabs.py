@@ -275,6 +275,8 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
         # Get conditions (if they're different, fill with 'N/A')
         conditions = intersect(s.conditions, sn.conditions)
         conditions["waveunit"] = waveunit
+        if "thermal_equilibrium" in conditions:
+            conditions["thermal_equilibrium"] = False
         # Add extensive parameters :
         for cond in [
             "path_length",
@@ -676,6 +678,11 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         for cond in ["molecule"]:  # list of all
             if in_all(cond, [s.conditions for s in slabs]):
                 conditions[cond] = set([s.conditions[cond] for s in slabs])
+        for cond in [
+            "thermal_equilibrium",
+        ]:
+            if in_all(cond, [s.conditions for s in slabs]):
+                conditions[cond] = all([s.conditions[cond] for s in slabs])
         for cond in [
             "calculation_time",
             "total_lines",

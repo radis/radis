@@ -91,6 +91,9 @@ class Default:
         >>> 42
     """
 
+    def __repr__(self):
+        return "{}".format(self.value)
+
     def __init__(self, value):
         self.value = value
 
