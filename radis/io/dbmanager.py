@@ -26,8 +26,8 @@ from os.path import join
 
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
 from dateutil.parser import parse as parse_date
+from joblib import Parallel, delayed
 from numpy import DataSource
 
 LAST_VALID_DATE = (
@@ -77,13 +77,22 @@ class DatabaseManager(object):
         of the overhead. Batching fast computations together can mitigate
         this. Default: ``'auto'``
     More information in :class:`joblib.parallel.Parallel`
-    
+
     """
 
     # Should be as a close as possible to the content of the corresponding ~/radis.json entry
     # Essentially a FileManager
 
-    def __init__(self, name, molecule, local_databases, verbose=False, parallel=True, nJobs=-2, batch_size="auto"):
+    def __init__(
+        self,
+        name,
+        molecule,
+        local_databases,
+        verbose=False,
+        parallel=True,
+        nJobs=-2,
+        batch_size="auto",
+    ):
 
         self.name = name
         self.molecule = molecule
@@ -95,7 +104,7 @@ class DatabaseManager(object):
         self.ds = DataSource(self.tempdir)
 
         self.verbose = verbose
-        
+
         self.parallel = parallel
         self.nJobs = nJobs
         self.batch_size = batch_size
@@ -282,6 +291,7 @@ class DatabaseManager(object):
             pbar_Ntot_estimate_factor = None
         Nlines_total = 0
         Ntotal_downloads = len(local_files)
+
         def download_and_parse_one_file(urlname, local_file, Ndownload):
             if verbose:
                 inputf = urlname.split("/")[-1]
@@ -313,17 +323,27 @@ class DatabaseManager(object):
             #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
 
             return Nlines
+
         if parallel and len(local_files) > self.minimum_nfiles:
             nJobs = self.nJobs
             batch_size = self.batch_size
-            Nlines_total = sum(Parallel(
-                n_jobs=nJobs, batch_size=batch_size,verbose=self.verbose
-                )(delayed(download_and_parse_one_file)(urlname, local_file, Ndownload)\
-                  for urlname, local_file, Ndownload in \
-                  zip(urlnames,local_files, range(1,len(local_files)+1))))
+            if self.verbose:
+                print(
+                    f"Downloading and parsing {urlnames} to {local_files} "
+                    + f"({len(local_files)}) files), in parallel ({nJobs} jobs)"
+                )
+            Nlines_total = sum(
+                Parallel(n_jobs=nJobs, batch_size=batch_size, verbose=self.verbose)(
+                    delayed(download_and_parse_one_file)(urlname, local_file, Ndownload)
+                    for urlname, local_file, Ndownload in zip(
+                        urlnames, local_files, range(1, len(local_files) + 1)
+                    )
+                )
+            )
         else:
-            for urlname, local_file, Ndownload in zip(urlnames, local_files,
-                                                      range(1,len(local_files)+1)):
+            for urlname, local_file, Ndownload in zip(
+                urlnames, local_files, range(1, len(local_files) + 1)
+            ):
                 download_and_parse_one_file(urlname, local_file, Ndownload)
 
     def clean_download_files(self):

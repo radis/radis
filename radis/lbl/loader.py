@@ -838,6 +838,7 @@ class DatabankLoader(object):
         db_use_cached=True,
         lvl_use_cached=True,
         hdf5_engine="default",
+        parallel=True,
     ):
         """Fetch the latest databank files from HITRAN or HITEMP with the
         https://hitran.org/ API.
@@ -896,6 +897,9 @@ class DatabankLoader(object):
         hdf5_engine: ``'pytables'``, ``'vaex'``
             which library to use to read HDF5 files (they are incompatible: ``'pytables'`` is
             row-major while ``'vaex'`` is column-major)
+        parallel: bool
+            if ``True``, uses joblib.parallel to load database with multiple processes
+            (works only for HITEMP files)
 
         Notes
         -----
@@ -1040,6 +1044,7 @@ class DatabankLoader(object):
                 verbose=self.verbose,
                 return_local_path=True,
                 engine=hdf5_engine,
+                parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
 
