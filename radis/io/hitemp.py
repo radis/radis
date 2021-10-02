@@ -111,7 +111,9 @@ class HITEMPDatabaseManager(DatabaseManager):
         chunksize=100000,
         parallel=True,
     ):
-        super().__init__(name, molecule, local_databases, verbose=verbose, parallel=parallel)
+        super().__init__(
+            name, molecule, local_databases, verbose=verbose, parallel=parallel
+        )
         self.chunksize = chunksize
         self.downloadable = True
         self.base_url = None
