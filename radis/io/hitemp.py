@@ -109,8 +109,11 @@ class HITEMPDatabaseManager(DatabaseManager):
         local_databases,
         verbose=True,
         chunksize=100000,
+        parallel=True,
     ):
-        super().__init__(name, molecule, local_databases, verbose=verbose)
+        super().__init__(
+            name, molecule, local_databases, verbose=verbose, parallel=parallel
+        )
         self.chunksize = chunksize
         self.downloadable = True
         self.base_url = None
@@ -261,6 +264,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         opener,
         urlname,
         local_file,
+        pbar_active=True,
         pbar_t0=0,
         pbar_Ntot_estimate_factor=None,
         pbar_Nlines_already=0,
@@ -282,6 +286,9 @@ class HITEMPDatabaseManager(DatabaseManager):
         verbose = self.verbose
         molecule = self.molecule
 
+        if not verbose:
+            pbar_active = False
+
         linereturnformat = self.get_linereturn_format(opener, urlname, columns)
 
         Nlines = 0
@@ -295,7 +302,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             Ntotal_lines_expected = int(
                 Ntotal_lines_expected * pbar_Ntot_estimate_factor
             )
-        pb = ProgressBar(N=Ntotal_lines_expected, active=verbose, t0=pbar_t0)
+        pb = ProgressBar(N=Ntotal_lines_expected, active=pbar_active, t0=pbar_t0)
         wmin = np.inf
         wmax = 0
 
@@ -430,6 +437,7 @@ def fetch_hitemp(
     clean_cache_files=True,
     return_local_path=False,
     engine="pytables",
+    parallel=True,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -467,6 +475,8 @@ def fetch_hitemp(
         if ``True``, also returns the path of the local database file.
     engine: 'pytables', 'vaex'
         which HDF5 library to use.
+    parallel: bool
+        if ``True``, uses joblib.parallel to load database with multiple processes
 
     Returns
     -------
@@ -517,6 +527,7 @@ def fetch_hitemp(
         local_databases=local_databases,
         verbose=verbose,
         chunksize=chunksize,
+        parallel=parallel,
     )
 
     # Get list of all expected local files for this database:
