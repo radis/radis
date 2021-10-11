@@ -32,7 +32,6 @@ import os
 from os.path import exists, splitext
 from warnings import warn
 
-import pandas as pd
 from packaging.version import parse
 
 import radis
@@ -471,36 +470,39 @@ def check_relevancy(
 ):
     """Make sure cache file is relevant.
 
-    Use case: checks that  wavenumber min and
-    wavenumber max in ``metadata`` are relevant for the specified spectral
-    range.
+     Use case: checks that  wavenumber min and
+     wavenumber max in ``metadata`` are relevant for the specified spectral
+     range.
 
-    Parameters
-    ----------
-    file: str
-        a `` .h5``  line database cache file
-    load_only_wavenum_above, relevant_if_metadata_below: dict
-        only load the cached file if the metadata values are above/below
-        the specific values for each key.
-    relevant_if_metadata_above, relevant_if_metadata_below: dict
-        file is relevant if the file metadata value for each key of the dictionary
-        is above/below the value in the dictionary
+     Parameters
+     ----------
+     file: str
+         a `` .h5``  line database cache file
+     load_only_wavenum_above, relevant_if_metadata_below: dict
+         only load the cached file if the metadata values are above/below
+         the specific values for each key.
+     relevant_if_metadata_above, relevant_if_metadata_below: dict
+         file is relevant if the file metadata value for each key of the dictionary
+         is above/below the value in the dictionary
 
-    Other Parameters
-    ----------------
-    key: str
-        dataset key in storer.
+     Other Parameters
+     ----------------
+     key: str
+         dataset key in storer.
+    engine: ``'h5py'``, ``'pytables'``, ``'vaex'``, ``'auto'``
+        which HDF5 library to use. If ``'auto'``, try to guess. Note: ``'vaex'``
+        uses ``'h5py'`` compatible HDF5.
 
-    Examples
-    --------
-    You want to compute a spectrum in between 2300 and 2500 cm-1. A line database
-    file is relevant only if its metadata says that ``'wavenum_max' > 2300``
-    and ``'wavenum_min'`` < 2500 cm-1.
+     Examples
+     --------
+     You want to compute a spectrum in between 2300 and 2500 cm-1. A line database
+     file is relevant only if its metadata says that ``'wavenum_max' > 2300``
+     and ``'wavenum_min'`` < 2500 cm-1.
 
-        check_relevancy('path/to/file', relevant_if_metadata_above={'wavenum_max':2300},
-                        relevant_if_metadata_below={'wavenum_min':2500})
+         check_relevancy('path/to/file', relevant_if_metadata_above={'wavenum_max':2300},
+                         relevant_if_metadata_below={'wavenum_min':2500})
 
-        the specified value.
+         the specified value.
 
     """
     if engine == "auto":
@@ -541,41 +543,51 @@ def _warn_if_object_columns(df, fname):
 
 
 def save_to_hdf(
-    df, fname, metadata, version=None, key="df", overwrite=True, verbose=True
+    df,
+    fname,
+    metadata,
+    version=None,
+    key="df",
+    overwrite=True,
+    verbose=True,
+    engine="pytables",
 ):
     """Save energy levels or lines to HDF5 file. Add metadata and version.
 
-    Parameters
-    ----------
-    df: a pandas DataFrame
-        data will be stored in the key ``'df'``
-    fname: str
-        ``.h5`` file where to store.
-    metadata: dict
-         dictionary of values that were used to generate the DataFrame. Metadata
-         will be asked again on file load to ensure it hasnt changed. ``None``
-         values are not stored.
-    version: str, or ``None``
-        file version. If ``None``, the current :data:`radis.__version__` is used.
-        On file loading, a warning will be raised if the current version is
-        posterior, or an error if the file version is set to be uncompatible.
-    key: str
-        dataset name. Default ``'df'``
-    overwrite: boolean
-        if ``True``, overwrites file. Else, raise an error if it exists.
+     Parameters
+     ----------
+     df: a pandas DataFrame
+         data will be stored in the key ``'df'``
+     fname: str
+         ``.h5`` file where to store.
+     metadata: dict
+          dictionary of values that were used to generate the DataFrame. Metadata
+          will be asked again on file load to ensure it hasnt changed. ``None``
+          values are not stored.
+     version: str, or ``None``
+         file version. If ``None``, the current :data:`radis.__version__` is used.
+         On file loading, a warning will be raised if the current version is
+         posterior, or an error if the file version is set to be uncompatible.
+     key: str
+         dataset name. Default ``'df'``
+     overwrite: boolean
+         if ``True``, overwrites file. Else, raise an error if it exists.
 
-    Other Parameters
-    ----------------
-    verbose: bool
-        If >=2, also warns if non numeric values are present (it would make
-        calculations slower)
+     Other Parameters
+     ----------------
+     verbose: bool
+         If >=2, also warns if non numeric values are present (it would make
+         calculations slower)
+    engine: ``'h5py'``, ``'pytables'``, ``'vaex'``
+        which HDF5 library to use. Note: ``'vaex'``
+        uses ``'h5py'`` compatible HDF5. Default ``pytables``
 
-    Notes
-    -----
-    ``None`` values are not stored
+     Notes
+     -----
+     ``None`` values are not stored
     """
     # Check file
-    assert fname.endswith(".h5")
+    assert fname.endswith(".h5") or fname.endswith(".hdf5")
     assert "version" not in metadata
     # ... 'object' columns slow everything down (not fixed format strings!)
     if verbose >= 2:
@@ -589,7 +601,8 @@ def save_to_hdf(
         raise ValueError("File exist: {0}".format(fname))
 
     # start by exporting dataframe
-    df.to_hdf(fname, key, format="fixed", mode="a", complevel=9, complib="blosc")
+    manager = HDF5Manager(engine)
+    manager.write(fname, df, append=False, key=key)
 
     # Add metadata
 
@@ -598,8 +611,7 @@ def save_to_hdf(
         version = radis.__version__
     metadata.update({"version": version})
 
-    with pd.HDFStore(fname, mode="a") as store:
-        store.get_storer(key).attrs.metadata = metadata
+    manager.add_metadata(fname, metadata)
 
     if verbose >= 3:
         print("... saved {0} with metadata: {1}".format(fname, metadata))
@@ -653,9 +665,20 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
     return metadata
 
 
-def cache_file_name(fname):
-    """Return the corresponding cache file name for fname."""
-    return splitext(fname)[0] + ".h5"
+def cache_file_name(fname, engine="pytables"):
+    """Return the corresponding cache file name for fname.
+
+    Other Parameters
+    ----------------
+    engine: ``'h5py'``, ``'pytables'``, ``'vaex'``
+       which HDF5 library to use. Default ``pytables``
+    """
+    if engine in ["pytables"]:
+        return splitext(fname)[0] + ".h5"
+    elif engine in ["h5py", "vaex"]:
+        return splitext(fname)[0] + ".hdf5"
+    else:
+        raise ValueError(engine)
 
 
 if __name__ == "__main__":

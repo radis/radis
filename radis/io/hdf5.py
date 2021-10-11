@@ -69,20 +69,43 @@ class HDF5Manager(object):
         else:
             raise NotImplementedError(self.engine)
 
-    def write(self, handler, df, append=True):
+    def write(
+        self,
+        file,
+        df,
+        append=True,
+        key="df",
+        format="table",
+        DATA_COLUMNS=["iso", "wav"],
+    ):
+        """Write dataframe ``df`` to ``file``
+
+        Other Parameters
+        ----------------
+        DATA_COLUMNS : list
+            only these column names will be searchable directly on disk to
+            load certain lines only. See :py:func:`~radis.io.hdf5.hdf2df`
+        """
         if self.engine == "pytables":
-            DATA_COLUMNS = ["iso", "wav"]
-            """
-            list : only these column names will be searchable directly on disk to
-            only load certain lines. See :py:func:`~radis.io.hdf5.hdf2df`
-            """
-            handler.put(
-                key="df",
-                value=df,
-                append=append,
-                format="table",
-                data_columns=DATA_COLUMNS,
-            )
+            with self.open(file) as f:
+                f.put(
+                    key=key,
+                    value=df,
+                    append=append,
+                    format=format,
+                    data_columns=DATA_COLUMNS,
+                )
+        elif self.engine == "vaex":
+            import vaex
+
+            if append == True:
+                raise ValueError(
+                    "Cannot append with 'vaex' engine. Load all files separately using vaex.open('many') then export to a single file"
+                )
+            try:
+                df.export_hdf5(file)
+            except AttributeError:  # case where df is not a Vaex dataFrame but (likely) a Pandas Dataframe
+                vaex.from_pandas(df).export_hdf5(file)
         else:
             raise NotImplementedError(self.engine)
 
@@ -195,7 +218,7 @@ class HDF5Manager(object):
         if self.engine == "pytables":
             with pd.HDFStore(fname, mode="r", complib="blosc", complevel=9) as f:
 
-                metadata = f.get_storer("df").attrs.metadata
+                metadata = f.get_storer(key).attrs.metadata
 
         elif self.engine == "h5py":
             with h5py.File(fname, "r") as hf:
