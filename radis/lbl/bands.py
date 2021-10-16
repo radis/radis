@@ -1065,7 +1065,7 @@ class BandFactory(BroadenFactory):
         return wavenumber, abscoeff_bands, emisscoeff_bands
 
     def _retrieve_bands_from_database(self):
-        """"""
+        """ """
 
         # TODO: options:
         # - Implement store / retrieve machinery for Bands

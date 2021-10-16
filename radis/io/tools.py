@@ -87,7 +87,7 @@ def _get_linereturnformat(data, columns, fname=""):
 
 
 def _ndarray2df(data, columns, linereturnformat):
-    """"""
+    """ """
 
     # ... Cast to new type
     # This requires to recast all the data already read, but is still the fastest

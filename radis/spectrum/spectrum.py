@@ -1868,7 +1868,7 @@ class Spectrum(object):
                 slider.on_changed(lambda val: self.update_plot(val, fig, line))
                 self.plot_sliders[key] = slider
                 n_sliders += 1
-                
+
             plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
 
         if show:
