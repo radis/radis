@@ -1,3 +1,4 @@
+# isort:skip_file
 import ctypes
 from os.path import join
 
@@ -497,11 +498,15 @@ def gpu_init(
     if verbose_gpu >= 2:
         print("Allocating device memory and copying data...")
 
+    #  (@EP : I suspect the following lines fail the black formatter on Travis.
+    #   deactivating auto-format :
+    # fmt: off
     S_klm_d = zeros(
         (2 * init_h.N_v, init_h.N_G, init_h.N_L),
         order="C",
         dtype=float32,
     )
+    # fmt: on
     spectrum_in_d = zeros(init_h.N_v + 1, dtype=complex64)
     transmittance_noslit_d = zeros(init_h.N_v * 2, dtype=float32)
     transmittance_FT_d = zeros(init_h.N_v + 1, dtype=complex64)

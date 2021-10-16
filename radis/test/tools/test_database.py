@@ -18,7 +18,7 @@ from radis.tools.database import SpecDatabase, SpecList
 
 @pytest.mark.fast
 def test_speclist(*args, **kwargs):
-    """ Test :py:class:`~radis.tools.database.SpecList` functions """
+    """Test :py:class:`~radis.tools.database.SpecList` functions"""
 
     from radis.test.utils import getTestFile
 
@@ -35,7 +35,7 @@ def test_speclist(*args, **kwargs):
 def test_database_functions(
     verbose=True, plot=True, close_plots=True, warnings=True, *args, **kwargs
 ):
-    """ Test :py:class:`~radis.tools.database.SpecDatabase` functions """
+    """Test :py:class:`~radis.tools.database.SpecDatabase` functions"""
 
     if plot:
         import matplotlib.pyplot as plt
@@ -165,7 +165,7 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
 
 
 def test_lazy_loading(verbose=True, *args, **kwargs):
-    """ Test lazy loading """
+    """Test lazy loading"""
 
     import numpy as np
 

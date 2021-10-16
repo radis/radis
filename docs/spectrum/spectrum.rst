@@ -53,7 +53,6 @@ community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or
 How to generate a Spectrum?
 ===========================
 
-
 Calculate a Spectrum
 --------------------
 
@@ -80,25 +79,30 @@ or calculates it and stores it if you didn't. Very useful for spectra that
 require long computational times!
 
 
-Initialize from text file or arrays
------------------------------------
+Initialize from Python arrays
+-----------------------------
 
-Spectrum objects can also be generated from NumPy arrays or files.
+The standard way to build a Radis Spectrum is from a dictionary of
+:py:mod:`numpy` arrays::
 
-From numpy arrays, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array` ::
+    # w, k, I are numpy arrays for wavenumbers, absorption coefficient, and radiance.
+    from radis import Spectrum
+    s = Spectrum({"wavenumber":w, "abscoeff":k, "radiance_noslit":I},
+                 units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
+Or::
+
+    s = Spectrum({"abscoeff":(w,k), "radiance_noslit":(w,I)},
+                 wunit="cm-1"
+                 units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
+
+You can also use the :py:meth:`~radis.spectrum.spectrum.Spectrum.from_array`
+convenience function::
 
     # w, T are two numpy arrays
     from radis import Spectrum
     s = Spectrum.from_array(w, T, 'transmittance_noslit',
-                               waveunit='nm', unit='') # adimensioned
+                               wunit='nm', unit='') # adimensioned
 
-
-From a file, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
-
-    # 'exp_spectrum.txt' contains a spectrum
-    from radis import Spectrum
-    s = Spectrum.from_txt('exp_spectrum.txt', 'radiance',
-                               waveunit='nm', unit='mW/cm2/sr/nm')
 
 Convenience functions have been added to handle the usual cases:
 :func:`~radis.spectrum.models.calculated_spectrum`,
@@ -112,25 +116,20 @@ Convenience functions have been added to handle the usual cases:
     s3 = experimental_spectrum(w, I, wunit='nm', Iunit='W/cm2/sr/nm')   # creates 'radiance'
 
 
-Generate a Blackbody (Planck) function object
----------------------------------------------
+Initialize from a text file
+---------------------------
 
-In RADIS you can either use the :func:`~radis.phys.blackbody.planck` and
-:func:`~radis.phys.blackbody.planck_wn` functions that generate Planck
-radiation arrays for wavelength and wavenumber, respectively.
+Spectrum objects can also be generated directly from a text file.
 
-Or, you can use the :func:`~radis.phys.blackbody.sPlanck` function that
-returns a :class:`~radis.spectrum.spectrum.Spectrum` object, with all
-the associated methods (add in a line-of-sight, compare, etc.)
+From a file, use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_txt` ::
 
-Example::
+    # 'exp_spectrum.txt' contains a spectrum
+    from radis import Spectrum
+    s = Spectrum.from_txt('exp_spectrum.txt', 'radiance',
+                               wunit='nm', unit='mW/cm2/sr/nm')
 
-    s = sPlanck(wavelength_min=3000, wavelength_max=50000,
-                T=288, eps=1)
-    s.plot()
-
-
-.. minigallery:: radis.sPlanck
+It is, however, recommended to use the RADIS ``.spec`` json format to store
+and load arrays :
 
 
 Load from a .spec file
@@ -157,7 +156,44 @@ Spectrum conditions and get Spectrum that suits specific parameters
 .. minigallery:: radis.load_spec
 
 
-.. _label_spectral _arrays:
+Want a quick spectrum
+---------------------
+
+You need a spectrum immediatly, to run some tests ? Use :py:func:`~radis.test.utils.test_spectrum` ::
+
+    s = radis.test_spectrum()
+    s.apply_slit(0.5, 'nm')
+    s.plot('radiance')
+
+This returns the CO spectrum from the :ref:`first documentation example <label_first_example>`
+
+.. figure:: examples/co_spectrum_700K.png
+:scale: 60 %
+
+
+Generate a Blackbody (Planck) function object
+---------------------------------------------
+
+In RADIS you can either use the :func:`~radis.phys.blackbody.planck` and
+:func:`~radis.phys.blackbody.planck_wn` functions that generate Planck
+radiation arrays for wavelength and wavenumber, respectively.
+
+Or, you can use the :func:`~radis.phys.blackbody.sPlanck` function that
+returns a :class:`~radis.spectrum.spectrum.Spectrum` object, with all
+the associated methods (add in a line-of-sight, compare, etc.)
+
+Example::
+
+    s = sPlanck(wavelength_min=3000, wavelength_max=50000,
+                T=288, eps=1)
+    s.plot()
+
+.. minigallery:: radis.sPlanck
+
+
+
+
+.. _label_spectral_arrays:
 
 Spectral Arrays
 ===============
@@ -211,7 +247,7 @@ Custom spectral arrays with arbitrary units can be defined when creating a Spect
 
     # w, I are two numpy arrays
     s = Spectrum.from_array(w, I, 'irradiance',
-                               waveunit='nm', unit='w/cm2/nm')
+                               wunit='nm', unit='w/cm2/nm')
 
 Although not recommended, it is also possible to directly edit the dictionary containing the objects.
 For instance, this is done in
@@ -362,11 +398,11 @@ Example of output::
 Know if a spectrum has nan
 --------------------------
 
-:py:func:`~radis.spectrum.utils.has_nan` looks over all spectral
+:py:meth:`~radis.spectrum.spectrum.Spectrum.has_nan` looks over all spectral
 quantities. ``print(s)`` will also show the number of nans per quantity ::
 
-    from radis.spectrum.utils import has_nan
-    has_nan(s)
+    s = radis.test_spectrum()
+    s.has_nan()
 
 
 How to export ?
@@ -614,9 +650,23 @@ This returns a new spectrum and does not modify the Spectrum itself. To do so us
 
     s.normalize(inplace=True)
 
-You can chain the commands::
+.. _label_spectrum_chaining:
+
+Chaining
+--------
+
+You can chain the various methods of Spectrum. For instance::
 
     s.normalize().plot()
+
+Or::
+
+    s.crop(4120, 4220, 'nm').apply_slit(3, 'nm').take('radiance')
+
+If you want to create a new spectrum, don't forget to set ``inplace=False``
+for the first command that allows it. i.e ::
+
+    s2 = s.crop(4120, 4220, 'nm', inplace=False).apply_slit(3, 'nm').take('radiance')
 
 
 .. _label_spectrum_remove_baseline:
@@ -811,7 +861,7 @@ folder as an argument, and converts it in a list of
 See more information about databases below.
 
 
-.. include:: database.rst
+.. include:: _database.rst
 
 
 

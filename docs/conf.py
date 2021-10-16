@@ -75,9 +75,11 @@ sphinx_gallery_conf = {
         "radis": None,
     },
     # directory where function/class granular galleries are stored
-    "backreferences_dir": "gen_modules/backreferences",
+    "backreferences_dir": "source/backreferences",
     # Modules for which function/class level galleries are created.
     "doc_module": ("radis"),
+    "inspect_global_variables": True,
+    "show_signature": False,
 }
 
 
@@ -131,6 +133,7 @@ def run_apidoc(_):
 
 def setup(app):
     app.connect("builder-inited", run_apidoc)
+    app.add_css_file("custom.css")  #  for scrollable sidebar
 
 
 # %%
@@ -138,14 +141,17 @@ def setup(app):
 # Reference other packages
 intersphinx_mapping = {
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
-    "astroquery": ("http://astroquery.readthedocs.io/en/latest/", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
     "matplotlib": ("https://matplotlib.org/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
-    "scipy": ("http://docs.scipy.org/doc/scipy/reference", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "cantera": ("https://www.cantera.org/documentation/docs-2.4/sphinx/html/", None),
     "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
-    "astropy": ("http://docs.astropy.org/en/stable/", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
+    "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
+    "seaborn": ("https://seaborn.pydata.org/", None),
+    "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
 }
 
 napoleon_google_docstring = False
@@ -201,7 +207,7 @@ language = None
 
 # List of patterns, relative to the source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "dev/_*", "lbl/_*", "spectrum/_*", "references/_*"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -252,9 +258,10 @@ html_theme_options = {
     "github_banner": False,
     "travis_button": False,
     "codecov_button": False,
-    "sidebar_includehidden": False,
-    "fixed_sidebar": False,
+    "sidebar_includehidden": True,
+    "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
+    "link": "#7A306C",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

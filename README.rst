@@ -1,5 +1,5 @@
  | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder|
- | |badge_slack| |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
+ | |badge_slack| |badge_contributors| |badge_travis| |badge_coverage| |badge_code_quality| |badge_asv| |badge_license|
 
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
@@ -219,6 +219,7 @@ Links
 
 - Interactive Examples: `radis_examples <https://github.com/radis/radis-examples>`__ |badge_examples| |badge_binder|
 
+- `Fitroom <https://github.com/radis/fitroom>`__ (for advanced multidimensional fitting).
 
 
 
@@ -271,6 +272,10 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg
                     :target: https://codecov.io/gh/radis/radis
                     :alt: Coverage
+
+.. |badge_code_quality| image:: https://img.shields.io/lgtm/grade/python/g/radis/radis.svg?logo=lgtm&logoWidth=18)
+                  :target: https://lgtm.com/projects/g/radis/radis/alerts
+                  :alt: Code Quality
 
 .. |badge_asv| image:: http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat
                   :target: https://github.com/radis/radis-benchmark

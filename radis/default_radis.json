@@ -1,0 +1,19 @@
+{
+"database":{},
+"spectroscopic_constants":{
+    "CO2": "molecules_data.json",
+    "CO": "molecules_data.json"
+    },
+"plot":{
+    "plotlib":"publib",
+    "context":"paper",
+    "style":"origin"
+    },
+"DEBUG_MODE":false,
+"AUTO_UPDATE_DATABASE":false,
+"AUTO_UPDATE_SPEC":false,
+"OLDEST_COMPATIBLE_VERSION":"0.9.1",
+"USE_CYTHON":true,
+"GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD":3,
+"GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD":1
+}

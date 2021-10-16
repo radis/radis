@@ -166,7 +166,7 @@ def test_spec_generation(
         wavelength_max=4400,
         cutoff=1e-27,
         isotope="1,2",
-        broadening_max_width=50,
+        truncation=25,
         optimization=None,
         # optimization="min-RMS",
         # pseudo_continuum_threshold=0.01,
@@ -304,7 +304,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
         path_length=10,
         mole_fraction=400e-6,
         isotope=[1],
-        broadening_max_width=10,
+        truncation=5,
         verbose=verbose,
     )
     sf.warnings.update(
@@ -346,7 +346,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwargs):
-    """ See wavelength difference in air and vacuum """
+    """See wavelength difference in air and vacuum"""
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
@@ -365,7 +365,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         mole_fraction=400e-6,
         isotope=[1],
         medium="vacuum",
-        broadening_max_width=10,
+        truncation=5,
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
@@ -560,8 +560,8 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
     """Test to check that on computing several spectrum from the same Spectrum
     Factory object we get the different wstep for each case using auto method"""
 
+    import radis
     from radis.misc.basics import round_off
-    from radis.params import GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
 
     setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 
@@ -590,7 +590,7 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
 
     # Checking computed wstep and expected wstep are equal
     assert wstep_calculated == round_off(
-        sf.min_width / GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD
+        sf.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
     )
 
     s2 = sf.eq_spectrum(300, pressure=0.2)
@@ -612,8 +612,8 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     Tgas = 1000
 
     sf = SpectrumFactory(
-        wavelength_min=4160,
-        wavelength_max=4220,
+        wavelength_min=4165,
+        wavelength_max=4200,
         mole_fraction=1,
         path_length=0.3,
         cutoff=1e-23,
@@ -626,7 +626,7 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.fetch_databank("hitran")
+    sf.load_databank("HITRAN-CO2-TEST")
 
     sf.eq_spectrum(Tgas)
     wstep_1 = sf.params.wstep

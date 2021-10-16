@@ -5,6 +5,8 @@ Calculate a large spectrum
 ==========================
 
 Calculate a full-range spectrum on several partial spectral ranges, and combine them.
+
+Uses the :py:func:`~radis.los.slabs.MergeSlabs` function
 """
 
 from radis import MergeSlabs, calc_spectrum

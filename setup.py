@@ -240,13 +240,20 @@ def run_setup(with_binary):
             "spectroscopy",
             "molecules",
             "HITRAN",
+            "hitemp",
+            "exomol",
+            "line-by-line",
         ],
         packages=find_packages(),
         install_requires=[
             "hitran-api",
+            "beautifulsoup4",  # parse ExoMol website
+            "lxml",  # parser used for ExoMol website
+            "pyarrow",  # for the feather format (temporarily needed for ExoMol)
             "numpy",
             "scipy>=1.4.0",
             "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
+            "seaborn",  # other matplotlib themes
             "cython",
             "pandas>=1.0.5",
             "plotly>=2.5.1",
@@ -263,6 +270,11 @@ def run_setup(with_binary):
             "pytest",  # to run test suite
             "joblib",  # for parallel loading of SpecDatabase
             "numba",  # just-in-time compiler
+            "psutil",  # for getting user RAM
+            "tuna",  # to generate visual/interactive performance profiles
+            "vaex",  # HDF5,
+            "h5py",  # HDF5
+            "habanero",  # CrossRef API to retrieve data from doi
         ],
         extras_require={
             "dev": [

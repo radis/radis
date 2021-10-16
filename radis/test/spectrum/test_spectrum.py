@@ -32,10 +32,65 @@ fig_prefix = basename(__file__) + ": "
 # %% Test routines
 
 
+def test_spectrum_creation_method(*args, **kwargs):
+    import pytest
+
+    w = np.linspace(300, 700, 1000)
+    k = (np.random.rand(1000) + 0.3) ** 10
+    T = np.exp(-k * 1)
+
+    # Good inputs:
+    # ... format of quantities :
+    Spectrum({"wavelength": w, "abscoeff": k, "transmittance_noslit": T}, wunit="nm")
+    Spectrum({"abscoeff": (w, k), "transmittance_noslit": (w, T)}, wunit="nm")
+
+    Spectrum({"wavelength": w, "abscoeff": k, "transmittance_noslit": T}, wunit="nm")
+
+    # ... units:
+    Spectrum({"wavespace": w, "abscoeff": k}, wunit="nm")
+    Spectrum({"wavelength": w, "abscoeff": k}, wunit="nm")
+
+    # Bad inputs:
+    with pytest.raises(AssertionError) as err:
+        Spectrum(
+            {"wavelength": w, "abscoeff": k, "transmittance_noslit": T}
+        )  # wunit not defined
+    with pytest.raises(AssertionError) as err:
+        Spectrum(
+            {"wavenumber": w, "abscoeff": k, "transmittance_noslit": T}
+        )  # wunit not defined
+
+    # ... wavespace defined multiple times
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"wavelength": w, "wavenumber": 1e7 / w, "abscoeff": k}, wunit="nm")
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"wavelength": w, "wavespace": 1e7 / w, "abscoeff": k}, wunit="nm")
+
+    # ... format of quantities :
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"wavenumber": w, "abscoeff": np.hstack((k, k))}, wunit="cm-1")
+    assert "Input arrays should have the same length" in str(err.value)
+
+    # ... units badly defeined :
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"wavespace": w, "abscoeff": k})
+    assert "waveunit ('nm', 'cm-1'?) has to be defined" in str(err.value)
+
+    with pytest.raises(AssertionError) as err:
+        Spectrum({"abscoeff": (w, k)})
+    assert "waveunit ('nm', 'cm-1'?) has to be defined" in str(err.value)
+
+    with pytest.raises(AssertionError):
+        Spectrum({"wavenumber": w, "abscoeff": k}, wunit="nm")
+
+    with pytest.raises(AssertionError):
+        Spectrum({"wavelength": w, "abscoeff": k}, wunit="cm-1")
+
+
 def test_spectrum_get_methods(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
-    """ Test all spectrum methods on a Spectrum generated in Specair """
+    """Test all spectrum methods on a Spectrum generated in Specair"""
 
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
@@ -97,6 +152,36 @@ def test_spectrum_get_methods(
 
 
 @pytest.mark.fast
+def test_trimming(verbose=True, *args, **kwargs):
+    """Test :py:meth:`radis.spectrum.spectrum.Spectrum.trim`"""
+
+    from radis.misc.arrays import count_nans
+
+    # trim both sides
+    w = np.linspace(300, 600)
+    T = np.ones_like(w)
+    T[:15] = np.nan
+    T[-10:] = np.nan
+    s = Spectrum.from_array(w, T, "transmittance_noslit", wunit="nm", unit="")
+
+    Nnans = count_nans(T)
+    assert len(s) == 50  # before trimming
+    s.trim()
+    assert len(s) == 50 - Nnans
+
+    # trim one side
+    w = np.linspace(300, 600)
+    T = np.ones_like(w)
+    T[:15] = np.nan
+    s = Spectrum.from_array(w, T, "transmittance_noslit", wunit="nm", unit="")
+
+    Nnans = count_nans(T)
+    assert len(s) == 50  # before trimming
+    s.trim()
+    assert len(s) == 50 - Nnans
+
+
+@pytest.mark.fast
 def test_copy(verbose=True, *args, **kwargs):
     """Test that a Spectrum is correctly copied
 
@@ -123,11 +208,8 @@ def test_copy(verbose=True, *args, **kwargs):
 
     # Test all quantities in detail
     for var in s._q.keys():
-        assert np.allclose(s._q[var], s2._q[var])
+        assert np.allclose(s._q[var], s2._q[var], equal_nan=True)
         assert not (s._q[var] is s2._q[var])
-    for var in s._q_conv.keys():
-        assert np.allclose(s._q_conv[var], s2._q_conv[var])
-        assert not (s._q_conv[var] is s2._q_conv[var])
 
     if verbose:
         print("Tested that s2 == s (but s2 is not s) after Spectrum copy")
@@ -174,7 +256,7 @@ def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs)
 
 
 def test_store_functions(verbose=True, *args, **kwargs):
-    """ Test some store / retrieve functions """
+    """Test some store / retrieve functions"""
 
     from radis.spectrum.models import transmittance_spectrum
     from radis.test.utils import getTestFile
@@ -251,14 +333,14 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
 
 
 def test_rescaling_function(verbose=True, *args, **kwargs):
-    """ Test rescaling functions """
+    """Test rescaling functions"""
 
     from radis.test.utils import getTestFile
 
     s = Spectrum.from_txt(
         getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000.txt"),
         quantity="radiance_noslit",
-        waveunit="nm",
+        wunit="nm",
         unit="mW/cm2/sr/µm",  # Specair units: mW/cm2/sr/µm
         conditions={
             "Tvib": 3000,
@@ -340,6 +422,42 @@ def test_resampling_function(
     assert get_residual_integral(s, s3, "abscoeff", ignore_nan=True) < 1e-5
 
 
+def test_resampling_nan_function(verbose=True, *args, **kwargs):
+    """Test resampling functions, for Spectra with nans"""
+    from radis import get_residual
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+
+    plot = True
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True).crop(
+        2170, 2180, "cm-1"
+    )
+    s.rescale_path_length(10)  # cm
+    s.name = "original"
+
+    # We want to resample on a small range:
+    w_exp = s.get_wavenumber()[700:-700][::5]
+    # ... add a shift:
+    w_exp += np.diff(s.get_wavenumber())[0] * 2 / 3
+
+    s.update("transmittance_noslit")
+    s.apply_slit(3, "nm")
+
+    assert s.has_nan()
+
+    # s2.resample(w_exp)
+    s2 = s.resample(w_exp, inplace=False)
+    s2.name = "resampled"
+
+    assert get_residual(s2, s, "transmittance") < 1e-6
+
+    if plot:
+        from radis import plot_diff
+
+        plot_diff(s, s2, show_points=True)
+
+
 @pytest.mark.fast
 def test_noplot_different_quantities(*args, **kwargs):
     """Prevents User Errors: Ensures an error is raised if plotting different
@@ -412,6 +530,21 @@ def test_normalization(*args, **kwargs):
     )
 
 
+@pytest.mark.fast
+def test_sort(*args, **kwargs):
+    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.sort`"""
+
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    s_exp = load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True)
+
+    from radis.misc.arrays import is_sorted
+
+    assert not is_sorted(s_exp.get("radiance")[0])
+    assert is_sorted(s_exp.sort().get("radiance")[0])
+
+
 # %%
 
 
@@ -436,6 +569,7 @@ def _run_testcases(
 
     # Test all Spectrum methods
     # -------------------------
+    test_spectrum_creation_method(*args, **kwargs)
     test_spectrum_get_methods(
         debug=debug,
         verbose=verbose,
@@ -445,6 +579,7 @@ def _run_testcases(
         **kwargs
     )
     test_copy(verbose=verbose, *args, **kwargs)
+    test_trimming(*args, **kwargs)
     test_populations(
         verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs
     )
@@ -465,6 +600,7 @@ def _run_testcases(
     test_resampling_function(
         debug=debug, plot=plot, close_plots=close_plots, *args, **kwargs
     )
+    test_resampling_nan_function(verbose=verbose, *args, **kwargs)
 
     test_normalization(*args, **kwargs)
 
@@ -473,6 +609,7 @@ def _run_testcases(
 
     # Test plot by parts
     test_plot_by_parts(plot=plot, *args, **kwargs)
+    test_sort()
 
     return True
 

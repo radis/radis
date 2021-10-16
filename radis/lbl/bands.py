@@ -60,7 +60,11 @@ from radis.lbl.labels import (
     vib_lvl_name_hitran_class1,
     vib_lvl_name_hitran_class5,
 )
-from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+
+try:  # Proper import
+    from .loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+except ImportError:  # if ran from here
+    from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 from radis.misc.basics import all_in, is_float
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
@@ -185,6 +189,9 @@ class BandFactory(BroadenFactory):
         path_length = self.input.path_length
         verbose = self.verbose
 
+        # New Profiler object
+        self._reset_profiler(verbose)
+
         # %% Retrieve from database if exists
         if self.autoretrievedatabase:
             s = self._retrieve_bands_from_database()
@@ -197,8 +204,6 @@ class BandFactory(BroadenFactory):
             self.print_conditions()
 
         # Start
-        t0 = time()
-
         # %% Make sure database is loaded
         if self.df0 is None:
             raise AttributeError("Load databank first (.load_databank())")
@@ -208,8 +213,8 @@ class BandFactory(BroadenFactory):
 
         # %% Calculate the spectrum
         # ---------------------------------------------------
-        t0 = time()
 
+        self.profiler.start("band_calculation", 1)
         self._reinitialize()
 
         # --------------------------------------------------------------------
@@ -363,10 +368,10 @@ class BandFactory(BroadenFactory):
                 lines=lines,
                 units=self.units,
                 cond_units=self.cond_units,
-                waveunit=self.params.waveunit,  # cm-1
+                wunit=self.params.waveunit,  # cm-1
                 name=band,
                 # dont check input (much faster, and Spectrum
-                warnings=False,
+                check_wavespace=False,
                 # is freshly baken so probably in a good format
             )
 
@@ -382,8 +387,7 @@ class BandFactory(BroadenFactory):
             pb.update(i)  # progress bar
         pb.done()
 
-        if verbose:
-            print(("... process done in {0:.1f}s".format(time() - t0)))
+        self.profiler.stop("band_calculation", "Bands calculated")
 
         return s_bands
 
@@ -503,6 +507,9 @@ class BandFactory(BroadenFactory):
         pressure_mbar = self.input.pressure_mbar
         verbose = self.verbose
 
+        # New Profiler object
+        self._reset_profiler(verbose)
+
         # %% Retrieve from database if exists
         if self.autoretrievedatabase:
             s = self._retrieve_bands_from_database()
@@ -514,6 +521,7 @@ class BandFactory(BroadenFactory):
             print("Calculating Non-Equilibrium bands")
             self.print_conditions()
 
+        self.profiler.start("band_calculation", 1)
         # %% Make sure database is loaded
         self._check_line_databank()
         self._calc_noneq_parameters(vib_distribution, singleTvibmode)
@@ -526,7 +534,6 @@ class BandFactory(BroadenFactory):
 
         # %% Calculate the spectrum
         # ---------------------------------------------------
-        t0 = time()
 
         self._reinitialize()
 
@@ -535,8 +542,8 @@ class BandFactory(BroadenFactory):
         # (Note: Emission Integral is non canonical quantity, equivalent to
         #  Linestrength for absorption)
         self.calc_populations_noneq(Tvib, Trot)
-        self._calc_linestrength_noneq()
-        self._calc_emission_integral()
+        self.calc_linestrength_noneq()
+        self.calc_emission_integral()
 
         # ----------------------------------------------------------------------
         # Cutoff linestrength
@@ -718,10 +725,10 @@ class BandFactory(BroadenFactory):
                 lines=lines,
                 units=self.units,
                 cond_units=self.cond_units,
-                waveunit=self.params.waveunit,  # cm-1
+                wunit=self.params.waveunit,  # cm-1
                 name=band,
                 # dont check input (much faster, and Spectrum
-                warnings=False,
+                check_wavespace=False,
                 # is freshly baken so probably in a good format
             )
 
@@ -734,8 +741,7 @@ class BandFactory(BroadenFactory):
             pb.update(i)  # progress bar
         pb.done()
 
-        if verbose:
-            print(("... process done in {0:.1f}s".format(time() - t0)))
+        self.profiler.stop("band_calculation", "Bands calculated")
 
         return s_bands
 
@@ -987,6 +993,7 @@ class BandFactory(BroadenFactory):
         if self.verbose:
             print(("Now processing lines ({0})".format(len(df))))
 
+        self.profiler.start("calc_broadening_eq_bands", 2)
         # Just some tests
         try:
             assert len(df.shape) == 2
@@ -998,6 +1005,8 @@ class BandFactory(BroadenFactory):
             )
 
         (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
+
+        self.profiler.stop("calc_broadening_eq_bands", "Calc Broadening Eq Bands")
 
         return wavenumber, abscoeff_bands
 
@@ -1032,6 +1041,7 @@ class BandFactory(BroadenFactory):
         if self.verbose:
             print(("Now processing lines ({0})".format(len(df))))
 
+        self.profiler.start("calc_broadening_noneq_bands", 2)
         # Just some tests
         try:
             assert len(df.shape) == 2
@@ -1047,6 +1057,10 @@ class BandFactory(BroadenFactory):
             abscoeff_bands,
             emisscoeff_bands,
         ) = self._broaden_lines_noneq_bands(df)
+
+        self.profiler.stop(
+            "calc_broadening_noneq_bands", "Calculate broadening noneq bands"
+        )
 
         return wavenumber, abscoeff_bands, emisscoeff_bands
 
@@ -1128,13 +1142,18 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
         print("... sorting lines by vibrational bands")
 
     # Calculate bands:
-    id = list(pd.unique(df["id"]))
-    if len(id) > 1:
-        raise ValueError(
-            "Cant calculate vibrational bands for multiple " + "molecules yet"
-        )  # although it's an easy fix. Just
-        # groupby id
-    molecule = get_molecule(id[0])
+    if "id" in df:
+        id = list(pd.unique(df["id"]))
+        if len(id) > 1:
+            raise ValueError(
+                "Cant calculate vibrational bands for multiple " + "molecules yet"
+            )  # although it's an easy fix. Just
+            # groupby id
+        molecule = get_molecule(id[0])
+
+    else:
+        id = df.attrs["id"]
+        molecule = get_molecule(id)
 
     if molecule == "CO2":
 

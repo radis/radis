@@ -37,7 +37,7 @@ class SlitDispersionWarning(UserWarning):
 
 
 class AccuracyError(ValueError):
-    """ Output spectrum is not valid """
+    """Output spectrum is not valid"""
 
     pass
 
@@ -119,12 +119,30 @@ class NegativeEnergiesWarning(UserWarning):
     pass
 
 
-class MissingSelfBroadeningWarning(UserWarning):
-    """Self broadening is missing in Line Database.
+class MissingSelfBroadeningTdepWarning(UserWarning):
+    """Self broadening temperature dependance coefficient is missing in Line Database.
 
-    Usually, use Air broadening instead
+    Usually, use Air broadening temperature dependance coefficient instead. See
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
     """
 
+    pass
+
+
+class MissingSelfBroadeningWarning(UserWarning):
+    """Self broadening tabulated width is missing in Line Database.
+
+    Usually, use Air broadening tabulated width instead. See
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    """
+
+    pass
+
+
+class MissingPressureShiftWarning(UserWarning):
+    """Pressure-shift coefficient is missing in Line Database."""
+
+    # TODO : add docstring link to references of line database columns.
     pass
 
 
@@ -142,13 +160,20 @@ class InputConditionsWarning(UserWarning):
 
 
 class DeprecatedFileWarning(DeprecationWarning):
-    """ Warning triggered when the cached file was generated in a previous version of radis """
+    """Warning triggered when the cached file was generated in a previous version of radis"""
 
     pass
 
 
 class IrrelevantFileWarning(PerformanceWarning):
-    """ Warning triggered when the cached file is irrelevant for the current calcul """
+    """Warning triggered when the cached file is irrelevant for the current calcul"""
+
+    pass
+
+
+class MissingReferenceWarning(UserWarning):
+    """Warning triggered when some algorithm / database is missing the bibliographic
+    data used by :py:meth:`~radis.spectrum.spectrum.Spectrum.cite`"""
 
     pass
 
@@ -183,12 +208,15 @@ WarningClasses = {
     "OutOfRangeLinesWarning": OutOfRangeLinesWarning,
     "HighTemperatureWarning": HighTemperatureWarning,
     "NegativeEnergiesWarning": NegativeEnergiesWarning,
+    "MissingSelfBroadeningTdepWarning": MissingSelfBroadeningTdepWarning,
     "MissingSelfBroadeningWarning": MissingSelfBroadeningWarning,
+    "MissingPressureShiftWarning": MissingPressureShiftWarning,
     "LinestrengthCutoffWarning": LinestrengthCutoffWarning,
     "InputConditionsWarning": InputConditionsWarning,
     "DeprecatedFileWarning": DeprecatedFileWarning,
     "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
+    "MissingReferenceWarning": MissingReferenceWarning,
 }
 """ dict: warnings used in RADIS Spectrum calculations.
 
@@ -227,11 +255,14 @@ default_warning_status = {
     "HighTemperatureWarning": "warn",
     "NegativeEnergiesWarning": "warn",  # warning if negative energies in database
     # warning if self-broadening abs coefficnet missing (Air is used instead)
+    "MissingSelfBroadeningTdepWarning": "warn",
     "MissingSelfBroadeningWarning": "warn",
+    "MissingPressureShiftWarning": "warn",
     "InputConditionsWarning": "warn",
     "DeprecatedFileWarning": "warn",
     "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
+    "MissingReferenceWarning": "warn",
 }
 """ dict: default status of warnings used in RADIS Spectrum calculations.
 

@@ -25,7 +25,7 @@ from numpy import exp
 
 from radis.db.classes import get_molecule, get_molecule_identifier
 from radis.io.hitemp import fetch_hitemp
-from radis.levels.partfunc import PartFuncHAPI
+from radis.levels.partfunc import PartFuncTIPS
 from radis.phys.constants import hc_k
 
 
@@ -33,11 +33,11 @@ def get_Qgas(molecule, iso, T):
 
     M = get_molecule_identifier(molecule)
 
-    Q = PartFuncHAPI(M, iso)
+    Q = PartFuncTIPS(M, iso)
     return Q.at(T=T)
 
 
-def calc_linestrength_eq(df, Tref, Tgas):
+def scale_linestrength_eq(df, Tref, Tgas):
 
     print("Scaling equilibrium linestrength")
 
@@ -78,7 +78,6 @@ if __name__ == "__main__":
     Tref = 296
     df = fetch_hitemp(
         molecule="CO",
-        databank_name="HITEMP",
         isotope="1, 2, 3",
         load_wavenum_min=2000,
         load_wavenum_max=2250,
@@ -86,7 +85,7 @@ if __name__ == "__main__":
 
     Tgas = 450
 
-    df = calc_linestrength_eq(df, Tref, Tgas)
+    df = scale_linestrength_eq(df, Tref, Tgas)
     plt.bar(df["wav"], df["S"])
     plt.xlabel("Wavenumbers in cm-1")
     plt.ylabel("Linestrengths in cm-1/(molecules/cm-2)")

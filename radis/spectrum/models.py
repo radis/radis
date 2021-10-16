@@ -46,7 +46,7 @@ def calculated_spectrum(
     cond_units=None,
     populations=None,
     name=None,
-):  # -> Spectrum:
+) -> Spectrum:
     """Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`
     object that has unit conversion, plotting and slit convolution
     capabilities.
@@ -110,7 +110,7 @@ def calculated_spectrum(
         np.array(w),
         np.array(I),
         "radiance_noslit",
-        waveunit=wunit,
+        wunit=wunit,
         unit=Iunit,
         conditions=conditions,
         cond_units=cond_units,
@@ -121,7 +121,7 @@ def calculated_spectrum(
 
 def transmittance_spectrum(
     w, T, wunit="nm", Tunit="", conditions=None, cond_units=None, name=None
-):  # -> Spectrum:
+) -> Spectrum:
     """Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`
     object that has unit conversion, plotting and slit convolution
     capabilities.
@@ -181,7 +181,7 @@ def transmittance_spectrum(
         np.array(w),
         np.array(T),
         "transmittance_noslit",
-        waveunit=wunit,
+        wunit=wunit,
         unit=Tunit,
         conditions=conditions,
         cond_units=cond_units,
@@ -191,7 +191,7 @@ def transmittance_spectrum(
 
 def experimental_spectrum(
     w, I, wunit="nm", Iunit="counts", conditions={}, cond_units=None, name=None
-):  # -> Spectrum:
+) -> Spectrum:
     """Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`
     object that has unit conversion and plotting capabilities. Convolution is
     not available as the spectrum is assumed to have be measured experimentally
@@ -258,7 +258,7 @@ def experimental_spectrum(
         np.array(w),
         np.array(I),
         "radiance",
-        waveunit=wunit,
+        wunit=wunit,
         unit=Iunit,
         conditions=conditions,
         cond_units=cond_units,

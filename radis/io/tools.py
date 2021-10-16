@@ -3,6 +3,7 @@
 
 @author: erwan
 """
+# TODO refactor : rename this file as hitran_utils.py
 
 import numpy as np
 import pandas as pd

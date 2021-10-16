@@ -187,7 +187,7 @@ def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
 
 
 def test_irrelevant_file_loading(*args, **kwargs):
-    """ check that irrelevant files (irrelevant wavenumber) are not loaded """
+    """check that irrelevant files (irrelevant wavenumber) are not loaded"""
 
     # For cdsd-hitemp files :
 
@@ -232,7 +232,7 @@ def _run_example(verbose=False):
         molecule="CO2",
         isotope="1",
         cutoff=1e-25,  # cm/molecule
-        broadening_max_width=10,  # cm-1
+        truncation=5,  # cm-1
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
@@ -303,5 +303,5 @@ def _run_testcases(verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # print("Testing io.py: ", _run_testcases(verbose=True))
+    print("Testing test_hitran_cdsd.py: ", _run_testcases(verbose=True))
     test_cache_regeneration(verbose=3)
