@@ -457,7 +457,7 @@ def _h5_compatible(a_dict):
     for k, v in a_dict.items():
         if v is None:
             continue  # dont store None
-        elif is_float(v):
+        elif is_float(v) or isinstance(v, bool):
             out[k] = v
         # elif isinstance(v, dict):
         #     raise ValueError(f"Value of key `{k}` is a dictionary and cannot be stored as attribute of an HDF5 file. Delete it, flatten it, or convert it to a string ?")
