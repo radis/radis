@@ -115,7 +115,15 @@ class HDF5Manager(object):
             raise NotImplementedError(self.engine)
             # h5py is not designed to write Pandas DataFrames
 
-    def load(self, fname, columns=None, where=None, key=None, **store_kwargs):
+    def load(
+        self,
+        fname,
+        columns=None,
+        where=None,
+        key=None,
+        none_if_empty=False,
+        **store_kwargs,
+    ):
         """
         Parameters
         ----------
@@ -162,11 +170,18 @@ class HDF5Manager(object):
         elif self.engine == "vaex":
             if key is None:
                 key = r"/table"
+
+            import h5py
             import vaex
 
             # Open file
             assert len(store_kwargs) == 0
             try:
+                with h5py.File(fname, "r") as f:
+                    if key not in f:
+                        raise KeyError(
+                            key
+                        )  # before vaex raises the same error; which prints things on the console that cannot be caught
                 df = vaex.open(fname, group=key)
             except FileNotFoundError as err:
                 # error message with suggestion on how to convert from existing file
@@ -204,7 +219,9 @@ class HDF5Manager(object):
 
         return df
 
-    def add_metadata(self, fname: str, metadata: dict, key=None):
+    def add_metadata(
+        self, fname: str, metadata: dict, key=None, create_empty_dataset=False
+    ):
         """
         Parameters
         ----------
@@ -213,6 +230,11 @@ class HDF5Manager(object):
         metadata: dict
             dictionary of metadata to add in group ``key``
 
+        Other Parameters
+        ----------------
+        create_empty_dataset: bool
+            if True, create an empty dataset to store the metadata as attribute
+
         """
         from radis.io.cache_files import _h5_compatible
 
@@ -220,12 +242,17 @@ class HDF5Manager(object):
             if key is None:
                 key = "df"
             with pd.HDFStore(fname, mode="a", complib="blosc", complevel=9) as f:
+                if create_empty_dataset:
+                    # Not possible to create an empty node directly, so we create a dummy group  # TODO ?
+                    f.put(key, pd.Series([]))
                 f.get_storer(key).attrs.metadata = metadata
 
         elif self.engine == "h5py":
             # TODO: define default key
             with h5py.File(fname, "a") as hf:
-                hf.attrs.update(_h5_compatible(metadata))
+                if create_empty_dataset:
+                    hf.create_dataset(key, dtype="f")
+                hf[key].attrs.update(_h5_compatible(metadata))
 
         elif self.engine == "vaex":
             if key is None:
@@ -235,10 +262,14 @@ class HDF5Manager(object):
                 assert isinstance(metadata, list)
                 for f, m in zip(fname, metadata):
                     with h5py.File(f, "a") as hf:
-                        hf.attrs.update(_h5_compatible(m))
+                        if create_empty_dataset:
+                            hf.create_dataset(key, dtype="f")
+                        hf[key].attrs.update(_h5_compatible(m))
             else:
                 with h5py.File(fname, "a") as hf:
-                    hf.attrs.update(_h5_compatible(metadata))
+                    if create_empty_dataset:
+                        hf.create_dataset(key, dtype="f")
+                    hf[key].attrs.update(_h5_compatible(metadata))
 
         else:
             raise NotImplementedError(self.engine)
@@ -260,7 +291,7 @@ class HDF5Manager(object):
         elif self.engine == "h5py":
             # TODO: define default key
             with h5py.File(fname, "r") as hf:
-                metadata = dict(hf.attrs)
+                metadata = dict(hf[key].attrs)
 
         elif self.engine == "vaex":
             if key is None:
@@ -269,10 +300,10 @@ class HDF5Manager(object):
                 metadata = []
                 for f in fname:
                     with h5py.File(f, "r") as hf:
-                        metadata.append(dict(hf.attrs))
+                        metadata.append(dict(hf[key].attrs))
             else:
                 with h5py.File(fname, "r") as hf:
-                    metadata = dict(hf.attrs)
+                    metadata = dict(hf[key].attrs)
 
         else:
             raise NotImplementedError(self.engine)

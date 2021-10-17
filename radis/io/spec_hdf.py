@@ -23,24 +23,24 @@ def spec2hdf(s, file, engine="pytables"):
     # Store spectral arrays and lines as Datasets
 
     mgr.write(file, df_arrays, key="arrays", append=False, data_columns=["wavespace"])
+    mgr.add_metadata(file, s.units, key="arrays")
 
     if s.lines:
         mgr.write(file, s.lines, key="lines", append=True)
 
     # Store the rest as metadata
 
-    metadata = {}
-    metadata["units"] = s.units
-
     if s.populations:
-        metadata["populations"] = s.populations
+        mgr.add_metadata(
+            file, s.populations, key="populations", create_empty_dataset=True
+        )
 
-    metadata["conditions"] = s.conditions
+    mgr.add_metadata(file, s.conditions, key="conditions", create_empty_dataset=True)
 
     if s.references:
-        metadata["references"] = s.references
-
-    mgr.add_metadata(file, metadata, key="arrays")
+        mgr.add_metadata(
+            file, s.references, key="references", create_empty_dataset=True
+        )
 
 
 def hdf2spec(file, wmin=None, wmax=None, wunit=None, columns=None, engine="pytables"):
@@ -59,8 +59,8 @@ def hdf2spec(file, wmin=None, wmax=None, wunit=None, columns=None, engine="pytab
             if wmax is not None:
                 where.append(f"wavespace < {wmax}")
         elif engine == "vaex":
-            #  Selection is done after opening the file time in vaex
-            pass
+            #  Selection is done after opening the file in vaex
+            where = None
         else:
             raise NotImplementedError(engine)
     else:
@@ -75,16 +75,29 @@ def hdf2spec(file, wmin=None, wmax=None, wunit=None, columns=None, engine="pytab
 
     # Convert to Pandas df (if vaex)
     if engine == "vaex":
-        if wmin is not None or wmax is not None:
-            raise NotImplementedError(engine)
-        df2 = df2.to_pandas_df()
+        if wmin is not None and wmax is not None:
+            df2.select((df2.wavespace > wmin) & (df2.wavespace < wmax))
+            selection = True
+        elif wmin is not None:
+            df2.select(df2.wavespace > wmin)
+            selection = True
+        elif wmax is not None:
+            df2.select(df2.wavespace < wmax)
+            selection = True
+        else:
+            selection = False
+        df2 = df2.to_pandas_df(selection=selection, column_names=columns)
 
-    metadata = mgr.read_metadata(file, key="arrays")
-
-    units2 = metadata["units"]
-    conditions2 = metadata["conditions"]
-    populations2 = metadata.get("populations", None)
-    references2 = metadata.get("references", None)
+    units2 = mgr.read_metadata(file, key="arrays")
+    conditions2 = mgr.read_metadata(file, key="conditions")
+    try:
+        populations2 = mgr.read_metadata(file, key="populations")
+    except KeyError:
+        populations2 = None
+    try:
+        references2 = mgr.read_metadata(file, key="references")
+    except KeyError:
+        references2 = None
 
     try:
         lines2 = mgr.load(file, key="lines")

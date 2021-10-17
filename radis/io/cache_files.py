@@ -448,13 +448,19 @@ def check_not_deprecated(
 
 
 def _h5_compatible(a_dict):
-    """Make dictionary ``a_dict`` h5 compatible."""
+    """Make dictionary ``a_dict`` compatible with HDF5 attributes.
+
+    Note that nested dictionaries are not supported, see for instance
+    https://gitlab.com/quantify-os/quantify-core/-/issues/158
+    """
     out = {}
     for k, v in a_dict.items():
         if v is None:
             continue  # dont store None
         elif is_float(v):
             out[k] = v
+        # elif isinstance(v, dict):
+        #     raise ValueError(f"Value of key `{k}` is a dictionary and cannot be stored as attribute of an HDF5 file. Delete it, flatten it, or convert it to a string ?")
         else:
             out[k] = str(v)  # convert to str
     return out
