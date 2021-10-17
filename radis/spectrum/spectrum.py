@@ -752,18 +752,35 @@ class Spectrum(object):
         return s
 
     @classmethod
-    def from_hdf5(self, file, engine="pytables"):
-        """Generates a Spectrum from an HDF5 file. Uses :py:func:`~radis.io.spec_hdf.hdf2spec`"""
+    def from_hdf5(
+        self, file, wmin=None, wmax=None, wunit=None, columns=None, engine="pytables"
+    ):
+        """Generates a Spectrum from an HDF5 file. Uses :py:func:`~radis.io.spec_hdf.hdf2spec`
+
+        Other Parameters
+        ----------------
+        wmin, wmax: float
+            range of wmin, wmax to load , using ``wunit`` (if None, load everything)
+        columns: list of str
+            spectral arrays to load (if None, load everything)
+
+        Examples
+        --------
+        ::
+            Spectrum.from_hdf5("rad_hdf.h5", wmin=2100, wmax=2200, columns=['abscoeff', 'emisscoeff'])
+        """
         from radis.io.spec_hdf import hdf2spec
 
-        s = hdf2spec(file, engine="pytables")
+        s = hdf2spec(
+            file, wmin=wmin, wmax=wmax, wunit=wunit, columns=columns, engine=engine
+        )
 
         # Store filename
         s.file = file
         return s
 
     @classmethod
-    def from_spec(self, file, engine="pytables"):
+    def from_spec(self, file):
         """Generates a Spectrum from a .spec [json] file. Uses :py:func:`~radis.tools.database.load_spec`"""
         from radis.tools.database import load_spec
 
@@ -3082,7 +3099,30 @@ class Spectrum(object):
         """Stores the Spectrum under HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`"""
         from radis.io.spec_hdf import spec2hdf
 
-        return spec2hdf(self, file, engine)
+        return spec2hdf(self, file, engine=engine)
+
+    def to_pandas(s, copy=True):
+        """Convert a Spectrum to a Pandas DataFrame
+
+        Returns
+        -------
+        pd.DataFrame : pandas DataFrame where columns are spectral arrays, and
+            units are stored in attributes ``df.attrs``
+
+        Notes
+        -----
+        Pandas does not support units yet. pint-pandas is an advanced
+        project but not fully working.
+        See discussion in https://github.com/pandas-dev/pandas/issues/10349
+
+        For the moment, we store units as metadata"""
+        import pandas as pd
+
+        df = pd.DataFrame(s._q, copy=copy)
+
+        df.attrs = s.units
+
+        return df
 
     def resample(
         self,
