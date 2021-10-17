@@ -751,6 +751,24 @@ class Spectrum(object):
         s.file = file
         return s
 
+    @classmethod
+    def from_hdf5(self, file, engine="pytables"):
+        """Generates a Spectrum from an HDF5 file. Uses :py:func:`~radis.io.spec_hdf.hdf2spec`"""
+        from radis.io.spec_hdf import hdf2spec
+
+        s = hdf2spec(file, engine="pytables")
+
+        # Store filename
+        s.file = file
+        return s
+
+    @classmethod
+    def from_spec(self, file, engine="pytables"):
+        """Generates a Spectrum from a .spec [json] file. Uses :py:func:`~radis.tools.database.load_spec`"""
+        from radis.tools.database import load_spec
+
+        return load_spec(file)
+
     # Public functions
     # %% ======================================================================
     # ----------------
@@ -3051,6 +3069,20 @@ class Spectrum(object):
         """
 
         return self.store(*args, **kwargs)
+
+    def to_json(self, *args, **kwargs):
+        """Alias to Spectrum.store(compress=False).
+
+        See Spectrum.store for documentation
+        """
+
+        return self.store(compress=False, *args, **kwargs)
+
+    def to_hdf5(self, file, engine="pytables"):
+        """Stores the Spectrum under HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`"""
+        from radis.io.spec_hdf import spec2hdf
+
+        return spec2hdf(self, file, engine)
 
     def resample(
         self,

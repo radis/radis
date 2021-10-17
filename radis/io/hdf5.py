@@ -15,7 +15,7 @@ import pandas as pd
 from tables.exceptions import NoSuchNodeError
 
 
-def update_pytables_to_vaex(fname, remove_initial=False, verbose=True):
+def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df"):
     """Convert a HDF5 file generated from PyTables to a
     Vaex-friendly HDF5 format, preserving metadata"""
     import vaex
@@ -31,7 +31,7 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True):
 
     # Read metadata
     with pd.HDFStore(fname, mode="r") as store:
-        file_metadata = store.get_storer("df").attrs.metadata
+        file_metadata = store.get_storer(key).attrs.metadata
 
     # Write Vaex file
     df.export_hdf5(fname_vaex)
@@ -87,14 +87,13 @@ class HDF5Manager(object):
             load certain lines only. See :py:func:`~radis.io.hdf5.hdf2df`
         """
         if self.engine == "pytables":
-            with self.open(file) as f:
-                f.put(
-                    key=key,
-                    value=df,
-                    append=append,
-                    format=format,
-                    data_columns=DATA_COLUMNS,
-                )
+            df.to_hdf(
+                file,
+                key=key,
+                mode="a" if append else "w",
+                format=format,
+                data_columns=DATA_COLUMNS,
+            )
         elif self.engine == "vaex":
             import vaex
 
@@ -108,6 +107,7 @@ class HDF5Manager(object):
                 vaex.from_pandas(df).export_hdf5(file)
         else:
             raise NotImplementedError(self.engine)
+            # h5py is not designed to write Pandas DataFrames
 
     def load(
         self, fname, columns=None, where=None, key="df", **store_kwargs
@@ -183,19 +183,27 @@ class HDF5Manager(object):
 
         return df
 
-    def add_metadata(self, fname: str, metadata: dict):
+    def add_metadata(self, fname: str, metadata: dict, key="df"):
+        """
+        Parameters
+        ----------
+        fname: str
+            filename
+        metadata: dict
+            dictionary of metadata to add in group ``key``
+
+        """
 
         if self.engine == "pytables":
             with pd.HDFStore(fname, mode="a", complib="blosc", complevel=9) as f:
-
-                # f.get_storer("df").attrs.update(metadata)
-                f.get_storer("df").attrs.metadata = metadata
+                f.get_storer(key).attrs.metadata = metadata
 
         elif self.engine == "h5py":
             with h5py.File(fname, "a") as hf:
                 hf.attrs.update(metadata)
 
         elif self.engine == "vaex":
+            # Should be able to deal with multiple files at a time
             if isinstance(fname, list):
                 assert isinstance(metadata, list)
                 for f, m in zip(fname, metadata):
@@ -240,12 +248,12 @@ class HDF5Manager(object):
         return metadata
 
     @classmethod
-    def guess_engine(self, file, verbose=True):
+    def guess_engine(self, file, verbose=True, key="df"):
         """Guess which HDF5 library ``file`` is compatible with"""
         # See if it looks like PyTables
         #  TODO : move in Manager
         with pd.HDFStore(file, mode="r") as store:
-            if store.get_storer("df"):
+            if store.get_storer(key):
                 engine = "pytables"
             else:
                 engine = "h5py"
