@@ -1071,7 +1071,7 @@ class SpectrumFactory(BandFactory):
         conditions.update(
             {
                 "calculation_time": round(
-                    self.profiler.dict_time["spectrum_calc_before_obj"], 2
+                    self.profiler.dict_time["spectrum_calc_before_obj"][0], 2
                 ),
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
