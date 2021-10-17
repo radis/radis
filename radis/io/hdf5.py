@@ -101,6 +101,10 @@ class HDF5Manager(object):
                     format=format,
                     data_columns=data_columns,
                 )
+        elif self.engine == "pytables-fixed":
+            assert not append
+            # export dataframe
+            df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
         elif self.engine == "vaex":
             if key == "default":
                 key = r"/table"
@@ -149,7 +153,7 @@ class HDF5Manager(object):
         pd.DataFrame or vaex.DataFrame
         """
 
-        if self.engine == "pytables":
+        if self.engine in ["pytables", "pytables-fixed"]:
             if key == "default":
                 key = "df"
             try:
@@ -255,11 +259,12 @@ class HDF5Manager(object):
         """
         from radis.io.cache_files import _h5_compatible
 
-        if self.engine == "pytables":
+        if self.engine in ["pytables", "pytables-fixed"]:
             if key == "default":
                 key = "df"
             with pd.HDFStore(fname, mode="a", complib="blosc", complevel=9) as f:
                 if create_empty_dataset:
+                    assert self.engine != "pytables-fixed"
                     # Not possible to create an empty node directly, so we create a dummy group  # TODO ?
                     f.put(key, pd.Series([]))
                 f.get_storer(key).attrs.metadata = metadata
@@ -314,7 +319,7 @@ class HDF5Manager(object):
             root for `h5py` )
         """
 
-        if self.engine == "pytables":
+        if self.engine in ["pytables", "pytables-fixed"]:
             if key == "default":
                 key = "df"
             with pd.HDFStore(fname, mode="r", complib="blosc", complevel=9) as f:

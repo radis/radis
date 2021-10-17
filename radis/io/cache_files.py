@@ -584,7 +584,7 @@ def save_to_hdf(
      verbose: bool
          If >=2, also warns if non numeric values are present (it would make
          calculations slower)
-    engine: ``'h5py'``, ``'pytables'``, ``'vaex'``
+    engine: ``'h5py'``, ``'pytables'``, ``'vaex'``, ``'pytables-fixed'``
         which HDF5 library to use. Note: ``'vaex'``
         uses ``'h5py'`` compatible HDF5. Default ``pytables``
 

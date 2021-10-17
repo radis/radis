@@ -115,11 +115,13 @@ def fetch_astroquery(
                 use_cached=cache,
                 expected_metadata=expected_metadata,
                 verbose=verbose,
-                engine="pytables",
+                engine="pytables-fixed",
             )
             if exists(fcache):
                 try:
-                    return get_cache_file(fcache, verbose=verbose)
+                    return get_cache_file(
+                        fcache, verbose=verbose, engine="pytables-fixed"
+                    )
                 except Exception as err:
                     if verbose:
                         printr(
@@ -253,6 +255,7 @@ def fetch_astroquery(
                 key="df",
                 overwrite=True,
                 verbose=verbose,
+                engine="pytables-fixed",
             )
         except PermissionError:
             if verbose:
