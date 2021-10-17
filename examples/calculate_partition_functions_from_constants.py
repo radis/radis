@@ -4,9 +4,18 @@
 Partition Functions from spectroscopic constants
 ================================================
 
-By default and for equilibrium calculations, RADIS calculates Partition Functions
-using the TIPS program through [HAPI]_. These partition functions can be retrieved
-with the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class::
+RADIS can calculate equilibrium and non-LTE Partition Functions from a given
+set of spectroscopic constants using a Dunham expansion.
+
+Calculations use the the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class
+
+Default spectroscopic constants and spectroscopic models used are given in
+:ref:`default spectroscopic constants <label_db_spectroscopic_constants>`.
+You can also use your own set of spectroscopic constants.
+
+See Also
+--------
+:py:class:`~radis.levels.partfunc.PartFuncHAPI`
 
 """
 

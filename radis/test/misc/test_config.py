@@ -13,13 +13,13 @@ from radis.misc.config import get_config, printDatabankList
 
 @pytest.mark.fast
 def test_json_config_file(*args, **kwargs):
-    """ Test that it's readable """
+    """Test that it's readable"""
     get_config()
 
 
 @pytest.mark.fast
 def test_databanks(*args, **kwargs):
-    """ Test radis.json is readable """
+    """Test radis.json is readable"""
     printDatabankList()
 
 

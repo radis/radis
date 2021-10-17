@@ -52,6 +52,7 @@ from radis.db.utils import (
     get_default_jsonfile,
     get_dunham_coefficients,
     get_herzberg_coefficients,
+    parse_doi,
 )
 from radis.levels.dunham import EvJ, Fv, Gv
 
@@ -212,25 +213,21 @@ HITRAN_MOLECULES = list(trans.values())
 
 def get_molecule_identifier(molecule_name):
     r"""
-    For a given input molecular formula, return the corresponding HITRAN molecule
-    identifier number [1]_.
-
+    For a given input molecular formula, return the corresponding
+    :py:data:`~radis.db.classes.HITRAN_MOLECULES` identifier number [1]_.
 
     Parameters
     ----------
     molecular_formula : str
         The string describing the molecule.
 
-
     Returns
     -------
     M: int
         The HITRAN molecular identified number.
 
-
     References
     ----------
-
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
     Function is from from https://github.com/nzhagen/hitran/blob/master/hitran.py
@@ -252,20 +249,17 @@ def get_molecule_identifier(molecule_name):
 
 def get_molecule(molecule_id):
     r"""
-    For a given input molecular identifier, return the corresponding HITRAN
-    molecule name [1]_.
-
+    For a given input molecular identifier, return the corresponding
+    :py:data:`~radis.db.classes.HITRAN_MOLECULES` name [1]_.
 
     Parameters
     ----------
-
     molecular_id: str
         Hitran identifier of the molecule.
 
 
     References
     ----------
-
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
     """
@@ -281,6 +275,20 @@ def get_molecule(molecule_id):
         )
 
 
+# %% ExoMol molecules
+
+
+KNOWN_EXOMOL_ISOTOPES_NAMES = {
+    ("FeH", 1): "56Fe-1H",
+    ("SiO", 1): "28Si-16O",  # Placeholder until all molecules parsed from website TODO
+    ("CN", 1): "12C-14N",  # Placeholder until all molecules parsed from website TODO
+}
+"""All :py:data:`~radis.db.classes.HITRAN_MOLECULES` are also converted to their ExoMol full-name format
+in :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
+"""
+EXOMOL_MOLECULES = list(set([M for M, iso in KNOWN_EXOMOL_ISOTOPES_NAMES.keys()]))
+
+
 # %% Molecule class
 
 
@@ -289,19 +297,16 @@ class Molecule(object):
 
     Parameters
     ----------
-
     name: str, int
         molecule name, or HITRAN identifier
 
     Other Parameters
     ----------------
-
     verbose: boolean
         more blabla
 
     See Also
     --------
-
     :py:class:`~radis.db.classes.Isotope`, :py:class:`~radis.db.classes.ElectronicState`,
     :py:func:`~radis.db.molecules.getMolecule`
 
@@ -509,6 +514,9 @@ class ElectronicState(Isotope):
         self.term_symbol = term_symbol
         self.g_e = g_e
 
+        self.doi = (
+            None  #: str: stores DOI of spectroscopic constants if given in database
+        )
         self._parse_rovib_constants(
             spectroscopic_constants, spectroscopic_constants_type
         )
@@ -573,6 +581,8 @@ class ElectronicState(Isotope):
             rovib_constants = spectroscopic_constants
             jsonfile = None
 
+            doi = parse_doi(rovib_constants)
+
         else:  # file
 
             # Get file name
@@ -587,12 +597,20 @@ class ElectronicState(Isotope):
 
             # Parse file
             if spectroscopic_constants_type == "dunham":
-                rovib_constants = get_dunham_coefficients(
-                    self.name, self.iso, self.get_statename_utf(), jsonfile=jsonfile
+                rovib_constants, doi = get_dunham_coefficients(
+                    self.name,
+                    self.iso,
+                    self.get_statename_utf(),
+                    jsonfile=jsonfile,
+                    return_doi=True,
                 )
             elif spectroscopic_constants_type == "herzberg":
-                rovib_constants = get_herzberg_coefficients(
-                    self.name, self.iso, self.get_statename_utf(), jsonfile=jsonfile
+                rovib_constants, doi = get_herzberg_coefficients(
+                    self.name,
+                    self.iso,
+                    self.get_statename_utf(),
+                    jsonfile=jsonfile,
+                    return_doi=True,
                 )
             else:
                 raise ValueError(
@@ -616,6 +634,7 @@ class ElectronicState(Isotope):
         # Store
         self.rovib_constants = rovib_constants
         self.jsonfile = jsonfile
+        self.doi = doi
 
     # Default method to calculate energy
 

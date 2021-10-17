@@ -14,7 +14,7 @@ from radis.phys.blackbody import planck, planck_wn, sPlanck
 
 
 def test_exceptions(verbose=True, *args, **kwargs):
-    """ Here we test that the code actually crashes properly!"""
+    """Here we test that the code actually crashes properly!"""
 
     import pytest
 

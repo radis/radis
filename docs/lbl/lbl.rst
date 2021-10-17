@@ -7,6 +7,10 @@ Line-by-line (LBL) module
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+Calculations are performed within the :class:`~radis.lbl.factory.SpectrumFactory` class.
+:py:func:`~radis.lbl.calc.calc_spectrum` is a high-level wrapper to
+:class:`~radis.lbl.factory.SpectrumFactory` for most simple cases.
+
 
 .. minigallery:: radis.calc_spectrum
 
@@ -24,7 +28,7 @@ community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or
 `Slack <https://radis.github.io/slack-invite/>`__ . |badge_gitter| |badge_slack|
 
 
-.. include:: databases.rst
+.. include:: _databases.rst
 
 Calculating spectra
 ===================
@@ -49,6 +53,7 @@ from the latest HITRAN database, and plot the transmittance: ::
     		  	)
 	s.plot('transmittance_noslit')
 
+.. _label_multiple_molecule_spectrum:
 
 Calculate multiple molecules spectrum
 -------------------------------------
@@ -136,24 +141,6 @@ Be careful to be consistent and not to give partial or contradictory inputs. ::
         )
 
 
-Flow Chart
-----------
-
-Under the hood, RADIS will calculate populations by scaling tabulated data (equilibrium)
-or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients
-from :ref:`Line Databases <label_line_databases>`, calculate the line broadening using
-various strategies to improve :ref:`Performances <label_lbl_performance>`,
-and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
-the flow chart below:
-
-.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :scale: 100 %
-
-The detail of the functions that perform each step of the RADIS calculation flow chart
-is given in :ref:`Architecture <label_dev_architecture>`.
-
-
 Equilibrium Conditions
 ----------------------
 
@@ -179,6 +166,7 @@ provides an interace to [CANTERA]_ directly from RADIS ::
                   mole_fraction=gas['H2O']
                   )
 
+.. minigallery:: radis.tools.gascomp.get_eq_mole_fraction
 
 
 Nonequilibrium Calculations
@@ -192,6 +180,15 @@ You can either let RADIS calculate rovibrational energies
 with its built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`,
 or supply an energy level database. In the latter case, you need to edit the
 :ref:`Configuration file <label_lbl_config_file>` .
+
+
+Fit a Spectrum
+--------------
+
+
+.. minigallery:: radis.lbl.factory.fit_spectrum
+
+
 
 Calculating spectrum using GPU
 ------------------------------
@@ -308,6 +305,30 @@ where each file contains all the information for multiple lines.
 `reshape_arrays.py` extracts and separates the different fields for each line, and saves the values of
 a specific field for all the lines in a separate file as explained above, e.g. `v0.npy`, 'da.npy`, etc.
 
+
+Under the hood
+==============
+
+
+Flow Chart
+----------
+
+RADIS can calculate populations of emitting/absorbing levels by scaling tabulated data (equilibrium)
+or from the rovibrational energies (nonequilibrium), get the emission and absorption coefficients
+from :ref:`Line Databases <label_line_databases>`, calculate the line broadening using
+various strategies to improve :ref:`Performances <label_lbl_performance>`,
+and produce a :ref:`Spectrum object <label_spectrum>`. These steps can be summarized in
+the flow chart below:
+
+.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+    :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+    :scale: 100 %
+
+The detail of the functions that perform each step of the RADIS calculation flow chart
+is given in :ref:`Architecture <label_dev_architecture>`.
+
+
+
 The Spectrum Factory
 --------------------
 
@@ -347,6 +368,7 @@ and :py:mod:`~astropy.units` ::
     s1 = sf.eq_spectrum(Tgas=300 * u.K)
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
+
 
 .. _label_lbl_config_file:
 
@@ -574,6 +596,8 @@ An example of how to use your own spectroscopic constants::
     s = calc_spectrum(...)
 
 
+.. minigallery:: radis.db.molecules.getMolecule
+
 
 Vibrational bands
 -----------------
@@ -777,11 +801,23 @@ ensure that your system has an Nvidia GPU with compute capability of atleast 3.0
 :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` to see how to setup your system to run GPU accelerated spectrum
 calculation methods, examples and performance tests.
 
+
+Tabulated Partition Functions
+-----------------------------
+
+At nonequilibrium, calculating partition functions by full summation
+of all rovibrational levels can become costly. Radis offers to tabulate
+them just-in-time, using the ``parsum_mode='tabulation'`` of
+:py:func:`~radis.lbl.calc.calc_spectrum` or :py:class:`~radis.lbl.factory.SpectrumFactory`.
+See :py:attr:`~radis.lbl.loader.Conditions.parsum_mode`.
+
+
 Profiler
 --------
 
 You may want to track where the calculation is taking some time.
-You can set ``verbose=2`` to print the time spent on different operations. Example::
+You can set ``verbose=1`` or higher to print the time spent on the different
+calculation steps at runtime. Example with ``verbose=3``::
 
     s = calc_spectrum(1900, 2300,         # cm-1
                       molecule='CO',
@@ -790,36 +826,81 @@ You can set ``verbose=2`` to print the time spent on different operations. Examp
                       Tvib=1000,          # K
                       Trot=300,           # K
                       mole_fraction=0.1,
-                      verbose=2,
+                      verbose=3,
                       )
 
-::
+Performance profiles are kept in the output spectrum ``conditions['profiler']`` dictionary.
+You can also use the :py:meth:`~radis.lbl.factory.SpectrumFactory.print_perf_profile`
+method in the SpectrumFactory object or the :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
+method in the Spectrum object to print them in the console :
 
-    >>> ...
-    >>> Fetching vib / rot energies for all 749 transitions
-    >>> Fetched energies in 0s
-    >>> Calculate weighted transition moment
-    >>> Calculated weighted transition moment in 0.0
-    >>> Calculating nonequilibrium populations
-    >>> sorting lines by vibrational bands
-    >>> lines sorted in 0.0s
-    >>> Calculated nonequilibrium populations in 0.1s
-    >>> scale nonequilibrium linestrength
-    >>> scaled nonequilibrium linestrength in 0.0s
-    >>> calculated emission integral
-    >>> calculated emission integral in 0.0s
-    >>> Applying linestrength cutoff
-    >>> Applied linestrength cutoff in 0.0s (expected time saved ~ 0.0s)
-    >>> Calculating lineshift
-    >>> Calculated lineshift in 0.0s
-    >>> Calculate broadening FWHM
-    >>> Calculated broadening FWHM in 0.0s
-    >>> Calculating line broadening (695 lines: expect ~ 0.1s on 1 CPU)
-    >>> Calculated line broadening in 0.1s
-    >>> process done in 0.4s
-    >>> ...
+For the above example::
+
+    s.print_perf_profile()
+
+::
+    # Output:
+        spectrum_calculation      0.189s ████████████████
+            check_line_databank              0.000s
+            check_non_eq_param               0.042s ███
+            fetch_energy_5                   0.015s █
+            calc_weight_trans                0.008s
+            reinitialize                     0.002s
+                copy_database                    0.000s
+                memory_usage_warning             0.002s
+                reset_population                 0.000s
+            calc_noneq_population            0.041s ███
+                part_function                    0.035s ██
+                population                       0.006s
+            scaled_non_eq_linestrength       0.005s
+                map_part_func                    0.001s
+                corrected_population_se          0.003s
+            calc_emission_integral           0.006s
+            applied_linestrength_cutoff      0.002s
+            calc_lineshift                   0.001s
+            calc_hwhm                        0.007s
+            generate_wavenumber_arrays       0.001s
+            calc_line_broadening             0.074s ██████
+                precompute_DLM_lineshapes        0.012s
+                DLM_Initialized_vectors          0.000s
+                DLM_closest_matching_line        0.001s
+                DLM_Distribute_lines             0.001s
+                DLM_convolve                     0.060s █████
+                others                           0.001s
+            calc_other_spectral_quan         0.003s
+            generate_spectrum_obj            0.000s
+            others                           -0.016s
+
+Finally, you can also use the SpectrumFactory :py:meth:`~radis.lbl.factory.SpectrumFactory.generate_perf_profile`
+Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.generate_perf_profile`
+methods to generate an interactive profiler in the browser.
+
+.. image:: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+    :alt: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+    :target: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png
+
 
 .. _label_lbl_precompute_spectra:
+
+Predict Time
+------------
+
+:py:meth:`~radis.lbl.factory.SpectrumFactory.predict_time` function uses the input parameters like `Spectral Range`, `Number of lines`, `wstep`,
+`truncation` to predict the estimated calculation time for the Spectrum
+broadening step(bottleneck step) for the current optimization and broadening_method. The formula
+for predicting time is based on benchmarks performed on various parameters for different optimization,
+broadening_method and deriving its time complexity.
+
+The following Benchmarks were used to derive the time complexity:
+
+  https://anandxkumar.github.io/Benchmark_Visualization_GSoC_2021/
+
+Complexity vs Calculation Time Visualizations for different optimizations and broadening_method:
+
+
+|    LBL>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LegacyComplexityvsCalculationTime/Sheet1>`_
+|    DIT>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/2_096e-07lines_calculated7_185e-091wLwGSpectral_PointslogSpectral_Points/Sheet1>`_
+|    DIT>FFT: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LDMLatestLDMFFTComplexity4_675e-081wLwGSpectralPointslogSpectralPoints/Sheet1>`_
 
 Precompute Spectra
 ------------------

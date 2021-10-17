@@ -113,7 +113,7 @@ def test_ZPE(verbose=True, *args, **kwargs):
                         )
                 else:
                     if verbose:
-                        print("No ZPE defined for ".format(ElecState.get_fullname()))
+                        print(f"No ZPE defined for {ElecState.get_fullname()}")
 
 
 def _run_testcases(verbose=True, *args, **kwargs):

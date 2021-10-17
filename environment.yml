@@ -3,11 +3,14 @@ name: radis-env
 channels:
 - conda-forge
 - astropy
+- cantera
 dependencies:
 - python=3.8
 - numpy
 - scipy>=1.4.0
 - matplotlib
+- seaborn   # other matplotlib themes
+- cantera   # for chemical equilibrium computations
 - cython
 - pandas>=1.0.5
 - pytables  # for pandas to HDF5 export
@@ -20,9 +23,18 @@ dependencies:
 - pytest  # to run test suite
 - joblib  # for parallel loading of SpecDatabase
 - numba  # just-in-time compiler
+- psutil # for getting user RAM
+- h5py   # load HDF5
 - pip
 - pip:
+  - beautifulsoup4 # parse ExoMol website
+  - lxml           # parser used for ExoMol website
+  - pyarrow       # for the feather format (temporarily needed for ExoMol)
   - publib>=0.3.2  # Plotting styles for Matplotlib
   - hitran-api     # HAPI, used to access TIPS partition functions
   - json-tricks>=3.15.0  # to deal with non jsonable formats
   - mpldatacursor
+  - tuna           # to generate visual/interactive performance profiles
+  - tables  # for pandas to HDF5 export
+  - vaex    # load HDF5 files
+  - habanero  # CrossRef API to retrieve data from doi

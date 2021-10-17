@@ -19,7 +19,7 @@ from radis.tools.database import load_spec
 
 @pytest.mark.fast
 def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
-    """ Test line survey """
+    """Test line survey"""
 
     _temp_file = "radis_test_line_survey.html"
     if exists(_temp_file):

@@ -55,7 +55,7 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
 
     See Also
     --------
-    :py:func:`~radis.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck_wn`
+    :py:func:`~radis.tools.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck_wn`
     """
     k = k_b
     lbd = lmbda * 1e-9
@@ -95,7 +95,7 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
 
     See Also
     --------
-    :py:func:`~radis.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck`
+    :py:func:`~radis.tools.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck`
     """
     k = k_b_CGS
     h = h_CGS
@@ -241,7 +241,7 @@ def sPlanck(
         conditions=conditions,
         units={"radiance_noslit": Iunit, "transmittance_noslit": "", "absorbance": ""},
         cond_units={"wstep": waveunit},
-        waveunit=waveunit,
+        wunit=waveunit,
         name="Planck {0}K, eps={1:.2g}".format(T, eps),
     )
 
