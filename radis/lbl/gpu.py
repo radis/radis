@@ -69,7 +69,7 @@ def py_calc_lorentzian_envelope_params(na, gamma, verbose=False):
     Returns
     -------
     TYPE
-        DESCRIPTION.
+        DESCRIPTION..
 
     """
     # Remove duplicates
