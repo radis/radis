@@ -1874,8 +1874,8 @@ class BaseFactory(DatabankLoader):
                     assert (df.loc[idx, "iso"] == iso).all()
 
             Qref = df["iso"].map(Qref_dict)
-        #NOTE: This S0 is not the same as the one calculated by calc_S0()!!!
-        #TO-DO: Resolve this ambiguity
+        # NOTE: This S0 is not the same as the one calculated by calc_S0()!!!
+        # TO-DO: Resolve this ambiguity
         S0 = linestrength_from_Einstein(
             A=df.A, gu=df.gu, El=df.El, Ia=df.Ia, nu=df.wav, Q=Qref, T=Tref
         )
@@ -1994,7 +1994,6 @@ class BaseFactory(DatabankLoader):
 
         return
 
-
     def calc_S0(self):
         """Calculate the unscaled intensity from the tabulated Einstein coefficient.
 
@@ -2010,7 +2009,7 @@ class BaseFactory(DatabankLoader):
         ----------
 
         .. math::
-            S_0 = \\frac{I_a g' A_{21}}{8 \\pi c \\nu^2} 
+            S_0 = \\frac{I_a g' A_{21}}{8 \\pi c \\nu^2}
 
         Notes
         -----
@@ -2024,11 +2023,12 @@ class BaseFactory(DatabankLoader):
 
         NOTE: S0 is not directly related to S(T) used elsewhere!!!
               (It may even differ in units!!!)
-   
+
         """
 
-        from radis.phys.constants import c #m.s-1
-        c_cm = c*100 #cm.s-1
+        from radis.phys.constants import c  # m.s-1
+
+        c_cm = c * 100  # cm.s-1
 
         df0 = self.df0
 
@@ -2036,14 +2036,14 @@ class BaseFactory(DatabankLoader):
             return  # no lines
 
         self.profiler.start("scaled_S0", 2, "... Scaling equilibrium linestrength")
-        
-        gp = df0['gp']
-        A = df0['A']
-        wav = df0['wav']
+
+        gp = df0["gp"]
+        A = df0["A"]
+        wav = df0["wav"]
         Ia = self.get_lines_abundance(df0)
 
-        S0 = Ia * gp * A / (8 * pi * c_cm * wav**2)
-        
+        S0 = Ia * gp * A / (8 * pi * c_cm * wav ** 2)
+
         df0["S0"] = S0  # [cm-1/(molecules/cm-2)]
 
         assert "S0" in self.df0

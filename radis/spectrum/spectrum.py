@@ -1837,7 +1837,6 @@ class Spectrum(object):
             plt.legend()
         fix_style()
 
-
         # Add plotting tools
         # ... Add cursor
         try:
@@ -1853,7 +1852,6 @@ class Spectrum(object):
             from radis.tools.plot_tools import add_ruler
 
             add_ruler(fig, wunit=wunit, Iunit=Iunit)
-
 
         # Sliders
         n_sliders = 0

@@ -84,7 +84,7 @@ sphinx_gallery_conf = {
 
 
 def linkcode_resolve(domain, info):
-    """ for sphinx.ext.linkcode"""
+    """for sphinx.ext.linkcode"""
     if domain != "py":
         return None
     if not info["module"]:

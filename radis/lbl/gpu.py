@@ -551,9 +551,7 @@ def gpu_init(
 ##    print("wG arr:",np.min(log_wG_debug_h),np.max(log_wG_debug_h))
 
 
-def gpu_iterate(
-    p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False
-):
+def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False):
     """
     Parameters
     ----------
