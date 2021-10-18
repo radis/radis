@@ -826,8 +826,8 @@ class SpectrumFactory(BandFactory):
         if self.params.optimization != None:
             conditions.update(
                 {
-                    "wL": self.wL,
-                    "wG": self.wG,
+                    "NwL": self.NwL,
+                    "NwG": self.NwG,
                 }
             )
         del self.profiler.final[list(self.profiler.final)[-1]][
@@ -1056,11 +1056,10 @@ class SpectrumFactory(BandFactory):
         )
 
         self.calc_S0()
-        ##        S0 = np.array(self._get_S0(Ia_arr), dtype=np.float32)
         S0 = self.df0["S0"].to_numpy(dtype=np.float32)
 
-        NwG = 4  # TO-DO: these shouldn't be hardcoded
-        NwL = 8  # TO-DO: these shouldn't be hardcoded
+        self.NwG = 4  # TO-DO: these shouldn't be hardcoded
+        self.NwL = 8  # TO-DO: these shouldn't be hardcoded
 
         _Nlines_calculated = len(v0)
 
@@ -1082,8 +1081,8 @@ class SpectrumFactory(BandFactory):
 
         gpu_init(
             v_arr,
-            NwG,
-            NwL,
+            self.NwG,
+            self.NwL,
             iso,
             v0,
             da,
@@ -1166,8 +1165,8 @@ class SpectrumFactory(BandFactory):
         if self.params.optimization != None:
             conditions.update(
                 {
-                    "wL": self.wL,
-                    "wG": self.wG,
+                    "NwL": self.NwL,
+                    "NwG": self.NwG,
                 }
             )
         del self.profiler.final[list(self.profiler.final)[-1]][

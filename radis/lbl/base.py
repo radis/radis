@@ -1874,7 +1874,8 @@ class BaseFactory(DatabankLoader):
                     assert (df.loc[idx, "iso"] == iso).all()
 
             Qref = df["iso"].map(Qref_dict)
-
+        #NOTE: This S0 is not the same as the one calculated by calc_S0()!!!
+        #TO-DO: Resolve this ambiguity
         S0 = linestrength_from_Einstein(
             A=df.A, gu=df.gu, El=df.El, Ia=df.Ia, nu=df.wav, Q=Qref, T=Tref
         )
@@ -1993,135 +1994,57 @@ class BaseFactory(DatabankLoader):
 
         return
 
+
     def calc_S0(self):
-        """Calculate the unscaled intensity from the tabulated intensities at the reference temperature.
+        """Calculate the unscaled intensity from the tabulated Einstein coefficient.
 
         Parameters
         ----------
-        Tgas: float (K)
-            gas temperature
+        None
 
         Returns
         -------
-        None: ``self.df1`` is updated directly with new column ``S``
+        None: ``self.df0`` is updated directly with new column ``S0``
 
         References
         ----------
 
         .. math::
-            S(T) = S_0 \\frac{Q_{ref}}{Q_{gas}} \\operatorname{exp}\\left(-E_l \\left(\\frac{1}{T_{gas}}-\\frac{1}{T_{ref}}\\right)\\right) \\frac{1-\\operatorname{exp}\\left(\\frac{-\\omega_0}{Tgas}\\right)}{1-\\operatorname{exp}\\left(\\frac{-\\omega_0}{T_{ref}}\\right)}
-
-        See Eq.(A11) in [Rothman-1998]_
+            S_0 = \\frac{I_a g' A_{21}}{8 \\pi c \\nu^2} 
 
         Notes
         -----
-        Internals:
+        Currently this value is only used in GPU calculations.
+        It is one of the columns that is transferred to the GPU
+        memory. The idea behind S0 is that it is scaled with all
+        variabled that do not change during iterations as to
+        minimize calculations.
 
-        (some more informations about what this function does)
+        Units: cm-1/(molecules/cm-2
 
-        Starts with df1 which is still a copy of df0 loaded by
-        :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
-        Updates linestrength in df1. Cutoff criteria is applied afterwards.
+        NOTE: S0 is not directly related to S(T) used elsewhere!!!
+              (It may even differ in units!!!)
+   
         """
 
-        Tref = self.input.Tref
+        from radis.phys.constants import c #m.s-1
+        c_cm = c*100 #cm.s-1
+
         df0 = self.df0
 
         if len(df0) == 0:
             return  # no lines
 
         self.profiler.start("scaled_S0", 2, "... Scaling equilibrium linestrength")
+        
+        gp = df0['gp']
+        A = df0['A']
+        wav = df0['wav']
+        Ia = self.get_lines_abundance(df0)
 
-        # %% Load partition function values
-
-        def _calc_Q(molecule, iso, state):
-            """Get partition function from tabulated values, try with
-            calculated one if Out of Bounds.
-
-            Returns
-            -------
-            Qref, Qgas: float
-                partition functions at reference temperature and gas temperature
-            """
-
-            try:
-                parsum = self.get_partition_function_interpolator(molecule, iso, state)
-                Qref = parsum.at(Tref)
-            except OutOfBoundError as err:
-                # Try to calculate
-                try:
-                    parsum = self.get_partition_function_calculator(
-                        molecule, iso, state
-                    )
-                    Qref = parsum.at(Tref)
-                except:  # if an error occur, raise the initial error
-                    raise err
-                else:
-                    self.warn(
-                        "Error with tabulated partition function"
-                        + "({0}). Using calculated one instead".format(err.args[0]),
-                        "OutOfBoundWarning",
-                    )
-            return Qref
-
-        id_set = df0.id.unique()
-        if len(id_set) == 1:
-            id = list(id_set)[0]
-            molecule = get_molecule(id)
-            iso_set = self._get_isotope_list(molecule)  # df1.iso.unique()
-
-            # Shortcut if only 1 molecule, 1 isotope. We attribute molar_mass & abundance
-            # as attributes of the line database, instead of columns. Much
-            # faster!
-
-            if len(iso_set) == 1:
-                Qref = _calc_Q(molecule, iso_set[0], self.input.state)
-                df0.Qref = float(Qref)  # attribute, not column
-                assert "Qref" not in df0.columns
-
-            # Else, parse for all isotopes. Use np.take that is very fast
-            # Use the fact that isotopes are int, and thus can be considered as
-            # index in an array.
-            # ... in the following we exploit this to use the np.take function,
-            # ... which is amazingly fast
-            # ... Read https://stackoverflow.com/a/51388828/5622825 to understand more
-
-            else:
-
-                iso_arr = list(range(max(iso_set) + 1))
-
-                Qref_arr = np.empty_like(iso_arr, dtype=np.float64)
-                for iso in iso_arr:
-                    if iso in iso_set:
-                        Qref = _calc_Q(molecule, iso, self.input.state)
-                        Qref_arr[iso] = Qref
-                # ... the trick below is that iso is used as index in the array
-                df0["Qref"] = Qref_arr.take(df0.iso)
-
-        else:
-            raise NotImplementedError(
-                ">1 molecule. Can use the np.take trick. Need to "
-                + "fallback to pandas.map(dict)"
-            )
-            # TODO: Implement. Read https://stackoverflow.com/a/51388828/5622825 to understand more
-
-        # Note on performance: few times faster than doing a groupby().apply()
-
-        # %% Calculate line strength at desired temperature
-        # -------------------------------------------------
-
-        # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
-        # 60, No. 5, pp. 665-710"
-        # An alternative strategy would be to calculate the linestrength from the
-        # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
-
-        # correct for Partition Function
-        line_strength = df0.int * df0.Qref
-        # ratio of Boltzman populations
-        line_strength /= exp(-hc_k * df0.El / Tref)
-        # effect of stimulated emission
-        line_strength /= 1 - exp(-hc_k * df0.wav / Tref)
-        df0["S0"] = line_strength  # [cm-1/(molecules/cm-2)]
+        S0 = Ia * gp * A / (8 * pi * c_cm * wav**2)
+        
+        df0["S0"] = S0  # [cm-1/(molecules/cm-2)]
 
         assert "S0" in self.df0
 

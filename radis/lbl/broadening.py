@@ -1427,9 +1427,9 @@ class BroadenFactory(BaseFactory):
         wG_dat = df.hwhm_gauss.values * 2  # FWHM
 
         wL = _init_w_axis(wL_dat, log_pL)  # FWHM
-        self.wL = len(wL)
+        self.NwL = len(wL)
         wG = _init_w_axis(wG_dat, log_pG)  # FWHM
-        self.wG = len(wG)
+        self.NwG = len(wG)
 
         # Calculate the Lineshape
         # -----------------------
