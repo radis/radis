@@ -329,7 +329,7 @@ def calc_lorentzian_params(param_data, init_h, iter_h, epsilon=1e-4):
     iter_h.dxL = dxL
 
 
-def set_pTQ(p, T, mole_fraction, Q_arr, iter_h, l=1.0, slit_FWHM=0.0):
+def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
     """
 
 
@@ -362,8 +362,8 @@ def set_pTQ(p, T, mole_fraction, Q_arr, iter_h, l=1.0, slit_FWHM=0.0):
     iter_h.l = l
     iter_h.slit_FWHM = slit_FWHM
 
-    for i in range(len(Q_arr)):
-        iter_h.Q[i] = Q_arr[i]
+    for i in range(len(Q_interpolator_list)):
+        iter_h.Q[i] = Q_interpolator_list[i](T)
 
 
 def constant_memory_setter(cuda_module, var_str):
@@ -388,6 +388,7 @@ def gpu_init(
     S0,
     El,
     Mm_arr,
+    Q_intp_list,
     verbose_gpu=True,
     gpu=False,
 ):
@@ -418,6 +419,8 @@ def gpu_init(
         DESCRIPTION.
     Mm_arr  : TYPE
         DESCRIPTION.
+    Q_intp_list: TYPE
+        DESCRIPTION.
     verbose_gpu : TYPE, optional
         DESCRIPTION. The default is True.
     gpu : TYPE, optional
@@ -434,7 +437,7 @@ def gpu_init(
     global block_preparation_step_size
     global iso_d, v0_d, da_d, S0_d, El_d, gamma_d, na_d
     global S_klm_d, spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
-    global lorentzian_param_data, gaussian_param_data
+    global lorentzian_param_data, gaussian_param_data, Q_interpolator_list
     global cuda_module, cuda_functions
     # -----------------------------------------------------
 
@@ -527,6 +530,7 @@ def gpu_init(
     )
     for i in range(len(log_c2Mm_arr)):
         init_h.log_c2Mm[i] = log_c2Mm_arr[i]
+    Q_interpolator_list = Q_intp_list
 
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
     gaussian_param_data = init_gaussian_params(log_2vMm.astype(np.float32), verbose_gpu)
@@ -548,7 +552,7 @@ def gpu_init(
 
 
 def gpu_iterate(
-    p, T, mole_fraction, Q_arr, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False
+    p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False
 ):
     """
     Parameters
@@ -617,7 +621,7 @@ def gpu_iterate(
     if verbose_gpu >= 2:
         print("Copying iteration parameters to device...")
 
-    set_pTQ(p, T, mole_fraction, Q_arr, iter_h, l=l, slit_FWHM=slit_FWHM)
+    set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
 
     calc_gaussian_params(
         gaussian_param_data,

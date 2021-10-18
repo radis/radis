@@ -1006,31 +1006,26 @@ class SpectrumFactory(BandFactory):
 
             else:
                 mol_id = self.df0.attrs["id"]
-            molecule = get_molecule(mol_id)
         except:
             mol_id = get_molecule_identifier(self.input.molecule)
-            molecule = get_molecule(mol_id)
-
+            
+        molecule = get_molecule(mol_id)
         state = self.input.state
         iso_set = self._get_isotope_list(molecule)
 
-        iso_arr = list(range(max(iso_set) + 1))
+        iso_list = list(range(max(iso_set) + 1)) #element 0 is not used
 
-        Ia_arr = np.empty_like(iso_arr, dtype=np.float32)  # abundance of each isotope
-        molarmass_arr = np.empty_like(
-            iso_arr, dtype=np.float32
-        )  # molar mass of each isotope
-        Q_arr = np.empty_like(
-            iso_arr, dtype=np.float32
-        )  # partitioning function of each isotope
-        for iso in iso_arr:
+        molarmass_arr = np.empty_like(iso_list, dtype=np.float32)  # molar mass of each isotope
+        Q_interp_list = []
+        for iso in iso_list:
             if iso in iso_set:
                 params = molpar.df.loc[(mol_id, iso)]
-                Ia_arr[iso] = params.abundance
                 molarmass_arr[iso] = params.mol_mass
-                Q_arr[iso] = self._get_parsum(molecule, iso, state).at(T=Tgas)
-
-        Ia_arr[np.isnan(Ia_arr)] = 0
+                parsum = self.get_partition_function_interpolator(molecule, iso, state)
+                Q_interp_list.append(parsum.at)
+            else:
+                Q_interp_list.append(lambda T: 1.0)
+                
         molarmass_arr[np.isnan(molarmass_arr)] = 0
 
         self.profiler.start("spectrum_calculation", 1)
@@ -1091,6 +1086,7 @@ class SpectrumFactory(BandFactory):
             S0,
             El,
             molarmass_arr,
+            Q_interp_list,
             verbose_gpu,
             gpu=(not emulate),
         )
@@ -1107,7 +1103,6 @@ class SpectrumFactory(BandFactory):
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
-            Q_arr,
             verbose_gpu,
             gpu=(not emulate),
         )
@@ -1755,34 +1750,35 @@ class SpectrumFactory(BandFactory):
         gamma = x * gamma_self + (1 - x) * gamma_air
         return gamma
 
-    def _get_S0(self, Ia_arr):
-        """Returns S0 if it already exists, otherwise computes the value using
-        abundance, gamma_air and Einstein's number."""
-        df = self.df0
-
-        # if the column already exists, then return it
-        if "S0" in df.columns:
-            return df["S0"]
-
-        elif "int" in df.columns:
-            return df["int"]
-
-        try:
-            v0 = df["wav"].to_numpy()
-            iso = df["iso"].to_numpy()
-            A21 = df["A"].to_numpy()
-            Jl = df["jl"].to_numpy()
-            DJ = df["branch"].to_numpy()
-            Ju = Jl + DJ
-            gu = 2 * Ju + 1  # g_up
-            S0 = Ia_arr.take(iso) * gu * A21 / (8 * pi * c_cm * v0 ** 2)
-            df["S0"] = S0
-            return S0
-
-        except KeyError as err:
-            raise KeyError(
-                "Could not find wavenumber, Einstein's coefficient, lower state energy or S0 in the dataframe. PLease check the database"
-            ) from err
+##    def _get_S0(self, Ia_arr):
+##        """Returns S0 if it already exists, otherwise computes the value using
+##        abundance, upper level degeneracy and Einstein's number."""
+##        df = self.df0
+##
+##        # if the column already exists, then return it
+##        if "S0" in df.columns:
+##            return df["S0"]
+##
+##        ## TO-DO: I don't think 'int' and 'S0' are the same quantity!
+##        ##elif "int" in df.columns:
+##        ##    return df["int"]
+##
+##        try:
+##            v0 = df["wav"].to_numpy()
+##            iso = df["iso"].to_numpy()
+##            A21 = df["A"].to_numpy()
+##            Jl = df["jl"].to_numpy()
+##            DJ = df["branch"].to_numpy()
+##            Ju = Jl + DJ
+##            gu = 2 * Ju + 1  # g_up
+##            S0 = Ia_arr.take(iso) * gu * A21 / (8 * pi * c_cm * v0 ** 2)
+##            df["S0"] = S0
+##            return S0
+##
+##        except KeyError as err:
+##            raise KeyError(
+##                "Could not find wavenumber, Einstein's coefficient, lower state energy or S0 in the dataframe. PLease check the database"
+##            ) from err
 
     def optically_thin_power(
         self,

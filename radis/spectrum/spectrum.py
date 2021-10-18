@@ -1885,7 +1885,7 @@ class Spectrum(object):
             self.conditions["pressure_mbar"] * 1e-3,
             self.conditions["Tgas"],
             self.conditions["mole_fraction"],
-            False,
+            verbose_gpu=False,
             l=self.conditions["path_length"],
             slit_FWHM=self.conditions["slit_FWHM"],
             gpu=(not self.conditions["emulate_gpu"]),
