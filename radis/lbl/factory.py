@@ -82,7 +82,7 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp
-from scipy.constants import N_A, c, k, pi
+from scipy.constants import c
 from scipy.optimize import OptimizeResult
 
 from radis import version
@@ -1514,8 +1514,8 @@ class SpectrumFactory(BandFactory):
         if self.params.optimization != None:
             conditions.update(
                 {
-                    "wL": self.wL,
-                    "wG": self.wG,
+                    "NwL": self.NwL,
+                    "NwG": self.NwG,
                 }
             )
         del self.profiler.final[list(self.profiler.final)[-1]][
@@ -1696,13 +1696,13 @@ class SpectrumFactory(BandFactory):
         broadening_method = self.params.broadening_method
 
         if optimization in ("simple", "min-RMS"):
-            wL = self.wL
-            wG = self.wG
+            NwL = self.NwL
+            NwG = self.NwG
             if broadening_method == "voigt":
                 estimated_time = (
                     2.096e-07 * n_lines
                     + 7.185e-09
-                    * (1 + wL * wG)
+                    * (1 + NwL * NwG)
                     * spectral_points
                     * np.log(spectral_points)
                     * factor
@@ -1710,7 +1710,7 @@ class SpectrumFactory(BandFactory):
             elif broadening_method == "fft":
                 estimated_time = (
                     4.675e-08
-                    * (1 + wL * wG)
+                    * (1 + NwL * NwG)
                     * spectral_points
                     * np.log(spectral_points)
                     * factor
