@@ -291,12 +291,12 @@ def test_cython_add_at_spectra(*args, **kwargs):
     sf.use_cython = False
     s_numpy = sf.eq_spectrum(Tgas=T, name="numpy")
     s_numpy.apply_slit(0.5, "nm")
-    assert sf.params.add_at_used == "numpy"
+    assert sf.misc.add_at_used == "numpy"
 
     sf.use_cython = True
     s_cython = sf.eq_spectrum(Tgas=T, name="cython")
     s_cython.apply_slit(0.5, "nm")
-    assert sf.params.add_at_used == "cython"
+    assert sf.misc.add_at_used == "cython"
 
     res = get_residual(s_numpy, s_cython, "transmittance")
     assert res < 2e-4

@@ -116,6 +116,18 @@ def partition(pred, iterable):
 #            falses.append(item)
 #    return trues, falses
 
+
+def str2bool(s):
+    """ Used to convert Pandas columns in str type to boolean 
+    (note that by default bool("False")==True !)
+    """
+    if s in [True, 'true', 'True', 1, '1', '1.0']:
+        return True
+    elif s in [False, 'false', 'False', 0, '0', '0.0']:
+        return False
+    else:
+        raise ValueError
+        
 # %% Compare / merge tools
 
 

@@ -1884,6 +1884,7 @@ class SpecDatabase(SpecList):
         nJobs=-2,
         batch_size="auto",
         lazy_loading=True,
+        update_register_only=False,
     ):
         # TODO @devs: generate a SpecDatabase from a dict.
         # use the key of the dict insted of the file.
@@ -1927,7 +1928,7 @@ class SpecDatabase(SpecList):
         super(SpecDatabase, self).__init__()
         # now load from the folder with the update() function
         if not lazy_loading:
-            return self.update(force_reload=True, filt=filt)
+            return self.update(force_reload=True, filt=filt, update_register_only=update_register_only)
         else:
             if verbose >= 2:
                 print(
@@ -1946,7 +1947,7 @@ class SpecDatabase(SpecList):
                 )
             spec_files = [f for f in os.listdir(self.path) if f.endswith(".spec")]
             # Initialize database without loading the spectra
-            self.df = read_conditions_file(join(self.path, csv_file[0]))
+            self.df = read_conditions_file(join(self.path, csv_file[0]), verbose=self.verbose)
 
             if len(self.df["file"]) != len(spec_files):
                 raise ValueError(
@@ -1982,7 +1983,7 @@ class SpecDatabase(SpecList):
                             "Csv file wasn't created with last modifications informations. Update the database first with `SpecDatabase(..., lazy_loading=False)`."
                         )
 
-    def update(self, force_reload=False, filt=".spec"):
+    def update(self, force_reload=False, filt=".spec", update_register_only=False):
         """Reloads database, updates internal index structure and export it in
         ``<database>.csv``.
 
@@ -1992,6 +1993,12 @@ class SpecDatabase(SpecList):
             if ``True``, reloads files already in database. Default ``False``
         filt: str
             only consider files ending with ``filt``. Default ``.spec``
+        
+        Other Parameters
+        ----------------
+        update_register_only: bool
+            if ``True``, load files and update csv but do not keep the Spectrum in memory.
+            Default ``False``
 
         Notes
         -----
@@ -2005,7 +2012,7 @@ class SpecDatabase(SpecList):
         if force_reload:
             # Reloads whole database  (necessary on database init to create self.df
             files = [join(path, f) for f in os.listdir(path) if f.endswith(filt)]
-            self.df = self._load_new_files(files=files)
+            self.df = self._load_new_files(files=files, update_register_only=update_register_only)
         else:
             dbfiles = list(self.df["file"])
             files = [
@@ -2016,7 +2023,7 @@ class SpecDatabase(SpecList):
             # no parallelization here because the number of files is supposed to be small
             for f in files:
                 self.df = self.df.append(
-                    self._load_new_file(f, binary=self.binary), ignore_index=True
+                    self._load_new_file(f, binary=self.binary, update_register_only=update_register_only), ignore_index=True
                 )
 
         # Print index
@@ -2368,9 +2375,15 @@ class SpecDatabase(SpecList):
 
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
 
-    def _load_new_files(self, files):
+    def _load_new_files(self, files, update_register_only=False):
         """Parse files and generate a database.
 
+        Other Parameters
+        ----------------
+        update_register_only: bool
+            if ``True``, load files and update csv but do not keep the Spectrum in memory.
+            Default ``False``
+            
         Returns
         -------
         db: pandas.DataFrame
@@ -2390,7 +2403,7 @@ class SpecDatabase(SpecList):
         minimum_nfiles = self.minimum_nfiles
 
         def funLoad(f):
-            return self._load_new_file(f, binary=self.binary)
+            return self._load_new_file(f, binary=self.binary, update_register_only=update_register_only)
 
         # Sequential loading
         if nJobs == 1 or len(files) < minimum_nfiles:
@@ -2414,12 +2427,18 @@ class SpecDatabase(SpecList):
             )(delayed(funLoad)(f) for f in files)
         return pd.DataFrame(db)
 
-    def _load_new_file(self, file, binary=False):
+    def _load_new_file(self, file, binary=False, update_register_only=False):
         """Load spectrum and return Spectrum attributes for insertion in database.
 
         The Spectrum itself is stored under the "Spectrum" key, and the filename
         under "file".
 
+        Other Parameters
+        ----------------
+        update_register_only: bool
+            if ``True``, load files and update csv but do not keep the Spectrum in memory.
+            Default ``False``
+            
         Returns
         -------
         dict: dictionary of conditions of loaded spectrum"""
@@ -2435,7 +2454,11 @@ class SpecDatabase(SpecList):
             out["name"] = s.get_name()
         else:
             out["name"] = s.name
-        out.update({"file": basename(file), "Spectrum": s})
+        out["file"] = basename(file)
+        if update_register_only:
+            out["Spectrum"] = None
+        else:
+            out["Spectrum"] = s
         out["last_modified"] = os.path.getmtime(file)
 
         return out
@@ -2482,7 +2505,7 @@ class SpecDatabase(SpecList):
         return dict(list(zip(self.df.file, self.df.Spectrum)))
 
 
-def read_conditions_file(path):
+def read_conditions_file(path, verbose=True):
     """Read .csv file with calculation/measurement conditions of all spectra.
 
     File must have at least the column "file"
@@ -2497,9 +2520,22 @@ def read_conditions_file(path):
     None.
 
     """
+    # import csv
+    # with open(path, 'r') as csvfile:  # Check if comma or semicolon # Note: dialect may be given directly to read_csv ?
+    #     dialect=csv.Sniffer().sniff(csvfile.read(), delimiters=',;')
+
     df = pd.read_csv(path, float_precision="round_trip")
     # thank you https://stackoverflow.com/questions/36909368/precision-lost-while-using-read-csv-in-pandas
-
+    
+    # Force some types
+    for boolvar in ["self_absorption", "db_use_cached", "lvl_use_cached", "include_neighbouring_lines", "export_lines", "export_rovib_fractions", "load_energies", "thermal_equilibrium"]:
+        if boolvar in df:
+            if df.dtypes[boolvar] == object:
+                from radis.misc.basics import str2bool
+                if verbose:
+                    print(f"Reading {path} : casting column {boolvar} from string type to boolean")
+                df[boolvar] = df[boolvar].map(str2bool)
+        
     # if only "1" in isotopes they are read as numbers and later get() function fails.
     if "isotope" in df:
         df["isotope"] = df["isotope"].astype(str).str.replace(".0", "", regex=True)

@@ -406,7 +406,7 @@ class Parameters(ConditionDict):
 
     # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
     __slots__ = [
-        "add_at_used",
+        # "add_at_used",
         "broadening_method",
         "truncation",
         "neighbour_lines",
@@ -467,7 +467,7 @@ class Parameters(ConditionDict):
         self.dlm_log_pG = _gaussian_step(
             0.01
         )  #: float : Gaussian step DLM lineshape database. Default _gaussian_step(0.01)
-        self.add_at_used = None  # use Cython-accelerated code
+        # self.add_at_used = None  # use Cython-accelerated code
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
@@ -503,6 +503,7 @@ class MiscParams(ConditionDict):
         "total_lines",
         "zero_padding",
         "hdf5_engine",
+        "add_at_used",    # function used in DIT ; a Cython and a pure-Python version exist
     ]
 
     def __init__(self):
@@ -524,6 +525,7 @@ class MiscParams(ConditionDict):
         self.total_lines = 0  #: int : number of lines in database.
         self.hdf5_engine = "pytables"  # 'pytables', 'vaex' (/!\ experimental in 0.9.30)
 
+        self.add_at_used = ""       # function used in DIT ; a Cython and a pure-Python version exist
 
 def format_paths(s):
     """escape all special characters."""
@@ -1561,6 +1563,7 @@ class DatabankLoader(object):
         add_info=["Tvib", "Trot"],
         add_date="%Y%m%d",
         compress=True,
+        **kwargs,
     ):
         """Init a :class:`~radis.tools.database.SpecDatabase` folder in
         ``path`` to later store our spectra. Spectra can also be automatically
@@ -1593,6 +1596,11 @@ class DatabankLoader(object):
             and takes less memory space. Default ``True``.
             If ``2``, additionaly remove all redundant quantities.
 
+        Other Parameters
+        ----------------
+        **kwargs: **dict
+            arguments sent to :py:class:`~radis.tools.database.SpecDatabase` initialization.
+        
         Returns
         -------
         db: SpecDatabase
@@ -1602,7 +1610,7 @@ class DatabankLoader(object):
         .. minigallery:: radis.lbl.loader.DatabankLoader.init_database
         """
 
-        db = SpecDatabase(path, add_info=add_info, add_date=add_date, binary=compress)
+        db = SpecDatabase(path, add_info=add_info, add_date=add_date, binary=compress, **kwargs)
 
         self.SpecDatabase = db
         self.database = format_paths(path)  # just to appear in conditions
@@ -2225,14 +2233,14 @@ class DatabankLoader(object):
 
                     raise ValueError(
                         "No spectrum found in database that matched "
-                        + "given conditions. See best case found above"
+                        + "given conditions. See best case found above. You can also add parameters in SpectrumFactory._ignoreautoretrieveconditions to ignore them"
                     )
             else:
                 # just a print, then calculate
                 if self.verbose:
                     print(
                         "No spectrum found in database that "
-                        + "matched given conditions."
+                        + "matched given conditions. You can also add parameters in SpectrumFactory._ignoreautoretrieveconditions to ignore them"
                     )
                 return None
 
