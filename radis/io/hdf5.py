@@ -20,28 +20,28 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
     Vaex-friendly HDF5 format, preserving metadata"""
     import vaex
 
-    if verbose:
-        print(f"Auto-updating {fname} to a Vaex-compatible HDF5 file")
-    df = pd.read_hdf(fname)
-    df = vaex.from_pandas(df)
     if fname.endswith(".h5"):
         fname_vaex = fname.replace(".h5", ".hdf5")
     else:
         fname_vaex = fname
 
+    if verbose:
+        print(f"Auto-updating {fname} to a Vaex-compatible HDF5 file {fname_vaex}")
+    df = pd.read_hdf(fname)
+    df = vaex.from_pandas(df)
+
+    pytables_manager = HDF5Manager(engine="pytables")
+
     # Read metadata
-    with pd.HDFStore(fname, mode="r") as store:
-        file_metadata = store.get_storer(key).attrs.metadata
+    file_metadata = pytables_manager.read_metadata(fname)
 
     # Write Vaex file
     df.export_hdf5(fname_vaex)
     df.close()  # try to fix file not closed()  TODO: remove?
     del df  # same TODO
 
-    with h5py.File(fname_vaex, "a") as hf:
-        # Add metadata
-        for k, v in file_metadata.items():
-            hf.attrs[k] = v
+    vaex_manager = HDF5Manager(engine="vaex")
+    vaex_manager.add_metadata(fname_vaex, file_metadata)
 
     if verbose:
         print(f"Converted to Vaex's HDF5 format {fname_vaex}")
