@@ -2788,9 +2788,15 @@ class Spectrum(object):
 
             Note: if not None, cutoff criteria is applied in this unit.
             Not used if plot is not 'S'
+        barwidth: float or str
+            if float, width of bars, in ``wunit``, as a fraction of full-range; i.e. ::
 
-        barwidth: float
-            With of bars in LineSurvey. Default 0.07
+                barwidth=0.01
+
+            makes bars span 1% of the full range.
+            if ``str``, uses the column as width. Example ::
+
+                barwidth = 'hwhm_voigt'
 
 
 
@@ -2819,7 +2825,7 @@ class Spectrum(object):
             sf.load_databank('HITRAN-CO2-TEST')
             s = sf.eq_spectrum(Tgas=1500)
             s.apply_slit(0.5)
-            s.line_survey(overlay='radiance_noslit', barwidth=0.01)
+            s.line_survey(overlay='radiance_noslit', barwidth=0.01)  # or barwidth='hwhm_voigt'
 
         See the output in :ref:`Examples <label_examples>`
 
