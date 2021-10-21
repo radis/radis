@@ -15,33 +15,33 @@ import pandas as pd
 from tables.exceptions import NoSuchNodeError
 
 
-def update_pytables_to_vaex(fname, remove_initial=False, verbose=True):
+def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df"):
     """Convert a HDF5 file generated from PyTables to a
     Vaex-friendly HDF5 format, preserving metadata"""
     import vaex
 
-    if verbose:
-        print(f"Auto-updating {fname} to a Vaex-compatible HDF5 file")
-    df = pd.read_hdf(fname)
-    df = vaex.from_pandas(df)
     if fname.endswith(".h5"):
         fname_vaex = fname.replace(".h5", ".hdf5")
     else:
         fname_vaex = fname
 
+    if verbose:
+        print(f"Auto-updating {fname} to a Vaex-compatible HDF5 file {fname_vaex}")
+    df = pd.read_hdf(fname)
+    df = vaex.from_pandas(df)
+
+    pytables_manager = HDF5Manager(engine="pytables")
+
     # Read metadata
-    with pd.HDFStore(fname, mode="r") as store:
-        file_metadata = store.get_storer("df").attrs.metadata
+    file_metadata = pytables_manager.read_metadata(fname)
 
     # Write Vaex file
     df.export_hdf5(fname_vaex)
     df.close()  # try to fix file not closed()  TODO: remove?
     del df  # same TODO
 
-    with h5py.File(fname_vaex, "a") as hf:
-        # Add metadata
-        for k, v in file_metadata.items():
-            hf.attrs[k] = v
+    vaex_manager = HDF5Manager(engine="vaex")
+    vaex_manager.add_metadata(fname_vaex, file_metadata)
 
     if verbose:
         print(f"Converted to Vaex's HDF5 format {fname_vaex}")
@@ -69,38 +69,93 @@ class HDF5Manager(object):
         else:
             raise NotImplementedError(self.engine)
 
-    def write(self, handler, df, append=True):
+    def write(
+        self,
+        file,
+        df,
+        append=True,
+        key="default",
+        format="table",
+        data_columns=["iso", "wav"],
+    ):
+        """Write dataframe ``df`` to ``file``
+
+        Other Parameters
+        ----------------
+        key: str
+            group to write to. If ``None``, write at root level. If ``'default'``,
+            use engine's default (`/table` for `'vaex'`, `df` for `pytables`,
+            root for `h5py` )
+        data_columns : list
+            only these column names will be searchable directly on disk to
+            load certain lines only. See :py:func:`~radis.io.hdf5.hdf2df`
+        """
         if self.engine == "pytables":
-            DATA_COLUMNS = ["iso", "wav"]
-            """
-            list : only these column names will be searchable directly on disk to
-            only load certain lines. See :py:func:`~radis.io.hdf5.hdf2df`
-            """
-            handler.put(
-                key="df",
-                value=df,
-                append=append,
-                format="table",
-                data_columns=DATA_COLUMNS,
-            )
+            if key == "default":
+                key = "df"
+            with self.open(file, "a" if append else "w") as f:
+                f.put(
+                    key=key,
+                    value=df,
+                    append=append,
+                    format=format,
+                    data_columns=data_columns,
+                )
+        elif self.engine == "pytables-fixed":
+            assert not append
+            # export dataframe
+            df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
+        elif self.engine == "vaex":
+            if key == "default":
+                key = r"/table"
+            import vaex
+
+            if append == True:
+                raise ValueError(
+                    "Cannot append with 'vaex' engine. Load all files separately using vaex.open('many') then export to a single file"
+                )
+            try:
+                df.export_hdf5(file, group=key, mode="w")
+            except AttributeError:  # case where df is not a Vaex dataFrame but (likely) a Pandas Dataframe
+                vaex.from_pandas(df).export_hdf5(file, group=key, mode="w")
         else:
             raise NotImplementedError(self.engine)
+            # h5py is not designed to write Pandas DataFrames
 
     def load(
-        self, fname, columns=None, where=None, key="df", **store_kwargs
-    ) -> pd.DataFrame:
+        self,
+        fname,
+        columns=None,
+        where=None,
+        key="default",
+        none_if_empty=False,
+        **store_kwargs,
+    ):
         """
         Parameters
         ----------
         columns: list of str
             list of columns to load. If ``None``, returns all columns in the file.
+        where: list of str
+            filtering conditions. Ex::
+
+                "wav > 2300"
 
         Other Parameters
         ----------------
-        key: store key in  ``'pytables'`` mode.
+        key: str
+            group to load from. If ``None``, load from root level. If ``'default'``,
+            use engine's default (`/table` for `'vaex'`, `df` for `pytables`,
+            root for `h5py` )
+
+        Returns
+        -------
+        pd.DataFrame or vaex.DataFrame
         """
 
-        if self.engine == "pytables":
+        if self.engine in ["pytables", "pytables-fixed"]:
+            if key == "default":
+                key = "df"
             try:
                 df = pd.read_hdf(
                     fname, columns=columns, where=where, key=key, **store_kwargs
@@ -110,46 +165,67 @@ class HDF5Manager(object):
                     raise TypeError(
                         f"radis.io.hdf5.hdf2df can only be used to load specific HDF5 files generated in a 'Table' which allows to select only certain columns or rows. Here the file {fname} is in 'Fixed' format. Regenerate it ? If it's a cache file of a .par file, load the .par file directly ?"
                     )
+                elif "cannot create a storer if the object is not existing" in str(err):
+                    raise TypeError(
+                        f"Missing group `{key}` in {fname}. Maybe the file has been generated by a different HDF5 library than Pytables. Try using `engine='vaex'` in the calling function (hdf2df, etc.)"
+                    )
                 else:
                     raise
             except NoSuchNodeError as err:
                 # Probably tried to read a Vaex/h5py HDF5 file forcing "engine='pytables'"
                 raise AttributeError(
-                    f"file {fname} does not seem to have been generated by Pytables. Try using `engine='vaex'` in hdf2df"
+                    f"file {fname} does not seem to have been generated by Pytables. Try using `engine='vaex'` in the calling function (hdf2df, etc.)"
                 ) from err
 
         elif self.engine == "vaex":
+            if key == "default":
+                key = r"/table"
+
+            import h5py
             import vaex
 
             # Open file
             assert len(store_kwargs) == 0
+            fname_list = fname if isinstance(fname, list) else [fname]
+            # vaex can open several files at the same time
+            # First check group exists
+            for fname in fname_list:
+                try:
+                    with h5py.File(fname, "r") as f:
+                        if key and key not in f:
+                            raise KeyError(
+                                key
+                            )  # before vaex raises the same error; which prints things on the console that cannot be caught
+                except (FileNotFoundError, OSError) as err:
+                    # error message with suggestion on how to convert from existing file
+                    for f in fname_list:
+                        if exists(f.replace(".hdf5", ".h5")):
+                            raise FileNotFoundError(
+                                f"`{f}` not found but `{f.replace('.hdf5', '.h5')}` exists (probably a row-based pytables HDF5 file). Try (1) using engine='pytables' in the calling function (`hdf2df`, `fetch_hitemp`, etc.)  ; (2) delete the file to re-download and re-parse it (this may take a lot of time !) ;  or (3, recommended) set `import radis; radis.config['AUTO_UPDATE_DATABASE']= True` in your script to auto-update to Vaex HDF5 file"
+                            ) from err
+                    raise
+
+            # Now, open with vaex
             try:
-                df = vaex.open(fname)
-            except FileNotFoundError as err:
-                # error message with suggestion on how to convert from existing file
-                fname_list = fname if isinstance(fname, list) else [fname]
-                for f in fname_list:
-                    if exists(f.replace(".hdf5", ".h5")):
-                        raise FileNotFoundError(
-                            f"`{f}` not found but `{f.replace('.hdf5', '.h5')}` exists (probably a row-based pytables HDF5 file). Try (1) using engine='pytables' in `hdf2df` or `fetch_hitemp` ; (2) delete the file to re-download and re-parse it (this may take a lot of time !) ;  or (3, recommended) set `import radis; radis.congig['AUTO_UPDATE_DATABASE']= True` in your script to auto-update to Vaex HDF5 file"
-                        ) from err
-                # else:
-                raise
+                df = vaex.open(fname_list, group=key)
             except OSError as err:
                 raise OSError(
-                    f"Cannot read {fname} with Vaex's HDF5 library (column-based). It may be a file generated by pytables (row-based). Try (1) using engine='pytables' in `hdf2df` or `fetch_hitemp` ; (2) delete the file to re-download and re-parse it (this may take a lot of time !) ;  or (3, recommended) set `import radis; radis.congig['AUTO_UPDATE_DATABASE'] = True` in your script to auto-update to Vaex HDF5 file"
+                    f"Cannot read {fname}, group `{key}` with Vaex HDF5 library (column-based). It may be a file generated by pytables (row-based). Try (1) using engine='pytables' in the calling function (`hdf2df`, `fetch_hitemp`, etc.)  ; (2) delete the file to re-download and re-parse it (this may take a lot of time !) ;  or (3, recommended) set `import radis; radis.config['AUTO_UPDATE_DATABASE'] = True` in your script to auto-update to Vaex HDF5 file"
                 ) from err
 
             return df
 
         elif self.engine == "h5py":
+            # TODO: define default key ?
+            if key == "default":
+                key = None
             import h5py
 
             with h5py.File(fname, "r") as f:
-                if key:
-                    load_from = f[key]
-                else:
+                if key is None:  # load from root level
                     load_from = f
+                else:
+                    load_from = f[key]
                 out = {}
                 for k in load_from.keys():
                     out[k] = f[k][()]
@@ -160,56 +236,121 @@ class HDF5Manager(object):
 
         return df
 
-    def add_metadata(self, fname: str, metadata: dict):
+    def add_metadata(
+        self, fname: str, metadata: dict, key="default", create_empty_dataset=False
+    ):
+        """
+        Parameters
+        ----------
+        fname: str
+            filename
+        metadata: dict
+            dictionary of metadata to add in group ``key``
+        key: str
+            group to add metadata to. If ``None``, add at root level. If ``'default'``,
+            use engine's default (`/table` for `'vaex'`, `df` for `pytables`,
+            root for `h5py` )
 
-        if self.engine == "pytables":
+        Other Parameters
+        ----------------
+        create_empty_dataset: bool
+            if True, create an empty dataset to store the metadata as attribute
+
+        """
+        from radis.io.cache_files import _h5_compatible
+
+        if self.engine in ["pytables", "pytables-fixed"]:
+            if key == "default":
+                key = "df"
             with pd.HDFStore(fname, mode="a", complib="blosc", complevel=9) as f:
-
-                # f.get_storer("df").attrs.update(metadata)
-                f.get_storer("df").attrs.metadata = metadata
+                if create_empty_dataset:
+                    assert self.engine != "pytables-fixed"
+                    # Not possible to create an empty node directly, so we create a dummy group  # TODO ?
+                    f.put(key, pd.Series([]))
+                f.get_storer(key).attrs.metadata = metadata
 
         elif self.engine == "h5py":
+            if key == "default":
+                key = None
             with h5py.File(fname, "a") as hf:
-                hf.attrs.update(metadata)
+                if create_empty_dataset:
+                    assert key is not None
+                    hf.create_dataset(key, dtype="f")
+                if key is None:  # add metadta at root level
+                    hf.attrs.update(_h5_compatible(metadata))
+                else:
+                    hf[key].attrs.update(_h5_compatible(metadata))
 
         elif self.engine == "vaex":
+            if key == "default":
+                key = r"/table"
+            # Should be able to deal with multiple files at a time
             if isinstance(fname, list):
                 assert isinstance(metadata, list)
                 for f, m in zip(fname, metadata):
                     with h5py.File(f, "a") as hf:
-                        hf.attrs.update(m)
+                        if create_empty_dataset:
+                            assert key is not None
+                            hf.create_dataset(key, dtype="f")
+                        if key is None:  # add metadta at root level
+                            hf.attrs.update(_h5_compatible(m))
+                        else:
+                            hf[key].attrs.update(_h5_compatible(m))
             else:
                 with h5py.File(fname, "a") as hf:
-                    hf.attrs.update(metadata)
+                    if create_empty_dataset:
+                        assert key is not None
+                        hf.create_dataset(key, dtype="f")
+                    if key is None:  # add metadta at root level
+                        hf.attrs.update(_h5_compatible(metadata))
+                    else:
+                        hf[key].attrs.update(_h5_compatible(metadata))
 
         else:
             raise NotImplementedError(self.engine)
 
-    def read_metadata(self, fname: str, key="df") -> dict:
+    def read_metadata(self, fname: str, key="default") -> dict:
         """
         Other Parameters
         ----------------
-        key: store key in  ``'pytables'`` mode.
+        key: str
+            group where to read metadat from. If ``None``, add at root level. If ``'default'``,
+            use engine's default (`/table` for `'vaex'`, `df` for `pytables`,
+            root for `h5py` )
         """
 
-        if self.engine == "pytables":
+        if self.engine in ["pytables", "pytables-fixed"]:
+            if key == "default":
+                key = "df"
             with pd.HDFStore(fname, mode="r", complib="blosc", complevel=9) as f:
-
-                metadata = f.get_storer("df").attrs.metadata
+                metadata = f.get_storer(key).attrs.metadata
 
         elif self.engine == "h5py":
+            if key == "default":
+                key = None
             with h5py.File(fname, "r") as hf:
-                metadata = dict(hf.attrs)
+                if key is None:  # read metadta at root level
+                    metadata = dict(hf.attrs)
+                else:
+                    metadata = dict(hf[key].attrs)
 
         elif self.engine == "vaex":
+            if key == "default":
+                key = r"/table"
             if isinstance(fname, list):
                 metadata = []
                 for f in fname:
                     with h5py.File(f, "r") as hf:
-                        metadata.append(dict(hf.attrs))
+                        if key is None:  # read metadta at root level
+                            metadata.append(dict(hf.attrs))
+                        else:
+                            metadata.append(dict(hf[key].attrs))
             else:
                 with h5py.File(fname, "r") as hf:
-                    metadata = dict(hf.attrs)
+                    if key is None:  # add metadta at root level
+                        metadata = dict(hf.attrs)
+                    else:
+                        metadata = dict(hf[key].attrs)
 
         else:
             raise NotImplementedError(self.engine)
