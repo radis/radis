@@ -378,6 +378,7 @@ class SpectrumFactory(BandFactory):
         mole_fraction=1,
         path_length=1,
         wstep=0.01,
+        optional_wstep=None,
         molecule=None,
         isotope="all",
         medium="air",
@@ -466,6 +467,9 @@ class SpectrumFactory(BandFactory):
 
         # Storing inital value of wstep if wstep != "auto"
         self.wstep = wstep
+
+        # Storing optional_wstep value
+        self.optional_wstep = optional_wstep
 
         # Init variables
         # --------------
@@ -755,7 +759,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # ... generates all wstep related entities
-        self._generate_wavenumber_arrays()
+        self._generate_wavenumber_arrays(self.optional_wstep)
 
         # ... find weak lines and calculate semi-continuum (optional)
         I_continuum = self.calculate_pseudo_continuum()
@@ -819,6 +823,7 @@ class SpectrumFactory(BandFactory):
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
                 )
                 / self.params.wstep,
+                "optional_wstep": self.optional_wstep,
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1404,7 +1409,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # ... generates all wstep related entities
-        self._generate_wavenumber_arrays()
+        self._generate_wavenumber_arrays(self.optional_wstep)
 
         # ... find weak lines and calculate semi-continuum (optional)
         k_continuum, j_continuum = self.calculate_pseudo_continuum(noneq=True)
@@ -1494,6 +1499,7 @@ class SpectrumFactory(BandFactory):
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
                 )
                 / self.params.wstep,
+                "optional_wstep": self.optional_wstep,
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1565,7 +1571,7 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def _generate_wavenumber_arrays(self):
+    def _generate_wavenumber_arrays(self, optional_wstep=None):
         """define wavenumber grid vectors
 
         `SpectrumFactory.wavenumber` is the output spectral range and
@@ -1583,6 +1589,10 @@ class SpectrumFactory(BandFactory):
             self.params.wstep = round_off(
                 self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
             )
+
+            if optional_wstep:
+                self.params.wstep = min(self.params.wstep, optional_wstep)
+
             self.warnings["AccuracyWarning"] = "ignore"
 
         truncation = self.params.truncation

@@ -48,6 +48,7 @@ def calc_spectrum(
     databank="hitran",
     medium="air",
     wstep=0.01,
+    optional_wstep=None,
     truncation=Default(50),
     neighbour_lines=0,
     cutoff=1e-27,
@@ -435,6 +436,9 @@ def calc_spectrum(
 
     # Stage 3: Now let's calculate all the spectra
     s_list = []
+    optional_wstep = float("inf")
+    condition_option_wstep = len(molecule_dict) > 1 and wstep == "auto"
+
     for molecule, dict_arguments in molecule_dict.items():
         kwargs_molecule = deepcopy(
             kwargs
@@ -443,41 +447,47 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
-        s_list.append(
-            _calc_spectrum(
-                wavenum_min=wavenum_min,
-                wavenum_max=wavenum_max,
-                wavelength_min=wavelength_min,
-                wavelength_max=wavelength_max,
-                Tgas=Tgas,
-                Tvib=Tvib,
-                Trot=Trot,
-                pressure=pressure,
-                # overpopulation=overpopulation,  # now in dict_arguments
-                molecule=molecule,
-                # isotope=isotope,                # now in dict_arguments
-                # mole_fraction=mole_fraction,    # now in dict_arguments
-                path_length=path_length,
-                # databank=databank,              # now in dict_arguments
-                medium=medium,
-                wstep=wstep,
-                truncation=truncation,
-                neighbour_lines=neighbour_lines,
-                cutoff=cutoff,
-                parsum_mode=parsum_mode,
-                optimization=optimization,
-                broadening_method=broadening_method,
-                name=name,
-                use_cached=use_cached,
-                verbose=verbose,
-                mode=mode,
-                export_lines=export_lines,
-                **kwargs_molecule
-            )
+        generated_spectrum = _calc_spectrum(
+            wavenum_min=wavenum_min,
+            wavenum_max=wavenum_max,
+            wavelength_min=wavelength_min,
+            wavelength_max=wavelength_max,
+            Tgas=Tgas,
+            Tvib=Tvib,
+            Trot=Trot,
+            pressure=pressure,
+            # overpopulation=overpopulation,  # now in dict_arguments
+            molecule=molecule,
+            # isotope=isotope,                # now in dict_arguments
+            # mole_fraction=mole_fraction,    # now in dict_arguments
+            path_length=path_length,
+            # databank=databank,              # now in dict_arguments
+            medium=medium,
+            wstep=wstep,
+            optional_wstep=optional_wstep,
+            truncation=truncation,
+            neighbour_lines=neighbour_lines,
+            cutoff=cutoff,
+            parsum_mode=parsum_mode,
+            optimization=optimization,
+            broadening_method=broadening_method,
+            name=name,
+            use_cached=use_cached,
+            verbose=verbose,
+            mode=mode,
+            export_lines=export_lines,
+            **kwargs_molecule
         )
+        s_list.append(generated_spectrum)
+
+        if condition_option_wstep:
+            optional_wstep = generated_spectrum.get_conditions()["wstep"]
 
     # Stage 4: merge all molecules and return
-    s = MergeSlabs(*s_list)
+    if condition_option_wstep:
+        s = MergeSlabs(*s_list, resample="intersect")
+    else:
+        s = MergeSlabs(*s_list)
 
     if save_to:
         s.store(path=save_to, if_exists_then="replace", verbose=verbose)
@@ -502,6 +512,7 @@ def _calc_spectrum(
     databank,
     medium,
     wstep,
+    optional_wstep,
     truncation,
     neighbour_lines,
     cutoff,
@@ -591,6 +602,7 @@ def _calc_spectrum(
         isotope=isotope,
         pressure=pressure,
         wstep=wstep,
+        optional_wstep=optional_wstep,
         truncation=truncation,
         neighbour_lines=neighbour_lines,
         cutoff=cutoff,
