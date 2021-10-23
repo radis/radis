@@ -48,7 +48,6 @@ def calc_spectrum(
     databank="hitran",
     medium="air",
     wstep=0.01,
-    optional_wstep=None,
     truncation=Default(50),
     neighbour_lines=0,
     cutoff=1e-27,
@@ -168,9 +167,6 @@ def calc_spectrum(
         .. note::
             wstep = 'auto' is optimized for performances while ensuring accuracy,
             but is still experimental in 0.9.30. Feedback welcome!
-    optional_wstep: float (:math:`cm^{-1}`)  or `'None'`
-        Stores the minimum wstep value encountered in case of multiple molecules
-        and wstep='auto'.
     truncation: float (:math:`cm^{-1}`)
         Half-width over which to compute the lineshape, i.e. lines are truncated
         on each side after ``truncation`` (:math:`cm^{-1}`) from the line center.
@@ -440,9 +436,15 @@ def calc_spectrum(
     # Stage 3: Now let's calculate all the spectra
     s_list = []
 
-    condition_optional_wstep = len(molecule_dict) > 1 and wstep == "auto"
-    if condition_optional_wstep:
-        optional_wstep = float("inf")
+    """If we are computing spectrums for multiple molecules with wstep='auto',
+    each spectrum can have different wstep values, thus will require resample="intersect"
+    argument in MergeSlab() function to interpolate the different wstep values."""
+    condition_multiple_wstep = len(molecule_dict) > 1 and wstep == "auto"
+    if condition_multiple_wstep:
+        wstep = [
+            "auto",
+            float("inf"),
+        ]  # Using a list to store minimum wstep value at 1st index
 
     for molecule, dict_arguments in molecule_dict.items():
         kwargs_molecule = deepcopy(
@@ -469,7 +471,6 @@ def calc_spectrum(
             # databank=databank,              # now in dict_arguments
             medium=medium,
             wstep=wstep,
-            optional_wstep=optional_wstep,
             truncation=truncation,
             neighbour_lines=neighbour_lines,
             cutoff=cutoff,
@@ -485,12 +486,12 @@ def calc_spectrum(
         )
         s_list.append(generated_spectrum)
 
-        if condition_optional_wstep:
+        if condition_multiple_wstep:
             # Stores the minimum wstep value encountered
-            optional_wstep = generated_spectrum.get_conditions()["wstep"]
+            wstep[1] = generated_spectrum.get_conditions()["wstep"]
 
     # Stage 4: merge all molecules and return
-    if condition_optional_wstep:
+    if condition_multiple_wstep:
         s = MergeSlabs(*s_list, resample="intersect")
     else:
         s = MergeSlabs(*s_list)
@@ -518,7 +519,6 @@ def _calc_spectrum(
     databank,
     medium,
     wstep,
-    optional_wstep,
     truncation,
     neighbour_lines,
     cutoff,
@@ -608,7 +608,6 @@ def _calc_spectrum(
         isotope=isotope,
         pressure=pressure,
         wstep=wstep,
-        optional_wstep=optional_wstep,
         truncation=truncation,
         neighbour_lines=neighbour_lines,
         cutoff=cutoff,
