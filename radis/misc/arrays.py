@@ -480,7 +480,86 @@ else:
     add_at = rcx.add_at
 
 
+@numba.njit
+def non_zero_values_around(a, n):
+    """return a boolean array of same size as ``a`` where each position ``i``
+    is ``True`` if there are non-zero points less than ``n`` index position
+    away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+    position away from from ``a[i]``
+    """
+    # build the list
+    L = []
+    pos = -1  # found position of non-zero point
+    start = -1  # start position of subrange
+
+    for i, ai in enumerate(a):
+        if ai != 0:
+            pos = i
+            if start == -1:
+                if i == 0:
+                    start = 0
+                else:
+                    start = i - n
+        else:
+            if start == -1:
+                continue
+            elif pos == i - n - 1:
+                L.append((start, i - 1))
+                start = -1
+                pos = -1
+
+    if start != -1:
+        L.append((start, len(a) - 1))
+
+    # turn it into a boolean array
+    b = np.zeros(len(a), dtype=np.bool_)
+    for start, end in L:
+        b[start : end + 1] = 1
+        # TODO : check out of index ?
+
+    return b
+
+
 if __name__ == "__main__":
     import pytest
 
     pytest.main(["../test/misc/test_arrays.py", "-s"])  # -s for showing console output
+
+    a = np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0])
+
+    # n = 1
+    b = np.array([0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1])
+    out = non_zero_values_around(a, 1)
+    print(a, "width 1")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert out == b
+
+    # n = 2
+    b = np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    out = non_zero_values_around(a, 2)
+    print(a, "width 2")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert out == b
+
+    # n = 2
+    a = np.array([0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    b = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1])
+    out = non_zero_values_around(a, 2)
+    print(a, "width 2")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert out == b
+
+    # n = 1
+    a = np.array([0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    b = np.array([1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1])
+    out = non_zero_values_around(a, 1)
+    print(a, "width 1")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert out == b
+
+    # Fold
+    a[out]

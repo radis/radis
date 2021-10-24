@@ -827,6 +827,8 @@ def getDatabankEntries(dbname, get_extra_keys=[], configpath=CONFIG_PATH_JSON):
             + "See databank format above. More information in "
             + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
         )
+        if dbname in ["hitran", "hitemp", "exomol"]:
+            msg += f"\nIf querying {dbname.upper()} you may want to be using SpectrumFactory.fetch_databank({dbname}) instead of SpectrumFactory.load_databank"
         raise DatabankNotFound(msg)
 
     entries = config[dbname]
