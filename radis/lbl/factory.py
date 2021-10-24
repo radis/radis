@@ -1577,12 +1577,18 @@ class SpectrumFactory(BandFactory):
         self._calc_min_width(self.df1)
 
         # Setting wstep to optimal value and rounding it to a degree 3
-        if self.wstep == "auto":
+        if self.wstep == "auto" or type(self.params.wstep) == list:
             import radis
 
-            self.params.wstep = round_off(
+            wstep_calc = round_off(
                 self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
             )
+
+            if type(self.params.wstep) == list:
+                self.params.wstep = min(self.params.wstep[1], wstep_calc)
+            else:
+                self.params.wstep = wstep_calc
+
             self.warnings["AccuracyWarning"] = "ignore"
 
         truncation = self.params.truncation
