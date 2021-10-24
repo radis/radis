@@ -755,8 +755,8 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
 
     # Merging the CO, CO2 spectrum itself in calc_spectrum
     s = calc_spectrum(
-        1900,
-        2300,  # cm-1
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
         isotope="1,2,3",
         pressure=1.01325,  # bar
         Tgas=700,  # K
