@@ -496,7 +496,7 @@ def non_zero_values_around(a, n):
     # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
     # --------------
 
-    # non_zero_values_around2()
+    # # non_zero_values_around2()
     # b = np.zeros(len(a)+2*n+1,  dtype=np.bool_)
     # for pos in np.nonzero(a)[0]:
     #     b[pos:pos+2*n+1] = True
@@ -529,8 +529,7 @@ def non_zero_values_around(a, n):
     # turn it into a boolean array
     b = np.zeros(len(a), dtype=np.bool_)
     for start, end in L:
-        b[start : end + 1] = 1
-        # TODO : check out of index ?
+        b[max(0, start) : end + 1] = 1
 
     return b
 
