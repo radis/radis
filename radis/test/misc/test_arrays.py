@@ -26,6 +26,7 @@ from radis.misc.arrays import (
     is_sorted_backward,
     last_nonnan_index,
     logspace,
+    non_zero_values_around,
 )
 from radis.test.utils import setup_test_line_databases
 
@@ -300,6 +301,50 @@ def test_cython_add_at_spectra(*args, **kwargs):
 
     res = get_residual(s_numpy, s_cython, "transmittance")
     assert res < 2e-4
+
+
+def test_non_zero_values_around(*args, **kwargs):
+    """return a boolean array of same size as ``a`` where each position ``i``
+    is ``True`` if there are non-zero points less than ``n`` index position
+    away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+    position away from from ``a[i]``
+    """
+
+    a = np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0])
+
+    # n = 1
+    b = np.array([0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1])
+    out = non_zero_values_around(a, 1)
+    print(a, "width 1")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert (out == b).all()
+
+    # n = 2
+    b = np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    out = non_zero_values_around(a, 2)
+    print(a, "width 2")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert (out == b).all()
+
+    # n = 2
+    a = np.array([0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    b = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1])
+    out = non_zero_values_around(a, 2)
+    print(a, "width 2")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert (out == b).all()
+
+    # n = 1
+    a = np.array([0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    b = np.array([1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1])
+    out = non_zero_values_around(a, 1)
+    print(a, "width 1")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert (out == b).all()
 
 
 if __name__ == "__main__":

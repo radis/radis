@@ -1932,7 +1932,6 @@ class BroadenFactory(BaseFactory):
                         )
                     else:
                         sumoflines_calc += oaconvolve(DLM[:, l, m], lineshape, "same")
-                        raise
 
         elif broadening_method == "fft":
             # ... Initialize array in FT space

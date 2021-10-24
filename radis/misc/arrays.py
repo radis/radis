@@ -487,6 +487,21 @@ def non_zero_values_around(a, n):
     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
     position away from from ``a[i]``
     """
+    # # Cleaner version, but about 2x slower on real-life test cases:
+    # #
+    # %timeit non_zero_values_around(DLM[:, l, m], truncation)
+    # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+
+    # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
+    # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    # --------------
+
+    # non_zero_values_around2()
+    # b = np.zeros(len(a)+2*n+1,  dtype=np.bool_)
+    # for pos in np.nonzero(a)[0]:
+    #     b[pos:pos+2*n+1] = True
+    # return b[n:len(a)+n]
+
     # build the list
     L = []
     pos = -1  # found position of non-zero point
@@ -524,42 +539,3 @@ if __name__ == "__main__":
     import pytest
 
     pytest.main(["../test/misc/test_arrays.py", "-s"])  # -s for showing console output
-
-    a = np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0])
-
-    # n = 1
-    b = np.array([0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1])
-    out = non_zero_values_around(a, 1)
-    print(a, "width 1")
-    print(b)
-    print(np.array(out, dtype=int))
-    assert out == b
-
-    # n = 2
-    b = np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
-    out = non_zero_values_around(a, 2)
-    print(a, "width 2")
-    print(b)
-    print(np.array(out, dtype=int))
-    assert out == b
-
-    # n = 2
-    a = np.array([0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-    b = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1])
-    out = non_zero_values_around(a, 2)
-    print(a, "width 2")
-    print(b)
-    print(np.array(out, dtype=int))
-    assert out == b
-
-    # n = 1
-    a = np.array([0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-    b = np.array([1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1])
-    out = non_zero_values_around(a, 1)
-    print(a, "width 1")
-    print(b)
-    print(np.array(out, dtype=int))
-    assert out == b
-
-    # Fold
-    a[out]
