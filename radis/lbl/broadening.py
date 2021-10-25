@@ -1922,11 +1922,13 @@ class BroadenFactory(BaseFactory):
                 for m in range(len(wL)):
                     lineshape = line_profile_DLM[l][m]
                     if radis.config["SPARSE_WAVERANGE"]:
-                        truncation = int(self.params.truncation // self.params.wstep)
+                        truncation_pts = int(
+                            self.params.truncation // self.params.wstep
+                        )
                         # note: truncation can be unique for each point of the DLM basis
                         # (allow to have line-dependant truncatino, at least as all
                         # lines with same truncation are grouped together in the DLM basis)
-                        mask = non_zero_values_around(DLM[:, l, m], truncation)
+                        mask = non_zero_values_around(DLM[:, l, m], truncation_pts)
                         sumoflines_calc[mask] += oaconvolve(
                             DLM[:, l, m][mask], lineshape, "same"
                         )
